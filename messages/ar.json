@@ -801,7 +801,7 @@
         "contactAddress": "عنوان العمل",
         "contactAddressPlaceholder": "١٢٣ الشارع الرئيسي، المدينة، الدولة",
         "logoSection": "شعار العمل",
-        "logoHint": "يظهر على الفواتير وفي رأس صفحة معرض أعمالك العامة.",
+        "logoHint": "يظهر على الفواتير التي تنشئها.",
         "logoLabel": "رفع الشعار",
         "logoUploading": "جارٍ الرفع…",
         "logoRequirements": "PNG أو JPEG أو WebP أو SVG · 2 ميغابايت كحد أقصى · حتى 2000 × 2000 بكسل",

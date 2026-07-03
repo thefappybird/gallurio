@@ -801,7 +801,7 @@
         "contactAddress": "Address ng negosyo",
         "contactAddressPlaceholder": "123 Main St, Lungsod, Bansa",
         "logoSection": "Logo ng negosyo",
-        "logoHint": "Ipinapakita sa mga invoice at sa header ng iyong pampublikong portfolio.",
+        "logoHint": "Makikita ito sa mga invoice na iyong nabubuo.",
         "logoLabel": "Mag-upload ng logo",
         "logoUploading": "Ina-upload…",
         "logoRequirements": "PNG, JPEG, WebP o SVG · max 2 MB · hanggang 2000 × 2000 px",

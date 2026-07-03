@@ -481,9 +481,13 @@ describe("EditorShell", () => {
     expect(iframeBefore?.getAttribute("src")).toContain("formDir=");
 
     const languageTrigger = screen.getByTestId("language-control");
+    // Guarded retry: only re-fire the open events while the menu isn't open
+    // yet, so a slow-opening retry never re-toggles an already-open menu closed.
     await waitFor(() => {
-      fireEvent.pointerDown(languageTrigger, { button: 0 });
-      fireEvent.click(languageTrigger);
+      if (!screen.queryByText("العربية")) {
+        fireEvent.pointerDown(languageTrigger, { button: 0 });
+        fireEvent.click(languageTrigger);
+      }
       expect(screen.queryByText("العربية")).toBeInTheDocument();
     });
     fireEvent.click(screen.getByText("العربية"));

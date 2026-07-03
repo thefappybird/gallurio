@@ -801,7 +801,7 @@
         "contactAddress": "Alamat bisnis",
         "contactAddressPlaceholder": "Jl. Utama 123, Kota, Negara",
         "logoSection": "Logo bisnis",
-        "logoHint": "Ditampilkan pada faktur dan header halaman portofolio publik Anda.",
+        "logoHint": "Ditampilkan pada faktur yang Anda hasilkan.",
         "logoLabel": "Unggah logo",
         "logoUploading": "Mengunggah…",
         "logoRequirements": "PNG, JPEG, WebP atau SVG · maks 2 MB · hingga 2000 × 2000 px",

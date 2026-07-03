@@ -801,7 +801,7 @@
         "contactAddress": "Business address",
         "contactAddressPlaceholder": "123 Main St, City, Country",
         "logoSection": "Business logo",
-        "logoHint": "Shown on invoices and your public portfolio header.",
+        "logoHint": "Shown on your generated invoices.",
         "logoLabel": "Upload logo",
         "logoUploading": "Uploading…",
         "logoRequirements": "PNG, JPEG, WebP or SVG · max 2 MB · up to 2000 × 2000 px",

@@ -125,7 +125,7 @@ export function WorkspaceBusinessForm({
             invalid_image: "logoErrors.image",
           } as Record<string, string>
         )[result.error];
-        setLogoError(t(msgKey as Parameters<typeof t>[0]));
+        setLogoError(t((msgKey ?? "logoErrors.upload") as Parameters<typeof t>[0]));
         return;
       }
       setValue("logoUrl", result.asset.url, { shouldDirty: true });
