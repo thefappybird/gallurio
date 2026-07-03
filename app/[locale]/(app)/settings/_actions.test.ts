@@ -208,6 +208,10 @@ describe("updateWorkspaceBusinessAction", () => {
     country: "PH" as const,
     currency: "PHP" as const,
     timezone: "Asia/Manila",
+    contactEmail: "",
+    contactAddress: "",
+    logoUrl: "",
+    logoAssetId: "",
   };
 
   it("owner happy path — updates the workspace doc", async () => {
