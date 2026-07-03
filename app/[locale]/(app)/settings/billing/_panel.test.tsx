@@ -42,6 +42,7 @@ const defaultProps: BillingPanelProps = {
   paddleCurrentPeriodEnd: null,
   workspaceId: "ws_test_123",
   customerEmail: "owner@example.com",
+  proPricing: { monthly: 250 },
 };
 
 function renderPanel(overrides: Partial<BillingPanelProps> = {}) {

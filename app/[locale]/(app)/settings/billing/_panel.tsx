@@ -17,6 +17,7 @@ export type BillingPanelProps = {
   paddleCurrentPeriodEnd: Date | null;
   workspaceId: string;
   customerEmail: string;
+  proPricing: { monthly: number };
 };
 
 function formatPHP(amount: number): string {
@@ -37,6 +38,7 @@ export function BillingPanel({
   paddleCurrentPeriodEnd,
   workspaceId,
   customerEmail,
+  proPricing,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
@@ -213,7 +215,7 @@ export function BillingPanel({
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium">{tPlans(`${entry.id}.name`)}</span>
                       <span className="text-xs text-muted-foreground">
-                        {formatPHP(entry.amount)}{" "}
+                        {formatPHP(entry.id === "pro" ? proPricing.monthly : entry.amount)}{" "}
                         <span className="text-muted-foreground">{t("perMonth")}</span>
                       </span>
                     </div>

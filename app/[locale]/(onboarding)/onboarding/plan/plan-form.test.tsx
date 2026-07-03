@@ -57,6 +57,7 @@ function renderForm(props: { currentPlan?: string } = {}) {
     <PlanStepForm
       currentPlan={props.currentPlan ?? "free"}
       furthestStep="plan"
+      proPricing={{ monthly: 250, yearly: 2500 }}
     />
   );
 }

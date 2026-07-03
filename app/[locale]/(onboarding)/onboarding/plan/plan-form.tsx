@@ -10,7 +10,7 @@ import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction } from "@/lib/actions/onboarding";
 import { devActivatePlanAction } from "@/lib/actions/dev";
-import { PLAN_CATALOG } from "@/lib/paddle/plans";
+import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/paddle/plans";
 import { useActionError } from "@/lib/i18n/actionError";
 import { StepShell, StepBackButton } from "../_components/step-shell";
 import { PlanIllustration } from "../_components/illustrations";
@@ -26,9 +26,11 @@ function formatPHP(amount: number): string {
 export function PlanStepForm({
   currentPlan,
   furthestStep,
+  proPricing,
 }: {
   currentPlan: string;
   furthestStep: OnboardingStep;
+  proPricing: { monthly: number; yearly: number };
 }) {
   const t = useTranslations("onboarding.plan");
   const tPlans = useTranslations("plans");
@@ -135,12 +137,15 @@ export function PlanStepForm({
     });
   }
 
+  function amountFor(p: PlanCatalogEntry, cadence: "monthly" | "yearly"): number {
+    if (p.id === "pro") return cadence === "yearly" ? proPricing.yearly : proPricing.monthly;
+    return cadence === "yearly" && p.yearlyAmount ? p.yearlyAmount : p.amount;
+  }
+
   const isDev = process.env.NODE_ENV !== "production";
   const busy = loading || pending;
   const selectedEntry = PLAN_CATALOG.find((p) => p.id === selected);
-  const selectedPrice = selectedEntry
-    ? formatPHP(cadence === "yearly" && selectedEntry.yearlyAmount ? selectedEntry.yearlyAmount : selectedEntry.amount)
-    : "";
+  const selectedPrice = selectedEntry ? formatPHP(amountFor(selectedEntry, cadence)) : "";
   const selectedName = selectedEntry ? tPlans(`${selected}.name`) : "";
 
   const cta =
@@ -177,7 +182,7 @@ export function PlanStepForm({
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {PLAN_CATALOG.map((p) => {
             const active = selected === p.id;
-            const priceAmount = cadence === "yearly" && p.yearlyAmount ? p.yearlyAmount : p.amount;
+            const priceAmount = amountFor(p, cadence);
             const price = formatPHP(priceAmount);
             const cadenceLabel =
               p.amount === 0
