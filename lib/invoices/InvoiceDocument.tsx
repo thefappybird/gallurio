@@ -6,7 +6,13 @@ export type InvoiceData = {
   issueDate: Date;
   business: { name: string; logoUrl: string; address: string; email: string; accentColor: string };
   client: { name: string; email: string | null; phone: string | null };
-  booking: { title: string; eventType: string; sessionStart: Date; sessionEnd: Date; locationAddress: string };
+  booking: {
+    title: string;
+    eventType: string;
+    sessionStart: Date | null;
+    sessionEnd: Date | null;
+    locationAddress: string;
+  };
   amount: { total: number; deposit: number; currency: string };
   locale: string;
 };
@@ -97,7 +103,10 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
   const balanceDue = amount.total - amount.deposit;
 
   const dateFmt = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
-  const sessionRange = `${dateFmt.format(booking.sessionStart)} - ${dateFmt.format(booking.sessionEnd)}`;
+  const sessionRange =
+    booking.sessionStart && booking.sessionEnd
+      ? `${dateFmt.format(booking.sessionStart)} - ${dateFmt.format(booking.sessionEnd)}`
+      : null;
 
   return (
     <Document>
@@ -129,7 +138,7 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
           <Text style={styles.sectionLabel}>Event Details</Text>
           <Text style={styles.line}>{booking.title}</Text>
           <Text style={styles.line}>{booking.eventType}</Text>
-          <Text style={styles.line}>{sessionRange}</Text>
+          {sessionRange ? <Text style={styles.line}>{sessionRange}</Text> : null}
           {booking.locationAddress ? <Text style={styles.line}>{booking.locationAddress}</Text> : null}
         </View>
 

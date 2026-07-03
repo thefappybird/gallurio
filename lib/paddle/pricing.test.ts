@@ -49,6 +49,15 @@ describe("getProPricing", () => {
     expect(result.yearly).toBe(2999);
   });
 
+  it("falls back to PLAN_CATALOG.pro.amount/yearlyAmount when unitPrice.amount is non-numeric", async () => {
+    mockPricesGet.mockResolvedValue({ unitPrice: { amount: "not-a-number" } });
+
+    const result = await getProPricing();
+
+    expect(result.monthly).toBe(pro.amount);
+    expect(result.yearly).toBe(pro.yearlyAmount);
+  });
+
   it("falls back to PLAN_CATALOG.pro.amount/yearlyAmount when the SDK call rejects", async () => {
     mockPricesGet.mockRejectedValue(new Error("network error"));
 

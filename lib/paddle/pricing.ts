@@ -6,7 +6,8 @@ async function fetchAmount(priceId: string): Promise<number | null> {
   if (!priceId) return null;
   try {
     const price = await getPaddle().prices.get(priceId);
-    return Number(price.unitPrice.amount) / 100;
+    const amount = Number(price.unitPrice.amount) / 100;
+    return Number.isFinite(amount) ? amount : null;
   } catch {
     return null; // sandbox/dev without PADDLE_API_KEY, price not found, network error, etc.
   }
