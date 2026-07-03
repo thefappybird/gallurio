@@ -480,8 +480,13 @@ describe("EditorShell", () => {
     expect(iframeBefore?.getAttribute("src")).toContain("formLocale=");
     expect(iframeBefore?.getAttribute("src")).toContain("formDir=");
 
-    fireEvent.click(screen.getByTestId("language-control"));
-    fireEvent.click(await screen.findByText("العربية"));
+    const languageTrigger = screen.getByTestId("language-control");
+    await waitFor(() => {
+      fireEvent.pointerDown(languageTrigger, { button: 0 });
+      fireEvent.click(languageTrigger);
+      expect(screen.queryByText("العربية")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("العربية"));
 
     const iframeAfter = container.querySelector("iframe");
     expect(iframeAfter?.getAttribute("src")).toContain("formLocale=ar");
