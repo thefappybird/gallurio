@@ -88,6 +88,16 @@ describe("StoryPromptDialog", () => {
     expect(chip).toHaveClass("bg-primary");
   });
 
+  it("truncates a custom tag longer than 40 characters before adding it", async () => {
+    setup({ businessType: "photographer" });
+    await goToVibeStep();
+    const longTag = "a".repeat(50);
+    const input = screen.getByPlaceholderText(/add a tag/i);
+    fireEvent.change(input, { target: { value: longTag } });
+    fireEvent.click(screen.getByRole("button", { name: /add a tag/i }));
+    expect(screen.getByRole("button", { name: "a".repeat(40) })).toBeInTheDocument();
+  });
+
   it("saves and continues with guide from the done step", async () => {
     const onContinueWithGuide = vi.fn();
     setup({ onContinueWithGuide, initialDescription: "Hi", initialKeywords: ["Candid"] });

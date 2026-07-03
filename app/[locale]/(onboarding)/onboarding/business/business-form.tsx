@@ -214,8 +214,12 @@ export function BusinessStepForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label>{t("businessType")}</Label>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          <Label id="business-type-label">{t("businessType")}</Label>
+          <div
+            role="group"
+            aria-labelledby="business-type-label"
+            className="grid grid-cols-3 gap-2 sm:grid-cols-4"
+          >
             {businessTypes.map((bt) => {
               const Icon = bt.icon;
               const active = businessTypeValue === bt.value;

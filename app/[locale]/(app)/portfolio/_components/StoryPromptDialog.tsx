@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -29,6 +29,7 @@ function slugify(name: string) {
 }
 
 const MAX_KEYWORDS = 10;
+const MAX_KEYWORD_LENGTH = 40;
 
 const SUGGESTED_TAGS: Record<string, string[]> = {
   photographer: ["Documentary", "Candid", "Studio", "Editorial", "Destination Weddings", "Same-Day Edit"],
@@ -106,7 +107,7 @@ export function StoryPromptDialog({
   }
 
   function addCustomTag() {
-    const trimmed = tagInput.trim();
+    const trimmed = tagInput.trim().slice(0, MAX_KEYWORD_LENGTH);
     if (!trimmed || keywords.includes(trimmed) || keywords.length >= MAX_KEYWORDS) return;
     setKeywords([...keywords, trimmed]);
     setTagInput("");
@@ -219,14 +220,16 @@ export function StoryPromptDialog({
                       <button
                         key={tag}
                         type="button"
+                        aria-pressed={selected}
                         onClick={() => toggleTag(tag)}
                         className={cn(
-                          "rounded-full border px-3 py-1 text-sm transition-colors",
+                          "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm transition-colors",
                           selected
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-border bg-background hover:bg-muted"
                         )}
                       >
+                        {selected && <Check className="h-3 w-3" aria-hidden="true" />}
                         {tag}
                       </button>
                     );
