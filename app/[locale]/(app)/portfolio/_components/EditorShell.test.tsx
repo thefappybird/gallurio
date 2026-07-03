@@ -471,6 +471,23 @@ describe("EditorShell", () => {
     expect(src).toContain("v=");
   });
 
+  it("reflects a formLocale/formDir change in the preview iframe src", async () => {
+    const { container } = await renderAndDismissEntry(<EditorShell {...basePro} />);
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(await screen.findByTitle("Live preview")).toBeInTheDocument();
+
+    const iframeBefore = container.querySelector("iframe");
+    expect(iframeBefore?.getAttribute("src")).toContain("formLocale=");
+    expect(iframeBefore?.getAttribute("src")).toContain("formDir=");
+
+    fireEvent.click(screen.getByTestId("language-control"));
+    fireEvent.click(await screen.findByText("العربية"));
+
+    const iframeAfter = container.querySelector("iframe");
+    expect(iframeAfter?.getAttribute("src")).toContain("formLocale=ar");
+    expect(iframeAfter?.getAttribute("src")).toContain("formDir=rtl");
+  });
+
   it("shows the Drafts button and draft name editor in the toolbar", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByRole("button", { name: "Drafts" })).toBeInTheDocument();

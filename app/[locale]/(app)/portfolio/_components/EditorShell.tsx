@@ -1373,7 +1373,7 @@ export function EditorShell({
     (key, values) => tLocationPicker(key, values)
   ).form;
   const previewZone = previewZoneFor(activeSection, activeZone);
-  const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}`;
+  const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}&formLocale=${formLocale}&formDir=${formDir}`;
 
   // Stable references for Puck overrides that must not change identity on every
   // re-render. Puck treats a new function reference as a reason to unmount and
