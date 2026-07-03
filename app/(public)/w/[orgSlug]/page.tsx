@@ -115,6 +115,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     phone: workspace.contact?.phone || undefined,
     address: workspace.contact?.address || undefined,
     sameAs,
+    keywords: (workspace.publicPage?.seo as { keywords?: string[] } | undefined)?.keywords,
   });
 
   // ComingSoonFallback does not need workspace block context — only <Render>

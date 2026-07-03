@@ -250,8 +250,8 @@ const completeStoryPromptSchema = z.object({
  * Persist the owner's first-visit "story prompt" answers (SEO description +
  * style tags), captured before the editor's Guide tour opens. Owner-only.
  * Idempotent — re-submitting just rewrites the fields and the timestamp.
- * Not surfaced on the public page until the owner opens Settings → Public
- * Page, so no revalidatePath (mirrors dismissPortfolioGuideAction).
+ * seoDescription/keywords feed the public home page's <meta description>
+ * and JSON-LD, which is route-cached — revalidate so the write isn't stale.
  */
 export async function completeStoryPromptAction(input: unknown): Promise<EditorActionResult> {
   const ctx = await requireOrg();
@@ -271,6 +271,9 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
       },
     }
   );
+
+  revalidatePath(`/w/${ctx.workspace.slug}`);
+  revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
   return { ok: true };
 }
 
