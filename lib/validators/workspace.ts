@@ -113,6 +113,10 @@ export const updateWorkspaceBusinessSchema = z.object({
   country: businessStepSchema.shape.country,
   currency: businessStepSchema.shape.currency,
   timezone: businessStepSchema.shape.timezone,
+  contactEmail: z.union([z.string().email("Enter a valid email"), z.literal("")]).optional().default(""),
+  contactAddress: z.string().max(200).trim().optional().default(""),
+  logoUrl: z.string().trim().url().or(z.literal("")).optional().default(""),
+  logoAssetId: z.string().trim().optional().default(""),
 });
 export type UpdateWorkspaceBusinessInput = z.infer<typeof updateWorkspaceBusinessSchema>;
 

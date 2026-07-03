@@ -62,6 +62,10 @@ const workspaceSchema = new Schema(
     country: { type: String, default: null },
     currency: { type: String, enum: SUPPORTED_CURRENCIES, default: "PHP", required: true },
     timezone: { type: String, default: null },
+    // Business logo shown in the CRM app (Business Details settings). Distinct
+    // from publicPage.header.logoUrl, which is the portfolio nav logo.
+    logoUrl: { type: String, default: "" },
+    logoAssetId: { type: String, default: "" },
     contact: {
       email: { type: String, default: "" },
       phone: { type: String, default: "" },

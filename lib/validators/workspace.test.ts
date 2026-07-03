@@ -181,6 +181,50 @@ describe("updateWorkspaceBusinessSchema", () => {
         .success
     ).toBe(false);
   });
+
+  it("defaults contactEmail, contactAddress, logoUrl, logoAssetId to empty string when omitted", () => {
+    const result = updateWorkspaceBusinessSchema.safeParse(validUpdateBusiness);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.contactEmail).toBe("");
+      expect(result.data.contactAddress).toBe("");
+      expect(result.data.logoUrl).toBe("");
+      expect(result.data.logoAssetId).toBe("");
+    }
+  });
+
+  it("accepts a valid contactEmail and logoUrl, preserves them through parse", () => {
+    const result = updateWorkspaceBusinessSchema.safeParse({
+      ...validUpdateBusiness,
+      contactEmail: "hello@sarah.com",
+      contactAddress: "123 Manila St",
+      logoUrl: "https://cdn.example.com/logo.png",
+      logoAssetId: "logo_abc",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.contactEmail).toBe("hello@sarah.com");
+      expect(result.data.contactAddress).toBe("123 Manila St");
+      expect(result.data.logoUrl).toBe("https://cdn.example.com/logo.png");
+      expect(result.data.logoAssetId).toBe("logo_abc");
+    }
+  });
+
+  it("rejects an invalid contactEmail", () => {
+    const result = updateWorkspaceBusinessSchema.safeParse({
+      ...validUpdateBusiness,
+      contactEmail: "not-an-email",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-URL non-empty logoUrl", () => {
+    const result = updateWorkspaceBusinessSchema.safeParse({
+      ...validUpdateBusiness,
+      logoUrl: "not-a-url",
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("publicPageSettingsSchema", () => {
