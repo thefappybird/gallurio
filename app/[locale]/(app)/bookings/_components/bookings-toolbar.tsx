@@ -211,7 +211,7 @@ export function BookingsToolbar({
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />
-        {isOwner && initialInvoiceTheme ? (
+        {isOwner ? (
           <Button
             variant="outline"
             size="sm"

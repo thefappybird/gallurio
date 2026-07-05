@@ -246,4 +246,22 @@ describe("BookingsToolbar — Invoice theme button", () => {
     );
     expect(screen.queryByRole("button", { name: /invoice theme/i })).not.toBeInTheDocument();
   });
+
+  // Regression: workspaces created before `invoiceTheme` existed on the schema
+  // have no key at all — `.lean()` in requireOrg() skips schema defaults, so
+  // `workspace.invoiceTheme` is `undefined`, not the classic preset object.
+  // The button's visibility must depend only on `isOwner`, never on the theme
+  // value being truthy — otherwise pre-existing workspaces can never open the
+  // dialog to set a theme in the first place.
+  it("renders the Invoice theme button for an owner even when initialInvoiceTheme is undefined", () => {
+    render(
+      <BookingsToolbar
+        defaultCurrency="PHP"
+        isOwner
+        initialInvoiceTheme={undefined}
+      />,
+      { wrapper }
+    );
+    expect(screen.getByRole("button", { name: /invoice theme/i })).toBeInTheDocument();
+  });
 });
