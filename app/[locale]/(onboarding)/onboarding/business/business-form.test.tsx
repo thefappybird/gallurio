@@ -8,27 +8,20 @@ import { renderWithProviders } from "@/test-utils/render";
 import { BusinessStepForm } from "./business-form";
 import type { BusinessStepInput } from "@/lib/validators/workspace";
 
+const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 vi.mock("@/lib/actions/onboarding", () => ({
   businessStepAction: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock("@/hooks/useSlugAvailability", () => ({
-  useSlugAvailability: () => ({ status: "idle" }),
-}));
-
 const defaults: BusinessStepInput = {
   firstName: "Sarah",
   lastName: "Bell",
   name: "Sarah Bell Photography",
-  slug: "",
   businessType: "photographer",
-  country: "PH",
-  currency: "PHP",
-  timezone: "Asia/Manila",
 };
 
 function renderForm(overrides: Partial<BusinessStepInput> = {}) {
@@ -62,15 +55,14 @@ describe("BusinessStepForm — business type icon grid", () => {
   });
 });
 
-describe("BusinessStepForm — slug preview", () => {
-  it("shows a live gallurio.com/w/<slug> preview as the slug input changes", () => {
-    renderForm({ slug: "sarah-bell" });
+describe("BusinessStepForm — submit navigation", () => {
+  it("navigates to /onboarding/workspace after a successful submit", async () => {
+    renderForm();
 
-    expect(screen.getByText(/gallurio\.com\/w\/sarah-bell/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
-    const slugInput = screen.getByLabelText(/workspace url/i);
-    fireEvent.change(slugInput, { target: { value: "new-slug" } });
-
-    expect(screen.getByText(/gallurio\.com\/w\/new-slug/)).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/onboarding/workspace");
+    });
   });
 });

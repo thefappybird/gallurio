@@ -2209,12 +2209,13 @@
     },
     "steps": {
       "business": "Negosyo",
+      "workspace": "Workspace",
       "plan": "Plano",
       "done": "Tapos"
     },
     "business": {
       "title": "Sabihin sa amin ang tungkol sa iyong negosyo",
-      "description": "Ang pangalan mo, mga pangunahing detalye ng negosyo, at kung saan ka nag-ooperate.",
+      "description": "Ang pangalan mo at mga pangunahing detalye ng negosyo.",
       "firstName": "Pangalan",
       "firstNamePlaceholder": "Sarah",
       "lastName": "Apelyido",
@@ -2229,7 +2230,6 @@
       "businessType": "Uri ng negosyo",
       "country": "Bansa",
       "currency": "Currency",
-      "currencyHelp": "Ginagamit para sa mga bagong booking, transaksyon, at mga kabuuang ipinapakita sa iyong workspace.",
       "timezone": "Timezone",
       "businessTypes": {
         "photographer": "Photographer",
@@ -2244,6 +2244,15 @@
       "slugAvailable": "Available",
       "slugTaken": "Hindi available",
       "slugInvalid": "Hindi tamang format"
+    },
+    "workspace": {
+      "title": "I-set up ang iyong workspace",
+      "description": "Kung saan ka nag-ooperate at kung paano mo gustong ipakita ang oras.",
+      "country": "Bansa",
+      "timezone": "Timezone",
+      "timeFormat": "Format ng oras",
+      "time12h": "12h",
+      "time24h": "24h"
     },
     "plan": {
       "title": "Pumili ng planong angkop",
@@ -2281,7 +2290,12 @@
         "description": "Magdadagdag kami ng 5 demo client, 3 demo booking, at 1 demo inquiry para makapaglibot ka sa app. Lahat ay may tag na sample para mabura mo sa isang click."
       },
       "settingUp": "Sine-set up ang iyong dashboard…",
-      "goToDashboard": "Pumunta sa iyong dashboard"
+      "goToDashboard": "Pumunta sa iyong dashboard",
+      "footer": {
+        "everything": "Lahat nasa iisang lugar",
+        "grow": "Ginawa para lumago kasama ka",
+        "support": "Suporta kapag kailangan mo"
+      }
     }
   },
   "plans": {

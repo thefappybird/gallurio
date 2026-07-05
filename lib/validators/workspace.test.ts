@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   businessStepSchema,
+  workspaceSetupSchema,
+  currencySchema,
+  coerceBillingCountry,
   slugSchema,
   SUPPORTED_CURRENCIES,
   BILLING_COUNTRY_VALUES,
@@ -11,11 +14,14 @@ const validBusiness = {
   firstName: "Sarah",
   lastName: "Bell",
   name: "Sarah Bell Photography",
-  slug: "sarah-bell-photo",
   businessType: "photographer" as const,
+};
+
+const validWorkspaceSetup = {
+  slug: "sarah-bell-photo",
   country: "PH" as const,
-  currency: "PHP" as const,
   timezone: "Asia/Manila",
+  timeFormat: "24h" as const,
 };
 
 describe("slugSchema", () => {
@@ -44,23 +50,6 @@ describe("businessStepSchema", () => {
     expect(businessStepSchema.safeParse(validBusiness).success).toBe(true);
   });
 
-  it("requires currency", () => {
-    const { currency: _omit, ...rest } = validBusiness;
-    void _omit;
-    const parsed = businessStepSchema.safeParse(rest);
-    expect(parsed.success).toBe(false);
-  });
-
-  it("rejects an unsupported currency", () => {
-    const parsed = businessStepSchema.safeParse({ ...validBusiness, currency: "JPY" });
-    expect(parsed.success).toBe(false);
-  });
-
-  it("rejects an unsupported country", () => {
-    const parsed = businessStepSchema.safeParse({ ...validBusiness, country: "JP" });
-    expect(parsed.success).toBe(false);
-  });
-
   it("trims firstName and name", () => {
     const parsed = businessStepSchema.safeParse({
       ...validBusiness,
@@ -72,6 +61,38 @@ describe("businessStepSchema", () => {
       expect(parsed.data.firstName).toBe("Sarah");
       expect(parsed.data.name).toBe("Sarah Bell Photography");
     }
+  });
+});
+
+describe("workspaceSetupSchema", () => {
+  it("accepts a valid input and has no currency field", () => {
+    expect(workspaceSetupSchema.safeParse(validWorkspaceSetup).success).toBe(true);
+    expect(workspaceSetupSchema.shape).not.toHaveProperty("currency");
+  });
+
+  it("rejects an unsupported country, an empty timezone, and an invalid timeFormat", () => {
+    expect(workspaceSetupSchema.safeParse({ ...validWorkspaceSetup, country: "JP" }).success).toBe(
+      false
+    );
+    expect(workspaceSetupSchema.safeParse({ ...validWorkspaceSetup, timezone: "" }).success).toBe(
+      false
+    );
+    expect(
+      workspaceSetupSchema.safeParse({ ...validWorkspaceSetup, timeFormat: "36h" }).success
+    ).toBe(false);
+    expect(
+      workspaceSetupSchema.safeParse({ ...validWorkspaceSetup, timeFormat: "12h" }).success
+    ).toBe(true);
+  });
+});
+
+describe("coerceBillingCountry", () => {
+  it("returns supported values as-is and falls back to PH (or a custom fallback) otherwise", () => {
+    expect(coerceBillingCountry("SG")).toBe("SG");
+    expect(coerceBillingCountry(null)).toBe("PH");
+    expect(coerceBillingCountry(undefined)).toBe("PH");
+    expect(coerceBillingCountry("ZZ")).toBe("PH");
+    expect(coerceBillingCountry("ZZ", "US")).toBe("US");
   });
 });
 
@@ -100,17 +121,16 @@ describe("currency / country tables stay in sync", () => {
   });
 
   it("Gulf currencies are accepted by the currency zod enum", () => {
-    const { currency } = businessStepSchema.shape;
-    expect(currency.safeParse("AED").success).toBe(true);
-    expect(currency.safeParse("SAR").success).toBe(true);
-    expect(currency.safeParse("QAR").success).toBe(true);
-    expect(currency.safeParse("KWD").success).toBe(true);
-    expect(currency.safeParse("OMR").success).toBe(true);
-    expect(currency.safeParse("BHD").success).toBe(true);
+    expect(currencySchema.safeParse("AED").success).toBe(true);
+    expect(currencySchema.safeParse("SAR").success).toBe(true);
+    expect(currencySchema.safeParse("QAR").success).toBe(true);
+    expect(currencySchema.safeParse("KWD").success).toBe(true);
+    expect(currencySchema.safeParse("OMR").success).toBe(true);
+    expect(currencySchema.safeParse("BHD").success).toBe(true);
   });
 
   it("Gulf countries are accepted by the country zod enum", () => {
-    const { country } = businessStepSchema.shape;
+    const { country } = workspaceSetupSchema.shape;
     expect(country.safeParse("AE").success).toBe(true);
     expect(country.safeParse("SA").success).toBe(true);
     expect(country.safeParse("QA").success).toBe(true);
@@ -120,15 +140,14 @@ describe("currency / country tables stay in sync", () => {
   });
 
   it("rejects unsupported country codes", () => {
-    const { country } = businessStepSchema.shape;
+    const { country } = workspaceSetupSchema.shape;
     expect(country.safeParse("ZZ").success).toBe(false);
     expect(country.safeParse("JP").success).toBe(false);
   });
 
   it("rejects unsupported currency codes", () => {
-    const { currency } = businessStepSchema.shape;
-    expect(currency.safeParse("XYZ").success).toBe(false);
-    expect(currency.safeParse("JPY").success).toBe(false);
+    expect(currencySchema.safeParse("XYZ").success).toBe(false);
+    expect(currencySchema.safeParse("JPY").success).toBe(false);
   });
 });
 

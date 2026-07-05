@@ -2209,12 +2209,13 @@
     },
     "steps": {
       "business": "Business",
+      "workspace": "Workspace",
       "plan": "Plan",
       "done": "Finish"
     },
     "business": {
       "title": "Tell us about your business",
-      "description": "Your name, your business basics, and where you operate.",
+      "description": "Your name and your business basics.",
       "firstName": "First name",
       "firstNamePlaceholder": "Sarah",
       "lastName": "Last name",
@@ -2229,7 +2230,6 @@
       "businessType": "Business type",
       "country": "Country",
       "currency": "Currency",
-      "currencyHelp": "Used for new bookings, transactions, and totals shown across your workspace.",
       "timezone": "Timezone",
       "businessTypes": {
         "photographer": "Photographer",
@@ -2244,6 +2244,15 @@
       "slugAvailable": "Available",
       "slugTaken": "Already taken",
       "slugInvalid": "Invalid format"
+    },
+    "workspace": {
+      "title": "Set up your workspace",
+      "description": "Where you operate and how you'd like times shown.",
+      "country": "Country",
+      "timezone": "Timezone",
+      "timeFormat": "Time format",
+      "time12h": "12h",
+      "time24h": "24h"
     },
     "plan": {
       "title": "Pick the plan that fits",
@@ -2281,7 +2290,12 @@
         "description": "We'll add 5 demo clients, 3 demo bookings, and 1 demo inquiry so you can explore the app. Everything is tagged sample so you can delete it in one click."
       },
       "settingUp": "Setting up your dashboard…",
-      "goToDashboard": "Go to your dashboard"
+      "goToDashboard": "Go to your dashboard",
+      "footer": {
+        "everything": "Everything in one place",
+        "grow": "Built to grow with you",
+        "support": "Support when you need it"
+      }
     }
   },
   "plans": {

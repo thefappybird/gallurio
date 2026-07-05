@@ -15,9 +15,13 @@ import {
 import { ensureDefaultTeam } from "@/lib/db/models/team";
 import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
+import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
 import {
   businessStepSchema,
+  workspaceSetupSchema,
+  COUNTRY_TO_CURRENCY,
   type BusinessStepInput,
+  type WorkspaceSetupInput,
 } from "@/lib/validators/workspace";
 import mongoose from "mongoose";
 
@@ -26,6 +30,33 @@ type ActionResult = { error?: string; ok?: boolean };
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+function slugifyName(name: string): string {
+  const base = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
+  return base || "workspace";
+}
+
+// businessStepAction has no slug field of its own (it moved to the workspace
+// step) but still needs SOME unique slug to satisfy the required+unique
+// index on first insert. Auto-derive one from the business name; the owner
+// can rename it on the next step.
+async function generateUniqueSlug(name: string): Promise<string> {
+  const base = slugifyName(name);
+  let candidate = base;
+  let suffix = 1;
+  while (await Workspace.exists({ slug: candidate })) {
+    suffix += 1;
+    candidate = `${base}-${suffix}`.slice(0, 50);
+  }
+  return candidate;
+}
 
 async function setUserStep(workosUserId: string, step: OnboardingStep) {
   // Only advance — never regress. If the user is already at a later step
@@ -51,34 +82,14 @@ export async function businessStepAction(
   const parsed = businessStepSchema.safeParse(input);
   if (!parsed.success) return { error: "invalid_input" };
 
-  const {
-    firstName,
-    lastName,
-    name,
-    slug,
-    businessType,
-    country,
-    currency,
-    timezone,
-  } = parsed.data;
+  const { firstName, lastName, name, businessType } = parsed.data;
 
   await connectDB();
 
-  // Slug must be globally unique. Exclude the user's own workspace when
-  // re-running (idempotent update path) so they are not blocked by their own slug.
-  const existingUserDoc = await User.findOne(
-    { workosUserId: authUser.workosUserId },
-    { memberships: 1 }
-  ).lean();
-  const ownedWorkspaceId = existingUserDoc?.memberships.find(
-    (m) => m.role === "owner"
-  )?.workspaceId ?? null;
-
-  const slugClash = await Workspace.findOne({
-    slug,
-    ...(ownedWorkspaceId ? { _id: { $ne: ownedWorkspaceId } } : {}),
-  }).lean();
-  if (slugClash) return { error: "url_taken" };
+  // The workspace's URL slug is edited on the next step, but the Workspace
+  // schema requires one on insert — auto-derive it from the business name
+  // now; $setOnInsert below means it only applies the first time.
+  const autoSlug = await generateUniqueSlug(name);
 
   let workspaceId: string;
   let session: mongoose.ClientSession | null = null;
@@ -90,9 +101,10 @@ export async function businessStepAction(
       const workspace = await Workspace.findOneAndUpdate(
         { ownerUserId: authUser.workosUserId },
         {
-          $set: { name, slug, businessType, country, currency, timezone },
+          $set: { name, businessType },
           $setOnInsert: {
             ownerUserId: authUser.workosUserId,
+            slug: autoSlug,
             plan: "free",
             // Seed the inquiry recipient with the owner's auth email so
             // notifications are delivered from day one, without requiring a
@@ -142,12 +154,71 @@ export async function businessStepAction(
     if (session) await session.endSession();
   }
 
-  await setUserStep(authUser.workosUserId, "plan");
+  await setUserStep(authUser.workosUserId, "workspace");
 
   // Set the signed active-workspace cookie so subsequent steps can resolve
   // the workspace without relying on query params.
   await setActiveWorkspace(authUser.workosUserId, workspaceId!);
 
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Workspace setup step
+// ---------------------------------------------------------------------------
+
+export async function workspaceStepAction(
+  input: WorkspaceSetupInput
+): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "not_authenticated" };
+
+  const parsed = workspaceSetupSchema.safeParse(input);
+  if (!parsed.success) return { error: "invalid_input" };
+
+  const { slug, country, timezone, timeFormat } = parsed.data;
+  // Currency is never client-submitted — always derived from country.
+  const currency = COUNTRY_TO_CURRENCY[country];
+
+  await connectDB();
+
+  const user = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 }
+  ).lean();
+  const ownerMembership = user?.memberships.find((m) => m.role === "owner");
+  if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
+
+  // Slug must be globally unique. Exclude the user's own workspace so
+  // keeping (or re-submitting) their existing slug never self-clashes.
+  const slugClash = await Workspace.findOne({
+    slug,
+    _id: { $ne: ownerMembership.workspaceId },
+  }).lean();
+  if (slugClash) return { error: "url_taken" };
+
+  try {
+    await Workspace.updateOne(
+      { _id: ownerMembership.workspaceId },
+      { $set: { slug, country, currency, timezone } }
+    );
+  } catch (err) {
+    // Race-safe: if two concurrent requests slip through the pre-write check
+    // simultaneously, the second hits the unique index on `slug` (E11000).
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 11000
+    ) {
+      return { error: "url_taken" };
+    }
+    throw err;
+  }
+
+  await persistUserTimeFormat(authUser.workosUserId, timeFormat);
+
+  await setUserStep(authUser.workosUserId, "plan");
   return { ok: true };
 }
 
@@ -266,7 +337,7 @@ export async function completeOnboardingAction(opts: {
   const workspace = await Workspace.findOne({ _id: ownerMembership.workspaceId });
   if (!workspace) return { error: "workspace_not_found" };
 
-  if (opts.seedSampleData) {
+  if (opts.seedSampleData && process.env.NODE_ENV === "development") {
     await seedSampleData(workspace._id.toString());
   }
 

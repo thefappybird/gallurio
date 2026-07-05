@@ -11,9 +11,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { THEMES, resolveScheme } from "@/lib/theme/themes";
 
-export function ThemeToggle() {
+export function ThemeToggle({
+  variant = "sidebar",
+}: {
+  variant?: "sidebar" | "standalone";
+} = {}) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const t = useTranslations("app.theme");
 
@@ -34,19 +39,24 @@ export function ThemeToggle() {
         SunIcon);
   const TriggerIcon = triggerIcon;
 
+  const trigger =
+    variant === "standalone" ? (
+      <Button variant="ghost" size="icon" aria-label={t("label")}>
+        <TriggerIcon suppressHydrationWarning />
+      </Button>
+    ) : (
+      <SidebarMenuButton
+        tooltip={t("label")}
+        className="group-data-[collapsible=icon]:mx-auto"
+      >
+        <TriggerIcon suppressHydrationWarning />
+        <span>{t("label")}</span>
+      </SidebarMenuButton>
+    );
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <SidebarMenuButton
-            tooltip={t("label")}
-            className="group-data-[collapsible=icon]:mx-auto"
-          >
-            <TriggerIcon suppressHydrationWarning />
-            <span>{t("label")}</span>
-          </SidebarMenuButton>
-        }
-      />
+      <DropdownMenuTrigger render={trigger} />
       <DropdownMenuContent side="inline-end" align="start">
         {THEMES.map((opt) => {
           const Icon = opt.icon;

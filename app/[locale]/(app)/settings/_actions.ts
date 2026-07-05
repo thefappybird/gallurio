@@ -17,6 +17,7 @@ import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { deleteImage, verifyImageOwnership } from "@/lib/storage/cloudflareImages";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
 import { getAuthUser } from "@/lib/auth/session";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { workos } from "@/lib/workos";
@@ -215,18 +216,7 @@ export async function updateTimeFormatAction(
   const parsed = timeModeSchema.safeParse(format);
   if (!parsed.success) return { error: "Invalid time format" };
 
-  await User.updateOne(
-    { workosUserId: ctx.userId },
-    { $set: { timeFormat: parsed.data } },
-  );
-
-  const cookieStore = await cookies();
-  cookieStore.set("timeFormat", parsed.data, {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-    httpOnly: false,
-    sameSite: "lax",
-  });
+  await persistUserTimeFormat(ctx.userId, parsed.data);
 
   return { ok: true };
 }

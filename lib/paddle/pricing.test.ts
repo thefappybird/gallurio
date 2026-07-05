@@ -8,16 +8,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { PLAN_CATALOG } from "./plans";
 
-const { mockGetPaddle, mockPricesGet } = vi.hoisted(() => {
-  const mockPricesGet = vi.fn();
-  const mockGetPaddle = vi.fn(() => ({ prices: { get: mockPricesGet } }));
-  return { mockGetPaddle, mockPricesGet };
+const { mockGetPaddle, mockPreview } = vi.hoisted(() => {
+  const mockPreview = vi.fn();
+  const mockGetPaddle = vi.fn(() => ({ pricingPreview: { preview: mockPreview } }));
+  return { mockGetPaddle, mockPreview };
 });
 
-vi.mock("./client", () => ({ getPaddle: mockGetPaddle }));
-vi.mock("next/cache", () => ({
-  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+const { mockUnstableCache } = vi.hoisted(() => ({
+  mockUnstableCache: vi.fn((fn: (...args: unknown[]) => unknown) => fn),
 }));
+
+vi.mock("./client", () => ({ getPaddle: mockGetPaddle }));
+vi.mock("next/cache", () => ({ unstable_cache: mockUnstableCache }));
 
 import { getProPricing } from "./pricing";
 
@@ -25,8 +27,21 @@ const pro = PLAN_CATALOG.find((p) => p.id === "pro")!;
 
 const ORIGINAL_ENV = { ...process.env };
 
+function previewResponse(currencyCode: string, monthlyTotal: string, yearlyTotal: string) {
+  return {
+    currencyCode,
+    details: {
+      lineItems: [
+        { price: { id: "pri_monthly_123" }, unitTotals: { total: monthlyTotal } },
+        { price: { id: "pri_yearly_456" }, unitTotals: { total: yearlyTotal } },
+      ],
+    },
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUnstableCache.mockImplementation((fn: (...args: unknown[]) => unknown) => fn);
   process.env.PADDLE_PRICE_PRO_ID = "pri_monthly_123";
   process.env.PADDLE_PRICE_PRO_YEARLY_ID = "pri_yearly_456";
 });
@@ -36,46 +51,66 @@ afterEach(() => {
 });
 
 describe("getProPricing", () => {
-  it("converts unitPrice.amount (smallest unit string) to a decimal PHP amount", async () => {
-    mockPricesGet.mockImplementation(async (priceId: string) => {
-      if (priceId === "pri_monthly_123") return { unitPrice: { amount: "29900" } };
-      if (priceId === "pri_yearly_456") return { unitPrice: { amount: "299900" } };
-      throw new Error("unexpected priceId");
+  it("converts unitTotals.total (smallest unit string) to a decimal amount in the preview's currency", async () => {
+    mockPreview.mockResolvedValue(previewResponse("USD", "2900", "29900"));
+
+    const result = await getProPricing("US");
+
+    expect(result.currency).toBe("USD");
+    expect(result.monthly).toBe(29);
+    expect(result.yearly).toBe(299);
+    expect(mockPreview).toHaveBeenCalledWith({
+      items: [
+        { priceId: "pri_monthly_123", quantity: 1 },
+        { priceId: "pri_yearly_456", quantity: 1 },
+      ],
+      address: { countryCode: "US" },
     });
-
-    const result = await getProPricing();
-
-    expect(result.monthly).toBe(299);
-    expect(result.yearly).toBe(2999);
   });
 
-  it("falls back to PLAN_CATALOG.pro.amount/yearlyAmount when unitPrice.amount is non-numeric", async () => {
-    mockPricesGet.mockResolvedValue({ unitPrice: { amount: "not-a-number" } });
+  it("falls back to PLAN_CATALOG.pro.amount/yearlyAmount/currency when a line item total is non-numeric", async () => {
+    mockPreview.mockResolvedValue(previewResponse("PHP", "not-a-number", "not-a-number"));
 
-    const result = await getProPricing();
+    const result = await getProPricing("PH");
 
+    expect(result.currency).toBe(pro.currency);
     expect(result.monthly).toBe(pro.amount);
     expect(result.yearly).toBe(pro.yearlyAmount);
   });
 
-  it("falls back to PLAN_CATALOG.pro.amount/yearlyAmount when the SDK call rejects", async () => {
-    mockPricesGet.mockRejectedValue(new Error("network error"));
+  it("falls back to PLAN_CATALOG.pro.amount/yearlyAmount/currency when the SDK call rejects", async () => {
+    mockPreview.mockRejectedValue(new Error("network error"));
 
-    const result = await getProPricing();
+    const result = await getProPricing("PH");
 
+    expect(result.currency).toBe(pro.currency);
     expect(result.monthly).toBe(pro.amount);
     expect(result.yearly).toBe(pro.yearlyAmount);
+  });
+
+  it("still resolves pricing when unstable_cache itself throws (e.g. no incrementalCache outside Next's runtime)", async () => {
+    mockUnstableCache.mockImplementation(() => {
+      throw new Error("Invariant: incrementalCache missing in unstable_cache");
+    });
+    mockPreview.mockResolvedValue(previewResponse("USD", "2900", "29900"));
+
+    const result = await getProPricing("US");
+
+    expect(result.currency).toBe("USD");
+    expect(result.monthly).toBe(29);
+    expect(result.yearly).toBe(299);
   });
 
   it("falls back without calling the SDK when the env var is empty", async () => {
     process.env.PADDLE_PRICE_PRO_ID = "";
     process.env.PADDLE_PRICE_PRO_YEARLY_ID = "";
 
-    const result = await getProPricing();
+    const result = await getProPricing("PH");
 
+    expect(result.currency).toBe(pro.currency);
     expect(result.monthly).toBe(pro.amount);
     expect(result.yearly).toBe(pro.yearlyAmount);
-    expect(mockPricesGet).not.toHaveBeenCalled();
+    expect(mockPreview).not.toHaveBeenCalled();
     expect(mockGetPaddle).not.toHaveBeenCalled();
   });
 });

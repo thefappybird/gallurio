@@ -122,7 +122,7 @@ export default async function SettingsCatchallPage({
   };
 
   const t = await getTranslations("app.settings.tabs");
-  const proPricing = await getProPricing();
+  const proPricing = await getProPricing(workspace.country ?? "PH");
 
   // Active slug: null means base /settings -> render account tab
   const activeSlug = slug;

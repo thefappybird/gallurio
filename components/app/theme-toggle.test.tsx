@@ -36,6 +36,15 @@ describe("ThemeToggle", () => {
     expect(screen.getByText("System")).toBeInTheDocument();
   });
 
+  it("renders a plain icon-button trigger (no sidebar context) when variant is standalone", () => {
+    renderWithProviders(
+      <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeToggle variant="standalone" />
+      </NextThemesProvider>
+    );
+    expect(screen.getByRole("button", { name: "Theme" })).toBeInTheDocument();
+  });
+
   it("selected theme item has data-active=true; others have data-active=false", () => {
     renderWithProviders(
       <Wrapper>

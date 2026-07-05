@@ -36,10 +36,20 @@ test("first-time owner: onboarding wizard, then story prompt skips the guide", a
   await page.getByLabel("Business name").fill(`Mae Test Studio ${Date.now()}`);
   // Icon-grid business-type picker (redesigned this session) — pick Venue.
   await page.getByRole("button", { name: "Venue" }).click();
-  await expect(page.getByText("Your page will live at")).toBeVisible();
   const businessContinue = page.getByRole("button", { name: "Continue" });
   await expect(businessContinue).toBeEnabled({ timeout: 10_000 });
   await businessContinue.click();
+
+  // --- Onboarding: workspace step (URL slug, country, timezone, 12h/24h) ---
+  await page.waitForURL(/\/onboarding\/workspace/, { timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "Set up your workspace" })).toBeVisible({
+    timeout: 30_000,
+  });
+  // The workspace URL (slug) moved here — auto-generated from the business
+  // name on the previous step; leave it (and country/timezone/time-format)
+  // at their pre-filled defaults.
+  await expect(page.getByText("Your page will live at")).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
 
   // --- Onboarding: plan step (Free + Pro cards, monthly/yearly toggle) ---
   await page.waitForURL(/\/onboarding\/plan/, { timeout: 30_000 });

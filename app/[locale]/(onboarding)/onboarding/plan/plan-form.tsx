@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "@/lib/i18n/navigation";
 import { motion } from "motion/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
@@ -11,17 +11,13 @@ import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction } from "@/lib/actions/onboarding";
 import { devActivatePlanAction } from "@/lib/actions/dev";
 import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/paddle/plans";
+import type { ProPricing } from "@/lib/paddle/pricing";
+import { formatMoney } from "@/lib/utils/format-currency";
 import { useActionError } from "@/lib/i18n/actionError";
 import { StepShell, StepBackButton } from "../_components/step-shell";
-import { PlanIllustration } from "../_components/illustrations";
 import { Button } from "@/components/ui/button";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { cn } from "@/lib/utils";
-
-function formatPHP(amount: number): string {
-  if (amount === 0) return "₱0";
-  return `₱${amount.toLocaleString("en-PH")}`;
-}
 
 export function PlanStepForm({
   currentPlan,
@@ -30,11 +26,12 @@ export function PlanStepForm({
 }: {
   currentPlan: string;
   furthestStep: OnboardingStep;
-  proPricing: { monthly: number; yearly: number };
+  proPricing: ProPricing;
 }) {
   const t = useTranslations("onboarding.plan");
   const tPlans = useTranslations("plans");
   const errMsg = useActionError();
+  const locale = useLocale();
   const router = useRouter();
   const [selected, setSelected] = useState<PlanTier>(currentPlan === "pro" ? "pro" : "free");
   const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
@@ -145,7 +142,9 @@ export function PlanStepForm({
   const isDev = process.env.NODE_ENV !== "production";
   const busy = loading || pending;
   const selectedEntry = PLAN_CATALOG.find((p) => p.id === selected);
-  const selectedPrice = selectedEntry ? formatPHP(amountFor(selectedEntry, cadence)) : "";
+  const selectedPrice = selectedEntry
+    ? formatMoney(amountFor(selectedEntry, cadence), proPricing.currency, locale)
+    : "";
   const selectedName = selectedEntry ? tPlans(`${selected}.name`) : "";
 
   const cta =
@@ -159,7 +158,6 @@ export function PlanStepForm({
       furthestStep={furthestStep}
       title={t("title")}
       description={t("description")}
-      illustration={<PlanIllustration />}
     >
       <div className="flex flex-col gap-5">
         <div className="flex items-center gap-2">
@@ -173,7 +171,7 @@ export function PlanStepForm({
             ]}
           />
           {cadence === "yearly" && (
-            <span className="bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+            <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
               {t("cadenceToggle.savePill")}
             </span>
           )}
@@ -183,7 +181,7 @@ export function PlanStepForm({
           {PLAN_CATALOG.map((p) => {
             const active = selected === p.id;
             const priceAmount = amountFor(p, cadence);
-            const price = formatPHP(priceAmount);
+            const price = formatMoney(priceAmount, proPricing.currency, locale);
             const cadenceLabel =
               p.amount === 0
                 ? t("cadence.forever")
@@ -202,18 +200,18 @@ export function PlanStepForm({
                 }}
                 className={cn(
                   "relative flex flex-col gap-3 border bg-background p-4 text-left transition-colors",
-                  active ? "border-primary" : "border-border hover:border-foreground/40 focus-visible:border-foreground/40"
+                  active ? "border-brand" : "border-border hover:border-brand/40 focus-visible:border-brand/40"
                 )}
               >
                 {p.highlight && (
-                  <span className="absolute -top-2 right-3 bg-primary px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary-foreground">
+                  <span className="absolute -top-2 right-3 bg-brand px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-foreground">
                     {t("popular")}
                   </span>
                 )}
                 <div className="flex items-baseline justify-between">
                   <h3 className="font-heading text-lg font-semibold">{tPlans(`${p.id}.name`)}</h3>
                   {active && (
-                    <span className="flex h-5 w-5 items-center justify-center bg-primary text-primary-foreground">
+                    <span className="flex h-5 w-5 items-center justify-center bg-brand text-brand-foreground">
                       <Check className="h-3.5 w-3.5" />
                     </span>
                   )}
@@ -226,7 +224,7 @@ export function PlanStepForm({
                 <ul className="mt-1 flex flex-col gap-1.5 text-xs">
                   {p.featureKeys.map((key) => (
                     <li key={key} className="flex items-start gap-1.5">
-                      <Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                      <Check className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
                       <span>{tPlans(key.replace(/^plans\./, ""))}</span>
                     </li>
                   ))}
@@ -254,7 +252,7 @@ export function PlanStepForm({
 
         <div className="mt-1 flex items-center justify-between gap-2">
           <StepBackButton from="plan" />
-          <Button onClick={submit} disabled={busy} className="min-w-48">
+          <Button onClick={submit} variant="brand" disabled={busy} className="min-w-48">
             {busy ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

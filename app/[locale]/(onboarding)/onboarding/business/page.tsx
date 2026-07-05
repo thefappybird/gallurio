@@ -1,29 +1,6 @@
 import { loadOnboardingContext, requireStep } from "@/lib/auth/onboardingStep";
 import { getAuthUser } from "@/lib/auth/session";
-import {
-  BILLING_COUNTRY_VALUES,
-  SUPPORTED_CURRENCIES,
-  COUNTRY_TO_CURRENCY,
-  type SupportedCountry,
-  type SupportedCurrency,
-} from "@/lib/validators/workspace";
 import { BusinessStepForm } from "./business-form";
-
-function coerceCountry(value: string | null | undefined): SupportedCountry {
-  return (BILLING_COUNTRY_VALUES as readonly string[]).includes(value ?? "")
-    ? (value as SupportedCountry)
-    : "PH";
-}
-
-function coerceCurrency(
-  value: string | null | undefined,
-  country: SupportedCountry
-): SupportedCurrency {
-  if ((SUPPORTED_CURRENCIES as readonly string[]).includes(value ?? "")) {
-    return value as SupportedCurrency;
-  }
-  return COUNTRY_TO_CURRENCY[country];
-}
 
 export default async function BusinessStepPage() {
   const ctx = await loadOnboardingContext();
@@ -42,7 +19,6 @@ export default async function BusinessStepPage() {
         firstName,
         lastName,
         name: ctx.workspace?.name ?? "",
-        slug: ctx.workspace?.slug ?? "",
         businessType: (ctx.workspace?.businessType as
           | "photographer"
           | "venue"
@@ -51,13 +27,6 @@ export default async function BusinessStepPage() {
           | "catering"
           | "entertainer"
           | "other") ?? "photographer",
-        country: coerceCountry(ctx.workspace?.country),
-        currency: coerceCurrency(
-          ctx.workspace?.currency,
-          coerceCountry(ctx.workspace?.country)
-        ),
-        timezone:
-          ctx.workspace?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
       }}
     />
   );

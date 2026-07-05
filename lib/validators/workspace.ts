@@ -80,26 +80,51 @@ export const COUNTRY_TO_CURRENCY: Record<SupportedCountry, SupportedCurrency> = 
   BH: "BHD",
 };
 
+// Step 1 — business identity only. The workspace URL (slug) and
+// country/timezone/currency live on workspaceSetupSchema (a later onboarding
+// step); this schema is also reused by the post-onboarding settings form below.
 export const businessStepSchema = z.object({
   firstName: z.string().min(1, "Required").max(40, "At most 40 characters").trim(),
   lastName: z.string().max(40, "At most 40 characters").trim().optional().default(""),
   name: z.string().min(2, "At least 2 characters").max(80, "At most 80 characters").trim(),
-  slug: slugSchema,
   businessType: z.enum(BUSINESS_TYPE_VALUES),
+});
+export type BusinessStepInput = z.infer<typeof businessStepSchema>;
+
+// Step 2 — workspace setup (URL slug, country, timezone, time-format
+// preference). No `currency` field: it is never client-submitted, only
+// derived server-side from `country` via COUNTRY_TO_CURRENCY.
+export const workspaceSetupSchema = z.object({
+  slug: slugSchema,
   country: z.enum(BILLING_COUNTRY_VALUES, {
     errorMap: () => ({ message: "Pick a supported country" }),
   }),
-  currency: z.enum(SUPPORTED_CURRENCIES, {
-    errorMap: () => ({ message: "Pick a supported currency" }),
-  }),
   timezone: z.string().min(1, "Pick a timezone"),
+  timeFormat: z.enum(["24h", "12h"]),
 });
-export type BusinessStepInput = z.infer<typeof businessStepSchema>;
+export type WorkspaceSetupInput = z.infer<typeof workspaceSetupSchema>;
+
+// Standalone currency schema — used by updateWorkspaceBusinessSchema (settings,
+// which still exposes a manual currency override) independently of either
+// onboarding step schema.
+export const currencySchema = z.enum(SUPPORTED_CURRENCIES, {
+  errorMap: () => ({ message: "Pick a supported currency" }),
+});
+
+// Shared coercion helper for a possibly-null/invalid stored country value.
+export function coerceBillingCountry(
+  value: string | null | undefined,
+  fallback: SupportedCountry = "PH"
+): SupportedCountry {
+  return (BILLING_COUNTRY_VALUES as readonly string[]).includes(value ?? "")
+    ? (value as SupportedCountry)
+    : fallback;
+}
 
 // Kept for backwards-compat with the old single-page onboarding action signature.
 export const createWorkspaceSchema = z.object({
   name: businessStepSchema.shape.name,
-  slug: businessStepSchema.shape.slug,
+  slug: workspaceSetupSchema.shape.slug,
   businessType: businessStepSchema.shape.businessType,
 });
 export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
@@ -108,11 +133,11 @@ export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
 // Business fields the owner can change from /settings/workspace.
 export const updateWorkspaceBusinessSchema = z.object({
   name: businessStepSchema.shape.name,
-  slug: businessStepSchema.shape.slug,
+  slug: workspaceSetupSchema.shape.slug,
   businessType: businessStepSchema.shape.businessType,
-  country: businessStepSchema.shape.country,
-  currency: businessStepSchema.shape.currency,
-  timezone: businessStepSchema.shape.timezone,
+  country: workspaceSetupSchema.shape.country,
+  currency: currencySchema,
+  timezone: workspaceSetupSchema.shape.timezone,
   contactEmail: z.union([z.string().email("Enter a valid email"), z.literal("")]).optional().default(""),
   contactAddress: z.string().max(200).trim().optional().default(""),
   logoUrl: z.string().trim().url().or(z.literal("")).optional().default(""),

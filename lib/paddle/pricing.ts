@@ -1,30 +1,59 @@
 import { getPaddle } from "./client";
 import { PLAN_CATALOG } from "./plans";
 import { unstable_cache } from "next/cache";
+import type { CountryCode } from "@paddle/paddle-node-sdk";
 
-async function fetchAmount(priceId: string): Promise<number | null> {
-  if (!priceId) return null;
+export type ProPricing = { currency: string; monthly: number; yearly: number };
+
+async function fetchProPricingFromPaddle(countryCode: string): Promise<ProPricing | null> {
+  const monthlyPriceId = process.env.PADDLE_PRICE_PRO_ID ?? "";
+  const yearlyPriceId = process.env.PADDLE_PRICE_PRO_YEARLY_ID ?? "";
+  if (!monthlyPriceId || !yearlyPriceId) return null;
+
   try {
-    const price = await getPaddle().prices.get(priceId);
-    const amount = Number(price.unitPrice.amount) / 100;
-    return Number.isFinite(amount) ? amount : null;
+    const preview = await getPaddle().pricingPreview.preview({
+      items: [
+        { priceId: monthlyPriceId, quantity: 1 },
+        { priceId: yearlyPriceId, quantity: 1 },
+      ],
+      address: { countryCode: countryCode as CountryCode },
+    });
+
+    const items = preview.details.lineItems;
+    const monthlyItem = items.find((i) => i.price.id === monthlyPriceId);
+    const yearlyItem = items.find((i) => i.price.id === yearlyPriceId);
+    if (!monthlyItem || !yearlyItem) return null;
+
+    const monthly = Number(monthlyItem.unitTotals.total) / 100;
+    const yearly = Number(yearlyItem.unitTotals.total) / 100;
+    if (!Number.isFinite(monthly) || !Number.isFinite(yearly)) return null;
+
+    return { currency: preview.currencyCode, monthly, yearly };
   } catch {
-    return null; // sandbox/dev without PADDLE_API_KEY, price not found, network error, etc.
+    return null; // sandbox/dev without PADDLE_API_KEY, unsupported country, network error, etc.
   }
 }
 
-async function resolveProPricing() {
+async function resolveProPricing(countryCode: string): Promise<ProPricing> {
   const pro = PLAN_CATALOG.find((p) => p.id === "pro")!;
-  const [monthly, yearly] = await Promise.all([
-    fetchAmount(process.env.PADDLE_PRICE_PRO_ID ?? ""),
-    fetchAmount(process.env.PADDLE_PRICE_PRO_YEARLY_ID ?? ""),
-  ]);
-  return {
-    monthly: monthly ?? pro.amount,
-    yearly: yearly ?? pro.yearlyAmount ?? pro.amount,
+  const fallback: ProPricing = {
+    currency: pro.currency,
+    monthly: pro.amount,
+    yearly: pro.yearlyAmount ?? pro.amount,
   };
+  return (await fetchProPricingFromPaddle(countryCode)) ?? fallback;
 }
 
-export const getProPricing = unstable_cache(resolveProPricing, ["paddle-pro-pricing"], {
-  revalidate: 3600,
-});
+export async function getProPricing(countryCode: string): Promise<ProPricing> {
+  try {
+    const cached = unstable_cache(resolveProPricing, ["paddle-pro-pricing", countryCode], {
+      revalidate: 3600,
+    });
+    return await cached(countryCode);
+  } catch {
+    // unstable_cache requires Next's request/build incrementalCache context —
+    // fall back to an uncached call (e.g. tests that render a page component
+    // directly, outside Next's runtime).
+    return resolveProPricing(countryCode);
+  }
+}

@@ -2209,12 +2209,13 @@
     },
     "steps": {
       "business": "Bisnis",
+      "workspace": "Ruang kerja",
       "plan": "Paket",
       "done": "Selesai"
     },
     "business": {
       "title": "Ceritakan tentang bisnis Anda",
-      "description": "Nama Anda, dasar-dasar bisnis, dan tempat Anda beroperasi.",
+      "description": "Nama Anda dan dasar-dasar bisnis Anda.",
       "firstName": "Nama depan",
       "firstNamePlaceholder": "Sarah",
       "lastName": "Nama belakang",
@@ -2229,7 +2230,6 @@
       "businessType": "Jenis bisnis",
       "country": "Negara",
       "currency": "Mata uang",
-      "currencyHelp": "Digunakan untuk pemesanan baru, transaksi, dan total yang ditampilkan di seluruh ruang kerja Anda.",
       "timezone": "Zona waktu",
       "businessTypes": {
         "photographer": "Fotografer",
@@ -2244,6 +2244,15 @@
       "slugAvailable": "Tersedia",
       "slugTaken": "Sudah digunakan",
       "slugInvalid": "Format tidak valid"
+    },
+    "workspace": {
+      "title": "Siapkan ruang kerja Anda",
+      "description": "Tempat Anda beroperasi dan cara Anda ingin waktu ditampilkan.",
+      "country": "Negara",
+      "timezone": "Zona waktu",
+      "timeFormat": "Format waktu",
+      "time12h": "12j",
+      "time24h": "24j"
     },
     "plan": {
       "title": "Pilih paket yang sesuai",
@@ -2281,7 +2290,12 @@
         "description": "Kami akan menambah 5 klien demo, 3 pemesanan demo, dan 1 pertanyaan demo agar Anda dapat menjelajahi aplikasi. Semuanya ditandai sample agar dapat dihapus dengan satu klik."
       },
       "settingUp": "Menyiapkan dasbor Anda…",
-      "goToDashboard": "Pergi ke dasbor Anda"
+      "goToDashboard": "Pergi ke dasbor Anda",
+      "footer": {
+        "everything": "Semuanya di satu tempat",
+        "grow": "Dibangun untuk tumbuh bersama Anda",
+        "support": "Dukungan saat Anda membutuhkannya"
+      }
     }
   },
   "plans": {

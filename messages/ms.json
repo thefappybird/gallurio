@@ -2209,12 +2209,13 @@
     },
     "steps": {
       "business": "Perniagaan",
+      "workspace": "Ruang kerja",
       "plan": "Pelan",
       "done": "Selesai"
     },
     "business": {
       "title": "Beritahu kami tentang perniagaan anda",
-      "description": "Nama anda, asas perniagaan, dan di mana anda beroperasi.",
+      "description": "Nama anda dan asas perniagaan anda.",
       "firstName": "Nama pertama",
       "firstNamePlaceholder": "Sarah",
       "lastName": "Nama akhir",
@@ -2229,7 +2230,6 @@
       "businessType": "Jenis perniagaan",
       "country": "Negara",
       "currency": "Mata wang",
-      "currencyHelp": "Digunakan untuk tempahan baru, transaksi, dan jumlah yang ditunjukkan di seluruh ruang kerja anda.",
       "timezone": "Zon waktu",
       "businessTypes": {
         "photographer": "Jurugambar",
@@ -2244,6 +2244,15 @@
       "slugAvailable": "Tersedia",
       "slugTaken": "Sudah diambil",
       "slugInvalid": "Format tidak sah"
+    },
+    "workspace": {
+      "title": "Sediakan ruang kerja anda",
+      "description": "Di mana anda beroperasi dan cara anda mahu waktu dipaparkan.",
+      "country": "Negara",
+      "timezone": "Zon waktu",
+      "timeFormat": "Format masa",
+      "time12h": "12j",
+      "time24h": "24j"
     },
     "plan": {
       "title": "Pilih pelan yang sesuai",
@@ -2281,7 +2290,12 @@
         "description": "Kami akan tambah 5 pelanggan demo, 3 tempahan demo, dan 1 pertanyaan demo supaya anda boleh meneroka aplikasi. Semuanya ditanda sample supaya anda boleh padam dengan satu klik."
       },
       "settingUp": "Menyediakan papan pemuka anda…",
-      "goToDashboard": "Pergi ke papan pemuka anda"
+      "goToDashboard": "Pergi ke papan pemuka anda",
+      "footer": {
+        "everything": "Semuanya di satu tempat",
+        "grow": "Dibina untuk berkembang bersama anda",
+        "support": "Sokongan apabila anda memerlukannya"
+      }
     }
   },
   "plans": {

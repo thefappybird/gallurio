@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 // lib/db/models/User.ts.
 export const STEP_META = [
   { key: "business", href: "/onboarding/business" },
+  { key: "workspace", href: "/onboarding/workspace" },
   { key: "plan", href: "/onboarding/plan" },
   { key: "done", href: "/onboarding/done" },
 ] as const;
@@ -26,7 +27,8 @@ export function StepShell({
   furthestStep,
   title,
   description,
-  illustration,
+  headerAddon,
+  centerHeader,
   children,
 }: {
   step: StepKey;
@@ -34,7 +36,10 @@ export function StepShell({
   furthestStep: StepKey;
   title: string;
   description: string;
-  illustration: ReactNode;
+  /** Optional content rendered above the title (e.g. the done step's badge). */
+  headerAddon?: ReactNode;
+  /** Centers the title/description/addon block (the done step's celebratory layout). */
+  centerHeader?: boolean;
   children: ReactNode;
 }) {
   const t = useTranslations("onboarding.shell");
@@ -42,43 +47,36 @@ export function StepShell({
   const furthestIndex = STEP_META.findIndex((s) => s.key === furthestStep);
 
   return (
-    <div className="flex flex-1 flex-col gap-8">
-      <Link href="/" className="flex items-center gap-2 self-start">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-4 md:gap-6">
+      <Link href="/" className="flex shrink-0 items-center gap-2 self-start">
         <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
         <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
       </Link>
 
-      <ProgressBar activeIndex={activeIndex} furthestIndex={furthestIndex} />
+      <div className="shrink-0">
+        <ProgressBar activeIndex={activeIndex} furthestIndex={furthestIndex} />
+      </div>
 
-      <div className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-[1fr_minmax(360px,440px)]">
+      <div className="flex min-h-0 flex-1 flex-col items-center">
         <motion.div
           key={step}
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -16 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="flex flex-col gap-6 border border-border bg-background p-6 md:p-8"
+          className="flex w-full max-w-3xl min-h-0 flex-col gap-4 border border-border bg-background p-4 sm:p-6 md:gap-6 md:p-8"
         >
-          <div className="flex flex-col gap-1">
+          <div className={cn("flex shrink-0 flex-col gap-1", centerHeader && "items-center text-center")}>
+            {headerAddon}
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               {t("stepCounter", { current: activeIndex + 1, total: STEP_META.length })}
             </p>
             <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
               {title}
             </h1>
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <p className="onboarding-step-description text-sm text-muted-foreground">{description}</p>
           </div>
-          <div>{children}</div>
-        </motion.div>
-
-        <motion.div
-          key={`${step}-art`}
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
-          className="hidden border border-border bg-background lg:flex lg:items-center lg:justify-center lg:p-8"
-        >
-          {illustration}
+          <div className="min-h-0 flex-1 overflow-y-auto scrollbar-subtle">{children}</div>
         </motion.div>
       </div>
     </div>
@@ -111,15 +109,15 @@ function ProgressBar({
                 animate={{ scaleX: fillScaleX }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
                 style={{ originX: 0 }}
-                className="absolute inset-0 bg-primary"
+                className="absolute inset-0 bg-brand"
               />
             </div>
             <div className="flex items-center gap-1.5">
               <span
                 className={cn(
                   "flex h-5 w-5 items-center justify-center rounded-full border text-[10px]",
-                  visited && "border-primary bg-primary text-primary-foreground",
-                  active && !visited && "border-primary text-primary",
+                  visited && "border-brand bg-brand text-brand-foreground",
+                  active && !visited && "border-brand text-brand",
                   locked && "border-border text-muted-foreground"
                 )}
               >
@@ -133,7 +131,7 @@ function ProgressBar({
               </span>
               <span
                 className={cn(
-                  "text-xs",
+                  "onboarding-progress-label text-xs",
                   active && "text-foreground",
                   !active && reachable && "text-foreground/70",
                   locked && "text-muted-foreground"

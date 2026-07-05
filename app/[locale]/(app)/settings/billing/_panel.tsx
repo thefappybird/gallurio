@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { CreditCard, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import { PLAN_CATALOG } from "@/lib/paddle/plans";
+import type { ProPricing } from "@/lib/paddle/pricing";
+import { formatMoney } from "@/lib/utils/format-currency";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PlanTier, PaddleSubscriptionStatus } from "@/lib/db/models";
@@ -17,13 +19,8 @@ export type BillingPanelProps = {
   paddleCurrentPeriodEnd: Date | null;
   workspaceId: string;
   customerEmail: string;
-  proPricing: { monthly: number };
+  proPricing: ProPricing;
 };
-
-function formatPHP(amount: number): string {
-  if (amount === 0) return "₱0";
-  return `₱${amount.toLocaleString("en-PH")}`;
-}
 
 function formatDate(d: Date | null): string {
   if (!d) return "—";
@@ -43,6 +40,7 @@ export function BillingPanel({
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
   const errMsg = useActionError();
+  const locale = useLocale();
 
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -215,7 +213,11 @@ export function BillingPanel({
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium">{tPlans(`${entry.id}.name`)}</span>
                       <span className="text-xs text-muted-foreground">
-                        {formatPHP(entry.id === "pro" ? proPricing.monthly : entry.amount)}{" "}
+                        {formatMoney(
+                          entry.id === "pro" ? proPricing.monthly : entry.amount,
+                          entry.id === "pro" ? proPricing.currency : entry.currency,
+                          locale
+                        )}{" "}
                         <span className="text-muted-foreground">{t("perMonth")}</span>
                       </span>
                     </div>

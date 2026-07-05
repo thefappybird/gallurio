@@ -44,6 +44,15 @@ describe("LocaleSwitcher", () => {
     expect(screen.getByText("العربية")).toBeInTheDocument();
   });
 
+  it("renders a plain icon-button trigger (no sidebar context) when variant is standalone", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <LocaleSwitcher variant="standalone" />
+      </NextIntlClientProvider>
+    );
+    expect(screen.getByRole("button", { name: /english/i })).toBeInTheDocument();
+  });
+
   it("switches locale on the current path when an option is selected", async () => {
     renderAt("en");
     fireEvent.click(screen.getByRole("button", { name: /english/i }));
