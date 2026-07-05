@@ -1025,6 +1025,44 @@ describe("EditorShell", () => {
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
   });
 
+  it("explore-self exit awaits dismissPortfolioGuideAction before proceeding to entry", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    // "Skip for now" (step 0) exits via the same "explore" path as the final
+    // step's "I'll explore myself" button — both call onExploreSelf.
+    fireEvent.click(screen.getByRole("button", { name: "Skip for now" }));
+
+    await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
+    // Returning user (baseProps has a draft) lands on the normal entry dialog.
+    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+  });
+
+  it("explore-self exit logs a warning but still proceeds when dismissPortfolioGuideAction rejects", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    dismissPortfolioGuideAction.mockRejectedValueOnce(new Error("network blip"));
+
+    renderWithProviders(
+      <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip for now" }));
+
+    await waitFor(() =>
+      expect(warnSpy).toHaveBeenCalledWith(
+        "[portfolio] failed to dismiss guide on explore-self exit",
+        expect.any(Error)
+      )
+    );
+    // The failed dismiss-write must not block the exit flow.
+    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+
+    warnSpy.mockRestore();
+  });
+
   // ---- First-load sequencing (#4) ----
 
   it("guide open: entry/template-welcome NOT in document until guide is skipped", async () => {

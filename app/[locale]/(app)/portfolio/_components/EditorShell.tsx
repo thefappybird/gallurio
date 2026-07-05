@@ -1847,9 +1847,13 @@ export function EditorShell({
           initialKeywords={initialSeoKeywords}
           businessType={workspaceBusinessType}
           onContinueWithGuide={() => setStoryPromptOpen(false)}
-          onExploreSelf={() => {
+          onExploreSelf={async () => {
             setStoryPromptOpen(false);
-            void dismissPortfolioGuideAction();
+            try {
+              await dismissPortfolioGuideAction();
+            } catch (err) {
+              console.warn("[portfolio] failed to dismiss guide on explore-self exit", err);
+            }
             setGuideOpen(false);
             openEntryAfterGuide();
           }}
