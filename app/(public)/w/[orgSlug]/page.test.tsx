@@ -26,7 +26,7 @@ import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { buildRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { ContactDetailsBlock, contactDetailsDefaultProps } from "@/lib/page-builder/blocks/ContactDetailsBlock";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
-import { generateMetadata } from "./page";
+import PortfolioHomePage, { generateMetadata } from "./page";
 import type { WorkspaceDoc } from "@/lib/db/models/Workspace";
 
 // ---------------------------------------------------------------------------
@@ -78,9 +78,11 @@ vi.mock("@/lib/page-builder/seo/jsonLd", () => ({
 
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
+import { buildHomeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 
 const mockFind = vi.mocked(findPublishedWorkspaceBySlug);
 const mockResolvePublicChromeLocale = vi.mocked(resolvePublicChromeLocale);
+const mockBuildHomeJsonLd = vi.mocked(buildHomeJsonLd);
 
 // Lean return type from findPublishedWorkspaceBySlug (non-null variant)
 type LeanWorkspace = NonNullable<Awaited<ReturnType<typeof findPublishedWorkspaceBySlug>>>;
@@ -277,6 +279,48 @@ describe("generateMetadata", () => {
     });
 
     expect(result.openGraph?.locale).toBe("fil");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PortfolioHomePage — JSON-LD keywords wiring
+// (data.home is null in the fixture, so the page returns via the ComingSoon
+// branch without needing the Puck Render/runWithRenderWorkspace machinery —
+// buildHomeJsonLd is still called unconditionally before that branch.)
+// ---------------------------------------------------------------------------
+
+describe("PortfolioHomePage — JSON-LD keywords", () => {
+  it("passes publicPage.seo.keywords through to buildHomeJsonLd", async () => {
+    const workspace = makePublishedWorkspace({
+      publicPage: {
+        templateId: "minimal",
+        data: { home: null, gallery: null },
+        brandKit: DEFAULT_BRAND_KIT,
+        publishedAt: new Date(),
+        lastPublishedAt: null,
+        latestVersion: 0,
+        seoTitle: "",
+        seoDescription: "",
+        inquiryRecipientEmail: "",
+        seo: { keywords: ["wedding", "manila"] },
+      },
+    } as Partial<WorkspaceDoc>);
+    mockFind.mockResolvedValueOnce(workspace);
+
+    await PortfolioHomePage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+
+    expect(mockBuildHomeJsonLd).toHaveBeenCalledWith(
+      expect.objectContaining({ keywords: ["wedding", "manila"] })
+    );
+  });
+
+  it("omits keywords when publicPage.seo.keywords is unset", async () => {
+    const workspace = makePublishedWorkspace();
+    mockFind.mockResolvedValueOnce(workspace);
+
+    await PortfolioHomePage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+
+    expect(mockBuildHomeJsonLd).toHaveBeenCalledWith(expect.objectContaining({ keywords: undefined }));
   });
 });
 

@@ -466,6 +466,7 @@
         },
         "cancel": "Kanselahin ang booking",
         "restore": "I-restore ang booking",
+        "invoice": "I-download ang invoice",
         "discardChanges": "Itapon ang mga pagbabago",
         "saveChanges": "I-save ang mga pagbabago",
         "pendingBadge": "{count} hindi pa nai-save",
@@ -745,7 +746,7 @@
       "tabs": {
         "account": "Account",
         "customize": "I-customize",
-        "workspace": "Workspace",
+        "workspace": "Detalye ng Negosyo",
         "teams": "Mga Koponan",
         "publicPage": "Pampublikong pahina",
         "billing": "Bayad",
@@ -757,6 +758,7 @@
         "renewsOn": "Magre-renew sa {date}",
         "availablePlans": "Mga available na plano",
         "perMonth": "/ buwan",
+        "perYear": "/ taon",
         "upgradeTo": "I-upgrade sa {plan}",
         "upgradeToAriaLabel": "I-upgrade sa planong {plan}",
         "opening": "Binubuksan…",
@@ -794,7 +796,24 @@
         "save": "I-save ang mga pagbabago",
         "saving": "Sine-save…",
         "savedToast": "Na-update ang workspace.",
-        "currencyWarning": "Nalalapat sa mga bagong booking. Pinapanatili ng mga kasalukuyang halaga ang orihinal na currency."
+        "currencyWarning": "Nalalapat sa mga bagong booking. Pinapanatili ng mga kasalukuyang halaga ang orihinal na currency.",
+        "contactEmail": "Email ng kontak",
+        "contactEmailPlaceholder": "ikaw@halimbawa.com",
+        "contactAddress": "Address ng negosyo",
+        "contactAddressPlaceholder": "123 Main St, Lungsod, Bansa",
+        "logoSection": "Logo ng negosyo",
+        "logoHint": "Makikita ito sa mga invoice na iyong nabubuo.",
+        "logoLabel": "Mag-upload ng logo",
+        "logoUploading": "Ina-upload…",
+        "logoRequirements": "PNG, JPEG, WebP o SVG · max 2 MB · hanggang 2000 × 2000 px",
+        "logoRemove": "Alisin",
+        "logoErrors": {
+          "type": "Tanging PNG, JPEG, WebP o SVG na file lang ang tinatanggap.",
+          "size": "Ang file ay dapat 2 MB o mas maliit.",
+          "dimensions": "Ang larawan ay dapat 2000 × 2000 px o mas maliit.",
+          "image": "Hindi mabasa ang larawan. Pakisubukan ang ibang file.",
+          "upload": "Nabigo ang pag-upload. Pakisubukan muli."
+        }
       },
       "customize": {
         "themeSection": "Tema",
@@ -1960,6 +1979,34 @@
               "body": "Mag-save ng mga pagbabago kahit kailan. Gamitin ang Mga Draft para pamahalaan ang maraming bersyon. Muling buksan ang tour na ito sa pamamagitan ng button na Gabay."
             }
           }
+        },
+        "storyPrompt": {
+          "welcome": {
+            "title": "Ikwento natin ang iyong sarili",
+            "subtitle": "Apat na mabilisang hakbang para ilarawan ang iyong trabaho at piliin ang iyong estilo — pagkatapos, tutulungan ka naming buuin ang pahina.",
+            "cta": "Simulan na"
+          },
+          "story": {
+            "title": "Ikwento ang iyong sarili",
+            "subtitle": "Ipapakita ito sa mga resulta ng paghahanap sa Google at kapag na-share ang iyong pahina.",
+            "placeholder": "Isang maikling linya tungkol sa kung sino ka at ano ang iyong ginagawa…",
+            "charCount": "{count}/{max}",
+            "previewLabel": "Preview ng paghahanap"
+          },
+          "vibe": {
+            "title": "Ang iyong vibe",
+            "subtitle": "Pumili ng ilang tag na naglalarawan sa iyong estilo — o magdagdag ng sarili mo.",
+            "addPlaceholder": "Magdagdag ng tag"
+          },
+          "done": {
+            "title": "Handa nang magningning ang iyong pahina",
+            "subtitle": "Naitakda mo na ang pundasyon. Gawin natin itong mas maganda.",
+            "continueWithGuide": "Ituloy kasama ang gabay",
+            "exploreSelf": "Gagalugarin ko na lang mag-isa",
+            "footerNote": "Puwede mo itong i-edit anumang oras sa Mga Setting → Pampublikong Pahina."
+          },
+          "back": "Bumalik",
+          "continue": "Magpatuloy"
         }
       },
       "wizard": {
@@ -2163,12 +2210,13 @@
     },
     "steps": {
       "business": "Negosyo",
+      "workspace": "Workspace",
       "plan": "Plano",
       "done": "Tapos"
     },
     "business": {
       "title": "Sabihin sa amin ang tungkol sa iyong negosyo",
-      "description": "Ang pangalan mo, mga pangunahing detalye ng negosyo, at kung saan ka nag-ooperate.",
+      "description": "Ang pangalan mo at mga pangunahing detalye ng negosyo.",
       "firstName": "Pangalan",
       "firstNamePlaceholder": "Sarah",
       "lastName": "Apelyido",
@@ -2179,10 +2227,10 @@
       "workspaceUrl": "URL ng workspace",
       "workspaceUrlNote": "(ang address ng iyong pampublikong pahina)",
       "slugPlaceholder": "sarah-bell-photo",
+      "slugPreview": "Mapupunta ang iyong pahina sa",
       "businessType": "Uri ng negosyo",
       "country": "Bansa",
       "currency": "Currency",
-      "currencyHelp": "Ginagamit para sa mga bagong booking, transaksyon, at mga kabuuang ipinapakita sa iyong workspace.",
       "timezone": "Timezone",
       "businessTypes": {
         "photographer": "Photographer",
@@ -2198,17 +2246,32 @@
       "slugTaken": "Hindi available",
       "slugInvalid": "Hindi tamang format"
     },
+    "workspace": {
+      "title": "I-set up ang iyong workspace",
+      "description": "Kung saan ka nag-ooperate at kung paano mo gustong ipakita ang oras.",
+      "country": "Bansa",
+      "timezone": "Timezone",
+      "timeFormat": "Format ng oras",
+      "time12h": "12h",
+      "time24h": "24h"
+    },
     "plan": {
       "title": "Pumili ng planong angkop",
       "description": "Maaari kang magpalit ng plano o magkansela anumang oras mula sa mga setting ng iyong workspace.",
       "popular": "Popular",
       "cadence": {
         "forever": "habambuhay",
-        "monthly": "/ buwan"
+        "monthly": "/ buwan",
+        "yearly": "/ taon"
+      },
+      "cadenceToggle": {
+        "monthly": "Buwanan",
+        "yearly": "Taunan",
+        "savePill": "Makatipid ng 2 buwan"
       },
       "checkoutNote": "Magbubukas ang secure na Paddle checkout overlay. Ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
       "ctaFree": "Magpatuloy sa Free",
-      "ctaPaid": "Mag-subscribe — {price} / buwan",
+      "ctaPaid": "Mag-subscribe — {price}",
       "settingUp": "Sine-set up…",
       "opening": "Binubuksan ang checkout…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
@@ -2228,15 +2291,21 @@
         "description": "Magdadagdag kami ng 5 demo client, 3 demo booking, at 1 demo inquiry para makapaglibot ka sa app. Lahat ay may tag na sample para mabura mo sa isang click."
       },
       "settingUp": "Sine-set up ang iyong dashboard…",
-      "goToDashboard": "Pumunta sa iyong dashboard"
+      "goToDashboard": "Pumunta sa iyong dashboard",
+      "footer": {
+        "everything": "Lahat nasa iisang lugar",
+        "grow": "Ginawa para lumago kasama ka",
+        "support": "Suporta kapag kailangan mo"
+      }
     }
   },
   "plans": {
     "free": {
       "name": "Free",
-      "description": "Magsimula nang libre",
-      "tagline": "Subukan ang produkto, hindi kailangan ng card.",
+      "description": "15-araw na trial na may buong access",
+      "tagline": "Gamitin ang paid version nang libre sa loob ng 15 araw.",
       "features": {
+        "trial": "15 araw ng buong Pro access",
         "workspace": "1 workspace",
         "bookings": "Hanggang 10 booking",
         "storage": "1 GB image storage",
@@ -2256,12 +2325,16 @@
     },
     "pro": {
       "name": "Pro",
-      "description": "Mga invoice + alisin ang branding.",
-      "tagline": "Mga invoice + alisin ang branding.",
+      "description": "Pamahalaan ang bookings, clients, teams, invoices, at public page.",
+      "tagline": "Buong workspace para sa lumalaking event businesses.",
       "features": {
         "everythingStarter": "Lahat ng nasa Starter",
+        "unlimitedBookings": "Walang limitasyon na booking",
+        "publicPageControls": "Buong kontrol sa public page",
         "storage": "50 GB storage",
         "invoicePdfs": "Mga invoice PDF",
+        "clientManagement": "Pamamahala ng clients",
+        "teamManagement": "Pamamahala ng teams",
         "removeBranding": "Alisin ang branding ng Gallurio"
       }
     }

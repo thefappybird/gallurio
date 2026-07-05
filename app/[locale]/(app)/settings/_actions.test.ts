@@ -208,6 +208,10 @@ describe("updateWorkspaceBusinessAction", () => {
     country: "PH" as const,
     currency: "PHP" as const,
     timezone: "Asia/Manila",
+    contactEmail: "",
+    contactAddress: "",
+    logoUrl: "",
+    logoAssetId: "",
   };
 
   it("owner happy path — updates the workspace doc", async () => {
@@ -306,6 +310,73 @@ describe("updateWorkspaceBusinessAction", () => {
 
     const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.name).toBe("Sarah Photography");
+  });
+
+  it("persists contact.email/contact.address/logoUrl/logoAssetId via dotted $set, leaves contact.phone/socials untouched", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      {
+        $set: {
+          "contact.phone": "+63 900 000 0000",
+          "contact.socials.instagram": "https://instagram.com/sarah",
+        },
+      },
+    );
+
+    const result = await updateWorkspaceBusinessAction({
+      ...validInput,
+      contactEmail: "hello@sarah.com",
+      contactAddress: "123 Manila St",
+      logoUrl: "https://cdn.example.com/logo.png",
+      logoAssetId: "logo_abc",
+    });
+
+    expect(result.ok).toBe(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.contact?.email).toBe("hello@sarah.com");
+    expect(ws?.contact?.address).toBe("123 Manila St");
+    expect(ws?.logoUrl).toBe("https://cdn.example.com/logo.png");
+    expect(ws?.logoAssetId).toBe("logo_abc");
+    // Untouched siblings within contact subdoc.
+    expect(ws?.contact?.phone).toBe("+63 900 000 0000");
+    expect(ws?.contact?.socials?.instagram).toBe("https://instagram.com/sarah");
+  });
+
+  it("rejects logoAssetId when ownership verification fails", async () => {
+    await seedWorkspaceA();
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+
+    const result = await updateWorkspaceBusinessAction({
+      ...validInput,
+      logoUrl: "https://cdn.example.com/notmine.png",
+      logoAssetId: "logo_notmine",
+    });
+
+    expect(result.error).toBe("invalid_logo");
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.logoAssetId ?? "").toBe("");
+  });
+
+  it("deletes the old logo asset when replaced with a new one", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { logoAssetId: "old_logo_id", logoUrl: "https://cdn.example.com/old.png" } },
+    );
+
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
+    vi.mocked(deleteImage).mockResolvedValue(undefined);
+
+    const result = await updateWorkspaceBusinessAction({
+      ...validInput,
+      logoUrl: "https://cdn.example.com/new.png",
+      logoAssetId: "new_logo_id",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("old_logo_id");
   });
 });
 

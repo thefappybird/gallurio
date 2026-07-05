@@ -111,12 +111,14 @@ const dismissPortfolioGuideAction = vi.fn().mockResolvedValue({ ok: true });
 const saveThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
 const deleteThemeAction = vi.fn().mockResolvedValue({ ok: true });
 const updateThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
+const completeStoryPromptAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
   dismissPortfolioGuideAction: (...a: unknown[]) => dismissPortfolioGuideAction(...a),
   saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
   deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
   updateThemeAction: (...a: unknown[]) => updateThemeAction(...a),
   updatePortfolioSlugAction: vi.fn().mockResolvedValue({ ok: true }),
+  completeStoryPromptAction: (...a: unknown[]) => completeStoryPromptAction(...a),
 }));
 
 const createDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
@@ -180,6 +182,11 @@ const baseProps = {
   // Keep the first-run guide closed during these tests so its overlay doesn't
   // sit over the editor controls.
   guideDismissed: true,
+  // Keep the story prompt closed by default so existing guide/entry tests are unaffected.
+  storyPromptCompleted: true,
+  initialSeoDescription: "",
+  initialSeoKeywords: [],
+  workspaceBusinessType: "",
   initialSavedThemes: [],
   // Provide an active draft so the editor starts in a clean (non-dirty) state.
   initialActiveDraftId: "d1",
@@ -462,6 +469,32 @@ describe("EditorShell", () => {
     expect(src).not.toContain("draft=");
     expect(src).toContain("zone=");
     expect(src).toContain("v=");
+  });
+
+  it("reflects a formLocale/formDir change in the preview iframe src", async () => {
+    const { container } = await renderAndDismissEntry(<EditorShell {...basePro} />);
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(await screen.findByTitle("Live preview")).toBeInTheDocument();
+
+    const iframeBefore = container.querySelector("iframe");
+    expect(iframeBefore?.getAttribute("src")).toContain("formLocale=");
+    expect(iframeBefore?.getAttribute("src")).toContain("formDir=");
+
+    const languageTrigger = screen.getByTestId("language-control");
+    // Guarded retry: only re-fire the open events while the menu isn't open
+    // yet, so a slow-opening retry never re-toggles an already-open menu closed.
+    await waitFor(() => {
+      if (!screen.queryByText("العربية")) {
+        fireEvent.pointerDown(languageTrigger, { button: 0 });
+        fireEvent.click(languageTrigger);
+      }
+      expect(screen.queryByText("العربية")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("العربية"));
+
+    const iframeAfter = container.querySelector("iframe");
+    expect(iframeAfter?.getAttribute("src")).toContain("formLocale=ar");
+    expect(iframeAfter?.getAttribute("src")).toContain("formDir=rtl");
   });
 
   it("shows the Drafts button and draft name editor in the toolbar", async () => {
@@ -980,6 +1013,16 @@ describe("EditorShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guide" }));
     expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
     expect(screen.getByText(/1 of \d+/)).toBeInTheDocument();
+  });
+
+  // ---- Story prompt ----
+
+  it("renders the story prompt on load when storyPromptCompleted=false and guideDismissed=false, and hides the guide until it's done", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
   });
 
   // ---- First-load sequencing (#4) ----

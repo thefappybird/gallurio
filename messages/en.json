@@ -466,6 +466,7 @@
         },
         "cancel": "Cancel booking",
         "restore": "Restore booking",
+        "invoice": "Download invoice",
         "discardChanges": "Discard changes",
         "saveChanges": "Save changes",
         "pendingBadge": "{count} unsaved",
@@ -745,7 +746,7 @@
       "tabs": {
         "account": "Account",
         "customize": "Customize",
-        "workspace": "Workspace",
+        "workspace": "Business Details",
         "teams": "Teams",
         "publicPage": "Public page",
         "billing": "Billing",
@@ -757,6 +758,7 @@
         "renewsOn": "Renews on {date}",
         "availablePlans": "Available plans",
         "perMonth": "/ month",
+        "perYear": "/ year",
         "upgradeTo": "Upgrade to {plan}",
         "upgradeToAriaLabel": "Upgrade to the {plan} plan",
         "opening": "Opening…",
@@ -794,7 +796,24 @@
         "save": "Save changes",
         "saving": "Saving…",
         "savedToast": "Workspace updated.",
-        "currencyWarning": "Applies to new bookings. Existing amounts keep their original currency."
+        "currencyWarning": "Applies to new bookings. Existing amounts keep their original currency.",
+        "contactEmail": "Contact email",
+        "contactEmailPlaceholder": "you@example.com",
+        "contactAddress": "Business address",
+        "contactAddressPlaceholder": "123 Main St, City, Country",
+        "logoSection": "Business logo",
+        "logoHint": "Shown on your generated invoices.",
+        "logoLabel": "Upload logo",
+        "logoUploading": "Uploading…",
+        "logoRequirements": "PNG, JPEG, WebP or SVG · max 2 MB · up to 2000 × 2000 px",
+        "logoRemove": "Remove",
+        "logoErrors": {
+          "type": "Only PNG, JPEG, WebP or SVG files are accepted.",
+          "size": "File must be 2 MB or smaller.",
+          "dimensions": "Image must be 2000 × 2000 px or smaller.",
+          "image": "Could not read the image. Please try another file.",
+          "upload": "Upload failed. Please try again."
+        }
       },
       "customize": {
         "themeSection": "Theme",
@@ -1960,6 +1979,34 @@
             "dontShow": "Don't show again",
             "skip": "Skip Guide"
           }
+        },
+        "storyPrompt": {
+          "welcome": {
+            "title": "Let's tell your story",
+            "subtitle": "Four quick steps to describe your work and pick your style — then we'll help you build the page.",
+            "cta": "Let's go"
+          },
+          "story": {
+            "title": "Tell your story",
+            "subtitle": "This shows up in Google search results and when your page gets shared.",
+            "placeholder": "A short line about who you are and what you do…",
+            "charCount": "{count}/{max}",
+            "previewLabel": "Search preview"
+          },
+          "vibe": {
+            "title": "Your vibe",
+            "subtitle": "Pick a few tags that capture your style — or add your own.",
+            "addPlaceholder": "Add a tag"
+          },
+          "done": {
+            "title": "Your page is ready to shine",
+            "subtitle": "You've set the foundation. Let's make it look great.",
+            "continueWithGuide": "Continue with guide",
+            "exploreSelf": "I'll explore myself",
+            "footerNote": "You can edit this anytime in Settings → Public Page."
+          },
+          "back": "Back",
+          "continue": "Continue"
         }
       },
       "wizard": {
@@ -2163,12 +2210,13 @@
     },
     "steps": {
       "business": "Business",
+      "workspace": "Workspace",
       "plan": "Plan",
       "done": "Finish"
     },
     "business": {
       "title": "Tell us about your business",
-      "description": "Your name, your business basics, and where you operate.",
+      "description": "Your name and your business basics.",
       "firstName": "First name",
       "firstNamePlaceholder": "Sarah",
       "lastName": "Last name",
@@ -2179,10 +2227,10 @@
       "workspaceUrl": "Workspace URL",
       "workspaceUrlNote": "(your public page address)",
       "slugPlaceholder": "sarah-bell-photo",
+      "slugPreview": "Your page will live at",
       "businessType": "Business type",
       "country": "Country",
       "currency": "Currency",
-      "currencyHelp": "Used for new bookings, transactions, and totals shown across your workspace.",
       "timezone": "Timezone",
       "businessTypes": {
         "photographer": "Photographer",
@@ -2198,17 +2246,32 @@
       "slugTaken": "Already taken",
       "slugInvalid": "Invalid format"
     },
+    "workspace": {
+      "title": "Set up your workspace",
+      "description": "Where you operate and how you'd like times shown.",
+      "country": "Country",
+      "timezone": "Timezone",
+      "timeFormat": "Time format",
+      "time12h": "12h",
+      "time24h": "24h"
+    },
     "plan": {
       "title": "Pick the plan that fits",
       "description": "You can change plans or cancel anytime from your workspace settings.",
       "popular": "Popular",
       "cadence": {
         "forever": "forever",
-        "monthly": "/ month"
+        "monthly": "/ month",
+        "yearly": "/ year"
+      },
+      "cadenceToggle": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
       },
       "checkoutNote": "A secure Paddle checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
       "ctaFree": "Continue with Free",
-      "ctaPaid": "Subscribe — {price} / month",
+      "ctaPaid": "Subscribe — {price}",
       "settingUp": "Setting up…",
       "opening": "Opening checkout…",
       "checkoutFailed": "Checkout failed. Please try again.",
@@ -2228,15 +2291,21 @@
         "description": "We'll add 5 demo clients, 3 demo bookings, and 1 demo inquiry so you can explore the app. Everything is tagged sample so you can delete it in one click."
       },
       "settingUp": "Setting up your dashboard…",
-      "goToDashboard": "Go to your dashboard"
+      "goToDashboard": "Go to your dashboard",
+      "footer": {
+        "everything": "Everything in one place",
+        "grow": "Built to grow with you",
+        "support": "Support when you need it"
+      }
     }
   },
   "plans": {
     "free": {
       "name": "Free",
-      "description": "Get started for free",
-      "tagline": "Try the product, no card required.",
+      "description": "15-day full access trial",
+      "tagline": "Use the paid version free for 15 days.",
       "features": {
+        "trial": "15 days of full Pro access",
         "workspace": "1 workspace",
         "bookings": "Up to 10 bookings",
         "storage": "1 GB image storage",
@@ -2256,12 +2325,16 @@
     },
     "pro": {
       "name": "Pro",
-      "description": "Invoices + remove branding.",
-      "tagline": "Invoices + remove branding.",
+      "description": "Run bookings, clients, teams, invoices, and your public page.",
+      "tagline": "The full workspace for growing event businesses.",
       "features": {
         "everythingStarter": "Everything in Starter",
+        "unlimitedBookings": "Unlimited bookings",
+        "publicPageControls": "Full public page controls",
         "storage": "50 GB storage",
         "invoicePdfs": "Invoice PDFs",
+        "clientManagement": "Client management",
+        "teamManagement": "Team management",
         "removeBranding": "Remove Gallurio branding"
       }
     }

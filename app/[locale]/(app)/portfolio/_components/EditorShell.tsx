@@ -83,6 +83,7 @@ import { cn } from "@/lib/utils";
 import { DraftNameEditor, type DraftNameEditorHandle } from "./DraftNameEditor";
 import { DraftsDialog } from "./DraftsDialog";
 import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
+import { StoryPromptDialog } from "./StoryPromptDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { resolveDiscardTarget } from "./draftDiscard";
 import { SuppressedActionBar } from "./SuppressedActionBar";
@@ -141,6 +142,14 @@ type Props = {
   currentTemplateId: string;
   /** Whether the owner already dismissed the first-run guide overlay. */
   guideDismissed: boolean;
+  /** True once the owner has been through/skipped the story prompt flow. */
+  storyPromptCompleted: boolean;
+  /** Owner's current public-page SEO description (seeds the story prompt). */
+  initialSeoDescription: string;
+  /** Owner's current SEO/style keywords (seeds the story prompt). */
+  initialSeoKeywords: string[];
+  /** Workspace business type, used to pick suggested vibe tags. */
+  workspaceBusinessType: string;
   /** Owner's saved named themes (server-loaded). */
   initialSavedThemes: PortfolioSavedTheme[];
   // ---- Draft-system props (all optional; page.tsx wired in Task 13) ----
@@ -406,6 +415,10 @@ export function EditorShell({
   templates,
   currentTemplateId,
   guideDismissed,
+  storyPromptCompleted,
+  initialSeoDescription,
+  initialSeoKeywords,
+  workspaceBusinessType,
   initialSavedThemes,
   initialDrafts = [],
   initialActiveDraftId = null,
@@ -458,6 +471,11 @@ export function EditorShell({
   const [templateSeedSnapshot, setTemplateSeedSnapshot] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
+  // The story prompt auto-opens once, before the guide, on a fresh workspace.
+  // Also gated on !guideDismissed so an owner who already dismissed the guide
+  // via the old (pre-story-prompt) path never sees it retroactively, and on
+  // !guideMode since the sandbox tour-preview shell has no real story to capture.
+  const [storyPromptOpen, setStoryPromptOpen] = useState(!storyPromptCompleted && !guideDismissed && !guideMode);
   // The guide auto-opens on first run (until the owner persisted a dismissal),
   // and can be reopened on demand via the Guide button for the session.
   const [guideOpen, setGuideOpen] = useState(!guideDismissed);
@@ -1355,7 +1373,7 @@ export function EditorShell({
     (key, values) => tLocationPicker(key, values)
   ).form;
   const previewZone = previewZoneFor(activeSection, activeZone);
-  const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}`;
+  const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}&formLocale=${formLocale}&formDir=${formDir}`;
 
   // Stable references for Puck overrides that must not change identity on every
   // re-render. Puck treats a new function reference as a reason to unmount and
@@ -1821,27 +1839,45 @@ export function EditorShell({
         welcome
         onStartScratch={() => setWelcomeTemplatesOpen(false)}
       />
+      {!guideMode && (
+        <StoryPromptDialog
+          open={storyPromptOpen}
+          workspaceName={workspaceName}
+          initialDescription={initialSeoDescription}
+          initialKeywords={initialSeoKeywords}
+          businessType={workspaceBusinessType}
+          onContinueWithGuide={() => setStoryPromptOpen(false)}
+          onExploreSelf={() => {
+            setStoryPromptOpen(false);
+            void dismissPortfolioGuideAction();
+            setGuideOpen(false);
+            openEntryAfterGuide();
+          }}
+        />
+      )}
       {/* In sandbox (guideMode) the guide runs directly in this shell. In the
           real editor it opens a full-screen sandbox so the live data is never
           touched during the tour. */}
-      {guideMode ? (
-        <SpotlightGuide
-          open={guideOpen}
-          steps={SPOTLIGHT_STEPS}
-          stepIndex={spotlightStepIndex}
-          onStepChange={handleGuideStepChange}
-          gateSatisfied={gateSatisfied}
-          onSkip={handleGuideSkip}
-          onFinish={handleGuideFinish}
-          queryRoot={guideQueryRoot}
-        />
-      ) : (
-        guideOpen && (
-          <SandboxEditorGuide
-            templates={templates}
-            onFinished={handleGuideFinish}
-            onSkipped={handleGuideSkip}
+      {!storyPromptOpen && (
+        guideMode ? (
+          <SpotlightGuide
+            open={guideOpen}
+            steps={SPOTLIGHT_STEPS}
+            stepIndex={spotlightStepIndex}
+            onStepChange={handleGuideStepChange}
+            gateSatisfied={gateSatisfied}
+            onSkip={handleGuideSkip}
+            onFinish={handleGuideFinish}
+            queryRoot={guideQueryRoot}
           />
+        ) : (
+          guideOpen && (
+            <SandboxEditorGuide
+              templates={templates}
+              onFinished={handleGuideFinish}
+              onSkipped={handleGuideSkip}
+            />
+          )
         )
       )}
 

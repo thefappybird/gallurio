@@ -10,8 +10,8 @@ import { Workspace } from "@/lib/db/models";
 // ---------------------------------------------------------------------------
 // Env — read at module-eval time by lib/paddle/plans.ts, so set before import.
 // ---------------------------------------------------------------------------
-process.env.PADDLE_PRICE_STARTER_ID = "pri_test_starter";
 process.env.PADDLE_PRICE_PRO_ID = "pri_test_pro";
+process.env.PADDLE_PRICE_PRO_YEARLY_ID = "pri_test_pro_yearly";
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted)
@@ -143,6 +143,19 @@ describe("billing checkout — validation", () => {
     expect(res.status).toBe(400);
     expect(mockStart).not.toHaveBeenCalled();
   });
+
+  it("rejects the merged-away 'starter' plan as invalid_request", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "starter" }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body).toEqual({ error: "invalid_request" });
+    expect(mockStart).not.toHaveBeenCalled();
+  });
 });
 
 describe("billing checkout — happy path (no stale run)", () => {
@@ -151,12 +164,12 @@ describe("billing checkout — happy path (no stale run)", () => {
     wireAuth(wsId);
 
     const { POST } = await loadRoute();
-    const res = await POST(makeReq({ plan: "starter" }));
+    const res = await POST(makeReq({ plan: "pro" }));
 
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({
-      priceId: "pri_test_starter",
+      priceId: "pri_test_pro",
       customerEmail: "owner@example.com",
       workspaceId: wsId.toString(),
     });
@@ -168,6 +181,20 @@ describe("billing checkout — happy path (no stale run)", () => {
     const ws = await Workspace.findById(wsId).lean();
     expect(ws?.paddleCustomerId).toBe("ctm_default");
     expect(ws?.paddleCheckoutWorkflowRunId).toBe("run_new");
+  });
+});
+
+describe("billing checkout — cadence", () => {
+  it("resolves the yearly priceId when cadence is 'yearly'", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro", cadence: "yearly" }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.priceId).toBe("pri_test_pro_yearly");
   });
 });
 
@@ -211,7 +238,7 @@ describe("billing checkout — idempotent init (Bug #2 regression)", () => {
     } as never);
 
     const { POST } = await loadRoute();
-    const res = await POST(makeReq({ plan: "starter" }));
+    const res = await POST(makeReq({ plan: "pro" }));
 
     expect(res.status).toBe(200);
     expect(mockStart).toHaveBeenCalledOnce();

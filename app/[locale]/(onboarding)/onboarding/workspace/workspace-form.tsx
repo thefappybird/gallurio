@@ -1,0 +1,212 @@
+"use client";
+
+import { useTransition } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import type { OnboardingStep } from "@/lib/db/models";
+import {
+  workspaceSetupSchema,
+  BILLING_COUNTRY_VALUES,
+  type WorkspaceSetupInput,
+  type SupportedCountry,
+} from "@/lib/validators/workspace";
+import { workspaceStepAction } from "@/lib/actions/onboarding";
+import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
+import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
+import { useSlugAvailability } from "@/hooks/useSlugAvailability";
+import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
+import { useActionError } from "@/lib/i18n/actionError";
+
+const COUNTRY_LABELS: Record<SupportedCountry, string> = {
+  PH: "Philippines",
+  SG: "Singapore",
+  MY: "Malaysia",
+  ID: "Indonesia",
+  TH: "Thailand",
+  AU: "Australia",
+  CA: "Canada",
+  NZ: "New Zealand",
+  GB: "United Kingdom",
+  US: "United States",
+  AE: "United Arab Emirates",
+  SA: "Saudi Arabia",
+  QA: "Qatar",
+  KW: "Kuwait",
+  OM: "Oman",
+  BH: "Bahrain",
+};
+const COUNTRIES = BILLING_COUNTRY_VALUES.map((value) => ({
+  value,
+  label: COUNTRY_LABELS[value],
+}));
+
+export function WorkspaceStepForm({
+  defaults,
+  furthestStep,
+}: {
+  defaults: WorkspaceSetupInput;
+  furthestStep: OnboardingStep;
+}) {
+  const t = useTranslations("onboarding.workspace");
+  // Slug field copy reuses onboarding.business's existing workspaceUrl/slug*
+  // keys — the field only moved a step, the copy didn't change.
+  const tSlug = useTranslations("onboarding.business");
+  const tShell = useTranslations("onboarding.shell");
+  const errMsg = useActionError();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isSubmitting, isDirty },
+  } = useForm<WorkspaceSetupInput>({
+    resolver: zodResolver(workspaceSetupSchema),
+    defaultValues: defaults,
+  });
+
+  const slugValue = useWatch({ control, name: "slug" });
+  const { status: slugStatus } = useSlugAvailability(slugValue, defaults.slug);
+  const timeFormatValue = useWatch({ control, name: "timeFormat" });
+
+  async function onSubmit(data: WorkspaceSetupInput) {
+    if (isStepCompleted("workspace", furthestStep) && !isDirty) {
+      startTransition(() => router.push("/onboarding/plan"));
+      return;
+    }
+
+    const result = await workspaceStepAction(data);
+    if (result?.error) {
+      toast.error(errMsg(result.error));
+      return;
+    }
+    startTransition(() => router.push("/onboarding/plan"));
+  }
+
+  return (
+    <StepShell
+      step="workspace"
+      furthestStep={furthestStep}
+      title={t("title")}
+      description={t("description")}
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="slug">
+            {tSlug("workspaceUrl")}{" "}
+            <span className="font-normal text-muted-foreground">{tSlug("workspaceUrlNote")}</span>
+          </Label>
+          <div className="flex items-stretch">
+            <span className="flex items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+              gallurio.com/w/
+            </span>
+            <Input
+              id="slug"
+              placeholder={tSlug("slugPlaceholder")}
+              aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
+              {...register("slug")}
+            />
+          </div>
+          <div className="flex justify-between items-center gap-2">
+            <SlugStatusIndicator status={slugStatus} t={tSlug} />
+            {slugValue && (
+              <p className="text-xs text-muted-foreground">
+                {tSlug("slugPreview")} <span className="font-mono">gallurio.com/w/{slugValue}</span>
+              </p>
+            )}
+          </div>
+          {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="country">{t("country")}</Label>
+            <select
+              id="country"
+              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              {...register("country")}
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            {errors.country && (
+              <p className="text-sm text-destructive">{errors.country.message}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="timezone">{t("timezone")}</Label>
+            <select
+              id="timezone"
+              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              {...register("timezone")}
+            >
+              {Object.entries(TIMEZONE_GROUPS).map(([region, zones]) => (
+                <optgroup key={region} label={region}>
+                  {zones.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {errors.timezone && (
+              <p className="text-sm text-destructive">{errors.timezone.message}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label id="time-format-label">{t("timeFormat")}</Label>
+            <SegmentedToggle
+              ariaLabel={t("timeFormat")}
+              value={timeFormatValue}
+              onChange={(v) =>
+                setValue("timeFormat", v, { shouldValidate: true, shouldDirty: true })
+              }
+              options={[
+                { key: "12h", label: t("time12h") },
+                { key: "24h", label: t("time24h") },
+              ]}
+              className="sm:flex sm:h-9 sm:min-h-0 sm:w-full"
+            />
+          </div>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between pt-2">
+          <div>
+            <StepBackButton from="workspace" />
+          </div>
+          <Button
+            type="submit"
+            variant="brand"
+            disabled={isSubmitting || slugStatus === "checking" || slugStatus === "taken" || slugStatus === "invalid"}
+            className="min-w-40"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {tShell("saving")}
+              </>
+            ) : (
+              tShell("continue")
+            )}
+          </Button>
+        </div>
+      </form>
+    </StepShell>
+  );
+}

@@ -8,6 +8,7 @@ export type PlanCatalogEntry = {
   id: PlanTier;
   nameKey: string;
   amount: number;
+  yearlyAmount?: number;
   currency: "PHP";
   descriptionKey: string;
   taglineKey: string;
@@ -15,7 +16,12 @@ export type PlanCatalogEntry = {
   highlight?: boolean;
   entitlements: PlanEntitlements;
   priceId?: string;
+  yearlyPriceId?: string;
 };
+
+export function getProMonthlyPriceId() {
+  return process.env.PADDLE_PRICE_PRO_MONTHLY_ID ?? process.env.PADDLE_PRICE_PRO_ID ?? "";
+}
 
 // Pricing is in PHP (display only — Paddle billing uses priceId, not amount).
 // Strings here are i18n keys so the catalog stays language-neutral.
@@ -28,49 +34,36 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
     descriptionKey: "plans.free.description",
     taglineKey: "plans.free.tagline",
     featureKeys: [
-      "plans.free.features.workspace",
-      "plans.free.features.bookings",
-      "plans.free.features.storage",
-      "plans.free.features.publicPage",
+      "plans.free.features.trial",
+      "plans.pro.features.unlimitedBookings",
+      "plans.pro.features.publicPageControls",
+      "plans.pro.features.invoicePdfs",
     ],
     entitlements: PLAN_ENTITLEMENTS.free,
   },
   {
-    id: "starter",
-    nameKey: "plans.starter.name",
-    amount: 250,
-    currency: "PHP",
-    descriptionKey: "plans.starter.description",
-    taglineKey: "plans.starter.tagline",
-    featureKeys: [
-      "plans.starter.features.unlimitedBookings",
-      "plans.starter.features.storage",
-      "plans.starter.features.brandedForm",
-      "plans.starter.features.acceptPayments",
-    ],
-    entitlements: PLAN_ENTITLEMENTS.starter,
-    priceId: process.env.PADDLE_PRICE_STARTER_ID ?? "",
-  },
-  {
     id: "pro",
     nameKey: "plans.pro.name",
-    amount: 500,
+    amount: 250,
+    yearlyAmount: 2500,
     currency: "PHP",
     descriptionKey: "plans.pro.description",
     taglineKey: "plans.pro.tagline",
     featureKeys: [
-      "plans.pro.features.everythingStarter",
-      "plans.pro.features.storage",
+      "plans.pro.features.unlimitedBookings",
+      "plans.pro.features.publicPageControls",
       "plans.pro.features.invoicePdfs",
-      "plans.pro.features.removeBranding",
+      "plans.pro.features.clientManagement",
+      "plans.pro.features.teamManagement",
     ],
     highlight: true,
     entitlements: PLAN_ENTITLEMENTS.pro,
-    priceId: process.env.PADDLE_PRICE_PRO_ID ?? "",
+    priceId: getProMonthlyPriceId(),
+    yearlyPriceId: process.env.PADDLE_PRICE_PRO_YEARLY_ID ?? "",
   },
 ];
 
-const PAID_PLANS = ["starter", "pro"] as const;
+const PAID_PLANS = ["pro"] as const;
 export type PaidPlan = (typeof PAID_PLANS)[number];
 
 export function isPaidPlan(plan: PlanTier): plan is PaidPlan {
@@ -90,7 +83,9 @@ export function getPlanCatalog(id: PlanTier): PlanCatalogEntry {
 export function planForPriceId(priceId: string): PlanTier {
   if (!priceId) return "free";
   const match = PLAN_CATALOG.find(
-    (p) => p.priceId && p.priceId !== "" && p.priceId === priceId
+    (p) =>
+      (p.priceId && p.priceId !== "" && p.priceId === priceId) ||
+      (p.yearlyPriceId && p.yearlyPriceId !== "" && p.yearlyPriceId === priceId)
   );
   return match?.id ?? "free";
 }

@@ -23,6 +23,7 @@ import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
+import { getProPricing } from "@/lib/paddle/pricing";
 import { AccountPanel } from "../account/_panel";
 import type {
   UpdateWorkspaceBusinessInput,
@@ -96,6 +97,10 @@ export default async function SettingsCatchallPage({
     country: (workspace.country ?? "PH") as SupportedCountry,
     currency: workspace.currency as SupportedCurrency,
     timezone: workspace.timezone ?? "Asia/Manila",
+    contactEmail: workspace.contact?.email ?? "",
+    contactAddress: workspace.contact?.address ?? "",
+    logoUrl: workspace.logoUrl ?? "",
+    logoAssetId: workspace.logoAssetId ?? "",
   };
 
   const publicPageDefaults: PublicPageSettingsInput = {
@@ -117,6 +122,7 @@ export default async function SettingsCatchallPage({
   };
 
   const t = await getTranslations("app.settings.tabs");
+  const proPricing = await getProPricing(workspace.country ?? "PH");
 
   // Active slug: null means base /settings -> render account tab
   const activeSlug = slug;
@@ -190,6 +196,7 @@ export default async function SettingsCatchallPage({
               paddleCurrentPeriodEnd={workspace.paddleCurrentPeriodEnd ?? null}
               workspaceId={String(workspace._id)}
               customerEmail={authUser?.email ?? ""}
+              proPricing={proPricing}
             />
           ),
         },

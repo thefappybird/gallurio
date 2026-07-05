@@ -466,6 +466,7 @@
         },
         "cancel": "Batalkan tempahan",
         "restore": "Pulihkan tempahan",
+        "invoice": "Muat turun invois",
         "discardChanges": "Buang perubahan",
         "saveChanges": "Simpan perubahan",
         "pendingBadge": "{count} belum disimpan",
@@ -745,7 +746,7 @@
       "tabs": {
         "account": "Akaun",
         "customize": "Sesuaikan",
-        "workspace": "Ruang kerja",
+        "workspace": "Butiran Perniagaan",
         "teams": "Pasukan",
         "publicPage": "Halaman awam",
         "billing": "Bil",
@@ -757,6 +758,7 @@
         "renewsOn": "Diperbaharui pada {date}",
         "availablePlans": "Pelan tersedia",
         "perMonth": "/ bulan",
+        "perYear": "/ tahun",
         "upgradeTo": "Naik taraf ke {plan}",
         "upgradeToAriaLabel": "Naik taraf ke pelan {plan}",
         "opening": "Membuka…",
@@ -794,7 +796,24 @@
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Ruang kerja dikemas kini.",
-        "currencyWarning": "Terpakai untuk tempahan baru. Amaun sedia ada mengekalkan mata wang asal mereka."
+        "currencyWarning": "Terpakai untuk tempahan baru. Amaun sedia ada mengekalkan mata wang asal mereka.",
+        "contactEmail": "E-mel hubungan",
+        "contactEmailPlaceholder": "anda@contoh.com",
+        "contactAddress": "Alamat perniagaan",
+        "contactAddressPlaceholder": "123 Jalan Utama, Bandar, Negara",
+        "logoSection": "Logo perniagaan",
+        "logoHint": "Dipaparkan pada invois yang anda jana.",
+        "logoLabel": "Muat naik logo",
+        "logoUploading": "Sedang memuat naik…",
+        "logoRequirements": "PNG, JPEG, WebP atau SVG · maks 2 MB · sehingga 2000 × 2000 px",
+        "logoRemove": "Buang",
+        "logoErrors": {
+          "type": "Hanya fail PNG, JPEG, WebP atau SVG diterima.",
+          "size": "Fail mestilah 2 MB atau lebih kecil.",
+          "dimensions": "Imej mestilah 2000 × 2000 px atau lebih kecil.",
+          "image": "Tidak dapat membaca imej. Sila cuba fail lain.",
+          "upload": "Muat naik gagal. Sila cuba lagi."
+        }
       },
       "customize": {
         "themeSection": "Tema",
@@ -1960,6 +1979,34 @@
               "body": "Simpan perubahan pada bila-bila masa. Gunakan Draf untuk mengurus pelbagai versi. Buka semula panduan ini melalui butang Panduan."
             }
           }
+        },
+        "storyPrompt": {
+          "welcome": {
+            "title": "Mari kongsi kisah anda",
+            "subtitle": "Empat langkah pantas untuk menerangkan kerja anda dan memilih gaya anda — kemudian kami akan bantu anda bina halaman tersebut.",
+            "cta": "Mari mula"
+          },
+          "story": {
+            "title": "Kongsikan kisah anda",
+            "subtitle": "Ini akan dipaparkan dalam hasil carian Google dan apabila halaman anda dikongsi.",
+            "placeholder": "Satu ayat pendek tentang siapa anda dan apa yang anda lakukan…",
+            "charCount": "{count}/{max}",
+            "previewLabel": "Pratonton carian"
+          },
+          "vibe": {
+            "title": "Gaya anda",
+            "subtitle": "Pilih beberapa tag yang menggambarkan gaya anda — atau tambah tag sendiri.",
+            "addPlaceholder": "Tambah tag"
+          },
+          "done": {
+            "title": "Halaman anda sedia untuk bersinar",
+            "subtitle": "Anda telah menetapkan asasnya. Mari jadikan ia lebih menarik.",
+            "continueWithGuide": "Teruskan dengan panduan",
+            "exploreSelf": "Saya akan terokai sendiri",
+            "footerNote": "Anda boleh sunting ini bila-bila masa di Tetapan → Halaman Awam."
+          },
+          "back": "Kembali",
+          "continue": "Teruskan"
         }
       },
       "wizard": {
@@ -2163,12 +2210,13 @@
     },
     "steps": {
       "business": "Perniagaan",
+      "workspace": "Ruang kerja",
       "plan": "Pelan",
       "done": "Selesai"
     },
     "business": {
       "title": "Beritahu kami tentang perniagaan anda",
-      "description": "Nama anda, asas perniagaan, dan di mana anda beroperasi.",
+      "description": "Nama anda dan asas perniagaan anda.",
       "firstName": "Nama pertama",
       "firstNamePlaceholder": "Sarah",
       "lastName": "Nama akhir",
@@ -2179,10 +2227,10 @@
       "workspaceUrl": "URL ruang kerja",
       "workspaceUrlNote": "(alamat halaman awam anda)",
       "slugPlaceholder": "sarah-bell-photo",
+      "slugPreview": "Halaman anda akan berada di",
       "businessType": "Jenis perniagaan",
       "country": "Negara",
       "currency": "Mata wang",
-      "currencyHelp": "Digunakan untuk tempahan baru, transaksi, dan jumlah yang ditunjukkan di seluruh ruang kerja anda.",
       "timezone": "Zon waktu",
       "businessTypes": {
         "photographer": "Jurugambar",
@@ -2198,17 +2246,32 @@
       "slugTaken": "Sudah diambil",
       "slugInvalid": "Format tidak sah"
     },
+    "workspace": {
+      "title": "Sediakan ruang kerja anda",
+      "description": "Di mana anda beroperasi dan cara anda mahu waktu dipaparkan.",
+      "country": "Negara",
+      "timezone": "Zon waktu",
+      "timeFormat": "Format masa",
+      "time12h": "12j",
+      "time24h": "24j"
+    },
     "plan": {
       "title": "Pilih pelan yang sesuai",
       "description": "Anda boleh menukar pelan atau membatalkan bila-bila masa dari tetapan ruang kerja anda.",
       "popular": "Popular",
       "cadence": {
         "forever": "selamanya",
-        "monthly": "/ bulan"
+        "monthly": "/ bulan",
+        "yearly": "/ tahun"
+      },
+      "cadenceToggle": {
+        "monthly": "Bulanan",
+        "yearly": "Tahunan",
+        "savePill": "Jimat 2 bulan"
       },
       "checkoutNote": "Overlay pembayaran Paddle yang selamat akan dibuka. Masukkan butiran kad anda (Visa atau Mastercard). Kitaran pertama akan dicaj segera dan diperbaharui setiap bulan sehingga anda batal.",
       "ctaFree": "Teruskan dengan Free",
-      "ctaPaid": "Langgan — {price} / bulan",
+      "ctaPaid": "Langgan — {price}",
       "settingUp": "Menyediakan…",
       "opening": "Membuka pembayaran…",
       "checkoutFailed": "Pembayaran gagal. Sila cuba lagi.",
@@ -2228,15 +2291,21 @@
         "description": "Kami akan tambah 5 pelanggan demo, 3 tempahan demo, dan 1 pertanyaan demo supaya anda boleh meneroka aplikasi. Semuanya ditanda sample supaya anda boleh padam dengan satu klik."
       },
       "settingUp": "Menyediakan papan pemuka anda…",
-      "goToDashboard": "Pergi ke papan pemuka anda"
+      "goToDashboard": "Pergi ke papan pemuka anda",
+      "footer": {
+        "everything": "Semuanya di satu tempat",
+        "grow": "Dibina untuk berkembang bersama anda",
+        "support": "Sokongan apabila anda memerlukannya"
+      }
     }
   },
   "plans": {
     "free": {
       "name": "Free",
-      "description": "Mulakan secara percuma",
-      "tagline": "Cuba produk, tiada kad diperlukan.",
+      "description": "Percubaan akses penuh selama 15 hari",
+      "tagline": "Gunakan versi berbayar secara percuma selama 15 hari.",
       "features": {
+        "trial": "15 hari akses penuh Pro",
         "workspace": "1 ruang kerja",
         "bookings": "Sehingga 10 tempahan",
         "storage": "Storan imej 1 GB",
@@ -2256,12 +2325,16 @@
     },
     "pro": {
       "name": "Pro",
-      "description": "Invois + buang penjenamaan.",
-      "tagline": "Invois + buang penjenamaan.",
+      "description": "Urus tempahan, pelanggan, pasukan, invois, dan halaman awam anda.",
+      "tagline": "Ruang kerja penuh untuk bisnes acara yang berkembang.",
       "features": {
         "everythingStarter": "Semua dalam Starter",
+        "unlimitedBookings": "Tempahan tanpa had",
+        "publicPageControls": "Kawalan penuh halaman awam",
         "storage": "Storan 50 GB",
         "invoicePdfs": "PDF invois",
+        "clientManagement": "Pengurusan pelanggan",
+        "teamManagement": "Pengurusan pasukan",
         "removeBranding": "Buang penjenamaan Gallurio"
       }
     }

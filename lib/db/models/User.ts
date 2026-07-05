@@ -11,9 +11,11 @@ const membershipSchema = new Schema(
 
 // "payments" step removed when marketplace was dropped from MVP — tenants no
 // longer onboard a payment sub-account during signup. "template" step removed
-// and moved to Page Builder / workspace settings.
+// and moved to Page Builder / workspace settings. Keep in sync with
+// STEP_META in app/[locale]/(onboarding)/onboarding/_components/step-shell.tsx.
 export const ONBOARDING_STEPS = [
   "business",
+  "workspace",
   "plan",
   "done",
 ] as const;

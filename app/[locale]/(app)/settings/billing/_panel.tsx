@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { CreditCard, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import { PLAN_CATALOG } from "@/lib/paddle/plans";
+import type { ProPricing } from "@/lib/paddle/pricing";
+import { formatMoney } from "@/lib/utils/format-currency";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PlanTier, PaddleSubscriptionStatus } from "@/lib/db/models";
@@ -17,12 +19,8 @@ export type BillingPanelProps = {
   paddleCurrentPeriodEnd: Date | null;
   workspaceId: string;
   customerEmail: string;
+  proPricing: ProPricing;
 };
-
-function formatPHP(amount: number): string {
-  if (amount === 0) return "₱0";
-  return `₱${amount.toLocaleString("en-PH")}`;
-}
 
 function formatDate(d: Date | null): string {
   if (!d) return "—";
@@ -37,10 +35,12 @@ export function BillingPanel({
   paddleCurrentPeriodEnd,
   workspaceId,
   customerEmail,
+  proPricing,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
   const errMsg = useActionError();
+  const locale = useLocale();
 
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -205,6 +205,11 @@ export function BillingPanel({
             {PLAN_CATALOG.filter((p) => p.id !== "free" && p.id !== currentPlan).map(
               (entry) => {
                 const busy = loadingPlan === entry.id;
+                const monthlyPrice = entry.id === "pro" ? proPricing.monthly : entry.amount;
+                const yearlyPrice =
+                  entry.id === "pro" ? proPricing.yearly : entry.yearlyAmount ?? entry.amount * 12;
+                const yearlyComparePrice = monthlyPrice * 12;
+                const currency = entry.id === "pro" ? proPricing.currency : entry.currency;
                 return (
                   <div
                     key={entry.id}
@@ -212,10 +217,21 @@ export function BillingPanel({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium">{tPlans(`${entry.id}.name`)}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatPHP(entry.amount)}{" "}
-                        <span className="text-muted-foreground">{t("perMonth")}</span>
-                      </span>
+                      <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                        <span>
+                          {formatMoney(monthlyPrice, currency, locale)}{" "}
+                          <span>{t("perMonth")}</span>
+                        </span>
+                        <span>
+                          <span className="line-through">
+                            {formatMoney(yearlyComparePrice, currency, locale)}
+                          </span>{" "}
+                          <span className="font-medium text-foreground">
+                            {formatMoney(yearlyPrice, currency, locale)}
+                          </span>{" "}
+                          <span>{t("perYear")}</span>
+                        </span>
+                      </div>
                     </div>
                     <Button
                       size="sm"

@@ -23,6 +23,7 @@
     "@measured/puck": "^0.20.2",
     "@paddle/paddle-js": "^1.6.4",
     "@paddle/paddle-node-sdk": "^3.8.0",
+    "@react-pdf/renderer": "^4.5.1",
     "@tanstack/react-table": "^8.21.3",
     "@types/react-big-calendar": "^1.16.3",
     "@workos-inc/authkit-nextjs": "^4.1.1",

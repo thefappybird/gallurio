@@ -5,6 +5,8 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { buildRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
+import { resolveEffectiveDir } from "@/lib/i18n/rtl";
+import { routing } from "@/lib/i18n/routing";
 import {
   DEFAULT_BRAND_KIT,
   type PortfolioContactConfig,
@@ -62,7 +64,11 @@ export default async function PortfolioPreviewPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ zone?: string | string[] }>;
+  searchParams: Promise<{
+    zone?: string | string[];
+    formLocale?: string | string[];
+    formDir?: string | string[];
+  }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -75,7 +81,20 @@ export default async function PortfolioPreviewPage({
   const pp = workspace.publicPage;
   const { cssVars, className } = resolveBrandKit(pp?.brandKit ?? DEFAULT_BRAND_KIT);
 
-  const chromeLocale = resolvePublicChromeLocale(workspace);
+  // A live in-editor language switch overrides the DB-resolved chrome locale —
+  // pure override, not a new default (falls back to the existing resolution
+  // when formLocale is absent or not a supported locale).
+  const requestedFormLocale =
+    typeof sp.formLocale === "string" ? sp.formLocale : undefined;
+  const chromeLocale =
+    requestedFormLocale &&
+    (routing.locales as readonly string[]).includes(requestedFormLocale)
+      ? (requestedFormLocale as (typeof routing.locales)[number])
+      : resolvePublicChromeLocale(workspace);
+  const effectiveDir = resolveEffectiveDir(
+    typeof sp.formDir === "string" ? (sp.formDir as "ltr" | "rtl" | "") : (workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined),
+    chromeLocale,
+  );
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
   // DB fallback — PreviewHeaderShell overrides with the localStorage draft on mount.
   const headerConfig = (pp?.header ?? null) as PortfolioHeaderConfig | null;
@@ -156,40 +175,42 @@ export default async function PortfolioPreviewPage({
   const showHeader = zone !== "popup";
 
   return (
-    <PreviewBrandShell
-      slug={workspace.slug}
-      fallbackCssVars={cssVars}
-      fallbackClassName={className}
-    >
-      {showHeader && (
-        <PreviewHeaderShell
-          slug={workspace.slug}
-          fallbackConfig={headerConfig}
-          activePath={activePath}
-          homeHref={previewHomeHref}
-          galleryHref={previewGalleryHref}
-          labels={{
-            brand: workspace.name,
-            navLandmark: tNav("navLandmark"),
-            home: tNav("home"),
-            gallery: tNav("gallery"),
-            contact: tNav("contact"),
-            openMenu: tNav("openMenu"),
-            closeMenu: tNav("closeMenu"),
-          }}
-        />
-      )}
-      {body}
-      {/* Mount contact modal only when the header is visible (home/gallery zones).
-          The contact zone shows PreviewContactCard instead; popup zone has no header.
-          This mirrors the public layout's ContactModal mount. */}
-      {showHeader && zone !== "contact" && (
-        <PreviewContactModal
-          workspaceSlug={workspace.slug}
-          dbContact={dbContact}
-          labels={contactLabels}
-        />
-      )}
-    </PreviewBrandShell>
+    <div lang={chromeLocale} dir={effectiveDir}>
+      <PreviewBrandShell
+        slug={workspace.slug}
+        fallbackCssVars={cssVars}
+        fallbackClassName={className}
+      >
+        {showHeader && (
+          <PreviewHeaderShell
+            slug={workspace.slug}
+            fallbackConfig={headerConfig}
+            activePath={activePath}
+            homeHref={previewHomeHref}
+            galleryHref={previewGalleryHref}
+            labels={{
+              brand: workspace.name,
+              navLandmark: tNav("navLandmark"),
+              home: tNav("home"),
+              gallery: tNav("gallery"),
+              contact: tNav("contact"),
+              openMenu: tNav("openMenu"),
+              closeMenu: tNav("closeMenu"),
+            }}
+          />
+        )}
+        {body}
+        {/* Mount contact modal only when the header is visible (home/gallery zones).
+            The contact zone shows PreviewContactCard instead; popup zone has no header.
+            This mirrors the public layout's ContactModal mount. */}
+        {showHeader && zone !== "contact" && (
+          <PreviewContactModal
+            workspaceSlug={workspace.slug}
+            dbContact={dbContact}
+            labels={contactLabels}
+          />
+        )}
+      </PreviewBrandShell>
+    </div>
   );
 }

@@ -5,84 +5,26 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
-import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
+import {
+  Loader2,
+  Camera,
+  Building2,
+  ClipboardList,
+  Scissors,
+  UtensilsCrossed,
+  Music,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
-import {
-  businessStepSchema,
-  BILLING_COUNTRY_VALUES,
-  SUPPORTED_CURRENCIES,
-  COUNTRY_TO_CURRENCY,
-  type BusinessStepInput,
-  type SupportedCountry,
-  type SupportedCurrency,
-} from "@/lib/validators/workspace";
+import { businessStepSchema, type BusinessStepInput } from "@/lib/validators/workspace";
 import { businessStepAction } from "@/lib/actions/onboarding";
-import { StepShell, StepBackButton } from "../_components/step-shell";
-import { BusinessIllustration } from "../_components/illustrations";
+import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
-import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { useActionError } from "@/lib/i18n/actionError";
-
-const COUNTRY_LABELS: Record<SupportedCountry, string> = {
-  PH: "Philippines",
-  SG: "Singapore",
-  MY: "Malaysia",
-  ID: "Indonesia",
-  TH: "Thailand",
-  AU: "Australia",
-  CA: "Canada",
-  NZ: "New Zealand",
-  GB: "United Kingdom",
-  US: "United States",
-  AE: "United Arab Emirates",
-  SA: "Saudi Arabia",
-  QA: "Qatar",
-  KW: "Kuwait",
-  OM: "Oman",
-  BH: "Bahrain",
-};
-const COUNTRIES = BILLING_COUNTRY_VALUES.map((value) => ({
-  value,
-  label: COUNTRY_LABELS[value],
-}));
-
-const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
-  PHP: "Philippine Peso (₱)",
-  SGD: "Singapore Dollar (S$)",
-  MYR: "Malaysian Ringgit (RM)",
-  IDR: "Indonesian Rupiah (Rp)",
-  THB: "Thai Baht (฿)",
-  AUD: "Australian Dollar (A$)",
-  CAD: "Canadian Dollar (C$)",
-  NZD: "New Zealand Dollar (NZ$)",
-  GBP: "British Pound (£)",
-  USD: "US Dollar ($)",
-  AED: "UAE Dirham (د.إ)",
-  SAR: "Saudi Riyal (﷼)",
-  QAR: "Qatari Riyal (﷼)",
-  KWD: "Kuwaiti Dinar (د.ك)",
-  OMR: "Omani Rial (﷼)",
-  BHD: "Bahraini Dinar (.د.ب)",
-};
-const CURRENCIES = SUPPORTED_CURRENCIES.map((value) => ({
-  value,
-  label: CURRENCY_LABELS[value],
-}));
-
-function toSlug(val: string) {
-  return val
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 50);
-}
+import { cn } from "@/lib/utils";
 
 export function BusinessStepForm({
   defaults,
@@ -102,39 +44,36 @@ export function BusinessStepForm({
     handleSubmit,
     setValue,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<BusinessStepInput>({
     resolver: zodResolver(businessStepSchema),
     defaultValues: defaults,
   });
 
-  const slugValue = useWatch({ control, name: "slug" });
-  const { status: slugStatus } = useSlugAvailability(slugValue);
-
-  function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setValue("name", e.target.value);
-    if (!defaults.slug) {
-      setValue("slug", toSlug(e.target.value), { shouldValidate: true });
-    }
-  }
+  const businessTypeValue = useWatch({ control, name: "businessType" });
 
   async function onSubmit(data: BusinessStepInput) {
+    if (isStepCompleted("business", furthestStep) && !isDirty) {
+      startTransition(() => router.push("/onboarding/workspace"));
+      return;
+    }
+
     const result = await businessStepAction(data);
     if (result?.error) {
       toast.error(errMsg(result.error));
       return;
     }
-    startTransition(() => router.push("/onboarding/plan"));
+    startTransition(() => router.push("/onboarding/workspace"));
   }
 
   const businessTypes = [
-    { value: "photographer", label: t("businessTypes.photographer") },
-    { value: "venue", label: t("businessTypes.venue") },
-    { value: "planner", label: t("businessTypes.planner") },
-    { value: "stylist", label: t("businessTypes.stylist") },
-    { value: "catering", label: t("businessTypes.catering") },
-    { value: "entertainer", label: t("businessTypes.entertainer") },
-    { value: "other", label: t("businessTypes.other") },
+    { value: "photographer", label: t("businessTypes.photographer"), icon: Camera },
+    { value: "venue", label: t("businessTypes.venue"), icon: Building2 },
+    { value: "planner", label: t("businessTypes.planner"), icon: ClipboardList },
+    { value: "stylist", label: t("businessTypes.stylist"), icon: Scissors },
+    { value: "catering", label: t("businessTypes.catering"), icon: UtensilsCrossed },
+    { value: "entertainer", label: t("businessTypes.entertainer"), icon: Music },
+    { value: "other", label: t("businessTypes.other"), icon: Sparkles },
   ] as const;
 
   return (
@@ -143,9 +82,8 @@ export function BusinessStepForm({
       furthestStep={furthestStep}
       title={t("title")}
       description={t("description")}
-      illustration={<BusinessIllustration />}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col gap-5">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="firstName">{t("firstName")}</Label>
@@ -168,133 +106,51 @@ export function BusinessStepForm({
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="name">{t("businessName")}</Label>
-          <Input
-            id="name"
-            placeholder={t("businessNamePlaceholder")}
-            {...register("name")}
-            onChange={handleNameChange}
-          />
+          <Input id="name" placeholder={t("businessNamePlaceholder")} {...register("name")} />
           {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="slug">
-            {t("workspaceUrl")}{" "}
-            <span className="font-normal text-muted-foreground">{t("workspaceUrlNote")}</span>
-          </Label>
-          <div className="flex items-stretch">
-            <span className="flex items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
-              gallurio.com/w/
-            </span>
-            <Input
-              id="slug"
-              placeholder={t("slugPlaceholder")}
-              aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
-              {...register("slug")}
-            />
-          </div>
-          <SlugStatusIndicator status={slugStatus} t={t} />
-          {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="businessType">{t("businessType")}</Label>
-            <select
-              id="businessType"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("businessType")}
-            >
-              {businessTypes.map((bt) => (
-                <option key={bt.value} value={bt.value}>
+          <Label id="business-type-label">{t("businessType")}</Label>
+          <div
+            role="group"
+            aria-labelledby="business-type-label"
+            className="flex flex-wrap justify-center gap-2"
+          >
+            {businessTypes.map((bt) => {
+              const Icon = bt.icon;
+              const active = businessTypeValue === bt.value;
+              return (
+                <button
+                  key={bt.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() =>
+                    setValue("businessType", bt.value, { shouldValidate: true, shouldDirty: true })
+                  }
+                  className={cn(
+                    "flex w-[calc(33.333%-0.34rem)] flex-col items-center gap-1.5 border p-3 text-center text-xs font-medium transition-colors sm:w-[calc(25%-0.375rem)]",
+                    active
+                      ? "border-brand bg-brand/12 text-foreground"
+                      : "border-border text-muted-foreground hover:border-brand/40"
+                  )}
+                >
+                  <Icon className="h-5 w-5" aria-hidden="true" />
                   {bt.label}
-                </option>
-              ))}
-            </select>
-            {errors.businessType && (
-              <p className="text-sm text-destructive">{errors.businessType.message}</p>
-            )}
+                </button>
+              );
+            })}
           </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="country">{t("country")}</Label>
-            <select
-              id="country"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("country", {
-                onChange: (e) => {
-                  const next = e.target.value as SupportedCountry;
-                  setValue("currency", COUNTRY_TO_CURRENCY[next], {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  });
-                },
-              })}
-            >
-              {COUNTRIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-            {errors.country && (
-              <p className="text-sm text-destructive">{errors.country.message}</p>
-            )}
-          </div>
+          {errors.businessType && (
+            <p className="text-sm text-destructive">{errors.businessType.message}</p>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="currency">{t("currency")}</Label>
-            <select
-              id="currency"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("currency")}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground">{t("currencyHelp")}</p>
-            {errors.currency && (
-              <p className="text-sm text-destructive">{errors.currency.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="timezone">{t("timezone")}</Label>
-            <select
-              id="timezone"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("timezone")}
-            >
-              {Object.entries(TIMEZONE_GROUPS).map(([region, zones]) => (
-                <optgroup key={region} label={region}>
-                  {zones.map((tz) => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-            {errors.timezone && (
-              <p className="text-sm text-destructive">{errors.timezone.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-auto flex items-center justify-between pt-2">
           <div>
             <StepBackButton from="business" />
           </div>
-          <Button
-            type="submit"
-            disabled={isSubmitting || slugStatus === "checking" || slugStatus === "taken" || slugStatus === "invalid"}
-            className="min-w-40"
-          >
+          <Button type="submit" variant="brand" disabled={isSubmitting} className="min-w-40">
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

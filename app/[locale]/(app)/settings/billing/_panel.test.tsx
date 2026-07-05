@@ -42,6 +42,7 @@ const defaultProps: BillingPanelProps = {
   paddleCurrentPeriodEnd: null,
   workspaceId: "ws_test_123",
   customerEmail: "owner@example.com",
+  proPricing: { currency: "PHP", monthly: 250, yearly: 2500 },
 };
 
 function renderPanel(overrides: Partial<BillingPanelProps> = {}) {
@@ -64,11 +65,15 @@ describe("BillingPanel — renders", () => {
     renderPanel({ currentPlan: "free" });
     // Buttons have aria-label "Upgrade to the {Plan} plan"
     expect(
-      screen.getByRole("button", { name: /upgrade to the starter plan/i })
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole("button", { name: /upgrade to the pro plan/i })
     ).toBeInTheDocument();
+  });
+
+  it("shows monthly and yearly Pro prices", () => {
+    renderPanel({ currentPlan: "free" });
+    expect(screen.getByText(/\/ month/i)).toBeInTheDocument();
+    expect(screen.getByText(/\/ year/i)).toBeInTheDocument();
+    expect(screen.getByText(/2,500/)).toBeInTheDocument();
   });
 
   it("does not show an upgrade button for the plan you're already on", () => {
@@ -134,7 +139,7 @@ describe("BillingPanel — upgrade checkout", () => {
       expect(initializePaddle).toHaveBeenCalled();
     });
 
-    const upgradeBtn = screen.getByRole("button", { name: /upgrade to the starter plan/i });
+    const upgradeBtn = screen.getByRole("button", { name: /upgrade to the pro plan/i });
     fireEvent.click(upgradeBtn);
 
     await waitFor(() => {
@@ -164,13 +169,11 @@ describe("BillingPanel — upgrade checkout", () => {
 
     renderPanel({ currentPlan: "free" });
 
-    const starterBtn = screen.getByRole("button", { name: /upgrade to the starter plan/i });
     const proBtn = screen.getByRole("button", { name: /upgrade to the pro plan/i });
 
-    fireEvent.click(starterBtn);
+    fireEvent.click(proBtn);
 
     await waitFor(() => {
-      expect(starterBtn).toBeDisabled();
       expect(proBtn).toBeDisabled();
     });
 
@@ -191,7 +194,7 @@ describe("BillingPanel — upgrade checkout", () => {
 
     renderPanel({ currentPlan: "free" });
 
-    const upgradeBtn = screen.getByRole("button", { name: /upgrade to the starter plan/i });
+    const upgradeBtn = screen.getByRole("button", { name: /upgrade to the pro plan/i });
     fireEvent.click(upgradeBtn);
 
     await waitFor(() => {

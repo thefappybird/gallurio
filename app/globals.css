@@ -31,6 +31,7 @@
   --color-brand-2: var(--brand-2);
   --color-brand-3: var(--brand-3);
   --color-brand-4: var(--brand-4);
+  --color-onboarding-bg: var(--onboarding-bg);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -94,6 +95,11 @@
   --brand-2: oklch(0.65 0.10 195);
   --brand-3: oklch(0.78 0.08 195);
   --brand-4: oklch(0.88 0.05 195);
+  /* Onboarding-only warm cream backdrop — never touches the global
+     --background. Scoped by applying bg-onboarding-bg on the onboarding
+     layout's outer wrapper only. Warm hue (~85, amber family) so the wizard
+     reads inviting against the app's default cool-neutral shell. */
+  --onboarding-bg: oklch(0.975 0.014 85);
   /* Chart palette: teal (brand) stays the lead accent (chart-1); the rest fan
      out across distinct hues at mid-luminance / moderate chroma so multiple
      datasets read apart at a glance while staying on-brand and legible on the
@@ -164,6 +170,10 @@
   --brand-2: oklch(0.62 0.10 195);
   --brand-3: oklch(0.50 0.10 195);
   --brand-4: oklch(0.42 0.08 195);
+  /* Dark equivalent — a faintly warm-tinted charcoal (vs. the cool-hued
+     --background/--card) so the same "warm wizard" identity carries into
+     dark mode without a literal cream (which would fail contrast). */
+  --onboarding-bg: oklch(0.235 0.010 75);
   --chart-1: var(--brand);                 /* teal 195 — lead accent */
   --chart-2: oklch(0.70 0.13 250);         /* indigo */
   --chart-3: oklch(0.78 0.14 60);          /* amber */
@@ -676,6 +686,42 @@ html[data-radius="rounded"] {
 }
 .scrollbar-inline-subtle::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
+}
+
+/* Lean vertical scrollbar — same tokens as .scrollbar-inline-subtle, sized for
+ * height instead of width. */
+.scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Onboarding wizard — short-viewport graceful degradation. The wizard is
+ * designed to avoid nested form scrollbars. On short/landscape windows, hide
+ * decorative chrome before functional content, in this priority order:
+ * 1) progress-bar step-name labels (keep the bar + numbered dot), 2) the
+ * step description paragraph (keep the title). */
+@media (max-height: 620px) {
+  .onboarding-progress-label {
+    display: none;
+  }
+}
+@media (max-height: 560px) {
+  .onboarding-step-description {
+    display: none;
+  }
 }
 
 /* ---------------------------------------------------------------------------

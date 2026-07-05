@@ -7,21 +7,26 @@
  * @/lib/i18n/navigation: aliased to stub via vitest.config.ts.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { PlanStepForm } from "./plan-form";
 
 // ── Paddle mock ────────────────────────────────────────────────────────────
 // vi.mock is hoisted to top-of-file, so we must use vi.hoisted() to create
 // shared mocks that the factory can safely reference.
-const { paddleCheckoutOpenMock } = vi.hoisted(() => ({
+const { paddleCheckoutOpenMock, mockRouterPush } = vi.hoisted(() => ({
   paddleCheckoutOpenMock: vi.fn(),
+  mockRouterPush: vi.fn(),
 }));
 
 vi.mock("@paddle/paddle-js", () => ({
   initializePaddle: vi.fn().mockResolvedValue({
     Checkout: { open: paddleCheckoutOpenMock },
   }),
+}));
+
+vi.mock("@/lib/i18n/navigation", () => ({
+  useRouter: () => ({ push: mockRouterPush }),
 }));
 
 // ── Server action mocks ────────────────────────────────────────────────────
@@ -37,9 +42,11 @@ vi.mock("@/lib/actions/dev", () => ({
 const fetchMock = vi.fn();
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   paddleCheckoutOpenMock.mockReset();
+  mockRouterPush.mockReset();
   // Set the Paddle token env var so initializePaddle is invoked.
   // (In real test env this is empty so the token-missing branch fires.)
   process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_paddle_token";
@@ -52,11 +59,12 @@ afterEach(() => {
   delete process.env.NEXT_PUBLIC_PADDLE_ENV;
 });
 
-function renderForm(props: { currentPlan?: string } = {}) {
+function renderForm(props: { currentPlan?: string; furthestStep?: "business" | "workspace" | "plan" | "done" } = {}) {
   return renderWithProviders(
     <PlanStepForm
       currentPlan={props.currentPlan ?? "free"}
-      furthestStep="plan"
+      furthestStep={props.furthestStep ?? "plan"}
+      proPricing={{ currency: "PHP", monthly: 250, yearly: 2500 }}
     />
   );
 }
@@ -66,7 +74,6 @@ describe("PlanStepForm — renders", () => {
     renderForm();
     // Plan card headings are <h3> — use role heading to avoid SVG text duplication
     expect(screen.getByRole("heading", { name: "Free" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Starter" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pro" })).toBeInTheDocument();
   });
 
@@ -81,7 +88,7 @@ describe("PlanStepForm — renders", () => {
   });
 
   it("shows a paid CTA when a paid plan is selected", async () => {
-    renderForm({ currentPlan: "starter" });
+    renderForm({ currentPlan: "pro" });
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /subscribe/i })).toBeInTheDocument();
     });
@@ -94,15 +101,15 @@ describe("PlanStepForm — renders", () => {
 });
 
 describe("PlanStepForm — plan card selection", () => {
-  it("switching to Starter changes the CTA to paid text", async () => {
+  it("switching to Pro changes the CTA to paid text", async () => {
     renderForm({ currentPlan: "free" });
 
-    // Find the Starter plan card specifically by its heading
-    const starterHeading = screen.getByRole("heading", { name: "Starter" });
+    // Find the Pro plan card specifically by its heading
+    const proHeading = screen.getByRole("heading", { name: "Pro" });
     // The heading is inside the card button — click the closest button ancestor
-    const starterCard = starterHeading.closest("button");
-    expect(starterCard).not.toBeNull();
-    fireEvent.click(starterCard!);
+    const proCard = proHeading.closest("button");
+    expect(proCard).not.toBeNull();
+    fireEvent.click(proCard!);
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /subscribe.*₱/i })).toBeInTheDocument();
@@ -123,6 +130,20 @@ describe("PlanStepForm — free plan submission", () => {
       expect(selectFreePlanAction).toHaveBeenCalledOnce();
     });
   });
+
+  it("skips saving and continues when a completed plan step is unchanged", async () => {
+    const { selectFreePlanAction } = await import("@/lib/actions/onboarding");
+
+    renderForm({ currentPlan: "free", furthestStep: "done" });
+
+    const cta = screen.getByRole("button", { name: /continue with free/i });
+    fireEvent.click(cta);
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
+    });
+    expect(selectFreePlanAction).not.toHaveBeenCalled();
+  });
 });
 
 describe("PlanStepForm — paid plan checkout", () => {
@@ -138,7 +159,7 @@ describe("PlanStepForm — paid plan checkout", () => {
 
     const { initializePaddle } = await import("@paddle/paddle-js");
 
-    renderForm({ currentPlan: "starter" });
+    renderForm({ currentPlan: "pro" });
 
     // Wait for Paddle to init (useEffect + async initializePaddle)
     await waitFor(() => {
@@ -164,6 +185,39 @@ describe("PlanStepForm — paid plan checkout", () => {
     });
   });
 
+  it("sends the selected cadence in the checkout request body", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        priceId: "pri_test_123",
+        customerEmail: "test@example.com",
+        workspaceId: "ws_abc",
+      }),
+    });
+
+    const { initializePaddle } = await import("@paddle/paddle-js");
+
+    renderForm({ currentPlan: "pro" });
+
+    await waitFor(() => {
+      expect(initializePaddle).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
+
+    const cta = screen.getByRole("button", { name: /subscribe/i });
+    fireEvent.click(cta);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/billing/checkout",
+        expect.objectContaining({
+          body: JSON.stringify({ plan: "pro", cadence: "yearly", onboarding: true }),
+        })
+      );
+    });
+  });
+
   it("shows an inline error and re-enables button when checkout API fails", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: false,
@@ -171,7 +225,7 @@ describe("PlanStepForm — paid plan checkout", () => {
       json: async () => ({ error: "Server error" }),
     });
 
-    renderForm({ currentPlan: "starter" });
+    renderForm({ currentPlan: "pro" });
 
     const cta = screen.getByRole("button", { name: /subscribe/i });
     fireEvent.click(cta);
@@ -211,3 +265,22 @@ describe("PlanStepForm — dev activate", () => {
     });
   });
 });
+
+describe("PlanStepForm — cadence toggle", () => {
+  it("toggling to yearly updates the Pro card price and shows the save badge", async () => {
+    renderForm({ currentPlan: "pro" });
+
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
+    expect(within(proCard).getByText("₱250")).toBeInTheDocument();
+    expect(screen.queryByText(/save 2 months/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
+
+    await waitFor(() => {
+      expect(within(proCard).getByText("₱2,500")).toBeInTheDocument();
+    });
+    expect(within(proCard).getByText("₱3,000")).toHaveClass("line-through");
+    expect(screen.getByText(/save 2 months/i)).toBeInTheDocument();
+  });
+});
+

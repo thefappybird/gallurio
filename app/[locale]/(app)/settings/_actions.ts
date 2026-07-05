@@ -17,6 +17,7 @@ import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { deleteImage, verifyImageOwnership } from "@/lib/storage/cloudflareImages";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
 import { getAuthUser } from "@/lib/auth/session";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { workos } from "@/lib/workos";
@@ -40,7 +41,8 @@ export async function updateWorkspaceBusinessAction(
   if (!parsed.success)
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
 
-  const { name, slug, businessType, country, currency, timezone } = parsed.data;
+  const { name, slug, businessType, country, currency, timezone, contactEmail, contactAddress, logoUrl, logoAssetId } =
+    parsed.data;
 
   const slugClash = await Workspace.findOne({
     slug,
@@ -48,10 +50,40 @@ export async function updateWorkspaceBusinessAction(
   }).lean();
   if (slugClash) return { error: "url_taken" };
 
+  const workspaceId = String(ctx.workspace._id);
+
+  // Verify logo ownership before persisting — prevents a workspace from
+  // referencing an image uploaded by a different workspace.
+  if (logoAssetId) {
+    const owned = await verifyImageOwnership(logoAssetId, workspaceId);
+    if (!owned) return { error: "invalid_logo" };
+  }
+
+  // Fetch the current logo assetId so we can delete it when the owner
+  // replaces or removes the image.
+  const current = await Workspace.findOne(
+    { _id: ctx.workspace._id },
+    { logoAssetId: 1 },
+  ).lean();
+  const oldLogoAssetId = current?.logoAssetId || undefined;
+
   try {
     await Workspace.updateOne(
       { _id: ctx.workspace._id },
-      { $set: { name, slug, businessType, country, currency, timezone } },
+      {
+        $set: {
+          name,
+          slug,
+          businessType,
+          country,
+          currency,
+          timezone,
+          "contact.email": contactEmail,
+          "contact.address": contactAddress,
+          logoUrl,
+          logoAssetId,
+        },
+      },
     );
   } catch (err) {
     // Race-safe: map E11000 duplicate-key on slug to the same friendly message.
@@ -64,6 +96,15 @@ export async function updateWorkspaceBusinessAction(
       return { error: "url_taken" };
     }
     throw err;
+  }
+
+  // Delete the old logo from Cloudflare if the owner replaced or cleared it.
+  if (oldLogoAssetId && oldLogoAssetId !== logoAssetId) {
+    try {
+      await deleteImage(oldLogoAssetId);
+    } catch (err) {
+      console.warn("[settings] failed to delete old logo asset", err);
+    }
   }
 
   revalidatePath("/settings/workspace", "page");
@@ -175,18 +216,7 @@ export async function updateTimeFormatAction(
   const parsed = timeModeSchema.safeParse(format);
   if (!parsed.success) return { error: "Invalid time format" };
 
-  await User.updateOne(
-    { workosUserId: ctx.userId },
-    { $set: { timeFormat: parsed.data } },
-  );
-
-  const cookieStore = await cookies();
-  cookieStore.set("timeFormat", parsed.data, {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-    httpOnly: false,
-    sameSite: "lax",
-  });
+  await persistUserTimeFormat(ctx.userId, parsed.data);
 
   return { ok: true };
 }
