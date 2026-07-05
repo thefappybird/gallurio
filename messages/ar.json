@@ -758,6 +758,7 @@
         "renewsOn": "تتجدّد في {date}",
         "availablePlans": "الخطط المتاحة",
         "perMonth": "/ شهر",
+        "perYear": "/ سنة",
         "upgradeTo": "الترقية إلى {plan}",
         "upgradeToAriaLabel": "الترقية إلى خطة {plan}",
         "opening": "جارٍ الفتح…",
@@ -2301,9 +2302,10 @@
   "plans": {
     "free": {
       "name": "مجاني",
-      "description": "ابدأ مجانًا",
-      "tagline": "جرّب المنتج، دون الحاجة إلى بطاقة.",
+      "description": "تجربة وصول كامل لمدة 15 يومًا",
+      "tagline": "استخدم النسخة المدفوعة مجانًا لمدة 15 يومًا.",
       "features": {
+        "trial": "15 يومًا من وصول Pro الكامل",
         "workspace": "مساحة عمل واحدة",
         "bookings": "حتى 10 حجوزات",
         "storage": "1 غيغابايت لتخزين الصور",
@@ -2323,12 +2325,16 @@
     },
     "pro": {
       "name": "الاحترافية",
-      "description": "فواتير + إزالة العلامة التجارية.",
-      "tagline": "فواتير + إزالة العلامة التجارية.",
+      "description": "أدِر الحجوزات والعملاء والفِرق والفواتير وصفحتك العامة.",
+      "tagline": "مساحة العمل الكاملة لشركات المناسبات النامية.",
       "features": {
         "everythingStarter": "كل ما في المبتدئة",
+        "unlimitedBookings": "حجوزات غير محدودة",
+        "publicPageControls": "تحكم كامل في الصفحة العامة",
         "storage": "50 غيغابايت للتخزين",
         "invoicePdfs": "فواتير بصيغة PDF",
+        "clientManagement": "إدارة العملاء",
+        "teamManagement": "إدارة الفِرق",
         "removeBranding": "إزالة علامة Gallurio التجارية"
       }
     }

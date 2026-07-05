@@ -14,14 +14,19 @@ import { PlanStepForm } from "./plan-form";
 // ── Paddle mock ────────────────────────────────────────────────────────────
 // vi.mock is hoisted to top-of-file, so we must use vi.hoisted() to create
 // shared mocks that the factory can safely reference.
-const { paddleCheckoutOpenMock } = vi.hoisted(() => ({
+const { paddleCheckoutOpenMock, mockRouterPush } = vi.hoisted(() => ({
   paddleCheckoutOpenMock: vi.fn(),
+  mockRouterPush: vi.fn(),
 }));
 
 vi.mock("@paddle/paddle-js", () => ({
   initializePaddle: vi.fn().mockResolvedValue({
     Checkout: { open: paddleCheckoutOpenMock },
   }),
+}));
+
+vi.mock("@/lib/i18n/navigation", () => ({
+  useRouter: () => ({ push: mockRouterPush }),
 }));
 
 // ── Server action mocks ────────────────────────────────────────────────────
@@ -37,9 +42,11 @@ vi.mock("@/lib/actions/dev", () => ({
 const fetchMock = vi.fn();
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   paddleCheckoutOpenMock.mockReset();
+  mockRouterPush.mockReset();
   // Set the Paddle token env var so initializePaddle is invoked.
   // (In real test env this is empty so the token-missing branch fires.)
   process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_paddle_token";
@@ -52,11 +59,11 @@ afterEach(() => {
   delete process.env.NEXT_PUBLIC_PADDLE_ENV;
 });
 
-function renderForm(props: { currentPlan?: string } = {}) {
+function renderForm(props: { currentPlan?: string; furthestStep?: "business" | "workspace" | "plan" | "done" } = {}) {
   return renderWithProviders(
     <PlanStepForm
       currentPlan={props.currentPlan ?? "free"}
-      furthestStep="plan"
+      furthestStep={props.furthestStep ?? "plan"}
       proPricing={{ currency: "PHP", monthly: 250, yearly: 2500 }}
     />
   );
@@ -122,6 +129,20 @@ describe("PlanStepForm — free plan submission", () => {
     await waitFor(() => {
       expect(selectFreePlanAction).toHaveBeenCalledOnce();
     });
+  });
+
+  it("skips saving and continues when a completed plan step is unchanged", async () => {
+    const { selectFreePlanAction } = await import("@/lib/actions/onboarding");
+
+    renderForm({ currentPlan: "free", furthestStep: "done" });
+
+    const cta = screen.getByRole("button", { name: /continue with free/i });
+    fireEvent.click(cta);
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
+    });
+    expect(selectFreePlanAction).not.toHaveBeenCalled();
   });
 });
 
@@ -258,6 +279,7 @@ describe("PlanStepForm — cadence toggle", () => {
     await waitFor(() => {
       expect(within(proCard).getByText("₱2,500")).toBeInTheDocument();
     });
+    expect(within(proCard).getByText("₱3,000")).toHaveClass("line-through");
     expect(screen.getByText(/save 2 months/i)).toBeInTheDocument();
   });
 });

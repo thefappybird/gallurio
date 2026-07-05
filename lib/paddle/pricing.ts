@@ -1,12 +1,12 @@
 import { getPaddle } from "./client";
-import { PLAN_CATALOG } from "./plans";
+import { getProMonthlyPriceId, PLAN_CATALOG } from "./plans";
 import { unstable_cache } from "next/cache";
 import type { CountryCode } from "@paddle/paddle-node-sdk";
 
 export type ProPricing = { currency: string; monthly: number; yearly: number };
 
 async function fetchProPricingFromPaddle(countryCode: string): Promise<ProPricing | null> {
-  const monthlyPriceId = process.env.PADDLE_PRICE_PRO_ID ?? "";
+  const monthlyPriceId = getProMonthlyPriceId();
   const yearlyPriceId = process.env.PADDLE_PRICE_PRO_YEARLY_ID ?? "";
   if (!monthlyPriceId || !yearlyPriceId) return null;
 

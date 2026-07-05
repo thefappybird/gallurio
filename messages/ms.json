@@ -758,6 +758,7 @@
         "renewsOn": "Diperbaharui pada {date}",
         "availablePlans": "Pelan tersedia",
         "perMonth": "/ bulan",
+        "perYear": "/ tahun",
         "upgradeTo": "Naik taraf ke {plan}",
         "upgradeToAriaLabel": "Naik taraf ke pelan {plan}",
         "opening": "Membuka…",
@@ -2301,9 +2302,10 @@
   "plans": {
     "free": {
       "name": "Free",
-      "description": "Mulakan secara percuma",
-      "tagline": "Cuba produk, tiada kad diperlukan.",
+      "description": "Percubaan akses penuh selama 15 hari",
+      "tagline": "Gunakan versi berbayar secara percuma selama 15 hari.",
       "features": {
+        "trial": "15 hari akses penuh Pro",
         "workspace": "1 ruang kerja",
         "bookings": "Sehingga 10 tempahan",
         "storage": "Storan imej 1 GB",
@@ -2323,12 +2325,16 @@
     },
     "pro": {
       "name": "Pro",
-      "description": "Invois + buang penjenamaan.",
-      "tagline": "Invois + buang penjenamaan.",
+      "description": "Urus tempahan, pelanggan, pasukan, invois, dan halaman awam anda.",
+      "tagline": "Ruang kerja penuh untuk bisnes acara yang berkembang.",
       "features": {
         "everythingStarter": "Semua dalam Starter",
+        "unlimitedBookings": "Tempahan tanpa had",
+        "publicPageControls": "Kawalan penuh halaman awam",
         "storage": "Storan 50 GB",
         "invoicePdfs": "PDF invois",
+        "clientManagement": "Pengurusan pelanggan",
+        "teamManagement": "Pengurusan pasukan",
         "removeBranding": "Buang penjenamaan Gallurio"
       }
     }

@@ -19,6 +19,10 @@ export type PlanCatalogEntry = {
   yearlyPriceId?: string;
 };
 
+export function getProMonthlyPriceId() {
+  return process.env.PADDLE_PRICE_PRO_MONTHLY_ID ?? process.env.PADDLE_PRICE_PRO_ID ?? "";
+}
+
 // Pricing is in PHP (display only — Paddle billing uses priceId, not amount).
 // Strings here are i18n keys so the catalog stays language-neutral.
 export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
@@ -30,10 +34,10 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
     descriptionKey: "plans.free.description",
     taglineKey: "plans.free.tagline",
     featureKeys: [
-      "plans.free.features.workspace",
-      "plans.free.features.bookings",
-      "plans.free.features.storage",
-      "plans.free.features.publicPage",
+      "plans.free.features.trial",
+      "plans.pro.features.unlimitedBookings",
+      "plans.pro.features.publicPageControls",
+      "plans.pro.features.invoicePdfs",
     ],
     entitlements: PLAN_ENTITLEMENTS.free,
   },
@@ -46,16 +50,15 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
     descriptionKey: "plans.pro.description",
     taglineKey: "plans.pro.tagline",
     featureKeys: [
-      "plans.starter.features.unlimitedBookings",
-      "plans.starter.features.brandedForm",
-      "plans.starter.features.acceptPayments",
-      "plans.pro.features.storage",
+      "plans.pro.features.unlimitedBookings",
+      "plans.pro.features.publicPageControls",
       "plans.pro.features.invoicePdfs",
-      "plans.pro.features.removeBranding",
+      "plans.pro.features.clientManagement",
+      "plans.pro.features.teamManagement",
     ],
     highlight: true,
     entitlements: PLAN_ENTITLEMENTS.pro,
-    priceId: process.env.PADDLE_PRICE_PRO_ID ?? "",
+    priceId: getProMonthlyPriceId(),
     yearlyPriceId: process.env.PADDLE_PRICE_PRO_YEARLY_ID ?? "",
   },
 ];

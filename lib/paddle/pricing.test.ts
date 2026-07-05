@@ -42,7 +42,8 @@ function previewResponse(currencyCode: string, monthlyTotal: string, yearlyTotal
 beforeEach(() => {
   vi.clearAllMocks();
   mockUnstableCache.mockImplementation((fn: (...args: unknown[]) => unknown) => fn);
-  process.env.PADDLE_PRICE_PRO_ID = "pri_monthly_123";
+  process.env.PADDLE_PRICE_PRO_MONTHLY_ID = "pri_monthly_123";
+  process.env.PADDLE_PRICE_PRO_ID = "";
   process.env.PADDLE_PRICE_PRO_YEARLY_ID = "pri_yearly_456";
 });
 
@@ -102,6 +103,7 @@ describe("getProPricing", () => {
   });
 
   it("falls back without calling the SDK when the env var is empty", async () => {
+    process.env.PADDLE_PRICE_PRO_MONTHLY_ID = "";
     process.env.PADDLE_PRICE_PRO_ID = "";
     process.env.PADDLE_PRICE_PRO_YEARLY_ID = "";
 

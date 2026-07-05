@@ -15,7 +15,7 @@ import {
   type SupportedCountry,
 } from "@/lib/validators/workspace";
 import { workspaceStepAction } from "@/lib/actions/onboarding";
-import { StepShell, StepBackButton } from "../_components/step-shell";
+import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,7 +69,7 @@ export function WorkspaceStepForm({
     handleSubmit,
     setValue,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<WorkspaceSetupInput>({
     resolver: zodResolver(workspaceSetupSchema),
     defaultValues: defaults,
@@ -80,6 +80,11 @@ export function WorkspaceStepForm({
   const timeFormatValue = useWatch({ control, name: "timeFormat" });
 
   async function onSubmit(data: WorkspaceSetupInput) {
+    if (isStepCompleted("workspace", furthestStep) && !isDirty) {
+      startTransition(() => router.push("/onboarding/plan"));
+      return;
+    }
+
     const result = await workspaceStepAction(data);
     if (result?.error) {
       toast.error(errMsg(result.error));
@@ -95,7 +100,7 @@ export function WorkspaceStepForm({
       title={t("title")}
       description={t("description")}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col gap-5">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="slug">
             {tSlug("workspaceUrl")}{" "}
@@ -112,12 +117,14 @@ export function WorkspaceStepForm({
               {...register("slug")}
             />
           </div>
-          <SlugStatusIndicator status={slugStatus} t={tSlug} />
-          {slugValue && (
-            <p className="text-xs text-muted-foreground">
-              {tSlug("slugPreview")} <span className="font-mono">gallurio.com/w/{slugValue}</span>
-            </p>
-          )}
+          <div className="flex justify-between items-center gap-2">
+            <SlugStatusIndicator status={slugStatus} t={tSlug} />
+            {slugValue && (
+              <p className="text-xs text-muted-foreground">
+                {tSlug("slugPreview")} <span className="font-mono">gallurio.com/w/{slugValue}</span>
+              </p>
+            )}
+          </div>
           {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
         </div>
 
@@ -179,7 +186,7 @@ export function WorkspaceStepForm({
           </div>
         </div>
 
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-auto flex items-center justify-between pt-2">
           <div>
             <StepBackButton from="workspace" />
           </div>

@@ -13,7 +13,7 @@ let getPlanCatalog: (
 ) => import("@/lib/paddle/plans").PlanCatalogEntry;
 
 beforeAll(async () => {
-  process.env.PADDLE_PRICE_PRO_ID = PRO_PRICE_ID;
+  process.env.PADDLE_PRICE_PRO_MONTHLY_ID = PRO_PRICE_ID;
   process.env.PADDLE_PRICE_PRO_YEARLY_ID = PRO_YEARLY_PRICE_ID;
 
   const mod = await import("@/lib/paddle/plans");

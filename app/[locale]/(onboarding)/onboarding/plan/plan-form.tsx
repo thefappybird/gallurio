@@ -14,7 +14,7 @@ import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/paddle/plans";
 import type { ProPricing } from "@/lib/paddle/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { useActionError } from "@/lib/i18n/actionError";
-import { StepShell, StepBackButton } from "../_components/step-shell";
+import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
 import { Button } from "@/components/ui/button";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { cn } from "@/lib/utils";
@@ -69,6 +69,13 @@ export function PlanStepForm({
 
   async function submit() {
     setCheckoutError(null);
+    const savedPlan = currentPlan === "pro" ? "pro" : "free";
+    const unchangedSavedSelection = selected === savedPlan && cadence === "monthly";
+
+    if (isStepCompleted("plan", furthestStep) && unchangedSavedSelection) {
+      startTransition(() => router.push("/onboarding/done"));
+      return;
+    }
 
     if (selected === "free") {
       startTransition(async () => {
@@ -159,21 +166,41 @@ export function PlanStepForm({
       title={t("title")}
       description={t("description")}
     >
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-2">
-          <SegmentedToggle
-            value={cadence}
-            onChange={setCadence}
-            ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
-            options={[
-              { key: "monthly", label: t("cadenceToggle.monthly") },
-              { key: "yearly", label: t("cadenceToggle.yearly") },
-            ]}
-          />
-          {cadence === "yearly" && (
-            <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
-              {t("cadenceToggle.savePill")}
-            </span>
+      <div className="flex h-full flex-col gap-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <SegmentedToggle
+              value={cadence}
+              onChange={setCadence}
+              ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+              options={[
+                { key: "monthly", label: t("cadenceToggle.monthly") },
+                { key: "yearly", label: t("cadenceToggle.yearly") },
+              ]}
+            />
+            {cadence === "yearly" && (
+              <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
+                {t("cadenceToggle.savePill")}
+              </span>
+            )}
+          </div>
+
+          {isDev && (
+            <div className="flex items-center gap-2 border border-dashed border-amber-500/40 bg-amber-500/5 px-2 py-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-500">
+                {t("dev.label")}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={devActivate}
+                disabled={busy}
+                className="h-7 px-2 text-xs"
+              >
+                {t("dev.activate", { planName: selectedName })}
+              </Button>
+            </div>
           )}
         </div>
 
@@ -182,6 +209,10 @@ export function PlanStepForm({
             const active = selected === p.id;
             const priceAmount = amountFor(p, cadence);
             const price = formatMoney(priceAmount, proPricing.currency, locale);
+            const yearlyComparePrice =
+              p.id === "pro" && cadence === "yearly"
+                ? formatMoney(proPricing.monthly * 12, proPricing.currency, locale)
+                : null;
             const cadenceLabel =
               p.amount === 0
                 ? t("cadence.forever")
@@ -217,6 +248,11 @@ export function PlanStepForm({
                   )}
                 </div>
                 <div className="flex items-baseline gap-1">
+                  {yearlyComparePrice && (
+                    <span className="text-sm text-muted-foreground line-through">
+                      {yearlyComparePrice}
+                    </span>
+                  )}
                   <span className="font-heading text-2xl font-semibold">{price}</span>
                   <span className="text-xs text-muted-foreground">{cadenceLabel}</span>
                 </div>
@@ -250,7 +286,7 @@ export function PlanStepForm({
           </p>
         )}
 
-        <div className="mt-1 flex items-center justify-between gap-2">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
           <StepBackButton from="plan" />
           <Button onClick={submit} variant="brand" disabled={busy} className="min-w-48">
             {busy ? (
@@ -263,28 +299,6 @@ export function PlanStepForm({
             )}
           </Button>
         </div>
-
-        {isDev && (
-          <div className="mt-2 flex items-center justify-between gap-2 border border-dashed border-amber-500/40 bg-amber-500/5 p-3">
-            <div className="text-xs">
-              <p className="font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-500">
-                {t("dev.label")}
-              </p>
-              <p className="text-muted-foreground">
-                {t("dev.description", { planName: selectedName })}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={devActivate}
-              disabled={busy}
-            >
-              {t("dev.activate", { planName: selectedName })}
-            </Button>
-          </div>
-        )}
       </div>
     </StepShell>
   );

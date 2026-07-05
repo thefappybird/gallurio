@@ -22,6 +22,13 @@ export const STEP_META = [
 
 type StepKey = (typeof STEP_META)[number]["key"];
 
+export function isStepCompleted(step: StepKey, furthestStep: StepKey) {
+  return (
+    STEP_META.findIndex((s) => s.key === furthestStep) >
+    STEP_META.findIndex((s) => s.key === step)
+  );
+}
+
 export function StepShell({
   step,
   furthestStep,
@@ -29,6 +36,8 @@ export function StepShell({
   description,
   headerAddon,
   centerHeader,
+  centerContent,
+  footer,
   children,
 }: {
   step: StepKey;
@@ -40,6 +49,10 @@ export function StepShell({
   headerAddon?: ReactNode;
   /** Centers the title/description/addon block (the done step's celebratory layout). */
   centerHeader?: boolean;
+  /** Centers the title/body group within the panel instead of stretching it like a form. */
+  centerContent?: boolean;
+  /** Optional bottom area that should not move with centered step content. */
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const t = useTranslations("onboarding.shell");
@@ -47,36 +60,46 @@ export function StepShell({
   const furthestIndex = STEP_META.findIndex((s) => s.key === furthestStep);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col gap-4 md:gap-6">
-      <Link href="/" className="flex shrink-0 items-center gap-2 self-start">
-        <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
-        <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
-      </Link>
+    <div className="flex h-full min-h-0 flex-1 items-center justify-center">
+      <div className="flex h-[min(640px,calc(100dvh-8rem))] w-full max-w-3xl flex-col gap-4 border border-border bg-background p-4 sm:p-5 md:p-6">
+        <Link href="/" className="flex shrink-0 scale-150 items-center self-center">
+          <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
+          <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
+        </Link>
 
-      <div className="shrink-0">
-        <ProgressBar activeIndex={activeIndex} furthestIndex={furthestIndex} />
-      </div>
+        <div className="w-full shrink-0">
+          <ProgressBar activeIndex={activeIndex} furthestIndex={furthestIndex} />
+        </div>
 
-      <div className="flex min-h-0 flex-1 flex-col items-center">
         <motion.div
           key={step}
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -16 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="flex w-full max-w-3xl min-h-0 flex-col gap-4 border border-border bg-background p-4 sm:p-6 md:gap-6 md:p-8"
+          className="flex min-h-0 flex-1 flex-col gap-4"
         >
-          <div className={cn("flex shrink-0 flex-col gap-1", centerHeader && "items-center text-center")}>
-            {headerAddon}
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              {t("stepCounter", { current: activeIndex + 1, total: STEP_META.length })}
-            </p>
-            <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
-              {title}
-            </h1>
-            <p className="onboarding-step-description text-sm text-muted-foreground">{description}</p>
+          <div
+            className={cn(
+              "flex min-h-0 flex-col gap-4",
+              centerContent ? "flex-1 justify-center" : "flex-1"
+            )}
+          >
+            <div className={cn("flex shrink-0 flex-col gap-1", centerHeader && "items-center text-center")}>
+              {headerAddon}
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                {t("stepCounter", { current: activeIndex + 1, total: STEP_META.length })}
+              </p>
+              <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
+                {title}
+              </h1>
+              <p className="onboarding-step-description text-sm text-muted-foreground">{description}</p>
+            </div>
+            <div className={cn("flex min-h-0 flex-col", centerContent ? "shrink-0" : "flex-1")}>
+              {children}
+            </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto scrollbar-subtle">{children}</div>
+          {footer && <div className="shrink-0">{footer}</div>}
         </motion.div>
       </div>
     </div>
@@ -131,7 +154,7 @@ function ProgressBar({
               </span>
               <span
                 className={cn(
-                  "onboarding-progress-label text-xs",
+                  "onboarding-progress-label hidden text-xs sm:inline",
                   active && "text-foreground",
                   !active && reachable && "text-foreground/70",
                   locked && "text-muted-foreground"

@@ -689,8 +689,7 @@ html[data-radius="rounded"] {
 }
 
 /* Lean vertical scrollbar — same tokens as .scrollbar-inline-subtle, sized for
- * height instead of width. Used as the onboarding step-shell's internal-scroll
- * fallback (step-shell.tsx). */
+ * height instead of width. */
 .scrollbar-subtle {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
@@ -710,8 +709,7 @@ html[data-radius="rounded"] {
 }
 
 /* Onboarding wizard — short-viewport graceful degradation. The wizard is
- * designed to fit within 100dvh with zero page-level scroll (step-shell.tsx
- * caps height via a min-h-0 chain). On short/landscape windows, hide
+ * designed to avoid nested form scrollbars. On short/landscape windows, hide
  * decorative chrome before functional content, in this priority order:
  * 1) progress-bar step-name labels (keep the bar + numbered dot), 2) the
  * step description paragraph (keep the title). */

@@ -2,14 +2,15 @@
  * Smoke tests for WorkspaceStepForm: country/timezone selects and the
  * 12h/24h time-format toggle.
  */
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { WorkspaceStepForm } from "./workspace-form";
 import type { WorkspaceSetupInput } from "@/lib/validators/workspace";
 
+const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 vi.mock("@/lib/actions/onboarding", () => ({
@@ -30,9 +31,17 @@ const defaults: WorkspaceSetupInput = {
   timeFormat: "24h",
 };
 
-function renderForm(overrides: Partial<WorkspaceSetupInput> = {}) {
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockUseSlugAvailability.mockReturnValue({ status: "idle" });
+});
+
+function renderForm(
+  overrides: Partial<WorkspaceSetupInput> = {},
+  furthestStep: "business" | "workspace" | "plan" | "done" = "workspace"
+) {
   return renderWithProviders(
-    <WorkspaceStepForm defaults={{ ...defaults, ...overrides }} furthestStep="workspace" />
+    <WorkspaceStepForm defaults={{ ...defaults, ...overrides }} furthestStep={furthestStep} />
   );
 }
 
@@ -61,5 +70,17 @@ describe("WorkspaceStepForm", () => {
     renderForm();
 
     expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
+  });
+
+  it("skips saving and continues when a completed step is unchanged", async () => {
+    const { workspaceStepAction } = await import("@/lib/actions/onboarding");
+    renderForm({}, "plan");
+
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    await vi.waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/onboarding/plan");
+    });
+    expect(workspaceStepAction).not.toHaveBeenCalled();
   });
 });

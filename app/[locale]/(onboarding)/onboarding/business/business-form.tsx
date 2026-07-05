@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
 import { businessStepSchema, type BusinessStepInput } from "@/lib/validators/workspace";
 import { businessStepAction } from "@/lib/actions/onboarding";
-import { StepShell, StepBackButton } from "../_components/step-shell";
+import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +44,7 @@ export function BusinessStepForm({
     handleSubmit,
     setValue,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<BusinessStepInput>({
     resolver: zodResolver(businessStepSchema),
     defaultValues: defaults,
@@ -53,6 +53,11 @@ export function BusinessStepForm({
   const businessTypeValue = useWatch({ control, name: "businessType" });
 
   async function onSubmit(data: BusinessStepInput) {
+    if (isStepCompleted("business", furthestStep) && !isDirty) {
+      startTransition(() => router.push("/onboarding/workspace"));
+      return;
+    }
+
     const result = await businessStepAction(data);
     if (result?.error) {
       toast.error(errMsg(result.error));
@@ -78,7 +83,7 @@ export function BusinessStepForm({
       title={t("title")}
       description={t("description")}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col gap-5">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="firstName">{t("firstName")}</Label>
@@ -141,7 +146,7 @@ export function BusinessStepForm({
           )}
         </div>
 
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-auto flex items-center justify-between pt-2">
           <div>
             <StepBackButton from="business" />
           </div>

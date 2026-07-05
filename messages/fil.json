@@ -758,6 +758,7 @@
         "renewsOn": "Magre-renew sa {date}",
         "availablePlans": "Mga available na plano",
         "perMonth": "/ buwan",
+        "perYear": "/ taon",
         "upgradeTo": "I-upgrade sa {plan}",
         "upgradeToAriaLabel": "I-upgrade sa planong {plan}",
         "opening": "Binubuksan…",
@@ -2301,9 +2302,10 @@
   "plans": {
     "free": {
       "name": "Free",
-      "description": "Magsimula nang libre",
-      "tagline": "Subukan ang produkto, hindi kailangan ng card.",
+      "description": "15-araw na trial na may buong access",
+      "tagline": "Gamitin ang paid version nang libre sa loob ng 15 araw.",
       "features": {
+        "trial": "15 araw ng buong Pro access",
         "workspace": "1 workspace",
         "bookings": "Hanggang 10 booking",
         "storage": "1 GB image storage",
@@ -2323,12 +2325,16 @@
     },
     "pro": {
       "name": "Pro",
-      "description": "Mga invoice + alisin ang branding.",
-      "tagline": "Mga invoice + alisin ang branding.",
+      "description": "Pamahalaan ang bookings, clients, teams, invoices, at public page.",
+      "tagline": "Buong workspace para sa lumalaking event businesses.",
       "features": {
         "everythingStarter": "Lahat ng nasa Starter",
+        "unlimitedBookings": "Walang limitasyon na booking",
+        "publicPageControls": "Buong kontrol sa public page",
         "storage": "50 GB storage",
         "invoicePdfs": "Mga invoice PDF",
+        "clientManagement": "Pamamahala ng clients",
+        "teamManagement": "Pamamahala ng teams",
         "removeBranding": "Alisin ang branding ng Gallurio"
       }
     }

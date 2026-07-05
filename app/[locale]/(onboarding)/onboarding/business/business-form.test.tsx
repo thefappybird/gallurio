@@ -2,7 +2,7 @@
  * Smoke tests for BusinessStepForm: icon-grid business-type picker and the
  * live slug URL preview.
  */
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BusinessStepForm } from "./business-form";
@@ -24,9 +24,16 @@ const defaults: BusinessStepInput = {
   businessType: "photographer",
 };
 
-function renderForm(overrides: Partial<BusinessStepInput> = {}) {
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+function renderForm(
+  overrides: Partial<BusinessStepInput> = {},
+  furthestStep: "business" | "workspace" | "plan" | "done" = "business"
+) {
   return renderWithProviders(
-    <BusinessStepForm defaults={{ ...defaults, ...overrides }} furthestStep="business" />
+    <BusinessStepForm defaults={{ ...defaults, ...overrides }} furthestStep={furthestStep} />
   );
 }
 
@@ -57,12 +64,26 @@ describe("BusinessStepForm — business type icon grid", () => {
 
 describe("BusinessStepForm — submit navigation", () => {
   it("navigates to /onboarding/workspace after a successful submit", async () => {
+    const { businessStepAction } = await import("@/lib/actions/onboarding");
     renderForm();
+
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    await vi.waitFor(() => {
+      expect(businessStepAction).toHaveBeenCalledOnce();
+      expect(mockPush).toHaveBeenCalledWith("/onboarding/workspace");
+    });
+  });
+
+  it("skips saving and continues when a completed step is unchanged", async () => {
+    const { businessStepAction } = await import("@/lib/actions/onboarding");
+    renderForm({}, "workspace");
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
     await vi.waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/onboarding/workspace");
     });
+    expect(businessStepAction).not.toHaveBeenCalled();
   });
 });

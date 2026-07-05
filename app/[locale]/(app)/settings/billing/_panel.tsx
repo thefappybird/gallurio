@@ -205,6 +205,11 @@ export function BillingPanel({
             {PLAN_CATALOG.filter((p) => p.id !== "free" && p.id !== currentPlan).map(
               (entry) => {
                 const busy = loadingPlan === entry.id;
+                const monthlyPrice = entry.id === "pro" ? proPricing.monthly : entry.amount;
+                const yearlyPrice =
+                  entry.id === "pro" ? proPricing.yearly : entry.yearlyAmount ?? entry.amount * 12;
+                const yearlyComparePrice = monthlyPrice * 12;
+                const currency = entry.id === "pro" ? proPricing.currency : entry.currency;
                 return (
                   <div
                     key={entry.id}
@@ -212,14 +217,21 @@ export function BillingPanel({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium">{tPlans(`${entry.id}.name`)}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatMoney(
-                          entry.id === "pro" ? proPricing.monthly : entry.amount,
-                          entry.id === "pro" ? proPricing.currency : entry.currency,
-                          locale
-                        )}{" "}
-                        <span className="text-muted-foreground">{t("perMonth")}</span>
-                      </span>
+                      <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                        <span>
+                          {formatMoney(monthlyPrice, currency, locale)}{" "}
+                          <span>{t("perMonth")}</span>
+                        </span>
+                        <span>
+                          <span className="line-through">
+                            {formatMoney(yearlyComparePrice, currency, locale)}
+                          </span>{" "}
+                          <span className="font-medium text-foreground">
+                            {formatMoney(yearlyPrice, currency, locale)}
+                          </span>{" "}
+                          <span>{t("perYear")}</span>
+                        </span>
+                      </div>
                     </div>
                     <Button
                       size="sm"
