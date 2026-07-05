@@ -546,6 +546,16 @@
         "pastHidden": "{count, plural, one {# sesi lepas disembunyikan} other {# sesi lepas disembunyikan}} — togol untuk tunjuk",
         "unsaved": "Belum disimpan"
       },
+      "payments": {
+        "label": "Bayaran {n}",
+        "add": "Tambah bayaran",
+        "remove": "Buang bayaran",
+        "reviewLabel": "Bayaran",
+        "price": "Harga",
+        "status": "Status",
+        "paid": "Dibayar",
+        "unpaid": "Belum dibayar"
+      },
       "wizard": {
         "createTitle": "Tempahan baru",
         "editTitle": "Edit tempahan",
@@ -579,6 +589,7 @@
           "event": "Acara",
           "pricing": "Harga",
           "eventPricing": "Acara & Harga",
+          "payments": "Bayaran",
           "sessionsLocation": "Sesi",
           "review": "Semak"
         },

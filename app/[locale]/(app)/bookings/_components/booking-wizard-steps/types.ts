@@ -25,6 +25,9 @@ export type WizardSession = {
   allowPastDate: boolean;
 };
 
+export type WizardPaymentStatus = "unpaid" | "paid";
+export type WizardPayment = { price: number; status: WizardPaymentStatus };
+
 export type WizardValues = {
   client: WizardClient;
   title: string;
@@ -33,6 +36,7 @@ export type WizardValues = {
   sessions: WizardSession[];
   location: { address: string; lat: number | null; lng: number | null };
   amount: { total: number; deposit: number; currency: SupportedCurrency };
+  payments: WizardPayment[];
   notes: string;
   teamId?: string;
 };

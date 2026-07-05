@@ -546,6 +546,16 @@
         "pastHidden": "{count, plural, one {# past session hidden} other {# past sessions hidden}} — toggle to show",
         "unsaved": "Unsaved"
       },
+      "payments": {
+        "label": "Payment {n}",
+        "add": "Add payment",
+        "remove": "Remove payment",
+        "reviewLabel": "Payments",
+        "price": "Price",
+        "status": "Status",
+        "paid": "Paid",
+        "unpaid": "Unpaid"
+      },
       "wizard": {
         "createTitle": "New booking",
         "editTitle": "Edit booking",
@@ -579,6 +589,7 @@
           "event": "Event",
           "pricing": "Pricing",
           "eventPricing": "Event & Pricing",
+          "payments": "Payments",
           "sessionsLocation": "Sessions",
           "review": "Review"
         },

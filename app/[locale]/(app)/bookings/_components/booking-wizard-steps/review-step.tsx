@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { cn } from "@/lib/utils";
 import type { WizardValues, WizardSession } from "./types";
 
 type Props = {
@@ -17,6 +18,7 @@ export function ReviewStep({ values, locale, teams }: Props) {
   const tWiz = useTranslations("app.bookings.wizard");
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
+  const tPayments = useTranslations("app.bookings.payments");
 
   const clientLabel =
     values.client.mode === "existing"
@@ -74,6 +76,38 @@ export function ReviewStep({ values, locale, teams }: Props) {
           ))}
         </ul>
       </div>
+
+      {/* Payments list */}
+      {(values.payments ?? []).length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {tPayments("reviewLabel")}
+          </p>
+          <ul className="flex flex-col gap-1.5">
+            {values.payments.map((p, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between gap-2 border border-border px-3 py-2 text-sm"
+              >
+                <span className="font-medium">{tPayments("label", { n: i + 1 })}</span>
+                <span className="flex items-center gap-2">
+                  <span>{formatMoney(p.price, values.amount.currency, locale)}</span>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 text-xs",
+                      p.status === "paid"
+                        ? "bg-brand/10 text-brand"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {tPayments(p.status)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

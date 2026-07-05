@@ -546,6 +546,16 @@
         "pastHidden": "{count, plural, one {# sesi lampau disembunyikan} other {# sesi lampau disembunyikan}} — toggle untuk tampilkan",
         "unsaved": "Belum disimpan"
       },
+      "payments": {
+        "label": "Pembayaran {n}",
+        "add": "Tambah pembayaran",
+        "remove": "Hapus pembayaran",
+        "reviewLabel": "Pembayaran",
+        "price": "Harga",
+        "status": "Status",
+        "paid": "Dibayar",
+        "unpaid": "Belum dibayar"
+      },
       "wizard": {
         "createTitle": "Pemesanan baru",
         "editTitle": "Edit pemesanan",
@@ -579,6 +589,7 @@
           "event": "Acara",
           "pricing": "Harga",
           "eventPricing": "Acara & Harga",
+          "payments": "Pembayaran",
           "sessionsLocation": "Sesi",
           "review": "Tinjau"
         },

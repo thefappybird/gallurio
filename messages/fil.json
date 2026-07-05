@@ -546,6 +546,16 @@
         "pastHidden": "{count, plural, one {# nakaraang sesyon ang nakatago} other {# nakaraang sesyon ang nakatago}} — i-toggle para ipakita",
         "unsaved": "Hindi pa nai-save"
       },
+      "payments": {
+        "label": "Bayad {n}",
+        "add": "Magdagdag ng bayad",
+        "remove": "Alisin ang bayad",
+        "reviewLabel": "Mga bayad",
+        "price": "Presyo",
+        "status": "Katayuan",
+        "paid": "Nabayaran",
+        "unpaid": "Hindi pa bayad"
+      },
       "wizard": {
         "createTitle": "Bagong booking",
         "editTitle": "I-edit ang booking",
@@ -579,6 +589,7 @@
           "event": "Event",
           "pricing": "Presyo",
           "eventPricing": "Event at Presyo",
+          "payments": "Mga Bayad",
           "sessionsLocation": "Mga Sesyon",
           "review": "Suriin"
         },
