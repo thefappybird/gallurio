@@ -1983,8 +1983,9 @@
         "storyPrompt": {
           "welcome": {
             "title": "Mari kongsi kisah anda",
-            "subtitle": "Empat langkah pantas untuk menerangkan kerja anda dan memilih gaya anda — kemudian kami akan bantu anda bina halaman tersebut.",
-            "cta": "Mari mula"
+            "subtitle": "Lima langkah pantas untuk menerangkan kerja anda dan memilih gaya anda — kemudian kami akan bantu anda bina halaman tersebut.",
+            "cta": "Mari mula",
+            "skip": "Langkau buat masa ini"
           },
           "story": {
             "title": "Kongsikan kisah anda",
@@ -1997,6 +1998,34 @@
             "title": "Gaya anda",
             "subtitle": "Pilih beberapa tag yang menggambarkan gaya anda — atau tambah tag sendiri.",
             "addPlaceholder": "Tambah tag"
+          },
+          "branding": {
+            "title": "Tambah penjenamaan anda",
+            "subtitle": "Muat naik logo dan ikon laman — anda boleh menukarnya bila-bila masa.",
+            "logoLabel": "Logo",
+            "logoUpload": "Muat naik logo",
+            "logoUploading": "Memuat naik…",
+            "logoRemove": "Alih keluar logo",
+            "logoRequirements": "PNG, JPEG atau WEBP · maks 250 KB · sehingga 512×256",
+            "logoErrors": {
+              "type": "Logo mesti imej PNG, JPEG, atau WEBP.",
+              "size": "Logo mesti 250 KB atau lebih kecil.",
+              "dimensions": "Logo mesti 512 x 256 px atau lebih kecil.",
+              "image": "Imej logo ini tidak dapat dibaca.",
+              "upload": "Muat naik logo gagal. Sila cuba lagi."
+            },
+            "iconLabel": "Ikon laman",
+            "iconUpload": "Pilih imej",
+            "iconUploading": "Memuat naik…",
+            "iconRemove": "Alih keluar",
+            "iconRequirements": "PNG, JPEG, WebP atau AVIF · maks 1 MB · sehingga 512 × 512 px",
+            "iconErrors": {
+              "type": "Hanya fail PNG, JPEG, WebP atau AVIF diterima.",
+              "size": "Ikon mesti 1 MB atau lebih kecil.",
+              "dimensions": "Ikon mesti 512 x 512 px atau lebih kecil.",
+              "image": "Imej ikon ini tidak dapat dibaca.",
+              "upload": "Muat naik ikon gagal. Sila cuba lagi."
+            }
           },
           "done": {
             "title": "Halaman anda sedia untuk bersinar",

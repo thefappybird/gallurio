@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTranslations } from "next-intl";
-import { Plus, Check } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Plus, Check, Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -14,9 +16,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { resolveScheme } from "@/lib/theme/themes";
+import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { completeStoryPromptAction } from "../_actions";
 
 const MAX_DESCRIPTION = 300;
+
+const LOGO_MAX_BYTES = 250 * 1024;
+const LOGO_MAX_WIDTH = 512;
+const LOGO_MAX_HEIGHT = 256;
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
+const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
+const SITE_ICON_MAX_DIM = 512;
 
 function slugify(name: string) {
   return (
@@ -41,12 +54,81 @@ const SUGGESTED_TAGS: Record<string, string[]> = {
   other: ["Creative", "Modern", "Classic", "Bold", "Minimal", "Elegant"],
 };
 
+type SerpScheme = "light" | "dark";
+
+function useForcedInverseScheme(): SerpScheme {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    Promise.resolve().then(() => setMounted(true));
+  }, []);
+  if (!mounted) return "dark";
+  return resolveScheme(resolvedTheme) === "dark" ? "light" : "dark";
+}
+
+const SERP_COLORS: Record<
+  SerpScheme,
+  {
+    bg: string;
+    faviconBg: string;
+    faviconRing: string;
+    domain: string;
+    breadcrumb: string;
+    title: string;
+    description: string;
+  }
+> = {
+  light: {
+    bg: "#ffffff",
+    faviconBg: "#f1f3f4",
+    faviconRing: "#dfe1e5",
+    domain: "#202124",
+    breadcrumb: "#006621",
+    title: "#1a0dab",
+    description: "#4d5156",
+  },
+  dark: {
+    bg: "#202124",
+    faviconBg: "#303134",
+    faviconRing: "#5f6368",
+    domain: "#e8eaed",
+    breadcrumb: "#81c995",
+    title: "#8ab4f8",
+    description: "#bdc1c6",
+  },
+};
+
 function SearchPreview({ slug, title, description }: { slug: string; title: string; description: string }) {
+  const t = useTranslations("app.pageBuilder.editor.storyPrompt");
+  const scheme = useForcedInverseScheme();
+  const c = SERP_COLORS[scheme];
   return (
-    <div className="flex flex-col gap-1.5 border border-border p-3">
-      <p className="truncate text-[13px] text-muted-foreground">gallurio.com › w › {slug}</p>
-      <p className="truncate text-base text-primary">{title}</p>
-      <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p>
+    <div className="flex flex-col gap-1.5">
+      <p className="text-xs text-muted-foreground">{t("story.previewLabel")}</p>
+      <div style={{ backgroundColor: c.bg }} className="flex flex-col gap-1.5 rounded-lg p-3">
+        <div className="flex items-center gap-2">
+          <span
+            style={{ backgroundColor: c.faviconBg, borderColor: c.faviconRing }}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold"
+          >
+            {title.charAt(0).toUpperCase()}
+          </span>
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span style={{ color: c.domain }} className="truncate text-xs font-medium">
+              {title}
+            </span>
+            <span style={{ color: c.breadcrumb }} className="truncate text-xs">
+              gallurio.com › w › {slug}
+            </span>
+          </div>
+        </div>
+        <p style={{ color: c.title, fontFamily: "Georgia, serif" }} className="truncate text-lg">
+          {title}
+        </p>
+        <p style={{ color: c.description }} className="line-clamp-2 text-sm">
+          {description}
+        </p>
+      </div>
     </div>
   );
 }
@@ -54,10 +136,33 @@ function SearchPreview({ slug, title, description }: { slug: string; title: stri
 function StepDots({ step }: { step: number }) {
   return (
     <div className="flex items-center justify-center gap-1.5">
-      {[0, 1, 2, 3].map((i) => (
+      {[0, 1, 2, 3, 4].map((i) => (
         <span
           key={i}
           className={cn("h-1.5 w-1.5 rounded-full transition-colors", i <= step ? "bg-primary" : "bg-muted")}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StepSparkleScatter({ density }: { density: "sparse" | "dense" }) {
+  const dots =
+    density === "dense"
+      ? [
+          { top: "8%", left: "12%", size: 10 },
+          { top: "18%", left: "82%", size: 14 },
+          { top: "70%", left: "8%", size: 8 },
+          { top: "76%", left: "88%", size: 12 },
+        ]
+      : [{ top: "10%", left: "85%", size: 10 }];
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {dots.map((d, i) => (
+        <Sparkles
+          key={i}
+          className="absolute text-brand/40"
+          style={{ top: d.top, left: d.left, width: d.size, height: d.size }}
         />
       ))}
     </div>
@@ -89,11 +194,20 @@ export function StoryPromptDialog({
 }) {
   const t = useTranslations("app.pageBuilder.editor.storyPrompt");
   const tEditor = useTranslations("app.pageBuilder.editor");
-  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
   const [description, setDescription] = useState(initialDescription);
   const [keywords, setKeywords] = useState<string[]>(initialKeywords);
   const [tagInput, setTagInput] = useState("");
   const [savingAction, setSavingAction] = useState<"guide" | "explore" | null>(null);
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoAssetId, setLogoAssetId] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [iconUrl, setIconUrl] = useState("");
+  const [iconAssetId, setIconAssetId] = useState("");
+  const [iconUploading, setIconUploading] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   const suggestedTags = SUGGESTED_TAGS[businessType] ?? SUGGESTED_TAGS.other;
   const displayTags = Array.from(new Set([...suggestedTags, ...keywords]));
@@ -113,10 +227,83 @@ export function StoryPromptDialog({
     setTagInput("");
   }
 
+  async function uploadLogo(file: File) {
+    setLogoUploading(true);
+    setLogoError(null);
+    try {
+      const result = await uploadAsset(
+        file,
+        { acceptedTypes: LOGO_TYPES, maxBytes: LOGO_MAX_BYTES, maxWidth: LOGO_MAX_WIDTH, maxHeight: LOGO_MAX_HEIGHT },
+        { subfolder: "portfolio_header" },
+      );
+      if ("error" in result) {
+        const key = {
+          type_not_accepted: "type",
+          file_too_large: "size",
+          dimensions_too_large: "dimensions",
+          invalid_image: "image",
+        }[result.error];
+        setLogoError(t(`branding.logoErrors.${key}` as Parameters<typeof t>[0]));
+        return;
+      }
+      setLogoUrl(result.asset.url);
+      setLogoAssetId(result.asset.assetId);
+    } catch {
+      setLogoError(t("branding.logoErrors.upload"));
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+  function removeLogo() {
+    setLogoUrl("");
+    setLogoAssetId("");
+    setLogoError(null);
+  }
+
+  async function uploadIcon(file: File) {
+    setIconUploading(true);
+    setIconError(null);
+    try {
+      const result = await uploadAsset(
+        file,
+        { acceptedTypes: SITE_ICON_TYPES, maxBytes: SITE_ICON_MAX_BYTES, maxWidth: SITE_ICON_MAX_DIM, maxHeight: SITE_ICON_MAX_DIM },
+        { subfolder: "site_icon" },
+      );
+      if ("error" in result) {
+        const key = {
+          type_not_accepted: "type",
+          file_too_large: "size",
+          dimensions_too_large: "dimensions",
+          invalid_image: "image",
+        }[result.error];
+        setIconError(t(`branding.iconErrors.${key}` as Parameters<typeof t>[0]));
+        return;
+      }
+      setIconUrl(result.asset.url);
+      setIconAssetId(result.asset.assetId);
+    } catch {
+      setIconError(t("branding.iconErrors.upload"));
+    } finally {
+      setIconUploading(false);
+    }
+  }
+  function removeIcon() {
+    setIconUrl("");
+    setIconAssetId("");
+    setIconError(null);
+  }
+
   async function handleExit(kind: "guide" | "explore") {
     setSavingAction(kind);
     try {
-      const res = await completeStoryPromptAction({ description, keywords });
+      const res = await completeStoryPromptAction({
+        description,
+        keywords,
+        logoUrl,
+        logoAssetId,
+        siteIconUrl: iconUrl,
+        siteIconAssetId: iconAssetId,
+      });
       if ("error" in res) {
         toast.error(tEditor("errorToast"));
         return;
@@ -141,8 +328,8 @@ export function StoryPromptDialog({
       <DialogContent className="sm:max-w-lg" showCloseButton={false}>
         <StepDots step={step} />
 
-        <div className="overflow-hidden">
-          <AnimatePresence initial={false}>
+        <motion.div layout transition={{ duration: 0.25, ease: "easeInOut" }} className="overflow-hidden">
+          <AnimatePresence initial={false} mode="popLayout">
             {step === 0 && (
               <motion.div
                 key="0"
@@ -151,12 +338,25 @@ export function StoryPromptDialog({
                 animate="animate"
                 exit="exit"
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="flex flex-col items-center gap-4 py-6 text-center"
+                className="relative flex flex-col items-center gap-4 py-6 text-center"
               >
+                <StepSparkleScatter density="dense" />
+                <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
                 <DialogTitle className="text-xl">{t("welcome.title")}</DialogTitle>
                 <DialogDescription className="max-w-sm">{t("welcome.subtitle")}</DialogDescription>
                 <Button type="button" onClick={() => setStep(1)} className="mt-2">
                   {t("welcome.cta")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  loading={savingAction === "explore"}
+                  disabled={busy && savingAction !== "explore"}
+                  onClick={() => void handleExit("explore")}
+                  className="text-muted-foreground"
+                >
+                  {t("welcome.skip")}
                 </Button>
               </motion.div>
             )}
@@ -280,8 +480,118 @@ export function StoryPromptDialog({
                 animate="animate"
                 exit="exit"
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="flex flex-col items-center gap-4 py-4 text-center"
+                className="flex flex-col gap-4"
               >
+                <div className="flex flex-col gap-1">
+                  <DialogTitle className="text-lg">{t("branding.title")}</DialogTitle>
+                  <DialogDescription>{t("branding.subtitle")}</DialogDescription>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs text-muted-foreground">{t("branding.logoLabel")}</p>
+                  {logoUrl ? (
+                    <div className="flex flex-col gap-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={logoUrl} alt="" className="h-12 w-auto max-w-full border border-border object-contain" />
+                      <button
+                        type="button"
+                        onClick={removeLogo}
+                        className="text-xs text-muted-foreground underline hover:text-foreground"
+                      >
+                        {t("branding.logoRemove")}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={logoUploading}
+                      onClick={() => logoFileInputRef.current?.click()}
+                      className="inline-flex min-h-24 flex-col items-center justify-center gap-2 border border-dashed border-border bg-background px-3 text-center text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60"
+                    >
+                      <Upload className="size-3.5" aria-hidden />
+                      <span>{logoUploading ? t("branding.logoUploading") : t("branding.logoUpload")}</span>
+                      <span>{t("branding.logoRequirements")}</span>
+                    </button>
+                  )}
+                  {logoError ? (
+                    <p role="alert" className="text-xs text-destructive">
+                      {logoError}
+                    </p>
+                  ) : null}
+                  <input
+                    ref={logoFileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void uploadLogo(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs text-muted-foreground">{t("branding.iconLabel")}</p>
+                  {iconUrl ? (
+                    <div className="flex items-center gap-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={iconUrl} alt="" className="h-12 w-12 border border-border object-contain" />
+                      <button
+                        type="button"
+                        onClick={removeIcon}
+                        className="text-xs text-muted-foreground underline hover:text-foreground"
+                      >
+                        {t("branding.iconRemove")}
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="story-prompt-icon-file"
+                      className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-border bg-background px-3 text-center text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      <Upload className="size-3.5" aria-hidden />
+                      <span>{iconUploading ? t("branding.iconUploading") : t("branding.iconUpload")}</span>
+                      <span>{t("branding.iconRequirements")}</span>
+                    </label>
+                  )}
+                  {iconError ? (
+                    <p role="alert" className="text-xs text-destructive">
+                      {iconError}
+                    </p>
+                  ) : null}
+                  <input
+                    id="story-prompt-icon-file"
+                    type="file"
+                    accept={SITE_ICON_TYPES.join(",")}
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void uploadIcon(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between gap-2">
+                  <Button type="button" variant="outline" onClick={() => setStep(2)}>
+                    {t("back")}
+                  </Button>
+                  <Button type="button" onClick={() => setStep(4)}>
+                    {t("continue")}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 4 && (
+              <motion.div
+                key="4"
+                variants={stepVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="relative flex flex-col items-center gap-4 py-4 text-center"
+              >
+                <StepSparkleScatter density="dense" />
                 <DialogTitle className="text-xl">{t("done.title")}</DialogTitle>
                 <DialogDescription className="max-w-sm">{t("done.subtitle")}</DialogDescription>
                 <div className="flex w-full max-w-xs flex-col gap-2">
@@ -307,7 +617,7 @@ export function StoryPromptDialog({
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );
