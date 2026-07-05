@@ -19,6 +19,16 @@ const sessionSchema = new Schema(
   { _id: false }
 );
 
+const paymentSchema = new Schema(
+  {
+    price: { type: Number, required: true, min: 0 },
+    status: { type: String, enum: ["unpaid", "paid"], required: true, default: "unpaid" },
+    createdAt: { type: Date, required: true },
+    paidAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const bookingSchema = new Schema(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", required: true, index: true },
@@ -60,6 +70,8 @@ const bookingSchema = new Schema(
       deposit: { type: Number, default: 0 },
       currency: { type: String, default: "PHP" },
     },
+    payments: { type: [paymentSchema], default: [] },
+    invoiceNumber: { type: String, default: null },
     staffIds: { type: [Schema.Types.ObjectId], default: [] },
     notes: { type: String, default: "" },
     customFields: { type: Schema.Types.Mixed, default: {} },

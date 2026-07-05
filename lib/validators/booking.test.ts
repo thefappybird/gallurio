@@ -5,6 +5,7 @@ import {
   bookingImportRowSchema,
   bookingSessionSchema,
   bookingClientSchema,
+  bookingPaymentSchema,
   BOOKING_STATUSES,
   EDITABLE_KEYS,
 } from "./booking";
@@ -59,6 +60,34 @@ describe("bookingClientSchema (new-client phone shares client.ts E.164 rule)", (
     if (result.success && result.data.mode === "new") {
       expect(result.data.phone).toBeNull();
     }
+  });
+});
+
+describe("bookingPaymentSchema", () => {
+  it("accepts a minimal unpaid payment", () => {
+    expect(bookingPaymentSchema.safeParse({ price: 100, status: "unpaid" }).success).toBe(true);
+  });
+
+  it("parses createdAt into a Date and passes through a null paidAt", () => {
+    const result = bookingPaymentSchema.safeParse({
+      price: 100,
+      status: "paid",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      paidAt: null,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.createdAt).toBeInstanceOf(Date);
+      expect(result.data.paidAt).toBeNull();
+    }
+  });
+
+  it("rejects a negative price", () => {
+    expect(bookingPaymentSchema.safeParse({ price: -1, status: "unpaid" }).success).toBe(false);
+  });
+
+  it("rejects a status outside unpaid/paid", () => {
+    expect(bookingPaymentSchema.safeParse({ price: 1, status: "refunded" }).success).toBe(false);
   });
 });
 
@@ -206,6 +235,12 @@ describe("bookingCreateSchema", () => {
     });
     expect(bad.success).toBe(false);
   });
+
+  it("defaults payments to an empty array when omitted", () => {
+    const result = bookingCreateSchema.safeParse(validCreate);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.payments).toEqual([]);
+  });
 });
 
 describe("bookingPatchSchema", () => {
@@ -247,6 +282,13 @@ describe("bookingPatchSchema", () => {
   it("rejects status outside the allowed enum", () => {
     const bad = bookingPatchSchema.safeParse({ status: "ghosted" });
     expect(bad.success).toBe(false);
+  });
+
+  it("accepts a payments array patch", () => {
+    const ok = bookingPatchSchema.safeParse({
+      payments: [{ price: 100, status: "unpaid" }],
+    });
+    expect(ok.success).toBe(true);
   });
 
   it("accepts a teamId reassignment (valid ObjectId)", () => {

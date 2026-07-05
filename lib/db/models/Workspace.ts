@@ -234,6 +234,11 @@ const workspaceSchema = new Schema(
         keywords: { type: [String], default: [] },
       },
     },
+    invoiceTheme: {
+      preset: { type: String, enum: ["classic", "slate", "navyGold", "forest", "custom"], default: "classic" },
+      main: { type: String, default: "#1A1A1A" },
+      accent: { type: String, default: "#FFFFFF" },
+    },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
 
     // Paddle subscription — Gallurio billing the tenant (Merchant of Record).

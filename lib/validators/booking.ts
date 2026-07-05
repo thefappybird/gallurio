@@ -9,6 +9,8 @@ export const BOOKING_STATUSES = [
 ] as const;
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
+export const BOOKING_PAYMENT_STATUSES = ["unpaid", "paid"] as const;
+
 export const EVENT_TYPES = [
   "wedding",
   "corporate",
@@ -27,6 +29,13 @@ const isoDate = z.preprocess(
 const nonNegMoney = z.number().nonnegative("Must be 0 or more");
 export const DEPOSIT_REQUIRES_TOTAL_MESSAGE = "Cannot add a deposit without setting a price";
 const DEPOSIT_EXCEEDS_TOTAL_MESSAGE = "Deposit cannot exceed total";
+
+export const bookingPaymentSchema = z.object({
+  price: nonNegMoney,
+  status: z.enum(BOOKING_PAYMENT_STATUSES),
+  createdAt: isoDate.optional(),
+  paidAt: isoDate.nullable().optional(),
+});
 
 const clientExistingBlock = z.object({
   mode: z.literal("existing"),
@@ -110,6 +119,7 @@ export const bookingCreateSchema = z.object({
       message: DEPOSIT_REQUIRES_TOTAL_MESSAGE,
       path: ["deposit"],
     }),
+  payments: z.array(bookingPaymentSchema).default([]),
   notes: z.string().max(2000).trim().default(""),
 });
 export type BookingCreateInput = z.infer<typeof bookingCreateSchema>;
@@ -125,6 +135,7 @@ export const EDITABLE_KEYS = [
   "amount.total",
   "amount.deposit",
   "amount.currency",
+  "payments",
   "notes",
   "clientName",
   "clientId",
@@ -147,6 +158,7 @@ export const bookingPatchSchema = z
     "amount.total": nonNegMoney.optional(),
     "amount.deposit": nonNegMoney.optional(),
     "amount.currency": z.enum(SUPPORTED_CURRENCIES).optional(),
+    payments: z.array(bookingPaymentSchema).optional(),
     notes: z.string().max(2000).trim().optional(),
     clientName: z.string().min(1).max(120).trim().optional(),
     clientId: objectIdString.optional(),

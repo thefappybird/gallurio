@@ -77,3 +77,16 @@ it("new workspace has formDir defaulting to empty string", async () => {
   });
   expect(ws.publicPage?.formDir).toBe("");
 });
+
+describe("Workspace.invoiceTheme defaults", () => {
+  it("new workspace has invoiceTheme defaulting to the classic preset", async () => {
+    const ws = await Workspace.create({
+      slug: "invoice-theme-studio",
+      name: "Invoice Theme Studio",
+      ownerUserId: "user_invoice_1",
+    });
+    expect(ws.invoiceTheme?.preset).toBe("classic");
+    expect(ws.invoiceTheme?.main).toBe("#1A1A1A");
+    expect(ws.invoiceTheme?.accent).toBe("#FFFFFF");
+  });
+});
