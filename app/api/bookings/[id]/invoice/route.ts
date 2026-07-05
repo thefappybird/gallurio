@@ -5,6 +5,9 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client } from "@/lib/db/models";
 import { InvoiceDocument, type InvoiceData } from "@/lib/invoices/InvoiceDocument";
+import { buildPdfFilename } from "@/lib/invoices/filename";
+import { getNextInvoiceSeq, formatInvoiceNumber } from "@/lib/invoices/counter";
+import { resolveInvoiceTheme } from "@/lib/invoices/theme";
 
 export const runtime = "nodejs";
 
@@ -27,7 +30,7 @@ export async function GET(_req: Request, { params }: Params) {
   if (!booking) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
-  if (booking.status !== "completed") {
+  if (booking.payments.length === 0) {
     return NextResponse.json({ error: "invoice_not_available" }, { status: 400 });
   }
 
@@ -38,7 +41,12 @@ export async function GET(_req: Request, { params }: Params) {
     : null;
 
   const workspace = ctx.workspace;
-  const invoiceNumber = `INV-${booking._id.toString().slice(-8).toUpperCase()}`;
+  let invoiceNumber = booking.invoiceNumber;
+  if (!invoiceNumber) {
+    const seq = await getNextInvoiceSeq(ctx.workspace._id);
+    invoiceNumber = formatInvoiceNumber(seq);
+    await Booking.updateOne({ _id: booking._id }, { $set: { invoiceNumber } });
+  }
 
   const data: InvoiceData = {
     invoiceNumber,
@@ -48,7 +56,7 @@ export async function GET(_req: Request, { params }: Params) {
       logoUrl: workspace.logoUrl ?? "",
       address: workspace.contact?.address ?? "",
       email: workspace.contact?.email ?? "",
-      accentColor: workspace.publicPage?.brandKit?.accentColor ?? "#2f5d56",
+      theme: resolveInvoiceTheme(workspace.invoiceTheme),
     },
     client: {
       name: client?.name ?? booking.clientName,
@@ -72,10 +80,16 @@ export async function GET(_req: Request, { params }: Params) {
 
   const buffer = await renderToBuffer(InvoiceDocument({ data }));
 
+  const filename = buildPdfFilename({
+    business: workspace.name,
+    customer: client?.name ?? booking.clientName,
+    kind: "invoice",
+  });
+
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="invoice-${booking._id}.pdf"`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
 }
