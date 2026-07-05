@@ -7,7 +7,10 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
 }));
-const updateOneMock = vi.fn(async () => ({ acknowledged: true }));
+const updateOneMock = vi.fn(async (...args: unknown[]) => {
+  void args;
+  return { acknowledged: true };
+});
 vi.mock("@/lib/db/models", () => ({
   Workspace: { updateOne: (...args: unknown[]) => updateOneMock(...args) },
 }));
