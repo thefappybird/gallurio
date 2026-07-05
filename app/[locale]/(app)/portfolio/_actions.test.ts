@@ -370,6 +370,54 @@ describe("completeStoryPromptAction", () => {
     expect(deleteImage).toHaveBeenCalledWith("old-logo");
   });
 
+  it("does not delete an unrelated pre-existing logo when only a site icon is submitted", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.header.logoAssetId": "L1",
+          "publicPage.header.logoUrl": "https://imagedelivery.net/h/L1/public",
+        },
+      }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      siteIconUrl: "https://imagedelivery.net/h/I1/public",
+      siteIconAssetId: "I1",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(deleteImage).not.toHaveBeenCalledWith("L1");
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.header?.logoAssetId).toBe("L1");
+  });
+
+  it("does not delete an unrelated pre-existing site icon when only a logo is submitted", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.siteIcon.assetId": "I1",
+          "publicPage.siteIcon.url": "https://imagedelivery.net/h/I1/public",
+        },
+      }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      logoUrl: "https://imagedelivery.net/h/L1/public",
+      logoAssetId: "L1",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(deleteImage).not.toHaveBeenCalledWith("I1");
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.siteIcon?.assetId).toBe("I1");
+  });
+
   it("leaves publicPage.header and publicPage.siteIcon untouched when only description/keywords are sent", async () => {
     await Workspace.updateOne(
       { _id: workspaceId },

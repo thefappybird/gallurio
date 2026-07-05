@@ -311,14 +311,14 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
 
   await Workspace.updateOne({ _id: ctx.workspace._id }, { $set: set });
 
-  if (oldLogoAssetId && oldLogoAssetId !== newLogoAssetId) {
+  if (newLogoAssetId && oldLogoAssetId && oldLogoAssetId !== newLogoAssetId) {
     try {
       await deleteImage(oldLogoAssetId);
     } catch (err) {
       console.warn("[portfolio] failed to delete old story-prompt logo asset", err);
     }
   }
-  if (oldSiteIconAssetId && oldSiteIconAssetId !== newSiteIconAssetId) {
+  if (newSiteIconAssetId && oldSiteIconAssetId && oldSiteIconAssetId !== newSiteIconAssetId) {
     try {
       await deleteImage(oldSiteIconAssetId);
     } catch (err) {
