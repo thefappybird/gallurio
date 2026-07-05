@@ -197,6 +197,54 @@ describe("POST /api/bookings", () => {
     expect(res.status).toBe(400);
   });
 
+  it("persists normalized payments on a new booking", async () => {
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(
+        makeBody({
+          amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+          payments: [{ price: 50_000, status: "paid" }],
+        })
+      )
+    );
+    expect(res.status).toBe(201);
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(booking?.payments).toHaveLength(1);
+    expect(booking?.payments?.[0].price).toBe(50_000);
+    expect(booking?.payments?.[0].status).toBe("paid");
+    expect(booking?.payments?.[0].paidAt).toBeInstanceOf(Date);
+  });
+
+  it("returns 422 when creating a completed booking with ineligible payments", async () => {
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(
+        makeBody({
+          status: "completed",
+          amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+          payments: [{ price: 25_000, status: "unpaid" }],
+        })
+      )
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("returns 201 when creating a completed booking with fully-paid payments matching the total", async () => {
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(
+        makeBody({
+          status: "completed",
+          amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+          payments: [{ price: 50_000, status: "paid" }],
+        })
+      )
+    );
+    expect(res.status).toBe(201);
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(booking?.status).toBe("completed");
+  });
+
   it("returns 400 when deposit exceeds total (Zod refine)", async () => {
     const { POST } = await load();
     const res = await POST(

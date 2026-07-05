@@ -11,7 +11,14 @@ export type SerializedActivity = {
   actorUserId: string;
   entity: "booking" | "client" | "inquiry" | "gallery" | "transaction" | "workspace";
   entityId: string | null;
-  action: "created" | "updated" | "deleted" | "status_changed" | "client_changed";
+  action:
+    | "created"
+    | "updated"
+    | "deleted"
+    | "status_changed"
+    | "client_changed"
+    | "payment_added"
+    | "payment_updated";
   createdAt: string;
 };
 

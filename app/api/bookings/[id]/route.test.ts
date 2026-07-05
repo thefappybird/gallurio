@@ -53,6 +53,11 @@ vi.mock("@/lib/email/brand", () => ({
   gallurioBrand: () => ({ kind: "platform", name: "Gallurio", accentHex: null, poweredByGallurio: false }),
 }));
 
+const notificationMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/notifications/send", () => ({
+  sendNotification: (arg: unknown) => notificationMock(arg),
+}));
+
 beforeAll(async () => {
   await startInMemoryMongo();
 });
@@ -70,6 +75,8 @@ beforeEach(async () => {
   cancelledMocks.sendBookingCancelledOwner.mockResolvedValue(undefined);
   cancelledMocks.resolveWorkspaceBrand.mockReset();
   cancelledMocks.resolveWorkspaceBrand.mockReturnValue({ kind: "partner", name: "Test", accentHex: null, poweredByGallurio: false });
+  notificationMock.mockReset();
+  notificationMock.mockResolvedValue(undefined);
   await Team.create({
     _id: teamId,
     workspaceId,
@@ -322,6 +329,130 @@ describe("PATCH /api/bookings/[id]", () => {
     );
     const logs = await ActivityLog.find({ workspaceId, entity: "booking" }).lean();
     expect(logs).toHaveLength(0);
+  });
+});
+
+describe("PATCH /api/bookings/[id] — payments + completion guard", () => {
+  it("persists a normalized payments patch (paidAt set, createdAt defaulted)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      amount: { total: 75_000, deposit: 75_000, currency: "PHP" },
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ payments: [{ price: 10_000, status: "paid" }] }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.payments).toHaveLength(1);
+    expect(fresh?.payments?.[0].price).toBe(10_000);
+    expect(fresh?.payments?.[0].paidAt).toBeInstanceOf(Date);
+    expect(fresh?.payments?.[0].createdAt).toBeInstanceOf(Date);
+  });
+
+  it("auto-completes when a payments patch brings deposit+payments to match the total", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      status: "booked",
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ payments: [{ price: 50_000, status: "paid" }] }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.status).toBe("completed");
+
+    const logs = await ActivityLog.find({ workspaceId, entity: "booking" }).sort({ action: 1 }).lean();
+    expect(logs).toHaveLength(2);
+    expect(logs.map((l) => l.action).sort()).toEqual(["payment_added", "status_changed"]);
+  });
+
+  it("notifies status_changed with the auto-completed status even though the client only sent payments", async () => {
+    auth.workspaceOverrides = { contact: { email: "owner@studio.test" } };
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      status: "booked",
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ payments: [{ price: 50_000, status: "paid" }] }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const statusChangeCall = notificationMock.mock.calls.find(
+      ([arg]) => (arg as { type?: string }).type === "booking.status_changed"
+    );
+    expect(statusChangeCall).toBeDefined();
+    expect((statusChangeCall![0] as { vars: { newStatus: string } }).vars.newStatus).toBe("completed");
+  });
+
+  it("a payments-only patch that does not reach completion writes exactly one payment_added entry", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      status: "booked",
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ payments: [{ price: 10_000, status: "paid" }] }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.status).toBe("booked");
+
+    const logs = await ActivityLog.find({ workspaceId, entity: "booking" }).lean();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].action).toBe("payment_added");
+  });
+
+  it("returns 422 when patching status to completed with an unpaid payment", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+      payments: [{ price: 50_000, status: "unpaid", createdAt: new Date() }],
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ status: "completed" }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("returns 422 when the paid sum is a cent short of the total", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      amount: { total: 75_000, deposit: 0, currency: "PHP" },
+      payments: [{ price: 74_999.99, status: "paid", createdAt: new Date(), paidAt: new Date() }],
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ status: "completed" }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("returns 200 when patching status to completed with fully-paid payments matching the total", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+      payments: [{ price: 50_000, status: "paid", createdAt: new Date(), paidAt: new Date() }],
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ status: "completed" }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.status).toBe("completed");
   });
 });
 
@@ -869,7 +1000,11 @@ describe("PATCH /api/bookings/[id] — cancellation emails", () => {
   it("does NOT fire cancellation senders when status changes to something other than cancelled", async () => {
     auth.workspaceOverrides = { contact: { email: "owner@studio.test" } };
     const c = await seedClient(workspaceId);
-    const b = await seedBooking(workspaceId, c._id, { status: "booked" });
+    // deposit === total (no payments needed) so the completion guard allows this transition.
+    const b = await seedBooking(workspaceId, c._id, {
+      status: "booked",
+      amount: { total: 25_000, deposit: 25_000, currency: "PHP" },
+    });
     const { PATCH } = await load();
     const res = await PATCH(makePatch({ status: "completed" }, b._id.toString()), ctx(b._id.toString()));
     expect(res.status).toBe(200);
