@@ -158,7 +158,7 @@ export type PortfolioHeaderConfig = {
   /** URL for the logo image. */
   logoUrl?: string;
   /** CF Images asset ID for the logo image (used for deletion). */
-  logoPublicId?: string;
+  logoAssetId?: string;
   /** Token name (e.g. "primary") or custom hex (e.g. "#ffffff"). */
   backgroundColor?: string;
   /** 0–100. Applied to the header background only (not text). Default 100. */

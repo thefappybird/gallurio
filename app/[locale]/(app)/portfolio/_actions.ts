@@ -18,6 +18,7 @@ import { SAVED_THEMES_MAX, type PortfolioSavedTheme } from "@/lib/page-builder/t
 import { isThemeNameTaken } from "@/lib/page-builder/themeNames";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import type { PuckData } from "@/lib/page-builder/types";
+import { deleteImage, verifyImageOwnership } from "@/lib/storage/cloudflareImages";
 import { z } from "zod";
 
 export type EditorActionResult =
@@ -244,11 +245,16 @@ export async function dismissPortfolioGuideAction(): Promise<EditorActionResult>
 const completeStoryPromptSchema = z.object({
   description: z.string().max(300).trim(),
   keywords: z.array(z.string().trim().min(1).max(40)).max(10),
+  logoUrl: z.string().max(500).optional().or(z.literal("")),
+  logoAssetId: z.string().max(200).optional().or(z.literal("")),
+  siteIconUrl: z.string().max(500).optional().or(z.literal("")),
+  siteIconAssetId: z.string().max(200).optional().or(z.literal("")),
 });
 
 /**
- * Persist the owner's first-visit "story prompt" answers (SEO description +
- * style tags), captured before the editor's Guide tour opens. Owner-only.
+ * Persist the owner's first-visit "story prompt" answers (SEO description,
+ * style tags, and optionally a logo/site-icon upload from the wizard's
+ * branding step), captured before the editor's Guide tour opens. Owner-only.
  * Idempotent — re-submitting just rewrites the fields and the timestamp.
  * seoDescription/keywords feed the public home page's <meta description>
  * and JSON-LD, which is route-cached — revalidate so the write isn't stale.
@@ -261,16 +267,64 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
   if (!parsed.success) return { error: "invalid_request" };
 
   await connectDB();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    {
-      $set: {
-        "publicPage.seoDescription": parsed.data.description,
-        "publicPage.seo.keywords": parsed.data.keywords,
-        "publicPage.storyPromptCompletedAt": new Date(),
-      },
+  const workspaceId = String(ctx.workspace._id);
+  const newLogoAssetId = parsed.data.logoAssetId || undefined;
+  const newSiteIconAssetId = parsed.data.siteIconAssetId || undefined;
+
+  // Verify ownership before persisting any new asset id — prevents a
+  // workspace from referencing an image uploaded by a different workspace.
+  if (newLogoAssetId) {
+    const owned = await verifyImageOwnership(newLogoAssetId, workspaceId);
+    if (!owned) return { error: "invalid_logo" };
+  }
+  if (newSiteIconAssetId) {
+    const owned = await verifyImageOwnership(newSiteIconAssetId, workspaceId);
+    if (!owned) return { error: "invalid_site_icon" };
+  }
+
+  // Fetch the current asset ids so we can delete them when the owner
+  // replaces or removes the image.
+  let oldLogoAssetId: string | undefined;
+  let oldSiteIconAssetId: string | undefined;
+  if (newLogoAssetId || newSiteIconAssetId) {
+    const current = await Workspace.findOne(
+      { _id: ctx.workspace._id },
+      { "publicPage.header.logoAssetId": 1, "publicPage.siteIcon.assetId": 1 }
+    ).lean();
+    oldLogoAssetId = current?.publicPage?.header?.logoAssetId || undefined;
+    oldSiteIconAssetId = current?.publicPage?.siteIcon?.assetId || undefined;
+  }
+
+  const set: Record<string, unknown> = {
+    "publicPage.seoDescription": parsed.data.description,
+    "publicPage.seo.keywords": parsed.data.keywords,
+    "publicPage.storyPromptCompletedAt": new Date(),
+  };
+  if (newLogoAssetId) {
+    set["publicPage.header.logoUrl"] = parsed.data.logoUrl ?? "";
+    set["publicPage.header.logoAssetId"] = newLogoAssetId;
+  }
+  if (newSiteIconAssetId) {
+    set["publicPage.siteIcon.url"] = parsed.data.siteIconUrl ?? "";
+    set["publicPage.siteIcon.assetId"] = newSiteIconAssetId;
+  }
+
+  await Workspace.updateOne({ _id: ctx.workspace._id }, { $set: set });
+
+  if (oldLogoAssetId && oldLogoAssetId !== newLogoAssetId) {
+    try {
+      await deleteImage(oldLogoAssetId);
+    } catch (err) {
+      console.warn("[portfolio] failed to delete old story-prompt logo asset", err);
     }
-  );
+  }
+  if (oldSiteIconAssetId && oldSiteIconAssetId !== newSiteIconAssetId) {
+    try {
+      await deleteImage(oldSiteIconAssetId);
+    } catch (err) {
+      console.warn("[portfolio] failed to delete old story-prompt site icon asset", err);
+    }
+  }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);

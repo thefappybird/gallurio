@@ -5,6 +5,10 @@ import { GalleryItem } from "@/lib/db/models";
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => revalidatePath(...a) }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  verifyImageOwnership: vi.fn().mockResolvedValue(true),
+  deleteImage: vi.fn().mockResolvedValue(undefined),
+}));
 
 let mockCtx: { userId: string; role: "owner" | "staff"; workspace: { _id: Types.ObjectId; slug: string } };
 vi.mock("@/lib/auth/requireOrg", () => ({
@@ -17,6 +21,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
+import { verifyImageOwnership, deleteImage } from "@/lib/storage/cloudflareImages";
 import { Workspace } from "@/lib/db/models";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import {
@@ -62,6 +67,8 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   revalidatePath.mockClear();
+  vi.mocked(verifyImageOwnership).mockClear().mockResolvedValue(true);
+  vi.mocked(deleteImage).mockClear();
   await seedWorkspace();
 });
 
@@ -326,6 +333,68 @@ describe("completeStoryPromptAction", () => {
     const other = await Workspace.findById(otherWs._id).lean();
     expect(other!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
     expect(other!.publicPage!.seoDescription ?? "").toBe("");
+  });
+
+  it("rejects a logoAssetId not owned by the caller's workspace", async () => {
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      logoUrl: "https://imagedelivery.net/h/not-mine/public",
+      logoAssetId: "not-mine",
+    });
+    expect(res).toEqual({ error: "invalid_logo" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.header?.logoAssetId ?? "").toBe("");
+  });
+
+  it("deletes the old logo asset when replaced by a new one", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.header.logoAssetId": "old-logo",
+          "publicPage.header.logoUrl": "https://imagedelivery.net/h/old-logo/public",
+        },
+      }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      logoUrl: "https://imagedelivery.net/h/new-logo/public",
+      logoAssetId: "new-logo",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(deleteImage).toHaveBeenCalledWith("old-logo");
+  });
+
+  it("leaves publicPage.header and publicPage.siteIcon untouched when only description/keywords are sent", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.header.logoAssetId": "existing-logo",
+          "publicPage.header.logoUrl": "https://imagedelivery.net/h/existing-logo/public",
+          "publicPage.siteIcon.assetId": "existing-icon",
+          "publicPage.siteIcon.url": "https://imagedelivery.net/h/existing-icon/public",
+        },
+      }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Just SEO, no branding",
+      keywords: ["studio"],
+    });
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.header?.logoAssetId).toBe("existing-logo");
+    expect(ws!.publicPage!.header?.logoUrl).toBe("https://imagedelivery.net/h/existing-logo/public");
+    expect(ws!.publicPage!.siteIcon?.assetId).toBe("existing-icon");
+    expect(ws!.publicPage!.siteIcon?.url).toBe("https://imagedelivery.net/h/existing-icon/public");
+    expect(deleteImage).not.toHaveBeenCalled();
   });
 });
 

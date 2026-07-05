@@ -224,7 +224,7 @@ export function HeaderPanelDialog({
       onHeaderChange({
         ...header,
         logoUrl: result.asset.url,
-        logoPublicId: result.asset.assetId,
+        logoAssetId: result.asset.assetId,
       });
     } catch {
       toast.error(t("logoErrors.upload"));
@@ -336,7 +336,7 @@ export function HeaderPanelDialog({
                     type="button"
                     onClick={() => {
                       setLogoError(null);
-                      onHeaderChange({ ...header, logoUrl: "", logoPublicId: "" });
+                      onHeaderChange({ ...header, logoUrl: "", logoAssetId: "" });
                     }}
                     className="text-xs text-muted-foreground underline hover:text-foreground"
                   >

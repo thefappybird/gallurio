@@ -78,7 +78,7 @@ describe("HeaderPanelDialog", () => {
     expect(onHeaderChange).toHaveBeenCalledWith(
       expect.objectContaining({
         logoUrl: "https://imagedelivery.net/test-hash/logo-asset-id/public",
-        logoPublicId: "logo-asset-id",
+        logoAssetId: "logo-asset-id",
       }),
     );
   });
@@ -298,7 +298,7 @@ describe("HeaderPanelDialog", () => {
     expect(onHeaderChange).toHaveBeenCalledWith(
       expect.objectContaining({
         logoUrl: "https://imagedelivery.net/hash/logo-asset-id/public",
-        logoPublicId: "logo-asset-id",
+        logoAssetId: "logo-asset-id",
       }),
     );
   });
