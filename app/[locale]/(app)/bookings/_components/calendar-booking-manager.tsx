@@ -8,6 +8,7 @@ import { CalendarView, type ClientHit } from "./calendar-view";
 import type { CalendarEvent } from "./booking-calendar";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
+import type { InvoiceThemePresetId } from "@/lib/invoices/theme";
 
 type Props = {
   events: CalendarEvent[];
@@ -33,6 +34,8 @@ type Props = {
   colorMode: "team" | "status";
   /** Map of team id → hex color for candle coloring. */
   teamColorMap: Record<string, string>;
+  /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
+  initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
 };
 
 /**
@@ -56,6 +59,7 @@ export function CalendarBookingManager({
   writableTeams,
   colorMode,
   teamColorMap,
+  initialInvoiceTheme,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -88,6 +92,7 @@ export function CalendarBookingManager({
         teams={teams}
         selectedTeams={selectedTeams}
         isOwner={isOwner}
+        initialInvoiceTheme={initialInvoiceTheme}
       />
       <CalendarView
         events={events}

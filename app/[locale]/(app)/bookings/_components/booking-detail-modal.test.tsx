@@ -138,6 +138,7 @@ const MOCK_BOOKING = {
   lastSessionEnd: FUTURE_SESSION.endAt,
   location: { address: "Test Venue" },
   amount: { total: 10000, deposit: 3000, currency: "PHP" },
+  payments: [] as { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null }[],
   notes: "",
 };
 
@@ -331,14 +332,42 @@ describe("BookingDetailModal — render", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Piece A — Download invoice button on completed bookings
+// Piece A — Download invoice/receipt button, gated on booking.payments
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Download invoice button", () => {
-  it("renders and opens the invoice route when the booking is completed", async () => {
+describe("Download invoice/receipt button", () => {
+  const PAID_PAYMENT = {
+    price: 10000,
+    status: "paid" as const,
+    createdAt: new Date().toISOString(),
+    paidAt: new Date().toISOString(),
+  };
+
+  it("renders Download receipt and opens the receipt route when completed with payments", async () => {
     vi.stubGlobal(
       "fetch",
-      makeFetch({ booking: { ...MOCK_BOOKING, status: "completed" } })
+      makeFetch({
+        booking: { ...MOCK_BOOKING, status: "completed", payments: [PAID_PAYMENT] },
+      })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal();
+    await waitForLoad();
+
+    const btn = screen.getByRole("button", { name: "Download receipt" });
+    fireEvent.click(btn);
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/receipt`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    openSpy.mockRestore();
+  });
+
+  it("renders Download invoice and opens the invoice route when not completed with payments", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
     );
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     renderModal();
@@ -354,12 +383,15 @@ describe("Download invoice button", () => {
     openSpy.mockRestore();
   });
 
-  it("does not render when the booking is not completed", async () => {
+  it("does not render when the booking has no payments", async () => {
     renderModal();
     await waitForLoad();
 
     expect(
       screen.queryByRole("button", { name: "Download invoice" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Download receipt" })
     ).not.toBeInTheDocument();
   });
 });
@@ -769,6 +801,7 @@ describe("False-conflict regression — time-overlap filtering", () => {
       lastSessionEnd: session2End,
       location: { address: "" },
       amount: { total: 0, deposit: 0, currency: "PHP" },
+      payments: [] as { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null }[],
       notes: "",
     };
   }
@@ -1926,5 +1959,213 @@ describe("BookingDetailModal — time-format preference", () => {
 
     const sessionPanel = screen.getByRole("tabpanel", { name: "Sessions" });
     expect(within(sessionPanel).queryByText(/\b(AM|PM)\b/)).not.toBeInTheDocument();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payments section — draft add + Save
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Payments section", () => {
+  it("adds a draft payment via Add payment and includes it in the PATCH body on Save", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Event & Location" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "500" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([{ price: 500, status: "unpaid" }]);
+    });
+  });
+
+  it("shows a Status control defaulting to Unpaid for a new draft payment", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Event & Location" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+
+    const statusTrigger = screen.getByRole("combobox", { name: "Status" });
+    expect(within(statusTrigger).getByText("Unpaid")).toBeInTheDocument();
+  });
+
+  it("clears a draft payment when Discard changes is clicked", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Event & Location" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    expect(screen.getByLabelText("Price")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /discard changes/i }));
+
+    expect(screen.queryByLabelText("Price")).not.toBeInTheDocument();
+  });
+
+  it("removes a draft payment via its remove button", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Event & Location" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    expect(screen.getByLabelText("Price")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /remove payment/i }));
+
+    expect(screen.queryByLabelText("Price")).not.toBeInTheDocument();
+  });
+
+  it("edits an existing payment's price and includes the merged payments array in the PATCH body on Save", async () => {
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Event & Location" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 1/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "2000" } });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([{ price: 2000, status: "unpaid" }]);
+    });
+  });
+
+  it("flips an existing payment from unpaid to paid via the existing-payment Status control and sends it in the PATCH body on Save", async () => {
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Event & Location" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 1/i }));
+
+    const statusTrigger = screen.getByRole("combobox", { name: "Status" });
+    fireEvent.click(statusTrigger);
+    const paidOption = screen.getByRole("option", { name: "Paid" });
+    fireEvent.pointerMove(paidOption);
+    fireEvent.mouseOver(paidOption);
+    fireEvent.mouseMove(paidOption);
+    fireEvent.click(paidOption);
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([{ price: 1000, status: "paid" }]);
+    });
+  });
+
+  it("edits payment index 1 of a 2-payment booking without corrupting index 0", async () => {
+    const PAYMENT_0 = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      paidAt: null,
+    };
+    const PAYMENT_1 = {
+      price: 2000,
+      status: "unpaid" as const,
+      createdAt: "2026-01-02T00:00:00.000Z",
+      paidAt: null,
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [PAYMENT_0, PAYMENT_1] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Event & Location" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 2/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "3000" } });
+
+    const statusTrigger = screen.getByRole("combobox", { name: "Status" });
+    fireEvent.click(statusTrigger);
+    const paidOption = screen.getByRole("option", { name: "Paid" });
+    fireEvent.pointerMove(paidOption);
+    fireEvent.mouseOver(paidOption);
+    fireEvent.mouseMove(paidOption);
+    fireEvent.click(paidOption);
+
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([
+        PAYMENT_0,
+        { price: 3000, status: "paid" },
+      ]);
+    });
   });
 });

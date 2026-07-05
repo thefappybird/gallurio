@@ -235,7 +235,8 @@
         "showPast": "Tampilkan yang lalu",
         "import": "Impor CSV",
         "export": "Ekspor CSV",
-        "add": "Pemesanan baru"
+        "add": "Pemesanan baru",
+        "invoiceTheme": "Tema faktur"
       },
       "teamPicker": {
         "allTeams": "Semua tim",
@@ -379,6 +380,20 @@
         "anniversary": "Ulang tahun",
         "other": "Lainnya"
       },
+      "invoiceThemeDialog": {
+        "title": "Tema faktur",
+        "presets": {
+          "classic": "Klasik",
+          "slate": "Slate",
+          "navyGold": "Navy Gold",
+          "forest": "Forest",
+          "custom": "Kustom"
+        },
+        "mainColor": "Warna utama",
+        "accentColor": "Warna aksen",
+        "saveAndApply": "Simpan dan terapkan",
+        "cancel": "Batal"
+      },
       "detail": {
         "past": "Lalu",
         "showPast": "Tampilkan sesi yang lalu",
@@ -395,6 +410,7 @@
         "sections": {
           "schedule": "Jadwal",
           "pricing": "Harga",
+          "payments": "Pembayaran",
           "history": "Riwayat"
         },
         "fields": {
@@ -458,7 +474,9 @@
             "updated": "Diperbarui",
             "status_changed": "Status diubah",
             "client_changed": "Klien diubah",
-            "deleted": "Dihapus"
+            "deleted": "Dihapus",
+            "payment_added": "Pembayaran ditambahkan",
+            "payment_updated": "Pembayaran diperbarui"
           },
           "today": "Hari ini",
           "yesterday": "Kemarin",
@@ -467,6 +485,7 @@
         "cancel": "Batalkan pemesanan",
         "restore": "Pulihkan pemesanan",
         "invoice": "Unduh faktur",
+        "receipt": "Unduh kuitansi",
         "discardChanges": "Buang perubahan",
         "saveChanges": "Simpan perubahan",
         "pendingBadge": "{count} belum disimpan",
@@ -554,7 +573,8 @@
         "price": "Harga",
         "status": "Status",
         "paid": "Dibayar",
-        "unpaid": "Belum dibayar"
+        "unpaid": "Belum dibayar",
+        "paidOn": "Dibayar pada {date}"
       },
       "wizard": {
         "createTitle": "Pemesanan baru",
@@ -2139,6 +2159,8 @@
       "no_active_workspace": "Tidak ada ruang kerja aktif. Pilih ruang kerja dan coba lagi.",
       "workspace_not_found": "Ruang kerja tidak ditemukan.",
       "owner_only": "Hanya pemilik ruang kerja yang dapat melakukan ini.",
+      "invalid_data": "Data tidak valid. Periksa input Anda dan coba lagi.",
+      "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
       "finish_onboarding": "Selesaikan orientasi sebelum mengubah pengaturan ruang kerja.",
       "invalid_input": "Periksa formulir dan coba lagi.",
       "rate_limited": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",

@@ -31,6 +31,18 @@ vi.mock("./csv-import-dialog", () => ({
   CsvImportDialog: () => null,
 }));
 
+// ── InvoiceThemeDialog stub (avoids pulling in the real dialog + action) ──────
+const invoiceThemeDialogOpenSpy = vi.fn();
+vi.mock("./invoice-theme-dialog", () => ({
+  InvoiceThemeDialog: (props: { open: boolean }) => {
+    invoiceThemeDialogOpenSpy(props.open);
+    return null;
+  },
+}));
+
+const DEFAULT_INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
+
+
 function wrapper({ children }: { children: React.ReactNode }) {
   return (
     <NextIntlClientProvider locale="en" messages={enMessages}>
@@ -205,5 +217,33 @@ describe("BookingsToolbar — render-loop stability (regression guard)", () => {
     // (It would be called if the debounce effect re-fired due to an unstable
     // pushParams identity caused by searchParams in its dep array.)
     expect(mockPush).not.toHaveBeenCalled();
+  });
+});
+
+describe("BookingsToolbar — Invoice theme button", () => {
+  it("renders the Invoice theme button for an owner and opens the dialog on click", () => {
+    render(
+      <BookingsToolbar
+        defaultCurrency="PHP"
+        isOwner
+        initialInvoiceTheme={DEFAULT_INVOICE_THEME}
+      />,
+      { wrapper }
+    );
+    const btn = screen.getByRole("button", { name: /invoice theme/i });
+    fireEvent.click(btn);
+    expect(invoiceThemeDialogOpenSpy).toHaveBeenCalledWith(true);
+  });
+
+  it("does not render the Invoice theme button for a non-owner", () => {
+    render(
+      <BookingsToolbar
+        defaultCurrency="PHP"
+        isOwner={false}
+        initialInvoiceTheme={DEFAULT_INVOICE_THEME}
+      />,
+      { wrapper }
+    );
+    expect(screen.queryByRole("button", { name: /invoice theme/i })).not.toBeInTheDocument();
   });
 });

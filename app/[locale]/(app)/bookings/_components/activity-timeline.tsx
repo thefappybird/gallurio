@@ -48,6 +48,7 @@ function diffKeyToI18n(key: string): { ns: "fields" | "sections"; key: string } 
   };
   if (key in fieldMap) return { ns: "fields", key: fieldMap[key] };
   if (key === "sessions") return { ns: "sections", key: "schedule" };
+  if (key === "payments") return { ns: "sections", key: "payments" };
   return null;
 }
 
@@ -75,6 +76,14 @@ const ACTION_STYLES: Record<
   deleted: {
     pill: "border-destructive/40 bg-destructive/10 text-destructive",
     dot: "bg-destructive",
+  },
+  payment_added: {
+    pill: "border-border bg-muted text-muted-foreground",
+    dot: "bg-muted-foreground",
+  },
+  payment_updated: {
+    pill: "border-border bg-muted text-muted-foreground",
+    dot: "bg-muted-foreground",
   },
 };
 
@@ -311,7 +320,7 @@ export function ActivityTimeline({
                             }
                           }
 
-                          const isSessions = key === "sessions";
+                          const isSessions = key === "sessions" || key === "payments";
                           if (isSessions) {
                             return (
                               <li key={key}>

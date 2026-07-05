@@ -54,6 +54,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import dynamic from "next/dynamic";
 import { LocationPicker, LocationDisplay } from "@/components/ui/location-picker";
@@ -123,6 +124,7 @@ type BookingDoc = {
   lastSessionEnd: string;
   location: { address: string; lat: number | null; lng: number | null };
   amount: { total: number; deposit: number; currency: string };
+  payments: { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null }[];
   notes: string;
 };
 
@@ -152,6 +154,17 @@ type DraftSession = {
    */
   locked: boolean;
 };
+
+/** A payment row added locally but not yet persisted to the API. */
+type DraftPayment = {
+  /** Stable key for React rendering — not sent to the API. */
+  draftId: string;
+  price: number;
+  status: "unpaid" | "paid";
+};
+
+/** Pending edit for an existing payment (keyed by payment index in booking.payments). */
+type PendingPaymentEdit = { price: number; status: "unpaid" | "paid" };
 
 /**
  * Describes an in-flight session edit that requires confirmation before commit.
@@ -229,6 +242,20 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
   const [pendingSessionEditDialog, setPendingSessionEditDialog] =
     useState<PendingSessionEditDialog>(null);
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  // `draftPayments` is referenced by the BookingTabs call site below (added in
+  // the previous step) but was never declared as state, which throws
+  // `ReferenceError: draftPayments is not defined` during render — this is why
+  // the modal fails to mount and the test can't find the dialog heading.
+  /** Draft payments appended by "Add payment" — not yet persisted. */
+  const [draftPayments, setDraftPayments] = useState<DraftPayment[]>([]);
+  /**
+   * Pending edits for EXISTING payments. Keyed by payment index in
+   * booking.payments — mirrors `pendingSessionEdits`. Flushed in the global
+   * Save together with `pending` scalar changes and draft payments.
+   */
+  const [pendingPaymentEdits, setPendingPaymentEdits] = useState<
+    Record<number, PendingPaymentEdit>
+  >({});
   /**
    * Confirm-discard dialog state — replaces window.confirm for close-with-unsaved.
    */
@@ -547,7 +574,9 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
   const pendingCount =
     Object.keys(pending).length +
     Object.keys(pendingSessionEdits).length +
-    lockedDraftCount;
+    lockedDraftCount +
+    draftPayments.length +
+    Object.keys(pendingPaymentEdits).length;
   const hasPending = pendingCount > 0;
 
   // Count open inline editors for EXISTING sessions (keys are numeric strings).
@@ -634,6 +663,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
     setPending({});
     setPendingSessionEdits({});
     setDraftSessions([]);
+    setDraftPayments([]);
+    setPendingPaymentEdits({});
     setSaveError(null);
     setReassignedClient(null);
   }
@@ -724,7 +755,9 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
     const hasSomethingToSave =
       Object.keys(effectivePending).length > 0 ||
       Object.keys(pendingSessionEdits).length > 0 ||
-      draftSessions.some((d) => d.locked);
+      draftSessions.some((d) => d.locked) ||
+      draftPayments.length > 0 ||
+      Object.keys(pendingPaymentEdits).length > 0;
     if (!hasSomethingToSave || !booking) return;
     if (hasAnyConflict) {
       setSaveError(t("conflictBlocksSave"));
@@ -739,6 +772,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
     const previousTotal = activityTotal;
     const previousDrafts = draftSessions;
     const previousSessionEdits = pendingSessionEdits;
+    const previousDraftPayments = draftPayments;
+    const previousPaymentEdits = pendingPaymentEdits;
     const optimistic = applyChanges(booking, effectivePending);
 
     // Build the final sessions array: overlay pendingSessionEdits onto existing,
@@ -785,6 +820,16 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       ) {
         body["sessions"] = mergedSessions;
       }
+      if (draftPayments.length > 0 || Object.keys(pendingPaymentEdits).length > 0) {
+        const existing = previous.payments.map((p, i) => {
+          const edit = pendingPaymentEdits[i];
+          return edit ? { price: edit.price, status: edit.status } : p;
+        });
+        body["payments"] = [
+          ...existing,
+          ...draftPayments.map((d) => ({ price: d.price, status: d.status })),
+        ];
+      }
       const res = await fetch(`/api/bookings/${bookingId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
@@ -808,6 +853,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       setPending({});
       setPendingSessionEdits({});
       setDraftSessions([]);
+      setDraftPayments([]);
+      setPendingPaymentEdits({});
       setReassignedClient(null);
       toast.success(t("savedToast"));
       startTransition(() => router.refresh());
@@ -818,6 +865,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       setActivityTotal(previousTotal);
       setDraftSessions(previousDrafts);
       setPendingSessionEdits(previousSessionEdits);
+      setDraftPayments(previousDraftPayments);
+      setPendingPaymentEdits(previousPaymentEdits);
       const msg = err instanceof Error ? err.message : errMsg(null);
       setSaveError(msg);
       toast.error(msg);
@@ -1062,6 +1111,13 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
     setDraftSessions((prev) => [...prev, draft]);
   }
 
+  function handleAddPayment() {
+    setDraftPayments((prev) => [
+      ...prev,
+      { draftId: crypto.randomUUID(), price: 0, status: "unpaid" },
+    ]);
+  }
+
   function handleDiscardDraft(draftId: string) {
     setDraftSessions((prev) => prev.filter((d) => d.draftId !== draftId));
   }
@@ -1250,6 +1306,25 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
               onDiscardSessionEdit={handleDiscardSessionEdit}
               onAddSession={handleAddSession}
               onRemoveSession={handleRemoveSession}
+              draftPayments={draftPayments}
+              pendingPaymentEdits={pendingPaymentEdits}
+              onAddPayment={handleAddPayment}
+              onUpdateDraftPayment={(index, price) =>
+                setDraftPayments((prev) =>
+                  prev.map((d, i) => (i === index ? { ...d, price } : d))
+                )
+              }
+              onUpdateDraftPaymentStatus={(index, status) =>
+                setDraftPayments((prev) =>
+                  prev.map((d, i) => (i === index ? { ...d, status } : d))
+                )
+              }
+              onRemoveDraftPayment={(draftId) =>
+                setDraftPayments((prev) => prev.filter((d) => d.draftId !== draftId))
+              }
+              onCommitPaymentEdit={(index, edit) => {
+                setPendingPaymentEdits((prev) => ({ ...prev, [index]: edit }));
+              }}
               onDiscardDraft={handleDiscardDraft}
               onUpdateDraft={handleUpdateDraft}
               onLockDraft={handleLockDraft}
@@ -1265,6 +1340,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
           <DialogFooterBar
             cancelled={booking.status === "cancelled"}
             completed={booking.status === "completed"}
+            hasPayments={booking.payments.length > 0}
             bookingId={bookingId}
             hasPending={hasPending}
             pendingCount={pendingCount}
@@ -1759,6 +1835,13 @@ function BookingTabs({
   onLockDraft,
   onUnlockDraft,
   onDraftDateChange,
+  draftPayments,
+  pendingPaymentEdits,
+  onAddPayment,
+  onUpdateDraftPayment,
+  onUpdateDraftPaymentStatus,
+  onRemoveDraftPayment,
+  onCommitPaymentEdit,
   registerFieldHandle,
   onFieldEditingChange,
 }: {
@@ -1801,10 +1884,18 @@ function BookingTabs({
   onLockDraft: (draftId: string) => void;
   onUnlockDraft: (draftId: string) => void;
   onDraftDateChange: (key: string, date: string | null) => void;
+  draftPayments: DraftPayment[];
+  pendingPaymentEdits: Record<number, PendingPaymentEdit>;
+  onAddPayment: () => void;
+  onUpdateDraftPayment: (index: number, price: number) => void;
+  onUpdateDraftPaymentStatus: (index: number, status: "unpaid" | "paid") => void;
+  onRemoveDraftPayment: (draftId: string) => void;
+  onCommitPaymentEdit: (index: number, edit: PendingPaymentEdit) => void;
   registerFieldHandle: (editKey: string, handle: FieldHandle | null) => void;
   onFieldEditingChange: (editKey: string, editing: boolean) => void;
 }) {
   const t = useTranslations("app.bookings.detail.tabs");
+  const tPayments = useTranslations("app.bookings.payments");
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
 
@@ -1826,6 +1917,9 @@ function BookingTabs({
   const tSections = useTranslations("app.bookings.detail.sections");
 
   const [showPast, setShowPast] = useState(false);
+  const [editingPaymentIndex, setEditingPaymentIndex] = useState<number | null>(null);
+  const [editPaymentPrice, setEditPaymentPrice] = useState(0);
+  const [editPaymentStatus, setEditPaymentStatus] = useState<"unpaid" | "paid">("unpaid");
 
   const { upcomingSessions, pastSessions } = useMemo(() => {
     const allSessions = booking?.sessions ?? [];
@@ -2083,6 +2177,146 @@ function BookingTabs({
             onEditingChange={onFieldEditingChange}
           />
         </div>
+
+        <SectionHeader label={tSections("payments")} />
+        <div className="flex flex-col gap-2">
+          {booking.payments.map((payment, idx) => {
+            const edit = pendingPaymentEdits[idx];
+            const effectivePrice = edit?.price ?? payment.price;
+            const effectiveStatus = edit?.status ?? payment.status;
+            return editingPaymentIndex === idx ? (
+              <div key={idx} className="flex flex-col gap-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor={`existing-payment-price-${idx}`}>{tPayments("price")}</Label>
+                    <Input
+                      id={`existing-payment-price-${idx}`}
+                      type="number"
+                      value={editPaymentPrice}
+                      onChange={(e) => setEditPaymentPrice(Number(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor={`existing-payment-status-${idx}`}>{tPayments("status")}</Label>
+                    <Select<"unpaid" | "paid">
+                      value={editPaymentStatus}
+                      onValueChange={(v) => v && setEditPaymentStatus(v)}
+                    >
+                      <SelectTrigger id={`existing-payment-status-${idx}`}>
+                        <SelectValue>{(v: string) => tPayments(v)}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unpaid">{tPayments("unpaid")}</SelectItem>
+                        <SelectItem value="paid">{tPayments("paid")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    onCommitPaymentEdit(idx, { price: editPaymentPrice, status: editPaymentStatus });
+                    setEditingPaymentIndex(null);
+                  }}
+                  className="self-start"
+                >
+                  {tFields("confirmTitle")}
+                </Button>
+              </div>
+            ) : (
+              <div
+                key={idx}
+                className="flex items-center justify-between gap-2 border border-border px-2.5 py-1.5"
+              >
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium tabular-nums">
+                    {formatMoney(effectivePrice, booking.amount.currency, locale)}
+                  </span>
+                  <Badge variant={effectiveStatus === "paid" ? "default" : "outline"}>
+                    {tPayments(effectiveStatus)}
+                  </Badge>
+                  {payment.paidAt ? (
+                    <span className="text-xs text-muted-foreground">
+                      {tPayments("paidOn", {
+                        date: new Date(payment.paidAt).toLocaleDateString(locale),
+                      })}
+                    </span>
+                  ) : null}
+                </div>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label={`Edit ${tPayments("label", { n: idx + 1 })}`}
+                  onClick={() => {
+                    setEditPaymentPrice(effectivePrice);
+                    setEditPaymentStatus(effectiveStatus);
+                    setEditingPaymentIndex(idx);
+                  }}
+                >
+                  <PencilIcon className="size-4" />
+                </Button>
+              </div>
+            );
+          })}
+          {draftPayments.map((draft, idx) => (
+            <div key={draft.draftId} className="flex items-end gap-2">
+            <div className="grid flex-1 grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor={`payment-price-${idx}`}>{tPayments("price")}</Label>
+                <Input
+                  id={`payment-price-${idx}`}
+                  type="number"
+                  value={draft.price}
+                  onChange={(e) => onUpdateDraftPayment(idx, Number(e.target.value) || 0)}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor={`payment-status-${idx}`}>{tPayments("status")}</Label>
+                <Select<"unpaid" | "paid">
+                  value={draft.status}
+                  onValueChange={(v) => v && onUpdateDraftPaymentStatus(idx, v)}
+                >
+                  <SelectTrigger id={`payment-status-${idx}`}>
+                    <SelectValue>{(v: string) => tPayments(v)}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unpaid">{tPayments("unpaid")}</SelectItem>
+                    <SelectItem value="paid">{tPayments("paid")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {!readOnly ? (
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                onClick={() => onRemoveDraftPayment(draft.draftId)}
+                aria-label={tPayments("remove")}
+                className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+              >
+                <XIcon className="size-4" />
+              </Button>
+            ) : null}
+            </div>
+          ))}
+        </div>
+        {!readOnly ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onAddPayment}
+            disabled={disabled}
+            className="self-start"
+          >
+            <PlusIcon className="size-4" />
+            {tPayments("add")}
+          </Button>
+        ) : null}
+
         {/* Location — moved from sessions tab */}
         <SectionHeader label={tFields("location")} />
         <div className="flex flex-col gap-1 py-1.5">
@@ -3285,6 +3519,7 @@ function SectionHeader({ label }: { label: string }) {
 function DialogFooterBar({
   cancelled,
   completed,
+  hasPayments,
   bookingId,
   hasPending,
   pendingCount,
@@ -3297,6 +3532,7 @@ function DialogFooterBar({
 }: {
   cancelled: boolean;
   completed: boolean;
+  hasPayments: boolean;
   bookingId: string;
   hasPending: boolean;
   pendingCount: number;
@@ -3324,14 +3560,14 @@ function DialogFooterBar({
           {cancelled ? t("restore") : t("cancel")}
         </Button>
         <div className="flex items-center gap-2">
-          {completed ? (
+          {hasPayments ? (
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() =>
                 window.open(
-                  `/api/bookings/${bookingId}/invoice`,
+                  `/api/bookings/${bookingId}/${completed ? "receipt" : "invoice"}`,
                   "_blank",
                   "noopener,noreferrer",
                 )
@@ -3339,7 +3575,7 @@ function DialogFooterBar({
               disabled={saving}
             >
               <DownloadIcon className="size-4" />
-              {t("invoice")}
+              {completed ? t("receipt") : t("invoice")}
             </Button>
           ) : null}
           {hasPending ? (

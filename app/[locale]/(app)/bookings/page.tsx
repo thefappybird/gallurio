@@ -282,6 +282,7 @@ export default async function BookingsPage({
           selectedTeams={selectedTeamIds}
           writableTeams={writableTeams}
           isOwner={role === "owner"}
+          initialInvoiceTheme={workspace.invoiceTheme ?? undefined}
         />
       ) : null}
 
@@ -299,6 +300,7 @@ export default async function BookingsPage({
           selectedTeams={selectedTeamIds}
           writableTeams={writableTeams}
           isOwner={role === "owner"}
+          initialInvoiceTheme={workspace.invoiceTheme ?? undefined}
           colorMode={colorMode}
           teamColorMap={teamColorMap}
           messages={{

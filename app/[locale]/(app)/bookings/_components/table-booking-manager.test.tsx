@@ -15,12 +15,16 @@ vi.mock("@/lib/i18n/navigation", () => ({
   usePathname: () => "/bookings",
 }));
 
+const bookingsToolbarPropsSpy = vi.fn();
 vi.mock("./bookings-toolbar", () => ({
-  BookingsToolbar: ({ onAddClick }: { onAddClick: () => void }) => (
-    <button type="button" onClick={onAddClick}>
-      Open booking wizard
-    </button>
-  ),
+  BookingsToolbar: (props: { onAddClick: () => void }) => {
+    bookingsToolbarPropsSpy(props);
+    return (
+      <button type="button" onClick={props.onAddClick}>
+        Open booking wizard
+      </button>
+    );
+  },
 }));
 
 vi.mock("./booking-wizard-modal", () => ({
@@ -30,6 +34,8 @@ vi.mock("./booking-wizard-modal", () => ({
     </button>
   ),
 }));
+
+const INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
 
 function renderManager() {
   return renderWithProviders(
@@ -43,6 +49,7 @@ function renderManager() {
       selectedTeams={[]}
       isOwner
       writableTeams={[]}
+      initialInvoiceTheme={INVOICE_THEME}
     />
   );
 }
@@ -59,5 +66,12 @@ describe("TableBookingManager", () => {
     fireEvent.click(screen.getByRole("button", { name: /close booking wizard/i }));
 
     expect(replaceSpy).toHaveBeenCalledWith("/bookings", { scroll: false });
+  });
+
+  it("passes initialInvoiceTheme through to BookingsToolbar", () => {
+    renderManager();
+    expect(bookingsToolbarPropsSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ initialInvoiceTheme: INVOICE_THEME })
+    );
   });
 });

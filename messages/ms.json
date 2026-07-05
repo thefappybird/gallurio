@@ -235,7 +235,8 @@
         "showPast": "Tunjuk yang lepas",
         "import": "Import CSV",
         "export": "Eksport CSV",
-        "add": "Tempahan baru"
+        "add": "Tempahan baru",
+        "invoiceTheme": "Tema invois"
       },
       "teamPicker": {
         "allTeams": "Semua pasukan",
@@ -379,6 +380,20 @@
         "anniversary": "Ulang tahun",
         "other": "Lain-lain"
       },
+      "invoiceThemeDialog": {
+        "title": "Tema invois",
+        "presets": {
+          "classic": "Klasik",
+          "slate": "Slate",
+          "navyGold": "Navy Gold",
+          "forest": "Forest",
+          "custom": "Tersuai"
+        },
+        "mainColor": "Warna utama",
+        "accentColor": "Warna aksen",
+        "saveAndApply": "Simpan dan gunakan",
+        "cancel": "Batal"
+      },
       "detail": {
         "past": "Lepas",
         "showPast": "Tunjukkan sesi lepas",
@@ -395,6 +410,7 @@
         "sections": {
           "schedule": "Jadual",
           "pricing": "Harga",
+          "payments": "Bayaran",
           "history": "Sejarah"
         },
         "fields": {
@@ -458,7 +474,9 @@
             "updated": "Dikemas kini",
             "status_changed": "Status diubah",
             "client_changed": "Klien diubah",
-            "deleted": "Dipadam"
+            "deleted": "Dipadam",
+            "payment_added": "Bayaran ditambah",
+            "payment_updated": "Bayaran dikemas kini"
           },
           "today": "Hari ini",
           "yesterday": "Semalam",
@@ -467,6 +485,7 @@
         "cancel": "Batalkan tempahan",
         "restore": "Pulihkan tempahan",
         "invoice": "Muat turun invois",
+        "receipt": "Muat turun resit",
         "discardChanges": "Buang perubahan",
         "saveChanges": "Simpan perubahan",
         "pendingBadge": "{count} belum disimpan",
@@ -554,7 +573,8 @@
         "price": "Harga",
         "status": "Status",
         "paid": "Dibayar",
-        "unpaid": "Belum dibayar"
+        "unpaid": "Belum dibayar",
+        "paidOn": "Dibayar pada {date}"
       },
       "wizard": {
         "createTitle": "Tempahan baru",
@@ -2139,6 +2159,8 @@
       "no_active_workspace": "Tiada ruang kerja aktif. Pilih ruang kerja dan cuba lagi.",
       "workspace_not_found": "Ruang kerja tidak ditemui.",
       "owner_only": "Hanya pemilik ruang kerja boleh melakukan ini.",
+      "invalid_data": "Data tidak sah. Sila semak input anda dan cuba lagi.",
+      "completion_requires_full_payment": "Tandakan semua bayaran sebagai dibayar dan padankan jumlah sebelum melengkapkan tempahan ini.",
       "finish_onboarding": "Selesaikan onboarding sebelum menukar tetapan ruang kerja.",
       "invalid_input": "Sila semak borang dan cuba lagi.",
       "rate_limited": "Terlalu banyak percubaan. Cuba lagi dalam {seconds} saat.",
