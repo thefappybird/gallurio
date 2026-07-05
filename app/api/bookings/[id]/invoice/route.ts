@@ -45,7 +45,10 @@ export async function GET(_req: Request, { params }: Params) {
   if (!invoiceNumber) {
     const seq = await getNextInvoiceSeq(ctx.workspace._id);
     invoiceNumber = formatInvoiceNumber(seq);
-    await Booking.updateOne({ _id: booking._id }, { $set: { invoiceNumber } });
+    await Booking.updateOne(
+      { _id: booking._id, workspaceId: ctx.workspace._id },
+      { $set: { invoiceNumber } },
+    );
   }
 
   const data: InvoiceData = {
