@@ -4,8 +4,8 @@ export type PdfTheme = { main: string; accent: string };
 
 export function buildInvoiceStyles(theme: PdfTheme) {
   return StyleSheet.create({
-    page: { padding: 0, fontSize: 10, color: "#111111" },
-    content: { paddingHorizontal: 40 },
+    page: { padding: 0, fontSize: 10, color: "#111111", display: "flex", flexDirection: "column" },
+    content: { paddingHorizontal: 40, flexGrow: 1 },
     headerBlock: {
       backgroundColor: theme.main,
       paddingHorizontal: 32,

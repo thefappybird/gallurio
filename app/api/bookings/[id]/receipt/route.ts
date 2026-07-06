@@ -53,10 +53,6 @@ export async function GET(_req: Request, { params }: Params) {
     );
   }
 
-  const paidTotal =
-    (booking.amount?.deposit ?? 0) +
-    booking.payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.price, 0);
-
   const data: ReceiptData = {
     receiptNumber: invoiceNumber,
     issueDate: new Date(),
@@ -79,8 +75,14 @@ export async function GET(_req: Request, { params }: Params) {
     },
     amount: {
       total: booking.amount?.total ?? 0,
-      paidTotal,
+      deposit: booking.amount?.deposit ?? 0,
       currency: booking.amount?.currency ?? "PHP",
+      payments: booking.payments.map((p) => ({
+        title: p.title || "",
+        price: p.price,
+        status: p.status,
+        paidAt: p.paidAt ? p.paidAt.toISOString() : null,
+      })),
     },
     locale: "en-PH",
   };

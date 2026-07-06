@@ -57,15 +57,15 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
           <View style={styles.table}>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>Total</Text>
-              <Text style={styles.tableValue}>{formatMoney(amount.total, amount.currency, locale)}</Text>
+              <Text style={styles.tableValue}>{formatMoney(amount.total, amount.currency, locale, { currencyDisplay: "code" })}</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>Deposit paid</Text>
-              <Text style={styles.tableValue}>{formatMoney(amount.deposit, amount.currency, locale)}</Text>
+              <Text style={styles.tableValue}>{formatMoney(amount.deposit, amount.currency, locale, { currencyDisplay: "code" })}</Text>
             </View>
             <View style={styles.tableRowEmphasis}>
               <Text style={styles.tableLabelEmphasis}>Balance due</Text>
-              <Text style={styles.tableValueEmphasis}>{formatMoney(balanceDue, amount.currency, locale)}</Text>
+              <Text style={styles.tableValueEmphasis}>{formatMoney(balanceDue, amount.currency, locale, { currencyDisplay: "code" })}</Text>
             </View>
           </View>
         </View>

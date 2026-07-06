@@ -38,7 +38,12 @@ const baseData: ReceiptData = {
     sessionStart: new Date("2026-08-15T10:00:00Z"),
     sessionEnd: new Date("2026-08-15T14:00:00Z"),
   },
-  amount: { total: 75_000, paidTotal: 75_000, currency: "PHP" },
+  amount: {
+    total: 75_000,
+    deposit: 25_000,
+    currency: "PHP",
+    payments: [{ title: "Final payment", price: 50_000, status: "paid", paidAt: "2026-08-16T00:00:00Z" }],
+  },
   locale: "en-PH",
 };
 
@@ -52,5 +57,18 @@ describe("ReceiptDocument", () => {
     expect(text).toContain("This booking has been paid in full and marked complete.");
     expect(text).toContain("THANK YOU");
     expect(text).not.toContain("Balance due");
+  });
+
+  it("renders a Deposit row and one row per payment with its title", () => {
+    const element = ReceiptDocument({ data: baseData });
+    const text = collectText(element).join(" | ");
+    expect(text).toContain("Deposit");
+    expect(text).toContain("Final payment");
+  });
+
+  it("computes a zero Balance when deposit + payments exactly cover the total", () => {
+    const element = ReceiptDocument({ data: baseData });
+    const text = collectText(element).join(" | ");
+    expect(text).toMatch(/Balance \| PHP\s?0/);
   });
 });

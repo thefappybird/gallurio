@@ -28,4 +28,10 @@ describe("formatMoney", () => {
   it("respects locale-specific grouping", () => {
     expect(formatMoney(1_000_000, "USD", "en")).toMatch(/1,000,000/);
   });
+
+  it("uses the ISO currency code instead of the symbol when currencyDisplay: 'code' is passed", () => {
+    const result = formatMoney(5000, "PHP", "en-PH", { currencyDisplay: "code" });
+    expect(result).toContain("PHP");
+    expect(result).not.toContain("₱");
+  });
 });

@@ -7,6 +7,14 @@ import {
 } from "@/test-utils/mongo";
 import { Booking, Client } from "@/lib/db/models";
 
+const receiptDocumentMock = vi.hoisted(() => vi.fn((_arg: unknown) => "mock-element"));
+vi.mock("@/lib/invoices/ReceiptDocument", () => ({
+  ReceiptDocument: (arg: unknown) => receiptDocumentMock(arg),
+}));
+vi.mock("@react-pdf/renderer", () => ({
+  renderToBuffer: async () => Buffer.from("%PDF-mock"),
+}));
+
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
 const userId = "user_test";
@@ -37,6 +45,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  receiptDocumentMock.mockClear();
 });
 
 async function load() {
@@ -123,5 +132,22 @@ describe("GET /api/bookings/[id]/receipt", () => {
     );
     const buf = Buffer.from(await res.arrayBuffer());
     expect(buf.subarray(0, 4).toString("ascii")).toBe("%PDF");
+  });
+
+  it("passes deposit and an itemized payments breakdown (with title) to ReceiptDocument", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      payments: [{ price: 50_000, status: "paid", title: "Final payment", createdAt: new Date(), paidAt: new Date() }],
+    });
+    const { GET } = await load();
+    await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+    expect(receiptDocumentMock).toHaveBeenCalledTimes(1);
+    const { data } = receiptDocumentMock.mock.calls[0][0] as {
+      data: { amount: { deposit: number; payments: { title: string; price: number }[] } };
+    };
+    expect(data.amount.deposit).toBe(25_000);
+    expect(data.amount.payments).toEqual([
+      expect.objectContaining({ title: "Final payment", price: 50_000 }),
+    ]);
   });
 });
