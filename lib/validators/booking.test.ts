@@ -89,6 +89,16 @@ describe("bookingPaymentSchema", () => {
   it("rejects a status outside unpaid/paid", () => {
     expect(bookingPaymentSchema.safeParse({ price: 1, status: "refunded" }).success).toBe(false);
   });
+
+  it("defaults title to an empty string and roundtrips a provided title", () => {
+    const defaulted = bookingPaymentSchema.safeParse({ price: 100, status: "unpaid" });
+    expect(defaulted.success).toBe(true);
+    if (defaulted.success) expect(defaulted.data.title).toBe("");
+
+    const withTitle = bookingPaymentSchema.safeParse({ price: 100, status: "unpaid", title: "Deposit" });
+    expect(withTitle.success).toBe(true);
+    if (withTitle.success) expect(withTitle.data.title).toBe("Deposit");
+  });
 });
 
 describe("bookingSessionSchema", () => {
@@ -240,6 +250,24 @@ describe("bookingCreateSchema", () => {
     const result = bookingCreateSchema.safeParse(validCreate);
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.payments).toEqual([]);
+  });
+
+  it("rejects when payments sum exceeds the remaining balance (total - deposit)", () => {
+    const bad = bookingCreateSchema.safeParse({
+      ...validCreate,
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+      payments: [{ price: 60_000, status: "unpaid" }],
+    });
+    expect(bad.success).toBe(false);
+  });
+
+  it("accepts payments that exactly exhaust the remaining balance", () => {
+    const ok = bookingCreateSchema.safeParse({
+      ...validCreate,
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+      payments: [{ price: 50_000, status: "unpaid" }],
+    });
+    expect(ok.success).toBe(true);
   });
 });
 

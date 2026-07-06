@@ -25,6 +25,7 @@ const paymentSchema = new Schema(
     status: { type: String, enum: ["unpaid", "paid"], required: true, default: "unpaid" },
     createdAt: { type: Date, required: true },
     paidAt: { type: Date, default: null },
+    title: { type: String, default: "" },
   },
   { _id: false }
 );

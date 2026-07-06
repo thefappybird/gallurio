@@ -11,7 +11,7 @@ import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/noti
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
-import { normalizePayments, isCompletionEligible, type PaymentInput } from "@/lib/bookings/payment-rules";
+import { normalizePayments, isCompletionEligible, remainingBalance, type PaymentInput } from "@/lib/bookings/payment-rules";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/email/booking/bookingCancelled";
 
@@ -412,6 +412,20 @@ export async function PATCH(req: Request, { params }: Params) {
       };
       if (!isCompletionEligible(effectivePayments, effectiveAmount)) {
         return NextResponse.json({ error: "completion_requires_full_payment" }, { status: 422 });
+      }
+    }
+
+    // Reject a payments/amount patch that would push payments past the
+    // remaining balance (total - deposit), regardless of status transition.
+    if ("payments" in setOp || "amount.total" in setOp || "amount.deposit" in setOp) {
+      const effectivePayments = ("payments" in setOp ? setOp.payments : existing.payments ?? []) as
+        { price: number }[];
+      const effectiveAmount = {
+        total: (setOp["amount.total"] as number | undefined) ?? existing.amount?.total ?? 0,
+        deposit: (setOp["amount.deposit"] as number | undefined) ?? existing.amount?.deposit ?? 0,
+      };
+      if (remainingBalance(effectivePayments, effectiveAmount) < -0.005) {
+        return NextResponse.json({ error: "payments_exceed_balance" }, { status: 422 });
       }
     }
 

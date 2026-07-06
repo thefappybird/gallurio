@@ -253,6 +253,19 @@ describe("POST /api/bookings", () => {
     expect(res.status).toBe(400);
   });
 
+  it("returns 400 when payments exceed the remaining balance (Zod refine)", async () => {
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(
+        makeBody({
+          amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+          payments: [{ price: 60_000, status: "unpaid" }],
+        })
+      )
+    );
+    expect(res.status).toBe(400);
+  });
+
   it("reuses an existing client when mode='existing' and ownership matches", async () => {
     const existing = await Client.create({
       workspaceId,

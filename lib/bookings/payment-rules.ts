@@ -1,6 +1,18 @@
 export type PaymentStatus = "unpaid" | "paid";
-export type PaymentInput = { price: number; status: PaymentStatus; createdAt?: Date; paidAt?: Date | null };
-export type PaymentRecord = { price: number; status: PaymentStatus; createdAt: Date; paidAt: Date | null };
+export type PaymentInput = {
+  price: number;
+  status: PaymentStatus;
+  createdAt?: Date;
+  paidAt?: Date | null;
+  title?: string;
+};
+export type PaymentRecord = {
+  price: number;
+  status: PaymentStatus;
+  createdAt: Date;
+  paidAt: Date | null;
+  title: string;
+};
 
 export function normalizePayments(raw: PaymentInput[], now = new Date()): PaymentRecord[] {
   return raw.map((p) => ({
@@ -8,12 +20,22 @@ export function normalizePayments(raw: PaymentInput[], now = new Date()): Paymen
     status: p.status,
     createdAt: p.createdAt ?? now,
     paidAt: p.status === "paid" ? (p.paidAt ?? now) : null,
+    title: p.title ?? "",
   }));
 }
 
 const CENTS_EPSILON = 0.005;
 export function centsEqual(a: number, b: number): boolean {
   return Math.abs(a - b) < CENTS_EPSILON;
+}
+
+export function remainingBalance(
+  payments: { price: number }[],
+  amount: { total: number; deposit: number },
+  excludeIndex?: number
+): number {
+  const sum = payments.reduce((s, p, i) => (i === excludeIndex ? s : s + p.price), 0);
+  return amount.total - amount.deposit - sum;
 }
 
 export function isCompletionEligible(

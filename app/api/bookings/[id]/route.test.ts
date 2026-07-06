@@ -336,7 +336,7 @@ describe("PATCH /api/bookings/[id] — payments + completion guard", () => {
   it("persists a normalized payments patch (paidAt set, createdAt defaulted)", async () => {
     const c = await seedClient(workspaceId);
     const b = await seedBooking(workspaceId, c._id, {
-      amount: { total: 75_000, deposit: 75_000, currency: "PHP" },
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
     });
     const { PATCH } = await load();
     const res = await PATCH(
@@ -453,6 +453,21 @@ describe("PATCH /api/bookings/[id] — payments + completion guard", () => {
     expect(res.status).toBe(200);
     const fresh = await Booking.findById(b._id).lean();
     expect(fresh?.status).toBe("completed");
+  });
+
+  it("returns 422 payments_exceed_balance when a payments patch pushes the sum past total - deposit", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ payments: [{ price: 60_000, status: "unpaid" }] }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.error).toBe("payments_exceed_balance");
   });
 });
 

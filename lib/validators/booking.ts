@@ -35,6 +35,7 @@ export const bookingPaymentSchema = z.object({
   status: z.enum(BOOKING_PAYMENT_STATUSES),
   createdAt: isoDate.optional(),
   paidAt: isoDate.nullable().optional(),
+  title: z.string().max(120).trim().default(""),
 });
 
 const clientExistingBlock = z.object({
@@ -121,7 +122,13 @@ export const bookingCreateSchema = z.object({
     }),
   payments: z.array(bookingPaymentSchema).default([]),
   notes: z.string().max(2000).trim().default(""),
-});
+}).refine(
+  (v) => {
+    const sum = v.payments.reduce((s, p) => s + p.price, 0);
+    return sum <= v.amount.total - v.amount.deposit + 0.005; // epsilon for float rounding
+  },
+  { message: "Payments exceed the remaining balance", path: ["payments"] }
+);
 export type BookingCreateInput = z.infer<typeof bookingCreateSchema>;
 
 export const EDITABLE_KEYS = [

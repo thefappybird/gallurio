@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { normalizePayments, centsEqual, isCompletionEligible } from "./payment-rules";
+import { normalizePayments, centsEqual, isCompletionEligible, remainingBalance } from "./payment-rules";
 
 describe("normalizePayments", () => {
   it("defaults createdAt to now and forces paidAt to now when status is paid without paidAt", () => {
     const now = new Date("2026-07-05T00:00:00Z");
     const result = normalizePayments([{ price: 100, status: "paid" }], now);
     expect(result).toEqual([
-      { price: 100, status: "paid", createdAt: now, paidAt: now },
+      { price: 100, status: "paid", createdAt: now, paidAt: now, title: "" },
     ]);
   });
 
@@ -18,8 +18,18 @@ describe("normalizePayments", () => {
       now
     );
     expect(result).toEqual([
-      { price: 50, status: "unpaid", createdAt: past, paidAt: null },
+      { price: 50, status: "unpaid", createdAt: past, paidAt: null, title: "" },
     ]);
+  });
+
+  it("passes through a supplied title and defaults a missing title to an empty string", () => {
+    const now = new Date("2026-07-05T00:00:00Z");
+    const result = normalizePayments(
+      [{ price: 100, status: "unpaid", title: "Deposit" }, { price: 50, status: "unpaid" }],
+      now
+    );
+    expect(result[0].title).toBe("Deposit");
+    expect(result[1].title).toBe("");
   });
 });
 
@@ -57,5 +67,29 @@ describe("isCompletionEligible", () => {
     expect(
       isCompletionEligible([{ price: 50_000, status: "paid" }], { total: 75_000, deposit: 25_000 })
     ).toBe(true);
+  });
+});
+
+describe("remainingBalance", () => {
+  it("returns the amount left after deposit and existing payments", () => {
+    expect(
+      remainingBalance([{ price: 20_000 }], { total: 75_000, deposit: 25_000 })
+    ).toBe(30_000);
+  });
+
+  it("excludes the payment at excludeIndex from the sum (editing that payment in place)", () => {
+    expect(
+      remainingBalance(
+        [{ price: 20_000 }, { price: 30_000 }],
+        { total: 75_000, deposit: 25_000 },
+        1
+      )
+    ).toBe(30_000);
+  });
+
+  it("returns zero when deposit + payments exactly cover the total", () => {
+    expect(
+      remainingBalance([{ price: 50_000 }], { total: 75_000, deposit: 25_000 })
+    ).toBe(0);
   });
 });
