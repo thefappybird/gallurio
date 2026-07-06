@@ -70,6 +70,8 @@ const workspaceSchema = new Schema(
       email: { type: String, default: "" },
       phone: { type: String, default: "" },
       address: { type: String, default: "" },
+      addressLat: { type: Number, default: null },
+      addressLng: { type: Number, default: null },
       socials: {
         instagram: { type: String, default: "" },
         facebook: { type: String, default: "" },

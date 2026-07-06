@@ -140,6 +140,8 @@ export const updateWorkspaceBusinessSchema = z.object({
   timezone: workspaceSetupSchema.shape.timezone,
   contactEmail: z.union([z.string().email("Enter a valid email"), z.literal("")]).optional().default(""),
   contactAddress: z.string().max(200).trim().optional().default(""),
+  contactAddressLat: z.number().min(-90).max(90).nullable().optional(),
+  contactAddressLng: z.number().min(-180).max(180).nullable().optional(),
   logoUrl: z.string().trim().url().or(z.literal("")).optional().default(""),
   logoAssetId: z.string().trim().optional().default(""),
 });

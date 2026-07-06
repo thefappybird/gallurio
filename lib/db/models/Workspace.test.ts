@@ -78,6 +78,18 @@ it("new workspace has formDir defaulting to empty string", async () => {
   expect(ws.publicPage?.formDir).toBe("");
 });
 
+describe("Workspace.contact.addressLat / addressLng defaults", () => {
+  it("new workspace has addressLat and addressLng defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "address-coords-studio",
+      name: "Address Coords Studio",
+      ownerUserId: "user_coords_1",
+    });
+    expect(ws.contact?.addressLat).toBeNull();
+    expect(ws.contact?.addressLng).toBeNull();
+  });
+});
+
 describe("Workspace.invoiceTheme defaults", () => {
   it("new workspace has invoiceTheme defaulting to the classic preset", async () => {
     const ws = await Workspace.create({
