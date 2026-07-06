@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2, Upload, X } from "lucide-react";
@@ -21,6 +21,7 @@ import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocationPicker } from "@/components/ui/location-picker";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 
@@ -300,10 +301,25 @@ export function WorkspaceBusinessForm({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="contactAddress">{t("contactAddress")}</Label>
-            <Input
-              id="contactAddress"
-              placeholder={t("contactAddressPlaceholder")}
-              {...register("contactAddress")}
+            <Controller
+              control={control}
+              name="contactAddress"
+              render={({ field }) => (
+                <LocationPicker
+                  id="contactAddress"
+                  editable
+                  value={{
+                    address: field.value ?? "",
+                    lat: watch("contactAddressLat") ?? null,
+                    lng: watch("contactAddressLng") ?? null,
+                  }}
+                  onChange={(v) => {
+                    field.onChange(v.address);
+                    setValue("contactAddressLat", v.lat);
+                    setValue("contactAddressLng", v.lng);
+                  }}
+                />
+              )}
             />
             {errors.contactAddress && (
               <p className="text-sm text-destructive">{errors.contactAddress.message}</p>
