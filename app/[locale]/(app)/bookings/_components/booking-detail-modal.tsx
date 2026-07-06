@@ -265,6 +265,18 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
   const [pendingPaymentEdits, setPendingPaymentEdits] = useState<
     Record<number, PendingPaymentEdit>
   >({});
+  /** Indexes into booking.payments staged for removal on next Save. */
+  const [removedPaymentIndexes, setRemovedPaymentIndexes] = useState<Set<number>>(
+    new Set()
+  );
+  function handleToggleRemovePayment(idx: number) {
+    setRemovedPaymentIndexes((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  }
   /**
    * Confirm-discard dialog state — replaces window.confirm for close-with-unsaved.
    */
@@ -585,7 +597,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
     Object.keys(pendingSessionEdits).length +
     lockedDraftCount +
     draftPayments.length +
-    Object.keys(pendingPaymentEdits).length;
+    Object.keys(pendingPaymentEdits).length +
+    removedPaymentIndexes.size;
   const hasPending = pendingCount > 0;
 
   // Count open inline editors for EXISTING sessions (keys are numeric strings).
@@ -674,6 +687,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
     setDraftSessions([]);
     setDraftPayments([]);
     setPendingPaymentEdits({});
+    setRemovedPaymentIndexes(new Set());
     setSaveError(null);
     setReassignedClient(null);
   }
@@ -766,7 +780,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       Object.keys(pendingSessionEdits).length > 0 ||
       draftSessions.some((d) => d.locked) ||
       draftPayments.length > 0 ||
-      Object.keys(pendingPaymentEdits).length > 0;
+      Object.keys(pendingPaymentEdits).length > 0 ||
+      removedPaymentIndexes.size > 0;
     if (!hasSomethingToSave || !booking) return;
     if (hasAnyConflict) {
       setSaveError(t("conflictBlocksSave"));
@@ -783,6 +798,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
     const previousSessionEdits = pendingSessionEdits;
     const previousDraftPayments = draftPayments;
     const previousPaymentEdits = pendingPaymentEdits;
+    const previousRemovedPaymentIndexes = removedPaymentIndexes;
     const optimistic = applyChanges(booking, effectivePending);
 
     // Build the final sessions array: overlay pendingSessionEdits onto existing,
@@ -829,11 +845,17 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       ) {
         body["sessions"] = mergedSessions;
       }
-      if (draftPayments.length > 0 || Object.keys(pendingPaymentEdits).length > 0) {
-        const existing = previous.payments.map((p, i) => {
-          const edit = pendingPaymentEdits[i];
-          return edit ? { price: edit.price, status: edit.status, title: edit.title } : p;
-        });
+      if (
+        draftPayments.length > 0 ||
+        Object.keys(pendingPaymentEdits).length > 0 ||
+        removedPaymentIndexes.size > 0
+      ) {
+        const existing = previous.payments
+          .map((p, i) => {
+            const edit = pendingPaymentEdits[i];
+            return edit ? { price: edit.price, status: edit.status, title: edit.title } : p;
+          })
+          .filter((_, i) => !removedPaymentIndexes.has(i));
         body["payments"] = [
           ...existing,
           ...draftPayments.map((d) => ({ price: d.price, status: d.status, title: d.title })),
@@ -864,6 +886,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       setDraftSessions([]);
       setDraftPayments([]);
       setPendingPaymentEdits({});
+      setRemovedPaymentIndexes(new Set());
       setReassignedClient(null);
       toast.success(t("savedToast"));
       startTransition(() => router.refresh());
@@ -876,6 +899,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       setPendingSessionEdits(previousSessionEdits);
       setDraftPayments(previousDraftPayments);
       setPendingPaymentEdits(previousPaymentEdits);
+      setRemovedPaymentIndexes(previousRemovedPaymentIndexes);
       const msg = err instanceof Error ? err.message : errMsg(null);
       setSaveError(msg);
       toast.error(msg);
@@ -1339,6 +1363,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
               onCommitPaymentEdit={(index, edit) => {
                 setPendingPaymentEdits((prev) => ({ ...prev, [index]: edit }));
               }}
+              removedPaymentIndexes={removedPaymentIndexes}
+              onToggleRemovePayment={handleToggleRemovePayment}
               onDiscardDraft={handleDiscardDraft}
               onUpdateDraft={handleUpdateDraft}
               onLockDraft={handleLockDraft}
@@ -1857,6 +1883,8 @@ function BookingTabs({
   onUpdateDraftPaymentTitle,
   onRemoveDraftPayment,
   onCommitPaymentEdit,
+  removedPaymentIndexes,
+  onToggleRemovePayment,
   registerFieldHandle,
   onFieldEditingChange,
 }: {
@@ -1907,6 +1935,8 @@ function BookingTabs({
   onUpdateDraftPaymentTitle: (index: number, title: string) => void;
   onRemoveDraftPayment: (draftId: string) => void;
   onCommitPaymentEdit: (index: number, edit: PendingPaymentEdit) => void;
+  removedPaymentIndexes: Set<number>;
+  onToggleRemovePayment: (idx: number) => void;
   registerFieldHandle: (editKey: string, handle: FieldHandle | null) => void;
   onFieldEditingChange: (editKey: string, editing: boolean) => void;
 }) {
@@ -2258,15 +2288,16 @@ function BookingTabs({
         {(() => {
           const depositForAddGate =
             (pending["amount.deposit"] as number) ?? booking.amount.deposit;
+          const remainingPaymentsCount = booking.payments.length - removedPaymentIndexes.size;
           const allPaymentsForGate = [
-            ...booking.payments.map((p, i) => ({
-              price: pendingPaymentEdits[i]?.price ?? p.price,
-            })),
+            ...booking.payments
+              .map((p, i) => ({ price: pendingPaymentEdits[i]?.price ?? p.price, i }))
+              .filter(({ i }) => !removedPaymentIndexes.has(i)),
             ...draftPayments.map((d) => ({ price: d.price })),
           ];
           const noBalanceRemaining =
             remainingBalance(allPaymentsForGate, { total, deposit: depositForAddGate }) <= 0;
-          return booking.payments.length === 0 && draftPayments.length === 0 ? (
+          return remainingPaymentsCount <= 0 && draftPayments.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <p className="text-sm text-muted-foreground">{tPayments("empty")}</p>
             {!readOnly ? (
@@ -2286,6 +2317,7 @@ function BookingTabs({
           <>
         <div className="flex flex-col gap-2">
           {booking.payments.map((payment, idx) => {
+            if (removedPaymentIndexes.has(idx)) return null;
             const edit = pendingPaymentEdits[idx];
             const effectivePrice = edit?.price ?? payment.price;
             const effectiveStatus = edit?.status ?? payment.status;
@@ -2294,7 +2326,7 @@ function BookingTabs({
               (pending["amount.deposit"] as number) ?? booking.amount.deposit;
             const otherPayments = [
               ...booking.payments.map((p, i) => ({
-                price: pendingPaymentEdits[i]?.price ?? p.price,
+                price: removedPaymentIndexes.has(i) ? 0 : (pendingPaymentEdits[i]?.price ?? p.price),
               })),
               ...draftPayments.map((d) => ({ price: d.price })),
             ];
@@ -2398,6 +2430,18 @@ function BookingTabs({
                 >
                   <PencilIcon className="size-4" />
                 </Button>
+                {!readOnly ? (
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={`Delete ${tPayments("label", { n: idx + 1 })}`}
+                    onClick={() => onToggleRemovePayment(idx)}
+                    className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+                  >
+                    <Trash2Icon className="size-4" />
+                  </Button>
+                ) : null}
               </div>
             );
           })}
@@ -2406,7 +2450,7 @@ function BookingTabs({
               (pending["amount.deposit"] as number) ?? booking.amount.deposit;
             const otherPayments = [
               ...booking.payments.map((p, i) => ({
-                price: pendingPaymentEdits[i]?.price ?? p.price,
+                price: removedPaymentIndexes.has(i) ? 0 : (pendingPaymentEdits[i]?.price ?? p.price),
               })),
               ...draftPayments.map((d) => ({ price: d.price })),
             ];

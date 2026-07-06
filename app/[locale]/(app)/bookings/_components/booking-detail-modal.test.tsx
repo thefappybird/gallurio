@@ -2163,6 +2163,50 @@ describe("Payments section — cap to remaining balance", () => {
   });
 });
 
+describe("Payments section — delete existing payment", () => {
+  it("removes an existing payment from the PATCH body on Save after clicking its delete button", async () => {
+    const PAYMENT_0 = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      paidAt: null,
+      title: "",
+    };
+    const PAYMENT_1 = {
+      price: 2000,
+      status: "unpaid" as const,
+      createdAt: "2026-01-02T00:00:00.000Z",
+      paidAt: null,
+      title: "",
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [PAYMENT_0, PAYMENT_1] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /delete payment 1/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([PAYMENT_1]);
+    });
+  });
+});
+
 describe("Payments section", () => {
   it("adds a draft payment via Add payment and includes it in the PATCH body on Save", async () => {
     const fetchMock = makeFetch();
