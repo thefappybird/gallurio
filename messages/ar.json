@@ -574,7 +574,9 @@
         "status": "الحالة",
         "paid": "مدفوع",
         "unpaid": "غير مدفوع",
-        "paidOn": "دُفع في {date}"
+        "paidOn": "دُفع في {date}",
+        "empty": "لا توجد مدفوعات مجدولة بعد لهذا الحجز",
+        "exceedsBalance": "يتجاوز الرصيد المتبقي"
       },
       "wizard": {
         "createTitle": "حجز جديد",
@@ -608,7 +610,7 @@
           "client": "العميل",
           "event": "المناسبة",
           "pricing": "التسعير",
-          "eventPricing": "المناسبة والتسعير",
+          "eventPricing": "المناسبة",
           "payments": "المدفوعات",
           "sessionsLocation": "الجلسات",
           "review": "المراجعة"

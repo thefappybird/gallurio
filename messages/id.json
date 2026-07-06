@@ -574,7 +574,9 @@
         "status": "Status",
         "paid": "Dibayar",
         "unpaid": "Belum dibayar",
-        "paidOn": "Dibayar pada {date}"
+        "paidOn": "Dibayar pada {date}",
+        "empty": "Belum ada pembayaran terjadwal untuk pemesanan ini",
+        "exceedsBalance": "Melebihi sisa saldo"
       },
       "wizard": {
         "createTitle": "Pemesanan baru",
@@ -608,7 +610,7 @@
           "client": "Klien",
           "event": "Acara",
           "pricing": "Harga",
-          "eventPricing": "Acara & Harga",
+          "eventPricing": "Acara",
           "payments": "Pembayaran",
           "sessionsLocation": "Sesi",
           "review": "Tinjau"

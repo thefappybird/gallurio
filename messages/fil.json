@@ -574,7 +574,9 @@
         "status": "Katayuan",
         "paid": "Nabayaran",
         "unpaid": "Hindi pa bayad",
-        "paidOn": "Binayaran noong {date}"
+        "paidOn": "Binayaran noong {date}",
+        "empty": "Wala pang naka-iskedyul na bayad para sa bookingn na ito",
+        "exceedsBalance": "Lumalampas sa natitirang balanse"
       },
       "wizard": {
         "createTitle": "Bagong booking",
@@ -608,7 +610,7 @@
           "client": "Kliyente",
           "event": "Event",
           "pricing": "Presyo",
-          "eventPricing": "Event at Presyo",
+          "eventPricing": "Event",
           "payments": "Mga Bayad",
           "sessionsLocation": "Mga Sesyon",
           "review": "Suriin"

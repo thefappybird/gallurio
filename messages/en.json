@@ -574,7 +574,9 @@
         "status": "Status",
         "paid": "Paid",
         "unpaid": "Unpaid",
-        "paidOn": "Paid on {date}"
+        "paidOn": "Paid on {date}",
+        "empty": "No payments scheduled yet for this booking",
+        "exceedsBalance": "Exceeds remaining balance"
       },
       "wizard": {
         "createTitle": "New booking",
@@ -608,7 +610,7 @@
           "client": "Client",
           "event": "Event",
           "pricing": "Pricing",
-          "eventPricing": "Event & Pricing",
+          "eventPricing": "Event",
           "payments": "Payments",
           "sessionsLocation": "Sessions",
           "review": "Review"

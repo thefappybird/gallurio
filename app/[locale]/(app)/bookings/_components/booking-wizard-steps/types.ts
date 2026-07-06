@@ -26,7 +26,7 @@ export type WizardSession = {
 };
 
 export type WizardPaymentStatus = "unpaid" | "paid";
-export type WizardPayment = { price: number; status: WizardPaymentStatus };
+export type WizardPayment = { price: number; status: WizardPaymentStatus; title: string };
 
 export type WizardValues = {
   client: WizardClient;

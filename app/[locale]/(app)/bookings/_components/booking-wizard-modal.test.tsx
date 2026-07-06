@@ -1519,6 +1519,17 @@ describe("BookingWizardModal — deposit requires total", () => {
     fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
       target: { value: "Test Booking" },
     });
+    const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInput);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /accept location/i }));
+    });
+    // Advance to the Payments step, where the pricing fields now live.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
     fireEvent.change(screen.getByLabelText(/^deposit$/i), {
       target: { value: "1000" },
     });
@@ -1530,7 +1541,90 @@ describe("BookingWizardModal — deposit requires total", () => {
     expect(
       screen.getByText(/cannot add a deposit without setting a price/i)
     ).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^deposit$/i)).toBeInTheDocument();
+  });
+});
+
+// ── Payments cap + required-title gating ──────────────────────────────────────
+//
+// A payment whose price exceeds the booking's remaining balance must block
+// Next on the Payments step.
+describe("BookingWizardModal — payments cap blocks Next", () => {
+  it("blocks Next when a payment's price exceeds the remaining balance", async () => {
+    mockFetchWithConflict();
+    renderWizard();
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+    const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInput);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /accept location/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // On the Payments step — set a total of 100, then add a payment priced at 500.
+    fireEvent.change(screen.getByLabelText(/^total$/i), {
+      target: { value: "100" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    });
+    fireEvent.change(document.getElementById("wiz-payment-price-0") as HTMLInputElement, {
+      target: { value: "500" },
+    });
+    fireEvent.change(document.getElementById("wiz-payment-title-0") as HTMLInputElement, {
+      target: { value: "Deposit" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Must still be on the Payments step — Sessions & Location must not be reached.
+    expect(document.getElementById("wiz-startDate-0")).not.toBeInTheDocument();
+  });
+
+  it("blocks Next when a payment's title is left empty", async () => {
+    mockFetchWithConflict();
+    renderWizard();
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+    const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInput);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /accept location/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // On the Payments step — set a total, add a payment with a price but no title.
+    fireEvent.change(screen.getByLabelText(/^total$/i), {
+      target: { value: "500" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    });
+    fireEvent.change(document.getElementById("wiz-payment-price-0") as HTMLInputElement, {
+      target: { value: "100" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Must still be on the Payments step.
+    expect(document.getElementById("wiz-startDate-0")).not.toBeInTheDocument();
   });
 });
 
@@ -1616,12 +1710,17 @@ describe("BookingWizardModal — payments payload", () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }));
     });
 
-    // Now on the Payments step — add one payment.
+    // Now on the Payments step — set a total so a payment can be added, then add one.
+    fireEvent.change(screen.getByLabelText(/^total$/i), {
+      target: { value: "500" },
+    });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
     });
     const priceInput = document.getElementById("wiz-payment-price-0") as HTMLInputElement;
     fireEvent.change(priceInput, { target: { value: "500" } });
+    const titleInput = document.getElementById("wiz-payment-title-0") as HTMLInputElement;
+    fireEvent.change(titleInput, { target: { value: "Deposit" } });
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }));
@@ -1655,7 +1754,7 @@ describe("BookingWizardModal — payments payload", () => {
       );
       expect(postCall).toBeDefined();
       const body = JSON.parse((postCall![1] as RequestInit).body as string);
-      expect(body.payments).toEqual([{ price: 500, status: "unpaid" }]);
+      expect(body.payments).toEqual([{ price: 500, status: "unpaid", title: "Deposit" }]);
     });
   });
 });
@@ -1688,8 +1787,8 @@ describe("BookingWizardModal — payments edit diff", () => {
         { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
       ],
       location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
-      amount: { total: 0, deposit: 0, currency: "PHP" as const },
-      payments: [{ price: 100, status: "unpaid" as const }],
+      amount: { total: 500, deposit: 0, currency: "PHP" as const },
+      payments: [{ price: 100, status: "unpaid" as const, title: "Deposit" }],
       notes: "",
     };
 
@@ -1735,7 +1834,7 @@ describe("BookingWizardModal — payments edit diff", () => {
       );
       expect(patchCall).toBeDefined();
       const body = JSON.parse((patchCall![1] as RequestInit).body as string);
-      expect(body.payments).toEqual([{ price: 250, status: "unpaid" }]);
+      expect(body.payments).toEqual([{ price: 250, status: "unpaid", title: "Deposit" }]);
     });
   });
 });

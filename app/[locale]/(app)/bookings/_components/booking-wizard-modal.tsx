@@ -85,15 +85,15 @@ type StepDef = {
 
 const ALL_STEPS: StepDef[] = [
   { id: "client", fields: ["client"] },
-  { id: "eventPricing", fields: ["title", "eventType", "teamId", "amount", "location"] },
-  { id: "payments", fields: ["payments"] },
+  { id: "eventPricing", fields: ["title", "eventType", "teamId", "location"] },
+  { id: "payments", fields: ["payments", "amount"] },
   { id: "sessionsLocation", fields: ["sessions"] },
   { id: "review", fields: [] },
 ];
 
 const MULTI_SESSION_STEPS: StepDef[] = [
-  { id: "eventPricing", fields: ["title", "eventType", "amount", "location"] },
-  { id: "payments", fields: ["payments"] },
+  { id: "eventPricing", fields: ["title", "eventType", "location"] },
+  { id: "payments", fields: ["payments", "amount"] },
   { id: "sessionsLocation", fields: ["sessions"] },
   { id: "review", fields: [] },
 ];
@@ -464,6 +464,11 @@ export function BookingWizardModal({
       if (!title?.trim()) return false;
       // In create mode, a team must be selected.
       if (mode === "create" && !watch("teamId")) return false;
+      // Location is required — must have a committed (non-empty) address.
+      const location = watch("location");
+      if (!location?.address?.trim()) return false;
+    }
+    if (step.id === "payments") {
       const { total, deposit } = watch("amount");
       if (typeof total !== "number" || total < 0) return false;
       if (typeof deposit !== "number" || deposit < 0) return false;
@@ -476,11 +481,6 @@ export function BookingWizardModal({
       }
       clearErrors("amount.deposit");
       if (deposit > total) return false;
-      // Location is required — must have a committed (non-empty) address.
-      const location = watch("location");
-      if (!location?.address?.trim()) return false;
-    }
-    if (step.id === "payments") {
       const payments = watch("payments") ?? [];
       if (payments.some((p) => typeof p.price !== "number" || p.price < 0)) return false;
     }
@@ -509,8 +509,8 @@ export function BookingWizardModal({
     const ok = await validateStep(stepIndex);
     if (!ok) {
       markStepInvalid(stepIndex);
-      // Event & Pricing's specific "deposit > total" surfaces as a top-of-footer error.
-      if (STEPS[stepIndex].id === "eventPricing") {
+      // Payments' specific "deposit > total" surfaces as a top-of-footer error.
+      if (STEPS[stepIndex].id === "payments") {
         const { total, deposit } = watch("amount");
         if (deposit > total) setSubmitError(t("depositExceedsTotal"));
       }
@@ -1068,7 +1068,7 @@ function buildCreatePayload(v: WizardValues, timeZone: string) {
       deposit: v.amount.deposit,
       currency: v.amount.currency,
     },
-    payments: v.payments.map((p) => ({ price: p.price, status: p.status })),
+    payments: v.payments.map((p) => ({ price: p.price, status: p.status, title: p.title })),
     notes: v.notes,
     teamId: v.teamId || undefined,
   };
@@ -1108,7 +1108,7 @@ function buildEditDiff(
   const paymentsChanged =
     JSON.stringify(v.payments) !== JSON.stringify(defaults.payments);
   if (paymentsChanged) {
-    diff.payments = v.payments.map((p) => ({ price: p.price, status: p.status }));
+    diff.payments = v.payments.map((p) => ({ price: p.price, status: p.status, title: p.title }));
   }
 
   if (v.notes !== defaults.notes) diff.notes = v.notes;

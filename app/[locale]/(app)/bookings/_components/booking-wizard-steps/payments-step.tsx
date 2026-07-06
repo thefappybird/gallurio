@@ -24,6 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BOOKING_PAYMENT_STATUSES } from "@/lib/validators/booking";
+import {
+  SUPPORTED_CURRENCIES,
+  type SupportedCurrency,
+} from "@/lib/validators/workspace";
+import { remainingBalance } from "@/lib/bookings/payment-rules";
 import type { WizardPaymentStatus, WizardValues } from "./types";
 
 type Props = {
@@ -38,6 +43,7 @@ function PaymentCard({
   index,
   control,
   register,
+  watch,
   errors,
   onRemove,
   defaultOpen,
@@ -45,6 +51,7 @@ function PaymentCard({
   index: number;
   control: Control<WizardValues>;
   register: UseFormRegister<WizardValues>;
+  watch: UseFormWatch<WizardValues>;
   errors: FieldErrors<WizardValues>;
   onRemove: () => void;
   defaultOpen: boolean;
@@ -53,13 +60,22 @@ function PaymentCard({
   const [expanded, setExpanded] = useState(defaultOpen);
 
   const paymentErrors = errors.payments?.[index];
+  const allPayments = watch("payments") ?? [];
+  const amount = watch("amount");
+  const max = remainingBalance(allPayments, amount, index);
 
   return (
     <CollapsibleDrawer
       title={
-        <span className="text-sm font-semibold">
-          {tPayments("label", { n: index + 1 })}
-        </span>
+        <div onClick={(e) => e.stopPropagation()}>
+          <Input
+            id={`wiz-payment-title-${index}`}
+            {...register(`payments.${index}.title`, { required: true })}
+            placeholder={tPayments("label", { n: index + 1 })}
+            aria-invalid={paymentErrors?.title ? "true" : undefined}
+            className="h-auto border-none bg-transparent p-0 text-sm font-semibold shadow-none focus-visible:ring-0"
+          />
+        </div>
       }
       actions={
         <Button
@@ -83,10 +99,19 @@ function PaymentCard({
           type="number"
           inputMode="decimal"
           min={0}
+          max={max}
           step="1"
-          {...register(`payments.${index}.price`, { valueAsNumber: true, min: 0 })}
+          {...register(`payments.${index}.price`, {
+            valueAsNumber: true,
+            min: 0,
+            max: { value: max, message: tPayments("exceedsBalance") },
+            validate: (v) => v > 0,
+          })}
           aria-invalid={paymentErrors?.price ? "true" : undefined}
         />
+        {paymentErrors?.price?.message ? (
+          <p className="text-xs text-destructive">{paymentErrors.price.message}</p>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-1">
@@ -100,7 +125,9 @@ function PaymentCard({
               onValueChange={(v) => v && field.onChange(v)}
             >
               <SelectTrigger id={`wiz-payment-status-${index}`}>
-                <SelectValue placeholder={tPayments("status")} />
+                <SelectValue placeholder={tPayments("status")}>
+                  {(v: string) => tPayments(v)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {BOOKING_PAYMENT_STATUSES.map((s) => (
@@ -117,8 +144,9 @@ function PaymentCard({
   );
 }
 
-export function PaymentsStep({ control, register, errors }: Props) {
+export function PaymentsStep({ control, register, watch, errors }: Props) {
   const tPayments = useTranslations("app.bookings.payments");
+  const tPricing = useTranslations("app.bookings.wizard.pricing");
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -126,11 +154,76 @@ export function PaymentsStep({ control, register, errors }: Props) {
   });
 
   function addPayment() {
-    append({ price: 0, status: "unpaid" });
+    append({ price: 0, status: "unpaid", title: "" });
   }
+
+  const paymentsWatched = watch("payments") ?? [];
+  const amountWatched = watch("amount");
+  const canAddPayment = remainingBalance(paymentsWatched, amountWatched) > 0;
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="wiz-total">{tPricing("total")}</Label>
+          <Input
+            id="wiz-total"
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="1"
+            {...register("amount.total", { valueAsNumber: true })}
+          />
+          {errors.amount?.total ? (
+            <p className="text-xs text-destructive">{errors.amount.total.message}</p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="wiz-deposit">{tPricing("deposit")}</Label>
+          <Input
+            id="wiz-deposit"
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="1"
+            {...register("amount.deposit", { valueAsNumber: true })}
+          />
+          {errors.amount?.deposit ? (
+            <p className="text-xs text-destructive">{errors.amount.deposit.message}</p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="wiz-currency">{tPricing("currency")}</Label>
+          <Controller
+            control={control}
+            name="amount.currency"
+            render={({ field }) => (
+              <Select<SupportedCurrency>
+                value={field.value}
+                onValueChange={(v) => v && field.onChange(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={tPricing("currency")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+
+        <p className="sm:col-span-3 text-xs text-muted-foreground">
+          {tPricing("hint")}
+        </p>
+      </div>
+
       <div className="flex flex-col gap-3">
         {fields.map((field, i) => (
           <PaymentCard
@@ -138,6 +231,7 @@ export function PaymentsStep({ control, register, errors }: Props) {
             index={i}
             control={control}
             register={register}
+            watch={watch}
             errors={errors}
             onRemove={() => remove(i)}
             defaultOpen={i === fields.length - 1}
@@ -145,16 +239,33 @@ export function PaymentsStep({ control, register, errors }: Props) {
         ))}
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={addPayment}
-        className="self-start"
-      >
-        <PlusIcon className="size-4" />
-        {tPayments("add")}
-      </Button>
+      {fields.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-4 text-center">
+          <p className="text-sm text-muted-foreground">{tPayments("empty")}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addPayment}
+            disabled={!canAddPayment}
+          >
+            <PlusIcon className="size-4" />
+            {tPayments("add")}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addPayment}
+          className="self-start"
+          disabled={!canAddPayment}
+        >
+          <PlusIcon className="size-4" />
+          {tPayments("add")}
+        </Button>
+      )}
     </div>
   );
 }
