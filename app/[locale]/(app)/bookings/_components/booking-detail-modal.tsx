@@ -1275,6 +1275,9 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
         <DialogHeaderBar
           booking={booking}
           pending={pending}
+          pendingPaymentEdits={pendingPaymentEdits}
+          draftPayments={draftPayments}
+          removedPaymentIndexes={removedPaymentIndexes}
           loading={loading}
           locale={locale}
           disabled={saving}
@@ -1532,6 +1535,9 @@ function UnconfirmedDraftsDialog({
 function DialogHeaderBar({
   booking,
   pending,
+  pendingPaymentEdits,
+  draftPayments,
+  removedPaymentIndexes,
   loading,
   locale,
   disabled,
@@ -1543,6 +1549,9 @@ function DialogHeaderBar({
 }: {
   booking: BookingDoc | null;
   pending: PendingChanges;
+  pendingPaymentEdits: Record<number, PendingPaymentEdit>;
+  draftPayments: DraftPayment[];
+  removedPaymentIndexes: Set<number>;
   loading: boolean;
   locale: string;
   disabled: boolean;
@@ -1570,7 +1579,16 @@ function DialogHeaderBar({
     const deposit =
       (pending["amount.deposit"] as number) ?? booking.amount.deposit;
     currency = (pending["amount.currency"] as string) ?? booking.amount.currency;
-    outstanding = Math.max(0, (total ?? 0) - (deposit ?? 0));
+    const effectivePayments = [
+      ...booking.payments
+        .map((p, i) => {
+          const edit = pendingPaymentEdits[i];
+          return edit ? { price: edit.price } : { price: p.price };
+        })
+        .filter((_, i) => !removedPaymentIndexes.has(i)),
+      ...draftPayments.map((d) => ({ price: d.price })),
+    ];
+    outstanding = Math.max(0, remainingBalance(effectivePayments, { total, deposit }));
   }
   const isOverdue = booking ? outstanding > 0 : false;
 

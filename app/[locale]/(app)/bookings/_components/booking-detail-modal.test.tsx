@@ -2410,3 +2410,29 @@ describe("Payments section", () => {
     });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Outstanding balance — must reflect payments, not just total - deposit
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Header outstanding balance", () => {
+  it("subtracts recorded payments from total - deposit", async () => {
+    // total 10000, deposit 3000, payment 2000 → outstanding should be 5000,
+    // not 7000 (total - deposit alone).
+    const PAYMENT = {
+      price: 2000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    expect(screen.getByText("Outstanding balance: ₱5,000")).toBeInTheDocument();
+  });
+});
