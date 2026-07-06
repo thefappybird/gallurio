@@ -585,8 +585,10 @@
         "paid": "Nabayaran",
         "unpaid": "Hindi pa bayad",
         "paidOn": "Binayaran noong {date}",
-        "empty": "Wala pang naka-iskedyul na bayad para sa bookingn na ito",
-        "exceedsBalance": "Lumalampas sa natitirang balanse"
+        "empty": "Wala pang naka-iskedyul na bayad para sa booking na ito",
+        "exceedsBalance": "Lumalampas sa natitirang balanse",
+        "titleRequired": "Kailangan ang pamagat.",
+        "priceRequired": "Dapat mas mataas sa 0 ang halaga."
       },
       "wizard": {
         "createTitle": "Bagong booking",

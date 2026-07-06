@@ -586,7 +586,9 @@
         "unpaid": "Belum dibayar",
         "paidOn": "Dibayar pada {date}",
         "empty": "Belum ada bayaran dijadualkan untuk tempahan ini",
-        "exceedsBalance": "Melebihi baki tertunggak"
+        "exceedsBalance": "Melebihi baki tertunggak",
+        "titleRequired": "Tajuk diperlukan.",
+        "priceRequired": "Amaun mesti lebih besar daripada 0."
       },
       "wizard": {
         "createTitle": "Tempahan baru",

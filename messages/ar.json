@@ -586,7 +586,9 @@
         "unpaid": "غير مدفوع",
         "paidOn": "دُفع في {date}",
         "empty": "لا توجد مدفوعات مجدولة بعد لهذا الحجز",
-        "exceedsBalance": "يتجاوز الرصيد المتبقي"
+        "exceedsBalance": "يتجاوز الرصيد المتبقي",
+        "titleRequired": "العنوان مطلوب.",
+        "priceRequired": "يجب أن يكون المبلغ أكبر من 0."
       },
       "wizard": {
         "createTitle": "حجز جديد",

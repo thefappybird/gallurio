@@ -2543,14 +2543,33 @@ describe("Payments section", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Header outstanding balance", () => {
-  it("subtracts recorded payments from total - deposit", async () => {
-    // total 10000, deposit 3000, payment 2000 → outstanding should be 5000,
-    // not 7000 (total - deposit alone).
+  it("does not reduce outstanding balance for an unpaid scheduled payment", async () => {
+    // total 10000, deposit 3000 → outstanding stays 7000; an unpaid payment
+    // isn't money in hand yet, so it must not clear the balance.
     const PAYMENT = {
       price: 2000,
       status: "unpaid" as const,
       createdAt: new Date().toISOString(),
       paidAt: null,
+      title: "",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    expect(screen.getByText("Outstanding balance: ₱7,000")).toBeInTheDocument();
+  });
+
+  it("subtracts a paid payment from total - deposit", async () => {
+    // total 10000, deposit 3000, paid payment 2000 → outstanding 5000.
+    const PAYMENT = {
+      price: 2000,
+      status: "paid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
       title: "",
     };
     vi.stubGlobal(

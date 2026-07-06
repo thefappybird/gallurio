@@ -1595,12 +1595,15 @@ function DialogHeaderBar({
       ...booking.payments
         .map((p, i) => {
           const edit = pendingPaymentEdits[i];
-          return edit ? { price: edit.price } : { price: p.price };
+          return edit
+            ? { price: edit.price, status: edit.status ?? p.status }
+            : { price: p.price, status: p.status };
         })
         .filter((_, i) => !removedPaymentIndexes.has(i)),
-      ...draftPayments.map((d) => ({ price: d.price })),
+      ...draftPayments.map((d) => ({ price: d.price, status: d.status })),
     ];
-    outstanding = Math.max(0, remainingBalance(effectivePayments, { total, deposit }));
+    const paidOnly = effectivePayments.filter((p) => p.status === "paid");
+    outstanding = Math.max(0, remainingBalance(paidOnly, { total, deposit }));
   }
   const isOverdue = booking ? outstanding > 0 : false;
 

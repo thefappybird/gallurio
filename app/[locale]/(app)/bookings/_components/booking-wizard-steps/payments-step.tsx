@@ -70,11 +70,16 @@ function PaymentCard({
         <div onClick={(e) => e.stopPropagation()}>
           <Input
             id={`wiz-payment-title-${index}`}
-            {...register(`payments.${index}.title`, { required: true })}
+            {...register(`payments.${index}.title`, {
+              required: { value: true, message: tPayments("titleRequired") },
+            })}
             placeholder={tPayments("label", { n: index + 1 })}
             aria-invalid={paymentErrors?.title ? "true" : undefined}
             className="h-auto border-none bg-transparent p-0 text-sm font-semibold shadow-none focus-visible:ring-0"
           />
+          {paymentErrors?.title?.message ? (
+            <p className="text-xs text-destructive">{paymentErrors.title.message}</p>
+          ) : null}
         </div>
       }
       actions={
@@ -105,7 +110,7 @@ function PaymentCard({
             valueAsNumber: true,
             min: 0,
             max: { value: max, message: tPayments("exceedsBalance") },
-            validate: (v) => v > 0,
+            validate: (v) => v > 0 || tPayments("priceRequired"),
           })}
           aria-invalid={paymentErrors?.price ? "true" : undefined}
         />
