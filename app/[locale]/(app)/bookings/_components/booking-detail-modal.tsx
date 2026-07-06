@@ -132,11 +132,6 @@ type BookingDoc = {
   notes: string;
 };
 
-/** A payment entry after merging saved payments (with pending edits applied and
- *  removals excluded) with draft payments — the single shape used by the cap
- *  check, the outstanding-balance calc, and the PATCH payload builder. */
-type EffectivePayment = { price: number; status: "unpaid" | "paid"; title: string };
-
 type Props = {
   bookingId: string;
   locale: string;
