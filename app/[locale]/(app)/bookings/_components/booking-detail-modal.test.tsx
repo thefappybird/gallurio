@@ -1996,6 +1996,104 @@ describe("Payments section — empty state", () => {
   });
 });
 
+describe("Payments section — title field", () => {
+  it("typing a title on a draft payment includes it in the PATCH body on Save", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+
+    const titleInput = screen.getByLabelText("Title");
+    fireEvent.change(titleInput, { target: { value: "Deposit installment" } });
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "500" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([
+        { price: 500, status: "unpaid", title: "Deposit installment" },
+      ]);
+    });
+  });
+
+  it("typing a title on an existing payment edit includes it in the PATCH body on Save", async () => {
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "",
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 1/i }));
+
+    const titleInput = screen.getByLabelText("Title");
+    fireEvent.change(titleInput, { target: { value: "Final balance" } });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([
+        { price: 1000, status: "unpaid", title: "Final balance" },
+      ]);
+    });
+  });
+
+  it("shows the payment's title as its primary label when set", async () => {
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "Booking fee",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Booking fee")).toBeInTheDocument();
+    });
+  });
+});
+
 describe("Payments section", () => {
   it("adds a draft payment via Add payment and includes it in the PATCH body on Save", async () => {
     const fetchMock = makeFetch();
@@ -2022,7 +2120,7 @@ describe("Payments section", () => {
       const body = JSON.parse(
         ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
       );
-      expect(body.payments).toEqual([{ price: 500, status: "unpaid" }]);
+      expect(body.payments).toEqual([{ price: 500, status: "unpaid", title: "" }]);
     });
   });
 

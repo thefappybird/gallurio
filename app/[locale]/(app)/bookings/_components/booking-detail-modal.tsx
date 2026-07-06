@@ -832,11 +832,11 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       if (draftPayments.length > 0 || Object.keys(pendingPaymentEdits).length > 0) {
         const existing = previous.payments.map((p, i) => {
           const edit = pendingPaymentEdits[i];
-          return edit ? { price: edit.price, status: edit.status } : p;
+          return edit ? { price: edit.price, status: edit.status, title: edit.title } : p;
         });
         body["payments"] = [
           ...existing,
-          ...draftPayments.map((d) => ({ price: d.price, status: d.status })),
+          ...draftPayments.map((d) => ({ price: d.price, status: d.status, title: d.title })),
         ];
       }
       const res = await fetch(`/api/bookings/${bookingId}`, {
@@ -1123,7 +1123,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
   function handleAddPayment() {
     setDraftPayments((prev) => [
       ...prev,
-      { draftId: crypto.randomUUID(), price: 0, status: "unpaid" },
+      { draftId: crypto.randomUUID(), price: 0, status: "unpaid", title: "" },
     ]);
   }
 
@@ -1326,6 +1326,11 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
               onUpdateDraftPaymentStatus={(index, status) =>
                 setDraftPayments((prev) =>
                   prev.map((d, i) => (i === index ? { ...d, status } : d))
+                )
+              }
+              onUpdateDraftPaymentTitle={(index, title) =>
+                setDraftPayments((prev) =>
+                  prev.map((d, i) => (i === index ? { ...d, title } : d))
                 )
               }
               onRemoveDraftPayment={(draftId) =>
@@ -1849,6 +1854,7 @@ function BookingTabs({
   onAddPayment,
   onUpdateDraftPayment,
   onUpdateDraftPaymentStatus,
+  onUpdateDraftPaymentTitle,
   onRemoveDraftPayment,
   onCommitPaymentEdit,
   registerFieldHandle,
@@ -1898,6 +1904,7 @@ function BookingTabs({
   onAddPayment: () => void;
   onUpdateDraftPayment: (index: number, price: number) => void;
   onUpdateDraftPaymentStatus: (index: number, status: "unpaid" | "paid") => void;
+  onUpdateDraftPaymentTitle: (index: number, title: string) => void;
   onRemoveDraftPayment: (draftId: string) => void;
   onCommitPaymentEdit: (index: number, edit: PendingPaymentEdit) => void;
   registerFieldHandle: (editKey: string, handle: FieldHandle | null) => void;
@@ -1929,6 +1936,7 @@ function BookingTabs({
   const [editingPaymentIndex, setEditingPaymentIndex] = useState<number | null>(null);
   const [editPaymentPrice, setEditPaymentPrice] = useState(0);
   const [editPaymentStatus, setEditPaymentStatus] = useState<"unpaid" | "paid">("unpaid");
+  const [editPaymentTitle, setEditPaymentTitle] = useState("");
 
   const { upcomingSessions, pastSessions } = useMemo(() => {
     const allSessions = booking?.sessions ?? [];
@@ -2270,8 +2278,17 @@ function BookingTabs({
             const edit = pendingPaymentEdits[idx];
             const effectivePrice = edit?.price ?? payment.price;
             const effectiveStatus = edit?.status ?? payment.status;
+            const effectiveTitle = edit?.title ?? payment.title;
             return editingPaymentIndex === idx ? (
               <div key={idx} className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor={`existing-payment-title-${idx}`}>{tPayments("title")}</Label>
+                  <Input
+                    id={`existing-payment-title-${idx}`}
+                    value={editPaymentTitle}
+                    onChange={(e) => setEditPaymentTitle(e.target.value)}
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
                     <Label htmlFor={`existing-payment-price-${idx}`}>{tPayments("price")}</Label>
@@ -2302,7 +2319,11 @@ function BookingTabs({
                   type="button"
                   size="sm"
                   onClick={() => {
-                    onCommitPaymentEdit(idx, { price: editPaymentPrice, status: editPaymentStatus });
+                    onCommitPaymentEdit(idx, {
+                      price: editPaymentPrice,
+                      status: editPaymentStatus,
+                      title: editPaymentTitle,
+                    });
                     setEditingPaymentIndex(null);
                   }}
                   className="self-start"
@@ -2316,7 +2337,10 @@ function BookingTabs({
                 className="flex items-center justify-between gap-2 border border-border px-2.5 py-1.5"
               >
                 <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium tabular-nums">
+                  <span className="text-sm font-medium">
+                    {effectiveTitle || tPayments("label", { n: idx + 1 })}
+                  </span>
+                  <span className="text-sm tabular-nums text-muted-foreground">
                     {formatMoney(effectivePrice, booking.amount.currency, locale)}
                   </span>
                   <Badge variant={effectiveStatus === "paid" ? "default" : "outline"}>
@@ -2338,6 +2362,7 @@ function BookingTabs({
                   onClick={() => {
                     setEditPaymentPrice(effectivePrice);
                     setEditPaymentStatus(effectiveStatus);
+                    setEditPaymentTitle(effectiveTitle);
                     setEditingPaymentIndex(idx);
                   }}
                 >
@@ -2348,7 +2373,15 @@ function BookingTabs({
           })}
           {draftPayments.map((draft, idx) => (
             <div key={draft.draftId} className="flex items-end gap-2">
-            <div className="grid flex-1 grid-cols-2 gap-3">
+            <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor={`payment-title-${idx}`}>{tPayments("title")}</Label>
+                <Input
+                  id={`payment-title-${idx}`}
+                  value={draft.title}
+                  onChange={(e) => onUpdateDraftPaymentTitle(idx, e.target.value)}
+                />
+              </div>
               <div className="flex flex-col gap-1">
                 <Label htmlFor={`payment-price-${idx}`}>{tPayments("price")}</Label>
                 <Input
