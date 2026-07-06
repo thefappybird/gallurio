@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import type { WizardValues, WizardSession } from "./types";
 
 type Props = {
@@ -61,10 +62,15 @@ export function ReviewStep({ values, locale, teams }: Props) {
       </dl>
 
       {/* Sessions list */}
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {tSessions("reviewLabel")}
-        </p>
+      <CollapsibleDrawer
+        title={
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {tSessions("reviewLabel")} ({(values.sessions ?? []).length})
+          </span>
+        }
+        defaultOpen
+        bodyClassName="max-h-64 overflow-y-auto scrollbar-subtle"
+      >
         <ul className="flex flex-col gap-1.5">
           {(values.sessions ?? []).map((s, i) => (
             <li key={i} className="border border-border px-3 py-2 text-sm">
@@ -75,14 +81,19 @@ export function ReviewStep({ values, locale, teams }: Props) {
             </li>
           ))}
         </ul>
-      </div>
+      </CollapsibleDrawer>
 
       {/* Payments list */}
       {(values.payments ?? []).length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {tPayments("reviewLabel")}
-          </p>
+        <CollapsibleDrawer
+          title={
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {tPayments("reviewLabel")} ({values.payments.length})
+            </span>
+          }
+          defaultOpen
+          bodyClassName="max-h-64 overflow-y-auto scrollbar-subtle"
+        >
           <ul className="flex flex-col gap-1.5">
             {values.payments.map((p, i) => (
               <li
@@ -106,7 +117,7 @@ export function ReviewStep({ values, locale, teams }: Props) {
               </li>
             ))}
           </ul>
-        </div>
+        </CollapsibleDrawer>
       ) : null}
     </div>
   );
