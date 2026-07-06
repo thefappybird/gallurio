@@ -127,7 +127,19 @@ const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
 const listDraftsAction = vi.fn().mockResolvedValue([]);
 const publishDraftAction = vi.fn().mockResolvedValue({ ok: true });
-const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: DEFAULT_BRAND_KIT, contact: { title: "" }, header: {}, collectionsPopup: {} } });
+const seedTemplateAction = vi.fn((templateId = "minimal") =>
+  Promise.resolve({
+    ok: true,
+    seed: {
+      templateId,
+      data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+      brandKit: DEFAULT_BRAND_KIT,
+      contact: { title: "" },
+      header: {},
+      collectionsPopup: {},
+    },
+  })
+);
 vi.mock("../_draftActions", () => ({
   createDraftAction: (...a: unknown[]) => createDraftAction(...a),
   updateDraftAction: (...a: unknown[]) => updateDraftAction(...a),
@@ -241,6 +253,19 @@ beforeEach(() => {
   window.localStorage.clear();
   __puckMountCount = 0;
   listDraftsAction.mockResolvedValue([]);
+  seedTemplateAction.mockImplementation((templateId = "minimal") =>
+    Promise.resolve({
+      ok: true,
+      seed: {
+        templateId,
+        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+        brandKit: DEFAULT_BRAND_KIT,
+        contact: { title: "" },
+        header: {},
+        collectionsPopup: {},
+      },
+    })
+  );
 });
 
 describe("EditorShell", () => {
@@ -620,12 +645,23 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: /Preview/ }).className).toContain("bg-secondary");
   });
 
-  it("nav cluster uses flex-nowrap with overflow-x-auto so tabs scroll instead of wrapping", async () => {
+  it("toolbar scrolls as one region while Save changes and Publish stay fixed", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const sectionGroup = screen.getByRole("group", { name: /sections/i });
+    const scrollRegion = screen.getByTestId("portfolio-toolbar-scroll");
+    const toolbarGrid = screen.getByTestId("portfolio-toolbar-grid");
+    const fixedActions = screen.getByTestId("portfolio-toolbar-fixed-actions");
     expect(sectionGroup.className).toContain("flex-nowrap");
-    expect(sectionGroup.className).toContain("overflow-x-auto");
+    expect(sectionGroup.className).not.toContain("overflow-x-auto");
     expect(sectionGroup.className).not.toContain("flex-wrap");
+    expect(scrollRegion.className).toContain("overflow-x-auto");
+    expect(scrollRegion.parentElement?.className).toContain("pe-44");
+    expect(fixedActions.parentElement?.className).toContain("absolute");
+    expect(fixedActions.parentElement?.className).toContain("end-0");
+    expect(fixedActions.className).toContain("w-max");
+    expect(toolbarGrid.className).toContain("grid-cols-[minmax(max-content,1fr)_max-content_minmax(max-content,1fr)]");
+    expect(fixedActions).toContainElement(screen.getByRole("button", { name: "Save changes" }));
+    expect(fixedActions).toContainElement(screen.getByRole("button", { name: "Publish" }));
   });
 
   it("renders the Preview button as a sibling of the section tabs inside the nav cluster", async () => {
@@ -636,17 +672,17 @@ describe("EditorShell", () => {
     expect(preview.parentElement).toBe(sectionGroup);
   });
 
-  it("renders the draft title above the toolbar below lg and between Drafts and Save changes on desktop", async () => {
+  it("renders the draft title inside the scrollable toolbar before fixed Save changes", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const draftsButton = screen.getByRole("button", { name: "Drafts" });
     const title = screen.getByTitle("Test Draft");
     const saveButton = screen.getByRole("button", { name: "Save changes" });
     const slot = title.closest('[data-testid="draft-title-slot"]');
+    const scrollRegion = screen.getByTestId("portfolio-toolbar-scroll");
     expect(slot).not.toBeNull();
-    expect(slot!.className).toContain("basis-full");
-    expect(slot!.className).toContain("order-first");
-    expect(slot!.className).toContain("lg:order-7");
-    expect(slot!.className).toContain("lg:basis-auto");
+    expect(slot!.className).toContain("min-w-0");
+    expect(slot!.className).toContain("shrink-0");
+    expect(scrollRegion).toContainElement(slot as HTMLElement);
     expect(
       draftsButton.compareDocumentPosition(slot!) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
@@ -742,7 +778,7 @@ describe("EditorShell", () => {
     });
   });
 
-  it("treats a deleted active draft as an unsaved working copy and saves it as a new draft", async () => {
+  it("does not allow deleting the only active draft", async () => {
     const props = {
       ...baseProps,
       initialActiveDraftId: "d1",
@@ -763,24 +799,8 @@ describe("EditorShell", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Continue where you left off/ }));
 
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Delete New Draft" }));
-    fireEvent.click(await screen.findByRole("button", { name: /^Delete draft$/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/no drafts yet/i)).toBeInTheDocument();
-    });
-
-    const draftsDialog = screen.getByRole("dialog", { name: "Your drafts" });
-    fireEvent.click(within(draftsDialog).getAllByRole("button", { name: "Close" })[0]!);
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-
-    await waitFor(() => {
-      expect(createDraftAction).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "New Draft" })
-      );
-    });
-    expect(updateDraftAction).not.toHaveBeenCalled();
-    expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Delete New Draft" })).toBeDisabled();
+    expect(deleteDraftAction).not.toHaveBeenCalled();
   });
 
   it("recovers by updating a stale server-side New Draft when the local list is empty", async () => {
@@ -1025,6 +1045,22 @@ describe("EditorShell", () => {
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
   });
 
+  it("can force-open the story prompt for preview without persisting or opening the guide", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} storyPromptCompleted guideDismissed seoSetupPreview />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip for now" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Let's tell your story")).not.toBeInTheDocument();
+    });
+    expect(completeStoryPromptAction).not.toHaveBeenCalled();
+    expect(dismissPortfolioGuideAction).not.toHaveBeenCalled();
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+  });
+
   it("explore-self exit awaits dismissPortfolioGuideAction before proceeding to entry", async () => {
     renderWithProviders(
       <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
@@ -1038,6 +1074,35 @@ describe("EditorShell", () => {
     await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
     // Returning user (baseProps has a draft) lands on the normal entry dialog.
     expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+  });
+
+  it("final story prompt explore-self opens the template picker for a brand-new visitor", async () => {
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        storyPromptCompleted={false}
+        guideDismissed={false}
+        initialDrafts={[]}
+        initialActiveDraftId={null}
+        initialActiveDraftName={undefined}
+        initialData={{ home: { content: [], root: {} }, gallery: { content: [], root: {} } }}
+        currentTemplateId="scratch"
+      />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Let's go" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your vibe" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Add your branding" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your page is ready to shine" });
+    fireEvent.click(screen.getByRole("button", { name: "I'll explore myself" }));
+
+    await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
+    expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
   });
 
   it("explore-self exit logs a warning but still proceeds when dismissPortfolioGuideAction rejects", async () => {
@@ -1139,6 +1204,7 @@ describe("EditorShell", () => {
     );
     expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Start from scratch" }));
+    await waitFor(() => expect(seedTemplateAction).toHaveBeenCalledWith("scratch"));
     await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
     // Canvas is accessible after dismissal
     expect(screen.getByTestId("portfolio-editor-shell")).toBeInTheDocument();

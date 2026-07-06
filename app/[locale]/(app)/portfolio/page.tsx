@@ -23,6 +23,11 @@ export async function generateMetadata({
 }
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
+type PortfolioSearchParams = { seoSetup?: string };
+
+function shouldForceSeoSetupPreview(query: PortfolioSearchParams | undefined) {
+  return process.env.NODE_ENV !== "production" && query?.seoSetup === "preview";
+}
 
 // Strip to plain, serializable JSON before crossing the server→client boundary.
 function toPlain<T>(value: unknown, fallback: T): T {
@@ -36,10 +41,13 @@ function toPlain<T>(value: unknown, fallback: T): T {
 
 export default async function PageBuilderEntry({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams?: Promise<PortfolioSearchParams>;
 }) {
   const { locale } = await params;
+  const query = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("app.pageBuilder");
 
@@ -63,7 +71,7 @@ export default async function PageBuilderEntry({
   let galleryData: unknown = pp?.data?.gallery ?? null;
   let brandKitData: unknown = pp?.brandKit ?? null;
   let contactData: unknown = pp?.contact ?? null;
-  let templateId: string = pp?.templateId ?? "minimal";
+  let templateId: string = pp?.templateId ?? "scratch";
   if (!homeData) {
     const seed = await seedDefaultPortfolio(workspace._id);
     if (seed) {
@@ -94,6 +102,7 @@ export default async function PageBuilderEntry({
   const initialSeoDescription = pp?.seoDescription ?? "";
   const initialSeoKeywords = toPlain<string[]>(pp?.seo?.keywords, []);
   const workspaceBusinessType = workspace.businessType ?? "";
+  const seoSetupPreview = shouldForceSeoSetupPreview(query);
 
   // Migrate legacy publicPage.data into a draft if this workspace has no drafts yet.
   await ensureLegacyDraftMigrated(workspace._id);
@@ -139,6 +148,7 @@ export default async function PageBuilderEntry({
         guideDismissed={guideDismissed}
         initialSavedThemes={initialSavedThemes}
         storyPromptCompleted={storyPromptCompleted}
+        seoSetupPreview={seoSetupPreview}
         initialSeoDescription={initialSeoDescription}
         initialSeoKeywords={initialSeoKeywords}
         workspaceBusinessType={workspaceBusinessType}

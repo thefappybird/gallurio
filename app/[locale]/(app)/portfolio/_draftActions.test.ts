@@ -148,11 +148,20 @@ describe("updateDraftAction", () => {
 
 describe("deleteDraftAction", () => {
   it("deletes only within the workspace", async () => {
+    await createDraftAction({ name: "Keep", ...snapshot });
     const created = await createDraftAction({ name: "Bye", ...snapshot });
     if (!("ok" in created)) throw new Error("setup failed");
     const res = await deleteDraftAction(created.draft.id);
     expect(res).toEqual({ ok: true });
-    expect(await PortfolioDraft.countDocuments({})).toBe(0);
+    expect(await PortfolioDraft.countDocuments({ workspaceId: mockCtx.workspace._id })).toBe(1);
+  });
+
+  it("does not delete the last draft in the workspace", async () => {
+    const created = await createDraftAction({ name: "Only", ...snapshot });
+    if (!("ok" in created)) throw new Error("setup failed");
+    const res = await deleteDraftAction(created.draft.id);
+    expect(res).toEqual({ error: "last_draft" });
+    expect(await PortfolioDraft.countDocuments({ workspaceId: mockCtx.workspace._id })).toBe(1);
   });
 
   it("cannot delete another workspace's draft (tenant isolation)", async () => {

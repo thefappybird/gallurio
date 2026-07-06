@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
@@ -33,9 +33,40 @@ function setup(props: Partial<React.ComponentProps<typeof StoryPromptDialog>> = 
 }
 
 describe("StoryPromptDialog", () => {
+  beforeEach(() => {
+    completeStoryPromptAction.mockClear();
+    uploadAsset.mockReset();
+  });
+
   it("shows the welcome step title when open", () => {
     setup();
     expect(screen.getByText(/let's tell your story/i)).toBeInTheDocument();
+  });
+
+  it("uses a larger onboarding-styled modal while keeping the form centered", () => {
+    setup();
+    const dialog = document.querySelector('[data-slot="dialog-content"]');
+    expect(dialog).toHaveClass("sm:max-w-3xl");
+    expect(dialog).toHaveClass("sm:min-h-[480px]");
+    expect(dialog).toHaveClass("bg-onboarding-bg");
+    expect(dialog?.querySelector(".max-w-lg")).toBeInTheDocument();
+    expect(dialog?.querySelector('img[src*="/onboarding/background-light.svg"]')).toBeInTheDocument();
+    expect(dialog?.querySelector('img[src*="/onboarding/background-dark.svg"]')).toBeInTheDocument();
+  });
+
+  it("keeps middle-step actions pinned to the bottom without a sticky background", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /let's go/i }));
+    const footer = screen.getByTestId("story-prompt-action-footer");
+    expect(footer).toHaveClass("mt-auto");
+    expect(footer).not.toHaveClass("sticky", "bg-onboarding-bg/95", "border-t");
+  });
+
+  it("centers the final step actions without the bottom action footer", async () => {
+    setup();
+    await goToDoneStep();
+    expect(screen.getByRole("heading", { name: /your page is ready to shine/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("story-prompt-action-footer")).not.toBeInTheDocument();
   });
 
   it("advances to the story step when Let's go is clicked", () => {
@@ -43,6 +74,20 @@ describe("StoryPromptDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /let's go/i }));
     expect(screen.getByRole("heading", { name: /^tell your story$/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/who you are and what you do/i)).toBeInTheDocument();
+  });
+
+  it("lets reached step circles navigate back to previous steps", async () => {
+    setup();
+    await goToVibeStep();
+
+    expect(screen.getByRole("button", { name: "Step 1" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Step 3" })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("button", { name: "Step 4" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Step 4" })).toHaveClass("bg-foreground/25");
+    expect(screen.getByRole("button", { name: "Step 4" })).not.toHaveClass("bg-muted");
+
+    fireEvent.click(screen.getByRole("button", { name: "Step 2" }));
+    expect(screen.getByRole("heading", { name: /^tell your story$/i })).toBeInTheDocument();
   });
 
   it("shows a live character count as the description is typed", () => {
@@ -70,6 +115,14 @@ describe("StoryPromptDialog", () => {
     });
   });
 
+  it("skips persistence when opened as a preview", async () => {
+    const onExploreSelf = vi.fn();
+    setup({ onExploreSelf, persistOnExit: false });
+    fireEvent.click(screen.getByRole("button", { name: /skip for now/i }));
+    await waitFor(() => expect(onExploreSelf).toHaveBeenCalled());
+    expect(completeStoryPromptAction).not.toHaveBeenCalled();
+  });
+
   it("shows a live search preview reflecting the typed description", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: /let's go/i }));
@@ -77,6 +130,13 @@ describe("StoryPromptDialog", () => {
     fireEvent.change(textarea, { target: { value: "We shoot candid weddings." } });
     expect(screen.getByText(/gallurio\.com › w › studio-aurora/i)).toBeInTheDocument();
     expect(screen.getAllByText("We shoot candid weddings.")).toHaveLength(2);
+  });
+
+  it("renders the search preview badge with an explicit visible text color", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /let's go/i }));
+    const badge = screen.getByText("S", { selector: "span" });
+    expect(badge).toHaveStyle({ color: "#e8eaed" });
   });
 
   async function waitForSingle(name: RegExp) {
@@ -96,8 +156,11 @@ describe("StoryPromptDialog", () => {
     await goToVibeStep();
     const chip = screen.getByRole("button", { name: "Documentary" });
     expect(chip).toHaveClass("border-border");
+    expect(chip).toHaveClass("bg-popover");
     fireEvent.click(chip);
-    expect(chip).toHaveClass("bg-primary");
+    expect(chip).toHaveClass("border-foreground");
+    expect(chip).toHaveClass("bg-accent");
+    expect(chip).toHaveClass("text-accent-foreground");
   });
 
   it("adds a free-text tag as a new selected chip", async () => {
@@ -106,8 +169,98 @@ describe("StoryPromptDialog", () => {
     const input = screen.getByPlaceholderText(/add a tag/i);
     fireEvent.change(input, { target: { value: "Moody" } });
     fireEvent.click(screen.getByRole("button", { name: /add a tag/i }));
-    const chip = screen.getByRole("button", { name: "Moody" });
-    expect(chip).toHaveClass("bg-primary");
+    expect(screen.getByRole("button", { name: "Moody" })).toHaveClass("border-foreground");
+    expect(screen.queryByRole("button", { name: "Remove draft Moody" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add a tag/i })).toBeDisabled();
+  });
+
+  it("creates an inline draft chip when space is pressed", async () => {
+    setup({ businessType: "photographer" });
+    await goToVibeStep();
+    const input = screen.getByPlaceholderText(/add a tag/i);
+    fireEvent.change(input, { target: { value: "Moody" } });
+    fireEvent.keyDown(input, { key: " " });
+
+    expect(screen.getByText("Moody")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove draft Moody" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add a tag/i })).toBeEnabled();
+    expect(input).toHaveValue("");
+  });
+
+  it("creates an inline draft chip when the input value receives a trailing space", async () => {
+    setup({ businessType: "photographer" });
+    await goToVibeStep();
+    const input = screen.getByPlaceholderText(/add a tag/i);
+    fireEvent.change(input, { target: { value: "Moody " } });
+
+    expect(screen.getByText("Moody")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove draft Moody" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add a tag/i })).toBeEnabled();
+    expect(input).toHaveValue("");
+  });
+
+  it("adds the typed word as a tag through the add tag form", async () => {
+    setup({ businessType: "photographer" });
+    await goToVibeStep();
+    const input = screen.getByPlaceholderText(/add a tag/i);
+    fireEvent.change(input, { target: { value: "Warm" } });
+    const form = input.closest("form");
+    expect(form).toBeInTheDocument();
+    fireEvent.submit(form as HTMLFormElement);
+
+    expect(screen.getByRole("button", { name: "Warm" })).toHaveClass("border-foreground");
+    expect(screen.queryByRole("button", { name: "Remove draft Warm" })).not.toBeInTheDocument();
+    expect(input).toHaveValue("");
+  });
+
+  it("moves the last draft tag back into the input on empty backspace", async () => {
+    setup({ businessType: "photographer" });
+    await goToVibeStep();
+    const input = screen.getByPlaceholderText(/add a tag/i);
+    fireEvent.change(input, { target: { value: "Moody" } });
+    fireEvent.keyDown(input, { key: " " });
+    fireEvent.keyDown(input, { key: "Backspace" });
+
+    expect(input).toHaveValue("Moody");
+    expect(screen.queryByText("Moody")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove draft Moody" })).not.toBeInTheDocument();
+  });
+
+  it("gives the add tag icon button a hover title", async () => {
+    setup({ businessType: "photographer" });
+    await goToVibeStep();
+    expect(screen.getByRole("button", { name: /add a tag/i })).toHaveAttribute("title", "Add a tag");
+  });
+
+  it("moves inline chips to registered preview chips and submits them as the keywords array", async () => {
+    const onContinueWithGuide = vi.fn();
+    setup({ onContinueWithGuide });
+    await goToVibeStep();
+    const input = screen.getByPlaceholderText(/add a tag/i);
+    fireEvent.change(input, { target: { value: "Moody " } });
+    fireEvent.click(screen.getByRole("button", { name: /add a tag/i }));
+    expect(screen.queryByRole("button", { name: "Remove draft Moody" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Moody" })).toHaveClass("border-foreground");
+
+    fireEvent.click(screen.getByRole("button", { name: /^continue$/i }));
+
+    await screen.findByRole("heading", { name: /add your branding/i });
+    await waitForSingle(/^continue$/i);
+    fireEvent.click(screen.getByRole("button", { name: /^continue$/i }));
+    await screen.findByRole("button", { name: /continue with guide/i });
+    fireEvent.click(screen.getByRole("button", { name: /continue with guide/i }));
+
+    await waitFor(() => {
+      expect(completeStoryPromptAction).toHaveBeenCalledWith({
+        description: "",
+        keywords: ["Moody"],
+        logoUrl: "",
+        logoAssetId: "",
+        siteIconUrl: "",
+        siteIconAssetId: "",
+      });
+      expect(onContinueWithGuide).toHaveBeenCalled();
+    });
   });
 
   it("truncates a custom tag longer than 40 characters before adding it", async () => {

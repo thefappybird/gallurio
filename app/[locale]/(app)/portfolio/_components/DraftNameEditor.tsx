@@ -47,12 +47,11 @@ export const DraftNameEditor = forwardRef<
   }));
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5">
       {editing ? (
         <div className="flex items-center gap-1">
           {/* autoFocus used in place of ref because Input does not forwardRef */}
           <Input
-            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -85,7 +84,7 @@ export const DraftNameEditor = forwardRef<
         </div>
       ) : (
         <div className="flex min-w-0 items-center gap-0.5">
-          <span className="max-w-[11rem] truncate text-sm font-medium" title={name}>
+          <span className="max-w-24 truncate text-sm font-medium" title={name}>
             {name}
           </span>
           <Button
