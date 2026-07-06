@@ -2094,6 +2094,75 @@ describe("Payments section — title field", () => {
   });
 });
 
+describe("Payments section — cap to remaining balance", () => {
+  it("shows an inline error when a draft payment's price exceeds the remaining balance", async () => {
+    // MOCK_BOOKING: total 10000, deposit 3000 → remaining balance 7000.
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "8000" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Exceeds remaining balance")).toBeInTheDocument();
+    });
+  });
+
+  it("shows an inline error and disables Confirm when an existing payment's edited price exceeds the remaining balance", async () => {
+    // total 10000, deposit 3000 → remaining balance (excluding this payment) 7000.
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 1/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "8000" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Exceeds remaining balance")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /^confirm$/i })).toBeDisabled();
+  });
+
+  it("disables the Add payment button once the remaining balance reaches zero", async () => {
+    // total 10000, deposit 3000, one payment of 7000 → remaining balance 0.
+    const FULL_PAYMENT = {
+      price: 7000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [FULL_PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add payment/i })).toBeDisabled();
+    });
+  });
+});
+
 describe("Payments section", () => {
   it("adds a draft payment via Add payment and includes it in the PATCH body on Save", async () => {
     const fetchMock = makeFetch();

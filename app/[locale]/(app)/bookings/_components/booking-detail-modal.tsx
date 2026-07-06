@@ -2255,7 +2255,18 @@ function BookingTabs({
         </div>
 
         <SectionHeader label={tSections("payments")} />
-        {booking.payments.length === 0 && draftPayments.length === 0 ? (
+        {(() => {
+          const depositForAddGate =
+            (pending["amount.deposit"] as number) ?? booking.amount.deposit;
+          const allPaymentsForGate = [
+            ...booking.payments.map((p, i) => ({
+              price: pendingPaymentEdits[i]?.price ?? p.price,
+            })),
+            ...draftPayments.map((d) => ({ price: d.price })),
+          ];
+          const noBalanceRemaining =
+            remainingBalance(allPaymentsForGate, { total, deposit: depositForAddGate }) <= 0;
+          return booking.payments.length === 0 && draftPayments.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <p className="text-sm text-muted-foreground">{tPayments("empty")}</p>
             {!readOnly ? (
@@ -2264,7 +2275,7 @@ function BookingTabs({
                 variant="outline"
                 size="sm"
                 onClick={onAddPayment}
-                disabled={disabled}
+                disabled={disabled || noBalanceRemaining}
               >
                 <PlusIcon className="size-4" />
                 {tPayments("add")}
@@ -2279,6 +2290,21 @@ function BookingTabs({
             const effectivePrice = edit?.price ?? payment.price;
             const effectiveStatus = edit?.status ?? payment.status;
             const effectiveTitle = edit?.title ?? payment.title;
+            const depositForCap =
+              (pending["amount.deposit"] as number) ?? booking.amount.deposit;
+            const otherPayments = [
+              ...booking.payments.map((p, i) => ({
+                price: pendingPaymentEdits[i]?.price ?? p.price,
+              })),
+              ...draftPayments.map((d) => ({ price: d.price })),
+            ];
+            const maxForExisting = remainingBalance(
+              otherPayments,
+              { total, deposit: depositForCap },
+              idx
+            );
+            const existingExceedsCap =
+              editingPaymentIndex === idx && editPaymentPrice > maxForExisting;
             return editingPaymentIndex === idx ? (
               <div key={idx} className="flex flex-col gap-1">
                 <div className="flex flex-col gap-1">
@@ -2298,6 +2324,9 @@ function BookingTabs({
                       value={editPaymentPrice}
                       onChange={(e) => setEditPaymentPrice(Number(e.target.value) || 0)}
                     />
+                    {existingExceedsCap ? (
+                      <p className="text-xs text-destructive">{tPayments("exceedsBalance")}</p>
+                    ) : null}
                   </div>
                   <div className="flex flex-col gap-1">
                     <Label htmlFor={`existing-payment-status-${idx}`}>{tPayments("status")}</Label>
@@ -2318,6 +2347,7 @@ function BookingTabs({
                 <Button
                   type="button"
                   size="sm"
+                  disabled={existingExceedsCap}
                   onClick={() => {
                     onCommitPaymentEdit(idx, {
                       price: editPaymentPrice,
@@ -2371,8 +2401,24 @@ function BookingTabs({
               </div>
             );
           })}
-          {draftPayments.map((draft, idx) => (
-            <div key={draft.draftId} className="flex items-end gap-2">
+          {draftPayments.map((draft, idx) => {
+            const depositForCap =
+              (pending["amount.deposit"] as number) ?? booking.amount.deposit;
+            const otherPayments = [
+              ...booking.payments.map((p, i) => ({
+                price: pendingPaymentEdits[i]?.price ?? p.price,
+              })),
+              ...draftPayments.map((d) => ({ price: d.price })),
+            ];
+            const maxForDraft = remainingBalance(
+              otherPayments,
+              { total, deposit: depositForCap },
+              booking.payments.length + idx
+            );
+            const exceedsCap = draft.price > maxForDraft;
+            return (
+            <div key={draft.draftId} className="flex flex-col gap-1">
+            <div className="flex items-end gap-2">
             <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="flex flex-col gap-1">
                 <Label htmlFor={`payment-title-${idx}`}>{tPayments("title")}</Label>
@@ -2390,6 +2436,9 @@ function BookingTabs({
                   value={draft.price}
                   onChange={(e) => onUpdateDraftPayment(idx, Number(e.target.value) || 0)}
                 />
+                {exceedsCap ? (
+                  <p className="text-xs text-destructive">{tPayments("exceedsBalance")}</p>
+                ) : null}
               </div>
               <div className="flex flex-col gap-1">
                 <Label htmlFor={`payment-status-${idx}`}>{tPayments("status")}</Label>
@@ -2420,7 +2469,9 @@ function BookingTabs({
               </Button>
             ) : null}
             </div>
-          ))}
+            </div>
+            );
+          })}
         </div>
         {!readOnly ? (
           <Button
@@ -2428,7 +2479,7 @@ function BookingTabs({
             variant="outline"
             size="sm"
             onClick={onAddPayment}
-            disabled={disabled}
+            disabled={disabled || noBalanceRemaining}
             className="self-start"
           >
             <PlusIcon className="size-4" />
@@ -2436,7 +2487,8 @@ function BookingTabs({
           </Button>
         ) : null}
           </>
-        )}
+          );
+        })()}
       </TabsPanel>
 
       {/* sessionsLocation: sessions only */}
