@@ -31,6 +31,7 @@ import {
   DialogClose,
   DialogContent,
   DialogTitle,
+  DialogDescription,
   DialogHeader,
   DialogFooter,
 } from "@/components/ui/dialog";
@@ -142,6 +143,12 @@ type Props = {
   teams?: BookingTeamOption[];
   writableTeams?: BookingTeamOption[];
   readOnly?: boolean;
+  /** Whether the workspace's business address + contact email are both set —
+   *  gates the pre-download completeness warning. Defaults to true (no
+   *  warning) when the caller doesn't pass it. */
+  businessComplete?: boolean;
+  /** Used to namespace the "don't show this again" localStorage flag. */
+  workspaceId?: string;
 };
 
 type PendingChanges = Record<string, string | number | null>;
@@ -197,7 +204,15 @@ const NESTED_TO_DOTTED: Record<string, EditableKey> = {
   "amount.currency": "amount.currency",
 };
 
-export function BookingDetailModal({ bookingId, locale, teams = [], writableTeams = [], readOnly = false }: Props) {
+export function BookingDetailModal({
+  bookingId,
+  locale,
+  teams = [],
+  writableTeams = [],
+  readOnly = false,
+  businessComplete = true,
+  workspaceId = "",
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1390,6 +1405,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
             saving={saving}
             saveError={saveError}
             saveBlocked={hasAnyConflict}
+            businessComplete={businessComplete}
+            workspaceId={workspaceId}
             onToggleCancel={requestCancel}
             onDiscard={discardAll}
             onSave={save}
@@ -3709,6 +3726,8 @@ function DialogFooterBar({
   saving,
   saveError,
   saveBlocked,
+  businessComplete,
+  workspaceId,
   onToggleCancel,
   onDiscard,
   onSave,
@@ -3722,11 +3741,30 @@ function DialogFooterBar({
   saving: boolean;
   saveError: string | null;
   saveBlocked: boolean;
+  businessComplete: boolean;
+  workspaceId: string;
   onToggleCancel: () => void;
   onDiscard: () => void;
   onSave: () => void;
 }) {
   const t = useTranslations("app.bookings.detail");
+  const tWarn = useTranslations("app.bookings.detail.incompleteBusiness");
+  const [incompleteWarningOpen, setIncompleteWarningOpen] = useState(false);
+  const downloadUrl = `/api/bookings/${bookingId}/${completed ? "receipt" : "invoice"}`;
+  const hideFlagKey = `gw_hide_incomplete_business_warning:${workspaceId}`;
+
+  function openDownload() {
+    window.open(downloadUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function handleDownloadClick() {
+    if (!businessComplete && !window.localStorage.getItem(hideFlagKey)) {
+      setIncompleteWarningOpen(true);
+      return;
+    }
+    openDownload();
+  }
+
   return (
     <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-muted/30 px-4 py-3">
       {saveError ? (
@@ -3748,13 +3786,7 @@ function DialogFooterBar({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `/api/bookings/${bookingId}/${completed ? "receipt" : "invoice"}`,
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
+              onClick={handleDownloadClick}
               disabled={saving}
             >
               <DownloadIcon className="size-4" />
@@ -3792,6 +3824,51 @@ function DialogFooterBar({
           ) : null}
         </div>
       </div>
+
+      <Dialog open={incompleteWarningOpen} onOpenChange={setIncompleteWarningOpen}>
+        <DialogContent className="flex max-h-[calc(100dvh-3rem)] flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="shrink-0 px-4 pt-4">
+            <DialogTitle>{tWarn("title")}</DialogTitle>
+            <DialogDescription>
+              {completed ? tWarn("bodyReceipt") : tWarn("bodyInvoice")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="shrink-0 gap-2 border-t border-border px-4 py-3 sm:justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                window.localStorage.setItem(hideFlagKey, "1");
+                setIncompleteWarningOpen(false);
+                openDownload();
+              }}
+            >
+              {tWarn("dontShowAgain")}
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIncompleteWarningOpen(false)}
+              >
+                {tWarn("cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setIncompleteWarningOpen(false);
+                  openDownload();
+                }}
+              >
+                {tWarn("downloadAnyway")}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -187,10 +187,10 @@ function makeFetch({
   });
 }
 
-function renderModal() {
+function renderModal(props: { businessComplete?: boolean; workspaceId?: string } = {}) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <BookingDetailModal bookingId={BOOKING_ID} locale="en" />
+      <BookingDetailModal bookingId={BOOKING_ID} locale="en" {...props} />
     </NextIntlClientProvider>
   );
 }
@@ -393,6 +393,133 @@ describe("Download invoice/receipt button", () => {
     expect(
       screen.queryByRole("button", { name: "Download receipt" })
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("Incomplete business warning", () => {
+  const PAID_PAYMENT = {
+    price: 10000,
+    status: "paid" as const,
+    createdAt: new Date().toISOString(),
+    paidAt: new Date().toISOString(),
+  };
+
+  it("shows the incomplete-business warning dialog instead of downloading when business info is incomplete", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Business info incomplete")).toBeInTheDocument();
+    });
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+
+  it("clicking Cancel closes the warning dialog without downloading", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+    await waitFor(() => {
+      expect(screen.getByText("Business info incomplete")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Business info incomplete")).not.toBeInTheDocument();
+    });
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+
+  it("clicking Download anyway opens the PDF and does not set the localStorage flag", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+    await waitFor(() => {
+      expect(screen.getByText("Business info incomplete")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Download anyway" }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/invoice`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    expect(
+      window.localStorage.getItem("gw_hide_incomplete_business_warning:ws-1")
+    ).toBeNull();
+    openSpy.mockRestore();
+  });
+
+  it("clicking Don't show this again sets the localStorage flag and downloads", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+    await waitFor(() => {
+      expect(screen.getByText("Business info incomplete")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Don't show this again" }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/invoice`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    expect(
+      window.localStorage.getItem("gw_hide_incomplete_business_warning:ws-1")
+    ).toBe("1");
+    openSpy.mockRestore();
+    window.localStorage.clear();
+  });
+
+  it("skips the warning dialog and downloads directly once the localStorage flag is set", async () => {
+    window.localStorage.setItem("gw_hide_incomplete_business_warning:ws-1", "1");
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/invoice`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    expect(screen.queryByText("Business info incomplete")).not.toBeInTheDocument();
+    openSpy.mockRestore();
+    window.localStorage.clear();
   });
 });
 

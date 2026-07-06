@@ -249,6 +249,12 @@ export default async function BookingsPage({
     ...INVOICE_THEME_PRESETS.classic,
   };
 
+  // Gates the pre-download completeness warning in the booking detail modal —
+  // both fields must be non-empty for invoices/receipts to render complete.
+  const businessComplete = Boolean(
+    workspace.contact?.address?.trim() && workspace.contact?.email?.trim()
+  );
+
   // Defensive: if ?detail= is present but the booking doesn't exist (or is
   // not owned by this workspace), strip the param and redirect — prevents the
   // URL from staying broken after a delete, hard-reload, or bad link.
@@ -346,6 +352,8 @@ export default async function BookingsPage({
           locale={locale}
           teams={teamOptions}
           writableTeams={writableTeams}
+          businessComplete={businessComplete}
+          workspaceId={workspace._id.toString()}
         />
       ) : null}
 
