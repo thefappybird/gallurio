@@ -403,7 +403,8 @@
           "client": "Client",
           "event": "Event",
           "pricing": "Pricing",
-          "eventPricing": "Event & Location",
+          "eventPricing": "Event",
+          "payments": "Payments",
           "sessionsLocation": "Sessions",
           "activity": "Notes & activity"
         },
@@ -508,6 +509,14 @@
           "discard": "Discard unconfirmed & save",
           "cancel": "Go back",
           "invalidError": "Some changes have errors — fix them before submitting."
+        },
+        "incompleteBusiness": {
+          "title": "Business info incomplete",
+          "bodyInvoice": "Your business address and contact email are not configured in your settings page. Your invoice will contain incomplete data.",
+          "bodyReceipt": "Your business address and contact email are not configured in your settings page. Your receipt will contain incomplete data.",
+          "dontShowAgain": "Don't show this again",
+          "cancel": "Cancel",
+          "downloadAnyway": "Download anyway"
         }
       },
       "confirm": {

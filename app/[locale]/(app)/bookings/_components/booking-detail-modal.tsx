@@ -31,6 +31,8 @@ import {
   DialogClose,
   DialogContent,
   DialogTitle,
+  DialogHeader,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -89,6 +91,7 @@ import {
   splitDayOut,
   type Session,
 } from "@/lib/bookings/session-edits";
+import { remainingBalance } from "@/lib/bookings/payment-rules";
 import { cn } from "@/lib/utils";
 
 const LocationMap = dynamic(() => import("@/components/ui/location-map"), {
@@ -124,9 +127,14 @@ type BookingDoc = {
   lastSessionEnd: string;
   location: { address: string; lat: number | null; lng: number | null };
   amount: { total: number; deposit: number; currency: string };
-  payments: { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null }[];
+  payments: { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null; title: string }[];
   notes: string;
 };
+
+/** A payment entry after merging saved payments (with pending edits applied and
+ *  removals excluded) with draft payments — the single shape used by the cap
+ *  check, the outstanding-balance calc, and the PATCH payload builder. */
+type EffectivePayment = { price: number; status: "unpaid" | "paid"; title: string };
 
 type Props = {
   bookingId: string;
@@ -161,10 +169,11 @@ type DraftPayment = {
   draftId: string;
   price: number;
   status: "unpaid" | "paid";
+  title: string;
 };
 
 /** Pending edit for an existing payment (keyed by payment index in booking.payments). */
-type PendingPaymentEdit = { price: number; status: "unpaid" | "paid" };
+type PendingPaymentEdit = { price: number; status: "unpaid" | "paid"; title: string };
 
 /**
  * Describes an in-flight session edit that requires confirmation before commit.
@@ -1990,6 +1999,9 @@ function BookingTabs({
         <TabsTab value="eventPricing" className="min-h-11">
           {t("eventPricing")}
         </TabsTab>
+        <TabsTab value="payments" className="min-h-11">
+          {t("payments")}
+        </TabsTab>
         <TabsTab value="sessionsLocation" className="min-h-11">
           {t("sessionsLocation")}
         </TabsTab>
@@ -2122,6 +2134,62 @@ function BookingTabs({
           ) : null}
         </div>
 
+        {/* Location — moved from sessions tab */}
+        <SectionHeader label={tFields("location")} />
+        <div className="flex flex-col gap-1 py-1.5">
+          {readOnly ? (
+            <>
+              <LocationDisplay
+                value={{
+                  address: booking.location?.address ?? "",
+                  lat: booking.location?.lat ?? null,
+                  lng: booking.location?.lng ?? null,
+                }}
+              />
+              {booking.location?.lat != null && booking.location?.lng != null ? (
+                <div className="overflow-hidden border border-border">
+                  <LocationMap
+                    lat={booking.location.lat}
+                    lng={booking.location.lng}
+                    onPick={() => {}}
+                    disabled
+                    compact
+                    scrollWheelZoom
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <LocationPicker
+              editable
+              value={{
+                address:
+                  "location.address" in pending
+                    ? ((pending["location.address"] as string) ?? "")
+                    : (booking.location?.address ?? ""),
+                lat:
+                  "location.lat" in pending
+                    ? (pending["location.lat"] as number | null)
+                    : (booking.location?.lat ?? null),
+                lng:
+                  "location.lng" in pending
+                    ? (pending["location.lng"] as number | null)
+                    : (booking.location?.lng ?? null),
+              }}
+              onChange={(v) => {
+                onCommit("location.address", v.address);
+                onCommit("location.lat", v.lat);
+                onCommit("location.lng", v.lng);
+              }}
+              disabled={disabled}
+            />
+          )}
+        </div>
+      </TabsPanel>
+
+      {/* payments: pricing fields + payment list, split out of eventPricing so
+          the tab isn't overloaded. */}
+      <TabsPanel value="payments">
         <SectionHeader label={tSections("pricing")} />
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
@@ -2316,58 +2384,6 @@ function BookingTabs({
             {tPayments("add")}
           </Button>
         ) : null}
-
-        {/* Location — moved from sessions tab */}
-        <SectionHeader label={tFields("location")} />
-        <div className="flex flex-col gap-1 py-1.5">
-          {readOnly ? (
-            <>
-              <LocationDisplay
-                value={{
-                  address: booking.location?.address ?? "",
-                  lat: booking.location?.lat ?? null,
-                  lng: booking.location?.lng ?? null,
-                }}
-              />
-              {booking.location?.lat != null && booking.location?.lng != null ? (
-                <div className="overflow-hidden border border-border">
-                  <LocationMap
-                    lat={booking.location.lat}
-                    lng={booking.location.lng}
-                    onPick={() => {}}
-                    disabled
-                    compact
-                    scrollWheelZoom
-                  />
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <LocationPicker
-              editable
-              value={{
-                address:
-                  "location.address" in pending
-                    ? ((pending["location.address"] as string) ?? "")
-                    : (booking.location?.address ?? ""),
-                lat:
-                  "location.lat" in pending
-                    ? (pending["location.lat"] as number | null)
-                    : (booking.location?.lat ?? null),
-                lng:
-                  "location.lng" in pending
-                    ? (pending["location.lng"] as number | null)
-                    : (booking.location?.lng ?? null),
-              }}
-              onChange={(v) => {
-                onCommit("location.address", v.address);
-                onCommit("location.lat", v.lat);
-                onCommit("location.lng", v.lng);
-              }}
-              disabled={disabled}
-            />
-          )}
-        </div>
       </TabsPanel>
 
       {/* sessionsLocation: sessions only */}

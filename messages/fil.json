@@ -403,7 +403,8 @@
           "client": "Kliyente",
           "event": "Event",
           "pricing": "Presyo",
-          "eventPricing": "Event at Lokasyon",
+          "eventPricing": "Event",
+          "payments": "Mga bayad",
           "sessionsLocation": "Mga Sesyon",
           "activity": "Mga tala at aktibidad"
         },
@@ -508,6 +509,14 @@
           "discard": "Itapon ang hindi pa nakumpirma at i-save",
           "cancel": "Bumalik",
           "invalidError": "May mga pagbabago na may error — ayusin muna bago isumite."
+        },
+        "incompleteBusiness": {
+          "title": "Hindi kumpleto ang impormasyon ng negosyo",
+          "bodyInvoice": "Ang address at email ng negosyo mo ay hindi pa naka-set up sa settings. Magiging hindi kumpleto ang datos sa invoice mo.",
+          "bodyReceipt": "Ang address at email ng negosyo mo ay hindi pa naka-set up sa settings. Magiging hindi kumpleto ang datos sa resibo mo.",
+          "dontShowAgain": "Huwag nang ipakita ulit",
+          "cancel": "Kanselahin",
+          "downloadAnyway": "I-download pa rin"
         }
       },
       "confirm": {

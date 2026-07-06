@@ -403,7 +403,8 @@
           "client": "Pelanggan",
           "event": "Acara",
           "pricing": "Harga",
-          "eventPricing": "Acara & Lokasi",
+          "eventPricing": "Acara",
+          "payments": "Bayaran",
           "sessionsLocation": "Sesi",
           "activity": "Nota & aktiviti"
         },
@@ -508,6 +509,14 @@
           "discard": "Buang yang belum disahkan & simpan",
           "cancel": "Kembali",
           "invalidError": "Sesetengah perubahan mengandungi ralat — betulkan sebelum menghantar."
+        },
+        "incompleteBusiness": {
+          "title": "Maklumat perniagaan tidak lengkap",
+          "bodyInvoice": "Alamat dan e-mel perniagaan anda belum ditetapkan dalam halaman tetapan. Invois anda akan mengandungi data yang tidak lengkap.",
+          "bodyReceipt": "Alamat dan e-mel perniagaan anda belum ditetapkan dalam halaman tetapan. Resit anda akan mengandungi data yang tidak lengkap.",
+          "dontShowAgain": "Jangan tunjukkan lagi",
+          "cancel": "Batal",
+          "downloadAnyway": "Muat turun juga"
         }
       },
       "confirm": {

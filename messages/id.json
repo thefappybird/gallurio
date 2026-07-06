@@ -403,7 +403,8 @@
           "client": "Klien",
           "event": "Acara",
           "pricing": "Harga",
-          "eventPricing": "Acara & Lokasi",
+          "eventPricing": "Acara",
+          "payments": "Pembayaran",
           "sessionsLocation": "Sesi",
           "activity": "Catatan & aktivitas"
         },
@@ -508,6 +509,14 @@
           "discard": "Buang yang belum dikonfirmasi & simpan",
           "cancel": "Kembali",
           "invalidError": "Beberapa perubahan memiliki kesalahan — perbaiki sebelum mengirim."
+        },
+        "incompleteBusiness": {
+          "title": "Informasi bisnis belum lengkap",
+          "bodyInvoice": "Alamat dan email bisnis Anda belum diatur di halaman pengaturan. Invoice Anda akan berisi data yang tidak lengkap.",
+          "bodyReceipt": "Alamat dan email bisnis Anda belum diatur di halaman pengaturan. Kuitansi Anda akan berisi data yang tidak lengkap.",
+          "dontShowAgain": "Jangan tampilkan lagi",
+          "cancel": "Batal",
+          "downloadAnyway": "Tetap unduh"
         }
       },
       "confirm": {
