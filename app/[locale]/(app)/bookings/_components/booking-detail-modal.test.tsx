@@ -1980,6 +1980,22 @@ describe("BookingDetailModal — time-format preference", () => {
 // Payments section — draft add + Save
 // ─────────────────────────────────────────────────────────────────────────────
 
+describe("Payments section — empty state", () => {
+  it("shows the empty-payments message centered above the Add payment button when there are no payments", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("No payments scheduled yet for this booking")
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /add payment/i })).toBeInTheDocument();
+  });
+});
+
 describe("Payments section", () => {
   it("adds a draft payment via Add payment and includes it in the PATCH body on Save", async () => {
     const fetchMock = makeFetch();

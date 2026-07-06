@@ -2247,6 +2247,24 @@ function BookingTabs({
         </div>
 
         <SectionHeader label={tSections("payments")} />
+        {booking.payments.length === 0 && draftPayments.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <p className="text-sm text-muted-foreground">{tPayments("empty")}</p>
+            {!readOnly ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onAddPayment}
+                disabled={disabled}
+              >
+                <PlusIcon className="size-4" />
+                {tPayments("add")}
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <>
         <div className="flex flex-col gap-2">
           {booking.payments.map((payment, idx) => {
             const edit = pendingPaymentEdits[idx];
@@ -2384,6 +2402,8 @@ function BookingTabs({
             {tPayments("add")}
           </Button>
         ) : null}
+          </>
+        )}
       </TabsPanel>
 
       {/* sessionsLocation: sessions only */}
