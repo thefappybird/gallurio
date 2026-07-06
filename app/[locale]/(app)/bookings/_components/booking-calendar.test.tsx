@@ -45,7 +45,7 @@ vi.mock("react-big-calendar/lib/addons/dragAndDrop", () => ({
 // components by dynamically importing and extracting from CALENDAR_COMPONENTS,
 // which is module-level. We use a dynamic import with the already-mocked deps.
 
-import { groupEventsForMonth, MonthBookingEvent, BookingCalendar } from "./booking-calendar";
+import { groupEventsForMonth, MonthBookingEvent, TimeBookingEvent, BookingCalendar } from "./booking-calendar";
 import type { CalendarEvent, OverflowEvent } from "./booking-calendar";
 import { formatTimeRange } from "@/lib/utils/time-format";
 
@@ -254,6 +254,82 @@ describe("TimeBookingEvent pill", () => {
   it("renders em-dash when clientName is empty", () => {
     render(<TimePill event={makeEvent({ clientName: "" })} />);
     expect(screen.getByText("—")).toBeInTheDocument();
+  });
+});
+
+describe("MonthBookingEvent status-mute logic", () => {
+  it("does not strike through a completed booking whose session end is in the future", () => {
+    const ev = makeEvent({ status: "completed", end: new Date(Date.now() + 86_400_000) });
+    const props = { event: ev, continuesPrior: false, continuesAfter: false } as MonthProps;
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MonthBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).not.toContain("line-through");
+  });
+
+  it("strikes through a completed booking whose session end is in the past", () => {
+    const ev = makeEvent({ status: "completed", end: new Date(Date.now() - 86_400_000) });
+    const props = { event: ev, continuesPrior: false, continuesAfter: false } as MonthProps;
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MonthBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain("line-through");
+  });
+
+  it("strikes through a cancelled booking even when its session end is in the future", () => {
+    const ev = makeEvent({ status: "cancelled", end: new Date(Date.now() + 86_400_000) });
+    const props = { event: ev, continuesPrior: false, continuesAfter: false } as MonthProps;
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MonthBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain("line-through");
+  });
+});
+
+describe("TimeBookingEvent status-mute logic", () => {
+  it("does not strike through a completed booking whose session end is in the future", () => {
+    const ev = makeEvent({ status: "completed", end: new Date(Date.now() + 86_400_000) });
+    const props = { event: ev, continuesPrior: false, continuesAfter: false } as MonthProps;
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TimeBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).not.toContain("line-through");
+  });
+
+  it("strikes through a completed booking whose session end is in the past", () => {
+    const ev = makeEvent({ status: "completed", end: new Date(Date.now() - 86_400_000) });
+    const props = { event: ev, continuesPrior: false, continuesAfter: false } as MonthProps;
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TimeBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain("line-through");
+  });
+
+  it("strikes through a cancelled booking even when its session end is in the future", () => {
+    const ev = makeEvent({ status: "cancelled", end: new Date(Date.now() + 86_400_000) });
+    const props = { event: ev, continuesPrior: false, continuesAfter: false } as MonthProps;
+    const { container } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TimeBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain("line-through");
   });
 });
 
