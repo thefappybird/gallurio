@@ -199,7 +199,9 @@
         "updated": "na-update",
         "deleted": "tinanggal",
         "status_changed": "binago ang status",
-        "client_changed": "binago ang kliyente"
+        "client_changed": "binago ang kliyente",
+        "payment_added": "nagdagdag ng bayad",
+        "payment_updated": "na-update ang bayad"
       }
     },
     "calendar": {

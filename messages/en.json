@@ -199,7 +199,9 @@
         "updated": "updated",
         "deleted": "deleted",
         "status_changed": "status changed",
-        "client_changed": "client changed"
+        "client_changed": "client changed",
+        "payment_added": "payment added",
+        "payment_updated": "payment updated"
       }
     },
     "calendar": {
