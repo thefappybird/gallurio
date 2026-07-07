@@ -44,6 +44,54 @@ test("editor canvas is the pfpage container and the responsive sheet is present"
   await page.screenshot({ path: "e2e/.artifacts/editor-desktop.png" });
 });
 
+test("editor mobile viewport clamps the full canvas frame and remains horizontally reachable", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/portfolio?seoSetup=preview");
+  await page.locator("[data-testid='portfolio-editor-shell']").waitFor({ timeout: 90_000 });
+
+  await page.locator('button[aria-label="Mobile"]').first().click({ force: true });
+  await page.waitForFunction(() =>
+    document.getElementById("pf-root-canvas-style")?.textContent?.includes("width: 390px !important"),
+  );
+
+  const metrics = await page.evaluate(() => {
+    const root = document.querySelector("#puck-canvas-root") as HTMLElement | null;
+    const preview = document.querySelector("[data-puck-preview]") as HTMLElement | null;
+    if (!root || !preview) return null;
+
+    const hasHorizontalScrollOwner = (el: HTMLElement) => {
+      let node: HTMLElement | null = el;
+      while (node) {
+        const style = getComputedStyle(node);
+        if (node.scrollWidth > node.clientWidth + 1 && style.overflowX !== "visible" && style.overflowX !== "clip") {
+          return true;
+        }
+        node = node.parentElement;
+      }
+      return false;
+    };
+
+    const toolbar = document.querySelector("[data-testid='portfolio-toolbar-scroll']") as HTMLElement | null;
+    return {
+      rootCssWidth: Math.round(parseFloat(getComputedStyle(root).width)),
+      rootWidth: Math.round(root.getBoundingClientRect().width),
+      previewWidth: Math.round(preview.getBoundingClientRect().width),
+      hasHorizontalScrollOwner: hasHorizontalScrollOwner(root),
+      toolbarReachable: toolbar ? hasHorizontalScrollOwner(toolbar) : false,
+    };
+  });
+
+  console.log("[diag] editor 375px mobile canvas metrics:", JSON.stringify(metrics));
+  expect(metrics, "mobile editor canvas metrics").not.toBeNull();
+  expect(metrics!.rootCssWidth, "Puck canvas frame follows the mobile viewport width").toBe(390);
+  expect(metrics!.rootWidth, "Puck canvas frame includes only its 1px border around the mobile width").toBeLessThanOrEqual(392);
+  expect(metrics!.previewWidth, "droppable preview surface follows the mobile viewport width").toBe(390);
+  expect(metrics!.hasHorizontalScrollOwner, "canvas overflow remains horizontally scrollable").toBe(true);
+  expect(metrics!.toolbarReachable, "toolbar overflow remains horizontally reachable").toBe(true);
+
+  await page.screenshot({ path: "e2e/.artifacts/editor-mobile-375.png" });
+});
+
 test("public portfolio has no horizontal overflow at 375px", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(`/w/${PUBLIC_SLUG}`);

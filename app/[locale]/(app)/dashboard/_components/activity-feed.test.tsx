@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import arMessages from "@/messages/ar.json";
@@ -45,6 +45,18 @@ describe("ActivityFeed", () => {
     expect(screen.getByText(/inquiry status changed/i)).toBeInTheDocument();
   });
 
+  it("renders translated payment activity labels", () => {
+    renderWithProviders(
+      <ActivityFeed
+        activity={[makeActivity({ entity: "transaction", action: "payment_updated" })]}
+        locale="en"
+        title="Recent activity"
+        empty="Nothing here yet."
+      />
+    );
+    expect(screen.getByText(/transaction payment updated/i)).toBeInTheDocument();
+  });
+
   it("translates the entity and action labels for non-English locales", () => {
     renderWithProviders(
       <ActivityFeed
@@ -59,6 +71,25 @@ describe("ActivityFeed", () => {
     expect(screen.getByText(/حجز/)).toBeInTheDocument();
     expect(screen.getByText(/حُدّث/)).toBeInTheDocument();
     expect(screen.queryByText(/booking/i)).toBeNull();
+  });
+
+  it("falls back to a humanized action label without logging MISSING_MESSAGE", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    renderWithProviders(
+      <ActivityFeed
+        activity={[makeActivity({ action: "legacy_action" })]}
+        locale="en"
+        title="Recent activity"
+        empty="Nothing here yet."
+      />
+    );
+    expect(screen.getByText(/booking legacy action/i)).toBeInTheDocument();
+    expect(
+      errorSpy.mock.calls.some((args) =>
+        args.some((arg) => String(arg).includes("MISSING_MESSAGE"))
+      )
+    ).toBe(false);
+    errorSpy.mockRestore();
   });
 
   it("formats createdAt as a relative time", () => {

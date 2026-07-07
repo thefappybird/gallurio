@@ -199,7 +199,9 @@
         "updated": "حُدّث",
         "deleted": "حُذف",
         "status_changed": "تغيّرت الحالة",
-        "client_changed": "تغيّر العميل"
+        "client_changed": "تغيّر العميل",
+        "payment_added": "?????? ????",
+        "payment_updated": "??????? ????"
       }
     },
     "calendar": {

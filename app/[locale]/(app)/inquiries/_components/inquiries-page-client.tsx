@@ -233,8 +233,8 @@ export function InquiriesPageClient({
   const hasActiveDates = Boolean(from || to);
 
   return (
-    <>
-      <div className="flex items-center justify-between">
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
@@ -247,7 +247,7 @@ export function InquiriesPageClient({
       ) : (
         <>
           {/* Status tabs + Date popover tab */}
-          <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label={t("title")}>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5" role="tablist" aria-label={t("title")}>
             {TABS.map((tab) => {
               const count = counts[tab];
               const isActive = activeTab === tab;
@@ -347,11 +347,11 @@ export function InquiriesPageClient({
           )}
 
           {total > 0 && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm text-muted-foreground">
                 {tc("showing", { from: fromRow, to: toRow, total })}
               </span>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <PageSizeSelect value={limit} />
                 <Button
                   variant="outline"
@@ -393,6 +393,6 @@ export function InquiriesPageClient({
         onConvertFailed={handleConvertFailed}
         onInquiryChanged={handleInquiryChanged}
       />
-    </>
+    </div>
   );
 }

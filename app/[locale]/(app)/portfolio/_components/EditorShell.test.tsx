@@ -273,6 +273,7 @@ describe("EditorShell", () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByTestId("puck-title")).toHaveTextContent("Studio Aurora · Home");
     expect(screen.getByTestId("portfolio-editor-shell")).toHaveClass("min-h-svh");
+    expect(screen.getByTestId("portfolio-editor-shell")).toHaveClass("overflow-x-auto");
   });
 
   it("renders the zone switcher and switches the active zone", async () => {

@@ -1642,7 +1642,7 @@ export function EditorShell({
 
       <BrandColorsContext.Provider value={brandColors}>
       <div
-        className={cn("gallurio-editor relative min-h-svh", className)}
+        className={cn("gallurio-editor relative min-h-svh overflow-x-auto", className)}
         data-testid="portfolio-editor-shell"
         style={cssVars as React.CSSProperties}
         onKeyDown={handleEditorKeyDown}

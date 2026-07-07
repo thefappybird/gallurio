@@ -262,7 +262,7 @@ export default async function BookingsPage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
         <ViewToggle view={view} />

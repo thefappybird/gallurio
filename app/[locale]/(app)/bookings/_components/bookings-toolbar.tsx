@@ -125,8 +125,8 @@ export function BookingsToolbar({
   }, [q, pushParams]);
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-      <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:w-80">
           <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -201,7 +201,7 @@ export function BookingsToolbar({
         </label>
       </div>
 
-      <div className="flex w-full items-center sm:w-auto sm:flex-wrap sm:gap-2">
+      <div className="flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto">
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />

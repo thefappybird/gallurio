@@ -199,7 +199,9 @@
         "updated": "dikemas kini",
         "deleted": "dipadam",
         "status_changed": "status ditukar",
-        "client_changed": "pelanggan ditukar"
+        "client_changed": "pelanggan ditukar",
+        "payment_added": "pembayaran ditambah",
+        "payment_updated": "pembayaran dikemas kini"
       }
     },
     "calendar": {
