@@ -302,6 +302,15 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
   set["publicPage.formLocale"] = doc.formLocale ?? "";
   set["publicPage.formDir"] = doc.formDir ?? "";
+  set["publicPage.seoTitle"] = doc.seoTitle ?? "";
+  set["publicPage.seoDescription"] = doc.seoDescription ?? "";
+  set["publicPage.siteIcon.url"] = doc.siteIcon?.url ?? "";
+  set["publicPage.siteIcon.assetId"] = doc.siteIcon?.assetId ?? "";
+  set["publicPage.seo.ogImageUrl"] = doc.seo?.ogImageUrl ?? "";
+  set["publicPage.seo.ogImageAssetId"] = doc.seo?.ogImageAssetId ?? "";
+  set["publicPage.seo.galleryDescription"] = doc.seo?.galleryDescription ?? "";
+  set["publicPage.seo.noindex"] = doc.seo?.noindex ?? false;
+  set["publicPage.seo.keywords"] = doc.seo?.keywords ?? [];
   set["publicPage.templateId"] =
     doc.templateId &&
     PORTFOLIO_TEMPLATE_IDS.includes(doc.templateId as (typeof PORTFOLIO_TEMPLATE_IDS)[number])

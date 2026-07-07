@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace } from "@/lib/db/models";
+import { Workspace, PortfolioDraft } from "@/lib/db/models";
 import {
   puckDataSchema,
   brandKitSchema,
@@ -12,6 +12,7 @@ import {
   portfolioCollectionsPopupConfigSchema,
 } from "@/lib/validators/publicPage";
 import { slugSchema } from "@/lib/validators/workspace";
+import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { SAVED_THEMES_MAX, type PortfolioSavedTheme } from "@/lib/page-builder/types";
@@ -256,8 +257,10 @@ const completeStoryPromptSchema = z.object({
  * style tags, and optionally a logo/site-icon upload from the wizard's
  * branding step), captured before the editor's Guide tour opens. Owner-only.
  * Idempotent — re-submitting just rewrites the fields and the timestamp.
- * seoDescription/keywords feed the public home page's <meta description>
- * and JSON-LD, which is route-cached — revalidate so the write isn't stale.
+ * seoDescription/keywords/header logo/site icon land on the active
+ * PortfolioDraft (published only via the draft's Publish action); only the
+ * one-time completion flag lands live on Workspace.publicPage, since it just
+ * gates whether the wizard auto-opens and drives no public-facing render.
  */
 export async function completeStoryPromptAction(input: unknown): Promise<EditorActionResult> {
   const ctx = await requireOrg();
@@ -268,6 +271,7 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
 
   await connectDB();
   const workspaceId = String(ctx.workspace._id);
+  const draftId = await resolveActiveDraftId(ctx.workspace._id);
   const newLogoAssetId = parsed.data.logoAssetId || undefined;
   const newSiteIconAssetId = parsed.data.siteIconAssetId || undefined;
 
@@ -282,34 +286,47 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
     if (!owned) return { error: "invalid_site_icon" };
   }
 
-  // Fetch the current asset ids so we can delete them when the owner
-  // replaces or removes the image.
+  // Fetch the draft's current header/siteIcon so we can delete replaced
+  // assets and — since `header` is a Mixed field that may be null — merge the
+  // new logo fields into the whole object rather than $set a dot-path (a
+  // dot-path $set on a null Mixed value throws "cannot use the part (header)
+  // to traverse the element").
+  let currentHeader: Record<string, unknown> | null = null;
   let oldLogoAssetId: string | undefined;
   let oldSiteIconAssetId: string | undefined;
   if (newLogoAssetId || newSiteIconAssetId) {
-    const current = await Workspace.findOne(
-      { _id: ctx.workspace._id },
-      { "publicPage.header.logoAssetId": 1, "publicPage.siteIcon.assetId": 1 }
+    const current = await PortfolioDraft.findOne(
+      { _id: draftId },
+      { header: 1, "siteIcon.assetId": 1 }
     ).lean();
-    oldLogoAssetId = current?.publicPage?.header?.logoAssetId || undefined;
-    oldSiteIconAssetId = current?.publicPage?.siteIcon?.assetId || undefined;
+    currentHeader = (current?.header as Record<string, unknown> | null | undefined) ?? null;
+    oldLogoAssetId = (currentHeader?.logoAssetId as string | undefined) || undefined;
+    oldSiteIconAssetId = current?.siteIcon?.assetId || undefined;
   }
 
-  const set: Record<string, unknown> = {
-    "publicPage.seoDescription": parsed.data.description,
-    "publicPage.seo.keywords": parsed.data.keywords,
-    "publicPage.storyPromptCompletedAt": new Date(),
+  const draftSet: Record<string, unknown> = {
+    seoDescription: parsed.data.description,
+    "seo.keywords": parsed.data.keywords,
   };
   if (newLogoAssetId) {
-    set["publicPage.header.logoUrl"] = parsed.data.logoUrl ?? "";
-    set["publicPage.header.logoAssetId"] = newLogoAssetId;
+    draftSet["header"] = {
+      ...(currentHeader ?? {}),
+      logoUrl: parsed.data.logoUrl ?? "",
+      logoAssetId: newLogoAssetId,
+    };
   }
   if (newSiteIconAssetId) {
-    set["publicPage.siteIcon.url"] = parsed.data.siteIconUrl ?? "";
-    set["publicPage.siteIcon.assetId"] = newSiteIconAssetId;
+    draftSet["siteIcon.url"] = parsed.data.siteIconUrl ?? "";
+    draftSet["siteIcon.assetId"] = newSiteIconAssetId;
   }
 
-  await Workspace.updateOne({ _id: ctx.workspace._id }, { $set: set });
+  await Promise.all([
+    Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      { $set: { "publicPage.storyPromptCompletedAt": new Date() } }
+    ),
+    PortfolioDraft.updateOne({ _id: draftId, workspaceId: ctx.workspace._id }, { $set: draftSet }),
+  ]);
 
   if (newLogoAssetId && oldLogoAssetId && oldLogoAssetId !== newLogoAssetId) {
     try {
@@ -326,8 +343,6 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
     }
   }
 
-  revalidatePath(`/w/${ctx.workspace.slug}`);
-  revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
   return { ok: true };
 }
 

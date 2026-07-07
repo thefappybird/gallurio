@@ -221,4 +221,46 @@ describe("publishDraftAction", () => {
     const res = await publishDraftAction(String(foreign._id));
     expect(res).toEqual({ error: "draft_not_found" });
   });
+
+  it("copies seoTitle/seoDescription/siteIcon/seo.* onto publicPage", async () => {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: { data: { home: null, gallery: null }, latestVersion: 0 },
+    });
+    const draft = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "SEO Draft",
+      ...snapshot,
+      seoTitle: "Aurora Studio",
+      seoDescription: "Candid wedding photography.",
+      siteIcon: { url: "https://imagedelivery.net/h/icon/public", assetId: "icon-1" },
+      seo: {
+        ogImageUrl: "https://imagedelivery.net/h/og/public",
+        ogImageAssetId: "og-1",
+        galleryDescription: "Our gallery",
+        noindex: true,
+        keywords: ["wedding", "bali"],
+      },
+    });
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.publicPage!.seoTitle).toBe("Aurora Studio");
+    expect(ws!.publicPage!.seoDescription).toBe("Candid wedding photography.");
+    expect(ws!.publicPage!.siteIcon?.url).toBe("https://imagedelivery.net/h/icon/public");
+    expect(ws!.publicPage!.siteIcon?.assetId).toBe("icon-1");
+    expect(ws!.publicPage!.seo?.ogImageUrl).toBe("https://imagedelivery.net/h/og/public");
+    expect(ws!.publicPage!.seo?.ogImageAssetId).toBe("og-1");
+    expect(ws!.publicPage!.seo?.galleryDescription).toBe("Our gallery");
+    expect(ws!.publicPage!.seo?.noindex).toBe(true);
+    expect(ws!.publicPage!.seo?.keywords).toEqual(["wedding", "bali"]);
+  });
 });
