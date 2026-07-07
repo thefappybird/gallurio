@@ -19,6 +19,19 @@ const portfolioDraftSchema = new Schema(
     collectionsPopup: { type: Schema.Types.Mixed, default: null },
     formLocale: { type: String, default: "" },
     formDir: { type: String, default: "" },
+    seoTitle: { type: String, default: "" },
+    seoDescription: { type: String, default: "" },
+    siteIcon: {
+      url: { type: String, default: "" },
+      assetId: { type: String, default: "" },
+    },
+    seo: {
+      ogImageUrl: { type: String, default: "" },
+      ogImageAssetId: { type: String, default: "" },
+      galleryDescription: { type: String, default: "" },
+      noindex: { type: Boolean, default: false },
+      keywords: { type: [String], default: [] },
+    },
   },
   { timestamps: true }
 );
