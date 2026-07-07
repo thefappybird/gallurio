@@ -14,7 +14,13 @@ import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { connectDB } from "@/lib/db/mongoose";
-import { User, Workspace } from "@/lib/db/models";
+import { User, Workspace, PortfolioDraft } from "@/lib/db/models";
+import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
+import {
+  normalizeDraftSeoFields,
+  normalizePublishedSeoFields,
+  hasPendingSeoChanges,
+} from "@/lib/portfolio/publicPageSeoFields";
 import { SettingsUserProfile } from "../_components/settings-user-profile";
 import { WorkspaceBusinessForm } from "../workspace/_business-form";
 import { CustomizePanel } from "../customize/_panel";
@@ -102,21 +108,51 @@ export default async function SettingsCatchallPage({
     logoAssetId: workspace.logoAssetId ?? "",
   };
 
+  // Bundled SEO/icon fields now live on the active draft, not the stale
+  // published publicPage — read from the resolved active draft so the form
+  // shows the last save instead of reverting to live values on reload.
+  const draftId = await resolveActiveDraftId(workspace._id);
+  const draft = await PortfolioDraft.findOne(
+    { _id: draftId },
+    { seoTitle: 1, seoDescription: 1, siteIcon: 1, seo: 1 },
+  ).lean();
+  const draftFields = normalizeDraftSeoFields(draft);
+  const publishedFields = normalizePublishedSeoFields(workspace.publicPage);
+  const initialHasPendingChanges = hasPendingSeoChanges(draftFields, publishedFields);
+
   const publicPageDefaults: PublicPageSettingsInput = {
-    seoTitle: workspace.publicPage?.seoTitle ?? "",
-    seoDescription: workspace.publicPage?.seoDescription ?? "",
+    seoTitle: draftFields.seoTitle,
+    seoDescription: draftFields.seoDescription,
     // Default inquiry routing to the owner's own email until they set another.
+    // This field alone stays live-immediate (see updatePublicPageSettingsAction).
+    inquiryRecipientEmail:
+      workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
+    siteIconUrl: portfolioSiteIconUrl(draft?.siteIcon),
+    siteIconAssetId: draftFields.siteIconAssetId,
+    // Seed seo sub-fields so the form shows existing draft values on load.
+    // Both ends are tested: action tests verify persistence; form tests verify rendering.
+    seo: {
+      ogImageUrl: draftFields.seo.ogImageUrl,
+      ogImageAssetId: draftFields.seo.ogImageAssetId,
+      galleryDescription: draftFields.seo.galleryDescription,
+      noindex: draftFields.seo.noindex,
+    },
+  };
+
+  // Published-side snapshot in the same shape, so the frontend can recompute
+  // pending-state client-side after a Save without a full reload.
+  const publishedDefaults: PublicPageSettingsInput = {
+    seoTitle: publishedFields.seoTitle,
+    seoDescription: publishedFields.seoDescription,
     inquiryRecipientEmail:
       workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
     siteIconUrl: portfolioSiteIconUrl(workspace.publicPage?.siteIcon),
-    siteIconAssetId: workspace.publicPage?.siteIcon?.assetId ?? "",
-    // Seed seo sub-fields so the form shows existing DB values on load.
-    // Both ends are tested: action tests verify persistence; form tests verify rendering.
+    siteIconAssetId: publishedFields.siteIconAssetId,
     seo: {
-      ogImageUrl: workspace.publicPage?.seo?.ogImageUrl ?? "",
-      ogImageAssetId: workspace.publicPage?.seo?.ogImageAssetId ?? "",
-      galleryDescription: workspace.publicPage?.seo?.galleryDescription ?? "",
-      noindex: workspace.publicPage?.seo?.noindex ?? false,
+      ogImageUrl: publishedFields.seo.ogImageUrl,
+      ogImageAssetId: publishedFields.seo.ogImageAssetId,
+      galleryDescription: publishedFields.seo.galleryDescription,
+      noindex: publishedFields.seo.noindex,
     },
   };
 
@@ -172,6 +208,9 @@ export default async function SettingsCatchallPage({
               publishedAt={workspace.publicPage?.publishedAt ?? null}
               defaults={publicPageDefaults}
               locale={locale}
+              targetDraftId={String(draftId)}
+              initialHasPendingChanges={initialHasPendingChanges}
+              publishedDefaults={publishedDefaults}
             />
           ),
         },

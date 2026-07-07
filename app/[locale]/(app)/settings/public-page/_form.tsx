@@ -37,6 +37,11 @@ export function PublicPageSettingsForm({
   publishedAt: Date | null;
   defaults: PublicPageSettingsInput;
   locale: string;
+  // Server-provided context for the pending-changes banner (consumed by a
+  // separate, in-progress frontend task — additive only, not yet rendered).
+  targetDraftId?: string;
+  initialHasPendingChanges?: boolean;
+  publishedDefaults?: PublicPageSettingsInput;
 }) {
   const t = useTranslations("app.settings.publicPage");
   const errMsg = useActionError();

@@ -11,6 +11,7 @@ import { ensureLegacyDraftMigrated } from "@/lib/page-builder/migrateDraft";
 import { listDraftsAction } from "./_draftActions";
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { portfolioHeaderLogoUrl } from "@/lib/storage/portfolioAssetUrls";
+import { PortfolioDraft } from "@/lib/db/models";
 
 export async function generateMetadata({
   params,
@@ -107,8 +108,6 @@ export default async function PageBuilderEntry({
   const guideDismissed = Boolean(pp?.guideDismissedAt);
   const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
   const storyPromptCompleted = Boolean(pp?.storyPromptCompletedAt);
-  const initialSeoDescription = pp?.seoDescription ?? "";
-  const initialSeoKeywords = toPlain<string[]>(pp?.seo?.keywords, []);
   const workspaceBusinessType = workspace.businessType ?? "";
   const seoSetupPreview = shouldForceSeoSetupPreview(query);
 
@@ -120,6 +119,18 @@ export default async function PageBuilderEntry({
   const activeDraft = initialDrafts[0] ?? null;
   const initialActiveDraftId = activeDraft?.id ?? null;
   const initialActiveDraftName = activeDraft?.name ?? DEFAULT_DRAFT_NAME;
+
+  // Bundled SEO fields (description/keywords) now live on the active draft, not
+  // the stale published publicPage — read from the resolved active draft so a
+  // page reload reflects the last save instead of reverting to live values.
+  const activeDraftSeo = initialActiveDraftId
+    ? await PortfolioDraft.findOne(
+        { _id: initialActiveDraftId },
+        { seoDescription: 1, "seo.keywords": 1 },
+      ).lean()
+    : null;
+  const initialSeoDescription = activeDraftSeo?.seoDescription ?? "";
+  const initialSeoKeywords = toPlain<string[]>(activeDraftSeo?.seo?.keywords, []);
 
   // Serializable starter-template summaries for the in-editor switcher.
   const templates: EditorTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({
