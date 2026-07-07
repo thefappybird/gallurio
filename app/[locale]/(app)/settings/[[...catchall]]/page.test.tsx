@@ -100,6 +100,7 @@ function getPublicPageProps() {
     targetDraftId: string;
     initialHasPendingChanges: boolean;
     publishedDefaults: PublicPageSettingsInput;
+    keywordsPending: boolean;
   };
 }
 
@@ -253,5 +254,106 @@ describe("SettingsCatchallPage — public-page defaults read from active draft",
 
     const props = getPublicPageProps();
     expect(props.initialHasPendingChanges).toBe(true);
+  });
+
+  it("computes keywordsPending true when draft and published keywords differ", async () => {
+    const ws = await seedWorkspace({
+      seoTitle: "Same title",
+      seo: { keywords: ["old"] },
+    });
+    await seedOwnerUser(ws._id);
+    await PortfolioDraft.create({
+      workspaceId: ws._id,
+      name: "My Draft",
+      templateId: "",
+      data: { home: null, gallery: null },
+      seoTitle: "Same title",
+      seo: { keywords: ["new", "keywords"] },
+    });
+
+    requireOrgMock.mockResolvedValue({
+      role: "owner",
+      userId: "owner_1",
+      workspace: {
+        _id: ws._id,
+        slug: ws.slug,
+        name: ws.name,
+        businessType: "photographer",
+        country: "PH",
+        currency: "PHP",
+        timezone: "Asia/Manila",
+        plan: "free",
+        publicPage: {
+          seoTitle: "Same title",
+          seo: { keywords: ["old"] },
+          publishedAt: null,
+        },
+      },
+    });
+    getAuthUserMock.mockResolvedValue({
+      name: "Owner",
+      email: "owner@test.com",
+      avatarUrl: null,
+    });
+
+    const page = await SettingsCatchallPage({
+      params: Promise.resolve({ locale: "en", catchall: ["public-page"] }),
+    });
+    render(page);
+
+    const props = getPublicPageProps();
+    // Server-side hasPendingSeoChanges already folds keywords in, so this is
+    // true too; keywordsPending is the independent signal the client needs.
+    expect(props.initialHasPendingChanges).toBe(true);
+    expect(props.keywordsPending).toBe(true);
+  });
+
+  it("computes keywordsPending false when draft and published keywords are equal", async () => {
+    const ws = await seedWorkspace({
+      seoTitle: "Same title",
+      seo: { keywords: ["shared"] },
+    });
+    await seedOwnerUser(ws._id);
+    await PortfolioDraft.create({
+      workspaceId: ws._id,
+      name: "My Draft",
+      templateId: "",
+      data: { home: null, gallery: null },
+      seoTitle: "Same title",
+      seo: { keywords: ["shared"] },
+    });
+
+    requireOrgMock.mockResolvedValue({
+      role: "owner",
+      userId: "owner_1",
+      workspace: {
+        _id: ws._id,
+        slug: ws.slug,
+        name: ws.name,
+        businessType: "photographer",
+        country: "PH",
+        currency: "PHP",
+        timezone: "Asia/Manila",
+        plan: "free",
+        publicPage: {
+          seoTitle: "Same title",
+          seo: { keywords: ["shared"] },
+          publishedAt: null,
+        },
+      },
+    });
+    getAuthUserMock.mockResolvedValue({
+      name: "Owner",
+      email: "owner@test.com",
+      avatarUrl: null,
+    });
+
+    const page = await SettingsCatchallPage({
+      params: Promise.resolve({ locale: "en", catchall: ["public-page"] }),
+    });
+    render(page);
+
+    const props = getPublicPageProps();
+    expect(props.keywordsPending).toBe(false);
   });
 });

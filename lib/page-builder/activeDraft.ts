@@ -1,6 +1,6 @@
 import type { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
-import { PortfolioDraft } from "@/lib/db/models";
+import { PortfolioDraft, Workspace } from "@/lib/db/models";
 import { DEFAULT_DRAFT_NAME } from "./drafts";
 import { ensureLegacyDraftMigrated } from "./migrateDraft";
 
@@ -19,6 +19,12 @@ export async function resolveActiveDraftId(workspaceId: Types.ObjectId): Promise
     .lean();
   if (existing) return existing._id;
 
+  // No page content ever existed to migrate, but SEO/icon fields may already be
+  // set directly on publicPage (old Settings-form writes) — seed them so this
+  // fresh draft doesn't silently blank out real, previously-configured data.
+  const ws = await Workspace.findById(workspaceId).select({ publicPage: 1 }).lean();
+  const pp = ws?.publicPage;
+
   try {
     const created = await PortfolioDraft.create({
       workspaceId,
@@ -31,6 +37,19 @@ export async function resolveActiveDraftId(workspaceId: Types.ObjectId): Promise
       collectionsPopup: null,
       formLocale: "",
       formDir: "",
+      seoTitle: pp?.seoTitle ?? "",
+      seoDescription: pp?.seoDescription ?? "",
+      siteIcon: {
+        url: pp?.siteIcon?.url ?? "",
+        assetId: pp?.siteIcon?.assetId ?? "",
+      },
+      seo: {
+        ogImageUrl: pp?.seo?.ogImageUrl ?? "",
+        ogImageAssetId: pp?.seo?.ogImageAssetId ?? "",
+        galleryDescription: pp?.seo?.galleryDescription ?? "",
+        noindex: pp?.seo?.noindex ?? false,
+        keywords: pp?.seo?.keywords ?? [],
+      },
     });
     return created._id;
   } catch (err) {

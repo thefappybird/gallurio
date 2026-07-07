@@ -54,6 +54,7 @@ export function PublicPageSettingsForm({
   targetDraftId,
   initialHasPendingChanges,
   publishedDefaults,
+  keywordsPending,
 }: {
   slug: string;
   publishedAt: Date | null;
@@ -62,6 +63,7 @@ export function PublicPageSettingsForm({
   targetDraftId?: string;
   initialHasPendingChanges?: boolean;
   publishedDefaults?: PublicPageSettingsInput;
+  keywordsPending?: boolean;
 }) {
   const t = useTranslations("app.settings.publicPage");
   const errMsg = useActionError();
@@ -131,7 +133,7 @@ export function PublicPageSettingsForm({
     }
     toast.success(t("savedToast"));
     reset(data);
-    setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults));
+    setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults) || !!keywordsPending);
   }
 
   function handlePublish() {

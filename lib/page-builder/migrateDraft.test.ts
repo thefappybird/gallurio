@@ -48,4 +48,43 @@ describe("ensureLegacyDraftMigrated", () => {
     await ensureLegacyDraftMigrated(ws._id);
     expect(await PortfolioDraft.countDocuments({ workspaceId: ws._id })).toBe(0);
   });
+
+  it("carries forward existing seoTitle/siteIcon/seo.* onto the migrated draft", async () => {
+    const ws = await Workspace.create({
+      slug: `s-${Math.round(Math.random() * 1e9)}`,
+      name: "Studio",
+      ownerUserId: "u",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: {
+        data: { home: { content: [], root: {} }, gallery: null },
+        latestVersion: 0,
+        seoTitle: "Luna Studio | Weddings",
+        seoDescription: "Wedding photography in Manila",
+        siteIcon: { url: "https://cdn.example.com/icon.png", assetId: "icon-1" },
+        seo: {
+          ogImageUrl: "https://cdn.example.com/og.jpg",
+          ogImageAssetId: "og-1",
+          galleryDescription: "Our recent work",
+          noindex: true,
+          keywords: ["wedding", "manila"],
+        },
+      },
+    });
+
+    await ensureLegacyDraftMigrated(ws._id);
+    const draft = await PortfolioDraft.findOne({ workspaceId: ws._id }).lean();
+
+    expect(draft?.seoTitle).toBe("Luna Studio | Weddings");
+    expect(draft?.seoDescription).toBe("Wedding photography in Manila");
+    expect(draft?.siteIcon).toMatchObject({ url: "https://cdn.example.com/icon.png", assetId: "icon-1" });
+    expect(draft?.seo).toMatchObject({
+      ogImageUrl: "https://cdn.example.com/og.jpg",
+      ogImageAssetId: "og-1",
+      galleryDescription: "Our recent work",
+      noindex: true,
+      keywords: ["wedding", "manila"],
+    });
+  });
 });

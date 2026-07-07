@@ -119,6 +119,11 @@ export default async function SettingsCatchallPage({
   const draftFields = normalizeDraftSeoFields(draft);
   const publishedFields = normalizePublishedSeoFields(workspace.publicPage);
   const initialHasPendingChanges = hasPendingSeoChanges(draftFields, publishedFields);
+  // keywords aren't editable in this form (only the Story Prompt wizard writes
+  // them) — compute once server-side and OR it into every client recompute so
+  // a Save can't incorrectly clear the pending banner while keywords still differ.
+  const keywordsPending =
+    JSON.stringify(draftFields.seo.keywords) !== JSON.stringify(publishedFields.seo.keywords);
 
   const publicPageDefaults: PublicPageSettingsInput = {
     seoTitle: draftFields.seoTitle,
@@ -211,6 +216,7 @@ export default async function SettingsCatchallPage({
               targetDraftId={String(draftId)}
               initialHasPendingChanges={initialHasPendingChanges}
               publishedDefaults={publishedDefaults}
+              keywordsPending={keywordsPending}
             />
           ),
         },

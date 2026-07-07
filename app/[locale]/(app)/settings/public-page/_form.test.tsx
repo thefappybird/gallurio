@@ -84,8 +84,14 @@ vi.mock("../../portfolio/_draftActions", () => ({
   publishDraftAction: vi.fn(),
 }));
 
+vi.mock("../_actions", () => ({
+  updatePublicPageSettingsAction: vi.fn(),
+  togglePublicPagePublishedAction: vi.fn(),
+}));
+
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { publishDraftAction } from "../../portfolio/_draftActions";
+import { updatePublicPageSettingsAction } from "../_actions";
 
 vi.mock("@/lib/utils/handleActionResult", () => ({
   toastActionResult: vi.fn(() => true),
@@ -365,5 +371,40 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
 
     expect(publishDraftAction).toHaveBeenCalledWith("draft-1");
     expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
+  });
+});
+
+describe("PublicPageSettingsForm — keywordsPending recompute after Save", () => {
+  it("keeps the banner visible and Publish enabled after a Save whose SEO fields match published, when keywordsPending is true", async () => {
+    vi.mocked(updatePublicPageSettingsAction).mockResolvedValueOnce({
+      ok: true,
+    } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={true}
+        publishedDefaults={baseDefaults}
+        keywordsPending={true}
+      />
+    );
+
+    // Dirty the form via a field that computeHasPendingChanges ignores
+    // (inquiryRecipientEmail), so Save submits with SEO fields still
+    // matching publishedDefaults exactly.
+    const emailInput = document.querySelector("#inquiryRecipientEmail") as HTMLInputElement;
+    fireEvent.change(emailInput, { target: { value: "owner@example.com" } });
+
+    const saveBtn = screen.getByText("save").closest("button")!;
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
+    expect(screen.getByText("publishChanges").closest("button")).toBeEnabled();
   });
 });

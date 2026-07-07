@@ -38,6 +38,45 @@ describe("resolveActiveDraftId", () => {
     expect(drafts[0].name).toBe(DEFAULT_DRAFT_NAME);
   });
 
+  it("seeds seoTitle/siteIcon/seo.* from publicPage onto the fallback default draft", async () => {
+    const ws = await Workspace.create({
+      slug: `s-${Math.round(Math.random() * 1e9)}`,
+      name: "Studio",
+      ownerUserId: "u",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      // No page content at all -- ensureLegacyDraftMigrated's home/gallery
+      // check early-returns, so this must go through the fallback create path.
+      publicPage: {
+        data: { home: null, gallery: null },
+        latestVersion: 0,
+        seoTitle: "Luna Studio | Weddings",
+        siteIcon: { url: "https://cdn.example.com/icon.png", assetId: "icon-1" },
+        seo: {
+          ogImageUrl: "https://cdn.example.com/og.jpg",
+          ogImageAssetId: "og-1",
+          galleryDescription: "Our recent work",
+          noindex: true,
+          keywords: ["wedding", "manila"],
+        },
+      },
+    });
+
+    const draftId = await resolveActiveDraftId(ws._id);
+    const draft = await PortfolioDraft.findById(draftId).lean();
+
+    expect(draft?.seoTitle).toBe("Luna Studio | Weddings");
+    expect(draft?.siteIcon).toMatchObject({ url: "https://cdn.example.com/icon.png", assetId: "icon-1" });
+    expect(draft?.seo).toMatchObject({
+      ogImageUrl: "https://cdn.example.com/og.jpg",
+      ogImageAssetId: "og-1",
+      galleryDescription: "Our recent work",
+      noindex: true,
+      keywords: ["wedding", "manila"],
+    });
+  });
+
   it("returns the most recently updated existing draft", async () => {
     const ws = await makeWorkspace();
     await PortfolioDraft.create({ workspaceId: ws._id, name: "Older" });
