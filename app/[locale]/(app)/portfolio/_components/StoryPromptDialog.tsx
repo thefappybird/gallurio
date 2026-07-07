@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { resolveScheme } from "@/lib/theme/themes";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { useImageRetry } from "@/hooks/useImageRetry";
 import { OnboardingCornerAccents } from "../../../(onboarding)/onboarding/_components/decorative-accents";
 import { completeStoryPromptAction } from "../_actions";
 
@@ -223,18 +224,10 @@ export function StoryPromptDialog({
   const [iconAssetId, setIconAssetId] = useState("");
   const [iconUploading, setIconUploading] = useState(false);
   const [iconError, setIconError] = useState<string | null>(null);
-  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
-  const [iconLoadFailed, setIconLoadFailed] = useState(false);
+  const logo = useImageRetry(logoUrl);
+  const icon = useImageRetry(iconUrl);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setLogoLoadFailed(false);
-  }, [logoUrl]);
-
-  useEffect(() => {
-    setIconLoadFailed(false);
-  }, [iconUrl]);
 
   const suggestedTags = SUGGESTED_TAGS[businessType] ?? SUGGESTED_TAGS.other;
   const displayTags = Array.from(new Set([...suggestedTags, ...keywords]));
@@ -570,13 +563,13 @@ export function StoryPromptDialog({
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <p className="text-xs font-medium text-foreground/80">{t("branding.logoLabel")}</p>
-                  {logoUrl && !logoLoadFailed ? (
+                  {logoUrl && !logo.failed ? (
                     <div className="flex flex-col gap-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={logoUrl}
+                        src={logo.src}
                         alt=""
-                        onError={() => setLogoLoadFailed(true)}
+                        onError={logo.onError}
                         className="h-12 w-auto max-w-full border border-border object-contain"
                       />
                       <button
@@ -618,13 +611,13 @@ export function StoryPromptDialog({
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <p className="text-xs font-medium text-foreground/80">{t("branding.iconLabel")}</p>
-                  {iconUrl && !iconLoadFailed ? (
+                  {iconUrl && !icon.failed ? (
                     <div className="flex items-center gap-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={iconUrl}
+                        src={icon.src}
                         alt=""
-                        onError={() => setIconLoadFailed(true)}
+                        onError={icon.onError}
                         className="h-12 w-12 border border-border object-contain"
                       />
                       <button

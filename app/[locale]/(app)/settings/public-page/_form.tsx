@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, useOptimistic } from "react";
+import { useRef, useState, useTransition, useOptimistic } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { useImageRetry } from "@/hooks/useImageRetry";
 
 const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
@@ -55,8 +56,6 @@ export function PublicPageSettingsForm({
   const [ogError, setOgError] = useState<string | null>(null);
   const ogFileInputRef = useRef<HTMLInputElement>(null);
 
-  const [siteIconLoadFailed, setSiteIconLoadFailed] = useState(false);
-
   const {
     register,
     handleSubmit,
@@ -71,10 +70,7 @@ export function PublicPageSettingsForm({
 
   const siteIconUrl = watch("siteIconUrl");
   const ogImageUrl = watch("seo.ogImageUrl");
-
-  useEffect(() => {
-    setSiteIconLoadFailed(false);
-  }, [siteIconUrl]);
+  const siteIcon = useImageRetry(siteIconUrl);
 
   const publicUrl = portfolioPublicUrl(slug);
 
@@ -443,14 +439,14 @@ export function PublicPageSettingsForm({
             </div>
 
             <div className="flex flex-col gap-3">
-              {siteIconUrl && !siteIconLoadFailed ? (
+              {siteIconUrl && !siteIcon.failed ? (
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={siteIconUrl}
+                      src={siteIcon.src}
                       alt={t("siteIconLabel")}
-                      onError={() => setSiteIconLoadFailed(true)}
+                      onError={siteIcon.onError}
                       className="h-16 w-16 border border-border bg-background object-contain"
                     />
                     <div className="flex flex-wrap gap-2">

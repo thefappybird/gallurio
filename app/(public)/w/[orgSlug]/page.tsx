@@ -61,8 +61,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: ogImageUrl ? "summary_large_image" : "summary",
       images: ogImageUrl ? [ogImageUrl] : undefined,
     },
-    icons: iconUrl ? { icon: iconUrl, shortcut: iconUrl, apple: iconUrl } : undefined,
   };
+  // Only set `icons` when the workspace has a custom one — an explicit
+  // `icons: undefined` here still counts as "set" during Next's metadata
+  // merge and blanks out the layout's default favicon instead of inheriting
+  // it, so the key must be omitted entirely to fall back correctly.
+  if (iconUrl) result.icons = { icon: iconUrl, shortcut: iconUrl, apple: iconUrl };
   if (seo.noindex) result.robots = { index: false, follow: false };
   return result;
 }
