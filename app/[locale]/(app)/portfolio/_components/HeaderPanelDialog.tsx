@@ -173,6 +173,7 @@ export function HeaderPanelDialog({
   header,
   onHeaderChange,
   workspaceName,
+  onSaved,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.headerDialog");
   const [logoUploading, setLogoUploading] = useState(false);
@@ -226,6 +227,7 @@ export function HeaderPanelDialog({
         logoUrl: result.asset.url,
         logoAssetId: result.asset.assetId,
       });
+      onSaved?.();
     } catch {
       toast.error(t("logoErrors.upload"));
     } finally {

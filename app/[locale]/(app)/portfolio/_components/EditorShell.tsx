@@ -1886,6 +1886,7 @@ export function EditorShell({
           onBrandingSaved={({ logoUrl, logoAssetId }) => {
             if (!logoUrl || !logoAssetId) return;
             setHeaderConfig((current) => ({ ...current, logoUrl, logoAssetId }));
+            setPreviewNonce((n) => n + 1);
           }}
           onContinueWithGuide={() => setStoryPromptOpen(false)}
           onExploreSelf={async () => {

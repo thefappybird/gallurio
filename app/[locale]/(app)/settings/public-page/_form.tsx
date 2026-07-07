@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition, useOptimistic } from "react";
+import { useEffect, useRef, useState, useTransition, useOptimistic } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -55,6 +55,8 @@ export function PublicPageSettingsForm({
   const [ogError, setOgError] = useState<string | null>(null);
   const ogFileInputRef = useRef<HTMLInputElement>(null);
 
+  const [siteIconLoadFailed, setSiteIconLoadFailed] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -69,6 +71,10 @@ export function PublicPageSettingsForm({
 
   const siteIconUrl = watch("siteIconUrl");
   const ogImageUrl = watch("seo.ogImageUrl");
+
+  useEffect(() => {
+    setSiteIconLoadFailed(false);
+  }, [siteIconUrl]);
 
   const publicUrl = portfolioPublicUrl(slug);
 
@@ -437,13 +443,14 @@ export function PublicPageSettingsForm({
             </div>
 
             <div className="flex flex-col gap-3">
-              {siteIconUrl ? (
+              {siteIconUrl && !siteIconLoadFailed ? (
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={siteIconUrl}
                       alt={t("siteIconLabel")}
+                      onError={() => setSiteIconLoadFailed(true)}
                       className="h-16 w-16 border border-border bg-background object-contain"
                     />
                     <div className="flex flex-wrap gap-2">

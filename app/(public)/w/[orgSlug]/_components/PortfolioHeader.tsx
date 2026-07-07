@@ -114,7 +114,12 @@ export function PortfolioHeader({
   galleryHref?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [config?.logoUrl]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -212,12 +217,13 @@ export function PortfolioHeader({
             overflow: "hidden",
           }}
         >
-          {config?.logoUrl && (
+          {config?.logoUrl && !logoFailed && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={config.logoUrl}
               alt=""
               aria-hidden="true"
+              onError={() => setLogoFailed(true)}
               style={{ height: navbarSize.logoHeight, maxWidth: "40vw", width: "auto", objectFit: "contain", flexShrink: 0 }}
             />
           )}
