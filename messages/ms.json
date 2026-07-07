@@ -892,7 +892,14 @@
         },
         "noindexSection": "Keterlihatan carian",
         "noindexLabel": "Sembunyikan dari enjin carian",
-        "noindexHint": "Jauhkan portfolio ini daripada hasil carian Google. Sesuai untuk draf atau pelancaran lembut. Pautan terus anda masih berfungsi."
+        "noindexHint": "Jauhkan portfolio ini daripada hasil carian Google. Sesuai untuk draf atau pelancaran lembut. Pautan terus anda masih berfungsi.",
+        "publishChanges": "Terbitkan perubahan",
+        "publishingChanges": "Menerbitkan…",
+        "publishChangesSuccessToast": "Perubahan telah diterbitkan ke halaman awam anda.",
+        "unpublishedBannerTitle": "Belum diterbitkan",
+        "unpublishedBannerBody": "Laman web anda belum diterbitkan — tetapan ini tidak akan muncul di halaman awam anda sehingga anda menerbitkannya.",
+        "pendingChangesBannerTitle": "Perubahan belum diterbitkan",
+        "pendingChangesBannerBody": "Anda mempunyai perubahan yang belum diterbitkan — terbitkan untuk menjadikannya kelihatan di halaman awam anda."
       }
     },
     "teams": {

@@ -892,7 +892,14 @@
         },
         "noindexSection": "Visibilitas pencarian",
         "noindexLabel": "Sembunyikan dari mesin pencari",
-        "noindexHint": "Jauhkan portofolio ini dari hasil pencarian Google. Cocok untuk draf atau peluncuran lunak. Tautan langsung Anda tetap berfungsi."
+        "noindexHint": "Jauhkan portofolio ini dari hasil pencarian Google. Cocok untuk draf atau peluncuran lunak. Tautan langsung Anda tetap berfungsi.",
+        "publishChanges": "Terbitkan perubahan",
+        "publishingChanges": "Menerbitkan…",
+        "publishChangesSuccessToast": "Perubahan telah diterbitkan ke halaman publik Anda.",
+        "unpublishedBannerTitle": "Belum diterbitkan",
+        "unpublishedBannerBody": "Situs Anda belum diterbitkan — pengaturan ini tidak akan muncul di halaman publik Anda sampai Anda menerbitkannya.",
+        "pendingChangesBannerTitle": "Perubahan belum diterbitkan",
+        "pendingChangesBannerBody": "Anda memiliki perubahan yang belum diterbitkan — terbitkan agar terlihat di halaman publik Anda."
       }
     },
     "teams": {

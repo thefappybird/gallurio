@@ -892,7 +892,14 @@
         },
         "noindexSection": "Kakikitaan sa paghahanap",
         "noindexLabel": "Itago mula sa mga search engine",
-        "noindexHint": "Panatilihing wala sa mga resulta ng paghahanap ng Google ang portfolio na ito. Maganda para sa mga draft o soft launch. Ang iyong direktang link ay patuloy na gagana."
+        "noindexHint": "Panatilihing wala sa mga resulta ng paghahanap ng Google ang portfolio na ito. Maganda para sa mga draft o soft launch. Ang iyong direktang link ay patuloy na gagana.",
+        "publishChanges": "I-publish ang mga pagbabago",
+        "publishingChanges": "Pina-publish…",
+        "publishChangesSuccessToast": "Na-publish ang mga pagbabago sa iyong pampublikong pahina.",
+        "unpublishedBannerTitle": "Hindi pa na-publish",
+        "unpublishedBannerBody": "Hindi pa na-publish ang iyong website — hindi lalabas ang mga setting na ito sa iyong pampublikong pahina hanggang sa i-publish mo.",
+        "pendingChangesBannerTitle": "May mga hindi pa na-publish na pagbabago",
+        "pendingChangesBannerBody": "May mga pagbabago kang hindi pa na-publish — i-publish ito para makita sa iyong pampublikong pahina."
       }
     },
     "teams": {

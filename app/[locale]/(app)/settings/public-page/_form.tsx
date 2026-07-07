@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
-import { Loader2, Upload, X } from "lucide-react";
+import { AlertCircle, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   publicPageSettingsSchema,
@@ -15,6 +15,7 @@ import {
   updatePublicPageSettingsAction,
   togglePublicPagePublishedAction,
 } from "../_actions";
+import { publishDraftAction } from "../../portfolio/_draftActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,18 +28,37 @@ const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] 
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
 const SITE_ICON_MAX_DIM = 512;
 
+/** True if any of the published-page-affecting fields differ from the published snapshot. */
+function computeHasPendingChanges(
+  data: PublicPageSettingsInput,
+  publishedDefaults?: PublicPageSettingsInput,
+): boolean {
+  if (!publishedDefaults) return true;
+  return (
+    data.seoTitle !== publishedDefaults.seoTitle ||
+    data.seoDescription !== publishedDefaults.seoDescription ||
+    data.siteIconUrl !== publishedDefaults.siteIconUrl ||
+    data.siteIconAssetId !== publishedDefaults.siteIconAssetId ||
+    data.seo?.ogImageUrl !== publishedDefaults.seo?.ogImageUrl ||
+    data.seo?.ogImageAssetId !== publishedDefaults.seo?.ogImageAssetId ||
+    data.seo?.galleryDescription !== publishedDefaults.seo?.galleryDescription ||
+    data.seo?.noindex !== publishedDefaults.seo?.noindex
+  );
+}
+
 export function PublicPageSettingsForm({
   slug,
   publishedAt,
   defaults,
   locale,
+  targetDraftId,
+  initialHasPendingChanges,
+  publishedDefaults,
 }: {
   slug: string;
   publishedAt: Date | null;
   defaults: PublicPageSettingsInput;
   locale: string;
-  // Server-provided context for the pending-changes banner (consumed by a
-  // separate, in-progress frontend task — additive only, not yet rendered).
   targetDraftId?: string;
   initialHasPendingChanges?: boolean;
   publishedDefaults?: PublicPageSettingsInput;
@@ -47,6 +67,10 @@ export function PublicPageSettingsForm({
   const errMsg = useActionError();
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [hasPendingChanges, setHasPendingChanges] = useState(
+    initialHasPendingChanges ?? false,
+  );
+  const [isPublishing, startPublishTransition] = useTransition();
 
   const [optimisticPublishedAt, setOptimisticPublishedAt] = useOptimistic<Date | null>(
     publishedAt
@@ -107,6 +131,20 @@ export function PublicPageSettingsForm({
     }
     toast.success(t("savedToast"));
     reset(data);
+    setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults));
+  }
+
+  function handlePublish() {
+    startPublishTransition(async () => {
+      if (!targetDraftId) return;
+      const result = await publishDraftAction(targetDraftId);
+      if (result && "error" in result) {
+        toast.error(errMsg(result.error));
+        return;
+      }
+      toast.success(t("publishChangesSuccessToast"));
+      setHasPendingChanges(false);
+    });
   }
 
   async function handleIconFile(file: File) {
@@ -591,17 +629,49 @@ export function PublicPageSettingsForm({
           </div>
         </section>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                {t("saving")}
-              </>
-            ) : (
-              t("save")
-            )}
-          </Button>
+        <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col gap-3 border-t border-border bg-background px-6 py-4">
+          {hasPendingChanges && (
+            <div className="flex items-start gap-2 border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <p>
+                <span className="block font-medium">
+                  {publishedAt === null
+                    ? t("unpublishedBannerTitle")
+                    : t("pendingChangesBannerTitle")}
+                </span>
+                {publishedAt === null
+                  ? t("unpublishedBannerBody")
+                  : t("pendingChangesBannerBody")}
+              </p>
+            </div>
+          )}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDirty || isSubmitting || !hasPendingChanges || isPublishing}
+              onClick={handlePublish}
+            >
+              {isPublishing ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  {t("publishingChanges")}
+                </>
+              ) : (
+                t("publishChanges")
+              )}
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !isDirty}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  {t("saving")}
+                </>
+              ) : (
+                t("save")
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

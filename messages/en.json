@@ -892,7 +892,14 @@
         },
         "noindexSection": "Search visibility",
         "noindexLabel": "Hide from search engines",
-        "noindexHint": "Keep this portfolio out of Google search results. Useful for drafts or soft launches. Your direct link still works."
+        "noindexHint": "Keep this portfolio out of Google search results. Useful for drafts or soft launches. Your direct link still works.",
+        "publishChanges": "Publish changes",
+        "publishingChanges": "Publishing…",
+        "publishChangesSuccessToast": "Changes published to your public page.",
+        "unpublishedBannerTitle": "Not published yet",
+        "unpublishedBannerBody": "Your website isn't published yet — these settings won't appear on your public page until you publish.",
+        "pendingChangesBannerTitle": "Unpublished changes",
+        "pendingChangesBannerBody": "You have unpublished changes — publish to make them visible on your public page."
       }
     },
     "teams": {

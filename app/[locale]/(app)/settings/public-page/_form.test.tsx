@@ -80,7 +80,12 @@ vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
 }));
 
+vi.mock("../../portfolio/_draftActions", () => ({
+  publishDraftAction: vi.fn(),
+}));
+
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { publishDraftAction } from "../../portfolio/_draftActions";
 
 vi.mock("@/lib/utils/handleActionResult", () => ({
   toastActionResult: vi.fn(() => true),
@@ -284,5 +289,81 @@ describe("PublicPageSettingsForm — site icon section", () => {
     await act(async () => { fireEvent.click(removeBtn); });
     // After remove, upload area should appear
     expect(screen.getByText("ogImageLabel")).toBeInTheDocument();
+  });
+});
+
+describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
+  it("hides the banner and disables Publish when there are no pending changes", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={false}
+        publishedDefaults={baseDefaults}
+      />
+    );
+    expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
+    expect(screen.queryByText("unpublishedBannerTitle")).not.toBeInTheDocument();
+    expect(screen.getByText("publishChanges").closest("button")).toBeDisabled();
+  });
+
+  it("shows the never-published banner variant when publishedAt is null", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={true}
+        publishedDefaults={baseDefaults}
+      />
+    );
+    expect(screen.getByText("unpublishedBannerTitle")).toBeInTheDocument();
+    expect(screen.getByText("unpublishedBannerBody")).toBeInTheDocument();
+    expect(screen.getByText("publishChanges").closest("button")).toBeEnabled();
+  });
+
+  it("shows the pending-changes banner variant when publishedAt is set", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={true}
+        publishedDefaults={baseDefaults}
+      />
+    );
+    expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
+    expect(screen.getByText("pendingChangesBannerBody")).toBeInTheDocument();
+  });
+
+  it("calls publishDraftAction with targetDraftId and clears the banner on success", async () => {
+    vi.mocked(publishDraftAction).mockResolvedValueOnce({ ok: true });
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={true}
+        publishedDefaults={baseDefaults}
+      />
+    );
+
+    const publishBtn = screen.getByText("publishChanges").closest("button")!;
+    await act(async () => {
+      fireEvent.click(publishBtn);
+    });
+
+    expect(publishDraftAction).toHaveBeenCalledWith("draft-1");
+    expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
   });
 });

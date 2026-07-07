@@ -892,7 +892,14 @@
         },
         "noindexSection": "ظهور في محركات البحث",
         "noindexLabel": "إخفاء من محركات البحث",
-        "noindexHint": "أبعد هذا الملف الشخصي عن نتائج بحث Google. مناسب للمسودات أو الإطلاق الناعم. رابطك المباشر يظل يعمل."
+        "noindexHint": "أبعد هذا الملف الشخصي عن نتائج بحث Google. مناسب للمسودات أو الإطلاق الناعم. رابطك المباشر يظل يعمل.",
+        "publishChanges": "نشر التغييرات",
+        "publishingChanges": "جارٍ النشر…",
+        "publishChangesSuccessToast": "تم نشر التغييرات على صفحتك العامة.",
+        "unpublishedBannerTitle": "لم تُنشر بعد",
+        "unpublishedBannerBody": "موقعك لم يُنشر بعد — لن تظهر هذه الإعدادات في صفحتك العامة حتى تقوم بالنشر.",
+        "pendingChangesBannerTitle": "توجد تغييرات غير منشورة",
+        "pendingChangesBannerBody": "لديك تغييرات لم تُنشر بعد — انشرها لتظهر في صفحتك العامة."
       }
     },
     "teams": {
