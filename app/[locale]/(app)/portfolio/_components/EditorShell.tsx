@@ -1883,6 +1883,10 @@ export function EditorShell({
           initialKeywords={initialSeoKeywords}
           businessType={workspaceBusinessType}
           persistOnExit={!seoSetupPreviewMode}
+          onBrandingSaved={({ logoUrl, logoAssetId }) => {
+            if (!logoUrl || !logoAssetId) return;
+            setHeaderConfig((current) => ({ ...current, logoUrl, logoAssetId }));
+          }}
           onContinueWithGuide={() => setStoryPromptOpen(false)}
           onExploreSelf={async () => {
             setStoryPromptOpen(false);

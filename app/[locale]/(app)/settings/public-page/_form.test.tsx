@@ -149,6 +149,19 @@ describe("PublicPageSettingsForm — site icon section", () => {
     expect(screen.getByText("siteIconRemove")).toBeInTheDocument();
   });
 
+  it("shows replace control and requirements when icon is set", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{ ...baseDefaults, siteIconUrl: "https://cdn.example.com/icon.png" }}
+        locale="en"
+      />
+    );
+    expect(screen.getByText("siteIconUpload")).toBeInTheDocument();
+    expect(screen.getByText("siteIconRequirements")).toBeInTheDocument();
+  });
+
   it("renders galleryDescription field", () => {
     render(
       <PublicPageSettingsForm

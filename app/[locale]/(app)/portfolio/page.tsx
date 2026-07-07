@@ -10,6 +10,7 @@ import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShe
 import { ensureLegacyDraftMigrated } from "@/lib/page-builder/migrateDraft";
 import { listDraftsAction } from "./_draftActions";
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
+import { portfolioHeaderLogoUrl } from "@/lib/storage/portfolioAssetUrls";
 
 export async function generateMetadata({
   params,
@@ -92,7 +93,14 @@ export default async function PageBuilderEntry({
   };
   const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
   const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
-  const initialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
+  const rawInitialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
+  const initialHeaderConfig = {
+    ...rawInitialHeaderConfig,
+    logoUrl: portfolioHeaderLogoUrl({
+      url: rawInitialHeaderConfig.logoUrl,
+      assetId: rawInitialHeaderConfig.logoAssetId,
+    }),
+  };
   const initialCollectionsPopup = toPlain<PortfolioCollectionsPopupConfig>(pp?.collectionsPopup ?? null, {});
   const initialFormLocale = toPlain<string>(pp?.formLocale, "");
   const initialFormDir = toPlain<string>(pp?.formDir, "");

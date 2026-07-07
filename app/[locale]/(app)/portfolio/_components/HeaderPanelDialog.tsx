@@ -210,7 +210,7 @@ export function HeaderPanelDialog({
           maxWidth: LOGO_MAX_WIDTH,
           maxHeight: LOGO_MAX_HEIGHT,
         },
-        { subfolder: "portfolio_header" },
+        { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
       );
       if ("error" in result) {
         switch (result.error) {

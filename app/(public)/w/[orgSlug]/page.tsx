@@ -14,6 +14,7 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildHomeJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
+import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,7 +39,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = publicPage?.seoTitle || name;
   const description = publicPage?.seoDescription || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
-  const iconUrl = publicPage?.siteIcon?.url || undefined;
+  const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
+  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const canonical = portfolioPublicUrl(orgSlug);
   const locale = resolvePublicChromeLocale(workspace);
 
@@ -59,7 +61,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: ogImageUrl ? "summary_large_image" : "summary",
       images: ogImageUrl ? [ogImageUrl] : undefined,
     },
-    icons: iconUrl ? { icon: iconUrl } : undefined,
+    icons: iconUrl ? { icon: iconUrl, shortcut: iconUrl, apple: iconUrl } : undefined,
   };
   if (seo.noindex) result.robots = { index: false, follow: false };
   return result;

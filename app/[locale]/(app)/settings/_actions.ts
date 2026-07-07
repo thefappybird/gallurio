@@ -10,7 +10,6 @@ import {
   updateWorkspaceBusinessSchema,
   publicPageSettingsSchema,
   type UpdateWorkspaceBusinessInput,
-  type PublicPageSettingsInput,
   type PublicPageSettingsRawInput,
 } from "@/lib/validators/workspace";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
@@ -51,7 +50,6 @@ export async function updateWorkspaceBusinessAction(
   if (slugClash) return { error: "url_taken" };
 
   const workspaceId = String(ctx.workspace._id);
-
   // Verify logo ownership before persisting — prevents a workspace from
   // referencing an image uploaded by a different workspace.
   if (logoAssetId) {
@@ -129,22 +127,25 @@ export async function updatePublicPageSettingsAction(
 
   // Verify OG image ownership before persisting — prevents a workspace from
   // referencing an image uploaded by a different workspace.
+  const newSiteIconAssetId = parsed.data.siteIconAssetId || undefined;
+  if (newSiteIconAssetId) {
+    const owned = await verifyImageOwnership(newSiteIconAssetId, workspaceId);
+    if (!owned) return { error: "invalid_site_icon" };
+  }
+
   const newOgAssetId = parsed.data.seo?.ogImageAssetId;
   if (newOgAssetId) {
     const owned = await verifyImageOwnership(newOgAssetId, workspaceId);
     if (!owned) return { error: "invalid_og_image" };
   }
 
-  // Fetch the current OG assetId so we can delete it when the owner replaces
-  // or removes the image. Only needed when the seo sub-object is being updated.
-  let oldOgAssetId: string | undefined;
-  if (parsed.data.seo !== undefined) {
-    const current = await Workspace.findOne(
-      { _id: ctx.workspace._id },
-      { "publicPage.seo.ogImageAssetId": 1 },
-    ).lean();
-    oldOgAssetId = current?.publicPage?.seo?.ogImageAssetId || undefined;
-  }
+  // Fetch current asset IDs so old uploads can be deleted after replacement/removal.
+  const currentAssets = await Workspace.findOne(
+    { _id: ctx.workspace._id },
+    { "publicPage.seo.ogImageAssetId": 1, "publicPage.siteIcon.assetId": 1 },
+  ).lean();
+  const oldOgAssetId = currentAssets?.publicPage?.seo?.ogImageAssetId || undefined;
+  const oldSiteIconAssetId = currentAssets?.publicPage?.siteIcon?.assetId || undefined;
 
   const seoFields: Record<string, unknown> = {};
   if (parsed.data.seo !== undefined) {
@@ -164,7 +165,7 @@ export async function updatePublicPageSettingsAction(
         "publicPage.inquiryRecipientEmail":
           parsed.data.inquiryRecipientEmail ?? "",
         "publicPage.siteIcon.url": parsed.data.siteIconUrl ?? "",
-        "publicPage.siteIcon.assetId": parsed.data.siteIconAssetId ?? "",
+        "publicPage.siteIcon.assetId": newSiteIconAssetId ?? "",
         ...seoFields,
       },
     },
@@ -178,8 +179,17 @@ export async function updatePublicPageSettingsAction(
       console.warn("[settings] failed to delete old OG image asset", err);
     }
   }
+  if (oldSiteIconAssetId && oldSiteIconAssetId !== newSiteIconAssetId) {
+    try {
+      await deleteImage(oldSiteIconAssetId);
+    } catch (err) {
+      console.warn("[settings] failed to delete old site icon asset", err);
+    }
+  }
 
   revalidatePath("/settings/public-page", "page");
+  revalidatePath(`/w/${ctx.workspace.slug}`);
+  revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
   return { ok: true };
 }
 

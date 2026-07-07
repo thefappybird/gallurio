@@ -190,6 +190,7 @@ export function StoryPromptDialog({
   persistOnExit = true,
   onContinueWithGuide,
   onExploreSelf,
+  onBrandingSaved,
 }: {
   open: boolean;
   workspaceName: string;
@@ -199,6 +200,12 @@ export function StoryPromptDialog({
   persistOnExit?: boolean;
   onContinueWithGuide: () => void;
   onExploreSelf: () => void;
+  onBrandingSaved?: (branding: {
+    logoUrl: string;
+    logoAssetId: string;
+    siteIconUrl: string;
+    siteIconAssetId: string;
+  }) => void;
 }) {
   const t = useTranslations("app.pageBuilder.editor.storyPrompt");
   const tEditor = useTranslations("app.pageBuilder.editor");
@@ -296,7 +303,7 @@ export function StoryPromptDialog({
       const result = await uploadAsset(
         file,
         { acceptedTypes: LOGO_TYPES, maxBytes: LOGO_MAX_BYTES, maxWidth: LOGO_MAX_WIDTH, maxHeight: LOGO_MAX_HEIGHT },
-        { subfolder: "portfolio_header" },
+        { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
       );
       if ("error" in result) {
         const key = {
@@ -329,7 +336,7 @@ export function StoryPromptDialog({
       const result = await uploadAsset(
         file,
         { acceptedTypes: SITE_ICON_TYPES, maxBytes: SITE_ICON_MAX_BYTES, maxWidth: SITE_ICON_MAX_DIM, maxHeight: SITE_ICON_MAX_DIM },
-        { subfolder: "site_icon" },
+        { subfolder: "site_icon", delivery: { width: 512, height: 512, fit: "scale-down" } },
       );
       if ("error" in result) {
         const key = {
@@ -371,6 +378,7 @@ export function StoryPromptDialog({
           toast.error(tEditor("errorToast"));
           return;
         }
+        onBrandingSaved?.({ logoUrl, logoAssetId, siteIconUrl: iconUrl, siteIconAssetId: iconAssetId });
       }
       if (kind === "guide") onContinueWithGuide();
       else onExploreSelf();

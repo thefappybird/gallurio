@@ -562,6 +562,35 @@ describe("updatePublicPageSettingsAction", () => {
     expect(ws?.publicPage?.siteIcon?.assetId).toBe("abc123");
   });
 
+  it("rejects siteIconAssetId when ownership fails", async () => {
+    await seedWorkspaceA();
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+
+    const result = await updatePublicPageSettingsAction({
+      siteIconUrl: "https://cdn.example.com/icon.png",
+      siteIconAssetId: "not_mine",
+    });
+
+    expect(result.error).toBe("invalid_site_icon");
+  });
+
+  it("deletes old site icon when replacing with a new one", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { "publicPage.siteIcon.assetId": "old_icon_id" } },
+    );
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
+
+    const result = await updatePublicPageSettingsAction({
+      siteIconUrl: "https://cdn.example.com/new-icon.png",
+      siteIconAssetId: "new_icon_id",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("old_icon_id");
+  });
+
   it("rejects invalid siteIconUrl (non-URL non-empty string)", async () => {
     await seedWorkspaceA();
 

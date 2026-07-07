@@ -114,7 +114,7 @@ export function PublicPageSettingsForm({
           maxWidth: SITE_ICON_MAX_DIM,
           maxHeight: SITE_ICON_MAX_DIM,
         },
-        { subfolder: "site_icon" },
+        { subfolder: "site_icon", delivery: { width: 512, height: 512, fit: "scale-down" } },
       );
       if ("error" in result) {
         const msgKey = (
@@ -438,24 +438,40 @@ export function PublicPageSettingsForm({
 
             <div className="flex flex-col gap-3">
               {siteIconUrl ? (
-                <div className="flex items-center gap-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={siteIconUrl}
-                    alt={t("siteIconLabel")}
-                    className="h-16 w-16 border border-border bg-muted object-contain"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={iconUploading}
-                    onClick={handleRemoveIcon}
-                    className="flex items-center gap-1.5"
-                  >
-                    <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    {t("siteIconRemove")}
-                  </Button>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={siteIconUrl}
+                      alt={t("siteIconLabel")}
+                      className="h-16 w-16 border border-border bg-background object-contain"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={iconUploading}
+                        onClick={() => iconFileInputRef.current?.click()}
+                      >
+                        {t("siteIconUpload")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={iconUploading}
+                        onClick={handleRemoveIcon}
+                        className="flex items-center gap-1.5"
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        {t("siteIconRemove")}
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t("siteIconRequirements")}
+                  </p>
                 </div>
               ) : (
                 <label

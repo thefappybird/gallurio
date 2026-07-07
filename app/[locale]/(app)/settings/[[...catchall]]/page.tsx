@@ -12,9 +12,7 @@ import {
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
-import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
-import { routing } from "@/lib/i18n/routing";
 import { connectDB } from "@/lib/db/mongoose";
 import { User, Workspace } from "@/lib/db/models";
 import { SettingsUserProfile } from "../_components/settings-user-profile";
@@ -25,6 +23,7 @@ import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
 import { getProPricing } from "@/lib/paddle/pricing";
 import { AccountPanel } from "../account/_panel";
+import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import type {
   UpdateWorkspaceBusinessInput,
   PublicPageSettingsInput,
@@ -109,7 +108,7 @@ export default async function SettingsCatchallPage({
     // Default inquiry routing to the owner's own email until they set another.
     inquiryRecipientEmail:
       workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
-    siteIconUrl: workspace.publicPage?.siteIcon?.url ?? "",
+    siteIconUrl: portfolioSiteIconUrl(workspace.publicPage?.siteIcon),
     siteIconAssetId: workspace.publicPage?.siteIcon?.assetId ?? "",
     // Seed seo sub-fields so the form shows existing DB values on load.
     // Both ends are tested: action tests verify persistence; form tests verify rendering.
