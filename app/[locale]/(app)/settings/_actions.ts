@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { AuthenticationException } from "@workos-inc/node";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
-import { Workspace, User } from "@/lib/db/models";
+import { Workspace, User, PortfolioDraft } from "@/lib/db/models";
+import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import {
   updateWorkspaceBusinessSchema,
   publicPageSettingsSchema,
@@ -139,33 +140,46 @@ export async function updatePublicPageSettingsAction(
     if (!owned) return { error: "invalid_og_image" };
   }
 
-  // Fetch current asset IDs so old uploads can be deleted after replacement/removal.
-  const currentAssets = await Workspace.findOne(
-    { _id: ctx.workspace._id },
-    { "publicPage.seo.ogImageAssetId": 1, "publicPage.siteIcon.assetId": 1 },
+  // Bundled SEO/icon fields now write to the active draft, not live publicPage.
+  const draftId = await resolveActiveDraftId(ctx.workspace._id);
+
+  // Fetch current asset IDs from the draft so old uploads can be deleted after
+  // replacement/removal.
+  const currentAssets = await PortfolioDraft.findOne(
+    { _id: draftId },
+    { "seo.ogImageAssetId": 1, "siteIcon.assetId": 1 },
   ).lean();
-  const oldOgAssetId = currentAssets?.publicPage?.seo?.ogImageAssetId || undefined;
-  const oldSiteIconAssetId = currentAssets?.publicPage?.siteIcon?.assetId || undefined;
+  const oldOgAssetId = currentAssets?.seo?.ogImageAssetId || undefined;
+  const oldSiteIconAssetId = currentAssets?.siteIcon?.assetId || undefined;
 
   const seoFields: Record<string, unknown> = {};
   if (parsed.data.seo !== undefined) {
-    seoFields["publicPage.seo.galleryDescription"] =
+    seoFields["seo.galleryDescription"] =
       parsed.data.seo.galleryDescription ?? "";
-    seoFields["publicPage.seo.ogImageUrl"] = parsed.data.seo.ogImageUrl ?? "";
-    seoFields["publicPage.seo.ogImageAssetId"] = newOgAssetId ?? "";
-    seoFields["publicPage.seo.noindex"] = parsed.data.seo.noindex ?? false;
+    seoFields["seo.ogImageUrl"] = parsed.data.seo.ogImageUrl ?? "";
+    seoFields["seo.ogImageAssetId"] = newOgAssetId ?? "";
+    seoFields["seo.noindex"] = parsed.data.seo.noindex ?? false;
   }
 
+  // inquiryRecipientEmail is the only field that stays live-immediate.
   await Workspace.updateOne(
     { _id: ctx.workspace._id },
     {
       $set: {
-        "publicPage.seoTitle": parsed.data.seoTitle ?? "",
-        "publicPage.seoDescription": parsed.data.seoDescription ?? "",
         "publicPage.inquiryRecipientEmail":
           parsed.data.inquiryRecipientEmail ?? "",
-        "publicPage.siteIcon.url": parsed.data.siteIconUrl ?? "",
-        "publicPage.siteIcon.assetId": newSiteIconAssetId ?? "",
+      },
+    },
+  );
+
+  await PortfolioDraft.updateOne(
+    { _id: draftId },
+    {
+      $set: {
+        seoTitle: parsed.data.seoTitle ?? "",
+        seoDescription: parsed.data.seoDescription ?? "",
+        "siteIcon.url": parsed.data.siteIconUrl ?? "",
+        "siteIcon.assetId": newSiteIconAssetId ?? "",
         ...seoFields,
       },
     },
@@ -188,8 +202,6 @@ export async function updatePublicPageSettingsAction(
   }
 
   revalidatePath("/settings/public-page", "page");
-  revalidatePath(`/w/${ctx.workspace.slug}`);
-  revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
   return { ok: true };
 }
 
