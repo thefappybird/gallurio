@@ -12,11 +12,15 @@ import {
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
-import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
-import { routing } from "@/lib/i18n/routing";
 import { connectDB } from "@/lib/db/mongoose";
-import { User, Workspace } from "@/lib/db/models";
+import { User, Workspace, PortfolioDraft } from "@/lib/db/models";
+import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
+import {
+  normalizeDraftSeoFields,
+  normalizePublishedSeoFields,
+  hasPendingSeoChanges,
+} from "@/lib/portfolio/publicPageSeoFields";
 import { SettingsUserProfile } from "../_components/settings-user-profile";
 import { WorkspaceBusinessForm } from "../workspace/_business-form";
 import { CustomizePanel } from "../customize/_panel";
@@ -25,6 +29,7 @@ import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
 import { getProPricing } from "@/lib/paddle/pricing";
 import { AccountPanel } from "../account/_panel";
+import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import type {
   UpdateWorkspaceBusinessInput,
   PublicPageSettingsInput,
@@ -103,21 +108,56 @@ export default async function SettingsCatchallPage({
     logoAssetId: workspace.logoAssetId ?? "",
   };
 
+  // Bundled SEO/icon fields now live on the active draft, not the stale
+  // published publicPage — read from the resolved active draft so the form
+  // shows the last save instead of reverting to live values on reload.
+  const draftId = await resolveActiveDraftId(workspace._id);
+  const draft = await PortfolioDraft.findOne(
+    { _id: draftId },
+    { seoTitle: 1, seoDescription: 1, siteIcon: 1, seo: 1 },
+  ).lean();
+  const draftFields = normalizeDraftSeoFields(draft);
+  const publishedFields = normalizePublishedSeoFields(workspace.publicPage);
+  const initialHasPendingChanges = hasPendingSeoChanges(draftFields, publishedFields);
+  // keywords aren't editable in this form (only the Story Prompt wizard writes
+  // them) — compute once server-side and OR it into every client recompute so
+  // a Save can't incorrectly clear the pending banner while keywords still differ.
+  const keywordsPending =
+    JSON.stringify(draftFields.seo.keywords) !== JSON.stringify(publishedFields.seo.keywords);
+
   const publicPageDefaults: PublicPageSettingsInput = {
-    seoTitle: workspace.publicPage?.seoTitle ?? "",
-    seoDescription: workspace.publicPage?.seoDescription ?? "",
+    seoTitle: draftFields.seoTitle,
+    seoDescription: draftFields.seoDescription,
     // Default inquiry routing to the owner's own email until they set another.
+    // This field alone stays live-immediate (see updatePublicPageSettingsAction).
     inquiryRecipientEmail:
       workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
-    siteIconUrl: workspace.publicPage?.siteIcon?.url ?? "",
-    siteIconAssetId: workspace.publicPage?.siteIcon?.assetId ?? "",
-    // Seed seo sub-fields so the form shows existing DB values on load.
+    siteIconUrl: portfolioSiteIconUrl(draft?.siteIcon),
+    siteIconAssetId: draftFields.siteIconAssetId,
+    // Seed seo sub-fields so the form shows existing draft values on load.
     // Both ends are tested: action tests verify persistence; form tests verify rendering.
     seo: {
-      ogImageUrl: workspace.publicPage?.seo?.ogImageUrl ?? "",
-      ogImageAssetId: workspace.publicPage?.seo?.ogImageAssetId ?? "",
-      galleryDescription: workspace.publicPage?.seo?.galleryDescription ?? "",
-      noindex: workspace.publicPage?.seo?.noindex ?? false,
+      ogImageUrl: draftFields.seo.ogImageUrl,
+      ogImageAssetId: draftFields.seo.ogImageAssetId,
+      galleryDescription: draftFields.seo.galleryDescription,
+      noindex: draftFields.seo.noindex,
+    },
+  };
+
+  // Published-side snapshot in the same shape, so the frontend can recompute
+  // pending-state client-side after a Save without a full reload.
+  const publishedDefaults: PublicPageSettingsInput = {
+    seoTitle: publishedFields.seoTitle,
+    seoDescription: publishedFields.seoDescription,
+    inquiryRecipientEmail:
+      workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
+    siteIconUrl: portfolioSiteIconUrl(workspace.publicPage?.siteIcon),
+    siteIconAssetId: publishedFields.siteIconAssetId,
+    seo: {
+      ogImageUrl: publishedFields.seo.ogImageUrl,
+      ogImageAssetId: publishedFields.seo.ogImageAssetId,
+      galleryDescription: publishedFields.seo.galleryDescription,
+      noindex: publishedFields.seo.noindex,
     },
   };
 
@@ -173,6 +213,10 @@ export default async function SettingsCatchallPage({
               publishedAt={workspace.publicPage?.publishedAt ?? null}
               defaults={publicPageDefaults}
               locale={locale}
+              targetDraftId={String(draftId)}
+              initialHasPendingChanges={initialHasPendingChanges}
+              publishedDefaults={publishedDefaults}
+              keywordsPending={keywordsPending}
             />
           ),
         },

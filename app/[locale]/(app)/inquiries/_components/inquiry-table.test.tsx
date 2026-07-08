@@ -72,18 +72,26 @@ describe("InquiryTable", () => {
     renderTable();
     // aria-label is t("table.actions.view") = "View"
     const viewButtons = screen.getAllByRole("button", { name: "View" });
-    // One in mobile card list, one in desktop table per row
-    expect(viewButtons.length).toBeGreaterThanOrEqual(2);
+    expect(viewButtons).toHaveLength(1);
   });
 
   it("View icon button is already visible without opening any menu", () => {
     renderTable();
-    expect(screen.getAllByRole("button", { name: "View" }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("button", { name: "View" })).toHaveLength(1);
   });
 
   it("View icon button is clickable without throwing", () => {
     renderTable();
     const viewButtons = screen.getAllByRole("button", { name: "View" });
     expect(() => fireEvent.click(viewButtons[0])).not.toThrow();
+  });
+
+  it("keeps horizontal overflow scoped to the table wrapper", () => {
+    const { container } = renderTable();
+    const wrapper = container.querySelector("div.overflow-x-auto");
+    const table = container.querySelector("table");
+    expect(wrapper?.className).toMatch(/min-w-0/);
+    expect(wrapper?.className).toMatch(/max-w-full/);
+    expect(table?.className).toMatch(/min-w-max/);
   });
 });

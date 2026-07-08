@@ -640,6 +640,10 @@ export function SpotlightGuide({
   const step = steps[stepIndex];
   const cardRef = useRef<HTMLDivElement | null>(null);
   const isRtl = useIsRtl();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Measure the active anchor element, scoped to queryRoot when provided to
   // avoid resolving to a sibling editor shell's element with the same tour id.
@@ -744,7 +748,7 @@ export function SpotlightGuide({
     [onSkip]
   );
 
-  if (!open || !step) return null;
+  if (!open || !step || !mounted) return null;
 
   const hasMeaningfulSecondaryRect = secondaryRect !== null && (secondaryRect.width > 0 || secondaryRect.height > 0);
 

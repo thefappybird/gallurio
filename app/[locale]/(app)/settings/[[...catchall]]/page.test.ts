@@ -133,6 +133,20 @@ vi.mock("@/lib/db/models", () => ({
       ]),
     }),
   },
+  PortfolioDraft: {
+    countDocuments: vi.fn().mockResolvedValue(1),
+    findOne: vi.fn().mockReturnValue({
+      sort: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn().mockResolvedValue({
+        _id: "draft_1",
+        seoTitle: "",
+        seoDescription: "",
+        siteIcon: null,
+        seo: null,
+      }),
+    }),
+  },
 }));
 
 // ---------------------------------------------------------------------------

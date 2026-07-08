@@ -199,7 +199,9 @@
         "updated": "na-update",
         "deleted": "tinanggal",
         "status_changed": "binago ang status",
-        "client_changed": "binago ang kliyente"
+        "client_changed": "binago ang kliyente",
+        "payment_added": "idinagdag ang bayad",
+        "payment_updated": "na-update ang bayad"
       }
     },
     "calendar": {
@@ -890,7 +892,14 @@
         },
         "noindexSection": "Kakikitaan sa paghahanap",
         "noindexLabel": "Itago mula sa mga search engine",
-        "noindexHint": "Panatilihing wala sa mga resulta ng paghahanap ng Google ang portfolio na ito. Maganda para sa mga draft o soft launch. Ang iyong direktang link ay patuloy na gagana."
+        "noindexHint": "Panatilihing wala sa mga resulta ng paghahanap ng Google ang portfolio na ito. Maganda para sa mga draft o soft launch. Ang iyong direktang link ay patuloy na gagana.",
+        "publishChanges": "I-publish ang mga pagbabago",
+        "publishingChanges": "Pina-publish…",
+        "publishChangesSuccessToast": "Na-publish ang mga pagbabago sa iyong pampublikong pahina.",
+        "unpublishedBannerTitle": "Hindi pa na-publish",
+        "unpublishedBannerBody": "Hindi pa na-publish ang iyong website — hindi lalabas ang mga setting na ito sa iyong pampublikong pahina hanggang sa i-publish mo.",
+        "pendingChangesBannerTitle": "May mga hindi pa na-publish na pagbabago",
+        "pendingChangesBannerBody": "May mga pagbabago kang hindi pa na-publish — i-publish ito para makita sa iyong pampublikong pahina."
       }
     },
     "teams": {
@@ -1983,8 +1992,9 @@
         "storyPrompt": {
           "welcome": {
             "title": "Ikwento natin ang iyong sarili",
-            "subtitle": "Apat na mabilisang hakbang para ilarawan ang iyong trabaho at piliin ang iyong estilo — pagkatapos, tutulungan ka naming buuin ang pahina.",
-            "cta": "Simulan na"
+            "subtitle": "Limang mabilisang hakbang para ilarawan ang iyong trabaho at piliin ang iyong estilo — pagkatapos, tutulungan ka naming buuin ang pahina.",
+            "cta": "Simulan na",
+            "skip": "Laktawan muna"
           },
           "story": {
             "title": "Ikwento ang iyong sarili",
@@ -1997,6 +2007,34 @@
             "title": "Ang iyong vibe",
             "subtitle": "Pumili ng ilang tag na naglalarawan sa iyong estilo — o magdagdag ng sarili mo.",
             "addPlaceholder": "Magdagdag ng tag"
+          },
+          "branding": {
+            "title": "Idagdag ang iyong branding",
+            "subtitle": "Mag-upload ng logo at site icon — puwede mo itong baguhin anumang oras.",
+            "logoLabel": "Logo",
+            "logoUpload": "Mag-upload ng logo",
+            "logoUploading": "Ina-upload…",
+            "logoRemove": "Alisin ang logo",
+            "logoRequirements": "PNG, JPEG, o WEBP · max 250 KB · hanggang 512×256",
+            "logoErrors": {
+              "type": "Ang logo ay dapat na larawang PNG, JPEG, o WEBP.",
+              "size": "Ang logo ay dapat na 250 KB o mas maliit.",
+              "dimensions": "Ang logo ay dapat na 512 x 256 px o mas maliit.",
+              "image": "Hindi mabasa ang larawang ito ng logo.",
+              "upload": "Nabigo ang pag-upload ng logo. Pakisubukan muli."
+            },
+            "iconLabel": "Site icon",
+            "iconUpload": "Pumili ng larawan",
+            "iconUploading": "Ina-upload…",
+            "iconRemove": "Alisin",
+            "iconRequirements": "PNG, JPEG, WebP, o AVIF · max 1 MB · hanggang 512 × 512 px",
+            "iconErrors": {
+              "type": "Mga PNG, JPEG, WebP, o AVIF na file lang ang tinatanggap.",
+              "size": "Ang icon ay dapat na 1 MB o mas maliit.",
+              "dimensions": "Ang icon ay dapat na 512 x 512 px o mas maliit.",
+              "image": "Hindi mabasa ang larawang ito ng icon.",
+              "upload": "Nabigo ang pag-upload ng icon. Pakisubukan muli."
+            }
           },
           "done": {
             "title": "Handa nang magningning ang iyong pahina",

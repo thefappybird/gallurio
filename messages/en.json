@@ -199,7 +199,9 @@
         "updated": "updated",
         "deleted": "deleted",
         "status_changed": "status changed",
-        "client_changed": "client changed"
+        "client_changed": "client changed",
+        "payment_added": "payment added",
+        "payment_updated": "payment updated"
       }
     },
     "calendar": {
@@ -890,7 +892,14 @@
         },
         "noindexSection": "Search visibility",
         "noindexLabel": "Hide from search engines",
-        "noindexHint": "Keep this portfolio out of Google search results. Useful for drafts or soft launches. Your direct link still works."
+        "noindexHint": "Keep this portfolio out of Google search results. Useful for drafts or soft launches. Your direct link still works.",
+        "publishChanges": "Publish changes",
+        "publishingChanges": "Publishing…",
+        "publishChangesSuccessToast": "Changes published to your public page.",
+        "unpublishedBannerTitle": "Not published yet",
+        "unpublishedBannerBody": "Your website isn't published yet — these settings won't appear on your public page until you publish.",
+        "pendingChangesBannerTitle": "Unpublished changes",
+        "pendingChangesBannerBody": "You have unpublished changes — publish to make them visible on your public page."
       }
     },
     "teams": {
@@ -1983,8 +1992,9 @@
         "storyPrompt": {
           "welcome": {
             "title": "Let's tell your story",
-            "subtitle": "Four quick steps to describe your work and pick your style — then we'll help you build the page.",
-            "cta": "Let's go"
+            "subtitle": "Five quick steps to describe your work and pick your style — then we'll help you build the page.",
+            "cta": "Let's go",
+            "skip": "Skip for now"
           },
           "story": {
             "title": "Tell your story",
@@ -1997,6 +2007,34 @@
             "title": "Your vibe",
             "subtitle": "Pick a few tags that capture your style — or add your own.",
             "addPlaceholder": "Add a tag"
+          },
+          "branding": {
+            "title": "Add your branding",
+            "subtitle": "Upload a logo and site icon — you can always change these later.",
+            "logoLabel": "Logo",
+            "logoUpload": "Upload logo",
+            "logoUploading": "Uploading…",
+            "logoRemove": "Remove logo",
+            "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · up to 512×256",
+            "logoErrors": {
+              "type": "Logo must be a PNG, JPEG, or WEBP image.",
+              "size": "Logo must be 250 KB or smaller.",
+              "dimensions": "Logo must be 512 x 256 px or smaller.",
+              "image": "This logo image could not be read.",
+              "upload": "Logo upload failed. Please try again."
+            },
+            "iconLabel": "Site icon",
+            "iconUpload": "Choose image",
+            "iconUploading": "Uploading…",
+            "iconRemove": "Remove",
+            "iconRequirements": "PNG, JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
+            "iconErrors": {
+              "type": "Only PNG, JPEG, WebP or AVIF files are accepted.",
+              "size": "Icon must be 1 MB or smaller.",
+              "dimensions": "Icon must be 512 x 512 px or smaller.",
+              "image": "This icon image could not be read.",
+              "upload": "Icon upload failed. Please try again."
+            }
           },
           "done": {
             "title": "Your page is ready to shine",

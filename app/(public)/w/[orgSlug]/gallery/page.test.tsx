@@ -151,7 +151,7 @@ describe("gallery generateMetadata", () => {
         seoTitle: "",
         seoDescription: "",
         inquiryRecipientEmail: "",
-        siteIcon: { url: "https://cdn.example.com/icon.png", assetId: "abc" },
+        siteIcon: { url: "https://cdn.example.com/icon.png", assetId: "" },
       },
     } as Partial<WorkspaceDoc>);
     mockFind.mockResolvedValueOnce(workspace);
@@ -160,10 +160,14 @@ describe("gallery generateMetadata", () => {
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
 
-    expect(result.icons).toEqual({ icon: "https://cdn.example.com/icon.png" });
+    expect(result.icons).toEqual({
+      icon: "https://cdn.example.com/icon.png",
+      shortcut: "https://cdn.example.com/icon.png",
+      apple: "https://cdn.example.com/icon.png",
+    });
   });
 
-  it("does not fall back to header.logoUrl when siteIcon.url is empty (icons omitted)", async () => {
+  it("falls back to header.logoUrl when siteIcon.url is empty", async () => {
     const workspace = makePublishedWorkspace({
       publicPage: {
         templateId: "minimal",
@@ -185,7 +189,11 @@ describe("gallery generateMetadata", () => {
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
 
-    expect(result.icons).toBeUndefined();
+    expect(result.icons).toEqual({
+      icon: "https://cdn.example.com/logo.png",
+      shortcut: "https://cdn.example.com/logo.png",
+      apple: "https://cdn.example.com/logo.png",
+    });
   });
 
   it("omits icons when both siteIcon.url and header.logoUrl are empty", async () => {

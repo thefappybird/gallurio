@@ -248,18 +248,6 @@ export function CalendarView({
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
   const showPast = searchParams.get("showPast") === "1";
 
-  // On mount: if the persisted/URL view is WEEK but the viewport is mobile
-  // (< sm = 640px), snap to DAY so the hidden Week button doesn't leave the
-  // user stranded on a view they can't switch away from via the toolbar.
-  useEffect(() => {
-    if (view !== Views.WEEK) return;
-    const mq = window.matchMedia("(max-width: 639px)");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs media query (external system) into React view state on mount only
-    if (mq.matches) setView(Views.DAY);
-  // Only run on mount — view changes thereafter are intentional.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Keep optimistic state in sync when the server provides new events.
   const prevEventsRef = useRef(events);
   useEffect(() => {

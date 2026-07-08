@@ -150,7 +150,7 @@ export type PortfolioContactConfigInput = z.infer<typeof portfolioContactConfigS
 export const portfolioHeaderConfigSchema = z.object({
   brandText: z.string().trim().max(80).optional().or(z.literal("")),
   logoUrl: z.string().max(500).optional().or(z.literal("")),
-  logoPublicId: z.string().max(200).optional().or(z.literal("")),
+  logoAssetId: z.string().max(200).optional().or(z.literal("")),
   backgroundColor: z.string().max(32).optional().or(z.literal("")),
   backgroundOpacity: z.number().int().min(0).max(100).optional(),
   linkColor: z.string().max(32).optional().or(z.literal("")),

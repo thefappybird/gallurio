@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { PortfolioHeaderConfig } from "@/lib/page-builder/types";
 import { buildColorWithOpacity } from "@/lib/page-builder/styleToolkit";
+import { useImageRetry } from "@/hooks/useImageRetry";
 
 export type PortfolioHeaderLabels = {
   brand: string;
@@ -114,6 +115,7 @@ export function PortfolioHeader({
   galleryHref?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const logo = useImageRetry(config?.logoUrl);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -212,12 +214,13 @@ export function PortfolioHeader({
             overflow: "hidden",
           }}
         >
-          {config?.logoUrl && (
+          {config?.logoUrl && !logo.failed && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={config.logoUrl}
+              src={logo.src}
               alt=""
               aria-hidden="true"
+              onError={logo.onError}
               style={{ height: navbarSize.logoHeight, maxWidth: "40vw", width: "auto", objectFit: "contain", flexShrink: 0 }}
             />
           )}

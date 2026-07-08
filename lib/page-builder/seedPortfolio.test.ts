@@ -37,12 +37,11 @@ beforeEach(async () => {
 });
 
 describe("seedDefaultPortfolio", () => {
-  it("seeds the businessType-matched template when home is empty", async () => {
+  it("seeds the scratch template when home is empty", async () => {
     await makeWorkspace();
     const seed = await seedDefaultPortfolio(workspaceId);
     expect(seed).toBeTruthy();
-    // photographer → wedding-photographer default.
-    expect(seed!.templateId).toBe("wedding-photographer");
+    expect(seed!.templateId).toBe("scratch");
 
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.data!.home).toBeTruthy();

@@ -5,7 +5,9 @@ import {
   act,
   cleanup,
 } from "@testing-library/react";
-import { renderWithProviders } from "@/test-utils/render";
+import { renderToString } from "react-dom/server";
+import { NextIntlClientProvider } from "next-intl";
+import { renderWithProviders, enMessages } from "@/test-utils/render";
 import {
   SpotlightGuide,
   calcTooltipPosition,
@@ -112,6 +114,20 @@ describe("SpotlightGuide", () => {
   it("renders nothing when open is false", () => {
     renderGuide({ open: false });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("does not throw on the pre-mount (SSR) render, before the mount effect has fired and document.body-dependent portal logic runs", () => {
+    // renderToString never commits effects, so `mounted` stays false throughout —
+    // exactly the SSR pass that used to crash with "document is not defined"
+    // inside createPortal(..., document.body). The guard must short-circuit to
+    // null before that portal call is ever reached.
+    expect(() =>
+      renderToString(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <SpotlightGuide {...defaultProps} />
+        </NextIntlClientProvider>
+      )
+    ).not.toThrow();
   });
 
   it("renders the active step's title and body", () => {

@@ -144,6 +144,8 @@ type Props = {
   guideDismissed: boolean;
   /** True once the owner has been through/skipped the story prompt flow. */
   storyPromptCompleted: boolean;
+  /** Dev-only: force the SEO setup prompt open without persisting completion. */
+  seoSetupPreview?: boolean;
   /** Owner's current public-page SEO description (seeds the story prompt). */
   initialSeoDescription: string;
   /** Owner's current SEO/style keywords (seeds the story prompt). */
@@ -177,6 +179,7 @@ type Props = {
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
+const SCRATCH_TEMPLATE_ID = "scratch";
 const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectionsPopup", "header", "contact"] as const;
 // formDir was added as an optional field; absence defaults to LTR at hydration,
 // so v2 buffers stay forward-compatible and must not be invalidated by a bump.
@@ -416,6 +419,7 @@ export function EditorShell({
   currentTemplateId,
   guideDismissed,
   storyPromptCompleted,
+  seoSetupPreview = false,
   initialSeoDescription,
   initialSeoKeywords,
   workspaceBusinessType,
@@ -471,14 +475,17 @@ export function EditorShell({
   const [templateSeedSnapshot, setTemplateSeedSnapshot] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
+  const seoSetupPreviewMode = seoSetupPreview && !guideMode;
   // The story prompt auto-opens once, before the guide, on a fresh workspace.
   // Also gated on !guideDismissed so an owner who already dismissed the guide
   // via the old (pre-story-prompt) path never sees it retroactively, and on
   // !guideMode since the sandbox tour-preview shell has no real story to capture.
-  const [storyPromptOpen, setStoryPromptOpen] = useState(!storyPromptCompleted && !guideDismissed && !guideMode);
+  const [storyPromptOpen, setStoryPromptOpen] = useState(
+    seoSetupPreviewMode || (!storyPromptCompleted && !guideDismissed && !guideMode)
+  );
   // The guide auto-opens on first run (until the owner persisted a dismissal),
   // and can be reopened on demand via the Guide button for the session.
-  const [guideOpen, setGuideOpen] = useState(!guideDismissed);
+  const [guideOpen, setGuideOpen] = useState(!guideDismissed && !seoSetupPreviewMode);
   const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
   function handleFormLocaleChange(next: string) {
     setFormLocale(next);
@@ -520,6 +527,7 @@ export function EditorShell({
   // drafts AND no recoverable buffer) go to the welcome template modal instead.
   // When guideDismissed=false, both stay closed until guide finishes/skips.
   const [entryOpen, setEntryOpen] = useState(() => {
+    if (seoSetupPreviewMode) return false;
     if (!guideDismissed) return false;
     // Brand-new check: no saved drafts AND no localStorage buffer.
     const hasDrafts = initialDrafts.length > 0;
@@ -536,6 +544,7 @@ export function EditorShell({
   });
   // Welcome template modal for brand-new users (no buffer AND no saved drafts).
   const [welcomeTemplatesOpen, setWelcomeTemplatesOpen] = useState(() => {
+    if (seoSetupPreviewMode) return false;
     if (!guideDismissed) return false;
     const hasDrafts = initialDrafts.length > 0;
     const hasBuffer = (() => {
@@ -918,6 +927,8 @@ export function EditorShell({
   function resetToScratchCanvas() {
     zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
     setRenderDraftData(zoneDataRef.current);
+    setTemplateId(SCRATCH_TEMPLATE_ID);
+    setTemplateSeedSnapshot(JSON.stringify(zoneDataRef.current));
     setActiveDraftId(null);
     setIsNewUnsavedDraft(true);
     setDraftName(DEFAULT_DRAFT_NAME);
@@ -981,6 +992,7 @@ export function EditorShell({
 
   // ---- Delete draft ----
   async function handleDeleteDraft(id: string) {
+    if (id === activeDraftId && drafts.length <= 1) return;
     setDeletingDraftId(id);
     try {
       const res = await deleteDraftAction(id);
@@ -1166,14 +1178,14 @@ export function EditorShell({
 
   // ---- Apply template as a new unsaved draft ----
   async function applyTemplate(nextTemplateId: string) {
-    if (guideMode) return;
+    if (guideMode) return false;
     setSwitching(true);
     setSwitchError(null);
     const res = await seedTemplateAction(nextTemplateId);
     if ("error" in res) {
       setSwitching(false);
       setSwitchError(t("errorToast"));
-      return;
+      return false;
     }
     const { seed } = res;
     // Prepare both zones so zoneDataRef, renderDraftData, and templateSeedSnapshot
@@ -1215,6 +1227,12 @@ export function EditorShell({
     setSwitching(false);
     setTemplatesOpen(false);
     if (!showPuck) setPreviewNonce((n) => n + 1);
+    return true;
+  }
+
+  async function applyWelcomeTemplate(nextTemplateId = SCRATCH_TEMPLATE_ID) {
+    const applied = await applyTemplate(nextTemplateId);
+    if (applied) setWelcomeTemplatesOpen(false);
   }
 
   // ---- Add New Draft ----
@@ -1436,7 +1454,7 @@ export function EditorShell({
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
-      <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-x-auto" role="group" aria-label={t("zone.sectionsLabel")}>
+      <div className="flex flex-nowrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
         {/* section-tabs wrapper: spans all five page tabs (Home → Contact Form)
             for the spotlight tour step 7 cutout. Excludes Preview. */}
         <div className="flex flex-nowrap items-center gap-1" data-tour-id="section-tabs">
@@ -1504,15 +1522,14 @@ export function EditorShell({
     );
   }
 
-  function actionsCluster(publishSlot: ReactNode) {
-    const saveDisabled = (!isDirty && activeDraftId !== null) || nameError !== null;
+  function toolbarToolsCluster() {
     return (
       <>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          className="order-4 lg:order-3"
+          className="shrink-0"
           data-tour-id="photos"
           onClick={() => setPhotosOpen(true)}
         >
@@ -1522,7 +1539,7 @@ export function EditorShell({
           type="button"
           size="sm"
           variant="outline"
-          className="order-5 lg:order-4"
+          className="shrink-0"
           data-tour-id="theme"
           onClick={openTheme}
         >
@@ -1532,7 +1549,7 @@ export function EditorShell({
           type="button"
           size="sm"
           variant="outline"
-          className="order-6 lg:order-5"
+          className="shrink-0"
           onClick={() => { setSpotlightStepIndex(0); setGuideOpen(true); }}
         >
           {t("guide")}
@@ -1541,16 +1558,13 @@ export function EditorShell({
           type="button"
           size="sm"
           variant="outline"
-          className="order-7 lg:order-6"
+          className="shrink-0"
           data-tour-id="drafts"
           onClick={() => setDraftsOpen(true)}
         >
           {t("drafts")}
         </Button>
-        <div
-          data-testid="draft-title-slot"
-          className="order-first basis-full lg:order-7 lg:basis-auto"
-        >
+        <div data-testid="draft-title-slot" className="min-w-0 shrink-0">
           <DraftNameEditor
             ref={nameEditorRef}
             name={draftName}
@@ -1558,11 +1572,18 @@ export function EditorShell({
             onCommit={(n) => { setDraftName(n); setNameError(null); }}
           />
         </div>
+      </>
+    );
+  }
+
+  function fixedActionsCluster(publishSlot: ReactNode) {
+    const saveDisabled = (!isDirty && activeDraftId !== null) || nameError !== null;
+    return (
+      <div data-testid="portfolio-toolbar-fixed-actions" className="flex w-max shrink-0 items-center gap-2">
         <Button
           type="button"
           size="sm"
           variant="brand"
-          className="order-8"
           data-tour-id="save-changes"
           disabled={saveDisabled}
           loading={savingChanges}
@@ -1570,8 +1591,8 @@ export function EditorShell({
         >
           {t("saveChanges")}
         </Button>
-        <div className="order-9">{publishSlot}</div>
-      </>
+        {publishSlot}
+      </div>
     );
   }
 
@@ -1594,10 +1615,23 @@ export function EditorShell({
 
   function topBar(center: ReactNode, publishSlot: ReactNode) {
     return (
-      <div className="flex w-full flex-wrap items-center gap-2">
-        <div className="order-2 flex min-w-0 flex-1 justify-start lg:order-1">{navCluster()}</div>
-        {center && <div className="order-3 flex shrink-0 items-center justify-center lg:order-2">{center}</div>}
-        {actionsCluster(publishSlot)}
+      <div className="relative w-full min-w-0 pe-44">
+        <div
+          data-testid="portfolio-toolbar-scroll"
+          className="min-w-0 overflow-x-auto"
+        >
+          <div
+            data-testid="portfolio-toolbar-grid"
+            className="grid w-max min-w-full grid-cols-[minmax(max-content,1fr)_max-content_minmax(max-content,1fr)] items-center gap-2"
+          >
+            <div className="flex min-w-max justify-start">{navCluster()}</div>
+            <div className="flex min-w-max justify-center">{center}</div>
+            <div className="flex min-w-max justify-end gap-2">{toolbarToolsCluster()}</div>
+          </div>
+        </div>
+        <div className="absolute end-0 top-1/2 -translate-y-1/2">
+          {fixedActionsCluster(publishSlot)}
+        </div>
       </div>
     );
   }
@@ -1608,7 +1642,7 @@ export function EditorShell({
 
       <BrandColorsContext.Provider value={brandColors}>
       <div
-        className={cn("gallurio-editor relative min-h-svh", className)}
+        className={cn("gallurio-editor relative min-h-svh overflow-x-auto", className)}
         data-testid="portfolio-editor-shell"
         style={cssVars as React.CSSProperties}
         onKeyDown={handleEditorKeyDown}
@@ -1829,15 +1863,17 @@ export function EditorShell({
       {/* Welcome template modal — shown to brand-new users (no drafts, no buffer) instead of PortfolioEntryDialog. */}
       <TemplatePickerDialog
         open={welcomeTemplatesOpen}
-        onOpenChange={() => {/* non-dismissible in welcome mode */}}
+        onOpenChange={(next) => {
+          if (!next) void applyWelcomeTemplate();
+        }}
         templates={templates}
         currentTemplateId={templateId}
         isCanvasMatchingSeed={isCanvasMatchingSeed}
         switching={switching}
         error={switchError}
-        onConfirm={(id) => { void applyTemplate(id); setWelcomeTemplatesOpen(false); }}
+        onConfirm={(id) => { void applyWelcomeTemplate(id); }}
         welcome
-        onStartScratch={() => setWelcomeTemplatesOpen(false)}
+        onStartScratch={() => { void applyWelcomeTemplate(); }}
       />
       {!guideMode && (
         <StoryPromptDialog
@@ -1846,10 +1882,24 @@ export function EditorShell({
           initialDescription={initialSeoDescription}
           initialKeywords={initialSeoKeywords}
           businessType={workspaceBusinessType}
+          persistOnExit={!seoSetupPreviewMode}
+          onBrandingSaved={({ logoUrl, logoAssetId }) => {
+            if (!logoUrl || !logoAssetId) return;
+            setHeaderConfig((current) => ({ ...current, logoUrl, logoAssetId }));
+            setPreviewNonce((n) => n + 1);
+          }}
           onContinueWithGuide={() => setStoryPromptOpen(false)}
-          onExploreSelf={() => {
+          onExploreSelf={async () => {
             setStoryPromptOpen(false);
-            void dismissPortfolioGuideAction();
+            if (seoSetupPreviewMode) {
+              setGuideOpen(false);
+              return;
+            }
+            try {
+              await dismissPortfolioGuideAction();
+            } catch (err) {
+              console.warn("[portfolio] failed to dismiss guide on explore-self exit", err);
+            }
             setGuideOpen(false);
             openEntryAfterGuide();
           }}

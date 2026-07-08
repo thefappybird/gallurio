@@ -33,6 +33,19 @@ export async function ensureLegacyDraftMigrated(workspaceId: Types.ObjectId): Pr
       collectionsPopup: pp?.collectionsPopup ?? null,
       formLocale: pp?.formLocale ?? "",
       formDir: pp?.formDir ?? "",
+      seoTitle: pp?.seoTitle ?? "",
+      seoDescription: pp?.seoDescription ?? "",
+      siteIcon: {
+        url: pp?.siteIcon?.url ?? "",
+        assetId: pp?.siteIcon?.assetId ?? "",
+      },
+      seo: {
+        ogImageUrl: pp?.seo?.ogImageUrl ?? "",
+        ogImageAssetId: pp?.seo?.ogImageAssetId ?? "",
+        galleryDescription: pp?.seo?.galleryDescription ?? "",
+        noindex: pp?.seo?.noindex ?? false,
+        keywords: pp?.seo?.keywords ?? [],
+      },
     });
   } catch (err) {
     // Benign race: a concurrent first-load already created the migrated draft.

@@ -1,5 +1,6 @@
 "use client";
 
+import { useImageRetry } from "@/hooks/useImageRetry";
 import type { PortfolioBrandKit, PortfolioHeaderConfig } from "@/lib/page-builder/types";
 
 const FONT_SIZE_MAP: Record<string, string> = {
@@ -93,6 +94,8 @@ type Props = {
 // editor preview panel. It does NOT inherit PortfolioHeader's styles or logic. These two
 // components should eventually be de-duplicated into a shared renderer.
 export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
+  const logo = useImageRetry(header.logoUrl);
+
   const bgColorHex = resolveColor(header.backgroundColor, brandKit, brandKit.backgroundColor);
   const opacity = header.backgroundOpacity ?? 100;
   const bgFinal = opacity < 100 ? hexToRgba(bgColorHex, opacity) : bgColorHex;
@@ -207,11 +210,12 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
               overflow: "hidden",
             }}
           >
-            {header.logoUrl && (
+            {header.logoUrl && !logo.failed && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={header.logoUrl}
+                src={logo.src}
                 alt="Logo"
+                onError={logo.onError}
                 style={{ height: navbarSize.logoHeight, maxWidth: "40%", width: "auto", objectFit: "contain", flexShrink: 0 }}
               />
             )}

@@ -34,7 +34,8 @@ export function ActivityFeed({ activity, locale, title, empty }: Props) {
                 className="flex items-center justify-between gap-3 py-2 text-xs"
               >
                 <span className="capitalize text-foreground">
-                  {t(`activityEntity.${a.entity}`)} {t(`activityAction.${a.action}`)}
+                  {safeT(t, `activityEntity.${a.entity}`, humanizeActivityToken(a.entity))}{" "}
+                  {safeT(t, `activityAction.${a.action}`, humanizeActivityToken(a.action))}
                 </span>
                 <span className="shrink-0 text-muted-foreground">
                   {formatRelativeTime(a.createdAt, locale)}
@@ -46,4 +47,23 @@ export function ActivityFeed({ activity, locale, title, empty }: Props) {
       </CardContent>
     </Card>
   );
+}
+
+function humanizeActivityToken(value: string) {
+  return value.replaceAll("_", " ");
+}
+
+function safeT(
+  t: { (key: string): string; has?: (key: string) => boolean },
+  key: string,
+  fallback: string
+) {
+  if (!key) return fallback;
+  try {
+    if (typeof t.has === "function" && !t.has(key)) return fallback;
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+  } catch {
+    return fallback;
+  }
 }

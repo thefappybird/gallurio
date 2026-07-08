@@ -30,19 +30,19 @@ export function getTemplate(id: string): PortfolioTemplate | null {
   return BY_ID.get(id as PortfolioTemplateId) ?? null;
 }
 
-// Closest template for a workspace's businessType — drives the wizard's default
-// selection. Falls back to "minimal" for unmapped types.
+// First-visit default template. Owners can still choose any starter template,
+// but a workspace that has not explicitly selected one starts from scratch.
 const BUSINESS_TYPE_DEFAULT: Record<TemplateBusinessType, PortfolioTemplateId> = {
-  photographer: "editorial",
-  venue: "luxury",
-  stylist: "luxury",
-  planner: "editorial",
-  catering: "editorial",
-  entertainer: "bold",
-  other: "minimal",
+  photographer: "scratch",
+  venue: "scratch",
+  stylist: "scratch",
+  planner: "scratch",
+  catering: "scratch",
+  entertainer: "scratch",
+  other: "scratch",
 };
 
 export function getTemplateForBusinessType(businessType: string | null | undefined): PortfolioTemplate {
-  const id = BUSINESS_TYPE_DEFAULT[(businessType as TemplateBusinessType) ?? "other"] ?? "minimal";
-  return BY_ID.get(id) ?? minimalTemplate;
+  const id = BUSINESS_TYPE_DEFAULT[(businessType as TemplateBusinessType) ?? "other"] ?? "scratch";
+  return BY_ID.get(id) ?? scratchTemplate;
 }

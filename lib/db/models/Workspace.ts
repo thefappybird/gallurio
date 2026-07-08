@@ -78,7 +78,7 @@ const workspaceSchema = new Schema(
       },
     },
     publicPage: {
-      templateId: { type: String, enum: PUBLIC_PAGE_TEMPLATES, default: "minimal" },
+      templateId: { type: String, enum: PUBLIC_PAGE_TEMPLATES, default: "scratch" },
       data: {
         home: { type: Schema.Types.Mixed, default: null },
         gallery: { type: Schema.Types.Mixed, default: null },

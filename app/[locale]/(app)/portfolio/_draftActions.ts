@@ -84,7 +84,7 @@ export async function createDraftAction(input: unknown): Promise<DraftMutationRe
             {
               workspaceId,
               name: parsed.data.name,
-              templateId: parsed.data.templateId || "",
+              templateId: parsed.data.templateId || "scratch",
               data: parsed.data.data,
               brandKit: parsed.data.brandKit,
               contact: parsed.data.contact,
@@ -135,7 +135,7 @@ export async function updateDraftAction(input: unknown): Promise<DraftMutationRe
       {
         $set: {
           name: parsed.data.name,
-          templateId: parsed.data.templateId || "",
+          templateId: parsed.data.templateId || "scratch",
           data: parsed.data.data,
           brandKit: parsed.data.brandKit,
           contact: parsed.data.contact,
@@ -163,6 +163,15 @@ export async function deleteDraftAction(id: unknown): Promise<DraftActionResult>
   if (!idParsed.success) return { error: "invalid_id" };
 
   await connectDB();
+  const target = await PortfolioDraft.findOne({ _id: idParsed.data, workspaceId: ctx.workspace._id })
+    .select({ _id: 1 })
+    .lean();
+  if (!target) {
+    revalidatePath("/portfolio");
+    return { ok: true };
+  }
+  const count = await PortfolioDraft.countDocuments({ workspaceId: ctx.workspace._id });
+  if (count <= 1) return { error: "last_draft" };
   await PortfolioDraft.deleteOne({ _id: idParsed.data, workspaceId: ctx.workspace._id });
   revalidatePath("/portfolio");
   return { ok: true };
@@ -293,11 +302,20 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
   set["publicPage.formLocale"] = doc.formLocale ?? "";
   set["publicPage.formDir"] = doc.formDir ?? "";
+  set["publicPage.seoTitle"] = doc.seoTitle ?? "";
+  set["publicPage.seoDescription"] = doc.seoDescription ?? "";
+  set["publicPage.siteIcon.url"] = doc.siteIcon?.url ?? "";
+  set["publicPage.siteIcon.assetId"] = doc.siteIcon?.assetId ?? "";
+  set["publicPage.seo.ogImageUrl"] = doc.seo?.ogImageUrl ?? "";
+  set["publicPage.seo.ogImageAssetId"] = doc.seo?.ogImageAssetId ?? "";
+  set["publicPage.seo.galleryDescription"] = doc.seo?.galleryDescription ?? "";
+  set["publicPage.seo.noindex"] = doc.seo?.noindex ?? false;
+  set["publicPage.seo.keywords"] = doc.seo?.keywords ?? [];
   set["publicPage.templateId"] =
     doc.templateId &&
     PORTFOLIO_TEMPLATE_IDS.includes(doc.templateId as (typeof PORTFOLIO_TEMPLATE_IDS)[number])
       ? doc.templateId
-      : "minimal";
+      : "scratch";
 
   const now = new Date();
   set["publicPage.publishedAt"] = now;
