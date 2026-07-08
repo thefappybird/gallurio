@@ -77,8 +77,8 @@ const defaultProps = {
 describe("ClientsTable", () => {
   it("renders client names", () => {
     renderWithProviders(<ClientsTable {...defaultProps} />);
-    expect(screen.getAllByText("Maria Santos").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("John Dela Cruz").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Maria Santos")).toHaveLength(2);
+    expect(screen.getAllByText("John Dela Cruz")).toHaveLength(2);
   });
 
   it("calls onClickClient when a row is clicked", () => {

@@ -130,7 +130,10 @@ export function CreateDialog({
         onCreated(result.team);
         toast.success(t("toasts.created"));
         handleOpenChange(false);
-        onDone();
+        // Defer so the optimistic row commits/paints before the refresh
+        // transition flips on the table skeleton (mirrors the microtask
+        // defer used for search sync in teams-page-client.tsx).
+        Promise.resolve().then(() => onDone());
       }
     });
   }

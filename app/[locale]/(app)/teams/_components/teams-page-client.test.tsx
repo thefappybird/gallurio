@@ -101,8 +101,8 @@ describe("TeamsPageClient", () => {
 
   it("renders the table with the seeded teams", () => {
     renderWithProviders(<TeamsPageClient {...build()} />);
-    expect(screen.getAllByText("Main").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Wedding crew").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Main")).toHaveLength(2);
+    expect(screen.getAllByText("Wedding crew")).toHaveLength(2);
   });
 
   it("creating a team refreshes the page after the server action succeeds", async () => {
