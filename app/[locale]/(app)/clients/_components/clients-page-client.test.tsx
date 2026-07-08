@@ -135,9 +135,9 @@ describe("ClientsPageClient", () => {
     renderWithProviders(<ClientsPageClient {...build()} />);
     // toolbar
     expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
-    // table rows
-    expect(screen.getByText("Maria Santos")).toBeInTheDocument();
-    expect(screen.getByText("John Dela Cruz")).toBeInTheDocument();
+    // table rows (rendered in both the mobile card list and the desktop table)
+    expect(screen.getAllByText("Maria Santos").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("John Dela Cruz").length).toBeGreaterThan(0);
     // pagination summary
     expect(screen.getByText(/showing 1–2 of 2/i)).toBeInTheDocument();
   });
@@ -184,7 +184,8 @@ describe("ClientsPageClient", () => {
     // (inactive) is the first row, so its action menu is the first one.
     const menuButtons = screen.getAllByRole("button", { name: /open client actions/i });
     fireEvent.click(menuButtons[0]);
-    fireEvent.click(await screen.findByText(/reactivate/i));
+    const reactivateButtons = await screen.findAllByText(/reactivate/i);
+    fireEvent.click(reactivateButtons[0]);
 
     await waitFor(() => expect(reactivateMock).toHaveBeenCalledWith("c-inactive"));
     await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
@@ -197,7 +198,8 @@ describe("ClientsPageClient", () => {
 
     const menuButtons = screen.getAllByRole("button", { name: /open client actions/i });
     fireEvent.click(menuButtons[0]);
-    fireEvent.click(await screen.findByText(/reactivate/i));
+    const reactivateButtons = await screen.findAllByText(/reactivate/i);
+    fireEvent.click(reactivateButtons[0]);
 
     await waitFor(() => expect(reactivateMock).toHaveBeenCalled());
     // The guarded action handles the failure via toast and never throws, so
