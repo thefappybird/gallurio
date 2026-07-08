@@ -632,41 +632,7 @@ function CalendarToolbar({
     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
       {/* Left cluster: nav + optional trailing controls (legend chips, team filter) */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Nav pill: outer rounded container owns the single border; divide-x provides per-button dividers */}
-        <div className="flex rounded-lg overflow-hidden border border-border bg-background divide-x divide-border">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="min-h-11 rounded-none"
-            onClick={() => onNavigate("PREV")}
-            aria-label={messages.previous}
-          >
-            <ChevronLeftIcon className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="min-h-11 rounded-none"
-            onClick={() => onNavigate("TODAY")}
-          >
-            {messages.today}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="min-h-11 rounded-none"
-            onClick={() => onNavigate("NEXT")}
-            aria-label={messages.next}
-          >
-            <ChevronRightIcon className="size-4" />
-          </Button>
-        </div>
-        {ctx?.toolbarTrailing}
-      </div>
-
-      {/* Right cluster: date label + jump-to + view switcher */}
-      <div className="flex items-center gap-2">
-        <span className="hidden lg:block font-semibold text-sm me-1">{label}</span>
+                <span className="hidden lg:block font-semibold text-sm me-1">{label}</span>
         {/* Jump-to popover */}
         <Popover>
           <PopoverTrigger
@@ -715,7 +681,40 @@ function CalendarToolbar({
             </div>
           </PopoverContent>
         </Popover>
+        {/* Nav pill: outer rounded container owns the single border; divide-x provides per-button dividers */}
+        <div className="flex rounded-lg overflow-hidden border border-border bg-background divide-x divide-border">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="min-h-11 rounded-none"
+            onClick={() => onNavigate("PREV")}
+            aria-label={messages.previous}
+          >
+            <ChevronLeftIcon className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 rounded-none"
+            onClick={() => onNavigate("TODAY")}
+          >
+            {messages.today}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="min-h-11 rounded-none"
+            onClick={() => onNavigate("NEXT")}
+            aria-label={messages.next}
+          >
+            <ChevronRightIcon className="size-4" />
+          </Button>
+        </div>
+        {ctx?.toolbarTrailing}
+      </div>
 
+      {/* Right cluster: date label + jump-to + view switcher */}
+      <div className="flex items-center gap-2">
         {/* View switcher — pill matching table/calendar toggle; w-auto to stay inline in toolbar */}
         {availableViews.length > 1 ? (
           <SegmentedToggle

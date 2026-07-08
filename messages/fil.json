@@ -228,6 +228,7 @@
       "titleForTeam": "Mga Booking ng {team}",
       "view": {
         "table": "Talahanayan",
+        "card": "Card Mode",
         "calendar": "Kalendaryo"
       },
       "toolbar": {
@@ -1392,6 +1393,7 @@
       },
       "view": {
         "table": "Talahanayan",
+        "card": "Card Mode",
         "calendar": "Kalendaryo"
       },
       "calendar": {

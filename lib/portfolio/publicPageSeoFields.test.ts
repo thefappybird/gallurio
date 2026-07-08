@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeDraftSeoFields,
   normalizePublishedSeoFields,
+  normalizeSettingsSeoFields,
   hasPendingSeoChanges,
+  hasPendingSettingsSeoChanges,
 } from "./publicPageSeoFields";
 
 describe("normalizeDraftSeoFields", () => {
@@ -59,6 +61,26 @@ describe("normalizePublishedSeoFields", () => {
   });
 });
 
+describe("normalizeSettingsSeoFields", () => {
+  it("defaults every settings-owned field for a null/undefined input", () => {
+    expect(normalizeSettingsSeoFields(null)).toEqual({
+      seoTitle: "",
+      seoDescription: "",
+      siteIconUrl: "",
+      siteIconAssetId: "",
+      seo: {
+        ogImageUrl: "",
+        ogImageAssetId: "",
+        galleryDescription: "",
+        noindex: false,
+      },
+    });
+    expect(normalizeSettingsSeoFields(undefined)).toEqual(
+      normalizeSettingsSeoFields(null)
+    );
+  });
+});
+
 describe("hasPendingSeoChanges", () => {
   it("returns false for identical bundles", () => {
     const a = normalizeDraftSeoFields({ seoTitle: "T", seo: { keywords: ["a", "b"] } });
@@ -76,5 +98,19 @@ describe("hasPendingSeoChanges", () => {
     const a = normalizeDraftSeoFields({ seo: { keywords: ["a", "b"] } });
     const b = normalizeDraftSeoFields({ seo: { keywords: ["b", "a"] } });
     expect(hasPendingSeoChanges(a, b)).toBe(true);
+  });
+});
+
+describe("hasPendingSettingsSeoChanges", () => {
+  it("ignores keywords and returns false for identical settings bundles", () => {
+    const a = normalizeSettingsSeoFields({ seoTitle: "T" });
+    const b = normalizeSettingsSeoFields({ seoTitle: "T" });
+    expect(hasPendingSettingsSeoChanges(a, b)).toBe(false);
+  });
+
+  it("returns true when a settings-owned field differs", () => {
+    const a = normalizeSettingsSeoFields({ siteIcon: { assetId: "icon-a" } });
+    const b = normalizeSettingsSeoFields({ siteIcon: { assetId: "icon-b" } });
+    expect(hasPendingSettingsSeoChanges(a, b)).toBe(true);
   });
 });

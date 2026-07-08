@@ -1,11 +1,14 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 export type SegmentedToggleOption<K extends string = string> = {
   key: K;
-  label: string;
+  label: ReactNode;
+  /** Optional stable accessible name when the visual label is responsive. */
+  ariaLabel?: string;
   /** Optional Lucide icon rendered before the label. */
   icon?: LucideIcon;
 };
@@ -52,12 +55,13 @@ export function SegmentedToggle<K extends string = string>({
         className
       )}
     >
-      {options.map(({ key, label, icon: Icon }) => (
+      {options.map(({ key, label, ariaLabel, icon: Icon }) => (
         <button
           key={key}
           type="button"
           role="tab"
           aria-selected={value === key}
+          aria-label={ariaLabel}
           onClick={() => onChange(key)}
           className={cn(
             "flex flex-1 items-center justify-center gap-1.5 px-3 text-sm font-medium transition-colors",
@@ -69,7 +73,7 @@ export function SegmentedToggle<K extends string = string>({
           )}
         >
           {Icon && <Icon className="size-4" />}
-          {label}
+          <span aria-hidden={ariaLabel ? true : undefined}>{label}</span>
         </button>
       ))}
     </div>

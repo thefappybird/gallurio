@@ -52,7 +52,11 @@ export function BookingsPageClient({
   return (
     <div className="flex min-w-0 flex-col gap-4">
       {isPending ? (
-        <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={limit} />
+        <TableSkeleton
+          columns={BOOKINGS_TABLE_COLUMNS}
+          rows={limit}
+          cardRows={Math.min(limit, 4)}
+        />
       ) : (
         <BookingsTable
           rows={rows}

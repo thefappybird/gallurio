@@ -228,6 +228,7 @@
       "titleForTeam": "Tempahan {team}",
       "view": {
         "table": "Jadual",
+        "card": "Mod kad",
         "calendar": "Kalendar"
       },
       "toolbar": {
@@ -1392,6 +1393,7 @@
       },
       "view": {
         "table": "Jadual",
+        "card": "Mod kad",
         "calendar": "Kalendar"
       },
       "calendar": {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition, useOptimistic } from "react";
+import { useId, useRef, useState, useTransition, useOptimistic } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -67,6 +67,7 @@ export function PublicPageSettingsForm({
 }) {
   const t = useTranslations("app.settings.publicPage");
   const errMsg = useActionError();
+  const formId = useId();
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [hasPendingChanges, setHasPendingChanges] = useState(
@@ -111,13 +112,13 @@ export function PublicPageSettingsForm({
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleTogglePublish() {
-    const next = !optimisticPublishedAt;
+  function handlePublishedStateChange(next: boolean) {
     startTransition(async () => {
       setOptimisticPublishedAt(next ? new Date() : null);
+      const previous = optimisticPublishedAt;
       const result = await togglePublicPagePublishedAction(next);
       if (result?.error) {
-        setOptimisticPublishedAt(optimisticPublishedAt);
+        setOptimisticPublishedAt(previous);
         toast.error(errMsg(result.error, result.params));
       } else {
         toast.success(t("visibilityUpdatedToast"));
@@ -144,9 +145,27 @@ export function PublicPageSettingsForm({
         toast.error(errMsg(result.error));
         return;
       }
+      setOptimisticPublishedAt(new Date());
       toast.success(t("publishChangesSuccessToast"));
       setHasPendingChanges(false);
     });
+  }
+
+  const isPublished = !!optimisticPublishedAt;
+  const publishAction = isPublished && !hasPendingChanges ? "unpublish" : "publish";
+  const publishActionPending = isPending || isPublishing;
+  const publishActionDisabled =
+    isDirty ||
+    isSubmitting ||
+    publishActionPending ||
+    (publishAction === "publish" && !targetDraftId);
+
+  function handlePrimaryPublishAction() {
+    if (publishAction === "unpublish") {
+      handlePublishedStateChange(false);
+      return;
+    }
+    handlePublish();
   }
 
   async function handleIconFile(file: File) {
@@ -234,15 +253,63 @@ export function PublicPageSettingsForm({
     if (ogFileInputRef.current) ogFileInputRef.current.value = "";
   }
 
-  const isPublished = !!optimisticPublishedAt;
-
   return (
     <div className="flex flex-col gap-8">
       {/* Visibility */}
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col gap-3 border-t border-border bg-background px-6 py-4">
+        {hasPendingChanges && (
+          <div className="flex items-start gap-2 border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <p>
+              <span className="block font-medium">
+                {!isPublished
+                  ? t("unpublishedBannerTitle")
+                  : t("pendingChangesBannerTitle")}
+              </span>
+              {!isPublished
+                ? t("unpublishedBannerBody")
+                : t("pendingChangesBannerBody")}
+            </p>
+          </div>
+        )}
+      </div>
       <section className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-lg font-semibold">{t("visibilitySection")}</h2>
-          <p className="text-sm text-muted-foreground">{t("visibilityHint")}</p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">{t("visibilitySection")}</h2>
+            <p className="text-sm text-muted-foreground">{t("visibilityHint")}</p>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={publishActionDisabled}
+              onClick={handlePrimaryPublishAction}
+            >
+              {publishActionPending ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  {publishAction === "unpublish" ? t("saving") : t("publishingChanges")}
+                </>
+              ) : (
+                t(publishAction)
+              )}
+            </Button>
+            <Button
+              type="submit"
+              form={formId}
+              disabled={isSubmitting || !isDirty}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  {t("saving")}
+                </>
+              ) : (
+                t("save")
+              )}
+            </Button>
+          </div>
         </div>
 
         <div
@@ -286,26 +353,6 @@ export function PublicPageSettingsForm({
                   </Button>
                 </div>
               </div>
-              <div className="lg:flex lg:items-end">
-                <Button
-                  type="button"
-                  variant={isPublished ? "outline" : "default"}
-                  disabled={isPending}
-                  onClick={handleTogglePublish}
-                  className="min-h-[2.25rem] w-full lg:w-auto"
-                >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                      {t("saving")}
-                    </>
-                  ) : isPublished ? (
-                    t("unpublish")
-                  ) : (
-                    t("publish")
-                  )}
-                </Button>
-              </div>
             </div>
           </div>
 
@@ -313,7 +360,7 @@ export function PublicPageSettingsForm({
       </section>
 
       {/* SEO + Site icon + Inquiry (shared form) */}
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
+      <form id={formId} onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
         {/* SEO section */}
         <section className="flex flex-col gap-4 border-t border-border pt-8">
           <div>
@@ -384,6 +431,7 @@ export function PublicPageSettingsForm({
             <div>
               <h2 className="text-lg font-semibold">{t("ogImageSection")}</h2>
               <p className="text-sm text-muted-foreground">{t("ogImageHint")}</p>
+              <p className="text-xs text-muted-foreground">{t("ogImageRequirements")}</p>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -481,6 +529,9 @@ export function PublicPageSettingsForm({
             <div>
               <h2 className="text-lg font-semibold">{t("siteIconSection")}</h2>
               <p className="text-sm text-muted-foreground">{t("siteIconHint")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("siteIconRequirements")}
+              </p>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -517,9 +568,7 @@ export function PublicPageSettingsForm({
                       </Button>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {t("siteIconRequirements")}
-                  </p>
+
                 </div>
               ) : (
                 <label
@@ -586,95 +635,50 @@ export function PublicPageSettingsForm({
           </section>
         </div>
 
-        {/* Search visibility (noindex) section */}
-        <section className="flex flex-col gap-4 border-t border-border pt-8">
-          <div>
-            <h2 className="text-lg font-semibold">{t("noindexSection")}</h2>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              id="noindex"
-              className="mt-0.5 h-4 w-4 shrink-0"
-              {...register("seo.noindex")}
-            />
-            <div className="flex flex-col gap-0.5">
-              <Label htmlFor="noindex">{t("noindexLabel")}</Label>
-              <p className="text-sm text-muted-foreground">{t("noindexHint")}</p>
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+          {/* Search visibility (noindex) section */}
+          <section className="flex flex-col gap-4 border-t border-border pt-8">
+            <div>
+              <h2 className="text-lg font-semibold">{t("noindexSection")}</h2>
             </div>
-          </div>
-        </section>
-
-        {/* Inquiry routing section */}
-        <section className="flex flex-col gap-4 border-t border-border pt-8">
-          <div>
-            <h2 className="text-lg font-semibold">{t("inquirySection")}</h2>
-            <p className="text-sm text-muted-foreground">{t("inquirySectionHint")}</p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <div className="flex flex-col gap-1.5 xl:max-w-xl">
-              <Label htmlFor="inquiryRecipientEmail">{t("inquiryRecipientEmail")}</Label>
-              <Input
-                id="inquiryRecipientEmail"
-                type="email"
-                placeholder={t("inquiryRecipientEmailPlaceholder")}
-                {...register("inquiryRecipientEmail")}
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="noindex"
+                className="mt-0.5 h-4 w-4 shrink-0"
+                {...register("seo.noindex")}
               />
-              {errors.inquiryRecipientEmail && (
-                <p className="text-sm text-destructive">
-                  {errors.inquiryRecipientEmail.message}
-                </p>
-              )}
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="noindex">{t("noindexLabel")}</Label>
+                <p className="text-sm text-muted-foreground">{t("noindexHint")}</p>
+              </div>
             </div>
-          </div>
-        </section>
-
-        <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col gap-3 border-t border-border bg-background px-6 py-4">
-          {hasPendingChanges && (
-            <div className="flex items-start gap-2 border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
-              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <p>
-                <span className="block font-medium">
-                  {publishedAt === null
-                    ? t("unpublishedBannerTitle")
-                    : t("pendingChangesBannerTitle")}
-                </span>
-                {publishedAt === null
-                  ? t("unpublishedBannerBody")
-                  : t("pendingChangesBannerBody")}
-              </p>
+          </section>
+          {/* Inquiry routing section */}
+          <section className="flex flex-col gap-4 border-t border-border pt-8">
+            <div>
+              <h2 className="text-lg font-semibold">{t("inquirySection")}</h2>
+              <p className="text-sm text-muted-foreground">{t("inquirySectionHint")}</p>
             </div>
-          )}
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isDirty || isSubmitting || !hasPendingChanges || isPublishing}
-              onClick={handlePublish}
-            >
-              {isPublishing ? (
-                <>
-                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  {t("publishingChanges")}
-                </>
-              ) : (
-                t("publishChanges")
-              )}
-            </Button>
-            <Button type="submit" disabled={isSubmitting || !isDirty}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  {t("saving")}
-                </>
-              ) : (
-                t("save")
-              )}
-            </Button>
-          </div>
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <div className="flex flex-col gap-1.5 xl:max-w-xl">
+                <Label htmlFor="inquiryRecipientEmail">{t("inquiryRecipientEmail")}</Label>
+                <Input
+                  id="inquiryRecipientEmail"
+                  type="email"
+                  placeholder={t("inquiryRecipientEmailPlaceholder")}
+                  {...register("inquiryRecipientEmail")}
+                />
+                {errors.inquiryRecipientEmail && (
+                  <p className="text-sm text-destructive">
+                    {errors.inquiryRecipientEmail.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
         </div>
+
       </form>
     </div>
   );

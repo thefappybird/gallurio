@@ -228,6 +228,7 @@
       "titleForTeam": "{team}'s Bookings",
       "view": {
         "table": "Table",
+        "card": "Card Mode",
         "calendar": "Calendar"
       },
       "toolbar": {
@@ -923,7 +924,7 @@
         "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
         "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",
         "ogImageSection": "Share image",
-        "ogImageHint": "The photo shown when your link is shared on Facebook, Instagram, WhatsApp, or iMessage. Use your best shot. 1200 × 630 px recommended.",
+        "ogImageHint": "The photo shown when your link is shared on Facebook, Instagram, WhatsApp, or iMessage. Use your best shot.",
         "ogImageLabel": "Upload share image",
         "ogImageUploading": "Uploading…",
         "ogImageRequirements": "JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
@@ -1392,6 +1393,7 @@
       },
       "view": {
         "table": "Table",
+        "card": "Card Mode",
         "calendar": "Calendar"
       },
       "calendar": {

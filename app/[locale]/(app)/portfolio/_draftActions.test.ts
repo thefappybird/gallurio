@@ -222,7 +222,7 @@ describe("publishDraftAction", () => {
     expect(res).toEqual({ error: "draft_not_found" });
   });
 
-  it("copies seoTitle/seoDescription/siteIcon/seo.* onto publicPage", async () => {
+  it("overlays workspace settingsDraft seo/media fields onto publicPage during publish", async () => {
     await Workspace.create({
       _id: mockCtx.workspace._id,
       slug: "studio-aurora",
@@ -231,14 +231,28 @@ describe("publishDraftAction", () => {
       clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
       currency: "PHP",
       plan: "free",
-      publicPage: { data: { home: null, gallery: null }, latestVersion: 0 },
+      publicPage: {
+        data: { home: null, gallery: null },
+        latestVersion: 0,
+        settingsDraft: {
+          seoTitle: "Settings Draft Title",
+          seoDescription: "Settings draft description.",
+          siteIcon: { url: "https://imagedelivery.net/h/settings-icon/public", assetId: "settings-icon-1" },
+          seo: {
+            ogImageUrl: "https://imagedelivery.net/h/settings-og/public",
+            ogImageAssetId: "settings-og-1",
+            galleryDescription: "Settings gallery copy",
+            noindex: false,
+          },
+        },
+      },
     });
     const draft = await PortfolioDraft.create({
       workspaceId: mockCtx.workspace._id,
       name: "SEO Draft",
       ...snapshot,
-      seoTitle: "Aurora Studio",
-      seoDescription: "Candid wedding photography.",
+      seoTitle: "Draft Title Should Be Overridden",
+      seoDescription: "Draft description should be overridden.",
       siteIcon: { url: "https://imagedelivery.net/h/icon/public", assetId: "icon-1" },
       seo: {
         ogImageUrl: "https://imagedelivery.net/h/og/public",
@@ -252,15 +266,15 @@ describe("publishDraftAction", () => {
     const res = await publishDraftAction(String(draft._id));
     expect(res).toEqual({ ok: true });
 
-    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
-    expect(ws!.publicPage!.seoTitle).toBe("Aurora Studio");
-    expect(ws!.publicPage!.seoDescription).toBe("Candid wedding photography.");
-    expect(ws!.publicPage!.siteIcon?.url).toBe("https://imagedelivery.net/h/icon/public");
-    expect(ws!.publicPage!.siteIcon?.assetId).toBe("icon-1");
-    expect(ws!.publicPage!.seo?.ogImageUrl).toBe("https://imagedelivery.net/h/og/public");
-    expect(ws!.publicPage!.seo?.ogImageAssetId).toBe("og-1");
-    expect(ws!.publicPage!.seo?.galleryDescription).toBe("Our gallery");
-    expect(ws!.publicPage!.seo?.noindex).toBe(true);
+      const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.publicPage!.seoTitle).toBe("Settings Draft Title");
+    expect(ws!.publicPage!.seoDescription).toBe("Settings draft description.");
+    expect(ws!.publicPage!.siteIcon?.url).toBe("https://imagedelivery.net/h/settings-icon/public");
+    expect(ws!.publicPage!.siteIcon?.assetId).toBe("settings-icon-1");
+    expect(ws!.publicPage!.seo?.ogImageUrl).toBe("https://imagedelivery.net/h/settings-og/public");
+    expect(ws!.publicPage!.seo?.ogImageAssetId).toBe("settings-og-1");
+    expect(ws!.publicPage!.seo?.galleryDescription).toBe("Settings gallery copy");
+      expect(ws!.publicPage!.seo?.noindex).toBe(false);
     expect(ws!.publicPage!.seo?.keywords).toEqual(["wedding", "bali"]);
   });
 });

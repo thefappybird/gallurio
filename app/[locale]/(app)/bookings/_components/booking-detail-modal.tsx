@@ -15,15 +15,20 @@ import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
 import {
   ArrowUpRightIcon,
+  CalendarDaysIcon,
   CheckIcon,
+  CreditCardIcon,
   DownloadIcon,
   EyeIcon,
   EyeOffIcon,
+  HistoryIcon,
   Loader2Icon,
+  MapPinIcon,
   PencilIcon,
   PlusIcon,
   SearchIcon,
   Trash2Icon,
+  UserIcon,
   XIcon,
 } from "lucide-react";
 import {
@@ -1393,7 +1398,7 @@ export function BookingDetailModal({
           <DialogFooterBar
             cancelled={booking.status === "cancelled"}
             completed={booking.status === "completed"}
-            hasPayments={booking.payments.length > 0}
+            hasPayments={booking?.payments?.length > 0}
             bookingId={bookingId}
             hasPending={hasPending}
             pendingCount={pendingCount}
@@ -1646,13 +1651,13 @@ function DialogHeaderBar({
   }
 
   return (
-    <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
+    <div className="flex shrink-0 flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         {loading ? (
           <Skeleton className="h-5 w-48" />
         ) : (
-          <div className="flex min-w-0 items-center gap-2">
-            <DialogTitle className="min-w-0 text-base font-semibold">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <DialogTitle className="min-w-0 flex-1 text-base font-semibold">
               {editingTitle ? (
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
                   <Input
@@ -1834,12 +1839,12 @@ function DialogHeaderBar({
         ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
         {booking ? (
           <Badge
             variant={isOverdue ? "default" : "outline"}
             className={
-              "tabular-nums" +
+              "max-w-full tabular-nums" +
               (isOverdue ? " bg-brand text-brand-foreground" : "")
             }
             title={t("outstanding")}
@@ -1847,24 +1852,27 @@ function DialogHeaderBar({
             {t("outstanding")}: {formatMoney(outstanding, currency, locale)}
           </Badge>
         ) : null}
-        {booking && !readOnly ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onEditAll}
-          >
-            <PencilIcon className="size-3.5" />
-            {tDetail("editAll")}
-          </Button>
-        ) : null}
-        <DialogClose
-          render={
-            <Button variant="ghost" size="icon-sm" onClick={onClose}>
-              <XIcon className="size-4" />
+        <div className="ms-auto flex shrink-0 items-center gap-2">
+          {booking && !readOnly ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onEditAll}
+            >
+              <PencilIcon className="size-3.5" />
+              <span className="hidden sm:inline">{tDetail("editAll")}</span>
+              <span className="sr-only sm:hidden">{tDetail("editAll")}</span>
             </Button>
-          }
-        />
+          ) : null}
+          <DialogClose
+            render={
+              <Button variant="ghost" size="icon-sm" onClick={onClose}>
+                <XIcon className="size-4" />
+              </Button>
+            }
+          />
+        </div>
       </div>
     </div>
   );
@@ -2063,21 +2071,46 @@ function BookingTabs({
           TabsTab → active tab gets the foreground underline) for cross-modal
           consistency. min-h-11 keeps the touch target ≥44px and overflow-x-auto
           lets the four tabs scroll at 375px. */}
-      <TabsList className="h-auto overflow-x-auto">
-        <TabsTab value="client" className="min-h-11">
-          {t("client")}
+      <TabsList className="grid h-auto w-full grid-cols-5">
+        <TabsTab
+          value="client"
+          aria-label={t("client")}
+          className="min-h-11 px-2 sm:px-3"
+        >
+          <UserIcon className="size-4 sm:hidden" aria-hidden />
+          <span className="hidden sm:inline">{t("client")}</span>
         </TabsTab>
-        <TabsTab value="eventPricing" className="min-h-11">
-          {t("eventPricing")}
+        <TabsTab
+          value="eventPricing"
+          aria-label={t("eventPricing")}
+          className="min-h-11 px-2 sm:px-3"
+        >
+          <CalendarDaysIcon className="size-4 sm:hidden" aria-hidden />
+          <span className="hidden sm:inline">{t("eventPricing")}</span>
         </TabsTab>
-        <TabsTab value="payments" className="min-h-11">
-          {t("payments")}
+        <TabsTab
+          value="payments"
+          aria-label={t("payments")}
+          className="min-h-11 px-2 sm:px-3"
+        >
+          <CreditCardIcon className="size-4 sm:hidden" aria-hidden />
+          <span className="hidden sm:inline">{t("payments")}</span>
         </TabsTab>
-        <TabsTab value="sessionsLocation" className="min-h-11">
-          {t("sessionsLocation")}
+        <TabsTab
+          value="sessionsLocation"
+          aria-label={t("sessionsLocation")}
+          className="min-h-11 px-2 sm:px-3"
+        >
+          <MapPinIcon className="size-4 sm:hidden" aria-hidden />
+          <span className="hidden sm:inline">{t("sessionsLocation")}</span>
         </TabsTab>
-        <TabsTab value="activity" className="min-h-11">
-          {t("activity")}
+        <TabsTab
+          value="activity"
+          aria-label={t("activity")}
+          className="min-h-11 px-2 sm:px-3"
+        >
+          <HistoryIcon className="size-4 sm:hidden" aria-hidden />
+          <span className="hidden sm:inline">{t("activity")}</span>
         </TabsTab>
       </TabsList>
 
@@ -3824,14 +3857,14 @@ function DialogFooterBar({
       </div>
 
       <Dialog open={incompleteWarningOpen} onOpenChange={setIncompleteWarningOpen}>
-        <DialogContent className="flex max-h-[calc(100dvh-3rem)] flex-col gap-0 overflow-hidden p-0">
-          <DialogHeader className="shrink-0 px-4 pt-4">
+        <DialogContent className="flex max-h-[calc(100dvh-3rem)] flex-col gap-0 overflow-hidden p-2">
+          <DialogHeader className="shrink-0 p-4">
             <DialogTitle>{tWarn("title")}</DialogTitle>
             <DialogDescription>
               {completed ? tWarn("bodyReceipt") : tWarn("bodyInvoice")}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="shrink-0 gap-2 border-t border-border px-4 py-3 sm:justify-between">
+          <DialogFooter className="shrink-0 gap-2 border-t border-border p-4">
             <Button
               type="button"
               variant="ghost"
@@ -3844,7 +3877,7 @@ function DialogFooterBar({
             >
               {tWarn("dontShowAgain")}
             </Button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-center sm:justify-end">
               <Button
                 type="button"
                 variant="outline"

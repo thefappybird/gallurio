@@ -1115,6 +1115,15 @@ describe("Pill tabs — five tabs render and switch panels", () => {
     expect(activityTab).toBeInTheDocument();
   });
 
+  it("uses a fixed five-column tab list so small screens do not need horizontal scrolling", async () => {
+    renderModal();
+    await waitForLoad();
+
+    const tablist = screen.getByRole("tablist");
+    expect(tablist.className).toContain("grid-cols-5");
+    expect(tablist.className).not.toContain("overflow-x-auto");
+  });
+
   it("switching to the Payments tab shows the currency field", async () => {
     renderModal();
     await waitForLoad();
@@ -1192,6 +1201,17 @@ describe("Header inline title editing", () => {
       // An input with the current title value appears
       expect(screen.getByDisplayValue("Test Wedding")).toBeInTheDocument();
     });
+  });
+
+  it("stacks the header layout responsively and keeps the Edit all action accessible", async () => {
+    renderModal();
+    await waitForLoad();
+
+    const heading = screen.getByRole("heading", { name: /Test Wedding/i });
+    const headerRoot = heading.closest("div.border-b");
+    expect(headerRoot?.className).toContain("flex-col");
+    expect(headerRoot?.className).toContain("sm:flex-row");
+    expect(screen.getByRole("button", { name: /edit all/i })).toBeInTheDocument();
   });
 
   it("editing the title and pressing Enter stages it as a pending change", async () => {

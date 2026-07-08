@@ -228,6 +228,7 @@
       "titleForTeam": "حجوزات {team}",
       "view": {
         "table": "جدول",
+        "card": "وضع البطاقات",
         "calendar": "تقويم"
       },
       "toolbar": {
@@ -1392,6 +1393,7 @@
       },
       "view": {
         "table": "جدول",
+        "card": "وضع البطاقات",
         "calendar": "تقويم"
       },
       "calendar": {

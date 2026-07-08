@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { createElement, type ReactNode } from "react";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
 const mockPush = vi.fn();
@@ -41,52 +41,86 @@ describe("InquiryStatusBadge", () => {
 });
 
 describe("InquiryTable", () => {
-  it("renders rows with a link to the detail page", () => {
+  it("renders rows in both card and table layouts", () => {
     renderWithProviders(
-      <InquiryTable rows={rows} locale="en" empty="No inquiries yet." emptyHint="hint" />
+      <InquiryTable
+        rows={rows}
+        locale="en"
+        empty="No inquiries yet."
+        emptyHint="hint"
+      />
     );
-    // Name appears in both mobile card + desktop table layouts.
     expect(screen.getAllByText("Emma Carter").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Emma & Noah Wedding").length).toBeGreaterThan(0);
-    // Source text is rendered as-is in DOM; CSS capitalize handles display.
     expect(screen.getAllByText("portfolio").length).toBeGreaterThan(0);
-    const links = screen.getAllByRole("link", { name: /Open inquiry from Emma Carter/i });
-    expect(links[0]).toHaveAttribute("href", "/inquiries?inquiryId=111111111111111111111111");
+    expect(screen.getByTestId("inquiries-card-list")).toBeInTheDocument();
+  });
+
+  it("renders the event type as a pill beside the status pill in the card layout", () => {
+    renderWithProviders(
+      <InquiryTable
+        rows={rows}
+        locale="en"
+        empty="No inquiries yet."
+        emptyHint="hint"
+      />
+    );
+    const cardList = screen.getByTestId("inquiries-card-list");
+    const [typePill] = within(cardList).getAllByText("Wedding");
+    expect(typePill.className).toContain("border");
+    expect(typePill.className).toContain("px-2");
   });
 
   it("renders the empty state when there are no rows", () => {
     renderWithProviders(
-      <InquiryTable rows={[]} locale="en" empty="No inquiries yet." emptyHint="Submit to see them." />
+      <InquiryTable
+        rows={[]}
+        locale="en"
+        empty="No inquiries yet."
+        emptyHint="Submit to see them."
+      />
     );
     expect(screen.getByText("No inquiries yet.")).toBeInTheDocument();
     expect(screen.getByText("Submit to see them.")).toBeInTheDocument();
   });
 
-  it("renders a View (eye) icon button for each row", () => {
+  it("renders View icon buttons for the card and table variants", () => {
     renderWithProviders(
-      <InquiryTable rows={rows} locale="en" empty="No inquiries yet." emptyHint="hint" />
+      <InquiryTable
+        rows={rows}
+        locale="en"
+        empty="No inquiries yet."
+        emptyHint="hint"
+      />
     );
-    // aria-label is t("table.actions.view") = "View"; mobile + desktop = 2 per row
-    const viewButtons = screen.getAllByRole("button", { name: "View" });
-    expect(viewButtons.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("button", { name: "View" }).length).toBeGreaterThanOrEqual(2);
   });
 
-  it("navigates to the detail modal URL when the View icon button is clicked", () => {
+  it("navigates to the detail modal URL when a View icon button is clicked", () => {
     mockPush.mockClear();
     renderWithProviders(
-      <InquiryTable rows={rows} locale="en" empty="No inquiries yet." emptyHint="hint" />
+      <InquiryTable
+        rows={rows}
+        locale="en"
+        empty="No inquiries yet."
+        emptyHint="hint"
+      />
     );
-    // Click the first View icon button (mobile card layout).
-    const viewButtons = screen.getAllByRole("button", { name: "View" });
-    fireEvent.click(viewButtons[0]);
-    expect(mockPush).toHaveBeenCalledWith("/inquiries?inquiryId=111111111111111111111111");
+    fireEvent.click(screen.getAllByRole("button", { name: "View" })[0]);
+    expect(mockPush).toHaveBeenCalledWith(
+      "/inquiries?inquiryId=111111111111111111111111"
+    );
   });
 
-  it("applies the capitalize CSS class to the source cell", () => {
+  it("applies the capitalize CSS class to the desktop source cell", () => {
     renderWithProviders(
-      <InquiryTable rows={rows} locale="en" empty="No inquiries yet." emptyHint="hint" />
+      <InquiryTable
+        rows={rows}
+        locale="en"
+        empty="No inquiries yet."
+        emptyHint="hint"
+      />
     );
-    // The desktop source <td> must carry the capitalize class.
     const sourceCells = document.querySelectorAll("td.capitalize");
     expect(sourceCells.length).toBeGreaterThan(0);
   });

@@ -228,6 +228,7 @@
       "titleForTeam": "Pemesanan {team}",
       "view": {
         "table": "Tabel",
+        "card": "Mode kartu",
         "calendar": "Kalender"
       },
       "toolbar": {
@@ -1392,6 +1393,7 @@
       },
       "view": {
         "table": "Tabel",
+        "card": "Mode kartu",
         "calendar": "Kalender"
       },
       "calendar": {

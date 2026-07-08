@@ -104,12 +104,18 @@ function getPublicPageProps() {
   };
 }
 
-describe("SettingsCatchallPage — public-page defaults read from active draft", () => {
-  it("builds publicPageDefaults from the active draft (not stale publicPage) and reports pending changes", async () => {
+describe("SettingsCatchallPage — public-page defaults read from workspace settingsDraft", () => {
+  it("builds publicPageDefaults from settingsDraft (not the active portfolio draft) and reports pending changes", async () => {
     const ws = await seedWorkspace({
       seoTitle: "Stale live title",
       seoDescription: "Stale live description",
       inquiryRecipientEmail: "owner@test.com",
+      settingsDraft: {
+        seoTitle: "Fresh settings title",
+        seoDescription: "Fresh settings description",
+        siteIcon: { url: "https://cdn.example.com/icon.png", assetId: "icon_1" },
+        seo: { ogImageUrl: "", ogImageAssetId: "", galleryDescription: "", noindex: false },
+      },
     });
     await seedOwnerUser(ws._id);
     const draft = await PortfolioDraft.create({
@@ -117,10 +123,8 @@ describe("SettingsCatchallPage — public-page defaults read from active draft",
       name: "My Draft",
       templateId: "",
       data: { home: null, gallery: null },
-      seoTitle: "Fresh draft title",
-      seoDescription: "Fresh draft description",
-      siteIcon: { url: "https://cdn.example.com/icon.png", assetId: "icon_1" },
-      seo: { ogImageUrl: "", ogImageAssetId: "", galleryDescription: "", noindex: false },
+      seoTitle: "Draft title should not drive settings",
+      seoDescription: "Draft description should not drive settings",
     });
 
     requireOrgMock.mockResolvedValue({
@@ -155,8 +159,8 @@ describe("SettingsCatchallPage — public-page defaults read from active draft",
     render(page);
 
     const props = getPublicPageProps();
-    expect(props.defaults.seoTitle).toBe("Fresh draft title");
-    expect(props.defaults.seoDescription).toBe("Fresh draft description");
+    expect(props.defaults.seoTitle).toBe("Fresh settings title");
+    expect(props.defaults.seoDescription).toBe("Fresh settings description");
     // inquiryRecipientEmail stays live-sourced, unaffected by the draft.
     expect(props.defaults.inquiryRecipientEmail).toBe("owner@test.com");
     expect(props.defaults.siteIconAssetId).toBe("icon_1");
@@ -170,6 +174,10 @@ describe("SettingsCatchallPage — public-page defaults read from active draft",
     const ws = await seedWorkspace({
       seoTitle: "Same title",
       seoDescription: "Same description",
+      settingsDraft: {
+        seoTitle: "Same title",
+        seoDescription: "Same description",
+      },
     });
     await seedOwnerUser(ws._id);
     await PortfolioDraft.create({
@@ -177,8 +185,8 @@ describe("SettingsCatchallPage — public-page defaults read from active draft",
       name: "My Draft",
       templateId: "",
       data: { home: null, gallery: null },
-      seoTitle: "Same title",
-      seoDescription: "Same description",
+      seoTitle: "Different draft title should not matter",
+      seoDescription: "Different draft description should not matter",
     });
 
     requireOrgMock.mockResolvedValue({
@@ -216,14 +224,18 @@ describe("SettingsCatchallPage — public-page defaults read from active draft",
   });
 
   it("reports pending changes true when the workspace has never been published (draft has content, live is empty)", async () => {
-    const ws = await seedWorkspace({});
+    const ws = await seedWorkspace({
+      settingsDraft: {
+        seoTitle: "Never published yet",
+      },
+    });
     await seedOwnerUser(ws._id);
     await PortfolioDraft.create({
       workspaceId: ws._id,
       name: "My Draft",
       templateId: "",
       data: { home: null, gallery: null },
-      seoTitle: "Never published yet",
+      seoTitle: "Draft title should not drive settings pending state",
     });
 
     requireOrgMock.mockResolvedValue({

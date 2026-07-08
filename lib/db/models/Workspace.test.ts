@@ -69,6 +69,18 @@ describe("Workspace.publicPage.seo defaults", () => {
   });
 });
 
+describe("Workspace.publicPage.settingsDraft defaults", () => {
+  it("new workspace has no settingsDraft until /settings/public-page saves one", async () => {
+    const ws = await Workspace.create({
+      slug: "settings-draft-studio",
+      name: "Settings Draft Studio",
+      ownerUserId: "user_settings_1",
+    });
+
+    expect(ws.publicPage?.settingsDraft).toBeUndefined();
+  });
+});
+
 it("new workspace has formDir defaulting to empty string", async () => {
   const ws = await Workspace.create({
     slug: "dir-test-studio",

@@ -91,7 +91,10 @@ vi.mock("../_actions", () => ({
 
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { publishDraftAction } from "../../portfolio/_draftActions";
-import { updatePublicPageSettingsAction } from "../_actions";
+import {
+  togglePublicPagePublishedAction,
+  updatePublicPageSettingsAction,
+} from "../_actions";
 
 vi.mock("@/lib/utils/handleActionResult", () => ({
   toastActionResult: vi.fn(() => true),
@@ -299,7 +302,7 @@ describe("PublicPageSettingsForm — site icon section", () => {
 });
 
 describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
-  it("hides the banner and disables Publish when there are no pending changes", () => {
+  it("hides the banner and shows Unpublish when there are no pending changes", () => {
     render(
       <PublicPageSettingsForm
         slug="luna-studio"
@@ -313,7 +316,7 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
     );
     expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
     expect(screen.queryByText("unpublishedBannerTitle")).not.toBeInTheDocument();
-    expect(screen.getByText("publishChanges").closest("button")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "unpublish" })).toBeEnabled();
   });
 
   it("shows the never-published banner variant when publishedAt is null", () => {
@@ -330,7 +333,7 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
     );
     expect(screen.getByText("unpublishedBannerTitle")).toBeInTheDocument();
     expect(screen.getByText("unpublishedBannerBody")).toBeInTheDocument();
-    expect(screen.getByText("publishChanges").closest("button")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "publish" })).toBeEnabled();
   });
 
   it("shows the pending-changes banner variant when publishedAt is set", () => {
@@ -364,13 +367,35 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
       />
     );
 
-    const publishBtn = screen.getByText("publishChanges").closest("button")!;
+    const publishBtn = screen.getByRole("button", { name: "publish" });
     await act(async () => {
       fireEvent.click(publishBtn);
     });
 
     expect(publishDraftAction).toHaveBeenCalledWith("draft-1");
     expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
+  });
+
+  it("unpublishes from the top action row when the live page has no pending changes", async () => {
+    vi.mocked(togglePublicPagePublishedAction).mockResolvedValueOnce({ ok: true });
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={false}
+        publishedDefaults={baseDefaults}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "unpublish" }));
+    });
+
+    expect(togglePublicPagePublishedAction).toHaveBeenCalledWith(false);
   });
 });
 
@@ -404,7 +429,8 @@ describe("PublicPageSettingsForm — keywordsPending recompute after Save", () =
       fireEvent.click(saveBtn);
     });
 
+    expect(updatePublicPageSettingsAction).toHaveBeenCalledTimes(1);
     expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
-    expect(screen.getByText("publishChanges").closest("button")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "publish" })).toBeEnabled();
   });
 });

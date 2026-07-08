@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CalendarIcon, TableIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import {
   INQUIRIES_VIEW_COOKIE_NAME,
@@ -16,6 +17,21 @@ export type InquiriesView = "table" | "calendar";
 type Props = {
   view: InquiriesView;
 };
+
+function ResponsiveTableLabel({
+  mobile,
+  desktop,
+}: {
+  mobile: string;
+  desktop: string;
+}): ReactNode {
+  return (
+    <>
+      <span className="lg:hidden">{mobile}</span>
+      <span className="hidden lg:inline">{desktop}</span>
+    </>
+  );
+}
 
 export function InquiryViewToggle({ view }: Props) {
   const router = useRouter();
@@ -48,7 +64,12 @@ export function InquiryViewToggle({ view }: Props) {
       onChange={setView}
       ariaLabel="Inquiries view toggle"
       options={[
-        { key: "table", label: t("table"), icon: TableIcon },
+        {
+          key: "table",
+          label: <ResponsiveTableLabel mobile={t("card")} desktop={t("table")} />,
+          ariaLabel: t("table"),
+          icon: TableIcon,
+        },
         { key: "calendar", label: t("calendar"), icon: CalendarIcon },
       ]}
     />

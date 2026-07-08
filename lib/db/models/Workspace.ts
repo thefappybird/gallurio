@@ -46,6 +46,24 @@ const brandKitFields = {
   buttonStyle: { type: String, enum: BRAND_KIT_BUTTON_STYLES, default: "solid" },
 } as const;
 
+const publicPageSettingsDraftSchema = new Schema(
+  {
+    seoTitle: { type: String, default: "" },
+    seoDescription: { type: String, default: "" },
+    siteIcon: {
+      url: { type: String, default: "" },
+      assetId: { type: String, default: "" },
+    },
+    seo: {
+      ogImageUrl: { type: String, default: "" },
+      ogImageAssetId: { type: String, default: "" },
+      galleryDescription: { type: String, default: "" },
+      noindex: { type: Boolean, default: false },
+    },
+  },
+  { _id: false }
+);
+
 const workspaceSchema = new Schema(
   {
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
@@ -225,6 +243,10 @@ const workspaceSchema = new Schema(
         url: { type: String, default: "" },
         assetId: { type: String, default: "" },
       },
+      // Draft-independent owner-edited settings from /settings/public-page.
+      // Saved here so the settings UI does not drift when the owner switches
+      // portfolio drafts; publish overlays these fields onto the live page.
+      settingsDraft: { type: publicPageSettingsDraftSchema, default: undefined },
       // SEO sub-object for owner-configurable social/crawl controls.
       // All fields default to empty/false so existing docs without `seo`
       // read fine (Mongoose applies the defaults on access).
