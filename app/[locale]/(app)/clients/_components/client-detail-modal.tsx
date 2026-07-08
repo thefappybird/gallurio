@@ -146,7 +146,7 @@ function ClientDetailModalInner({
           {/* Overview Tab */}
           <TabsPanel value="overview" className="overflow-y-auto px-4 py-4">
             {/* Stats grid */}
-            <div className="mb-4 grid grid-cols-3 divide-x divide-border border border-border">
+            <div className="mb-4 grid grid-cols-1 divide-y divide-border border border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               <div className="flex flex-col items-center py-3 text-center">
                 <span className="text-lg font-semibold tabular-nums text-brand">
                   {new Intl.NumberFormat(locale, {
