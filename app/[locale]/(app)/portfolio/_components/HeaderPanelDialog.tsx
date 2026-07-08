@@ -173,6 +173,7 @@ export function HeaderPanelDialog({
   header,
   onHeaderChange,
   workspaceName,
+  onSaved,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.headerDialog");
   const [logoUploading, setLogoUploading] = useState(false);
@@ -210,7 +211,7 @@ export function HeaderPanelDialog({
           maxWidth: LOGO_MAX_WIDTH,
           maxHeight: LOGO_MAX_HEIGHT,
         },
-        { subfolder: "portfolio_header" },
+        { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
       );
       if ("error" in result) {
         switch (result.error) {
@@ -224,8 +225,9 @@ export function HeaderPanelDialog({
       onHeaderChange({
         ...header,
         logoUrl: result.asset.url,
-        logoPublicId: result.asset.assetId,
+        logoAssetId: result.asset.assetId,
       });
+      onSaved?.();
     } catch {
       toast.error(t("logoErrors.upload"));
     } finally {
@@ -336,7 +338,7 @@ export function HeaderPanelDialog({
                     type="button"
                     onClick={() => {
                       setLogoError(null);
-                      onHeaderChange({ ...header, logoUrl: "", logoPublicId: "" });
+                      onHeaderChange({ ...header, logoUrl: "", logoAssetId: "" });
                     }}
                     className="text-xs text-muted-foreground underline hover:text-foreground"
                   >

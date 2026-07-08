@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { useRef } from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 
@@ -738,5 +738,29 @@ describe("BookingCalendar grid positioning (timezone-correct startAccessor/endAc
     const forwarded = onDropFromOutside.mock.calls[0][0];
     // Midnight Manila (UTC+8) Aug 16 = 2026-08-15T16:00:00.000Z.
     expect((forwarded.start as Date).toISOString()).toBe("2026-08-15T16:00:00.000Z");
+  });
+});
+
+describe("BookingCalendar mobile view constraints", () => {
+  it("forces day view and removes month/week views on small screens", async () => {
+    capturedDnDProps = null;
+    const matchMedia = vi.fn().mockReturnValue({
+      matches: true,
+      media: "(max-width: 639px)",
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+    vi.stubGlobal("matchMedia", matchMedia);
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={[makeEvent()]} messages={calendarMessages} />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(capturedDnDProps?.view).toBe("day");
+      expect(capturedDnDProps?.views).toEqual(["day"]);
+    });
   });
 });

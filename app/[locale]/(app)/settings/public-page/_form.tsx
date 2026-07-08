@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
-import { Loader2, Upload, X } from "lucide-react";
+import { AlertCircle, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   publicPageSettingsSchema,
@@ -15,32 +15,64 @@ import {
   updatePublicPageSettingsAction,
   togglePublicPagePublishedAction,
 } from "../_actions";
+import { publishDraftAction } from "../../portfolio/_draftActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { useImageRetry } from "@/hooks/useImageRetry";
 
 const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
 const SITE_ICON_MAX_DIM = 512;
+
+/** True if any of the published-page-affecting fields differ from the published snapshot. */
+function computeHasPendingChanges(
+  data: PublicPageSettingsInput,
+  publishedDefaults?: PublicPageSettingsInput,
+): boolean {
+  if (!publishedDefaults) return true;
+  return (
+    data.seoTitle !== publishedDefaults.seoTitle ||
+    data.seoDescription !== publishedDefaults.seoDescription ||
+    data.siteIconUrl !== publishedDefaults.siteIconUrl ||
+    data.siteIconAssetId !== publishedDefaults.siteIconAssetId ||
+    data.seo?.ogImageUrl !== publishedDefaults.seo?.ogImageUrl ||
+    data.seo?.ogImageAssetId !== publishedDefaults.seo?.ogImageAssetId ||
+    data.seo?.galleryDescription !== publishedDefaults.seo?.galleryDescription ||
+    data.seo?.noindex !== publishedDefaults.seo?.noindex
+  );
+}
 
 export function PublicPageSettingsForm({
   slug,
   publishedAt,
   defaults,
   locale,
+  targetDraftId,
+  initialHasPendingChanges,
+  publishedDefaults,
+  keywordsPending,
 }: {
   slug: string;
   publishedAt: Date | null;
   defaults: PublicPageSettingsInput;
   locale: string;
+  targetDraftId?: string;
+  initialHasPendingChanges?: boolean;
+  publishedDefaults?: PublicPageSettingsInput;
+  keywordsPending?: boolean;
 }) {
   const t = useTranslations("app.settings.publicPage");
   const errMsg = useActionError();
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [hasPendingChanges, setHasPendingChanges] = useState(
+    initialHasPendingChanges ?? false,
+  );
+  const [isPublishing, startPublishTransition] = useTransition();
 
   const [optimisticPublishedAt, setOptimisticPublishedAt] = useOptimistic<Date | null>(
     publishedAt
@@ -69,6 +101,7 @@ export function PublicPageSettingsForm({
 
   const siteIconUrl = watch("siteIconUrl");
   const ogImageUrl = watch("seo.ogImageUrl");
+  const siteIcon = useImageRetry(siteIconUrl);
 
   const publicUrl = portfolioPublicUrl(slug);
 
@@ -100,6 +133,20 @@ export function PublicPageSettingsForm({
     }
     toast.success(t("savedToast"));
     reset(data);
+    setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults) || !!keywordsPending);
+  }
+
+  function handlePublish() {
+    startPublishTransition(async () => {
+      if (!targetDraftId) return;
+      const result = await publishDraftAction(targetDraftId);
+      if (result && "error" in result) {
+        toast.error(errMsg(result.error));
+        return;
+      }
+      toast.success(t("publishChangesSuccessToast"));
+      setHasPendingChanges(false);
+    });
   }
 
   async function handleIconFile(file: File) {
@@ -114,7 +161,7 @@ export function PublicPageSettingsForm({
           maxWidth: SITE_ICON_MAX_DIM,
           maxHeight: SITE_ICON_MAX_DIM,
         },
-        { subfolder: "site_icon" },
+        { subfolder: "site_icon", delivery: { width: 512, height: 512, fit: "scale-down" } },
       );
       if ("error" in result) {
         const msgKey = (
@@ -437,25 +484,42 @@ export function PublicPageSettingsForm({
             </div>
 
             <div className="flex flex-col gap-3">
-              {siteIconUrl ? (
-                <div className="flex items-center gap-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={siteIconUrl}
-                    alt={t("siteIconLabel")}
-                    className="h-16 w-16 border border-border bg-muted object-contain"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={iconUploading}
-                    onClick={handleRemoveIcon}
-                    className="flex items-center gap-1.5"
-                  >
-                    <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    {t("siteIconRemove")}
-                  </Button>
+              {siteIconUrl && !siteIcon.failed ? (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={siteIcon.src}
+                      alt={t("siteIconLabel")}
+                      onError={siteIcon.onError}
+                      className="h-16 w-16 border border-border bg-background object-contain"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={iconUploading}
+                        onClick={() => iconFileInputRef.current?.click()}
+                      >
+                        {t("siteIconUpload")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={iconUploading}
+                        onClick={handleRemoveIcon}
+                        className="flex items-center gap-1.5"
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        {t("siteIconRemove")}
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t("siteIconRequirements")}
+                  </p>
                 </div>
               ) : (
                 <label
@@ -567,17 +631,49 @@ export function PublicPageSettingsForm({
           </div>
         </section>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                {t("saving")}
-              </>
-            ) : (
-              t("save")
-            )}
-          </Button>
+        <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col gap-3 border-t border-border bg-background px-6 py-4">
+          {hasPendingChanges && (
+            <div className="flex items-start gap-2 border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <p>
+                <span className="block font-medium">
+                  {publishedAt === null
+                    ? t("unpublishedBannerTitle")
+                    : t("pendingChangesBannerTitle")}
+                </span>
+                {publishedAt === null
+                  ? t("unpublishedBannerBody")
+                  : t("pendingChangesBannerBody")}
+              </p>
+            </div>
+          )}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDirty || isSubmitting || !hasPendingChanges || isPublishing}
+              onClick={handlePublish}
+            >
+              {isPublishing ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  {t("publishingChanges")}
+                </>
+              ) : (
+                t("publishChanges")
+              )}
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !isDirty}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  {t("saving")}
+                </>
+              ) : (
+                t("save")
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

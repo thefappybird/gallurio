@@ -104,6 +104,7 @@ export function DraftsDialog({
               {drafts.map((d) => {
                 const isActive = d.id === activeDraftId;
                 const isBeingDeleted = d.id === deletingId;
+                const isLastActiveDraft = isActive && drafts.length === 1 && !hasUnsaved;
                 return (
                   <li
                     key={d.id}
@@ -150,7 +151,7 @@ export function DraftsDialog({
                             variant="ghost"
                             aria-label={t("draftsDialog.deleteAria", { name: d.name })}
                             title={t("draftsDialog.deleteAria", { name: d.name })}
-                            disabled={isDeleting}
+                            disabled={isDeleting || isLastActiveDraft}
                             onClick={() => setPendingDelete(d)}
                           >
                             <Trash2 />

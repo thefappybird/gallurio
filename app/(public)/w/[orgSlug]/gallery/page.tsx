@@ -14,6 +14,7 @@ import { ComingSoonFallback } from "../_components/ComingSoonFallback";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
+import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 
 type PageProps = {
   params: Promise<{ orgSlug: string }>;
@@ -33,7 +34,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     seo.galleryDescription ||
     seoDescription ||
     `${name} — Photography Portfolio`;
-  const iconUrl = publicPage?.siteIcon?.url || undefined;
+  const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
+  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
   const galleryUrl = `${portfolioPublicUrl(workspace.slug)}/gallery`;
   const locale = resolvePublicChromeLocale(workspace);
@@ -55,8 +57,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: ogImageUrl ? "summary_large_image" : "summary",
       images: ogImageUrl ? [ogImageUrl] : undefined,
     },
-    icons: iconUrl ? { icon: iconUrl } : undefined,
   };
+  // Only set `icons` when the workspace has a custom one — see the same
+  // note in ../page.tsx: an explicit `icons: undefined` still blanks the
+  // layout's default favicon during Next's metadata merge instead of
+  // inheriting it.
+  if (iconUrl) result.icons = { icon: iconUrl, shortcut: iconUrl, apple: iconUrl };
   if (seo.noindex) result.robots = { index: false, follow: false };
   return result;
 }

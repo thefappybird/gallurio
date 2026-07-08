@@ -50,7 +50,7 @@ export function BookingsPageClient({
   }
 
   return (
-    <>
+    <div className="flex min-w-0 flex-col gap-4">
       {isPending ? (
         <TableSkeleton columns={BOOKINGS_TABLE_COLUMNS} rows={limit} />
       ) : (
@@ -64,11 +64,11 @@ export function BookingsPageClient({
 
       {/* Pagination footer */}
       {total > 0 && (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-muted-foreground">
             {t("showing", { from, to, total })}
           </span>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <PageSizeSelect value={limit} />
             <Button
               variant="outline"
@@ -91,6 +91,6 @@ export function BookingsPageClient({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

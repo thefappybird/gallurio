@@ -10,6 +10,8 @@ import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShe
 import { ensureLegacyDraftMigrated } from "@/lib/page-builder/migrateDraft";
 import { listDraftsAction } from "./_draftActions";
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
+import { portfolioHeaderLogoUrl } from "@/lib/storage/portfolioAssetUrls";
+import { PortfolioDraft } from "@/lib/db/models";
 
 export async function generateMetadata({
   params,
@@ -23,6 +25,11 @@ export async function generateMetadata({
 }
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
+type PortfolioSearchParams = { seoSetup?: string };
+
+function shouldForceSeoSetupPreview(query: PortfolioSearchParams | undefined) {
+  return process.env.NODE_ENV !== "production" && query?.seoSetup === "preview";
+}
 
 // Strip to plain, serializable JSON before crossing the server→client boundary.
 function toPlain<T>(value: unknown, fallback: T): T {
@@ -36,10 +43,13 @@ function toPlain<T>(value: unknown, fallback: T): T {
 
 export default async function PageBuilderEntry({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams?: Promise<PortfolioSearchParams>;
 }) {
   const { locale } = await params;
+  const query = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("app.pageBuilder");
 
@@ -63,7 +73,7 @@ export default async function PageBuilderEntry({
   let galleryData: unknown = pp?.data?.gallery ?? null;
   let brandKitData: unknown = pp?.brandKit ?? null;
   let contactData: unknown = pp?.contact ?? null;
-  let templateId: string = pp?.templateId ?? "minimal";
+  let templateId: string = pp?.templateId ?? "scratch";
   if (!homeData) {
     const seed = await seedDefaultPortfolio(workspace._id);
     if (seed) {
@@ -84,16 +94,22 @@ export default async function PageBuilderEntry({
   };
   const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
   const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
-  const initialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
+  const rawInitialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
+  const initialHeaderConfig = {
+    ...rawInitialHeaderConfig,
+    logoUrl: portfolioHeaderLogoUrl({
+      url: rawInitialHeaderConfig.logoUrl,
+      assetId: rawInitialHeaderConfig.logoAssetId,
+    }),
+  };
   const initialCollectionsPopup = toPlain<PortfolioCollectionsPopupConfig>(pp?.collectionsPopup ?? null, {});
   const initialFormLocale = toPlain<string>(pp?.formLocale, "");
   const initialFormDir = toPlain<string>(pp?.formDir, "");
   const guideDismissed = Boolean(pp?.guideDismissedAt);
   const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
   const storyPromptCompleted = Boolean(pp?.storyPromptCompletedAt);
-  const initialSeoDescription = pp?.seoDescription ?? "";
-  const initialSeoKeywords = toPlain<string[]>(pp?.seo?.keywords, []);
   const workspaceBusinessType = workspace.businessType ?? "";
+  const seoSetupPreview = shouldForceSeoSetupPreview(query);
 
   // Migrate legacy publicPage.data into a draft if this workspace has no drafts yet.
   await ensureLegacyDraftMigrated(workspace._id);
@@ -103,6 +119,18 @@ export default async function PageBuilderEntry({
   const activeDraft = initialDrafts[0] ?? null;
   const initialActiveDraftId = activeDraft?.id ?? null;
   const initialActiveDraftName = activeDraft?.name ?? DEFAULT_DRAFT_NAME;
+
+  // Bundled SEO fields (description/keywords) now live on the active draft, not
+  // the stale published publicPage — read from the resolved active draft so a
+  // page reload reflects the last save instead of reverting to live values.
+  const activeDraftSeo = initialActiveDraftId
+    ? await PortfolioDraft.findOne(
+        { _id: initialActiveDraftId },
+        { seoDescription: 1, "seo.keywords": 1 },
+      ).lean()
+    : null;
+  const initialSeoDescription = activeDraftSeo?.seoDescription ?? "";
+  const initialSeoKeywords = toPlain<string[]>(activeDraftSeo?.seo?.keywords, []);
 
   // Serializable starter-template summaries for the in-editor switcher.
   const templates: EditorTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({
@@ -118,10 +146,11 @@ export default async function PageBuilderEntry({
     locale === routing.defaultLocale ? "/portfolio-preview" : `/${locale}/portfolio-preview`;
 
   // Full-bleed editor: `-m-6` cancels the app shell's `<main>` padding so the
-  // editor fills the whole content area, and `h-svh` pins it to the viewport so
-  // only Puck's internal regions scroll (no outer page scroll).
+  // editor fills the whole content area, and `h-svh` pins it to the viewport.
+  // Horizontal overflow remains scrollable so the desktop editor is still usable
+  // on constrained screens.
   return (
-    <div className="-m-6 h-svh">
+    <div className="-m-6 h-svh overflow-x-auto">
       <EditorShell
         slug={workspace.slug}
         workspaceName={workspace.name}
@@ -139,6 +168,7 @@ export default async function PageBuilderEntry({
         guideDismissed={guideDismissed}
         initialSavedThemes={initialSavedThemes}
         storyPromptCompleted={storyPromptCompleted}
+        seoSetupPreview={seoSetupPreview}
         initialSeoDescription={initialSeoDescription}
         initialSeoKeywords={initialSeoKeywords}
         workspaceBusinessType={workspaceBusinessType}

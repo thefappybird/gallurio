@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, forwardRef, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useIsRtl } from "@/lib/i18n/rtl";
 import {
@@ -585,6 +585,7 @@ type CalendarToolbarCtxValue = {
   showPast: boolean;
   eventColor: (ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }) => string;
   toolbarTrailing?: ReactNode;
+  availableViews: View[];
 };
 
 /**
@@ -606,7 +607,7 @@ function CalendarToolbar({
   const [jumpTime, setJumpTime] = useState("");
 
   if (!ctx) return null;
-  const { messages, onScrollToHour } = ctx;
+  const { messages, onScrollToHour, availableViews } = ctx;
   const isTimeView = view === Views.WEEK || view === Views.DAY;
 
   const viewLabel: Record<string, string> = {
@@ -716,16 +717,18 @@ function CalendarToolbar({
         </Popover>
 
         {/* View switcher — pill matching table/calendar toggle; w-auto to stay inline in toolbar */}
-        <SegmentedToggle
-          value={view}
-          onChange={onView}
-          ariaLabel={messages.month}
-          options={([Views.MONTH, Views.WEEK, Views.DAY] as View[]).map((v) => ({
-            key: v,
-            label: viewLabel[v] ?? v,
-          }))}
-          className="w-auto"
-        />
+        {availableViews.length > 1 ? (
+          <SegmentedToggle
+            value={view}
+            onChange={onView}
+            ariaLabel={messages.month}
+            options={availableViews.map((v) => ({
+              key: v,
+              label: viewLabel[v] ?? v,
+            }))}
+            className="w-auto"
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -868,6 +871,7 @@ export function BookingCalendar({
   workspaceTimezone,
 }: Props) {
   const isRtl = useIsRtl();
+  const [isCompactCalendar, setIsCompactCalendar] = useState(false);
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
     if (ev.colorOverride) return ev.colorOverride;
     if (colorMode === "team") {
@@ -880,6 +884,7 @@ export function BookingCalendar({
   const [internalView, setInternalView] = useState<View>(viewProp ?? defaultView);
   const [internalDate, setInternalDate] = useState<Date>(dateProp ?? defaultDate ?? new Date());
   const view = viewProp ?? internalView;
+  const effectiveView = isCompactCalendar ? Views.DAY : view;
   const date = dateProp ?? internalDate;
   const setView = useCallback(
     (v: View) => {
@@ -894,6 +899,20 @@ export function BookingCalendar({
       else setInternalDate(d);
     },
     [onDateChange]
+  );
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(max-width: 639px)");
+    const sync = () => setIsCompactCalendar(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  const availableViews = useMemo<View[]>(
+    () => (isCompactCalendar ? [Views.DAY] : [Views.MONTH, Views.WEEK, Views.DAY]),
+    [isCompactCalendar]
   );
 
   // Open week/day view scrolled to 8 AM so business-hours bookings are
@@ -928,6 +947,11 @@ export function BookingCalendar({
     [setView, setDate]
   );
 
+  useEffect(() => {
+    if (!isCompactCalendar || view === Views.DAY) return;
+    handleViewChange(Views.DAY);
+  }, [handleViewChange, isCompactCalendar, view]);
+
   const toolbarCtx = useMemo<CalendarToolbarCtxValue>(
     () => ({
       messages,
@@ -935,10 +959,11 @@ export function BookingCalendar({
       showPast,
       eventColor,
       toolbarTrailing,
+      availableViews,
     }),
     // eventColor is recreated only when colorMode/teamColorMap change (inline fn inside render)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [messages, onScrollToHour, showPast, colorMode, teamColorMap, toolbarTrailing]
+    [messages, onScrollToHour, showPast, colorMode, teamColorMap, toolbarTrailing, availableViews]
   );
 
   const calendarMessages = useMemo(
@@ -961,9 +986,9 @@ export function BookingCalendar({
   // - month: cap each day at 1 pill + overflow placeholder.
   // - week/day: pass events directly (overnight sessions are represented as-is).
   const displayEvents = useMemo<AnyCalendarEvent[]>(() => {
-    if (view === Views.MONTH) return groupEventsForMonth(events, workspaceTimezone);
+    if (effectiveView === Views.MONTH) return groupEventsForMonth(events, workspaceTimezone);
     return events;
-  }, [view, events, workspaceTimezone]);
+  }, [effectiveView, events, workspaceTimezone]);
 
   // Build the components object here so we can bind onSelectEvent and the
   // external-drag callbacks to MonthBookingEvent without stale closures.
@@ -1054,18 +1079,18 @@ export function BookingCalendar({
 
   return (
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
-      <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full">
+      <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full min-w-0">
         <DnDCalendar
           rtl={isRtl}
           localizer={localizer}
           events={displayEvents}
           startAccessor={gridStartAccessor}
           endAccessor={gridEndAccessor}
-          view={view}
+          view={effectiveView}
           onView={handleViewChange}
           date={date}
           onNavigate={setDate}
-          views={[Views.MONTH, Views.WEEK, Views.DAY]}
+          views={availableViews}
           scrollToTime={scrollToTime}
           step={30}
           timeslots={2}
@@ -1080,7 +1105,7 @@ export function BookingCalendar({
           }}
           onSelectSlot={(slot) => {
             const d = new Date(slot.start);
-            const isTimeView = view === Views.WEEK || view === Views.DAY;
+            const isTimeView = effectiveView === Views.WEEK || effectiveView === Views.DAY;
             onSelectSlot?.(d, isTimeView ? slotTime(d) : undefined);
           }}
           onEventDrop={handleGridEventDrop}

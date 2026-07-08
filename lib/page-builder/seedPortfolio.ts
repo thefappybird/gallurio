@@ -38,7 +38,8 @@ async function buildSeed(
  * (or a just-completed peer) populates the page, or null when already seeded by
  * a non-default flow (the caller then renders the persisted data).
  *
- * Picks the closest template for the workspace's businessType.
+ * Seeds the scratch template for first visitors unless they explicitly pick a
+ * starter template in the editor.
  */
 export async function seedDefaultPortfolio(workspaceId: Types.ObjectId): Promise<PortfolioSeed | null> {
   await connectDB();

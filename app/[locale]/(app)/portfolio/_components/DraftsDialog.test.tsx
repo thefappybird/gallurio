@@ -90,4 +90,14 @@ describe("DraftsDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /^delete draft$/i }));
     expect(onDelete).toHaveBeenCalledWith("b");
   });
+
+  it("does not allow deleting the only active draft", () => {
+    setup({ drafts: [drafts[0]], activeDraftId: "a" });
+    expect(screen.getByRole("button", { name: "Delete Spring" })).toBeDisabled();
+  });
+
+  it("still allows deleting an inactive draft when the active draft remains", () => {
+    setup();
+    expect(screen.getByRole("button", { name: "Delete Bold" })).toBeEnabled();
+  });
 });

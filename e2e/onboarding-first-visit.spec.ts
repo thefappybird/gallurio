@@ -87,7 +87,12 @@ test("first-time owner: onboarding wizard, then story prompt skips the guide", a
   await page.waitForTimeout(400);
   await page.getByRole("button", { name: "Continue" }).click();
 
-  // Step 4: Done — two exits. Take "I'll explore myself", the more complex
+  // Step 4: Add your branding — logo/icon uploads are optional; skip both.
+  await expect(page.getByRole("heading", { name: /add your branding/i })).toBeVisible();
+  await page.waitForTimeout(400);
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  // Step 5: Done — two exits. Take "I'll explore myself", the more complex
   // branch: it must skip the Guide entirely (dismissPortfolioGuideAction) and
   // jump straight to an entry dialog.
   await expect(page.getByRole("heading", { name: "Your page is ready to shine" })).toBeVisible();

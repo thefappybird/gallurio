@@ -64,9 +64,12 @@ export function TemplatePickerDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        // In welcome mode the dialog is non-dismissible (user must pick a template
-        // or start from scratch). In normal switcher mode, allow close unless switching.
-        if (welcome) return;
+        // In welcome mode, any close attempt falls back to scratch in the parent.
+        if (welcome) {
+          if (!next && !switching) onOpenChange(false);
+          return;
+        }
+        // In normal switcher mode, allow close unless switching.
         if (!switching) onOpenChange(next);
       }}
     >

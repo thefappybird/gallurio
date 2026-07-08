@@ -56,7 +56,10 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
 export async function uploadAsset(
   file: File,
   constraints: AssetValidationConstraints,
-  opts: { subfolder?: string } = {},
+  opts: {
+    subfolder?: string;
+    delivery?: { width?: number; height?: number; fit?: "scale-down" | "contain" | "cover" | "crop" | "pad" };
+  } = {},
 ): Promise<{ error: AssetValidationError } | { asset: UploadedAsset }> {
   if (!constraints.acceptedTypes.includes(file.type)) {
     return { error: "type_not_accepted" };
@@ -95,7 +98,7 @@ export async function uploadAsset(
   return {
     asset: {
       assetId: imageId,
-      url: imageDeliveryUrl(imageId),
+      url: (opts.delivery ? imageDeliveryUrl(imageId, opts.delivery) : "") || imageDeliveryUrl(imageId),
       width: dims.width,
       height: dims.height,
     },

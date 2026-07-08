@@ -246,8 +246,8 @@ export function BookingsTable({
   }
 
   return (
-    <div className="border border-border bg-card overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="min-w-0 max-w-full overflow-x-auto border border-border bg-card">
+      <table className="w-full min-w-max text-sm">
         <thead>
           {table.getHeaderGroups().map((hg) => (
             <tr

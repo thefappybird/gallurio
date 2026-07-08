@@ -69,13 +69,12 @@ const CANVAS_PUCK_PREVIEW_HEIGHT_CSS =
 // targets the grid by its stable structural relationship to our canvas wrapper —
 // avoiding the hashed CSS-module class name (_PuckLayout-inner_HASH_) entirely.
 //
-// `overflow: clip` is added to remove the scroll-container behavior of
-// `._PuckCanvas_` (grid-area: editor, overflow: auto by default). Unlike
-// `overflow: hidden`, `overflow: clip` does NOT establish a BFC scroll container,
-// so the grid row can grow vertically as content gets taller in edit mode.
-// Width clipping is preserved so horizontal overflow is still hidden.
+// Puck's canvas column is the right scroll owner for editor overflow. Keep
+// horizontal overflow scrollable so constrained screens can still reach the full
+// canvas, while the growth rules below make the preview surface itself wrap tall
+// content instead of clipping its page background.
 const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
-  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; overflow: clip; }`;
+  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; overflow-x: auto; overflow-y: auto; }`;
 
 // In edit mode Puck wraps the preview surface (`[data-puck-preview]`) in an
 // absolutely-positioned `._PuckCanvas-root_` (top: 0; bottom: 0), which pins the
@@ -96,6 +95,9 @@ const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
 // blank canvas filling the viewport.
 const CANVAS_PUCK_CANVAS_ROOT_CSS =
   `:has(> [data-puck-preview]), :has(> [data-tour-id="canvas-viewport"] > [data-puck-preview]) { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
+
+const CANVAS_ROOT_SELECTOR =
+  `:has(> [data-puck-preview]), :has(> [data-tour-id="canvas-viewport"] > [data-puck-preview])`;
 
 // The root page drop zone carries data-puck-dropzone="root:default-zone" (Puck's
 // hardcoded rootAreaId "root" + rootZone "default-zone"). All nested Container /
@@ -136,10 +138,21 @@ const CANVAS_EFFECTIVE_BG_CSS =
 // centered as it shrinks). The clamp is only emitted for non-desktop widths
 // (deviceWidth !== null) so desktop stays full-width.
 export function buildCanvasViewportCss(deviceWidth: number | null, zoom: number): string {
+  const surfaceRules: string[] = [];
+  const rootRules: string[] = [];
+  if (deviceWidth !== null) {
+    surfaceRules.push(`width: ${deviceWidth}px; margin-inline: auto;`);
+    rootRules.push(`width: ${deviceWidth * zoom}px !important;`);
+  } else if (zoom !== 1) {
+    rootRules.push(`width: calc(100% * ${zoom}) !important;`);
+    surfaceRules.push(`width: calc(100% / ${zoom}); margin-inline: auto;`);
+  }
+  if (zoom !== 1) surfaceRules.push(`transform: scale(${zoom}); transform-origin: top center;`);
+
   const rules: string[] = [];
-  if (deviceWidth !== null) rules.push(`width: ${deviceWidth}px; margin-inline: auto;`);
-  if (zoom !== 1) rules.push(`transform: scale(${zoom}); transform-origin: top center;`);
-  return rules.length ? `${CANVAS_SURFACE_SELECTOR} { ${rules.join(" ")} }` : "";
+  if (rootRules.length) rules.push(`${CANVAS_ROOT_SELECTOR} { ${rootRules.join(" ")} }`);
+  if (surfaceRules.length) rules.push(`${CANVAS_SURFACE_SELECTOR} { ${surfaceRules.join(" ")} }`);
+  return rules.join("\n");
 }
 
 export function buildCanvasCss(

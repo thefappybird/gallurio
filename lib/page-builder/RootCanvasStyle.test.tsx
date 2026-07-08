@@ -94,14 +94,13 @@ describe("buildCanvasCss", () => {
     expect(css).toContain("min-height: 100dvh");
   });
 
-  it("makes the Puck canvas column a scroll-through surface so edit-mode content pushes the layout", () => {
+  it("keeps the Puck canvas column horizontally scrollable while tall content can still grow", () => {
     const css = buildCanvasCss(undefined);
-    // In edit mode, _PuckCanvas_ (the grid-area:editor flex column) has overflow:auto
-    // which traps content in a local scroll rather than letting the page grow.
-    // We target it via :has(> [data-tour-id="canvas"]) — same selector as the
-    // min-height rule — and override overflow to clip (clips width overflows only)
-    // so tall content can push the grid row taller instead of scrolling inside.
-    expect(css).toContain("overflow: clip");
+    // In edit mode, _PuckCanvas_ owns canvas scrolling. Keep horizontal overflow
+    // reachable on constrained screens while the preview surface still wraps tall
+    // content and paints its background down the full page.
+    expect(css).toContain("overflow-x: auto");
+    expect(css).toContain("overflow-y: auto");
   });
 
   it("removes absolute pinning from Puck canvas-root so edit-mode content is not height-clamped", () => {
@@ -127,6 +126,18 @@ describe("buildCanvasCss", () => {
     const css = buildCanvasCss(undefined, { deviceWidth: 390, zoom: 1 });
     expect(css).toMatch(/\[data-puck-preview\]\s*{[^}]*width: 390px/);
     expect(css).toContain("margin-inline: auto");
+  });
+
+  it("clamps Puck's white canvas frame as well as the droppable preview surface", () => {
+    const css = buildCanvasCss(undefined, { deviceWidth: 390, zoom: 1 });
+    expect(css).toContain(":has(> [data-puck-preview])");
+    expect(css).toContain("width: 390px !important");
+  });
+
+  it("reserves scrollable layout width for zoomed device previews", () => {
+    const css = buildCanvasCss(undefined, { deviceWidth: 390, zoom: 1.5 });
+    expect(css).toContain("width: 585px !important");
+    expect(css).toContain("transform: scale(1.5)");
   });
 
   it("re-injects the canvas <style> with the device-width clamp when the viewport store changes", () => {

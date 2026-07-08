@@ -212,22 +212,22 @@ describe("getTemplate", () => {
 
 describe("getTemplateForBusinessType", () => {
   it.each([
-    ["photographer", "editorial"],
-    ["venue", "luxury"],
-    ["stylist", "luxury"],
-    ["planner", "editorial"],
-    ["catering", "editorial"],
-    ["entertainer", "bold"],
-    ["other", "minimal"],
+    ["photographer", "scratch"],
+    ["venue", "scratch"],
+    ["stylist", "scratch"],
+    ["planner", "scratch"],
+    ["catering", "scratch"],
+    ["entertainer", "scratch"],
+    ["other", "scratch"],
   ])("maps %s → %s", (businessType, expected) => {
     expect(getTemplateForBusinessType(businessType).id).toBe(expected);
   });
 
-  it("falls back to minimal for an unknown businessType", () => {
-    expect(getTemplateForBusinessType("spaceship").id).toBe("minimal");
+  it("falls back to scratch for an unknown businessType", () => {
+    expect(getTemplateForBusinessType("spaceship").id).toBe("scratch");
   });
 
-  it("falls back to minimal for null", () => {
-    expect(getTemplateForBusinessType(null).id).toBe("minimal");
+  it("falls back to scratch for null", () => {
+    expect(getTemplateForBusinessType(null).id).toBe("scratch");
   });
 });

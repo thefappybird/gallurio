@@ -937,7 +937,14 @@
         },
         "noindexSection": "Visibilitas pencarian",
         "noindexLabel": "Sembunyikan dari mesin pencari",
-        "noindexHint": "Jauhkan portofolio ini dari hasil pencarian Google. Cocok untuk draf atau peluncuran lunak. Tautan langsung Anda tetap berfungsi."
+        "noindexHint": "Jauhkan portofolio ini dari hasil pencarian Google. Cocok untuk draf atau peluncuran lunak. Tautan langsung Anda tetap berfungsi.",
+        "publishChanges": "Terbitkan perubahan",
+        "publishingChanges": "Menerbitkan…",
+        "publishChangesSuccessToast": "Perubahan telah diterbitkan ke halaman publik Anda.",
+        "unpublishedBannerTitle": "Belum diterbitkan",
+        "unpublishedBannerBody": "Situs Anda belum diterbitkan — pengaturan ini tidak akan muncul di halaman publik Anda sampai Anda menerbitkannya.",
+        "pendingChangesBannerTitle": "Perubahan belum diterbitkan",
+        "pendingChangesBannerBody": "Anda memiliki perubahan yang belum diterbitkan — terbitkan agar terlihat di halaman publik Anda."
       }
     },
     "teams": {
@@ -2030,8 +2037,9 @@
         "storyPrompt": {
           "welcome": {
             "title": "Mari ceritakan kisah Anda",
-            "subtitle": "Empat langkah singkat untuk menjelaskan pekerjaan Anda dan memilih gaya Anda — lalu kami bantu Anda membangun halamannya.",
-            "cta": "Mulai"
+            "subtitle": "Lima langkah singkat untuk menjelaskan pekerjaan Anda dan memilih gaya Anda — lalu kami bantu Anda membangun halamannya.",
+            "cta": "Mulai",
+            "skip": "Lewati dulu"
           },
           "story": {
             "title": "Ceritakan kisah Anda",
@@ -2044,6 +2052,34 @@
             "title": "Gaya Anda",
             "subtitle": "Pilih beberapa tag yang menggambarkan gaya Anda — atau tambahkan sendiri.",
             "addPlaceholder": "Tambah tag"
+          },
+          "branding": {
+            "title": "Tambahkan branding Anda",
+            "subtitle": "Unggah logo dan ikon situs — Anda selalu bisa mengubahnya nanti.",
+            "logoLabel": "Logo",
+            "logoUpload": "Unggah logo",
+            "logoUploading": "Mengunggah…",
+            "logoRemove": "Hapus logo",
+            "logoRequirements": "PNG, JPEG, atau WEBP · maks 250 KB · hingga 512×256",
+            "logoErrors": {
+              "type": "Logo harus berupa gambar PNG, JPEG, atau WEBP.",
+              "size": "Logo harus berukuran 250 KB atau lebih kecil.",
+              "dimensions": "Logo harus berukuran 512 x 256 px atau lebih kecil.",
+              "image": "Gambar logo ini tidak dapat dibaca.",
+              "upload": "Unggah logo gagal. Silakan coba lagi."
+            },
+            "iconLabel": "Ikon situs",
+            "iconUpload": "Pilih gambar",
+            "iconUploading": "Mengunggah…",
+            "iconRemove": "Hapus",
+            "iconRequirements": "PNG, JPEG, WebP, atau AVIF · maks 1 MB · hingga 512 × 512 px",
+            "iconErrors": {
+              "type": "Hanya file PNG, JPEG, WebP, atau AVIF yang diterima.",
+              "size": "Ikon harus berukuran 1 MB atau lebih kecil.",
+              "dimensions": "Ikon harus berukuran 512 x 512 px atau lebih kecil.",
+              "image": "Gambar ikon ini tidak dapat dibaca.",
+              "upload": "Unggah ikon gagal. Silakan coba lagi."
+            }
           },
           "done": {
             "title": "Halaman Anda siap untuk bersinar",

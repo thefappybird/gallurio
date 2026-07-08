@@ -5,6 +5,10 @@ import { GalleryItem } from "@/lib/db/models";
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => revalidatePath(...a) }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  verifyImageOwnership: vi.fn().mockResolvedValue(true),
+  deleteImage: vi.fn().mockResolvedValue(undefined),
+}));
 
 let mockCtx: { userId: string; role: "owner" | "staff"; workspace: { _id: Types.ObjectId; slug: string } };
 vi.mock("@/lib/auth/requireOrg", () => ({
@@ -17,7 +21,9 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { Workspace } from "@/lib/db/models";
+import { verifyImageOwnership, deleteImage } from "@/lib/storage/cloudflareImages";
+import { Workspace, PortfolioDraft } from "@/lib/db/models";
+import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import {
   savePortfolioDraftAction,
@@ -62,6 +68,8 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   revalidatePath.mockClear();
+  vi.mocked(verifyImageOwnership).mockClear().mockResolvedValue(true);
+  vi.mocked(deleteImage).mockClear();
   await seedWorkspace();
 });
 
@@ -281,16 +289,18 @@ describe("completeStoryPromptAction", () => {
     expect(ws!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
   });
 
-  it("happy path: persists description, keywords, and completion timestamp", async () => {
+  it("happy path: persists description/keywords to the draft, completion timestamp live", async () => {
     const res = await completeStoryPromptAction({
       description: "Bali wedding studio capturing candid moments.",
       keywords: ["wedding", "bali", "candid"],
     });
     expect(res).toEqual({ ok: true });
     const ws = await Workspace.findById(workspaceId).lean();
-    expect(ws!.publicPage!.seoDescription).toBe("Bali wedding studio capturing candid moments.");
-    expect(ws!.publicPage!.seo!.keywords).toEqual(["wedding", "bali", "candid"]);
     expect(ws!.publicPage!.storyPromptCompletedAt).toBeTruthy();
+    expect(ws!.publicPage!.seoDescription ?? "").toBe("");
+    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
+    expect(draft!.seoDescription).toBe("Bali wedding studio capturing candid moments.");
+    expect(draft!.seo!.keywords).toEqual(["wedding", "bali", "candid"]);
   });
 
   it("rejects a description over 300 chars", async () => {
@@ -325,7 +335,149 @@ describe("completeStoryPromptAction", () => {
     await completeStoryPromptAction({ description: "Mine", keywords: ["mine"] });
     const other = await Workspace.findById(otherWs._id).lean();
     expect(other!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
-    expect(other!.publicPage!.seoDescription ?? "").toBe("");
+    const otherDraft = await PortfolioDraft.findOne({ workspaceId: otherWs._id }).lean();
+    expect(otherDraft?.seoDescription ?? "").toBe("");
+  });
+
+  it("rejects a logoAssetId not owned by the caller's workspace", async () => {
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      logoUrl: "https://imagedelivery.net/h/not-mine/public",
+      logoAssetId: "not-mine",
+    });
+    expect(res).toEqual({ error: "invalid_logo" });
+    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
+    expect((draft?.header as { logoAssetId?: string } | null | undefined)?.logoAssetId ?? "").not.toBe(
+      "not-mine"
+    );
+  });
+
+  it("deletes the old logo asset when replaced by a new one", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.header.logoAssetId": "old-logo",
+          "publicPage.header.logoUrl": "https://imagedelivery.net/h/old-logo/public",
+        },
+      }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      logoUrl: "https://imagedelivery.net/h/new-logo/public",
+      logoAssetId: "new-logo",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(deleteImage).toHaveBeenCalledWith("old-logo");
+  });
+
+  it("does not delete an unrelated pre-existing logo when only a site icon is submitted", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.header.logoAssetId": "L1",
+          "publicPage.header.logoUrl": "https://imagedelivery.net/h/L1/public",
+        },
+      }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      siteIconUrl: "https://imagedelivery.net/h/I1/public",
+      siteIconAssetId: "I1",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(deleteImage).not.toHaveBeenCalledWith("L1");
+    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
+    expect((draft?.header as { logoAssetId?: string } | null | undefined)?.logoAssetId).toBe("L1");
+  });
+
+  it("does not delete an unrelated pre-existing site icon when only a logo is submitted", async () => {
+    // siteIcon lives only on the draft (unlike header, migrateDraft doesn't copy
+    // it from a legacy publicPage), so seed it directly on the active draft.
+    const draftId = await resolveActiveDraftId(workspaceId);
+    await PortfolioDraft.updateOne(
+      { _id: draftId },
+      { $set: { "siteIcon.assetId": "I1", "siteIcon.url": "https://imagedelivery.net/h/I1/public" } }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      logoUrl: "https://imagedelivery.net/h/L1/public",
+      logoAssetId: "L1",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(deleteImage).not.toHaveBeenCalledWith("I1");
+    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
+    expect(draft?.siteIcon?.assetId).toBe("I1");
+  });
+
+  it("leaves the draft's header and siteIcon untouched when only description/keywords are sent", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.header.logoAssetId": "existing-logo",
+          "publicPage.header.logoUrl": "https://imagedelivery.net/h/existing-logo/public",
+        },
+      }
+    );
+    // siteIcon isn't migrated from legacy publicPage — seed it directly on the draft.
+    const draftId = await resolveActiveDraftId(workspaceId);
+    await PortfolioDraft.updateOne(
+      { _id: draftId },
+      {
+        $set: {
+          "siteIcon.assetId": "existing-icon",
+          "siteIcon.url": "https://imagedelivery.net/h/existing-icon/public",
+        },
+      }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Just SEO, no branding",
+      keywords: ["studio"],
+    });
+    expect(res).toEqual({ ok: true });
+
+    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
+    const header = draft?.header as { logoAssetId?: string; logoUrl?: string } | null | undefined;
+    expect(header?.logoAssetId).toBe("existing-logo");
+    expect(header?.logoUrl).toBe("https://imagedelivery.net/h/existing-logo/public");
+    expect(draft?.siteIcon?.assetId).toBe("existing-icon");
+    expect(draft?.siteIcon?.url).toBe("https://imagedelivery.net/h/existing-icon/public");
+    expect(deleteImage).not.toHaveBeenCalled();
+  });
+
+  it("accepts a new logo when the draft's header is null (Mixed-field null-traversal safety)", async () => {
+    await PortfolioDraft.create({
+      workspaceId,
+      name: "Default",
+      templateId: "",
+      data: { home: null, gallery: null },
+      header: null,
+    });
+
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      logoUrl: "https://imagedelivery.net/h/new-logo/public",
+      logoAssetId: "new-logo",
+    });
+
+    expect(res).toEqual({ ok: true });
+    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
+    expect((draft?.header as { logoAssetId?: string } | null | undefined)?.logoAssetId).toBe("new-logo");
   });
 });
 

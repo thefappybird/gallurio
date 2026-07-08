@@ -64,7 +64,7 @@ describe("DraftNameEditor", () => {
     );
     const title = screen.getByTitle("New Draft lorem ipsum dolor sit amet consectetur");
     expect(title.className).toContain("truncate");
-    expect(title.className).toMatch(/max-w-\[/); // fixed/max width cap
+    expect(title.className).toContain("max-w-24"); // compact fixed/max width cap
     const err = screen.getByRole("alert");
     expect(err.className).toContain("text-[11px]"); // smaller than text-xs
   });

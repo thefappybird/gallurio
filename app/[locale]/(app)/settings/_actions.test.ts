@@ -11,7 +11,7 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Types } from "mongoose";
-import { Workspace, User } from "@/lib/db/models";
+import { Workspace, User, PortfolioDraft } from "@/lib/db/models";
 
 // ---- External mocks ---------------------------------------------------------
 
@@ -156,6 +156,18 @@ async function seedWorkspaceA() {
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
+  });
+}
+
+// Seeds a PortfolioDraft for workspace A so resolveActiveDraftId() picks it up
+// as the (only, most-recently-updated) active draft.
+async function seedDraftA(overrides: Record<string, unknown> = {}) {
+  return PortfolioDraft.create({
+    workspaceId: WS_A_ID,
+    name: "Test Draft",
+    templateId: "",
+    data: { home: null, gallery: null },
+    ...overrides,
   });
 }
 
@@ -405,7 +417,7 @@ describe("updateWorkspaceBusinessAction", () => {
 // ---- updatePublicPageSettingsAction -----------------------------------------
 
 describe("updatePublicPageSettingsAction — seo fields", () => {
-  it("persists seo.galleryDescription to the workspace doc", async () => {
+  it("persists seo.galleryDescription to the active draft, not the workspace doc", async () => {
     await seedWorkspaceA();
 
     const result = await updatePublicPageSettingsAction({
@@ -414,13 +426,16 @@ describe("updatePublicPageSettingsAction — seo fields", () => {
 
     expect(result.ok).toBe(true);
 
-    const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws?.publicPage?.seo?.galleryDescription).toBe(
+    const draft = await PortfolioDraft.findOne({ workspaceId: WS_A_ID }).lean();
+    expect(draft?.seo?.galleryDescription).toBe(
       "A curated gallery of wedding photography.",
     );
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.publicPage?.seo?.galleryDescription ?? "").toBe("");
   });
 
-  it("persists seo.noindex toggle", async () => {
+  it("persists seo.noindex toggle to the active draft", async () => {
     await seedWorkspaceA();
 
     const result = await updatePublicPageSettingsAction({
@@ -429,8 +444,11 @@ describe("updatePublicPageSettingsAction — seo fields", () => {
 
     expect(result.ok).toBe(true);
 
+    const draft = await PortfolioDraft.findOne({ workspaceId: WS_A_ID }).lean();
+    expect(draft?.seo?.noindex).toBe(true);
+
     const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws?.publicPage?.seo?.noindex).toBe(true);
+    expect(ws?.publicPage?.seo?.noindex ?? false).toBe(false);
   });
 
   it("rejects seo.ogImageAssetId when ownership fails", async () => {
@@ -484,7 +502,7 @@ describe("updatePublicPageSettingsAction — seo fields", () => {
     expect(result.error).toBe("owner_only");
   });
 
-  it("tenant isolation — workspace B seo is NOT touched", async () => {
+  it("tenant isolation — workspace B has no draft created/touched", async () => {
     await seedWorkspaceA();
     await seedWorkspaceB();
 
@@ -494,11 +512,11 @@ describe("updatePublicPageSettingsAction — seo fields", () => {
 
     expect(result.ok).toBe(true);
 
-    const wsB = await Workspace.findById(WS_B_ID).lean();
-    expect(wsB?.publicPage?.seo?.galleryDescription ?? "").toBe("");
+    const wsBDraft = await PortfolioDraft.findOne({ workspaceId: WS_B_ID }).lean();
+    expect(wsBDraft).toBeNull();
   });
 
-  it("persists seo.ogImageUrl and ogImageAssetId when ownership verified", async () => {
+  it("persists seo.ogImageUrl and ogImageAssetId to the active draft when ownership verified", async () => {
     await seedWorkspaceA();
 
     vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
@@ -512,18 +530,14 @@ describe("updatePublicPageSettingsAction — seo fields", () => {
 
     expect(result.ok).toBe(true);
 
-    const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws?.publicPage?.seo?.ogImageUrl).toBe("https://cdn.example.com/og.jpg");
-    expect(ws?.publicPage?.seo?.ogImageAssetId).toBe("og_abc");
+    const draft = await PortfolioDraft.findOne({ workspaceId: WS_A_ID }).lean();
+    expect(draft?.seo?.ogImageUrl).toBe("https://cdn.example.com/og.jpg");
+    expect(draft?.seo?.ogImageAssetId).toBe("og_abc");
   });
 
-  it("deletes old OG image when replacing with new one", async () => {
+  it("deletes old OG image when replacing with new one (old asset id read from the draft)", async () => {
     await seedWorkspaceA();
-
-    await Workspace.updateOne(
-      { _id: WS_A_ID },
-      { $set: { "publicPage.seo.ogImageAssetId": "old_og_id" } },
-    );
+    await seedDraftA({ seo: { ogImageAssetId: "old_og_id" } });
 
     vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
     vi.mocked(deleteImage).mockResolvedValue(undefined);
@@ -537,11 +551,14 @@ describe("updatePublicPageSettingsAction — seo fields", () => {
 
     expect(result.ok).toBe(true);
     expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("old_og_id");
+
+    const draft = await PortfolioDraft.findOne({ workspaceId: WS_A_ID }).lean();
+    expect(draft?.seo?.ogImageAssetId).toBe("new_og_id");
   });
 });
 
 describe("updatePublicPageSettingsAction", () => {
-  it("updates SEO and inquiry fields", async () => {
+  it("writes seoTitle/seoDescription to the draft, inquiryRecipientEmail live to the workspace", async () => {
     await seedWorkspaceA();
 
     const result = await updatePublicPageSettingsAction({
@@ -552,9 +569,14 @@ describe("updatePublicPageSettingsAction", () => {
 
     expect(result.ok).toBe(true);
 
+    const draft = await PortfolioDraft.findOne({ workspaceId: WS_A_ID }).lean();
+    expect(draft?.seoTitle).toBe("Sarah Bell Photography");
+    expect(draft?.seoDescription).toBe("Wedding photography in the Philippines.");
+
     const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws?.publicPage?.seoTitle).toBe("Sarah Bell Photography");
     expect(ws?.publicPage?.inquiryRecipientEmail).toBe("sarah@example.com");
+    // seoTitle stays untouched live — moved to the draft.
+    expect(ws?.publicPage?.seoTitle ?? "").toBe("");
   });
 
   it("rejects an invalid email", async () => {
@@ -569,7 +591,7 @@ describe("updatePublicPageSettingsAction", () => {
     expect(result.error).toBeTruthy();
   });
 
-  it("persists siteIconUrl and siteIconAssetId", async () => {
+  it("persists siteIconUrl and siteIconAssetId to the active draft", async () => {
     await seedWorkspaceA();
 
     const result = await updatePublicPageSettingsAction({
@@ -579,9 +601,38 @@ describe("updatePublicPageSettingsAction", () => {
 
     expect(result.ok).toBe(true);
 
-    const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws?.publicPage?.siteIcon?.url).toBe("https://cdn.example.com/icon.png");
-    expect(ws?.publicPage?.siteIcon?.assetId).toBe("abc123");
+    const draft = await PortfolioDraft.findOne({ workspaceId: WS_A_ID }).lean();
+    expect(draft?.siteIcon?.url).toBe("https://cdn.example.com/icon.png");
+    expect(draft?.siteIcon?.assetId).toBe("abc123");
+  });
+
+  it("rejects siteIconAssetId when ownership fails", async () => {
+    await seedWorkspaceA();
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+
+    const result = await updatePublicPageSettingsAction({
+      siteIconUrl: "https://cdn.example.com/icon.png",
+      siteIconAssetId: "not_mine",
+    });
+
+    expect(result.error).toBe("invalid_site_icon");
+  });
+
+  it("deletes old site icon when replacing with a new one (old asset id read from the draft)", async () => {
+    await seedWorkspaceA();
+    await seedDraftA({ siteIcon: { assetId: "old_icon_id" } });
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
+
+    const result = await updatePublicPageSettingsAction({
+      siteIconUrl: "https://cdn.example.com/new-icon.png",
+      siteIconAssetId: "new_icon_id",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("old_icon_id");
+
+    const draft = await PortfolioDraft.findOne({ workspaceId: WS_A_ID }).lean();
+    expect(draft?.siteIcon?.assetId).toBe("new_icon_id");
   });
 
   it("rejects invalid siteIconUrl (non-URL non-empty string)", async () => {
@@ -1310,22 +1361,16 @@ describe("updatePublicPageSettingsAction — seo extended", () => {
 
     expect(result.error).toBeTruthy();
 
-    const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws?.publicPage?.seo?.ogImageAssetId ?? "").toBe("");
+    const draft = await PortfolioDraft.findOne({ workspaceId: WS_A_ID }).lean();
+    expect(draft?.seo?.ogImageAssetId ?? "").toBe("");
   });
 
-  it("deletes old OG image when a new one replaces it", async () => {
+  it("deletes old OG image when a new one replaces it (old asset id read from the draft)", async () => {
     const OLD_OG = "og_old_456";
     await seedWorkspaceA();
-    await Workspace.updateOne(
-      { _id: WS_A_ID },
-      {
-        $set: {
-          "publicPage.seo.ogImageUrl": "https://old.example.com/og.jpg",
-          "publicPage.seo.ogImageAssetId": OLD_OG,
-        },
-      },
-    );
+    await seedDraftA({
+      seo: { ogImageUrl: "https://old.example.com/og.jpg", ogImageAssetId: OLD_OG },
+    });
 
     vi.mocked(verifyOwnership).mockResolvedValueOnce(true);
     const { deleteImage: del } = await import("@/lib/storage/cloudflareImages");
@@ -1341,7 +1386,7 @@ describe("updatePublicPageSettingsAction — seo extended", () => {
     expect(del).toHaveBeenCalledWith(OLD_OG);
   });
 
-  it("tenant isolation — workspace B seo is not affected", async () => {
+  it("tenant isolation — workspace B has no draft created", async () => {
     await seedWorkspaceA();
     await seedWorkspaceB();
 
@@ -1349,7 +1394,21 @@ describe("updatePublicPageSettingsAction — seo extended", () => {
       seo: { galleryDescription: "Only for workspace A." },
     });
 
-    const wsB = await Workspace.findById(WS_B_ID).lean();
-    expect(wsB?.publicPage?.seo?.galleryDescription ?? "").toBe("");
+    const wsBDraft = await PortfolioDraft.findOne({ workspaceId: WS_B_ID }).lean();
+    expect(wsBDraft).toBeNull();
+  });
+
+  it("does not revalidate any public /w/ route (moved off the live publish path)", async () => {
+    await seedWorkspaceA();
+    const { revalidatePath } = await import("next/cache");
+
+    await updatePublicPageSettingsAction({
+      seoTitle: "New Title",
+    });
+
+    const calledPaths = vi.mocked(revalidatePath).mock.calls.map((c) => c[0]);
+    expect(calledPaths).not.toContain(`/w/${"sarah-photo"}`);
+    expect(calledPaths).not.toContain(`/w/${"sarah-photo"}/gallery`);
+    expect(calledPaths.every((p) => !String(p).startsWith("/w/"))).toBe(true);
   });
 });

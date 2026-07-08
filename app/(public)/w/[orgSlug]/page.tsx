@@ -14,6 +14,7 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildHomeJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
+import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,7 +39,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = publicPage?.seoTitle || name;
   const description = publicPage?.seoDescription || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
-  const iconUrl = publicPage?.siteIcon?.url || undefined;
+  const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
+  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const canonical = portfolioPublicUrl(orgSlug);
   const locale = resolvePublicChromeLocale(workspace);
 
@@ -59,8 +61,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: ogImageUrl ? "summary_large_image" : "summary",
       images: ogImageUrl ? [ogImageUrl] : undefined,
     },
-    icons: iconUrl ? { icon: iconUrl } : undefined,
   };
+  // Only set `icons` when the workspace has a custom one — an explicit
+  // `icons: undefined` here still counts as "set" during Next's metadata
+  // merge and blanks out the layout's default favicon instead of inheriting
+  // it, so the key must be omitted entirely to fall back correctly.
+  if (iconUrl) result.icons = { icon: iconUrl, shortcut: iconUrl, apple: iconUrl };
   if (seo.noindex) result.robots = { index: false, follow: false };
   return result;
 }

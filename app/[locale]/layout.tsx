@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   },
   description:
     "The CRM for event businesses — bookings, clients, galleries, and inquiries in one workspace.",
+  icons: { icon: "/brand/gallurio-sq.svg" },
 };
 
 export function generateStaticParams() {
