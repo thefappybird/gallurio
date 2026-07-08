@@ -18,6 +18,7 @@ export type SettingsSeoFields = {
   siteIconUrl: string;
   siteIconAssetId: string;
   seo: {
+    keywords: string[];
     ogImageUrl: string;
     ogImageAssetId: string;
     galleryDescription: string;
@@ -43,6 +44,7 @@ type SettingsSeoFieldsSource = {
   seoDescription?: string | null;
   siteIcon?: { url?: string | null; assetId?: string | null } | null;
   seo?: {
+    keywords?: string[] | null;
     ogImageUrl?: string | null;
     ogImageAssetId?: string | null;
     galleryDescription?: string | null;
@@ -79,6 +81,7 @@ export function normalizeSettingsSeoFields(
     siteIconUrl: source?.siteIcon?.url ?? "",
     siteIconAssetId: source?.siteIcon?.assetId ?? "",
     seo: {
+      keywords: source?.seo?.keywords ?? [],
       ogImageUrl: source?.seo?.ogImageUrl ?? "",
       ogImageAssetId: source?.seo?.ogImageAssetId ?? "",
       galleryDescription: source?.seo?.galleryDescription ?? "",
@@ -111,6 +114,7 @@ export function hasPendingSettingsSeoChanges(
     a.seoDescription !== b.seoDescription ||
     a.siteIconUrl !== b.siteIconUrl ||
     a.siteIconAssetId !== b.siteIconAssetId ||
+    JSON.stringify(a.seo.keywords) !== JSON.stringify(b.seo.keywords) ||
     a.seo.ogImageUrl !== b.seo.ogImageUrl ||
     a.seo.ogImageAssetId !== b.seo.ogImageAssetId ||
     a.seo.galleryDescription !== b.seo.galleryDescription ||

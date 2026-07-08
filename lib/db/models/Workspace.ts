@@ -55,6 +55,7 @@ const publicPageSettingsDraftSchema = new Schema(
       assetId: { type: String, default: "" },
     },
     seo: {
+      keywords: { type: [String], default: [] },
       ogImageUrl: { type: String, default: "" },
       ogImageAssetId: { type: String, default: "" },
       galleryDescription: { type: String, default: "" },

@@ -1046,7 +1046,7 @@ describe("EditorShell", () => {
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
   });
 
-  it("can force-open the story prompt for preview without persisting or opening the guide", async () => {
+  it("seo setup preview routes dismissed-guide users to the welcome template modal without persisting", async () => {
     renderWithProviders(
       <EditorShell {...baseProps} storyPromptCompleted guideDismissed seoSetupPreview />
     );
@@ -1060,6 +1060,44 @@ describe("EditorShell", () => {
     expect(completeStoryPromptAction).not.toHaveBeenCalled();
     expect(dismissPortfolioGuideAction).not.toHaveBeenCalled();
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+    expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+  });
+
+  it("seo setup preview continue-with-guide opens the guide, then the welcome template modal after the guide closes", async () => {
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        storyPromptCompleted={false}
+        guideDismissed={false}
+        seoSetupPreview
+        initialDrafts={[]}
+        initialActiveDraftId={null}
+        initialActiveDraftName={undefined}
+      />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Let's go" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your vibe" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Add your branding" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your page is ready to shine" });
+    fireEvent.click(screen.getByRole("button", { name: /continue with guide/i }));
+
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument();
+
+    fireEvent.click(within(document.body).getByRole("button", { name: "Skip Guide" }));
+    const confirmSkip = within(document.body).getAllByRole("button", { name: "Skip Guide" });
+    fireEvent.click(confirmSkip[confirmSkip.length - 1]);
+
+    expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+    expect(dismissPortfolioGuideAction).not.toHaveBeenCalled();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
   });
 
   it("explore-self exit awaits dismissPortfolioGuideAction before proceeding to entry", async () => {

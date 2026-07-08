@@ -322,6 +322,7 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
     set["publicPage.seoDescription"] = settingsDraft.seoDescription ?? "";
     set["publicPage.siteIcon.url"] = settingsDraft.siteIcon?.url ?? "";
     set["publicPage.siteIcon.assetId"] = settingsDraft.siteIcon?.assetId ?? "";
+    set["publicPage.seo.keywords"] = settingsDraft.seo?.keywords ?? [];
     set["publicPage.seo.ogImageUrl"] = settingsDraft.seo?.ogImageUrl ?? "";
     set["publicPage.seo.ogImageAssetId"] = settingsDraft.seo?.ogImageAssetId ?? "";
     set["publicPage.seo.galleryDescription"] =

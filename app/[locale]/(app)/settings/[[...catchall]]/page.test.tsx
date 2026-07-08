@@ -100,7 +100,6 @@ function getPublicPageProps() {
     targetDraftId: string;
     initialHasPendingChanges: boolean;
     publishedDefaults: PublicPageSettingsInput;
-    keywordsPending: boolean;
   };
 }
 
@@ -114,7 +113,13 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
         seoTitle: "Fresh settings title",
         seoDescription: "Fresh settings description",
         siteIcon: { url: "https://cdn.example.com/icon.png", assetId: "icon_1" },
-        seo: { ogImageUrl: "", ogImageAssetId: "", galleryDescription: "", noindex: false },
+        seo: {
+          keywords: ["wedding photographer", "editorial"],
+          ogImageUrl: "",
+          ogImageAssetId: "",
+          galleryDescription: "",
+          noindex: false,
+        },
       },
     });
     await seedOwnerUser(ws._id);
@@ -164,6 +169,7 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
     // inquiryRecipientEmail stays live-sourced, unaffected by the draft.
     expect(props.defaults.inquiryRecipientEmail).toBe("owner@test.com");
     expect(props.defaults.siteIconAssetId).toBe("icon_1");
+    expect(props.defaults.seo.keywords).toEqual(["wedding photographer", "editorial"]);
 
     expect(props.targetDraftId).toBe(String(draft._id));
     expect(props.initialHasPendingChanges).toBe(true);
@@ -268,10 +274,14 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
     expect(props.initialHasPendingChanges).toBe(true);
   });
 
-  it("computes keywordsPending true when draft and published keywords differ", async () => {
+  it("reports pending changes when settings-draft keywords differ from published keywords", async () => {
     const ws = await seedWorkspace({
       seoTitle: "Same title",
       seo: { keywords: ["old"] },
+      settingsDraft: {
+        seoTitle: "Same title",
+        seo: { keywords: ["new", "keywords"] },
+      },
     });
     await seedOwnerUser(ws._id);
     await PortfolioDraft.create({
@@ -279,8 +289,8 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
       name: "My Draft",
       templateId: "",
       data: { home: null, gallery: null },
-      seoTitle: "Same title",
-      seo: { keywords: ["new", "keywords"] },
+      seoTitle: "Draft title should not drive settings keywords",
+      seo: { keywords: ["draft-only"] },
     });
 
     requireOrgMock.mockResolvedValue({
@@ -314,16 +324,18 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
     render(page);
 
     const props = getPublicPageProps();
-    // Server-side hasPendingSeoChanges already folds keywords in, so this is
-    // true too; keywordsPending is the independent signal the client needs.
     expect(props.initialHasPendingChanges).toBe(true);
-    expect(props.keywordsPending).toBe(true);
+    expect(props.defaults.seo.keywords).toEqual(["new", "keywords"]);
   });
 
-  it("computes keywordsPending false when draft and published keywords are equal", async () => {
+  it("reports no pending changes when settings-draft keywords equal published keywords", async () => {
     const ws = await seedWorkspace({
       seoTitle: "Same title",
       seo: { keywords: ["shared"] },
+      settingsDraft: {
+        seoTitle: "Same title",
+        seo: { keywords: ["shared"] },
+      },
     });
     await seedOwnerUser(ws._id);
     await PortfolioDraft.create({
@@ -332,7 +344,7 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
       templateId: "",
       data: { home: null, gallery: null },
       seoTitle: "Same title",
-      seo: { keywords: ["shared"] },
+      seo: { keywords: ["draft-only"] },
     });
 
     requireOrgMock.mockResolvedValue({
@@ -366,6 +378,7 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
     render(page);
 
     const props = getPublicPageProps();
-    expect(props.keywordsPending).toBe(false);
+    expect(props.initialHasPendingChanges).toBe(false);
+    expect(props.defaults.seo.keywords).toEqual(["shared"]);
   });
 });

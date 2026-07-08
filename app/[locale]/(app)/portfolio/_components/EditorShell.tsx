@@ -1254,10 +1254,31 @@ export function EditorShell({
     }
   }
 
+  /**
+   * Dev-only SEO-setup preview should always continue into the first-build
+   * onboarding flow, never the returning-user entry dialog. After the preview
+   * prompt the owner either sees the guide (if they chose it and it's still
+   * eligible) or lands directly on the welcome template picker.
+   */
+  function openSeoSetupPreviewNextSurface(preferGuide: boolean) {
+    setEntryOpen(false);
+    if (preferGuide && !guideDismissed) {
+      setWelcomeTemplatesOpen(false);
+      setGuideOpen(true);
+      return;
+    }
+    setGuideOpen(false);
+    setWelcomeTemplatesOpen(true);
+  }
+
   function handleGuideSkip(dontShowAgain: boolean) {
     setGuideOpen(false);
     if (guideMode) {
       onGuideSkipClose?.(dontShowAgain);
+      return;
+    }
+    if (seoSetupPreviewMode) {
+      openSeoSetupPreviewNextSurface(false);
       return;
     }
     if (dontShowAgain) void dismissPortfolioGuideAction();
@@ -1269,6 +1290,10 @@ export function EditorShell({
     setGuideOpen(false);
     if (guideMode) {
       onGuideFinish?.(dontShowAgain);
+      return;
+    }
+    if (seoSetupPreviewMode) {
+      openSeoSetupPreviewNextSurface(false);
       return;
     }
     if (dontShowAgain) void dismissPortfolioGuideAction();
@@ -1888,11 +1913,14 @@ export function EditorShell({
             setHeaderConfig((current) => ({ ...current, logoUrl, logoAssetId }));
             setPreviewNonce((n) => n + 1);
           }}
-          onContinueWithGuide={() => setStoryPromptOpen(false)}
+          onContinueWithGuide={() => {
+            setStoryPromptOpen(false);
+            if (seoSetupPreviewMode) openSeoSetupPreviewNextSurface(true);
+          }}
           onExploreSelf={async () => {
             setStoryPromptOpen(false);
             if (seoSetupPreviewMode) {
-              setGuideOpen(false);
+              openSeoSetupPreviewNextSurface(false);
               return;
             }
             try {

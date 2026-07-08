@@ -171,6 +171,17 @@ export const publicPageSettingsSchema = z.object({
   siteIconAssetId: z.string().trim().optional().default(""),
   seo: z
     .object({
+      keywords: z
+        .array(
+          z
+            .string()
+            .trim()
+            .min(1, "Each SEO tag must contain text")
+            .max(40, "Keep each SEO tag under 40 characters")
+        )
+        .max(10, "Add up to 10 SEO tags")
+        .optional()
+        .default([]),
       ogImageUrl: z.string().trim().url().or(z.literal("")).optional().default(""),
       ogImageAssetId: z.string().trim().optional().default(""),
       galleryDescription: z

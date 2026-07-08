@@ -167,6 +167,8 @@ export async function updatePublicPageSettingsAction(
 
   const seoFields: Record<string, unknown> = {};
   if (parsed.data.seo !== undefined) {
+    seoFields["publicPage.settingsDraft.seo.keywords"] =
+      parsed.data.seo.keywords ?? [];
     seoFields["publicPage.settingsDraft.seo.galleryDescription"] =
       parsed.data.seo.galleryDescription ?? "";
     seoFields["publicPage.settingsDraft.seo.ogImageUrl"] =

@@ -14,10 +14,9 @@ import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { connectDB } from "@/lib/db/mongoose";
-import { User, Workspace, PortfolioDraft } from "@/lib/db/models";
+import { User, Workspace } from "@/lib/db/models";
 import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import {
-  normalizePublishedSeoFields,
   normalizeSettingsSeoFields,
   hasPendingSettingsSeoChanges,
 } from "@/lib/portfolio/publicPageSeoFields";
@@ -111,23 +110,12 @@ export default async function SettingsCatchallPage({
   };
 
   const draftId = await resolveActiveDraftId(workspace._id);
-  const activeDraftSeo = await PortfolioDraft.findOne(
-    { _id: draftId },
-    { "seo.keywords": 1 },
-  ).lean();
   const settingsDraftFields = normalizeSettingsSeoFields(
     workspace.publicPage?.settingsDraft ?? workspace.publicPage
   );
   const publishedFields = normalizeSettingsSeoFields(workspace.publicPage);
-  const draftKeywords = normalizePublishedSeoFields(activeDraftSeo).seo.keywords;
-  // keywords aren't editable in this form (only the Story Prompt wizard writes
-  // them) — compute once server-side and OR it into every client recompute so
-  // a Save can't incorrectly clear the pending banner while keywords still differ.
-  const keywordsPending =
-    JSON.stringify(draftKeywords) !==
-    JSON.stringify(normalizePublishedSeoFields(workspace.publicPage).seo.keywords);
   const initialHasPendingChanges =
-    hasPendingSettingsSeoChanges(settingsDraftFields, publishedFields) || keywordsPending;
+    hasPendingSettingsSeoChanges(settingsDraftFields, publishedFields);
 
   const publicPageDefaults: PublicPageSettingsInput = {
     seoTitle: settingsDraftFields.seoTitle,
@@ -141,6 +129,7 @@ export default async function SettingsCatchallPage({
     ),
     siteIconAssetId: settingsDraftFields.siteIconAssetId,
     seo: {
+      keywords: settingsDraftFields.seo.keywords,
       ogImageUrl: settingsDraftFields.seo.ogImageUrl,
       ogImageAssetId: settingsDraftFields.seo.ogImageAssetId,
       galleryDescription: settingsDraftFields.seo.galleryDescription,
@@ -158,6 +147,7 @@ export default async function SettingsCatchallPage({
     siteIconUrl: portfolioSiteIconUrl(workspace.publicPage?.siteIcon),
     siteIconAssetId: publishedFields.siteIconAssetId,
     seo: {
+      keywords: publishedFields.seo.keywords,
       ogImageUrl: publishedFields.seo.ogImageUrl,
       ogImageAssetId: publishedFields.seo.ogImageAssetId,
       galleryDescription: publishedFields.seo.galleryDescription,
@@ -220,7 +210,6 @@ export default async function SettingsCatchallPage({
               targetDraftId={String(draftId)}
               initialHasPendingChanges={initialHasPendingChanges}
               publishedDefaults={publishedDefaults}
-              keywordsPending={keywordsPending}
             />
           ),
         },

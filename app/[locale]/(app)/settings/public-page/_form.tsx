@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, useTransition, useOptimistic } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
@@ -28,6 +28,22 @@ const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] 
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
 const SITE_ICON_MAX_DIM = 512;
 
+function parseSeoKeywords(raw: string): string[] {
+  const seen = new Set<string>();
+  const keywords: string[] = [];
+
+  for (const part of raw.split(",")) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    keywords.push(trimmed);
+  }
+
+  return keywords;
+}
+
 /** True if any of the published-page-affecting fields differ from the published snapshot. */
 function computeHasPendingChanges(
   data: PublicPageSettingsInput,
@@ -39,6 +55,8 @@ function computeHasPendingChanges(
     data.seoDescription !== publishedDefaults.seoDescription ||
     data.siteIconUrl !== publishedDefaults.siteIconUrl ||
     data.siteIconAssetId !== publishedDefaults.siteIconAssetId ||
+    JSON.stringify(data.seo?.keywords ?? []) !==
+      JSON.stringify(publishedDefaults.seo?.keywords ?? []) ||
     data.seo?.ogImageUrl !== publishedDefaults.seo?.ogImageUrl ||
     data.seo?.ogImageAssetId !== publishedDefaults.seo?.ogImageAssetId ||
     data.seo?.galleryDescription !== publishedDefaults.seo?.galleryDescription ||
@@ -54,7 +72,6 @@ export function PublicPageSettingsForm({
   targetDraftId,
   initialHasPendingChanges,
   publishedDefaults,
-  keywordsPending,
 }: {
   slug: string;
   publishedAt: Date | null;
@@ -63,7 +80,6 @@ export function PublicPageSettingsForm({
   targetDraftId?: string;
   initialHasPendingChanges?: boolean;
   publishedDefaults?: PublicPageSettingsInput;
-  keywordsPending?: boolean;
 }) {
   const t = useTranslations("app.settings.publicPage");
   const errMsg = useActionError();
@@ -89,6 +105,7 @@ export function PublicPageSettingsForm({
   const ogFileInputRef = useRef<HTMLInputElement>(null);
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -102,6 +119,7 @@ export function PublicPageSettingsForm({
 
   const siteIconUrl = watch("siteIconUrl");
   const ogImageUrl = watch("seo.ogImageUrl");
+  const seoKeywords = watch("seo.keywords") ?? [];
   const siteIcon = useImageRetry(siteIconUrl);
 
   const publicUrl = portfolioPublicUrl(slug);
@@ -134,7 +152,7 @@ export function PublicPageSettingsForm({
     }
     toast.success(t("savedToast"));
     reset(data);
-    setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults) || !!keywordsPending);
+    setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults));
   }
 
   function handlePublish() {
@@ -382,6 +400,29 @@ export function PublicPageSettingsForm({
               {errors.seoTitle && (
                 <p className="text-sm text-destructive">{errors.seoTitle.message}</p>
               )}
+              <p className="text-xs text-muted-foreground">{t("seoTitleHint")}</p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="seoKeywords">{t("seoKeywords")}</Label>
+              <Controller
+                control={control}
+                name="seo.keywords"
+                render={({ field }) => (
+                  <Input
+                    id="seoKeywords"
+                    placeholder={t("seoKeywordsPlaceholder")}
+                    value={seoKeywords.join(", ")}
+                    onChange={(e) => {
+                      field.onChange(parseSeoKeywords(e.target.value));
+                    }}
+                  />
+                )}
+              />
+              {errors.seo?.keywords?.message && (
+                <p className="text-sm text-destructive">{errors.seo.keywords.message}</p>
+              )}
+              <p className="text-xs text-muted-foreground">{t("seoKeywordsHint")}</p>
             </div>
 
             <div className="flex flex-col gap-1.5 xl:col-span-2">

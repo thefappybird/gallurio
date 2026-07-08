@@ -116,6 +116,7 @@ const baseDefaults: PublicPageSettingsInput = {
   siteIconUrl: "",
   siteIconAssetId: "",
   seo: {
+    keywords: [],
     ogImageUrl: "",
     ogImageAssetId: "",
     galleryDescription: "",
@@ -186,6 +187,19 @@ describe("PublicPageSettingsForm — site icon section", () => {
       />
     );
     expect(screen.getByText("galleryDescriptionLabel")).toBeInTheDocument();
+  });
+
+  it("renders SEO keywords field beside the SEO inputs", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+    expect(screen.getByLabelText("seoKeywords")).toBeInTheDocument();
+    expect(screen.getByText("seoKeywordsHint")).toBeInTheDocument();
   });
 
   it("uses responsive grid layouts for visibility, SEO, and media sections", () => {
@@ -399,8 +413,8 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
   });
 });
 
-describe("PublicPageSettingsForm — keywordsPending recompute after Save", () => {
-  it("keeps the banner visible and Publish enabled after a Save whose SEO fields match published, when keywordsPending is true", async () => {
+describe("PublicPageSettingsForm — SEO keywords pending recompute after Save", () => {
+  it("keeps the banner visible and Publish enabled after a Save whose keywords still differ from published", async () => {
     vi.mocked(updatePublicPageSettingsAction).mockResolvedValueOnce({
       ok: true,
     } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
@@ -414,15 +428,13 @@ describe("PublicPageSettingsForm — keywordsPending recompute after Save", () =
         targetDraftId="draft-1"
         initialHasPendingChanges={true}
         publishedDefaults={baseDefaults}
-        keywordsPending={true}
       />
     );
 
-    // Dirty the form via a field that computeHasPendingChanges ignores
-    // (inquiryRecipientEmail), so Save submits with SEO fields still
-    // matching publishedDefaults exactly.
-    const emailInput = document.querySelector("#inquiryRecipientEmail") as HTMLInputElement;
-    fireEvent.change(emailInput, { target: { value: "owner@example.com" } });
+    const keywordsInput = screen.getByLabelText("seoKeywords");
+    fireEvent.change(keywordsInput, {
+      target: { value: "wedding photographer, editorial" },
+    });
 
     const saveBtn = screen.getByText("save").closest("button")!;
     await act(async () => {
@@ -430,6 +442,13 @@ describe("PublicPageSettingsForm — keywordsPending recompute after Save", () =
     });
 
     expect(updatePublicPageSettingsAction).toHaveBeenCalledTimes(1);
+    expect(updatePublicPageSettingsAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        seo: expect.objectContaining({
+          keywords: ["wedding photographer", "editorial"],
+        }),
+      })
+    );
     expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "publish" })).toBeEnabled();
   });

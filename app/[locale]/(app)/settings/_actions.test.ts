@@ -405,6 +405,23 @@ describe("updateWorkspaceBusinessAction", () => {
 // ---- updatePublicPageSettingsAction -----------------------------------------
 
 describe("updatePublicPageSettingsAction — seo fields", () => {
+  it("persists seo.keywords to the workspace settings draft, not the live publicPage", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({
+      seo: { keywords: ["wedding photographer", "editorial"] },
+    });
+
+    expect(result.ok).toBe(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.publicPage?.settingsDraft?.seo?.keywords).toEqual([
+      "wedding photographer",
+      "editorial",
+    ]);
+    expect(ws?.publicPage?.seo?.keywords ?? []).toEqual([]);
+  });
+
   it("persists seo.galleryDescription to the workspace settings draft, not the live publicPage", async () => {
     await seedWorkspaceA();
 

@@ -239,6 +239,7 @@ describe("publishDraftAction", () => {
           seoDescription: "Settings draft description.",
           siteIcon: { url: "https://imagedelivery.net/h/settings-icon/public", assetId: "settings-icon-1" },
           seo: {
+            keywords: ["settings", "override"],
             ogImageUrl: "https://imagedelivery.net/h/settings-og/public",
             ogImageAssetId: "settings-og-1",
             galleryDescription: "Settings gallery copy",
@@ -274,7 +275,7 @@ describe("publishDraftAction", () => {
     expect(ws!.publicPage!.seo?.ogImageUrl).toBe("https://imagedelivery.net/h/settings-og/public");
     expect(ws!.publicPage!.seo?.ogImageAssetId).toBe("settings-og-1");
     expect(ws!.publicPage!.seo?.galleryDescription).toBe("Settings gallery copy");
-      expect(ws!.publicPage!.seo?.noindex).toBe(false);
-    expect(ws!.publicPage!.seo?.keywords).toEqual(["wedding", "bali"]);
+    expect(ws!.publicPage!.seo?.noindex).toBe(false);
+    expect(ws!.publicPage!.seo?.keywords).toEqual(["settings", "override"]);
   });
 });

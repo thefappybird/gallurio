@@ -69,6 +69,7 @@ describe("normalizeSettingsSeoFields", () => {
       siteIconUrl: "",
       siteIconAssetId: "",
       seo: {
+        keywords: [],
         ogImageUrl: "",
         ogImageAssetId: "",
         galleryDescription: "",
@@ -102,10 +103,16 @@ describe("hasPendingSeoChanges", () => {
 });
 
 describe("hasPendingSettingsSeoChanges", () => {
-  it("ignores keywords and returns false for identical settings bundles", () => {
+  it("returns false for identical settings bundles", () => {
     const a = normalizeSettingsSeoFields({ seoTitle: "T" });
     const b = normalizeSettingsSeoFields({ seoTitle: "T" });
     expect(hasPendingSettingsSeoChanges(a, b)).toBe(false);
+  });
+
+  it("returns true when settings keywords differ", () => {
+    const a = normalizeSettingsSeoFields({ seo: { keywords: ["wedding"] } });
+    const b = normalizeSettingsSeoFields({ seo: { keywords: ["editorial"] } });
+    expect(hasPendingSettingsSeoChanges(a, b)).toBe(true);
   });
 
   it("returns true when a settings-owned field differs", () => {
