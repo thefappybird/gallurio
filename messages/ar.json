@@ -969,7 +969,8 @@
           "members": "الأعضاء",
           "actions": "إجراءات"
         },
-        "details": "التفاصيل"
+        "details": "التفاصيل",
+        "openTeam": "فتح {name}"
       },
       "colorPicker": {
         "presetsLabel": "الجاهزة",

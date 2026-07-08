@@ -969,7 +969,8 @@
           "members": "Mga Miyembro",
           "actions": "Mga Aksyon"
         },
-        "details": "Mga Detalye"
+        "details": "Mga Detalye",
+        "openTeam": "Buksan ang {name}"
       },
       "colorPicker": {
         "presetsLabel": "Mga preset",

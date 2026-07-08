@@ -969,7 +969,8 @@
           "members": "Ahli",
           "actions": "Tindakan"
         },
-        "details": "Butiran"
+        "details": "Butiran",
+        "openTeam": "Buka {name}"
       },
       "colorPicker": {
         "presetsLabel": "Praset",

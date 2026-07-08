@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter, Link } from "@/lib/i18n/navigation";
+import { Link } from "@/lib/i18n/navigation";
 import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -75,14 +75,15 @@ export function CreateDialog({
   onOpenChange,
   onCreated,
   onCapExceeded,
+  onDone,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (team: TeamRow) => void;
   onCapExceeded: () => void;
+  onDone: () => void;
 }) {
   const t = useTranslations("app.teams");
-  const router = useRouter();
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(TEAM_COLOR_PALETTE[0]);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -129,7 +130,7 @@ export function CreateDialog({
         onCreated(result.team);
         toast.success(t("toasts.created"));
         handleOpenChange(false);
-        router.refresh();
+        onDone();
       }
     });
   }
@@ -196,15 +197,16 @@ export function EditDialog({
   onOpenChange,
   onRenamed,
   onColorChanged,
+  onDone,
 }: {
   team: TeamRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRenamed: (name: string) => void;
   onColorChanged: (color: string) => void;
+  onDone: () => void;
 }) {
   const t = useTranslations("app.teams");
-  const router = useRouter();
   const [name, setName] = useState(team.name);
   const [color, setColor] = useState(team.color);
   const [error, setError] = useState<string | null>(null);
@@ -272,7 +274,7 @@ export function EditDialog({
 
       toast.success(t("toasts.saved"));
       onOpenChange(false);
-      router.refresh();
+      onDone();
     });
   }
 
@@ -336,15 +338,16 @@ export function DeactivateDialog({
   onOpenChange,
   onDeactivated,
   onFailed,
+  onDone,
 }: {
   team: TeamRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDeactivated: () => void;
   onFailed: (team: TeamRow) => void;
+  onDone: () => void;
 }) {
   const t = useTranslations("app.teams");
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   function handleOpenChange(next: boolean) {
@@ -363,7 +366,7 @@ export function DeactivateDialog({
       }
       toast.success(t("toasts.deactivated"));
       onOpenChange(false);
-      router.refresh();
+      onDone();
     });
   }
 
@@ -404,15 +407,16 @@ export function ReactivateDialog({
   onOpenChange,
   onReactivated,
   onFailed,
+  onDone,
 }: {
   team: TeamRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onReactivated: () => void;
   onFailed: (team: TeamRow) => void;
+  onDone: () => void;
 }) {
   const t = useTranslations("app.teams");
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   function handleOpenChange(next: boolean) {
@@ -431,7 +435,7 @@ export function ReactivateDialog({
       }
       toast.success(t("toasts.reactivated"));
       onOpenChange(false);
-      router.refresh();
+      onDone();
     });
   }
 

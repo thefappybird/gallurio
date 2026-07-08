@@ -969,7 +969,8 @@
           "members": "Members",
           "actions": "Actions"
         },
-        "details": "Details"
+        "details": "Details",
+        "openTeam": "Open {name}"
       },
       "colorPicker": {
         "presetsLabel": "Presets",

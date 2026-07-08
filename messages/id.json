@@ -969,7 +969,8 @@
           "members": "Anggota",
           "actions": "Tindakan"
         },
-        "details": "Detail"
+        "details": "Detail",
+        "openTeam": "Buka {name}"
       },
       "colorPicker": {
         "presetsLabel": "Pra-setel",
