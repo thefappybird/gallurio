@@ -85,10 +85,10 @@ describe("SettingsUserProfile", () => {
   describe("role=owner", () => {
     it("renders nav links for all pages including ownerOnly ones", () => {
       renderSettings("owner");
-      expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /customize/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /workspace/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /billing/i })).toBeInTheDocument();
+      expect(screen.getAllByRole("link", { name: /account/i })).toHaveLength(2);
+      expect(screen.getAllByRole("link", { name: /customize/i })).toHaveLength(2);
+      expect(screen.getAllByRole("link", { name: /workspace/i })).toHaveLength(2);
+      expect(screen.getAllByRole("link", { name: /billing/i })).toHaveLength(2);
     });
 
     it("renders the active page body", () => {
@@ -96,10 +96,14 @@ describe("SettingsUserProfile", () => {
       expect(screen.getByTestId("body-account")).toBeInTheDocument();
     });
 
-    it("uses the brand active treatment for the current page", () => {
+    it("uses the brand active treatment for the current page in both nav variants", () => {
       renderSettings("owner", "account");
-      expect(screen.getByRole("link", { name: /account/i }).className).toContain("bg-brand/12");
-      expect(screen.getByRole("link", { name: /account/i }).className).toContain("text-brand");
+      const accountLinks = screen.getAllByRole("link", { name: /account/i });
+      expect(accountLinks).toHaveLength(2);
+      for (const link of accountLinks) {
+        expect(link.className).toContain("bg-brand/12");
+        expect(link.className).toContain("text-brand");
+      }
     });
 
     it("renders org-switcher bar", () => {
@@ -111,8 +115,8 @@ describe("SettingsUserProfile", () => {
   describe("role=staff", () => {
     it("renders only non-ownerOnly nav links", () => {
       renderSettings("staff");
-      expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /customize/i })).toBeInTheDocument();
+      expect(screen.getAllByRole("link", { name: /account/i })).toHaveLength(2);
+      expect(screen.getAllByRole("link", { name: /customize/i })).toHaveLength(2);
       expect(screen.queryByRole("link", { name: /workspace/i })).not.toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /billing/i })).not.toBeInTheDocument();
     });
@@ -120,6 +124,24 @@ describe("SettingsUserProfile", () => {
     it("renders the active page body for visible page", () => {
       renderSettings("staff", "account");
       expect(screen.getByTestId("body-account")).toBeInTheDocument();
+    });
+  });
+
+  describe("responsive nav variants", () => {
+    it("renders both a mobile tab-strip nav and a desktop sidebar nav with the same aria-label", () => {
+      renderSettings("owner");
+      const navs = screen.getAllByRole("navigation", { name: "Settings navigation" });
+      expect(navs).toHaveLength(2);
+    });
+
+    it("mobile strip is hidden at lg and desktop sidebar is hidden below lg", () => {
+      renderSettings("owner");
+      const navs = screen.getAllByRole("navigation", { name: "Settings navigation" });
+      const mobileNav = navs.find((n) => n.className.includes("overflow-x-auto"));
+      const desktopNav = navs.find((n) => n.className.includes("w-48"));
+      expect(mobileNav?.className).toContain("lg:hidden");
+      expect(desktopNav?.className).toContain("hidden");
+      expect(desktopNav?.className).toContain("lg:flex");
     });
   });
 
