@@ -8,6 +8,7 @@ import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
 import { bookingCreateSchema } from "@/lib/validators/booking";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
+import { normalizePayments, isCompletionEligible } from "@/lib/bookings/payment-rules";
 
 export const runtime = "nodejs";
 
@@ -25,8 +26,13 @@ export async function POST(req: Request) {
 
   await connectDB();
 
-  const { client, teamId, title, eventType, status, sessions, location, amount, notes } =
+  const { client, teamId, title, eventType, status, sessions, location, amount, notes, payments } =
     parsed.data;
+
+  const normalizedPayments = normalizePayments(payments);
+  if (status === "completed" && !isCompletionEligible(normalizedPayments, amount)) {
+    return NextResponse.json({ error: "completion_requires_full_payment" }, { status: 422 });
+  }
 
   // Resolve + authorize the target team before any writes. New bookings may only
   // target an ACTIVE team in this workspace that the caller may write to (owner
@@ -151,6 +157,7 @@ export async function POST(req: Request) {
               deposit: amount.deposit,
               currency: amount.currency,
             },
+            payments: normalizedPayments,
             notes,
           },
         ],

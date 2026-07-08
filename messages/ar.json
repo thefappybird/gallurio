@@ -200,8 +200,8 @@
         "deleted": "حُذف",
         "status_changed": "تغيّرت الحالة",
         "client_changed": "تغيّر العميل",
-        "payment_added": "?????? ????",
-        "payment_updated": "??????? ????"
+        "payment_added": "أُضيفت دفعة",
+        "payment_updated": "حُدِّثت دفعة"
       }
     },
     "calendar": {
@@ -237,7 +237,8 @@
         "showPast": "إظهار السابقة",
         "import": "استيراد CSV",
         "export": "تصدير CSV",
-        "add": "حجز جديد"
+        "add": "حجز جديد",
+        "invoiceTheme": "نمط الفاتورة"
       },
       "teamPicker": {
         "allTeams": "كل الفِرق",
@@ -381,6 +382,20 @@
         "anniversary": "ذكرى سنوية",
         "other": "أخرى"
       },
+      "invoiceThemeDialog": {
+        "title": "نمط الفاتورة",
+        "presets": {
+          "classic": "كلاسيكي",
+          "slate": "أردوازي",
+          "navyGold": "أزرق داكن وذهبي",
+          "forest": "أخضر غابي",
+          "custom": "مخصص"
+        },
+        "mainColor": "اللون الأساسي",
+        "accentColor": "لون التمييز",
+        "saveAndApply": "حفظ وتطبيق",
+        "cancel": "إلغاء"
+      },
       "detail": {
         "past": "سابق",
         "showPast": "إظهار الجلسات السابقة",
@@ -390,13 +405,15 @@
           "client": "العميل",
           "event": "المناسبة",
           "pricing": "التسعير",
-          "eventPricing": "المناسبة والموقع",
+          "eventPricing": "المناسبة",
+          "payments": "المدفوعات",
           "sessionsLocation": "الجلسات",
           "activity": "الملاحظات والنشاط"
         },
         "sections": {
           "schedule": "الجدول",
           "pricing": "التسعير",
+          "payments": "المدفوعات",
           "history": "السجل"
         },
         "fields": {
@@ -460,7 +477,9 @@
             "updated": "حُدِّث",
             "status_changed": "تغيّرت الحالة",
             "client_changed": "تغيّر العميل",
-            "deleted": "حُذف"
+            "deleted": "حُذف",
+            "payment_added": "أُضيفت دفعة",
+            "payment_updated": "حُدِّثت دفعة"
           },
           "today": "اليوم",
           "yesterday": "أمس",
@@ -469,6 +488,7 @@
         "cancel": "إلغاء الحجز",
         "restore": "استعادة الحجز",
         "invoice": "تنزيل الفاتورة",
+        "receipt": "تنزيل الإيصال",
         "discardChanges": "تجاهل التغييرات",
         "saveChanges": "حفظ التغييرات",
         "pendingBadge": "{count} غير محفوظ",
@@ -491,6 +511,14 @@
           "discard": "تجاهل غير المؤكَّدة والحفظ",
           "cancel": "رجوع",
           "invalidError": "بعض التغييرات بها أخطاء — صحِّحها قبل الإرسال."
+        },
+        "incompleteBusiness": {
+          "title": "بيانات النشاط التجاري غير مكتملة",
+          "bodyInvoice": "لم يتم ضبط عنوان نشاطك التجاري وبريده الإلكتروني في صفحة الإعدادات. ستحتوي الفاتورة على بيانات غير مكتملة.",
+          "bodyReceipt": "لم يتم ضبط عنوان نشاطك التجاري وبريده الإلكتروني في صفحة الإعدادات. سيحتوي الإيصال على بيانات غير مكتملة.",
+          "dontShowAgain": "عدم إظهار هذا مرة أخرى",
+          "cancel": "إلغاء",
+          "downloadAnyway": "تنزيل على أي حال"
         }
       },
       "confirm": {
@@ -548,6 +576,22 @@
         "pastHidden": "{count, plural, zero {لا جلسات سابقة مخفية} one {جلسة سابقة واحدة مخفية} two {جلستان سابقتان مخفيتان} few {# جلسات سابقة مخفية} many {# جلسة سابقة مخفية} other {# جلسة سابقة مخفية}} — بدِّل للإظهار",
         "unsaved": "غير محفوظ"
       },
+      "payments": {
+        "label": "الدفعة {n}",
+        "add": "إضافة دفعة",
+        "remove": "إزالة الدفعة",
+        "reviewLabel": "المدفوعات",
+        "title": "العنوان",
+        "price": "السعر",
+        "status": "الحالة",
+        "paid": "مدفوع",
+        "unpaid": "غير مدفوع",
+        "paidOn": "دُفع في {date}",
+        "empty": "لا توجد مدفوعات مجدولة بعد لهذا الحجز",
+        "exceedsBalance": "يتجاوز الرصيد المتبقي",
+        "titleRequired": "العنوان مطلوب.",
+        "priceRequired": "يجب أن يكون المبلغ أكبر من 0."
+      },
       "wizard": {
         "createTitle": "حجز جديد",
         "editTitle": "تعديل الحجز",
@@ -580,7 +624,8 @@
           "client": "العميل",
           "event": "المناسبة",
           "pricing": "التسعير",
-          "eventPricing": "المناسبة والتسعير",
+          "eventPricing": "المناسبة",
+          "payments": "المدفوعات",
           "sessionsLocation": "الجلسات",
           "review": "المراجعة"
         },
@@ -2166,6 +2211,8 @@
       "no_active_workspace": "لا توجد مساحة عمل نشطة. اختر مساحة عمل وحاول مجددًا.",
       "workspace_not_found": "مساحة العمل غير موجودة.",
       "owner_only": "هذا الإجراء متاح للمالك فقط.",
+      "invalid_data": "بيانات غير صالحة. يرجى مراجعة المدخلات والمحاولة مرة أخرى.",
+      "completion_requires_full_payment": "ضع علامة على جميع الدفعات كمدفوعة وطابق الإجمالي قبل إكمال هذا الحجز.",
       "finish_onboarding": "أكمل الإعداد الأولي قبل تغيير إعدادات مساحة العمل.",
       "invalid_input": "يرجى مراجعة النموذج والمحاولة مرة أخرى.",
       "rate_limited": "محاولات كثيرة. حاول مجددًا بعد {seconds} ثانية.",

@@ -113,10 +113,15 @@ async function advanceToSessionsStep() {
     fireEvent.click(acceptBtn);
   });
 
-  // Click Next — move to Sessions step.
+  // Click Next — move to the Payments step (trivially valid with no rows).
   const nextBtn = screen.getByRole("button", { name: /next/i });
   await act(async () => {
     fireEvent.click(nextBtn);
+  });
+
+  // Click Next again — move to Sessions step.
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
   });
 
   // Confirm we're on the Sessions step (sessions list visible).
@@ -1214,6 +1219,11 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
       fireEvent.click(screen.getByRole("button", { name: /next/i }));
     });
 
+    // Payments step: trivially valid with no rows — advance.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
     // Sessions step: wait for conflict check then advance.
     await waitFor(() => {
       expect(document.getElementById("wiz-startDate-0")).not.toBeNull();
@@ -1509,6 +1519,17 @@ describe("BookingWizardModal — deposit requires total", () => {
     fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
       target: { value: "Test Booking" },
     });
+    const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInput);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /accept location/i }));
+    });
+    // Advance to the Payments step, where the pricing fields now live.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
     fireEvent.change(screen.getByLabelText(/^deposit$/i), {
       target: { value: "1000" },
     });
@@ -1520,7 +1541,361 @@ describe("BookingWizardModal — deposit requires total", () => {
     expect(
       screen.getByText(/cannot add a deposit without setting a price/i)
     ).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^deposit$/i)).toBeInTheDocument();
+  });
+});
+
+// ── Payments cap + required-title gating ──────────────────────────────────────
+//
+// A payment whose price exceeds the booking's remaining balance must block
+// Next on the Payments step.
+describe("BookingWizardModal — payments cap blocks Next", () => {
+  it("blocks Next when a payment's price exceeds the remaining balance", async () => {
+    mockFetchWithConflict();
+    renderWizard();
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+    const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInput);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /accept location/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // On the Payments step — set a total of 100, then add a payment priced at 500.
+    fireEvent.change(screen.getByLabelText(/^total$/i), {
+      target: { value: "100" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    });
+    fireEvent.change(document.getElementById("wiz-payment-price-0") as HTMLInputElement, {
+      target: { value: "500" },
+    });
+    fireEvent.change(document.getElementById("wiz-payment-title-0") as HTMLInputElement, {
+      target: { value: "Deposit" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Must still be on the Payments step — Sessions & Location must not be reached.
+    expect(document.getElementById("wiz-startDate-0")).not.toBeInTheDocument();
+  });
+
+  it("blocks Next when a payment's title is left empty", async () => {
+    mockFetchWithConflict();
+    renderWizard();
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+    const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInput);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /accept location/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // On the Payments step — set a total, add a payment with a price but no title.
+    fireEvent.change(screen.getByLabelText(/^total$/i), {
+      target: { value: "500" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    });
+    fireEvent.change(document.getElementById("wiz-payment-price-0") as HTMLInputElement, {
+      target: { value: "100" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Must still be on the Payments step.
+    expect(document.getElementById("wiz-startDate-0")).not.toBeInTheDocument();
+  });
+});
+
+// ── Payments step ordering ────────────────────────────────────────────────────
+//
+// A Payments step sits between Event & Pricing and Sessions & Location in the
+// step sequence. With no payments added (the default), it must not block Next.
+describe("BookingWizardModal — Payments step ordering", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+  });
+
+  it("shows the Payments step between Event & Pricing and Sessions", async () => {
+    renderWizard();
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+    const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInput);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /accept location/i }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Next from Event & Pricing must land on the Payments step, not Sessions.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add payment/i })).toBeInTheDocument();
+    });
+    expect(document.getElementById("wiz-startDate-0")).not.toBeInTheDocument();
+  });
+});
+
+// ── Payments payload ───────────────────────────────────────────────────────────
+//
+// A payment added on the Payments step must appear in the POST body sent on
+// create-mode submit.
+describe("BookingWizardModal — payments payload", () => {
+  it("includes payments array in POST body when a payment is added", async () => {
+    const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes("/api/bookings/shifts-on-date")) {
+        return { ok: true, json: async () => ({ shifts: [] }) };
+      }
+      if (url.includes("/api/clients")) {
+        return { ok: true, json: async () => ({ clients: [] }) };
+      }
+      if (init?.method === "POST") {
+        return { ok: true, json: async () => ({}) };
+      }
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    renderWizard();
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+    const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInput);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /accept location/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Now on the Payments step — set a total so a payment can be added, then add one.
+    fireEvent.change(screen.getByLabelText(/^total$/i), {
+      target: { value: "500" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    });
+    const priceInput = document.getElementById("wiz-payment-price-0") as HTMLInputElement;
+    fireEvent.change(priceInput, { target: { value: "500" } });
+    const titleInput = document.getElementById("wiz-payment-title-0") as HTMLInputElement;
+    fireEvent.change(titleInput, { target: { value: "Deposit" } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Now on Sessions & Location — fill a start date.
+    await waitFor(() => {
+      expect(document.getElementById("wiz-startDate-0")).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.change(document.getElementById("wiz-startDate-0") as HTMLInputElement, {
+        target: { value: "2026-09-01" },
+      });
+    });
+    await waitFor(() => {
+      expect(screen.queryByText(/checking for conflicts/i)).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Review step — submit.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /create booking/i }));
+    });
+
+    await waitFor(() => {
+      const postCall = mockFetch.mock.calls.find(
+        ([, init]) => (init as RequestInit | undefined)?.method === "POST"
+      );
+      expect(postCall).toBeDefined();
+      const body = JSON.parse((postCall![1] as RequestInit).body as string);
+      expect(body.payments).toEqual([{ price: 500, status: "unpaid", title: "Deposit" }]);
+    });
+  });
+});
+
+// ── Payments edit diff ────────────────────────────────────────────────────────
+//
+// Changing a payment's price in edit mode must appear in the PATCH diff.
+describe("BookingWizardModal — payments edit diff", () => {
+  it("sends an updated payments array in the PATCH body when a price changes", async () => {
+    const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes("/api/bookings/shifts-on-date")) {
+        return { ok: true, json: async () => ({ shifts: [] }) };
+      }
+      if (url.includes("/api/clients")) {
+        return { ok: true, json: async () => ({ clients: [] }) };
+      }
+      if (init?.method === "PATCH") {
+        return { ok: true, json: async () => ({}) };
+      }
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const initialValues = {
+      client: { mode: "existing" as const, clientId: "aaa", clientName: "Test Client" },
+      title: "Test Shoot",
+      eventType: "portrait" as const,
+      status: "booked" as const,
+      sessions: [
+        { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
+      ],
+      location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
+      amount: { total: 500, deposit: 0, currency: "PHP" as const },
+      payments: [{ price: 100, status: "unpaid" as const, title: "Deposit" }],
+      notes: "",
+    };
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId="aabbccddeeff001122335599"
+          defaultCurrency="PHP"
+          initialValues={initialValues}
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /payments/i })).toBeInTheDocument();
+    });
+
+    // Jump directly to the Payments step.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /payments/i }));
+    });
+
+    await waitFor(() => {
+      expect(document.getElementById("wiz-payment-price-0")).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.change(document.getElementById("wiz-payment-price-0") as HTMLInputElement, {
+        target: { value: "250" },
+      });
+    });
+
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    await waitFor(() => {
+      const patchCall = mockFetch.mock.calls.find(
+        ([, init]) => (init as RequestInit | undefined)?.method === "PATCH"
+      );
+      expect(patchCall).toBeDefined();
+      const body = JSON.parse((patchCall![1] as RequestInit).body as string);
+      expect(body.payments).toEqual([{ price: 250, status: "unpaid", title: "Deposit" }]);
+    });
+  });
+});
+
+// ── Payments loaded from fetched booking (edit mode, no initialValues) ────────
+describe("BookingWizardModal — payments loaded from fetch in edit mode", () => {
+  const BOOKING_ID = "aabbccddeeff001122336600";
+
+  it("pre-fills the Payments step price from the fetched booking's payments array", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (typeof url === "string" && url.includes(`/api/bookings/${BOOKING_ID}`)) {
+          if (!init || init.method === "GET" || !init.method) {
+            return {
+              ok: true,
+              json: async () => ({
+                _id: BOOKING_ID,
+                clientId: "aaaaaaaaaaaaaaaaaaaaaaaa",
+                clientName: "Emma Carter",
+                title: "Carter Wedding",
+                status: "booked",
+                sessions: [{ startAt: "2026-08-15T10:00:00Z", endAt: "2026-08-15T17:00:00Z" }],
+                amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+                payments: [{ price: 30_000, status: "paid" }],
+                notes: "",
+                location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
+                eventType: "wedding",
+              }),
+            };
+          }
+        }
+        if (typeof url === "string" && url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        return { ok: true, json: async () => ({}) };
+      })
+    );
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal mode="edit" bookingId={BOOKING_ID} defaultCurrency="PHP" locale="en" />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /payments/i }));
+    });
+
+    await waitFor(() => {
+      const priceInput = document.getElementById("wiz-payment-price-0") as HTMLInputElement;
+      expect(priceInput).not.toBeNull();
+      expect(priceInput.value).toBe("30000");
+    });
   });
 });
 

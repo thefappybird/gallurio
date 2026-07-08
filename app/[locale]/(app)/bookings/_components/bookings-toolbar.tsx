@@ -18,9 +18,11 @@ import {
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import { CsvImportDialog } from "./csv-import-dialog";
+import { InvoiceThemeDialog } from "./invoice-theme-dialog";
 import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
+import type { InvoiceThemePresetId } from "@/lib/invoices/theme";
 
 const ALL = "__all__";
 
@@ -32,6 +34,7 @@ export function BookingsToolbar({
   teams = [],
   selectedTeams = [],
   isOwner = false,
+  initialInvoiceTheme,
 }: {
   defaultCurrency: string;
   /** When provided, the "New Booking" button calls this directly instead of
@@ -51,6 +54,8 @@ export function BookingsToolbar({
   selectedTeams?: string[];
   /** Whether the current user is a workspace owner. */
   isOwner?: boolean;
+  /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
+  initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -61,6 +66,7 @@ export function BookingsToolbar({
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);
+  const [invoiceThemeOpen, setInvoiceThemeOpen] = useState(false);
 
   // Keep a ref to the latest searchParams so pushParams never captures a stale
   // closure AND never needs searchParams in its own dependency array (which
@@ -205,6 +211,16 @@ export function BookingsToolbar({
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />
+        {isOwner ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            onClick={() => setInvoiceThemeOpen(true)}
+          >
+            {t("invoiceTheme")}
+          </Button>
+        ) : null}
         {canCreate ? (
           <Button
             variant="outline"
@@ -232,6 +248,13 @@ export function BookingsToolbar({
           onClose={() => setImportOpen(false)}
           defaultCurrency={defaultCurrency}
         />
+        {initialInvoiceTheme ? (
+          <InvoiceThemeDialog
+            open={invoiceThemeOpen}
+            onClose={() => setInvoiceThemeOpen(false)}
+            initialTheme={initialInvoiceTheme}
+          />
+        ) : null}
         {canCreate ? (
           <Button
             variant="brand"

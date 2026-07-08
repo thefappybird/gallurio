@@ -356,6 +356,28 @@ describe("updateWorkspaceBusinessAction", () => {
     expect(ws?.contact?.socials?.instagram).toBe("https://instagram.com/sarah");
   });
 
+  it("persists contact.addressLat/addressLng, defaulting to null when omitted", async () => {
+    await seedWorkspaceA();
+
+    const result = await updateWorkspaceBusinessAction({
+      ...validInput,
+      contactAddress: "123 Manila St",
+      contactAddressLat: 14.5995,
+      contactAddressLng: 120.9842,
+    });
+
+    expect(result.ok).toBe(true);
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.contact?.addressLat).toBe(14.5995);
+    expect(ws?.contact?.addressLng).toBe(120.9842);
+
+    const cleared = await updateWorkspaceBusinessAction({ ...validInput, contactAddress: "" });
+    expect(cleared.ok).toBe(true);
+    const wsCleared = await Workspace.findById(WS_A_ID).lean();
+    expect(wsCleared?.contact?.addressLat).toBeNull();
+    expect(wsCleared?.contact?.addressLng).toBeNull();
+  });
+
   it("rejects logoAssetId when ownership verification fails", async () => {
     await seedWorkspaceA();
     vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);

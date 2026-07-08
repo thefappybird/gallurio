@@ -24,6 +24,7 @@ import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { BOOKINGS_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
+import { INVOICE_THEME_PRESETS } from "@/lib/invoices/theme";
 
 type ClientHit = {
   id: string;
@@ -240,6 +241,20 @@ export default async function BookingsPage({
 
   const defaultDate = sp.date ? new Date(sp.date) : new Date();
 
+  // `.lean()` in requireOrg() skips schema defaults, so workspaces created before
+  // `invoiceTheme` existed have no key at all (not the schema default) — fall
+  // back to the classic preset so the toolbar always has a value to seed.
+  const invoiceTheme = workspace.invoiceTheme ?? {
+    preset: "classic" as const,
+    ...INVOICE_THEME_PRESETS.classic,
+  };
+
+  // Gates the pre-download completeness warning in the booking detail modal —
+  // both fields must be non-empty for invoices/receipts to render complete.
+  const businessComplete = Boolean(
+    workspace.contact?.address?.trim() && workspace.contact?.email?.trim()
+  );
+
   // Defensive: if ?detail= is present but the booking doesn't exist (or is
   // not owned by this workspace), strip the param and redirect — prevents the
   // URL from staying broken after a delete, hard-reload, or bad link.
@@ -282,6 +297,7 @@ export default async function BookingsPage({
           selectedTeams={selectedTeamIds}
           writableTeams={writableTeams}
           isOwner={role === "owner"}
+          initialInvoiceTheme={invoiceTheme}
         />
       ) : null}
 
@@ -299,6 +315,7 @@ export default async function BookingsPage({
           selectedTeams={selectedTeamIds}
           writableTeams={writableTeams}
           isOwner={role === "owner"}
+          initialInvoiceTheme={invoiceTheme}
           colorMode={colorMode}
           teamColorMap={teamColorMap}
           messages={{
@@ -335,6 +352,8 @@ export default async function BookingsPage({
           locale={locale}
           teams={teamOptions}
           writableTeams={writableTeams}
+          businessComplete={businessComplete}
+          workspaceId={workspace._id.toString()}
         />
       ) : null}
 

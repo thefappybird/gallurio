@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { cn } from "@/lib/utils";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import type { WizardValues, WizardSession } from "./types";
 
 type Props = {
@@ -17,6 +19,7 @@ export function ReviewStep({ values, locale, teams }: Props) {
   const tWiz = useTranslations("app.bookings.wizard");
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
+  const tPayments = useTranslations("app.bookings.payments");
 
   const clientLabel =
     values.client.mode === "existing"
@@ -59,10 +62,15 @@ export function ReviewStep({ values, locale, teams }: Props) {
       </dl>
 
       {/* Sessions list */}
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {tSessions("reviewLabel")}
-        </p>
+      <CollapsibleDrawer
+        title={
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {tSessions("reviewLabel")} ({(values.sessions ?? []).length})
+          </span>
+        }
+        defaultOpen
+        bodyClassName="max-h-64 overflow-y-auto scrollbar-subtle"
+      >
         <ul className="flex flex-col gap-1.5">
           {(values.sessions ?? []).map((s, i) => (
             <li key={i} className="border border-border px-3 py-2 text-sm">
@@ -73,7 +81,44 @@ export function ReviewStep({ values, locale, teams }: Props) {
             </li>
           ))}
         </ul>
-      </div>
+      </CollapsibleDrawer>
+
+      {/* Payments list */}
+      {(values.payments ?? []).length > 0 ? (
+        <CollapsibleDrawer
+          title={
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {tPayments("reviewLabel")} ({values.payments.length})
+            </span>
+          }
+          defaultOpen
+          bodyClassName="max-h-64 overflow-y-auto scrollbar-subtle"
+        >
+          <ul className="flex flex-col gap-1.5">
+            {values.payments.map((p, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between gap-2 border border-border px-3 py-2 text-sm"
+              >
+                <span className="font-medium">{tPayments("label", { n: i + 1 })}</span>
+                <span className="flex items-center gap-2">
+                  <span>{formatMoney(p.price, values.amount.currency, locale)}</span>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 text-xs",
+                      p.status === "paid"
+                        ? "bg-brand/10 text-brand"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {tPayments(p.status)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </CollapsibleDrawer>
+      ) : null}
     </div>
   );
 }

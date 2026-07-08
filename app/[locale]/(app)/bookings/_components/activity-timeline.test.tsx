@@ -238,4 +238,34 @@ describe("ActivityTimeline", () => {
     expect(screen.getByText("Today")).toBeInTheDocument();
     expect(screen.getByText("Yesterday")).toBeInTheDocument();
   });
+
+  it("renders a translated 'Payment added' action pill for a payment_added entry", () => {
+    const entry: ActivityEntry = {
+      _id: "pay1",
+      action: "payment_added",
+      createdAt: TODAY,
+      diff: { changes: { payments: { before: [], after: [{ price: 100 }] } } },
+    };
+    renderWithProviders(
+      <ActivityTimeline entries={[entry]} locale="en" currency="PHP" />
+    );
+    expect(screen.getByText("Payment added")).toBeInTheDocument();
+  });
+
+  it("renders a payments diff as a label-only 'Payments' pill without before→after", () => {
+    const entry: ActivityEntry = {
+      _id: "pay2",
+      action: "payment_updated",
+      createdAt: TODAY,
+      diff: {
+        changes: {
+          payments: { before: [{ price: 100 }], after: [{ price: 200 }] },
+        },
+      },
+    };
+    renderWithProviders(
+      <ActivityTimeline entries={[entry]} locale="en" currency="PHP" />
+    );
+    expect(screen.getByText("Payments")).toBeInTheDocument();
+  });
 });

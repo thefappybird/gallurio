@@ -104,6 +104,8 @@ export default async function SettingsCatchallPage({
     timezone: workspace.timezone ?? "Asia/Manila",
     contactEmail: workspace.contact?.email ?? "",
     contactAddress: workspace.contact?.address ?? "",
+    contactAddressLat: workspace.contact?.addressLat ?? null,
+    contactAddressLng: workspace.contact?.addressLng ?? null,
     logoUrl: workspace.logoUrl ?? "",
     logoAssetId: workspace.logoAssetId ?? "",
   };

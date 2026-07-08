@@ -35,3 +35,4 @@ export {
   PageviewVisitorSeen,
   type PageviewVisitorSeenDoc,
 } from "./PageviewVisitorSeen";
+export { Counter, type CounterDoc } from "./Counter";

@@ -200,7 +200,7 @@
         "deleted": "tinanggal",
         "status_changed": "binago ang status",
         "client_changed": "binago ang kliyente",
-        "payment_added": "idinagdag ang bayad",
+        "payment_added": "nagdagdag ng bayad",
         "payment_updated": "na-update ang bayad"
       }
     },
@@ -237,7 +237,8 @@
         "showPast": "Ipakita ang nakaraan",
         "import": "Mag-import ng CSV",
         "export": "Mag-export ng CSV",
-        "add": "Bagong booking"
+        "add": "Bagong booking",
+        "invoiceTheme": "Tema ng invoice"
       },
       "teamPicker": {
         "allTeams": "Lahat ng koponan",
@@ -381,6 +382,20 @@
         "anniversary": "Anibersaryo",
         "other": "Iba pa"
       },
+      "invoiceThemeDialog": {
+        "title": "Tema ng invoice",
+        "presets": {
+          "classic": "Klasiko",
+          "slate": "Slate",
+          "navyGold": "Navy Gold",
+          "forest": "Forest",
+          "custom": "Custom"
+        },
+        "mainColor": "Pangunahing kulay",
+        "accentColor": "Accent na kulay",
+        "saveAndApply": "I-save at ilapat",
+        "cancel": "Kanselahin"
+      },
       "detail": {
         "past": "Lipas na",
         "showPast": "Ipakita ang lipas na sesyon",
@@ -390,13 +405,15 @@
           "client": "Kliyente",
           "event": "Event",
           "pricing": "Presyo",
-          "eventPricing": "Event at Lokasyon",
+          "eventPricing": "Event",
+          "payments": "Mga bayad",
           "sessionsLocation": "Mga Sesyon",
           "activity": "Mga tala at aktibidad"
         },
         "sections": {
           "schedule": "Iskedyul",
           "pricing": "Presyo",
+          "payments": "Mga bayad",
           "history": "Kasaysayan"
         },
         "fields": {
@@ -460,7 +477,9 @@
             "updated": "Na-update",
             "status_changed": "Nabago ang status",
             "client_changed": "Nabago ang kliyente",
-            "deleted": "Natanggal"
+            "deleted": "Natanggal",
+            "payment_added": "Nagdagdag ng bayad",
+            "payment_updated": "Na-update ang bayad"
           },
           "today": "Ngayon",
           "yesterday": "Kahapon",
@@ -469,6 +488,7 @@
         "cancel": "Kanselahin ang booking",
         "restore": "I-restore ang booking",
         "invoice": "I-download ang invoice",
+        "receipt": "I-download ang resibo",
         "discardChanges": "Itapon ang mga pagbabago",
         "saveChanges": "I-save ang mga pagbabago",
         "pendingBadge": "{count} hindi pa nai-save",
@@ -491,6 +511,14 @@
           "discard": "Itapon ang hindi pa nakumpirma at i-save",
           "cancel": "Bumalik",
           "invalidError": "May mga pagbabago na may error — ayusin muna bago isumite."
+        },
+        "incompleteBusiness": {
+          "title": "Hindi kumpleto ang impormasyon ng negosyo",
+          "bodyInvoice": "Ang address at email ng negosyo mo ay hindi pa naka-set up sa settings. Magiging hindi kumpleto ang datos sa invoice mo.",
+          "bodyReceipt": "Ang address at email ng negosyo mo ay hindi pa naka-set up sa settings. Magiging hindi kumpleto ang datos sa resibo mo.",
+          "dontShowAgain": "Huwag nang ipakita ulit",
+          "cancel": "Kanselahin",
+          "downloadAnyway": "I-download pa rin"
         }
       },
       "confirm": {
@@ -548,6 +576,22 @@
         "pastHidden": "{count, plural, one {# nakaraang sesyon ang nakatago} other {# nakaraang sesyon ang nakatago}} — i-toggle para ipakita",
         "unsaved": "Hindi pa nai-save"
       },
+      "payments": {
+        "label": "Bayad {n}",
+        "add": "Magdagdag ng bayad",
+        "remove": "Alisin ang bayad",
+        "reviewLabel": "Mga bayad",
+        "title": "Pamagat",
+        "price": "Presyo",
+        "status": "Katayuan",
+        "paid": "Nabayaran",
+        "unpaid": "Hindi pa bayad",
+        "paidOn": "Binayaran noong {date}",
+        "empty": "Wala pang naka-iskedyul na bayad para sa booking na ito",
+        "exceedsBalance": "Lumalampas sa natitirang balanse",
+        "titleRequired": "Kailangan ang pamagat.",
+        "priceRequired": "Dapat mas mataas sa 0 ang halaga."
+      },
       "wizard": {
         "createTitle": "Bagong booking",
         "editTitle": "I-edit ang booking",
@@ -580,7 +624,8 @@
           "client": "Kliyente",
           "event": "Event",
           "pricing": "Presyo",
-          "eventPricing": "Event at Presyo",
+          "eventPricing": "Event",
+          "payments": "Mga Bayad",
           "sessionsLocation": "Mga Sesyon",
           "review": "Suriin"
         },
@@ -2166,6 +2211,8 @@
       "no_active_workspace": "Walang aktibong workspace. Pumili ng workspace at subukan muli.",
       "workspace_not_found": "Hindi natagpuan ang workspace.",
       "owner_only": "Ang may-ari lang ng workspace ang makakagawa nito.",
+      "invalid_data": "Hindi wastong datos. Pakisuri ang iyong input at subukan muli.",
+      "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
       "finish_onboarding": "Tapusin muna ang onboarding bago baguhin ang mga setting ng workspace.",
       "invalid_input": "Pakitingnan ang form at subukan muli.",
       "rate_limited": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",

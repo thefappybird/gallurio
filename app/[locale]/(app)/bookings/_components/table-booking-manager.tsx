@@ -7,6 +7,7 @@ import { BookingsToolbar } from "./bookings-toolbar";
 import { BookingWizardModal } from "./booking-wizard-modal";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
+import type { InvoiceThemePresetId } from "@/lib/invoices/theme";
 
 type ClientHit = {
   id: string;
@@ -32,6 +33,8 @@ type Props = {
   isOwner: boolean;
   /** Teams the current user may assign to new bookings (writable teams). */
   writableTeams: BookingTeamOption[];
+  /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
+  initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
 };
 
 /**
@@ -53,6 +56,7 @@ export function TableBookingManager({
   selectedTeams,
   isOwner,
   writableTeams,
+  initialInvoiceTheme,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -120,6 +124,7 @@ export function TableBookingManager({
         teams={teams}
         selectedTeams={selectedTeams}
         isOwner={isOwner}
+        initialInvoiceTheme={initialInvoiceTheme}
       />
       {addOpen ? (
         <BookingWizardModal

@@ -41,8 +41,20 @@ export async function updateWorkspaceBusinessAction(
   if (!parsed.success)
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
 
-  const { name, slug, businessType, country, currency, timezone, contactEmail, contactAddress, logoUrl, logoAssetId } =
-    parsed.data;
+  const {
+    name,
+    slug,
+    businessType,
+    country,
+    currency,
+    timezone,
+    contactEmail,
+    contactAddress,
+    contactAddressLat,
+    contactAddressLng,
+    logoUrl,
+    logoAssetId,
+  } = parsed.data;
 
   const slugClash = await Workspace.findOne({
     slug,
@@ -79,6 +91,8 @@ export async function updateWorkspaceBusinessAction(
           timezone,
           "contact.email": contactEmail,
           "contact.address": contactAddress,
+          "contact.addressLat": contactAddressLat ?? null,
+          "contact.addressLng": contactAddressLng ?? null,
           logoUrl,
           logoAssetId,
         },

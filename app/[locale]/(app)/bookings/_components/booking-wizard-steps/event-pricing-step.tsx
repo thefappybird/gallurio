@@ -20,10 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EVENT_TYPES, type EventType } from "@/lib/validators/booking";
-import {
-  SUPPORTED_CURRENCIES,
-  type SupportedCurrency,
-} from "@/lib/validators/workspace";
 import { cn } from "@/lib/utils";
 import { LocationPicker } from "@/components/ui/location-picker";
 import type { WizardValues } from "./types";
@@ -64,7 +60,6 @@ export function EventPricingStep({
   const t = useTranslations("app.bookings.wizard.event");
   const tWiz = useTranslations("app.bookings.wizard");
   const tEvent = useTranslations("app.bookings.eventTypes");
-  const tPricing = useTranslations("app.bookings.wizard.pricing");
 
   const locationValue = watch("location");
   const [locationTouched, setLocationTouched] = useState(false);
@@ -154,68 +149,6 @@ export function EventPricingStep({
             />
           </div>
         ) : null}
-      </div>
-
-      {/* Pricing fields */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="wiz-total">{tPricing("total")}</Label>
-          <Input
-            id="wiz-total"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="1"
-            {...register("amount.total", { valueAsNumber: true })}
-          />
-          {errors.amount?.total ? (
-            <p className="text-xs text-destructive">{errors.amount.total.message}</p>
-          ) : null}
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="wiz-deposit">{tPricing("deposit")}</Label>
-          <Input
-            id="wiz-deposit"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="1"
-            {...register("amount.deposit", { valueAsNumber: true })}
-          />
-          {errors.amount?.deposit ? (
-            <p className="text-xs text-destructive">{errors.amount.deposit.message}</p>
-          ) : null}
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="wiz-currency">{tPricing("currency")}</Label>
-          <Controller
-            control={control}
-            name="amount.currency"
-            render={({ field }) => (
-              <Select<SupportedCurrency>
-                value={field.value}
-                onValueChange={(v) => v && field.onChange(v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={tPricing("currency")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUPPORTED_CURRENCIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-
-        <p className="sm:col-span-3 text-xs text-muted-foreground">
-          {tPricing("hint")}
-        </p>
       </div>
 
       {/* Location — required, applies to all sessions */}

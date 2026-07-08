@@ -70,6 +70,8 @@ const workspaceSchema = new Schema(
       email: { type: String, default: "" },
       phone: { type: String, default: "" },
       address: { type: String, default: "" },
+      addressLat: { type: Number, default: null },
+      addressLng: { type: Number, default: null },
       socials: {
         instagram: { type: String, default: "" },
         facebook: { type: String, default: "" },
@@ -233,6 +235,11 @@ const workspaceSchema = new Schema(
         noindex: { type: Boolean, default: false },
         keywords: { type: [String], default: [] },
       },
+    },
+    invoiceTheme: {
+      preset: { type: String, enum: ["classic", "slate", "navyGold", "forest", "custom"], default: "classic" },
+      main: { type: String, default: "#1A1A1A" },
+      accent: { type: String, default: "#FFFFFF" },
     },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
 

@@ -237,7 +237,8 @@
         "showPast": "Show past",
         "import": "Import CSV",
         "export": "Export CSV",
-        "add": "New booking"
+        "add": "New booking",
+        "invoiceTheme": "Invoice theme"
       },
       "teamPicker": {
         "allTeams": "All teams",
@@ -381,6 +382,20 @@
         "anniversary": "Anniversary",
         "other": "Other"
       },
+      "invoiceThemeDialog": {
+        "title": "Invoice theme",
+        "presets": {
+          "classic": "Classic",
+          "slate": "Slate",
+          "navyGold": "Navy Gold",
+          "forest": "Forest",
+          "custom": "Custom"
+        },
+        "mainColor": "Main color",
+        "accentColor": "Accent color",
+        "saveAndApply": "Save and apply",
+        "cancel": "Cancel"
+      },
       "detail": {
         "past": "Past",
         "showPast": "Show past sessions",
@@ -390,13 +405,15 @@
           "client": "Client",
           "event": "Event",
           "pricing": "Pricing",
-          "eventPricing": "Event & Location",
+          "eventPricing": "Event",
+          "payments": "Payments",
           "sessionsLocation": "Sessions",
           "activity": "Notes & activity"
         },
         "sections": {
           "schedule": "Schedule",
           "pricing": "Pricing",
+          "payments": "Payments",
           "history": "History"
         },
         "fields": {
@@ -460,7 +477,9 @@
             "updated": "Updated",
             "status_changed": "Status changed",
             "client_changed": "Client changed",
-            "deleted": "Deleted"
+            "deleted": "Deleted",
+            "payment_added": "Payment added",
+            "payment_updated": "Payment updated"
           },
           "today": "Today",
           "yesterday": "Yesterday",
@@ -469,6 +488,7 @@
         "cancel": "Cancel booking",
         "restore": "Restore booking",
         "invoice": "Download invoice",
+        "receipt": "Download receipt",
         "discardChanges": "Discard changes",
         "saveChanges": "Save changes",
         "pendingBadge": "{count} unsaved",
@@ -491,6 +511,14 @@
           "discard": "Discard unconfirmed & save",
           "cancel": "Go back",
           "invalidError": "Some changes have errors — fix them before submitting."
+        },
+        "incompleteBusiness": {
+          "title": "Business info incomplete",
+          "bodyInvoice": "Your business address and contact email are not configured in your settings page. Your invoice will contain incomplete data.",
+          "bodyReceipt": "Your business address and contact email are not configured in your settings page. Your receipt will contain incomplete data.",
+          "dontShowAgain": "Don't show this again",
+          "cancel": "Cancel",
+          "downloadAnyway": "Download anyway"
         }
       },
       "confirm": {
@@ -548,6 +576,22 @@
         "pastHidden": "{count, plural, one {# past session hidden} other {# past sessions hidden}} — toggle to show",
         "unsaved": "Unsaved"
       },
+      "payments": {
+        "label": "Payment {n}",
+        "add": "Add payment",
+        "remove": "Remove payment",
+        "reviewLabel": "Payments",
+        "title": "Title",
+        "price": "Price",
+        "status": "Status",
+        "paid": "Paid",
+        "unpaid": "Unpaid",
+        "paidOn": "Paid on {date}",
+        "empty": "No payments scheduled yet for this booking",
+        "exceedsBalance": "Exceeds remaining balance",
+        "titleRequired": "Title is required",
+        "priceRequired": "Amount must be greater than 0"
+      },
       "wizard": {
         "createTitle": "New booking",
         "editTitle": "Edit booking",
@@ -580,7 +624,8 @@
           "client": "Client",
           "event": "Event",
           "pricing": "Pricing",
-          "eventPricing": "Event & Pricing",
+          "eventPricing": "Event",
+          "payments": "Payments",
           "sessionsLocation": "Sessions",
           "review": "Review"
         },
@@ -2166,6 +2211,8 @@
       "no_active_workspace": "No active workspace. Pick a workspace and try again.",
       "workspace_not_found": "Workspace not found.",
       "owner_only": "Only the workspace owner can do this.",
+      "invalid_data": "Invalid data. Please check your input and try again.",
+      "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
       "finish_onboarding": "Finish onboarding before changing workspace settings.",
       "invalid_input": "Please check the form and try again.",
       "rate_limited": "Too many attempts. Try again in {seconds} seconds.",

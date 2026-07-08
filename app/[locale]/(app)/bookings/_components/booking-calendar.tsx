@@ -387,7 +387,7 @@ export function MonthBookingEvent({
   const timeRange = formatTimeRange(booking.start, booking.end, timeMode);
   const isPast = booking.end < new Date();
   const isStatusMuted =
-    booking.status === "cancelled" || booking.status === "completed";
+    booking.status === "cancelled" || (booking.status === "completed" && isPast);
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
   const statusLabel = typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status);
   const labelOverride = booking.kind === "inquiry" ? tInq("inquiry") : undefined;
@@ -429,7 +429,7 @@ export function MonthBookingEvent({
 }
 
 /** Week/day view: three-line stacked — title / client / time range. */
-function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
+export function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Hooks must be called unconditionally before any early return.
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
@@ -448,7 +448,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt, timeMode, ev.workspaceTz);
   const isContinuation = ev.isMorningContinuation === true;
   const isPast = ev.end < new Date();
-  const isStatusMuted = ev.status === "cancelled" || ev.status === "completed";
+  const isStatusMuted = ev.status === "cancelled" || (ev.status === "completed" && isPast);
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
   const statusLabel = typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status);
   const labelOverride = ev.kind === "inquiry" ? tInq("inquiry") : undefined;

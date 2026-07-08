@@ -77,3 +77,28 @@ it("new workspace has formDir defaulting to empty string", async () => {
   });
   expect(ws.publicPage?.formDir).toBe("");
 });
+
+describe("Workspace.contact.addressLat / addressLng defaults", () => {
+  it("new workspace has addressLat and addressLng defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "address-coords-studio",
+      name: "Address Coords Studio",
+      ownerUserId: "user_coords_1",
+    });
+    expect(ws.contact?.addressLat).toBeNull();
+    expect(ws.contact?.addressLng).toBeNull();
+  });
+});
+
+describe("Workspace.invoiceTheme defaults", () => {
+  it("new workspace has invoiceTheme defaulting to the classic preset", async () => {
+    const ws = await Workspace.create({
+      slug: "invoice-theme-studio",
+      name: "Invoice Theme Studio",
+      ownerUserId: "user_invoice_1",
+    });
+    expect(ws.invoiceTheme?.preset).toBe("classic");
+    expect(ws.invoiceTheme?.main).toBe("#1A1A1A");
+    expect(ws.invoiceTheme?.accent).toBe("#FFFFFF");
+  });
+});

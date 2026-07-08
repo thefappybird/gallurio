@@ -244,6 +244,25 @@ describe("updateWorkspaceBusinessSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts optional contactAddressLat/Lng within range and rejects out-of-range values", () => {
+    const ok = updateWorkspaceBusinessSchema.safeParse({
+      ...validUpdateBusiness,
+      contactAddressLat: 14.5995,
+      contactAddressLng: 120.9842,
+    });
+    expect(ok.success).toBe(true);
+    if (ok.success) {
+      expect(ok.data.contactAddressLat).toBe(14.5995);
+      expect(ok.data.contactAddressLng).toBe(120.9842);
+    }
+
+    const bad = updateWorkspaceBusinessSchema.safeParse({
+      ...validUpdateBusiness,
+      contactAddressLat: 200,
+    });
+    expect(bad.success).toBe(false);
+  });
 });
 
 describe("publicPageSettingsSchema", () => {

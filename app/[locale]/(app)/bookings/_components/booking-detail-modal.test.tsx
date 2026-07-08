@@ -138,6 +138,7 @@ const MOCK_BOOKING = {
   lastSessionEnd: FUTURE_SESSION.endAt,
   location: { address: "Test Venue" },
   amount: { total: 10000, deposit: 3000, currency: "PHP" },
+  payments: [] as { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null }[],
   notes: "",
 };
 
@@ -186,10 +187,10 @@ function makeFetch({
   });
 }
 
-function renderModal() {
+function renderModal(props: { businessComplete?: boolean; workspaceId?: string } = {}) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <BookingDetailModal bookingId={BOOKING_ID} locale="en" />
+      <BookingDetailModal bookingId={BOOKING_ID} locale="en" {...props} />
     </NextIntlClientProvider>
   );
 }
@@ -331,14 +332,42 @@ describe("BookingDetailModal — render", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Piece A — Download invoice button on completed bookings
+// Piece A — Download invoice/receipt button, gated on booking.payments
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Download invoice button", () => {
-  it("renders and opens the invoice route when the booking is completed", async () => {
+describe("Download invoice/receipt button", () => {
+  const PAID_PAYMENT = {
+    price: 10000,
+    status: "paid" as const,
+    createdAt: new Date().toISOString(),
+    paidAt: new Date().toISOString(),
+  };
+
+  it("renders Download receipt and opens the receipt route when completed with payments", async () => {
     vi.stubGlobal(
       "fetch",
-      makeFetch({ booking: { ...MOCK_BOOKING, status: "completed" } })
+      makeFetch({
+        booking: { ...MOCK_BOOKING, status: "completed", payments: [PAID_PAYMENT] },
+      })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal();
+    await waitForLoad();
+
+    const btn = screen.getByRole("button", { name: "Download receipt" });
+    fireEvent.click(btn);
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/receipt`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    openSpy.mockRestore();
+  });
+
+  it("renders Download invoice and opens the invoice route when not completed with payments", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
     );
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     renderModal();
@@ -354,13 +383,143 @@ describe("Download invoice button", () => {
     openSpy.mockRestore();
   });
 
-  it("does not render when the booking is not completed", async () => {
+  it("does not render when the booking has no payments", async () => {
     renderModal();
     await waitForLoad();
 
     expect(
       screen.queryByRole("button", { name: "Download invoice" })
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Download receipt" })
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Incomplete business warning", () => {
+  const PAID_PAYMENT = {
+    price: 10000,
+    status: "paid" as const,
+    createdAt: new Date().toISOString(),
+    paidAt: new Date().toISOString(),
+  };
+
+  it("shows the incomplete-business warning dialog instead of downloading when business info is incomplete", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Business info incomplete")).toBeInTheDocument();
+    });
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+
+  it("clicking Cancel closes the warning dialog without downloading", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+    await waitFor(() => {
+      expect(screen.getByText("Business info incomplete")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Business info incomplete")).not.toBeInTheDocument();
+    });
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+
+  it("clicking Download anyway opens the PDF and does not set the localStorage flag", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+    await waitFor(() => {
+      expect(screen.getByText("Business info incomplete")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Download anyway" }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/invoice`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    expect(
+      window.localStorage.getItem("gw_hide_incomplete_business_warning:ws-1")
+    ).toBeNull();
+    openSpy.mockRestore();
+  });
+
+  it("clicking Don't show this again sets the localStorage flag and downloads", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+    await waitFor(() => {
+      expect(screen.getByText("Business info incomplete")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Don't show this again" }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/invoice`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    expect(
+      window.localStorage.getItem("gw_hide_incomplete_business_warning:ws-1")
+    ).toBe("1");
+    openSpy.mockRestore();
+    window.localStorage.clear();
+  });
+
+  it("skips the warning dialog and downloads directly once the localStorage flag is set", async () => {
+    window.localStorage.setItem("gw_hide_incomplete_business_warning:ws-1", "1");
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal({ businessComplete: false, workspaceId: "ws-1" });
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download invoice" }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/invoice`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    expect(screen.queryByText("Business info incomplete")).not.toBeInTheDocument();
+    openSpy.mockRestore();
+    window.localStorage.clear();
   });
 });
 
@@ -769,6 +928,7 @@ describe("False-conflict regression — time-overlap filtering", () => {
       lastSessionEnd: session2End,
       location: { address: "" },
       amount: { total: 0, deposit: 0, currency: "PHP" },
+      payments: [] as { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null }[],
       notes: "",
     };
   }
@@ -937,32 +1097,46 @@ describe("pendingCount — includes all pending types", () => {
 // Issue new-1 — pill tabs styling
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Pill tabs — four tabs render and switch panels", () => {
-  it("renders four tab triggers (Client, Event & Location, Sessions, Notes & activity)", async () => {
+describe("Pill tabs — five tabs render and switch panels", () => {
+  it("renders five tab triggers (Client, Event, Payments, Sessions, Notes & activity)", async () => {
     renderModal();
     await waitForLoad();
 
     const clientTab = screen.getByRole("tab", { name: /client/i });
-    const eventPricingTab = screen.getByRole("tab", { name: /event & location/i });
+    const eventTab = screen.getByRole("tab", { name: /^event$/i });
+    const paymentsTab = screen.getByRole("tab", { name: /^payments$/i });
     const sessionsLocationTab = screen.getByRole("tab", { name: /^sessions$/i });
     const activityTab = screen.getByRole("tab", { name: /notes/i });
 
     expect(clientTab).toBeInTheDocument();
-    expect(eventPricingTab).toBeInTheDocument();
+    expect(eventTab).toBeInTheDocument();
+    expect(paymentsTab).toBeInTheDocument();
     expect(sessionsLocationTab).toBeInTheDocument();
     expect(activityTab).toBeInTheDocument();
   });
 
-  it("switching to the Event & Location tab shows the currency field", async () => {
+  it("switching to the Payments tab shows the currency field", async () => {
     renderModal();
     await waitForLoad();
 
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^payments$/i }));
 
     await waitFor(() => {
-      // Currency field label renders in the eventPricing tab panel
+      // Currency field label renders in the Payments tab panel (moved off Event)
       expect(screen.getByText("Currency")).toBeInTheDocument();
     });
+  });
+
+  it("the Event tab no longer shows the currency field", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: /^event$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /edit event type/i })).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Currency")).not.toBeInTheDocument();
   });
 });
 
@@ -1058,16 +1232,16 @@ describe("Header inline title editing", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Issue new-2b — event-type control in Event & Location tab
+// Issue new-2b — event-type control in the Event tab
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Event & Location tab — event-type field", () => {
+describe("Event tab — event-type field", () => {
   it("renders the event-type value as a pill with an edit button (no dropdown until clicked)", async () => {
     renderModal();
     await waitForLoad();
 
-    // Switch to Event & Location tab
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    // Switch to the Event tab
+    fireEvent.click(screen.getByRole("tab", { name: /^event$/i }));
 
     // The event type shows as a read-only value + pencil edit button — the
     // dropdown is only mounted after the pencil is clicked (reveal pattern).
@@ -1087,7 +1261,7 @@ describe("Event & Location tab — event-type field", () => {
     renderModal();
     await waitForLoad();
 
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^event$/i }));
 
     const editBtn = await screen.findByRole("button", {
       name: /edit event type/i,
@@ -1585,11 +1759,11 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
   // ── EditableField undrafted tests ──────────────────────────────────────────
 
   /**
-   * Switch to the Event & Location tab and open the Deposit field's inline editor
+   * Switch to the Payments tab and open the Deposit field's inline editor
    * WITHOUT clicking ✓ (leaving an undrafted change).
    */
   async function openDepositEditorWithoutConfirm(depositValue = "5000") {
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^payments$/i }));
     await waitFor(() =>
       expect(screen.getByText("Deposit")).toBeInTheDocument()
     );
@@ -1611,8 +1785,8 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Switch to Event & Location tab and draft the Total via ✓
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    // Switch to the Payments tab and draft the Total via ✓
+    fireEvent.click(screen.getByRole("tab", { name: /^payments$/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
@@ -1654,8 +1828,8 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Draft the Total via ✓ (Event & Location tab)
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    // Draft the Total via ✓ (Payments tab)
+    fireEvent.click(screen.getByRole("tab", { name: /^payments$/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
@@ -1711,8 +1885,8 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Draft the Total via ✓ (Event & Location tab)
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    // Draft the Total via ✓ (Payments tab)
+    fireEvent.click(screen.getByRole("tab", { name: /^payments$/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
@@ -1764,7 +1938,7 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     await waitForLoad();
 
     // Draft the Total via ✓ — keep it at 10000 (the MOCK_BOOKING default)
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^payments$/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
@@ -1821,7 +1995,7 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     // renders — hasPending is only true once at least one field is
     // confirmed, an open-but-uncommitted editor alone doesn't trigger it,
     // same reason EF-1/EF-4 draft Total first).
-    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^payments$/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
@@ -1926,5 +2100,485 @@ describe("BookingDetailModal — time-format preference", () => {
 
     const sessionPanel = screen.getByRole("tabpanel", { name: "Sessions" });
     expect(within(sessionPanel).queryByText(/\b(AM|PM)\b/)).not.toBeInTheDocument();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payments section — draft add + Save
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Payments section — empty state", () => {
+  it("shows the empty-payments message centered above the Add payment button when there are no payments", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("No payments scheduled yet for this booking")
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /add payment/i })).toBeInTheDocument();
+  });
+});
+
+describe("Payments section — title field", () => {
+  it("typing a title on a draft payment includes it in the PATCH body on Save", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+
+    const titleInput = screen.getByLabelText("Title");
+    fireEvent.change(titleInput, { target: { value: "Deposit installment" } });
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "500" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([
+        { price: 500, status: "unpaid", title: "Deposit installment" },
+      ]);
+    });
+  });
+
+  it("typing a title on an existing payment edit includes it in the PATCH body on Save", async () => {
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "",
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 1/i }));
+
+    const titleInput = screen.getByLabelText("Title");
+    fireEvent.change(titleInput, { target: { value: "Final balance" } });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([
+        { price: 1000, status: "unpaid", title: "Final balance" },
+      ]);
+    });
+  });
+
+  it("shows the payment's title as its primary label when set", async () => {
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "Booking fee",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Booking fee")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("Payments section — cap to remaining balance", () => {
+  it("shows an inline error when a draft payment's price exceeds the remaining balance", async () => {
+    // MOCK_BOOKING: total 10000, deposit 3000 → remaining balance 7000.
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "8000" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Exceeds remaining balance")).toBeInTheDocument();
+    });
+  });
+
+  it("shows an inline error and disables Confirm when an existing payment's edited price exceeds the remaining balance", async () => {
+    // total 10000, deposit 3000 → remaining balance (excluding this payment) 7000.
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 1/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "8000" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Exceeds remaining balance")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /^confirm$/i })).toBeDisabled();
+  });
+
+  it("disables the Add payment button once the remaining balance reaches zero", async () => {
+    // total 10000, deposit 3000, one payment of 7000 → remaining balance 0.
+    const FULL_PAYMENT = {
+      price: 7000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [FULL_PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add payment/i })).toBeDisabled();
+    });
+  });
+});
+
+describe("Payments section — delete existing payment", () => {
+  it("removes an existing payment from the PATCH body on Save after clicking its delete button", async () => {
+    const PAYMENT_0 = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      paidAt: null,
+      title: "",
+    };
+    const PAYMENT_1 = {
+      price: 2000,
+      status: "unpaid" as const,
+      createdAt: "2026-01-02T00:00:00.000Z",
+      paidAt: null,
+      title: "",
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [PAYMENT_0, PAYMENT_1] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /delete payment 1/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([PAYMENT_1]);
+    });
+  });
+});
+
+describe("Payments section", () => {
+  it("adds a draft payment via Add payment and includes it in the PATCH body on Save", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "500" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([{ price: 500, status: "unpaid", title: "" }]);
+    });
+  });
+
+  it("shows a Status control defaulting to Unpaid for a new draft payment", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+
+    const statusTrigger = screen.getByRole("combobox", { name: "Status" });
+    expect(within(statusTrigger).getByText("Unpaid")).toBeInTheDocument();
+  });
+
+  it("clears a draft payment when Discard changes is clicked", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    expect(screen.getByLabelText("Price")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /discard changes/i }));
+
+    expect(screen.queryByLabelText("Price")).not.toBeInTheDocument();
+  });
+
+  it("removes a draft payment via its remove button", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /add payment/i }));
+    expect(screen.getByLabelText("Price")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /remove payment/i }));
+
+    expect(screen.queryByLabelText("Price")).not.toBeInTheDocument();
+  });
+
+  it("edits an existing payment's price and includes the merged payments array in the PATCH body on Save", async () => {
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 1/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "2000" } });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([{ price: 2000, status: "unpaid" }]);
+    });
+  });
+
+  it("flips an existing payment from unpaid to paid via the existing-payment Status control and sends it in the PATCH body on Save", async () => {
+    const EXISTING_PAYMENT = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [EXISTING_PAYMENT] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 1/i }));
+
+    const statusTrigger = screen.getByRole("combobox", { name: "Status" });
+    fireEvent.click(statusTrigger);
+    const paidOption = screen.getByRole("option", { name: "Paid" });
+    fireEvent.pointerMove(paidOption);
+    fireEvent.mouseOver(paidOption);
+    fireEvent.mouseMove(paidOption);
+    fireEvent.click(paidOption);
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([{ price: 1000, status: "paid" }]);
+    });
+  });
+
+  it("edits payment index 1 of a 2-payment booking without corrupting index 0", async () => {
+    const PAYMENT_0 = {
+      price: 1000,
+      status: "unpaid" as const,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      paidAt: null,
+    };
+    const PAYMENT_1 = {
+      price: 2000,
+      status: "unpaid" as const,
+      createdAt: "2026-01-02T00:00:00.000Z",
+      paidAt: null,
+    };
+    const fetchMock = makeFetch({
+      booking: { ...MOCK_BOOKING, payments: [PAYMENT_0, PAYMENT_1] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+    fireEvent.click(screen.getByRole("button", { name: /edit payment 2/i }));
+
+    const priceInput = screen.getByLabelText("Price");
+    fireEvent.change(priceInput, { target: { value: "3000" } });
+
+    const statusTrigger = screen.getByRole("combobox", { name: "Status" });
+    fireEvent.click(statusTrigger);
+    const paidOption = screen.getByRole("option", { name: "Paid" });
+    fireEvent.pointerMove(paidOption);
+    fireEvent.mouseOver(paidOption);
+    fireEvent.mouseMove(paidOption);
+    fireEvent.click(paidOption);
+
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body.payments).toEqual([
+        PAYMENT_0,
+        { price: 3000, status: "paid" },
+      ]);
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Outstanding balance — must reflect payments, not just total - deposit
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Header outstanding balance", () => {
+  it("does not reduce outstanding balance for an unpaid scheduled payment", async () => {
+    // total 10000, deposit 3000 → outstanding stays 7000; an unpaid payment
+    // isn't money in hand yet, so it must not clear the balance.
+    const PAYMENT = {
+      price: 2000,
+      status: "unpaid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+      title: "",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    expect(screen.getByText("Outstanding balance: ₱7,000")).toBeInTheDocument();
+  });
+
+  it("subtracts a paid payment from total - deposit", async () => {
+    // total 10000, deposit 3000, paid payment 2000 → outstanding 5000.
+    const PAYMENT = {
+      price: 2000,
+      status: "paid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
+      title: "",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+
+    expect(screen.getByText("Outstanding balance: ₱5,000")).toBeInTheDocument();
   });
 });

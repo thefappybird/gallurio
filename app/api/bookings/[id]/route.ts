@@ -11,6 +11,7 @@ import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/noti
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
+import { normalizePayments, isCompletionEligible, remainingBalance, type PaymentInput } from "@/lib/bookings/payment-rules";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/email/booking/bookingCancelled";
 
@@ -267,7 +268,7 @@ export async function PATCH(req: Request, { params }: Params) {
     const before = beforeOf(k);
     // For sessions arrays, always treat as changed (deep equality is expensive
     // and the client only sends sessions when it intends to update).
-    if (k !== "sessions" && before === value) continue;
+    if (k !== "sessions" && k !== "payments" && before === value) continue;
     setOp[k] = value;
     if (!SILENT_KEYS.has(k)) diff[k] = { before, after: value };
   }
@@ -280,6 +281,10 @@ export async function PATCH(req: Request, { params }: Params) {
     const ends = sessions.map((s) => new Date(s.endAt).getTime());
     setOp.firstSessionStart = new Date(Math.min(...starts));
     setOp.lastSessionEnd = new Date(Math.max(...ends));
+  }
+
+  if ("payments" in setOp) {
+    setOp.payments = normalizePayments(setOp.payments as PaymentInput[]);
   }
 
   // Apply the validated team reassignment into the same $set + activity diff.
@@ -394,6 +399,52 @@ export async function PATCH(req: Request, { params }: Params) {
       await mongoSession.endSession();
     }
   } else {
+    // Completion guard: reject any transition to "completed" unless every
+    // payment is paid and deposit+payments sum matches the total, regardless
+    // of caller. Uses the POST-patch effective payments/amount since one PATCH
+    // can change amount, payments, and status together.
+    if (setOp.status === "completed") {
+      const effectivePayments = ("payments" in setOp ? setOp.payments : existing.payments ?? []) as
+        { price: number; status: "unpaid" | "paid" }[];
+      const effectiveAmount = {
+        total: (setOp["amount.total"] as number | undefined) ?? existing.amount?.total ?? 0,
+        deposit: (setOp["amount.deposit"] as number | undefined) ?? existing.amount?.deposit ?? 0,
+      };
+      if (!isCompletionEligible(effectivePayments, effectiveAmount)) {
+        return NextResponse.json({ error: "completion_requires_full_payment" }, { status: 422 });
+      }
+    }
+
+    // Reject a payments/amount patch that would push payments past the
+    // remaining balance (total - deposit), regardless of status transition.
+    if ("payments" in setOp || "amount.total" in setOp || "amount.deposit" in setOp) {
+      const effectivePayments = ("payments" in setOp ? setOp.payments : existing.payments ?? []) as
+        { price: number }[];
+      const effectiveAmount = {
+        total: (setOp["amount.total"] as number | undefined) ?? existing.amount?.total ?? 0,
+        deposit: (setOp["amount.deposit"] as number | undefined) ?? existing.amount?.deposit ?? 0,
+      };
+      if (remainingBalance(effectivePayments, effectiveAmount) < -0.005) {
+        return NextResponse.json({ error: "payments_exceed_balance" }, { status: 422 });
+      }
+    }
+
+    // Auto-complete: if this patch updates payments (and the caller did not
+    // already set status), and the booking isn't already completed/cancelled,
+    // and the new payments now satisfy the completion rule, flip status in
+    // the same request instead of requiring a second PATCH.
+    if ("payments" in setOp && !("status" in setOp) &&
+        existing.status !== "completed" && existing.status !== "cancelled") {
+      const effectiveAmount = {
+        total: (setOp["amount.total"] as number | undefined) ?? existing.amount?.total ?? 0,
+        deposit: (setOp["amount.deposit"] as number | undefined) ?? existing.amount?.deposit ?? 0,
+      };
+      if (isCompletionEligible(setOp.payments as { price: number; status: "unpaid" | "paid" }[], effectiveAmount)) {
+        setOp.status = "completed";
+        diff.status = { before: existing.status, after: "completed" };
+      }
+    }
+
     await Booking.updateOne(
       { _id: id, workspaceId: ctx.workspace._id },
       { $set: setOp }
@@ -402,14 +453,33 @@ export async function PATCH(req: Request, { params }: Params) {
     // Skip the activity entry when the only change was a silent coordinate
     // nudge (diff is empty but setOp persisted lat/lng).
     if (Object.keys(diff).length > 0) {
-      await ActivityLog.create({
-        workspaceId: ctx.workspace._id,
-        actorUserId: ctx.userId,
-        entity: "booking",
-        entityId: existing._id,
-        action: "status" in setOp ? "status_changed" : "updated",
-        diff: { changes: diff },
-      });
+      const paymentsChanged = "payments" in setOp;
+      const statusChanged = "status" in setOp;
+      const paymentAction =
+        paymentsChanged && (setOp.payments as unknown[]).length > (existing.payments?.length ?? 0)
+          ? "payment_added" : "payment_updated";
+
+      if (paymentsChanged && statusChanged) {
+        const { status: statusDiff, ...restDiff } = diff;
+        await ActivityLog.create([
+          { workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking",
+            entityId: existing._id, action: paymentAction, diff: { changes: restDiff } },
+          { workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking",
+            entityId: existing._id, action: "status_changed", diff: { changes: { status: statusDiff } } },
+        ]);
+      } else if (paymentsChanged) {
+        await ActivityLog.create({
+          workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking",
+          entityId: existing._id, action: paymentAction, diff: { changes: diff },
+        });
+      } else {
+        // Unchanged existing behavior — covered by an existing passing test, do not alter.
+        await ActivityLog.create({
+          workspaceId: ctx.workspace._id, actorUserId: ctx.userId, entity: "booking",
+          entityId: existing._id, action: "status" in setOp ? "status_changed" : "updated",
+          diff: { changes: diff },
+        });
+      }
     }
   }
 
@@ -425,7 +495,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   // --- Notifications ---
   const shouldNotifyTeamAssigned = teamReassignment !== null;
-  const newStatus = parsed.data.status;
+  const newStatus = (setOp.status as string | undefined) ?? parsed.data.status;
   const shouldNotifyStatusChanged =
     newStatus !== undefined && newStatus !== existing.status;
 
