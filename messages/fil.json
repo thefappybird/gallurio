@@ -1728,6 +1728,7 @@
           "cancel": "Kanselahin",
           "unsaved": "Hindi pa nai-save",
           "applyAria": "Ilapat ang {name}",
+          "applyingAria": "Inilalapat ang {name}",
           "deletingAria": "Binubura ang {name}",
           "deleteAria": "Burahin ang {name}"
         },

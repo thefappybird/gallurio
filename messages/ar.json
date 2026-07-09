@@ -1728,6 +1728,7 @@
           "cancel": "إلغاء",
           "unsaved": "غير محفوظة",
           "applyAria": "تطبيق {name}",
+          "applyingAria": "جارٍ تطبيق {name}",
           "deletingAria": "جارٍ حذف {name}",
           "deleteAria": "حذف {name}"
         },

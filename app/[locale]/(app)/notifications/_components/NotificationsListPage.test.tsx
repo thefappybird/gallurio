@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 import { renderWithProviders } from '@/test-utils/render'
 import arMessages from '@/messages/ar.json'
 import { NotificationsListPage } from './NotificationsListPage'
@@ -116,6 +116,38 @@ describe('NotificationsListPage', () => {
     // ar body template: "لديك استفسار جديد من {clientName}."
     expect(screen.getByText(/أحمد/)).toBeTruthy()
     expect(screen.queryByText('Stored body')).toBeNull()
+  })
+})
+
+describe('NotificationsListPage — Mark all read pending state', () => {
+  it('disables the button while the mark-all-read call is in flight', async () => {
+    const { markAllNotificationsReadAction } = await import(
+      '@/app/[locale]/(app)/notifications/_actions',
+    )
+    let resolveAction: () => void = () => {}
+    vi.mocked(markAllNotificationsReadAction).mockReturnValue(
+      new Promise<{ error?: string }>((resolve) => {
+        resolveAction = () => resolve({})
+      }),
+    )
+
+    renderWithProviders(
+      <NotificationsListPage
+        initialItems={[makeItem()]}
+        initialNextCursor={null}
+        locale="en"
+        messages={MESSAGES}
+      />,
+    )
+
+    const btn = screen.getByRole('button', { name: MESSAGES.markAllRead })
+    fireEvent.click(btn)
+    expect(btn).toBeDisabled()
+
+    await act(async () => {
+      resolveAction()
+      await Promise.resolve()
+    })
   })
 })
 

@@ -130,6 +130,7 @@ export function MiniBookingCalendar({
             variant="ghost"
             size="icon-xs"
             onClick={() => shiftMonth(-1)}
+            disabled={loading}
             aria-label="Previous month"
           >
             <ChevronLeftIcon className="size-3.5" />
@@ -137,7 +138,8 @@ export function MiniBookingCalendar({
           <button
             type="button"
             onClick={goToToday}
-            className="min-w-20 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            disabled={loading}
+            className="min-w-20 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Jump to current month"
           >
             {month.toLocaleDateString(locale, { month: "short", year: "numeric" })}
@@ -147,6 +149,7 @@ export function MiniBookingCalendar({
             variant="ghost"
             size="icon-xs"
             onClick={() => shiftMonth(1)}
+            disabled={loading}
             aria-label="Next month"
           >
             <ChevronRightIcon className="size-3.5" />
@@ -158,8 +161,9 @@ export function MiniBookingCalendar({
           <select
             value={teamId}
             onChange={(e) => setTeamId(e.target.value)}
+            disabled={loading}
             aria-label={t("calendarTeam.label")}
-            className="mb-2 h-8 w-full rounded-[var(--radius)] border border-border bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mb-2 h-8 w-full rounded-[var(--radius)] border border-border bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="">{t("calendarTeam.all")}</option>
             {teams.map((team) => (

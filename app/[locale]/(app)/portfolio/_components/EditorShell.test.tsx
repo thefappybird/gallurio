@@ -612,6 +612,45 @@ describe("EditorShell", () => {
     expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
   });
 
+  it("shows a busy state on the applied draft row while getDraftAction is in flight (clean canvas)", async () => {
+    const props = {
+      ...baseProps,
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    let resolveGetDraft!: (value: unknown) => void;
+    getDraftAction.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveGetDraft = resolve; })
+    );
+
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Summer" }));
+
+    expect(await screen.findByRole("button", { name: "Applying Summer" })).toBeInTheDocument();
+
+    resolveGetDraft({
+      ok: true,
+      draft: {
+        id: "d2",
+        name: "Summer",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Applying Summer" })).not.toBeInTheDocument()
+    );
+  });
+
   it("does not pre-validate duplicate names when clicking Add new draft", async () => {
     const props = {
       ...baseProps,
@@ -1163,6 +1202,30 @@ describe("EditorShell", () => {
     );
     // The failed dismiss-write must not block the exit flow.
     expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+
+    warnSpy.mockRestore();
+  });
+
+  it("guide skip 'don't show again' logs a warning but still proceeds when dismissPortfolioGuideAction rejects", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    dismissPortfolioGuideAction.mockRejectedValueOnce(new Error("network blip"));
+
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={false} />
+    );
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip Guide" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Don't show again" }));
+
+    await waitFor(() =>
+      expect(warnSpy).toHaveBeenCalledWith(
+        "[portfolio] failed to dismiss guide on skip",
+        expect.any(Error)
+      )
+    );
+    // The failed dismiss-write must not block the guide from closing.
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
 
     warnSpy.mockRestore();
   });

@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { THEMES } from "@/lib/theme/themes";
 import { routing } from "@/lib/i18n/routing";
@@ -34,18 +35,33 @@ export function CustomizePanel({ initialTimeFormat: _initialTimeFormat }: Custom
   const pathname = usePathname();
 
   const { timeMode, setTimeMode } = useTimeFormatContext();
-  const [, startTransition] = useTransition();
+  const [isTimeFormatPending, startTimeFormatTransition] = useTransition();
+  const [pendingTimeFormat, setPendingTimeFormat] = useState<TimeMode | null>(null);
+  const [, startLocaleTransition] = useTransition();
+  const [pendingLocale, setPendingLocale] = useState<string | null>(null);
+
+  // Locale switch remounts this component with a new `currentLocale`; clear
+  // the pending flag once that lands so it can't linger past the transition.
+  const [prevLocale, setPrevLocale] = useState(currentLocale);
+  if (currentLocale !== prevLocale) {
+    setPrevLocale(currentLocale);
+    setPendingLocale(null);
+  }
 
   function handleLocaleChange(nextLocale: string) {
     if (nextLocale === currentLocale) return;
-    router.replace(pathname, { locale: nextLocale });
+    setPendingLocale(nextLocale);
+    startLocaleTransition(() => {
+      router.replace(pathname, { locale: nextLocale });
+    });
   }
 
   function handleTimeFormatChange(newFormat: TimeMode) {
     if (newFormat === timeMode) return;
     const original = timeMode;
+    setPendingTimeFormat(newFormat);
     setTimeMode(newFormat);
-    startTransition(async () => {
+    startTimeFormatTransition(async () => {
       const result = await updateTimeFormatAction(newFormat);
       if (!result.ok) {
         setTimeMode(original);
@@ -103,12 +119,14 @@ export function CustomizePanel({ initialTimeFormat: _initialTimeFormat }: Custom
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {routing.locales.map((locale) => {
             const isActive = locale === currentLocale;
+            const isPendingThis = pendingLocale === locale;
 
             return (
               <button
                 key={locale}
                 type="button"
-                disabled={isActive}
+                disabled={isActive || pendingLocale !== null}
+                aria-busy={isPendingThis ? "true" : undefined}
                 onClick={() => handleLocaleChange(locale)}
                 className={cn(
                   "flex items-center justify-center gap-2 border px-3 py-3 text-sm font-medium transition-colors",
@@ -117,6 +135,9 @@ export function CustomizePanel({ initialTimeFormat: _initialTimeFormat }: Custom
                     : "border-border hover:border-muted-foreground focus-visible:border-muted-foreground"
                 )}
               >
+                {isPendingThis && (
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                )}
                 {tCustomize(`languages.${locale}`)}
               </button>
             );
@@ -134,12 +155,14 @@ export function CustomizePanel({ initialTimeFormat: _initialTimeFormat }: Custom
         <div className="grid grid-cols-2 gap-2">
           {TIME_MODES.map((mode) => {
             const isActive = timeMode === mode;
+            const showSpinner = isTimeFormatPending && pendingTimeFormat === mode;
 
             return (
               <button
                 key={mode}
                 type="button"
-                disabled={isActive}
+                disabled={isActive || isTimeFormatPending}
+                aria-busy={showSpinner ? "true" : undefined}
                 onClick={() => handleTimeFormatChange(mode)}
                 className={cn(
                   "flex items-center justify-center gap-2 border px-3 py-3 text-sm font-medium transition-colors",
@@ -148,6 +171,9 @@ export function CustomizePanel({ initialTimeFormat: _initialTimeFormat }: Custom
                     : "border-border hover:border-muted-foreground focus-visible:border-muted-foreground"
                 )}
               >
+                {showSpinner && (
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                )}
                 {mode === "24h" ? tCustomize("time24h") : tCustomize("time12h")}
               </button>
             );

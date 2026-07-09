@@ -46,6 +46,7 @@ export function NotificationsListPage({
   const [items, setItems] = useState<SerializedNotification[]>(initialItems);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [markAllPending, setMarkAllPending] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { liveArrivalTick } = useNotifications();
   const { showToast: showArrivalToast, count: bundledCount } = useNotificationBurstToast(liveArrivalTick);
@@ -65,10 +66,14 @@ export function NotificationsListPage({
   }
 
   function handleMarkAllRead() {
+    if (markAllPending) return;
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
-    markAllNotificationsReadAction().catch(() => {
-      setItems(initialItems);
-    });
+    setMarkAllPending(true);
+    markAllNotificationsReadAction()
+      .catch(() => {
+        setItems(initialItems);
+      })
+      .finally(() => setMarkAllPending(false));
   }
 
   function handleLoadMore() {
@@ -98,8 +103,13 @@ export function NotificationsListPage({
             </span>
           )}
         </div>
-        {hasUnread && (
-          <Button variant="ghost" size="sm" onClick={handleMarkAllRead}>
+        {(hasUnread || markAllPending) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleMarkAllRead}
+            disabled={markAllPending}
+          >
             {messages.markAllRead}
           </Button>
         )}
@@ -186,7 +196,7 @@ export function NotificationsListPage({
       {loadError && (
         <div className="flex items-center justify-between border-t px-4 py-3">
           <p className="text-sm text-destructive">{loadError}</p>
-          <Button variant="ghost" size="sm" onClick={handleLoadMore}>
+          <Button variant="ghost" size="sm" onClick={handleLoadMore} disabled={isPending}>
             Retry
           </Button>
         </div>

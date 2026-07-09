@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import { renderWithProviders } from "@/test-utils/render";
 import { SettingsUserProfile } from "./settings-user-profile";
@@ -164,6 +164,35 @@ describe("SettingsUserProfile", () => {
     it("falls back to the first workspace name when currentWorkspaceId has no match", () => {
       renderSettings("owner", "account", singleWorkspace, "ws_unknown");
       expect(screen.getByText("Solo Workspace")).toBeInTheDocument();
+    });
+  });
+
+  describe("tab-nav pending affordance", () => {
+    it("marks the clicked (non-active) tab as busy until activeSlug catches up, in both nav variants", () => {
+      const { rerender } = renderSettings("owner", "account");
+      for (const link of screen.getAllByRole("link", { name: /customize/i })) {
+        fireEvent.click(link);
+      }
+      for (const link of screen.getAllByRole("link", { name: /customize/i })) {
+        expect(link).toHaveAttribute("aria-busy", "true");
+      }
+      // The currently-active tab never gets the busy treatment.
+      for (const link of screen.getAllByRole("link", { name: /account/i })) {
+        expect(link).not.toHaveAttribute("aria-busy");
+      }
+
+      rerender(
+        <SettingsUserProfile
+          role="owner"
+          pages={allPages}
+          activeSlug="customize"
+          workspaces={mockWorkspaces}
+          currentWorkspaceId="ws_aaa"
+        />,
+      );
+      for (const link of screen.getAllByRole("link", { name: /customize/i })) {
+        expect(link).not.toHaveAttribute("aria-busy");
+      }
     });
   });
 });

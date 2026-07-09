@@ -1728,6 +1728,7 @@
           "cancel": "Batal",
           "unsaved": "Belum disimpan",
           "applyAria": "Guna {name}",
+          "applyingAria": "Sedang menggunakan {name}",
           "deletingAria": "Memadam {name}",
           "deleteAria": "Padam {name}"
         },

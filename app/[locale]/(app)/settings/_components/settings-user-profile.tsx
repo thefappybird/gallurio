@@ -1,7 +1,8 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { SettingsOrgSwitcher } from "./settings-org-switcher";
@@ -51,6 +52,17 @@ export function SettingsUserProfile({
   const hrefFor = (page: SettingsPage) =>
     page.slug === "account" ? "/settings" : `/settings/${page.slug}`;
 
+  // Manual pending flag: a tab click can't rely on next/link's own pending
+  // instrumentation here (this nav renders in both a mobile strip and a
+  // desktop sidebar sharing one piece of state). Set on click, cleared once
+  // the server round trip lands and `activeSlug` catches up to the click.
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [prevActiveSlug, setPrevActiveSlug] = useState(activeSlug);
+  if (activeSlug !== prevActiveSlug) {
+    setPrevActiveSlug(activeSlug);
+    setPendingSlug(null);
+  }
+
   return (
     <div className="flex w-full flex-col gap-0">
       {/* Workspace switcher bar */}
@@ -78,11 +90,14 @@ export function SettingsUserProfile({
         >
           {visiblePages.map((page) => {
             const isActive = isPageActive(page);
+            const isPending = pendingSlug === page.slug;
             return (
               <Link
                 key={page.slug}
                 href={hrefFor(page) as never}
                 aria-current={isActive ? "page" : undefined}
+                aria-busy={isPending ? "true" : undefined}
+                onClick={() => { if (!isActive) setPendingSlug(page.slug); }}
                 className={cn(
                   "flex min-h-11 shrink-0 items-center gap-2 px-4 py-3 text-sm transition-colors",
                   "hover:bg-accent hover:text-accent-foreground",
@@ -90,10 +105,11 @@ export function SettingsUserProfile({
                   isActive
                     ? "bg-brand/12 font-medium text-brand"
                     : "text-muted-foreground",
+                  isPending && "opacity-60",
                 )}
               >
                 <span className="shrink-0 [&_svg]:size-4" aria-hidden>
-                  {page.icon}
+                  {isPending ? <Loader2 className="animate-spin" /> : page.icon}
                 </span>
                 <span>{page.label}</span>
               </Link>
@@ -106,11 +122,14 @@ export function SettingsUserProfile({
         >
           {visiblePages.map((page) => {
             const isActive = isPageActive(page);
+            const isPending = pendingSlug === page.slug;
             return (
               <Link
                 key={page.slug}
                 href={hrefFor(page) as never}
                 aria-current={isActive ? "page" : undefined}
+                aria-busy={isPending ? "true" : undefined}
+                onClick={() => { if (!isActive) setPendingSlug(page.slug); }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-3 text-sm transition-colors",
                   "hover:bg-accent hover:text-accent-foreground",
@@ -118,10 +137,11 @@ export function SettingsUserProfile({
                   isActive
                     ? "bg-brand/12 font-medium text-brand"
                     : "text-muted-foreground",
+                  isPending && "opacity-60",
                 )}
               >
                 <span className="shrink-0 [&_svg]:size-4" aria-hidden>
-                  {page.icon}
+                  {isPending ? <Loader2 className="animate-spin" /> : page.icon}
                 </span>
                 <span>{page.label}</span>
               </Link>

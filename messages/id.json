@@ -1728,6 +1728,7 @@
           "cancel": "Batal",
           "unsaved": "Belum disimpan",
           "applyAria": "Terapkan {name}",
+          "applyingAria": "Menerapkan {name}",
           "deletingAria": "Menghapus {name}",
           "deleteAria": "Hapus {name}"
         },

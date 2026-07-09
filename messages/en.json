@@ -1728,6 +1728,7 @@
           "cancel": "Cancel",
           "unsaved": "Unsaved",
           "applyAria": "Apply {name}",
+          "applyingAria": "Applying {name}",
           "deletingAria": "Deleting {name}",
           "deleteAria": "Delete {name}"
         },

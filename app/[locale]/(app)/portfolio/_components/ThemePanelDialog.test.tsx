@@ -168,4 +168,26 @@ describe("ThemePanelDialog Apply button", () => {
     await waitFor(() => expect(saveThemeAction).toHaveBeenCalledWith("My Theme", expect.anything()));
     await waitFor(() => expect(props.onSaved).toHaveBeenCalled());
   });
+
+  it("shows a loading state on Apply while the save is in flight and disables it against repeat clicks", async () => {
+    const { saveThemeAction } = await import("../_actions");
+    let resolveSave!: (value: unknown) => void;
+    (saveThemeAction as ReturnType<typeof vi.fn>).mockReturnValueOnce(
+      new Promise((resolve) => { resolveSave = resolve; })
+    );
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    const nameInput = screen.getByRole("textbox", { name: "Theme name" });
+    fireEvent.change(nameInput, { target: { value: "My Theme" } });
+
+    const applyButton = screen.getByRole("button", { name: "Apply" });
+    fireEvent.click(applyButton);
+
+    expect(applyButton).toBeDisabled();
+    expect(applyButton.querySelector("svg")).toBeTruthy();
+
+    resolveSave({ ok: true, theme: { id: "n", name: "My Theme", brandKit: DEFAULT_BRAND_KIT } });
+    await waitFor(() => expect(applyButton).not.toBeDisabled());
+  });
 });
