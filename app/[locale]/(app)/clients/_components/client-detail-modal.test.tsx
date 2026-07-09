@@ -64,6 +64,18 @@ describe("ClientDetailModal", () => {
     expect(screen.getByText("3")).toBeInTheDocument(); // bookingsCount
   });
 
+  it("stacks the stats grid to a single column with row dividers on mobile, 3 columns with column dividers from sm", () => {
+    renderWithProviders(<ClientDetailModal {...defaultProps} />);
+    const dialog = screen.getByRole("dialog");
+    const grid = dialog.querySelector(".grid");
+    expect(grid).not.toBeNull();
+    expect(grid!.className).toContain("grid-cols-1");
+    expect(grid!.className).toContain("divide-y");
+    expect(grid!.className).toContain("sm:grid-cols-3");
+    expect(grid!.className).toContain("sm:divide-x");
+    expect(grid!.className).toContain("sm:divide-y-0");
+  });
+
   it("Bookings tab lazy-loads and shows booking title", async () => {
     renderWithProviders(<ClientDetailModal {...defaultProps} />);
     fireEvent.click(screen.getByRole("tab", { name: /bookings/i }));

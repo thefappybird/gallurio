@@ -279,7 +279,12 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
 
   await connectDB();
   const workspaceId = ctx.workspace._id;
-  const doc = await PortfolioDraft.findOne({ _id: idParsed.data, workspaceId }).lean();
+  const [doc, workspace] = await Promise.all([
+    PortfolioDraft.findOne({ _id: idParsed.data, workspaceId }).lean(),
+    Workspace.findById(workspaceId)
+      .select({ "publicPage.settingsDraft": 1 })
+      .lean(),
+  ]);
   if (!doc) return { error: "draft_not_found" };
 
   const wsIdStr = String(workspaceId);
@@ -311,6 +316,19 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   set["publicPage.seo.galleryDescription"] = doc.seo?.galleryDescription ?? "";
   set["publicPage.seo.noindex"] = doc.seo?.noindex ?? false;
   set["publicPage.seo.keywords"] = doc.seo?.keywords ?? [];
+  const settingsDraft = workspace?.publicPage?.settingsDraft;
+  if (settingsDraft) {
+    set["publicPage.seoTitle"] = settingsDraft.seoTitle ?? "";
+    set["publicPage.seoDescription"] = settingsDraft.seoDescription ?? "";
+    set["publicPage.siteIcon.url"] = settingsDraft.siteIcon?.url ?? "";
+    set["publicPage.siteIcon.assetId"] = settingsDraft.siteIcon?.assetId ?? "";
+    set["publicPage.seo.keywords"] = settingsDraft.seo?.keywords ?? [];
+    set["publicPage.seo.ogImageUrl"] = settingsDraft.seo?.ogImageUrl ?? "";
+    set["publicPage.seo.ogImageAssetId"] = settingsDraft.seo?.ogImageAssetId ?? "";
+    set["publicPage.seo.galleryDescription"] =
+      settingsDraft.seo?.galleryDescription ?? "";
+    set["publicPage.seo.noindex"] = settingsDraft.seo?.noindex ?? false;
+  }
   set["publicPage.templateId"] =
     doc.templateId &&
     PORTFOLIO_TEMPLATE_IDS.includes(doc.templateId as (typeof PORTFOLIO_TEMPLATE_IDS)[number])

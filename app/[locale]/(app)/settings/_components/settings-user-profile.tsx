@@ -47,6 +47,10 @@ export function SettingsUserProfile({
 
   const currentPage = visiblePages.find((p) => p.slug === activeSlug);
 
+  const isPageActive = (page: SettingsPage) => page.slug === activeSlug;
+  const hrefFor = (page: SettingsPage) =>
+    page.slug === "account" ? "/settings" : `/settings/${page.slug}`;
+
   return (
     <div className="flex w-full flex-col gap-0">
       {/* Workspace switcher bar */}
@@ -65,23 +69,47 @@ export function SettingsUserProfile({
         )}
       </div>
 
-      {/* Two-column layout: nav sidebar + panel */}
-      <div className="flex w-full border border-border">
-        {/* Nav */}
+      {/* Two-column layout: nav sidebar + panel (stacks below lg) */}
+      <div className="flex w-full flex-col border border-border lg:flex-row">
+        {/* Nav: horizontally-scrollable tab strip below lg, vertical sidebar at lg+ */}
         <nav
           aria-label={t("navigationLabel")}
-          className="flex w-48 shrink-0 flex-col border-e border-border bg-card"
+          className="flex w-full flex-row gap-1 overflow-x-auto border-b border-border bg-card lg:hidden"
         >
           {visiblePages.map((page) => {
-            const isActive = page.slug === activeSlug;
-            const href =
-              page.slug === "account"
-                ? "/settings"
-                : `/settings/${page.slug}`;
+            const isActive = isPageActive(page);
             return (
               <Link
                 key={page.slug}
-                href={href as never}
+                href={hrefFor(page) as never}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex min-h-11 shrink-0 items-center gap-2 px-4 py-3 text-sm transition-colors",
+                  "hover:bg-accent hover:text-accent-foreground",
+                  "focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none",
+                  isActive
+                    ? "bg-brand/12 font-medium text-brand"
+                    : "text-muted-foreground",
+                )}
+              >
+                <span className="shrink-0 [&_svg]:size-4" aria-hidden>
+                  {page.icon}
+                </span>
+                <span>{page.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+        <nav
+          aria-label={t("navigationLabel")}
+          className="hidden w-48 shrink-0 flex-col border-e border-border bg-card lg:flex"
+        >
+          {visiblePages.map((page) => {
+            const isActive = isPageActive(page);
+            return (
+              <Link
+                key={page.slug}
+                href={hrefFor(page) as never}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-2 px-4 py-3 text-sm transition-colors",

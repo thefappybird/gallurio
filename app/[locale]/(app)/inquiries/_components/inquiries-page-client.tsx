@@ -341,7 +341,11 @@ export function InquiriesPageClient({
           </div>
 
           {isPending ? (
-            <TableSkeleton columns={INQUIRY_TABLE_COLUMNS} rows={Math.min(limit, 8)} />
+            <TableSkeleton
+              columns={INQUIRY_TABLE_COLUMNS}
+              rows={Math.min(limit, 8)}
+              cardRows={Math.min(limit, 4)}
+            />
           ) : (
             <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} />
           )}

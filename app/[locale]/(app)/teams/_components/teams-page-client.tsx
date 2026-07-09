@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { TableSkeleton } from "@/components/app/table-skeleton";
 import { TeamsTable } from "./teams-table";
 import { TeamDetailDrawer } from "./team-detail-drawer";
 import { InviteForm } from "./invite-form";
@@ -51,6 +52,9 @@ type OptimisticAction =
   | { type: "deactivate"; id: string }
   | { type: "reactivate"; id: string };
 
+// TeamsTable has: color, name, members, actions = 4 columns
+const TEAMS_TABLE_COLUMNS = 4;
+
 function applyOptimistic(teams: TeamRow[], action: OptimisticAction): TeamRow[] {
   switch (action.type) {
     case "add":
@@ -81,7 +85,19 @@ export function TeamsPageClient({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
+  // Drives the table skeleton while a create/edit/deactivate/reactivate dialog's
+  // router.refresh() re-fetches server data after its own optimistic update has
+  // already landed. The optimistic dispatch below still applies instantly; this
+  // only covers the tail-end reconciliation with the server.
+  const [isRefreshing, startRefreshTransition] = useTransition();
+
   const [optimisticTeams, dispatch] = useOptimistic(initialTeams, applyOptimistic);
+
+  function refreshTeams() {
+    startRefreshTransition(() => {
+      router.refresh();
+    });
+  }
 
   // Search — URL-driven (?q=) with a debounced input, mirroring the clients
   // toolbar so back/forward and shared links restore the filter.
@@ -228,15 +244,23 @@ export function TeamsPageClient({
 
       {/* id is the scroll target for the DowngradeBlockModal "Manage teams" link */}
       <div id="teams-list">
-        <TeamsTable
-          rows={filteredTeams}
-          empty={committedQuery ? t("table.empty") : t("listEmpty")}
-          onDetails={openDetails}
-          onEdit={setEditTeam}
-          onInvite={(team) => openInvite([team.id])}
-          onDeactivate={setDeactivateTeam}
-          onReactivate={setReactivateTeam}
-        />
+        {isRefreshing ? (
+          <TableSkeleton
+            columns={TEAMS_TABLE_COLUMNS}
+            rows={filteredTeams.length || 8}
+            cardRows={Math.min(filteredTeams.length || 8, 4)}
+          />
+        ) : (
+          <TeamsTable
+            rows={filteredTeams}
+            empty={committedQuery ? t("table.empty") : t("listEmpty")}
+            onDetails={openDetails}
+            onEdit={setEditTeam}
+            onInvite={(team) => openInvite([team.id])}
+            onDeactivate={setDeactivateTeam}
+            onReactivate={setReactivateTeam}
+          />
+        )}
       </div>
 
       {/* Detail drawer */}
@@ -268,6 +292,7 @@ export function TeamsPageClient({
         onOpenChange={setCreateOpen}
         onCreated={(team) => dispatch({ type: "add", team })}
         onCapExceeded={() => setUpsellOpen(true)}
+        onDone={refreshTeams}
       />
       {editTeam && (
         <EditDialog
@@ -276,6 +301,7 @@ export function TeamsPageClient({
           onOpenChange={(open) => !open && setEditTeam(null)}
           onRenamed={(name) => dispatch({ type: "rename", id: editTeam.id, name })}
           onColorChanged={(color) => dispatch({ type: "color", id: editTeam.id, color })}
+          onDone={refreshTeams}
         />
       )}
       {deactivateTeam && (
@@ -287,6 +313,7 @@ export function TeamsPageClient({
           onFailed={(restored) =>
             dispatch({ type: "reactivate", id: restored.id })
           }
+          onDone={refreshTeams}
         />
       )}
       {reactivateTeam && (
@@ -298,6 +325,7 @@ export function TeamsPageClient({
           onFailed={(restored) =>
             dispatch({ type: "deactivate", id: restored.id })
           }
+          onDone={refreshTeams}
         />
       )}
 

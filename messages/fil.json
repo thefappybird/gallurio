@@ -228,6 +228,7 @@
       "titleForTeam": "Mga Booking ng {team}",
       "view": {
         "table": "Talahanayan",
+        "card": "Card Mode",
         "calendar": "Kalendaryo"
       },
       "toolbar": {
@@ -919,6 +920,9 @@
         },
         "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
         "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
+        "seoKeywords": "Mga tag ng SEO",
+        "seoKeywordsPlaceholder": "wedding photographer, editorial, metro manila",
+        "seoKeywordsHint": "Opsyonal na mga tag na pinaghiwalay ng kuwit para sa search engine at structured data. Hanggang 10.",
         "galleryDescriptionLabel": "Paglalarawan ng Gallery page",
         "galleryDescriptionPlaceholder": "Isang showcase ng aming pinakamahusay na wedding at portrait work…",
         "galleryDescriptionHint": "Hiwalay na paglalarawan para sa iyong Gallery page upang hindi ito magkatulad ng iyong home page. Target: ~155 karakter.",
@@ -965,7 +969,8 @@
           "members": "Mga Miyembro",
           "actions": "Mga Aksyon"
         },
-        "details": "Mga Detalye"
+        "details": "Mga Detalye",
+        "openTeam": "Buksan ang {name}"
       },
       "colorPicker": {
         "presetsLabel": "Mga preset",
@@ -1392,6 +1397,7 @@
       },
       "view": {
         "table": "Talahanayan",
+        "card": "Card Mode",
         "calendar": "Kalendaryo"
       },
       "calendar": {

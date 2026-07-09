@@ -11,6 +11,19 @@ describe("UnsavedChangesDialog", () => {
     expect(screen.getAllByText(/discard/i).length).toBeGreaterThan(0);
   });
 
+  it("clamps dialog height to the viewport and lets the body scroll independently", () => {
+    renderWithProviders(
+      <UnsavedChangesDialog open={true} onKeepEditing={vi.fn()} onDiscard={vi.fn()} />
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toContain("max-h-[calc(100dvh-2rem)]");
+    expect(dialog.className).toContain("flex-col");
+    const body = dialog.querySelector(".overflow-y-auto");
+    expect(body).not.toBeNull();
+    expect(body!.className).toContain("min-h-0");
+    expect(body!.className).toContain("flex-1");
+  });
+
   it("calls onKeepEditing when Keep editing clicked", () => {
     const onKeepEditing = vi.fn();
     renderWithProviders(

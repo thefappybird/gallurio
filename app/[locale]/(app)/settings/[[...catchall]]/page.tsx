@@ -14,12 +14,11 @@ import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { connectDB } from "@/lib/db/mongoose";
-import { User, Workspace, PortfolioDraft } from "@/lib/db/models";
+import { User, Workspace } from "@/lib/db/models";
 import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import {
-  normalizeDraftSeoFields,
-  normalizePublishedSeoFields,
-  hasPendingSeoChanges,
+  normalizeSettingsSeoFields,
+  hasPendingSettingsSeoChanges,
 } from "@/lib/portfolio/publicPageSeoFields";
 import { SettingsUserProfile } from "../_components/settings-user-profile";
 import { WorkspaceBusinessForm } from "../workspace/_business-form";
@@ -110,39 +109,31 @@ export default async function SettingsCatchallPage({
     logoAssetId: workspace.logoAssetId ?? "",
   };
 
-  // Bundled SEO/icon fields now live on the active draft, not the stale
-  // published publicPage — read from the resolved active draft so the form
-  // shows the last save instead of reverting to live values on reload.
   const draftId = await resolveActiveDraftId(workspace._id);
-  const draft = await PortfolioDraft.findOne(
-    { _id: draftId },
-    { seoTitle: 1, seoDescription: 1, siteIcon: 1, seo: 1 },
-  ).lean();
-  const draftFields = normalizeDraftSeoFields(draft);
-  const publishedFields = normalizePublishedSeoFields(workspace.publicPage);
-  const initialHasPendingChanges = hasPendingSeoChanges(draftFields, publishedFields);
-  // keywords aren't editable in this form (only the Story Prompt wizard writes
-  // them) — compute once server-side and OR it into every client recompute so
-  // a Save can't incorrectly clear the pending banner while keywords still differ.
-  const keywordsPending =
-    JSON.stringify(draftFields.seo.keywords) !== JSON.stringify(publishedFields.seo.keywords);
+  const settingsDraftFields = normalizeSettingsSeoFields(
+    workspace.publicPage?.settingsDraft ?? workspace.publicPage
+  );
+  const publishedFields = normalizeSettingsSeoFields(workspace.publicPage);
+  const initialHasPendingChanges =
+    hasPendingSettingsSeoChanges(settingsDraftFields, publishedFields);
 
   const publicPageDefaults: PublicPageSettingsInput = {
-    seoTitle: draftFields.seoTitle,
-    seoDescription: draftFields.seoDescription,
+    seoTitle: settingsDraftFields.seoTitle,
+    seoDescription: settingsDraftFields.seoDescription,
     // Default inquiry routing to the owner's own email until they set another.
     // This field alone stays live-immediate (see updatePublicPageSettingsAction).
     inquiryRecipientEmail:
       workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
-    siteIconUrl: portfolioSiteIconUrl(draft?.siteIcon),
-    siteIconAssetId: draftFields.siteIconAssetId,
-    // Seed seo sub-fields so the form shows existing draft values on load.
-    // Both ends are tested: action tests verify persistence; form tests verify rendering.
+    siteIconUrl: portfolioSiteIconUrl(
+      workspace.publicPage?.settingsDraft?.siteIcon ?? workspace.publicPage?.siteIcon
+    ),
+    siteIconAssetId: settingsDraftFields.siteIconAssetId,
     seo: {
-      ogImageUrl: draftFields.seo.ogImageUrl,
-      ogImageAssetId: draftFields.seo.ogImageAssetId,
-      galleryDescription: draftFields.seo.galleryDescription,
-      noindex: draftFields.seo.noindex,
+      keywords: settingsDraftFields.seo.keywords,
+      ogImageUrl: settingsDraftFields.seo.ogImageUrl,
+      ogImageAssetId: settingsDraftFields.seo.ogImageAssetId,
+      galleryDescription: settingsDraftFields.seo.galleryDescription,
+      noindex: settingsDraftFields.seo.noindex,
     },
   };
 
@@ -156,6 +147,7 @@ export default async function SettingsCatchallPage({
     siteIconUrl: portfolioSiteIconUrl(workspace.publicPage?.siteIcon),
     siteIconAssetId: publishedFields.siteIconAssetId,
     seo: {
+      keywords: publishedFields.seo.keywords,
       ogImageUrl: publishedFields.seo.ogImageUrl,
       ogImageAssetId: publishedFields.seo.ogImageAssetId,
       galleryDescription: publishedFields.seo.galleryDescription,
@@ -218,7 +210,6 @@ export default async function SettingsCatchallPage({
               targetDraftId={String(draftId)}
               initialHasPendingChanges={initialHasPendingChanges}
               publishedDefaults={publishedDefaults}
-              keywordsPending={keywordsPending}
             />
           ),
         },

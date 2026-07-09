@@ -30,6 +30,17 @@ describe("DeactivateClientDialog", () => {
     expect(screen.getAllByText(/deactivate/i).length).toBeGreaterThan(0);
   });
 
+  it("clamps dialog height to the viewport and lets the body scroll independently", () => {
+    renderWithProviders(<DeactivateClientDialog {...defaultProps} />);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toContain("max-h-[calc(100dvh-2rem)]");
+    expect(dialog.className).toContain("flex-col");
+    const body = dialog.querySelector(".overflow-y-auto");
+    expect(body).not.toBeNull();
+    expect(body!.className).toContain("min-h-0");
+    expect(body!.className).toContain("flex-1");
+  });
+
   it("shows the client name on its own emphasized line, separate from the body", () => {
     renderWithProviders(<DeactivateClientDialog {...defaultProps} />);
     const nameEl = screen.getByText("Maria Santos");

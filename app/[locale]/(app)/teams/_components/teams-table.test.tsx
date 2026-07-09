@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { type ReactNode, type ReactElement, createElement } from "react";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { TeamsTable } from "./teams-table";
 import type { TeamRow } from "../_types";
@@ -56,11 +56,12 @@ const ROWS: TeamRow[] = [
 describe("TeamsTable", () => {
   it("renders a row per team with name, default badge, and member count", () => {
     renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...makeHandlers()} />);
-    expect(screen.getByText("Main")).toBeInTheDocument();
-    expect(screen.getByText("Wedding crew")).toBeInTheDocument();
-    expect(screen.getByText("Default")).toBeInTheDocument();
-    expect(screen.getByText("1 member")).toBeInTheDocument();
-    expect(screen.getByText("3 members")).toBeInTheDocument();
+    // Each field renders in both the mobile card list and the desktop table.
+    expect(screen.getAllByText("Main").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Wedding crew").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Default").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1 member").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("3 members").length).toBeGreaterThan(0);
   });
 
   it("renders a color swatch carrying each team's color", () => {
@@ -82,8 +83,9 @@ describe("TeamsTable", () => {
 
   it("only offers Deactivate for non-default active teams", () => {
     renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...makeHandlers()} />);
-    // Main is the default team → no Deactivate item; Wedding crew → one Deactivate item.
-    expect(screen.getAllByText("Deactivate")).toHaveLength(1);
+    // Main is the default team → no Deactivate item; Wedding crew → one Deactivate
+    // item per rendering mode (card + desktop table) = 2 total.
+    expect(screen.getAllByText("Deactivate")).toHaveLength(2);
   });
 
   it("fires edit / invite / deactivate handlers from the menu", () => {
@@ -97,8 +99,9 @@ describe("TeamsTable", () => {
     fireEvent.click(screen.getAllByText("Invite teammate")[0]);
     expect(handlers.onInvite).toHaveBeenCalledWith(ROWS[0]);
 
-    // Deactivate exists only for the non-default Wedding crew row.
-    fireEvent.click(screen.getByText("Deactivate"));
+    // Deactivate exists only for the non-default Wedding crew row (card copy
+    // comes first in DOM order).
+    fireEvent.click(screen.getAllByText("Deactivate")[0]);
     expect(handlers.onDeactivate).toHaveBeenCalledWith(ROWS[1]);
   });
 
@@ -110,8 +113,41 @@ describe("TeamsTable", () => {
     expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
 
     // Clicking anywhere on the row (e.g. the team name) also opens details.
+    // Card copy comes first in DOM order.
     handlers.onDetails.mockClear();
-    fireEvent.click(screen.getByText("Wedding crew"));
+    fireEvent.click(screen.getAllByText("Wedding crew")[0]);
     expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
+  });
+
+  it("renders a mobile card list alongside the desktop table markup", () => {
+    const { container } = renderWithProviders(
+      <TeamsTable rows={ROWS} empty="none" {...makeHandlers()} />,
+    );
+    expect(screen.getByTestId("teams-card-list")).toBeInTheDocument();
+    const cards = container.querySelectorAll('[data-testid="teams-card-list"] > article');
+    expect(cards).toHaveLength(2);
+  });
+
+  it("shows the member count and badges in the card layout", () => {
+    renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...makeHandlers()} />);
+    const cardList = screen.getByTestId("teams-card-list");
+    expect(within(cardList).getByText("1 member")).toBeInTheDocument();
+    expect(within(cardList).getByText("3 members")).toBeInTheDocument();
+    expect(within(cardList).getByText("Default")).toBeInTheDocument();
+  });
+
+  it("opens details from a card click and fires handlers from the card's actions menu", () => {
+    const handlers = makeHandlers();
+    renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...handlers} />);
+    const cardList = screen.getByTestId("teams-card-list");
+
+    fireEvent.click(within(cardList).getByText("Wedding crew"));
+    expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
+
+    // Deactivate only exists for the non-default Wedding crew row; its card
+    // actions menu item should fire the same handler as the desktop table.
+    handlers.onDeactivate.mockClear();
+    fireEvent.click(within(cardList).getByText("Deactivate"));
+    expect(handlers.onDeactivate).toHaveBeenCalledWith(ROWS[1]);
   });
 });

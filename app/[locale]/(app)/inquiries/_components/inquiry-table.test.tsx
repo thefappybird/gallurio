@@ -44,40 +44,39 @@ describe("InquiryTable", () => {
     expect(screen.getAllByText("maria@example.com").length).toBeGreaterThan(0);
   });
 
-  // ── Task E: source capitalize ──────────────────────────────────────────────
+  it("renders a mobile card list", () => {
+    renderTable();
+    expect(screen.getByTestId("inquiries-card-list")).toBeInTheDocument();
+  });
 
   it("applies capitalize class to the desktop source cell", () => {
     const { container } = renderTable();
     const cells = container.querySelectorAll("td");
     const sourceCell = Array.from(cells).find(
-      (c) => c.textContent?.trim() === "portfolio"
+      (cell) => cell.textContent?.trim() === "portfolio"
     );
     expect(sourceCell).toBeDefined();
     expect(sourceCell?.className).toMatch(/capitalize/);
   });
 
-  it("renders 'Direct' fallback with capitalize class when source is null", () => {
+  it("renders Direct fallback with capitalize class when source is null", () => {
     const { container } = renderTable([rowNoSource]);
     const cells = container.querySelectorAll("td");
     const sourceCell = Array.from(cells).find(
-      (c) => c.textContent?.trim() === "Direct"
+      (cell) => cell.textContent?.trim() === "Direct"
     );
     expect(sourceCell).toBeDefined();
     expect(sourceCell?.className).toMatch(/capitalize/);
   });
 
-  // ── Task C: view icon buttons ──────────────────────────────────────────────
-
-  it("renders View (eye) icon buttons (mobile + desktop) per row", () => {
+  it("renders View icon buttons for the card and table variants", () => {
     renderTable();
-    // aria-label is t("table.actions.view") = "View"
-    const viewButtons = screen.getAllByRole("button", { name: "View" });
-    expect(viewButtons).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "View" }).length).toBeGreaterThanOrEqual(2);
   });
 
-  it("View icon button is already visible without opening any menu", () => {
+  it("View icon buttons are visible without opening any menu", () => {
     renderTable();
-    expect(screen.getAllByRole("button", { name: "View" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "View" }).length).toBeGreaterThanOrEqual(2);
   });
 
   it("View icon button is clickable without throwing", () => {
@@ -86,7 +85,7 @@ describe("InquiryTable", () => {
     expect(() => fireEvent.click(viewButtons[0])).not.toThrow();
   });
 
-  it("keeps horizontal overflow scoped to the table wrapper", () => {
+  it("keeps horizontal overflow scoped to the desktop table wrapper", () => {
     const { container } = renderTable();
     const wrapper = container.querySelector("div.overflow-x-auto");
     const table = container.querySelector("table");

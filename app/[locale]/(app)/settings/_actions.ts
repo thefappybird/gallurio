@@ -5,8 +5,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { AuthenticationException } from "@workos-inc/node";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
-import { Workspace, User, PortfolioDraft } from "@/lib/db/models";
-import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
+import { Workspace, User } from "@/lib/db/models";
 import {
   updateWorkspaceBusinessSchema,
   publicPageSettingsSchema,
@@ -154,46 +153,41 @@ export async function updatePublicPageSettingsAction(
     if (!owned) return { error: "invalid_og_image" };
   }
 
-  // Bundled SEO/icon fields now write to the active draft, not live publicPage.
-  const draftId = await resolveActiveDraftId(ctx.workspace._id);
-
-  // Fetch current asset IDs from the draft so old uploads can be deleted after
-  // replacement/removal.
-  const currentAssets = await PortfolioDraft.findOne(
-    { _id: draftId },
-    { "seo.ogImageAssetId": 1, "siteIcon.assetId": 1 },
+  // Saved settings live in a workspace-owned draft buffer so this page stays
+  // stable across portfolio draft switches without changing the public site
+  // until Publish is explicitly triggered.
+  const currentAssets = await Workspace.findOne(
+    { _id: ctx.workspace._id },
+    { "publicPage.settingsDraft.seo.ogImageAssetId": 1, "publicPage.settingsDraft.siteIcon.assetId": 1 },
   ).lean();
-  const oldOgAssetId = currentAssets?.seo?.ogImageAssetId || undefined;
-  const oldSiteIconAssetId = currentAssets?.siteIcon?.assetId || undefined;
+  const oldOgAssetId =
+    currentAssets?.publicPage?.settingsDraft?.seo?.ogImageAssetId || undefined;
+  const oldSiteIconAssetId =
+    currentAssets?.publicPage?.settingsDraft?.siteIcon?.assetId || undefined;
 
   const seoFields: Record<string, unknown> = {};
   if (parsed.data.seo !== undefined) {
-    seoFields["seo.galleryDescription"] =
+    seoFields["publicPage.settingsDraft.seo.keywords"] =
+      parsed.data.seo.keywords ?? [];
+    seoFields["publicPage.settingsDraft.seo.galleryDescription"] =
       parsed.data.seo.galleryDescription ?? "";
-    seoFields["seo.ogImageUrl"] = parsed.data.seo.ogImageUrl ?? "";
-    seoFields["seo.ogImageAssetId"] = newOgAssetId ?? "";
-    seoFields["seo.noindex"] = parsed.data.seo.noindex ?? false;
+    seoFields["publicPage.settingsDraft.seo.ogImageUrl"] =
+      parsed.data.seo.ogImageUrl ?? "";
+    seoFields["publicPage.settingsDraft.seo.ogImageAssetId"] = newOgAssetId ?? "";
+    seoFields["publicPage.settingsDraft.seo.noindex"] = parsed.data.seo.noindex ?? false;
   }
 
-  // inquiryRecipientEmail is the only field that stays live-immediate.
   await Workspace.updateOne(
     { _id: ctx.workspace._id },
     {
       $set: {
+        // inquiryRecipientEmail is the only field that stays live-immediate.
         "publicPage.inquiryRecipientEmail":
           parsed.data.inquiryRecipientEmail ?? "",
-      },
-    },
-  );
-
-  await PortfolioDraft.updateOne(
-    { _id: draftId },
-    {
-      $set: {
-        seoTitle: parsed.data.seoTitle ?? "",
-        seoDescription: parsed.data.seoDescription ?? "",
-        "siteIcon.url": parsed.data.siteIconUrl ?? "",
-        "siteIcon.assetId": newSiteIconAssetId ?? "",
+        "publicPage.settingsDraft.seoTitle": parsed.data.seoTitle ?? "",
+        "publicPage.settingsDraft.seoDescription": parsed.data.seoDescription ?? "",
+        "publicPage.settingsDraft.siteIcon.url": parsed.data.siteIconUrl ?? "",
+        "publicPage.settingsDraft.siteIcon.assetId": newSiteIconAssetId ?? "",
         ...seoFields,
       },
     },

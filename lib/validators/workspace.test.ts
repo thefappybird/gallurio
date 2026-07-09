@@ -378,9 +378,38 @@ describe("publicPageSettingsSchema — seo sub-object", () => {
     const result = publicPageSettingsSchema.safeParse({ seo: {} });
     expect(result.success).toBe(true);
     if (result.success) {
-      const seo = (result.data as { seo?: { noindex?: boolean } }).seo;
+      const seo = (result.data as { seo?: { noindex?: boolean; keywords?: string[] } }).seo;
       expect(seo?.noindex).toBe(false);
+      expect(seo?.keywords).toEqual([]);
     }
+  });
+
+  it("accepts up to 10 seo.keywords and preserves them", () => {
+    const result = publicPageSettingsSchema.safeParse({
+      seo: { keywords: ["wedding", "editorial", "bay area"] },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as { seo: { keywords: string[] } }).seo.keywords).toEqual([
+        "wedding",
+        "editorial",
+        "bay area",
+      ]);
+    }
+  });
+
+  it("rejects more than 10 seo.keywords", () => {
+    const result = publicPageSettingsSchema.safeParse({
+      seo: { keywords: Array.from({ length: 11 }, (_, i) => `kw${i}`) },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an seo keyword longer than 40 characters", () => {
+    const result = publicPageSettingsSchema.safeParse({
+      seo: { keywords: ["a".repeat(41)] },
+    });
+    expect(result.success).toBe(false);
   });
 
   it("rejects seo.galleryDescription over 160 characters", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { useState, type ReactNode, type ReactElement, createElement } from "react";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ClientsTable, type ClientRow } from "./clients-table";
 
@@ -77,15 +77,29 @@ const defaultProps = {
 describe("ClientsTable", () => {
   it("renders client names", () => {
     renderWithProviders(<ClientsTable {...defaultProps} />);
-    expect(screen.getByText("Maria Santos")).toBeInTheDocument();
-    expect(screen.getByText("John Dela Cruz")).toBeInTheDocument();
+    expect(screen.getAllByText("Maria Santos")).toHaveLength(2);
+    expect(screen.getAllByText("John Dela Cruz")).toHaveLength(2);
   });
 
   it("calls onClickClient when a row is clicked", () => {
     const onClickClient = vi.fn();
     renderWithProviders(<ClientsTable {...defaultProps} onClickClient={onClickClient} />);
-    fireEvent.click(screen.getByText("Maria Santos"));
+    fireEvent.click(screen.getAllByText("Maria Santos")[0]);
     expect(onClickClient).toHaveBeenCalledWith(sampleRows[0]);
+  });
+
+  it("renders a mobile card list alongside the desktop table markup", () => {
+    const { container } = renderWithProviders(<ClientsTable {...defaultProps} />);
+    expect(screen.getByTestId("clients-card-list")).toBeInTheDocument();
+    const cards = container.querySelectorAll('[data-testid="clients-card-list"] > article');
+    expect(cards).toHaveLength(2);
+  });
+
+  it("shows contact and total spent together in the card layout", () => {
+    renderWithProviders(<ClientsTable {...defaultProps} />);
+    const cardList = screen.getByTestId("clients-card-list");
+    expect(within(cardList).getByText("maria@example.com")).toBeInTheDocument();
+    expect(within(cardList).getByText(/75,000/)).toBeInTheDocument();
   });
 
   it("renders View as the first item in the actions menu", async () => {
@@ -114,7 +128,7 @@ describe("ClientsTable", () => {
     const menuButtons = screen.getAllByRole("button", { name: /open client actions/i });
     // After sorting by name asc: "John Dela Cruz" (inactive) = index 0, "Maria Santos" (active) = index 1
     fireEvent.click(menuButtons[1]); // second row (Maria Santos — active)
-    expect(await screen.findByText("Deactivate")).toBeInTheDocument();
+    expect((await screen.findAllByText("Deactivate")).length).toBeGreaterThan(0);
   });
 
   it("shows Reactivate in actions menu for inactive clients", async () => {
@@ -122,7 +136,7 @@ describe("ClientsTable", () => {
     const menuButtons = screen.getAllByRole("button", { name: /open client actions/i });
     // After sorting by name asc: "John Dela Cruz" (inactive) = index 0
     fireEvent.click(menuButtons[0]); // first row (John Dela Cruz — inactive)
-    expect(await screen.findByText("Reactivate")).toBeInTheDocument();
+    expect((await screen.findAllByText("Reactivate")).length).toBeGreaterThan(0);
   });
 
   it("applies opacity-50 class to inactive rows", () => {

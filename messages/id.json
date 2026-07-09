@@ -228,6 +228,7 @@
       "titleForTeam": "Pemesanan {team}",
       "view": {
         "table": "Tabel",
+        "card": "Mode kartu",
         "calendar": "Kalender"
       },
       "toolbar": {
@@ -919,6 +920,9 @@
         },
         "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
         "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
+        "seoKeywords": "Tag SEO",
+        "seoKeywordsPlaceholder": "fotografer pernikahan, editorial, jakarta",
+        "seoKeywordsHint": "Tag opsional dipisahkan koma untuk mesin pencari dan structured data. Tambahkan hingga 10.",
         "galleryDescriptionLabel": "Deskripsi halaman Gallery",
         "galleryDescriptionPlaceholder": "Pameran karya terbaik pernikahan dan potret kami…",
         "galleryDescriptionHint": "Deskripsi terpisah untuk halaman Gallery agar tidak menduplikasi halaman beranda. Target: ~155 karakter.",
@@ -965,7 +969,8 @@
           "members": "Anggota",
           "actions": "Tindakan"
         },
-        "details": "Detail"
+        "details": "Detail",
+        "openTeam": "Buka {name}"
       },
       "colorPicker": {
         "presetsLabel": "Pra-setel",
@@ -1392,6 +1397,7 @@
       },
       "view": {
         "table": "Tabel",
+        "card": "Mode kartu",
         "calendar": "Kalender"
       },
       "calendar": {

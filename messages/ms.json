@@ -228,6 +228,7 @@
       "titleForTeam": "Tempahan {team}",
       "view": {
         "table": "Jadual",
+        "card": "Mod kad",
         "calendar": "Kalendar"
       },
       "toolbar": {
@@ -919,6 +920,9 @@
         },
         "seoTitleHint": "Tajuk yang boleh diklik di Google + tab pelayar. Sasaran: ~60 aksara. Nama studio + apa yang anda tangkap.",
         "seoDescriptionHint": "Petikan kelabu di bawah tajuk anda dalam hasil carian. Sasaran: ~155 aksara. Promosikan halaman utama anda.",
+        "seoKeywords": "Tag SEO",
+        "seoKeywordsPlaceholder": "jurugambar perkahwinan, editorial, kuala lumpur",
+        "seoKeywordsHint": "Tag pilihan dipisahkan dengan koma untuk enjin carian dan data berstruktur. Tambah sehingga 10.",
         "galleryDescriptionLabel": "Penerangan halaman Gallery",
         "galleryDescriptionPlaceholder": "Pameran karya terbaik perkahwinan dan potret kami…",
         "galleryDescriptionHint": "Penerangan berasingan untuk halaman Gallery anda supaya tidak menduplikasi halaman utama. Sasaran: ~155 aksara.",
@@ -965,7 +969,8 @@
           "members": "Ahli",
           "actions": "Tindakan"
         },
-        "details": "Butiran"
+        "details": "Butiran",
+        "openTeam": "Buka {name}"
       },
       "colorPicker": {
         "presetsLabel": "Praset",
@@ -1392,6 +1397,7 @@
       },
       "view": {
         "table": "Jadual",
+        "card": "Mod kad",
         "calendar": "Kalendar"
       },
       "calendar": {

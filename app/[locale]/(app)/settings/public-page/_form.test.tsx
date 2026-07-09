@@ -91,7 +91,10 @@ vi.mock("../_actions", () => ({
 
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { publishDraftAction } from "../../portfolio/_draftActions";
-import { updatePublicPageSettingsAction } from "../_actions";
+import {
+  togglePublicPagePublishedAction,
+  updatePublicPageSettingsAction,
+} from "../_actions";
 
 vi.mock("@/lib/utils/handleActionResult", () => ({
   toastActionResult: vi.fn(() => true),
@@ -113,6 +116,7 @@ const baseDefaults: PublicPageSettingsInput = {
   siteIconUrl: "",
   siteIconAssetId: "",
   seo: {
+    keywords: [],
     ogImageUrl: "",
     ogImageAssetId: "",
     galleryDescription: "",
@@ -183,6 +187,19 @@ describe("PublicPageSettingsForm — site icon section", () => {
       />
     );
     expect(screen.getByText("galleryDescriptionLabel")).toBeInTheDocument();
+  });
+
+  it("renders SEO keywords field beside the SEO inputs", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+    expect(screen.getByLabelText("seoKeywords")).toBeInTheDocument();
+    expect(screen.getByText("seoKeywordsHint")).toBeInTheDocument();
   });
 
   it("uses responsive grid layouts for visibility, SEO, and media sections", () => {
@@ -299,7 +316,7 @@ describe("PublicPageSettingsForm — site icon section", () => {
 });
 
 describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
-  it("hides the banner and disables Publish when there are no pending changes", () => {
+  it("hides the banner and shows Unpublish when there are no pending changes", () => {
     render(
       <PublicPageSettingsForm
         slug="luna-studio"
@@ -313,7 +330,7 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
     );
     expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
     expect(screen.queryByText("unpublishedBannerTitle")).not.toBeInTheDocument();
-    expect(screen.getByText("publishChanges").closest("button")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "unpublish" })).toBeEnabled();
   });
 
   it("shows the never-published banner variant when publishedAt is null", () => {
@@ -330,7 +347,7 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
     );
     expect(screen.getByText("unpublishedBannerTitle")).toBeInTheDocument();
     expect(screen.getByText("unpublishedBannerBody")).toBeInTheDocument();
-    expect(screen.getByText("publishChanges").closest("button")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "publish" })).toBeEnabled();
   });
 
   it("shows the pending-changes banner variant when publishedAt is set", () => {
@@ -364,7 +381,7 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
       />
     );
 
-    const publishBtn = screen.getByText("publishChanges").closest("button")!;
+    const publishBtn = screen.getByRole("button", { name: "publish" });
     await act(async () => {
       fireEvent.click(publishBtn);
     });
@@ -372,10 +389,32 @@ describe("PublicPageSettingsForm — publish + pending-changes banner", () => {
     expect(publishDraftAction).toHaveBeenCalledWith("draft-1");
     expect(screen.queryByText("pendingChangesBannerTitle")).not.toBeInTheDocument();
   });
+
+  it("unpublishes from the top action row when the live page has no pending changes", async () => {
+    vi.mocked(togglePublicPagePublishedAction).mockResolvedValueOnce({ ok: true });
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={false}
+        publishedDefaults={baseDefaults}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "unpublish" }));
+    });
+
+    expect(togglePublicPagePublishedAction).toHaveBeenCalledWith(false);
+  });
 });
 
-describe("PublicPageSettingsForm — keywordsPending recompute after Save", () => {
-  it("keeps the banner visible and Publish enabled after a Save whose SEO fields match published, when keywordsPending is true", async () => {
+describe("PublicPageSettingsForm — SEO keywords pending recompute after Save", () => {
+  it("keeps the banner visible and Publish enabled after a Save whose keywords still differ from published", async () => {
     vi.mocked(updatePublicPageSettingsAction).mockResolvedValueOnce({
       ok: true,
     } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
@@ -389,22 +428,28 @@ describe("PublicPageSettingsForm — keywordsPending recompute after Save", () =
         targetDraftId="draft-1"
         initialHasPendingChanges={true}
         publishedDefaults={baseDefaults}
-        keywordsPending={true}
       />
     );
 
-    // Dirty the form via a field that computeHasPendingChanges ignores
-    // (inquiryRecipientEmail), so Save submits with SEO fields still
-    // matching publishedDefaults exactly.
-    const emailInput = document.querySelector("#inquiryRecipientEmail") as HTMLInputElement;
-    fireEvent.change(emailInput, { target: { value: "owner@example.com" } });
+    const keywordsInput = screen.getByLabelText("seoKeywords");
+    fireEvent.change(keywordsInput, {
+      target: { value: "wedding photographer, editorial" },
+    });
 
     const saveBtn = screen.getByText("save").closest("button")!;
     await act(async () => {
       fireEvent.click(saveBtn);
     });
 
+    expect(updatePublicPageSettingsAction).toHaveBeenCalledTimes(1);
+    expect(updatePublicPageSettingsAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        seo: expect.objectContaining({
+          keywords: ["wedding photographer", "editorial"],
+        }),
+      })
+    );
     expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
-    expect(screen.getByText("publishChanges").closest("button")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "publish" })).toBeEnabled();
   });
 });

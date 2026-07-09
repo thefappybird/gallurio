@@ -193,7 +193,11 @@ export function ClientsPageClient({
       <ClientsToolbar availableTags={availableTags} onAddClient={openAdd} />
 
       {isPending ? (
-        <TableSkeleton columns={CLIENTS_TABLE_COLUMNS} rows={limit} />
+        <TableSkeleton
+          columns={CLIENTS_TABLE_COLUMNS}
+          rows={limit}
+          cardRows={Math.min(limit, 4)}
+        />
       ) : (
         <ClientsTable
           rows={rows}

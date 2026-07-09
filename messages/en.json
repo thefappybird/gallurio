@@ -228,6 +228,7 @@
       "titleForTeam": "{team}'s Bookings",
       "view": {
         "table": "Table",
+        "card": "Card Mode",
         "calendar": "Calendar"
       },
       "toolbar": {
@@ -919,11 +920,14 @@
         },
         "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
         "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
+        "seoKeywords": "SEO tags",
+        "seoKeywordsPlaceholder": "wedding photographer, editorial, bay area",
+        "seoKeywordsHint": "Optional comma-separated tags for search engines and structured data. Add up to 10.",
         "galleryDescriptionLabel": "Gallery page description",
         "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
         "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",
         "ogImageSection": "Share image",
-        "ogImageHint": "The photo shown when your link is shared on Facebook, Instagram, WhatsApp, or iMessage. Use your best shot. 1200 × 630 px recommended.",
+        "ogImageHint": "The photo shown when your link is shared on Facebook, Instagram, WhatsApp, or iMessage. Use your best shot.",
         "ogImageLabel": "Upload share image",
         "ogImageUploading": "Uploading…",
         "ogImageRequirements": "JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
@@ -965,7 +969,8 @@
           "members": "Members",
           "actions": "Actions"
         },
-        "details": "Details"
+        "details": "Details",
+        "openTeam": "Open {name}"
       },
       "colorPicker": {
         "presetsLabel": "Presets",
@@ -1392,6 +1397,7 @@
       },
       "view": {
         "table": "Table",
+        "card": "Card Mode",
         "calendar": "Calendar"
       },
       "calendar": {
