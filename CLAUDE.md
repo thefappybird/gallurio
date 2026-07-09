@@ -92,6 +92,8 @@ Monolith Next.js app; shared-DB multi-tenancy via `workspaceId`. Workspaces are 
 ## Design
 Semantic tokens only, flat UI, brand teal (hue 195) as deliberate accent (~10–20% of any view), Plus Jakarta Sans app font. Controls: `--radius`; frames: `--radius-surface`. Full palette/radius/theming details: `docs/dev-reference.md#design`.
 
+**Design Context** ("The Studio Ledger"): `PRODUCT.md` (register/users/brand personality/anti-references) and `DESIGN.md` (tokens/typography/components) are the source of truth for `/impeccable` and any UI work. Core rules: one accent only (brand teal = "act on this," never decorative), never-pure neutrals, flat surfaces (hairline `ring-foreground/10` + tonal shift, no `box-shadow` on cards/dialogs), soft controls (`--radius`) / sharp frames (`--radius-surface`), single type family (Plus Jakarta Sans) for the whole hierarchy. Reject: SaaS-cream dashboards, sterile enterprise chrome, clutter.
+
 ## Portfolio builder
 3 public pages (Home, Gallery, Contact). Source of truth: `Workspace.publicPage`. Shared Puck config for editor + renderer. Inquiry submission is a single transaction (Inquiry + Client + Booking). See `portfolio-*` skills for internals.
 
