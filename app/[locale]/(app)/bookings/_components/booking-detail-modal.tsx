@@ -1415,6 +1415,7 @@ export function BookingDetailModal({
             saving={saving}
             saveError={saveError}
             saveBlocked={hasAnyConflict}
+            sessionActionBusy={sessionActionBusyIdx !== null}
             businessComplete={businessComplete}
             workspaceId={workspaceId}
             onToggleCancel={requestCancel}
@@ -3781,6 +3782,7 @@ function DialogFooterBar({
   saving,
   saveError,
   saveBlocked,
+  sessionActionBusy,
   businessComplete,
   workspaceId,
   onToggleCancel,
@@ -3796,6 +3798,7 @@ function DialogFooterBar({
   saving: boolean;
   saveError: string | null;
   saveBlocked: boolean;
+  sessionActionBusy: boolean;
   businessComplete: boolean;
   workspaceId: string;
   onToggleCancel: () => void;
@@ -3871,7 +3874,7 @@ function DialogFooterBar({
                 type="button"
                 size="sm"
                 onClick={onSave}
-                disabled={saving || saveBlocked}
+                disabled={saving || saveBlocked || sessionActionBusy}
                 className={cn(saving && "pointer-events-none")}
                 title={saveBlocked ? t("conflictBlocksSave") : undefined}
               >

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
@@ -38,6 +38,15 @@ function Probe() {
 }
 
 describe("useLiveRefresh", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    refresh.mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("refreshes only for matching entity types, never on mount", () => {
     renderWithProviders(
       <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
@@ -82,6 +91,50 @@ describe("useLiveRefresh", () => {
         silent: true,
         createdAt: new Date().toISOString(),
       });
+    });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("coalesces a burst of matching ticks within the debounce window into one refresh", () => {
+    renderWithProviders(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+        <Probe />
+      </NotificationProvider>,
+    );
+    screen.getByTestId("probe");
+
+    const teamNotification = (id: string) => ({
+      _id: id,
+      type: "team.invitation",
+      title: "t",
+      body: "b",
+      href: "/teams",
+      entityId: "team1",
+      entityType: "team",
+      read: true,
+      readAt: new Date().toISOString(),
+      silent: true,
+      createdAt: new Date().toISOString(),
+    });
+
+    act(() => {
+      emit("notification:new", teamNotification("n1"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(100);
+      emit("notification:new", teamNotification("n2"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(100);
+      emit("notification:new", teamNotification("n3"));
+    });
+    expect(refresh).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(300);
     });
     expect(refresh).toHaveBeenCalledTimes(1);
   });

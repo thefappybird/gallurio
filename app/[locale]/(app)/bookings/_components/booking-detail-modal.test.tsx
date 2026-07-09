@@ -725,6 +725,73 @@ describe("Session remove — scoped busy state", () => {
       expect(screen.getAllByRole("button", { name: "Remove session" }).length).toBeGreaterThan(0);
     });
   });
+
+  it("disables the global Save changes button while a session-removal patch is in flight", async () => {
+    const SECOND_SESSION = makeFutureSession(5);
+    const TWO_SESSION_BOOKING = {
+      ...MOCK_BOOKING,
+      sessions: [FUTURE_SESSION, SECOND_SESSION],
+      lastSessionEnd: SECOND_SESSION.endAt,
+    };
+
+    let resolvePatch!: (v: unknown) => void;
+    const patchGate = new Promise((r) => {
+      resolvePatch = r;
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes(`/api/bookings/${BOOKING_ID}/activity`)) {
+          return { ok: true, json: async () => ({ entries: [], total: 0 }) };
+        }
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url === `/api/bookings/${BOOKING_ID}`) {
+          if (init?.method === "PATCH") {
+            await patchGate;
+            return { ok: true, json: async () => TWO_SESSION_BOOKING };
+          }
+          return { ok: true, json: async () => TWO_SESSION_BOOKING };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+
+    renderModal();
+    await waitForLoad();
+
+    // Create a pending edit on session 2 so the "Save changes" button renders.
+    clickEditSession(2);
+    changeDateInput(SECOND_SESSION.startAt.slice(0, 10), 6);
+    await clickConfirm();
+    await waitFor(() => {
+      expect(screen.getByText("Unsaved")).toBeInTheDocument();
+    });
+
+    const saveButton = screen.getByRole("button", { name: /save changes/i });
+    expect(saveButton).not.toBeDisabled();
+
+    // Trigger a session-removal PATCH (gated) on the other session.
+    const removeButtons = screen.getAllByRole("button", {
+      name: "Remove session",
+    });
+    fireEvent.click(removeButtons[0]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /save changes/i })
+      ).toBeDisabled();
+    });
+
+    resolvePatch(undefined);
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /save changes/i })
+      ).not.toBeDisabled();
+    });
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

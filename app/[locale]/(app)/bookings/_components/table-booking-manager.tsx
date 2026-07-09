@@ -35,6 +35,8 @@ type Props = {
   writableTeams: BookingTeamOption[];
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  /** Bubbles the toolbar's own pending state up to a wrapping shell. */
+  onPendingChange?: (pending: boolean) => void;
 };
 
 /**
@@ -57,6 +59,7 @@ export function TableBookingManager({
   isOwner,
   writableTeams,
   initialInvoiceTheme,
+  onPendingChange,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -125,6 +128,7 @@ export function TableBookingManager({
         selectedTeams={selectedTeams}
         isOwner={isOwner}
         initialInvoiceTheme={initialInvoiceTheme}
+        onPendingChange={onPendingChange}
       />
       {addOpen ? (
         <BookingWizardModal

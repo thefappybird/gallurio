@@ -36,6 +36,8 @@ type Props = {
   teamColorMap: Record<string, string>;
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  /** Bubbles the toolbar's own pending state up to a wrapping shell. */
+  onPendingChange?: (pending: boolean) => void;
 };
 
 /**
@@ -60,6 +62,7 @@ export function CalendarBookingManager({
   colorMode,
   teamColorMap,
   initialInvoiceTheme,
+  onPendingChange,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -93,6 +96,7 @@ export function CalendarBookingManager({
         selectedTeams={selectedTeams}
         isOwner={isOwner}
         initialInvoiceTheme={initialInvoiceTheme}
+        onPendingChange={onPendingChange}
       />
       <CalendarView
         events={events}

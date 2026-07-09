@@ -482,6 +482,9 @@ export function BookingsTable({
                       onClick={(event) => {
                         if (cell.column.id === "actions") event.stopPropagation();
                       }}
+                      onKeyDown={(event) => {
+                        if (cell.column.id === "actions") event.stopPropagation();
+                      }}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>

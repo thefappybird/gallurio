@@ -16,6 +16,7 @@ export function useLiveRefresh(entityTypes: string[], skip = false) {
   const { lastEntityEvent } = ctx;
   const router = useRouter();
   const isFirstRender = useRef(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -24,7 +25,16 @@ export function useLiveRefresh(entityTypes: string[], skip = false) {
     }
     if (!lastEntityEvent || skip) return;
     if (!entityTypes.includes(lastEntityEvent.entityType)) return;
-    router.refresh();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      router.refresh();
+    }, 300);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run on new entity events
   }, [lastEntityEvent?.tick]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 }
