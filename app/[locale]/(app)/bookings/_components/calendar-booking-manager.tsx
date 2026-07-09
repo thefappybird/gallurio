@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
+import { useBookingsToolbarPending } from "./bookings-pending-shell";
 import { CalendarView, type ClientHit } from "./calendar-view";
 import type { CalendarEvent } from "./booking-calendar";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
@@ -36,8 +37,6 @@ type Props = {
   teamColorMap: Record<string, string>;
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
-  /** Bubbles the toolbar's own pending state up to a wrapping shell. */
-  onPendingChange?: (pending: boolean) => void;
 };
 
 /**
@@ -62,11 +61,11 @@ export function CalendarBookingManager({
   colorMode,
   teamColorMap,
   initialInvoiceTheme,
-  onPendingChange,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const onPendingChange = useBookingsToolbarPending();
 
   // Incrementing nonce signals CalendarView to open a fresh add modal.
   const nonceRef = useRef(0);

@@ -123,10 +123,17 @@ function renderInquiriesPage(props: React.ComponentProps<typeof InquiriesPageCli
   );
 }
 
+const historyReplaceState = vi.spyOn(window.history, "replaceState");
+
 beforeEach(() => {
   refresh.mockReset();
   replace.mockReset();
   liveRefresh.mockReset();
+  replace.mockImplementation((href: string) => {
+    window.history.replaceState(null, "", href);
+  });
+  window.history.replaceState(null, "", "/en/inquiries?inquiryId=inq-1");
+  historyReplaceState.mockClear();
 });
 
 describe("InquiriesPageClient", () => {
@@ -135,6 +142,8 @@ describe("InquiriesPageClient", () => {
     expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();
     (capturedProps.onClose as () => void)();
     expect(refresh).not.toHaveBeenCalled();
+    expect(historyReplaceState).toHaveBeenCalledOnce();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("calls router.refresh() exactly once when modal closes after a change", () => {
@@ -144,7 +153,48 @@ describe("InquiriesPageClient", () => {
       { phone: "+63999999999" }
     );
     (capturedProps.onClose as () => void)();
-    expect(refresh).toHaveBeenCalledOnce();
+    expect(refresh).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledOnce();
+    const replaceArg = (replace.mock.calls[0] as string[])[0];
+    expect(replaceArg).not.toContain("inquiryId");
+  });
+
+  it("does not reopen the modal when refreshed props arrive after closing it", () => {
+    const nextDetail = { ...detail, updatedAt: "2026-01-02T00:00:00.000Z" };
+    const view = renderInquiriesPage(baseProps);
+
+    act(() => {
+      (capturedProps.onInquiryChanged as (id: string, patch: object) => void)(
+        "inq-1",
+        { phone: "+63999999999" }
+      );
+      (capturedProps.onClose as () => void)();
+    });
+
+    expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
+
+    view.rerender(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+        <InquiriesPageClient {...baseProps} initialDetail={nextDetail} />
+      </NotificationProvider>
+    );
+
+    expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
+    expect(replace).toHaveBeenCalledOnce();
+  });
+
+  it("applies eventDate optimistic patches to the rendered rows", () => {
+    renderInquiriesPage(baseProps);
+
+    act(() => {
+      (capturedProps.onInquiryChanged as (id: string, patch: object) => void)(
+        "inq-1",
+        { eventDate: "2099-12-31T00:00:00.000Z" }
+      );
+    });
+
+    const patchedRow = lastRenderedRows.find((r) => r.id === "inq-1");
+    expect(patchedRow?.eventDate).toBe("2099-12-31T00:00:00.000Z");
   });
 
   it("onConverted closes the modal, strips inquiryId param, and marks row booked optimistically", () => {
@@ -158,10 +208,11 @@ describe("InquiriesPageClient", () => {
     // Modal closed
     expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
 
-    // inquiryId param stripped via router.replace
-    expect(replace).toHaveBeenCalledOnce();
-    const replaceArg = (replace.mock.calls[0] as string[])[0];
-    expect(replaceArg).not.toContain("inquiryId");
+    // inquiryId param stripped without a client navigation
+    expect(historyReplaceState).toHaveBeenCalledOnce();
+    const replaceStateUrl = historyReplaceState.mock.calls.at(-1)?.[2];
+    expect(String(replaceStateUrl)).not.toContain("inquiryId");
+    expect(replace).not.toHaveBeenCalled();
 
     // No duplicate refresh (revalidatePath handles the server update)
     expect(refresh).not.toHaveBeenCalled();

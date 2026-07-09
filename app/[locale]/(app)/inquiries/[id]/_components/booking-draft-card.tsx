@@ -175,6 +175,11 @@ export function BookingDraftCard({
     if ("ok" in result && result.ok) {
       setEditingSessions(false);
       toast.success(ts("savedToast"));
+      onInquiryChanged?.(inquiryId, {
+        eventDate: draftSessions[0]?.startDate
+          ? new Date(draftSessions[0].startDate).toISOString()
+          : null,
+      });
     } else if ("error" in result) {
       setSessionsError(result.error);
       toast.error(ts("saveError"));

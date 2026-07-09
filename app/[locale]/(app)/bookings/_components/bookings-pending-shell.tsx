@@ -1,15 +1,28 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 import { ViewToggle, type BookingsView } from "./view-toggle";
+
+const BookingsToolbarPendingContext = createContext<((pending: boolean) => void) | null>(null);
 
 type Props = {
   title: ReactNode;
   view: BookingsView;
-  /** Render-prop so the caller can wire the exposed toolbar-pending setter
-   * into whichever manager (table/calendar) it renders for the active view. */
-  children: (onToolbarPendingChange: (pending: boolean) => void) => ReactNode;
+  children: ReactNode;
 };
+
+export function useBookingsToolbarPending() {
+  const context = useContext(BookingsToolbarPendingContext);
+  if (context === null) {
+    throw new Error("useBookingsToolbarPending must be used within BookingsPendingShell");
+  }
+  return context;
+}
 
 /**
  * Client shell owning the pending state for the view-toggle (table/calendar
@@ -34,7 +47,9 @@ export function BookingsPendingShell({ title, view, children }: Props) {
         aria-busy={pending}
         className={pending ? "pointer-events-none opacity-60 transition-opacity" : "transition-opacity"}
       >
-        {children(setToolbarPending)}
+        <BookingsToolbarPendingContext.Provider value={setToolbarPending}>
+          {children}
+        </BookingsToolbarPendingContext.Provider>
       </div>
     </>
   );

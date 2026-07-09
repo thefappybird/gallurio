@@ -283,74 +283,70 @@ export default async function BookingsPage({
         title={<h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>}
         view={view}
       >
-        {(onToolbarPendingChange) => (
-          <>
-            {view !== "calendar" ? (
-              // Table view: TableBookingManager owns the "New Booking" open state so
-              // the button always fires even when ?add=1 is already in the URL.
-              <TableBookingManager
-                defaultCurrency={workspace.currency as SupportedCurrency}
-                locale={locale}
-                workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
-                clients={initialClients}
-                canCreate={canCreate}
-                defaultTeamId={defaultTeamId}
-                teams={teamOptions}
-                selectedTeams={selectedTeamIds}
-                writableTeams={writableTeams}
-                isOwner={role === "owner"}
-                initialInvoiceTheme={invoiceTheme}
-                onPendingChange={onToolbarPendingChange}
-              />
-            ) : null}
+        <>
+          {view !== "calendar" ? (
+            // Table view: TableBookingManager owns the "New Booking" open state so
+            // the button always fires even when ?add=1 is already in the URL.
+            <TableBookingManager
+              defaultCurrency={workspace.currency as SupportedCurrency}
+              locale={locale}
+              workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+              clients={initialClients}
+              canCreate={canCreate}
+              defaultTeamId={defaultTeamId}
+              teams={teamOptions}
+              selectedTeams={selectedTeamIds}
+              writableTeams={writableTeams}
+              isOwner={role === "owner"}
+              initialInvoiceTheme={invoiceTheme}
+            />
+          ) : null}
 
-            {view === "calendar" ? (
-              <CalendarBookingManager
-                events={events}
-                defaultDate={defaultDate}
-                initialClients={initialClients}
-                defaultCurrency={workspace.currency as SupportedCurrency}
-                locale={locale}
-                workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
-                canCreate={canCreate}
-                defaultTeamId={defaultTeamId}
-                teams={teamOptions}
-                selectedTeams={selectedTeamIds}
-                writableTeams={writableTeams}
-                isOwner={role === "owner"}
-                initialInvoiceTheme={invoiceTheme}
-                colorMode={colorMode}
-                teamColorMap={teamColorMap}
-                onPendingChange={onToolbarPendingChange}
-                messages={{
-                  today: tCal("today"),
-                  previous: tCal("previous"),
-                  next: tCal("next"),
-                  day: tCal("views.day"),
-                  week: tCal("views.week"),
-                  month: tCal("views.month"),
-                  date: tCal("date"),
-                  time: tCal("time"),
-                  event: tCal("event"),
-                  noEventsInRange: tCal("noEventsInRange"),
-                  goTo: tCal("goTo"),
-                  scrollToTime: tCal("scrollToTime"),
-                  go: tCal("go"),
-                }}
-              />
-            ) : (
-              <BookingsPageClient
-                rows={rows}
-                total={bookingsTotal}
-                page={tablePage}
-                limit={tableLimit}
-                locale={locale}
-                empty={t("table.empty")}
-                workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
-              />
-            )}
-          </>
-        )}
+          {view === "calendar" ? (
+            <CalendarBookingManager
+              events={events}
+              defaultDate={defaultDate}
+              initialClients={initialClients}
+              defaultCurrency={workspace.currency as SupportedCurrency}
+              locale={locale}
+              workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+              canCreate={canCreate}
+              defaultTeamId={defaultTeamId}
+              teams={teamOptions}
+              selectedTeams={selectedTeamIds}
+              writableTeams={writableTeams}
+              isOwner={role === "owner"}
+              initialInvoiceTheme={invoiceTheme}
+              colorMode={colorMode}
+              teamColorMap={teamColorMap}
+              messages={{
+                today: tCal("today"),
+                previous: tCal("previous"),
+                next: tCal("next"),
+                day: tCal("views.day"),
+                week: tCal("views.week"),
+                month: tCal("views.month"),
+                date: tCal("date"),
+                time: tCal("time"),
+                event: tCal("event"),
+                noEventsInRange: tCal("noEventsInRange"),
+                goTo: tCal("goTo"),
+                scrollToTime: tCal("scrollToTime"),
+                go: tCal("go"),
+              }}
+            />
+          ) : (
+            <BookingsPageClient
+              rows={rows}
+              total={bookingsTotal}
+              page={tablePage}
+              limit={tableLimit}
+              locale={locale}
+              empty={t("table.empty")}
+              workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+            />
+          )}
+        </>
       </BookingsPendingShell>
 
       {sp.detail ? (

@@ -146,6 +146,26 @@ describe("BookingDraftCard", () => {
     expect(toast.success).toHaveBeenCalledWith("Sessions saved.");
   });
 
+  it("calls onInquiryChanged with the updated eventDate after a successful sessions save", async () => {
+    const onInquiryChanged = vi.fn();
+    const futureSession = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
+    renderWithProviders(
+      <BookingDraftCard
+        {...baseProps}
+        sessions={[futureSession]}
+        onInquiryChanged={onInquiryChanged}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    await waitFor(() => expect(editInquirySessionsAction).toHaveBeenCalledOnce());
+    expect(onInquiryChanged).toHaveBeenCalledWith("abc", {
+      eventDate: "2099-12-31T00:00:00.000Z",
+    });
+  });
+
   it("shows a loading indicator while checking session conflicts and discards a stale response", async () => {
     let resolveFirst!: () => void;
     let resolveSecond!: () => void;

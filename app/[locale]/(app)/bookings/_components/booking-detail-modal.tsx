@@ -80,7 +80,6 @@ import { ActivityTimeline } from "./activity-timeline";
 import type { ActivityEntry } from "./activity-types";
 import type { ShiftHit } from "./booking-wizard-steps/types";
 import {
-  BOOKING_STATUSES,
   EVENT_TYPES,
   type BookingStatus,
   type EditableKey,
@@ -136,6 +135,28 @@ type BookingDoc = {
   payments: { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null; title: string }[];
   notes: string;
 };
+
+function normalizeBookingDoc(booking: BookingDoc | null): BookingDoc | null {
+  if (!booking) return null;
+  return {
+    ...booking,
+    client: booking.client ?? null,
+    teamId: booking.teamId ?? null,
+    sessions: Array.isArray(booking.sessions) ? booking.sessions : [],
+    location: {
+      address: booking.location?.address ?? "",
+      lat: booking.location?.lat ?? null,
+      lng: booking.location?.lng ?? null,
+    },
+    amount: {
+      total: booking.amount?.total ?? 0,
+      deposit: booking.amount?.deposit ?? 0,
+      currency: booking.amount?.currency ?? "PHP",
+    },
+    payments: Array.isArray(booking.payments) ? booking.payments : [],
+    notes: booking.notes ?? "",
+  };
+}
 
 type Props = {
   bookingId: string;
@@ -411,7 +432,7 @@ export function BookingDetailModal({
       .then(async (results) => {
         if (!results || cancelled) return;
         const [b, a] = results;
-        setBooking(b);
+        setBooking(normalizeBookingDoc(b));
         const entries: ActivityEntry[] = a?.entries ?? [];
         setActivity(entries);
         setActivityTotal(a?.total ?? 0);
@@ -833,7 +854,7 @@ export function BookingDetailModal({
       mergedSessions.push({ startAt: d.startAt, endAt: d.endAt });
     }
 
-    setBooking({ ...optimistic, sessions: mergedSessions });
+    setBooking(normalizeBookingDoc({ ...optimistic, sessions: mergedSessions }));
 
     const changes: Record<string, { before: unknown; after: unknown }> = {};
     for (const [key, value] of Object.entries(effectivePending)) {
@@ -899,7 +920,7 @@ export function BookingDetailModal({
             ? { id: reassignedClient.id, name: reassignedClient.name, email: reassignedClient.email, phone: reassignedClient.phone }
             : null)
         : previous.client;
-      setBooking({ ...updated, client: clientAfterSave });
+      setBooking(normalizeBookingDoc({ ...updated, client: clientAfterSave }));
       setPending({});
       setPendingSessionEdits({});
       setDraftSessions([]);
@@ -911,7 +932,7 @@ export function BookingDetailModal({
       startTransition(() => router.refresh());
       await refetchInlineActivity();
     } catch (err) {
-      setBooking(previous);
+      setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
       setDraftSessions(previousDrafts);
@@ -951,7 +972,7 @@ export function BookingDetailModal({
       lastSessionEnd:
         newSessions[newSessions.length - 1]?.endAt ?? booking.lastSessionEnd,
     };
-    setBooking(optimistic);
+    setBooking(normalizeBookingDoc(optimistic));
     prependOptimisticActivity("updated", {
       sessions: { before: previous.sessions, after: newSessions },
     });
@@ -967,12 +988,12 @@ export function BookingDetailModal({
         throw new Error(errMsg(data.error, data.params));
       }
       const updated: BookingDoc = await res.json();
-      setBooking(updated);
+      setBooking(normalizeBookingDoc(updated));
       toast.success(t("savedToast"));
       startTransition(() => router.refresh());
       await refetchInlineActivity();
     } catch (err) {
-      setBooking(previous);
+      setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
       const msg = err instanceof Error ? err.message : errMsg(null);
@@ -1237,7 +1258,7 @@ export function BookingDetailModal({
     const previous = booking;
     const previousActivity = activity;
     const previousTotal = activityTotal;
-    setBooking({ ...booking, status: newStatus });
+    setBooking(normalizeBookingDoc({ ...booking, status: newStatus }));
     prependOptimisticActivity("status_changed", {
       status: { before: previous.status, after: newStatus },
     });
@@ -1249,14 +1270,14 @@ export function BookingDetailModal({
       });
       if (!res.ok) throw new Error("Action failed");
       const updated: BookingDoc = await res.json();
-      setBooking(updated);
+      setBooking(normalizeBookingDoc(updated));
       toast.success(
         newStatus === "cancelled" ? t("cancelledToast") : t("restoredToast")
       );
       startTransition(() => router.refresh());
       await refetchInlineActivity();
     } catch {
-      setBooking(previous);
+      setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
       toast.error(t("actionFailed"));
@@ -1294,7 +1315,7 @@ export function BookingDetailModal({
     <Dialog open={open} onOpenChange={attemptClose}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        className="flex min-h-[60vh] max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
       >
         <DialogHeaderBar
           booking={booking}
@@ -1596,10 +1617,6 @@ function DialogHeaderBar({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
-  // Status is a read-only pill by default; the dropdown is only mounted after
-  // the user clicks the pencil (mirrors the EditableField reveal pattern).
-  const [editingStatus, setEditingStatus] = useState(false);
-
   let outstanding = 0;
   let currency = "PHP";
   if (booking) {
@@ -1627,14 +1644,8 @@ function DialogHeaderBar({
   const effectiveStatus =
     (pending["status"] as string | undefined) ?? booking?.status ?? "";
   const hasTitlePending = "title" in pending;
-  const hasStatusPending = "status" in pending;
   const isCancelled = booking?.status === "cancelled";
 
-  const statusOptions = useMemo(
-    () =>
-      BOOKING_STATUSES.map((s) => ({ value: s, label: safeT(tStatus, s, s) })),
-    [tStatus]
-  );
   const statusLabel = safeT(tStatus, effectiveStatus, effectiveStatus);
   const statusColor = STATUS_COLOR_VAR[effectiveStatus as BookingStatus];
 
@@ -1734,98 +1745,20 @@ function DialogHeaderBar({
                 sibling of the heading so its label never pollutes the heading's
                 accessible name. */}
             {booking ? (
-              <div className="relative shrink-0">
-                {editingStatus && !isCancelled ? (
-                  <Select
-                    value={effectiveStatus}
-                    defaultOpen
-                    onValueChange={(v) => {
-                      onCommit("status", v);
-                      if (hasStatusPending && v === booking.status)
-                        onDiscard("status");
-                      setEditingStatus(false);
-                    }}
-                    onOpenChange={(o) => {
-                      if (!o) setEditingStatus(false);
-                    }}
-                    disabled={disabled}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                        hasStatusPending
-                          ? "border-brand bg-brand/10 text-brand"
-                          : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                      )}
-                      aria-label={t("status")}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          aria-hidden
-                          className="size-2 shrink-0"
-                          style={
-                            statusColor
-                              ? { backgroundColor: statusColor }
-                              : undefined
-                          }
-                        />
-                        <SelectValue>{statusLabel}</SelectValue>
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : readOnly ? (
-                  <span
-                    className={cn(
-                      "flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium",
-                      "border-border bg-background text-muted-foreground"
-                    )}
-                    aria-label={t("status")}
-                  >
-                    <span
-                      aria-hidden
-                      className="size-2 shrink-0"
-                      style={statusColor ? { backgroundColor: statusColor } : undefined}
-                    />
-                    <span>{statusLabel}</span>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => !isCancelled && setEditingStatus(true)}
-                    disabled={disabled || isCancelled}
-                    className={cn(
-                      "group flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
-                      hasStatusPending
-                        ? "border-brand bg-brand/10 text-brand"
-                        : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                    )}
-                    aria-label={t("editStatus")}
-                  >
-                    <span
-                      aria-hidden
-                      className="size-2 shrink-0"
-                      style={statusColor ? { backgroundColor: statusColor } : undefined}
-                    />
-                    <span>{statusLabel}</span>
-                    {!isCancelled ? (
-                      <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
-                    ) : null}
-                  </button>
+              <span
+                className={cn(
+                  "flex h-auto shrink-0 items-center gap-1.5 border px-2 py-0.5 text-xs font-medium",
+                  "border-border bg-background text-muted-foreground"
                 )}
-                {hasStatusPending ? (
-                  <span
-                    className="absolute -end-1 -top-1 size-1.5 bg-brand"
-                    aria-hidden
-                  />
-                ) : null}
-              </div>
+                aria-label={t("status")}
+              >
+                <span
+                  aria-hidden
+                  className="size-2 shrink-0"
+                  style={statusColor ? { backgroundColor: statusColor } : undefined}
+                />
+                <span>{statusLabel}</span>
+              </span>
             ) : null}
           </div>
         )}

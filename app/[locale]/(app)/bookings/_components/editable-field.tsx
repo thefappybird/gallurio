@@ -364,7 +364,9 @@ export function EditableField({
                   onValueChange={(v) => setDraft(v ?? "")}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={label} />
+                    <SelectValue placeholder={label}>
+                      {options.find((opt) => opt.value === String(draft ?? ""))?.label ?? label}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {options.map((opt) => (

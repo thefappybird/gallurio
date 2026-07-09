@@ -227,6 +227,12 @@ async function waitForLoad() {
   fireEvent.click(screen.getByRole("tab", { name: "Sessions" }));
 }
 
+async function waitForHeaderOnly() {
+  await waitFor(() => {
+    expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+  });
+}
+
 /** Click the inline-edit pencil for Session N (1-indexed). */
 function clickEditSession(n: number) {
   const btn = screen.getByRole("button", {
@@ -328,6 +334,22 @@ describe("BookingDetailModal — render", () => {
     );
     expect(missingMessageCalls).toHaveLength(0);
     errorSpy.mockRestore();
+  });
+
+  it("renders legacy bookings that omit payments without crashing", async () => {
+    const legacyBooking = { ...MOCK_BOOKING } as Partial<typeof MOCK_BOOKING>;
+    delete legacyBooking.payments;
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: legacyBooking as typeof MOCK_BOOKING })
+    );
+
+    renderModal();
+    await waitForHeaderOnly();
+
+    expect(
+      screen.getByRole("heading", { name: "Test Wedding" })
+    ).toBeInTheDocument();
   });
 });
 
@@ -1443,6 +1465,7 @@ describe("Event tab — event-type field", () => {
     await waitFor(() => {
       expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
+    expect(screen.getByRole("combobox")).toHaveTextContent("Wedding");
   });
 
   it("does NOT render an event-type control in the header", async () => {
@@ -1462,32 +1485,14 @@ describe("Event tab — event-type field", () => {
 });
 
 describe("Header status pill", () => {
-  it("renders status as a read-only pill in the header with the current label", async () => {
+  it("renders status as a display-only pill in the header with the current label", async () => {
     renderModal();
     await waitForLoad();
 
-    // Status is a button (pill) by default — not a combobox. MOCK_BOOKING.status
-    // === "booked" → label "Booked" shows on the pill.
-    const pill = await screen.findByRole("button", { name: /change status/i });
+    const pill = await screen.findByLabelText("Status");
     expect(within(pill).getByText("Booked")).toBeInTheDocument();
-    // No status combobox until the pencil is clicked.
-    expect(
-      screen.queryByRole("combobox", { name: /status/i })
-    ).not.toBeInTheDocument();
-  });
-
-  it("clicking the status pill reveals the status dropdown", async () => {
-    renderModal();
-    await waitForLoad();
-
-    const pill = await screen.findByRole("button", { name: /change status/i });
-    fireEvent.click(pill);
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("combobox", { name: /status/i })
-      ).toBeInTheDocument();
-    });
+    expect(screen.queryByRole("button", { name: /change status/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: /status/i })).not.toBeInTheDocument();
   });
 
   it("removes the editable Client name and Status fields from the Client tab", async () => {

@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
 import { BookingWizardModal } from "./booking-wizard-modal";
+import { useBookingsToolbarPending } from "./bookings-pending-shell";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
 import type { InvoiceThemePresetId } from "@/lib/invoices/theme";
@@ -35,8 +36,6 @@ type Props = {
   writableTeams: BookingTeamOption[];
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
-  /** Bubbles the toolbar's own pending state up to a wrapping shell. */
-  onPendingChange?: (pending: boolean) => void;
 };
 
 /**
@@ -59,11 +58,11 @@ export function TableBookingManager({
   isOwner,
   writableTeams,
   initialInvoiceTheme,
-  onPendingChange,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const onPendingChange = useBookingsToolbarPending();
 
   // Stable ref so callbacks that read searchParams don't capture stale closures
   // and don't need searchParams in their dep arrays (which would change identity
