@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -16,6 +17,7 @@ export type BookingsView = "table" | "calendar";
 
 type Props = {
   view: BookingsView;
+  onPendingChange?: (pending: boolean) => void;
 };
 
 function ResponsiveTableLabel({
@@ -33,11 +35,16 @@ function ResponsiveTableLabel({
   );
 }
 
-export function ViewToggle({ view }: Props) {
+export function ViewToggle({ view, onPendingChange }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.view");
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    onPendingChange?.(isPending);
+  }, [isPending, onPendingChange]);
 
   function setView(next: BookingsView) {
     if (next === view) return;
@@ -55,7 +62,9 @@ export function ViewToggle({ view }: Props) {
       params.set("view", next);
     }
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    startTransition(() => {
+      router.push(qs ? `${pathname}?${qs}` : pathname);
+    });
   }
 
   return (
@@ -63,6 +72,7 @@ export function ViewToggle({ view }: Props) {
       value={view}
       onChange={setView}
       ariaLabel={t("table")}
+      disabled={isPending}
       options={[
         {
           key: "table",

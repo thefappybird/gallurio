@@ -9,6 +9,7 @@ export type InquiryOptimisticPatch = Partial<{
   total: number;
   deposit: number;
   notes: string;
+  eventDate: string | null;
 }>;
 
 /**

@@ -35,6 +35,12 @@ interface NotificationContextValue {
    * unrelated unreadCount changes caused by mount-time hydration or markRead.
    */
   liveArrivalTick: number
+  /**
+   * Bumps on every `notification:new` socket arrival, unconditionally (even
+   * silent/pre-read ones from the actor's own action in another tab), so
+   * list surfaces can soft-refresh when their entity type changes live.
+   */
+  lastEntityEvent: { entityType: string; entityId: string; tick: number } | null
 }
 
 export const NotificationContext = createContext<NotificationContextValue | null>(null)
@@ -53,6 +59,8 @@ export function NotificationProvider({
   const [notifications, setNotifications] = useState<SerializedNotification[]>(initialNotifications)
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
   const [liveArrivalTick, setLiveArrivalTick] = useState(0)
+  const [lastEntityEvent, setLastEntityEvent] = useState<NotificationContextValue['lastEntityEvent']>(null)
+  const entityEventTick = useRef(0)
   const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
@@ -92,6 +100,12 @@ export function NotificationProvider({
         setUnreadCount((n) => n + 1)
         setLiveArrivalTick((t) => t + 1)
       }
+      entityEventTick.current += 1
+      setLastEntityEvent({
+        entityType: notification.entityType,
+        entityId: notification.entityId,
+        tick: entityEventTick.current,
+      })
     })
 
     socket.on('notification:read', ({ id }: { id: string }) => {
@@ -136,7 +150,7 @@ export function NotificationProvider({
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount, markRead, markAllRead, liveArrivalTick }}
+      value={{ notifications, unreadCount, markRead, markAllRead, liveArrivalTick, lastEntityEvent }}
     >
       {children}
     </NotificationContext.Provider>

@@ -80,7 +80,6 @@ import { ActivityTimeline } from "./activity-timeline";
 import type { ActivityEntry } from "./activity-types";
 import type { ShiftHit } from "./booking-wizard-steps/types";
 import {
-  BOOKING_STATUSES,
   EVENT_TYPES,
   type BookingStatus,
   type EditableKey,
@@ -136,6 +135,28 @@ type BookingDoc = {
   payments: { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null; title: string }[];
   notes: string;
 };
+
+function normalizeBookingDoc(booking: BookingDoc | null): BookingDoc | null {
+  if (!booking) return null;
+  return {
+    ...booking,
+    client: booking.client ?? null,
+    teamId: booking.teamId ?? null,
+    sessions: Array.isArray(booking.sessions) ? booking.sessions : [],
+    location: {
+      address: booking.location?.address ?? "",
+      lat: booking.location?.lat ?? null,
+      lng: booking.location?.lng ?? null,
+    },
+    amount: {
+      total: booking.amount?.total ?? 0,
+      deposit: booking.amount?.deposit ?? 0,
+      currency: booking.amount?.currency ?? "PHP",
+    },
+    payments: Array.isArray(booking.payments) ? booking.payments : [],
+    notes: booking.notes ?? "",
+  };
+}
 
 type Props = {
   bookingId: string;
@@ -251,6 +272,10 @@ export function BookingDetailModal({
   const [actorNames, setActorNames] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<PendingChanges>({});
   const [saving, setSaving] = useState(false);
+  /** Session index currently being patched by a direct action (remove, or a
+   *  multi-day date/time shift) — scoped separately from `saving` so it
+   *  doesn't visually conflict with the unrelated global "Save changes" button. */
+  const [sessionActionBusyIdx, setSessionActionBusyIdx] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
@@ -407,7 +432,7 @@ export function BookingDetailModal({
       .then(async (results) => {
         if (!results || cancelled) return;
         const [b, a] = results;
-        setBooking(b);
+        setBooking(normalizeBookingDoc(b));
         const entries: ActivityEntry[] = a?.entries ?? [];
         setActivity(entries);
         setActivityTotal(a?.total ?? 0);
@@ -829,7 +854,7 @@ export function BookingDetailModal({
       mergedSessions.push({ startAt: d.startAt, endAt: d.endAt });
     }
 
-    setBooking({ ...optimistic, sessions: mergedSessions });
+    setBooking(normalizeBookingDoc({ ...optimistic, sessions: mergedSessions }));
 
     const changes: Record<string, { before: unknown; after: unknown }> = {};
     for (const [key, value] of Object.entries(effectivePending)) {
@@ -895,7 +920,7 @@ export function BookingDetailModal({
             ? { id: reassignedClient.id, name: reassignedClient.name, email: reassignedClient.email, phone: reassignedClient.phone }
             : null)
         : previous.client;
-      setBooking({ ...updated, client: clientAfterSave });
+      setBooking(normalizeBookingDoc({ ...updated, client: clientAfterSave }));
       setPending({});
       setPendingSessionEdits({});
       setDraftSessions([]);
@@ -907,7 +932,7 @@ export function BookingDetailModal({
       startTransition(() => router.refresh());
       await refetchInlineActivity();
     } catch (err) {
-      setBooking(previous);
+      setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
       setDraftSessions(previousDrafts);
@@ -927,10 +952,15 @@ export function BookingDetailModal({
    * Patches the booking with a new full sessions array (used ONLY by
    * remove-session and the multi-day confirm dialog — NOT by inline edits,
    * which now go into pendingSessionEdits).
+   *
+   * `busyIdx` scopes the pending indicator to the session that triggered the
+   * patch (remove or a multi-day date/time shift) — it is tracked separately
+   * from `saving` so the unrelated global "Save changes" button doesn't flip
+   * into its own busy state for an action it didn't initiate.
    */
-  async function patchSessions(newSessions: SessionDoc[]) {
+  async function patchSessions(newSessions: SessionDoc[], busyIdx: number) {
     if (!booking) return;
-    setSaving(true);
+    setSessionActionBusyIdx(busyIdx);
     const previous = booking;
     const previousActivity = activity;
     const previousTotal = activityTotal;
@@ -942,7 +972,7 @@ export function BookingDetailModal({
       lastSessionEnd:
         newSessions[newSessions.length - 1]?.endAt ?? booking.lastSessionEnd,
     };
-    setBooking(optimistic);
+    setBooking(normalizeBookingDoc(optimistic));
     prependOptimisticActivity("updated", {
       sessions: { before: previous.sessions, after: newSessions },
     });
@@ -958,18 +988,18 @@ export function BookingDetailModal({
         throw new Error(errMsg(data.error, data.params));
       }
       const updated: BookingDoc = await res.json();
-      setBooking(updated);
+      setBooking(normalizeBookingDoc(updated));
       toast.success(t("savedToast"));
       startTransition(() => router.refresh());
       await refetchInlineActivity();
     } catch (err) {
-      setBooking(previous);
+      setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
       const msg = err instanceof Error ? err.message : errMsg(null);
       toast.error(msg);
     } finally {
-      setSaving(false);
+      setSessionActionBusyIdx(null);
     }
   }
 
@@ -1024,7 +1054,7 @@ export function BookingDetailModal({
     const updated = booking.sessions.flatMap((s, i) =>
       i === sessionIdx ? result.map(sessionToDoc) : [s]
     );
-    void patchSessions(updated);
+    void patchSessions(updated, sessionIdx);
   }
 
   /**
@@ -1073,7 +1103,7 @@ export function BookingDetailModal({
     );
     setSessionDialogOpen(false);
     setPendingSessionEditDialog(null);
-    void patchSessions(updated);
+    void patchSessions(updated, sessionIdx);
   }
 
   function handleSessionApplyToSession() {
@@ -1104,7 +1134,7 @@ export function BookingDetailModal({
     );
     setSessionDialogOpen(false);
     setPendingSessionEditDialog(null);
-    void patchSessions(updated);
+    void patchSessions(updated, sessionIdx);
   }
 
   function handleSessionDialogCancel() {
@@ -1204,7 +1234,7 @@ export function BookingDetailModal({
     if (!booking) return;
     if (booking.sessions.length <= 1) return;
     const updated = booking.sessions.filter((_, i) => i !== idx);
-    void patchSessions(updated);
+    void patchSessions(updated, idx);
   }
 
   function attemptClose(next: boolean) {
@@ -1228,7 +1258,7 @@ export function BookingDetailModal({
     const previous = booking;
     const previousActivity = activity;
     const previousTotal = activityTotal;
-    setBooking({ ...booking, status: newStatus });
+    setBooking(normalizeBookingDoc({ ...booking, status: newStatus }));
     prependOptimisticActivity("status_changed", {
       status: { before: previous.status, after: newStatus },
     });
@@ -1240,14 +1270,14 @@ export function BookingDetailModal({
       });
       if (!res.ok) throw new Error("Action failed");
       const updated: BookingDoc = await res.json();
-      setBooking(updated);
+      setBooking(normalizeBookingDoc(updated));
       toast.success(
         newStatus === "cancelled" ? t("cancelledToast") : t("restoredToast")
       );
       startTransition(() => router.refresh());
       await refetchInlineActivity();
     } catch {
-      setBooking(previous);
+      setBooking(normalizeBookingDoc(previous));
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
       toast.error(t("actionFailed"));
@@ -1285,7 +1315,7 @@ export function BookingDetailModal({
     <Dialog open={open} onOpenChange={attemptClose}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        className="flex min-h-[60vh] max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
       >
         <DialogHeaderBar
           booking={booking}
@@ -1351,6 +1381,7 @@ export function BookingDetailModal({
               onViewClient={handleViewClient}
               viewClientLoading={viewClientLoading}
               disabled={saving}
+              busySessionIdx={sessionActionBusyIdx}
               shiftsByDate={shiftsByDate}
               loadingDates={loadingDates}
               onSessionCommit={handleSessionCommit}
@@ -1405,6 +1436,7 @@ export function BookingDetailModal({
             saving={saving}
             saveError={saveError}
             saveBlocked={hasAnyConflict}
+            sessionActionBusy={sessionActionBusyIdx !== null}
             businessComplete={businessComplete}
             workspaceId={workspaceId}
             onToggleCancel={requestCancel}
@@ -1585,10 +1617,6 @@ function DialogHeaderBar({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
-  // Status is a read-only pill by default; the dropdown is only mounted after
-  // the user clicks the pencil (mirrors the EditableField reveal pattern).
-  const [editingStatus, setEditingStatus] = useState(false);
-
   let outstanding = 0;
   let currency = "PHP";
   if (booking) {
@@ -1616,14 +1644,8 @@ function DialogHeaderBar({
   const effectiveStatus =
     (pending["status"] as string | undefined) ?? booking?.status ?? "";
   const hasTitlePending = "title" in pending;
-  const hasStatusPending = "status" in pending;
   const isCancelled = booking?.status === "cancelled";
 
-  const statusOptions = useMemo(
-    () =>
-      BOOKING_STATUSES.map((s) => ({ value: s, label: safeT(tStatus, s, s) })),
-    [tStatus]
-  );
   const statusLabel = safeT(tStatus, effectiveStatus, effectiveStatus);
   const statusColor = STATUS_COLOR_VAR[effectiveStatus as BookingStatus];
 
@@ -1723,98 +1745,20 @@ function DialogHeaderBar({
                 sibling of the heading so its label never pollutes the heading's
                 accessible name. */}
             {booking ? (
-              <div className="relative shrink-0">
-                {editingStatus && !isCancelled ? (
-                  <Select
-                    value={effectiveStatus}
-                    defaultOpen
-                    onValueChange={(v) => {
-                      onCommit("status", v);
-                      if (hasStatusPending && v === booking.status)
-                        onDiscard("status");
-                      setEditingStatus(false);
-                    }}
-                    onOpenChange={(o) => {
-                      if (!o) setEditingStatus(false);
-                    }}
-                    disabled={disabled}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                        hasStatusPending
-                          ? "border-brand bg-brand/10 text-brand"
-                          : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                      )}
-                      aria-label={t("status")}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          aria-hidden
-                          className="size-2 shrink-0"
-                          style={
-                            statusColor
-                              ? { backgroundColor: statusColor }
-                              : undefined
-                          }
-                        />
-                        <SelectValue>{statusLabel}</SelectValue>
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : readOnly ? (
-                  <span
-                    className={cn(
-                      "flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium",
-                      "border-border bg-background text-muted-foreground"
-                    )}
-                    aria-label={t("status")}
-                  >
-                    <span
-                      aria-hidden
-                      className="size-2 shrink-0"
-                      style={statusColor ? { backgroundColor: statusColor } : undefined}
-                    />
-                    <span>{statusLabel}</span>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => !isCancelled && setEditingStatus(true)}
-                    disabled={disabled || isCancelled}
-                    className={cn(
-                      "group flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
-                      hasStatusPending
-                        ? "border-brand bg-brand/10 text-brand"
-                        : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                    )}
-                    aria-label={t("editStatus")}
-                  >
-                    <span
-                      aria-hidden
-                      className="size-2 shrink-0"
-                      style={statusColor ? { backgroundColor: statusColor } : undefined}
-                    />
-                    <span>{statusLabel}</span>
-                    {!isCancelled ? (
-                      <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
-                    ) : null}
-                  </button>
+              <span
+                className={cn(
+                  "flex h-auto shrink-0 items-center gap-1.5 border px-2 py-0.5 text-xs font-medium",
+                  "border-border bg-background text-muted-foreground"
                 )}
-                {hasStatusPending ? (
-                  <span
-                    className="absolute -end-1 -top-1 size-1.5 bg-brand"
-                    aria-hidden
-                  />
-                ) : null}
-              </div>
+                aria-label={t("status")}
+              >
+                <span
+                  aria-hidden
+                  className="size-2 shrink-0"
+                  style={statusColor ? { backgroundColor: statusColor } : undefined}
+                />
+                <span>{statusLabel}</span>
+              </span>
             ) : null}
           </div>
         )}
@@ -1905,6 +1849,7 @@ function BookingTabs({
   onViewClient,
   viewClientLoading,
   disabled,
+  busySessionIdx,
   shiftsByDate,
   loadingDates,
   onSessionCommit,
@@ -1953,6 +1898,9 @@ function BookingTabs({
   onViewClient: () => void;
   viewClientLoading: boolean;
   disabled: boolean;
+  /** Session index currently being patched by remove/date-shift — scoped
+   *  separately from `disabled` so it doesn't ride on the global save state. */
+  busySessionIdx: number | null;
   shiftsByDate: Map<string, ShiftHit[]>;
   loadingDates: Set<string>;
   onSessionCommit: (
@@ -2679,7 +2627,8 @@ function BookingTabs({
                 sessionIndex={resolvedIdx}
                 total={(booking?.sessions ?? []).length}
                 locale={locale}
-                disabled={disabled}
+                disabled={disabled || busySessionIdx !== null}
+                busy={busySessionIdx === resolvedIdx}
                 readOnly={readOnly}
                 isPast={isPastSession(s)}
                 label={tSessions("label", { n: resolvedIdx + 1 })}
@@ -2888,6 +2837,7 @@ function SessionCard({
   total,
   locale,
   disabled,
+  busy,
   readOnly,
   isPast,
   label,
@@ -2907,6 +2857,9 @@ function SessionCard({
   total: number;
   locale: string;
   disabled: boolean;
+  /** True while THIS session's own remove/date-shift patch is in flight —
+   *  drives a scoped spinner distinct from the shared `disabled` state. */
+  busy?: boolean;
   readOnly?: boolean;
   isPast: boolean;
   label: string;
@@ -3122,6 +3075,7 @@ function SessionCard({
               onClick={isOnlySession ? undefined : onRemove}
               disabled={disabled || isOnlySession}
               aria-disabled={isOnlySession}
+              aria-busy={busy ? "true" : undefined}
               title={isOnlySession ? removeLabel : undefined}
               aria-label={removeLabel}
               className={cn(
@@ -3130,7 +3084,11 @@ function SessionCard({
                   "hover:text-destructive focus-visible:text-destructive"
               )}
             >
-              <Trash2Icon className="size-4" />
+              {busy ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                <Trash2Icon className="size-4" />
+              )}
             </Button>
           </>
         ) : null
@@ -3757,6 +3715,7 @@ function DialogFooterBar({
   saving,
   saveError,
   saveBlocked,
+  sessionActionBusy,
   businessComplete,
   workspaceId,
   onToggleCancel,
@@ -3772,6 +3731,7 @@ function DialogFooterBar({
   saving: boolean;
   saveError: string | null;
   saveBlocked: boolean;
+  sessionActionBusy: boolean;
   businessComplete: boolean;
   workspaceId: string;
   onToggleCancel: () => void;
@@ -3781,14 +3741,19 @@ function DialogFooterBar({
   const t = useTranslations("app.bookings.detail");
   const tWarn = useTranslations("app.bookings.detail.incompleteBusiness");
   const [incompleteWarningOpen, setIncompleteWarningOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const downloadUrl = `/api/bookings/${bookingId}/${completed ? "receipt" : "invoice"}`;
   const hideFlagKey = `gw_hide_incomplete_business_warning:${workspaceId}`;
 
   function openDownload() {
+    if (downloading) return;
+    setDownloading(true);
     window.open(downloadUrl, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => setDownloading(false), 800);
   }
 
   function handleDownloadClick() {
+    if (downloading) return;
     if (!businessComplete && !window.localStorage.getItem(hideFlagKey)) {
       setIncompleteWarningOpen(true);
       return;
@@ -3842,7 +3807,7 @@ function DialogFooterBar({
                 type="button"
                 size="sm"
                 onClick={onSave}
-                disabled={saving || saveBlocked}
+                disabled={saving || saveBlocked || sessionActionBusy}
                 className={cn(saving && "pointer-events-none")}
                 title={saveBlocked ? t("conflictBlocksSave") : undefined}
               >

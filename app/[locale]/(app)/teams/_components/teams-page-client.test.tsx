@@ -2,8 +2,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { type ReactNode, type ReactElement, createElement } from "react";
 import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
+import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 import { TeamsPageClient } from "./teams-page-client";
 import type { TeamRow } from "../_types";
+
+// useLiveRefresh (wired into TeamsPageClient) needs a socket + a real
+// next/navigation router in the tree; neither is under test here.
+vi.mock("socket.io-client", () => ({
+  io: () => ({ on: vi.fn(), disconnect: vi.fn() }),
+}));
+vi.mock("@/app/[locale]/(app)/notifications/_actions", () => ({
+  markNotificationReadAction: vi.fn(),
+  markAllNotificationsReadAction: vi.fn(),
+}));
 
 // Base UI's floating menu relies on layout APIs unavailable in happy-dom.
 // Stub the dropdown so menu items render inline as buttons.
@@ -48,6 +59,7 @@ vi.mock("@/lib/i18n/navigation", () => ({
 }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ refresh: vi.fn() }),
 }));
 
 const createTeamMock = vi.fn();
@@ -79,6 +91,14 @@ const TEAMS: TeamRow[] = [
   { id: "t2", name: "Wedding crew", color: "#7c5cff", isDefault: false, isActive: true, memberCount: 3 },
 ];
 
+function renderTeamsPage(props: React.ComponentProps<typeof TeamsPageClient>) {
+  return renderWithProviders(
+    <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <TeamsPageClient {...props} />
+    </NotificationProvider>,
+  );
+}
+
 function build(overrides: Partial<React.ComponentProps<typeof TeamsPageClient>> = {}) {
   return {
     teams: TEAMS,
@@ -100,7 +120,7 @@ describe("TeamsPageClient", () => {
   });
 
   it("renders the table with the seeded teams", () => {
-    renderWithProviders(<TeamsPageClient {...build()} />);
+    renderTeamsPage(build());
     expect(screen.getAllByText("Main")).toHaveLength(2);
     expect(screen.getAllByText("Wedding crew")).toHaveLength(2);
   });
@@ -109,7 +129,7 @@ describe("TeamsPageClient", () => {
     createTeamMock.mockResolvedValue({
       team: { id: "t3", name: "New crew", color: "#000000", isDefault: false, isActive: true, memberCount: 0 },
     });
-    renderWithProviders(<TeamsPageClient {...build()} />);
+    renderTeamsPage(build());
 
     fireEvent.click(screen.getByRole("button", { name: /create team/i }));
     const dialog = screen.getByRole("dialog");
@@ -123,9 +143,27 @@ describe("TeamsPageClient", () => {
     await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
   });
 
+  it("does not flash a full-table skeleton after create, since the optimistic row is already correct", async () => {
+    createTeamMock.mockResolvedValue({
+      team: { id: "t3", name: "New crew", color: "#000000", isDefault: false, isActive: true, memberCount: 0 },
+    });
+    renderTeamsPage(build());
+
+    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/team name/i), {
+      target: { value: "New crew" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: /^create team$/i }));
+
+    await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+    expect(screen.getAllByText("New crew").length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText("Loading table data")).not.toBeInTheDocument();
+  });
+
   it("does not refresh when the create action fails", async () => {
     createTeamMock.mockResolvedValue({ error: "DUPLICATE_NAME" });
-    renderWithProviders(<TeamsPageClient {...build()} />);
+    renderTeamsPage(build());
 
     fireEvent.click(screen.getByRole("button", { name: /create team/i }));
     const dialog = screen.getByRole("dialog");

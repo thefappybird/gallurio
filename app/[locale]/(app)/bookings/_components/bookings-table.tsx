@@ -448,12 +448,24 @@ export function BookingsTable({
                 row.original.lastSessionEnd,
                 workspaceTimezone
               );
+
+              function handleRowKeyDown(event: KeyboardEvent<HTMLTableRowElement>) {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openDetail(row.original.id);
+                }
+              }
+
               return (
                 <tr
                   key={row.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${tActions("view")} ${row.original.title}`}
                   onClick={() => openDetail(row.original.id)}
+                  onKeyDown={handleRowKeyDown}
                   className={cn(
-                    "cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-accent/40",
+                    "cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset",
                     (cancelled || isPast) && "opacity-60"
                   )}
                 >
@@ -468,6 +480,9 @@ export function BookingsTable({
                           "line-through"
                       )}
                       onClick={(event) => {
+                        if (cell.column.id === "actions") event.stopPropagation();
+                      }}
+                      onKeyDown={(event) => {
                         if (cell.column.id === "actions") event.stopPropagation();
                       }}
                     >

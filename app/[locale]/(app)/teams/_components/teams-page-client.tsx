@@ -11,12 +11,12 @@ import {
 import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { PlusIcon, SearchIcon, MailPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { TableSkeleton } from "@/components/app/table-skeleton";
 import { TeamsTable } from "./teams-table";
 import { TeamDetailDrawer } from "./team-detail-drawer";
 import { InviteForm } from "./invite-form";
@@ -52,9 +52,6 @@ type OptimisticAction =
   | { type: "deactivate"; id: string }
   | { type: "reactivate"; id: string };
 
-// TeamsTable has: color, name, members, actions = 4 columns
-const TEAMS_TABLE_COLUMNS = 4;
-
 function applyOptimistic(teams: TeamRow[], action: OptimisticAction): TeamRow[] {
   switch (action.type) {
     case "add":
@@ -80,16 +77,20 @@ export function TeamsPageClient({
   ownerWorkosUserId,
 }: Props) {
   const t = useTranslations("app.teams");
+  // Covers team.invitation/removed/deleted; member-add and lead-toggle aren't
+  // covered since no notification type exists for them yet.
+  useLiveRefresh(["team"]);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  // Drives the table skeleton while a create/edit/deactivate/reactivate dialog's
-  // router.refresh() re-fetches server data after its own optimistic update has
-  // already landed. The optimistic dispatch below still applies instantly; this
-  // only covers the tail-end reconciliation with the server.
-  const [isRefreshing, startRefreshTransition] = useTransition();
+  // A create/edit/deactivate/reactivate dialog's onDone triggers this after
+  // its own optimistic update has already landed, so the table is already
+  // showing the correct row — this just reconciles server data silently in
+  // the background (no skeleton; that would just flash over data that's
+  // already right).
+  const [, startRefreshTransition] = useTransition();
 
   const [optimisticTeams, dispatch] = useOptimistic(initialTeams, applyOptimistic);
 
@@ -244,23 +245,15 @@ export function TeamsPageClient({
 
       {/* id is the scroll target for the DowngradeBlockModal "Manage teams" link */}
       <div id="teams-list">
-        {isRefreshing ? (
-          <TableSkeleton
-            columns={TEAMS_TABLE_COLUMNS}
-            rows={filteredTeams.length || 8}
-            cardRows={Math.min(filteredTeams.length || 8, 4)}
-          />
-        ) : (
-          <TeamsTable
-            rows={filteredTeams}
-            empty={committedQuery ? t("table.empty") : t("listEmpty")}
-            onDetails={openDetails}
-            onEdit={setEditTeam}
-            onInvite={(team) => openInvite([team.id])}
-            onDeactivate={setDeactivateTeam}
-            onReactivate={setReactivateTeam}
-          />
-        )}
+        <TeamsTable
+          rows={filteredTeams}
+          empty={committedQuery ? t("table.empty") : t("listEmpty")}
+          onDetails={openDetails}
+          onEdit={setEditTeam}
+          onInvite={(team) => openInvite([team.id])}
+          onDeactivate={setDeactivateTeam}
+          onReactivate={setReactivateTeam}
+        />
       </div>
 
       {/* Detail drawer */}
@@ -284,6 +277,7 @@ export function TeamsPageClient({
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         defaultTeamIds={inviteTeamIds}
+        onDone={refreshTeams}
       />
 
       {/* Create / Rename / Color / Delete dialogs */}

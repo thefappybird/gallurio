@@ -1,7 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { screen, fireEvent, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BookingsTable, type BookingRow } from "./bookings-table";
+
+const mockPush = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+vi.mock("@/lib/i18n/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+  usePathname: () => "/bookings",
+}));
 
 const TEST_TZ = "UTC";
 
@@ -309,5 +320,23 @@ describe("BookingsTable", () => {
     fireEvent.click(trigger);
     expect(screen.getByText("View")).toBeInTheDocument();
     expect(screen.getByText("Edit")).toBeInTheDocument();
+  });
+
+  it("does not open the booking detail when Enter is pressed on the desktop row's actions trigger", () => {
+    mockPush.mockClear();
+    const { container } = renderWithProviders(
+      <BookingsTable
+        rows={[futureRow]}
+        locale="en"
+        empty="No rows"
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+    const table = container.querySelector("table") as HTMLElement;
+    const trigger = within(table).getByRole("button", {
+      name: /open booking actions/i,
+    });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

@@ -55,7 +55,6 @@
       "codeLabel": "Kod pengesahan",
       "submit": "Sahkan e-mel",
       "resend": "Hantar semula kod",
-      "resending": "Menghantar…",
       "resendSent": "Kod dihantar semula — semak peti masuk anda."
     },
     "fields": {
@@ -1386,6 +1385,7 @@
           "phoneLabel": "Telefon",
           "emailReadonly": "E-mel (baca sahaja)",
           "sessionLabel": "Sesi {n}",
+          "checking": "Menyemak konflik…",
           "conflictInline": "konflik",
           "dateLabel": "Tarikh",
           "startLabel": "Masa mula",
@@ -1727,6 +1727,7 @@
           "cancel": "Batal",
           "unsaved": "Belum disimpan",
           "applyAria": "Guna {name}",
+          "applyingAria": "Sedang menggunakan {name}",
           "deletingAria": "Memadam {name}",
           "deleteAria": "Padam {name}"
         },

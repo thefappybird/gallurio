@@ -6,7 +6,7 @@
  * @/lib/i18n/navigation: already stubbed via vitest alias in vitest.config.ts.
  */
 import { describe, it, expect, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { renderWithProviders } from "@/test-utils/render";
 import { CustomizePanel } from "./_panel";
@@ -39,6 +39,10 @@ vi.mock("next/headers", () => ({
 }));
 
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn().mockResolvedValue(undefined) }));
+
+vi.mock("@/app/[locale]/(app)/settings/_actions", () => ({
+  updateTimeFormatAction: vi.fn(),
+}));
 
 vi.mock("next-intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next-intl")>();
@@ -95,5 +99,46 @@ describe("CustomizePanel", () => {
     expect(screen.getByText("Bahasa Indonesia")).toBeInTheDocument();
     expect(screen.getByText("العربية")).toBeInTheDocument();
     expect(screen.queryByText("ภาษาไทย")).not.toBeInTheDocument();
+  });
+
+  it("disables the language buttons and shows a spinner on the clicked one while the locale change is pending", () => {
+    renderWithProviders(
+      <Wrapper>
+        <CustomizePanel />
+      </Wrapper>
+    );
+    const filipinoButton = screen.getByRole("button", { name: "Filipino" });
+    fireEvent.click(filipinoButton);
+    expect(filipinoButton).toBeDisabled();
+    expect(filipinoButton.querySelector("svg")).toBeTruthy();
+  });
+
+  it("shows a busy state on the time-format toggle while the update Action is in flight", async () => {
+    const { updateTimeFormatAction } = await import(
+      "@/app/[locale]/(app)/settings/_actions"
+    );
+    let resolveAction!: (value: { ok: boolean }) => void;
+    (updateTimeFormatAction as ReturnType<typeof vi.fn>).mockReturnValue(
+      new Promise((resolve) => {
+        resolveAction = resolve;
+      })
+    );
+
+    renderWithProviders(
+      <Wrapper>
+        <CustomizePanel />
+      </Wrapper>
+    );
+
+    const button12h = screen.getByRole("button", { name: "12h" });
+    fireEvent.click(button12h);
+    await act(async () => {});
+
+    expect(updateTimeFormatAction).toHaveBeenCalledTimes(1);
+    expect(button12h).toBeDisabled();
+    expect(button12h.querySelector("svg")).toBeTruthy();
+
+    resolveAction({ ok: true });
+    await waitFor(() => expect(button12h).not.toBeDisabled());
   });
 });

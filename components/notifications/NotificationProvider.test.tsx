@@ -64,3 +64,44 @@ describe("NotificationProvider liveArrivalTick", () => {
     expect(screen.getByTestId("tick").textContent).toBe("1");
   });
 });
+
+function LastEntityEventProbe() {
+  const ctx = useContext(NotificationContext);
+  return (
+    <span data-testid="entity-event">
+      {ctx?.lastEntityEvent
+        ? `${ctx.lastEntityEvent.entityType}:${ctx.lastEntityEvent.entityId}:${ctx.lastEntityEvent.tick}`
+        : "none"}
+    </span>
+  );
+}
+
+describe("NotificationProvider lastEntityEvent", () => {
+  it("bumps lastEntityEvent on notification:new even when silent/read (actor's own tab)", () => {
+    renderWithProviders(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+        <LastEntityEventProbe />
+      </NotificationProvider>,
+    );
+
+    expect(screen.getByTestId("entity-event").textContent).toBe("none");
+
+    act(() => {
+      emit("notification:new", {
+        _id: "n2",
+        type: "team.invitation",
+        title: "t",
+        body: "b",
+        href: "/teams",
+        entityId: "team1",
+        entityType: "team",
+        read: true,
+        readAt: new Date().toISOString(),
+        silent: true,
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    expect(screen.getByTestId("entity-event").textContent).toBe("team:team1:1");
+  });
+});

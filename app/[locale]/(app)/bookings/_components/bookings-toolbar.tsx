@@ -35,8 +35,12 @@ export function BookingsToolbar({
   selectedTeams = [],
   isOwner = false,
   initialInvoiceTheme,
+  onPendingChange,
 }: {
   defaultCurrency: string;
+  /** Notifies the parent when a filter-change navigation is pending, so it can
+   *  reflect the wait (e.g. surface the bookings table's loading skeleton). */
+  onPendingChange?: (pending: boolean) => void;
   /** When provided, the "New Booking" button calls this directly instead of
    *  performing a URL push. Allows the parent to own the open state so the
    *  button always fires even when ?add=1 is already in the URL. */
@@ -62,7 +66,11 @@ export function BookingsToolbar({
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.toolbar");
   const tBookings = useTranslations("app.bookings");
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    onPendingChange?.(isPending);
+  }, [isPending, onPendingChange]);
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);
@@ -131,7 +139,7 @@ export function BookingsToolbar({
   }, [q, pushParams]);
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-2">
       <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:w-80">
           <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -149,7 +157,7 @@ export function BookingsToolbar({
           value={status}
           onValueChange={(v) => pushParams({ status: !v || v === ALL ? null : v })}
         >
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="h-8 w-full rounded-lg border-border px-2.5 font-normal hover:bg-muted hover:text-foreground data-[popup-open]:bg-muted data-[popup-open]:text-foreground sm:w-48">
             <SelectValue>
               {(value: string) =>
                 !value || value === ALL ? (
@@ -160,10 +168,19 @@ export function BookingsToolbar({
               }
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>{t("statusAll")}</SelectItem>
+          <SelectContent className="rounded-lg border-border bg-background p-1 shadow-none sm:min-w-48">
+            <SelectItem
+              value={ALL}
+              className="min-h-8 rounded-md px-2.5 py-1 pe-7 font-normal data-highlighted:bg-muted data-highlighted:text-foreground"
+            >
+              {t("statusAll")}
+            </SelectItem>
             {BOOKING_STATUSES.map((s: BookingStatus) => (
-              <SelectItem key={s} value={s} className="capitalize">
+              <SelectItem
+                key={s}
+                value={s}
+                className="min-h-8 rounded-md px-2.5 py-1 pe-7 font-normal capitalize data-highlighted:bg-muted data-highlighted:text-foreground"
+              >
                 {s}
               </SelectItem>
             ))}

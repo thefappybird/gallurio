@@ -22,6 +22,8 @@ type Props = {
   onEdit?: (client: ClientRow) => void;
   onDeactivate?: (client: ClientRow) => void;
   onReactivate?: (client: ClientRow) => void;
+  /** Id of the client currently being reactivated — mirrors the table row's pending state. */
+  reactivatingId?: string | null;
   locale: string;
 };
 
@@ -32,6 +34,7 @@ export function ClientDetailModal({
   onEdit,
   onDeactivate,
   onReactivate,
+  reactivatingId = null,
   locale,
 }: Props) {
   if (!client) return null;
@@ -44,6 +47,7 @@ export function ClientDetailModal({
       onEdit={onEdit}
       onDeactivate={onDeactivate}
       onReactivate={onReactivate}
+      reactivatingId={reactivatingId}
       locale={locale}
     />
   );
@@ -58,6 +62,7 @@ function ClientDetailModalInner({
   onEdit,
   onDeactivate,
   onReactivate,
+  reactivatingId = null,
   locale,
 }: InnerProps) {
   const t = useTranslations("app.clients");
@@ -274,6 +279,7 @@ function ClientDetailModalInner({
                 variant="default"
                 size="sm"
                 className="min-h-11 sm:min-h-0"
+                loading={reactivatingId === client.id}
                 onClick={() => onReactivate(client)}
               >
                 {t("detail.reactivate")}

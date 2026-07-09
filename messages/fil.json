@@ -55,7 +55,6 @@
       "codeLabel": "Verification code",
       "submit": "I-verify ang email",
       "resend": "Muling ipadala ang code",
-      "resending": "Nagpapadala…",
       "resendSent": "Naipadala na ang code — tingnan ang iyong inbox."
     },
     "fields": {
@@ -1386,6 +1385,7 @@
           "phoneLabel": "Telepono",
           "emailReadonly": "Email (read-only)",
           "sessionLabel": "Sesi {n}",
+          "checking": "Sinisiyasat ang mga salungatan…",
           "conflictInline": "salungatan",
           "dateLabel": "Petsa",
           "startLabel": "Oras ng pagsisimula",
@@ -1727,6 +1727,7 @@
           "cancel": "Kanselahin",
           "unsaved": "Hindi pa nai-save",
           "applyAria": "Ilapat ang {name}",
+          "applyingAria": "Inilalapat ang {name}",
           "deletingAria": "Binubura ang {name}",
           "deleteAria": "Burahin ang {name}"
         },

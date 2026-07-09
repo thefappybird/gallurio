@@ -55,7 +55,6 @@
       "codeLabel": "Verification code",
       "submit": "Verify email",
       "resend": "Resend code",
-      "resending": "Sending…",
       "resendSent": "Code resent — check your inbox."
     },
     "fields": {
@@ -1386,6 +1385,7 @@
           "phoneLabel": "Phone",
           "emailReadonly": "Email (read-only)",
           "sessionLabel": "Session {n}",
+          "checking": "Checking for conflicts…",
           "conflictInline": "conflict",
           "dateLabel": "Date",
           "startLabel": "Start time",
@@ -1727,6 +1727,7 @@
           "cancel": "Cancel",
           "unsaved": "Unsaved",
           "applyAria": "Apply {name}",
+          "applyingAria": "Applying {name}",
           "deletingAria": "Deleting {name}",
           "deleteAria": "Delete {name}"
         },

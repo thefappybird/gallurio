@@ -561,6 +561,7 @@ export function EditorShell({
   const [pendingAction, setPendingAction] = useState<{ run: () => void; reseeds: boolean } | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
+  const [applyingDraftId, setApplyingDraftId] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   // True only when the canvas holds a newly-created draft (applyTemplate path) that
   // has no DB record yet; false when the active draft was deleted (deleted-working-copy
@@ -871,6 +872,15 @@ export function EditorShell({
 
   // ---- Apply draft ----
   async function applyDraft(id: string) {
+    setApplyingDraftId(id);
+    try {
+      await applyDraftInner(id);
+    } finally {
+      setApplyingDraftId(null);
+    }
+  }
+
+  async function applyDraftInner(id: string) {
     const res = await getDraftAction(id);
     if ("error" in res) {
       toast.error(errMsg("draft_load_failed"));
@@ -1281,7 +1291,11 @@ export function EditorShell({
       openSeoSetupPreviewNextSurface(false);
       return;
     }
-    if (dontShowAgain) void dismissPortfolioGuideAction();
+    if (dontShowAgain) {
+      dismissPortfolioGuideAction().catch((err) => {
+        console.warn("[portfolio] failed to dismiss guide on skip", err);
+      });
+    }
     // Open entry only when the guide was gating it (i.e. it was not already open).
     if (!guideDismissed) openEntryAfterGuide();
   }
@@ -1296,7 +1310,11 @@ export function EditorShell({
       openSeoSetupPreviewNextSurface(false);
       return;
     }
-    if (dontShowAgain) void dismissPortfolioGuideAction();
+    if (dontShowAgain) {
+      dismissPortfolioGuideAction().catch((err) => {
+        console.warn("[portfolio] failed to dismiss guide on finish", err);
+      });
+    }
     if (!guideDismissed) openEntryAfterGuide();
   }
 
@@ -1969,6 +1987,7 @@ export function EditorShell({
         onDelete={(id) => void handleDeleteDraft(id)}
         onAddNew={handleAddNewDraft}
         deletingId={deletingDraftId}
+        applyingId={applyingDraftId}
         unsavedDraftName={isNewUnsavedDraft && activeDraftId === null ? draftName : null}
       />
       <PortfolioEntryDialog

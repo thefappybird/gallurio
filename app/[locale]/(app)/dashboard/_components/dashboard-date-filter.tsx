@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
@@ -13,18 +13,26 @@ type Props = {
   today: string; // YYYY-MM-DD
   currentMonth: string; // YYYY-MM
   currentYear: number;
+  /** Notifies the parent when a filter-change navigation is pending, so it can
+   *  reflect the wait (e.g. dim the widget area below). */
+  onPendingChange?: (pending: boolean) => void;
 };
 
 type Mode = DateFilterMode;
 
 const MODE_KEYS: Mode[] = ["day", "month", "year", "custom", "all"];
 
-export function DashboardDateFilter({ today, currentMonth, currentYear }: Props) {
+export function DashboardDateFilter({ today, currentMonth, currentYear, onPendingChange }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
   const t = useTranslations("app.dashboard.dateFilter");
   const locale = useLocale();
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    onPendingChange?.(isPending);
+  }, [isPending, onPendingChange]);
 
   const [open, setOpen] = useState(false);
 
@@ -61,7 +69,9 @@ export function DashboardDateFilter({ today, currentMonth, currentYear }: Props)
       params.set("df", "all");
     }
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    startTransition(() => {
+      router.push(qs ? `${pathname}?${qs}` : pathname);
+    });
     setOpen(false);
   }
 
@@ -70,7 +80,9 @@ export function DashboardDateFilter({ today, currentMonth, currentYear }: Props)
     const params = new URLSearchParams(sp.toString());
     for (const k of ["df", "d", "m", "y", "from", "to"]) params.delete(k);
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    startTransition(() => {
+      router.push(qs ? `${pathname}?${qs}` : pathname);
+    });
     setMode("month");
     setOpen(false);
   }
@@ -183,14 +195,15 @@ export function DashboardDateFilter({ today, currentMonth, currentYear }: Props)
             <button
               type="button"
               onClick={clear}
-              className="h-8 rounded-[var(--radius)] px-3 text-xs font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              disabled={isPending}
+              className="h-8 rounded-[var(--radius)] px-3 text-xs font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
               {t("clear")}
             </button>
             <button
               type="button"
               onClick={apply}
-              disabled={customInvalid}
+              disabled={customInvalid || isPending}
               className="h-8 rounded-[var(--radius)] bg-brand px-4 text-xs font-medium text-brand-foreground outline-none transition-colors hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
               {t("apply")}

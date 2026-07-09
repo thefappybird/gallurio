@@ -220,6 +220,26 @@ describe("BookingsToolbar — render-loop stability (regression guard)", () => {
   });
 });
 
+describe("BookingsToolbar — pending state", () => {
+  it("reports a pending transition to the parent while a filter change navigates", () => {
+    const onPendingChange = vi.fn();
+    render(
+      <BookingsToolbar defaultCurrency="PHP" onPendingChange={onPendingChange} />,
+      { wrapper }
+    );
+
+    const allSwitches = screen.getAllByRole("switch");
+    const showPastSwitch = allSwitches.find(
+      (s) => s.closest("label")?.textContent?.match(/show past/i)
+    );
+    fireEvent.click(showPastSwitch!);
+
+    expect(mockPush).toHaveBeenCalled();
+    expect(onPendingChange.mock.calls).toContainEqual([true]);
+    expect(onPendingChange.mock.calls.at(-1)).toEqual([false]);
+  });
+});
+
 describe("BookingsToolbar — Invoice theme button", () => {
   it("renders the Invoice theme button for an owner and opens the dialog on click", () => {
     render(

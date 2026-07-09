@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ClientStep } from "./booking-wizard-steps/client-step";
 import { EventPricingStep } from "./booking-wizard-steps/event-pricing-step";
 import { PaymentsStep } from "./booking-wizard-steps/payments-step";
@@ -792,9 +793,11 @@ export function BookingWizardModal({
         >
           <div className="flex flex-1 flex-col gap-3 px-4 py-3 transition-[padding] duration-200 ease-out">
             {loading ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                {t("loading")}
-              </p>
+              <div className="flex flex-col gap-3 py-2" aria-busy="true" aria-label={t("loading")}>
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-32 w-full" />
+              </div>
             ) : null}
             {loadError ? (
               <div className="flex flex-col items-center gap-3 py-10 text-center">

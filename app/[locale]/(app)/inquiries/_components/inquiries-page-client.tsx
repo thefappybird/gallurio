@@ -2,8 +2,8 @@
 
 import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
-import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { TableSkeleton } from "@/components/app/table-skeleton";
@@ -66,16 +66,24 @@ export function InquiriesPageClient({
   const tc = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [detail, setDetail] = useState(initialDetail);
   const [detailOpen, setDetailOpen] = useState(Boolean(initialDetail));
   const isCalendar = view === "calendar";
+  // Skip while the detail modal is open: refresh gives `initialDetail` a new
+  // reference, which the deep-link sync effect below would use to re-clobber
+  // `detail` mid-edit.
+  useLiveRefresh(["inquiry", "booking"], detailOpen);
+
+  function readCurrentParams() {
+    return new URLSearchParams(window.location.search);
+  }
 
   const [syncedDeepLink, setSyncedDeepLink] = useState(initialDetail);
   if (initialDetail !== syncedDeepLink) {
     setSyncedDeepLink(initialDetail);
-    if (initialDetail) {
+    const activeInquiryId = readCurrentParams().get("inquiryId");
+    if (initialDetail && activeInquiryId === initialDetail.inquiryId) {
       setDetail(initialDetail);
       setDetailOpen(true);
     }
@@ -198,10 +206,11 @@ export function InquiriesPageClient({
     : "all";
 
   function pushParams(mutate: (params: URLSearchParams) => void) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = readCurrentParams();
     mutate(params);
     startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
+      const next = params.toString();
+      router.push(next ? `${pathname}?${next}` : pathname);
     });
   }
 
@@ -218,11 +227,23 @@ export function InquiriesPageClient({
   }
 
   function stripInquiryParam() {
-    if (!searchParams.has("inquiryId")) return;
-    const params = new URLSearchParams(searchParams.toString());
+    const params = readCurrentParams();
+    if (!params.has("inquiryId")) return;
     params.delete("inquiryId");
+    const next = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      next ? `${pathname}?${next}` : pathname
+    );
+  }
+
+  function replaceWithoutInquiryParam() {
+    const params = readCurrentParams();
+    if (!params.has("inquiryId")) return;
+    params.delete("inquiryId");
+    const next = params.toString();
     startTransition(() => {
-      const next = params.toString();
       router.replace(next ? `${pathname}?${next}` : pathname);
     });
   }
@@ -387,10 +408,12 @@ export function InquiriesPageClient({
         teams={teams}
         onClose={() => {
           setDetailOpen(false);
-          stripInquiryParam();
+          setDetail(null);
           if (hasChanges.current) {
             hasChanges.current = false;
-            router.refresh();
+            replaceWithoutInquiryParam();
+          } else {
+            stripInquiryParam();
           }
         }}
         onConverted={handleConverted}

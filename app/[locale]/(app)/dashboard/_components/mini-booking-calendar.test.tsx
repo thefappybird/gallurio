@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { MiniBookingCalendar } from "./mini-booking-calendar";
 
@@ -42,5 +42,30 @@ describe("MiniBookingCalendar", () => {
       "a[href*='/bookings?view=calendar&date=']"
     );
     expect(links).toHaveLength(2);
+  });
+
+  it("disables the prev/next nav buttons and team select while a month fetch is in flight", async () => {
+    global.fetch = vi.fn(() => new Promise(() => {})) as unknown as typeof fetch;
+    const month = new Date(2026, 4, 15);
+    renderWithProviders(
+      <MiniBookingCalendar
+        month={month}
+        days={[]}
+        locale="en"
+        title="Calendar"
+        teams={[
+          { id: "t1", name: "Team A", color: "#000000", isActive: true, isLead: false },
+          { id: "t2", name: "Team B", color: "#111111", isActive: true, isLead: false },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /next month/i })).toBeDisabled();
+    });
+    expect(screen.getByRole("button", { name: /previous month/i })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: /filter by team/i })).toBeDisabled();
   });
 });

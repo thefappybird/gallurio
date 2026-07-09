@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -12,13 +13,21 @@ import {
 
 type Props = {
   tab: DashboardTab;
+  /** Notifies the parent when the tab-switch navigation is pending, so it can
+   *  reflect the wait (e.g. dim the widget area below). */
+  onPendingChange?: (pending: boolean) => void;
 };
 
-export function DashboardTabs({ tab }: Props) {
+export function DashboardTabs({ tab, onPendingChange }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.dashboard.tabs");
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    onPendingChange?.(isPending);
+  }, [isPending, onPendingChange]);
 
   function setTab(next: DashboardTab) {
     if (next === tab) return;
@@ -37,7 +46,9 @@ export function DashboardTabs({ tab }: Props) {
       params.set("tab", next);
     }
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    startTransition(() => {
+      router.push(qs ? `${pathname}?${qs}` : pathname);
+    });
   }
 
   return (
@@ -45,6 +56,7 @@ export function DashboardTabs({ tab }: Props) {
       value={tab}
       onChange={setTab}
       ariaLabel={t("aria")}
+      disabled={isPending}
       options={[
         { key: "bookings", label: t("bookings"), icon: CalendarCheck2Icon },
         { key: "portfolio", label: t("portfolio"), icon: LayoutTemplateIcon },

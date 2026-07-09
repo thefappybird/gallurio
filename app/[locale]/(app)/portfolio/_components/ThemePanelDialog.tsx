@@ -54,6 +54,7 @@ export function ThemePanelDialog({
   const tk = useTranslations("app.pageBuilder.brandKit");
   const errMsg = useActionError();
   const [closeGuardOpen, setCloseGuardOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
 
   const onSaveTheme = async (name: string) => {
     const res = await saveThemeAction(name, brandKit);
@@ -83,11 +84,16 @@ export function ThemePanelDialog({
   }
 
   async function apply() {
-    if (controller.hasUnsavedCurrent) {
-      const ok = await controller.saveCurrentTheme();
-      if (!ok) return;
+    setApplying(true);
+    try {
+      if (controller.hasUnsavedCurrent) {
+        const ok = await controller.saveCurrentTheme();
+        if (!ok) return;
+      }
+      persistPage();
+    } finally {
+      setApplying(false);
     }
-    persistPage();
   }
 
   async function handleDeleteTheme(id: string) {
@@ -135,10 +141,10 @@ export function ThemePanelDialog({
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={attemptClose}>
+            <Button type="button" variant="outline" onClick={attemptClose} disabled={applying}>
               {t("publishDialog.cancel")}
             </Button>
-            <Button type="button" onClick={() => void apply()}>
+            <Button type="button" loading={applying} onClick={() => void apply()}>
               {tk("applyAction")}
             </Button>
           </DialogFooter>

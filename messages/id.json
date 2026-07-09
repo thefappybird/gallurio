@@ -55,7 +55,6 @@
       "codeLabel": "Kode verifikasi",
       "submit": "Verifikasi email",
       "resend": "Kirim ulang kode",
-      "resending": "Mengirim…",
       "resendSent": "Kode dikirim ulang — periksa kotak masuk Anda."
     },
     "fields": {
@@ -1386,6 +1385,7 @@
           "phoneLabel": "Telepon",
           "emailReadonly": "Email (hanya baca)",
           "sessionLabel": "Sesi {n}",
+          "checking": "Memeriksa konflik…",
           "conflictInline": "konflik",
           "dateLabel": "Tanggal",
           "startLabel": "Waktu mulai",
@@ -1727,6 +1727,7 @@
           "cancel": "Batal",
           "unsaved": "Belum disimpan",
           "applyAria": "Terapkan {name}",
+          "applyingAria": "Menerapkan {name}",
           "deletingAria": "Menghapus {name}",
           "deleteAria": "Hapus {name}"
         },

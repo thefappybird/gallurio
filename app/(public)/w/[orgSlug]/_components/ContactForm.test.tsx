@@ -220,6 +220,21 @@ describe("ContactForm", () => {
     resolveFetch({ ok: true });
   });
 
+  it("shows a spinner icon on the submit button while a request is pending", async () => {
+    let resolveFetch: (v: { ok: boolean }) => void = () => {};
+    global.fetch = vi.fn(
+      () => new Promise((res) => { resolveFetch = res; })
+    ) as unknown as typeof fetch;
+
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    await fillValidForm();
+    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+
+    const submit = await screen.findByRole("button", { name: "Sending…" });
+    expect(submit.querySelector(".animate-spin")).toBeInTheDocument();
+    resolveFetch({ ok: true });
+  });
+
   it("switches to the event tab when first-step continue fails validation there", async () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });

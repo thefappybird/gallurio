@@ -227,6 +227,12 @@ async function waitForLoad() {
   fireEvent.click(screen.getByRole("tab", { name: "Sessions" }));
 }
 
+async function waitForHeaderOnly() {
+  await waitFor(() => {
+    expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+  });
+}
+
 /** Click the inline-edit pencil for Session N (1-indexed). */
 function clickEditSession(n: number) {
   const btn = screen.getByRole("button", {
@@ -329,6 +335,22 @@ describe("BookingDetailModal — render", () => {
     expect(missingMessageCalls).toHaveLength(0);
     errorSpy.mockRestore();
   });
+
+  it("renders legacy bookings that omit payments without crashing", async () => {
+    const legacyBooking = { ...MOCK_BOOKING } as Partial<typeof MOCK_BOOKING>;
+    delete legacyBooking.payments;
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: legacyBooking as typeof MOCK_BOOKING })
+    );
+
+    renderModal();
+    await waitForHeaderOnly();
+
+    expect(
+      screen.getByRole("heading", { name: "Test Wedding" })
+    ).toBeInTheDocument();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -393,6 +415,22 @@ describe("Download invoice/receipt button", () => {
     expect(
       screen.queryByRole("button", { name: "Download receipt" })
     ).not.toBeInTheDocument();
+  });
+
+  it("guards against rapid double-clicks opening the PDF twice", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal();
+    await waitForLoad();
+
+    const btn = screen.getByRole("button", { name: "Download invoice" });
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    openSpy.mockRestore();
   });
 });
 
@@ -639,6 +677,141 @@ describe("Issue 2 — session edits are deferred (pendingSessionEdits)", () => {
 
     await waitFor(() => {
       expect(screen.queryByText("Unsaved")).not.toBeInTheDocument();
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Session remove — scoped busy state, decoupled from the global Save button
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Session remove — scoped busy state", () => {
+  it("keeps the global Cancel-booking control enabled while a session-removal patch is in flight", async () => {
+    const SECOND_SESSION = makeFutureSession(5);
+    const TWO_SESSION_BOOKING = {
+      ...MOCK_BOOKING,
+      sessions: [FUTURE_SESSION, SECOND_SESSION],
+      lastSessionEnd: SECOND_SESSION.endAt,
+    };
+
+    let resolvePatch!: (v: unknown) => void;
+    const patchGate = new Promise((r) => {
+      resolvePatch = r;
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes(`/api/bookings/${BOOKING_ID}/activity`)) {
+          return { ok: true, json: async () => ({ entries: [], total: 0 }) };
+        }
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url === `/api/bookings/${BOOKING_ID}`) {
+          if (init?.method === "PATCH") {
+            await patchGate;
+            return { ok: true, json: async () => TWO_SESSION_BOOKING };
+          }
+          return { ok: true, json: async () => TWO_SESSION_BOOKING };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+
+    renderModal();
+    await waitForLoad();
+
+    const removeButtons = screen.getAllByRole("button", {
+      name: "Remove session",
+    });
+    fireEvent.click(removeButtons[0]);
+
+    // While the session-removal PATCH is in flight, the unrelated global
+    // Cancel-booking control must stay enabled — proving the removal's own
+    // busy state is scoped away from the shared `saving` flag used by the
+    // global Save/Cancel controls.
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Cancel booking" })
+      ).not.toBeDisabled();
+    });
+
+    // The sibling session's own remove control must be disabled meanwhile —
+    // prevents a second, conflicting patch from firing concurrently.
+    const remaining = screen.getAllByRole("button", { name: "Remove session" });
+    expect(remaining[0]).toBeDisabled();
+
+    resolvePatch(undefined);
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "Remove session" }).length).toBeGreaterThan(0);
+    });
+  });
+
+  it("disables the global Save changes button while a session-removal patch is in flight", async () => {
+    const SECOND_SESSION = makeFutureSession(5);
+    const TWO_SESSION_BOOKING = {
+      ...MOCK_BOOKING,
+      sessions: [FUTURE_SESSION, SECOND_SESSION],
+      lastSessionEnd: SECOND_SESSION.endAt,
+    };
+
+    let resolvePatch!: (v: unknown) => void;
+    const patchGate = new Promise((r) => {
+      resolvePatch = r;
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes(`/api/bookings/${BOOKING_ID}/activity`)) {
+          return { ok: true, json: async () => ({ entries: [], total: 0 }) };
+        }
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url === `/api/bookings/${BOOKING_ID}`) {
+          if (init?.method === "PATCH") {
+            await patchGate;
+            return { ok: true, json: async () => TWO_SESSION_BOOKING };
+          }
+          return { ok: true, json: async () => TWO_SESSION_BOOKING };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+
+    renderModal();
+    await waitForLoad();
+
+    // Create a pending edit on session 2 so the "Save changes" button renders.
+    clickEditSession(2);
+    changeDateInput(SECOND_SESSION.startAt.slice(0, 10), 6);
+    await clickConfirm();
+    await waitFor(() => {
+      expect(screen.getByText("Unsaved")).toBeInTheDocument();
+    });
+
+    const saveButton = screen.getByRole("button", { name: /save changes/i });
+    expect(saveButton).not.toBeDisabled();
+
+    // Trigger a session-removal PATCH (gated) on the other session.
+    const removeButtons = screen.getAllByRole("button", {
+      name: "Remove session",
+    });
+    fireEvent.click(removeButtons[0]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /save changes/i })
+      ).toBeDisabled();
+    });
+
+    resolvePatch(undefined);
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /save changes/i })
+      ).not.toBeDisabled();
     });
   });
 });
@@ -1292,6 +1465,7 @@ describe("Event tab — event-type field", () => {
     await waitFor(() => {
       expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
+    expect(screen.getByRole("combobox")).toHaveTextContent("Wedding");
   });
 
   it("does NOT render an event-type control in the header", async () => {
@@ -1311,32 +1485,14 @@ describe("Event tab — event-type field", () => {
 });
 
 describe("Header status pill", () => {
-  it("renders status as a read-only pill in the header with the current label", async () => {
+  it("renders status as a display-only pill in the header with the current label", async () => {
     renderModal();
     await waitForLoad();
 
-    // Status is a button (pill) by default — not a combobox. MOCK_BOOKING.status
-    // === "booked" → label "Booked" shows on the pill.
-    const pill = await screen.findByRole("button", { name: /change status/i });
+    const pill = await screen.findByLabelText("Status");
     expect(within(pill).getByText("Booked")).toBeInTheDocument();
-    // No status combobox until the pencil is clicked.
-    expect(
-      screen.queryByRole("combobox", { name: /status/i })
-    ).not.toBeInTheDocument();
-  });
-
-  it("clicking the status pill reveals the status dropdown", async () => {
-    renderModal();
-    await waitForLoad();
-
-    const pill = await screen.findByRole("button", { name: /change status/i });
-    fireEvent.click(pill);
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("combobox", { name: /status/i })
-      ).toBeInTheDocument();
-    });
+    expect(screen.queryByRole("button", { name: /change status/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: /status/i })).not.toBeInTheDocument();
   });
 
   it("removes the editable Client name and Status fields from the Client tab", async () => {

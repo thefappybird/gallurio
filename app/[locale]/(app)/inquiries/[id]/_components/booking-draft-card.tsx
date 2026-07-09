@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { Loader2Icon } from "lucide-react";
 import { useRouter, Link } from "@/lib/i18n/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -114,8 +115,11 @@ export function BookingDraftCard({
   const [editingSessions, setEditingSessions] = useState(false);
   const [draftSessions, setDraftSessions] = useState<InquirySessionView[]>(sessions);
   const [sessionConflicts, setSessionConflicts] = useState<boolean[]>([]);
+  const [checkingSessionConflicts, setCheckingSessionConflicts] = useState(false);
   const [sessionsSaving, setSessionsSaving] = useState(false);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
+  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
+  const sessionConflictReqIdRef = useRef(0);
 
   function currentEdits() {
     return { total: Number(total) || 0, deposit: Number(deposit) || 0, notes, teamId };
@@ -129,6 +133,8 @@ export function BookingDraftCard({
   }
 
   async function checkSessionConflicts(next: InquirySessionView[]) {
+    const myId = ++sessionConflictReqIdRef.current;
+    setCheckingSessionConflicts(true);
     const checks = next.map(async (s) => {
       try {
         const url = `/api/bookings/shifts-on-date?date=${s.startDate}${bookingId ? `&excludeId=${bookingId}` : ""}`;
@@ -141,7 +147,11 @@ export function BookingDraftCard({
         return overlappingShifts(shifts, aStart, aEnd).length > 0;
       } catch { return false; }
     });
-    setSessionConflicts(await Promise.all(checks));
+    const results = await Promise.all(checks);
+    // A newer check superseded this one — discard the stale result.
+    if (myId !== sessionConflictReqIdRef.current) return;
+    setSessionConflicts(results);
+    setCheckingSessionConflicts(false);
   }
 
   async function handleSessionChange(idx: number, field: keyof InquirySessionView, value: string) {
@@ -165,6 +175,11 @@ export function BookingDraftCard({
     if ("ok" in result && result.ok) {
       setEditingSessions(false);
       toast.success(ts("savedToast"));
+      onInquiryChanged?.(inquiryId, {
+        eventDate: draftSessions[0]?.startDate
+          ? new Date(draftSessions[0].startDate).toISOString()
+          : null,
+      });
     } else if ("error" in result) {
       setSessionsError(result.error);
       toast.error(ts("saveError"));
@@ -293,6 +308,12 @@ export function BookingDraftCard({
               <span className="text-xs uppercase tracking-wide text-muted-foreground">
                 {ter("sessions")}
               </span>
+              {editingSessions && checkingSessionConflicts ? (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
+                  {ts("checking")}
+                </span>
+              ) : null}
               {!readOnly && !editingSessions ? (
                 <button
                   type="button"

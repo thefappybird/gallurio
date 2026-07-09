@@ -22,6 +22,8 @@ type SegmentedToggleProps<K extends string = string> = {
   /** Accessible label for the tablist container. */
   ariaLabel: string;
   className?: string;
+  /** Disables every option (e.g. while a pending navigation is in flight). */
+  disabled?: boolean;
 };
 
 /**
@@ -42,6 +44,7 @@ export function SegmentedToggle<K extends string = string>({
   options,
   ariaLabel,
   className,
+  disabled,
 }: SegmentedToggleProps<K>) {
   return (
     <div
@@ -63,10 +66,12 @@ export function SegmentedToggle<K extends string = string>({
           aria-selected={value === key}
           aria-label={ariaLabel}
           onClick={() => onChange(key)}
+          disabled={disabled}
           className={cn(
             "flex flex-1 items-center justify-center gap-1.5 px-3 text-sm font-medium transition-colors",
             // No per-button border radius — the container clips the outer corners
             "rounded-none outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "disabled:pointer-events-none disabled:opacity-60",
             value === key
               ? "bg-brand text-brand-foreground"
               : "bg-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground"

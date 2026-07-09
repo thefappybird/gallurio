@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/lib/i18n/navigation";
 import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,8 @@ type InviteFormProps = {
   /** Teams pre-checked when the dialog opens (per-team invite entry points). */
   defaultTeamIds?: string[];
   onInvited?: (email: string) => void;
+  /** Mirrors the other team dialogs' onDone: called after a successful invite so the page re-fetches. */
+  onDone?: () => void;
 };
 
 export function InviteForm({
@@ -37,9 +38,9 @@ export function InviteForm({
   onOpenChange,
   defaultTeamIds,
   onInvited,
+  onDone,
 }: InviteFormProps) {
   const t = useTranslations("app.teams");
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [selectedTeamIds, setSelectedTeamIds] = useState<Set<string>>(new Set());
   const [leadOnTeamIds, setLeadOnTeamIds] = useState<Set<string>>(new Set());
@@ -135,7 +136,7 @@ export function InviteForm({
       toast.success(t("invite.toasts.sent"));
       onInvited?.(email.trim().toLowerCase());
       onOpenChange(false);
-      router.refresh();
+      onDone?.();
     });
   }
 

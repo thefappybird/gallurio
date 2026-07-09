@@ -55,7 +55,6 @@
       "codeLabel": "رمز التحقّق",
       "submit": "تأكيد البريد الإلكتروني",
       "resend": "إعادة إرسال الرمز",
-      "resending": "جارٍ الإرسال…",
       "resendSent": "تمت إعادة إرسال الرمز — تحقّق من صندوق الوارد."
     },
     "fields": {
@@ -1386,6 +1385,7 @@
           "phoneLabel": "الهاتف",
           "emailReadonly": "البريد الإلكتروني (للقراءة فقط)",
           "sessionLabel": "الجلسة {n}",
+          "checking": "جارٍ التحقّق من التعارضات…",
           "conflictInline": "تعارض",
           "dateLabel": "التاريخ",
           "startLabel": "وقت البداية",
@@ -1727,6 +1727,7 @@
           "cancel": "إلغاء",
           "unsaved": "غير محفوظة",
           "applyAria": "تطبيق {name}",
+          "applyingAria": "جارٍ تطبيق {name}",
           "deletingAria": "جارٍ حذف {name}",
           "deleteAria": "حذف {name}"
         },

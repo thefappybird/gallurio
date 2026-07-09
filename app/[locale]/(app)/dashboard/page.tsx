@@ -31,8 +31,7 @@ import { MiniBookingCalendar } from "./_components/mini-booking-calendar";
 import { EventTypeDonut } from "./_components/event-type-donut";
 import { TopClientsBar } from "./_components/top-clients-bar";
 import { TeamPerformanceCards } from "./_components/team-performance-cards";
-import { DashboardTabs } from "./_components/dashboard-tabs";
-import { DashboardDateFilter } from "./_components/dashboard-date-filter";
+import { DashboardPendingShell } from "./_components/dashboard-pending-shell";
 import { PortfolioDashboard } from "./_components/portfolio-dashboard";
 import { getBookingTeamOptions } from "../bookings/_data/team-options";
 
@@ -85,44 +84,41 @@ export default async function DashboardPage({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t("greeting", { name: ownerFirstName })}
-          </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {new Date().toLocaleDateString(locale, {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
-        </div>
-        {/* One date filter for both dashboards, left of the tab switcher. */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <DashboardDateFilter
-            today={today}
-            currentMonth={today.slice(0, 7)}
-            currentYear={Number(today.slice(0, 4))}
+      <DashboardPendingShell
+        greeting={
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {t("greeting", { name: ownerFirstName })}
+            </h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {new Date().toLocaleDateString(locale, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+        }
+        today={today}
+        currentMonth={today.slice(0, 7)}
+        currentYear={Number(today.slice(0, 4))}
+        tab={tab}
+      >
+        {tab === "portfolio" ? (
+          <PortfolioDashboard workspace={workspace} locale={locale} range={range} />
+        ) : (
+          <BookingsTab
+            wid={wid}
+            workspace={workspace}
+            locale={locale}
+            t={t}
+            role={role}
+            userId={userId}
+            range={range}
           />
-          <DashboardTabs tab={tab} />
-        </div>
-      </div>
-
-      {tab === "portfolio" ? (
-        <PortfolioDashboard workspace={workspace} locale={locale} range={range} />
-      ) : (
-        <BookingsTab
-          wid={wid}
-          workspace={workspace}
-          locale={locale}
-          t={t}
-          role={role}
-          userId={userId}
-          range={range}
-        />
-      )}
+        )}
+      </DashboardPendingShell>
     </div>
   );
 }

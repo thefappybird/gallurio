@@ -33,6 +33,7 @@ export function DraftsDialog({
   onDelete,
   onAddNew,
   deletingId = null,
+  applyingId = null,
   unsavedDraftName = null,
 }: {
   open: boolean;
@@ -44,6 +45,8 @@ export function DraftsDialog({
   onAddNew: () => void;
   /** Id of the draft currently being deleted; disables all interactive elements. */
   deletingId?: string | null;
+  /** Id of the draft currently being applied; disables all interactive elements. */
+  applyingId?: string | null;
   /** When non-null, an unsaved draft with this name is shown at the top of the list. */
   unsavedDraftName?: string | null;
 }) {
@@ -58,10 +61,11 @@ export function DraftsDialog({
   }
 
   const isDeleting = deletingId !== null;
+  const isApplying = applyingId !== null;
   const hasUnsaved = unsavedDraftName !== null;
-  // When a delete is in progress, block the dialog from closing.
+  // When a delete or apply is in progress, block the dialog from closing.
   const handleOpenChange = (next: boolean) => {
-    if (isDeleting) return;
+    if (isDeleting || isApplying) return;
     onOpenChange(next);
   };
 
@@ -104,6 +108,7 @@ export function DraftsDialog({
               {drafts.map((d) => {
                 const isActive = d.id === activeDraftId;
                 const isBeingDeleted = d.id === deletingId;
+                const isBeingApplied = d.id === applyingId;
                 const isLastActiveDraft = isActive && drafts.length === 1 && !hasUnsaved;
                 return (
                   <li
@@ -123,17 +128,30 @@ export function DraftsDialog({
                             {t("draftsDialog.active")}
                           </span>
                         )}
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="outline"
-                          aria-label={t("draftsDialog.applyAria", { name: d.name })}
-                          title={t("draftsDialog.applyAria", { name: d.name })}
-                          disabled={isDeleting}
-                          onClick={() => onApply(d.id)}
-                        >
-                          <Check />
-                        </Button>
+                        {isBeingApplied ? (
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="outline"
+                            aria-label={t("draftsDialog.applyingAria", { name: d.name })}
+                            title={t("draftsDialog.applyingAria", { name: d.name })}
+                            disabled
+                          >
+                            <Loader2 className="animate-spin" />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="outline"
+                            aria-label={t("draftsDialog.applyAria", { name: d.name })}
+                            title={t("draftsDialog.applyAria", { name: d.name })}
+                            disabled={isDeleting || isApplying}
+                            onClick={() => onApply(d.id)}
+                          >
+                            <Check />
+                          </Button>
+                        )}
                         {isBeingDeleted ? (
                           <Button
                             type="button"
@@ -151,7 +169,7 @@ export function DraftsDialog({
                             variant="ghost"
                             aria-label={t("draftsDialog.deleteAria", { name: d.name })}
                             title={t("draftsDialog.deleteAria", { name: d.name })}
-                            disabled={isDeleting || isLastActiveDraft}
+                            disabled={isDeleting || isApplying || isLastActiveDraft}
                             onClick={() => setPendingDelete(d)}
                           >
                             <Trash2 />
@@ -167,10 +185,10 @@ export function DraftsDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button type="button" variant="outline" disabled={isDeleting} onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" disabled={isDeleting || isApplying} onClick={() => onOpenChange(false)}>
             {t("draftsDialog.close")}
           </Button>
-          <Button type="button" disabled={isDeleting} onClick={onAddNew}>
+          <Button type="button" disabled={isDeleting || isApplying} onClick={onAddNew}>
             {t("draftsDialog.addNew")}
           </Button>
         </DialogFooter>
