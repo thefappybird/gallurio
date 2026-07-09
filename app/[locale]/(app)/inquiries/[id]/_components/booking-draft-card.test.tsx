@@ -146,6 +146,63 @@ describe("BookingDraftCard", () => {
     expect(toast.success).toHaveBeenCalledWith("Sessions saved.");
   });
 
+  it("shows a loading indicator while checking session conflicts and discards a stale response", async () => {
+    let resolveFirst!: () => void;
+    let resolveSecond!: () => void;
+    let calls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => {
+        calls += 1;
+        if (calls === 1) {
+          return new Promise((resolve) => {
+            resolveFirst = () =>
+              resolve({
+                ok: true,
+                json: async () => ({
+                  shifts: [{ id: "x", title: "Other", shiftStart: "09:00", shiftEnd: "11:00" }],
+                }),
+              });
+          });
+        }
+        return new Promise((resolve) => {
+          resolveSecond = () => resolve({ ok: true, json: async () => ({ shifts: [] }) });
+        });
+      })
+    );
+
+    const futureSession = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
+    const { container } = renderWithProviders(
+      <BookingDraftCard {...baseProps} sessions={[futureSession]} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+
+    const dateInput = container.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: "2099-12-30" } });
+
+    // Loading indicator appears while the first check is in flight.
+    await waitFor(() => {
+      expect(screen.getByText("Checking for conflicts…")).toBeInTheDocument();
+    });
+
+    // A second, superseding change fires before the first request resolves.
+    fireEvent.change(dateInput, { target: { value: "2099-12-29" } });
+
+    // Resolve the SECOND (current) request first — no conflict.
+    resolveSecond();
+    await waitFor(() => {
+      expect(screen.queryByText("Checking for conflicts…")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByText("conflict")).not.toBeInTheDocument();
+
+    // The stale FIRST response arrives late — it must be discarded, not overwrite
+    // the current (conflict-free) result.
+    resolveFirst();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByText("conflict")).not.toBeInTheDocument();
+  });
+
   it("renders session time via formatSessionTimeRange in 12h mode (not raw HH:MM)", () => {
     _timeMode = "12h";
     const session = { startDate: "2026-09-01", startTime: "14:00", endTime: "17:30" };

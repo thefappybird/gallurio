@@ -275,6 +275,7 @@ export function ClientsPageClient({
         onEdit={openEdit}
         onDeactivate={openDeactivate}
         onReactivate={handleReactivate}
+        reactivatingId={reactivatingId}
         locale={locale}
       />
 

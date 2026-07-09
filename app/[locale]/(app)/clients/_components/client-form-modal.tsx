@@ -292,10 +292,10 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
               <Button
                 type="submit"
                 size="sm"
-                disabled={isSubmitting}
+                loading={isSubmitting}
                 className="min-h-11 sm:min-h-0"
               >
-                {isSubmitting ? t("form.saving") : t("form.save")}
+                {t("form.save")}
               </Button>
             </div>
           </form>

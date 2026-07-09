@@ -1386,6 +1386,7 @@
           "phoneLabel": "Phone",
           "emailReadonly": "Email (read-only)",
           "sessionLabel": "Session {n}",
+          "checking": "Checking for conflicts…",
           "conflictInline": "conflict",
           "dateLabel": "Date",
           "startLabel": "Start time",

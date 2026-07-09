@@ -261,14 +261,23 @@ export function TeamDetailDrawer({
                                 )}
                               </span>
                             ) : (
-                              <Switch
-                                id={`lead-${m.workosUserId}`}
-                                checked={isLead}
-                                disabled={busy}
-                                onCheckedChange={(v) =>
-                                  handleSetLead(m.workosUserId, v)
-                                }
-                              />
+                              <span className="inline-flex items-center gap-1.5">
+                                <Switch
+                                  id={`lead-${m.workosUserId}`}
+                                  checked={isLead}
+                                  disabled={busy}
+                                  aria-busy={busy}
+                                  onCheckedChange={(v) =>
+                                    handleSetLead(m.workosUserId, v)
+                                  }
+                                />
+                                {busy && (
+                                  <Loader2Icon
+                                    className="size-3 shrink-0 animate-spin text-muted-foreground"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                              </span>
                             )}
                           </Label>
                           <Button

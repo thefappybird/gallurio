@@ -123,6 +123,24 @@ describe("TeamsPageClient", () => {
     await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
   });
 
+  it("does not flash a full-table skeleton after create, since the optimistic row is already correct", async () => {
+    createTeamMock.mockResolvedValue({
+      team: { id: "t3", name: "New crew", color: "#000000", isDefault: false, isActive: true, memberCount: 0 },
+    });
+    renderWithProviders(<TeamsPageClient {...build()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/team name/i), {
+      target: { value: "New crew" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: /^create team$/i }));
+
+    await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+    expect(screen.getAllByText("New crew").length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText("Loading table data")).not.toBeInTheDocument();
+  });
+
   it("does not refresh when the create action fails", async () => {
     createTeamMock.mockResolvedValue({ error: "DUPLICATE_NAME" });
     renderWithProviders(<TeamsPageClient {...build()} />);

@@ -1386,6 +1386,7 @@
           "phoneLabel": "Telepono",
           "emailReadonly": "Email (read-only)",
           "sessionLabel": "Sesi {n}",
+          "checking": "Sinisiyasat ang mga salungatan…",
           "conflictInline": "salungatan",
           "dateLabel": "Petsa",
           "startLabel": "Oras ng pagsisimula",

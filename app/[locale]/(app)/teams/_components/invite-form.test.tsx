@@ -68,4 +68,29 @@ describe("InviteForm", () => {
       expect(leadSwitch).toHaveAttribute("aria-checked", "true");
     });
   });
+
+  it("calls onDone (the same callback the other team dialogs use) after a successful invite, instead of refreshing directly", async () => {
+    const { inviteMemberAction } = await import("../_invite-action");
+    vi.mocked(inviteMemberAction).mockResolvedValue({});
+    const onDone = vi.fn();
+
+    renderWithProviders(
+      <InviteForm
+        teams={[TEAM_WITHOUT_LEAD]}
+        open
+        onOpenChange={vi.fn()}
+        defaultTeamIds={["team-2"]}
+        onDone={onDone}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByRole("checkbox")).toBeChecked());
+
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "new@test.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send invite/i }));
+
+    await waitFor(() => expect(onDone).toHaveBeenCalledOnce());
+  });
 });

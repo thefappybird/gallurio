@@ -1386,6 +1386,7 @@
           "phoneLabel": "الهاتف",
           "emailReadonly": "البريد الإلكتروني (للقراءة فقط)",
           "sessionLabel": "الجلسة {n}",
+          "checking": "جارٍ التحقّق من التعارضات…",
           "conflictInline": "تعارض",
           "dateLabel": "التاريخ",
           "startLabel": "وقت البداية",

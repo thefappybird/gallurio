@@ -1386,6 +1386,7 @@
           "phoneLabel": "Telepon",
           "emailReadonly": "Email (hanya baca)",
           "sessionLabel": "Sesi {n}",
+          "checking": "Memeriksa konflik…",
           "conflictInline": "konflik",
           "dateLabel": "Tanggal",
           "startLabel": "Waktu mulai",

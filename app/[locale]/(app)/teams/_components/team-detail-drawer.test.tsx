@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { TeamDetailDrawer } from "./team-detail-drawer";
+import { setLeadFlagAction } from "../_member-action";
 import type { MemberSummary, TeamRow } from "../_types";
 
 vi.mock("@/lib/i18n/navigation", () => ({
@@ -167,5 +168,18 @@ describe("TeamDetailDrawer", () => {
     expect(screen.getByText(warning)).toBeInTheDocument();
     fireEvent.blur(toggle);
     expect(screen.queryByText(warning)).not.toBeInTheDocument();
+  });
+
+  it("shows a distinct busy indicator on the lead toggle while the promote action is in flight", async () => {
+    vi.mocked(setLeadFlagAction).mockReturnValue(new Promise(() => {}));
+    renderDrawer();
+
+    const toggle = screen.getByRole("switch");
+    expect(toggle).not.toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-disabled", "true"));
+    expect(toggle).toHaveAttribute("aria-busy", "true");
   });
 });

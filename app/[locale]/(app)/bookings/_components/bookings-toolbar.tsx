@@ -35,8 +35,12 @@ export function BookingsToolbar({
   selectedTeams = [],
   isOwner = false,
   initialInvoiceTheme,
+  onPendingChange,
 }: {
   defaultCurrency: string;
+  /** Notifies the parent when a filter-change navigation is pending, so it can
+   *  reflect the wait (e.g. surface the bookings table's loading skeleton). */
+  onPendingChange?: (pending: boolean) => void;
   /** When provided, the "New Booking" button calls this directly instead of
    *  performing a URL push. Allows the parent to own the open state so the
    *  button always fires even when ?add=1 is already in the URL. */
@@ -62,7 +66,11 @@ export function BookingsToolbar({
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.toolbar");
   const tBookings = useTranslations("app.bookings");
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    onPendingChange?.(isPending);
+  }, [isPending, onPendingChange]);
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);

@@ -394,6 +394,22 @@ describe("Download invoice/receipt button", () => {
       screen.queryByRole("button", { name: "Download receipt" })
     ).not.toBeInTheDocument();
   });
+
+  it("guards against rapid double-clicks opening the PDF twice", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAID_PAYMENT] } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal();
+    await waitForLoad();
+
+    const btn = screen.getByRole("button", { name: "Download invoice" });
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    openSpy.mockRestore();
+  });
 });
 
 describe("Incomplete business warning", () => {
@@ -639,6 +655,74 @@ describe("Issue 2 — session edits are deferred (pendingSessionEdits)", () => {
 
     await waitFor(() => {
       expect(screen.queryByText("Unsaved")).not.toBeInTheDocument();
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Session remove — scoped busy state, decoupled from the global Save button
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Session remove — scoped busy state", () => {
+  it("keeps the global Cancel-booking control enabled while a session-removal patch is in flight", async () => {
+    const SECOND_SESSION = makeFutureSession(5);
+    const TWO_SESSION_BOOKING = {
+      ...MOCK_BOOKING,
+      sessions: [FUTURE_SESSION, SECOND_SESSION],
+      lastSessionEnd: SECOND_SESSION.endAt,
+    };
+
+    let resolvePatch!: (v: unknown) => void;
+    const patchGate = new Promise((r) => {
+      resolvePatch = r;
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes(`/api/bookings/${BOOKING_ID}/activity`)) {
+          return { ok: true, json: async () => ({ entries: [], total: 0 }) };
+        }
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url === `/api/bookings/${BOOKING_ID}`) {
+          if (init?.method === "PATCH") {
+            await patchGate;
+            return { ok: true, json: async () => TWO_SESSION_BOOKING };
+          }
+          return { ok: true, json: async () => TWO_SESSION_BOOKING };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+
+    renderModal();
+    await waitForLoad();
+
+    const removeButtons = screen.getAllByRole("button", {
+      name: "Remove session",
+    });
+    fireEvent.click(removeButtons[0]);
+
+    // While the session-removal PATCH is in flight, the unrelated global
+    // Cancel-booking control must stay enabled — proving the removal's own
+    // busy state is scoped away from the shared `saving` flag used by the
+    // global Save/Cancel controls.
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Cancel booking" })
+      ).not.toBeDisabled();
+    });
+
+    // The sibling session's own remove control must be disabled meanwhile —
+    // prevents a second, conflicting patch from firing concurrently.
+    const remaining = screen.getAllByRole("button", { name: "Remove session" });
+    expect(remaining[0]).toBeDisabled();
+
+    resolvePatch(undefined);
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: "Remove session" }).length).toBeGreaterThan(0);
     });
   });
 });

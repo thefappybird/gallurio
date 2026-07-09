@@ -166,4 +166,38 @@ describe("ClientDetailModal", () => {
     expect(screen.getByRole("button", { name: /reactivate/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
   });
+
+  it("shows Reactivate button as busy/disabled when reactivatingId matches this client", () => {
+    const inactiveClient: ClientRow = { ...sampleClient, isActive: false };
+    renderWithProviders(
+      <ClientDetailModal
+        client={inactiveClient}
+        open={true}
+        onClose={vi.fn()}
+        onReactivate={vi.fn()}
+        reactivatingId={inactiveClient.id}
+        locale="en"
+      />
+    );
+    const button = screen.getByRole("button", { name: /reactivate/i });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("does not mark Reactivate busy when reactivatingId belongs to a different client", () => {
+    const inactiveClient: ClientRow = { ...sampleClient, isActive: false };
+    renderWithProviders(
+      <ClientDetailModal
+        client={inactiveClient}
+        open={true}
+        onClose={vi.fn()}
+        onReactivate={vi.fn()}
+        reactivatingId="some-other-client"
+        locale="en"
+      />
+    );
+    const button = screen.getByRole("button", { name: /reactivate/i });
+    expect(button).not.toBeDisabled();
+    expect(button).not.toHaveAttribute("aria-busy");
+  });
 });

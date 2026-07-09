@@ -251,6 +251,10 @@ export function BookingDetailModal({
   const [actorNames, setActorNames] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<PendingChanges>({});
   const [saving, setSaving] = useState(false);
+  /** Session index currently being patched by a direct action (remove, or a
+   *  multi-day date/time shift) — scoped separately from `saving` so it
+   *  doesn't visually conflict with the unrelated global "Save changes" button. */
+  const [sessionActionBusyIdx, setSessionActionBusyIdx] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
@@ -927,10 +931,15 @@ export function BookingDetailModal({
    * Patches the booking with a new full sessions array (used ONLY by
    * remove-session and the multi-day confirm dialog — NOT by inline edits,
    * which now go into pendingSessionEdits).
+   *
+   * `busyIdx` scopes the pending indicator to the session that triggered the
+   * patch (remove or a multi-day date/time shift) — it is tracked separately
+   * from `saving` so the unrelated global "Save changes" button doesn't flip
+   * into its own busy state for an action it didn't initiate.
    */
-  async function patchSessions(newSessions: SessionDoc[]) {
+  async function patchSessions(newSessions: SessionDoc[], busyIdx: number) {
     if (!booking) return;
-    setSaving(true);
+    setSessionActionBusyIdx(busyIdx);
     const previous = booking;
     const previousActivity = activity;
     const previousTotal = activityTotal;
@@ -969,7 +978,7 @@ export function BookingDetailModal({
       const msg = err instanceof Error ? err.message : errMsg(null);
       toast.error(msg);
     } finally {
-      setSaving(false);
+      setSessionActionBusyIdx(null);
     }
   }
 
@@ -1024,7 +1033,7 @@ export function BookingDetailModal({
     const updated = booking.sessions.flatMap((s, i) =>
       i === sessionIdx ? result.map(sessionToDoc) : [s]
     );
-    void patchSessions(updated);
+    void patchSessions(updated, sessionIdx);
   }
 
   /**
@@ -1073,7 +1082,7 @@ export function BookingDetailModal({
     );
     setSessionDialogOpen(false);
     setPendingSessionEditDialog(null);
-    void patchSessions(updated);
+    void patchSessions(updated, sessionIdx);
   }
 
   function handleSessionApplyToSession() {
@@ -1104,7 +1113,7 @@ export function BookingDetailModal({
     );
     setSessionDialogOpen(false);
     setPendingSessionEditDialog(null);
-    void patchSessions(updated);
+    void patchSessions(updated, sessionIdx);
   }
 
   function handleSessionDialogCancel() {
@@ -1204,7 +1213,7 @@ export function BookingDetailModal({
     if (!booking) return;
     if (booking.sessions.length <= 1) return;
     const updated = booking.sessions.filter((_, i) => i !== idx);
-    void patchSessions(updated);
+    void patchSessions(updated, idx);
   }
 
   function attemptClose(next: boolean) {
@@ -1351,6 +1360,7 @@ export function BookingDetailModal({
               onViewClient={handleViewClient}
               viewClientLoading={viewClientLoading}
               disabled={saving}
+              busySessionIdx={sessionActionBusyIdx}
               shiftsByDate={shiftsByDate}
               loadingDates={loadingDates}
               onSessionCommit={handleSessionCommit}
@@ -1905,6 +1915,7 @@ function BookingTabs({
   onViewClient,
   viewClientLoading,
   disabled,
+  busySessionIdx,
   shiftsByDate,
   loadingDates,
   onSessionCommit,
@@ -1953,6 +1964,9 @@ function BookingTabs({
   onViewClient: () => void;
   viewClientLoading: boolean;
   disabled: boolean;
+  /** Session index currently being patched by remove/date-shift — scoped
+   *  separately from `disabled` so it doesn't ride on the global save state. */
+  busySessionIdx: number | null;
   shiftsByDate: Map<string, ShiftHit[]>;
   loadingDates: Set<string>;
   onSessionCommit: (
@@ -2679,7 +2693,8 @@ function BookingTabs({
                 sessionIndex={resolvedIdx}
                 total={(booking?.sessions ?? []).length}
                 locale={locale}
-                disabled={disabled}
+                disabled={disabled || busySessionIdx !== null}
+                busy={busySessionIdx === resolvedIdx}
                 readOnly={readOnly}
                 isPast={isPastSession(s)}
                 label={tSessions("label", { n: resolvedIdx + 1 })}
@@ -2888,6 +2903,7 @@ function SessionCard({
   total,
   locale,
   disabled,
+  busy,
   readOnly,
   isPast,
   label,
@@ -2907,6 +2923,9 @@ function SessionCard({
   total: number;
   locale: string;
   disabled: boolean;
+  /** True while THIS session's own remove/date-shift patch is in flight —
+   *  drives a scoped spinner distinct from the shared `disabled` state. */
+  busy?: boolean;
   readOnly?: boolean;
   isPast: boolean;
   label: string;
@@ -3122,6 +3141,7 @@ function SessionCard({
               onClick={isOnlySession ? undefined : onRemove}
               disabled={disabled || isOnlySession}
               aria-disabled={isOnlySession}
+              aria-busy={busy ? "true" : undefined}
               title={isOnlySession ? removeLabel : undefined}
               aria-label={removeLabel}
               className={cn(
@@ -3130,7 +3150,11 @@ function SessionCard({
                   "hover:text-destructive focus-visible:text-destructive"
               )}
             >
-              <Trash2Icon className="size-4" />
+              {busy ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                <Trash2Icon className="size-4" />
+              )}
             </Button>
           </>
         ) : null
@@ -3781,14 +3805,19 @@ function DialogFooterBar({
   const t = useTranslations("app.bookings.detail");
   const tWarn = useTranslations("app.bookings.detail.incompleteBusiness");
   const [incompleteWarningOpen, setIncompleteWarningOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const downloadUrl = `/api/bookings/${bookingId}/${completed ? "receipt" : "invoice"}`;
   const hideFlagKey = `gw_hide_incomplete_business_warning:${workspaceId}`;
 
   function openDownload() {
+    if (downloading) return;
+    setDownloading(true);
     window.open(downloadUrl, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => setDownloading(false), 800);
   }
 
   function handleDownloadClick() {
+    if (downloading) return;
     if (!businessComplete && !window.localStorage.getItem(hideFlagKey)) {
       setIncompleteWarningOpen(true);
       return;
