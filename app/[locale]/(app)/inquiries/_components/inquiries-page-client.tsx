@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { TableSkeleton } from "@/components/app/table-skeleton";
@@ -71,6 +72,10 @@ export function InquiriesPageClient({
   const [detail, setDetail] = useState(initialDetail);
   const [detailOpen, setDetailOpen] = useState(Boolean(initialDetail));
   const isCalendar = view === "calendar";
+  // Skip while the detail modal is open: refresh gives `initialDetail` a new
+  // reference, which the deep-link sync effect below would use to re-clobber
+  // `detail` mid-edit.
+  useLiveRefresh(["inquiry", "booking"], detailOpen);
 
   const [syncedDeepLink, setSyncedDeepLink] = useState(initialDetail);
   if (initialDetail !== syncedDeepLink) {

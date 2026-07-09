@@ -55,7 +55,6 @@
       "codeLabel": "Verification code",
       "submit": "Verify email",
       "resend": "Resend code",
-      "resending": "Sending…",
       "resendSent": "Code resent — check your inbox."
     },
     "fields": {

@@ -55,7 +55,6 @@
       "codeLabel": "Verification code",
       "submit": "I-verify ang email",
       "resend": "Muling ipadala ang code",
-      "resending": "Nagpapadala…",
       "resendSent": "Naipadala na ang code — tingnan ang iyong inbox."
     },
     "fields": {

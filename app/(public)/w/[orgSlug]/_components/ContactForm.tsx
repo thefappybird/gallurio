@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useForm, useFieldArray, useWatch, Controller, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import {
   inquirySubmissionSchema,
   PREFERRED_CONTACT_METHODS,
@@ -628,7 +629,14 @@ export function ContactForm({
           disabled={isSubmitting}
           style={buildButtonStyle(submitAppearance, isSubmitting, { marginTop: "1rem" })}
         >
-          {isSubmitting ? labels.submitting : labels.submit}
+          {isSubmitting ? (
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              {labels.submitting}
+            </span>
+          ) : (
+            labels.submit
+          )}
         </button>
       ) : null}
     </form>

@@ -75,15 +75,15 @@ export function VerifyEmailForm() {
           <p className="text-sm text-muted-foreground">{t("verifyEmail.resendSent")}</p>
         ) : (
           <form action={resendAction}>
-            <button
+            <Button
               type="submit"
-              className="text-sm font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              variant="link"
+              className="h-auto p-0 text-sm font-medium text-foreground"
               disabled={resendPending}
+              loading={resendPending}
             >
-              {resendPending
-                ? t("verifyEmail.resending")
-                : t("verifyEmail.resend")}
-            </button>
+              {t("verifyEmail.resend")}
+            </Button>
           </form>
         )}
         {resendError && (

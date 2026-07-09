@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createElement, type ReactNode } from "react";
 import { act, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
+import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 
 // ── navigation / router ────────────────────────────────────────────────────
 const refresh = vi.fn();
@@ -13,8 +14,19 @@ vi.mock("@/lib/i18n/navigation", () => ({
     createElement("a", { href }, children),
 }));
 
+const liveRefresh = vi.fn();
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("inquiryId=inq-1"),
+  useRouter: () => ({ refresh: liveRefresh }),
+}));
+
+// useLiveRefresh (wired into InquiriesPageClient) needs a socket in the tree.
+vi.mock("socket.io-client", () => ({
+  io: () => ({ on: vi.fn(), disconnect: vi.fn() }),
+}));
+vi.mock("@/app/[locale]/(app)/notifications/_actions", () => ({
+  markNotificationReadAction: vi.fn(),
+  markAllNotificationsReadAction: vi.fn(),
 }));
 
 // ── heavy sub-components ───────────────────────────────────────────────────
@@ -103,21 +115,30 @@ const baseProps = {
   initialDetail: detail,
 };
 
+function renderInquiriesPage(props: React.ComponentProps<typeof InquiriesPageClient>) {
+  return renderWithProviders(
+    <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+      <InquiriesPageClient {...props} />
+    </NotificationProvider>,
+  );
+}
+
 beforeEach(() => {
   refresh.mockReset();
   replace.mockReset();
+  liveRefresh.mockReset();
 });
 
 describe("InquiriesPageClient", () => {
   it("does not call router.refresh() when modal closes with no changes", () => {
-    renderWithProviders(<InquiriesPageClient {...baseProps} />);
+    renderInquiriesPage(baseProps);
     expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();
     (capturedProps.onClose as () => void)();
     expect(refresh).not.toHaveBeenCalled();
   });
 
   it("calls router.refresh() exactly once when modal closes after a change", () => {
-    renderWithProviders(<InquiriesPageClient {...baseProps} />);
+    renderInquiriesPage(baseProps);
     (capturedProps.onInquiryChanged as (id: string, patch: object) => void)(
       "inq-1",
       { phone: "+63999999999" }
@@ -127,7 +148,7 @@ describe("InquiriesPageClient", () => {
   });
 
   it("onConverted closes the modal, strips inquiryId param, and marks row booked optimistically", () => {
-    renderWithProviders(<InquiriesPageClient {...baseProps} />);
+    renderInquiriesPage(baseProps);
     expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();
 
     act(() => {

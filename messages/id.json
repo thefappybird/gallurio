@@ -55,7 +55,6 @@
       "codeLabel": "Kode verifikasi",
       "submit": "Verifikasi email",
       "resend": "Kirim ulang kode",
-      "resending": "Mengirim…",
       "resendSent": "Kode dikirim ulang — periksa kotak masuk Anda."
     },
     "fields": {

@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { BookingsTable, type BookingRow } from "./bookings-table";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { TableSkeleton } from "@/components/app/table-skeleton";
@@ -32,6 +33,7 @@ export function BookingsPageClient({
   workspaceTimezone,
 }: Props) {
   const t = useTranslations("common.pagination");
+  useLiveRefresh(["booking"]);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
