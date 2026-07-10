@@ -3,7 +3,6 @@ import {
   createCheckout,
   getSubscription,
   cancelSubscription,
-  updateSubscription,
   listSubscriptions,
 } from "@lemonsqueezy/lemonsqueezy.js";
 
@@ -72,11 +71,6 @@ export async function getLemonSqueezySubscription(id: string) {
 export async function cancelLemonSqueezySubscription(id: string) {
   ensureConfigured();
   return cancelSubscription(id);
-}
-
-export async function resumeLemonSqueezySubscription(id: string) {
-  ensureConfigured();
-  return updateSubscription(id, { cancelled: false });
 }
 
 // Reconciliation lookup — Lemon Squeezy resolves/creates the customer from the

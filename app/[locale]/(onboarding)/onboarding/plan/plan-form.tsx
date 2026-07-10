@@ -284,7 +284,7 @@ export function PlanStepForm({
           <Button onClick={submit} variant="brand" disabled={busy} className="min-w-48">
             {busy ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
                 {selected === "free" ? t("settingUp") : t("opening")}
               </>
             ) : (
