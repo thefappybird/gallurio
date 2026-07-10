@@ -28,8 +28,8 @@ the primary market before Gulf is even shipped.
 
 ## Impact
 
-- **Billing correctness**: unaffected. Paddle bills by `priceId`; `formatMoney`
-  is display-only in the CRM (booking amounts, invoice previews).
+- **Billing correctness**: unaffected. Lemon Squeezy bills by `variantId`;
+  `formatMoney` is display-only in the CRM (booking amounts, invoice previews).
 - **Display in Gulf**: a photographer in Kuwait quoting `KWD 12.500` would
   see `KD 13`. This is a display rounding artifact, not a billing error.
 - **Who is affected**: Gulf tenants only — Gulf currency support itself
@@ -85,4 +85,4 @@ set, or allow the natural 2 decimals.
 - `lib/utils/format-currency.ts` — the 0-decimal override
 - `lib/utils/format-currency.test.ts` — pins PHP to 0 decimals
 - `lib/validators/workspace.ts` — defines `SUPPORTED_CURRENCIES` incl. Gulf
-- `docs/paddle-integration/deferred-scope/arabic-rtl.md` — broader Gulf UX context
+- `docs/lemonsqueezy-integration/deferred-scope/arabic-rtl.md` — broader Gulf UX context

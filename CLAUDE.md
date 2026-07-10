@@ -3,7 +3,7 @@
 Multi-tenant CRM SaaS for event businesses. Each workspace has bookings, clients, calendar, gallery, public pages, and inquiry forms.
 
 ## Stack
-Next.js 16 App Router + Turbopack · React 19.2 · Tailwind v4 · Mongoose 8 + MongoDB Atlas · WorkOS AuthKit (identity only — WorkOS Organizations are NOT used) · Zod · react-hook-form · Puck · Cloudflare Images · Paddle · Vercel Workflow DevKit (durable checkout) · next-intl · pnpm · RTK (token-efficient CLI).
+Next.js 16 App Router + Turbopack · React 19.2 · Tailwind v4 · Mongoose 8 + MongoDB Atlas · WorkOS AuthKit (identity only — WorkOS Organizations are NOT used) · Zod · react-hook-form · Puck · Cloudflare Images · Lemon Squeezy · Vercel Workflow DevKit (durable checkout) · next-intl · pnpm · RTK (token-efficient CLI).
 
 ## Framework rules
 - Next.js 16 only; prefer current repo/library docs (context7 + `node_modules/.../docs`) over model memory.
@@ -101,7 +101,7 @@ Semantic tokens only, flat UI, brand teal (hue 195) as deliberate accent (~10–
 Direct Creator Upload only — API token never reaches client. Scope uploads by `workspaceId` metadata; verify ownership before every create. Full implementation details: `docs/dev-reference.md#cloudflare-images`.
 
 ## Billing
-Paddle subscriptions via durable Vercel Workflow checkout. `Workspace.plan` is provider-agnostic (`free|starter|pro`). Webhook: raw body + HMAC before parse, Node runtime, ack 200 after verify. Full flow + field names: `docs/dev-reference.md#billing`.
+Lemon Squeezy subscriptions via durable Vercel Workflow checkout. `Workspace.plan` is provider-agnostic (`free|starter|pro`). Webhook: raw body + HMAC before parse, Node runtime, ack 200 after verify. Full flow + field names: `docs/dev-reference.md#billing`.
 
 ## Production hosting
 Hetzner VPS, Node 20+, pm2/systemd, Caddy/Nginx → Next on 3000. GitHub Actions gated on tests+lint+typecheck+build. Details: `docs/dev-reference.md#production-hosting`.

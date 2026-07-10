@@ -115,5 +115,5 @@ Libraries with their own stylesheets (react-big-calendar, recharts, Leaflet) mus
 ## Notes
 
 - Gulf markets represent a significant revenue opportunity (AE/SA are high-ARPU SaaS markets). Don't block the billing PR on this — but don't delay the Arabic task once the billing PR merges.
-- Arabic numerals vs. Eastern Arabic numerals: Paddle renders prices in the checkout overlay using the browser locale; the app's own `formatMoney` uses `Intl.NumberFormat` which respects locale — `ar` will render Eastern Arabic numerals (`٢٥٠ ₱`) by default. Verify this is acceptable or pass `numberingSystem: "latn"` to force Western digits.
+- Arabic numerals vs. Eastern Arabic numerals: the Lemon Squeezy checkout overlay renders prices using the browser locale; the app's own `formatMoney` uses `Intl.NumberFormat` which respects locale — `ar` will render Eastern Arabic numerals (`٢٥٠ ₱`) by default. Verify this is acceptable or pass `numberingSystem: "latn"` to force Western digits.
 - `KWD`, `BHD`, and `OMR` are 3-decimal currencies. `formatMoney` passes currency through to `Intl.NumberFormat`, so display is correct. The existing `maximumFractionDigits: 0` override rounds to whole amounts in the plan display — this is acceptable for plan pricing (₱250, not ₱250.00) and is unchanged.

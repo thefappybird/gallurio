@@ -14,7 +14,7 @@ They are **deterministic** — the same token can be reconstructed from the book
 |---|---|---|
 | Client response token | Client clicking quote email link or using the portal | `booking-client-{bookingId}-r{round}` |
 | Owner decision token | Owner clicking Accept / Re-quote / Decline in Lead Inbox | `booking-owner-{bookingId}-r{round}` |
-| Paddle checkout token | `subscriptionCheckoutWorkflow` (already built) | `paddle-checkout-{workspaceId}` |
+| Lemon Squeezy checkout token | `subscriptionCheckoutWorkflow` (already built) | `ls-checkout-{workspaceId}` |
 
 Examples:
 ```
@@ -43,11 +43,11 @@ await resumeHook("booking-client-{id}-r{n}", { action: "confirm" });
 
 The workflow run wakes up and `response` resolves to the value passed to `resumeHook`.
 
-The Paddle checkout workflow uses the same pattern:
+The Lemon Squeezy checkout workflow uses the same pattern:
 
 ```typescript
-const hook = createHook<CheckoutPayload>({ token: `paddle-checkout-${workspaceId}` });
-const event = await hook;  // suspends until subscription.activated webhook calls resumeHook
+const hook = createHook<CheckoutPayload>({ token: `ls-checkout-${workspaceId}` });
+const event = await hook;  // suspends until the subscription_created webhook calls resumeHook
 ```
 
 ---

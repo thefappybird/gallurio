@@ -2,11 +2,11 @@
 
 ## What it is
 
-A 3-stage durable negotiation flow between a workspace owner and their end client, triggered when the owner reviews an inquiry and chooses to send a price quote rather than directly booking. The flow uses the Vercel Workflow DevKit (`workflow` package) — the same package installed for the Paddle billing checkout workflow — for durable, resumable state that survives Vercel cold starts, deploys, and server restarts.
+A 3-stage durable negotiation flow between a workspace owner and their end client, triggered when the owner reviews an inquiry and chooses to send a price quote rather than directly booking. The flow uses the Vercel Workflow DevKit (`workflow` package) — the same package installed for the Lemon Squeezy billing checkout workflow — for durable, resumable state that survives Vercel cold starts, deploys, and server restarts.
 
 ## Why it's deferred
 
-The Paddle billing PR installs the Workflow DevKit and proves the pattern with `subscriptionCheckoutWorkflow`. Quote negotiation is the next natural consumer but is a significant feature in its own right (new UI surfaces, email templates, data model changes). Splitting it avoids conflating billing migration with a complex booking-lifecycle feature.
+The Lemon Squeezy billing PR installs the Workflow DevKit and proves the pattern with `subscriptionCheckoutWorkflow`. Quote negotiation is the next natural consumer but is a significant feature in its own right (new UI surfaces, email templates, data model changes). Splitting it avoids conflating billing migration with a complex booking-lifecycle feature.
 
 ## The 3-stage flow
 
