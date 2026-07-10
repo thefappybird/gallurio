@@ -811,8 +811,7 @@
         "opening": "Opening…",
         "upgradeSuccess": "Subscription activated! Your plan has been updated.",
         "checkoutFailed": "Checkout failed. Please try again.",
-        "paddleNotReady": "Payment system not ready. Please refresh and try again.",
-        "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set — overlay unavailable in this dev environment.",
+        "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
         "subscriptionIssue": "There is an issue with your subscription. Please check your payment method or contact support.",
         "subscriptionStatus": {
           "active": "Active",
@@ -2361,14 +2360,13 @@
         "yearly": "Yearly",
         "savePill": "Save 2 months"
       },
-      "checkoutNote": "A secure Paddle checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
+      "checkoutNote": "A secure checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
       "ctaFree": "Continue with Free",
       "ctaPaid": "Subscribe — {price}",
       "settingUp": "Setting up…",
       "opening": "Opening checkout…",
       "checkoutFailed": "Checkout failed. Please try again.",
-      "paddleNotReady": "Payment system not ready. Please refresh and try again.",
-      "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set — overlay unavailable in this dev environment. Use the dev shortcut below.",
+      "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
       "dev": {
         "label": "Dev shortcut",
         "description": "Skip Paddle and mark {planName} as active. Dev-only.",

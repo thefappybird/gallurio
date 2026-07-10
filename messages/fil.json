@@ -811,8 +811,7 @@
         "opening": "Binubuksan…",
         "upgradeSuccess": "Na-activate ang subscription! Na-update ang iyong plano.",
         "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
-        "paddleNotReady": "Hindi handa ang sistema ng pagbabayad. Pakisubukan muli.",
-        "paddleTokenMissingDev": "Hindi nakatakda ang NEXT_PUBLIC_PADDLE_CLIENT_TOKEN — hindi available ang overlay sa dev environment na ito.",
+        "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. Pakisubukan muli.",
         "subscriptionIssue": "May isyu sa iyong subscription. Pakitingnan ang iyong paraan ng pagbabayad o makipag-ugnayan sa suporta.",
         "subscriptionStatus": {
           "active": "Aktibo",
@@ -2361,14 +2360,13 @@
         "yearly": "Taunan",
         "savePill": "Makatipid ng 2 buwan"
       },
-      "checkoutNote": "Magbubukas ang secure na Paddle checkout overlay. Ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
+      "checkoutNote": "Magbubukas ang secure na checkout overlay. Ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
       "ctaFree": "Magpatuloy sa Free",
       "ctaPaid": "Mag-subscribe — {price}",
       "settingUp": "Sine-set up…",
       "opening": "Binubuksan ang checkout…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
-      "paddleNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
-      "paddleTokenMissingDev": "Hindi nakatakda ang NEXT_PUBLIC_PADDLE_CLIENT_TOKEN — hindi available ang overlay sa dev environment na ito. Gamitin ang dev shortcut sa ibaba.",
+      "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
       "dev": {
         "label": "Dev shortcut",
         "description": "Laktawan ang Paddle at markahan ang {planName} bilang aktibo. Dev-only.",

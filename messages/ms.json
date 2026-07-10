@@ -811,8 +811,7 @@
         "opening": "Membuka…",
         "upgradeSuccess": "Langganan diaktifkan! Pelan anda telah dikemas kini.",
         "checkoutFailed": "Pembayaran gagal. Sila cuba lagi.",
-        "paddleNotReady": "Sistem pembayaran belum sedia. Sila muat semula dan cuba lagi.",
-        "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN tidak ditetapkan — overlay tidak tersedia dalam persekitaran dev ini.",
+        "checkoutNotReady": "Sistem pembayaran belum sedia. Sila muat semula dan cuba lagi.",
         "subscriptionIssue": "Terdapat masalah dengan langganan anda. Sila semak kaedah pembayaran anda atau hubungi sokongan.",
         "subscriptionStatus": {
           "active": "Aktif",
@@ -2361,14 +2360,13 @@
         "yearly": "Tahunan",
         "savePill": "Jimat 2 bulan"
       },
-      "checkoutNote": "Overlay pembayaran Paddle yang selamat akan dibuka. Masukkan butiran kad anda (Visa atau Mastercard). Kitaran pertama akan dicaj segera dan diperbaharui setiap bulan sehingga anda batal.",
+      "checkoutNote": "Overlay pembayaran yang selamat akan dibuka. Masukkan butiran kad anda (Visa atau Mastercard). Kitaran pertama akan dicaj segera dan diperbaharui setiap bulan sehingga anda batal.",
       "ctaFree": "Teruskan dengan Free",
       "ctaPaid": "Langgan — {price}",
       "settingUp": "Menyediakan…",
       "opening": "Membuka pembayaran…",
       "checkoutFailed": "Pembayaran gagal. Sila cuba lagi.",
-      "paddleNotReady": "Sistem pembayaran belum sedia. Sila muat semula dan cuba lagi.",
-      "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN tidak ditetapkan — overlay tidak tersedia dalam persekitaran dev ini. Gunakan pintasan dev di bawah.",
+      "checkoutNotReady": "Sistem pembayaran belum sedia. Sila muat semula dan cuba lagi.",
       "dev": {
         "label": "Pintasan dev",
         "description": "Langkau Paddle dan tanda {planName} sebagai aktif. Dev sahaja.",

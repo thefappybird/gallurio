@@ -1,21 +1,30 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { CreditCard, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
-import { PLAN_CATALOG } from "@/lib/paddle/plans";
-import type { ProPricing } from "@/lib/paddle/pricing";
+import { PLAN_CATALOG } from "@/lib/lemonsqueezy/plans";
+import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { PlanTier, PaddleSubscriptionStatus } from "@/lib/db/models";
+import type { PlanTier, LemonSqueezySubscriptionStatus } from "@/lib/db/models";
+
+declare global {
+  interface Window {
+    createLemonSqueezy?: () => void;
+    LemonSqueezy?: {
+      Setup: (opts: { eventHandler: (data: { event: string; data?: unknown }) => void }) => void;
+      Url: { Open: (url: string) => void; Close?: () => void };
+    };
+  }
+}
 
 export type BillingPanelProps = {
   currentPlan: PlanTier;
-  paddleSubscriptionStatus: PaddleSubscriptionStatus | null;
+  paddleSubscriptionStatus: LemonSqueezySubscriptionStatus | null;
   paddleCurrentPeriodEnd: Date | null;
   workspaceId: string;
   customerEmail: string;
@@ -33,8 +42,6 @@ export function BillingPanel({
   currentPlan,
   paddleSubscriptionStatus,
   paddleCurrentPeriodEnd,
-  workspaceId,
-  customerEmail,
   proPricing,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
@@ -44,41 +51,32 @@ export function BillingPanel({
 
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const paddleRef = useRef<Paddle | null>(null);
-  const paddleInitAttempted = useRef(false);
-  const paddleTokenMissing =
-    !process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ||
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN === "";
+  const [lsReady, setLsReady] = useState(false);
 
   useEffect(() => {
-    if (paddleInitAttempted.current || paddleTokenMissing) return;
-    paddleInitAttempted.current = true;
-
-    initializePaddle({
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
-      environment: (process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox") as
-        | "sandbox"
-        | "production",
-      eventCallback(e) {
-        if (e.name === "checkout.completed") {
-          setLoadingPlan(null);
-          toast.success(t("upgradeSuccess"));
-          // Reload page to reflect new plan from server.
-          window.location.reload();
-        } else if (e.name === "checkout.closed" || e.name === "checkout.error") {
-          // Overlay dismissed or failed to render — release the button so the
-          // user can retry instead of staring at a permanent spinner.
-          setLoadingPlan(null);
-        }
-      },
-    })
-      .then((p) => {
-        paddleRef.current = p ?? null;
-      })
-      .catch((err) => {
-        console.warn("[billing-panel] Paddle init failed:", err);
+    const script = document.createElement("script");
+    script.src = "https://app.lemonsqueezy.com/js/lemon.js";
+    script.defer = true;
+    script.onload = () => {
+      window.createLemonSqueezy?.();
+      window.LemonSqueezy?.Setup({
+        eventHandler(e) {
+          if (e.event === "Checkout.Success") {
+            setLoadingPlan(null);
+            toast.success(t("upgradeSuccess"));
+            // Reload page to reflect new plan from server.
+            window.location.reload();
+          }
+        },
       });
-  }, [paddleTokenMissing, t]);
+      setLsReady(true);
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [t]);
 
   async function openUpgradeCheckout(plan: PlanTier) {
     if (plan === "free" || plan === currentPlan) return;
@@ -92,8 +90,7 @@ export function BillingPanel({
         body: JSON.stringify({ plan }),
       });
       const data = (await res.json().catch(() => ({}))) as {
-        priceId?: string;
-        customerEmail?: string;
+        checkoutUrl?: string;
         workspaceId?: string;
         error?: string;
       };
@@ -104,18 +101,17 @@ export function BillingPanel({
         setLoadingPlan(null);
         return;
       }
-      if (!data.priceId) {
-        throw new Error("Missing priceId in checkout response");
+      if (!data.checkoutUrl) {
+        throw new Error("Missing checkoutUrl in checkout response");
       }
-      if (!paddleRef.current) {
-        throw new Error(t("paddleNotReady"));
+      if (!lsReady || !window.LemonSqueezy) {
+        throw new Error(t("checkoutNotReady"));
       }
 
-      paddleRef.current.Checkout.open({
-        items: [{ priceId: data.priceId, quantity: 1 }],
-        customer: { email: data.customerEmail ?? customerEmail },
-        customData: { workspaceId: data.workspaceId ?? workspaceId },
-      });
+      window.LemonSqueezy.Url.Open(data.checkoutUrl);
+      // The overlay opens synchronously; release the button right away so a
+      // dismissed/failed checkout doesn't leave a permanent spinner.
+      setLoadingPlan(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : t("checkoutFailed");
       setCheckoutError(msg);
@@ -180,13 +176,6 @@ export function BillingPanel({
             <p>{t("subscriptionIssue")}</p>
           </div>
         )}
-
-      {/* Dev token missing notice */}
-      {paddleTokenMissing && process.env.NODE_ENV !== "production" && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
-          {t("paddleTokenMissingDev")}
-        </p>
-      )}
 
       {/* Inline error */}
       {checkoutError && (
