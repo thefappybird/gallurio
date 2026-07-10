@@ -9,6 +9,7 @@ import { getPlanCatalog, isPaidPlan } from "@/lib/lemonsqueezy/plans";
 import { subscriptionCheckoutWorkflow } from "@/lib/workflows/subscriptionCheckout";
 import { start, getHookByToken, getRun } from "workflow/api";
 import { rateLimit } from "@/lib/server/rateLimit";
+import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
 
 export const runtime = "nodejs";
 
@@ -38,10 +39,13 @@ const bodySchema = z.object({
   plan: z.enum(["pro"]),
   cadence: z.enum(["monthly", "yearly"]).default("monthly"),
   onboarding: z.boolean().optional(),
+  returnTo: z.string().startsWith("/").optional(),
 });
 
 export async function POST(req: Request) {
-  const ctx = await requireOrg({ allowDuringOnboarding: true });
+  // A gated owner must be able to POST here too - re-subscribing is how they
+  // un-gate themselves.
+  const ctx = await requireOrg({ allowDuringOnboarding: true, allowWhenGated: true });
 
   const limited = rateLimit(`checkout:${ctx.workspace._id.toString()}`, RATE_LIMIT);
   if (!limited.ok) {
@@ -61,7 +65,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
-  const { plan, cadence } = parsed.data;
+  const { plan, cadence, onboarding, returnTo } = parsed.data;
 
   if (!isPaidPlan(plan)) {
     return NextResponse.json(
@@ -95,6 +99,18 @@ export async function POST(req: Request) {
 
   const name = authUser.name || ctx.workspace.name;
   const workspaceId = ctx.workspace._id.toString();
+  // Lemon Squeezy defaults to redirecting to its own hosted order page after
+  // a successful payment unless told otherwise — send the customer back into
+  // the app instead. The embedded overlay's Checkout.Success event (see
+  // useLemonSqueezyCheckout) already navigates on success in normal browser
+  // flows; this is the fallback for when the overlay's own post-payment
+  // screen redirects the top-level page rather than staying embedded.
+  // `returnTo` (e.g. the caller's original destination behind a /subscribe
+  // gate) takes precedence over the onboarding/default targets when present.
+  const redirectUrl = new URL(
+    sanitizeLocalReturnTo(returnTo) ?? (onboarding ? "/onboarding/done" : "/settings/billing"),
+    req.url,
+  ).toString();
 
   let checkoutUrl: string;
   let run: { runId: string } | undefined;
@@ -106,6 +122,7 @@ export async function POST(req: Request) {
       email,
       name,
       workspaceId,
+      redirectUrl,
     });
   } catch (err) {
     console.error("[billing.checkout] lemonsqueezy/workflow init failed", err);

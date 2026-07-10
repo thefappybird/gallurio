@@ -203,6 +203,87 @@ describe("billing checkout — cadence", () => {
   });
 });
 
+describe("billing checkout — post-payment redirect", () => {
+  it("targets /onboarding/done when onboarding is true", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro", onboarding: true }));
+
+    expect(res.status).toBe(200);
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ redirectUrl: "http://test/onboarding/done" })
+    );
+  });
+
+  it("targets /settings/billing when onboarding is absent", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }));
+
+    expect(res.status).toBe(200);
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ redirectUrl: "http://test/settings/billing" })
+    );
+  });
+
+  it("honors returnTo over the onboarding/default targets", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(
+      makeReq({ plan: "pro", returnTo: "/inquiries?inquiryId=abc123" })
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        redirectUrl: "http://test/inquiries?inquiryId=abc123",
+      })
+    );
+  });
+
+  it("rejects a non-'/'-prefixed returnTo with 400", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(
+      makeReq({ plan: "pro", returnTo: "https://evil.com" })
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body).toEqual({ error: "invalid_request" });
+    expect(mockStart).not.toHaveBeenCalled();
+  });
+});
+
+describe("billing checkout — gated workspace", () => {
+  it("allows a gated owner (free plan, everSubscribed) to start checkout", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    await Workspace.updateOne({ _id: wsId }, { $set: { everSubscribed: true } });
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({
+      checkoutUrl: "https://checkout.lemonsqueezy.com/buy/abc123",
+      workspaceId: wsId.toString(),
+    });
+    expect(mockRequireOrg).toHaveBeenCalledWith(
+      expect.objectContaining({ allowWhenGated: true })
+    );
+  });
+});
+
 describe("billing checkout — idempotent init (Bug #2 regression)", () => {
   it("cancels the in-flight workflow run before starting a new one", async () => {
     const wsId = await seedWorkspace({
