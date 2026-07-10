@@ -821,8 +821,8 @@
           "trialing": "فترة تجريبية"
         },
         "manageSection": "إدارة الاشتراك",
-        "manageDescription": "تُدار اشتراكاتك عبر Lemon Squeezy. لتحديث طريقة الدفع أو عرض الفواتير، يرجى التواصل مع الدعم.",
-        "cancelNote": "لإلغاء اشتراكك، تواصل مع الدعم أو احذف مساحة عملك."
+        "manageDescription": "حدِّث طريقة الدفع أو اطّلع على الفواتير أو ألغِ اشتراكك مباشرةً عبر Lemon Squeezy.",
+        "manageButton": "إدارة الاشتراك"
       },
       "devPlan": {
         "title": "مبدِّل خطة المطوِّر",
@@ -2260,6 +2260,8 @@
       "lemonsqueezy_variant_not_configured": "هذه الباقة غير متاحة حاليًا. يرجى التواصل مع الدعم.",
       "no_verified_email": "أضف بريدًا إلكترونيًا موثّقًا قبل الاشتراك.",
       "checkout_init_failed": "تعذّر بدء الدفع. يرجى المحاولة مرة أخرى.",
+      "no_subscription": "ليس لديك اشتراك نشط لإدارته.",
+      "subscription_manage_unavailable": "تعذّر فتح إدارة الاشتراك. يرجى المحاولة مرة أخرى.",
       "locked": "هذا العنصر مقفل ولا يمكن تعديله الآن.",
       "conflict": "هذا الوقت يتعارض مع حجز آخر.",
       "edit_sessions_failed": "تعذّر تحديث الجلسات. يرجى المحاولة مرة أخرى.",
@@ -2427,6 +2429,25 @@
         "teamManagement": "إدارة الفِرق",
         "removeBranding": "إزالة علامة Gallurio التجارية"
       }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "الاشتراك",
+    "owner": {
+      "title": "انتهى اشتراكك",
+      "description": "أعد الاشتراك في Gallurio Pro للعودة إلى لوحة التحكم الخاصة بك.",
+      "perMonth": "/ شهريًا",
+      "perYear": "/ سنويًا",
+      "subscribeButton": "اشترك",
+      "subscribeAriaLabel": "اشترك في Gallurio Pro",
+      "opening": "جارٍ الفتح…",
+      "upgradeSuccess": "تم تفعيل الاشتراك! جارٍ التحويل…",
+      "checkoutFailed": "فشلت عملية الدفع. يرجى المحاولة مرة أخرى.",
+      "checkoutNotReady": "نظام الدفع غير جاهز بعد. يرجى تحديث الصفحة والمحاولة مرة أخرى."
+    },
+    "staff": {
+      "title": "انتهى اشتراك مساحة العمل",
+      "description": "اطلب من مالك مساحة العمل إعادة الاشتراك في Gallurio Pro لاستعادة الوصول."
     }
   },
   "publicPage": {

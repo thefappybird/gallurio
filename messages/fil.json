@@ -821,8 +821,8 @@
           "trialing": "Trial"
         },
         "manageSection": "Pamahalaan ang subscription",
-        "manageDescription": "Ang iyong subscription ay pinamamahalaan sa pamamagitan ng Lemon Squeezy. Makipag-ugnayan sa suporta para i-update ang iyong paraan ng pagbabayad o tingnan ang mga invoice.",
-        "cancelNote": "Para kanselahin ang iyong subscription, makipag-ugnayan sa suporta o burahin ang iyong workspace."
+        "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
+        "manageButton": "Pamahalaan ang subscription"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -2260,6 +2260,8 @@
       "lemonsqueezy_variant_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
       "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
       "checkout_init_failed": "Hindi masimulaan ang checkout. Pakisubukan muli.",
+      "no_subscription": "Wala kang aktibong subscription na mapapamahalaan.",
+      "subscription_manage_unavailable": "Hindi mabuksan ang pamamahala ng subscription. Pakisubukan muli.",
       "locked": "Naka-lock ang item na ito at hindi maaaring i-edit ngayon.",
       "conflict": "May salungatan ang oras na iyon sa ibang booking.",
       "edit_sessions_failed": "Hindi na-update ang mga sesyon. Pakisubukan muli.",
@@ -2427,6 +2429,25 @@
         "teamManagement": "Pamamahala ng teams",
         "removeBranding": "Alisin ang branding ng Gallurio"
       }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "Mag-subscribe",
+    "owner": {
+      "title": "Natapos na ang iyong subscription",
+      "description": "Mag-subscribe muli sa Gallurio Pro para bumalik sa iyong dashboard.",
+      "perMonth": "/ buwan",
+      "perYear": "/ taon",
+      "subscribeButton": "Mag-subscribe",
+      "subscribeAriaLabel": "Mag-subscribe sa Gallurio Pro",
+      "opening": "Bubuksan…",
+      "upgradeSuccess": "Aktibo na ang subscription! Nire-redirect…",
+      "checkoutFailed": "Nabigo ang checkout. Pakisubukang muli.",
+      "checkoutNotReady": "Hindi pa handa ang payment system. Paki-refresh at subukang muli."
+    },
+    "staff": {
+      "title": "Naubos ang subscription ng workspace",
+      "description": "Hilingin sa may-ari ng workspace na mag-subscribe muli sa Gallurio Pro para makabalik ang access."
     }
   },
   "publicPage": {

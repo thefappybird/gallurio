@@ -821,8 +821,8 @@
           "trialing": "Percubaan"
         },
         "manageSection": "Urus langganan",
-        "manageDescription": "Langganan anda diuruskan melalui Lemon Squeezy. Hubungi sokongan untuk mengemas kini kaedah pembayaran atau melihat invois.",
-        "cancelNote": "Untuk membatalkan langganan, hubungi sokongan atau padam ruang kerja anda."
+        "manageDescription": "Kemas kini kaedah pembayaran, lihat invois, atau batalkan langganan anda terus melalui Lemon Squeezy.",
+        "manageButton": "Urus langganan"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -2260,6 +2260,8 @@
       "lemonsqueezy_variant_not_configured": "Pelan ini tidak tersedia buat masa ini. Sila hubungi sokongan.",
       "no_verified_email": "Tambah dan sahkan e-mel sebelum melanggan.",
       "checkout_init_failed": "Pembayaran tidak dapat dimulakan. Sila cuba lagi.",
+      "no_subscription": "Anda tiada langganan aktif untuk diurus.",
+      "subscription_manage_unavailable": "Tidak dapat membuka pengurusan langganan. Sila cuba lagi.",
       "locked": "Item ini dikunci dan tidak boleh diedit buat masa ini.",
       "conflict": "Waktu itu bercanggah dengan tempahan lain.",
       "edit_sessions_failed": "Sesi tidak dapat dikemas kini. Sila cuba lagi.",
@@ -2427,6 +2429,25 @@
         "teamManagement": "Pengurusan pasukan",
         "removeBranding": "Buang penjenamaan Gallurio"
       }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "Langgan",
+    "owner": {
+      "title": "Langganan anda telah tamat",
+      "description": "Langgan semula Gallurio Pro untuk kembali ke papan pemuka anda.",
+      "perMonth": "/ bulan",
+      "perYear": "/ tahun",
+      "subscribeButton": "Langgan",
+      "subscribeAriaLabel": "Langgan Gallurio Pro",
+      "opening": "Membuka…",
+      "upgradeSuccess": "Langganan diaktifkan! Mengalih hala…",
+      "checkoutFailed": "Checkout gagal. Sila cuba lagi.",
+      "checkoutNotReady": "Sistem pembayaran belum sedia. Sila muat semula dan cuba lagi."
+    },
+    "staff": {
+      "title": "Langganan ruang kerja telah tamat",
+      "description": "Minta pemilik ruang kerja untuk melanggan semula Gallurio Pro bagi mendapatkan semula akses."
     }
   },
   "publicPage": {

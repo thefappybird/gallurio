@@ -821,8 +821,8 @@
           "trialing": "Masa percobaan"
         },
         "manageSection": "Kelola langganan",
-        "manageDescription": "Langganan Anda dikelola melalui Lemon Squeezy. Hubungi dukungan untuk memperbarui metode pembayaran atau melihat faktur.",
-        "cancelNote": "Untuk membatalkan langganan, hubungi dukungan atau hapus workspace Anda."
+        "manageDescription": "Perbarui metode pembayaran, lihat faktur, atau batalkan langganan Anda langsung melalui Lemon Squeezy.",
+        "manageButton": "Kelola langganan"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -2260,6 +2260,8 @@
       "lemonsqueezy_variant_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
       "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
       "checkout_init_failed": "Gagal memulai pembayaran. Silakan coba lagi.",
+      "no_subscription": "Anda tidak memiliki langganan aktif untuk dikelola.",
+      "subscription_manage_unavailable": "Gagal membuka pengelolaan langganan. Silakan coba lagi.",
       "locked": "Item ini terkunci dan tidak dapat diedit saat ini.",
       "conflict": "Waktu tersebut bertabrakan dengan pemesanan lain.",
       "edit_sessions_failed": "Gagal memperbarui sesi. Silakan coba lagi.",
@@ -2427,6 +2429,25 @@
         "teamManagement": "Manajemen tim",
         "removeBranding": "Hilangkan branding Gallurio"
       }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "Berlangganan",
+    "owner": {
+      "title": "Langganan Anda telah berakhir",
+      "description": "Berlangganan kembali ke Gallurio Pro untuk kembali ke dasbor Anda.",
+      "perMonth": "/ bulan",
+      "perYear": "/ tahun",
+      "subscribeButton": "Berlangganan",
+      "subscribeAriaLabel": "Berlangganan Gallurio Pro",
+      "opening": "Membuka…",
+      "upgradeSuccess": "Langganan diaktifkan! Mengalihkan…",
+      "checkoutFailed": "Checkout gagal. Silakan coba lagi.",
+      "checkoutNotReady": "Sistem pembayaran belum siap. Muat ulang dan coba lagi."
+    },
+    "staff": {
+      "title": "Langganan workspace telah berakhir",
+      "description": "Minta pemilik workspace untuk berlangganan kembali Gallurio Pro agar akses Anda pulih."
     }
   },
   "publicPage": {

@@ -821,8 +821,8 @@
           "trialing": "Trialing"
         },
         "manageSection": "Manage subscription",
-        "manageDescription": "Your subscription is managed through Lemon Squeezy. To update your payment method or view invoices, please contact support.",
-        "cancelNote": "To cancel your subscription, contact support or delete your workspace."
+        "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
+        "manageButton": "Manage subscription"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -2260,6 +2260,8 @@
       "lemonsqueezy_variant_not_configured": "This plan isn't available right now. Please contact support.",
       "no_verified_email": "Add and verify an email before subscribing.",
       "checkout_init_failed": "Couldn't start checkout. Please try again.",
+      "no_subscription": "You don't have an active subscription to manage.",
+      "subscription_manage_unavailable": "Couldn't open subscription management. Please try again.",
       "locked": "This item is locked and can't be edited right now.",
       "conflict": "That time conflicts with another booking.",
       "edit_sessions_failed": "Couldn't update the sessions. Please try again.",
@@ -2427,6 +2429,25 @@
         "teamManagement": "Team management",
         "removeBranding": "Remove Gallurio branding"
       }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "Subscribe",
+    "owner": {
+      "title": "Your subscription has ended",
+      "description": "Resubscribe to Gallurio Pro to get back into your dashboard.",
+      "perMonth": "/ month",
+      "perYear": "/ year",
+      "subscribeButton": "Subscribe",
+      "subscribeAriaLabel": "Subscribe to Gallurio Pro",
+      "opening": "Opening…",
+      "upgradeSuccess": "Subscription activated! Redirecting…",
+      "checkoutFailed": "Checkout failed. Please try again.",
+      "checkoutNotReady": "Payment system not ready. Please refresh and try again."
+    },
+    "staff": {
+      "title": "Workspace subscription lapsed",
+      "description": "Ask the workspace owner to resubscribe to Gallurio Pro to regain access."
     }
   },
   "publicPage": {
