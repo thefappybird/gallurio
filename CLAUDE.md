@@ -59,7 +59,7 @@ Use the graph index ONLY for large navigation/understanding tasks (multi-hop dep
 ## Tooling
 Reach for a tool when it raises confidence or a Done-criterion needs it; skip it when it adds no signal. Don't claim a UI/flow works until you've observed it running, not just compiled it.
 - **Playwright CLI** (`pnpm exec playwright test`, NOT the MCP plugin): drive the app in a browser for UI/behavioral changes. Repo is wired — `playwright.config.ts` loads `.env.local`, `auth.setup.ts` logs in once and reuses `storageState`, specs in `e2e/`. Required for the 3-breakpoint Done-criterion. Recipes + seeded login accounts: see the `portfolio-testing` / `run-gallurio` skills. Minimize side effects on the shared seeded dev DB — prefer inspecting states over submitting; never repeat a verified submit; no needless reload/re-navigate/re-poll.
-- **context7**: current library docs (Next 16, React 19, Mongoose, Tailwind v4, Paddle, next-intl, WorkOS) before relying on memory.
+- **context7**: current library docs (Next 16, React 19, Mongoose, Tailwind v4, Lemon Squeezy, next-intl, WorkOS) before relying on memory.
 - **Security passes**: the trailofbits static-analysis / differential-review / fp-check plugins are disabled by default to save context — re-enable them (and use the `security-auditor` agent) when a change touches auth, tenancy, webhooks, uploads, payments, public routes, or input validation, and for pre-merge audits.
 
 ## Engineering bar
