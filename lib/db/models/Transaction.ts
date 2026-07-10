@@ -19,13 +19,13 @@ const transactionSchema = new Schema(
     },
     method: {
       type: String,
-      enum: ["paddle", "cash", "transfer", "other"],
-      default: "paddle",
+      enum: ["lemonsqueezy", "cash", "transfer", "other"],
+      default: "lemonsqueezy",
     },
-    // Paddle identifiers. paymentId covers one-off charges; subscriptionId
+    // Lemon Squeezy identifiers. orderId covers one-off charges; subscriptionId
     // covers subscription cycles.
-    paddlePaymentId: { type: String, default: null, index: true, sparse: true },
-    paddleSubscriptionId: { type: String, default: null },
+    lsOrderId: { type: String, default: null, index: true, sparse: true },
+    lsSubscriptionId: { type: String, default: null },
     notes: { type: String, default: "" },
     paidAt: { type: Date, default: null },
   },

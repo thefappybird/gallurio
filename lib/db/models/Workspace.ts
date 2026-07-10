@@ -20,14 +20,14 @@ export type PlanTier = (typeof PLAN_TIERS)[number];
 export const PUBLIC_PAGE_TEMPLATES = PORTFOLIO_TEMPLATE_IDS;
 export type PublicPageTemplate = (typeof PUBLIC_PAGE_TEMPLATES)[number];
 
-export const PADDLE_SUBSCRIPTION_STATUSES = [
+export const LS_SUBSCRIPTION_STATUSES = [
   "active",
   "canceled",
   "past_due",
   "paused",
   "trialing",
 ] as const;
-export type PaddleSubscriptionStatus = (typeof PADDLE_SUBSCRIPTION_STATUSES)[number];
+export type LemonSqueezySubscriptionStatus = (typeof LS_SUBSCRIPTION_STATUSES)[number];
 
 // Brand-kit field definition, reused for `publicPage.brandKit` and each entry
 // in `publicPage.savedThemes`. `fontPair` stays for back-compat; `headingFont`
@@ -266,17 +266,17 @@ const workspaceSchema = new Schema(
     },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
 
-    // Paddle subscription — Gallurio billing the tenant (Merchant of Record).
-    paddleSubscriptionId: { type: String, default: null, index: true, sparse: true },
-    paddleCustomerId: { type: String, default: null, index: true, sparse: true },
-    paddleSubscriptionStatus: {
+    // Lemon Squeezy subscription — Gallurio billing the tenant (Merchant of Record).
+    lsSubscriptionId: { type: String, default: null, index: true, sparse: true },
+    lsCustomerId: { type: String, default: null, index: true, sparse: true },
+    lsSubscriptionStatus: {
       type: String,
-      enum: [...PADDLE_SUBSCRIPTION_STATUSES, null],
+      enum: [...LS_SUBSCRIPTION_STATUSES, null],
       default: null,
     },
-    paddleCurrentPeriodEnd: { type: Date, default: null },
+    lsCurrentPeriodEnd: { type: Date, default: null },
     // In-flight durable checkout workflow run id; cleared on activation.
-    paddleCheckoutWorkflowRunId: { type: String, default: null },
+    lsCheckoutWorkflowRunId: { type: String, default: null },
 
     trialEndsAt: { type: Date, default: null },
     onboardingCompletedAt: { type: Date, default: null },
