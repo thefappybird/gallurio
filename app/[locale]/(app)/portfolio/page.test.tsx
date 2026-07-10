@@ -107,7 +107,6 @@ describe("PageBuilderEntry — SEO fields read from active draft", () => {
 
     const page = await PageBuilderEntry({
       params: Promise.resolve({ locale: "en" }),
-      searchParams: Promise.resolve({}),
     });
     render(page);
 
@@ -139,7 +138,6 @@ describe("PageBuilderEntry — SEO fields read from active draft", () => {
 
     const page = await PageBuilderEntry({
       params: Promise.resolve({ locale: "en" }),
-      searchParams: Promise.resolve({}),
     });
     render(page);
 
