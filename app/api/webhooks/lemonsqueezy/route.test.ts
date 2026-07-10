@@ -236,6 +236,74 @@ describe("lemonsqueezy webhook — subscription_created", () => {
   });
 });
 
+describe("lemonsqueezy webhook — everSubscribed flag", () => {
+  it("sets everSubscribed true on a paid promotion not blocked by the team-cap guard", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_ever_subscribed";
+
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.everSubscribed).toBe(true);
+  });
+
+  it("keeps everSubscribed true after subscription_expired downgrades plan to free", async () => {
+    const subId = "sub_ever_subscribed_then_expired";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    await Workspace.updateOne({ _id: wsId }, { $set: { everSubscribed: true } });
+
+    const event = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.everSubscribed).toBe(true);
+  });
+
+  it("does NOT set everSubscribed when the team-cap guard refuses the promotion", async () => {
+    const subId = "sub_ever_subscribed_blocked";
+    const wsId = await seedWorkspace({
+      plan: "free",
+      lsSubscriptionId: subId,
+      teamCount: 20,
+    });
+
+    const event = makeEvent(
+      "subscription_updated",
+      subId,
+      makeSubscriptionAttrs({ status: "active" })
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.everSubscribed).toBe(false);
+  });
+});
+
 describe("lemonsqueezy webhook — subscription_cancelled (does NOT downgrade)", () => {
   it("marks status canceled and keeps plan pro until expiry", async () => {
     const subId = "sub_cancel_test";
@@ -385,6 +453,55 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
     const after = await Workspace.findById(wsId).lean();
     expect(after?.plan).toBe("pro");
     expect(after?.lsSubscriptionId).toBe(newSubId);
+  });
+});
+
+describe("lemonsqueezy webhook — subscription_payment_refunded (downgrades)", () => {
+  it("downgrades to free and clears lsSubscriptionId, same as expiry", async () => {
+    const subId = "sub_refunded";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId, teamCount: 5 });
+
+    // subscription-invoices resources: event.data.id is the invoice's own id
+    // (distinct from the subscription id), and the real subscription id lives
+    // in attributes.subscription_id.
+    const event = makeEvent("subscription_payment_refunded", "inv_999", {
+      subscription_id: subId,
+      refunded: true,
+      customer_id: "ctm_1",
+    });
+
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.lsSubscriptionStatus).toBe("canceled");
+    expect(after?.lsCurrentPeriodEnd).toBeNull();
+    expect(after?.lsSubscriptionId).toBeNull();
+  });
+
+  it("routes by custom_data.workspaceId when present, ignoring the invoice id", async () => {
+    const subId = "sub_refunded_custom_data";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const event = makeEvent(
+      "subscription_payment_refunded",
+      "inv_888",
+      { subscription_id: subId, refunded: true },
+      { workspaceId: wsId.toString() }
+    );
+
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
   });
 });
 

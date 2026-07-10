@@ -278,6 +278,12 @@ const workspaceSchema = new Schema(
     // In-flight durable checkout workflow run id; cleared on activation.
     lsCheckoutWorkflowRunId: { type: String, default: null },
 
+    // Set once, permanently, the first time this workspace's plan is promoted
+    // to a paid tier by the webhook below. Never cleared — including by the
+    // hard-expire downgrade — so a workspace that has ever paid can never
+    // fall back to ordinary free-tier access; see lib/billing/access.ts.
+    everSubscribed: { type: Boolean, default: false },
+
     trialEndsAt: { type: Date, default: null },
     onboardingCompletedAt: { type: Date, default: null },
   },

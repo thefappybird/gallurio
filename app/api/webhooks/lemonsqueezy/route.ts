@@ -35,7 +35,14 @@ function resolveWorkspaceFilter(event: LemonSqueezyWebhookEvent): Record<string,
   const wsIdFromCustomData = workspaceIdFromEvent(event);
   if (wsIdFromCustomData) return { _id: wsIdFromCustomData };
 
-  const subscriptionId = event.data.id;
+  // subscription_payment_* events are "subscription-invoices" resources:
+  // event.data.id is the invoice's own id, and the subscription id lives in
+  // attributes.subscription_id instead. Subscription-typed events (created/
+  // updated/cancelled/expired/paused/...) have no subscription_id attribute,
+  // so this only takes effect for invoice events — event.data.id remains the
+  // correct subscription id for every other event this handler routes.
+  const attrSubscriptionId = stringAttr(event.data.attributes, "subscription_id");
+  const subscriptionId = attrSubscriptionId ?? event.data.id;
   if (subscriptionId) return { lsSubscriptionId: subscriptionId };
 
   const customerId = stringAttr(event.data.attributes, "customer_id");
@@ -120,10 +127,12 @@ async function handleSubscriptionUpsert(
         // Don't include plan in the update — keep existing value.
       } else {
         update.plan = newTier;
+        update.everSubscribed = true;
       }
     } else {
       // Workspace not yet found by filter; safe to include plan.
       update.plan = newTier;
+      update.everSubscribed = true;
     }
   }
 
@@ -168,10 +177,15 @@ async function handleSubscriptionCancelled(event: LemonSqueezyWebhookEvent): Pro
 }
 
 // ---------------------------------------------------------------------------
-// subscription_expired — the hard boundary. Access has actually ended: always
-// downgrade to free, bypassing the team-cap guard. Over-cap teams are
-// surfaced in the UI; leaving expired accounts on paid entitlements is a
-// billing leak and is never acceptable.
+// subscription_expired / subscription_payment_refunded — hard access-ended
+// boundaries: always downgrade to free, bypassing the team-cap guard. Over-cap
+// teams are surfaced in the UI; leaving an expired-or-refunded account on paid
+// entitlements is a billing leak and is never acceptable. A refund (full or
+// partial) means the customer got money back, so they lose paid access
+// immediately rather than waiting for a separate cancellation.
+// everSubscribed is never reset here — a workspace that has ever paid stays
+// locked out of free-tier access after expiry until it resubscribes (see
+// lib/billing/access.ts).
 // ---------------------------------------------------------------------------
 async function handleSubscriptionExpired(event: LemonSqueezyWebhookEvent): Promise<void> {
   const filter = resolveWorkspaceFilter(event);
@@ -268,6 +282,7 @@ export async function POST(req: Request) {
         break;
 
       case "subscription_expired":
+      case "subscription_payment_refunded":
         await handleSubscriptionExpired(event);
         break;
 
