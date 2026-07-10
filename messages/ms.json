@@ -821,12 +821,12 @@
           "trialing": "Percubaan"
         },
         "manageSection": "Urus langganan",
-        "manageDescription": "Langganan anda diuruskan melalui Paddle. Hubungi sokongan untuk mengemas kini kaedah pembayaran atau melihat invois.",
+        "manageDescription": "Langganan anda diuruskan melalui Lemon Squeezy. Hubungi sokongan untuk mengemas kini kaedah pembayaran atau melihat invois.",
         "cancelNote": "Untuk membatalkan langganan, hubungi sokongan atau padam ruang kerja anda."
       },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -2257,7 +2257,7 @@
       "invalid_request": "Permintaan tidak sah.",
       "export_too_large": "Terlalu banyak tempahan untuk dieksport. Sempitkan penapis anda dan cuba lagi.",
       "free_plan_no_checkout": "Pelan percuma tidak memerlukan pembayaran.",
-      "paddle_price_not_configured": "Pelan ini tidak tersedia buat masa ini. Sila hubungi sokongan.",
+      "lemonsqueezy_variant_not_configured": "Pelan ini tidak tersedia buat masa ini. Sila hubungi sokongan.",
       "no_verified_email": "Tambah dan sahkan e-mel sebelum melanggan.",
       "checkout_init_failed": "Pembayaran tidak dapat dimulakan. Sila cuba lagi.",
       "locked": "Item ini dikunci dan tidak boleh diedit buat masa ini.",
@@ -2369,7 +2369,7 @@
       "checkoutNotReady": "Sistem pembayaran belum sedia. Sila muat semula dan cuba lagi.",
       "dev": {
         "label": "Pintasan dev",
-        "description": "Langkau Paddle dan tanda {planName} sebagai aktif. Dev sahaja.",
+        "description": "Langkau Lemon Squeezy dan tanda {planName} sebagai aktif. Dev sahaja.",
         "activate": "Aktifkan {planName} (dev)"
       }
     },

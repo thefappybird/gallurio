@@ -24,8 +24,8 @@ declare global {
 
 export type BillingPanelProps = {
   currentPlan: PlanTier;
-  paddleSubscriptionStatus: LemonSqueezySubscriptionStatus | null;
-  paddleCurrentPeriodEnd: Date | null;
+  lsSubscriptionStatus: LemonSqueezySubscriptionStatus | null;
+  lsCurrentPeriodEnd: Date | null;
   workspaceId: string;
   customerEmail: string;
   proPricing: ProPricing;
@@ -40,8 +40,8 @@ function formatDate(d: Date | null): string {
 
 export function BillingPanel({
   currentPlan,
-  paddleSubscriptionStatus,
-  paddleCurrentPeriodEnd,
+  lsSubscriptionStatus,
+  lsCurrentPeriodEnd,
   proPricing,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
@@ -121,10 +121,10 @@ export function BillingPanel({
   }
 
   const isActiveSubscriber =
-    currentPlan !== "free" && paddleSubscriptionStatus === "active";
+    currentPlan !== "free" && lsSubscriptionStatus === "active";
 
-  const statusLabel = paddleSubscriptionStatus
-    ? t(`subscriptionStatus.${paddleSubscriptionStatus}`)
+  const statusLabel = lsSubscriptionStatus
+    ? t(`subscriptionStatus.${lsSubscriptionStatus}`)
     : null;
 
   return (
@@ -142,15 +142,15 @@ export function BillingPanel({
               <span
                 className={cn(
                   "inline-flex items-center gap-1 border px-1.5 py-0.5 text-[10px] uppercase tracking-wider",
-                  paddleSubscriptionStatus === "active"
+                  lsSubscriptionStatus === "active"
                     ? "border-brand/30 bg-brand/10 text-brand"
-                    : paddleSubscriptionStatus === "past_due" ||
-                        paddleSubscriptionStatus === "paused"
+                    : lsSubscriptionStatus === "past_due" ||
+                        lsSubscriptionStatus === "paused"
                       ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
                       : "border-border bg-muted text-muted-foreground"
                 )}
               >
-                {paddleSubscriptionStatus === "active" ? (
+                {lsSubscriptionStatus === "active" ? (
                   <CheckCircle2 className="size-2.5" aria-hidden="true" />
                 ) : (
                   <AlertCircle className="size-2.5" aria-hidden="true" />
@@ -159,9 +159,9 @@ export function BillingPanel({
               </span>
             )}
           </div>
-          {paddleCurrentPeriodEnd && (
+          {lsCurrentPeriodEnd && (
             <p className="text-xs text-muted-foreground">
-              {t("renewsOn", { date: formatDate(paddleCurrentPeriodEnd) })}
+              {t("renewsOn", { date: formatDate(lsCurrentPeriodEnd) })}
             </p>
           )}
         </div>
@@ -169,8 +169,8 @@ export function BillingPanel({
 
       {/* Warning for non-active paid subscriptions */}
       {currentPlan !== "free" &&
-        paddleSubscriptionStatus &&
-        paddleSubscriptionStatus !== "active" && (
+        lsSubscriptionStatus &&
+        lsSubscriptionStatus !== "active" && (
           <div className="flex items-start gap-2 border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
             <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <p>{t("subscriptionIssue")}</p>

@@ -821,12 +821,12 @@
           "trialing": "Masa percobaan"
         },
         "manageSection": "Kelola langganan",
-        "manageDescription": "Langganan Anda dikelola melalui Paddle. Hubungi dukungan untuk memperbarui metode pembayaran atau melihat faktur.",
+        "manageDescription": "Langganan Anda dikelola melalui Lemon Squeezy. Hubungi dukungan untuk memperbarui metode pembayaran atau melihat faktur.",
         "cancelNote": "Untuk membatalkan langganan, hubungi dukungan atau hapus workspace Anda."
       },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -2257,7 +2257,7 @@
       "invalid_request": "Permintaan tidak valid.",
       "export_too_large": "Terlalu banyak pemesanan untuk diekspor. Persempit filter dan coba lagi.",
       "free_plan_no_checkout": "Paket gratis tidak memerlukan pembayaran.",
-      "paddle_price_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
+      "lemonsqueezy_variant_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
       "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
       "checkout_init_failed": "Gagal memulai pembayaran. Silakan coba lagi.",
       "locked": "Item ini terkunci dan tidak dapat diedit saat ini.",
@@ -2369,7 +2369,7 @@
       "checkoutNotReady": "Sistem pembayaran belum siap. Silakan refresh dan coba lagi.",
       "dev": {
         "label": "Pintasan dev",
-        "description": "Lewati Paddle dan tandai {planName} sebagai aktif. Hanya dev.",
+        "description": "Lewati Lemon Squeezy dan tandai {planName} sebagai aktif. Hanya dev.",
         "activate": "Aktifkan {planName} (dev)"
       }
     },

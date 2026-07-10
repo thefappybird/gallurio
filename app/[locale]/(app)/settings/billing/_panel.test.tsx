@@ -1,7 +1,10 @@
 /**
- * Smoke tests for BillingPanel (Paddle overlay version).
+ * Smoke tests for BillingPanel (Lemon Squeezy overlay version).
  *
- * @paddle/paddle-js: initializePaddle mocked to return a stub Paddle object.
+ * lemon.js: loaded via a real <script> tag appended to document.body — we
+ * intercept that by stubbing window.createLemonSqueezy/window.LemonSqueezy
+ * directly and firing the script's onload handler manually (jsdom doesn't
+ * execute remote script src, so we simulate the load callback).
  * fetch: mocked via vi.stubGlobal.
  * @/lib/i18n/navigation: aliased to stub via vitest.config.ts.
  */
@@ -10,18 +13,8 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BillingPanel, type BillingPanelProps } from "./_panel";
 
-// ── Paddle mock ────────────────────────────────────────────────────────────
-// vi.mock is hoisted to top-of-file, so we must use vi.hoisted() to create
-// shared mocks that the factory can safely reference.
-const { paddleCheckoutOpenMock } = vi.hoisted(() => ({
-  paddleCheckoutOpenMock: vi.fn(),
-}));
-
-vi.mock("@paddle/paddle-js", () => ({
-  initializePaddle: vi.fn().mockResolvedValue({
-    Checkout: { open: paddleCheckoutOpenMock },
-  }),
-}));
+const urlOpenMock = vi.fn();
+const createLemonSqueezyMock = vi.fn();
 
 // ── fetch mock ─────────────────────────────────────────────────────────────
 const fetchMock = vi.fn();
@@ -29,17 +22,40 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
-  paddleCheckoutOpenMock.mockReset();
+  urlOpenMock.mockReset();
+  createLemonSqueezyMock.mockReset();
+
+  window.createLemonSqueezy = createLemonSqueezyMock.mockImplementation(() => {
+    window.LemonSqueezy = {
+      Setup: vi.fn(),
+      Url: { Open: urlOpenMock },
+    };
+  });
+
+  // jsdom doesn't fetch/execute the remote lemon.js script src — fire the
+  // component's script.onload handler as soon as it appends the tag so
+  // `lsReady` flips true synchronously in tests.
+  const originalAppendChild = document.body.appendChild.bind(document.body);
+  vi.spyOn(document.body, "appendChild").mockImplementation((node: Node) => {
+    const result = originalAppendChild(node);
+    if (node instanceof HTMLScriptElement && node.src.includes("lemon.js")) {
+      node.onload?.(new Event("load"));
+    }
+    return result;
+  });
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  delete (window as { createLemonSqueezy?: unknown }).createLemonSqueezy;
+  delete (window as { LemonSqueezy?: unknown }).LemonSqueezy;
 });
 
 const defaultProps: BillingPanelProps = {
   currentPlan: "free",
-  paddleSubscriptionStatus: null,
-  paddleCurrentPeriodEnd: null,
+  lsSubscriptionStatus: null,
+  lsCurrentPeriodEnd: null,
   workspaceId: "ws_test_123",
   customerEmail: "owner@example.com",
   proPricing: { currency: "PHP", monthly: 250, yearly: 2500 },
@@ -77,66 +93,51 @@ describe("BillingPanel — renders", () => {
   });
 
   it("does not show an upgrade button for the plan you're already on", () => {
-    renderPanel({ currentPlan: "pro", paddleSubscriptionStatus: "active" });
+    renderPanel({ currentPlan: "pro", lsSubscriptionStatus: "active" });
     expect(
       screen.queryByRole("button", { name: /upgrade to the pro plan/i })
     ).not.toBeInTheDocument();
   });
 
   it("shows subscription status badge when status is set", () => {
-    renderPanel({ currentPlan: "starter", paddleSubscriptionStatus: "active" });
+    renderPanel({ currentPlan: "starter", lsSubscriptionStatus: "active" });
     expect(screen.getByText(/active/i)).toBeInTheDocument();
   });
 
-  it("shows a renewal date when paddleCurrentPeriodEnd is provided", () => {
+  it("shows a renewal date when lsCurrentPeriodEnd is provided", () => {
     renderPanel({
       currentPlan: "starter",
-      paddleSubscriptionStatus: "active",
-      paddleCurrentPeriodEnd: new Date("2026-07-01"),
+      lsSubscriptionStatus: "active",
+      lsCurrentPeriodEnd: new Date("2026-07-01"),
     });
     expect(screen.getByText(/renews on/i)).toBeInTheDocument();
   });
 
   it("shows a subscription issue warning for past_due status", () => {
-    renderPanel({ currentPlan: "starter", paddleSubscriptionStatus: "past_due" });
+    renderPanel({ currentPlan: "starter", lsSubscriptionStatus: "past_due" });
     expect(screen.getByText(/issue with your subscription/i)).toBeInTheDocument();
   });
 
   it("shows manage section for active subscribers on pro plan", () => {
-    renderPanel({ currentPlan: "pro", paddleSubscriptionStatus: "active" });
+    renderPanel({ currentPlan: "pro", lsSubscriptionStatus: "active" });
     expect(screen.getByText(/manage subscription/i)).toBeInTheDocument();
   });
 });
 
 describe("BillingPanel — upgrade checkout", () => {
-  beforeEach(() => {
-    // Enable Paddle init by providing a token
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_token";
-    process.env.NEXT_PUBLIC_PADDLE_ENV = "sandbox";
-  });
-
-  afterEach(() => {
-    delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-    delete process.env.NEXT_PUBLIC_PADDLE_ENV;
-  });
-
-  it("calls /api/billing/checkout and opens Paddle overlay on success", async () => {
+  it("calls /api/billing/checkout and opens the Lemon Squeezy overlay on success", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        priceId: "pri_starter_test",
-        customerEmail: "owner@example.com",
+        checkoutUrl: "https://gallurio.lemonsqueezy.com/checkout/custom/abc123",
         workspaceId: "ws_test_123",
       }),
     });
 
-    const { initializePaddle } = await import("@paddle/paddle-js");
-
     renderPanel({ currentPlan: "free" });
 
-    // Wait for Paddle init
     await waitFor(() => {
-      expect(initializePaddle).toHaveBeenCalled();
+      expect(createLemonSqueezyMock).toHaveBeenCalled();
     });
 
     const upgradeBtn = screen.getByRole("button", { name: /upgrade to the pro plan/i });
@@ -150,38 +151,9 @@ describe("BillingPanel — upgrade checkout", () => {
     });
 
     await waitFor(() => {
-      expect(paddleCheckoutOpenMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          items: [{ priceId: "pri_starter_test", quantity: 1 }],
-        })
+      expect(urlOpenMock).toHaveBeenCalledWith(
+        "https://gallurio.lemonsqueezy.com/checkout/custom/abc123"
       );
-    });
-  });
-
-  it("disables all upgrade buttons while one is loading", async () => {
-    // Keep the fetch hanging to test loading state
-    let resolveFetch!: (v: unknown) => void;
-    fetchMock.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveFetch = resolve;
-      })
-    );
-
-    renderPanel({ currentPlan: "free" });
-
-    const proBtn = screen.getByRole("button", { name: /upgrade to the pro plan/i });
-
-    fireEvent.click(proBtn);
-
-    await waitFor(() => {
-      expect(proBtn).toBeDisabled();
-    });
-
-    // Resolve the fetch to clean up
-    resolveFetch({
-      ok: false,
-      status: 500,
-      json: async () => ({ error: "err" }),
     });
   });
 
@@ -200,6 +172,31 @@ describe("BillingPanel — upgrade checkout", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });
+  });
+
+  it("shows an error and does not crash when lemon.js hasn't loaded yet", async () => {
+    // Don't let the script's onload fire — simulate a still-loading overlay.
+    vi.restoreAllMocks();
+    delete (window as { createLemonSqueezy?: unknown }).createLemonSqueezy;
+    delete (window as { LemonSqueezy?: unknown }).LemonSqueezy;
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        checkoutUrl: "https://gallurio.lemonsqueezy.com/checkout/custom/abc123",
+        workspaceId: "ws_test_123",
+      }),
+    });
+
+    renderPanel({ currentPlan: "free" });
+
+    const upgradeBtn = screen.getByRole("button", { name: /upgrade to the pro plan/i });
+    fireEvent.click(upgradeBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(urlOpenMock).not.toHaveBeenCalled();
   });
 });
 

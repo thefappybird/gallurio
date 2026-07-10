@@ -821,12 +821,12 @@
           "trialing": "Trial"
         },
         "manageSection": "Pamahalaan ang subscription",
-        "manageDescription": "Ang iyong subscription ay pinamamahalaan sa pamamagitan ng Paddle. Makipag-ugnayan sa suporta para i-update ang iyong paraan ng pagbabayad o tingnan ang mga invoice.",
+        "manageDescription": "Ang iyong subscription ay pinamamahalaan sa pamamagitan ng Lemon Squeezy. Makipag-ugnayan sa suporta para i-update ang iyong paraan ng pagbabayad o tingnan ang mga invoice.",
         "cancelNote": "Para kanselahin ang iyong subscription, makipag-ugnayan sa suporta o burahin ang iyong workspace."
       },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -2257,7 +2257,7 @@
       "invalid_request": "Hindi wastong kahilingan.",
       "export_too_large": "Masyadong maraming booking para i-export. I-paliitin ang iyong mga filter at subukan muli.",
       "free_plan_no_checkout": "Hindi kailangan ng checkout ang libreng plano.",
-      "paddle_price_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
+      "lemonsqueezy_variant_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
       "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
       "checkout_init_failed": "Hindi masimulaan ang checkout. Pakisubukan muli.",
       "locked": "Naka-lock ang item na ito at hindi maaaring i-edit ngayon.",
@@ -2369,7 +2369,7 @@
       "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
       "dev": {
         "label": "Dev shortcut",
-        "description": "Laktawan ang Paddle at markahan ang {planName} bilang aktibo. Dev-only.",
+        "description": "Laktawan ang Lemon Squeezy at markahan ang {planName} bilang aktibo. Dev-only.",
         "activate": "I-activate ang {planName} (dev)"
       }
     },

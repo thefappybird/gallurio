@@ -221,7 +221,7 @@ export default async function SettingsCatchallPage({
           body: (
             <BillingPanel
               currentPlan={workspace.plan as "free" | "starter" | "pro"}
-              paddleSubscriptionStatus={
+              lsSubscriptionStatus={
                 (workspace.lsSubscriptionStatus as
                   | "active"
                   | "canceled"
@@ -230,7 +230,7 @@ export default async function SettingsCatchallPage({
                   | "trialing"
                   | null) ?? null
               }
-              paddleCurrentPeriodEnd={workspace.lsCurrentPeriodEnd ?? null}
+              lsCurrentPeriodEnd={workspace.lsCurrentPeriodEnd ?? null}
               workspaceId={String(workspace._id)}
               customerEmail={authUser?.email ?? ""}
               proPricing={proPricing}
