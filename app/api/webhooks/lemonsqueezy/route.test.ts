@@ -292,6 +292,29 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
     expect(after?.lsCurrentPeriodEnd).toBeNull();
   });
 
+  it("downgrades starter to free even at the free team cap (2 teams > free's 1-team cap)", async () => {
+    const subId = "sub_expired_starter";
+    const wsId = await seedWorkspace({
+      plan: "starter",
+      lsSubscriptionId: subId,
+      teamCount: 2,
+    });
+
+    const event = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_2",
+    });
+
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+  });
+
   it("a trailing subscription_updated with terminal status does not re-promote a workspace subscription_expired already downgraded", async () => {
     // subscription_updated fires on ANY attribute change and Lemon Squeezy's
     // event ordering isn't guaranteed — a subscription_updated carrying the
@@ -326,6 +349,42 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
 
     const after = await Workspace.findById(wsId).lean();
     expect(after?.plan).toBe("free");
+  });
+
+  it("clears lsSubscriptionId so a later resubscribe successfully promotes the plan", async () => {
+    // Regression test: before the fix, expiry left the OLD subscription id on
+    // the workspace. A later resubscribe's subscription_created (a new sub
+    // id) would trip the mismatch guard in handleSubscriptionUpsert and
+    // reroute to a filter matching zero documents, silently never promoting.
+    const oldSubId = "sub_before_expiry";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: oldSubId });
+
+    const expiredEvent = makeEvent("subscription_expired", oldSubId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(expiredEvent as never);
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const afterExpiry = await Workspace.findById(wsId).lean();
+    expect(afterExpiry?.plan).toBe("free");
+    expect(afterExpiry?.lsSubscriptionId).toBeNull();
+
+    const newSubId = "sub_after_resubscribe";
+    const resubscribeEvent = makeEvent(
+      "subscription_created",
+      newSubId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(resubscribeEvent as never);
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.lsSubscriptionId).toBe(newSubId);
   });
 });
 
@@ -478,6 +537,53 @@ describe("lemonsqueezy webhook — subscription_paused and subscription_payment_
     expect(after?.plan).toBe("pro");
     expect(after?.lsSubscriptionStatus).toBe("past_due");
   });
+
+  it("routes by custom_data.workspaceId even when lsSubscriptionId isn't persisted yet", async () => {
+    // Lemon Squeezy doesn't guarantee event delivery order. If a status-only
+    // event (e.g. subscription_paused) arrives before subscription_created's
+    // DB write has landed, custom_data.workspaceId must still resolve the
+    // right workspace — routing only by lsSubscriptionId/lsCustomerId would
+    // match zero documents and silently drop the status update.
+    const wsId = await seedWorkspace({ plan: "pro" }); // no lsSubscriptionId set yet
+
+    const event = makeEvent(
+      "subscription_paused",
+      "sub_not_yet_persisted",
+      { status: "paused", customer_id: "ctm_not_yet_persisted" },
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lsSubscriptionStatus).toBe("paused");
+  });
+});
+
+describe("lemonsqueezy webhook — malformed payload with no usable identifier", () => {
+  it("no-ops instead of matching an unrelated workspace by a null filter value", async () => {
+    // No custom_data.workspaceId, no subscription id, no customer_id — there
+    // is nothing safe to route by. Must no-op, not fall through to a filter
+    // like { lsCustomerId: null } that could match any never-billed workspace.
+    const wsId = await seedWorkspace({ plan: "free" });
+
+    const event = {
+      meta: { event_name: "subscription_paused", custom_data: null },
+      data: { id: "", attributes: { status: "paused" } },
+    };
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.lsSubscriptionStatus).toBeNull();
+  });
 });
 
 describe("lemonsqueezy webhook — customData.workspaceId mis-routing defence", () => {
@@ -526,6 +632,28 @@ describe("lemonsqueezy webhook — customData.workspaceId mis-routing defence", 
 
     const after = await Workspace.findById(wsId).lean();
     expect(after?.lsSubscriptionId).toBe("sub_fresh_activation");
+    expect(after?.plan).toBe("pro");
+  });
+
+  it("allows activation when custom_data.workspaceId points at a workspace whose subscription id MATCHES the event (idempotent redelivery)", async () => {
+    const subId = "sub_redelivered";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lsSubscriptionId).toBe(subId);
     expect(after?.plan).toBe("pro");
   });
 });
@@ -589,8 +717,8 @@ describe("lemonsqueezy webhook — test-mode events in production", () => {
   });
 });
 
-describe("lemonsqueezy webhook — handler exception returns 500", () => {
-  it("returns 500 so Lemon Squeezy retries when a handler throws unexpectedly", async () => {
+describe("lemonsqueezy webhook — handler exception acks 200 (never retries into a loop)", () => {
+  it("acks 200 with an error flag instead of 500 when a handler throws unexpectedly", async () => {
     const subId = "sub_throws";
     await seedWorkspace({ plan: "free", lsSubscriptionId: subId });
 
@@ -608,9 +736,9 @@ describe("lemonsqueezy webhook — handler exception returns 500", () => {
     const { POST } = await loadRoute();
     const res = await POST(makeReq());
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ error: "handler failed" });
+    expect(body).toEqual({ received: true, error: "handler failed" });
 
     spy.mockRestore();
   });

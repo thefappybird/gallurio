@@ -26,6 +26,24 @@ function stringAttr(attrs: Record<string, unknown>, key: string): string | null 
   return null;
 }
 
+// Shared routing precedence for every handler except handleSubscriptionUpsert
+// (which additionally needs the mismatch-guard DB read): custom_data.workspaceId,
+// then the Lemon Squeezy subscription id, then the customer id. Returns null when
+// none are usable so callers can no-op instead of falling through to a filter
+// like { lsCustomerId: null } that could match an unrelated workspace.
+function resolveWorkspaceFilter(event: LemonSqueezyWebhookEvent): Record<string, unknown> | null {
+  const wsIdFromCustomData = workspaceIdFromEvent(event);
+  if (wsIdFromCustomData) return { _id: wsIdFromCustomData };
+
+  const subscriptionId = event.data.id;
+  if (subscriptionId) return { lsSubscriptionId: subscriptionId };
+
+  const customerId = stringAttr(event.data.attributes, "customer_id");
+  if (customerId) return { lsCustomerId: customerId };
+
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // subscription_created  &  subscription_updated
 // ---------------------------------------------------------------------------
@@ -109,7 +127,7 @@ async function handleSubscriptionUpsert(
     }
   }
 
-  if (Object.keys(update).length === 0) return;
+  // update always carries at least lsSubscriptionId/lsCustomerId (set above).
   await Workspace.updateOne(filter, { $set: update });
 
   // For activations: attempt to resume the in-flight checkout workflow hook.
@@ -138,16 +156,10 @@ async function handleSubscriptionUpsert(
 // `ends_at`; only mark status, never downgrade plan here.
 // ---------------------------------------------------------------------------
 async function handleSubscriptionCancelled(event: LemonSqueezyWebhookEvent): Promise<void> {
-  const subscriptionId = event.data.id;
+  const filter = resolveWorkspaceFilter(event);
+  if (!filter) return;
+
   const attrs = event.data.attributes;
-  const wsIdFromCustomData = workspaceIdFromEvent(event);
-
-  const filter: Record<string, unknown> = wsIdFromCustomData
-    ? { _id: wsIdFromCustomData }
-    : subscriptionId
-      ? { lsSubscriptionId: subscriptionId }
-      : { lsCustomerId: stringAttr(attrs, "customer_id") };
-
   const update: Record<string, unknown> = { lsSubscriptionStatus: "canceled" };
   const endsAt = stringAttr(attrs, "ends_at");
   if (endsAt) update.lsCurrentPeriodEnd = new Date(endsAt);
@@ -162,21 +174,21 @@ async function handleSubscriptionCancelled(event: LemonSqueezyWebhookEvent): Pro
 // billing leak and is never acceptable.
 // ---------------------------------------------------------------------------
 async function handleSubscriptionExpired(event: LemonSqueezyWebhookEvent): Promise<void> {
-  const subscriptionId = event.data.id;
-  const attrs = event.data.attributes;
-  const wsIdFromCustomData = workspaceIdFromEvent(event);
-
-  const filter: Record<string, unknown> = wsIdFromCustomData
-    ? { _id: wsIdFromCustomData }
-    : subscriptionId
-      ? { lsSubscriptionId: subscriptionId }
-      : { lsCustomerId: stringAttr(attrs, "customer_id") };
+  const filter = resolveWorkspaceFilter(event);
+  if (!filter) return;
 
   await Workspace.updateOne(filter, {
     $set: {
       plan: "free",
       lsSubscriptionStatus: "canceled",
       lsCurrentPeriodEnd: null,
+      // Clear lsSubscriptionId — otherwise a later resubscribe's
+      // subscription_created event finds this workspace already "bound" to
+      // the expired subscription id, trips handleSubscriptionUpsert's
+      // mismatch guard, and reroutes to a filter matching zero documents
+      // (the new subscription id was never persisted), silently failing to
+      // promote the plan.
+      lsSubscriptionId: null,
     },
   });
 }
@@ -186,14 +198,11 @@ async function handleSubscriptionExpired(event: LemonSqueezyWebhookEvent): Promi
 // subscription_payment_failed — status-only update.
 // ---------------------------------------------------------------------------
 async function handleSubscriptionStatusOnly(event: LemonSqueezyWebhookEvent): Promise<void> {
-  const attrs = event.data.attributes;
-  const status = mapLemonSqueezySubscriptionStatus(stringAttr(attrs, "status"));
+  const status = mapLemonSqueezySubscriptionStatus(stringAttr(event.data.attributes, "status"));
   if (!status) return;
 
-  const subscriptionId = event.data.id;
-  const filter: Record<string, unknown> = subscriptionId
-    ? { lsSubscriptionId: subscriptionId }
-    : { lsCustomerId: stringAttr(attrs, "customer_id") };
+  const filter = resolveWorkspaceFilter(event);
+  if (!filter) return;
 
   await Workspace.updateOne(filter, { $set: { lsSubscriptionStatus: status } });
 }
@@ -205,15 +214,15 @@ async function handleSubscriptionStatusOnly(event: LemonSqueezyWebhookEvent): Pr
 // Squeezy also fires it on renewal.
 // ---------------------------------------------------------------------------
 async function handleSubscriptionPaymentSuccess(event: LemonSqueezyWebhookEvent): Promise<void> {
-  const subscriptionId = event.data.id;
-  if (!subscriptionId) return;
+  const filter = resolveWorkspaceFilter(event);
+  if (!filter) return;
 
   const attrs = event.data.attributes;
   const update: Record<string, unknown> = { lsSubscriptionStatus: "active" };
   const renewsAt = stringAttr(attrs, "renews_at");
   if (renewsAt) update.lsCurrentPeriodEnd = new Date(renewsAt);
 
-  await Workspace.updateOne({ lsSubscriptionId: subscriptionId }, { $set: update });
+  await Workspace.updateOne(filter, { $set: update });
 }
 
 // ---------------------------------------------------------------------------
@@ -278,8 +287,12 @@ export async function POST(req: Request) {
         break;
     }
   } catch (err) {
+    // Ack 200 after signature verification even when a handler fails — never
+    // 500 into a provider retry loop (a deterministic bug would otherwise get
+    // retried forever). Log for follow-up instead of dead-lettering to a queue,
+    // since none exists yet.
     console.error(`[lemonsqueezy-webhook] handler failed for ${event.meta.event_name}`, err);
-    return NextResponse.json({ error: "handler failed" }, { status: 500 });
+    return NextResponse.json({ received: true, error: "handler failed" });
   }
 
   return NextResponse.json({ received: true });
