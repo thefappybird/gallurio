@@ -8,8 +8,14 @@ import { createSubscriptionCheckout } from "@/lib/lemonsqueezy/client";
 import { getPlanCatalog, isPaidPlan } from "@/lib/lemonsqueezy/plans";
 import { subscriptionCheckoutWorkflow } from "@/lib/workflows/subscriptionCheckout";
 import { start, getHookByToken, getRun } from "workflow/api";
+import { rateLimit } from "@/lib/server/rateLimit";
 
 export const runtime = "nodejs";
+
+// Authenticated but cheaply repeatable and each hit starts a durable workflow
+// run + calls the external Lemon Squeezy API — key by workspace (stable,
+// derived from the validated session) rather than IP.
+const RATE_LIMIT = { limit: 5, windowMs: 5 * 60_000 };
 
 // A checkout the user abandons (overlay closed before paying) leaves a workflow
 // run blocked on its hook token indefinitely. Starting a new run with the same
@@ -36,6 +42,19 @@ const bodySchema = z.object({
 
 export async function POST(req: Request) {
   const ctx = await requireOrg({ allowDuringOnboarding: true });
+
+  const limited = rateLimit(`checkout:${ctx.workspace._id.toString()}`, RATE_LIMIT);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.max(0, Math.ceil((limited.resetAt - Date.now()) / 1000))),
+        },
+      },
+    );
+  }
 
   const json = await req.json().catch(() => ({}));
   const parsed = bodySchema.safeParse(json);
@@ -78,7 +97,7 @@ export async function POST(req: Request) {
   const workspaceId = ctx.workspace._id.toString();
 
   let checkoutUrl: string;
-  let run: { runId: string };
+  let run: { runId: string } | undefined;
   try {
     await cancelInFlightCheckout(`ls-checkout-${workspaceId}`);
     run = await start(subscriptionCheckoutWorkflow, [workspaceId, plan]);
@@ -90,6 +109,18 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("[billing.checkout] lemonsqueezy/workflow init failed", err);
+    // If the workflow run started but the Lemon Squeezy API call failed
+    // after it, the run is left parked on its hook with no checkout ever
+    // created to resume it. Reclaim it now instead of leaving it dangling
+    // until the user's next attempt (cancelInFlightCheckout would only find
+    // it on a retry, which may never come).
+    if (run) {
+      await getRun(run.runId)
+        .cancel()
+        .catch(() => {
+          // Best-effort — the run may already have settled.
+        });
+    }
     return NextResponse.json({ error: "checkout_init_failed" }, { status: 502 });
   }
 

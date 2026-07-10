@@ -6,6 +6,7 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models";
+import { __resetRateLimitForTests } from "@/lib/server/rateLimit";
 
 // ---------------------------------------------------------------------------
 // Env — read at module-eval time by lib/lemonsqueezy/plans.ts, so set before import.
@@ -118,6 +119,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   vi.clearAllMocks();
+  __resetRateLimitForTests();
 
   mockCreateCheckout.mockResolvedValue("https://checkout.lemonsqueezy.com/buy/abc123");
   mockStart.mockResolvedValue({ runId: "run_new" } as never);
@@ -260,5 +262,68 @@ describe("billing checkout — checkout creation failure", () => {
     expect(res.status).toBe(502);
     const body = await res.json();
     expect(body).toEqual({ error: "checkout_init_failed" });
+  });
+
+  it("cancels the just-started workflow run when the Lemon Squeezy API call fails after it", async () => {
+    // A run started successfully but createSubscriptionCheckout then threw —
+    // without cleanup this run would be left parked on its hook indefinitely.
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+    mockCreateCheckout.mockRejectedValue(new Error("lemonsqueezy down"));
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mockGetRun.mockReturnValue({ cancel } as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }));
+
+    expect(res.status).toBe(502);
+    expect(mockGetRun).toHaveBeenCalledWith("run_new");
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("does not attempt to cancel a run when start() itself never succeeded", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+    mockStart.mockRejectedValue(new Error("workflow init failed"));
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }));
+
+    expect(res.status).toBe(502);
+    expect(mockGetRun).not.toHaveBeenCalled();
+  });
+});
+
+describe("billing checkout — rate limiting", () => {
+  it("returns 429 with Retry-After after exceeding the per-workspace limit", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    for (let i = 0; i < 5; i++) {
+      const res = await POST(makeReq({ plan: "pro" }));
+      expect(res.status).toBe(200);
+    }
+
+    const res = await POST(makeReq({ plan: "pro" }));
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBeTruthy();
+    const body = await res.json();
+    expect(body).toEqual({ error: "rate_limited" });
+  });
+
+  it("scopes the limit per workspace — a different workspace is unaffected", async () => {
+    const wsIdA = await seedWorkspace();
+    wireAuth(wsIdA);
+    const { POST } = await loadRoute();
+    for (let i = 0; i < 5; i++) {
+      await POST(makeReq({ plan: "pro" }));
+    }
+    expect((await POST(makeReq({ plan: "pro" }))).status).toBe(429);
+
+    const wsIdB = await seedWorkspace();
+    wireAuth(wsIdB);
+    const res = await POST(makeReq({ plan: "pro" }));
+    expect(res.status).toBe(200);
   });
 });
