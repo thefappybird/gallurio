@@ -79,9 +79,14 @@ async function handleSubscriptionUpsert(
 
   // Resolve the new plan from the variantId. Only promote when the resolved
   // tier is paid — a variantId miss (e.g. env var unset in dev) must not
-  // silently downgrade a workspace.
+  // silently downgrade a workspace. Also refuse to promote on a terminal
+  // status: subscription_updated fires on ANY attribute change, so a trailing
+  // update carrying a cancelled/expired status (variant_id is still populated
+  // on those) must not re-promote a workspace the dedicated
+  // subscription_cancelled/subscription_expired handlers already settled —
+  // those handlers are authoritative for terminal transitions, this one isn't.
   const newTier = variantId ? planForVariantId(variantId) : "free";
-  if (newTier !== "free") {
+  if (newTier !== "free" && status !== "canceled") {
     // Team-cap guard: if the workspace currently has more teams than the new
     // tier allows, drop the plan from this update. The owner must delete teams
     // first before the downgrade can take effect (UI surfaces this).
@@ -221,6 +226,20 @@ export async function POST(req: Request) {
   const event = await verifyAndParseLemonSqueezyEvent(rawBody, signature);
   if (!event) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  // Lemon Squeezy signs test-mode and live-mode events with the same webhook
+  // secret, unlike Paddle's separate sandbox/production credentials. A prod
+  // misconfiguration that leaves checkout creation in test mode (see
+  // lib/lemonsqueezy/client.ts isTestMode(), which defaults ON) would
+  // otherwise let a real customer complete a fake test-mode payment and still
+  // have this handler grant them a paid plan. Never let a test-mode event
+  // mutate billing state in production.
+  if (process.env.NODE_ENV === "production" && event.meta.test_mode === true) {
+    console.warn(
+      `[lemonsqueezy-webhook] ignoring test-mode event in production: ${event.meta.event_name}`
+    );
+    return NextResponse.json({ received: true, ignored: "test_mode" });
   }
 
   await connectDB();

@@ -291,6 +291,42 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
     expect(after?.lsSubscriptionStatus).toBe("canceled");
     expect(after?.lsCurrentPeriodEnd).toBeNull();
   });
+
+  it("a trailing subscription_updated with terminal status does not re-promote a workspace subscription_expired already downgraded", async () => {
+    // subscription_updated fires on ANY attribute change and Lemon Squeezy's
+    // event ordering isn't guaranteed — a subscription_updated carrying the
+    // same terminal status can land after subscription_expired already ran.
+    // variant_id is still populated on an expired event, so a naive upsert
+    // would resolve it back to "pro" and silently undo the downgrade.
+    const subId = "sub_trailing_update_after_expiry";
+    const wsId = await seedWorkspace({
+      plan: "pro",
+      lsSubscriptionId: subId,
+    });
+
+    const expiredEvent = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(expiredEvent as never);
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const afterExpiry = await Workspace.findById(wsId).lean();
+    expect(afterExpiry?.plan).toBe("free");
+
+    const trailingUpdate = makeEvent(
+      "subscription_updated",
+      subId,
+      makeSubscriptionAttrs({ status: "expired" })
+    );
+    mockVerify.mockResolvedValue(trailingUpdate as never);
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+  });
 });
 
 describe("lemonsqueezy webhook — team-cap guard on subscription_updated", () => {
@@ -490,6 +526,65 @@ describe("lemonsqueezy webhook — customData.workspaceId mis-routing defence", 
 
     const after = await Workspace.findById(wsId).lean();
     expect(after?.lsSubscriptionId).toBe("sub_fresh_activation");
+    expect(after?.plan).toBe("pro");
+  });
+});
+
+describe("lemonsqueezy webhook — test-mode events in production", () => {
+  it("ignores a test_mode event and writes nothing when NODE_ENV is production", async () => {
+    const origEnv = process.env.NODE_ENV;
+    // @ts-expect-error — NODE_ENV is read-only in the types but writable at runtime
+    process.env.NODE_ENV = "production";
+
+    try {
+      const subId = "sub_test_mode";
+      const wsId = await seedWorkspace({ plan: "free" });
+
+      const event = {
+        meta: {
+          event_name: "subscription_created",
+          custom_data: { workspaceId: wsId.toString() },
+          test_mode: true,
+        },
+        data: { id: subId, attributes: makeSubscriptionAttrs({ status: "active" }) },
+      };
+      mockVerify.mockResolvedValue(event as never);
+
+      const { POST } = await loadRoute();
+      const res = await POST(makeReq());
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toEqual({ received: true, ignored: "test_mode" });
+
+      const after = await Workspace.findById(wsId).lean();
+      expect(after?.plan).toBe("free");
+      expect(after?.lsSubscriptionId).toBeNull();
+    } finally {
+      // @ts-expect-error — restore
+      process.env.NODE_ENV = origEnv;
+    }
+  });
+
+  it("still processes a test_mode event outside production", async () => {
+    const subId = "sub_test_mode_dev";
+    const wsId = await seedWorkspace({ plan: "free" });
+
+    const event = {
+      meta: {
+        event_name: "subscription_created",
+        custom_data: { workspaceId: wsId.toString() },
+        test_mode: true,
+      },
+      data: { id: subId, attributes: makeSubscriptionAttrs({ status: "active" }) },
+    };
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
     expect(after?.plan).toBe("pro");
   });
 });
