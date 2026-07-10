@@ -5,7 +5,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { SignOutLink } from "@/components/app/sign-out-link";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { LocaleSwitcher } from "@/components/app/locale-switcher";
-import { OnboardingCornerAccents } from "./onboarding/_components/decorative-accents";
+import { AmbientBackground } from "@/components/app/ambient-background";
 
 export default async function OnboardingLayout({
   children,
@@ -19,7 +19,7 @@ export default async function OnboardingLayout({
 
   return (
     <div className="relative flex h-dvh max-h-dvh flex-col overflow-hidden overscroll-none bg-onboarding-bg">
-      <OnboardingCornerAccents />
+      <AmbientBackground />
       {/* Header row: theme/locale controls opposite the escape hatch — lets a
           signed-in user adjust their environment or leave the onboarding flow
           without completing it. Sits outside the step content. */}

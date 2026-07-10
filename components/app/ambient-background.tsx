@@ -42,7 +42,13 @@ function AnimatedBackgroundImage({
   );
 }
 
-export function OnboardingCornerAccents() {
+/**
+ * Full-bleed, theme-aware, slowly-drifting SVG background. Originally
+ * onboarding-only; now shared across onboarding and auth. Caller positions/
+ * sizes it via a `relative overflow-hidden` ancestor — this component fills
+ * that ancestor with `absolute inset-0`.
+ */
+export function AmbientBackground() {
   return (
     <div
       className="pointer-events-none absolute inset-0 overflow-hidden select-none"
