@@ -1,10 +1,455 @@
 {
   "marketing": {
-    "version": "Gallurio · v0.1.0",
-    "headline": "Ang CRM para sa mga event business.",
-    "description": "Mga booking, kliyente, gallery, at inquiries — sa isang workspace lamang. Ginawa para sa mga photographer, venue, planner, at stylist na pagod na sa spreadsheet.",
-    "getStarted": "Magsimula",
-    "signIn": "Mag-sign in"
+    "nav": {
+      "pricing": "Presyo",
+      "contact": "Makipag-ugnayan",
+      "signIn": "Mag-sign in",
+      "joinBeta": "Sumali sa Beta"
+    },
+    "footer": {
+      "pricing": "Presyo",
+      "terms": "Mga Tuntunin",
+      "privacy": "Privacy",
+      "refunds": "Refund",
+      "contact": "Makipag-ugnayan"
+    },
+    "metadata": {
+      "title": "Gallurio — Mga Tool sa Portfolio at Booking para sa Creative Business",
+      "description": "Gumawa ng pulidong portfolio page, ipakita ang iyong trabaho, at mangalap ng booking inquiries gamit ang Gallurio."
+    },
+    "hero": {
+      "headline": "Ang handa-sa-booking na portfolio, pinapatakbo tulad ng isang ledger.",
+      "body": "Ginagamit ng mga photographer, videographer, at event creative ang Gallurio para mag-publish ng page na karapat-dapat pagkatiwalaan ng booking — at pamahalaan ang mga booking, kliyente, at inquiry sa iisang workspace.",
+      "ctaJoinBeta": "Sumali sa Beta"
+    },
+    "whatIs": {
+      "title": "Ano ang Gallurio?",
+      "body": "Ang Gallurio ay isang portfolio at booking platform para sa mga creative professional. Nagbibigay ito ng mga tool para gumawa ng public-facing page, ipakita ang kanilang trabaho, tumanggap ng mga booking request, at ayusin ang mga client-facing na detalye ng negosyo."
+    },
+    "builtFor": {
+      "title": "Ginawa Para sa mga Creative Business",
+      "item1": "Mga Photographer",
+      "item2": "Mga Videographer",
+      "item3": "Mga Event Planner",
+      "item4": "Mga Makeup Artist",
+      "item5": "Mga Stylist",
+      "item6": "Mga Creative Studio",
+      "item7": "Mga Independent Service Provider"
+    },
+    "features": {
+      "portfolioBuilder": {
+        "title": "Portfolio builder",
+        "panelHeadline": "Bawat gallery, serbisyo, at section — eksakto kung paano mo ito ilalatag.",
+        "description": "Gumawa ng malinis at propesyonal na portfolio page gamit ang flexible na mga section, gallery block, detalye ng serbisyo, at visual layout na ginawa para sa creative work."
+      },
+      "businessWorkspace": {
+        "title": "Business workspace",
+        "panelHeadline": "Iisang dashboard para sa lahat ng nasa pagitan ng mga shoot.",
+        "description": "Pamahalaan ang public profile content, detalye ng negosyo, at booking-related setup mula sa iisang dashboard."
+      },
+      "bookingInquiryForms": {
+        "title": "Booking inquiry form",
+        "panelHeadline": "Dumarating ang mga request sa iyong calendar, hindi sa iyong DM.",
+        "description": "Hayaan ang mga bisita na direktang magpadala ng booking request sa iyong page, kasama ang petsa ng event, contact details, service preferences, at project notes."
+      },
+      "customBranding": {
+        "title": "Custom branding",
+        "description": "I-adjust ang mga kulay, typography, imahe, at istilo ng page para bumagay ang portfolio sa creative identity ng user."
+      },
+      "clientReadyPages": {
+        "title": "Client-ready na mga page",
+        "description": "Mag-publish ng page na idinisenyo para maging kapani-paniwala, simple, at madaling maintindihan ng mga potensyal na kliyente."
+      }
+    },
+    "betaNotice": {
+      "body1": "Kasalukuyang nasa beta ang Gallurio. Maaaring magbago ang ilang feature habang pinapabuti namin ang produkto, ginagawang mas maayos ang karanasan, at nangangalap ng feedback mula sa mga unang user.",
+      "body2": "Sa panahon ng beta, maaaring limitado ang access at ang ilang paid feature ay maaaring hindi pa available."
+    },
+    "finalCta": {
+      "title": "Simulan ang pagbuo ng iyong creative workspace gamit ang Gallurio.",
+      "subtitle": "Sumali sa beta at tumulong hubugin ang platform bago ang public launch.",
+      "button": "Sumali sa Beta"
+    },
+    "manifesto": {
+      "quote": "Bawat booking ay naitatala. Bawat kliyente ay mapagkakatiwalaan. Walang naiiwang malabo.",
+      "attribution": "— ang ideya sa likod ng Gallurio"
+    },
+    "pricingTeaser": {
+      "title": "Simpleng presyo",
+      "subtitle": "Libre sa simula. Iisang paid tier kapag handa ka nang patakbuhin ang buong pipeline mo.",
+      "viewFullPricing": "Tingnan ang buong presyo",
+      "disclaimer": "Ang mga presyong ipinapakita ay planado at maaaring magbago bago ang pampublikong paglulunsad.",
+      "cadence": {
+        "monthly": "Buwanan",
+        "yearly": "Taunan — makatipid ng ~30%"
+      },
+      "free": {
+        "name": "Libre",
+        "price": "₱0",
+        "description": "Bumuo ng portfolio at simulang mangalap ng inquiry — walang kailangang card.",
+        "feature1": "Portfolio builder, 1 na na-publish na page",
+        "feature2": "Booking inquiry form",
+        "feature3": "Workspace dashboard",
+        "cta": "Simulan nang libre"
+      },
+      "pro": {
+        "badge": "Pinakamalaking value",
+        "name": "Pro",
+        "priceMonthly": "₱780/buwan",
+        "priceYearly": "₱560/buwan, taunang bayad",
+        "description": "Lahat ng nasa Libre, para sa mga studio na handa nang patakbuhin ang buong client pipeline nila.",
+        "feature1": "Walang limit na booking at inquiry",
+        "feature2": "Custom branding at advanced na galleries",
+        "feature3": "Priority support",
+        "cta": "Simulan ang Pro trial"
+      },
+      "beta": {
+        "badge": "Limitadong slot",
+        "name": "Beta Tester",
+        "price": "Libre",
+        "priceNote": "— mga Pro feature",
+        "description": "Buong Pro access nang walang bayad, para sa mga unang studio na tutulong hubugin ang produkto.",
+        "feature1": "Lahat ng nasa Pro",
+        "feature2": "Direktang linya sa team",
+        "feature3": "Naka-lock na presyo sa paglunsad",
+        "cta": "Mag-apply para sa beta"
+      }
+    },
+    "pricing": {
+      "metadata": {
+        "title": "Presyo — Gallurio",
+        "description": "Tingnan ang beta access at planadong subscription options ng Gallurio para sa mga creative professional at studio."
+      },
+      "header": {
+        "headline": "Simpleng mga plano para sa mga creative professional at studio.",
+        "body": "Kasalukuyang nasa beta ang Gallurio. Ang mga paid subscription ay planadong ilulunsad pagkatapos ng beta testing. Maaaring magbago ang presyo, feature limits, at detalye ng plano bago ang final release."
+      },
+      "betaPlan": {
+        "badge": "Rekomendado",
+        "name": "Beta Plan",
+        "price": "Libre habang beta",
+        "description": "Para sa mga unang user na gustong subukan ang Gallurio, bumuo ng portfolio, at tumulong hubugin ang produkto.",
+        "feature1": "Portfolio page builder",
+        "feature2": "Batayang gallery sections",
+        "feature3": "Business profile setup",
+        "feature4": "Booking inquiry form",
+        "feature5": "Workspace dashboard",
+        "feature6": "Maagang access sa mga bagong feature",
+        "cta": "Sumali sa Beta"
+      },
+      "plannedBadge": "Planado",
+      "starter": {
+        "name": "Starter",
+        "description": "Para sa mga independent na creative na kailangan lang ng simpleng portfolio at booking inquiry page.",
+        "feature1": "Naka-publish na portfolio page",
+        "feature2": "Customizable na mga section ng page",
+        "feature3": "Image gallery",
+        "feature4": "Booking inquiry form",
+        "feature5": "Batayang business profile",
+        "feature6": "Email support"
+      },
+      "studio": {
+        "name": "Studio",
+        "description": "Para sa lumalaking creative business na kailangan ng mas malaking flexibility at mas malakas na client-facing tools.",
+        "feature1": "Lahat ng nasa Starter",
+        "feature2": "Mas maraming portfolio section",
+        "feature3": "Advanced na gallery layout",
+        "feature4": "Presentasyon ng service/package",
+        "feature5": "Custom branding options",
+        "feature6": "Priority support"
+      },
+      "business": {
+        "name": "Business",
+        "description": "Para sa mga team, studio, o creative business na may mas advanced na operational na pangangailangan.",
+        "feature1": "Lahat ng nasa Studio",
+        "feature2": "Team-oriented na workspace feature",
+        "feature3": "Pinalawak na booking setup",
+        "feature4": "Advanced na customization",
+        "feature5": "Mas mataas na usage limits",
+        "feature6": "Priority feature access"
+      },
+      "billingNotice": {
+        "body1": "Kapag naging available na ang paid subscriptions, ligtas na iproproseso ang bayad ng Paddle, ang aming Merchant of Record. Maaaring pangasiwaan ng Paddle ang payment processing, pagkalkula ng buwis, invoice, billing support, at eligible na refund processing.",
+        "body2": "Walang totoong bayad na kinokolekta habang beta maliban kung malinaw na nakasaad sa checkout."
+      },
+      "pricingTransparency": {
+        "title": "Transparency sa Presyo",
+        "body": "Ilalathala ang final na subscription prices bago mailunsad ang mga paid plan. Makikita ng mga user ang presyo, billing period, at subscription terms bago kumpletuhin ang anumang bayad."
+      }
+    },
+    "terms": {
+      "metadata": {
+        "title": "Mga Tuntunin ng Serbisyo — Gallurio",
+        "description": "Basahin ang mga tuntuning namamahala sa access at paggamit ng Gallurio."
+      },
+      "title": "Mga Tuntunin ng Serbisyo",
+      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "intro1": "Ang mga Tuntunin ng Serbisyong ito ay namamahala sa iyong access at paggamit ng Gallurio, kasama ang aming website, application, portfolio tools, booking inquiry features, at kaugnay na mga serbisyo.",
+      "intro2": "Sa paggamit ng Gallurio, sumasang-ayon ka sa mga Tuntuning ito. Kung hindi ka sumasang-ayon, hindi mo dapat gamitin ang serbisyo.",
+      "about": {
+        "title": "1. Tungkol sa Gallurio",
+        "body1": "Ang Gallurio ay isang software platform na tumutulong sa mga creative professional at negosyo na gumawa ng portfolio page, ipakita ang kanilang mga serbisyo, at tumanggap ng booking inquiries.",
+        "body2": "Hindi direktang nagbibigay ang Gallurio ng photography, videography, event planning, o iba pang creative services sa end clients. Ang mga user ng Gallurio ang may responsibilidad sa mga serbisyong inaalok nila sa pamamagitan ng kanilang sariling page."
+      },
+      "eligibility": {
+        "title": "2. Karapatang Gumamit",
+        "body": "Maaari mo lamang gamitin ang Gallurio kung ikaw ay may kakayahang pumasok sa isang legally binding agreement. Kung ginagamit mo ang Gallurio para sa isang negosyo, organisasyon, o studio, kinukumpirma mo na awtorisado kang tumanggap ng mga Tuntuning ito sa ngalan nito."
+      },
+      "accounts": {
+        "title": "3. Mga Account",
+        "body1": "Maaaring kailanganin mong gumawa ng account para magamit ang ilang feature ng Gallurio. Responsibilidad mong panatilihing secure ang iyong login credentials at ang lahat ng aktibidad sa ilalim ng iyong account.",
+        "body2": "Sumasang-ayon kang magbigay ng tumpak na impormasyon at i-update ito kung kinakailangan."
+      },
+      "betaAccess": {
+        "title": "4. Beta Access",
+        "body1": "Maaaring mag-alok ang Gallurio ng beta access bago ang public launch. Habang beta, maaaring hindi kumpleto, magbago, magkaroon ng limitasyon, ma-suspend, o matanggal ang mga feature anumang oras.",
+        "body2": "Hindi ginagarantiya ng beta access ang tuloy-tuloy na libreng access, availability ng mga susunod na feature, o permanenteng availability ng account."
+      },
+      "userContent": {
+        "title": "5. Content ng User",
+        "body1": "Maaaring mag-upload, mag-publish, o magsumite ang mga user ng content tulad ng mga larawan, teksto, impormasyon ng negosyo, paglalarawan ng serbisyo, materyales sa portfolio, at content ng booking form.",
+        "body2": "Pinapanatili ng mga user ang pagmamay-ari ng kanilang content. Sa paggamit ng Gallurio, binibigyan ng mga user ang Gallurio ng pahintulot na i-host, i-store, ipakita, iproseso, at i-transmit ang kanilang content kung kinakailangan para paandarin at pagbutihin ang serbisyo.",
+        "body3": "Responsibilidad ng mga user na tiyakin na mayroon silang mga karapatan, lisensya, at pahintulot na kailangan para sa anumang na-upload o na-publish na content."
+      },
+      "prohibited": {
+        "title": "6. Bawal na Content at Paggamit",
+        "intro": "Sumasang-ayon ang mga user na hindi gagamitin ang Gallurio para mag-upload, mag-publish, mamahagi, o mag-promote ng content na labag sa batas, nakakasama, mapang-abuso, mapanlinlang, lumalabag sa karapatan, o hindi angkop.",
+        "item1": "Paglabag sa mga naaangkop na batas o regulasyon",
+        "item2": "Paglabag sa intellectual property rights ng iba",
+        "item3": "Pag-upload ng malicious code o pagsubok na guluhin ang serbisyo",
+        "item4": "Pagmimintis ng pagkakakilanlan, negosyo, o mga serbisyo",
+        "item5": "Paggamit ng serbisyo para sa panloloko, spam, o mapanlinlang na aktibidad",
+        "item6": "Pagtatangkang ma-access ang mga account, sistema, o data nang walang pahintulot",
+        "outro": "Maaaring alisin ng Gallurio ang content o i-suspend ang mga account na lumalabag sa mga Tuntuning ito."
+      },
+      "bookings": {
+        "title": "7. Mga Booking at Client Inquiries",
+        "body1": "Maaaring payagan ng Gallurio ang mga bisita na magsumite ng booking inquiries sa pamamagitan ng mga page na ginawa ng user. Ang mga inquiries na ito ay hindi ginagarantiya ang isang kumpirmadong booking maliban kung sinang-ayunan nang hiwalay sa pagitan ng user ng Gallurio at ng kanilang kliyente.",
+        "body2": "Hindi mananagot ang Gallurio sa mga hindi pagkakaunawaan, bayad, cancellation, kalidad ng serbisyo, iskedyul, o kasunduan sa pagitan ng mga user ng Gallurio at ng kanilang mga kliyente maliban kung malinaw na nakasaad."
+      },
+      "subscriptions": {
+        "title": "8. Subscriptions at Bayad",
+        "body1": "Maaaring mangailangan ng paid subscription ang ilang feature ng Gallurio.",
+        "body2": "Kapag naging available na ang mga paid plan, maaaring iproseso ng Paddle ang billing, ang aming Merchant of Record. Maaaring pangasiwaan ng Paddle ang payment processing, buwis, invoice, billing support, at naaangkop na refund workflows.",
+        "body3": "Ipapakita sa mga user ang naaangkop na presyo at billing terms bago kumpletuhin ang isang pagbili."
+      },
+      "cancellations": {
+        "title": "9. Mga Cancellation",
+        "body1": "Maaaring i-cancel ng mga user ang kanilang subscription ayon sa proseso ng cancellation na available sa kanilang account o sa billing flow na ibinigay.",
+        "body2": "Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge, ngunit maaaring hindi ito awtomatikong magresulta sa refund maliban kung hinihiling ng batas o naaprubahan sa ilalim ng naaangkop na refund process."
+      },
+      "serviceChanges": {
+        "title": "10. Mga Pagbabago sa Serbisyo",
+        "body1": "Maaaring i-update, baguhin, i-suspend, o itigil ng Gallurio ang mga bahagi ng serbisyo anumang oras. Maaari ring baguhin ng Gallurio ang mga feature, plano, presyo, o usage limits habang umuunlad ang produkto.",
+        "body2": "Kung naaangkop, gagawa ng makatwirang pagsisikap ang Gallurio na abisuhan ang mga user ng mahahalagang pagbabago."
+      },
+      "ip": {
+        "title": "11. Intellectual Property",
+        "body1": "Ang Gallurio, kasama ang software, disenyo, branding, interface, feature, at kaugnay na materyales nito, ay pagmamay-ari ng Gallurio o ng mga licensor nito.",
+        "body2": "Hindi maaaring kopyahin, baguhin, i-reverse engineer, ibenta muli, o pagsamantalahan ng mga user ang anumang bahagi ng Gallurio maliban kung pinapayagan ng mga Tuntuning ito o ng naaangkop na batas."
+      },
+      "disclaimer": {
+        "title": "12. Disclaimer",
+        "body": "Ang Gallurio ay ibinibigay sa batayang \"as is\" at \"as available\". Hindi ginagarantiya ng Gallurio na ang serbisyo ay magiging tuloy-tuloy, walang error, secure, o angkop para sa bawat pangangailangan ng negosyo."
+      },
+      "liability": {
+        "title": "13. Limitasyon ng Pananagutan",
+        "body": "Sa pinakamataas na sakop na pinapayagan ng batas, hindi mananagot ang Gallurio para sa hindi direkta, incidental, espesyal, consequential, o punitive damages, kabilang ang nawalang kita, nawalang data, pagkaantala ng negosyo, o pinsala sa reputasyon."
+      },
+      "termination": {
+        "title": "14. Pagwawakas",
+        "body1": "Maaaring i-suspend o wakasan ng Gallurio ang access kung nilabag ng user ang mga Tuntuning ito, inabuso ang serbisyo, lumikha ng panganib para sa ibang user, o gumamit ng serbisyo sa paraang maaaring makapinsala sa Gallurio o sa mga third party.",
+        "body2": "Maaaring itigil ng mga user ang paggamit ng Gallurio anumang oras."
+      },
+      "contact": {
+        "title": "15. Makipag-ugnayan",
+        "body": "Para sa mga tanong tungkol sa mga Tuntuning ito, makipag-ugnayan sa amin sa:"
+      }
+    },
+    "privacy": {
+      "metadata": {
+        "title": "Patakaran sa Privacy — Gallurio",
+        "description": "Alamin kung paano kinokolekta, ginagamit, ini-imbak, at pinoprotektahan ng Gallurio ang impormasyon."
+      },
+      "title": "Patakaran sa Privacy",
+      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "intro": "Ipinapaliwanag ng Patakaran sa Privacy na ito kung paano kinokolekta, ginagamit, ini-imbak, at pinoprotektahan ng Gallurio ang impormasyon kapag ina-access ng mga user ang website, application, at kaugnay na mga serbisyo.",
+      "collect": {
+        "title": "1. Impormasyong Kinokolekta Namin",
+        "account": {
+          "title": "Impormasyon ng Account",
+          "body": "Maaaring kabilang dito ang pangalan, email address, detalye ng login, pangalan ng negosyo, impormasyon ng workspace, at mga kagustuhan sa account."
+        },
+        "business": {
+          "title": "Impormasyon ng Negosyo at Portfolio",
+          "body": "Maaaring kabilang dito ang mga detalye ng public profile, paglalarawan ng serbisyo, larawan, gallery, mga setting ng branding, content ng portfolio, at iba pang materyales na pinipili ng user na i-upload o i-publish."
+        },
+        "bookingInquiry": {
+          "title": "Impormasyon ng Booking Inquiry",
+          "body": "Kapag nagsumite ang mga bisita ng inquiries sa pamamagitan ng isang page ng Gallurio, maaaring kolektahin ng Gallurio ang impormasyon tulad ng mga pangalan, email address, petsa ng event, detalye ng proyekto, mensahe, at iba pang sagot sa form."
+        },
+        "usage": {
+          "title": "Impormasyon sa Paggamit",
+          "body": "Maaaring kolektahin ng Gallurio ang technical at usage data tulad ng impormasyon ng device, browser type, IP address, mga pahinang binisita, mga aksyong ginawa, timestamp, at diagnostic logs."
+        },
+        "payment": {
+          "title": "Impormasyon sa Bayad",
+          "body": "Kapag naging available na ang mga paid feature, maaaring iproseso ng Paddle, ang Merchant of Record ng Gallurio, ang mga bayad. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card. Maaaring kolektahin at iproseso ng Paddle ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice ayon sa sarili nitong mga tuntunin at privacy practices."
+        }
+      },
+      "useOfInfo": {
+        "title": "2. Paano Namin Ginagamit ang Impormasyon",
+        "item1": "Ibigay at paandarin ang Gallurio",
+        "item2": "Gumawa at pamahalaan ang mga account ng user",
+        "item3": "I-publish at ipakita ang mga portfolio page",
+        "item4": "Iproseso ang mga booking inquiries",
+        "item5": "Pagbutihin ang mga feature ng produkto at karanasan ng user",
+        "item6": "Magbigay ng suporta at tumugon sa mga kahilingan",
+        "item7": "Panatilihin ang seguridad at pigilan ang pang-aabuso",
+        "item8": "Suriin ang paggamit at performance",
+        "item9": "Sumunod sa mga legal at billing obligasyon"
+      },
+      "userContentPublic": {
+        "title": "3. Content ng User at Mga Pampublikong Page",
+        "body1": "Ang content na na-publish sa isang portfolio page ng Gallurio ay maaaring makita ng publiko. Maaaring kabilang dito ang mga pangalan ng negosyo, larawan, serbisyo, paglalarawan, opsyon sa contact, at iba pang impormasyong pinipili ng user na gawing pampubliko.",
+        "body2": "Responsibilidad ng mga user na tiyakin na ang na-publish na content ay hindi kasama ang private o sensitibong impormasyon na ayaw nilang maging available sa publiko."
+      },
+      "sharing": {
+        "title": "4. Pagbabahagi ng Impormasyon",
+        "body1": "Maaaring ibahagi ng Gallurio ang impormasyon sa mga pinagkakatiwalaang service provider na tumutulong paandarin ang platform, tulad ng mga hosting provider, authentication provider, analytics tools, email services, file storage providers, at payment processors.",
+        "body2": "Maaari ring ibahagi ng Gallurio ang impormasyon kapag hinihiling ng batas, upang protektahan ang mga karapatan, pigilan ang panloloko o pang-aabuso, o bilang bahagi ng business transfer tulad ng merger, acquisition, o pagbenta ng assets.",
+        "body3": "Hindi ibinebenta ng Gallurio ang personal na impormasyon."
+      },
+      "security": {
+        "title": "5. Pag-iimbak ng Data at Seguridad",
+        "body1": "Gumagamit ang Gallurio ng makatwirang technical at organizational measures para protektahan ang impormasyon. Gayunpaman, walang sistema na magagarantiyang ganap na secure.",
+        "body2": "Responsibilidad ng mga user na panatilihing secure ang account credentials at ipaalam sa Gallurio kung naniniwala silang na-compromise ang kanilang account."
+      },
+      "retention": {
+        "title": "6. Pagpapanatili ng Data",
+        "body1": "Pinapanatili ng Gallurio ang impormasyon hangga't kinakailangan para ibigay ang serbisyo, sumunod sa mga legal obligasyon, lutasin ang mga hindi pagkakaunawaan, ipatupad ang mga kasunduan, at panatilihin ang lehitimong mga rekord ng negosyo.",
+        "body2": "Maaaring humiling ang mga user ng pagtanggal ng account o data sa pamamagitan ng pakikipag-ugnayan sa Gallurio, batay sa legal, technical, o operational na limitasyon."
+      },
+      "cookies": {
+        "title": "7. Cookies at Katulad na Teknolohiya",
+        "body1": "Maaaring gumamit ang Gallurio ng cookies at katulad na teknolohiya para panatilihing naka-sign in ang mga user, tandaan ang mga kagustuhan, suriin ang paggamit, pagbutihin ang performance, at suportahan ang seguridad.",
+        "body2": "Maaaring kontrolin ng mga user ang cookies sa pamamagitan ng browser settings, ngunit ang pag-disable ng ilang cookies ay maaaring makaapekto sa paggana ng serbisyo."
+      },
+      "international": {
+        "title": "8. Paggamit sa Ibang Bansa",
+        "body1": "Maaaring ma-access ang Gallurio mula sa iba't ibang bansa. Maaaring iproseso ang impormasyon sa mga bansang pinapatakbo ng Gallurio o ng mga service provider nito.",
+        "body2": "Sa paggamit ng Gallurio, nauunawaan ng mga user na maaaring i-transfer at iproseso ang impormasyon sa labas ng kanilang bansang tinitirahan, batay sa naaangkop na batas."
+      },
+      "children": {
+        "title": "9. Privacy ng mga Bata",
+        "body1": "Hindi inilaan ang Gallurio para sa mga bata. Hindi sinasadyang kinokolekta ng Gallurio ang personal na impormasyon mula sa mga batang wala pa sa edad na kinakailangan ng naaangkop na batas.",
+        "body2": "Kung may naniniwalang nagbigay ang isang bata ng personal na impormasyon sa Gallurio, dapat silang makipag-ugnayan sa Gallurio para masuri at matanggal ang impormasyon kung angkop."
+      },
+      "changes": {
+        "title": "10. Mga Pagbabago sa Patakarang Ito",
+        "body": "Maaaring i-update ng Gallurio ang Patakaran sa Privacy na ito paminsan-minsan. Kapag may mahahalagang pagbabago, maaaring abisuhan ng Gallurio ang mga user sa pamamagitan ng serbisyo, email, o pag-update ng effective date."
+      },
+      "contact": {
+        "title": "11. Makipag-ugnayan",
+        "body": "Para sa mga tanong o kahilingan tungkol sa privacy, makipag-ugnayan sa amin sa:"
+      }
+    },
+    "refunds": {
+      "metadata": {
+        "title": "Patakaran sa Refund — Gallurio",
+        "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation, refund, at payment processing ng Paddle."
+      },
+      "title": "Patakaran sa Refund",
+      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "betaPeriod": {
+        "title": "1. Panahon ng Beta",
+        "body1": "Kasalukuyang nasa beta ang Gallurio. Kung walang paid subscription o totoong bayad na kinokolekta habang beta, walang kinakailangang refund dahil walang naisingil.",
+        "body2": "Kung mag-aalok ng paid beta access sa hinaharap, ipapakita ang naaangkop na presyo at refund terms bago ang checkout."
+      },
+      "subscriptions": {
+        "title": "2. Mga Subscription",
+        "body1": "Kapag naging available na ang mga paid plan, maaaring singilin ang mga subscription ng Gallurio buwan-buwan, taun-taon, o ayon sa billing period na ipinapakita sa checkout.",
+        "body2": "Maaaring i-cancel ng mga user ang kanilang subscription para pigilan ang mga susunod na renewal charge. Pagkatapos ng cancellation, maaaring magpatuloy ang access hanggang sa katapusan ng kasalukuyang billing period maliban kung nakasaad."
+      },
+      "refundRequests": {
+        "title": "3. Mga Kahilingan sa Refund",
+        "intro": "Sinusuri ang mga kahilingan sa refund nang case-by-case.",
+        "approvalIntro": "Maaaring depende ang approval sa:",
+        "item1": "Petsa ng pagbili",
+        "item2": "Billing period",
+        "item3": "Paggamit ng produkto",
+        "item4": "Aktibidad ng account",
+        "item5": "Mga isyu sa technical",
+        "item6": "Duplicate na singil",
+        "item7": "Naaangkop na mga batas sa proteksyon ng consumer",
+        "item8": "Proseso ng bayad at refund ng Paddle",
+        "outro": "Ang pagsusumite ng kahilingan sa refund ay hindi ginagarantiya na maaaprubahan ang refund."
+      },
+      "paddleMor": {
+        "title": "4. Paddle bilang Merchant of Record",
+        "body1": "Ang mga bayad para sa Gallurio ay maaaring iproseso ng Paddle, ang Merchant of Record ng Gallurio. Maaaring pangasiwaan ng Paddle ang payment processing, buwis, invoice, billing support, at eligible na refund processing.",
+        "body2": "Kung bumili ang isang user ng subscription ng Gallurio sa pamamagitan ng Paddle, maaaring ipakita sa kanilang billing statement ang Paddle o isang kaugnay na Paddle billing descriptor."
+      },
+      "nonRefundable": {
+        "title": "5. Mga Sitwasyong Hindi Maaaring i-Refund",
+        "intro": "Maliban kung hinihiling ng batas, maaaring hindi maibigay ang refund para sa:",
+        "item1": "Hindi nagamit na oras sa isang billing period pagkatapos ng cancellation",
+        "item2": "Hindi pag-cancel bago ang renewal",
+        "item3": "Pansamantalang hindi paggamit",
+        "item4": "Pagbabago ng isip pagkatapos ng malaking paggamit",
+        "item5": "Mga isyung dulot ng maling pagkaset-up ng account o impormasyong ibinigay ng user",
+        "outro": "Susuriin pa rin ng Gallurio ang mga makatwirang kahilingan, lalo na kung may mga isyu sa technical o billing."
+      },
+      "howToRequest": {
+        "title": "6. Paano Humiling ng Refund",
+        "body": "Para humiling ng refund, makipag-ugnayan sa amin sa:",
+        "includeIntro": "Isama ang sumusunod:",
+        "item1": "Email ng account",
+        "item2": "Pangalan ng negosyo o workspace",
+        "item3": "Petsa ng bayad",
+        "item4": "Dahilan ng kahilingan",
+        "item5": "Kaugnay na screenshot o detalye ng billing",
+        "outro": "Maaaring humingi ang Gallurio ng karagdagang impormasyon para i-verify ang bayad at suriin ang kahilingan."
+      },
+      "cancellations": {
+        "title": "7. Mga Cancellation",
+        "body1": "Maaaring i-cancel ng mga user ang kanilang subscription sa pamamagitan ng account settings o ng billing management flow na ibinigay.",
+        "body2": "Pinipigilan ng cancellation ang mga susunod na renewal ngunit hindi awtomatikong nirerefund ang mga nakaraang bayad maliban kung naaprubahan ang refund o hinihiling ng batas."
+      }
+    },
+    "contact": {
+      "metadata": {
+        "title": "Makipag-ugnayan — Gallurio",
+        "description": "Makipag-ugnayan sa Gallurio para sa suporta, beta access, mga tanong sa billing, at mga pangkalahatang katanungan."
+      },
+      "header": {
+        "headline": "Kailangan mo ba ng tulong sa Gallurio?",
+        "body": "Para sa suporta, mga tanong sa beta access, alalahanin sa account, isyu sa billing, o pangkalahatang katanungan, makipag-ugnayan sa amin sa:"
+      },
+      "supportTopics": {
+        "title": "Mga Paksa ng Suporta",
+        "item1": "Beta access",
+        "item2": "Pag-set up ng account",
+        "item3": "Mga portfolio page",
+        "item4": "Mga booking inquiry form",
+        "item5": "Billing at subscription",
+        "item6": "Mga kahilingan sa refund",
+        "item7": "Mga bug report",
+        "item8": "Feedback sa feature",
+        "item9": "Partnership o pangnegosyong katanungan"
+      },
+      "responseTime": {
+        "title": "Oras ng Pagtugon",
+        "body1": "Layunin naming tumugon sa lalong madaling panahon na makatwiran. Habang beta, maaaring mag-iba ang oras ng pagtugon habang patuloy naming pinapabuti ang Gallurio.",
+        "body2": "Para sa mga agarang alalahanin sa account o billing, mangyaring isama ang lahat ng kaugnay na detalye para masuri namin ang kahilingan nang mahusay."
+      },
+      "businessInfo": {
+        "title": "Impormasyon ng Negosyo",
+        "legalNamePlaceholder": "[Legal na Pangalan ng Negosyo, kung naaangkop]",
+        "addressPlaceholder": "[Address ng Negosyo o Rehistradong Bansa, kung naaangkop]",
+        "emailLabel": "Email:"
+      }
+    }
   },
   "auth": {
     "signInTitle": "Mag-sign in",

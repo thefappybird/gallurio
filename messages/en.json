@@ -1,10 +1,455 @@
 {
   "marketing": {
-    "version": "Gallurio · v0.1.0",
-    "headline": "The CRM for event businesses.",
-    "description": "Bookings, clients, galleries, and inquiries — in one workspace. Built for photographers, venues, planners, and stylists who are tired of spreadsheets.",
-    "getStarted": "Get started",
-    "signIn": "Sign in"
+    "nav": {
+      "pricing": "Pricing",
+      "contact": "Contact",
+      "signIn": "Sign in",
+      "joinBeta": "Join the Beta"
+    },
+    "footer": {
+      "pricing": "Pricing",
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "refunds": "Refunds",
+      "contact": "Contact"
+    },
+    "metadata": {
+      "title": "Gallurio — Portfolio and Booking Tools for Creative Businesses",
+      "description": "Create a polished portfolio page, showcase your work, and collect booking inquiries with Gallurio."
+    },
+    "hero": {
+      "headline": "The booking-ready portfolio, run like a ledger.",
+      "body": "Photographers, videographers, and event creatives use Gallurio to publish a page worth trusting a booking to — and manage bookings, clients, and inquiries in one workspace.",
+      "ctaJoinBeta": "Join the Beta"
+    },
+    "whatIs": {
+      "title": "What is Gallurio?",
+      "body": "Gallurio is a portfolio and booking platform for creative professionals. It gives users tools to create a public-facing page, showcase their work, receive booking requests, and organize client-facing business details."
+    },
+    "builtFor": {
+      "title": "Built for Creative Businesses",
+      "item1": "Photographers",
+      "item2": "Videographers",
+      "item3": "Event planners",
+      "item4": "Makeup artists",
+      "item5": "Stylists",
+      "item6": "Creative studios",
+      "item7": "Independent service providers"
+    },
+    "features": {
+      "portfolioBuilder": {
+        "title": "Portfolio builder",
+        "panelHeadline": "Every gallery, service, and section — exactly as you'd lay it out yourself.",
+        "description": "Create a clean, professional portfolio page using flexible sections, gallery blocks, service details, and visual layouts made for creative work."
+      },
+      "businessWorkspace": {
+        "title": "Business workspace",
+        "panelHeadline": "One dashboard for everything between shoots.",
+        "description": "Manage public profile content, business details, and booking-related setup from one dashboard."
+      },
+      "bookingInquiryForms": {
+        "title": "Booking inquiry forms",
+        "panelHeadline": "Requests land in your calendar, not your DMs.",
+        "description": "Let visitors send booking requests directly through a user page, including event dates, contact details, service preferences, and project notes."
+      },
+      "customBranding": {
+        "title": "Custom branding",
+        "description": "Adjust colors, typography, imagery, and page style so the portfolio feels aligned with the user's creative identity."
+      },
+      "clientReadyPages": {
+        "title": "Client-ready pages",
+        "description": "Publish a page designed to look credible, simple, and easy for potential clients to understand."
+      }
+    },
+    "betaNotice": {
+      "body1": "Gallurio is currently in beta. Some features may change as we improve the product, refine the experience, and gather feedback from early users.",
+      "body2": "During beta, access may be limited and certain paid features may not yet be available."
+    },
+    "finalCta": {
+      "title": "Start building your creative workspace with Gallurio.",
+      "subtitle": "Join the beta and help shape the platform before public launch.",
+      "button": "Join the Beta"
+    },
+    "manifesto": {
+      "quote": "Every booking accounted for. Every client trusted. Nothing left ambiguous.",
+      "attribution": "— the idea behind Gallurio"
+    },
+    "pricingTeaser": {
+      "title": "Simple pricing",
+      "subtitle": "Free to start. One paid tier when you're ready to run your full pipeline.",
+      "viewFullPricing": "View full pricing",
+      "disclaimer": "Pricing shown is planned and may change before public launch.",
+      "cadence": {
+        "monthly": "Monthly",
+        "yearly": "Yearly — save ~30%"
+      },
+      "free": {
+        "name": "Free",
+        "price": "$0",
+        "description": "Build a portfolio and start collecting inquiries — no card required.",
+        "feature1": "Portfolio builder, 1 published page",
+        "feature2": "Booking inquiry form",
+        "feature3": "Workspace dashboard",
+        "cta": "Start free"
+      },
+      "pro": {
+        "badge": "Best value",
+        "name": "Pro",
+        "priceMonthly": "$14/mo",
+        "priceYearly": "$10/mo, billed yearly",
+        "description": "Everything in Free, for studios ready to run their full client pipeline.",
+        "feature1": "Unlimited bookings and inquiries",
+        "feature2": "Custom branding and advanced galleries",
+        "feature3": "Priority support",
+        "cta": "Start Pro trial"
+      },
+      "beta": {
+        "badge": "Limited spots",
+        "name": "Beta Tester",
+        "price": "Free",
+        "priceNote": "— Pro features",
+        "description": "Full Pro access at no cost, for early studios who help shape the product.",
+        "feature1": "Everything in Pro",
+        "feature2": "Direct line to the team",
+        "feature3": "Locked-in pricing at launch",
+        "cta": "Apply for beta"
+      }
+    },
+    "pricing": {
+      "metadata": {
+        "title": "Pricing — Gallurio",
+        "description": "View Gallurio beta access and planned subscription options for creative professionals and studios."
+      },
+      "header": {
+        "headline": "Simple plans for creative professionals and studios.",
+        "body": "Gallurio is currently in beta. Paid subscriptions are planned for public launch after beta testing. Pricing, feature limits, and plan details may change before the final release."
+      },
+      "betaPlan": {
+        "badge": "Recommended",
+        "name": "Beta Plan",
+        "price": "Free during beta",
+        "description": "For early users who want to test Gallurio, build a portfolio, and help shape the product.",
+        "feature1": "Portfolio page builder",
+        "feature2": "Basic gallery sections",
+        "feature3": "Business profile setup",
+        "feature4": "Booking inquiry form",
+        "feature5": "Workspace dashboard",
+        "feature6": "Early access to new features",
+        "cta": "Join the Beta"
+      },
+      "plannedBadge": "Planned",
+      "starter": {
+        "name": "Starter",
+        "description": "For independent creatives who need a simple portfolio and booking inquiry page.",
+        "feature1": "Published portfolio page",
+        "feature2": "Customizable page sections",
+        "feature3": "Image galleries",
+        "feature4": "Booking inquiry form",
+        "feature5": "Basic business profile",
+        "feature6": "Email support"
+      },
+      "studio": {
+        "name": "Studio",
+        "description": "For growing creative businesses that need more flexibility and stronger client-facing tools.",
+        "feature1": "Everything in Starter",
+        "feature2": "More portfolio sections",
+        "feature3": "Advanced gallery layouts",
+        "feature4": "Service/package presentation",
+        "feature5": "Custom branding options",
+        "feature6": "Priority support"
+      },
+      "business": {
+        "name": "Business",
+        "description": "For teams, studios, or creative businesses with more advanced operational needs.",
+        "feature1": "Everything in Studio",
+        "feature2": "Team-oriented workspace features",
+        "feature3": "Expanded booking setup",
+        "feature4": "Advanced customization",
+        "feature5": "Higher usage limits",
+        "feature6": "Priority feature access"
+      },
+      "billingNotice": {
+        "body1": "When paid subscriptions become available, payments will be processed securely by Paddle, our Merchant of Record. Paddle may handle payment processing, tax calculation, invoices, billing support, and eligible refund processing.",
+        "body2": "No real payments are collected during the beta unless clearly stated at checkout."
+      },
+      "pricingTransparency": {
+        "title": "Pricing Transparency",
+        "body": "Final subscription prices will be published before paid plans go live. Users will be able to review the price, billing period, and subscription terms before completing any payment."
+      }
+    },
+    "terms": {
+      "metadata": {
+        "title": "Terms of Service — Gallurio",
+        "description": "Read the terms that govern access to and use of Gallurio."
+      },
+      "title": "Terms of Service",
+      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "intro1": "These Terms of Service govern your access to and use of Gallurio, including our website, application, portfolio tools, booking inquiry features, and related services.",
+      "intro2": "By using Gallurio, you agree to these Terms. If you do not agree, you should not use the service.",
+      "about": {
+        "title": "1. About Gallurio",
+        "body1": "Gallurio is a software platform that helps creative professionals and businesses create portfolio pages, present their services, and receive booking inquiries.",
+        "body2": "Gallurio does not directly provide photography, videography, event planning, or other creative services to end clients. Users of Gallurio are responsible for the services they offer through their own pages."
+      },
+      "eligibility": {
+        "title": "2. Eligibility",
+        "body": "You may use Gallurio only if you are able to enter into a legally binding agreement. If you use Gallurio on behalf of a business, organization, or studio, you confirm that you are authorized to accept these Terms on its behalf."
+      },
+      "accounts": {
+        "title": "3. Accounts",
+        "body1": "You may need to create an account to use certain Gallurio features. You are responsible for keeping your login credentials secure and for all activity under your account.",
+        "body2": "You agree to provide accurate information and to update it when necessary."
+      },
+      "betaAccess": {
+        "title": "4. Beta Access",
+        "body1": "Gallurio may offer beta access before public launch. During beta, features may be incomplete, changed, limited, suspended, or removed at any time.",
+        "body2": "Beta access does not guarantee continued free access, future feature availability, or permanent account availability."
+      },
+      "userContent": {
+        "title": "5. User Content",
+        "body1": "Users may upload, publish, or submit content such as images, text, business information, service descriptions, portfolio materials, and booking form content.",
+        "body2": "Users retain ownership of their content. By using Gallurio, users grant Gallurio permission to host, store, display, process, and transmit their content as needed to operate and improve the service.",
+        "body3": "Users are responsible for ensuring that they have the rights, licenses, and permissions needed for any content uploaded or published."
+      },
+      "prohibited": {
+        "title": "6. Prohibited Content and Use",
+        "intro": "Users agree not to use Gallurio to upload, publish, distribute, or promote content that is unlawful, harmful, abusive, misleading, infringing, or otherwise inappropriate.",
+        "item1": "Violating applicable laws or regulations",
+        "item2": "Infringing the intellectual property rights of others",
+        "item3": "Uploading malicious code or attempting to disrupt the service",
+        "item4": "Misrepresenting identity, business, or services",
+        "item5": "Using the service for fraud, spam, or deceptive activity",
+        "item6": "Attempting to access accounts, systems, or data without permission",
+        "outro": "Gallurio may remove content or suspend accounts that violate these Terms."
+      },
+      "bookings": {
+        "title": "7. Bookings and Client Inquiries",
+        "body1": "Gallurio may allow visitors to submit booking inquiries through user-created pages. These inquiries do not guarantee a confirmed booking unless separately agreed between the Gallurio user and their client.",
+        "body2": "Gallurio is not responsible for disputes, payments, cancellations, service quality, schedules, or agreements between Gallurio users and their clients unless explicitly stated otherwise."
+      },
+      "subscriptions": {
+        "title": "8. Subscriptions and Payments",
+        "body1": "Some Gallurio features may require a paid subscription.",
+        "body2": "When paid plans become available, billing may be processed by Paddle, our Merchant of Record. Paddle may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.",
+        "body3": "Users will be shown applicable pricing and billing terms before completing a purchase."
+      },
+      "cancellations": {
+        "title": "9. Cancellations",
+        "body1": "Users may cancel subscriptions according to the cancellation process available in their account or through the billing flow provided.",
+        "body2": "Cancellation generally prevents future renewal charges, but it may not automatically result in a refund unless required by law or approved under the applicable refund process."
+      },
+      "serviceChanges": {
+        "title": "10. Service Changes",
+        "body1": "Gallurio may update, modify, suspend, or discontinue parts of the service at any time. Gallurio may also change features, plans, pricing, or usage limits as the product evolves.",
+        "body2": "Where appropriate, Gallurio will make reasonable efforts to notify users of material changes."
+      },
+      "ip": {
+        "title": "11. Intellectual Property",
+        "body1": "Gallurio, including its software, design, branding, interface, features, and related materials, is owned by Gallurio or its licensors.",
+        "body2": "Users may not copy, modify, reverse engineer, resell, or exploit any part of Gallurio except as permitted by these Terms or applicable law."
+      },
+      "disclaimer": {
+        "title": "12. Disclaimer",
+        "body": "Gallurio is provided on an \"as is\" and \"as available\" basis. Gallurio does not guarantee that the service will be uninterrupted, error-free, secure, or suitable for every business need."
+      },
+      "liability": {
+        "title": "13. Limitation of Liability",
+        "body": "To the maximum extent permitted by law, Gallurio will not be liable for indirect, incidental, special, consequential, or punitive damages, including lost profits, lost data, business interruption, or reputational harm."
+      },
+      "termination": {
+        "title": "14. Termination",
+        "body1": "Gallurio may suspend or terminate access if a user violates these Terms, misuses the service, creates risk for other users, or uses the service in a way that may harm Gallurio or third parties.",
+        "body2": "Users may stop using Gallurio at any time."
+      },
+      "contact": {
+        "title": "15. Contact",
+        "body": "For questions about these Terms, contact us at:"
+      }
+    },
+    "privacy": {
+      "metadata": {
+        "title": "Privacy Policy — Gallurio",
+        "description": "Learn how Gallurio collects, uses, stores, and protects information."
+      },
+      "title": "Privacy Policy",
+      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "intro": "This Privacy Policy explains how Gallurio collects, uses, stores, and protects information when users access the website, application, and related services.",
+      "collect": {
+        "title": "1. Information We Collect",
+        "account": {
+          "title": "Account Information",
+          "body": "This may include name, email address, login details, business name, workspace information, and account preferences."
+        },
+        "business": {
+          "title": "Business and Portfolio Information",
+          "body": "This may include public profile details, service descriptions, images, galleries, branding settings, portfolio content, and other materials users choose to upload or publish."
+        },
+        "bookingInquiry": {
+          "title": "Booking Inquiry Information",
+          "body": "When visitors submit inquiries through a Gallurio page, Gallurio may collect information such as names, email addresses, event dates, project details, messages, and other form responses."
+        },
+        "usage": {
+          "title": "Usage Information",
+          "body": "Gallurio may collect technical and usage data such as device information, browser type, IP address, pages viewed, actions taken, timestamps, and diagnostic logs."
+        },
+        "payment": {
+          "title": "Payment Information",
+          "body": "When paid features become available, payments may be processed by Paddle, Gallurio's Merchant of Record. Gallurio does not directly store full payment card details. Paddle may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices."
+        }
+      },
+      "useOfInfo": {
+        "title": "2. How We Use Information",
+        "item1": "Provide and operate Gallurio",
+        "item2": "Create and manage user accounts",
+        "item3": "Publish and display portfolio pages",
+        "item4": "Process booking inquiries",
+        "item5": "Improve product features and user experience",
+        "item6": "Provide support and respond to requests",
+        "item7": "Maintain security and prevent abuse",
+        "item8": "Analyze usage and performance",
+        "item9": "Comply with legal and billing obligations"
+      },
+      "userContentPublic": {
+        "title": "3. User Content and Public Pages",
+        "body1": "Content published on a Gallurio portfolio page may be visible to the public. This may include business names, images, services, descriptions, contact options, and other information users choose to make public.",
+        "body2": "Users are responsible for ensuring that published content does not include private or sensitive information that they do not want publicly available."
+      },
+      "sharing": {
+        "title": "4. Sharing of Information",
+        "body1": "Gallurio may share information with trusted service providers that help operate the platform, such as hosting providers, authentication providers, analytics tools, email services, file storage providers, and payment processors.",
+        "body2": "Gallurio may also share information when required by law, to protect rights, to prevent fraud or abuse, or as part of a business transfer such as a merger, acquisition, or sale of assets.",
+        "body3": "Gallurio does not sell personal information."
+      },
+      "security": {
+        "title": "5. Data Storage and Security",
+        "body1": "Gallurio uses reasonable technical and organizational measures to protect information. However, no system can be guaranteed to be completely secure.",
+        "body2": "Users are responsible for keeping account credentials safe and notifying Gallurio if they believe their account has been compromised."
+      },
+      "retention": {
+        "title": "6. Data Retention",
+        "body1": "Gallurio retains information for as long as needed to provide the service, comply with legal obligations, resolve disputes, enforce agreements, and maintain legitimate business records.",
+        "body2": "Users may request account deletion or data removal by contacting Gallurio, subject to legal, technical, or operational limitations."
+      },
+      "cookies": {
+        "title": "7. Cookies and Similar Technologies",
+        "body1": "Gallurio may use cookies and similar technologies to keep users signed in, remember preferences, analyze usage, improve performance, and support security.",
+        "body2": "Users can control cookies through browser settings, but disabling some cookies may affect how the service works."
+      },
+      "international": {
+        "title": "8. International Use",
+        "body1": "Gallurio may be accessed from different countries. Information may be processed in countries where Gallurio or its service providers operate.",
+        "body2": "By using Gallurio, users understand that information may be transferred and processed outside their country of residence, subject to applicable law."
+      },
+      "children": {
+        "title": "9. Children's Privacy",
+        "body1": "Gallurio is not intended for children. Gallurio does not knowingly collect personal information from children under the age required by applicable law.",
+        "body2": "If someone believes a child has provided personal information to Gallurio, they should contact Gallurio so the information can be reviewed and removed if appropriate."
+      },
+      "changes": {
+        "title": "10. Changes to This Policy",
+        "body": "Gallurio may update this Privacy Policy from time to time. When material changes are made, Gallurio may notify users through the service, by email, or by updating the effective date."
+      },
+      "contact": {
+        "title": "11. Contact",
+        "body": "For privacy questions or requests, contact us at:"
+      }
+    },
+    "refunds": {
+      "metadata": {
+        "title": "Refund Policy — Gallurio",
+        "description": "Learn how Gallurio handles cancellations, refunds, and Paddle payment processing."
+      },
+      "title": "Refund Policy",
+      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "betaPeriod": {
+        "title": "1. Beta Period",
+        "body1": "Gallurio is currently in beta. If no paid subscription or real payment is collected during beta, no refund is required because no charge has been made.",
+        "body2": "If paid beta access is offered in the future, the applicable price and refund terms will be shown before checkout."
+      },
+      "subscriptions": {
+        "title": "2. Subscriptions",
+        "body1": "When paid plans become available, Gallurio subscriptions may be billed monthly, annually, or according to the billing period shown at checkout.",
+        "body2": "Users may cancel their subscription to prevent future renewal charges. After cancellation, access may continue until the end of the current billing period unless otherwise stated."
+      },
+      "refundRequests": {
+        "title": "3. Refund Requests",
+        "intro": "Refund requests are reviewed on a case-by-case basis.",
+        "approvalIntro": "Approval may depend on:",
+        "item1": "The date of purchase",
+        "item2": "The billing period",
+        "item3": "Product usage",
+        "item4": "Account activity",
+        "item5": "Technical issues",
+        "item6": "Duplicate charges",
+        "item7": "Applicable consumer protection laws",
+        "item8": "Paddle's payment and refund process",
+        "outro": "Submitting a refund request does not guarantee that a refund will be approved."
+      },
+      "paddleMor": {
+        "title": "4. Paddle as Merchant of Record",
+        "body1": "Payments for Gallurio may be processed by Paddle, Gallurio's Merchant of Record. Paddle may handle payment processing, taxes, invoices, billing support, and eligible refund processing.",
+        "body2": "If a user purchases a Gallurio subscription through Paddle, their billing statement may show Paddle or a related Paddle billing descriptor."
+      },
+      "nonRefundable": {
+        "title": "5. Non-Refundable Situations",
+        "intro": "Unless required by law, refunds may not be provided for:",
+        "item1": "Unused time in a billing period after cancellation",
+        "item2": "Failure to cancel before renewal",
+        "item3": "Temporary lack of use",
+        "item4": "Change of mind after substantial use",
+        "item5": "Issues caused by incorrect account setup or user-provided information",
+        "outro": "Gallurio will still review reasonable requests, especially where there are technical or billing issues."
+      },
+      "howToRequest": {
+        "title": "6. How to Request a Refund",
+        "body": "To request a refund, contact us at:",
+        "includeIntro": "Please include:",
+        "item1": "Account email",
+        "item2": "Business or workspace name",
+        "item3": "Date of payment",
+        "item4": "Reason for the request",
+        "item5": "Relevant screenshots or billing details",
+        "outro": "Gallurio may ask for additional information to verify the payment and review the request."
+      },
+      "cancellations": {
+        "title": "7. Cancellations",
+        "body1": "Users may cancel their subscription through account settings or the billing management flow provided.",
+        "body2": "Cancellation stops future renewals but does not automatically refund previous payments unless a refund is approved or required by law."
+      }
+    },
+    "contact": {
+      "metadata": {
+        "title": "Contact — Gallurio",
+        "description": "Contact Gallurio for support, beta access, billing questions, and general inquiries."
+      },
+      "header": {
+        "headline": "Need help with Gallurio?",
+        "body": "For support, beta access questions, account concerns, billing issues, or general inquiries, contact us at:"
+      },
+      "supportTopics": {
+        "title": "Support Topics",
+        "item1": "Beta access",
+        "item2": "Account setup",
+        "item3": "Portfolio pages",
+        "item4": "Booking inquiry forms",
+        "item5": "Billing and subscriptions",
+        "item6": "Refund requests",
+        "item7": "Bug reports",
+        "item8": "Feature feedback",
+        "item9": "Partnership or business inquiries"
+      },
+      "responseTime": {
+        "title": "Response Time",
+        "body1": "We aim to respond as soon as reasonably possible. During beta, response times may vary as we continue developing and improving Gallurio.",
+        "body2": "For urgent account or billing concerns, please include as much relevant detail as possible so we can review the request efficiently."
+      },
+      "businessInfo": {
+        "title": "Business Information",
+        "legalNamePlaceholder": "[Business Legal Name, if applicable]",
+        "addressPlaceholder": "[Business Address or Registered Country, if applicable]",
+        "emailLabel": "Email:"
+      }
+    }
   },
   "auth": {
     "signInTitle": "Sign in",

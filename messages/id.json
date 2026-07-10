@@ -1,10 +1,455 @@
 {
   "marketing": {
-    "version": "Gallurio · v0.1.0",
-    "headline": "CRM untuk bisnis acara.",
-    "description": "Pemesanan, klien, galeri, dan pertanyaan — dalam satu ruang kerja. Dibangun untuk fotografer, venue, perencana, dan stylist yang lelah dengan spreadsheet.",
-    "getStarted": "Mulai",
-    "signIn": "Masuk"
+    "nav": {
+      "pricing": "Harga",
+      "contact": "Kontak",
+      "signIn": "Masuk",
+      "joinBeta": "Gabung Beta"
+    },
+    "footer": {
+      "pricing": "Harga",
+      "terms": "Ketentuan",
+      "privacy": "Privasi",
+      "refunds": "Pengembalian Dana",
+      "contact": "Kontak"
+    },
+    "metadata": {
+      "title": "Gallurio — Alat Portfolio dan Pemesanan untuk Bisnis Kreatif",
+      "description": "Buat halaman portfolio yang rapi, tampilkan karya Anda, dan kumpulkan permintaan booking dengan Gallurio."
+    },
+    "hero": {
+      "headline": "Portfolio siap-booking, dijalankan seperti buku besar.",
+      "body": "Fotografer, videografer, dan event creative memakai Gallurio untuk menerbitkan halaman yang layak dipercaya untuk booking — sekaligus mengelola booking, klien, dan permintaan dalam satu workspace.",
+      "ctaJoinBeta": "Gabung Beta"
+    },
+    "whatIs": {
+      "title": "Apa itu Gallurio?",
+      "body": "Gallurio adalah platform portfolio dan pemesanan untuk para profesional kreatif. Platform ini memberi pengguna alat untuk membuat halaman publik, menampilkan karya mereka, menerima permintaan booking, dan mengatur detail bisnis yang berhadapan dengan klien."
+    },
+    "builtFor": {
+      "title": "Dibuat untuk Bisnis Kreatif",
+      "item1": "Fotografer",
+      "item2": "Videografer",
+      "item3": "Perencana Acara",
+      "item4": "Makeup Artist",
+      "item5": "Penata Gaya",
+      "item6": "Studio Kreatif",
+      "item7": "Penyedia Layanan Independen"
+    },
+    "features": {
+      "portfolioBuilder": {
+        "title": "Pembuat portfolio",
+        "panelHeadline": "Setiap galeri, layanan, dan bagian — persis seperti yang ingin Anda susun sendiri.",
+        "description": "Buat halaman portfolio yang bersih dan profesional menggunakan bagian yang fleksibel, blok galeri, detail layanan, dan tata letak visual yang dirancang untuk karya kreatif."
+      },
+      "businessWorkspace": {
+        "title": "Workspace bisnis",
+        "panelHeadline": "Satu dashboard untuk semuanya di antara sesi pemotretan.",
+        "description": "Kelola konten profil publik, detail bisnis, dan pengaturan terkait booking dari satu dashboard."
+      },
+      "bookingInquiryForms": {
+        "title": "Formulir permintaan booking",
+        "panelHeadline": "Permintaan masuk ke kalender Anda, bukan ke DM Anda.",
+        "description": "Biarkan pengunjung mengirim permintaan booking langsung melalui halaman Anda, termasuk tanggal acara, detail kontak, preferensi layanan, dan catatan proyek."
+      },
+      "customBranding": {
+        "title": "Branding kustom",
+        "description": "Sesuaikan warna, tipografi, gambar, dan gaya halaman agar portfolio selaras dengan identitas kreatif pengguna."
+      },
+      "clientReadyPages": {
+        "title": "Halaman siap klien",
+        "description": "Publikasikan halaman yang dirancang agar terlihat kredibel, sederhana, dan mudah dipahami oleh calon klien."
+      }
+    },
+    "betaNotice": {
+      "body1": "Gallurio saat ini dalam tahap beta. Beberapa fitur dapat berubah seiring kami menyempurnakan produk, memperbaiki pengalaman, dan mengumpulkan masukan dari pengguna awal.",
+      "body2": "Selama masa beta, akses mungkin terbatas dan beberapa fitur berbayar mungkin belum tersedia."
+    },
+    "finalCta": {
+      "title": "Mulai bangun workspace kreatif Anda bersama Gallurio.",
+      "subtitle": "Gabung beta dan bantu membentuk platform ini sebelum peluncuran publik.",
+      "button": "Gabung Beta"
+    },
+    "manifesto": {
+      "quote": "Setiap booking tercatat. Setiap klien terpercaya. Tidak ada yang samar.",
+      "attribution": "— gagasan di balik Gallurio"
+    },
+    "pricingTeaser": {
+      "title": "Harga sederhana",
+      "subtitle": "Gratis untuk memulai. Satu paket berbayar saat Anda siap menjalankan seluruh alur kerja.",
+      "viewFullPricing": "Lihat harga lengkap",
+      "disclaimer": "Harga yang ditampilkan bersifat rencana dan dapat berubah sebelum peluncuran publik.",
+      "cadence": {
+        "monthly": "Bulanan",
+        "yearly": "Tahunan — hemat ~30%"
+      },
+      "free": {
+        "name": "Gratis",
+        "price": "Rp0",
+        "description": "Bangun portfolio dan mulai kumpulkan permintaan — tanpa kartu.",
+        "feature1": "Pembuat portfolio, 1 halaman terbit",
+        "feature2": "Formulir permintaan booking",
+        "feature3": "Dashboard workspace",
+        "cta": "Mulai gratis"
+      },
+      "pro": {
+        "badge": "Nilai terbaik",
+        "name": "Pro",
+        "priceMonthly": "Rp220rb/bln",
+        "priceYearly": "Rp155rb/bln, tagihan tahunan",
+        "description": "Semua di Gratis, untuk studio yang siap menjalankan seluruh alur kerja klien.",
+        "feature1": "Booking dan permintaan tanpa batas",
+        "feature2": "Branding kustom dan galeri lanjutan",
+        "feature3": "Dukungan prioritas",
+        "cta": "Mulai uji coba Pro"
+      },
+      "beta": {
+        "badge": "Slot terbatas",
+        "name": "Beta Tester",
+        "price": "Gratis",
+        "priceNote": "— fitur Pro",
+        "description": "Akses Pro penuh tanpa biaya, untuk studio awal yang membantu membentuk produk.",
+        "feature1": "Semua di Pro",
+        "feature2": "Jalur langsung ke tim",
+        "feature3": "Harga terkunci saat peluncuran",
+        "cta": "Ajukan beta"
+      }
+    },
+    "pricing": {
+      "metadata": {
+        "title": "Harga — Gallurio",
+        "description": "Lihat akses beta dan opsi langganan yang direncanakan Gallurio untuk profesional dan studio kreatif."
+      },
+      "header": {
+        "headline": "Paket sederhana untuk profesional dan studio kreatif.",
+        "body": "Gallurio saat ini dalam tahap beta. Langganan berbayar direncanakan untuk peluncuran publik setelah pengujian beta. Harga, batasan fitur, dan detail paket dapat berubah sebelum rilis final."
+      },
+      "betaPlan": {
+        "badge": "Direkomendasikan",
+        "name": "Paket Beta",
+        "price": "Gratis selama beta",
+        "description": "Untuk pengguna awal yang ingin mencoba Gallurio, membangun portfolio, dan membantu membentuk produk ini.",
+        "feature1": "Pembuat halaman portfolio",
+        "feature2": "Bagian galeri dasar",
+        "feature3": "Pengaturan profil bisnis",
+        "feature4": "Formulir permintaan booking",
+        "feature5": "Dashboard workspace",
+        "feature6": "Akses awal ke fitur baru",
+        "cta": "Gabung Beta"
+      },
+      "plannedBadge": "Direncanakan",
+      "starter": {
+        "name": "Starter",
+        "description": "Untuk kreator independen yang membutuhkan portfolio sederhana dan halaman permintaan booking.",
+        "feature1": "Halaman portfolio yang dipublikasikan",
+        "feature2": "Bagian halaman yang dapat disesuaikan",
+        "feature3": "Galeri gambar",
+        "feature4": "Formulir permintaan booking",
+        "feature5": "Profil bisnis dasar",
+        "feature6": "Dukungan email"
+      },
+      "studio": {
+        "name": "Studio",
+        "description": "Untuk bisnis kreatif yang berkembang dan membutuhkan lebih banyak fleksibilitas serta alat menghadap klien yang lebih kuat.",
+        "feature1": "Semua fitur di Starter",
+        "feature2": "Lebih banyak bagian portfolio",
+        "feature3": "Tata letak galeri lanjutan",
+        "feature4": "Presentasi layanan/paket",
+        "feature5": "Opsi branding kustom",
+        "feature6": "Dukungan prioritas"
+      },
+      "business": {
+        "name": "Business",
+        "description": "Untuk tim, studio, atau bisnis kreatif dengan kebutuhan operasional yang lebih kompleks.",
+        "feature1": "Semua fitur di Studio",
+        "feature2": "Fitur workspace berorientasi tim",
+        "feature3": "Pengaturan booking yang diperluas",
+        "feature4": "Kustomisasi lanjutan",
+        "feature5": "Batas penggunaan yang lebih tinggi",
+        "feature6": "Akses prioritas ke fitur baru"
+      },
+      "billingNotice": {
+        "body1": "Ketika langganan berbayar tersedia, pembayaran akan diproses secara aman oleh Paddle, Merchant of Record kami. Paddle dapat menangani pemrosesan pembayaran, perhitungan pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body2": "Tidak ada pembayaran nyata yang dikumpulkan selama beta kecuali dinyatakan dengan jelas saat checkout."
+      },
+      "pricingTransparency": {
+        "title": "Transparansi Harga",
+        "body": "Harga langganan final akan dipublikasikan sebelum paket berbayar diluncurkan. Pengguna akan dapat meninjau harga, periode penagihan, dan ketentuan langganan sebelum menyelesaikan pembayaran apa pun."
+      }
+    },
+    "terms": {
+      "metadata": {
+        "title": "Ketentuan Layanan — Gallurio",
+        "description": "Baca ketentuan yang mengatur akses ke dan penggunaan Gallurio."
+      },
+      "title": "Ketentuan Layanan",
+      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "intro1": "Ketentuan Layanan ini mengatur akses Anda ke dan penggunaan Gallurio, termasuk situs web, aplikasi, alat portfolio, fitur permintaan booking, dan layanan terkait kami.",
+      "intro2": "Dengan menggunakan Gallurio, Anda menyetujui Ketentuan ini. Jika Anda tidak setuju, Anda tidak boleh menggunakan layanan ini.",
+      "about": {
+        "title": "1. Tentang Gallurio",
+        "body1": "Gallurio adalah platform perangkat lunak yang membantu profesional dan bisnis kreatif membuat halaman portfolio, mempresentasikan layanan mereka, dan menerima permintaan booking.",
+        "body2": "Gallurio tidak secara langsung menyediakan layanan fotografi, videografi, perencanaan acara, atau layanan kreatif lainnya kepada klien akhir. Pengguna Gallurio bertanggung jawab atas layanan yang mereka tawarkan melalui halaman mereka sendiri."
+      },
+      "eligibility": {
+        "title": "2. Kelayakan",
+        "body": "Anda hanya dapat menggunakan Gallurio jika Anda mampu mengikatkan diri dalam perjanjian yang sah secara hukum. Jika Anda menggunakan Gallurio atas nama bisnis, organisasi, atau studio, Anda menegaskan bahwa Anda berwenang menerima Ketentuan ini atas namanya."
+      },
+      "accounts": {
+        "title": "3. Akun",
+        "body1": "Anda mungkin perlu membuat akun untuk menggunakan fitur tertentu Gallurio. Anda bertanggung jawab menjaga kerahasiaan kredensial login Anda dan semua aktivitas di bawah akun Anda.",
+        "body2": "Anda setuju untuk memberikan informasi yang akurat dan memperbaruinya bila diperlukan."
+      },
+      "betaAccess": {
+        "title": "4. Akses Beta",
+        "body1": "Gallurio dapat menawarkan akses beta sebelum peluncuran publik. Selama beta, fitur dapat tidak lengkap, berubah, dibatasi, ditangguhkan, atau dihapus kapan saja.",
+        "body2": "Akses beta tidak menjamin akses gratis yang berkelanjutan, ketersediaan fitur di masa mendatang, atau ketersediaan akun secara permanen."
+      },
+      "userContent": {
+        "title": "5. Konten Pengguna",
+        "body1": "Pengguna dapat mengunggah, mempublikasikan, atau mengirimkan konten seperti gambar, teks, informasi bisnis, deskripsi layanan, materi portfolio, dan konten formulir booking.",
+        "body2": "Pengguna tetap memiliki hak atas konten mereka. Dengan menggunakan Gallurio, pengguna memberikan izin kepada Gallurio untuk menghosting, menyimpan, menampilkan, memproses, dan mengirimkan konten mereka sesuai kebutuhan untuk mengoperasikan dan meningkatkan layanan.",
+        "body3": "Pengguna bertanggung jawab memastikan bahwa mereka memiliki hak, lisensi, dan izin yang diperlukan untuk konten apa pun yang diunggah atau dipublikasikan."
+      },
+      "prohibited": {
+        "title": "6. Konten dan Penggunaan yang Dilarang",
+        "intro": "Pengguna setuju untuk tidak menggunakan Gallurio untuk mengunggah, mempublikasikan, mendistribusikan, atau mempromosikan konten yang melanggar hukum, berbahaya, kasar, menyesatkan, melanggar hak, atau tidak pantas.",
+        "item1": "Melanggar hukum atau peraturan yang berlaku",
+        "item2": "Melanggar hak kekayaan intelektual pihak lain",
+        "item3": "Mengunggah kode berbahaya atau mencoba mengganggu layanan",
+        "item4": "Memberikan gambaran yang salah tentang identitas, bisnis, atau layanan",
+        "item5": "Menggunakan layanan untuk penipuan, spam, atau aktivitas menyesatkan",
+        "item6": "Mencoba mengakses akun, sistem, atau data tanpa izin",
+        "outro": "Gallurio dapat menghapus konten atau menangguhkan akun yang melanggar Ketentuan ini."
+      },
+      "bookings": {
+        "title": "7. Booking dan Permintaan Klien",
+        "body1": "Gallurio dapat mengizinkan pengunjung mengirimkan permintaan booking melalui halaman yang dibuat pengguna. Permintaan ini tidak menjamin booking yang terkonfirmasi kecuali disepakati secara terpisah antara pengguna Gallurio dan klien mereka.",
+        "body2": "Gallurio tidak bertanggung jawab atas perselisihan, pembayaran, pembatalan, kualitas layanan, jadwal, atau kesepakatan antara pengguna Gallurio dan klien mereka kecuali dinyatakan secara jelas."
+      },
+      "subscriptions": {
+        "title": "8. Langganan dan Pembayaran",
+        "body1": "Beberapa fitur Gallurio mungkin memerlukan langganan berbayar.",
+        "body2": "Ketika paket berbayar tersedia, penagihan dapat diproses oleh Paddle, Merchant of Record kami. Paddle dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan alur kerja pengembalian dana yang berlaku.",
+        "body3": "Pengguna akan diperlihatkan harga dan ketentuan penagihan yang berlaku sebelum menyelesaikan pembelian."
+      },
+      "cancellations": {
+        "title": "9. Pembatalan",
+        "body1": "Pengguna dapat membatalkan langganan sesuai proses pembatalan yang tersedia di akun mereka atau melalui alur penagihan yang disediakan.",
+        "body2": "Pembatalan umumnya mencegah biaya perpanjangan di masa depan, tetapi mungkin tidak secara otomatis menghasilkan pengembalian dana kecuali diwajibkan oleh hukum atau disetujui berdasarkan proses pengembalian dana yang berlaku."
+      },
+      "serviceChanges": {
+        "title": "10. Perubahan Layanan",
+        "body1": "Gallurio dapat memperbarui, mengubah, menangguhkan, atau menghentikan bagian dari layanan kapan saja. Gallurio juga dapat mengubah fitur, paket, harga, atau batas penggunaan seiring perkembangan produk.",
+        "body2": "Jika sesuai, Gallurio akan melakukan upaya yang wajar untuk memberi tahu pengguna tentang perubahan material."
+      },
+      "ip": {
+        "title": "11. Kekayaan Intelektual",
+        "body1": "Gallurio, termasuk perangkat lunak, desain, branding, antarmuka, fitur, dan materi terkaitnya, dimiliki oleh Gallurio atau pemberi lisensinya.",
+        "body2": "Pengguna tidak boleh menyalin, mengubah, melakukan rekayasa balik, menjual kembali, atau mengeksploitasi bagian mana pun dari Gallurio kecuali sebagaimana diizinkan oleh Ketentuan ini atau hukum yang berlaku."
+      },
+      "disclaimer": {
+        "title": "12. Penafian",
+        "body": "Gallurio disediakan atas dasar \"sebagaimana adanya\" dan \"sebagaimana tersedia\". Gallurio tidak menjamin bahwa layanan akan berjalan tanpa gangguan, bebas kesalahan, aman, atau sesuai untuk setiap kebutuhan bisnis."
+      },
+      "liability": {
+        "title": "13. Batasan Tanggung Jawab",
+        "body": "Sejauh diizinkan oleh hukum, Gallurio tidak bertanggung jawab atas kerugian tidak langsung, insidental, khusus, konsekuensial, atau punitif, termasuk kehilangan keuntungan, kehilangan data, gangguan bisnis, atau kerusakan reputasi."
+      },
+      "termination": {
+        "title": "14. Penghentian",
+        "body1": "Gallurio dapat menangguhkan atau menghentikan akses jika pengguna melanggar Ketentuan ini, menyalahgunakan layanan, menciptakan risiko bagi pengguna lain, atau menggunakan layanan dengan cara yang dapat merugikan Gallurio atau pihak ketiga.",
+        "body2": "Pengguna dapat berhenti menggunakan Gallurio kapan saja."
+      },
+      "contact": {
+        "title": "15. Kontak",
+        "body": "Untuk pertanyaan tentang Ketentuan ini, hubungi kami di:"
+      }
+    },
+    "privacy": {
+      "metadata": {
+        "title": "Kebijakan Privasi — Gallurio",
+        "description": "Pelajari bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi."
+      },
+      "title": "Kebijakan Privasi",
+      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "intro": "Kebijakan Privasi ini menjelaskan bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi ketika pengguna mengakses situs web, aplikasi, dan layanan terkait.",
+      "collect": {
+        "title": "1. Informasi yang Kami Kumpulkan",
+        "account": {
+          "title": "Informasi Akun",
+          "body": "Ini dapat mencakup nama, alamat email, detail login, nama bisnis, informasi workspace, dan preferensi akun."
+        },
+        "business": {
+          "title": "Informasi Bisnis dan Portfolio",
+          "body": "Ini dapat mencakup detail profil publik, deskripsi layanan, gambar, galeri, pengaturan branding, konten portfolio, dan materi lain yang dipilih pengguna untuk diunggah atau dipublikasikan."
+        },
+        "bookingInquiry": {
+          "title": "Informasi Permintaan Booking",
+          "body": "Ketika pengunjung mengirimkan permintaan melalui halaman Gallurio, Gallurio dapat mengumpulkan informasi seperti nama, alamat email, tanggal acara, detail proyek, pesan, dan respons formulir lainnya."
+        },
+        "usage": {
+          "title": "Informasi Penggunaan",
+          "body": "Gallurio dapat mengumpulkan data teknis dan penggunaan seperti informasi perangkat, jenis browser, alamat IP, halaman yang dilihat, tindakan yang diambil, stempel waktu, dan log diagnostik."
+        },
+        "payment": {
+          "title": "Informasi Pembayaran",
+          "body": "Ketika fitur berbayar tersedia, pembayaran dapat diproses oleh Paddle, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran. Paddle dapat mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice sesuai dengan ketentuan dan praktik privasinya sendiri."
+        }
+      },
+      "useOfInfo": {
+        "title": "2. Bagaimana Kami Menggunakan Informasi",
+        "item1": "Menyediakan dan mengoperasikan Gallurio",
+        "item2": "Membuat dan mengelola akun pengguna",
+        "item3": "Mempublikasikan dan menampilkan halaman portfolio",
+        "item4": "Memproses permintaan booking",
+        "item5": "Meningkatkan fitur produk dan pengalaman pengguna",
+        "item6": "Memberikan dukungan dan menanggapi permintaan",
+        "item7": "Menjaga keamanan dan mencegah penyalahgunaan",
+        "item8": "Menganalisis penggunaan dan kinerja",
+        "item9": "Mematuhi kewajiban hukum dan penagihan"
+      },
+      "userContentPublic": {
+        "title": "3. Konten Pengguna dan Halaman Publik",
+        "body1": "Konten yang dipublikasikan pada halaman portfolio Gallurio dapat terlihat oleh publik. Ini dapat mencakup nama bisnis, gambar, layanan, deskripsi, opsi kontak, dan informasi lain yang dipilih pengguna untuk dijadikan publik.",
+        "body2": "Pengguna bertanggung jawab memastikan konten yang dipublikasikan tidak menyertakan informasi pribadi atau sensitif yang tidak ingin mereka jadikan tersedia untuk publik."
+      },
+      "sharing": {
+        "title": "4. Berbagi Informasi",
+        "body1": "Gallurio dapat membagikan informasi dengan penyedia layanan tepercaya yang membantu mengoperasikan platform, seperti penyedia hosting, penyedia autentikasi, alat analitik, layanan email, penyedia penyimpanan file, dan pemroses pembayaran.",
+        "body2": "Gallurio juga dapat membagikan informasi ketika diwajibkan oleh hukum, untuk melindungi hak, mencegah penipuan atau penyalahgunaan, atau sebagai bagian dari transfer bisnis seperti merger, akuisisi, atau penjualan aset.",
+        "body3": "Gallurio tidak menjual informasi pribadi."
+      },
+      "security": {
+        "title": "5. Penyimpanan Data dan Keamanan",
+        "body1": "Gallurio menggunakan langkah teknis dan organisasi yang wajar untuk melindungi informasi. Namun, tidak ada sistem yang dapat dijamin sepenuhnya aman.",
+        "body2": "Pengguna bertanggung jawab menjaga kerahasiaan kredensial akun dan memberi tahu Gallurio jika mereka yakin akun mereka telah disusupi."
+      },
+      "retention": {
+        "title": "6. Retensi Data",
+        "body1": "Gallurio menyimpan informasi selama diperlukan untuk menyediakan layanan, mematuhi kewajiban hukum, menyelesaikan perselisihan, menegakkan perjanjian, dan menjaga catatan bisnis yang sah.",
+        "body2": "Pengguna dapat meminta penghapusan akun atau data dengan menghubungi Gallurio, tunduk pada batasan hukum, teknis, atau operasional."
+      },
+      "cookies": {
+        "title": "7. Cookie dan Teknologi Serupa",
+        "body1": "Gallurio dapat menggunakan cookie dan teknologi serupa untuk menjaga pengguna tetap masuk, mengingat preferensi, menganalisis penggunaan, meningkatkan kinerja, dan mendukung keamanan.",
+        "body2": "Pengguna dapat mengontrol cookie melalui pengaturan browser, tetapi menonaktifkan beberapa cookie dapat memengaruhi cara kerja layanan."
+      },
+      "international": {
+        "title": "8. Penggunaan Internasional",
+        "body1": "Gallurio dapat diakses dari berbagai negara. Informasi dapat diproses di negara tempat Gallurio atau penyedia layanannya beroperasi.",
+        "body2": "Dengan menggunakan Gallurio, pengguna memahami bahwa informasi dapat ditransfer dan diproses di luar negara tempat tinggal mereka, tunduk pada hukum yang berlaku."
+      },
+      "children": {
+        "title": "9. Privasi Anak",
+        "body1": "Gallurio tidak ditujukan untuk anak-anak. Gallurio tidak dengan sengaja mengumpulkan informasi pribadi dari anak-anak di bawah usia yang disyaratkan oleh hukum yang berlaku.",
+        "body2": "Jika seseorang meyakini bahwa seorang anak telah memberikan informasi pribadi kepada Gallurio, mereka harus menghubungi Gallurio agar informasi tersebut dapat ditinjau dan dihapus jika diperlukan."
+      },
+      "changes": {
+        "title": "10. Perubahan pada Kebijakan Ini",
+        "body": "Gallurio dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Ketika perubahan material dilakukan, Gallurio dapat memberi tahu pengguna melalui layanan, email, atau dengan memperbarui tanggal berlaku."
+      },
+      "contact": {
+        "title": "11. Kontak",
+        "body": "Untuk pertanyaan atau permintaan privasi, hubungi kami di:"
+      }
+    },
+    "refunds": {
+      "metadata": {
+        "title": "Kebijakan Pengembalian Dana — Gallurio",
+        "description": "Pelajari bagaimana Gallurio menangani pembatalan, pengembalian dana, dan pemrosesan pembayaran Paddle."
+      },
+      "title": "Kebijakan Pengembalian Dana",
+      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "betaPeriod": {
+        "title": "1. Periode Beta",
+        "body1": "Gallurio saat ini dalam tahap beta. Jika tidak ada langganan berbayar atau pembayaran nyata yang dikumpulkan selama beta, tidak ada pengembalian dana yang diperlukan karena tidak ada biaya yang dikenakan.",
+        "body2": "Jika akses beta berbayar ditawarkan di masa mendatang, harga dan ketentuan pengembalian dana yang berlaku akan ditampilkan sebelum checkout."
+      },
+      "subscriptions": {
+        "title": "2. Langganan",
+        "body1": "Ketika paket berbayar tersedia, langganan Gallurio dapat ditagih bulanan, tahunan, atau sesuai periode penagihan yang ditampilkan saat checkout.",
+        "body2": "Pengguna dapat membatalkan langganan mereka untuk mencegah biaya perpanjangan di masa depan. Setelah pembatalan, akses dapat berlanjut hingga akhir periode penagihan saat ini kecuali dinyatakan lain."
+      },
+      "refundRequests": {
+        "title": "3. Permintaan Pengembalian Dana",
+        "intro": "Permintaan pengembalian dana ditinjau berdasarkan kasus per kasus.",
+        "approvalIntro": "Persetujuan dapat bergantung pada:",
+        "item1": "Tanggal pembelian",
+        "item2": "Periode penagihan",
+        "item3": "Penggunaan produk",
+        "item4": "Aktivitas akun",
+        "item5": "Masalah teknis",
+        "item6": "Biaya ganda",
+        "item7": "Hukum perlindungan konsumen yang berlaku",
+        "item8": "Proses pembayaran dan pengembalian dana Paddle",
+        "outro": "Mengirimkan permintaan pengembalian dana tidak menjamin bahwa pengembalian dana akan disetujui."
+      },
+      "paddleMor": {
+        "title": "4. Paddle sebagai Merchant of Record",
+        "body1": "Pembayaran untuk Gallurio dapat diproses oleh Paddle, Merchant of Record Gallurio. Paddle dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body2": "Jika pengguna membeli langganan Gallurio melalui Paddle, laporan penagihan mereka mungkin menampilkan Paddle atau deskriptor penagihan Paddle terkait."
+      },
+      "nonRefundable": {
+        "title": "5. Situasi yang Tidak Dapat Dikembalikan Dananya",
+        "intro": "Kecuali diwajibkan oleh hukum, pengembalian dana mungkin tidak diberikan untuk:",
+        "item1": "Waktu yang tidak digunakan dalam periode penagihan setelah pembatalan",
+        "item2": "Kegagalan membatalkan sebelum perpanjangan",
+        "item3": "Kurangnya penggunaan sementara",
+        "item4": "Perubahan pikiran setelah penggunaan yang substansial",
+        "item5": "Masalah yang disebabkan oleh pengaturan akun yang salah atau informasi yang diberikan pengguna",
+        "outro": "Gallurio akan tetap meninjau permintaan yang wajar, terutama jika ada masalah teknis atau penagihan."
+      },
+      "howToRequest": {
+        "title": "6. Cara Mengajukan Pengembalian Dana",
+        "body": "Untuk mengajukan pengembalian dana, hubungi kami di:",
+        "includeIntro": "Mohon sertakan:",
+        "item1": "Email akun",
+        "item2": "Nama bisnis atau workspace",
+        "item3": "Tanggal pembayaran",
+        "item4": "Alasan permintaan",
+        "item5": "Tangkapan layar atau detail penagihan terkait",
+        "outro": "Gallurio mungkin meminta informasi tambahan untuk memverifikasi pembayaran dan meninjau permintaan."
+      },
+      "cancellations": {
+        "title": "7. Pembatalan",
+        "body1": "Pengguna dapat membatalkan langganan mereka melalui pengaturan akun atau alur pengelolaan penagihan yang disediakan.",
+        "body2": "Pembatalan menghentikan perpanjangan di masa depan tetapi tidak secara otomatis mengembalikan dana pembayaran sebelumnya kecuali pengembalian dana disetujui atau diwajibkan oleh hukum."
+      }
+    },
+    "contact": {
+      "metadata": {
+        "title": "Kontak — Gallurio",
+        "description": "Hubungi Gallurio untuk dukungan, akses beta, pertanyaan penagihan, dan pertanyaan umum."
+      },
+      "header": {
+        "headline": "Butuh bantuan dengan Gallurio?",
+        "body": "Untuk dukungan, pertanyaan akses beta, kekhawatiran akun, masalah penagihan, atau pertanyaan umum, hubungi kami di:"
+      },
+      "supportTopics": {
+        "title": "Topik Dukungan",
+        "item1": "Akses beta",
+        "item2": "Pengaturan akun",
+        "item3": "Halaman portfolio",
+        "item4": "Formulir permintaan booking",
+        "item5": "Penagihan dan langganan",
+        "item6": "Permintaan pengembalian dana",
+        "item7": "Laporan bug",
+        "item8": "Masukan fitur",
+        "item9": "Pertanyaan kemitraan atau bisnis"
+      },
+      "responseTime": {
+        "title": "Waktu Respons",
+        "body1": "Kami berusaha merespons secepat yang wajar. Selama beta, waktu respons dapat bervariasi seiring kami terus mengembangkan dan meningkatkan Gallurio.",
+        "body2": "Untuk kekhawatiran akun atau penagihan yang mendesak, mohon sertakan detail relevan sebanyak mungkin agar kami dapat meninjau permintaan secara efisien."
+      },
+      "businessInfo": {
+        "title": "Informasi Bisnis",
+        "legalNamePlaceholder": "[Nama Resmi Bisnis, jika berlaku]",
+        "addressPlaceholder": "[Alamat Bisnis atau Negara Terdaftar, jika berlaku]",
+        "emailLabel": "Email:"
+      }
+    }
   },
   "auth": {
     "signInTitle": "Masuk",
