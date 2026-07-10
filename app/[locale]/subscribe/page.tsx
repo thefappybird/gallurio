@@ -2,7 +2,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getProPricing } from "@/lib/lemonsqueezy/pricing";
-import { getAuthUser } from "@/lib/auth/session";
 import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
 import { SubscribePanel } from "./_panel";
 
@@ -32,14 +31,13 @@ export default async function SubscribePage({
   // component, which uses it for a client-side redirect after checkout.
   const returnTo = sanitizeLocalReturnTo(rawReturnTo);
 
-  const { role, workspace } = await requireOrg({
+  const { role } = await requireOrg({
     allowDuringOnboarding: true,
     allowWhenGated: true,
   });
 
   if (role === "owner") {
     const proPricing = await getProPricing();
-    const authUser = await getAuthUser();
     return (
       <div className="flex flex-1 items-center justify-center bg-muted/40 px-4 py-12">
         <div className="w-full max-w-md border border-border bg-background p-8">
@@ -49,12 +47,7 @@ export default async function SubscribePage({
           <p className="mb-6 text-sm text-muted-foreground">
             {t("owner.description")}
           </p>
-          <SubscribePanel
-            workspaceId={String(workspace._id)}
-            customerEmail={authUser?.email ?? ""}
-            proPricing={proPricing}
-            returnTo={returnTo}
-          />
+          <SubscribePanel proPricing={proPricing} returnTo={returnTo} />
         </div>
       </div>
     );

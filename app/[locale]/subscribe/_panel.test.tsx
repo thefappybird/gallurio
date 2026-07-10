@@ -34,8 +34,6 @@ afterEach(() => {
 });
 
 const defaultProps: SubscribePanelProps = {
-  workspaceId: "ws_test_123",
-  customerEmail: "owner@example.com",
   proPricing: { currency: "PHP", monthly: 250, yearly: 2500 },
 };
 

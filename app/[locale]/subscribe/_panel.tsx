@@ -11,8 +11,6 @@ import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { Button } from "@/components/ui/button";
 
 export type SubscribePanelProps = {
-  workspaceId: string;
-  customerEmail: string;
   proPricing: ProPricing;
   returnTo?: string;
 };
@@ -30,7 +28,8 @@ export function SubscribePanel({ proPricing, returnTo }: SubscribePanelProps) {
     toast.success(t("upgradeSuccess"));
     // returnTo, if present, is where the gated resource lives (e.g. an
     // inquiry). Full reload (not client nav) so the freshly-webhook-updated
-    // plan/everSubscribed is reflected — mirrors _panel.tsx's own reload.
+    // plan/everSubscribed is reflected — mirrors settings/billing's own
+    // window.location.reload() after checkout success.
     window.location.href = returnTo || "/";
   });
 

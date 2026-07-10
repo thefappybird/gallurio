@@ -1,10 +1,10 @@
 /**
  * SubscribePage — server component gating tests.
  *
- * requireOrg/getProPricing/getAuthUser/next-intl server helpers are mocked so
- * the page can be called directly as an async function. SubscribePanel is
- * stubbed to isolate page-level rendering (owner vs. staff branch, and the
- * props passed through to the panel).
+ * requireOrg/getProPricing/next-intl server helpers are mocked so the page
+ * can be called directly as an async function. SubscribePanel is stubbed to
+ * isolate page-level rendering (owner vs. staff branch, and the props passed
+ * through to the panel).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -18,27 +18,14 @@ vi.mock("@/lib/lemonsqueezy/pricing", () => ({
   getProPricing: vi.fn().mockResolvedValue({ currency: "PHP", monthly: 250, yearly: 2500 }),
 }));
 
-vi.mock("@/lib/auth/session", () => ({
-  getAuthUser: vi.fn().mockResolvedValue({
-    workosUserId: "user_owner",
-    email: "owner@test.com",
-    name: "Owner User",
-    avatarUrl: null,
-  }),
-}));
-
 const requireOrgMock = vi.fn();
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: (...args: unknown[]) => requireOrgMock(...args),
 }));
 
 vi.mock("./_panel", () => ({
-  SubscribePanel: (props: { returnTo?: string; customerEmail: string }) => (
-    <div
-      data-testid="subscribe-panel"
-      data-return-to={props.returnTo ?? ""}
-      data-email={props.customerEmail}
-    />
+  SubscribePanel: (props: { returnTo?: string }) => (
+    <div data-testid="subscribe-panel" data-return-to={props.returnTo ?? ""} />
   ),
 }));
 
