@@ -14,15 +14,14 @@
     "seed": "tsx lib/db/seed.ts",
     "seed:portfolio": "tsx lib/db/seed-portfolio.ts",
     "reindex": "tsx lib/db/reindex.ts",
-    "paddle:sim": "tsx scripts/paddle-sim.ts",
+    "lemonsqueezy:sim": "tsx scripts/lemonsqueezy-sim.ts",
     "backfill:inquiries": "tsx scripts/backfill-inquiries.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
     "@hookform/resolvers": "^3.10.0",
+    "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "@measured/puck": "^0.20.2",
-    "@paddle/paddle-js": "^1.6.4",
-    "@paddle/paddle-node-sdk": "^3.8.0",
     "@react-pdf/renderer": "^4.5.1",
     "@tanstack/react-table": "^8.21.3",
     "@types/react-big-calendar": "^1.16.3",

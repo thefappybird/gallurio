@@ -15,16 +15,16 @@ export type PlanCatalogEntry = {
   featureKeys: string[];
   highlight?: boolean;
   entitlements: PlanEntitlements;
-  priceId?: string;
-  yearlyPriceId?: string;
+  variantId?: string;
+  yearlyVariantId?: string;
 };
 
-export function getProMonthlyPriceId() {
-  return process.env.PADDLE_PRICE_PRO_MONTHLY_ID ?? process.env.PADDLE_PRICE_PRO_ID ?? "";
+export function getProMonthlyVariantId() {
+  return process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID ?? "";
 }
 
-// Pricing is in PHP (display only — Paddle billing uses priceId, not amount).
-// Strings here are i18n keys so the catalog stays language-neutral.
+// Pricing is in PHP (display only — Lemon Squeezy billing uses variantId, not
+// amount). Strings here are i18n keys so the catalog stays language-neutral.
 export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
   {
     id: "free",
@@ -58,8 +58,8 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
     ],
     highlight: true,
     entitlements: PLAN_ENTITLEMENTS.pro,
-    priceId: getProMonthlyPriceId(),
-    yearlyPriceId: process.env.PADDLE_PRICE_PRO_YEARLY_ID ?? "",
+    variantId: getProMonthlyVariantId(),
+    yearlyVariantId: process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID ?? "",
   },
 ];
 
@@ -78,14 +78,15 @@ export function getPlanCatalog(id: PlanTier): PlanCatalogEntry {
   return entry;
 }
 
-// Maps a Paddle priceId back to our internal tier. Empty-string priceIds
-// (unset env vars) never match so they can't accidentally upgrade a workspace.
-export function planForPriceId(priceId: string): PlanTier {
-  if (!priceId) return "free";
+// Maps a Lemon Squeezy variantId back to our internal tier. Empty-string
+// variantIds (unset env vars) never match so they can't accidentally upgrade
+// a workspace.
+export function planForVariantId(variantId: string): PlanTier {
+  if (!variantId) return "free";
   const match = PLAN_CATALOG.find(
     (p) =>
-      (p.priceId && p.priceId !== "" && p.priceId === priceId) ||
-      (p.yearlyPriceId && p.yearlyPriceId !== "" && p.yearlyPriceId === priceId)
+      (p.variantId && p.variantId !== "" && p.variantId === variantId) ||
+      (p.yearlyVariantId && p.yearlyVariantId !== "" && p.yearlyVariantId === variantId)
   );
   return match?.id ?? "free";
 }
