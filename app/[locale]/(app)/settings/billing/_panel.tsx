@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { CreditCard, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
@@ -8,19 +8,10 @@ import { toast } from "sonner";
 import { PLAN_CATALOG } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PlanTier, LemonSqueezySubscriptionStatus } from "@/lib/db/models";
-
-declare global {
-  interface Window {
-    createLemonSqueezy?: () => void;
-    LemonSqueezy?: {
-      Setup: (opts: { eventHandler: (data: { event: string; data?: unknown }) => void }) => void;
-      Url: { Open: (url: string) => void; Close?: () => void };
-    };
-  }
-}
 
 export type BillingPanelProps = {
   currentPlan: PlanTier;
@@ -51,32 +42,12 @@ export function BillingPanel({
 
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [lsReady, setLsReady] = useState(false);
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://app.lemonsqueezy.com/js/lemon.js";
-    script.defer = true;
-    script.onload = () => {
-      window.createLemonSqueezy?.();
-      window.LemonSqueezy?.Setup({
-        eventHandler(e) {
-          if (e.event === "Checkout.Success") {
-            setLoadingPlan(null);
-            toast.success(t("upgradeSuccess"));
-            // Reload page to reflect new plan from server.
-            window.location.reload();
-          }
-        },
-      });
-      setLsReady(true);
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, [t]);
+  const lemonSqueezy = useLemonSqueezyCheckout(() => {
+    setLoadingPlan(null);
+    toast.success(t("upgradeSuccess"));
+    // Reload page to reflect new plan from server.
+    window.location.reload();
+  });
 
   async function openUpgradeCheckout(plan: PlanTier) {
     if (plan === "free" || plan === currentPlan) return;
@@ -104,11 +75,9 @@ export function BillingPanel({
       if (!data.checkoutUrl) {
         throw new Error("Missing checkoutUrl in checkout response");
       }
-      if (!lsReady || !window.LemonSqueezy) {
+      if (!lemonSqueezy.open(data.checkoutUrl)) {
         throw new Error(t("checkoutNotReady"));
       }
-
-      window.LemonSqueezy.Url.Open(data.checkoutUrl);
       // The overlay opens synchronously; release the button right away so a
       // dismissed/failed checkout doesn't leave a permanent spinner.
       setLoadingPlan(null);

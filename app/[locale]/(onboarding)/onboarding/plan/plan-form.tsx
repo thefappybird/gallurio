@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "@/lib/i18n/navigation";
 import { motion } from "motion/react";
 import { useTranslations, useLocale } from "next-intl";
@@ -13,20 +13,11 @@ import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { useActionError } from "@/lib/i18n/actionError";
+import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
 import { Button } from "@/components/ui/button";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { cn } from "@/lib/utils";
-
-declare global {
-  interface Window {
-    createLemonSqueezy?: () => void;
-    LemonSqueezy?: {
-      Setup: (opts: { eventHandler: (data: { event: string; data?: unknown }) => void }) => void;
-      Url: { Open: (url: string) => void; Close?: () => void };
-    };
-  }
-}
 
 export function PlanStepForm({
   currentPlan,
@@ -47,29 +38,7 @@ export function PlanStepForm({
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [lsReady, setLsReady] = useState(false);
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://app.lemonsqueezy.com/js/lemon.js";
-    script.defer = true;
-    script.onload = () => {
-      window.createLemonSqueezy?.();
-      window.LemonSqueezy?.Setup({
-        eventHandler(e) {
-          if (e.event === "Checkout.Success") {
-            router.push("/onboarding/done");
-          }
-        },
-      });
-      setLsReady(true);
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, [router]);
+  const lemonSqueezy = useLemonSqueezyCheckout(() => router.push("/onboarding/done"));
 
   async function submit() {
     setCheckoutError(null);
@@ -112,12 +81,10 @@ export function PlanStepForm({
         throw new Error("Missing checkoutUrl in checkout response");
       }
 
-      if (!lsReady || !window.LemonSqueezy) {
+      if (!lemonSqueezy.open(data.checkoutUrl)) {
         // lemon.js hasn't finished loading yet — surface clearly.
         throw new Error(t("checkoutNotReady"));
       }
-
-      window.LemonSqueezy.Url.Open(data.checkoutUrl);
     } catch (err) {
       const rawMsg = err instanceof Error ? err.message : "checkout_init_failed";
       const displayMsg = errMsg(rawMsg);
