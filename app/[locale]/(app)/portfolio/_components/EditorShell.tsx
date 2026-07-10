@@ -144,8 +144,6 @@ type Props = {
   guideDismissed: boolean;
   /** True once the owner has been through/skipped the story prompt flow. */
   storyPromptCompleted: boolean;
-  /** Dev-only: force the SEO setup prompt open without persisting completion. */
-  seoSetupPreview?: boolean;
   /** Owner's current public-page SEO description (seeds the story prompt). */
   initialSeoDescription: string;
   /** Owner's current SEO/style keywords (seeds the story prompt). */
@@ -419,7 +417,6 @@ export function EditorShell({
   currentTemplateId,
   guideDismissed,
   storyPromptCompleted,
-  seoSetupPreview = false,
   initialSeoDescription,
   initialSeoKeywords,
   workspaceBusinessType,
@@ -475,17 +472,16 @@ export function EditorShell({
   const [templateSeedSnapshot, setTemplateSeedSnapshot] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
-  const seoSetupPreviewMode = seoSetupPreview && !guideMode;
   // The story prompt auto-opens once, before the guide, on a fresh workspace.
   // Also gated on !guideDismissed so an owner who already dismissed the guide
   // via the old (pre-story-prompt) path never sees it retroactively, and on
   // !guideMode since the sandbox tour-preview shell has no real story to capture.
   const [storyPromptOpen, setStoryPromptOpen] = useState(
-    seoSetupPreviewMode || (!storyPromptCompleted && !guideDismissed && !guideMode)
+    !storyPromptCompleted && !guideDismissed && !guideMode
   );
   // The guide auto-opens on first run (until the owner persisted a dismissal),
   // and can be reopened on demand via the Guide button for the session.
-  const [guideOpen, setGuideOpen] = useState(!guideDismissed && !seoSetupPreviewMode);
+  const [guideOpen, setGuideOpen] = useState(!guideDismissed);
   const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
   function handleFormLocaleChange(next: string) {
     setFormLocale(next);
@@ -527,7 +523,6 @@ export function EditorShell({
   // drafts AND no recoverable buffer) go to the welcome template modal instead.
   // When guideDismissed=false, both stay closed until guide finishes/skips.
   const [entryOpen, setEntryOpen] = useState(() => {
-    if (seoSetupPreviewMode) return false;
     if (!guideDismissed) return false;
     // Brand-new check: no saved drafts AND no localStorage buffer.
     const hasDrafts = initialDrafts.length > 0;
@@ -544,7 +539,6 @@ export function EditorShell({
   });
   // Welcome template modal for brand-new users (no buffer AND no saved drafts).
   const [welcomeTemplatesOpen, setWelcomeTemplatesOpen] = useState(() => {
-    if (seoSetupPreviewMode) return false;
     if (!guideDismissed) return false;
     const hasDrafts = initialDrafts.length > 0;
     const hasBuffer = (() => {
@@ -1264,31 +1258,10 @@ export function EditorShell({
     }
   }
 
-  /**
-   * Dev-only SEO-setup preview should always continue into the first-build
-   * onboarding flow, never the returning-user entry dialog. After the preview
-   * prompt the owner either sees the guide (if they chose it and it's still
-   * eligible) or lands directly on the welcome template picker.
-   */
-  function openSeoSetupPreviewNextSurface(preferGuide: boolean) {
-    setEntryOpen(false);
-    if (preferGuide && !guideDismissed) {
-      setWelcomeTemplatesOpen(false);
-      setGuideOpen(true);
-      return;
-    }
-    setGuideOpen(false);
-    setWelcomeTemplatesOpen(true);
-  }
-
   function handleGuideSkip(dontShowAgain: boolean) {
     setGuideOpen(false);
     if (guideMode) {
       onGuideSkipClose?.(dontShowAgain);
-      return;
-    }
-    if (seoSetupPreviewMode) {
-      openSeoSetupPreviewNextSurface(false);
       return;
     }
     if (dontShowAgain) {
@@ -1304,10 +1277,6 @@ export function EditorShell({
     setGuideOpen(false);
     if (guideMode) {
       onGuideFinish?.(dontShowAgain);
-      return;
-    }
-    if (seoSetupPreviewMode) {
-      openSeoSetupPreviewNextSurface(false);
       return;
     }
     if (dontShowAgain) {
@@ -1925,7 +1894,7 @@ export function EditorShell({
           initialDescription={initialSeoDescription}
           initialKeywords={initialSeoKeywords}
           businessType={workspaceBusinessType}
-          persistOnExit={!seoSetupPreviewMode}
+          persistOnExit
           onBrandingSaved={({ logoUrl, logoAssetId }) => {
             if (!logoUrl || !logoAssetId) return;
             setHeaderConfig((current) => ({ ...current, logoUrl, logoAssetId }));
@@ -1933,14 +1902,9 @@ export function EditorShell({
           }}
           onContinueWithGuide={() => {
             setStoryPromptOpen(false);
-            if (seoSetupPreviewMode) openSeoSetupPreviewNextSurface(true);
           }}
           onExploreSelf={async () => {
             setStoryPromptOpen(false);
-            if (seoSetupPreviewMode) {
-              openSeoSetupPreviewNextSurface(false);
-              return;
-            }
             try {
               await dismissPortfolioGuideAction();
             } catch (err) {
