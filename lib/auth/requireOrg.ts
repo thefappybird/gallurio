@@ -4,6 +4,7 @@ import { getLocale } from "next-intl/server";
 import { connectDB } from "@/lib/db/mongoose";
 import { routing } from "@/lib/i18n/routing";
 import { User, Workspace, type WorkspaceDoc } from "@/lib/db/models";
+import { isWorkspaceGated } from "@/lib/billing/access";
 import { getAuthUser } from "./session";
 import { getActiveWorkspaceId } from "./activeWorkspace";
 
@@ -35,9 +36,11 @@ function localized(href: string, locale: string): string {
  *   5. Derive role: workspace.ownerUserId === workosUserId
  *      OR membership.role === "owner"
  *   6. Onboarding gate (owners only, bypassed by allowDuringOnboarding)
+ *   7. Subscription gate (isWorkspaceGated, bypassed by allowWhenGated)
+ *      — gated -> redirect to localized /subscribe
  */
 export async function requireOrg(
-  opts: { allowDuringOnboarding?: boolean } = {},
+  opts: { allowDuringOnboarding?: boolean; allowWhenGated?: boolean } = {},
 ): Promise<OrgContext> {
   const locale = await getLocale();
   const authUser = await getAuthUser();
@@ -65,6 +68,10 @@ export async function requireOrg(
   // Onboarding completion only applies to owners (members never onboard).
   if (isOwner && !opts.allowDuringOnboarding && !user.onboardingCompletedAt) {
     redirect(localized("/onboarding", locale));
+  }
+
+  if (!opts.allowWhenGated && isWorkspaceGated(workspace)) {
+    redirect(localized("/subscribe", locale));
   }
 
   const role: "owner" | "staff" = isOwner ? "owner" : "staff";

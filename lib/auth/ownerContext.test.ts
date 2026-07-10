@@ -205,6 +205,106 @@ describe("ownerContext — ownership check", () => {
   });
 });
 
+describe("ownerContext — subscription gate", () => {
+  it("gated owner (plan=free, everSubscribed=true) returns error: subscription_required", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `gated-owner-${wsId.toString()}`,
+      plan: "free",
+      everSubscribed: true,
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    const { ownerContext } = await load();
+    const result = await ownerContext();
+    expect("error" in result).toBe(true);
+    if ("error" in result) expect(result.error).toBe("subscription_required");
+  });
+
+  it("allowWhenGated=true bypasses the gate for a gated workspace", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `gated-bypass-${wsId.toString()}`,
+      plan: "free",
+      everSubscribed: true,
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    const { ownerContext } = await load();
+    const result = await ownerContext({ allowWhenGated: true });
+    expect("error" in result).toBe(false);
+  });
+
+  it("never-subscribed free workspace (everSubscribed=false) is NOT gated", async () => {
+    const wsId = await makeWorkspace();
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    const { ownerContext } = await load();
+    const result = await ownerContext();
+    expect("error" in result).toBe(false);
+  });
+
+  it("onboarding-incomplete owner gets finish_onboarding even when also gated (onboarding check runs first)", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `gated-onboarding-${wsId.toString()}`,
+      plan: "free",
+      everSubscribed: true,
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "business",
+      onboardingCompletedAt: null,
+    });
+
+    const { ownerContext } = await load();
+    const result = await ownerContext();
+    expect("error" in result).toBe(true);
+    if ("error" in result) expect(result.error).toMatch(/onboarding/i);
+  });
+});
+
 describe("ownerContext — tenant isolation", () => {
   it("cookie for a workspace the user is NOT a member of is rejected and returns error", async () => {
     const legitWsId = new Types.ObjectId();

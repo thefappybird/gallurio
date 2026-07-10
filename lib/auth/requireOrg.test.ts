@@ -298,6 +298,131 @@ describe("requireOrg — tenant isolation", () => {
   });
 });
 
+describe("requireOrg — subscription gate", () => {
+  it("gated owner (plan=free, everSubscribed=true) redirects to /subscribe", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `gated-owner-${wsId.toString()}`,
+      plan: "free",
+      everSubscribed: true,
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    const { requireOrg } = await load();
+
+    await expect(requireOrg()).rejects.toThrow("REDIRECT:/subscribe");
+    expect(redirectMock).toHaveBeenCalledWith("/subscribe");
+  });
+
+  it("gated staff member redirects to /subscribe", async () => {
+    authUserStub.workosUserId = "user_staff";
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `gated-staff-${wsId.toString()}`,
+      plan: "free",
+      everSubscribed: true,
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_staff",
+      email: "staff@test.com",
+      memberships: [{ workspaceId: wsId, role: "staff" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: null,
+    });
+
+    const { requireOrg } = await load();
+
+    await expect(requireOrg()).rejects.toThrow("REDIRECT:/subscribe");
+    expect(redirectMock).toHaveBeenCalledWith("/subscribe");
+  });
+
+  it("allowWhenGated=true bypasses the redirect for a gated workspace", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `gated-bypass-${wsId.toString()}`,
+      plan: "free",
+      everSubscribed: true,
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    const { requireOrg } = await load();
+    const ctx = await requireOrg({ allowWhenGated: true });
+
+    expect(redirectMock).not.toHaveBeenCalled();
+    expect(ctx.role).toBe("owner");
+  });
+
+  it("never-subscribed free workspace (everSubscribed=false) is NOT redirected", async () => {
+    const { wsId } = await makeWorkspaceWithOwner();
+    const { requireOrg } = await load();
+    const ctx = await requireOrg();
+
+    expect(redirectMock).not.toHaveBeenCalled();
+    expect(ctx.workspaceId).toBe(wsId.toString());
+  });
+
+  it("onboarding-incomplete owner redirects to /onboarding even when also gated (onboarding check runs first)", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `gated-onboarding-${wsId.toString()}`,
+      plan: "free",
+      everSubscribed: true,
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "business",
+      onboardingCompletedAt: null,
+    });
+
+    const { requireOrg } = await load();
+
+    await expect(requireOrg()).rejects.toThrow("REDIRECT:/onboarding");
+    expect(redirectMock).toHaveBeenCalledWith("/onboarding");
+  });
+});
+
 describe("requireRole", () => {
   it("returns context when user is owner", async () => {
     await makeWorkspaceWithOwner();
