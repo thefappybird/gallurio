@@ -16,7 +16,7 @@ export const BUSINESS_TYPE_VALUES = [
   "other",
 ] as const;
 
-// Paddle-supported merchant markets. PH leads because that's Gallurio's MVP
+// Lemon Squeezy-supported merchant markets. PH leads because that's Gallurio's MVP
 // launch market. SEA markets map to their primary language; en-only markets
 // (AU/CA/NZ/UK/US/SG) stay on English; Gulf markets fall back to English
 // until the Arabic locale ships — see lib/i18n/localeForCountry.ts.

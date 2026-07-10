@@ -1,15 +1,15 @@
-// Steps that update the Workspace Paddle billing fields.
+// Steps that update the Workspace Lemon Squeezy billing fields.
 //
 // IMPORTANT: This file intentionally imports ONLY npm packages (mongoose,
 // workflow/...). Project-local TypeScript files cannot be imported here because
 // the @workflow/vitest builder externalises non-step local files as .js paths
 // at runtime, and those compiled .js files don't exist in the source tree.
 //
-// Attempted import: @/lib/paddle/status.ts is a zero-dependency leaf, but
-// @workflow/vitest still resolves it as lib/paddle/status.js (a compiled path
-// that doesn't exist in the source tree), causing ERR_MODULE_NOT_FOUND. As a
-// last resort the status switch is inlined here.
-// KEEP IN SYNC WITH lib/paddle/status.ts — mapPaddleSubscriptionStatus().
+// Attempted import: @/lib/lemonsqueezy/status.ts is a zero-dependency leaf, but
+// @workflow/vitest still resolves it as lib/lemonsqueezy/status.js (a compiled
+// path that doesn't exist in the source tree), causing ERR_MODULE_NOT_FOUND. As
+// a last resort the status switch is inlined here.
+// KEEP IN SYNC WITH lib/lemonsqueezy/status.ts — mapLemonSqueezySubscriptionStatus().
 //
 // The test's beforeAll imports Workspace from the project source, which
 // registers the model in mongoose's global registry before any step runs.
@@ -18,31 +18,34 @@
 import mongoose from "mongoose";
 
 // ---------------------------------------------------------------------------
-// Inlined status normaliser (KEEP IN SYNC WITH lib/paddle/status.ts)
+// Inlined status normaliser (KEEP IN SYNC WITH lib/lemonsqueezy/status.ts)
 // ---------------------------------------------------------------------------
 
-type PaddleSubscriptionStatus =
+type LemonSqueezySubscriptionStatus =
   | "active"
   | "canceled"
   | "past_due"
   | "paused"
   | "trialing";
 
-function mapPaddleSubscriptionStatus(
+function mapLemonSqueezySubscriptionStatus(
   raw: string | null | undefined
-): PaddleSubscriptionStatus | null {
+): LemonSqueezySubscriptionStatus | null {
   switch (raw) {
+    case "on_trial":
+      return "trialing";
     case "active":
       return "active";
-    case "canceled":
-    case "cancelled":
-      return "canceled";
-    case "past_due":
-      return "past_due";
     case "paused":
       return "paused";
-    case "trialing":
-      return "trialing";
+    case "past_due":
+      return "past_due";
+    case "unpaid":
+      return "past_due";
+    case "cancelled":
+      return "canceled";
+    case "expired":
+      return "canceled";
     default:
       return null;
   }
@@ -64,10 +67,10 @@ async function ensureConnected(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 // NOTE: This step intentionally does NOT write the `plan` field. The webhook
-// (app/api/webhooks/paddle/route.ts) is the authoritative writer for `plan`
-// and applies the team-cap downgrade guard before calling resumeHook. The
-// step only persists subscription bookkeeping fields and clears the run id.
-// Writing `plan` here would race against the webhook's team-cap guard and
+// (app/api/webhooks/lemonsqueezy/route.ts) is the authoritative writer for
+// `plan` and applies the team-cap downgrade guard before calling resumeHook.
+// The step only persists subscription bookkeeping fields and clears the run
+// id. Writing `plan` here would race against the webhook's team-cap guard and
 // produce non-deterministic results on over-cap activations.
 export async function updateWorkspacePlanStep(
   workspaceId: string,
@@ -81,13 +84,13 @@ export async function updateWorkspacePlanStep(
   "use step";
   await ensureConnected();
 
-  const paddleSubscriptionStatus = mapPaddleSubscriptionStatus(event.status);
+  const lsSubscriptionStatus = mapLemonSqueezySubscriptionStatus(event.status);
 
   const $set: Record<string, unknown> = {
-    paddleSubscriptionId: event.subscriptionId,
-    paddleCustomerId: event.customerId,
-    paddleSubscriptionStatus,
-    paddleCurrentPeriodEnd: event.periodEnd ? new Date(event.periodEnd) : null,
+    lsSubscriptionId: event.subscriptionId,
+    lsCustomerId: event.customerId,
+    lsSubscriptionStatus,
+    lsCurrentPeriodEnd: event.periodEnd ? new Date(event.periodEnd) : null,
   };
 
   // Retrieve via registry — model registered by the caller's import of Workspace.ts.
@@ -102,6 +105,6 @@ export async function clearCheckoutRunStep(workspaceId: string) {
   const WorkspaceModel = mongoose.model("Workspace");
   await WorkspaceModel.updateOne(
     { _id: workspaceId },
-    { $unset: { paddleCheckoutWorkflowRunId: "" } }
+    { $unset: { lsCheckoutWorkflowRunId: "" } }
   );
 }

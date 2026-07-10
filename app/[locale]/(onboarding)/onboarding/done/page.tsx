@@ -5,15 +5,15 @@ import {
 } from "@/lib/auth/onboardingStep";
 import { connectDB } from "@/lib/db/mongoose";
 import { ONBOARDING_STEPS, User, Workspace, type PlanTier } from "@/lib/db/models";
-import { reconcilePaddleSubscription } from "@/lib/actions/onboarding";
+import { reconcileLemonSqueezySubscription } from "@/lib/actions/onboarding";
 import { DoneStepForm } from "./done-form";
 
-// When the user lands on the done page we eagerly reconcile the Paddle
+// When the user lands on the done page we eagerly reconcile the Lemon Squeezy
 // subscription onto the workspace. The webhook + workflow are the primary path;
 // this is the safety net for the race between the user completing checkout and
-// the webhook firing. Paddle checkout completes via an overlay event rather than
-// a redirect, so we reconcile unconditionally on load rather than gating on a
-// query param.
+// the webhook firing. Lemon Squeezy checkout completes via an overlay event
+// rather than a redirect, so we reconcile unconditionally on load rather than
+// gating on a query param.
 export default async function DoneStepPage() {
   const ctx = await loadOnboardingContext();
 
@@ -24,7 +24,7 @@ export default async function DoneStepPage() {
   }
 
   if (ctx.workspace) {
-    await reconcilePaddleSubscription(ctx.workspace._id.toString());
+    await reconcileLemonSqueezySubscription(ctx.workspace._id.toString());
   }
 
   let workspaceName = ctx.workspace?.name ?? "your workspace";

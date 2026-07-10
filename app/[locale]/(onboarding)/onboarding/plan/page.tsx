@@ -1,12 +1,11 @@
 import { loadOnboardingContext, requireStep } from "@/lib/auth/onboardingStep";
-import { getProPricing } from "@/lib/paddle/pricing";
-import { coerceBillingCountry } from "@/lib/validators/workspace";
+import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { PlanStepForm } from "./plan-form";
 
 export default async function PlanStepPage() {
   const ctx = await loadOnboardingContext();
   requireStep(ctx, "plan");
-  const proPricing = await getProPricing(coerceBillingCountry(ctx.workspace?.country));
+  const proPricing = await getProPricing();
 
   return (
     <PlanStepForm

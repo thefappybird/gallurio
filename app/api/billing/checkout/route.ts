@@ -1,11 +1,11 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace } from "@/lib/db/models";
-import { ensurePaddleCustomer } from "@/lib/paddle/client";
-import { getPlanCatalog, isPaidPlan } from "@/lib/paddle/plans";
+import { createSubscriptionCheckout } from "@/lib/lemonsqueezy/client";
+import { getPlanCatalog, isPaidPlan } from "@/lib/lemonsqueezy/plans";
 import { subscriptionCheckoutWorkflow } from "@/lib/workflows/subscriptionCheckout";
 import { start, getHookByToken, getRun } from "workflow/api";
 
@@ -52,17 +52,18 @@ export async function POST(req: Request) {
   }
 
   const catalog = getPlanCatalog(plan);
-  const priceId = cadence === "yearly" ? catalog.yearlyPriceId : catalog.priceId;
-  if (!priceId) {
+  const variantId = cadence === "yearly" ? catalog.yearlyVariantId : catalog.variantId;
+  if (!variantId) {
     return NextResponse.json(
-      { error: "paddle_price_not_configured" },
+      { error: "lemonsqueezy_variant_not_configured" },
       { status: 500 },
     );
   }
 
   await connectDB();
 
-  // Resolve email and name from WorkOS session for the Paddle customer record.
+  // Resolve email and name from WorkOS session — Lemon Squeezy resolves/
+  // creates the customer from the checkout email, no pre-create step needed.
   const authUser = await getAuthUser();
   if (!authUser) {
     return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
@@ -74,24 +75,21 @@ export async function POST(req: Request) {
   }
 
   const name = authUser.name || ctx.workspace.name;
+  const workspaceId = ctx.workspace._id.toString();
 
-  let customerId: string;
+  let checkoutUrl: string;
   let run: { runId: string };
   try {
-    customerId = await ensurePaddleCustomer({
+    await cancelInFlightCheckout(`ls-checkout-${workspaceId}`);
+    run = await start(subscriptionCheckoutWorkflow, [workspaceId, plan]);
+    checkoutUrl = await createSubscriptionCheckout({
+      variantId,
       email,
       name,
-      existingCustomerId: ctx.workspace.paddleCustomerId ?? undefined,
+      workspaceId,
     });
-    await cancelInFlightCheckout(
-      `paddle-checkout-${ctx.workspace._id.toString()}`,
-    );
-    run = await start(subscriptionCheckoutWorkflow, [
-      ctx.workspace._id.toString(),
-      plan,
-    ]);
   } catch (err) {
-    console.error("[billing.checkout] paddle/workflow init failed", err);
+    console.error("[billing.checkout] lemonsqueezy/workflow init failed", err);
     return NextResponse.json({ error: "checkout_init_failed" }, { status: 502 });
   }
 
@@ -99,15 +97,13 @@ export async function POST(req: Request) {
     { _id: ctx.workspace._id },
     {
       $set: {
-        paddleCustomerId: customerId,
-        paddleCheckoutWorkflowRunId: run.runId,
+        lsCheckoutWorkflowRunId: run.runId,
       },
     },
   );
 
   return NextResponse.json({
-    priceId,
-    customerEmail: email,
-    workspaceId: ctx.workspace._id.toString(),
+    checkoutUrl,
+    workspaceId,
   });
 }

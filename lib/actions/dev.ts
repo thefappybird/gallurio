@@ -21,14 +21,14 @@ export type DevPlanActionResult = {
 
 type ActionResult = { error?: string; ok?: boolean };
 
-// Dev-only escape hatch: flip a workspace's plan without touching Paddle.
-// Useful when iterating on plan-gated UI (invoice PDFs, etc.) without round-tripping Paddle's hosted
-// checkout overlay. Hard-blocked in production by the NODE_ENV gate.
+// Dev-only escape hatch: flip a workspace's plan without touching Lemon Squeezy.
+// Useful when iterating on plan-gated UI (invoice PDFs, etc.) without round-tripping Lemon
+// Squeezy's hosted checkout overlay. Hard-blocked in production by the NODE_ENV gate.
 //
-// The team-cap downgrade guard here mirrors the Paddle webhook's: if the
+// The team-cap downgrade guard here mirrors the Lemon Squeezy webhook's: if the
 // workspace currently has more teams than the target plan's cap allows,
 // refuse the plan change and surface the list of teams to delete. This
-// keeps the dev path forward-compatible with the eventual real Paddle
+// keeps the dev path forward-compatible with the eventual real Lemon Squeezy
 // downgrade UX.
 export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActionResult> {
   if (process.env.NODE_ENV === "production") {
@@ -80,19 +80,20 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
 
   // Simulate a complete active subscription so every billing-dependent surface
   // (settings billing panel, plan gates, "manage subscription") behaves exactly
-  // as it would with a real Paddle subscription — no Paddle credentials needed.
+  // as it would with a real Lemon Squeezy subscription — no Lemon Squeezy
+  // credentials needed.
   const isPaid = plan !== "free";
   await Workspace.updateOne(
     { _id: workspace._id },
     {
       $set: {
         plan,
-        paddleSubscriptionStatus: isPaid ? "active" : null,
-        paddleCurrentPeriodEnd: isPaid
+        lsSubscriptionStatus: isPaid ? "active" : null,
+        lsCurrentPeriodEnd: isPaid
           ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           : null,
-        paddleSubscriptionId: isPaid ? `dev_sub_${workspace._id}` : null,
-        paddleCustomerId: isPaid ? `dev_cus_${workspace._id}` : null,
+        lsSubscriptionId: isPaid ? `dev_sub_${workspace._id}` : null,
+        lsCustomerId: isPaid ? `dev_cus_${workspace._id}` : null,
       },
     }
   );

@@ -26,7 +26,7 @@ import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
-import { getProPricing } from "@/lib/paddle/pricing";
+import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { AccountPanel } from "../account/_panel";
 import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import type {
@@ -156,7 +156,7 @@ export default async function SettingsCatchallPage({
   };
 
   const t = await getTranslations("app.settings.tabs");
-  const proPricing = await getProPricing(workspace.country ?? "PH");
+  const proPricing = await getProPricing();
 
   // Active slug: null means base /settings -> render account tab
   const activeSlug = slug;
@@ -222,7 +222,7 @@ export default async function SettingsCatchallPage({
             <BillingPanel
               currentPlan={workspace.plan as "free" | "starter" | "pro"}
               paddleSubscriptionStatus={
-                (workspace.paddleSubscriptionStatus as
+                (workspace.lsSubscriptionStatus as
                   | "active"
                   | "canceled"
                   | "past_due"
@@ -230,7 +230,7 @@ export default async function SettingsCatchallPage({
                   | "trialing"
                   | null) ?? null
               }
-              paddleCurrentPeriodEnd={workspace.paddleCurrentPeriodEnd ?? null}
+              paddleCurrentPeriodEnd={workspace.lsCurrentPeriodEnd ?? null}
               workspaceId={String(workspace._id)}
               customerEmail={authUser?.email ?? ""}
               proPricing={proPricing}

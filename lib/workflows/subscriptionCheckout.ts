@@ -16,7 +16,7 @@ export async function subscriptionCheckoutWorkflow(
     status: string;
     periodEnd: string | null;
   }>({
-    token: `paddle-checkout-${workspaceId}`,
+    token: `ls-checkout-${workspaceId}`,
   });
 
   const event = await hook;
