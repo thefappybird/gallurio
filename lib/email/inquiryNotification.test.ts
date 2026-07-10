@@ -28,6 +28,7 @@ function makeData(overrides: Partial<InquiryNotificationData> = {}): InquiryNoti
     },
     description: "Looking for full-day coverage.",
     sessions: [{ startDate: "2026-08-15", startTime: "10:00", endTime: "18:00" }],
+    isRecipientGated: false,
     ...overrides,
   };
 }
@@ -86,8 +87,8 @@ describe("sendInquiryNotification", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.gallurio.test/";
     await sendInquiryNotification(makeData({ inquiryId: "inq_42" }));
     const arg = sendEmail.mock.calls[0][0];
-    expect(arg.text).toContain("https://app.gallurio.test/inquiries?inquiryId=inq_42");
-    expect(arg.html).toContain("https://app.gallurio.test/inquiries?inquiryId=inq_42");
+    expect(arg.text).toContain("https://app.gallurio.test/inquiry-redirect?inquiryId=inq_42");
+    expect(arg.html).toContain("https://app.gallurio.test/inquiry-redirect?inquiryId=inq_42");
     expect(arg.text).not.toContain("sign-in?redirect_url");
     expect(arg.html).not.toContain("sign-in?redirect_url");
   });
@@ -103,7 +104,7 @@ describe("sendInquiryNotification", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.gallurio.test";
     await sendInquiryNotification(makeData({ inquiryId: "inq_77" }));
     const { html } = sendEmail.mock.calls[0][0];
-    expect(html).toContain("https://app.gallurio.test/inquiries?inquiryId=inq_77");
+    expect(html).toContain("https://app.gallurio.test/inquiry-redirect?inquiryId=inq_77");
     expect(html).not.toContain("sign-in?redirect_url");
   });
 
@@ -111,7 +112,58 @@ describe("sendInquiryNotification", () => {
     delete process.env.NEXT_PUBLIC_APP_URL;
     await sendInquiryNotification(makeData({ inquiryId: "inq_55" }));
     const { html, text } = sendEmail.mock.calls[0][0];
-    expect(html).not.toContain("/inquiries");
-    expect(text).not.toContain("/inquiries");
+    expect(html).not.toContain("/inquiry-redirect");
+    expect(text).not.toContain("/inquiry-redirect");
+  });
+
+  it("omits the CTA and deep-link when NEXT_PUBLIC_APP_URL is unset, even when gated", async () => {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    await sendInquiryNotification(makeData({ inquiryId: "inq_56", isRecipientGated: true }));
+    const { html, text } = sendEmail.mock.calls[0][0];
+    expect(html).not.toContain("/inquiry-redirect");
+    expect(text).not.toContain("/inquiry-redirect");
+    expect(html).not.toContain("Subscribe and View");
+  });
+
+  describe("gated recipient", () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_APP_URL = "https://app.gallurio.test";
+    });
+
+    it("uses the Subscribe and View CTA label and links through the resolver", async () => {
+      await sendInquiryNotification(makeData({ inquiryId: "inq_99", isRecipientGated: true }));
+      const { html, text } = sendEmail.mock.calls[0][0];
+      expect(html).toContain("Subscribe and View");
+      expect(html).not.toContain("Review &amp; approve");
+      expect(html).toContain("https://app.gallurio.test/inquiry-redirect?inquiryId=inq_99");
+      expect(text).toContain("https://app.gallurio.test/inquiry-redirect?inquiryId=inq_99");
+    });
+
+    it("includes the subscribe copy in the body", async () => {
+      await sendInquiryNotification(makeData({ isRecipientGated: true }));
+      const { html, text } = sendEmail.mock.calls[0][0];
+      expect(html).toContain("Subscribe to Gallurio Pro to view the inquiry.");
+      expect(text).toContain("Subscribe to Gallurio Pro to view the inquiry.");
+    });
+  });
+
+  describe("non-gated recipient (unchanged behavior)", () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_APP_URL = "https://app.gallurio.test";
+    });
+
+    it("keeps the Review & approve CTA label", async () => {
+      await sendInquiryNotification(makeData({ inquiryId: "inq_100", isRecipientGated: false }));
+      const { html } = sendEmail.mock.calls[0][0];
+      expect(html).toContain("Review &amp; approve");
+      expect(html).not.toContain("Subscribe and View");
+      expect(html).not.toContain("Subscribe to Gallurio Pro to view the inquiry.");
+    });
+
+    it("still links through the /inquiry-redirect resolver", async () => {
+      await sendInquiryNotification(makeData({ inquiryId: "inq_101", isRecipientGated: false }));
+      const { html } = sendEmail.mock.calls[0][0];
+      expect(html).toContain("https://app.gallurio.test/inquiry-redirect?inquiryId=inq_101");
+    });
   });
 });

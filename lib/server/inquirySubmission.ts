@@ -1,5 +1,6 @@
 import "server-only";
 import mongoose from "mongoose";
+import { isWorkspaceGated } from "@/lib/billing/access";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, Client, Inquiry, Booking, PageviewRollup } from "@/lib/db/models";
 import {
@@ -58,6 +59,8 @@ export async function submitInquiry(
       currency: 1,
       timezone: 1,
       country: 1,
+      plan: 1,
+      everSubscribed: 1,
       "contact.email": 1,
       "publicPage.inquiryRecipientEmail": 1,
       "publicPage.formLocale": 1,
@@ -224,6 +227,7 @@ export async function submitInquiry(
         location,
         description,
         sessions: payload.sessions,
+        isRecipientGated: isWorkspaceGated(workspace),
       });
     } catch (err) {
       console.error("[inquiry] notification failed (non-fatal):", err);

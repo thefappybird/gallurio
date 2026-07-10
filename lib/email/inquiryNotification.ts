@@ -2,7 +2,6 @@
 import { sendEmail, type SendEmailResult } from "./send";
 import { renderBrandedEmail } from "./layout";
 import { gallurioBrand } from "./brand";
-import { buildInquiryModalPath } from "@/lib/inquiries/links";
 
 type InquiryLocation = {
   label?: string | null;
@@ -26,12 +25,14 @@ export type InquiryNotificationData = {
   location: InquiryLocation;
   description: string;
   sessions: Array<{ startDate: string; startTime: string; endTime: string }>;
+  isRecipientGated: boolean;
 };
 
-function inboxUrl(inquiryId: string): string | null {
+function redirectUrl(inquiryId: string): string | null {
   const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   if (!base) return null;
-  return `${base}${buildInquiryModalPath(inquiryId)}`;
+  const params = new URLSearchParams({ inquiryId });
+  return `${base}/inquiry-redirect?${params.toString()}`;
 }
 
 function formatSessions(sessions: InquiryNotificationData["sessions"]): string {
@@ -46,7 +47,7 @@ function formatLocation(location: InquiryLocation): string {
 export async function sendInquiryNotification(
   data: InquiryNotificationData
 ): Promise<SendEmailResult> {
-  const link = inboxUrl(data.inquiryId);
+  const link = redirectUrl(data.inquiryId);
   const phone = data.clientPhone || "—";
   const location = formatLocation(data.location);
   const sessionsText = formatSessions(data.sessions);
@@ -76,11 +77,15 @@ export async function sendInquiryNotification(
       { type: "spacer" },
       { type: "heading", text: "Message" },
       { type: "p", text: data.description },
-      ...(link
-        ? []
-        : [{ type: "p" as const, text: "Open your lead inbox to review this inquiry." }]),
+      ...(data.isRecipientGated
+        ? [{ type: "p" as const, text: "Subscribe to Gallurio Pro to view the inquiry." }]
+        : link
+          ? []
+          : [{ type: "p" as const, text: "Open your lead inbox to review this inquiry." }]),
     ],
-    ...(link ? { cta: { label: "Review & approve", url: link } } : {}),
+    ...(link
+      ? { cta: { label: data.isRecipientGated ? "Subscribe and View" : "Review & approve", url: link } }
+      : {}),
   });
 
   return sendEmail({
