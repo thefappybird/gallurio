@@ -294,6 +294,20 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
     const plan = planForVariantId(variantId);
     if (plan === "free") return;
 
+    // Defence-in-depth: listActiveSubscriptionsForEmail is scoped by the
+    // signed-in user's email, not this workspace. A user who owns multiple
+    // workspaces (or reuses an email across workspaces) could otherwise reach
+    // this safety net for a brand-new, unpaid workspace and have it silently
+    // inherit a DIFFERENT workspace's already-active subscription. Refuse to
+    // bind a subscription that's already claimed by another workspace.
+    const boundElsewhere = await Workspace.findOne({
+      _id: { $ne: workspaceId },
+      lsSubscriptionId: sub.id,
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (boundElsewhere) return;
+
     // Map raw Lemon Squeezy status through the shared normaliser — never
     // write an unmapped string to the DB enum field.
     const lsSubscriptionStatus = mapLemonSqueezySubscriptionStatus(
