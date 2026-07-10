@@ -2,7 +2,7 @@
  * Tests for settings server actions.
  *
  * Mongo: uses in-memory server — never mock Mongoose.
- * WorkOS + Paddle + Cloudinary + next/cache: mocked.
+ * WorkOS + Lemon Squeezy + Cloudinary + next/cache: mocked.
  */
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import {

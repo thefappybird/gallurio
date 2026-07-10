@@ -8,10 +8,10 @@ import {
 import { Workspace } from "@/lib/db/models";
 
 // ---------------------------------------------------------------------------
-// Env — read at module-eval time by lib/paddle/plans.ts, so set before import.
+// Env — read at module-eval time by lib/lemonsqueezy/plans.ts, so set before import.
 // ---------------------------------------------------------------------------
-process.env.PADDLE_PRICE_PRO_ID = "pri_test_pro";
-process.env.PADDLE_PRICE_PRO_YEARLY_ID = "pri_test_pro_yearly";
+process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID = "1001";
+process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = "1002";
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted)
@@ -25,8 +25,8 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: vi.fn(),
 }));
 
-vi.mock("@/lib/paddle/client", () => ({
-  ensurePaddleCustomer: vi.fn(),
+vi.mock("@/lib/lemonsqueezy/client", () => ({
+  createSubscriptionCheckout: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -41,12 +41,12 @@ vi.mock("workflow/api", () => ({
 }));
 
 import { requireOrg } from "@/lib/auth/requireOrg";
-import { ensurePaddleCustomer } from "@/lib/paddle/client";
+import { createSubscriptionCheckout } from "@/lib/lemonsqueezy/client";
 import { getAuthUser } from "@/lib/auth/session";
 import { start, getHookByToken, getRun } from "workflow/api";
 
 const mockRequireOrg = vi.mocked(requireOrg);
-const mockEnsureCustomer = vi.mocked(ensurePaddleCustomer);
+const mockCreateCheckout = vi.mocked(createSubscriptionCheckout);
 const mockGetAuthUser = vi.mocked(getAuthUser);
 const mockStart = vi.mocked(start);
 const mockGetHookByToken = vi.mocked(getHookByToken);
@@ -58,8 +58,7 @@ const mockGetRun = vi.mocked(getRun);
 
 async function seedWorkspace(opts: {
   plan?: "free" | "starter" | "pro";
-  paddleCustomerId?: string | null;
-  paddleCheckoutWorkflowRunId?: string | null;
+  lsCheckoutWorkflowRunId?: string | null;
 } = {}): Promise<Types.ObjectId> {
   const ws = await Workspace.create({
     clerkOrgId: `org_${Math.random().toString(36).slice(2, 10)}`,
@@ -67,8 +66,7 @@ async function seedWorkspace(opts: {
     name: "Test WS",
     slug: `t-${Math.random().toString(36).slice(2, 8)}`,
     plan: opts.plan ?? "free",
-    paddleCustomerId: opts.paddleCustomerId ?? null,
-    paddleCheckoutWorkflowRunId: opts.paddleCheckoutWorkflowRunId ?? null,
+    lsCheckoutWorkflowRunId: opts.lsCheckoutWorkflowRunId ?? null,
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
@@ -77,12 +75,11 @@ async function seedWorkspace(opts: {
   return ws._id;
 }
 
-function wireAuth(wsId: Types.ObjectId, paddleCustomerId: string | null = null) {
+function wireAuth(wsId: Types.ObjectId) {
   mockRequireOrg.mockResolvedValue({
     workspace: {
       _id: wsId,
       name: "Test WS",
-      paddleCustomerId,
     },
   } as never);
 
@@ -122,7 +119,7 @@ beforeEach(async () => {
   await clearCollections();
   vi.clearAllMocks();
 
-  mockEnsureCustomer.mockResolvedValue("ctm_default");
+  mockCreateCheckout.mockResolvedValue("https://checkout.lemonsqueezy.com/buy/abc123");
   mockStart.mockResolvedValue({ runId: "run_new" } as never);
   // Default: no hook in flight (common path).
   mockGetHookByToken.mockRejectedValue(new Error("HookNotFound"));
@@ -159,7 +156,7 @@ describe("billing checkout — validation", () => {
 });
 
 describe("billing checkout — happy path (no stale run)", () => {
-  it("starts a workflow, persists customer + run id, and returns the price id", async () => {
+  it("starts a workflow, persists the run id, and returns the checkout url", async () => {
     const wsId = await seedWorkspace();
     wireAuth(wsId);
 
@@ -169,23 +166,28 @@ describe("billing checkout — happy path (no stale run)", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({
-      priceId: "pri_test_pro",
-      customerEmail: "owner@example.com",
+      checkoutUrl: "https://checkout.lemonsqueezy.com/buy/abc123",
       workspaceId: wsId.toString(),
     });
 
     // No in-flight hook -> nothing cancelled.
     expect(mockGetRun).not.toHaveBeenCalled();
     expect(mockStart).toHaveBeenCalledOnce();
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variantId: "1001",
+        email: "owner@example.com",
+        workspaceId: wsId.toString(),
+      })
+    );
 
     const ws = await Workspace.findById(wsId).lean();
-    expect(ws?.paddleCustomerId).toBe("ctm_default");
-    expect(ws?.paddleCheckoutWorkflowRunId).toBe("run_new");
+    expect(ws?.lsCheckoutWorkflowRunId).toBe("run_new");
   });
 });
 
 describe("billing checkout — cadence", () => {
-  it("resolves the yearly priceId when cadence is 'yearly'", async () => {
+  it("resolves the yearly variantId when cadence is 'yearly'", async () => {
     const wsId = await seedWorkspace();
     wireAuth(wsId);
 
@@ -193,15 +195,16 @@ describe("billing checkout — cadence", () => {
     const res = await POST(makeReq({ plan: "pro", cadence: "yearly" }));
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.priceId).toBe("pri_test_pro_yearly");
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: "1002" })
+    );
   });
 });
 
 describe("billing checkout — idempotent init (Bug #2 regression)", () => {
   it("cancels the in-flight workflow run before starting a new one", async () => {
     const wsId = await seedWorkspace({
-      paddleCheckoutWorkflowRunId: "run_old",
+      lsCheckoutWorkflowRunId: "run_old",
     });
     wireAuth(wsId);
 
@@ -218,14 +221,14 @@ describe("billing checkout — idempotent init (Bug #2 regression)", () => {
     // The stale run was looked up by the deterministic token and cancelled
     // BEFORE the new run was started.
     expect(mockGetHookByToken).toHaveBeenCalledWith(
-      `paddle-checkout-${wsId.toString()}`
+      `ls-checkout-${wsId.toString()}`
     );
     expect(mockGetRun).toHaveBeenCalledWith("run_old");
     expect(cancel).toHaveBeenCalledOnce();
     expect(mockStart).toHaveBeenCalledOnce();
 
     const ws = await Workspace.findById(wsId).lean();
-    expect(ws?.paddleCheckoutWorkflowRunId).toBe("run_new");
+    expect(ws?.lsCheckoutWorkflowRunId).toBe("run_new");
   });
 
   it("still starts a fresh run when cancelling the stale run fails", async () => {
@@ -242,5 +245,20 @@ describe("billing checkout — idempotent init (Bug #2 regression)", () => {
 
     expect(res.status).toBe(200);
     expect(mockStart).toHaveBeenCalledOnce();
+  });
+});
+
+describe("billing checkout — checkout creation failure", () => {
+  it("returns 502 when createSubscriptionCheckout throws", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+    mockCreateCheckout.mockRejectedValue(new Error("lemonsqueezy down"));
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }));
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body).toEqual({ error: "checkout_init_failed" });
   });
 });

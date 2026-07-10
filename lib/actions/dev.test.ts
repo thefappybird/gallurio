@@ -82,13 +82,13 @@ describe("devActivatePlanAction", () => {
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("pro");
-    expect(updated?.paddleSubscriptionStatus).toBe("active");
-    expect(updated?.paddleCurrentPeriodEnd).toBeTruthy();
+    expect(updated?.lsSubscriptionStatus).toBe("active");
+    expect(updated?.lsCurrentPeriodEnd).toBeTruthy();
     // IDs are populated so billing-dependent surfaces behave like a real sub.
-    expect(updated?.paddleSubscriptionId).toBe(`dev_sub_${ws._id}`);
-    expect(updated?.paddleCustomerId).toBe(`dev_cus_${ws._id}`);
+    expect(updated?.lsSubscriptionId).toBe(`dev_sub_${ws._id}`);
+    expect(updated?.lsCustomerId).toBe(`dev_cus_${ws._id}`);
 
-    // Onboarding is advanced so the flow can complete without Paddle.
+    // Onboarding is advanced so the flow can complete without Lemon Squeezy.
     const user = await User.findOne({ workosUserId: WOS_ID }).lean();
     expect(user?.onboardingStep).toBe("done");
   });
@@ -100,10 +100,10 @@ describe("devActivatePlanAction", () => {
       {
         $set: {
           plan: "pro",
-          paddleSubscriptionStatus: "active",
-          paddleSubscriptionId: "dev_sub_x",
-          paddleCustomerId: "dev_cus_x",
-          paddleCurrentPeriodEnd: new Date(),
+          lsSubscriptionStatus: "active",
+          lsSubscriptionId: "dev_sub_x",
+          lsCustomerId: "dev_cus_x",
+          lsCurrentPeriodEnd: new Date(),
         },
       },
     );
@@ -113,10 +113,10 @@ describe("devActivatePlanAction", () => {
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("free");
-    expect(updated?.paddleSubscriptionStatus).toBeNull();
-    expect(updated?.paddleSubscriptionId).toBeNull();
-    expect(updated?.paddleCustomerId).toBeNull();
-    expect(updated?.paddleCurrentPeriodEnd).toBeNull();
+    expect(updated?.lsSubscriptionStatus).toBeNull();
+    expect(updated?.lsSubscriptionId).toBeNull();
+    expect(updated?.lsCustomerId).toBeNull();
+    expect(updated?.lsCurrentPeriodEnd).toBeNull();
   });
 
   it("is blocked in production", async () => {
