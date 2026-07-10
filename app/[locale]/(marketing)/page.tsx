@@ -9,6 +9,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/db/models";
 import { buttonVariants } from "@/components/ui/button";
 import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
+import { AmbientBackground } from "@/components/app/ambient-background";
 import { PricingTeaser } from "./_components/pricing-teaser";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -84,7 +85,8 @@ export default async function Home({ params }: Props) {
           class), not a second palette. The breakout screenshot bleeds into
           the light section below via negative margin. */}
       <section className="dark relative bg-background pt-20 pb-40 text-center text-foreground sm:pt-28">
-        <div className="mx-auto max-w-2xl px-4 sm:px-6" data-anim="slide-up">
+        <AmbientBackground />
+        <div className="relative mx-auto max-w-2xl px-4 sm:px-6" data-anim="slide-up">
           <h1 className="text-balance font-heading text-4xl font-extrabold tracking-tighter sm:text-6xl">
             {t("hero.headline")}
           </h1>
@@ -192,8 +194,9 @@ export default async function Home({ params }: Props) {
       </section>
 
       {/* Final CTA — dark bookend, matching the hero. */}
-      <section data-anim="slide-up" className="dark border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-6">
+      <section data-anim="slide-up" className="dark relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">
+        <AmbientBackground />
+        <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6">
           <h2 className="text-balance font-heading text-3xl font-extrabold tracking-tight sm:text-5xl">
             {t("finalCta.title")}
           </h2>
