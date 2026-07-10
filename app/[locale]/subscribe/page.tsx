@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { getAuthUser } from "@/lib/auth/session";
+import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
 import { SubscribePanel } from "./_panel";
 
 export async function generateMetadata({
@@ -26,7 +27,10 @@ export default async function SubscribePage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("subscribe");
-  const { returnTo } = await searchParams;
+  const { returnTo: rawReturnTo } = await searchParams;
+  // Untrusted query param — sanitize before it ever reaches the client
+  // component, which uses it for a client-side redirect after checkout.
+  const returnTo = sanitizeLocalReturnTo(rawReturnTo);
 
   const { role, workspace } = await requireOrg({
     allowDuringOnboarding: true,
