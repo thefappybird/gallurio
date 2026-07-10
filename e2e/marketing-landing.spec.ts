@@ -83,20 +83,6 @@ test("landing page renders all sections with no horizontal overflow at 375px", a
   ).toBeLessThanOrEqual(380);
 });
 
-test("dark hero header appears only on the landing page, not on other marketing pages", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-
-  await page.goto("/");
-  await expect(page.locator("header.dark")).toHaveCount(1);
-  await expect(page.locator("footer.dark")).toHaveCount(1);
-
-  await page.goto("/pricing");
-  await expect(page.locator("header.dark")).toHaveCount(0);
-  await expect(page.locator("footer.dark")).toHaveCount(0);
-});
-
 test("cadence toggle switches the Pro price between monthly and yearly", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
@@ -104,6 +90,23 @@ test("cadence toggle switches the Pro price between monthly and yearly", async (
   await expect(page.getByText("$14/mo", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: /Yearly/ }).click();
   await expect(page.getByText("$10/mo, billed yearly", { exact: false })).toBeVisible();
+});
+
+test("hero ambient background follows the site theme toggle", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+
+  const lightSvg = page.locator('img[src*="background-light.svg"]').first();
+  const darkSvg = page.locator('img[src*="background-dark.svg"]').first();
+
+  await expect(lightSvg).toBeVisible();
+  await expect(darkSvg).toBeHidden();
+
+  await page.getByRole("button", { name: "Theme" }).first().click();
+  await page.getByRole("menuitem", { name: "Dark" }).click();
+
+  await expect(darkSvg).toBeVisible();
+  await expect(lightSvg).toBeHidden();
 });
 
 test("ar locale renders right-to-left with translated header/footer", async ({ page }) => {

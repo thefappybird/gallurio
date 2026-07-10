@@ -54,7 +54,7 @@ function AnimatedBackgroundImage({
 
 /**
  * Full-bleed, theme-aware, slowly-drifting SVG background. Shared across
- * onboarding, auth, and the marketing landing page's dark hero/final-CTA
+ * onboarding, auth, and the marketing landing page's hero/final-CTA
  * sections. Caller positions/sizes it via a `relative` ancestor — this
  * component fills that ancestor with `absolute inset-0` and self-clips its
  * oversized drift range. Respects `prefers-reduced-motion`.

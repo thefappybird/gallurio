@@ -1069,13 +1069,14 @@ utilities (`ms/me/ps/pe/start/end/text-start`), never physical
 ### Landing (`/`) — "Draft B / Committed Teal"
 
 1. Sticky header (logo, Pricing, Contact, Sign in, Join the Beta,
-   `ThemeToggle`, `LocaleSwitcher`) and footer both render with the app's
-   `.dark` theme tokens scoped to this route only (`usePathname() === "/"`
-   in `marketing-header.tsx` / `marketing-footer.tsx`) — every other
-   marketing page keeps the default light chrome.
-2. Hero: dark section, headline + body + single "Join the Beta" CTA, with a
-   breakout product screenshot (`portfolio-builder-canvas.png`) bleeding
-   into the section below via negative margin.
+   `ThemeToggle`, `LocaleSwitcher`) and footer — same theme-following chrome
+   as every other marketing page, no route-scoped dark override.
+2. Hero: headline + body + single "Join the Beta" CTA over an ambient
+   drifting SVG background (`AmbientBackground`, shared with onboarding/
+   auth), with a breakout product screenshot
+   (`portfolio-builder-canvas.png`) bleeding into the section below via
+   negative margin. Follows the visitor's site theme like the rest of the
+   page.
 3. Merged two-column "What is Gallurio?" + "Built for Creative Businesses"
    section, light ground, sized to absorb the hero's breakout image.
 4. Three alternating full-bleed tonal feature panels (card / muted / brand
@@ -1094,8 +1095,8 @@ utilities (`ms/me/ps/pe/start/end/text-start`), never physical
    change before public launch (kept consistent with `/pricing`'s own
    "planned" framing).
 8. Beta Notice — plain text, quiet tone.
-9. Final CTA — dark bookend section matching the hero, headline + Join the
-   Beta button.
+9. Final CTA — bookend section matching the hero (same ambient background,
+   same theme-following treatment), headline + Join the Beta button.
 
 Screenshots ship at their final filenames so the build/deploy works
 immediately; overwrite the same paths with real captures when available:

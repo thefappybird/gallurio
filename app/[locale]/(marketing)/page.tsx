@@ -80,11 +80,10 @@ export default async function Home({ params }: Props) {
     <>
       <MotionObserver />
 
-      {/* Hero — the one full "committed" dark moment at the top of the page,
-          reusing the app's own dark theme tokens (scoped via the `dark`
-          class), not a second palette. The breakout screenshot bleeds into
-          the light section below via negative margin. */}
-      <section className="dark relative bg-background pt-20 pb-40 text-center text-foreground sm:pt-28">
+      {/* Hero — follows the visitor's site theme like the rest of the page
+          (no forced dark override). The breakout screenshot bleeds into the
+          section below via negative margin. */}
+      <section className="relative bg-background pt-20 pb-40 text-center text-foreground sm:pt-28">
         <AmbientBackground />
         <div className="relative mx-auto max-w-2xl px-4 sm:px-6" data-anim="slide-up">
           <h1 className="text-balance font-heading text-4xl font-extrabold tracking-tighter sm:text-6xl">
@@ -193,8 +192,8 @@ export default async function Home({ params }: Props) {
         </div>
       </section>
 
-      {/* Final CTA — dark bookend, matching the hero. */}
-      <section data-anim="slide-up" className="dark relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">
+      {/* Final CTA — bookend matching the hero, same theme-following treatment. */}
+      <section data-anim="slide-up" className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">
         <AmbientBackground />
         <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6">
           <h2 className="text-balance font-heading text-3xl font-extrabold tracking-tight sm:text-5xl">

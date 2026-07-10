@@ -2,23 +2,13 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Link, usePathname } from "@/lib/i18n/navigation";
+import { Link } from "@/lib/i18n/navigation";
 
-// Bookends the landing page's dark hero — see marketing-header.tsx for why
-// only "/" gets the scoped dark override.
 export function MarketingFooter() {
-  const pathname = usePathname();
-  const isLanding = pathname === "/";
   const tFooter = useTranslations("marketing.footer");
 
   return (
-    <footer
-      className={
-        isLanding
-          ? "dark border-t border-border bg-background text-foreground"
-          : "border-t border-border"
-      }
-    >
+    <footer className="border-t border-border">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-2">
           <Image
