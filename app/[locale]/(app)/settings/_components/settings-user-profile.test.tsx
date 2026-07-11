@@ -5,11 +5,6 @@ import { renderWithProviders } from "@/test-utils/render";
 import { SettingsUserProfile } from "./settings-user-profile";
 import type { SettingsPage } from "./settings-user-profile";
 
-// Stub SettingsOrgSwitcher so it doesn't pull in server actions.
-vi.mock("./settings-org-switcher", () => ({
-  SettingsOrgSwitcher: () => <div data-testid="org-switcher" />,
-}));
-
 // Stub next-intl.
 vi.mock("next-intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next-intl")>();
@@ -57,26 +52,17 @@ const allPages: SettingsPage[] = [
   },
 ];
 
-const mockWorkspaces = [
-  { id: "ws_aaa", name: "Workspace A" },
-  { id: "ws_bbb", name: "Workspace B" },
-];
-
-const singleWorkspace = [{ id: "ws_aaa", name: "Solo Workspace" }];
-
 function renderSettings(
   role: "owner" | "staff",
   activeSlug: string | null = "account",
-  workspaces = mockWorkspaces,
-  currentWorkspaceId = "ws_aaa",
+  workspaceName = "Solo Workspace",
 ) {
   return renderWithProviders(
     <SettingsUserProfile
       role={role}
       pages={allPages}
       activeSlug={activeSlug}
-      workspaces={workspaces}
-      currentWorkspaceId={currentWorkspaceId}
+      workspaceName={workspaceName}
     />,
   );
 }
@@ -106,9 +92,9 @@ describe("SettingsUserProfile", () => {
       }
     });
 
-    it("renders org-switcher bar", () => {
+    it("renders the workspace name bar", () => {
       renderSettings("owner");
-      expect(screen.getByTestId("org-switcher")).toBeInTheDocument();
+      expect(screen.getByText("Solo Workspace")).toBeInTheDocument();
     });
   });
 
@@ -145,28 +131,6 @@ describe("SettingsUserProfile", () => {
     });
   });
 
-  describe("workspace switcher bar", () => {
-    it("renders the org-switcher dropdown when there are 2+ workspaces", () => {
-      renderSettings("owner", "account", mockWorkspaces, "ws_aaa");
-      expect(screen.getByTestId("org-switcher")).toBeInTheDocument();
-    });
-
-    it("does NOT render the org-switcher dropdown when there is only 1 workspace", () => {
-      renderSettings("owner", "account", singleWorkspace, "ws_aaa");
-      expect(screen.queryByTestId("org-switcher")).not.toBeInTheDocument();
-    });
-
-    it("renders the single workspace name as static text when there is only 1 workspace", () => {
-      renderSettings("owner", "account", singleWorkspace, "ws_aaa");
-      expect(screen.getByText("Solo Workspace")).toBeInTheDocument();
-    });
-
-    it("falls back to the first workspace name when currentWorkspaceId has no match", () => {
-      renderSettings("owner", "account", singleWorkspace, "ws_unknown");
-      expect(screen.getByText("Solo Workspace")).toBeInTheDocument();
-    });
-  });
-
   describe("tab-nav pending affordance", () => {
     it("marks the clicked (non-active) tab as busy until activeSlug catches up, in both nav variants", () => {
       const { rerender } = renderSettings("owner", "account");
@@ -186,8 +150,7 @@ describe("SettingsUserProfile", () => {
           role="owner"
           pages={allPages}
           activeSlug="customize"
-          workspaces={mockWorkspaces}
-          currentWorkspaceId="ws_aaa"
+          workspaceName="Solo Workspace"
         />,
       );
       for (const link of screen.getAllByRole("link", { name: /customize/i })) {

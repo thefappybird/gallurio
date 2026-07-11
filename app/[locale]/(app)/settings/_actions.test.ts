@@ -109,14 +109,12 @@ import {
   enrollMfaAction,
   verifyMfaEnrollmentAction,
   disableMfaAction,
-  setActiveWorkspaceAction,
   updatePasswordAction,
   sendSetPasswordEmailAction,
   updateAvatarAction,
 } from "./_actions";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { cookies } from "next/headers";
-import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { AuthenticationException } from "@workos-inc/node";
@@ -998,59 +996,6 @@ describe("disableMfaAction", () => {
     expect(mockWorkos.multiFactorAuth.listUserAuthFactors).toHaveBeenCalledWith(
       expect.objectContaining({ userId: OWNER_WORKOS_ID }),
     );
-  });
-});
-
-// ---- setActiveWorkspaceAction -----------------------------------------------
-
-describe("setActiveWorkspaceAction", () => {
-  it("switches to a workspace the user is a member of", async () => {
-    const wsB = await seedWorkspaceB();
-
-    await User.updateOne(
-      { workosUserId: OWNER_WORKOS_ID },
-      {
-        $set: {
-          memberships: [
-            { workspaceId: WS_A_ID, role: "owner" },
-            { workspaceId: wsB._id, role: "staff" },
-          ],
-        },
-      },
-    );
-
-    let threw = false;
-    try {
-      await setActiveWorkspaceAction(String(wsB._id));
-    } catch (e) {
-      threw = true;
-      expect((e as Error).message).toMatch(/REDIRECT/);
-    }
-    expect(threw).toBe(true);
-    expect(setActiveWorkspace).toHaveBeenCalledWith(OWNER_WORKOS_ID, String(wsB._id));
-  });
-
-  it("rejects workspaceId not in the user memberships (tenant isolation)", async () => {
-    const strangerWs = await Workspace.create({
-      slug: "stranger-ws",
-      name: "Stranger WS",
-      ownerUserId: "user_stranger",
-      businessType: "other",
-      country: "SG",
-      currency: "SGD",
-      timezone: "Asia/Singapore",
-    });
-
-    const result = await setActiveWorkspaceAction(String(strangerWs._id));
-    expect(result.error).toBeTruthy();
-    expect(setActiveWorkspace).not.toHaveBeenCalled();
-  });
-
-  it("unauthenticated returns error", async () => {
-    mockGetAuthUser.mockResolvedValue(null);
-
-    const result = await setActiveWorkspaceAction(String(WS_A_ID));
-    expect(result.error).toBe("not_authenticated");
   });
 });
 

@@ -115,7 +115,7 @@ vi.mock("@/lib/auth/activeWorkspace", () => ({
   clearActiveWorkspace: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Stub User and Workspace Mongoose queries used by the page to load member workspaces.
+// Stub the User Mongoose query used by the page to load MFA state.
 vi.mock("@/lib/db/models", () => ({
   User: {
     findOne: vi.fn().mockReturnValue({
@@ -124,13 +124,6 @@ vi.mock("@/lib/db/models", () => ({
         mfaEnabled: false,
         memberships: [{ workspaceId: "ws_1", role: "owner" }],
       }),
-    }),
-  },
-  Workspace: {
-    find: vi.fn().mockReturnValue({
-      lean: vi.fn().mockResolvedValue([
-        { _id: "ws_1", name: "Sarah Photography" },
-      ]),
     }),
   },
   PortfolioDraft: {

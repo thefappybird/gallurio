@@ -14,7 +14,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { connectDB } from "@/lib/db/mongoose";
-import { User, Workspace } from "@/lib/db/models";
+import { User } from "@/lib/db/models";
 import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import {
   normalizeSettingsSeoFields,
@@ -77,21 +77,6 @@ export default async function SettingsCatchallPage({
   const userDoc = await User.findOne({ workosUserId: userId }).lean();
   const mfaEnabled = userDoc?.mfaEnabled ?? false;
   const { hasOAuth } = await getAuthMethods(userId);
-
-  // Load all workspaces the user is a member of for the switcher
-  const membershipWorkspaceIds = (userDoc?.memberships ?? []).map(
-    (m) => m.workspaceId,
-  );
-  const memberWorkspaces = await Workspace.find(
-    { _id: { $in: membershipWorkspaceIds } },
-    { _id: 1, name: 1 },
-  ).lean();
-
-  const workspaceSwitcherItems = memberWorkspaces.map((w) => ({
-    id: String(w._id),
-    name: w.name,
-    logoUrl: null,
-  }));
 
   const businessDefaults: UpdateWorkspaceBusinessInput = {
     name: workspace.name,
@@ -165,8 +150,7 @@ export default async function SettingsCatchallPage({
     <SettingsUserProfile
       role={role}
       activeSlug={activeSlug ?? "account"}
-      workspaces={workspaceSwitcherItems}
-      currentWorkspaceId={String(workspace._id)}
+      workspaceName={workspace.name}
       pages={[
         {
           slug: "account",
