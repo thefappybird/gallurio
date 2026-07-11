@@ -56,6 +56,7 @@ import {
   Team,
   TeamMembership,
   TEAM_COLOR_PALETTE,
+  PromoCode,
 } from "./models";
 import { Notification } from "./models/Notification";
 import { recordBookingForClient } from "./clientTransactions";
@@ -134,6 +135,7 @@ async function dropTenantCollections() {
     "teammemberships",
     "invitations",
     "notifications",
+    "promocodes",
   ];
   for (const c of collections) {
     if (tenantNames.includes(c.collectionName)) {
@@ -689,6 +691,14 @@ async function main() {
       lastAccessedAt: owner.memberships.length === 0 ? now : null,
     });
   }
+
+  console.log("→ Seeding promo codes…");
+  await PromoCode.insertMany([
+    { title: "Lifetime Pro", code: "LIFETIME2026", type: "lifetime", expiresAt: null },
+    { title: "1 Year Pro", code: "YEARPRO2026", type: "yearly", expiresAt: null },
+    { title: "1 Month Pro", code: "MONTHPRO2026", type: "monthly", expiresAt: null },
+    { title: "Beta Access", code: "BETAACCESS", type: "beta", expiresAt: null },
+  ]);
 
   console.log("→ Creating owner users…");
   for (const [ownerUserId, info] of owners) {

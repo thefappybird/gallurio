@@ -290,6 +290,9 @@ const workspaceSchema = new Schema(
     // lib/billing/checkGrantExpiry.ts.
     planGrantExpiresAt: { type: Date, default: null },
 
+    // Promo codes already applied to this workspace — guards re-redemption.
+    codesRedeemed: { type: [Schema.Types.ObjectId], ref: "PromoCode", default: [] },
+
     trialEndsAt: { type: Date, default: null },
     onboardingCompletedAt: { type: Date, default: null },
   },
