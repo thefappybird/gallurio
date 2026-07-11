@@ -293,6 +293,19 @@ describe("PlanStepForm — dev activate", () => {
       expect(devActivatePlanAction).toHaveBeenCalledWith("free");
     });
   });
+
+  it("calls devActivatePlanAction with beta when the beta dev button is clicked, regardless of selected card", async () => {
+    const { devActivatePlanAction } = await import("@/lib/actions/dev");
+
+    renderForm({ currentPlan: "free" });
+
+    const betaBtn = screen.getByRole("button", { name: /beta/i });
+    fireEvent.click(betaBtn);
+
+    await waitFor(() => {
+      expect(devActivatePlanAction).toHaveBeenCalledWith("beta");
+    });
+  });
 });
 
 describe("PlanStepForm — cadence toggle", () => {

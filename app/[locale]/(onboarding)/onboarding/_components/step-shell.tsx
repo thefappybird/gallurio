@@ -165,7 +165,7 @@ function ProgressBar({
               />
               <span
                 className={cn(
-                  "onboarding-progress-label hidden text-xs sm:inline",
+                  "onboarding-progress-label sr-only text-xs sm:not-sr-only sm:inline",
                   active && "text-foreground",
                   !active && reachable && "text-foreground/70",
                   locked && "text-muted-foreground"
