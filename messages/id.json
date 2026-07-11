@@ -459,6 +459,32 @@
   "auth": {
     "signInTitle": "Masuk",
     "signUpTitle": "Buat akun",
+    "brandPane": {
+      "signIn": {
+        "headline": "Selamat kembali ke buku besar Anda.",
+        "body": "Semua booking, klien, dan permintaan — tetap di tempatnya."
+      },
+      "signUp": {
+        "headline": "Buka buku besar Anda.",
+        "body": "Satu workspace untuk booking, klien, dan portofolio publik yang dilihat klien Anda."
+      },
+      "mfa": {
+        "headline": "Satu langkah lagi.",
+        "body": "Verifikasi singkat untuk menjaga keamanan buku besar Anda — dan data klien Anda."
+      },
+      "forgotPassword": {
+        "headline": "Lupa tempat terakhir?",
+        "body": "Kami akan mengirim link agar Anda bisa melanjutkan buku besar Anda."
+      },
+      "resetPassword": {
+        "headline": "Atur kunci baru.",
+        "body": "Pilih kata sandi yang mudah diingat. Buku besar Anda tetap seperti semula."
+      },
+      "verifyEmail": {
+        "headline": "Hampir selesai.",
+        "body": "Konfirmasi email Anda untuk menyelesaikan buku besar Anda."
+      }
+    },
     "signIn": {
       "title": "Masuk",
       "continueWithGoogle": "Lanjutkan dengan Google",

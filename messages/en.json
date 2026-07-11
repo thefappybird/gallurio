@@ -459,6 +459,32 @@
   "auth": {
     "signInTitle": "Sign in",
     "signUpTitle": "Create account",
+    "brandPane": {
+      "signIn": {
+        "headline": "Welcome back to the ledger.",
+        "body": "Every booking, client, and inquiry — exactly where you left them."
+      },
+      "signUp": {
+        "headline": "Open your ledger.",
+        "body": "One workspace for bookings, clients, and the public portfolio your clients see."
+      },
+      "mfa": {
+        "headline": "One more entry.",
+        "body": "A quick verification keeps your ledger — and your clients' details — secure."
+      },
+      "forgotPassword": {
+        "headline": "Lost your place?",
+        "body": "We'll send a link so you can pick your ledger back up."
+      },
+      "resetPassword": {
+        "headline": "Set a new key.",
+        "body": "Choose a password you'll remember. Your ledger stays exactly as you left it."
+      },
+      "verifyEmail": {
+        "headline": "Almost booked in.",
+        "body": "Confirm your email to finish setting up your ledger."
+      }
+    },
     "signIn": {
       "title": "Sign in",
       "continueWithGoogle": "Continue with Google",

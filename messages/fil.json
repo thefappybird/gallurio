@@ -459,6 +459,32 @@
   "auth": {
     "signInTitle": "Mag-sign in",
     "signUpTitle": "Gumawa ng account",
+    "brandPane": {
+      "signIn": {
+        "headline": "Balik sa iyong ledger.",
+        "body": "Lahat ng booking, kliyente, at inquiry — nasa dati nilang lugar."
+      },
+      "signUp": {
+        "headline": "Buksan ang iyong ledger.",
+        "body": "Isang workspace para sa mga booking, kliyente, at ang public portfolio na makikita ng iyong mga kliyente."
+      },
+      "mfa": {
+        "headline": "Isa na lang.",
+        "body": "Mabilis na beripikasyon para protektado ang iyong ledger — at ang detalye ng iyong mga kliyente."
+      },
+      "forgotPassword": {
+        "headline": "Bumalik sa iyong ledger.",
+        "body": "Ipapadala namin ang link para maituloy mo ang iyong ledger."
+      },
+      "resetPassword": {
+        "headline": "Gumawa ng bagong susi.",
+        "body": "Pumili ng password na madali mong maaalala. Mananatiling buo ang iyong ledger."
+      },
+      "verifyEmail": {
+        "headline": "Halos tapos na.",
+        "body": "I-confirm ang iyong email para makumpleto ang iyong ledger."
+      }
+    },
     "signIn": {
       "title": "Mag-sign in",
       "continueWithGoogle": "Magpatuloy sa Google",

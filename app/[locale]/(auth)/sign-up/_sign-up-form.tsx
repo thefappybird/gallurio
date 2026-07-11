@@ -42,7 +42,7 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
   }
 
   return (
-    <div className="w-full max-w-sm border border-border bg-background p-8">
+    <div className="w-full max-w-sm rounded-[var(--radius-surface)] border border-border bg-card p-8">
       <h1 className="mb-6 text-xl font-semibold">{t("signUp.title")}</h1>
 
       {/* Google sign-up */}

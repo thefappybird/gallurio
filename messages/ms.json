@@ -459,6 +459,32 @@
   "auth": {
     "signInTitle": "Log masuk",
     "signUpTitle": "Cipta akaun",
+    "brandPane": {
+      "signIn": {
+        "headline": "Selamat kembali ke lejar anda.",
+        "body": "Semua tempahan, pelanggan, dan pertanyaan — kekal di tempat yang sama."
+      },
+      "signUp": {
+        "headline": "Buka lejar anda.",
+        "body": "Satu ruang kerja untuk tempahan, pelanggan, dan portfolio awam yang dilihat pelanggan anda."
+      },
+      "mfa": {
+        "headline": "Satu semakan lagi.",
+        "body": "Pengesahan pantas untuk melindungi lejar anda — dan butiran pelanggan anda."
+      },
+      "forgotPassword": {
+        "headline": "Terlupa tempat anda?",
+        "body": "Kami akan hantar pautan supaya anda boleh sambung semula lejar anda."
+      },
+      "resetPassword": {
+        "headline": "Tetapkan kunci baharu.",
+        "body": "Pilih kata laluan yang mudah diingati. Lejar anda kekal seperti sedia ada."
+      },
+      "verifyEmail": {
+        "headline": "Hampir selesai.",
+        "body": "Sahkan e-mel anda untuk melengkapkan lejar anda."
+      }
+    },
     "signIn": {
       "title": "Log masuk",
       "continueWithGoogle": "Teruskan dengan Google",
