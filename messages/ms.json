@@ -716,11 +716,6 @@
       "description": "Urus akaun, ruang kerja, dan keutamaan anda.",
       "navigationLabel": "Navigasi tetapan",
       "selectPage": "Pilih halaman dari bar sisi.",
-      "workspaceSwitcher": {
-        "switchWorkspace": "Tukar ruang kerja",
-        "yourWorkspaces": "Ruang kerja anda",
-        "noWorkspace": "Tiada ruang kerja"
-      },
       "account": {
         "profileSection": "Profil",
         "profileHint": "Nama dan avatar anda seperti yang dilihat oleh rakan sepasukan.",
@@ -2237,6 +2232,7 @@
       "avatar_update_failed": "Foto anda tidak dapat dikemas kini. Sila cuba lagi.",
       "email_send_failed": "E-mel tidak dapat dihantar. Sila cuba lagi.",
       "onboarding_no_active_workspace": "Tiada ruang kerja aktif — mulakan semula onboarding.",
+      "already_member_elsewhere": "E-mel ini sudah menjadi ahli ruang kerja lain. Gunakan e-mel lain untuk membuat yang baharu.",
       "client_create_failed": "Pelanggan tidak dapat dicipta. Sila cuba lagi.",
       "client_not_found": "Pelanggan tidak ditemui.",
       "client_update_failed": "Pelanggan tidak dapat dikemas kini. Sila cuba lagi.",
@@ -2555,6 +2551,10 @@
       "already_accepted": {
         "title": "Sudah menjadi ahli",
         "description": "Anda telah menerima jemputan ini dan telah menyertai ruang kerja."
+      },
+      "already_member": {
+        "title": "E-mel sudah digunakan",
+        "description": "E-mel ini sudah menjadi ahli ruang kerja lain. Daftar dengan e-mel lain untuk menerima jemputan ini."
       },
       "email_mismatch": {
         "title": "Akaun yang salah",

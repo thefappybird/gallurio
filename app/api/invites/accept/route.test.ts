@@ -43,6 +43,11 @@ vi.mock("@/lib/db/models/Invitation", () => ({
 
 vi.mock("@/lib/db/models/User", () => ({
   User: {
+    // Pre-transaction membership check — no existing memberships by default.
+    findOne: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn(async () => ({ memberships: [] })),
+    })),
     findOneAndUpdate: vi.fn(async () => ({
       workosUserId: "wos_user_1",
       memberships: [],
@@ -79,10 +84,12 @@ vi.mock("mongoose", async (importActual) => {
 // ---------------------------------------------------------------------------
 import { getAuthUser } from "@/lib/auth/session";
 import { Invitation } from "@/lib/db/models/Invitation";
+import { User } from "@/lib/db/models/User";
 
 const mockGetAuthUser = vi.mocked(getAuthUser);
 const mockInvitationFindOne = vi.mocked(Invitation.findOne);
 const mockInvitationFindOneAndUpdate = vi.mocked(Invitation.findOneAndUpdate);
+const mockUserFindOne = vi.mocked(User.findOne);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -223,6 +230,61 @@ describe("GET /api/invites/accept — unauthenticated branch (cookie hardening)"
     expect(payload).not.toHaveProperty("inviteToken");
     // The raw token must not appear anywhere in the state string.
     expect(state).not.toContain(rawToken);
+  });
+});
+
+describe("GET /api/invites/accept — one workspace per email", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("redirects to error=already_member when the user already belongs to a different workspace", async () => {
+    const { GET } = await loadRoute();
+    wireValidInvitation("member@example.com");
+    mockGetAuthUser.mockResolvedValue({
+      workosUserId: "wos_user_elsewhere",
+      email: "member@example.com",
+      name: "Member User",
+      avatarUrl: null,
+    });
+    mockUserFindOne.mockReturnValueOnce({
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn(async () => ({
+        memberships: [{ workspaceId: "ws_other", role: "staff" }],
+      })),
+    } as never);
+
+    const res = await GET(
+      makeReq("http://localhost/api/invites/accept?token=tok_already_member"),
+    );
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("error=already_member");
+  });
+
+  it("proceeds when the user's only membership is to this same invited workspace", async () => {
+    const { GET } = await loadRoute();
+    wireValidInvitation("resident@example.com");
+    mockGetAuthUser.mockResolvedValue({
+      workosUserId: "wos_user_resident",
+      email: "resident@example.com",
+      name: "Resident User",
+      avatarUrl: null,
+    });
+    mockUserFindOne.mockReturnValueOnce({
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn(async () => ({
+        memberships: [{ workspaceId: "ws_1", role: "staff" }],
+      })),
+    } as never);
+
+    const res = await GET(
+      makeReq("http://localhost/api/invites/accept?token=tok_resident"),
+    );
+
+    const location = res.headers.get("location") ?? "";
+    expect(location).not.toContain("error=already_member");
+    expect(location).toContain("/bookings");
   });
 });
 

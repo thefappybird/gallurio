@@ -86,6 +86,17 @@ export async function businessStepAction(
 
   await connectDB();
 
+  // One workspace per email — a user who already belongs to someone else's
+  // workspace (as staff) can't also start their own. They must use another
+  // email. An existing owner membership is safe to proceed with: it can only
+  // point at this same user's own workspace (upserted by ownerUserId below).
+  const existingUser = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 },
+  ).lean();
+  const belongsElsewhere = existingUser?.memberships.some((m) => m.role !== "owner");
+  if (belongsElsewhere) return { error: "already_member_elsewhere" };
+
   // The workspace's URL slug is edited on the next step, but the Workspace
   // schema requires one on insert — auto-derive it from the business name
   // now; $setOnInsert below means it only applies the first time.

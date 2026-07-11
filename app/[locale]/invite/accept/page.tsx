@@ -21,6 +21,7 @@ type InviteError =
   | "invalid"
   | "expired"
   | "already_accepted"
+  | "already_member"
   | "email_mismatch"
   | "failed";
 
@@ -29,6 +30,7 @@ function isInviteError(v: string | undefined): v is InviteError {
     v === "invalid" ||
     v === "expired" ||
     v === "already_accepted" ||
+    v === "already_member" ||
     v === "email_mismatch" ||
     v === "failed"
   );
@@ -84,7 +86,7 @@ export default async function InviteAcceptPage({
         )}
 
         <div className="flex flex-col gap-3">
-          {errorCode === "already_accepted" ? (
+          {errorCode === "already_accepted" || errorCode === "already_member" ? (
             <a
               href={`/${locale}/bookings`}
               className="inline-block w-full bg-foreground px-4 py-2.5 text-center text-sm font-medium text-background"

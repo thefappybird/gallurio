@@ -716,11 +716,6 @@
       "description": "Pamahalaan ang iyong account, workspace, at mga kagustuhan.",
       "navigationLabel": "Nabigasyon ng mga setting",
       "selectPage": "Pumili ng pahina mula sa sidebar.",
-      "workspaceSwitcher": {
-        "switchWorkspace": "Lumipat ng workspace",
-        "yourWorkspaces": "Ang iyong mga workspace",
-        "noWorkspace": "Walang workspace"
-      },
       "account": {
         "profileSection": "Profile",
         "profileHint": "Ang iyong pangalan at avatar na nakikita ng mga katrabaho.",
@@ -2237,6 +2232,7 @@
       "avatar_update_failed": "Hindi na-update ang iyong larawan. Pakisubukan muli.",
       "email_send_failed": "Hindi maipadala ang email. Pakisubukan muli.",
       "onboarding_no_active_workspace": "Walang aktibong workspace — simulan muli ang onboarding.",
+      "already_member_elsewhere": "Miyembro na ang email na ito sa ibang workspace. Gumamit ng ibang email upang lumikha ng bago.",
       "client_create_failed": "Hindi nagawa ang kliyente. Pakisubukan muli.",
       "client_not_found": "Hindi natagpuan ang kliyente.",
       "client_update_failed": "Hindi na-update ang kliyente. Pakisubukan muli.",
@@ -2555,6 +2551,10 @@
       "already_accepted": {
         "title": "Miyembro na",
         "description": "Tinanggap mo na ang imbitasyong ito at sumali ka na sa workspace."
+      },
+      "already_member": {
+        "title": "Ginagamit na ang email",
+        "description": "Miyembro na ang email na ito sa ibang workspace. Mag-sign up gamit ang ibang email upang tanggapin ang imbitasyong ito."
       },
       "email_mismatch": {
         "title": "Maling account",

@@ -716,11 +716,6 @@
       "description": "Kelola akun, ruang kerja, dan preferensi Anda.",
       "navigationLabel": "Navigasi pengaturan",
       "selectPage": "Pilih halaman dari bilah sisi.",
-      "workspaceSwitcher": {
-        "switchWorkspace": "Ganti ruang kerja",
-        "yourWorkspaces": "Ruang kerja Anda",
-        "noWorkspace": "Tidak ada ruang kerja"
-      },
       "account": {
         "profileSection": "Profil",
         "profileHint": "Nama dan avatar Anda seperti yang dilihat oleh rekan tim.",
@@ -2237,6 +2232,7 @@
       "avatar_update_failed": "Gagal memperbarui foto Anda. Silakan coba lagi.",
       "email_send_failed": "Gagal mengirim email. Silakan coba lagi.",
       "onboarding_no_active_workspace": "Tidak ada ruang kerja aktif — mulai ulang orientasi.",
+      "already_member_elsewhere": "Email ini sudah menjadi anggota workspace lain. Gunakan email lain untuk membuat yang baru.",
       "client_create_failed": "Gagal membuat klien. Silakan coba lagi.",
       "client_not_found": "Klien tidak ditemukan.",
       "client_update_failed": "Gagal memperbarui klien. Silakan coba lagi.",
@@ -2555,6 +2551,10 @@
       "already_accepted": {
         "title": "Sudah menjadi anggota",
         "description": "Anda telah menerima undangan ini dan telah bergabung dengan workspace."
+      },
+      "already_member": {
+        "title": "Email sudah digunakan",
+        "description": "Email ini sudah menjadi anggota workspace lain. Daftar dengan email lain untuk menerima undangan ini."
       },
       "email_mismatch": {
         "title": "Akun yang salah",

@@ -112,6 +112,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const teamIds = (invitation.teamIds ?? []) as mongoose.Types.ObjectId[];
   const leadOnTeamIds = (invitation.leadOnTeamIds ?? []) as mongoose.Types.ObjectId[];
 
+  // One workspace per email — if this user already belongs to a different
+  // workspace, they can't also join this one. They must use another email.
+  const existingUser = await User.findOne({ workosUserId: authUser.workosUserId })
+    .select({ memberships: 1 })
+    .lean();
+  const belongsElsewhere = existingUser?.memberships.some(
+    (m) => String(m.workspaceId) !== String(workspaceId),
+  );
+  if (belongsElsewhere) {
+    return NextResponse.redirect(
+      new URL(localizedUrl(req, "/invite/accept?error=already_member")),
+    );
+  }
+
   // Transactional accept — idempotent on duplicate membership (11000).
   const session = await mongoose.startSession();
   try {

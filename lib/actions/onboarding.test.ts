@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi, type MockedFunction } from "vitest";
+import mongoose from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { User, Workspace } from "@/lib/db/models";
 import { Team } from "@/lib/db/models/team";
@@ -102,6 +103,21 @@ describe("businessStepAction", () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await businessStepAction(validBusinessInput);
     expect(result.error).toBe("not_authenticated");
+  });
+
+  it("rejects when the user already has a staff membership in another workspace", async () => {
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await User.create({
+      workosUserId: "wos_user_001",
+      email: "wos_user_001@example.com",
+      memberships: [{ workspaceId: new mongoose.Types.ObjectId(), role: "staff" }],
+    });
+
+    const result = await businessStepAction(validBusinessInput);
+    expect(result.error).toBe("already_member_elsewhere");
+
+    const workspace = await Workspace.findOne({ slug: "alice-photography" }).lean();
+    expect(workspace).toBeNull();
   });
 
   it("creates workspace + default team + owner membership on first run", async () => {

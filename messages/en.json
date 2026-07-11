@@ -716,11 +716,6 @@
       "description": "Manage your account, workspace, and preferences.",
       "navigationLabel": "Settings navigation",
       "selectPage": "Select a page from the sidebar.",
-      "workspaceSwitcher": {
-        "switchWorkspace": "Switch workspace",
-        "yourWorkspaces": "Your workspaces",
-        "noWorkspace": "No workspace"
-      },
       "account": {
         "profileSection": "Profile",
         "profileHint": "Your name and avatar as shown to teammates.",
@@ -2237,6 +2232,7 @@
       "avatar_update_failed": "Couldn't update your photo. Please try again.",
       "email_send_failed": "Couldn't send the email. Please try again.",
       "onboarding_no_active_workspace": "No active workspace — restart onboarding.",
+      "already_member_elsewhere": "This email is already a member of another workspace. Sign up with a different email to create a new one.",
       "client_create_failed": "Couldn't create the client. Please try again.",
       "client_not_found": "Client not found.",
       "client_update_failed": "Couldn't update the client. Please try again.",
@@ -2555,6 +2551,10 @@
       "already_accepted": {
         "title": "Already a member",
         "description": "You have already accepted this invitation and joined the workspace."
+      },
+      "already_member": {
+        "title": "Email already in use",
+        "description": "This email is already a member of another workspace. Sign up with a different email to accept this invitation."
       },
       "email_mismatch": {
         "title": "Wrong account",
