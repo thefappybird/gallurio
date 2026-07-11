@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction } from "@/lib/actions/onboarding";
 import { devActivatePlanAction } from "@/lib/actions/dev";
+import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
@@ -16,7 +17,9 @@ import { useActionError } from "@/lib/i18n/actionError";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { cn } from "@/lib/utils";
 
 export function PlanStepForm({
@@ -30,6 +33,7 @@ export function PlanStepForm({
 }) {
   const t = useTranslations("onboarding.plan");
   const tPlans = useTranslations("plans");
+  const tPromo = useTranslations("common.promoCode");
   const errMsg = useActionError();
   const locale = useLocale();
   const router = useRouter();
@@ -37,8 +41,26 @@ export function PlanStepForm({
   const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const lemonSqueezy = useLemonSqueezyCheckout(() => router.push("/onboarding/done"));
+
+  async function submitPromoCode() {
+    setPromoError(null);
+    setPromoLoading(true);
+    const result = await redeemPromoCodeAction(promoCode);
+    setPromoLoading(false);
+    if ("error" in result) {
+      const msg = errMsg(result.error);
+      setPromoError(msg);
+      toast.error(msg);
+      return;
+    }
+    toast.success(tPromo("success"));
+    router.push("/onboarding/done");
+  }
 
   async function submit() {
     setCheckoutError(null);
@@ -261,6 +283,40 @@ export function PlanStepForm({
         {selected !== "free" && (
           <p className="text-xs text-muted-foreground">{t("checkoutNote")}</p>
         )}
+
+        <CollapsibleDrawer title={tPromo("disclosureLabel")} defaultOpen={false}>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder={tPromo("placeholder")}
+                className="max-w-56"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={submitPromoCode}
+                disabled={promoLoading || !promoCode}
+              >
+                {promoLoading ? (
+                  <>
+                    <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />
+                    {tPromo("applying")}
+                  </>
+                ) : (
+                  tPromo("submit")
+                )}
+              </Button>
+            </div>
+            {promoError && (
+              <p role="alert" className="text-xs text-destructive">
+                {promoError}
+              </p>
+            )}
+          </div>
+        </CollapsibleDrawer>
 
         {checkoutError && (
           <p role="alert" className="text-xs text-destructive">

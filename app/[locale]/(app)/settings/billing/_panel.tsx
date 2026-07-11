@@ -10,8 +10,11 @@ import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
+import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { cn } from "@/lib/utils";
 import type { PlanTier, LemonSqueezySubscriptionStatus } from "@/lib/db/models";
 
@@ -39,6 +42,7 @@ export function BillingPanel({
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
+  const tPromo = useTranslations("common.promoCode");
   const errMsg = useActionError();
   const locale = useLocale();
 
@@ -46,6 +50,9 @@ export function BillingPanel({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [managingSubscription, setManagingSubscription] = useState(false);
   const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
   const lemonSqueezy = useLemonSqueezyCheckout(() => {
     setLoadingPlan(null);
     toast.success(t("upgradeSuccess"));
@@ -91,6 +98,21 @@ export function BillingPanel({
       toast.error(msg);
       setLoadingPlan(null);
     }
+  }
+
+  async function submitPromoCode() {
+    setPromoError(null);
+    setPromoLoading(true);
+    const result = await redeemPromoCodeAction(promoCode);
+    setPromoLoading(false);
+    if ("error" in result) {
+      const msg = errMsg(result.error);
+      setPromoError(msg);
+      toast.error(msg);
+      return;
+    }
+    toast.success(tPromo("success"));
+    window.location.reload();
   }
 
   async function openManagePortal() {
@@ -272,6 +294,42 @@ export function BillingPanel({
             )}
           </Button>
         </div>
+      )}
+
+      {!isBeta && (
+        <CollapsibleDrawer title={tPromo("disclosureLabel")} defaultOpen={false}>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder={tPromo("placeholder")}
+                className="max-w-56"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={submitPromoCode}
+                disabled={promoLoading || !promoCode}
+              >
+                {promoLoading ? (
+                  <>
+                    <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
+                    {tPromo("applying")}
+                  </>
+                ) : (
+                  tPromo("submit")
+                )}
+              </Button>
+            </div>
+            {promoError && (
+              <p role="alert" className="text-xs text-destructive">
+                {promoError}
+              </p>
+            )}
+          </div>
+        </CollapsibleDrawer>
       )}
     </div>
   );

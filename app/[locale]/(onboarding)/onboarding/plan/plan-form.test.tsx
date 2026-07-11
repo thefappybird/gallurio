@@ -31,6 +31,10 @@ vi.mock("@/lib/actions/dev", () => ({
   devActivatePlanAction: vi.fn().mockResolvedValue({}),
 }));
 
+vi.mock("@/lib/actions/promoCode", () => ({
+  redeemPromoCodeAction: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
 const urlOpenMock = vi.fn();
 const createLemonSqueezyMock = vi.fn();
 
@@ -305,6 +309,70 @@ describe("PlanStepForm — dev activate", () => {
     await waitFor(() => {
       expect(devActivatePlanAction).toHaveBeenCalledWith("beta");
     });
+  });
+});
+
+describe("PlanStepForm — promo code redemption", () => {
+  it("shows the promo code disclosure collapsed by default", () => {
+    renderForm();
+    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
+  });
+
+  it("expands the promo code form when clicked", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/enter code/i)).toBeInTheDocument();
+    });
+  });
+
+  it("calls redeemPromoCodeAction with the entered code on submit", async () => {
+    const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
+
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(redeemPromoCodeAction).toHaveBeenCalledWith("SAVE20");
+    });
+  });
+
+  it("redirects to /onboarding/done on a successful redemption", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
+    });
+  });
+
+  it("shows the translated error message and does not redirect when the code is invalid", async () => {
+    const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
+    vi.mocked(redeemPromoCodeAction).mockResolvedValueOnce({
+      error: "promo_code_not_found",
+    });
+
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "BADCODE" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/valid/i);
+    });
+    expect(mockRouterPush).not.toHaveBeenCalledWith("/onboarding/done");
   });
 });
 

@@ -17,6 +17,10 @@ vi.mock("@/lib/actions/billing", () => ({
   getSubscriptionManageUrlAction: vi.fn(),
 }));
 
+vi.mock("@/lib/actions/promoCode", () => ({
+  redeemPromoCodeAction: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
 const mockGetManageUrl = vi.mocked(getSubscriptionManageUrlAction);
 
@@ -138,6 +142,86 @@ describe("BillingPanel — renders", () => {
     expect(
       screen.getByRole("button", { name: /manage subscription/i })
     ).toBeInTheDocument();
+  });
+});
+
+describe("BillingPanel — promo code redemption", () => {
+  it("shows the promo code disclosure collapsed by default", () => {
+    renderPanel({ currentPlan: "free" });
+    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
+  });
+
+  it("hides the promo code disclosure for beta workspaces", () => {
+    renderPanel({ currentPlan: "beta" });
+    expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
+  });
+
+  it("expands the promo code form when clicked", async () => {
+    renderPanel({ currentPlan: "free" });
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/enter code/i)).toBeInTheDocument();
+    });
+  });
+
+  it("calls redeemPromoCodeAction with the entered code on submit", async () => {
+    const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
+
+    renderPanel({ currentPlan: "free" });
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(redeemPromoCodeAction).toHaveBeenCalledWith("SAVE20");
+    });
+  });
+
+  it("reloads the page on a successful redemption", async () => {
+    const reloadSpy = vi.fn();
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...originalLocation, reload: reloadSpy },
+    });
+
+    renderPanel({ currentPlan: "free" });
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(reloadSpy).toHaveBeenCalled();
+    });
+
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: originalLocation,
+    });
+  });
+
+  it("shows the translated error message and does not reload when the code is invalid", async () => {
+    const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
+    vi.mocked(redeemPromoCodeAction).mockResolvedValueOnce({
+      error: "promo_code_not_found",
+    });
+
+    renderPanel({ currentPlan: "free" });
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "BADCODE" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/valid/i);
+    });
   });
 });
 
