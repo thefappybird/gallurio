@@ -477,5 +477,8 @@ describe("reconcileLemonSqueezySubscription", () => {
     const afterC = await Workspace.findById(wsC._id).lean();
     expect(afterC!.plan).toBe("pro");
     expect(afterC!.lsSubscriptionId).toBe("sub_fresh_for_c");
+    // This safety-net path is a promotion path too — must mark everSubscribed
+    // just like the webhook's own upsert does, or a later lapse won't gate.
+    expect(afterC!.everSubscribed).toBe(true);
   });
 });

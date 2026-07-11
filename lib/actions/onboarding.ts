@@ -330,6 +330,7 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
 
     const $set: Record<string, unknown> = {
       plan,
+      everSubscribed: true,
       lsSubscriptionId: sub.id,
       lsCurrentPeriodEnd: periodEnd,
     };
