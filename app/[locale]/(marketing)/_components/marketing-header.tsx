@@ -43,8 +43,8 @@ export function MarketingHeader() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-1">
-            <Link href="/sign-in" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+          <div className="flex items-center gap-1 gap-x-4">
+            <Link href="/sign-in" className="flex items-center gap-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               {tNav("signIn")}
             </Link>
             <Link href="/sign-up" className={buttonVariants({ variant: "brand", size: "sm" })}>
