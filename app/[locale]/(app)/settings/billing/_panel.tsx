@@ -9,6 +9,7 @@ import { PLAN_CATALOG } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
+import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PlanTier, LemonSqueezySubscriptionStatus } from "@/lib/db/models";
@@ -42,6 +43,7 @@ export function BillingPanel({
 
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [managingSubscription, setManagingSubscription] = useState(false);
   const lemonSqueezy = useLemonSqueezyCheckout(() => {
     setLoadingPlan(null);
     toast.success(t("upgradeSuccess"));
@@ -86,6 +88,20 @@ export function BillingPanel({
       setCheckoutError(msg);
       toast.error(msg);
       setLoadingPlan(null);
+    }
+  }
+
+  async function openManagePortal() {
+    setManagingSubscription(true);
+    try {
+      const result = await getSubscriptionManageUrlAction();
+      if (result.error || !result.url) {
+        toast.error(errMsg(result.error));
+        return;
+      }
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    } finally {
+      setManagingSubscription(false);
     }
   }
 
@@ -213,13 +229,28 @@ export function BillingPanel({
           </div>
         </div>
       ) : (
-        /* Active subscriber — show manage notice */
+        /* Active subscriber — link to Lemon Squeezy's self-service portal */
         <div className="flex flex-col gap-2">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("manageSection")}
           </p>
           <p className="text-sm text-muted-foreground">{t("manageDescription")}</p>
-          <p className="text-xs text-muted-foreground">{t("cancelNote")}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={managingSubscription}
+            onClick={openManagePortal}
+            className="w-fit"
+          >
+            {managingSubscription ? (
+              <>
+                <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
+                {t("opening")}
+              </>
+            ) : (
+              t("manageButton")
+            )}
+          </Button>
         </div>
       )}
     </div>

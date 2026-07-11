@@ -13,6 +13,13 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BillingPanel, type BillingPanelProps } from "./_panel";
 
+vi.mock("@/lib/actions/billing", () => ({
+  getSubscriptionManageUrlAction: vi.fn(),
+}));
+
+import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
+const mockGetManageUrl = vi.mocked(getSubscriptionManageUrlAction);
+
 const urlOpenMock = vi.fn();
 const createLemonSqueezyMock = vi.fn();
 
@@ -24,6 +31,7 @@ beforeEach(() => {
   fetchMock.mockReset();
   urlOpenMock.mockReset();
   createLemonSqueezyMock.mockReset();
+  mockGetManageUrl.mockReset();
 
   window.createLemonSqueezy = createLemonSqueezyMock.mockImplementation(() => {
     window.LemonSqueezy = {
@@ -120,7 +128,9 @@ describe("BillingPanel — renders", () => {
 
   it("shows manage section for active subscribers on pro plan", () => {
     renderPanel({ currentPlan: "pro", lsSubscriptionStatus: "active" });
-    expect(screen.getByText(/manage subscription/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /manage subscription/i })
+    ).toBeInTheDocument();
   });
 });
 
@@ -197,6 +207,42 @@ describe("BillingPanel — upgrade checkout", () => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });
     expect(urlOpenMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("BillingPanel — manage subscription", () => {
+  it("opens the Lemon Squeezy customer portal URL on click", async () => {
+    mockGetManageUrl.mockResolvedValueOnce({
+      ok: true,
+      url: "https://gallurio.lemonsqueezy.com/billing/portal/abc123",
+    });
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    renderPanel({ currentPlan: "pro", lsSubscriptionStatus: "active" });
+
+    fireEvent.click(screen.getByRole("button", { name: /manage subscription/i }));
+
+    await waitFor(() => {
+      expect(openSpy).toHaveBeenCalledWith(
+        "https://gallurio.lemonsqueezy.com/billing/portal/abc123",
+        "_blank",
+        "noopener,noreferrer"
+      );
+    });
+  });
+
+  it("does not open a new tab when the action returns an error", async () => {
+    mockGetManageUrl.mockResolvedValueOnce({ error: "no_subscription" });
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    renderPanel({ currentPlan: "pro", lsSubscriptionStatus: "active" });
+
+    fireEvent.click(screen.getByRole("button", { name: /manage subscription/i }));
+
+    await waitFor(() => {
+      expect(mockGetManageUrl).toHaveBeenCalled();
+    });
+    expect(openSpy).not.toHaveBeenCalled();
   });
 });
 
