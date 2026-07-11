@@ -115,7 +115,7 @@ export function BillingPanel({
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex max-w-2xl flex-col gap-6">
       {/* Current plan summary */}
       <div className="flex items-start gap-3 border border-border bg-card p-4">
         <CreditCard className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

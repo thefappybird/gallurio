@@ -71,10 +71,10 @@ describe("SettingsUserProfile", () => {
   describe("role=owner", () => {
     it("renders nav links for all pages including ownerOnly ones", () => {
       renderSettings("owner");
-      expect(screen.getAllByRole("link", { name: /account/i })).toHaveLength(2);
-      expect(screen.getAllByRole("link", { name: /customize/i })).toHaveLength(2);
-      expect(screen.getAllByRole("link", { name: /workspace/i })).toHaveLength(2);
-      expect(screen.getAllByRole("link", { name: /billing/i })).toHaveLength(2);
+      expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /customize/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /workspace/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /billing/i })).toBeInTheDocument();
     });
 
     it("renders the active page body", () => {
@@ -82,14 +82,11 @@ describe("SettingsUserProfile", () => {
       expect(screen.getByTestId("body-account")).toBeInTheDocument();
     });
 
-    it("uses the brand active treatment for the current page in both nav variants", () => {
+    it("uses the underline active treatment for the current tab", () => {
       renderSettings("owner", "account");
-      const accountLinks = screen.getAllByRole("link", { name: /account/i });
-      expect(accountLinks).toHaveLength(2);
-      for (const link of accountLinks) {
-        expect(link.className).toContain("bg-brand/12");
-        expect(link.className).toContain("text-brand");
-      }
+      const accountLink = screen.getByRole("link", { name: /account/i });
+      expect(accountLink.className).toContain("border-brand");
+      expect(accountLink.className).toContain("text-brand");
     });
 
     it("renders the workspace name bar", () => {
@@ -101,8 +98,8 @@ describe("SettingsUserProfile", () => {
   describe("role=staff", () => {
     it("renders only non-ownerOnly nav links", () => {
       renderSettings("staff");
-      expect(screen.getAllByRole("link", { name: /account/i })).toHaveLength(2);
-      expect(screen.getAllByRole("link", { name: /customize/i })).toHaveLength(2);
+      expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /customize/i })).toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /workspace/i })).not.toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /billing/i })).not.toBeInTheDocument();
     });
@@ -114,20 +111,23 @@ describe("SettingsUserProfile", () => {
   });
 
   describe("responsive nav variants", () => {
-    it("renders both a mobile tab-strip nav and a desktop sidebar nav with the same aria-label", () => {
+    it("renders a single nav landmark used at every breakpoint", () => {
       renderSettings("owner");
       const navs = screen.getAllByRole("navigation", { name: "Settings navigation" });
-      expect(navs).toHaveLength(2);
+      expect(navs).toHaveLength(1);
     });
 
-    it("mobile strip is hidden at lg and desktop sidebar is hidden below lg", () => {
+    it("scroll-snaps the rail and stacks icon-over-label below sm, icon-beside-label from sm up", () => {
       renderSettings("owner");
-      const navs = screen.getAllByRole("navigation", { name: "Settings navigation" });
-      const mobileNav = navs.find((n) => n.className.includes("overflow-x-auto"));
-      const desktopNav = navs.find((n) => n.className.includes("w-48"));
-      expect(mobileNav?.className).toContain("lg:hidden");
-      expect(desktopNav?.className).toContain("hidden");
-      expect(desktopNav?.className).toContain("lg:flex");
+      const nav = screen.getByRole("navigation", { name: "Settings navigation" });
+      expect(nav.className).toContain("overflow-x-auto");
+      expect(nav.className).toContain("snap-x");
+      expect(nav.className).toContain("snap-mandatory");
+
+      const accountLink = screen.getByRole("link", { name: /account/i });
+      expect(accountLink.className).toContain("flex-col");
+      expect(accountLink.className).toContain("snap-start");
+      expect(accountLink.className).toContain("sm:flex-row");
     });
   });
 

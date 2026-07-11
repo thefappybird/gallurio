@@ -66,12 +66,13 @@ export function SettingsUserProfile({
         <span className="min-w-0 truncate text-sm font-medium">{workspaceName}</span>
       </div>
 
-      {/* Two-column layout: nav sidebar + panel (stacks below lg) */}
-      <div className="flex w-full flex-col border border-border lg:flex-row">
-        {/* Nav: horizontally-scrollable tab strip below lg, vertical sidebar at lg+ */}
+      <div className="flex w-full flex-col border border-border">
+        {/* Top tab rail: underline tabs at every breakpoint. Icon-over-label
+            chips with scroll-snap below sm (native tab-bar feel); icon beside
+            label from sm up. */}
         <nav
           aria-label={t("navigationLabel")}
-          className="flex w-full flex-row gap-1 overflow-x-auto border-b border-border bg-card lg:hidden"
+          className="flex w-full snap-x snap-mandatory flex-row gap-1 overflow-x-auto border-b border-border bg-card px-2 sm:gap-2 sm:px-4"
         >
           {visiblePages.map((page) => {
             const isActive = isPageActive(page);
@@ -84,43 +85,12 @@ export function SettingsUserProfile({
                 aria-busy={isPending ? "true" : undefined}
                 onClick={() => { if (!isActive) setPendingSlug(page.slug); }}
                 className={cn(
-                  "flex min-h-11 shrink-0 items-center gap-2 px-4 py-3 text-sm transition-colors",
-                  "hover:bg-accent hover:text-accent-foreground",
-                  "focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none",
+                  "flex min-h-14 shrink-0 snap-start flex-col items-center justify-center gap-1 border-b-2 border-transparent px-3 py-2 text-xs transition-colors",
+                  "sm:min-h-11 sm:flex-row sm:gap-2 sm:px-4 sm:py-3 sm:text-sm",
+                  "hover:bg-accent/60 hover:text-foreground",
+                  "focus-visible:bg-accent/60 focus-visible:text-foreground focus-visible:outline-none",
                   isActive
-                    ? "bg-brand/12 font-medium text-brand"
-                    : "text-muted-foreground",
-                  isPending && "opacity-60",
-                )}
-              >
-                <span className="shrink-0 [&_svg]:size-4" aria-hidden>
-                  {isPending ? <Loader2 className="animate-spin" /> : page.icon}
-                </span>
-                <span>{page.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-        <nav
-          aria-label={t("navigationLabel")}
-          className="hidden w-48 shrink-0 flex-col border-e border-border bg-card lg:flex"
-        >
-          {visiblePages.map((page) => {
-            const isActive = isPageActive(page);
-            const isPending = pendingSlug === page.slug;
-            return (
-              <Link
-                key={page.slug}
-                href={hrefFor(page) as never}
-                aria-current={isActive ? "page" : undefined}
-                aria-busy={isPending ? "true" : undefined}
-                onClick={() => { if (!isActive) setPendingSlug(page.slug); }}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-3 text-sm transition-colors",
-                  "hover:bg-accent hover:text-accent-foreground",
-                  "focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none",
-                  isActive
-                    ? "bg-brand/12 font-medium text-brand"
+                    ? "border-brand font-medium text-brand"
                     : "text-muted-foreground",
                   isPending && "opacity-60",
                 )}

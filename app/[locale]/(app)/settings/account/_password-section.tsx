@@ -96,6 +96,52 @@ function ChangePasswordForm() {
     },
   ];
 
+  function renderField(f: (typeof fields)[number]) {
+    return (
+      <div key={f.id} className="flex flex-col gap-1.5">
+        <Label htmlFor={f.id}>{f.label}</Label>
+        <div className="relative">
+          <Input
+            id={f.id}
+            type={f.show ? "text" : "password"}
+            autoComplete={f.autoComplete}
+            disabled={pending}
+            className="pe-10"
+            aria-invalid={!!errors[f.name]}
+            aria-describedby={errors[f.name] ? `${f.id}-error` : undefined}
+            {...register(f.name)}
+          />
+          <button
+            type="button"
+            className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={f.toggle}
+            aria-label={f.show ? t("hidePassword") : t("showPassword")}
+          >
+            {f.show ? (
+              <EyeOff className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )}
+          </button>
+        </div>
+        {f.hint && (
+          <p className="text-xs text-muted-foreground">{f.hint}</p>
+        )}
+        {errors[f.name] && (
+          <p
+            id={`${f.id}-error`}
+            role="alert"
+            className="text-xs text-destructive"
+          >
+            {errors[f.name]?.message}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const [currentField, newField, confirmField] = fields;
+
   return (
     <>
       <div>
@@ -107,47 +153,11 @@ function ChangePasswordForm() {
         noValidate
         className="flex flex-col gap-4"
       >
-        {fields.map((f) => (
-          <div key={f.id} className="flex flex-col gap-1.5">
-            <Label htmlFor={f.id}>{f.label}</Label>
-            <div className="relative">
-              <Input
-                id={f.id}
-                type={f.show ? "text" : "password"}
-                autoComplete={f.autoComplete}
-                disabled={pending}
-                className="pe-10"
-                aria-invalid={!!errors[f.name]}
-                aria-describedby={errors[f.name] ? `${f.id}-error` : undefined}
-                {...register(f.name)}
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                onClick={f.toggle}
-                aria-label={f.show ? t("hidePassword") : t("showPassword")}
-              >
-                {f.show ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
-              </button>
-            </div>
-            {f.hint && (
-              <p className="text-xs text-muted-foreground">{f.hint}</p>
-            )}
-            {errors[f.name] && (
-              <p
-                id={`${f.id}-error`}
-                role="alert"
-                className="text-xs text-destructive"
-              >
-                {errors[f.name]?.message}
-              </p>
-            )}
-          </div>
-        ))}
+        {renderField(currentField!)}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {renderField(newField!)}
+          {renderField(confirmField!)}
+        </div>
         <div>
           <Button
             type="submit"

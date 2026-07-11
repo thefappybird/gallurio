@@ -170,7 +170,7 @@ export function AccountPanel({
   const initials = getInitials(displayName, email);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex max-w-3xl flex-col gap-8">
       {/* Avatar */}
       <section className="flex flex-col gap-4">
         <div>
@@ -283,40 +283,42 @@ export function AccountPanel({
           noValidate
           className="flex flex-col gap-4"
         >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="profile-name">{t("nameLabel")}</Label>
-            <Input
-              id="profile-name"
-              type="text"
-              autoComplete="name"
-              disabled={pending}
-              aria-describedby={errors.name ? "profile-name-error" : undefined}
-              aria-invalid={!!errors.name}
-              {...register("name")}
-            />
-            {errors.name && (
-              <p
-                id="profile-name-error"
-                role="alert"
-                className="text-xs text-destructive"
-              >
-                {errors.name.message}
-              </p>
-            )}
-          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="profile-name">{t("nameLabel")}</Label>
+              <Input
+                id="profile-name"
+                type="text"
+                autoComplete="name"
+                disabled={pending}
+                aria-describedby={errors.name ? "profile-name-error" : undefined}
+                aria-invalid={!!errors.name}
+                {...register("name")}
+              />
+              {errors.name && (
+                <p
+                  id="profile-name-error"
+                  role="alert"
+                  className="text-xs text-destructive"
+                >
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
 
-          {/* Email — read-only; email change is out of scope */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="profile-email">{t("emailLabel")}</Label>
-            <Input
-              id="profile-email"
-              type="email"
-              value={email}
-              readOnly
-              disabled
-              aria-describedby="profile-email-hint"
-              className="cursor-not-allowed"
-            />
+            {/* Email — read-only; email change is out of scope */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="profile-email">{t("emailLabel")}</Label>
+              <Input
+                id="profile-email"
+                type="email"
+                value={email}
+                readOnly
+                disabled
+                aria-describedby="profile-email-hint"
+                className="cursor-not-allowed"
+              />
+            </div>
           </div>
 
           <div>
