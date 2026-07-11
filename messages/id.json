@@ -2699,6 +2699,9 @@
       "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
       "onboarding_required": "Selesaikan orientasi untuk melanjutkan.",
       "subscription_required": "Langganan Anda telah berakhir. Berlangganan untuk melanjutkan.",
+      "promo_code_not_found": "Kode itu tidak valid. Periksa kembali dan coba lagi.",
+      "promo_code_expired": "Kode itu sudah kedaluwarsa.",
+      "promo_code_already_redeemed": "Anda sudah menukarkan kode ini.",
       "invalid_input": "Periksa formulir dan coba lagi.",
       "rate_limited": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
       "user_not_found": "Pengguna tidak ditemukan.",
@@ -2772,7 +2775,14 @@
       "previous": "Sebelumnya",
       "next": "Berikutnya"
     },
-    "clearFilters": "Hapus filter"
+    "clearFilters": "Hapus filter",
+    "promoCode": {
+      "disclosureLabel": "Punya kode promo?",
+      "placeholder": "Masukkan kode",
+      "submit": "Terapkan",
+      "applying": "Menerapkan…",
+      "success": "Kode berhasil diterapkan — paket Anda telah diperbarui."
+    }
   },
   "onboarding": {
     "shell": {

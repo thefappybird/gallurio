@@ -2699,6 +2699,9 @@
       "completion_requires_full_payment": "Tandakan semua bayaran sebagai dibayar dan padankan jumlah sebelum melengkapkan tempahan ini.",
       "onboarding_required": "Selesaikan onboarding untuk teruskan.",
       "subscription_required": "Langganan anda telah tamat. Langgan untuk teruskan.",
+      "promo_code_not_found": "Kod itu tidak sah. Semak semula dan cuba lagi.",
+      "promo_code_expired": "Kod itu telah tamat tempoh.",
+      "promo_code_already_redeemed": "Anda sudah menebus kod ini.",
       "invalid_input": "Sila semak borang dan cuba lagi.",
       "rate_limited": "Terlalu banyak percubaan. Cuba lagi dalam {seconds} saat.",
       "user_not_found": "Pengguna tidak ditemui.",
@@ -2772,7 +2775,14 @@
       "previous": "Sebelumnya",
       "next": "Seterusnya"
     },
-    "clearFilters": "Padam penapis"
+    "clearFilters": "Padam penapis",
+    "promoCode": {
+      "disclosureLabel": "Ada kod promosi?",
+      "placeholder": "Masukkan kod",
+      "submit": "Guna kod",
+      "applying": "Menggunakan…",
+      "success": "Kod berjaya digunakan — pelan anda telah dikemas kini."
+    }
   },
   "onboarding": {
     "shell": {

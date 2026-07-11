@@ -2699,6 +2699,9 @@
       "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
       "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
       "subscription_required": "Natapos na ang iyong subscription. Mag-subscribe para magpatuloy.",
+      "promo_code_not_found": "Hindi valid ang code na iyon. I-check ulit at subukan muli.",
+      "promo_code_expired": "Nag-expire na ang code na iyon.",
+      "promo_code_already_redeemed": "Na-redeem mo na ang code na ito.",
       "invalid_input": "Pakitingnan ang form at subukan muli.",
       "rate_limited": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",
       "user_not_found": "Hindi natagpuan ang user.",
@@ -2772,7 +2775,14 @@
       "previous": "Nakaraan",
       "next": "Susunod"
     },
-    "clearFilters": "Tanggalin ang filter"
+    "clearFilters": "Tanggalin ang filter",
+    "promoCode": {
+      "disclosureLabel": "May promo code ka ba?",
+      "placeholder": "Ilagay ang code",
+      "submit": "I-apply",
+      "applying": "Ina-apply…",
+      "success": "Na-apply ang code — na-update na ang iyong plan."
+    }
   },
   "onboarding": {
     "shell": {

@@ -2699,6 +2699,9 @@
       "completion_requires_full_payment": "ضع علامة على جميع الدفعات كمدفوعة وطابق الإجمالي قبل إكمال هذا الحجز.",
       "onboarding_required": "أكمل الإعداد الأولي للمتابعة.",
       "subscription_required": "انتهى اشتراكك. اشترك للمتابعة.",
+      "promo_code_not_found": "هذا الرمز غير صالح. تحقّق منه وحاول مرة أخرى.",
+      "promo_code_expired": "انتهت صلاحية هذا الرمز.",
+      "promo_code_already_redeemed": "لقد استخدمت هذا الرمز من قبل.",
       "invalid_input": "يرجى مراجعة النموذج والمحاولة مرة أخرى.",
       "rate_limited": "محاولات كثيرة. حاول مجددًا بعد {seconds} ثانية.",
       "user_not_found": "المستخدم غير موجود.",
@@ -2772,7 +2775,14 @@
       "previous": "السابق",
       "next": "التالي"
     },
-    "clearFilters": "مسح عوامل التصفية"
+    "clearFilters": "مسح عوامل التصفية",
+    "promoCode": {
+      "disclosureLabel": "هل لديك رمز ترويجي؟",
+      "placeholder": "أدخل الرمز",
+      "submit": "تطبيق",
+      "applying": "جارٍ التطبيق…",
+      "success": "تم تطبيق الرمز — تم تحديث خطتك."
+    }
   },
   "onboarding": {
     "shell": {

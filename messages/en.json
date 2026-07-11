@@ -2699,6 +2699,9 @@
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
       "onboarding_required": "Finish onboarding to continue.",
       "subscription_required": "Your subscription has ended. Subscribe to continue.",
+      "promo_code_not_found": "That code isn't valid. Double-check and try again.",
+      "promo_code_expired": "That code has expired.",
+      "promo_code_already_redeemed": "You've already redeemed this code.",
       "invalid_input": "Please check the form and try again.",
       "rate_limited": "Too many attempts. Try again in {seconds} seconds.",
       "user_not_found": "User not found.",
@@ -2772,7 +2775,14 @@
       "previous": "Previous",
       "next": "Next"
     },
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "promoCode": {
+      "disclosureLabel": "Have a promo code?",
+      "placeholder": "Enter code",
+      "submit": "Apply",
+      "applying": "Applying…",
+      "success": "Code applied — your plan has been updated."
+    }
   },
   "onboarding": {
     "shell": {
