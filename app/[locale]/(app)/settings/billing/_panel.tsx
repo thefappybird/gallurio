@@ -11,6 +11,7 @@ import { formatMoney } from "@/lib/utils/format-currency";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
 import { Button } from "@/components/ui/button";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { cn } from "@/lib/utils";
 import type { PlanTier, LemonSqueezySubscriptionStatus } from "@/lib/db/models";
 
@@ -44,6 +45,7 @@ export function BillingPanel({
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [managingSubscription, setManagingSubscription] = useState(false);
+  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
   const lemonSqueezy = useLemonSqueezyCheckout(() => {
     setLoadingPlan(null);
     toast.success(t("upgradeSuccess"));
@@ -60,7 +62,7 @@ export function BillingPanel({
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, cadence }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         checkoutUrl?: string;
@@ -175,6 +177,16 @@ export function BillingPanel({
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("availablePlans")}
           </p>
+          <SegmentedToggle
+            value={cadence}
+            onChange={setCadence}
+            ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+            options={[
+              { key: "monthly", label: t("cadenceToggle.monthly") },
+              { key: "yearly", label: t("cadenceToggle.yearly") },
+            ]}
+            className="w-fit"
+          />
           <div className="flex flex-col gap-2">
             {PLAN_CATALOG.filter((p) => p.id !== "free" && p.id !== currentPlan).map(
               (entry) => {
@@ -191,20 +203,22 @@ export function BillingPanel({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium">{tPlans(`${entry.id}.name`)}</span>
-                      <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                        <span>
-                          {formatMoney(monthlyPrice, currency, locale)}{" "}
-                          <span>{t("perMonth")}</span>
-                        </span>
-                        <span>
-                          <span className="line-through">
-                            {formatMoney(yearlyComparePrice, currency, locale)}
-                          </span>{" "}
-                          <span className="font-medium text-foreground">
-                            {formatMoney(yearlyPrice, currency, locale)}
-                          </span>{" "}
-                          <span>{t("perYear")}</span>
-                        </span>
+                      <div className="flex items-baseline gap-1 text-xs text-muted-foreground">
+                        {cadence === "yearly" ? (
+                          <>
+                            <span className="line-through">
+                              {formatMoney(yearlyComparePrice, currency, locale)}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {formatMoney(yearlyPrice, currency, locale)}
+                            </span>
+                            <span>{t("perYear")}</span>
+                          </>
+                        ) : (
+                          <span>
+                            {formatMoney(monthlyPrice, currency, locale)} {t("perMonth")}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <Button

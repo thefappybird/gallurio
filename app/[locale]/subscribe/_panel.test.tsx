@@ -42,11 +42,18 @@ function renderPanel(overrides: Partial<SubscribePanelProps> = {}) {
 }
 
 describe("SubscribePanel — renders", () => {
-  it("shows the Pro plan name and monthly/yearly prices", () => {
+  it("defaults to monthly pricing", () => {
     renderPanel();
     expect(screen.getByText(/\/ month/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\/ year/i)).not.toBeInTheDocument();
+  });
+
+  it("switches to yearly pricing when the cadence toggle is clicked", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
     expect(screen.getByText(/\/ year/i)).toBeInTheDocument();
     expect(screen.getByText(/2,500/)).toBeInTheDocument();
+    expect(screen.queryByText(/\/ month/i)).not.toBeInTheDocument();
   });
 
   it("shows a subscribe button", () => {
@@ -72,7 +79,7 @@ describe("SubscribePanel — checkout", () => {
         "/api/billing/checkout",
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ plan: "pro" }),
+          body: JSON.stringify({ plan: "pro", cadence: "monthly" }),
         })
       );
     });
@@ -80,6 +87,28 @@ describe("SubscribePanel — checkout", () => {
     await waitFor(() => {
       expect(openMock).toHaveBeenCalledWith(
         "https://gallurio.lemonsqueezy.com/checkout/custom/abc123"
+      );
+    });
+  });
+
+  it("includes the selected cadence in the checkout body", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        checkoutUrl: "https://gallurio.lemonsqueezy.com/checkout/custom/abc123",
+      }),
+    });
+
+    renderPanel();
+    fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
+    fireEvent.click(screen.getByRole("button", { name: /subscribe/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/billing/checkout",
+        expect.objectContaining({
+          body: JSON.stringify({ plan: "pro", cadence: "yearly" }),
+        })
       );
     });
   });
@@ -99,7 +128,11 @@ describe("SubscribePanel — checkout", () => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/billing/checkout",
         expect.objectContaining({
-          body: JSON.stringify({ plan: "pro", returnTo: "/inquiries?inquiryId=abc123" }),
+          body: JSON.stringify({
+            plan: "pro",
+            cadence: "monthly",
+            returnTo: "/inquiries?inquiryId=abc123",
+          }),
         })
       );
     });

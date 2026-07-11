@@ -93,11 +93,18 @@ describe("BillingPanel — renders", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows monthly and yearly Pro prices", () => {
+  it("defaults to monthly Pro pricing", () => {
     renderPanel({ currentPlan: "free" });
     expect(screen.getByText(/\/ month/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\/ year/i)).not.toBeInTheDocument();
+  });
+
+  it("switches to yearly Pro pricing when the cadence toggle is clicked", () => {
+    renderPanel({ currentPlan: "free" });
+    fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
     expect(screen.getByText(/\/ year/i)).toBeInTheDocument();
     expect(screen.getByText(/2,500/)).toBeInTheDocument();
+    expect(screen.queryByText(/\/ month/i)).not.toBeInTheDocument();
   });
 
   it("does not show an upgrade button for the plan you're already on", () => {
@@ -156,13 +163,39 @@ describe("BillingPanel — upgrade checkout", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/billing/checkout",
-        expect.objectContaining({ method: "POST" })
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ plan: "pro", cadence: "monthly" }),
+        })
       );
     });
 
     await waitFor(() => {
       expect(urlOpenMock).toHaveBeenCalledWith(
         "https://gallurio.lemonsqueezy.com/checkout/custom/abc123"
+      );
+    });
+  });
+
+  it("includes the selected cadence in the checkout body", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        checkoutUrl: "https://gallurio.lemonsqueezy.com/checkout/custom/abc123",
+        workspaceId: "ws_test_123",
+      }),
+    });
+
+    renderPanel({ currentPlan: "free" });
+    fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
+    fireEvent.click(screen.getByRole("button", { name: /upgrade to the pro plan/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/billing/checkout",
+        expect.objectContaining({
+          body: JSON.stringify({ plan: "pro", cadence: "yearly" }),
+        })
       );
     });
   });

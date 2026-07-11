@@ -9,6 +9,7 @@ import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { Button } from "@/components/ui/button";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 
 export type SubscribePanelProps = {
   proPricing: ProPricing;
@@ -20,6 +21,7 @@ export function SubscribePanel({ proPricing, returnTo }: SubscribePanelProps) {
   const tPlans = useTranslations("plans");
   const errMsg = useActionError();
   const locale = useLocale();
+  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +46,7 @@ export function SubscribePanel({ proPricing, returnTo }: SubscribePanelProps) {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan: "pro", ...(returnTo ? { returnTo } : {}) }),
+        body: JSON.stringify({ plan: "pro", cadence, ...(returnTo ? { returnTo } : {}) }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         checkoutUrl?: string;
@@ -71,21 +73,33 @@ export function SubscribePanel({ proPricing, returnTo }: SubscribePanelProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <SegmentedToggle
+        value={cadence}
+        onChange={setCadence}
+        ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+        options={[
+          { key: "monthly", label: t("cadenceToggle.monthly") },
+          { key: "yearly", label: t("cadenceToggle.yearly") },
+        ]}
+      />
       <div className="flex flex-col gap-0.5 border border-border bg-background px-4 py-3">
         <span className="text-sm font-medium">{tPlans("pro.name")}</span>
-        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-          <span>
-            {formatMoney(monthlyPrice, proPricing.currency, locale)} {t("perMonth")}
-          </span>
-          <span>
-            <span className="line-through">
-              {formatMoney(yearlyComparePrice, proPricing.currency, locale)}
-            </span>{" "}
-            <span className="font-medium text-foreground">
-              {formatMoney(yearlyPrice, proPricing.currency, locale)}
-            </span>{" "}
-            {t("perYear")}
-          </span>
+        <div className="flex items-baseline gap-1 text-xs text-muted-foreground">
+          {cadence === "yearly" ? (
+            <>
+              <span className="line-through">
+                {formatMoney(yearlyComparePrice, proPricing.currency, locale)}
+              </span>
+              <span className="font-medium text-foreground">
+                {formatMoney(yearlyPrice, proPricing.currency, locale)}
+              </span>
+              <span>{t("perYear")}</span>
+            </>
+          ) : (
+            <span>
+              {formatMoney(monthlyPrice, proPricing.currency, locale)} {t("perMonth")}
+            </span>
+          )}
         </div>
       </div>
       {error && (
