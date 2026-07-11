@@ -276,7 +276,7 @@ describe("ownerContext — subscription gate", () => {
     expect("error" in result).toBe(false);
   });
 
-  it("onboarding-incomplete owner gets finish_onboarding even when also gated (onboarding check runs first)", async () => {
+  it("onboarding-incomplete owner gets onboarding_required even when also gated (onboarding check runs first)", async () => {
     const wsId = new Types.ObjectId();
     await Workspace.create({
       _id: wsId,

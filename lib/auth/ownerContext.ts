@@ -57,7 +57,7 @@ export async function ownerContext(
   // bypass the page-level redirect. Defense-in-depth for the action surface.
   if (!opts.allowDuringOnboarding) {
     if (!user.onboardingCompletedAt) {
-      return { error: "finish_onboarding" };
+      return { error: "onboarding_required" };
     }
   }
 

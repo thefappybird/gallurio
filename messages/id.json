@@ -817,7 +817,12 @@
         },
         "manageSection": "Kelola langganan",
         "manageDescription": "Perbarui metode pembayaran, lihat faktur, atau batalkan langganan Anda langsung melalui Lemon Squeezy.",
-        "manageButton": "Kelola langganan"
+        "manageButton": "Kelola langganan",
+        "cadenceToggle": {
+          "monthly": "Bulanan",
+          "yearly": "Tahunan",
+          "savePill": "Hemat 2 bulan"
+        }
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -2214,7 +2219,8 @@
       "owner_only": "Hanya pemilik ruang kerja yang dapat melakukan ini.",
       "invalid_data": "Data tidak valid. Periksa input Anda dan coba lagi.",
       "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
-      "finish_onboarding": "Selesaikan orientasi sebelum mengubah pengaturan ruang kerja.",
+      "onboarding_required": "Selesaikan orientasi untuk melanjutkan.",
+      "subscription_required": "Langganan Anda telah berakhir. Berlangganan untuk melanjutkan.",
       "invalid_input": "Periksa formulir dan coba lagi.",
       "rate_limited": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
       "user_not_found": "Pengguna tidak ditemukan.",
@@ -2439,7 +2445,12 @@
       "opening": "Membuka…",
       "upgradeSuccess": "Langganan diaktifkan! Mengalihkan…",
       "checkoutFailed": "Checkout gagal. Silakan coba lagi.",
-      "checkoutNotReady": "Sistem pembayaran belum siap. Muat ulang dan coba lagi."
+      "checkoutNotReady": "Sistem pembayaran belum siap. Muat ulang dan coba lagi.",
+      "cadenceToggle": {
+        "monthly": "Bulanan",
+        "yearly": "Tahunan",
+        "savePill": "Hemat 2 bulan"
+      }
     },
     "staff": {
       "title": "Langganan workspace telah berakhir",

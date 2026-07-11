@@ -817,7 +817,12 @@
         },
         "manageSection": "Pamahalaan ang subscription",
         "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
-        "manageButton": "Pamahalaan ang subscription"
+        "manageButton": "Pamahalaan ang subscription",
+        "cadenceToggle": {
+          "monthly": "Buwanan",
+          "yearly": "Taunan",
+          "savePill": "Makatipid ng 2 buwan"
+        }
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -2214,7 +2219,8 @@
       "owner_only": "Ang may-ari lang ng workspace ang makakagawa nito.",
       "invalid_data": "Hindi wastong datos. Pakisuri ang iyong input at subukan muli.",
       "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
-      "finish_onboarding": "Tapusin muna ang onboarding bago baguhin ang mga setting ng workspace.",
+      "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
+      "subscription_required": "Natapos na ang iyong subscription. Mag-subscribe para magpatuloy.",
       "invalid_input": "Pakitingnan ang form at subukan muli.",
       "rate_limited": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",
       "user_not_found": "Hindi natagpuan ang user.",
@@ -2439,7 +2445,12 @@
       "opening": "Bubuksan…",
       "upgradeSuccess": "Aktibo na ang subscription! Nire-redirect…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukang muli.",
-      "checkoutNotReady": "Hindi pa handa ang payment system. Paki-refresh at subukang muli."
+      "checkoutNotReady": "Hindi pa handa ang payment system. Paki-refresh at subukang muli.",
+      "cadenceToggle": {
+        "monthly": "Buwanan",
+        "yearly": "Taunan",
+        "savePill": "Makatipid ng 2 buwan"
+      }
     },
     "staff": {
       "title": "Naubos ang subscription ng workspace",

@@ -817,7 +817,12 @@
         },
         "manageSection": "Manage subscription",
         "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
-        "manageButton": "Manage subscription"
+        "manageButton": "Manage subscription",
+        "cadenceToggle": {
+          "monthly": "Monthly",
+          "yearly": "Yearly",
+          "savePill": "Save 2 months"
+        }
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -2214,7 +2219,8 @@
       "owner_only": "Only the workspace owner can do this.",
       "invalid_data": "Invalid data. Please check your input and try again.",
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
-      "finish_onboarding": "Finish onboarding before changing workspace settings.",
+      "onboarding_required": "Finish onboarding to continue.",
+      "subscription_required": "Your subscription has ended. Subscribe to continue.",
       "invalid_input": "Please check the form and try again.",
       "rate_limited": "Too many attempts. Try again in {seconds} seconds.",
       "user_not_found": "User not found.",
@@ -2439,7 +2445,12 @@
       "opening": "Opening…",
       "upgradeSuccess": "Subscription activated! Redirecting…",
       "checkoutFailed": "Checkout failed. Please try again.",
-      "checkoutNotReady": "Payment system not ready. Please refresh and try again."
+      "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
+      "cadenceToggle": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
+      }
     },
     "staff": {
       "title": "Workspace subscription lapsed",
