@@ -1294,6 +1294,8 @@
         "manageSection": "Urus langganan",
         "manageDescription": "Kemas kini kaedah pembayaran, lihat invois, atau batalkan langganan anda terus melalui Lemon Squeezy.",
         "manageButton": "Urus langganan",
+        "betaPlanLabel": "Penguji Beta",
+        "betaAccessNote": "Anda mempunyai akses penuh Pro sebagai sebahagian daripada program beta kami — tiada bil diperlukan.",
         "cadenceToggle": {
           "monthly": "Bulanan",
           "yearly": "Tahunan",

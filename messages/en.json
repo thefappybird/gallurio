@@ -1294,6 +1294,8 @@
         "manageSection": "Manage subscription",
         "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
         "manageButton": "Manage subscription",
+        "betaPlanLabel": "Beta tester",
+        "betaAccessNote": "You have full Pro access as part of our beta program — no billing required.",
         "cadenceToggle": {
           "monthly": "Monthly",
           "yearly": "Yearly",

@@ -1294,6 +1294,8 @@
         "manageSection": "إدارة الاشتراك",
         "manageDescription": "حدِّث طريقة الدفع أو اطّلع على الفواتير أو ألغِ اشتراكك مباشرةً عبر Lemon Squeezy.",
         "manageButton": "إدارة الاشتراك",
+        "betaPlanLabel": "مختبِر تجريبي",
+        "betaAccessNote": "لديك وصول كامل للخطة الاحترافية كجزء من برنامجنا التجريبي — دون الحاجة إلى الفوترة.",
         "cadenceToggle": {
           "monthly": "شهري",
           "yearly": "سنوي",

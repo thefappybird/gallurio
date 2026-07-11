@@ -107,6 +107,10 @@ export function BillingPanel({
     }
   }
 
+  // Beta-tester workspaces have full Pro-equivalent access with no Lemon
+  // Squeezy subscription behind them (see grantPlan) -- they must never see
+  // the LS-catalog-driven upgrade cards or a "manage via Lemon Squeezy" link.
+  const isBeta = currentPlan === "beta";
   const isActiveSubscriber =
     currentPlan !== "free" && lsSubscriptionStatus === "active";
 
@@ -123,7 +127,7 @@ export function BillingPanel({
           <p className="text-sm font-medium">{t("currentPlanLabel")}</p>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold capitalize text-foreground">
-              {tPlans(`${currentPlan}.name`)}
+              {isBeta ? t("betaPlanLabel") : tPlans(`${currentPlan}.name`)}
             </span>
             {statusLabel && (
               <span
@@ -171,8 +175,10 @@ export function BillingPanel({
         </p>
       )}
 
-      {/* Upgrade section — shown for free/starter users */}
-      {!isActiveSubscriber || currentPlan === "starter" ? (
+      {/* Beta tester — full access, nothing to upgrade or manage */}
+      {isBeta ? (
+        <p className="text-sm text-muted-foreground">{t("betaAccessNote")}</p>
+      ) : !isActiveSubscriber || currentPlan === "starter" ? (
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("availablePlans")}

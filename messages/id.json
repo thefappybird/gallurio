@@ -1294,6 +1294,8 @@
         "manageSection": "Kelola langganan",
         "manageDescription": "Perbarui metode pembayaran, lihat faktur, atau batalkan langganan Anda langsung melalui Lemon Squeezy.",
         "manageButton": "Kelola langganan",
+        "betaPlanLabel": "Beta Tester",
+        "betaAccessNote": "Anda memiliki akses penuh Pro sebagai bagian dari program beta kami — tidak perlu penagihan.",
         "cadenceToggle": {
           "monthly": "Bulanan",
           "yearly": "Tahunan",

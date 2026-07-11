@@ -1294,6 +1294,8 @@
         "manageSection": "Pamahalaan ang subscription",
         "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
         "manageButton": "Pamahalaan ang subscription",
+        "betaPlanLabel": "Beta Tester",
+        "betaAccessNote": "Mayroon kang buong access sa Pro bilang bahagi ng aming beta program — walang kailangang bayaran.",
         "cadenceToggle": {
           "monthly": "Buwanan",
           "yearly": "Taunan",
