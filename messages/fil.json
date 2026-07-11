@@ -52,6 +52,11 @@
         "panelHeadline": "Dumarating ang mga request sa iyong calendar, hindi sa iyong DM.",
         "description": "Hayaan ang mga bisita na direktang magpadala ng booking request sa iyong page, kasama ang petsa ng event, contact details, service preferences, at project notes."
       },
+      "teams": {
+        "title": "Team collaboration",
+        "panelHeadline": "Anyayahan ang team, magtakda ng roles, at magtrabaho gamit ang iisang shared calendar.",
+        "description": "Magdagdag ng staff at collaborators gamit ang role-based access sa mga booking, kliyente, at calendar — para malinaw sa bawat isa ang kanilang trabaho, nang walang gulo."
+      },
       "customBranding": {
         "title": "Custom branding",
         "description": "I-adjust ang mga kulay, typography, imahe, at istilo ng page para bumagay ang portfolio sa creative identity ng user."

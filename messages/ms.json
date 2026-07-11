@@ -52,6 +52,11 @@
         "panelHeadline": "Permintaan mendarat di kalendar anda, bukan di DM anda.",
         "description": "Benarkan pelawat menghantar permintaan tempahan terus melalui halaman anda, termasuk tarikh acara, butiran hubungan, keutamaan perkhidmatan, dan nota projek."
       },
+      "teams": {
+        "title": "Kerjasama pasukan",
+        "panelHeadline": "Jemput pasukan anda, tetapkan peranan, dan bekerja menggunakan satu kalendar dikongsi.",
+        "description": "Tambah kakitangan dan rakan kerjasama dengan akses berasaskan peranan kepada tempahan, pelanggan, dan kalendar — supaya setiap orang tahu tanggungjawab masing-masing tanpa bertindih."
+      },
       "customBranding": {
         "title": "Penjenamaan tersuai",
         "description": "Laraskan warna, tipografi, imej, dan gaya halaman supaya portfolio itu sesuai dengan identiti kreatif pengguna."

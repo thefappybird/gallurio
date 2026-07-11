@@ -52,6 +52,11 @@
         "panelHeadline": "Permintaan masuk ke kalender Anda, bukan ke DM Anda.",
         "description": "Biarkan pengunjung mengirim permintaan booking langsung melalui halaman Anda, termasuk tanggal acara, detail kontak, preferensi layanan, dan catatan proyek."
       },
+      "teams": {
+        "title": "Kolaborasi tim",
+        "panelHeadline": "Undang tim, tetapkan peran, dan bekerja dengan satu kalender bersama.",
+        "description": "Tambahkan staf dan kolaborator dengan akses berbasis peran ke booking, klien, dan kalender — sehingga semua orang tahu tanggung jawabnya tanpa tumpang tindih."
+      },
       "customBranding": {
         "title": "Branding kustom",
         "description": "Sesuaikan warna, tipografi, gambar, dan gaya halaman agar portfolio selaras dengan identitas kreatif pengguna."

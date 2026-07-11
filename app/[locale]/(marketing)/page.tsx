@@ -74,6 +74,13 @@ export default async function Home({ params }: Props) {
       image: "/marketing/screenshots/bookings-calendar.png",
       tone: "brand" as const,
     },
+    {
+      index: t("features.teams.title"),
+      headline: t("features.teams.panelHeadline"),
+      description: t("features.teams.description"),
+      image: "/marketing/screenshots/teams-collaboration.png",
+      tone: "card" as const,
+    },
   ];
 
   return (
@@ -234,28 +241,53 @@ function PanelSection({
       className={`border-t border-border px-4 py-16 sm:px-6 sm:py-24 ${PANEL_TONE_CLASS[panel.tone]}`}
     >
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 md:flex-row md:gap-14">
-        <div className="flex-1 text-start">
-          <p className="text-sm font-bold tracking-tight text-brand">{panel.index}</p>
-          <h3 className="mt-2 text-balance font-heading text-2xl font-bold tracking-tight sm:text-3xl">
-            {panel.headline}
-          </h3>
-          <p className="mt-3.5 max-w-md text-base leading-7 text-muted-foreground">{panel.description}</p>
-        </div>
-        <div className="w-full flex-1">
-          <div
-            data-hover="brighten"
-            className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10"
-          >
-            <Image
-              src={panel.image}
-              alt={panel.index}
-              fill
-              sizes="(min-width: 768px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-        </div>
+        {index % 2 === 0 ? (
+          <>
+            <TextBlock panel={panel} />
+            <ImageBlock panel={panel} />
+          </>
+        ) : (
+          <>
+            <ImageBlock panel={panel} />
+            <TextBlock panel={panel} />
+          </>
+        )}
       </div>
     </section>
+  );
+}
+
+function TextBlock({
+  panel,
+}: {
+  panel: { index: string; headline: string; description: string };
+}) {
+  return (
+    <div className="flex-1 text-start">
+      <p className="text-sm font-bold tracking-tight text-brand">{panel.index}</p>
+      <h3 className="mt-2 text-balance font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+        {panel.headline}
+      </h3>
+      <p className="mt-3.5 max-w-md text-base leading-7 text-muted-foreground">{panel.description}</p>
+    </div>
+  );
+}
+
+function ImageBlock({ panel }: { panel: { index: string; image: string } }) {
+  return (
+    <div className="w-full flex-1">
+      <div
+        data-hover="brighten"
+        className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10"
+      >
+        <Image
+          src={panel.image}
+          alt={panel.index}
+          fill
+          sizes="(min-width: 768px) 50vw, 100vw"
+          className="object-cover"
+        />
+      </div>
+    </div>
   );
 }

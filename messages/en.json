@@ -52,6 +52,11 @@
         "panelHeadline": "Requests land in your calendar, not your DMs.",
         "description": "Let visitors send booking requests directly through a user page, including event dates, contact details, service preferences, and project notes."
       },
+      "teams": {
+        "title": "Team collaboration",
+        "panelHeadline": "Invite the team, assign roles, and work off one shared calendar.",
+        "description": "Bring on staff and collaborators with role-based access to bookings, clients, and the calendar — so everyone knows what's theirs to handle without stepping on each other."
+      },
       "customBranding": {
         "title": "Custom branding",
         "description": "Adjust colors, typography, imagery, and page style so the portfolio feels aligned with the user's creative identity."

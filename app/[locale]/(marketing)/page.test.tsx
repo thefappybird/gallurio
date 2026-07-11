@@ -37,4 +37,11 @@ describe("Marketing Home page", () => {
     expect(screen.getByText("marketing:hero.headline")).toBeInTheDocument();
     expect(getAuthUserMock).toHaveBeenCalled();
   });
+
+  it("renders a teams panel alongside the other feature panels", async () => {
+    const page = await Home({ params: Promise.resolve({ locale: "en" }) });
+    render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
+
+    expect(screen.getByText("marketing:features.teams.title")).toBeInTheDocument();
+  });
 });
