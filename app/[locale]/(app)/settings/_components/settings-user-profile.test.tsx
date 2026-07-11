@@ -132,7 +132,7 @@ describe("SettingsUserProfile", () => {
   });
 
   describe("tab-nav pending affordance", () => {
-    it("marks the clicked (non-active) tab as busy until activeSlug catches up, in both nav variants", () => {
+    it("marks the clicked (non-active) tab as busy until activeSlug catches up", () => {
       const { rerender } = renderSettings("owner", "account");
       for (const link of screen.getAllByRole("link", { name: /customize/i })) {
         fireEvent.click(link);
