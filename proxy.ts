@@ -32,6 +32,10 @@ const UNAUTHENTICATED_PATHS = [
   // next-intl normalizes the redundant default-locale prefix to "/".
   ...routing.locales.map((l) => `/${l}`),
   "/pricing",
+  "/terms",
+  "/privacy",
+  "/refunds",
+  "/contact",
   "/about",
   // Auth UI (our first-party forms)
   "/sign-in",

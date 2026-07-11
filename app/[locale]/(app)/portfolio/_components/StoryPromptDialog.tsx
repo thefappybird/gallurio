@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { resolveScheme } from "@/lib/theme/themes";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { useImageRetry } from "@/hooks/useImageRetry";
-import { OnboardingCornerAccents } from "../../../(onboarding)/onboarding/_components/decorative-accents";
+import { AmbientBackground } from "@/components/app/ambient-background";
 import { completeStoryPromptAction } from "../_actions";
 
 const MAX_DESCRIPTION = 300;
@@ -404,7 +404,7 @@ export function StoryPromptDialog({
         className="min-h-[560px] overflow-hidden bg-onboarding-bg p-0 text-foreground sm:min-h-[480px] sm:max-w-3xl"
         showCloseButton={false}
       >
-        <OnboardingCornerAccents />
+        <AmbientBackground />
         <div className="relative mx-auto flex h-full min-h-[560px] w-full max-w-lg flex-col gap-4 p-4 sm:min-h-[480px] sm:p-6">
           <StepDots step={step} onStepChange={setStep} />
 
