@@ -6,6 +6,7 @@ import { Workspace, User, Team, type PlanTier } from "@/lib/db/models";
 import { getAuthUser } from "@/lib/auth/session";
 import { getActiveWorkspaceId, clearActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { planEntitlements } from "@/lib/plans/entitlements";
+import { grantPlan } from "@/lib/billing/grantPlan";
 
 export type DevPlanActionResult = {
   error?: string;
@@ -78,25 +79,32 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
     };
   }
 
-  // Simulate a complete active subscription so every billing-dependent surface
-  // (settings billing panel, plan gates, "manage subscription") behaves exactly
-  // as it would with a real Lemon Squeezy subscription — no Lemon Squeezy
-  // credentials needed.
-  const isPaid = plan !== "free";
-  await Workspace.updateOne(
-    { _id: workspace._id },
-    {
-      $set: {
-        plan,
-        lsSubscriptionStatus: isPaid ? "active" : null,
-        lsCurrentPeriodEnd: isPaid
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          : null,
-        lsSubscriptionId: isPaid ? `dev_sub_${workspace._id}` : null,
-        lsCustomerId: isPaid ? `dev_cus_${workspace._id}` : null,
-      },
-    }
-  );
+  if (plan === "beta") {
+    // Beta has no subscription at all, real or simulated — never fake ls*
+    // fields for it. Shares the same provider-agnostic grant path Phase 4's
+    // promo-code redemption will use.
+    await grantPlan(workspace._id, { plan: "beta", expiresAt: null });
+  } else {
+    // Simulate a complete active subscription so every billing-dependent surface
+    // (settings billing panel, plan gates, "manage subscription") behaves exactly
+    // as it would with a real Lemon Squeezy subscription — no Lemon Squeezy
+    // credentials needed.
+    const isPaid = plan !== "free";
+    await Workspace.updateOne(
+      { _id: workspace._id },
+      {
+        $set: {
+          plan,
+          lsSubscriptionStatus: isPaid ? "active" : null,
+          lsCurrentPeriodEnd: isPaid
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            : null,
+          lsSubscriptionId: isPaid ? `dev_sub_${workspace._id}` : null,
+          lsCustomerId: isPaid ? `dev_cus_${workspace._id}` : null,
+        },
+      }
+    );
+  }
 
   await User.updateOne(
     { workosUserId: authUser.workosUserId },

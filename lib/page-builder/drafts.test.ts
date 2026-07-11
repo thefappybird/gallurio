@@ -8,6 +8,10 @@ describe("draftCapForPlan", () => {
     expect(draftCapForPlan("pro")).toBe(Number.POSITIVE_INFINITY);
   });
 
+  it("caps beta the same as pro (unlimited)", () => {
+    expect(draftCapForPlan("beta")).toBe(draftCapForPlan("pro"));
+  });
+
   it("falls back to the free cap for an unknown plan", () => {
     // @ts-expect-error testing runtime fallback
     expect(draftCapForPlan("enterprise")).toBe(5);

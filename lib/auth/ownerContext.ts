@@ -2,6 +2,7 @@ import "server-only";
 import { Workspace, User, type WorkspaceDoc } from "@/lib/db/models";
 import { connectDB } from "@/lib/db/mongoose";
 import { isWorkspaceGated } from "@/lib/billing/access";
+import { expireGrantIfPast } from "@/lib/billing/checkGrantExpiry";
 import { getAuthUser } from "./session";
 import { getActiveWorkspaceId } from "./activeWorkspace";
 
@@ -49,6 +50,7 @@ export async function ownerContext(
 
   const workspace = await Workspace.findById(workspaceId);
   if (!workspace) return { error: "workspace_not_found" };
+  await expireGrantIfPast(workspace);
 
   const isOwner = workspace.ownerUserId === authUser.workosUserId;
   if (!isOwner) return { error: "owner_only" };

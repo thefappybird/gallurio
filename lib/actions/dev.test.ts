@@ -14,6 +14,7 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { User, Workspace } from "@/lib/db/models";
+import { Team, TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 
 // ---------------------------------------------------------------------------
 // Module mocks — declared before importing the tested module.
@@ -117,6 +118,43 @@ describe("devActivatePlanAction", () => {
     expect(updated?.lsSubscriptionId).toBeNull();
     expect(updated?.lsCustomerId).toBeNull();
     expect(updated?.lsCurrentPeriodEnd).toBeNull();
+  });
+
+  it("grants beta without touching any ls* field", async () => {
+    const ws = await seedOwner();
+
+    const result = await devActivatePlanAction("beta");
+    expect(result.ok).toBe(true);
+
+    const updated = await Workspace.findById(ws._id).lean();
+    expect(updated?.plan).toBe("beta");
+    expect(updated?.planGrantExpiresAt).toBeNull();
+    expect(updated?.lsSubscriptionStatus).toBeNull();
+    expect(updated?.lsSubscriptionId).toBeNull();
+    expect(updated?.lsCustomerId).toBeNull();
+    expect(updated?.lsCurrentPeriodEnd).toBeNull();
+  });
+
+  it("respects the team-cap downgrade guard when switching to beta", async () => {
+    const ws = await seedOwner();
+    for (let i = 0; i < 20; i++) {
+      await Team.create({
+        workspaceId: ws._id,
+        name: `Team ${i + 1}`,
+        color: TEAM_COLOR_PALETTE[i % TEAM_COLOR_PALETTE.length],
+        isDefault: i === 0,
+        memberCount: 0,
+        createdByWorkosUserId: WOS_ID,
+      });
+    }
+
+    const result = await devActivatePlanAction("beta");
+    expect(result.error).toBe("TEAM_DOWNGRADE_BLOCKED");
+    expect(result.blocked?.currentTeamCount).toBe(20);
+    expect(result.blocked?.maxTeamsOnTargetPlan).toBe(15);
+
+    const updated = await Workspace.findById(ws._id).lean();
+    expect(updated?.plan).toBe("free");
   });
 
   it("is blocked in production", async () => {

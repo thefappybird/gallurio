@@ -394,6 +394,40 @@ describe("requireOrg — subscription gate", () => {
     expect(ctx.workspaceId).toBe(wsId.toString());
   });
 
+  it("downgrades a workspace with a past planGrantExpiresAt to free before the gate check runs", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `expired-grant-${wsId.toString()}`,
+      plan: "pro",
+      planGrantExpiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    const { requireOrg } = await load();
+    const ctx = await requireOrg();
+
+    expect(redirectMock).not.toHaveBeenCalled();
+    expect(ctx.workspace.plan).toBe("free");
+    expect(ctx.workspace.planGrantExpiresAt).toBeNull();
+
+    const persisted = await Workspace.findById(wsId).lean();
+    expect(persisted?.plan).toBe("free");
+    expect(persisted?.planGrantExpiresAt).toBeNull();
+  });
+
   it("onboarding-incomplete owner redirects to /onboarding even when also gated (onboarding check runs first)", async () => {
     const wsId = new Types.ObjectId();
     await Workspace.create({

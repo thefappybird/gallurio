@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { routing } from "@/lib/i18n/routing";
 import { User, Workspace, type WorkspaceDoc } from "@/lib/db/models";
 import { isWorkspaceGated } from "@/lib/billing/access";
+import { expireGrantIfPast } from "@/lib/billing/checkGrantExpiry";
 import { getAuthUser } from "./session";
 import { getActiveWorkspaceId } from "./activeWorkspace";
 
@@ -54,8 +55,9 @@ export async function requireOrg(
   const workspaceId = await getActiveWorkspaceId(user.memberships);
   if (!workspaceId) redirect(localized("/onboarding", locale));
 
-  const workspace = await Workspace.findById(workspaceId).lean<WorkspaceDoc>();
+  let workspace = await Workspace.findById(workspaceId).lean<WorkspaceDoc>();
   if (!workspace) redirect(localized("/onboarding", locale));
+  workspace = await expireGrantIfPast(workspace);
 
   const membership = user.memberships.find(
     (m) => String(m.workspaceId) === workspaceId,

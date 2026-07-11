@@ -107,6 +107,18 @@ export function PlanStepForm({
     });
   }
 
+  function devActivateBeta() {
+    setCheckoutError(null);
+    startTransition(async () => {
+      const result = await devActivatePlanAction("beta");
+      if (result?.error) {
+        toast.error(errMsg(result.error));
+        return;
+      }
+      router.push("/onboarding/done");
+    });
+  }
+
   function amountFor(p: PlanCatalogEntry, cadence: "monthly" | "yearly"): number {
     if (p.id === "pro") return cadence === "yearly" ? proPricing.yearly : proPricing.monthly;
     return cadence === "yearly" && p.yearlyAmount ? p.yearlyAmount : p.amount;
@@ -165,6 +177,16 @@ export function PlanStepForm({
                 className="h-7 px-2 text-xs"
               >
                 {t("dev.activate", { planName: selectedName })}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={devActivateBeta}
+                disabled={busy}
+                className="h-7 px-2 text-xs"
+              >
+                Activate Beta tester
               </Button>
             </div>
           )}

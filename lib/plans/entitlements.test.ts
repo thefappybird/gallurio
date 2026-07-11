@@ -23,6 +23,10 @@ describe("planEntitlements", () => {
     });
   });
 
+  it("returns the same entitlements for beta as pro (unlimited-Pro grant tier)", () => {
+    expect(planEntitlements("beta")).toEqual(planEntitlements("pro"));
+  });
+
   it("returns the same object reference between calls (pulls from constant)", () => {
     expect(planEntitlements("free")).toBe(PLAN_ENTITLEMENTS.free);
     expect(planEntitlements("starter")).toBe(PLAN_ENTITLEMENTS.starter);

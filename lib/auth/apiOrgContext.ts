@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import { User, Workspace, type WorkspaceDoc } from "@/lib/db/models";
 import { isWorkspaceGated } from "@/lib/billing/access";
+import { expireGrantIfPast } from "@/lib/billing/checkGrantExpiry";
 import { getActiveWorkspaceId } from "./activeWorkspace";
 import { type OrgContext } from "./requireOrg";
 import { getAuthUser } from "./session";
@@ -37,10 +38,11 @@ export async function requireApiOrg(
     return { ok: false, response: NextResponse.json({ error: "no_active_workspace" }, { status: 409 }) };
   }
 
-  const workspace = await Workspace.findById(workspaceId).lean<WorkspaceDoc>();
+  let workspace = await Workspace.findById(workspaceId).lean<WorkspaceDoc>();
   if (!workspace) {
     return { ok: false, response: NextResponse.json({ error: "workspace_not_found" }, { status: 404 }) };
   }
+  workspace = await expireGrantIfPast(workspace);
 
   const membership = user.memberships.find((m) => String(m.workspaceId) === workspaceId);
   const isOwner =
