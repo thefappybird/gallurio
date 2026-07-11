@@ -308,11 +308,11 @@ async function seedWorkspace(
     amount: number;
     currency: string;
     type: "balance" | "refund";
-    method: "paddle" | "cash" | "transfer";
+    method: "lemonsqueezy" | "cash" | "transfer";
     paidAt: Date;
   }> = [];
 
-  const methods = ["paddle", "cash", "transfer"] as const;
+  const methods = ["lemonsqueezy", "cash", "transfer"] as const;
 
   // Balance payments for completed bookings.
   for (const b of completedBookings) {

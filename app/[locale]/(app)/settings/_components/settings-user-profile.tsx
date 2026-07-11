@@ -5,8 +5,6 @@ import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { SettingsOrgSwitcher } from "./settings-org-switcher";
-import type { WorkspaceSwitcherItem } from "./settings-org-switcher";
 
 export type Role = "owner" | "staff";
 
@@ -29,16 +27,14 @@ type Props = {
   role: Role;
   pages: SettingsPage[];
   activeSlug: string | null;
-  workspaces: WorkspaceSwitcherItem[];
-  currentWorkspaceId: string;
+  workspaceName: string;
 };
 
 export function SettingsUserProfile({
   role,
   pages,
   activeSlug,
-  workspaces,
-  currentWorkspaceId,
+  workspaceName,
 }: Props) {
   const t = useTranslations("app.settings");
 
@@ -65,20 +61,9 @@ export function SettingsUserProfile({
 
   return (
     <div className="flex w-full flex-col gap-0">
-      {/* Workspace switcher bar */}
+      {/* Workspace name bar */}
       <div className="flex w-full items-center justify-between border border-b-0 border-border bg-card px-4 py-3">
-        {workspaces.length >= 2 ? (
-          <SettingsOrgSwitcher
-            workspaces={workspaces}
-            currentWorkspaceId={currentWorkspaceId}
-          />
-        ) : (
-          <span className="min-w-0 truncate text-sm font-medium">
-            {workspaces.find((w) => w.id === currentWorkspaceId)?.name ??
-              workspaces[0]?.name ??
-              ""}
-          </span>
-        )}
+        <span className="min-w-0 truncate text-sm font-medium">{workspaceName}</span>
       </div>
 
       {/* Two-column layout: nav sidebar + panel (stacks below lg) */}

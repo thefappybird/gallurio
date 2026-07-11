@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "@/lib/i18n/navigation";
 import { motion } from "motion/react";
 import { useTranslations, useLocale } from "next-intl";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction } from "@/lib/actions/onboarding";
 import { devActivatePlanAction } from "@/lib/actions/dev";
-import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/paddle/plans";
-import type { ProPricing } from "@/lib/paddle/pricing";
+import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/lemonsqueezy/plans";
+import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { useActionError } from "@/lib/i18n/actionError";
+import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
 import { Button } from "@/components/ui/button";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
@@ -38,34 +38,7 @@ export function PlanStepForm({
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const paddleRef = useRef<Paddle | null>(null);
-  const paddleInitAttempted = useRef(false);
-  const paddleTokenMissing =
-    !process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ||
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN === "";
-
-  useEffect(() => {
-    if (paddleInitAttempted.current || paddleTokenMissing) return;
-    paddleInitAttempted.current = true;
-
-    initializePaddle({
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
-      environment: (process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox") as
-        | "sandbox"
-        | "production",
-      eventCallback(e) {
-        if (e.name === "checkout.completed") {
-          router.push("/onboarding/done");
-        }
-      },
-    })
-      .then((p) => {
-        paddleRef.current = p ?? null;
-      })
-      .catch((err) => {
-        console.warn("[plan-form] Paddle init failed:", err);
-      });
-  }, [paddleTokenMissing, router]);
+  const lemonSqueezy = useLemonSqueezyCheckout(() => router.push("/onboarding/done"));
 
   async function submit() {
     setCheckoutError(null);
@@ -97,28 +70,21 @@ export function PlanStepForm({
         body: JSON.stringify({ plan: selected, cadence, onboarding: true }),
       });
       const data = (await res.json().catch(() => ({}))) as {
-        priceId?: string;
-        customerEmail?: string;
+        checkoutUrl?: string;
         workspaceId?: string;
         error?: string;
       };
       if (!res.ok) {
         throw new Error(data.error ?? `Checkout request failed (${res.status})`);
       }
-      if (!data.priceId) {
-        throw new Error("Missing priceId in checkout response");
+      if (!data.checkoutUrl) {
+        throw new Error("Missing checkoutUrl in checkout response");
       }
 
-      if (!paddleRef.current) {
-        // Paddle failed to init (no token or load error) — surface clearly.
-        throw new Error(t("paddleNotReady"));
+      if (!lemonSqueezy.open(data.checkoutUrl)) {
+        // lemon.js hasn't finished loading yet — surface clearly.
+        throw new Error(t("checkoutNotReady"));
       }
-
-      paddleRef.current.Checkout.open({
-        items: [{ priceId: data.priceId, quantity: 1 }],
-        customer: data.customerEmail ? { email: data.customerEmail } : undefined,
-        customData: { workspaceId: data.workspaceId },
-      });
     } catch (err) {
       const rawMsg = err instanceof Error ? err.message : "checkout_init_failed";
       const displayMsg = errMsg(rawMsg);
@@ -274,12 +240,6 @@ export function PlanStepForm({
           <p className="text-xs text-muted-foreground">{t("checkoutNote")}</p>
         )}
 
-        {selected !== "free" && paddleTokenMissing && isDev && (
-          <p className="text-xs text-amber-700 dark:text-amber-400">
-            {t("paddleTokenMissingDev")}
-          </p>
-        )}
-
         {checkoutError && (
           <p role="alert" className="text-xs text-destructive">
             {checkoutError}
@@ -291,7 +251,7 @@ export function PlanStepForm({
           <Button onClick={submit} variant="brand" disabled={busy} className="min-w-48">
             {busy ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
                 {selected === "free" ? t("settingUp") : t("opening")}
               </>
             ) : (

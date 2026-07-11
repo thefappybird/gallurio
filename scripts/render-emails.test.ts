@@ -130,11 +130,12 @@ describe("platform emails", () => {
       location: { label: "Tagaytay Highlands", address: "Tagaytay, Cavite, Philippines", placeId: "place_1", lat: 14.1154, lng: 120.9621 },
       description: "Looking for full-day coverage with a documentary style.",
       sessions: SESSIONS,
+      isRecipientGated: false,
     });
     const html = capturedHtml();
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("Emma Carter");
-    expect(html).toContain("/inquiries?inquiryId=inq_42");
+    expect(html).toContain("/inquiry-redirect?inquiryId=inq_42");
     expect(html).toContain("@media (prefers-color-scheme: dark)");
     expect(html).toContain("min-height:44px");
     writeHtml("platform-inquiry-notification-en-cta.html", html, {
@@ -162,6 +163,7 @@ describe("platform emails", () => {
       location: { label: null, address: null, placeId: null, lat: null, lng: null },
       description: "Short inquiry.",
       sessions: [],
+      isRecipientGated: false,
     });
     const html = capturedHtml();
     expect(html).toContain("<!DOCTYPE html>");

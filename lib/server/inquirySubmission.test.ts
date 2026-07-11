@@ -251,8 +251,16 @@ describe("submitInquiry", () => {
     await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
     expect(sendInquiryNotification).toHaveBeenCalledOnce();
     expect(sendInquiryNotification.mock.calls[0][0].recipientEmail).toBe("owner@studio.test");
+    expect(sendInquiryNotification.mock.calls[0][0].isRecipientGated).toBe(false);
     expect(sendInquiryClientConfirmation).toHaveBeenCalledOnce();
     expect(sendInquiryClientConfirmation.mock.calls[0][0].workspaceName).toBe("Studio Aurora");
+  });
+
+  it("marks the owner notification as gated when the workspace has lapsed to gated free", async () => {
+    await Workspace.create(makeWorkspace({ plan: "free", everSubscribed: true }));
+    await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+    expect(sendInquiryNotification).toHaveBeenCalledOnce();
+    expect(sendInquiryNotification.mock.calls[0][0].isRecipientGated).toBe(true);
   });
 
   it("keeps the inquiry submission committed when email delivery fails", async () => {

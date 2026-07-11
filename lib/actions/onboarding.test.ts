@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi, type MockedFunction } from "vitest";
+import mongoose from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { User, Workspace } from "@/lib/db/models";
 import { Team } from "@/lib/db/models/team";
@@ -27,21 +28,34 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
+// reconcileLemonSqueezySubscription dynamically imports lib/lemonsqueezy/client —
+// mock it so tests never hit the real Lemon Squeezy SDK.
+vi.mock("@/lib/lemonsqueezy/client", () => ({
+  listActiveSubscriptionsForEmail: vi.fn(),
+}));
+
+process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID = "1001";
+
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
 
 import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
+import { listActiveSubscriptionsForEmail } from "@/lib/lemonsqueezy/client";
 import {
   businessStepAction,
   workspaceStepAction,
   selectFreePlanAction,
   completeOnboardingAction,
+  reconcileLemonSqueezySubscription,
 } from "./onboarding";
 
 const mockGetAuthUser = getAuthUser as MockedFunction<typeof getAuthUser>;
 const mockSetActiveWorkspace = setActiveWorkspace as MockedFunction<typeof setActiveWorkspace>;
+const mockListActiveSubscriptionsForEmail = listActiveSubscriptionsForEmail as MockedFunction<
+  typeof listActiveSubscriptionsForEmail
+>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -89,6 +103,21 @@ describe("businessStepAction", () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await businessStepAction(validBusinessInput);
     expect(result.error).toBe("not_authenticated");
+  });
+
+  it("rejects when the user already has a staff membership in another workspace", async () => {
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await User.create({
+      workosUserId: "wos_user_001",
+      email: "wos_user_001@example.com",
+      memberships: [{ workspaceId: new mongoose.Types.ObjectId(), role: "staff" }],
+    });
+
+    const result = await businessStepAction(validBusinessInput);
+    expect(result.error).toBe("already_member_elsewhere");
+
+    const workspace = await Workspace.findOne({ slug: "alice-photography" }).lean();
+    expect(workspace).toBeNull();
   });
 
   it("creates workspace + default team + owner membership on first run", async () => {
@@ -368,5 +397,88 @@ describe("completeOnboardingAction", () => {
     const { Client } = await import("@/lib/db/models");
     const clientCount = await Client.countDocuments();
     expect(clientCount).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reconcileLemonSqueezySubscription
+// ---------------------------------------------------------------------------
+
+describe("reconcileLemonSqueezySubscription", () => {
+  function makeSub(id: string, overrides: Record<string, unknown> = {}) {
+    return {
+      id,
+      attributes: {
+        variant_id: process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID,
+        status: "active",
+        created_at: "2026-01-01T00:00:00Z",
+        renews_at: "2026-02-01T00:00:00Z",
+        ...overrides,
+      },
+    } as never;
+  }
+
+  it("does not cross-bind a subscription already claimed by a different workspace", async () => {
+    const wsA = await Workspace.create({
+      ownerUserId: "wos_user_002",
+      name: "Workspace A",
+      slug: "workspace-a",
+      plan: "pro",
+      lsSubscriptionId: "sub_owned_by_a",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    const wsB = await Workspace.create({
+      ownerUserId: "wos_user_002",
+      name: "Workspace B",
+      slug: "workspace-b",
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+
+    mockGetAuthUser.mockResolvedValue(makeAuthUser("wos_user_002"));
+    // Same user's email surfaces workspace A's still-active subscription even
+    // though the caller is reconciling for workspace B.
+    mockListActiveSubscriptionsForEmail.mockResolvedValue([makeSub("sub_owned_by_a")]);
+
+    await reconcileLemonSqueezySubscription(wsB._id.toString());
+
+    const afterB = await Workspace.findById(wsB._id).lean();
+    expect(afterB!.plan).toBe("free");
+    expect(afterB!.lsSubscriptionId ?? null).toBeNull();
+
+    const afterA = await Workspace.findById(wsA._id).lean();
+    expect(afterA!.plan).toBe("pro");
+    expect(afterA!.lsSubscriptionId).toBe("sub_owned_by_a");
+  });
+
+  it("still reconciles a subscription that is not bound to any other workspace", async () => {
+    const wsC = await Workspace.create({
+      ownerUserId: "wos_user_003",
+      name: "Workspace C",
+      slug: "workspace-c",
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+
+    mockGetAuthUser.mockResolvedValue(makeAuthUser("wos_user_003"));
+    mockListActiveSubscriptionsForEmail.mockResolvedValue([makeSub("sub_fresh_for_c")]);
+
+    await reconcileLemonSqueezySubscription(wsC._id.toString());
+
+    const afterC = await Workspace.findById(wsC._id).lean();
+    expect(afterC!.plan).toBe("pro");
+    expect(afterC!.lsSubscriptionId).toBe("sub_fresh_for_c");
+    // This safety-net path is a promotion path too — must mark everSubscribed
+    // just like the webhook's own upsert does, or a later lapse won't gate.
+    expect(afterC!.everSubscribed).toBe(true);
   });
 });

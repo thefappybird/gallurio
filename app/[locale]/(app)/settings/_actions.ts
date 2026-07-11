@@ -21,10 +21,6 @@ import { getAuthUser } from "@/lib/auth/session";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { workos } from "@/lib/workos";
 import { connectDB } from "@/lib/db/mongoose";
-import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
-import { getLocale } from "next-intl/server";
-import { redirect } from "next/navigation";
-import { routing } from "@/lib/i18n/routing";
 
 // ---------------------------------------------------------------------------
 // Workspace business settings
@@ -454,39 +450,6 @@ export async function disableMfaAction(): Promise<ActionResult> {
 
   revalidatePath("/settings", "page");
   return { ok: true };
-}
-
-// ---------------------------------------------------------------------------
-// Workspace switcher: switch active workspace (membership-validated)
-// ---------------------------------------------------------------------------
-
-export async function setActiveWorkspaceAction(
-  workspaceId: string,
-): Promise<ActionResult> {
-  const authUser = await getAuthUser();
-  if (!authUser) return { error: "not_authenticated" };
-
-  await connectDB();
-
-  const user = await User.findOne({
-    workosUserId: authUser.workosUserId,
-  }).lean();
-  if (!user) return { error: "user_not_found" };
-
-  const isMember = user.memberships.some(
-    (m) => String(m.workspaceId) === workspaceId,
-  );
-  if (!isMember) return { error: "workspace_not_found" };
-
-  await setActiveWorkspace(authUser.workosUserId, workspaceId);
-
-  const locale = await getLocale();
-  const dashboardPath =
-    locale === routing.defaultLocale
-      ? "/dashboard"
-      : `/${locale}/dashboard`;
-
-  redirect(dashboardPath);
 }
 
 // ---------------------------------------------------------------------------

@@ -69,3 +69,4 @@ skills-lock.json
 /.driver-shots/
 /e2e/.artifacts/
 *.log
+/.swc

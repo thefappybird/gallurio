@@ -14,7 +14,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { connectDB } from "@/lib/db/mongoose";
-import { User, Workspace } from "@/lib/db/models";
+import { User } from "@/lib/db/models";
 import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import {
   normalizeSettingsSeoFields,
@@ -26,7 +26,7 @@ import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
-import { getProPricing } from "@/lib/paddle/pricing";
+import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { AccountPanel } from "../account/_panel";
 import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import type {
@@ -77,21 +77,6 @@ export default async function SettingsCatchallPage({
   const userDoc = await User.findOne({ workosUserId: userId }).lean();
   const mfaEnabled = userDoc?.mfaEnabled ?? false;
   const { hasOAuth } = await getAuthMethods(userId);
-
-  // Load all workspaces the user is a member of for the switcher
-  const membershipWorkspaceIds = (userDoc?.memberships ?? []).map(
-    (m) => m.workspaceId,
-  );
-  const memberWorkspaces = await Workspace.find(
-    { _id: { $in: membershipWorkspaceIds } },
-    { _id: 1, name: 1 },
-  ).lean();
-
-  const workspaceSwitcherItems = memberWorkspaces.map((w) => ({
-    id: String(w._id),
-    name: w.name,
-    logoUrl: null,
-  }));
 
   const businessDefaults: UpdateWorkspaceBusinessInput = {
     name: workspace.name,
@@ -156,7 +141,7 @@ export default async function SettingsCatchallPage({
   };
 
   const t = await getTranslations("app.settings.tabs");
-  const proPricing = await getProPricing(workspace.country ?? "PH");
+  const proPricing = await getProPricing();
 
   // Active slug: null means base /settings -> render account tab
   const activeSlug = slug;
@@ -165,8 +150,7 @@ export default async function SettingsCatchallPage({
     <SettingsUserProfile
       role={role}
       activeSlug={activeSlug ?? "account"}
-      workspaces={workspaceSwitcherItems}
-      currentWorkspaceId={String(workspace._id)}
+      workspaceName={workspace.name}
       pages={[
         {
           slug: "account",
@@ -221,8 +205,8 @@ export default async function SettingsCatchallPage({
           body: (
             <BillingPanel
               currentPlan={workspace.plan as "free" | "starter" | "pro"}
-              paddleSubscriptionStatus={
-                (workspace.paddleSubscriptionStatus as
+              lsSubscriptionStatus={
+                (workspace.lsSubscriptionStatus as
                   | "active"
                   | "canceled"
                   | "past_due"
@@ -230,7 +214,7 @@ export default async function SettingsCatchallPage({
                   | "trialing"
                   | null) ?? null
               }
-              paddleCurrentPeriodEnd={workspace.paddleCurrentPeriodEnd ?? null}
+              lsCurrentPeriodEnd={workspace.lsCurrentPeriodEnd ?? null}
               workspaceId={String(workspace._id)}
               customerEmail={authUser?.email ?? ""}
               proPricing={proPricing}

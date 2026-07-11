@@ -33,7 +33,7 @@ vi.mock("@/lib/utils/get-user-time-format", () => ({
   getUserTimeFormat: vi.fn(async () => "24h"),
 }));
 
-vi.mock("@/lib/paddle/pricing", () => ({
+vi.mock("@/lib/lemonsqueezy/pricing", () => ({
   getProPricing: vi.fn(async () => ({ monthly: 0, yearly: 0 })),
 }));
 

@@ -1161,11 +1161,6 @@
       "description": "Manage your account, workspace, and preferences.",
       "navigationLabel": "Settings navigation",
       "selectPage": "Select a page from the sidebar.",
-      "workspaceSwitcher": {
-        "switchWorkspace": "Switch workspace",
-        "yourWorkspaces": "Your workspaces",
-        "noWorkspace": "No workspace"
-      },
       "account": {
         "profileSection": "Profile",
         "profileHint": "Your name and avatar as shown to teammates.",
@@ -1256,8 +1251,7 @@
         "opening": "Opening…",
         "upgradeSuccess": "Subscription activated! Your plan has been updated.",
         "checkoutFailed": "Checkout failed. Please try again.",
-        "paddleNotReady": "Payment system not ready. Please refresh and try again.",
-        "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set — overlay unavailable in this dev environment.",
+        "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
         "subscriptionIssue": "There is an issue with your subscription. Please check your payment method or contact support.",
         "subscriptionStatus": {
           "active": "Active",
@@ -1267,12 +1261,17 @@
           "trialing": "Trialing"
         },
         "manageSection": "Manage subscription",
-        "manageDescription": "Your subscription is managed through Paddle. To update your payment method or view invoices, please contact support.",
-        "cancelNote": "To cancel your subscription, contact support or delete your workspace."
+        "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
+        "manageButton": "Manage subscription",
+        "cadenceToggle": {
+          "monthly": "Monthly",
+          "yearly": "Yearly",
+          "savePill": "Save 2 months"
+        }
       },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -2665,7 +2664,8 @@
       "owner_only": "Only the workspace owner can do this.",
       "invalid_data": "Invalid data. Please check your input and try again.",
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
-      "finish_onboarding": "Finish onboarding before changing workspace settings.",
+      "onboarding_required": "Finish onboarding to continue.",
+      "subscription_required": "Your subscription has ended. Subscribe to continue.",
       "invalid_input": "Please check the form and try again.",
       "rate_limited": "Too many attempts. Try again in {seconds} seconds.",
       "user_not_found": "User not found.",
@@ -2683,6 +2683,7 @@
       "avatar_update_failed": "Couldn't update your photo. Please try again.",
       "email_send_failed": "Couldn't send the email. Please try again.",
       "onboarding_no_active_workspace": "No active workspace — restart onboarding.",
+      "already_member_elsewhere": "This email is already a member of another workspace. Sign up with a different email to create a new one.",
       "client_create_failed": "Couldn't create the client. Please try again.",
       "client_not_found": "Client not found.",
       "client_update_failed": "Couldn't update the client. Please try again.",
@@ -2703,9 +2704,11 @@
       "invalid_request": "Invalid request.",
       "export_too_large": "Too many bookings to export. Narrow your filters and try again.",
       "free_plan_no_checkout": "The free plan doesn't require checkout.",
-      "paddle_price_not_configured": "This plan isn't available right now. Please contact support.",
+      "lemonsqueezy_variant_not_configured": "This plan isn't available right now. Please contact support.",
       "no_verified_email": "Add and verify an email before subscribing.",
       "checkout_init_failed": "Couldn't start checkout. Please try again.",
+      "no_subscription": "You don't have an active subscription to manage.",
+      "subscription_manage_unavailable": "Couldn't open subscription management. Please try again.",
       "locked": "This item is locked and can't be edited right now.",
       "conflict": "That time conflicts with another booking.",
       "edit_sessions_failed": "Couldn't update the sessions. Please try again.",
@@ -2806,17 +2809,16 @@
         "yearly": "Yearly",
         "savePill": "Save 2 months"
       },
-      "checkoutNote": "A secure Paddle checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
+      "checkoutNote": "A secure checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
       "ctaFree": "Continue with Free",
       "ctaPaid": "Subscribe — {price}",
       "settingUp": "Setting up…",
       "opening": "Opening checkout…",
       "checkoutFailed": "Checkout failed. Please try again.",
-      "paddleNotReady": "Payment system not ready. Please refresh and try again.",
-      "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set — overlay unavailable in this dev environment. Use the dev shortcut below.",
+      "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
       "dev": {
         "label": "Dev shortcut",
-        "description": "Skip Paddle and mark {planName} as active. Dev-only.",
+        "description": "Skip Lemon Squeezy and mark {planName} as active. Dev-only.",
         "activate": "Activate {planName} (dev)"
       }
     },
@@ -2874,6 +2876,30 @@
         "teamManagement": "Team management",
         "removeBranding": "Remove Gallurio branding"
       }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "Subscribe",
+    "owner": {
+      "title": "Your subscription has ended",
+      "description": "Resubscribe to Gallurio Pro to get back into your dashboard.",
+      "perMonth": "/ month",
+      "perYear": "/ year",
+      "subscribeButton": "Subscribe",
+      "subscribeAriaLabel": "Subscribe to Gallurio Pro",
+      "opening": "Opening…",
+      "upgradeSuccess": "Subscription activated! Redirecting…",
+      "checkoutFailed": "Checkout failed. Please try again.",
+      "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
+      "cadenceToggle": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
+      }
+    },
+    "staff": {
+      "title": "Workspace subscription lapsed",
+      "description": "Ask the workspace owner to resubscribe to Gallurio Pro to regain access."
     }
   },
   "publicPage": {
@@ -2981,6 +3007,10 @@
       "already_accepted": {
         "title": "Already a member",
         "description": "You have already accepted this invitation and joined the workspace."
+      },
+      "already_member": {
+        "title": "Email already in use",
+        "description": "This email is already a member of another workspace. Sign up with a different email to accept this invitation."
       },
       "email_mismatch": {
         "title": "Wrong account",

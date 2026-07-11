@@ -1,22 +1,24 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { CreditCard, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
-import { PLAN_CATALOG } from "@/lib/paddle/plans";
-import type { ProPricing } from "@/lib/paddle/pricing";
+import { PLAN_CATALOG } from "@/lib/lemonsqueezy/plans";
+import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
+import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
 import { Button } from "@/components/ui/button";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { cn } from "@/lib/utils";
-import type { PlanTier, PaddleSubscriptionStatus } from "@/lib/db/models";
+import type { PlanTier, LemonSqueezySubscriptionStatus } from "@/lib/db/models";
 
 export type BillingPanelProps = {
   currentPlan: PlanTier;
-  paddleSubscriptionStatus: PaddleSubscriptionStatus | null;
-  paddleCurrentPeriodEnd: Date | null;
+  lsSubscriptionStatus: LemonSqueezySubscriptionStatus | null;
+  lsCurrentPeriodEnd: Date | null;
   workspaceId: string;
   customerEmail: string;
   proPricing: ProPricing;
@@ -31,10 +33,8 @@ function formatDate(d: Date | null): string {
 
 export function BillingPanel({
   currentPlan,
-  paddleSubscriptionStatus,
-  paddleCurrentPeriodEnd,
-  workspaceId,
-  customerEmail,
+  lsSubscriptionStatus,
+  lsCurrentPeriodEnd,
   proPricing,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
@@ -44,41 +44,14 @@ export function BillingPanel({
 
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const paddleRef = useRef<Paddle | null>(null);
-  const paddleInitAttempted = useRef(false);
-  const paddleTokenMissing =
-    !process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ||
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN === "";
-
-  useEffect(() => {
-    if (paddleInitAttempted.current || paddleTokenMissing) return;
-    paddleInitAttempted.current = true;
-
-    initializePaddle({
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
-      environment: (process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox") as
-        | "sandbox"
-        | "production",
-      eventCallback(e) {
-        if (e.name === "checkout.completed") {
-          setLoadingPlan(null);
-          toast.success(t("upgradeSuccess"));
-          // Reload page to reflect new plan from server.
-          window.location.reload();
-        } else if (e.name === "checkout.closed" || e.name === "checkout.error") {
-          // Overlay dismissed or failed to render — release the button so the
-          // user can retry instead of staring at a permanent spinner.
-          setLoadingPlan(null);
-        }
-      },
-    })
-      .then((p) => {
-        paddleRef.current = p ?? null;
-      })
-      .catch((err) => {
-        console.warn("[billing-panel] Paddle init failed:", err);
-      });
-  }, [paddleTokenMissing, t]);
+  const [managingSubscription, setManagingSubscription] = useState(false);
+  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
+  const lemonSqueezy = useLemonSqueezyCheckout(() => {
+    setLoadingPlan(null);
+    toast.success(t("upgradeSuccess"));
+    // Reload page to reflect new plan from server.
+    window.location.reload();
+  });
 
   async function openUpgradeCheckout(plan: PlanTier) {
     if (plan === "free" || plan === currentPlan) return;
@@ -89,11 +62,10 @@ export function BillingPanel({
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, cadence }),
       });
       const data = (await res.json().catch(() => ({}))) as {
-        priceId?: string;
-        customerEmail?: string;
+        checkoutUrl?: string;
         workspaceId?: string;
         error?: string;
       };
@@ -104,18 +76,15 @@ export function BillingPanel({
         setLoadingPlan(null);
         return;
       }
-      if (!data.priceId) {
-        throw new Error("Missing priceId in checkout response");
+      if (!data.checkoutUrl) {
+        throw new Error("Missing checkoutUrl in checkout response");
       }
-      if (!paddleRef.current) {
-        throw new Error(t("paddleNotReady"));
+      if (!lemonSqueezy.open(data.checkoutUrl)) {
+        throw new Error(t("checkoutNotReady"));
       }
-
-      paddleRef.current.Checkout.open({
-        items: [{ priceId: data.priceId, quantity: 1 }],
-        customer: { email: data.customerEmail ?? customerEmail },
-        customData: { workspaceId: data.workspaceId ?? workspaceId },
-      });
+      // The overlay opens synchronously; release the button right away so a
+      // dismissed/failed checkout doesn't leave a permanent spinner.
+      setLoadingPlan(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : t("checkoutFailed");
       setCheckoutError(msg);
@@ -124,11 +93,25 @@ export function BillingPanel({
     }
   }
 
-  const isActiveSubscriber =
-    currentPlan !== "free" && paddleSubscriptionStatus === "active";
+  async function openManagePortal() {
+    setManagingSubscription(true);
+    try {
+      const result = await getSubscriptionManageUrlAction();
+      if (result.error || !result.url) {
+        toast.error(errMsg(result.error));
+        return;
+      }
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    } finally {
+      setManagingSubscription(false);
+    }
+  }
 
-  const statusLabel = paddleSubscriptionStatus
-    ? t(`subscriptionStatus.${paddleSubscriptionStatus}`)
+  const isActiveSubscriber =
+    currentPlan !== "free" && lsSubscriptionStatus === "active";
+
+  const statusLabel = lsSubscriptionStatus
+    ? t(`subscriptionStatus.${lsSubscriptionStatus}`)
     : null;
 
   return (
@@ -146,15 +129,15 @@ export function BillingPanel({
               <span
                 className={cn(
                   "inline-flex items-center gap-1 border px-1.5 py-0.5 text-[10px] uppercase tracking-wider",
-                  paddleSubscriptionStatus === "active"
+                  lsSubscriptionStatus === "active"
                     ? "border-brand/30 bg-brand/10 text-brand"
-                    : paddleSubscriptionStatus === "past_due" ||
-                        paddleSubscriptionStatus === "paused"
+                    : lsSubscriptionStatus === "past_due" ||
+                        lsSubscriptionStatus === "paused"
                       ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
                       : "border-border bg-muted text-muted-foreground"
                 )}
               >
-                {paddleSubscriptionStatus === "active" ? (
+                {lsSubscriptionStatus === "active" ? (
                   <CheckCircle2 className="size-2.5" aria-hidden="true" />
                 ) : (
                   <AlertCircle className="size-2.5" aria-hidden="true" />
@@ -163,9 +146,9 @@ export function BillingPanel({
               </span>
             )}
           </div>
-          {paddleCurrentPeriodEnd && (
+          {lsCurrentPeriodEnd && (
             <p className="text-xs text-muted-foreground">
-              {t("renewsOn", { date: formatDate(paddleCurrentPeriodEnd) })}
+              {t("renewsOn", { date: formatDate(lsCurrentPeriodEnd) })}
             </p>
           )}
         </div>
@@ -173,20 +156,13 @@ export function BillingPanel({
 
       {/* Warning for non-active paid subscriptions */}
       {currentPlan !== "free" &&
-        paddleSubscriptionStatus &&
-        paddleSubscriptionStatus !== "active" && (
+        lsSubscriptionStatus &&
+        lsSubscriptionStatus !== "active" && (
           <div className="flex items-start gap-2 border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
             <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <p>{t("subscriptionIssue")}</p>
           </div>
         )}
-
-      {/* Dev token missing notice */}
-      {paddleTokenMissing && process.env.NODE_ENV !== "production" && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
-          {t("paddleTokenMissingDev")}
-        </p>
-      )}
 
       {/* Inline error */}
       {checkoutError && (
@@ -201,6 +177,16 @@ export function BillingPanel({
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("availablePlans")}
           </p>
+          <SegmentedToggle
+            value={cadence}
+            onChange={setCadence}
+            ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+            options={[
+              { key: "monthly", label: t("cadenceToggle.monthly") },
+              { key: "yearly", label: t("cadenceToggle.yearly") },
+            ]}
+            className="w-fit"
+          />
           <div className="flex flex-col gap-2">
             {PLAN_CATALOG.filter((p) => p.id !== "free" && p.id !== currentPlan).map(
               (entry) => {
@@ -217,20 +203,22 @@ export function BillingPanel({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium">{tPlans(`${entry.id}.name`)}</span>
-                      <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                        <span>
-                          {formatMoney(monthlyPrice, currency, locale)}{" "}
-                          <span>{t("perMonth")}</span>
-                        </span>
-                        <span>
-                          <span className="line-through">
-                            {formatMoney(yearlyComparePrice, currency, locale)}
-                          </span>{" "}
-                          <span className="font-medium text-foreground">
-                            {formatMoney(yearlyPrice, currency, locale)}
-                          </span>{" "}
-                          <span>{t("perYear")}</span>
-                        </span>
+                      <div className="flex items-baseline gap-1 text-xs text-muted-foreground">
+                        {cadence === "yearly" ? (
+                          <>
+                            <span className="line-through">
+                              {formatMoney(yearlyComparePrice, currency, locale)}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {formatMoney(yearlyPrice, currency, locale)}
+                            </span>
+                            <span>{t("perYear")}</span>
+                          </>
+                        ) : (
+                          <span>
+                            {formatMoney(monthlyPrice, currency, locale)} {t("perMonth")}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <Button
@@ -255,13 +243,28 @@ export function BillingPanel({
           </div>
         </div>
       ) : (
-        /* Active subscriber — show manage notice */
+        /* Active subscriber — link to Lemon Squeezy's self-service portal */
         <div className="flex flex-col gap-2">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("manageSection")}
           </p>
           <p className="text-sm text-muted-foreground">{t("manageDescription")}</p>
-          <p className="text-xs text-muted-foreground">{t("cancelNote")}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={managingSubscription}
+            onClick={openManagePortal}
+            className="w-fit"
+          >
+            {managingSubscription ? (
+              <>
+                <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
+                {t("opening")}
+              </>
+            ) : (
+              t("manageButton")
+            )}
+          </Button>
         </div>
       )}
     </div>

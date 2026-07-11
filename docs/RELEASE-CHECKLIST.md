@@ -9,9 +9,9 @@ Last updated: 2026-06-22 (provider audit: Clerk→WorkOS, Cloudinary→Cloudflar
 These exist to unblock local iteration. Each one is gated by `NODE_ENV !== "production"` today, but the long-term plan is to replace them with real production flows. Before shipping:
 
 - [ ] **`lib/actions/dev.ts → devActivatePlanAction`**
-  - Currently flips `Workspace.plan` directly without touching Paddle (dev-only bypass).
-  - Replacement plan: drive `Workspace.plan` from the Paddle webhook only. Owner-initiated upgrades go through `/api/billing/checkout` + the Paddle.js overlay (already implemented). Owner-initiated downgrades are handled via the Paddle customer portal or a future in-app cancel/downgrade flow; the webhook then reconciles `Workspace.plan`.
-  - When real subscription management lands: keep the team-cap downgrade guard logic — it already mirrors the one in `app/api/webhooks/paddle/route.ts`. The `DEV plan` settings tab should be removed (or moved behind a `?dev=1` query param).
+  - Currently flips `Workspace.plan` directly without touching Lemon Squeezy (dev-only bypass).
+  - Replacement plan: drive `Workspace.plan` from the Lemon Squeezy webhook only. Owner-initiated upgrades go through `/api/billing/checkout` + the Lemon Squeezy overlay (already implemented). Owner-initiated downgrades are handled via the Lemon Squeezy customer portal or a future in-app cancel/downgrade flow; the webhook then reconciles `Workspace.plan`.
+  - When real subscription management lands: keep the team-cap downgrade guard logic — it already mirrors the one in `app/api/webhooks/lemonsqueezy/route.ts`. The `DEV plan` settings tab should be removed (or moved behind a `?dev=1` query param).
 - [ ] **`lib/actions/dev.ts → devSeedMemberAction`**
   - Bypasses the `assertCanAddTeamMember` seat reservation and the `PendingTeamAssignment` row that the real invite flow creates.
   - Replacement plan: the real owner flow is `inviteMemberAction`. Remove this action — it predates the real one.
@@ -20,14 +20,14 @@ These exist to unblock local iteration. Each one is gated by `NODE_ENV !== "prod
 
 Search to confirm everything dev-only is gated: `rg "NODE_ENV !== \"production\"" -t ts -t tsx`.
 
-## 2. Paddle subscription wiring
+## 2. Lemon Squeezy subscription wiring
 
-Billing has been migrated from HitPay to Paddle. The items below supersede the old HitPay section. See `docs/paddle-integration/paddle-setup.md` for the full dashboard setup guide.
+Billing has been migrated from Paddle to Lemon Squeezy (no registered PH business entity yet — Paddle requires one, Lemon Squeezy accepts individual/sole-proprietor sellers). The items below supersede the old Paddle section. See `docs/lemonsqueezy-integration/lemonsqueezy-setup.md` for the full dashboard setup guide.
 
 - [ ] **Owner-initiated downgrades** must be flow-tested end-to-end: create a live subscription → owner downgrades from Pro to Starter while over the Starter team cap → confirm the webhook refuses the plan change AND the user sees the downgrade-block-modal pointing at teams to delete.
-- [ ] **Cancellation while over-cap** must be flow-tested: workspace on Pro with 8 teams → cancel subscription → confirm `Workspace.plan` flips to `free`, `paddleSubscriptionStatus` flips to `"canceled"`, and the next session render shows the `DowngradeBlockModal` listing the teams to delete.
-- [ ] **Webhook signature** must use a real `PADDLE_WEBHOOK_SECRET` (destination secret from live Paddle Notifications). Confirm `verifyAndParsePaddleEvent` returns `null` for unsigned/tampered bodies.
-- [ ] **Real prices** in `lib/paddle/plans.ts` match the live Paddle dashboard (free 0, Starter ₱250, Pro ₱500). The `priceId` fields must reference live `pri_…` IDs, not sandbox ones. See §14 for the full Paddle pre-launch checklist.
+- [ ] **Cancellation vs expiry** must be flow-tested: workspace on Pro with 8 teams → cancel subscription → confirm `Workspace.plan` stays `pro` and `lsSubscriptionStatus` flips to `"canceled"` (access continues until `ends_at`) → when the period ends and `subscription_expired` fires, confirm `Workspace.plan` flips to `free` and the next session render shows the `DowngradeBlockModal` listing the teams to delete.
+- [ ] **Webhook signature** must use a real `LEMONSQUEEZY_WEBHOOK_SECRET` (signing secret from the live Lemon Squeezy webhook destination). Confirm `verifyAndParseLemonSqueezyEvent` returns `null` for unsigned/tampered bodies.
+- [ ] **Real prices** in `lib/lemonsqueezy/plans.ts` match the live Lemon Squeezy dashboard (free 0, Pro ₱250/₱2,500). The `variantId` fields must reference live variant IDs, not test-mode ones. `LEMONSQUEEZY_TEST_MODE` must be `"false"` in production. See §14 for the full Lemon Squeezy pre-launch checklist.
 
 ## 3. Pending-invite seat lifecycle
 
@@ -142,7 +142,7 @@ Confirm these are set in the production environment:
 - [ ] `DATABASE_URL` (MongoDB Atlas connection string)
 - [ ] **WorkOS:** `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD` (≥32 chars), `ACTIVE_WORKSPACE_COOKIE_SECRET`, `NEXT_PUBLIC_WORKOS_REDIRECT_URI`, `WORKOS_WEBHOOK_SECRET` (for the email-verification webhook, §4g)
 - [ ] **Cloudflare Images:** `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_IMAGES_API_TOKEN`, `CLOUDFLARE_IMAGES_ACCOUNT_HASH`, `NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH`
-- [ ] **Paddle:** `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `NEXT_PUBLIC_PADDLE_ENV=production`, `PADDLE_PRICE_STARTER_ID`, `PADDLE_PRICE_PRO_ID` (all live values — see §14)
+- [ ] **Lemon Squeezy:** `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`, `LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID`, `LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID`, `LEMONSQUEEZY_TEST_MODE=false` (all live values — see §14)
 - [ ] **Email (Resend):** `RESEND_API_KEY`, `EMAIL_FROM` (verified domain), `EMAIL_REPLY_TO` (optional)
 - [ ] `CRON_SECRET`
 
@@ -150,7 +150,7 @@ Confirm these are set in the production environment:
 
 ## 10. Smoke after deploy
 
-In production with live credentials (see §14 for Paddle-specific billing smoke tests):
+In production with live credentials (see §14 for Lemon Squeezy-specific billing smoke tests):
 
 - [ ] Sign up a new workspace — gets a Main team. The verification email arrives using our branded template (§4g), not the WorkOS default.
 - [ ] Owner invites a teammate (from the `/teams` toolbar, a team's 3-dot menu, or its Details drawer) — they get a branded Resend email (§8a), accept, and land at `/bookings` with the reduced sidebar.
@@ -181,21 +181,19 @@ The portfolio brand kit supports **independent heading + body font selection** f
   ```
   Target is **`inquiry`** (a `quoted` record was an unconfirmed deal — demoting it to an active lead is safer than fabricating a confirmed `booked`). Confirm the desired target before running. Dev/staging databases are cleaned by `pnpm seed`, so this only matters for any DB that holds real data.
 
-## 14. Paddle billing (cannot test fully in dev)
+## 14. Lemon Squeezy billing (cannot test fully in dev)
 
-The following items require live Paddle credentials and a real card. None can be verified in sandbox or dev mode.
+The following items require live Lemon Squeezy credentials and a real card. None can be verified in test/sandbox mode.
 
-- [ ] **Live API key set**: `PADDLE_API_KEY` starts with `pdl_live_` (not `pdl_sdbx_`).
-- [ ] **Live webhook secret set**: `PADDLE_WEBHOOK_SECRET` is the destination secret from the live Notifications destination (`pdl_ntfset_…`).
-- [ ] **Live client token set**: `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` starts with `live_`.
-- [ ] **Environment set to production**: `NEXT_PUBLIC_PADDLE_ENV=production`.
-- [ ] **Production Price IDs set**: `PADDLE_PRICE_STARTER_ID` and `PADDLE_PRICE_PRO_ID` are `pri_…` IDs from the **live** Paddle account (not the sandbox account — they are different).
-- [ ] **Production webhook destination registered**: destination URL is `https://[domain]/api/webhooks/paddle` in the live Paddle account, subscribed to `subscription.*` and `transaction.completed`.
-- [ ] **PHP payout bank account linked**: Settings → Payouts in the live Paddle account. Paddle remits net proceeds in PHP via SWIFT. Without a linked account, payouts accumulate and are not disbursed.
-- [ ] **Paddle MoR coverage confirmed**: verify Paddle's Merchant of Record service covers the Philippines (PH — RA 12023 / 12% VAT on digital services) and UAE (5% VAT) before marketing in those markets. Paddle handles these taxes automatically as MoR.
-- [ ] **Live Starter checkout**: run one real-card Starter checkout end-to-end — plan upgrades → `subscription.activated` webhook fires → workflow run completes → `/onboarding/done` shows Starter plan. Confirm via Paddle dashboard that the subscription is active and `Workspace.paddleSubscriptionStatus === "active"`.
-- [ ] **Cancellation tested**: run `pnpm paddle:sim subscription-canceled <workspaceId>` (or cancel via the live dashboard) → confirm `Workspace.plan` drops to `free` and `paddleSubscriptionStatus` = `"canceled"`.
-- [ ] **Per-country price overrides configured** (optional but recommended before Gulf launch): add `unit_price_overrides` for AE/SA/QA/KW/OM/BH on the live Starter and Pro prices. See `docs/paddle-integration/paddle-setup.md` Step 2 for instructions. No code change required — this is dashboard-only config.
-- [ ] **Arabic/RTL locale shipped** (see `docs/paddle-integration/deferred-scope/arabic-rtl.md`) before marketing Gallurio in Arabic-primary Gulf markets. Gulf countries currently receive English chrome as an interim measure.
+- [ ] **Test mode off**: `LEMONSQUEEZY_TEST_MODE=false` in the production environment.
+- [ ] **Live API key set**: `LEMONSQUEEZY_API_KEY` is a live (non-test) key from the production account.
+- [ ] **Live webhook secret set**: `LEMONSQUEEZY_WEBHOOK_SECRET` is the signing secret from the live webhook destination.
+- [ ] **Production variant IDs set**: `LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID` and `LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID` reference the **live** store's variants (not test-mode ones — they are different).
+- [ ] **Production webhook destination registered**: destination URL is `https://[domain]/api/webhooks/lemonsqueezy` in the live account, subscribed to all `subscription_*` events listed in `docs/lemonsqueezy-integration/lemonsqueezy-setup.md`.
+- [ ] **Payout details linked**: Settings → Payouts in the live Lemon Squeezy account. Without this configured, payouts accumulate and are not disbursed.
+- [ ] **Store currency confirmed**: verify whether the live store currency is PHP or USD (see `docs/lemonsqueezy-integration/lemonsqueezy-setup.md` Part A.1) and that `lib/lemonsqueezy/plans.ts` amounts match what's configured on the live variants.
+- [ ] **Live Pro checkout**: run one real-card Pro checkout end-to-end — plan upgrades → `subscription_created` webhook fires → workflow run completes → `/onboarding/done` shows Pro plan. Confirm via the Lemon Squeezy dashboard that the subscription is active and `Workspace.lsSubscriptionStatus === "active"`.
+- [ ] **Cancellation vs expiry tested**: run `pnpm lemonsqueezy:sim subscription-cancelled <workspaceId>` (or cancel via the live dashboard) → confirm `Workspace.plan` stays `pro` and `lsSubscriptionStatus` = `"canceled"`; then `pnpm lemonsqueezy:sim subscription-expired <workspaceId>` (or wait for the real `ends_at`) → confirm `Workspace.plan` drops to `free`.
+- [ ] **Arabic/RTL locale shipped** (see `docs/lemonsqueezy-integration/deferred-scope/arabic-rtl.md`) before marketing Gallurio in Arabic-primary Gulf markets. Gulf countries currently receive English chrome as an interim measure.
 
 When everything in this file is checked, ship it.

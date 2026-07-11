@@ -1,6 +1,7 @@
 import "server-only";
 import { Workspace, User, type WorkspaceDoc } from "@/lib/db/models";
 import { connectDB } from "@/lib/db/mongoose";
+import { isWorkspaceGated } from "@/lib/billing/access";
 import { getAuthUser } from "./session";
 import { getActiveWorkspaceId } from "./activeWorkspace";
 
@@ -33,7 +34,7 @@ export type ActionResult = {
  *   5. Onboarding gate (bypassed by allowDuringOnboarding)
  */
 export async function ownerContext(
-  opts: { allowDuringOnboarding?: boolean } = {},
+  opts: { allowDuringOnboarding?: boolean; allowWhenGated?: boolean } = {},
 ): Promise<OwnerContext | { error: string }> {
   const authUser = await getAuthUser();
   if (!authUser) return { error: "not_authenticated" };
@@ -56,8 +57,12 @@ export async function ownerContext(
   // bypass the page-level redirect. Defense-in-depth for the action surface.
   if (!opts.allowDuringOnboarding) {
     if (!user.onboardingCompletedAt) {
-      return { error: "finish_onboarding" };
+      return { error: "onboarding_required" };
     }
+  }
+
+  if (!opts.allowWhenGated && isWorkspaceGated(workspace)) {
+    return { error: "subscription_required" };
   }
 
   return { userId: authUser.workosUserId, workspaceId, workspace };

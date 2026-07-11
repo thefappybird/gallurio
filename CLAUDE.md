@@ -3,7 +3,7 @@
 Multi-tenant CRM SaaS for event businesses. Each workspace has bookings, clients, calendar, gallery, public pages, and inquiry forms.
 
 ## Stack
-Next.js 16 App Router + Turbopack · React 19.2 · Tailwind v4 · Mongoose 8 + MongoDB Atlas · WorkOS AuthKit (identity only — WorkOS Organizations are NOT used) · Zod · react-hook-form · Puck · Cloudflare Images · Paddle · Vercel Workflow DevKit (durable checkout) · next-intl · pnpm · RTK (token-efficient CLI).
+Next.js 16 App Router + Turbopack · React 19.2 · Tailwind v4 · Mongoose 8 + MongoDB Atlas · WorkOS AuthKit (identity only — WorkOS Organizations are NOT used) · Zod · react-hook-form · Puck · Cloudflare Images · Lemon Squeezy · Vercel Workflow DevKit (durable checkout) · next-intl · pnpm · RTK (token-efficient CLI).
 
 ## Framework rules
 - Next.js 16 only; prefer current repo/library docs (context7 + `node_modules/.../docs`) over model memory.
@@ -59,7 +59,7 @@ Use the graph index ONLY for large navigation/understanding tasks (multi-hop dep
 ## Tooling
 Reach for a tool when it raises confidence or a Done-criterion needs it; skip it when it adds no signal. Don't claim a UI/flow works until you've observed it running, not just compiled it.
 - **Playwright CLI** (`pnpm exec playwright test`, NOT the MCP plugin): drive the app in a browser for UI/behavioral changes. Repo is wired — `playwright.config.ts` loads `.env.local`, `auth.setup.ts` logs in once and reuses `storageState`, specs in `e2e/`. Required for the 3-breakpoint Done-criterion. Recipes + seeded login accounts: see the `portfolio-testing` / `run-gallurio` skills. Minimize side effects on the shared seeded dev DB — prefer inspecting states over submitting; never repeat a verified submit; no needless reload/re-navigate/re-poll.
-- **context7**: current library docs (Next 16, React 19, Mongoose, Tailwind v4, Paddle, next-intl, WorkOS) before relying on memory.
+- **context7**: current library docs (Next 16, React 19, Mongoose, Tailwind v4, Lemon Squeezy, next-intl, WorkOS) before relying on memory.
 - **Security passes**: the trailofbits static-analysis / differential-review / fp-check plugins are disabled by default to save context — re-enable them (and use the `security-auditor` agent) when a change touches auth, tenancy, webhooks, uploads, payments, public routes, or input validation, and for pre-merge audits.
 
 ## Engineering bar
@@ -101,7 +101,7 @@ Semantic tokens only, flat UI, brand teal (hue 195) as deliberate accent (~10–
 Direct Creator Upload only — API token never reaches client. Scope uploads by `workspaceId` metadata; verify ownership before every create. Full implementation details: `docs/dev-reference.md#cloudflare-images`.
 
 ## Billing
-Paddle subscriptions via durable Vercel Workflow checkout. `Workspace.plan` is provider-agnostic (`free|starter|pro`). Webhook: raw body + HMAC before parse, Node runtime, ack 200 after verify. Full flow + field names: `docs/dev-reference.md#billing`.
+Lemon Squeezy subscriptions via durable Vercel Workflow checkout. `Workspace.plan` is provider-agnostic (`free|starter|pro`). Webhook: raw body + HMAC before parse, Node runtime, ack 200 after verify. Full flow + field names: `docs/dev-reference.md#billing`.
 
 ## Production hosting
 Hetzner VPS, Node 20+, pm2/systemd, Caddy/Nginx → Next on 3000. GitHub Actions gated on tests+lint+typecheck+build. Details: `docs/dev-reference.md#production-hosting`.

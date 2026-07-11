@@ -1,7 +1,10 @@
 /**
- * Smoke tests for PlanStepForm (Paddle overlay version).
+ * Smoke tests for PlanStepForm (Lemon Squeezy overlay version).
  *
- * @paddle/paddle-js: initializePaddle mocked to return a stub Paddle object.
+ * lemon.js: loaded via a real <script> tag appended to document.body — we
+ * intercept that by stubbing window.createLemonSqueezy/window.LemonSqueezy
+ * directly and firing the script's onload handler manually (jsdom doesn't
+ * execute remote script src, so we simulate the load callback).
  * fetch: mocked via vi.stubGlobal to simulate checkout API responses.
  * Server actions (selectFreePlanAction, devActivatePlanAction): mocked.
  * @/lib/i18n/navigation: aliased to stub via vitest.config.ts.
@@ -11,18 +14,8 @@ import { screen, fireEvent, waitFor, act, within } from "@testing-library/react"
 import { renderWithProviders } from "@/test-utils/render";
 import { PlanStepForm } from "./plan-form";
 
-// ── Paddle mock ────────────────────────────────────────────────────────────
-// vi.mock is hoisted to top-of-file, so we must use vi.hoisted() to create
-// shared mocks that the factory can safely reference.
-const { paddleCheckoutOpenMock, mockRouterPush } = vi.hoisted(() => ({
-  paddleCheckoutOpenMock: vi.fn(),
+const { mockRouterPush } = vi.hoisted(() => ({
   mockRouterPush: vi.fn(),
-}));
-
-vi.mock("@paddle/paddle-js", () => ({
-  initializePaddle: vi.fn().mockResolvedValue({
-    Checkout: { open: paddleCheckoutOpenMock },
-  }),
 }));
 
 vi.mock("@/lib/i18n/navigation", () => ({
@@ -38,6 +31,9 @@ vi.mock("@/lib/actions/dev", () => ({
   devActivatePlanAction: vi.fn().mockResolvedValue({}),
 }));
 
+const urlOpenMock = vi.fn();
+const createLemonSqueezyMock = vi.fn();
+
 // ── fetch mock ─────────────────────────────────────────────────────────────
 const fetchMock = vi.fn();
 
@@ -45,18 +41,35 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
-  paddleCheckoutOpenMock.mockReset();
+  urlOpenMock.mockReset();
+  createLemonSqueezyMock.mockReset();
   mockRouterPush.mockReset();
-  // Set the Paddle token env var so initializePaddle is invoked.
-  // (In real test env this is empty so the token-missing branch fires.)
-  process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = "test_paddle_token";
-  process.env.NEXT_PUBLIC_PADDLE_ENV = "sandbox";
+
+  window.createLemonSqueezy = createLemonSqueezyMock.mockImplementation(() => {
+    window.LemonSqueezy = {
+      Setup: vi.fn(),
+      Url: { Open: urlOpenMock },
+    };
+  });
+
+  // jsdom doesn't fetch/execute the remote lemon.js script src — fire the
+  // component's script.onload handler as soon as it appends the tag so
+  // `lsReady` flips true synchronously in tests.
+  const originalAppendChild = document.body.appendChild.bind(document.body);
+  vi.spyOn(document.body, "appendChild").mockImplementation((node: Node) => {
+    const result = originalAppendChild(node);
+    if (node instanceof HTMLScriptElement && node.src.includes("lemon.js")) {
+      node.onload?.(new Event("load"));
+    }
+    return result;
+  });
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  delete process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-  delete process.env.NEXT_PUBLIC_PADDLE_ENV;
+  vi.restoreAllMocks();
+  delete (window as { createLemonSqueezy?: unknown }).createLemonSqueezy;
+  delete (window as { LemonSqueezy?: unknown }).LemonSqueezy;
 });
 
 function renderForm(props: { currentPlan?: string; furthestStep?: "business" | "workspace" | "plan" | "done" } = {}) {
@@ -147,23 +160,19 @@ describe("PlanStepForm — free plan submission", () => {
 });
 
 describe("PlanStepForm — paid plan checkout", () => {
-  it("calls /api/billing/checkout and opens Paddle overlay on success", async () => {
+  it("calls /api/billing/checkout and opens the Lemon Squeezy overlay on success", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        priceId: "pri_test_123",
-        customerEmail: "test@example.com",
+        checkoutUrl: "https://gallurio.lemonsqueezy.com/checkout/custom/abc123",
         workspaceId: "ws_abc",
       }),
     });
 
-    const { initializePaddle } = await import("@paddle/paddle-js");
-
     renderForm({ currentPlan: "pro" });
 
-    // Wait for Paddle to init (useEffect + async initializePaddle)
     await waitFor(() => {
-      expect(initializePaddle).toHaveBeenCalled();
+      expect(createLemonSqueezyMock).toHaveBeenCalled();
     });
 
     const cta = screen.getByRole("button", { name: /subscribe/i });
@@ -177,10 +186,8 @@ describe("PlanStepForm — paid plan checkout", () => {
     });
 
     await waitFor(() => {
-      expect(paddleCheckoutOpenMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          items: [{ priceId: "pri_test_123", quantity: 1 }],
-        })
+      expect(urlOpenMock).toHaveBeenCalledWith(
+        "https://gallurio.lemonsqueezy.com/checkout/custom/abc123"
       );
     });
   });
@@ -189,18 +196,15 @@ describe("PlanStepForm — paid plan checkout", () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        priceId: "pri_test_123",
-        customerEmail: "test@example.com",
+        checkoutUrl: "https://gallurio.lemonsqueezy.com/checkout/custom/abc123",
         workspaceId: "ws_abc",
       }),
     });
 
-    const { initializePaddle } = await import("@paddle/paddle-js");
-
     renderForm({ currentPlan: "pro" });
 
     await waitFor(() => {
-      expect(initializePaddle).toHaveBeenCalled();
+      expect(createLemonSqueezyMock).toHaveBeenCalled();
     });
 
     fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
@@ -249,6 +253,31 @@ describe("PlanStepForm — paid plan checkout", () => {
     await act(async () => {});
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("shows an error and does not crash when lemon.js hasn't loaded yet", async () => {
+    // Don't let the script's onload fire — simulate a still-loading overlay.
+    vi.restoreAllMocks();
+    delete (window as { createLemonSqueezy?: unknown }).createLemonSqueezy;
+    delete (window as { LemonSqueezy?: unknown }).LemonSqueezy;
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        checkoutUrl: "https://gallurio.lemonsqueezy.com/checkout/custom/abc123",
+        workspaceId: "ws_abc",
+      }),
+    });
+
+    renderForm({ currentPlan: "pro" });
+
+    const cta = screen.getByRole("button", { name: /subscribe/i });
+    fireEvent.click(cta);
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(urlOpenMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("PlanStepForm — dev activate", () => {
@@ -283,4 +312,3 @@ describe("PlanStepForm — cadence toggle", () => {
     expect(screen.getByText(/save 2 months/i)).toBeInTheDocument();
   });
 });
-

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { getAuthUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/mongoose";
 import type { BookingDoc } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -57,7 +58,10 @@ export default async function DashboardPage({
   setRequestLocale(locale);
   const t = await getTranslations("app.dashboard");
 
-  const { role, userId, workspace } = await requireOrg();
+  const [{ role, userId, workspace }, authUser] = await Promise.all([
+    requireOrg(),
+    getAuthUser(),
+  ]);
   // Dashboard is owner-only; members never see the nav link, and a direct URL
   // hit must 404 rather than leak workspace metrics.
   if (role !== "owner") notFound();
@@ -80,7 +84,7 @@ export default async function DashboardPage({
     day: "2-digit",
   }).format(new Date()); // YYYY-MM-DD
 
-  const ownerFirstName = workspace.name.split(" ")[0] ?? "";
+  const ownerFirstName = (authUser?.name ?? "").split(" ")[0] ?? "";
 
   return (
     <div className="flex flex-col gap-3">

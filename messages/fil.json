@@ -1161,11 +1161,6 @@
       "description": "Pamahalaan ang iyong account, workspace, at mga kagustuhan.",
       "navigationLabel": "Nabigasyon ng mga setting",
       "selectPage": "Pumili ng pahina mula sa sidebar.",
-      "workspaceSwitcher": {
-        "switchWorkspace": "Lumipat ng workspace",
-        "yourWorkspaces": "Ang iyong mga workspace",
-        "noWorkspace": "Walang workspace"
-      },
       "account": {
         "profileSection": "Profile",
         "profileHint": "Ang iyong pangalan at avatar na nakikita ng mga katrabaho.",
@@ -1256,8 +1251,7 @@
         "opening": "Binubuksan…",
         "upgradeSuccess": "Na-activate ang subscription! Na-update ang iyong plano.",
         "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
-        "paddleNotReady": "Hindi handa ang sistema ng pagbabayad. Pakisubukan muli.",
-        "paddleTokenMissingDev": "Hindi nakatakda ang NEXT_PUBLIC_PADDLE_CLIENT_TOKEN — hindi available ang overlay sa dev environment na ito.",
+        "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. Pakisubukan muli.",
         "subscriptionIssue": "May isyu sa iyong subscription. Pakitingnan ang iyong paraan ng pagbabayad o makipag-ugnayan sa suporta.",
         "subscriptionStatus": {
           "active": "Aktibo",
@@ -1267,12 +1261,17 @@
           "trialing": "Trial"
         },
         "manageSection": "Pamahalaan ang subscription",
-        "manageDescription": "Ang iyong subscription ay pinamamahalaan sa pamamagitan ng Paddle. Makipag-ugnayan sa suporta para i-update ang iyong paraan ng pagbabayad o tingnan ang mga invoice.",
-        "cancelNote": "Para kanselahin ang iyong subscription, makipag-ugnayan sa suporta o burahin ang iyong workspace."
+        "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
+        "manageButton": "Pamahalaan ang subscription",
+        "cadenceToggle": {
+          "monthly": "Buwanan",
+          "yearly": "Taunan",
+          "savePill": "Makatipid ng 2 buwan"
+        }
       },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -2665,7 +2664,8 @@
       "owner_only": "Ang may-ari lang ng workspace ang makakagawa nito.",
       "invalid_data": "Hindi wastong datos. Pakisuri ang iyong input at subukan muli.",
       "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
-      "finish_onboarding": "Tapusin muna ang onboarding bago baguhin ang mga setting ng workspace.",
+      "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
+      "subscription_required": "Natapos na ang iyong subscription. Mag-subscribe para magpatuloy.",
       "invalid_input": "Pakitingnan ang form at subukan muli.",
       "rate_limited": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",
       "user_not_found": "Hindi natagpuan ang user.",
@@ -2683,6 +2683,7 @@
       "avatar_update_failed": "Hindi na-update ang iyong larawan. Pakisubukan muli.",
       "email_send_failed": "Hindi maipadala ang email. Pakisubukan muli.",
       "onboarding_no_active_workspace": "Walang aktibong workspace — simulan muli ang onboarding.",
+      "already_member_elsewhere": "Miyembro na ang email na ito sa ibang workspace. Gumamit ng ibang email upang lumikha ng bago.",
       "client_create_failed": "Hindi nagawa ang kliyente. Pakisubukan muli.",
       "client_not_found": "Hindi natagpuan ang kliyente.",
       "client_update_failed": "Hindi na-update ang kliyente. Pakisubukan muli.",
@@ -2703,9 +2704,11 @@
       "invalid_request": "Hindi wastong kahilingan.",
       "export_too_large": "Masyadong maraming booking para i-export. I-paliitin ang iyong mga filter at subukan muli.",
       "free_plan_no_checkout": "Hindi kailangan ng checkout ang libreng plano.",
-      "paddle_price_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
+      "lemonsqueezy_variant_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
       "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
       "checkout_init_failed": "Hindi masimulaan ang checkout. Pakisubukan muli.",
+      "no_subscription": "Wala kang aktibong subscription na mapapamahalaan.",
+      "subscription_manage_unavailable": "Hindi mabuksan ang pamamahala ng subscription. Pakisubukan muli.",
       "locked": "Naka-lock ang item na ito at hindi maaaring i-edit ngayon.",
       "conflict": "May salungatan ang oras na iyon sa ibang booking.",
       "edit_sessions_failed": "Hindi na-update ang mga sesyon. Pakisubukan muli.",
@@ -2806,17 +2809,16 @@
         "yearly": "Taunan",
         "savePill": "Makatipid ng 2 buwan"
       },
-      "checkoutNote": "Magbubukas ang secure na Paddle checkout overlay. Ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
+      "checkoutNote": "Magbubukas ang secure na checkout overlay. Ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
       "ctaFree": "Magpatuloy sa Free",
       "ctaPaid": "Mag-subscribe — {price}",
       "settingUp": "Sine-set up…",
       "opening": "Binubuksan ang checkout…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
-      "paddleNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
-      "paddleTokenMissingDev": "Hindi nakatakda ang NEXT_PUBLIC_PADDLE_CLIENT_TOKEN — hindi available ang overlay sa dev environment na ito. Gamitin ang dev shortcut sa ibaba.",
+      "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
       "dev": {
         "label": "Dev shortcut",
-        "description": "Laktawan ang Paddle at markahan ang {planName} bilang aktibo. Dev-only.",
+        "description": "Laktawan ang Lemon Squeezy at markahan ang {planName} bilang aktibo. Dev-only.",
         "activate": "I-activate ang {planName} (dev)"
       }
     },
@@ -2874,6 +2876,30 @@
         "teamManagement": "Pamamahala ng teams",
         "removeBranding": "Alisin ang branding ng Gallurio"
       }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "Mag-subscribe",
+    "owner": {
+      "title": "Natapos na ang iyong subscription",
+      "description": "Mag-subscribe muli sa Gallurio Pro para bumalik sa iyong dashboard.",
+      "perMonth": "/ buwan",
+      "perYear": "/ taon",
+      "subscribeButton": "Mag-subscribe",
+      "subscribeAriaLabel": "Mag-subscribe sa Gallurio Pro",
+      "opening": "Bubuksan…",
+      "upgradeSuccess": "Aktibo na ang subscription! Nire-redirect…",
+      "checkoutFailed": "Nabigo ang checkout. Pakisubukang muli.",
+      "checkoutNotReady": "Hindi pa handa ang payment system. Paki-refresh at subukang muli.",
+      "cadenceToggle": {
+        "monthly": "Buwanan",
+        "yearly": "Taunan",
+        "savePill": "Makatipid ng 2 buwan"
+      }
+    },
+    "staff": {
+      "title": "Naubos ang subscription ng workspace",
+      "description": "Hilingin sa may-ari ng workspace na mag-subscribe muli sa Gallurio Pro para makabalik ang access."
     }
   },
   "publicPage": {
@@ -2981,6 +3007,10 @@
       "already_accepted": {
         "title": "Miyembro na",
         "description": "Tinanggap mo na ang imbitasyong ito at sumali ka na sa workspace."
+      },
+      "already_member": {
+        "title": "Ginagamit na ang email",
+        "description": "Miyembro na ang email na ito sa ibang workspace. Mag-sign up gamit ang ibang email upang tanggapin ang imbitasyong ito."
       },
       "email_mismatch": {
         "title": "Maling account",

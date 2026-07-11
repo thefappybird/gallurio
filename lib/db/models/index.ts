@@ -2,10 +2,10 @@ export {
   Workspace,
   PLAN_TIERS,
   PUBLIC_PAGE_TEMPLATES,
-  PADDLE_SUBSCRIPTION_STATUSES,
+  LS_SUBSCRIPTION_STATUSES,
   type PlanTier,
   type PublicPageTemplate,
-  type PaddleSubscriptionStatus,
+  type LemonSqueezySubscriptionStatus,
   type WorkspaceDoc,
 } from "./Workspace";
 export { User, ONBOARDING_STEPS, type OnboardingStep, type UserDoc } from "./User";

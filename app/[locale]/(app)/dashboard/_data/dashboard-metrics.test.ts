@@ -87,7 +87,7 @@ async function seedTransaction(
     amount,
     currency: "PHP",
     type,
-    method: "paddle",
+    method: "lemonsqueezy",
     paidAt,
   });
 }
@@ -123,7 +123,7 @@ describe("getKpiSnapshot", () => {
       amount: 99_000,
       currency: "PHP",
       type: "subscription",
-      method: "paddle",
+      method: "lemonsqueezy",
       paidAt: now,
     });
     const snap = await getKpiSnapshot(workspaceId);
@@ -542,8 +542,8 @@ describe("getBookingsCountByTeam — date range", () => {
 describe("getTransactionsByTeam — date range", () => {
   it("sums team revenue only within the range", async () => {
     const team = await Team.create({ workspaceId, name: "T2", color: "#203040", isActive: true, createdByWorkosUserId: "u" });
-    await Transaction.create({ workspaceId, teamId: team._id, bookingId: null, clientId: null, amount: 5_000, currency: "PHP", type: "deposit", method: "paddle", paidAt: new Date("2026-03-15T12:00:00Z") });
-    await Transaction.create({ workspaceId, teamId: team._id, bookingId: null, clientId: null, amount: 9_000, currency: "PHP", type: "deposit", method: "paddle", paidAt: new Date("2026-01-15T12:00:00Z") });
+    await Transaction.create({ workspaceId, teamId: team._id, bookingId: null, clientId: null, amount: 5_000, currency: "PHP", type: "deposit", method: "lemonsqueezy", paidAt: new Date("2026-03-15T12:00:00Z") });
+    await Transaction.create({ workspaceId, teamId: team._id, bookingId: null, clientId: null, amount: 9_000, currency: "PHP", type: "deposit", method: "lemonsqueezy", paidAt: new Date("2026-01-15T12:00:00Z") });
     const rows = await getTransactionsByTeam(workspaceId, {
       from: new Date("2026-03-01T00:00:00.000Z"),
       to: new Date("2026-03-31T23:59:59.999Z"),

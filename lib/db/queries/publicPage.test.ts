@@ -165,10 +165,10 @@ describe("findPublishedWorkspaceBySlug", () => {
         ownerUserId: "user_sensitive",
         plan: "starter",
         currency: "PHP",
-        paddleSubscriptionId: "sub_secret_001",
-        paddleCustomerId: "ctm_secret_001",
-        paddleSubscriptionStatus: "active",
-        paddleCurrentPeriodEnd: new Date("2026-12-31"),
+        lsSubscriptionId: "sub_secret_001",
+        lsCustomerId: "ctm_secret_001",
+        lsSubscriptionStatus: "active",
+        lsCurrentPeriodEnd: new Date("2026-12-31"),
       })
     );
 
@@ -177,11 +177,11 @@ describe("findPublishedWorkspaceBySlug", () => {
 
     // Sensitive fields must be absent (projected out)
     const doc = result as Record<string, unknown>;
-    expect(doc.paddleSubscriptionId).toBeUndefined();
-    expect(doc.paddleCustomerId).toBeUndefined();
-    expect(doc.paddleSubscriptionStatus).toBeUndefined();
-    expect(doc.paddleCurrentPeriodEnd).toBeUndefined();
-    expect(doc.paddleCheckoutWorkflowRunId).toBeUndefined();
+    expect(doc.lsSubscriptionId).toBeUndefined();
+    expect(doc.lsCustomerId).toBeUndefined();
+    expect(doc.lsSubscriptionStatus).toBeUndefined();
+    expect(doc.lsCurrentPeriodEnd).toBeUndefined();
+    expect(doc.lsCheckoutWorkflowRunId).toBeUndefined();
     expect(doc.ownerUserId).toBeUndefined();
     expect(doc.plan).toBeUndefined();
   });

@@ -86,6 +86,17 @@ export async function businessStepAction(
 
   await connectDB();
 
+  // One workspace per email — a user who already belongs to someone else's
+  // workspace (as staff) can't also start their own. They must use another
+  // email. An existing owner membership is safe to proceed with: it can only
+  // point at this same user's own workspace (upserted by ownerUserId below).
+  const existingUser = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 },
+  ).lean();
+  const belongsElsewhere = existingUser?.memberships.some((m) => m.role !== "owner");
+  if (belongsElsewhere) return { error: "already_member_elsewhere" };
+
   // The workspace's URL slug is edited on the next step, but the Workspace
   // schema requires one on insert — auto-derive it from the business name
   // now; $setOnInsert below means it only applies the first time.
@@ -227,7 +238,7 @@ export async function workspaceStepAction(
 // ---------------------------------------------------------------------------
 
 export async function selectFreePlanAction(): Promise<ActionResult> {
-  // Free plan path: no Paddle checkout, just record the choice and advance.
+  // Free plan path: no Lemon Squeezy checkout, just record the choice and advance.
   const authUser = await getAuthUser();
   if (!authUser) return { error: "not_authenticated" };
 
@@ -245,10 +256,8 @@ export async function selectFreePlanAction(): Promise<ActionResult> {
     {
       $set: {
         plan: "free",
-        paddleSubscriptionStatus: null,
-        paddleCurrentPeriodEnd: null,
-        // paddleCustomerId is intentionally preserved — a customer can
-        // downgrade to free and re-upgrade without creating a new Paddle customer.
+        lsSubscriptionStatus: null,
+        lsCurrentPeriodEnd: null,
       },
     }
   );
@@ -258,60 +267,81 @@ export async function selectFreePlanAction(): Promise<ActionResult> {
 }
 
 // ---------------------------------------------------------------------------
-// Paddle reconciliation (done page safety net)
+// Lemon Squeezy reconciliation (done page safety net)
 // ---------------------------------------------------------------------------
 
-// Eagerly reconcile the workspace's Paddle subscription state on the done page.
-// The webhook + workflow are the authoritative path; this is the safety net for
-// cases where the user reaches the done page before the webhook fires.
-// Never throws — logs errors and returns silently so the done page always loads.
-export async function reconcilePaddleSubscription(workspaceId: string): Promise<void> {
+// Eagerly reconcile the workspace's Lemon Squeezy subscription state on the
+// done page. The webhook + workflow are the authoritative path; this is the
+// safety net for cases where the user reaches the done page before the
+// webhook fires. Never throws — logs errors and returns silently so the done
+// page always loads.
+export async function reconcileLemonSqueezySubscription(workspaceId: string): Promise<void> {
   try {
     await connectDB();
     const workspace = await Workspace.findOne({ _id: workspaceId }).select({
-      paddleCustomerId: 1,
-      paddleSubscriptionId: 1,
+      lsSubscriptionId: 1,
     });
-    if (!workspace?.paddleCustomerId) return;
+    if (!workspace) return;
 
-    const { listActiveSubscriptionsForCustomer } = await import("@/lib/paddle/client");
-    const { planForPriceId } = await import("@/lib/paddle/plans");
-    const { mapPaddleSubscriptionStatus } = await import("@/lib/paddle/status");
+    const authUser = await getAuthUser();
+    const email = authUser?.email;
+    if (!email) return;
 
-    const subs = await listActiveSubscriptionsForCustomer(workspace.paddleCustomerId);
+    const { listActiveSubscriptionsForEmail } = await import("@/lib/lemonsqueezy/client");
+    const { planForVariantId } = await import("@/lib/lemonsqueezy/plans");
+    const { mapLemonSqueezySubscriptionStatus } = await import("@/lib/lemonsqueezy/status");
+
+    const subs = await listActiveSubscriptionsForEmail(email);
     if (subs.length === 0) return;
 
-    // Pick the most recently created active/trialing subscription.
+    // Pick the most recently created subscription.
     const sub = subs.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.attributes.created_at as string).getTime() -
+        new Date(a.attributes.created_at as string).getTime()
     )[0];
 
-    const priceId = sub.items[0]?.price?.id ?? "";
-    const plan = planForPriceId(priceId);
+    const variantId = sub.attributes.variant_id != null ? String(sub.attributes.variant_id) : "";
+    const plan = planForVariantId(variantId);
     if (plan === "free") return;
 
-    // Map raw Paddle status through the shared normaliser — never write an
-    // unmapped string to the DB enum field.
-    const paddleSubscriptionStatus = mapPaddleSubscriptionStatus(sub.status);
+    // Defence-in-depth: listActiveSubscriptionsForEmail is scoped by the
+    // signed-in user's email, not this workspace. A user who owns multiple
+    // workspaces (or reuses an email across workspaces) could otherwise reach
+    // this safety net for a brand-new, unpaid workspace and have it silently
+    // inherit a DIFFERENT workspace's already-active subscription. Refuse to
+    // bind a subscription that's already claimed by another workspace.
+    const boundElsewhere = await Workspace.findOne({
+      _id: { $ne: workspaceId },
+      lsSubscriptionId: sub.id,
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (boundElsewhere) return;
 
-    // currentBillingPeriod.endsAt is an ISO string; coerce to Date.
-    const periodEnd = sub.currentBillingPeriod?.endsAt
-      ? new Date(sub.currentBillingPeriod.endsAt)
-      : null;
+    // Map raw Lemon Squeezy status through the shared normaliser — never
+    // write an unmapped string to the DB enum field.
+    const lsSubscriptionStatus = mapLemonSqueezySubscriptionStatus(
+      sub.attributes.status as string | null | undefined
+    );
+
+    const renewsAt = sub.attributes.renews_at as string | null | undefined;
+    const periodEnd = renewsAt ? new Date(renewsAt) : null;
 
     const $set: Record<string, unknown> = {
       plan,
-      paddleSubscriptionId: sub.id,
-      paddleCurrentPeriodEnd: periodEnd,
+      everSubscribed: true,
+      lsSubscriptionId: sub.id,
+      lsCurrentPeriodEnd: periodEnd,
     };
     // Only write status when the mapper recognised the value.
-    if (paddleSubscriptionStatus !== null) {
-      $set.paddleSubscriptionStatus = paddleSubscriptionStatus;
+    if (lsSubscriptionStatus !== null) {
+      $set.lsSubscriptionStatus = lsSubscriptionStatus;
     }
 
     await Workspace.updateOne({ _id: workspaceId }, { $set });
   } catch (err) {
-    console.error("[onboarding/done] paddle reconcile failed", err);
+    console.error("[onboarding/done] lemonsqueezy reconcile failed", err);
   }
 }
 

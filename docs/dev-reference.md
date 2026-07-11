@@ -9,7 +9,7 @@ Detailed reference sections extracted from CLAUDE.md. Read the relevant section 
 Acceptance criteria for every Server Action, Route Handler, and public/server-component data loader. Known lapses: `docs/backend-audit-findings.md` — read before touching a flagged area.
 
 - **Rate limiting / abuse control**: every public or cheaply-abusable endpoint (inquiry submit, signed upload, public reads, auth callback, search) has throttling and/or a challenge (honeypot + `rateLimit()`; CAPTCHA/Turnstile where spam-prone). Bound client-supplied `limit`/`cursor`. Prod runs on Hetzner with no edge WAF — app-level limiting is the only layer; `lib/server/rateLimit.ts` is in-memory/best-effort, not distributed.
-- **Error handling never breaks the app**: no empty/log-only catches that continue with bad state; every external call (Paddle, Cloudflare, WorkOS, Mongo, email) gets a timeout + graceful failure; every async route/page tree has `error.tsx` or try/catch. Webhooks ack (200) after signature verification even when a handler fails, then dead-letter/log — never 500 into a provider retry loop. Don't collapse malformed JSON into `{}`.
+- **Error handling never breaks the app**: no empty/log-only catches that continue with bad state; every external call (Lemon Squeezy, Cloudflare, WorkOS, Mongo, email) gets a timeout + graceful failure; every async route/page tree has `error.tsx` or try/catch. Webhooks ack (200) after signature verification even when a handler fails, then dead-letter/log — never 500 into a provider retry loop. Don't collapse malformed JSON into `{}`.
 - **DB efficiency**: no query-per-item loops — batch with `$in`/`bulkWrite`/aggregation. Project to needed fields, `.lean()` reads, cursor-paginate, and confirm a `{ workspaceId, ... }` compound index backs each query shape and sort.
 - **Auth on every page/route**: every authenticated page calls `requireOrg()`, every server action `ownerContext()`/`requireRole()`, every route handler an explicit identity or signature check. Never rely on middleware alone.
 - **Secret exposure**: never log tokens/sessions/cookies/headers, never return session state to the client or serialize it into props, never put a secret in a `NEXT_PUBLIC_` var.
@@ -52,10 +52,10 @@ Acceptance criteria for every Server Action, Route Handler, and public/server-co
 
 ## Billing
 
-- Paddle (Merchant of Record) for subscriptions; Vercel Workflow DevKit for durable checkout that waits on webhook confirmation. Marketplace/split payments not in MVP.
-- `Workspace.plan` stays provider-agnostic (`free|starter|pro`). Billing fields: `paddleSubscriptionId`, `paddleCustomerId`, `paddleSubscriptionStatus`, `paddleCurrentPeriodEnd`, `paddleCheckoutWorkflowRunId`.
-- Webhook verification: raw body + HMAC before parsing; Node runtime. Flow: create checkout → start workflow → save run id → wait `subscription.activated` → resume → update plan/status/period end.
-- Handle `subscription.activated|updated|canceled|past_due` and `transaction.completed`.
+- Lemon Squeezy (Merchant of Record) for subscriptions; Vercel Workflow DevKit for durable checkout that waits on webhook confirmation. Marketplace/split payments not in MVP. Runs in test mode (`LEMONSQUEEZY_TEST_MODE`) pre-launch — no separate sandbox API base like Paddle's.
+- `Workspace.plan` stays provider-agnostic (`free|starter|pro`). Billing fields: `lsSubscriptionId`, `lsCustomerId`, `lsSubscriptionStatus`, `lsCurrentPeriodEnd`, `lsCheckoutWorkflowRunId`.
+- Webhook verification: raw body + manual HMAC-SHA256 (`X-Signature` header) before parsing; Node runtime. Flow: create checkout URL (no customer pre-create — Lemon Squeezy resolves the customer from the checkout email) → start workflow → save run id → wait `subscription_created` → resume → update plan/status/period end.
+- Handle `subscription_created|updated|cancelled|expired|paused|unpaused|resumed|payment_success|payment_failed`. `subscription_cancelled` is status-only (access continues until `ends_at`); only `subscription_expired` downgrades `plan` to free. See `docs/lemonsqueezy-integration/lemonsqueezy-setup.md` for the full flow.
 
 ---
 

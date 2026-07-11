@@ -45,15 +45,15 @@ enforced on every endpoint (see `CLAUDE.md` → **Backend endpoint principles**)
 
 | # | Finding | Location | Severity | Direction |
 |---|---------|----------|----------|-----------|
-| EH-1 | Paddle webhook returns **500 on any handler error**, so Paddle retries the same event for ~24h; combined with non-idempotent handlers this risks duplicate application. | `app/api/webhooks/paddle/route.ts` (~238–241) | high | Return 200 after the signature is verified even when a handler fails; record the failed event (dead-letter / log) and make handlers idempotent on Paddle event `id`. |
+| EH-1 | Billing webhook returns **500 on any handler error**, so the provider retries the same event for ~24h; combined with non-idempotent handlers this risks duplicate application. Carried forward unfixed through the Paddle→Lemon Squeezy migration. | `app/api/webhooks/lemonsqueezy/route.ts` (~245–260) | high | Return 200 after the signature is verified even when a handler fails; record the failed event (dead-letter / log) and make handlers idempotent on the event `id`. |
 | EH-2 | Public portfolio page has no `error.tsx`. If `findPublishedWorkspaceBySlug()` or `normalizePublicPageData()` throws (DB timeout, corrupt stored data), the whole page 500s instead of degrading. | `app/(public)/w/[orgSlug]/{page,layout}.tsx` | high | Add `error.tsx` boundary; wrap normalization so corrupt data renders `ComingSoonFallback` instead of throwing. |
 | EH-3 | External image API calls (`cfFetch`) have no timeout; a slow/hung upstream can block the route handler indefinitely (incl. a 3× retry-with-sleep path). | `lib/storage/cloudflareImages.ts` | high | Add `AbortController` timeout (~10–15s); map `AbortError` → 503. |
-| EH-4 | Paddle SDK calls have no timeout; a slow Paddle API blocks `/api/billing/checkout` (also hit during onboarding). | `lib/paddle/client.ts` | med | Wrap in `Promise.race` with a timeout or configure SDK timeout; 503 on timeout. |
+| EH-4 | Lemon Squeezy SDK calls have no timeout; a slow Lemon Squeezy API blocks `/api/billing/checkout` (also hit during onboarding). | `lib/lemonsqueezy/client.ts` | med | Wrap in `Promise.race` with a timeout or configure SDK timeout; 503 on timeout. |
 | EH-5 | Email send failures are swallowed by callers (`.catch()`); a Resend outage means an inquiry is saved but nobody is notified, with no retry. | `lib/email/send.ts` + inquiry callers | med | Log failed sends to a collection for manual/automated retry; surface a dashboard warning on elevated failures. |
 | EH-6 | `await req.json().catch(() => ({}))` collapses malformed JSON into an empty object, indistinguishable from a missing field, logged nowhere. | `app/api/inquiries/route.ts` (~26) and other routes | med | Catch parse errors explicitly; return a distinct `malformed_json` 400 and log request metadata. |
-| EH-7 | Paddle subscription-mismatch is detected and logged but silently re-routed; a replayed/compromised webhook could rebind a workspace's subscription with no alert. | `app/api/webhooks/paddle/route.ts` (~35–61) | med | Record to an anomalies log / alert ops rather than silently accepting. |
+| EH-7 | Subscription-mismatch is detected and logged but silently re-routed; a replayed/compromised webhook could rebind a workspace's subscription with no alert. | `app/api/webhooks/lemonsqueezy/route.ts` (~44–70) | med | Record to an anomalies log / alert ops rather than silently accepting. |
 | EH-8 | Booking PATCH recomputes `firstSessionStart`/`lastSessionEnd` via `Math.min(...)`; a bad date parses to `NaN` and corrupts denormalized bounds. | `app/api/bookings/[id]/route.ts` (~275–281) | low | Validate all session dates before computing bounds; 400 on parse failure. |
-| EH-9 | Checkout-workflow resume-hook failure is logged but returns 200; the user's checkout modal can hang waiting for a signal that never comes. | `app/api/webhooks/paddle/route.ts` (~110–124) | low | Keep DB write authoritative; alert on orphaned workflow runs; ensure the client has a timeout/fallback. |
+| EH-9 | Checkout-workflow resume-hook failure is logged but returns 200; the user's checkout modal can hang waiting for a signal that never comes. | `app/api/webhooks/lemonsqueezy/route.ts` (~120–135) | low | Keep DB write authoritative; alert on orphaned workflow runs; ensure the client has a timeout/fallback. |
 
 ## 3. N+1 / DB fetch efficiency
 
@@ -72,7 +72,7 @@ enforced on every endpoint (see `CLAUDE.md` → **Backend endpoint principles**)
 
 - **No lapses found.** All 25 authenticated pages under `app/[locale]/(app)/**`
   call `requireOrg()`; all API route handlers authenticate except the
-  intentionally public ones (`/api/auth/callback`, HMAC-verified Paddle webhook,
+  intentionally public ones (`/api/auth/callback`, HMAC-verified Lemon Squeezy webhook,
   public inquiry submission, slug-scoped public reads, email-matched invite
   accept). `proxy.ts` gates everything via an explicit public-path allowlist.
 - Keep this invariant: every new authenticated page must call `requireOrg()`,
@@ -107,7 +107,7 @@ enforced on every endpoint (see `CLAUDE.md` → **Backend endpoint principles**)
 
 ## Suggested remediation order (to refine into a plan)
 
-1. EH-3 image-API timeouts, EH-2 public portfolio `error.tsx`, EH-1 Paddle
+1. EH-3 image-API timeouts, EH-2 public portfolio `error.tsx`, EH-1 billing
    webhook 200-on-handler-error + idempotency — these prevent hard breaks /
    billing drift.
 2. DB-1 gallery detach N+1, DB-3 top-clients projection, DB-6 import batching.
