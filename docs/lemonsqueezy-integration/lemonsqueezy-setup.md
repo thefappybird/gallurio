@@ -55,7 +55,8 @@ per-store scoping.
 3. **Events**: subscribe to `subscription_created`, `subscription_updated`,
    `subscription_cancelled`, `subscription_resumed`, `subscription_unpaused`,
    `subscription_paused`, `subscription_expired`,
-   `subscription_payment_success`, `subscription_payment_failed`.
+   `subscription_payment_success`, `subscription_payment_failed`,
+   `subscription_payment_refunded`.
 4. Copy the **signing secret** → `LEMONSQUEEZY_WEBHOOK_SECRET`.
 
 ### 5. Enable test mode
@@ -147,6 +148,13 @@ Paddle's, and the handler is NOT a naive rename of the old Paddle logic:
   team-cap guard entirely (an expired subscription must never leave an
   over-cap team on paid entitlements — that's a billing leak, not a UX
   nicety).
+- **`subscription_payment_refunded`** is handled the same way as
+  `subscription_expired` — a refund means the customer got their money back,
+  so access is revoked immediately rather than waiting for a separate
+  cancellation. Note this event's `data` resource is a *subscription-invoice*,
+  not a subscription: `event.data.id` is the invoice's own id, and the real
+  subscription id is in `attributes.subscription_id` instead (the shared
+  workspace-resolution helper checks that field first for this reason).
 - `subscription_created` / `subscription_updated` run the same upsert path:
   route by `meta.custom_data.workspaceId` with a defence-in-depth check
   against a different existing subscription id on that workspace, resolve the

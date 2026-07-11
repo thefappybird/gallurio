@@ -105,7 +105,7 @@ describe("verifyAndParseLemonSqueezyEvent — missing secret", () => {
 });
 
 describe("HANDLED_LEMONSQUEEZY_EVENTS", () => {
-  it("contains the nine expected event names", async () => {
+  it("contains the ten expected event names", async () => {
     const { HANDLED_LEMONSQUEEZY_EVENTS } = await import("./webhook");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_created");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_updated");
@@ -116,6 +116,7 @@ describe("HANDLED_LEMONSQUEEZY_EVENTS", () => {
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_expired");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_success");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_failed");
-    expect(HANDLED_LEMONSQUEEZY_EVENTS).toHaveLength(9);
+    expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_refunded");
+    expect(HANDLED_LEMONSQUEEZY_EVENTS).toHaveLength(10);
   });
 });

@@ -12,6 +12,7 @@ export const HANDLED_LEMONSQUEEZY_EVENTS = [
   "subscription_expired",
   "subscription_payment_success",
   "subscription_payment_failed",
+  "subscription_payment_refunded",
 ] as const;
 
 export type HandledLemonSqueezyEvent = (typeof HANDLED_LEMONSQUEEZY_EVENTS)[number];

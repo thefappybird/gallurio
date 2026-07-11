@@ -32,6 +32,7 @@ export async function createSubscriptionCheckout(opts: {
   email: string;
   name?: string;
   workspaceId: string;
+  redirectUrl: string;
 }): Promise<string> {
   ensureConfigured();
   const storeId = process.env.LEMONSQUEEZY_STORE_ID;
@@ -46,6 +47,7 @@ export async function createSubscriptionCheckout(opts: {
       custom: { workspaceId: opts.workspaceId },
     },
     checkoutOptions: { embed: true },
+    productOptions: { redirectUrl: opts.redirectUrl },
     testMode: isTestMode(),
   });
 
