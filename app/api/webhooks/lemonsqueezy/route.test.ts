@@ -701,6 +701,29 @@ describe("lemonsqueezy webhook — malformed payload with no usable identifier",
     expect(after?.plan).toBe("free");
     expect(after?.lsSubscriptionStatus).toBeNull();
   });
+
+  it("does not promote an unrelated workspace when subscription_created has no usable identifier", async () => {
+    // handleSubscriptionUpsert builds its own filter separately from
+    // resolveWorkspaceFilter — this exercises that its customer_id fallback
+    // has the same "no-op instead of { lsCustomerId: null }" guard, since a
+    // { lsCustomerId: null } filter would match (and could promote) any
+    // never-billed workspace, not necessarily the one that actually paid.
+    const victimWsId = await seedWorkspace({ plan: "free" });
+
+    const event = makeEvent("subscription_created", "", {
+      status: "active",
+      variant_id: process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID,
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(victimWsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.lsSubscriptionId).toBeNull();
+  });
 });
 
 describe("lemonsqueezy webhook — customData.workspaceId mis-routing defence", () => {

@@ -86,7 +86,18 @@ async function handleSubscriptionUpsert(
   } else if (subscriptionId) {
     filter = { lsSubscriptionId: subscriptionId };
   } else {
-    filter = { lsCustomerId: stringAttr(attrs, "customer_id") };
+    // Same null-filter hazard resolveWorkspaceFilter guards against: an empty
+    // customer_id here would build { lsCustomerId: null }, which matches any
+    // never-billed workspace and could promote an unrelated tenant to paid.
+    const customerId = stringAttr(attrs, "customer_id");
+    if (!customerId) {
+      console.warn(
+        `[lemonsqueezy-webhook] ${event.meta.event_name} has no usable identifier ` +
+          "(no custom_data.workspaceId, subscription id, or customer_id) — skipping"
+      );
+      return;
+    }
+    filter = { lsCustomerId: customerId };
   }
 
   const rawStatus = stringAttr(attrs, "status");
