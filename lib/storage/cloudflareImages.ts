@@ -10,19 +10,33 @@ if (
   }
 }
 
+const CF_FETCH_TIMEOUT_MS = 15_000;
+
 async function cfFetch(path: string, init?: RequestInit): Promise<Response> {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
   const apiToken = process.env.CLOUDFLARE_IMAGES_API_TOKEN ?? "";
-  return fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${accountId}${path}`,
-    {
-      ...init,
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-        ...(init?.headers as Record<string, string> | undefined),
-      },
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), CF_FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}${path}`,
+      {
+        ...init,
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          ...(init?.headers as Record<string, string> | undefined),
+        },
+      }
+    );
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`CF request timed out after ${CF_FETCH_TIMEOUT_MS}ms: ${path}`);
     }
-  );
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function requestDirectUpload(

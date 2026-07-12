@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   requestDirectUpload,
   verifyImageOwnership,
@@ -12,9 +12,19 @@ const ACCOUNT_HASH = "hash789";
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  // Earlier tests in this file stub globals (e.g. setTimeout) via
+  // vi.stubGlobal without unstubbing -- clear that here so every test starts
+  // from a real, un-leaked global state (matters for the fake-timer test below).
+  vi.unstubAllGlobals();
   vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", ACCOUNT_ID);
   vi.stubEnv("CLOUDFLARE_IMAGES_API_TOKEN", API_TOKEN);
   vi.stubEnv("CLOUDFLARE_IMAGES_ACCOUNT_HASH", ACCOUNT_HASH);
+});
+
+afterEach(() => {
+  // Safety net: if a test throws before reaching its own vi.useRealTimers(),
+  // don't leak fake timers into the next test file in the run.
+  vi.useRealTimers();
 });
 
 // ---------------------------------------------------------------------------
@@ -169,6 +179,30 @@ describe("deleteImage", () => {
   it("throws when CF returns non-ok", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => "err" }));
     await expect(deleteImage("img_x")).rejects.toThrow("CF delete failed 500");
+  });
+
+  it("aborts and throws a timeout error when the CF request hangs", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          const err = new Error("aborted");
+          err.name = "AbortError";
+          reject(err);
+        });
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const promise = deleteImage("img_timeout");
+    await vi.advanceTimersByTimeAsync(15_000);
+    await expect(promise).rejects.toThrow(/timed out/i);
+
+    // clearAllTimers before switching back so no stray fake-timer-scheduled
+    // callback (e.g. a duplicate setTimeout from cfFetch's `finally` running
+    // clearTimeout on an already-fired timer) can leak into real-timer mode.
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });
 

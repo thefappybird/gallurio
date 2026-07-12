@@ -479,21 +479,44 @@ export async function detachItemsFromCollection(opts: {
   const items = await GalleryItem.find({ workspaceId, collectionId, _id: { $in: ids } }).lean();
   if (items.length === 0) return 0;
 
+  // Batch refcount computation: one aggregation for all distinct assetIds in
+  // the request instead of a countDocuments() per item (was N+1). For each
+  // assetId, collect every GalleryItem _id (batch + external) referencing it;
+  // if any id outside the batch remains, the batch's items for that asset are
+  // redundant duplicates and all get deleted. If the batch is the only
+  // reference, keep exactly one (dedup) and delete the rest.
+  const assetIds = Array.from(new Set(items.map((it) => it.assetId)));
+  const batchIdSet = new Set(items.map((it) => String(it._id)));
+
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
-      for (const it of items) {
-        const otherRefs = await GalleryItem.countDocuments({
-          workspaceId,
-          assetId: it.assetId,
-          _id: { $ne: it._id },
-        }).session(session);
-        if (otherRefs > 0) {
-          await GalleryItem.deleteOne({ _id: it._id, workspaceId }, { session });
+      const refGroups = await GalleryItem.aggregate<{ _id: string; ids: Types.ObjectId[] }>([
+        { $match: { workspaceId: new Types.ObjectId(workspaceId), assetId: { $in: assetIds } } },
+        { $group: { _id: "$assetId", ids: { $push: "$_id" } } },
+      ]).session(session);
+
+      const toDelete: Types.ObjectId[] = [];
+      const toDetach: Types.ObjectId[] = [];
+      for (const group of refGroups) {
+        const batchIdsForAsset = group.ids.filter((id) => batchIdSet.has(String(id)));
+        if (batchIdsForAsset.length === 0) continue;
+        const hasExternalRef = group.ids.some((id) => !batchIdSet.has(String(id)));
+        if (hasExternalRef) {
+          toDelete.push(...batchIdsForAsset);
         } else {
-          await GalleryItem.updateOne({ _id: it._id, workspaceId }, { $set: { collectionId: null } }, { session });
+          toDetach.push(batchIdsForAsset[0]);
+          toDelete.push(...batchIdsForAsset.slice(1));
         }
       }
+
+      if (toDelete.length > 0) {
+        await GalleryItem.deleteMany({ _id: { $in: toDelete }, workspaceId }, { session });
+      }
+      if (toDetach.length > 0) {
+        await GalleryItem.updateMany({ _id: { $in: toDetach }, workspaceId }, { $set: { collectionId: null } }, { session });
+      }
+
       const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId })
         .select({ coverItemId: 1 })
         .session(session);

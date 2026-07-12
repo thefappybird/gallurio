@@ -13,7 +13,7 @@ See `CLAUDE.md` → **DRY & code reuse (cross-agent)** for the full policy.
 > instead of re-reading source. Prefer it, then the codebase-memory graph
 > (`search_code` / `SIMILAR_TO`), then file reads — in that order.
 
-Last audited: 2026-06-22 (branch `enhance/branded-transactional-emails`).
+Last audited: 2026-07-12 (branch `action/backend-beta-audit` — extracted `TurnstileWidget`).
 
 ---
 
@@ -51,6 +51,7 @@ frames use `--radius-surface` (default sharp/0rem) — see Design rules in `CLAU
 | `components/ui/segmented-toggle.tsx` | `SegmentedToggle<K>`, `SegmentedToggleOption<K>` | Single-select pill toggle (tablist/tab ARIA). Outer container owns border + `rounded-lg` + `overflow-hidden`; buttons `rounded-none`; `divide-x divide-border` for inner dividers — no doubled borders. Active = `bg-brand text-brand-foreground`. Mobile: full-width `min-h-11`; sm+: `inline-flex w-auto h-9`. | `value: K`, `onChange(key: K)`, `options: {key, label, icon?}[]`, `ariaLabel: string`, `className?` |
 | `components/ui/location-picker.tsx` | `LocationPicker`, `BaseLocationPicker`, `IntlLocationPicker`, `LocationDisplay`, `LocationReadOnly` | Location select (Nominatim geocode + drag pin). **Commit-only semantics**: `onChange` fires only on explicit Accept (✓); Discard (✗) reverts to last committed value — never fires on intermediate map/search state. Accepts `ariaDescribedby` to associate error messages with the inner search input. `LocationReadOnly` is unused (see extraction candidates). | `value: {address,lat,lng}`; `editable`/`compact`/`searchEnabled`/`ariaDescribedby`; i18n |
 | `components/ui/location-map.tsx` | `LocationMap` (default) | Leaflet map w/ draggable pin | `lat`/`lng` nullable; `onPick`; `compact`/`scrollWheelZoom` |
+| `components/ui/turnstile-widget.tsx` | `TurnstileWidget`, `TurnstileWidgetHandle` | Cloudflare Turnstile bot-check widget (explicit render, no npm dep). Dev bypass fires a `"dev-bypass"` sentinel token when `NODE_ENV==="development"`; renders nothing when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is unset. Server-verify the token with `verifyTurnstileToken` (`lib/server/turnstile.ts`). Used by the (auth) sign-in/sign-up/forgot-password forms and the public inquiry form. | `ref` exposing `reset()` (call after any failed submit — tokens are single-use); `onToken`, `onExpire?`, `onError?`, `className?` |
 
 ## 2. App components — `components/app/`
 

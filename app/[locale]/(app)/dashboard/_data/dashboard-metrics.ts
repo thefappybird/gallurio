@@ -434,6 +434,7 @@ export async function getTopClients(workspaceId: WorkspaceId, limit = 5) {
   return Client.find({ workspaceId })
     .sort({ totalSpent: -1 })
     .limit(limit)
+    .select({ _id: 1, name: 1, totalSpent: 1 })
     .lean();
 }
 
