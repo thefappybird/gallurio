@@ -195,12 +195,14 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
         </div>
 
         {/* Turnstile */}
-        <TurnstileWidget
-          ref={turnstileRef}
-          onToken={setTurnstileToken}
-          onExpire={() => setTurnstileToken("")}
-          onError={() => setTurnstileToken("")}
-        />
+        <div className="flex justify-center">
+          <TurnstileWidget
+            ref={turnstileRef}
+            onToken={setTurnstileToken}
+            onExpire={() => setTurnstileToken("")}
+            onError={() => setTurnstileToken("")}
+          />
+        </div>
 
         {/* Error */}
         {error && (
