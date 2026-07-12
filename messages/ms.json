@@ -2690,6 +2690,9 @@
         }
       }
     },
+    "errorBoundary": {
+      "retry": "Cuba lagi"
+    },
     "errors": {
       "generic": "Sesuatu telah berlaku. Sila cuba lagi.",
       "not_authenticated": "Anda belum log masuk. Sila log masuk dan cuba lagi.",
