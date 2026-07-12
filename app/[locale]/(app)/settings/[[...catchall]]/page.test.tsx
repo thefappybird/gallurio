@@ -144,12 +144,9 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
         currency: "PHP",
         timezone: "Asia/Manila",
         plan: "free",
-        publicPage: {
-          seoTitle: "Stale live title",
-          seoDescription: "Stale live description",
-          inquiryRecipientEmail: "owner@test.com",
-          publishedAt: null,
-        },
+        // Mirror the real `Workspace.findById().lean()` shape requireOrg()
+        // returns in production, so settingsDraft is present like it seeded.
+        publicPage: ws.toObject().publicPage,
       },
     });
     getAuthUserMock.mockResolvedValue({
@@ -207,11 +204,7 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
         currency: "PHP",
         timezone: "Asia/Manila",
         plan: "free",
-        publicPage: {
-          seoTitle: "Same title",
-          seoDescription: "Same description",
-          publishedAt: null,
-        },
+        publicPage: ws.toObject().publicPage,
       },
     });
     getAuthUserMock.mockResolvedValue({
@@ -256,7 +249,7 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
         currency: "PHP",
         timezone: "Asia/Manila",
         plan: "free",
-        publicPage: {},
+        publicPage: ws.toObject().publicPage,
       },
     });
     getAuthUserMock.mockResolvedValue({
@@ -305,11 +298,7 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
         currency: "PHP",
         timezone: "Asia/Manila",
         plan: "free",
-        publicPage: {
-          seoTitle: "Same title",
-          seo: { keywords: ["old"] },
-          publishedAt: null,
-        },
+        publicPage: ws.toObject().publicPage,
       },
     });
     getAuthUserMock.mockResolvedValue({
@@ -359,11 +348,7 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
         currency: "PHP",
         timezone: "Asia/Manila",
         plan: "free",
-        publicPage: {
-          seoTitle: "Same title",
-          seo: { keywords: ["shared"] },
-          publishedAt: null,
-        },
+        publicPage: ws.toObject().publicPage,
       },
     });
     getAuthUserMock.mockResolvedValue({

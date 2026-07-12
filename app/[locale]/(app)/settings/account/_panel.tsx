@@ -110,6 +110,7 @@ export function AccountPanel({
       // uses). validateDimensions is off — avatars have no minimum size.
       const res = await uploadImage(file, {
         subfolder: "avatars",
+        validateDimensions: false,
       });
       const newUrl = res.url;
       const newPublicId = res.assetId;

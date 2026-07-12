@@ -35,15 +35,17 @@ function getFileDimensions(file: File): Promise<{ width: number; height: number 
 
 export async function uploadImage(
   file: File,
-  opts: { subfolder?: string; maxBytes?: number } = {}
+  opts: { subfolder?: string; maxBytes?: number; validateDimensions?: boolean } = {}
 ): Promise<UploadedImage> {
   const fileCheck = validatePhotoFile(file, opts.maxBytes);
   if (!fileCheck.ok) throw new Error(fileCheck.reason);
 
   // Capture dimensions from the file before upload — CF does not return them.
   const dims = await getFileDimensions(file);
-  const dimCheck = validatePhotoDimensions(dims.width, dims.height);
-  if (!dimCheck.ok) throw new Error(dimCheck.reason);
+  if (opts.validateDimensions ?? true) {
+    const dimCheck = validatePhotoDimensions(dims.width, dims.height);
+    if (!dimCheck.ok) throw new Error(dimCheck.reason);
+  }
 
   const directRes = await fetch("/api/images/direct-upload", {
     method: "POST",
