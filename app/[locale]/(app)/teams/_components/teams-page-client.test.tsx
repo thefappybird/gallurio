@@ -102,7 +102,7 @@ function renderTeamsPage(props: React.ComponentProps<typeof TeamsPageClient>) {
 function build(overrides: Partial<React.ComponentProps<typeof TeamsPageClient>> = {}) {
   return {
     teams: TEAMS,
-    plan: "starter" as const,
+    plan: "pro" as const,
     maxTeams: 5,
     maxMembersPerTeam: 10,
     members: [],

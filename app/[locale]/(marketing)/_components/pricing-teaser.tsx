@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // Landing-page pricing summary — deliberately separate from the full /pricing
-// page's `marketing.pricing` namespace (Starter/Studio/Business, still under
+// page's `marketing.pricing` namespace (Studio/Business, still under
 // review for the LemonSqueezy migration). This teaser reflects the current
 // model: Free, Pro (monthly/yearly), and a free-during-beta Pro tier for
 // early testers. Provider-neutral copy — no payment processor named here.

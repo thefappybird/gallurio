@@ -13,7 +13,7 @@ vi.mock("@/lib/page-builder/reconcile", () => ({
 let mockCtx: {
   userId: string;
   role: "owner" | "staff";
-  workspace: { _id: Types.ObjectId; slug: string; plan: "free" | "starter" | "pro" };
+  workspace: { _id: Types.ObjectId; slug: string; plan: "free" | "pro" | "beta" };
 };
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
@@ -46,7 +46,7 @@ const snapshot = {
   formLocale: "",
 };
 
-function setWorkspace(plan: "free" | "starter" | "pro" = "free") {
+function setWorkspace(plan: "free" | "pro" | "beta" = "free") {
   mockCtx = {
     userId: "user_owner",
     role: "owner",
@@ -93,16 +93,6 @@ describe("createDraftAction", () => {
     }
     const res = await createDraftAction({ name: "D6", ...snapshot });
     expect(res).toEqual({ error: "draft_limit_reached:5" });
-  });
-
-  it("enforces the starter-plan cap of 15", async () => {
-    setWorkspace("starter");
-    for (let i = 0; i < 15; i++) {
-      const r = await createDraftAction({ name: `S${i}`, ...snapshot });
-      expect("ok" in r).toBe(true);
-    }
-    const res = await createDraftAction({ name: "S16", ...snapshot });
-    expect(res).toEqual({ error: "draft_limit_reached:15" });
   });
 
   it("lets pro create past 15 (unlimited)", async () => {

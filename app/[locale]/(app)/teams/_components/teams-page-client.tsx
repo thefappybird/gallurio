@@ -37,7 +37,7 @@ import type {
 
 type Props = {
   teams: TeamRow[];
-  plan: "free" | "starter" | "pro";
+  plan: "free" | "pro" | "beta";
   maxTeams: number;
   maxMembersPerTeam: number;
   members: MemberSummary[];
@@ -334,8 +334,8 @@ export function TeamsPageClient({
         <DowngradeBlockModal
           open={downgradeBlockOpen}
           onOpenChange={setDowngradeBlockOpen}
-          currentPlan={plan === "free" ? "starter" : (plan as "starter" | "pro")}
-          targetPlan={plan === "pro" ? "starter" : "free"}
+          currentPlan="pro"
+          targetPlan="free"
           currentTeamCount={initialTeams.length}
           maxTeamsOnTargetPlan={maxTeams}
           teamsToReview={initialTeams.map((tm) => ({

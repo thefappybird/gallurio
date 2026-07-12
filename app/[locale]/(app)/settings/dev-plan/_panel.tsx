@@ -129,8 +129,8 @@ export function DevPlanPanel({ currentPlan }: DevPlanPanelProps) {
               setBlockedTarget(null);
             }
           }}
-          currentPlan={currentPlan === "free" ? "starter" : (currentPlan as "starter" | "pro")}
-          targetPlan={blockedTarget === "pro" ? "starter" : blockedTarget === "starter" ? "free" : "free"}
+          currentPlan="pro"
+          targetPlan="free"
           currentTeamCount={blocked.currentTeamCount}
           maxTeamsOnTargetPlan={blocked.maxTeamsOnTargetPlan}
           teamsToReview={blocked.teams}

@@ -143,16 +143,6 @@
         "cta": "Gabung Beta"
       },
       "plannedBadge": "Direncanakan",
-      "starter": {
-        "name": "Starter",
-        "description": "Untuk kreator independen yang membutuhkan portfolio sederhana dan halaman permintaan booking.",
-        "feature1": "Halaman portfolio yang dipublikasikan",
-        "feature2": "Bagian halaman yang dapat disesuaikan",
-        "feature3": "Galeri gambar",
-        "feature4": "Formulir permintaan booking",
-        "feature5": "Profil bisnis dasar",
-        "feature6": "Dukungan email"
-      },
       "studio": {
         "name": "Studio",
         "description": "Untuk bisnis kreatif yang berkembang dan membutuhkan lebih banyak fleksibilitas serta alat menghadap klien yang lebih kuat.",
@@ -2896,17 +2886,6 @@
         "bookings": "Hingga 10 pemesanan",
         "storage": "Penyimpanan gambar 1 GB",
         "publicPage": "Halaman pendaratan publik"
-      }
-    },
-    "starter": {
-      "name": "Starter",
-      "description": "Untuk pemilik solo yang baru memulai.",
-      "tagline": "Untuk pemilik solo yang baru memulai.",
-      "features": {
-        "unlimitedBookings": "Pemesanan tanpa batas",
-        "storage": "Penyimpanan gambar 5 GB",
-        "brandedForm": "Formulir pertanyaan bermerek",
-        "acceptPayments": "Terima GCash, Maya, kartu dari klien"
       }
     },
     "pro": {

@@ -68,7 +68,7 @@ function makeSubscriptionAttrs(overrides: Record<string, unknown> = {}) {
 }
 
 async function seedWorkspace(opts: {
-  plan: "free" | "starter" | "pro";
+  plan: "free" | "pro";
   lsSubscriptionId?: string;
   lsCustomerId?: string;
   teamCount?: number;
@@ -360,10 +360,10 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
     expect(after?.lsCurrentPeriodEnd).toBeNull();
   });
 
-  it("downgrades starter to free even at the free team cap (2 teams > free's 1-team cap)", async () => {
-    const subId = "sub_expired_starter";
+  it("downgrades pro to free even at the free team cap (2 teams > free's 1-team cap)", async () => {
+    const subId = "sub_expired_pro";
     const wsId = await seedWorkspace({
-      plan: "starter",
+      plan: "pro",
       lsSubscriptionId: subId,
       teamCount: 2,
     });

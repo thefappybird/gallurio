@@ -2,9 +2,8 @@ import { describe, it, expect } from "vitest";
 import { draftCapForPlan, DEFAULT_DRAFT_NAME, DRAFT_NAME_MAX } from "./drafts";
 
 describe("draftCapForPlan", () => {
-  it("caps free at 5, starter at 15, pro unlimited", () => {
+  it("caps free at 5, pro unlimited", () => {
     expect(draftCapForPlan("free")).toBe(5);
-    expect(draftCapForPlan("starter")).toBe(15);
     expect(draftCapForPlan("pro")).toBe(Number.POSITIVE_INFINITY);
   });
 

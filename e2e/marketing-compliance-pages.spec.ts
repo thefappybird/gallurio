@@ -58,13 +58,12 @@ test("compliance pages render with no horizontal overflow at 375px", async ({ pa
   }
 });
 
-test("pricing page shows the Beta Plan and three planned plans", async ({ page }) => {
+test("pricing page shows the Beta Plan and two planned plans", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/pricing");
 
   await expect(page.getByText("Beta Plan")).toBeVisible();
   await expect(page.getByText("Recommended")).toBeVisible();
-  await expect(page.getByText("Starter", { exact: true })).toBeVisible();
   await expect(page.getByText("Studio", { exact: true })).toBeVisible();
   await expect(page.getByText("Business", { exact: true })).toBeVisible();
   await expect(page.getByText("Planned").first()).toBeVisible();

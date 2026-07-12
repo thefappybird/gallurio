@@ -90,7 +90,7 @@ describe("subscriptionCheckoutWorkflow", () => {
     const wsId = ws._id.toHexString();
 
     // Start the workflow. It will suspend on the hook.
-    const run = await start(subscriptionCheckoutWorkflow, [wsId, "starter"]);
+    const run = await start(subscriptionCheckoutWorkflow, [wsId, "pro"]);
     expect(run.runId).toMatch(/^wrun_/);
 
     // Wait for the hook to be created, then resume it with a Lemon Squeezy event.
@@ -106,7 +106,7 @@ describe("subscriptionCheckoutWorkflow", () => {
 
     // Wait for the workflow to complete
     const result = await run.returnValue;
-    expect(result).toEqual({ outcome: "activated", plan: "starter" });
+    expect(result).toEqual({ outcome: "activated", plan: "pro" });
 
     // Re-fetch the workspace and verify DB state.
     // The workflow step's responsibility: persist subscription bookkeeping
@@ -141,7 +141,7 @@ describe("subscriptionCheckoutWorkflow", () => {
     );
     const wsBId = wsB._id.toHexString();
 
-    const run = await start(subscriptionCheckoutWorkflow, [wsAId, "starter"]);
+    const run = await start(subscriptionCheckoutWorkflow, [wsAId, "pro"]);
     await waitForHook(run, { token: `ls-checkout-${wsAId}` });
 
     const periodEnd = new Date(Date.now() + 30 * 86_400_000).toISOString();
@@ -171,7 +171,7 @@ describe("subscriptionCheckoutWorkflow", () => {
     const ws = await Workspace.create(makeWorkspaceBase());
     const wsId = ws._id.toHexString();
 
-    const run = await start(subscriptionCheckoutWorkflow, [wsId, "starter"]);
+    const run = await start(subscriptionCheckoutWorkflow, [wsId, "pro"]);
     await waitForHook(run, { token: `ls-checkout-${wsId}` });
 
     await resumeHook(`ls-checkout-${wsId}`, {
@@ -194,7 +194,7 @@ describe("subscriptionCheckoutWorkflow", () => {
     const ws = await Workspace.create(makeWorkspaceBase({ plan: "free" }));
     const wsId = ws._id.toHexString();
 
-    const run = await start(subscriptionCheckoutWorkflow, [wsId, "starter"]);
+    const run = await start(subscriptionCheckoutWorkflow, [wsId, "pro"]);
     await waitForHook(run, { token: `ls-checkout-${wsId}` });
 
     await resumeHook(`ls-checkout-${wsId}`, {

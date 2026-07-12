@@ -33,19 +33,6 @@ export default async function PricingPage({ params }: Props) {
 
   const plannedPlans = [
     {
-      key: "starter",
-      name: t("starter.name"),
-      description: t("starter.description"),
-      features: [
-        t("starter.feature1"),
-        t("starter.feature2"),
-        t("starter.feature3"),
-        t("starter.feature4"),
-        t("starter.feature5"),
-        t("starter.feature6"),
-      ],
-    },
-    {
       key: "studio",
       name: t("studio.name"),
       description: t("studio.description"),

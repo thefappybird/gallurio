@@ -143,16 +143,6 @@
         "cta": "Join the Beta"
       },
       "plannedBadge": "Planned",
-      "starter": {
-        "name": "Starter",
-        "description": "For independent creatives who need a simple portfolio and booking inquiry page.",
-        "feature1": "Published portfolio page",
-        "feature2": "Customizable page sections",
-        "feature3": "Image galleries",
-        "feature4": "Booking inquiry form",
-        "feature5": "Basic business profile",
-        "feature6": "Email support"
-      },
       "studio": {
         "name": "Studio",
         "description": "For growing creative businesses that need more flexibility and stronger client-facing tools.",
@@ -2896,17 +2886,6 @@
         "bookings": "Up to 10 bookings",
         "storage": "1 GB image storage",
         "publicPage": "Public landing page"
-      }
-    },
-    "starter": {
-      "name": "Starter",
-      "description": "For solo owners getting started.",
-      "tagline": "For solo owners getting started.",
-      "features": {
-        "unlimitedBookings": "Unlimited bookings",
-        "storage": "5 GB image storage",
-        "brandedForm": "Branded inquiry form",
-        "acceptPayments": "Accept GCash, Maya, cards from clients"
       }
     },
     "pro": {

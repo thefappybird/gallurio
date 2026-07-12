@@ -143,16 +143,6 @@
         "cta": "Sertai Beta"
       },
       "plannedBadge": "Dirancang",
-      "starter": {
-        "name": "Starter",
-        "description": "Untuk individu kreatif yang memerlukan portfolio dan halaman pertanyaan tempahan yang ringkas.",
-        "feature1": "Halaman portfolio yang diterbitkan",
-        "feature2": "Bahagian halaman yang boleh disesuaikan",
-        "feature3": "Galeri imej",
-        "feature4": "Borang pertanyaan tempahan",
-        "feature5": "Profil perniagaan asas",
-        "feature6": "Sokongan e-mel"
-      },
       "studio": {
         "name": "Studio",
         "description": "Untuk perniagaan kreatif yang berkembang dan memerlukan lebih fleksibiliti serta alat menghadap pelanggan yang lebih kukuh.",
@@ -2896,17 +2886,6 @@
         "bookings": "Sehingga 10 tempahan",
         "storage": "Storan imej 1 GB",
         "publicPage": "Halaman pendaratan awam"
-      }
-    },
-    "starter": {
-      "name": "Starter",
-      "description": "Untuk pemilik solo yang baru bermula.",
-      "tagline": "Untuk pemilik solo yang baru bermula.",
-      "features": {
-        "unlimitedBookings": "Tempahan tanpa had",
-        "storage": "Storan imej 5 GB",
-        "brandedForm": "Borang pertanyaan berjenama",
-        "acceptPayments": "Terima GCash, Maya, kad daripada pelanggan"
       }
     },
     "pro": {

@@ -31,7 +31,7 @@ vi.mock("@/lib/auth/ownerContext", () => ({
     workspace: {
       _id: WORKSPACE_ID,
       ownerUserId: OWNER_USER_ID,
-      plan: "starter",
+      plan: "pro",
       name: "Test Workspace",
       country: "us",
     },
@@ -75,7 +75,7 @@ async function makeTeam(
 }
 
 async function makeFullTeam(max = 10) {
-  // "starter" plan max per team is 10. Fill to the limit.
+  // members-per-team cap is 10 for every tier. Fill to the limit.
   return Team.create({
     workspaceId: WORKSPACE_ID,
     name: "Full Crew",

@@ -163,7 +163,7 @@ describe("findPublishedWorkspaceBySlug", () => {
         slug: "sensitive-ws",
         name: "Sensitive Studio",
         ownerUserId: "user_sensitive",
-        plan: "starter",
+        plan: "pro",
         currency: "PHP",
         lsSubscriptionId: "sub_secret_001",
         lsCustomerId: "ctm_secret_001",

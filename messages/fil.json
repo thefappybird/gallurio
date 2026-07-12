@@ -143,16 +143,6 @@
         "cta": "Sumali sa Beta"
       },
       "plannedBadge": "Planado",
-      "starter": {
-        "name": "Starter",
-        "description": "Para sa mga independent na creative na kailangan lang ng simpleng portfolio at booking inquiry page.",
-        "feature1": "Naka-publish na portfolio page",
-        "feature2": "Customizable na mga section ng page",
-        "feature3": "Image gallery",
-        "feature4": "Booking inquiry form",
-        "feature5": "Batayang business profile",
-        "feature6": "Email support"
-      },
       "studio": {
         "name": "Studio",
         "description": "Para sa lumalaking creative business na kailangan ng mas malaking flexibility at mas malakas na client-facing tools.",
@@ -2896,17 +2886,6 @@
         "bookings": "Hanggang 10 booking",
         "storage": "1 GB image storage",
         "publicPage": "Pampublikong landing page"
-      }
-    },
-    "starter": {
-      "name": "Starter",
-      "description": "Para sa mga solong may-ari na nagsisimula.",
-      "tagline": "Para sa mga solong may-ari na nagsisimula.",
-      "features": {
-        "unlimitedBookings": "Walang limitasyon na booking",
-        "storage": "5 GB image storage",
-        "brandedForm": "Branded inquiry form",
-        "acceptPayments": "Tumanggap ng GCash, Maya, card mula sa mga kliyente"
       }
     },
     "pro": {

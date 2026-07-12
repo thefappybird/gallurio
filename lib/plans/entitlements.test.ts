@@ -9,13 +9,6 @@ describe("planEntitlements", () => {
     });
   });
 
-  it("returns correct entitlements for starter plan", () => {
-    expect(planEntitlements("starter")).toEqual({
-      maxTeams: 3,
-      maxMembersPerTeam: 10,
-    });
-  });
-
   it("returns correct entitlements for pro plan", () => {
     expect(planEntitlements("pro")).toEqual({
       maxTeams: 15,
@@ -29,7 +22,6 @@ describe("planEntitlements", () => {
 
   it("returns the same object reference between calls (pulls from constant)", () => {
     expect(planEntitlements("free")).toBe(PLAN_ENTITLEMENTS.free);
-    expect(planEntitlements("starter")).toBe(PLAN_ENTITLEMENTS.starter);
     expect(planEntitlements("pro")).toBe(PLAN_ENTITLEMENTS.pro);
   });
 });

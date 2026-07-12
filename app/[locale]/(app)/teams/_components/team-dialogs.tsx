@@ -481,7 +481,7 @@ export function UpsellDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  plan: "free" | "starter" | "pro";
+  plan: "free" | "pro" | "beta";
   maxTeams: number;
 }) {
   const t = useTranslations("app.teams");

@@ -12,7 +12,7 @@ import {
 import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 
-export const PLAN_TIERS = ["free", "starter", "pro", "beta"] as const;
+export const PLAN_TIERS = ["free", "pro", "beta"] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
 
 // The portfolio template the workspace was seeded from. Canonical ids live in
