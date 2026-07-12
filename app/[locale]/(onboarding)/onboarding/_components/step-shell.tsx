@@ -60,8 +60,8 @@ export function StepShell({
   const furthestIndex = STEP_META.findIndex((s) => s.key === furthestStep);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 items-center justify-center">
-      <div className="relative h-[min(640px,calc(100dvh-8rem))] w-full max-w-3xl">
+    <div className="flex h-full min-h-0 flex-1 items-start justify-center overflow-y-auto">
+      <div className="relative my-auto w-full max-w-3xl">
         {/* Ledger deck: two hairline-bordered pages peeking out behind the
             active step card, evoking a stacked index-card deck. Purely
             decorative; offsets flip under rtl: so the peek stays on the
@@ -71,7 +71,11 @@ export function StepShell({
           <div className="absolute inset-0 translate-x-1 translate-y-1 border border-border/80 bg-card rtl:-translate-x-1" />
         </div>
 
-        <div className="relative z-10 flex h-full w-full flex-col gap-4 border border-border bg-background p-4 sm:p-5 md:p-6">
+        {/* min-height matches the old fixed modal height so short steps keep
+            the same deck-like proportions; max-height + overflow-y-auto let
+            long steps (e.g. plan + promo drawer) grow into the free space
+            instead of spilling past the border. */}
+        <div className="relative z-10 flex min-h-[min(640px,calc(100dvh-8rem))] max-h-[calc(100dvh-4rem)] w-full flex-col gap-4 overflow-y-auto border border-border bg-background p-4 sm:p-5 md:p-6">
           <Link href="/" className="flex shrink-0 scale-150 items-center self-center">
             <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
             <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
@@ -165,7 +169,7 @@ function ProgressBar({
               />
               <span
                 className={cn(
-                  "onboarding-progress-label sr-only text-xs sm:not-sr-only sm:inline",
+                  "onboarding-progress-label text-[10px] leading-tight sm:text-xs",
                   active && "text-foreground",
                   !active && reachable && "text-foreground/70",
                   locked && "text-muted-foreground"

@@ -2859,10 +2859,9 @@
       "opening": "Opening checkout…",
       "checkoutFailed": "Checkout failed. Please try again.",
       "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
-      "dev": {
-        "label": "Dev shortcut",
-        "description": "Skip Lemon Squeezy and mark {planName} as active. Dev-only.",
-        "activate": "Activate {planName} (dev)"
+      "betaTester": {
+        "label": "Beta tester",
+        "activate": "Activate beta access"
       }
     },
     "done": {

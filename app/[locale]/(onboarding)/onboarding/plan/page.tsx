@@ -12,6 +12,7 @@ export default async function PlanStepPage() {
       furthestStep={ctx.currentStep}
       currentPlan={ctx.workspace?.plan ?? "free"}
       proPricing={proPricing}
+      betaTesterEnabled={process.env.BETA_TESTER_ENABLED === "true"}
     />
   );
 }

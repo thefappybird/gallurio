@@ -2859,10 +2859,9 @@
       "opening": "Binubuksan ang checkout…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
       "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
-      "dev": {
-        "label": "Dev shortcut",
-        "description": "Laktawan ang Lemon Squeezy at markahan ang {planName} bilang aktibo. Dev-only.",
-        "activate": "I-activate ang {planName} (dev)"
+      "betaTester": {
+        "label": "Beta Tester",
+        "activate": "I-activate ang beta access"
       }
     },
     "done": {

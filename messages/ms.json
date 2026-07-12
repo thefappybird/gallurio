@@ -2859,10 +2859,9 @@
       "opening": "Membuka pembayaran…",
       "checkoutFailed": "Pembayaran gagal. Sila cuba lagi.",
       "checkoutNotReady": "Sistem pembayaran belum sedia. Sila muat semula dan cuba lagi.",
-      "dev": {
-        "label": "Pintasan dev",
-        "description": "Langkau Lemon Squeezy dan tanda {planName} sebagai aktif. Dev sahaja.",
-        "activate": "Aktifkan {planName} (dev)"
+      "betaTester": {
+        "label": "Penguji Beta",
+        "activate": "Aktifkan akses beta"
       }
     },
     "done": {

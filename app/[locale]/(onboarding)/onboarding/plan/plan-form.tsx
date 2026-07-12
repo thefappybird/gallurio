@@ -7,8 +7,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
-import { selectFreePlanAction } from "@/lib/actions/onboarding";
-import { devActivatePlanAction } from "@/lib/actions/dev";
+import { selectFreePlanAction, activateBetaTesterAction } from "@/lib/actions/onboarding";
 import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
@@ -26,10 +25,12 @@ export function PlanStepForm({
   currentPlan,
   furthestStep,
   proPricing,
+  betaTesterEnabled = false,
 }: {
   currentPlan: string;
   furthestStep: OnboardingStep;
   proPricing: ProPricing;
+  betaTesterEnabled?: boolean;
 }) {
   const t = useTranslations("onboarding.plan");
   const tPlans = useTranslations("plans");
@@ -117,22 +118,10 @@ export function PlanStepForm({
     }
   }
 
-  function devActivate() {
+  function activateBeta() {
     setCheckoutError(null);
     startTransition(async () => {
-      const result = await devActivatePlanAction(selected);
-      if (result?.error) {
-        toast.error(errMsg(result.error));
-        return;
-      }
-      router.push("/onboarding/done");
-    });
-  }
-
-  function devActivateBeta() {
-    setCheckoutError(null);
-    startTransition(async () => {
-      const result = await devActivatePlanAction("beta");
+      const result = await activateBetaTesterAction();
       if (result?.error) {
         toast.error(errMsg(result.error));
         return;
@@ -146,13 +135,11 @@ export function PlanStepForm({
     return cadence === "yearly" && p.yearlyAmount ? p.yearlyAmount : p.amount;
   }
 
-  const isDev = process.env.NODE_ENV !== "production";
   const busy = loading || pending;
   const selectedEntry = PLAN_CATALOG.find((p) => p.id === selected);
   const selectedPrice = selectedEntry
     ? formatMoney(amountFor(selectedEntry, cadence), proPricing.currency, locale)
     : "";
-  const selectedName = selectedEntry ? tPlans(`${selected}.name`) : "";
 
   const cta =
     selected === "free"
@@ -185,30 +172,20 @@ export function PlanStepForm({
             )}
           </div>
 
-          {isDev && (
-            <div className="flex items-center gap-2 border border-dashed border-amber-500/40 bg-amber-500/5 px-2 py-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-500">
-                {t("dev.label")}
+          {betaTesterEnabled && (
+            <div className="flex items-center gap-2 border border-dashed border-brand/40 bg-brand/5 px-2 py-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand">
+                {t("betaTester.label")}
               </span>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={devActivate}
+                onClick={activateBeta}
                 disabled={busy}
                 className="h-7 px-2 text-xs"
               >
-                {t("dev.activate", { planName: selectedName })}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={devActivateBeta}
-                disabled={busy}
-                className="h-7 px-2 text-xs"
-              >
-                Activate Beta tester
+                {t("betaTester.activate")}
               </Button>
             </div>
           )}

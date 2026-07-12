@@ -6,7 +6,7 @@
  * directly and firing the script's onload handler manually (jsdom doesn't
  * execute remote script src, so we simulate the load callback).
  * fetch: mocked via vi.stubGlobal to simulate checkout API responses.
- * Server actions (selectFreePlanAction, devActivatePlanAction): mocked.
+ * Server actions (selectFreePlanAction, activateBetaTesterAction): mocked.
  * @/lib/i18n/navigation: aliased to stub via vitest.config.ts.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -25,10 +25,7 @@ vi.mock("@/lib/i18n/navigation", () => ({
 // ── Server action mocks ────────────────────────────────────────────────────
 vi.mock("@/lib/actions/onboarding", () => ({
   selectFreePlanAction: vi.fn().mockResolvedValue({}),
-}));
-
-vi.mock("@/lib/actions/dev", () => ({
-  devActivatePlanAction: vi.fn().mockResolvedValue({}),
+  activateBetaTesterAction: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock("@/lib/actions/promoCode", () => ({
@@ -76,12 +73,19 @@ afterEach(() => {
   delete (window as { LemonSqueezy?: unknown }).LemonSqueezy;
 });
 
-function renderForm(props: { currentPlan?: string; furthestStep?: "business" | "workspace" | "plan" | "done" } = {}) {
+function renderForm(
+  props: {
+    currentPlan?: string;
+    furthestStep?: "business" | "workspace" | "plan" | "done";
+    betaTesterEnabled?: boolean;
+  } = {}
+) {
   return renderWithProviders(
     <PlanStepForm
       currentPlan={props.currentPlan ?? "free"}
       furthestStep={props.furthestStep ?? "plan"}
       proPricing={{ currency: "PHP", monthly: 250, yearly: 2500 }}
+      betaTesterEnabled={props.betaTesterEnabled}
     />
   );
 }
@@ -111,9 +115,14 @@ describe("PlanStepForm — renders", () => {
     });
   });
 
-  it("shows dev escape hatch in non-production environment", () => {
+  it("hides the beta tester chip when disabled", () => {
     renderForm();
-    expect(screen.getByText(/dev shortcut/i)).toBeInTheDocument();
+    expect(screen.queryByText(/beta tester/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the beta tester chip when enabled", () => {
+    renderForm({ betaTesterEnabled: true });
+    expect(screen.getByText(/beta tester/i)).toBeInTheDocument();
   });
 });
 
@@ -284,30 +293,18 @@ describe("PlanStepForm — paid plan checkout", () => {
   });
 });
 
-describe("PlanStepForm — dev activate", () => {
-  it("calls devActivatePlanAction when dev button is clicked", async () => {
-    const { devActivatePlanAction } = await import("@/lib/actions/dev");
+describe("PlanStepForm — beta tester activation", () => {
+  it("calls activateBetaTesterAction and navigates on success", async () => {
+    const { activateBetaTesterAction } = await import("@/lib/actions/onboarding");
 
-    renderForm({ currentPlan: "free" });
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
 
-    const devBtn = screen.getByRole("button", { name: /activate.*dev/i });
-    fireEvent.click(devBtn);
-
-    await waitFor(() => {
-      expect(devActivatePlanAction).toHaveBeenCalledWith("free");
-    });
-  });
-
-  it("calls devActivatePlanAction with beta when the beta dev button is clicked, regardless of selected card", async () => {
-    const { devActivatePlanAction } = await import("@/lib/actions/dev");
-
-    renderForm({ currentPlan: "free" });
-
-    const betaBtn = screen.getByRole("button", { name: /beta/i });
+    const betaBtn = screen.getByRole("button", { name: /activate beta access/i });
     fireEvent.click(betaBtn);
 
     await waitFor(() => {
-      expect(devActivatePlanAction).toHaveBeenCalledWith("beta");
+      expect(activateBetaTesterAction).toHaveBeenCalledOnce();
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
     });
   });
 });

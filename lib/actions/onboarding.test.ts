@@ -47,6 +47,7 @@ import {
   businessStepAction,
   workspaceStepAction,
   selectFreePlanAction,
+  activateBetaTesterAction,
   completeOnboardingAction,
   reconcileLemonSqueezySubscription,
 } from "./onboarding";
@@ -323,6 +324,42 @@ describe("selectFreePlanAction", () => {
 
     const workspace = await Workspace.findOne({ ownerUserId: "wos_user_001" }).lean();
     expect(workspace!.plan).toBe("free");
+
+    const user = await User.findOne({ workosUserId: "wos_user_001" }).lean();
+    expect(user!.onboardingStep).toBe("done");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// activateBetaTesterAction
+// ---------------------------------------------------------------------------
+
+describe("activateBetaTesterAction", () => {
+  const originalFlag = process.env.BETA_TESTER_ENABLED;
+  afterEach(() => {
+    if (originalFlag === undefined) delete process.env.BETA_TESTER_ENABLED;
+    else process.env.BETA_TESTER_ENABLED = originalFlag;
+  });
+
+  it("refuses when BETA_TESTER_ENABLED is not set", async () => {
+    delete process.env.BETA_TESTER_ENABLED;
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    const result = await activateBetaTesterAction();
+    expect(result.ok).toBeUndefined();
+    expect(result.error).toBeTruthy();
+  });
+
+  it("grants the beta plan and advances the step when enabled", async () => {
+    process.env.BETA_TESTER_ENABLED = "true";
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+
+    const result = await activateBetaTesterAction();
+    expect(result.ok).toBe(true);
+
+    const workspace = await Workspace.findOne({ ownerUserId: "wos_user_001" }).lean();
+    expect(workspace!.plan).toBe("beta");
+    expect(workspace!.planGrantExpiresAt).toBeNull();
 
     const user = await User.findOne({ workosUserId: "wos_user_001" }).lean();
     expect(user!.onboardingStep).toBe("done");
