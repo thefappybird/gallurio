@@ -17,6 +17,10 @@ if (!(process.env as Record<string, string | undefined>)["NODE_ENV"]) {
   (process.env as Record<string, string>)["NODE_ENV"] = "production"
 }
 
+// Validates the production env matrix and throws before Next boots on a bad
+// config. Must load after the NODE_ENV fallback above, before anything else.
+import './lib/env'
+
 const dev = process.env.NODE_ENV !== 'production'
 const port = parseInt(process.env.PORT ?? '3000', 10)
 const app = next({ dev })

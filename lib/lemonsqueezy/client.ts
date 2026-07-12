@@ -5,12 +5,13 @@ import {
   cancelSubscription,
   listSubscriptions,
 } from "@lemonsqueezy/lemonsqueezy.js";
+import { env } from "@/lib/env";
 
 let configured = false;
 
 function ensureConfigured(): void {
   if (configured) return;
-  const apiKey = process.env.LEMONSQUEEZY_API_KEY;
+  const apiKey = env.LEMONSQUEEZY_API_KEY;
   if (!apiKey) {
     throw new Error("Missing env var LEMONSQUEEZY_API_KEY");
   }
@@ -24,7 +25,7 @@ function ensureConfigured(): void {
 // Test mode defaults ON (sandbox) — err toward sandbox unless explicitly
 // disabled. Matches the "beta test, no real users yet" instruction.
 function isTestMode(): boolean {
-  return process.env.LEMONSQUEEZY_TEST_MODE !== "false";
+  return env.LEMONSQUEEZY_TEST_MODE !== "false";
 }
 
 export async function createSubscriptionCheckout(opts: {
@@ -35,7 +36,7 @@ export async function createSubscriptionCheckout(opts: {
   redirectUrl: string;
 }): Promise<string> {
   ensureConfigured();
-  const storeId = process.env.LEMONSQUEEZY_STORE_ID;
+  const storeId = env.LEMONSQUEEZY_STORE_ID;
   if (!storeId) {
     throw new Error("Missing env var LEMONSQUEEZY_STORE_ID");
   }
@@ -80,7 +81,7 @@ export async function cancelLemonSqueezySubscription(id: string) {
 // the replacement for Paddle's customerId-based listActiveSubscriptionsForCustomer.
 export async function listActiveSubscriptionsForEmail(email: string) {
   ensureConfigured();
-  const storeId = process.env.LEMONSQUEEZY_STORE_ID;
+  const storeId = env.LEMONSQUEEZY_STORE_ID;
   const { data, error } = await listSubscriptions({
     filter: { userEmail: email, storeId },
   });
