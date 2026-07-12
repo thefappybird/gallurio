@@ -632,7 +632,7 @@ export function ContactForm({
       </div>
 
       {activeTab === "location" ? (
-        <div style={{ marginTop: "0.75rem" }}>
+        <div style={{ marginTop: "0.75rem" }} className="flex justify-center">
           <TurnstileWidget ref={turnstileRef} onToken={setTurnstileToken} onExpire={() => setTurnstileToken(null)} onError={() => setTurnstileToken(null)} />
         </div>
       ) : null}

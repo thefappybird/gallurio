@@ -8,7 +8,7 @@ Last updated: 2026-07-12 (added Hetzner + domain deployment section, deploy scaf
 
 No deployment scaffolding existed in the repo before this pass. It now does — see `deploy/Caddyfile`, `deploy/ecosystem.config.js`, and `.github/workflows/ci.yml`. `SaaS-Blueprint.md` §13 has the full narrative runbook; this section is the actionable subset for the beta cutover.
 
-- [ ] **Provision the VPS** — Ubuntu LTS, Node 20+, `pnpm`, `pm2` (`npm i -g pm2`), Caddy installed from the official repo (not apt's stale package).
+- [x] **Provision the VPS** — Ubuntu LTS, Node 20+, `pnpm`, `pm2` (`npm i -g pm2`), Caddy installed from the official repo (not apt's stale package).
 - [ ] **DNS** — point the domain's `A` record (and `www` `CNAME` if used) at the VPS's public IP. Do this *before* starting Caddy — Caddy's automatic TLS (Let's Encrypt) needs the domain to already resolve to the box, or issuance fails. Allow for propagation time (can be minutes to a few hours).
 - [ ] **Firewall** — open 80/443 (HTTP for the ACME challenge + redirect, HTTPS for everything else); keep 3000 closed to the outside world — only Caddy talks to it, over localhost.
 - [ ] **Clone + install** — `git clone` to e.g. `/var/www/gallurio`, `pnpm install --frozen-lockfile`.

@@ -67,12 +67,14 @@ export function ForgotPasswordForm() {
             aria-describedby={error ? "forgot-error" : undefined}
           />
         </div>
-
-        <TurnstileWidget
-          onToken={setTurnstileToken}
-          onExpire={() => setTurnstileToken("")}
-          onError={() => setTurnstileToken("")}
-        />
+        <div className="flex justify-center">
+          <TurnstileWidget
+            onToken={setTurnstileToken}
+            onExpire={() => setTurnstileToken("")}
+            onError={() => setTurnstileToken("")}
+          />
+        </div>
+        
 
         {error && (
           <p id="forgot-error" role="alert" className="text-sm text-destructive">
