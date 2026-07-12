@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useForm, useFieldArray, useWatch, Controller, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -23,6 +23,7 @@ import {
 import { colorTokenToVar } from "@/lib/page-builder/styleToolkit";
 import { DEFAULT_TIME_MODE, TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
+import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/ui/turnstile-widget";
 
 export type InquiryFormLabels = {
   tabClient: string;
@@ -236,6 +237,8 @@ export function ContactForm({
   const watchedSessions = useWatch({ control, name: "sessions" });
   const minDate = todayIso();
   const [activeTab, setActiveTab] = useState<"client" | "event" | "location">("client");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
   function onInvalid(errs: FieldErrors<InquirySubmissionInput>) {
     if (errs.name || errs.email || errs.phone || errs.preferredContact) {
@@ -274,21 +277,27 @@ export function ContactForm({
       const res = await fetch("/api/inquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspaceSlug, ...data }),
+        body: JSON.stringify({ workspaceSlug, ...data, turnstileToken }),
       });
       if (!res.ok) {
         setError("root", { message: labels.errorGeneric });
+        // Turnstile tokens are single-use -- a retry with the same token
+        // would fail bot verification even with correct form data.
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
         return;
       }
       onSuccess();
     } catch {
       setError("root", { message: labels.errorGeneric });
+      turnstileRef.current?.reset();
+      setTurnstileToken(null);
     }
   }
 
   return (
     <form
-      onSubmit={handleSubmit(onSubmit, onInvalid)}
+      onSubmit={(e) => { void handleSubmit(onSubmit, onInvalid)(e); }}
       noValidate
       className="pf-contact-form"
       style={{
@@ -623,10 +632,16 @@ export function ContactForm({
       </div>
 
       {activeTab === "location" ? (
+        <div style={{ marginTop: "0.75rem" }}>
+          <TurnstileWidget ref={turnstileRef} onToken={setTurnstileToken} onExpire={() => setTurnstileToken(null)} onError={() => setTurnstileToken(null)} />
+        </div>
+      ) : null}
+
+      {activeTab === "location" ? (
         <button
           type="submit"
           className="pf-cf-btn"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !turnstileToken}
           style={buildButtonStyle(submitAppearance, isSubmitting, { marginTop: "1rem" })}
         >
           {isSubmitting ? (

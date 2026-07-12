@@ -5,6 +5,11 @@ vi.mock("@/lib/server/inquirySubmission", () => ({
   submitInquiry: (...args: unknown[]) => submitInquiry(...args),
 }));
 
+const verifyTurnstileToken = vi.fn();
+vi.mock("@/lib/server/turnstile", () => ({
+  verifyTurnstileToken: (...args: unknown[]) => verifyTurnstileToken(...args),
+}));
+
 import { POST } from "./route";
 import { __resetRateLimitForTests } from "@/lib/server/rateLimit";
 
@@ -48,6 +53,8 @@ beforeEach(() => {
     draftBookingId: "bk_1",
     clientId: "cl_1",
   });
+  verifyTurnstileToken.mockReset();
+  verifyTurnstileToken.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -117,6 +124,15 @@ describe("POST /api/inquiries", () => {
     // A different IP is unaffected.
     const other = await POST(makeReq(makeBody(), "6.6.6.6"));
     expect(other.status).toBe(200);
+  });
+
+  it("returns 400 when Turnstile verification fails, without calling submitInquiry", async () => {
+    verifyTurnstileToken.mockResolvedValue(false);
+    const res = await POST(makeReq(makeBody({ turnstileToken: "bad-token" })));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json).toEqual({ ok: false, error: "verification_failed" });
+    expect(submitInquiry).not.toHaveBeenCalled();
   });
 
   it("returns 400 on non-JSON body", async () => {

@@ -1,6 +1,22 @@
 ﻿import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { useEffect } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ContactForm, getActiveTabExtraStyle, type InquiryFormLabels } from "./ContactForm";
+
+vi.mock("@/components/ui/turnstile-widget", () => ({
+  TurnstileWidget: ({
+    ref,
+    onToken,
+  }: {
+    ref?: { current: unknown } | null;
+    onToken: (t: string) => void;
+  }) => {
+    if (ref) ref.current = { reset: vi.fn() };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { onToken("test-token"); }, []);
+    return <div data-testid="turnstile-widget" />;
+  },
+}));
 
 vi.mock("@/components/ui/phone-input", () => ({
   PhoneInput: ({ value, onChange, ...props }: { value?: string; onChange?: (value?: string) => void }) => (
@@ -189,6 +205,7 @@ describe("ContactForm", () => {
     expect(body.sessions[0].startDate).toBe(futureDate());
     expect(body.location.address).toBe("Manila, Metro Manila, Philippines");
     expect(body.guestCount).toBeUndefined();
+    expect(body.turnstileToken).toBe("test-token");
   });
 
   it("surfaces a recoverable inline error when the API responds non-ok (e.g. 404)", async () => {

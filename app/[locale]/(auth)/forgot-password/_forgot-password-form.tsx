@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TurnstileWidget } from "../_components/turnstile-widget";
+import { TurnstileWidget } from "@/components/ui/turnstile-widget";
 import { forgotPasswordAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 
