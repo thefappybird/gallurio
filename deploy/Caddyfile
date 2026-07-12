@@ -1,0 +1,17 @@
+# Reverse proxy for Gallurio on a Hetzner VPS.
+# Copy to /etc/caddy/Caddyfile, replace the domain below, then:
+#   systemctl reload caddy
+# Caddy handles automatic HTTPS (Let's Encrypt) and the HTTP->HTTPS redirect
+# for any domain listed here — DNS must already resolve to this box first.
+
+your-domain.com, www.your-domain.com {
+	encode zstd gzip
+
+	reverse_proxy localhost:3000 {
+		# Overwrite (not append) X-Forwarded-For with the real connecting IP.
+		# Without this, a client-supplied X-Forwarded-For survives as the
+		# first hop and defeats the per-IP rate limiter in
+		# app/api/inquiries/route.ts (see docs/RELEASE-CHECKLIST.md §4c).
+		header_up X-Forwarded-For {http.request.remote.host}
+	}
+}

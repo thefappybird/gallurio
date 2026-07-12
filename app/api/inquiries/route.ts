@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { inquirySubmissionSchema } from "@/lib/validators/inquiry";
 import { submitInquiry } from "@/lib/server/inquirySubmission";
 import { rateLimit } from "@/lib/server/rateLimit";
+import { verifyTurnstileToken } from "@/lib/server/turnstile";
 
 // Public, unauthenticated endpoint — never Edge (transactions need Node).
 export const runtime = "nodejs";
@@ -47,6 +48,13 @@ export async function POST(req: Request) {
         },
       }
     );
+  }
+
+  // Bot check -- networked, so it runs after the free local checks above.
+  const turnstileToken = typeof json.turnstileToken === "string" ? json.turnstileToken : null;
+  const verified = await verifyTurnstileToken(turnstileToken, ip);
+  if (!verified) {
+    return NextResponse.json({ ok: false, error: "verification_failed" }, { status: 400 });
   }
 
   const workspaceSlug = typeof json.workspaceSlug === "string" ? json.workspaceSlug : "";

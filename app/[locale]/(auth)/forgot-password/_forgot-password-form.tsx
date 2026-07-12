@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TurnstileWidget } from "../_components/turnstile-widget";
+import { TurnstileWidget } from "@/components/ui/turnstile-widget";
 import { forgotPasswordAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 
@@ -67,12 +67,14 @@ export function ForgotPasswordForm() {
             aria-describedby={error ? "forgot-error" : undefined}
           />
         </div>
-
-        <TurnstileWidget
-          onToken={setTurnstileToken}
-          onExpire={() => setTurnstileToken("")}
-          onError={() => setTurnstileToken("")}
-        />
+        <div className="flex justify-center">
+          <TurnstileWidget
+            onToken={setTurnstileToken}
+            onExpire={() => setTurnstileToken("")}
+            onError={() => setTurnstileToken("")}
+          />
+        </div>
+        
 
         {error && (
           <p id="forgot-error" role="alert" className="text-sm text-destructive">

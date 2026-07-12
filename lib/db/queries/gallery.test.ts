@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest, listPublicCollectionItemsPage } from "./gallery";
+import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest, listPublicCollectionItemsPage, detachItemsFromCollection } from "./gallery";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -247,6 +247,38 @@ describe("listPublicCollectionItemsPage", () => {
   it("invalid collectionId yields empty (no throw)", async () => {
     const page = await listPublicCollectionItemsPage({ workspaceId: new Types.ObjectId().toString(), collectionId: "not-an-id" });
     expect(page).toEqual({ items: [], nextCursor: null });
+  });
+});
+
+describe("detachItemsFromCollection", () => {
+  it("dedups items sharing an assetId with no external refs (keep one, delete rest), deletes items whose assetId has an external ref, and avoids a per-item countDocuments N+1", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    // Two items share assetId "dup-asset", no other GalleryItem references it.
+    const dupA = await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "dup-asset", url: "u", order: 0 });
+    const dupB = await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "dup-asset", url: "u", order: 1 });
+    // One item whose assetId also has an external reference outside the batch.
+    const refd = await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "shared-asset", url: "u", order: 2 });
+    await GalleryItem.create({ workspaceId: ws, collectionId: null, assetId: "shared-asset", url: "u", order: 0 });
+
+    const countSpy = vi.spyOn(GalleryItem, "countDocuments");
+
+    const count = await detachItemsFromCollection({
+      workspaceId: ws.toString(),
+      collectionId: col._id.toString(),
+      itemIds: [dupA._id.toString(), dupB._id.toString(), refd._id.toString()],
+    });
+    expect(count).toBe(3);
+    // Fixed cost regardless of batch size: no per-item countDocuments query.
+    expect(countSpy).not.toHaveBeenCalled();
+    countSpy.mockRestore();
+
+    const remainingDup = await GalleryItem.find({ workspaceId: ws, assetId: "dup-asset" }).lean();
+    expect(remainingDup).toHaveLength(1);
+    expect(remainingDup[0].collectionId).toBeNull();
+
+    const refdDoc = await GalleryItem.findById(refd._id).lean();
+    expect(refdDoc).toBeNull();
   });
 });
 

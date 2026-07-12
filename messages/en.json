@@ -2690,6 +2690,9 @@
         }
       }
     },
+    "errorBoundary": {
+      "retry": "Try again"
+    },
     "errors": {
       "generic": "Something went wrong. Please try again.",
       "not_authenticated": "You're not signed in. Please sign in and try again.",

@@ -34,16 +34,31 @@ export async function POST(req: Request, { params }: Params) {
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
-      // Only advance the index for ids that actually belong to this collection,
-      // so foreign/stale ids don't leave gaps that shift the saved order.
+      // Batch: one find to know which ids actually belong to this collection,
+      // then one bulkWrite for all matching updates -- 2 round trips total
+      // instead of one updateOne per item. Order only advances for ids that
+      // actually match (preserves the original "no gap" behavior: a
+      // foreign/stale id doesn't consume an order slot).
+      const existing = await GalleryItem.find(
+        { _id: { $in: validIds }, workspaceId, collectionId: id },
+        { _id: 1 }
+      ).session(session).lean();
+      const existingIdSet = new Set(existing.map((d) => String(d._id)));
+
+      const ops: Parameters<typeof GalleryItem.bulkWrite>[0] = [];
       let order = 0;
       for (const itemId of validIds) {
-        const result = await GalleryItem.updateOne(
-          { _id: itemId, workspaceId, collectionId: id },
-          { $set: { order } },
-          { session }
-        );
-        if (result.matchedCount > 0) order += 1;
+        if (!existingIdSet.has(itemId)) continue;
+        ops.push({
+          updateOne: {
+            filter: { _id: itemId, workspaceId, collectionId: id },
+            update: { $set: { order } },
+          },
+        });
+        order += 1;
+      }
+      if (ops.length > 0) {
+        await GalleryItem.bulkWrite(ops, { session });
       }
     });
   } finally {

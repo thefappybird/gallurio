@@ -15,7 +15,7 @@ vi.mock("../_actions", () => ({
   googleSignInAction: vi.fn(),
 }));
 
-vi.mock("../_components/turnstile-widget", () => ({
+vi.mock("@/components/ui/turnstile-widget", () => ({
   TurnstileWidget: ({
     ref,
     onToken,

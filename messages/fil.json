@@ -2690,6 +2690,9 @@
         }
       }
     },
+    "errorBoundary": {
+      "retry": "Subukan muli"
+    },
     "errors": {
       "generic": "May nangyaring mali. Pakisubukan muli.",
       "not_authenticated": "Hindi ka naka-sign in. Mag-sign in at subukan muli.",

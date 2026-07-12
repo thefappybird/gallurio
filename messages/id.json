@@ -2690,6 +2690,9 @@
         }
       }
     },
+    "errorBoundary": {
+      "retry": "Coba lagi"
+    },
     "errors": {
       "generic": "Terjadi kesalahan. Silakan coba lagi.",
       "not_authenticated": "Anda belum masuk. Silakan masuk dan coba lagi.",

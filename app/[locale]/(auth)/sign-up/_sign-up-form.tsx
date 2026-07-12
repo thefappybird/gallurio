@@ -9,7 +9,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TurnstileWidget, type TurnstileWidgetHandle } from "../_components/turnstile-widget";
+import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/ui/turnstile-widget";
 import { signUpAction, googleSignInAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 import { useTransition } from "react";
