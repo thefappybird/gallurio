@@ -17,9 +17,12 @@ if (!(process.env as Record<string, string | undefined>)["NODE_ENV"]) {
   (process.env as Record<string, string>)["NODE_ENV"] = "production"
 }
 
-// Validates the production env matrix and throws before Next boots on a bad
-// config. Must load after the NODE_ENV fallback above, before anything else.
-import './lib/env'
+// Validates the production env matrix at runtime startup and throws before
+// Next boots on a bad config. Must run after the NODE_ENV fallback above.
+// NEVER call this at import time in a module `next build` might load — see
+// lib/env.ts for why (build-time NODE_ENV=production without real secrets).
+import { validateEnv } from './lib/env'
+validateEnv()
 
 const dev = process.env.NODE_ENV !== 'production'
 const port = parseInt(process.env.PORT ?? '3000', 10)

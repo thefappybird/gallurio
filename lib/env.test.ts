@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { validateEnv } from "./env";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -46,11 +47,6 @@ function resetEnv() {
   Object.assign(process.env, ORIGINAL_ENV);
 }
 
-async function loadEnvModule() {
-  vi.resetModules();
-  return import("./env");
-}
-
 describe("lib/env", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
@@ -64,83 +60,79 @@ describe("lib/env", () => {
     resetEnv();
   });
 
-  it("throws in production when a required var is missing", async () => {
+  it("throws in production when a required var is missing", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     delete process.env.DATABASE_URL;
 
-    await expect(loadEnvModule()).rejects.toThrow(/DATABASE_URL/);
+    expect(() => validateEnv()).toThrow(/DATABASE_URL/);
   });
 
-  it("warns instead of throwing in development when required vars are missing", async () => {
+  it("warns instead of throwing in development when required vars are missing", () => {
     resetEnv();
     setEnv({ NODE_ENV: "development" });
 
-    const mod = await loadEnvModule();
-
+    expect(() => validateEnv()).not.toThrow();
     expect(warnSpy).toHaveBeenCalled();
-    expect(mod.env).toBeDefined();
   });
 
-  it("passes validation in production with a fully valid config", async () => {
+  it("passes validation in production with a fully valid config", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
 
-    const mod = await loadEnvModule();
-
-    expect(mod.env.DATABASE_URL).toBe(VALID_PROD_ENV.DATABASE_URL);
+    expect(() => validateEnv()).not.toThrow();
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
-  it("rejects a too-short cookie secret in production", async () => {
+  it("rejects a too-short cookie secret in production", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     process.env.WORKOS_COOKIE_PASSWORD = "short";
 
-    await expect(loadEnvModule()).rejects.toThrow(/WORKOS_COOKIE_PASSWORD/);
+    expect(() => validateEnv()).toThrow(/WORKOS_COOKIE_PASSWORD/);
   });
 
-  it("rejects a non-https URL var in production", async () => {
+  it("rejects a non-https URL var in production", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     process.env.NEXT_PUBLIC_APP_URL = "http://app.example.com";
 
-    await expect(loadEnvModule()).rejects.toThrow(/NEXT_PUBLIC_APP_URL/);
+    expect(() => validateEnv()).toThrow(/NEXT_PUBLIC_APP_URL/);
   });
 
-  it("rejects mismatched Cloudflare Images account hashes in production", async () => {
+  it("rejects mismatched Cloudflare Images account hashes in production", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = "different-hash";
 
-    await expect(loadEnvModule()).rejects.toThrow(/CLOUDFLARE_IMAGES_ACCOUNT_HASH/);
+    expect(() => validateEnv()).toThrow(/CLOUDFLARE_IMAGES_ACCOUNT_HASH/);
   });
 
-  it('rejects LEMONSQUEEZY_TEST_MODE not equal to "false" in production', async () => {
+  it('rejects LEMONSQUEEZY_TEST_MODE not equal to "false" in production', () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     process.env.LEMONSQUEEZY_TEST_MODE = "true";
 
-    await expect(loadEnvModule()).rejects.toThrow(/LEMONSQUEEZY_TEST_MODE/);
+    expect(() => validateEnv()).toThrow(/LEMONSQUEEZY_TEST_MODE/);
   });
 
-  it("rejects AUTHKIT_DEBUG=true in production", async () => {
+  it("rejects AUTHKIT_DEBUG=true in production", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     process.env.AUTHKIT_DEBUG = "true";
 
-    await expect(loadEnvModule()).rejects.toThrow(/AUTHKIT_DEBUG/);
+    expect(() => validateEnv()).toThrow(/AUTHKIT_DEBUG/);
   });
 
-  it("rejects SEED_OWNER_* vars present in production", async () => {
+  it("rejects SEED_OWNER_* vars present in production", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     process.env.SEED_OWNER_EMAIL = "seed@example.com";
 
-    await expect(loadEnvModule()).rejects.toThrow(/SEED_OWNER_EMAIL/);
+    expect(() => validateEnv()).toThrow(/SEED_OWNER_EMAIL/);
   });
 
-  it("never includes secret values in the thrown error message", async () => {
+  it("never includes secret values in the thrown error message", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     const secretValue = "short-secret";
@@ -148,7 +140,7 @@ describe("lib/env", () => {
 
     let caught: unknown;
     try {
-      await loadEnvModule();
+      validateEnv();
     } catch (err) {
       caught = err;
     }

@@ -3,14 +3,18 @@ import { z } from "zod";
 
 // Fail-fast production environment validation.
 //
-// - production: any issue below throws at import time (server.ts imports this
-//   first, so a bad prod config never reaches `next().prepare()`).
+// `validateEnv()` must be called explicitly at RUNTIME STARTUP (server.ts) —
+// never as an import-time side effect. `next build` runs with
+// NODE_ENV=production against whatever machine happens to build the app
+// (often lacking real prod secrets); an import-time throw would break every
+// build. Only an explicit startup call is safe:
+// - production: any issue below throws.
 // - development/test: same checks run, but issues only log a concise warning
 //   (dev boxes routinely lack Cloudflare/Lemon Squeezy/etc keys).
 //
 // NEVER put a raw secret value into an issue message — only lengths/hosts.
 
-const isProd = process.env.NODE_ENV === "production";
+let isProd = process.env.NODE_ENV === "production";
 
 function fingerprint(value: string): string {
   return `len=${value.length}`;
@@ -191,14 +195,22 @@ function formatIssues(issues: z.ZodIssue[]): string {
   return issues.map((issue) => issue.message).join("; ");
 }
 
-const result = envSchema.safeParse(process.env);
+// Lenient accessor — never parses, never throws at import. Real values are
+// only guaranteed valid once `validateEnv()` has been called (see server.ts).
+export const env: Env = process.env as unknown as Env;
 
-if (!result.success) {
-  const summary = formatIssues(result.error.issues);
-  if (isProd) {
-    throw new Error(`Invalid production environment configuration: ${summary}`);
+// Call once at runtime startup (never at module import / build time —
+// `next build` runs with NODE_ENV=production on machines that may lack real
+// prod secrets, so parsing here must never be an import-time side effect).
+export function validateEnv(): void {
+  isProd = process.env.NODE_ENV === "production";
+  const result = envSchema.safeParse(process.env);
+
+  if (!result.success) {
+    const summary = formatIssues(result.error.issues);
+    if (isProd) {
+      throw new Error(`Invalid production environment configuration: ${summary}`);
+    }
+    console.warn(`[env] configuration issue(s) — will throw in production: ${summary}`);
   }
-  console.warn(`[env] configuration issue(s) — will throw in production: ${summary}`);
 }
-
-export const env: Env = result.success ? result.data : (process.env as unknown as Env);
