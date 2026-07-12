@@ -880,6 +880,145 @@ describe("lemonsqueezy webhook — test-mode events in production", () => {
   });
 });
 
+describe("lemonsqueezy webhook — lifecycle field mapping", () => {
+  it("sets lifecycle.lapsedAt on subscription_expired when it was previously null", async () => {
+    const subId = "sub_expired_lapse_stamp";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const event = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.lifecycle?.lapsedAt).toBeInstanceOf(Date);
+  });
+
+  it("does not move lifecycle.lapsedAt forward on a replayed subscription_expired event", async () => {
+    const subId = "sub_expired_replayed";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const event = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+    const firstLapse = (await Workspace.findById(wsId).lean())?.lifecycle?.lapsedAt;
+
+    // Replay: subscription id is null'd by now, so route by customer_id.
+    const replay = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+      subscription_id: subId,
+    });
+    mockVerify.mockResolvedValue(replay as never);
+    await POST(makeReq());
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.lapsedAt?.getTime()).toBe(firstLapse?.getTime());
+  });
+
+  it("resets lifecycle.* to null on subscription_resumed", async () => {
+    const subId = "sub_resumed_lifecycle";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    await Workspace.updateOne(
+      { _id: wsId },
+      { $set: { "lifecycle.lapsedAt": new Date(), "lifecycle.remind1moAt": new Date() } }
+    );
+
+    const event = makeEvent("subscription_resumed", subId, { status: "active" });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+    expect(after?.lifecycle?.remind1moAt).toBeNull();
+  });
+
+  it("does NOT reset lifecycle.* on subscription_paused (still entitled)", async () => {
+    const subId = "sub_paused_lifecycle";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    const marker = new Date();
+    await Workspace.updateOne({ _id: wsId }, { $set: { "lifecycle.remind1moAt": marker } });
+
+    const event = makeEvent("subscription_paused", subId, { status: "paused" });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.remind1moAt?.getTime()).toBe(marker.getTime());
+  });
+
+  it("resets lifecycle.* to null on subscription_payment_success", async () => {
+    const subId = "sub_payment_success_lifecycle";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    await Workspace.updateOne({ _id: wsId }, { $set: { "lifecycle.lapsedAt": new Date() } });
+
+    const event = makeEvent("subscription_payment_success", subId, {
+      renews_at: "2026-08-01T00:00:00Z",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+  });
+
+  it("resets lifecycle.* to null on subscription_created (active)", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    await Workspace.updateOne(
+      { _id: wsId },
+      {
+        $set: {
+          "lifecycle.lapsedAt": new Date(),
+          "lifecycle.warned7dAt": new Date(),
+          "lifecycle.expiredNotifiedAt": new Date(),
+          "lifecycle.remind1moAt": new Date(),
+          "lifecycle.remind7wkAt": new Date(),
+          "lifecycle.wipedAt": new Date(),
+        },
+      }
+    );
+
+    const subId = "sub_lifecycle_reset";
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+    expect(after?.lifecycle?.warned7dAt).toBeNull();
+    expect(after?.lifecycle?.expiredNotifiedAt).toBeNull();
+    expect(after?.lifecycle?.remind1moAt).toBeNull();
+    expect(after?.lifecycle?.remind7wkAt).toBeNull();
+    expect(after?.lifecycle?.wipedAt).toBeNull();
+  });
+});
+
 describe("lemonsqueezy webhook — handler exception acks 200 (never retries into a loop)", () => {
   it("acks 200 with an error flag instead of 500 when a handler throws unexpectedly", async () => {
     const subId = "sub_throws";

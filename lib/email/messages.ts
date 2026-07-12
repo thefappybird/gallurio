@@ -70,6 +70,13 @@ type VerificationCopy = {
   ignore: string;
 };
 
+type LifecycleCopy = {
+  subject: string;
+  heading: string;
+  body: string;
+  cta: string;
+};
+
 type EmailCopyMap = {
   teamInvite: Record<Locale, TeamInviteCopy>;
   inquiryConfirmation: Record<Locale, InquiryConfirmationCopy>;
@@ -78,6 +85,10 @@ type EmailCopyMap = {
   bookingCancelledClient: Record<Locale, BookingCancelledClientCopy>;
   inquiryDecline: Record<Locale, InquiryDeclineCopy>;
   verification: Record<Locale, VerificationCopy>;
+  lifecyclePreExpiry: Record<Locale, LifecycleCopy>;
+  lifecycleExpired: Record<Locale, LifecycleCopy>;
+  lifecycleRemind1: Record<Locale, LifecycleCopy>;
+  lifecycleRemind2: Record<Locale, LifecycleCopy>;
 };
 
 // Plain text only — never embed HTML here; renderBrandedEmail escapes all interpolated values.
@@ -315,6 +326,110 @@ export const EMAIL_COPY = {
       codeLabel: "Kode verifikasi",
       expiry: "Kode ini akan segera kedaluwarsa. Jangan bagikan kepada siapapun.",
       ignore: "Jika Anda tidak membuat akun Gallurio, Anda bisa mengabaikan email ini.",
+    },
+  },
+  lifecyclePreExpiry: {
+    en: {
+      subject: "Your Gallurio Pro access ends in a week",
+      heading: "A week left of full access",
+      body: "Your free month of Gallurio Pro ends in 7 days. Subscribe now to keep your portfolio online and all your bookings, clients, and gallery intact.",
+      cta: "Subscribe to Pro",
+    },
+    fil: {
+      subject: "Magtatapos sa isang linggo ang access mo sa Gallurio Pro",
+      heading: "Isang linggo na lang ang natitirang buong access",
+      body: "Magtatapos sa loob ng 7 araw ang iyong libreng buwan ng Gallurio Pro. Mag-subscribe na ngayon para manatiling online ang iyong portfolio at ligtas ang lahat ng booking, client, at gallery.",
+      cta: "Mag-subscribe sa Pro",
+    },
+    ms: {
+      subject: "Akses Gallurio Pro anda tamat dalam seminggu",
+      heading: "Seminggu lagi akses penuh anda",
+      body: "Bulan percuma Gallurio Pro anda akan tamat dalam 7 hari. Langgan sekarang untuk memastikan portfolio anda kekal dalam talian dan semua tempahan, pelanggan, serta galeri anda kekal utuh.",
+      cta: "Langgan Pro",
+    },
+    id: {
+      subject: "Akses Gallurio Pro Anda berakhir dalam seminggu",
+      heading: "Seminggu lagi akses penuh Anda",
+      body: "Bulan gratis Gallurio Pro Anda akan berakhir dalam 7 hari. Berlangganan sekarang agar portofolio Anda tetap online dan semua pemesanan, klien, serta galeri tetap aman.",
+      cta: "Berlangganan Pro",
+    },
+  },
+  lifecycleExpired: {
+    en: {
+      subject: "Your Gallurio Pro access has ended",
+      heading: "Your access has ended",
+      body: "Your Pro access has ended, but nothing is lost — your site and all your data are safely saved. Subscribe to bring your portfolio back online instantly.",
+      cta: "Resubscribe",
+    },
+    fil: {
+      subject: "Natapos na ang iyong access sa Gallurio Pro",
+      heading: "Natapos na ang iyong access",
+      body: "Natapos na ang iyong Pro access, pero walang nawala — ligtas na naka-save ang iyong site at lahat ng data mo. Mag-subscribe muli para agad na ma-online ulit ang iyong portfolio.",
+      cta: "Mag-subscribe muli",
+    },
+    ms: {
+      subject: "Akses Gallurio Pro anda telah tamat",
+      heading: "Akses anda telah tamat",
+      body: "Akses Pro anda telah tamat, tetapi tiada apa yang hilang — laman web dan semua data anda disimpan dengan selamat. Langgan semula untuk mengembalikan portfolio anda dalam talian dengan segera.",
+      cta: "Langgan semula",
+    },
+    id: {
+      subject: "Akses Gallurio Pro Anda telah berakhir",
+      heading: "Akses Anda telah berakhir",
+      body: "Akses Pro Anda telah berakhir, tetapi tidak ada yang hilang — situs dan semua data Anda tersimpan dengan aman. Berlangganan kembali untuk mengaktifkan kembali portofolio Anda secara instan.",
+      cta: "Berlangganan kembali",
+    },
+  },
+  lifecycleRemind1: {
+    en: {
+      subject: "Your portfolio is still saved on Gallurio",
+      heading: "We saved everything for you",
+      body: "It's been a month. Your portfolio and data are still saved and ready. Resubscribe anytime to pick up exactly where you left off.",
+      cta: "Resubscribe",
+    },
+    fil: {
+      subject: "Naka-save pa rin ang iyong portfolio sa Gallurio",
+      heading: "Sinave namin lahat para sa iyo",
+      body: "Isang buwan na ang nakalipas. Naka-save pa rin at handa ang iyong portfolio at data. Mag-subscribe muli anumang oras para ituloy mula sa kung saan ka huminto.",
+      cta: "Mag-subscribe muli",
+    },
+    ms: {
+      subject: "Portfolio anda masih disimpan di Gallurio",
+      heading: "Kami simpan semuanya untuk anda",
+      body: "Sudah sebulan berlalu. Portfolio dan data anda masih disimpan dan sedia. Langgan semula pada bila-bila masa untuk sambung semula dari tempat anda berhenti.",
+      cta: "Langgan semula",
+    },
+    id: {
+      subject: "Portofolio Anda masih tersimpan di Gallurio",
+      heading: "Kami menyimpan semuanya untuk Anda",
+      body: "Sudah sebulan berlalu. Portofolio dan data Anda masih tersimpan dan siap. Berlangganan kembali kapan saja untuk melanjutkan dari tempat Anda berhenti.",
+      cta: "Berlangganan kembali",
+    },
+  },
+  lifecycleRemind2: {
+    en: {
+      subject: "Last week to keep your portfolio online",
+      heading: "Final reminder",
+      body: "Your published site will be taken offline in one week unless you resubscribe. Your bookings, clients, and gallery stay safe either way — but resubscribe now to keep your site live.",
+      cta: "Resubscribe",
+    },
+    fil: {
+      subject: "Huling linggo para manatiling online ang portfolio mo",
+      heading: "Huling paalala",
+      body: "Mao-offline ang iyong naka-publish na site sa loob ng isang linggo maliban kung mag-subscribe ka muli. Ligtas pa rin ang iyong mga booking, client, at gallery — pero mag-subscribe na ngayon para manatiling live ang iyong site.",
+      cta: "Mag-subscribe muli",
+    },
+    ms: {
+      subject: "Minggu terakhir untuk kekalkan portfolio anda dalam talian",
+      heading: "Peringatan terakhir",
+      body: "Laman web anda yang diterbitkan akan dinyahsiarkan dalam masa seminggu melainkan anda melanggan semula. Tempahan, pelanggan, dan galeri anda kekal selamat — tetapi langgan semula sekarang untuk memastikan laman web anda kekal aktif.",
+      cta: "Langgan semula",
+    },
+    id: {
+      subject: "Minggu terakhir untuk menjaga portofolio Anda tetap online",
+      heading: "Pengingat terakhir",
+      body: "Situs Anda yang telah dipublikasikan akan dinonaktifkan dalam satu minggu kecuali Anda berlangganan kembali. Pemesanan, klien, dan galeri Anda tetap aman — tetapi berlangganan sekarang agar situs Anda tetap aktif.",
+      cta: "Berlangganan kembali",
     },
   },
 } as const satisfies EmailCopyMap;

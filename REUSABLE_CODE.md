@@ -165,6 +165,7 @@ Composed, app-specific shared components.
 | `lib/email/booking/bookingConfirmed.ts` | `sendBookingConfirmedClient(params)`, `sendBookingConfirmedOwner(params)`, `BookingConfirmedClientParams`, `BookingConfirmedOwnerParams` | Branded booking-confirmed emails: client copy (workspace-branded) and owner copy (platform-branded). |
 | `lib/email/booking/bookingCancelled.ts` | `sendBookingCancelledClient(params)`, `sendBookingCancelledOwner(params)`, `BookingCancelledClientParams`, `BookingCancelledOwnerParams` | Branded booking-cancelled emails: client copy (workspace-branded) and owner copy (platform-branded). |
 | `lib/email/booking/inquiryDecline.ts` | `sendInquiryDeclineClient(params)`, `InquiryDeclineClientParams` | Branded inquiry-decline email to the client when an inquiry is declined. |
+| `lib/email/lifecycle.ts` | `sendLifecycleEmail(stage, to, country)`, `LifecycleEmailStage` | Platform-branded lapse-lifecycle email (`preExpiry`/`expired`/`remind1`/`remind2`), locale via `emailLocale(country)`, CTA always to absolute `/subscribe`. Sent by `lib/db/jobs/billing-lifecycle-sweep.ts`. |
 
 ### `lib/notifications/`
 | Import | Export | Purpose |
