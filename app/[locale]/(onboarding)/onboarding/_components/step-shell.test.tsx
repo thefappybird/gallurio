@@ -1,22 +1,14 @@
 /**
- * Smoke tests for StepShell's ProgressBar: marker height must vary by step
- * state (locked/visited/active) so state isn't color-only.
+ * Smoke tests for StepShell's ProgressBar: the per-step icon marker must
+ * vary in shape (not just color) by state (locked/visited/active).
  */
 import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { StepShell } from "./step-shell";
 
-function getMarker(labelText: string) {
-  const label = screen.getByText(labelText);
-  const row = label.parentElement as HTMLElement;
-  const marker = row.querySelector('span[aria-hidden="true"]');
-  if (!marker) throw new Error(`marker not found for "${labelText}"`);
-  return marker as HTMLElement;
-}
-
-describe("StepShell — ProgressBar marker height by state", () => {
-  it("gives locked, visited, and active steps distinct height classes", () => {
+describe("StepShell — ProgressBar marker shape by state", () => {
+  it("gives locked, visited, and active steps distinct icon markers", () => {
     // step === furthestStep === "plan": business/workspace are visited,
     // plan is active (and not visited), done is locked.
     renderWithProviders(
@@ -25,9 +17,21 @@ describe("StepShell — ProgressBar marker height by state", () => {
       </StepShell>
     );
 
-    expect(getMarker("Business")).toHaveClass("h-3", "bg-brand");
-    expect(getMarker("Workspace")).toHaveClass("h-3", "bg-brand");
-    expect(getMarker("Plan")).toHaveClass("h-4", "bg-brand");
-    expect(getMarker("Finish")).toHaveClass("h-2", "bg-border");
+    expect(screen.getAllByTestId("step-icon-visited")).toHaveLength(2); // business, workspace
+    expect(screen.getByTestId("step-icon-active")).toBeInTheDocument(); // plan
+    expect(screen.getByTestId("step-icon-locked")).toBeInTheDocument(); // done
+  });
+
+  it("still exposes step names to assistive tech even when visually icon-only", () => {
+    renderWithProviders(
+      <StepShell step="plan" furthestStep="plan" title="Title" description="Description">
+        <div />
+      </StepShell>
+    );
+
+    expect(screen.getByText("Business")).toBeInTheDocument();
+    expect(screen.getByText("Workspace")).toBeInTheDocument();
+    expect(screen.getByText("Plan")).toBeInTheDocument();
+    expect(screen.getByText("Finish")).toBeInTheDocument();
   });
 });

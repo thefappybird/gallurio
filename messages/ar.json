@@ -2859,10 +2859,9 @@
       "opening": "جارٍ فتح الدفع…",
       "checkoutFailed": "فشل الدفع. يرجى المحاولة مرة أخرى.",
       "checkoutNotReady": "نظام الدفع غير جاهز. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
-      "dev": {
-        "label": "اختصار المطوِّر",
-        "description": "تجاوَز Lemon Squeezy وضع علامة نشط على {planName}. للمطوِّر فقط.",
-        "activate": "تفعيل {planName} (مطوِّر)"
+      "betaTester": {
+        "label": "مختبِر تجريبي",
+        "activate": "تفعيل الوصول التجريبي"
       }
     },
     "done": {
