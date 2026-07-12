@@ -552,7 +552,8 @@
       "generic": "May nangyaring mali. Pakisubukan muli.",
       "invalidCode": "Hindi tamang code o nag-expire na. Pakisubukan muli.",
       "sessionExpired": "Nag-expire na ang iyong session. Mangyaring mag-sign in muli.",
-      "resetTokenInvalid": "Ang link na ito ay invalid o nag-expire na. Mangyaring humingi ng bago."
+      "resetTokenInvalid": "Ang link na ito ay invalid o nag-expire na. Mangyaring humingi ng bago.",
+      "passwordReused": "Pumili ng password na iba sa kasalukuyan mong password."
     }
   },
   "app": {
@@ -2716,6 +2717,7 @@
       "current_password_incorrect": "Hindi tama ang iyong kasalukuyang password.",
       "password_verify_failed": "Hindi ma-verify ang iyong kasalukuyang password. Pakisubukan muli.",
       "password_update_failed": "Hindi na-update ang iyong password. Pakisubukan muli.",
+      "password_reused": "Pumili ng password na iba sa kasalukuyan mong password.",
       "avatar_update_failed": "Hindi na-update ang iyong larawan. Pakisubukan muli.",
       "email_send_failed": "Hindi maipadala ang email. Pakisubukan muli.",
       "onboarding_no_active_workspace": "Walang aktibong workspace — simulan muli ang onboarding.",

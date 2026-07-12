@@ -1,7 +1,10 @@
-import { screen } from "@testing-library/react";
+import { useEffect } from "react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test-utils/render";
 import { SignUpForm } from "./_sign-up-form";
+
+const { resetMock } = vi.hoisted(() => ({ resetMock: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -13,7 +16,18 @@ vi.mock("../_actions", () => ({
 }));
 
 vi.mock("../_components/turnstile-widget", () => ({
-  TurnstileWidget: () => <div data-testid="turnstile-widget" />,
+  TurnstileWidget: ({
+    ref,
+    onToken,
+  }: {
+    ref?: { current: unknown } | null;
+    onToken: (t: string) => void;
+  }) => {
+    if (ref) ref.current = { reset: resetMock };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { onToken("test-token"); }, []);
+    return <div data-testid="turnstile-widget" />;
+  },
 }));
 
 describe("SignUpForm", () => {
@@ -36,5 +50,26 @@ describe("SignUpForm", () => {
     const emailInput = screen.getByLabelText("Email");
     expect(emailInput).toBeEnabled();
     expect(emailInput).toHaveAttribute("name", "email");
+  });
+});
+
+describe("SignUpForm — bot check reset", () => {
+  it("resets the Turnstile widget after a failed sign-up attempt", async () => {
+    const { signUpAction } = await import("../_actions");
+    vi.mocked(signUpAction).mockResolvedValue({ error: "That email is already registered." });
+
+    renderWithProviders(<SignUpForm />);
+
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Ada" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Password1!" } });
+    fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: "Password1!" } });
+
+    const submitButton = screen.getByRole("button", { name: "Create account" });
+    fireEvent.submit(submitButton.closest("form")!);
+
+    await waitFor(() => {
+      expect(resetMock).toHaveBeenCalled();
+    });
   });
 });

@@ -552,7 +552,8 @@
       "generic": "Sesuatu telah berlaku. Sila cuba lagi.",
       "invalidCode": "Kod tidak sah atau telah tamat tempoh. Sila cuba lagi.",
       "sessionExpired": "Sesi anda telah tamat tempoh. Sila log masuk semula.",
-      "resetTokenInvalid": "Pautan ini tidak sah atau telah tamat tempoh. Sila minta yang baru."
+      "resetTokenInvalid": "Pautan ini tidak sah atau telah tamat tempoh. Sila minta yang baru.",
+      "passwordReused": "Sila pilih kata laluan yang berbeza daripada kata laluan semasa anda."
     }
   },
   "app": {
@@ -2716,6 +2717,7 @@
       "current_password_incorrect": "Kata laluan semasa anda tidak betul.",
       "password_verify_failed": "Kata laluan semasa anda tidak dapat disahkan. Sila cuba lagi.",
       "password_update_failed": "Kata laluan anda tidak dapat dikemas kini. Sila cuba lagi.",
+      "password_reused": "Sila pilih kata laluan yang berbeza daripada kata laluan semasa anda.",
       "avatar_update_failed": "Foto anda tidak dapat dikemas kini. Sila cuba lagi.",
       "email_send_failed": "E-mel tidak dapat dihantar. Sila cuba lagi.",
       "onboarding_no_active_workspace": "Tiada ruang kerja aktif — mulakan semula onboarding.",

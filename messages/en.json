@@ -552,7 +552,8 @@
       "generic": "Something went wrong. Please try again.",
       "invalidCode": "Invalid or expired code. Please try again.",
       "sessionExpired": "Your session has expired. Please sign in again.",
-      "resetTokenInvalid": "This link is invalid or has expired. Please request a new one."
+      "resetTokenInvalid": "This link is invalid or has expired. Please request a new one.",
+      "passwordReused": "Please choose a password different from your current one."
     }
   },
   "app": {
@@ -2716,6 +2717,7 @@
       "current_password_incorrect": "Your current password is incorrect.",
       "password_verify_failed": "Couldn't verify your current password. Please try again.",
       "password_update_failed": "Couldn't update your password. Please try again.",
+      "password_reused": "Please choose a password different from your current one.",
       "avatar_update_failed": "Couldn't update your photo. Please try again.",
       "email_send_failed": "Couldn't send the email. Please try again.",
       "onboarding_no_active_workspace": "No active workspace — restart onboarding.",

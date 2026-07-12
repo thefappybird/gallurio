@@ -80,6 +80,7 @@ vi.mock("next-intl/server", () => ({
     if (key === "errors.invalidCode") return "Invalid or expired code. Please try again.";
     if (key === "errors.sessionExpired") return "Your session has expired. Please sign in again.";
     if (key === "errors.resetTokenInvalid") return "This link is invalid or has expired.";
+    if (key === "errors.passwordReused") return "Please choose a password different from your current one.";
     if (key === "errors.invalidInput") return "Please check your input and try again.";
     if (key === "errors.generic") return "Something went wrong. Please try again.";
     return key;
@@ -133,7 +134,7 @@ import {
   googleSignInAction,
 } from "@/app/[locale]/(auth)/_actions";
 import { signOAuthState } from "@/lib/auth/oauthState";
-import { AuthenticationException } from "@workos-inc/node";
+import { AuthenticationException, UnprocessableEntityException } from "@workos-inc/node";
 
 // Helper: build FormData
 function fd(fields: Record<string, string>): FormData {
@@ -495,6 +496,21 @@ describe("resetPasswordAction", () => {
       confirmPassword: "NewPass1!",
     }));
     expect(result).toMatchObject({ error: expect.stringContaining("invalid or has expired") });
+  });
+
+  it("returns a specific error when the new password matches the current one", async () => {
+    mockWorkos.userManagement.resetPassword.mockRejectedValue(
+      new UnprocessableEntityException({
+        requestID: "req_1",
+        errors: [{ field: "password", code: "password_reused" }],
+      }),
+    );
+    const result = await resetPasswordAction(null, fd({
+      token: "valid-token",
+      password: "SamePass1!",
+      confirmPassword: "SamePass1!",
+    }));
+    expect(result).toMatchObject({ error: expect.stringContaining("different from your current") });
   });
 
   it("returns ok on success", async () => {

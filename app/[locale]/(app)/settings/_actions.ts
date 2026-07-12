@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { AuthenticationException } from "@workos-inc/node";
+import { isPasswordReusedError } from "@/lib/auth/passwordErrors";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { Workspace, User } from "@/lib/db/models";
 import {
@@ -526,6 +527,9 @@ export async function updatePasswordAction(input: {
     });
   } catch (err) {
     console.error("[settings] updateUser(password) failed", err);
+    if (isPasswordReusedError(err)) {
+      return { error: "password_reused" };
+    }
     return { error: "password_update_failed" };
   }
 
