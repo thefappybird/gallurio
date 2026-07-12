@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Building2, Globe, CreditCard, Flag, CheckCircle2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 // settings. Keep this list in sync with ONBOARDING_STEPS in
 // lib/db/models/User.ts.
 export const STEP_META = [
-  { key: "business", href: "/onboarding/business" },
-  { key: "workspace", href: "/onboarding/workspace" },
-  { key: "plan", href: "/onboarding/plan" },
-  { key: "done", href: "/onboarding/done" },
+  { key: "business", href: "/onboarding/business", icon: Building2 },
+  { key: "workspace", href: "/onboarding/workspace", icon: Globe },
+  { key: "plan", href: "/onboarding/plan", icon: CreditCard },
+  { key: "done", href: "/onboarding/done", icon: Flag },
 ] as const;
 
 type StepKey = (typeof STEP_META)[number]["key"];
@@ -60,8 +60,8 @@ export function StepShell({
   const furthestIndex = STEP_META.findIndex((s) => s.key === furthestStep);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 items-start justify-center overflow-y-auto">
-      <div className="relative my-auto w-full max-w-3xl">
+    <div className="flex h-full min-h-0 flex-1 items-center justify-center">
+      <div className="relative w-full max-w-3xl">
         {/* Ledger deck: two hairline-bordered pages peeking out behind the
             active step card, evoking a stacked index-card deck. Purely
             decorative; offsets flip under rtl: so the peek stays on the
@@ -74,8 +74,9 @@ export function StepShell({
         {/* min-height matches the old fixed modal height so short steps keep
             the same deck-like proportions; max-height + overflow-y-auto let
             long steps (e.g. plan + promo drawer) grow into the free space
-            instead of spilling past the border. */}
-        <div className="relative z-10 flex min-h-[min(640px,calc(100dvh-8rem))] max-h-[calc(100dvh-4rem)] w-full flex-col gap-4 overflow-y-auto border border-border bg-background p-4 sm:p-5 md:p-6">
+            instead of spilling past the border, with the scrollbar staying
+            inside the card itself rather than on the wide outer wrapper. */}
+        <div className="scrollbar-subtle relative z-10 flex min-h-[min(640px,calc(100dvh-8rem))] max-h-[calc(100dvh-6rem)] w-full flex-col gap-4 overflow-y-auto border border-border bg-background p-4 sm:p-5 md:p-6">
           <Link href="/" className="flex shrink-0 scale-150 items-center self-center">
             <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
             <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
@@ -140,14 +141,13 @@ function ProgressBar({
         const visited = i < furthestIndex || (i === furthestIndex && !active);
         const reachable = i <= furthestIndex;
         const locked = !reachable;
+        const StepIcon = s.icon;
 
         const fillScaleX = locked ? 0 : i < furthestIndex ? 1 : active ? 0.5 : 1;
 
         const indicator = (
           <>
-            {/* Thin hairline rule with a small tick marker per step — height
-                signals state (short/muted = locked, medium = visited, tall =
-                current) so the distinction isn't color-only. */}
+            {/* Thin hairline rule, filled per step's progress. */}
             <div className="relative h-px w-full bg-border">
               <motion.div
                 initial={{ scaleX: 0 }}
@@ -158,18 +158,34 @@ function ProgressBar({
               />
             </div>
             <div className="flex items-center gap-1.5">
+              {/* Icon carries the step's identity at every width (survives
+                  narrow screens where the text label has no room); shape —
+                  not just color — signals state: filled pill = current,
+                  checkmark = completed, dim outline = locked. */}
+              {visited ? (
+                <CheckCircle2
+                  aria-hidden="true"
+                  data-testid="step-icon-visited"
+                  className="size-4 shrink-0 text-brand"
+                />
+              ) : active ? (
+                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-brand">
+                  <StepIcon
+                    aria-hidden="true"
+                    data-testid="step-icon-active"
+                    className="size-2.5 text-brand-foreground"
+                  />
+                </span>
+              ) : (
+                <StepIcon
+                  aria-hidden="true"
+                  data-testid="step-icon-locked"
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                />
+              )}
               <span
-                aria-hidden="true"
                 className={cn(
-                  "w-0.5 shrink-0 rounded-full",
-                  locked && "h-2 bg-border",
-                  visited && "h-3 bg-brand",
-                  active && !visited && "h-4 bg-brand"
-                )}
-              />
-              <span
-                className={cn(
-                  "onboarding-progress-label text-[10px] leading-tight sm:text-xs",
+                  "onboarding-progress-label sr-only text-xs sm:not-sr-only sm:inline",
                   active && "text-foreground",
                   !active && reachable && "text-foreground/70",
                   locked && "text-muted-foreground"
