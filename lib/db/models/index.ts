@@ -36,3 +36,9 @@ export {
   type PageviewVisitorSeenDoc,
 } from "./PageviewVisitorSeen";
 export { Counter, type CounterDoc } from "./Counter";
+export {
+  PromoCode,
+  PROMO_CODE_TYPES,
+  type PromoCodeType,
+  type PromoCodeDoc,
+} from "./PromoCode";

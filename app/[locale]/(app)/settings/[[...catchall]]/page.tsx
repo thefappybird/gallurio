@@ -14,7 +14,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { getAuthMethods } from "@/lib/auth/authMethods";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { connectDB } from "@/lib/db/mongoose";
-import { User } from "@/lib/db/models";
+import { User, type PlanTier } from "@/lib/db/models";
 import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import {
   normalizeSettingsSeoFields,
@@ -204,7 +204,7 @@ export default async function SettingsCatchallPage({
           ownerOnly: true,
           body: (
             <BillingPanel
-              currentPlan={workspace.plan as "free" | "starter" | "pro"}
+              currentPlan={workspace.plan as PlanTier}
               lsSubscriptionStatus={
                 (workspace.lsSubscriptionStatus as
                   | "active"
@@ -230,7 +230,7 @@ export default async function SettingsCatchallPage({
                 ownerOnly: true,
                 body: (
                   <DevPlanPanel
-                    currentPlan={workspace.plan as "free" | "starter" | "pro"}
+                    currentPlan={workspace.plan as PlanTier}
                   />
                 ),
               },

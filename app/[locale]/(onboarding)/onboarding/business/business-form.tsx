@@ -115,7 +115,7 @@ export function BusinessStepForm({
           <div
             role="group"
             aria-labelledby="business-type-label"
-            className="flex flex-wrap justify-center gap-2"
+            className="grid grid-cols-3 gap-2 sm:grid-cols-4"
           >
             {businessTypes.map((bt) => {
               const Icon = bt.icon;
@@ -129,7 +129,7 @@ export function BusinessStepForm({
                     setValue("businessType", bt.value, { shouldValidate: true, shouldDirty: true })
                   }
                   className={cn(
-                    "flex w-[calc(33.333%-0.34rem)] flex-col items-center gap-1.5 border p-3 text-center text-xs font-medium transition-colors sm:w-[calc(25%-0.375rem)]",
+                    "flex flex-col items-center gap-1.5 border p-3 text-center text-xs font-medium transition-colors",
                     active
                       ? "border-brand bg-brand/12 text-foreground"
                       : "border-border text-muted-foreground hover:border-brand/40"

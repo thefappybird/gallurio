@@ -16,6 +16,7 @@ import { ensureDefaultTeam } from "@/lib/db/models/team";
 import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
+import { grantPlan } from "@/lib/billing/grantPlan";
 import {
   businessStepSchema,
   workspaceSetupSchema,
@@ -261,6 +262,35 @@ export async function selectFreePlanAction(): Promise<ActionResult> {
       },
     }
   );
+
+  await setUserStep(authUser.workosUserId, "done");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Beta tester activation — gated by an env var rather than NODE_ENV so it
+// can be flipped on in any environment (including production, for real beta
+// testers) and removed later just by unsetting the var.
+// ---------------------------------------------------------------------------
+
+export async function activateBetaTesterAction(): Promise<ActionResult> {
+  if (process.env.BETA_TESTER_ENABLED !== "true") {
+    return { error: "Beta tester program is not enabled" };
+  }
+
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "not_authenticated" };
+
+  await connectDB();
+
+  const user = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 }
+  ).lean();
+  const ownerMembership = user?.memberships.find((m) => m.role === "owner");
+  if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
+
+  await grantPlan(ownerMembership.workspaceId, { plan: "beta", expiresAt: null });
 
   await setUserStep(authUser.workosUserId, "done");
   return { ok: true };

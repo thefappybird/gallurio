@@ -456,6 +456,29 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
   });
 });
 
+describe("lemonsqueezy webhook — subscription_expired never touches a workspace with no matching lsSubscriptionId", () => {
+  it("no-ops for a beta/promo-granted workspace (lsSubscriptionId null) when the event carries no custom_data.workspaceId", async () => {
+    // beta/promo-granted workspaces (planGrantExpiresAt-based) never have an
+    // lsSubscriptionId — a stray/replayed subscription_expired event for some
+    // unrelated Lemon Squeezy subscription id must not touch them.
+    const wsId = await seedWorkspace({ plan: "beta" as never, teamCount: 0 });
+
+    const event = makeEvent("subscription_expired", "sub_unrelated_to_beta_ws", {
+      status: "expired",
+      customer_id: "ctm_unrelated",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("beta");
+    expect(after?.lsSubscriptionId).toBeNull();
+  });
+});
+
 describe("lemonsqueezy webhook — subscription_payment_refunded (downgrades)", () => {
   it("downgrades to free and clears lsSubscriptionId, same as expiry", async () => {
     const subId = "sub_refunded";

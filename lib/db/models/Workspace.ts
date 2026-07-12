@@ -12,7 +12,7 @@ import {
 import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 
-export const PLAN_TIERS = ["free", "starter", "pro"] as const;
+export const PLAN_TIERS = ["free", "starter", "pro", "beta"] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
 
 // The portfolio template the workspace was seeded from. Canonical ids live in
@@ -283,6 +283,15 @@ const workspaceSchema = new Schema(
     // hard-expire downgrade — so a workspace that has ever paid can never
     // fall back to ordinary free-tier access; see lib/billing/access.ts.
     everSubscribed: { type: Boolean, default: false },
+
+    // Expiry for a non-Lemon-Squeezy plan grant (beta tester, promo code).
+    // Distinct from lsCurrentPeriodEnd, which is LS-subscription-driven.
+    // null = perpetual grant; a past Date is lazily enforced — see
+    // lib/billing/checkGrantExpiry.ts.
+    planGrantExpiresAt: { type: Date, default: null },
+
+    // Promo codes already applied to this workspace — guards re-redemption.
+    codesRedeemed: { type: [Schema.Types.ObjectId], ref: "PromoCode", default: [] },
 
     trialEndsAt: { type: Date, default: null },
     onboardingCompletedAt: { type: Date, default: null },

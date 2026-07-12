@@ -38,6 +38,14 @@ function renderForm(
 }
 
 describe("BusinessStepForm — business type icon grid", () => {
+  it("lays out the business-type picker as a grid, not a wrapping flex row", () => {
+    renderForm();
+
+    const group = screen.getByRole("group", { name: /business type/i });
+    expect(group.className).toMatch(/\bgrid\b/);
+    expect(group.className).not.toMatch(/\bflex\b/);
+  });
+
   it("renders a button card for every business type with the default selected", () => {
     renderForm();
 

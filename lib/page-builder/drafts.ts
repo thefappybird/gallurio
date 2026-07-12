@@ -11,6 +11,7 @@ export const DRAFT_CAP_BY_PLAN: Record<PlanTier, number> = {
   free: 5,
   starter: 15,
   pro: Number.POSITIVE_INFINITY,
+  beta: Number.POSITIVE_INFINITY,
 };
 
 export function draftCapForPlan(plan: PlanTier): number {

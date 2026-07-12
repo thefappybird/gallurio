@@ -28,7 +28,7 @@ export function VerifyEmailForm() {
   const resendError = resendState && "error" in resendState ? resendState.error : null;
 
   return (
-    <div className="w-full max-w-sm border border-border bg-background p-8">
+    <div className="w-full max-w-sm rounded-[var(--radius-surface)] border border-border bg-card p-8">
       <h1 className="mb-2 text-xl font-semibold">{t("verifyEmail.title")}</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         {t("verifyEmail.description")}

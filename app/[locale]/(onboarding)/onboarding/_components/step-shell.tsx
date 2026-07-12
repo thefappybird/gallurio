@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { ArrowLeft, Check, Lock } from "lucide-react";
+import { ArrowLeft, Building2, Globe, CreditCard, Flag, CheckCircle2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 // settings. Keep this list in sync with ONBOARDING_STEPS in
 // lib/db/models/User.ts.
 export const STEP_META = [
-  { key: "business", href: "/onboarding/business" },
-  { key: "workspace", href: "/onboarding/workspace" },
-  { key: "plan", href: "/onboarding/plan" },
-  { key: "done", href: "/onboarding/done" },
+  { key: "business", href: "/onboarding/business", icon: Building2 },
+  { key: "workspace", href: "/onboarding/workspace", icon: Globe },
+  { key: "plan", href: "/onboarding/plan", icon: CreditCard },
+  { key: "done", href: "/onboarding/done", icon: Flag },
 ] as const;
 
 type StepKey = (typeof STEP_META)[number]["key"];
@@ -61,50 +61,66 @@ export function StepShell({
 
   return (
     <div className="flex h-full min-h-0 flex-1 items-center justify-center">
-      <div className="flex h-[min(640px,calc(100dvh-8rem))] w-full max-w-3xl flex-col gap-4 border border-border bg-background p-4 sm:p-5 md:p-6">
-        <Link href="/" className="flex shrink-0 scale-150 items-center self-center">
-          <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
-          <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
-        </Link>
-
-        <div className="w-full shrink-0">
-          <ProgressBar activeIndex={activeIndex} furthestIndex={furthestIndex} />
+      <div className="relative w-full max-w-3xl">
+        {/* Ledger deck: two hairline-bordered pages peeking out behind the
+            active step card, evoking a stacked index-card deck. Purely
+            decorative; offsets flip under rtl: so the peek stays on the
+            trailing corner in both reading directions. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 translate-x-2 translate-y-2 border border-border/50 bg-card rtl:-translate-x-2" />
+          <div className="absolute inset-0 translate-x-1 translate-y-1 border border-border/80 bg-card rtl:-translate-x-1" />
         </div>
 
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -16 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className={cn("flex min-h-0 flex-1 flex-col gap-4", centerContent && "relative")}
-        >
-          <div
-            className={cn(
-              "flex min-h-0 flex-col gap-4",
-              centerContent ? "flex-1 justify-center" : "flex-1"
-            )}
-          >
-            <div className={cn("flex shrink-0 flex-col gap-1", centerHeader && "items-center text-center")}>
-              {headerAddon}
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                {t("stepCounter", { current: activeIndex + 1, total: STEP_META.length })}
-              </p>
-              <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
-                {title}
-              </h1>
-              <p className="onboarding-step-description text-sm text-muted-foreground">{description}</p>
-            </div>
-            <div className={cn("flex min-h-0 flex-col", centerContent ? "shrink-0" : "flex-1")}>
-              {children}
-            </div>
+        {/* min-height matches the old fixed modal height so short steps keep
+            the same deck-like proportions; max-height + overflow-y-auto let
+            long steps (e.g. plan + promo drawer) grow into the free space
+            instead of spilling past the border, with the scrollbar staying
+            inside the card itself rather than on the wide outer wrapper. */}
+        <div className="scrollbar-subtle relative z-10 flex min-h-[min(640px,calc(100dvh-8rem))] max-h-[calc(100dvh-6rem)] w-full flex-col gap-4 overflow-y-auto border border-border bg-background p-4 sm:p-5 md:p-6">
+          <Link href="/" className="flex shrink-0 scale-150 items-center self-center">
+            <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
+            <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
+          </Link>
+
+          <div className="w-full shrink-0">
+            <ProgressBar activeIndex={activeIndex} furthestIndex={furthestIndex} />
           </div>
-          {footer && (
-            <div className={cn("shrink-0", centerContent && "absolute inset-x-0 bottom-0")}>
-              {footer}
+
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className={cn("flex min-h-0 flex-1 flex-col gap-4", centerContent && "relative")}
+          >
+            <div
+              className={cn(
+                "flex min-h-0 flex-col gap-4",
+                centerContent ? "flex-1 justify-center" : "flex-1"
+              )}
+            >
+              <div className={cn("flex shrink-0 flex-col gap-1", centerHeader && "items-center text-center")}>
+                {headerAddon}
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                  {t("stepCounter", { current: activeIndex + 1, total: STEP_META.length })}
+                </p>
+                <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
+                  {title}
+                </h1>
+                <p className="onboarding-step-description text-sm text-muted-foreground">{description}</p>
+              </div>
+              <div className={cn("flex min-h-0 flex-col", centerContent ? "shrink-0" : "flex-1")}>
+                {children}
+              </div>
             </div>
-          )}
-        </motion.div>
+            {footer && (
+              <div className={cn("shrink-0", centerContent && "absolute inset-x-0 bottom-0")}>
+                {footer}
+              </div>
+            )}
+          </motion.div>
+        </div>
       </div>
     </div>
   );
@@ -125,12 +141,14 @@ function ProgressBar({
         const visited = i < furthestIndex || (i === furthestIndex && !active);
         const reachable = i <= furthestIndex;
         const locked = !reachable;
+        const StepIcon = s.icon;
 
         const fillScaleX = locked ? 0 : i < furthestIndex ? 1 : active ? 0.5 : 1;
 
         const indicator = (
           <>
-            <div className="relative h-1 w-full bg-muted">
+            {/* Thin hairline rule, filled per step's progress. */}
+            <div className="relative h-px w-full bg-border">
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: fillScaleX }}
@@ -140,25 +158,34 @@ function ProgressBar({
               />
             </div>
             <div className="flex items-center gap-1.5">
+              {/* Icon carries the step's identity at every width (survives
+                  narrow screens where the text label has no room); shape —
+                  not just color — signals state: filled pill = current,
+                  checkmark = completed, dim outline = locked. */}
+              {visited ? (
+                <CheckCircle2
+                  aria-hidden="true"
+                  data-testid="step-icon-visited"
+                  className="size-4 shrink-0 text-brand"
+                />
+              ) : active ? (
+                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-brand">
+                  <StepIcon
+                    aria-hidden="true"
+                    data-testid="step-icon-active"
+                    className="size-2.5 text-brand-foreground"
+                  />
+                </span>
+              ) : (
+                <StepIcon
+                  aria-hidden="true"
+                  data-testid="step-icon-locked"
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                />
+              )}
               <span
                 className={cn(
-                  "flex h-5 w-5 items-center justify-center rounded-full border text-[10px]",
-                  visited && "border-brand bg-brand text-brand-foreground",
-                  active && !visited && "border-brand text-brand",
-                  locked && "border-border text-muted-foreground"
-                )}
-              >
-                {locked ? (
-                  <Lock className="h-2.5 w-2.5" />
-                ) : visited ? (
-                  <Check className="h-3 w-3" />
-                ) : (
-                  i + 1
-                )}
-              </span>
-              <span
-                className={cn(
-                  "onboarding-progress-label hidden text-xs sm:inline",
+                  "onboarding-progress-label sr-only text-xs sm:not-sr-only sm:inline",
                   active && "text-foreground",
                   !active && reachable && "text-foreground/70",
                   locked && "text-muted-foreground"

@@ -10,8 +10,11 @@ import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
+import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { cn } from "@/lib/utils";
 import type { PlanTier, LemonSqueezySubscriptionStatus } from "@/lib/db/models";
 
@@ -39,6 +42,7 @@ export function BillingPanel({
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
+  const tPromo = useTranslations("common.promoCode");
   const errMsg = useActionError();
   const locale = useLocale();
 
@@ -46,6 +50,9 @@ export function BillingPanel({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [managingSubscription, setManagingSubscription] = useState(false);
   const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
   const lemonSqueezy = useLemonSqueezyCheckout(() => {
     setLoadingPlan(null);
     toast.success(t("upgradeSuccess"));
@@ -93,6 +100,21 @@ export function BillingPanel({
     }
   }
 
+  async function submitPromoCode() {
+    setPromoError(null);
+    setPromoLoading(true);
+    const result = await redeemPromoCodeAction(promoCode);
+    setPromoLoading(false);
+    if ("error" in result) {
+      const msg = errMsg(result.error);
+      setPromoError(msg);
+      toast.error(msg);
+      return;
+    }
+    toast.success(tPromo("success"));
+    window.location.reload();
+  }
+
   async function openManagePortal() {
     setManagingSubscription(true);
     try {
@@ -107,6 +129,10 @@ export function BillingPanel({
     }
   }
 
+  // Beta-tester workspaces have full Pro-equivalent access with no Lemon
+  // Squeezy subscription behind them (see grantPlan) -- they must never see
+  // the LS-catalog-driven upgrade cards or a "manage via Lemon Squeezy" link.
+  const isBeta = currentPlan === "beta";
   const isActiveSubscriber =
     currentPlan !== "free" && lsSubscriptionStatus === "active";
 
@@ -115,7 +141,7 @@ export function BillingPanel({
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex max-w-2xl flex-col gap-6">
       {/* Current plan summary */}
       <div className="flex items-start gap-3 border border-border bg-card p-4">
         <CreditCard className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -123,7 +149,7 @@ export function BillingPanel({
           <p className="text-sm font-medium">{t("currentPlanLabel")}</p>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold capitalize text-foreground">
-              {tPlans(`${currentPlan}.name`)}
+              {isBeta ? t("betaPlanLabel") : tPlans(`${currentPlan}.name`)}
             </span>
             {statusLabel && (
               <span
@@ -171,8 +197,10 @@ export function BillingPanel({
         </p>
       )}
 
-      {/* Upgrade section — shown for free/starter users */}
-      {!isActiveSubscriber || currentPlan === "starter" ? (
+      {/* Beta tester — full access, nothing to upgrade or manage */}
+      {isBeta ? (
+        <p className="text-sm text-muted-foreground">{t("betaAccessNote")}</p>
+      ) : !isActiveSubscriber || currentPlan === "starter" ? (
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("availablePlans")}
@@ -266,6 +294,42 @@ export function BillingPanel({
             )}
           </Button>
         </div>
+      )}
+
+      {!isBeta && (
+        <CollapsibleDrawer title={tPromo("disclosureLabel")} defaultOpen={false}>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder={tPromo("placeholder")}
+                className="max-w-56"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={submitPromoCode}
+                disabled={promoLoading || !promoCode}
+              >
+                {promoLoading ? (
+                  <>
+                    <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
+                    {tPromo("applying")}
+                  </>
+                ) : (
+                  tPromo("submit")
+                )}
+              </Button>
+            </div>
+            {promoError && (
+              <p role="alert" className="text-xs text-destructive">
+                {promoError}
+              </p>
+            )}
+          </div>
+        </CollapsibleDrawer>
       )}
     </div>
   );

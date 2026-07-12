@@ -14,6 +14,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { verifyTurnstileToken } from "@/lib/server/turnstile";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { signOAuthState } from "@/lib/auth/oauthState";
+import { isPasswordReusedError } from "@/lib/auth/passwordErrors";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
@@ -457,6 +458,9 @@ export async function resetPasswordAction(
     });
   } catch (err) {
     console.error("[resetPasswordAction]", err);
+    if (isPasswordReusedError(err)) {
+      return { error: t("errors.passwordReused") };
+    }
     return { error: t("errors.resetTokenInvalid") };
   }
 

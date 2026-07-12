@@ -4,6 +4,7 @@ import {
   buildPortfolioPageviewFixtures,
   readExpiredSeedOwner,
   readSeedOwner,
+  PROMO_CODE_SEEDS,
 } from "./seed-fixtures";
 
 describe("seed-fixtures", () => {
@@ -60,5 +61,10 @@ describe("seed-fixtures", () => {
       "gallery",
       "home",
     ]);
+  });
+
+  it("has exactly one sample promo code per PromoCode type", () => {
+    const types = PROMO_CODE_SEEDS.map((c) => c.type).sort();
+    expect(types).toEqual(["beta", "lifetime", "monthly", "yearly"]);
   });
 });

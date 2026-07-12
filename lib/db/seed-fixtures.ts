@@ -4,6 +4,20 @@ export type SeedIdentity = {
   name: string;
 };
 
+export type PromoCodeSeed = {
+  title: string;
+  code: string;
+  type: "lifetime" | "yearly" | "monthly" | "beta";
+  expiresAt: null;
+};
+
+export const PROMO_CODE_SEEDS: PromoCodeSeed[] = [
+  { title: "Lifetime Pro", code: "LIFETIME2026", type: "lifetime", expiresAt: null },
+  { title: "1 Year Pro", code: "YEARPRO2026", type: "yearly", expiresAt: null },
+  { title: "1 Month Pro", code: "MONTHPRO2026", type: "monthly", expiresAt: null },
+  { title: "Beta Access", code: "BETAACCESS", type: "beta", expiresAt: null },
+];
+
 export type SeedPageviewFixture = {
   date: Date;
   page: "home" | "gallery" | "contact" | "_site";

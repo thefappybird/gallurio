@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useImperativeHandle } from "react";
 
 declare global {
   interface Window {
@@ -23,7 +23,16 @@ declare global {
   }
 }
 
+export interface TurnstileWidgetHandle {
+  /** Discards the current (possibly already-consumed) token and asks
+   *  Cloudflare for a fresh one. Call after any failed form submission --
+   *  Turnstile tokens are single-use, so a retry with the same token would
+   *  fail bot verification even with correct credentials. */
+  reset: () => void;
+}
+
 interface TurnstileWidgetProps {
+  ref?: React.Ref<TurnstileWidgetHandle>;
   onToken: (token: string) => void;
   onExpire?: () => void;
   onError?: () => void;
@@ -43,6 +52,7 @@ const IS_DEV = process.env.NODE_ENV === "development";
  * so forms are immediately submittable without a real Cloudflare challenge.
  */
 export function TurnstileWidget({
+  ref,
   onToken,
   onExpire,
   onError,
@@ -67,6 +77,20 @@ export function TurnstileWidget({
   }, []);
 
   const siteKey = IS_DEV ? "" : (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "");
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      if (IS_DEV) {
+        // No real widget in dev -- just re-fire the sentinel so the caller's
+        // token state clears and immediately re-enables the submit button.
+        onTokenRef.current("dev-bypass");
+        return;
+      }
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.reset(widgetIdRef.current);
+      }
+    },
+  }), []);
 
   const render = useCallback(() => {
     if (!containerRef.current || !window.turnstile || !siteKey) return;

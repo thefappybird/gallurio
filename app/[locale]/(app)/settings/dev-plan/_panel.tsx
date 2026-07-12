@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { devActivatePlanAction, type DevPlanActionResult } from "@/lib/actions/dev";
 import { PLAN_CATALOG } from "@/lib/lemonsqueezy/plans";
+import { PLAN_ENTITLEMENTS } from "@/lib/plans/entitlements";
 import type { PlanTier } from "@/lib/db/models";
 import { DowngradeBlockModal } from "../../teams/_components/downgrade-block-modal";
 
@@ -90,6 +91,33 @@ export function DevPlanPanel({ currentPlan }: DevPlanPanelProps) {
             );
           })}
         </ul>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          Beta tester (Pro-equivalent, no Lemon Squeezy subscription)
+        </p>
+        <div className="flex items-center gap-3 border border-border bg-background px-3 py-3">
+          <div className="flex flex-1 flex-col">
+            <span className="font-medium">Beta tester</span>
+            <span className="text-xs text-muted-foreground">
+              {PLAN_ENTITLEMENTS.beta.maxTeams} {t("teamsSuffix")} ·{" "}
+              {PLAN_ENTITLEMENTS.beta.maxMembersPerTeam} {t("perTeamSuffix")}
+            </span>
+          </div>
+          {currentPlan === "beta" ? (
+            <span className="text-xs text-muted-foreground">{t("active")}</span>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => switchTo("beta")}
+            >
+              {busyTier === "beta" ? <Loader2 className="size-4 animate-spin" /> : t("switch")}
+            </Button>
+          )}
+        </div>
       </div>
 
       {blocked && blockedTarget && (

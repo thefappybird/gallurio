@@ -52,6 +52,11 @@
         "panelHeadline": "Requests land in your calendar, not your DMs.",
         "description": "Let visitors send booking requests directly through a user page, including event dates, contact details, service preferences, and project notes."
       },
+      "teams": {
+        "title": "Team collaboration",
+        "panelHeadline": "Invite the team, assign roles, and work off one shared calendar.",
+        "description": "Bring on staff and collaborators with role-based access to bookings, clients, and the calendar — so everyone knows what's theirs to handle without stepping on each other."
+      },
       "customBranding": {
         "title": "Custom branding",
         "description": "Adjust colors, typography, imagery, and page style so the portfolio feels aligned with the user's creative identity."
@@ -454,6 +459,32 @@
   "auth": {
     "signInTitle": "Sign in",
     "signUpTitle": "Create account",
+    "brandPane": {
+      "signIn": {
+        "headline": "Welcome back to the ledger.",
+        "body": "Every booking, client, and inquiry — exactly where you left them."
+      },
+      "signUp": {
+        "headline": "Open your ledger.",
+        "body": "One workspace for bookings, clients, and the public portfolio your clients see."
+      },
+      "mfa": {
+        "headline": "One more entry.",
+        "body": "A quick verification keeps your ledger — and your clients' details — secure."
+      },
+      "forgotPassword": {
+        "headline": "Lost your place?",
+        "body": "We'll send a link so you can pick your ledger back up."
+      },
+      "resetPassword": {
+        "headline": "Set a new key.",
+        "body": "Choose a password you'll remember. Your ledger stays exactly as you left it."
+      },
+      "verifyEmail": {
+        "headline": "Almost booked in.",
+        "body": "Confirm your email to finish setting up your ledger."
+      }
+    },
     "signIn": {
       "title": "Sign in",
       "continueWithGoogle": "Continue with Google",
@@ -521,7 +552,8 @@
       "generic": "Something went wrong. Please try again.",
       "invalidCode": "Invalid or expired code. Please try again.",
       "sessionExpired": "Your session has expired. Please sign in again.",
-      "resetTokenInvalid": "This link is invalid or has expired. Please request a new one."
+      "resetTokenInvalid": "This link is invalid or has expired. Please request a new one.",
+      "passwordReused": "Please choose a password different from your current one."
     }
   },
   "app": {
@@ -1263,6 +1295,8 @@
         "manageSection": "Manage subscription",
         "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
         "manageButton": "Manage subscription",
+        "betaPlanLabel": "Beta tester",
+        "betaAccessNote": "You have full Pro access as part of our beta program — no billing required.",
         "cadenceToggle": {
           "monthly": "Monthly",
           "yearly": "Yearly",
@@ -2666,6 +2700,9 @@
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
       "onboarding_required": "Finish onboarding to continue.",
       "subscription_required": "Your subscription has ended. Subscribe to continue.",
+      "promo_code_not_found": "That code isn't valid. Double-check and try again.",
+      "promo_code_expired": "That code has expired.",
+      "promo_code_already_redeemed": "You've already redeemed this code.",
       "invalid_input": "Please check the form and try again.",
       "rate_limited": "Too many attempts. Try again in {seconds} seconds.",
       "user_not_found": "User not found.",
@@ -2680,6 +2717,7 @@
       "current_password_incorrect": "Your current password is incorrect.",
       "password_verify_failed": "Couldn't verify your current password. Please try again.",
       "password_update_failed": "Couldn't update your password. Please try again.",
+      "password_reused": "Please choose a password different from your current one.",
       "avatar_update_failed": "Couldn't update your photo. Please try again.",
       "email_send_failed": "Couldn't send the email. Please try again.",
       "onboarding_no_active_workspace": "No active workspace — restart onboarding.",
@@ -2739,7 +2777,14 @@
       "previous": "Previous",
       "next": "Next"
     },
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "promoCode": {
+      "disclosureLabel": "Have a promo code?",
+      "placeholder": "Enter code",
+      "submit": "Apply",
+      "applying": "Applying…",
+      "success": "Code applied — your plan has been updated."
+    }
   },
   "onboarding": {
     "shell": {
@@ -2816,10 +2861,9 @@
       "opening": "Opening checkout…",
       "checkoutFailed": "Checkout failed. Please try again.",
       "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
-      "dev": {
-        "label": "Dev shortcut",
-        "description": "Skip Lemon Squeezy and mark {planName} as active. Dev-only.",
-        "activate": "Activate {planName} (dev)"
+      "betaTester": {
+        "label": "Beta tester",
+        "activate": "Activate beta access"
       }
     },
     "done": {

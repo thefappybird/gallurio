@@ -45,6 +45,7 @@ import {
   TEAM_COLOR_PALETTE,
   PortfolioDraft,
   PageviewRollup,
+  PromoCode,
 } from "./models";
 import { Notification } from "./models/Notification";
 import { buildSeedGalleryItem } from "./seedGalleryItem";
@@ -54,6 +55,7 @@ import {
   buildPortfolioPageviewFixtures,
   readExpiredSeedOwner,
   readSeedOwner,
+  PROMO_CODE_SEEDS,
   type SeedIdentity,
 } from "./seed-fixtures";
 import { getTemplate } from "@/lib/page-builder/templates";
@@ -1041,6 +1043,9 @@ async function main() {
 
   console.log("-> Seeding expired subscription workspace");
   const expiredWorkspace = await createExpiredWorkspace(expiredOwner);
+
+  console.log("-> Seeding promo codes");
+  await PromoCode.insertMany(PROMO_CODE_SEEDS);
 
   console.log("");
   console.log("Seed complete.");

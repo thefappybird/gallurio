@@ -52,6 +52,11 @@
         "panelHeadline": "Permintaan mendarat di kalendar anda, bukan di DM anda.",
         "description": "Benarkan pelawat menghantar permintaan tempahan terus melalui halaman anda, termasuk tarikh acara, butiran hubungan, keutamaan perkhidmatan, dan nota projek."
       },
+      "teams": {
+        "title": "Kerjasama pasukan",
+        "panelHeadline": "Jemput pasukan anda, tetapkan peranan, dan bekerja menggunakan satu kalendar dikongsi.",
+        "description": "Tambah kakitangan dan rakan kerjasama dengan akses berasaskan peranan kepada tempahan, pelanggan, dan kalendar — supaya setiap orang tahu tanggungjawab masing-masing tanpa bertindih."
+      },
       "customBranding": {
         "title": "Penjenamaan tersuai",
         "description": "Laraskan warna, tipografi, imej, dan gaya halaman supaya portfolio itu sesuai dengan identiti kreatif pengguna."
@@ -454,6 +459,32 @@
   "auth": {
     "signInTitle": "Log masuk",
     "signUpTitle": "Cipta akaun",
+    "brandPane": {
+      "signIn": {
+        "headline": "Selamat kembali ke lejar anda.",
+        "body": "Semua tempahan, pelanggan, dan pertanyaan — kekal di tempat yang sama."
+      },
+      "signUp": {
+        "headline": "Buka lejar anda.",
+        "body": "Satu ruang kerja untuk tempahan, pelanggan, dan portfolio awam yang dilihat pelanggan anda."
+      },
+      "mfa": {
+        "headline": "Satu semakan lagi.",
+        "body": "Pengesahan pantas untuk melindungi lejar anda — dan butiran pelanggan anda."
+      },
+      "forgotPassword": {
+        "headline": "Terlupa tempat anda?",
+        "body": "Kami akan hantar pautan supaya anda boleh sambung semula lejar anda."
+      },
+      "resetPassword": {
+        "headline": "Tetapkan kunci baharu.",
+        "body": "Pilih kata laluan yang mudah diingati. Lejar anda kekal seperti sedia ada."
+      },
+      "verifyEmail": {
+        "headline": "Hampir selesai.",
+        "body": "Sahkan e-mel anda untuk melengkapkan lejar anda."
+      }
+    },
     "signIn": {
       "title": "Log masuk",
       "continueWithGoogle": "Teruskan dengan Google",
@@ -521,7 +552,8 @@
       "generic": "Sesuatu telah berlaku. Sila cuba lagi.",
       "invalidCode": "Kod tidak sah atau telah tamat tempoh. Sila cuba lagi.",
       "sessionExpired": "Sesi anda telah tamat tempoh. Sila log masuk semula.",
-      "resetTokenInvalid": "Pautan ini tidak sah atau telah tamat tempoh. Sila minta yang baru."
+      "resetTokenInvalid": "Pautan ini tidak sah atau telah tamat tempoh. Sila minta yang baru.",
+      "passwordReused": "Sila pilih kata laluan yang berbeza daripada kata laluan semasa anda."
     }
   },
   "app": {
@@ -1263,6 +1295,8 @@
         "manageSection": "Urus langganan",
         "manageDescription": "Kemas kini kaedah pembayaran, lihat invois, atau batalkan langganan anda terus melalui Lemon Squeezy.",
         "manageButton": "Urus langganan",
+        "betaPlanLabel": "Penguji Beta",
+        "betaAccessNote": "Anda mempunyai akses penuh Pro sebagai sebahagian daripada program beta kami — tiada bil diperlukan.",
         "cadenceToggle": {
           "monthly": "Bulanan",
           "yearly": "Tahunan",
@@ -2666,6 +2700,9 @@
       "completion_requires_full_payment": "Tandakan semua bayaran sebagai dibayar dan padankan jumlah sebelum melengkapkan tempahan ini.",
       "onboarding_required": "Selesaikan onboarding untuk teruskan.",
       "subscription_required": "Langganan anda telah tamat. Langgan untuk teruskan.",
+      "promo_code_not_found": "Kod itu tidak sah. Semak semula dan cuba lagi.",
+      "promo_code_expired": "Kod itu telah tamat tempoh.",
+      "promo_code_already_redeemed": "Anda sudah menebus kod ini.",
       "invalid_input": "Sila semak borang dan cuba lagi.",
       "rate_limited": "Terlalu banyak percubaan. Cuba lagi dalam {seconds} saat.",
       "user_not_found": "Pengguna tidak ditemui.",
@@ -2680,6 +2717,7 @@
       "current_password_incorrect": "Kata laluan semasa anda tidak betul.",
       "password_verify_failed": "Kata laluan semasa anda tidak dapat disahkan. Sila cuba lagi.",
       "password_update_failed": "Kata laluan anda tidak dapat dikemas kini. Sila cuba lagi.",
+      "password_reused": "Sila pilih kata laluan yang berbeza daripada kata laluan semasa anda.",
       "avatar_update_failed": "Foto anda tidak dapat dikemas kini. Sila cuba lagi.",
       "email_send_failed": "E-mel tidak dapat dihantar. Sila cuba lagi.",
       "onboarding_no_active_workspace": "Tiada ruang kerja aktif — mulakan semula onboarding.",
@@ -2739,7 +2777,14 @@
       "previous": "Sebelumnya",
       "next": "Seterusnya"
     },
-    "clearFilters": "Padam penapis"
+    "clearFilters": "Padam penapis",
+    "promoCode": {
+      "disclosureLabel": "Ada kod promosi?",
+      "placeholder": "Masukkan kod",
+      "submit": "Guna kod",
+      "applying": "Menggunakan…",
+      "success": "Kod berjaya digunakan — pelan anda telah dikemas kini."
+    }
   },
   "onboarding": {
     "shell": {
@@ -2816,10 +2861,9 @@
       "opening": "Membuka pembayaran…",
       "checkoutFailed": "Pembayaran gagal. Sila cuba lagi.",
       "checkoutNotReady": "Sistem pembayaran belum sedia. Sila muat semula dan cuba lagi.",
-      "dev": {
-        "label": "Pintasan dev",
-        "description": "Langkau Lemon Squeezy dan tanda {planName} sebagai aktif. Dev sahaja.",
-        "activate": "Aktifkan {planName} (dev)"
+      "betaTester": {
+        "label": "Penguji Beta",
+        "activate": "Aktifkan akses beta"
       }
     },
     "done": {

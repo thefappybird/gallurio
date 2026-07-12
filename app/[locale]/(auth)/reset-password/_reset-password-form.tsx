@@ -29,7 +29,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   if (!token) {
     return (
-      <div className="w-full max-w-sm border border-border bg-background p-8">
+      <div className="w-full max-w-sm rounded-[var(--radius-surface)] border border-border bg-card p-8">
         <h1 className="mb-4 text-xl font-semibold">{t("resetPassword.title")}</h1>
         <p className="text-sm text-destructive">{t("resetPassword.invalidToken")}</p>
         <p className="mt-6 text-center text-sm">
@@ -46,7 +46,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   if (success) {
     return (
-      <div className="w-full max-w-sm border border-border bg-background p-8">
+      <div className="w-full max-w-sm rounded-[var(--radius-surface)] border border-border bg-card p-8">
         <h1 className="mb-4 text-xl font-semibold">{t("resetPassword.title")}</h1>
         <p className="text-sm text-muted-foreground">
           {t("resetPassword.successMessage")}
@@ -64,7 +64,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   }
 
   return (
-    <div className="w-full max-w-sm border border-border bg-background p-8">
+    <div className="w-full max-w-sm rounded-[var(--radius-surface)] border border-border bg-card p-8">
       <h1 className="mb-2 text-xl font-semibold">{t("resetPassword.title")}</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         {t("resetPassword.description")}

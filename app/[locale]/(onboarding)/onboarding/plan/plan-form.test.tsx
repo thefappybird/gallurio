@@ -6,7 +6,7 @@
  * directly and firing the script's onload handler manually (jsdom doesn't
  * execute remote script src, so we simulate the load callback).
  * fetch: mocked via vi.stubGlobal to simulate checkout API responses.
- * Server actions (selectFreePlanAction, devActivatePlanAction): mocked.
+ * Server actions (selectFreePlanAction, activateBetaTesterAction): mocked.
  * @/lib/i18n/navigation: aliased to stub via vitest.config.ts.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -25,10 +25,11 @@ vi.mock("@/lib/i18n/navigation", () => ({
 // ── Server action mocks ────────────────────────────────────────────────────
 vi.mock("@/lib/actions/onboarding", () => ({
   selectFreePlanAction: vi.fn().mockResolvedValue({}),
+  activateBetaTesterAction: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock("@/lib/actions/dev", () => ({
-  devActivatePlanAction: vi.fn().mockResolvedValue({}),
+vi.mock("@/lib/actions/promoCode", () => ({
+  redeemPromoCodeAction: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 const urlOpenMock = vi.fn();
@@ -72,12 +73,19 @@ afterEach(() => {
   delete (window as { LemonSqueezy?: unknown }).LemonSqueezy;
 });
 
-function renderForm(props: { currentPlan?: string; furthestStep?: "business" | "workspace" | "plan" | "done" } = {}) {
+function renderForm(
+  props: {
+    currentPlan?: string;
+    furthestStep?: "business" | "workspace" | "plan" | "done";
+    betaTesterEnabled?: boolean;
+  } = {}
+) {
   return renderWithProviders(
     <PlanStepForm
       currentPlan={props.currentPlan ?? "free"}
       furthestStep={props.furthestStep ?? "plan"}
       proPricing={{ currency: "PHP", monthly: 250, yearly: 2500 }}
+      betaTesterEnabled={props.betaTesterEnabled}
     />
   );
 }
@@ -107,9 +115,14 @@ describe("PlanStepForm — renders", () => {
     });
   });
 
-  it("shows dev escape hatch in non-production environment", () => {
+  it("hides the beta tester chip when disabled", () => {
     renderForm();
-    expect(screen.getByText(/dev shortcut/i)).toBeInTheDocument();
+    expect(screen.queryByText(/beta tester/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the beta tester chip when enabled", () => {
+    renderForm({ betaTesterEnabled: true });
+    expect(screen.getByText(/beta tester/i)).toBeInTheDocument();
   });
 });
 
@@ -280,18 +293,83 @@ describe("PlanStepForm — paid plan checkout", () => {
   });
 });
 
-describe("PlanStepForm — dev activate", () => {
-  it("calls devActivatePlanAction when dev button is clicked", async () => {
-    const { devActivatePlanAction } = await import("@/lib/actions/dev");
+describe("PlanStepForm — beta tester activation", () => {
+  it("calls activateBetaTesterAction and navigates on success", async () => {
+    const { activateBetaTesterAction } = await import("@/lib/actions/onboarding");
 
-    renderForm({ currentPlan: "free" });
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
 
-    const devBtn = screen.getByRole("button", { name: /activate.*dev/i });
-    fireEvent.click(devBtn);
+    const betaBtn = screen.getByRole("button", { name: /activate beta access/i });
+    fireEvent.click(betaBtn);
 
     await waitFor(() => {
-      expect(devActivatePlanAction).toHaveBeenCalledWith("free");
+      expect(activateBetaTesterAction).toHaveBeenCalledOnce();
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
     });
+  });
+});
+
+describe("PlanStepForm — promo code redemption", () => {
+  it("shows the promo code disclosure collapsed by default", () => {
+    renderForm();
+    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
+  });
+
+  it("expands the promo code form when clicked", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/enter code/i)).toBeInTheDocument();
+    });
+  });
+
+  it("calls redeemPromoCodeAction with the entered code on submit", async () => {
+    const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
+
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(redeemPromoCodeAction).toHaveBeenCalledWith("SAVE20");
+    });
+  });
+
+  it("redirects to /onboarding/done on a successful redemption", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
+    });
+  });
+
+  it("shows the translated error message and does not redirect when the code is invalid", async () => {
+    const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
+    vi.mocked(redeemPromoCodeAction).mockResolvedValueOnce({
+      error: "promo_code_not_found",
+    });
+
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "BADCODE" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/valid/i);
+    });
+    expect(mockRouterPush).not.toHaveBeenCalledWith("/onboarding/done");
   });
 });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
@@ -51,7 +52,9 @@ export function MarketingHeader() {
               {tNav("joinBeta")}
             </Link>
             <ThemeToggle variant="standalone" />
-            <LocaleSwitcher variant="standalone" />
+            <Suspense fallback={<div className="size-9" />}>
+              <LocaleSwitcher variant="standalone" />
+            </Suspense>
           </div>
         </div>
       </div>

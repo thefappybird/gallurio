@@ -52,6 +52,11 @@
         "panelHeadline": "Dumarating ang mga request sa iyong calendar, hindi sa iyong DM.",
         "description": "Hayaan ang mga bisita na direktang magpadala ng booking request sa iyong page, kasama ang petsa ng event, contact details, service preferences, at project notes."
       },
+      "teams": {
+        "title": "Team collaboration",
+        "panelHeadline": "Anyayahan ang team, magtakda ng roles, at magtrabaho gamit ang iisang shared calendar.",
+        "description": "Magdagdag ng staff at collaborators gamit ang role-based access sa mga booking, kliyente, at calendar — para malinaw sa bawat isa ang kanilang trabaho, nang walang gulo."
+      },
       "customBranding": {
         "title": "Custom branding",
         "description": "I-adjust ang mga kulay, typography, imahe, at istilo ng page para bumagay ang portfolio sa creative identity ng user."
@@ -454,6 +459,32 @@
   "auth": {
     "signInTitle": "Mag-sign in",
     "signUpTitle": "Gumawa ng account",
+    "brandPane": {
+      "signIn": {
+        "headline": "Balik sa iyong ledger.",
+        "body": "Lahat ng booking, kliyente, at inquiry — nasa dati nilang lugar."
+      },
+      "signUp": {
+        "headline": "Buksan ang iyong ledger.",
+        "body": "Isang workspace para sa mga booking, kliyente, at ang public portfolio na makikita ng iyong mga kliyente."
+      },
+      "mfa": {
+        "headline": "Isa na lang.",
+        "body": "Mabilis na beripikasyon para protektado ang iyong ledger — at ang detalye ng iyong mga kliyente."
+      },
+      "forgotPassword": {
+        "headline": "Bumalik sa iyong ledger.",
+        "body": "Ipapadala namin ang link para maituloy mo ang iyong ledger."
+      },
+      "resetPassword": {
+        "headline": "Gumawa ng bagong susi.",
+        "body": "Pumili ng password na madali mong maaalala. Mananatiling buo ang iyong ledger."
+      },
+      "verifyEmail": {
+        "headline": "Halos tapos na.",
+        "body": "I-confirm ang iyong email para makumpleto ang iyong ledger."
+      }
+    },
     "signIn": {
       "title": "Mag-sign in",
       "continueWithGoogle": "Magpatuloy sa Google",
@@ -521,7 +552,8 @@
       "generic": "May nangyaring mali. Pakisubukan muli.",
       "invalidCode": "Hindi tamang code o nag-expire na. Pakisubukan muli.",
       "sessionExpired": "Nag-expire na ang iyong session. Mangyaring mag-sign in muli.",
-      "resetTokenInvalid": "Ang link na ito ay invalid o nag-expire na. Mangyaring humingi ng bago."
+      "resetTokenInvalid": "Ang link na ito ay invalid o nag-expire na. Mangyaring humingi ng bago.",
+      "passwordReused": "Pumili ng password na iba sa kasalukuyan mong password."
     }
   },
   "app": {
@@ -1263,6 +1295,8 @@
         "manageSection": "Pamahalaan ang subscription",
         "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
         "manageButton": "Pamahalaan ang subscription",
+        "betaPlanLabel": "Beta Tester",
+        "betaAccessNote": "Mayroon kang buong access sa Pro bilang bahagi ng aming beta program — walang kailangang bayaran.",
         "cadenceToggle": {
           "monthly": "Buwanan",
           "yearly": "Taunan",
@@ -2666,6 +2700,9 @@
       "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
       "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
       "subscription_required": "Natapos na ang iyong subscription. Mag-subscribe para magpatuloy.",
+      "promo_code_not_found": "Hindi valid ang code na iyon. I-check ulit at subukan muli.",
+      "promo_code_expired": "Nag-expire na ang code na iyon.",
+      "promo_code_already_redeemed": "Na-redeem mo na ang code na ito.",
       "invalid_input": "Pakitingnan ang form at subukan muli.",
       "rate_limited": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",
       "user_not_found": "Hindi natagpuan ang user.",
@@ -2680,6 +2717,7 @@
       "current_password_incorrect": "Hindi tama ang iyong kasalukuyang password.",
       "password_verify_failed": "Hindi ma-verify ang iyong kasalukuyang password. Pakisubukan muli.",
       "password_update_failed": "Hindi na-update ang iyong password. Pakisubukan muli.",
+      "password_reused": "Pumili ng password na iba sa kasalukuyan mong password.",
       "avatar_update_failed": "Hindi na-update ang iyong larawan. Pakisubukan muli.",
       "email_send_failed": "Hindi maipadala ang email. Pakisubukan muli.",
       "onboarding_no_active_workspace": "Walang aktibong workspace — simulan muli ang onboarding.",
@@ -2739,7 +2777,14 @@
       "previous": "Nakaraan",
       "next": "Susunod"
     },
-    "clearFilters": "Tanggalin ang filter"
+    "clearFilters": "Tanggalin ang filter",
+    "promoCode": {
+      "disclosureLabel": "May promo code ka ba?",
+      "placeholder": "Ilagay ang code",
+      "submit": "I-apply",
+      "applying": "Ina-apply…",
+      "success": "Na-apply ang code — na-update na ang iyong plan."
+    }
   },
   "onboarding": {
     "shell": {
@@ -2816,10 +2861,9 @@
       "opening": "Binubuksan ang checkout…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
       "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
-      "dev": {
-        "label": "Dev shortcut",
-        "description": "Laktawan ang Lemon Squeezy at markahan ang {planName} bilang aktibo. Dev-only.",
-        "activate": "I-activate ang {planName} (dev)"
+      "betaTester": {
+        "label": "Beta Tester",
+        "activate": "I-activate ang beta access"
       }
     },
     "done": {

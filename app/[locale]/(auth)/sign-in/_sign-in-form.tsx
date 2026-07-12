@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useTransition, useRef, useState } from "react";
+import { useActionState, useTransition, useRef, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TurnstileWidget } from "../_components/turnstile-widget";
+import { TurnstileWidget, type TurnstileWidgetHandle } from "../_components/turnstile-widget";
 import { signInAction, googleSignInAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 
@@ -28,8 +28,18 @@ export function SignInForm({ returnTo }: SignInFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [googlePending, startGoogleTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
   const error = state && "error" in state ? state.error : null;
+
+  // Turnstile tokens are single-use -- a retry after any failed submission
+  // would otherwise fail bot verification even with correct credentials.
+  // reset() re-fires onToken with a fresh token once ready, which already
+  // flows through the onToken={setTurnstileToken} wiring below.
+  useEffect(() => {
+    if (!error) return;
+    turnstileRef.current?.reset();
+  }, [error]);
 
   function handleGoogleSignIn() {
     startGoogleTransition(async () => {
@@ -41,7 +51,7 @@ export function SignInForm({ returnTo }: SignInFormProps) {
   }
 
   return (
-    <div className="w-full max-w-sm border border-border bg-background p-8">
+    <div className="w-full max-w-sm rounded-[var(--radius-surface)] border border-border bg-card p-8">
       <h1 className="mb-6 text-xl font-semibold">{t("signIn.title")}</h1>
 
       {/* Google sign-in */}
@@ -132,6 +142,7 @@ export function SignInForm({ returnTo }: SignInFormProps) {
         {/* Turnstile */}
         <div className="flex justify-center">
           <TurnstileWidget
+            ref={turnstileRef}
             onToken={setTurnstileToken}
             onExpire={() => setTurnstileToken("")}
             onError={() => setTurnstileToken("")}

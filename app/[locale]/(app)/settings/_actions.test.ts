@@ -117,7 +117,7 @@ import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { cookies } from "next/headers";
 import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
-import { AuthenticationException } from "@workos-inc/node";
+import { AuthenticationException, UnprocessableEntityException } from "@workos-inc/node";
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -1127,6 +1127,21 @@ describe("updatePasswordAction", () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await updatePasswordAction(validInput);
     expect(result).toEqual({ error: "not_authenticated" });
+  });
+
+  it("returns a specific error when the new password matches the current one", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockResolvedValue({
+      user: { id: OWNER_WORKOS_ID },
+    });
+    mockWorkos.userManagement.updateUser.mockRejectedValue(
+      new UnprocessableEntityException({
+        requestID: "req_5",
+        errors: [{ field: "password", code: "password_reused" }],
+      }),
+    );
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ error: "password_reused" });
   });
 });
 
