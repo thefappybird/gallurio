@@ -174,7 +174,7 @@
         "feature6": "Priority feature access"
       },
       "billingNotice": {
-        "body1": "When paid subscriptions become available, payments will be processed securely by Paddle, our Merchant of Record. Paddle may handle payment processing, tax calculation, invoices, billing support, and eligible refund processing.",
+        "body1": "When paid subscriptions become available, payments will be processed securely by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, tax calculation, invoices, billing support, and eligible refund processing.",
         "body2": "No real payments are collected during the beta unless clearly stated at checkout."
       },
       "pricingTransparency": {
@@ -235,7 +235,7 @@
       "subscriptions": {
         "title": "8. Subscriptions and Payments",
         "body1": "Some Gallurio features may require a paid subscription.",
-        "body2": "When paid plans become available, billing may be processed by Paddle, our Merchant of Record. Paddle may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.",
+        "body2": "When paid plans become available, billing may be processed by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.",
         "body3": "Users will be shown applicable pricing and billing terms before completing a purchase."
       },
       "cancellations": {
@@ -299,7 +299,7 @@
         },
         "payment": {
           "title": "Payment Information",
-          "body": "When paid features become available, payments may be processed by Paddle, Gallurio's Merchant of Record. Gallurio does not directly store full payment card details. Paddle may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices."
+          "body": "When paid features become available, payments may be processed by Lemon Squeezy, Gallurio's Merchant of Record. Gallurio does not directly store full payment card details. Lemon Squeezy may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices."
         }
       },
       "useOfInfo": {
@@ -362,7 +362,7 @@
     "refunds": {
       "metadata": {
         "title": "Refund Policy — Gallurio",
-        "description": "Learn how Gallurio handles cancellations, refunds, and Paddle payment processing."
+        "description": "Learn how Gallurio handles cancellations, refunds, and Lemon Squeezy payment processing."
       },
       "title": "Refund Policy",
       "effectiveDate": "Effective Date: [Month Day, Year]",
@@ -387,13 +387,13 @@
         "item5": "Technical issues",
         "item6": "Duplicate charges",
         "item7": "Applicable consumer protection laws",
-        "item8": "Paddle's payment and refund process",
+        "item8": "Lemon Squeezy's payment and refund process",
         "outro": "Submitting a refund request does not guarantee that a refund will be approved."
       },
-      "paddleMor": {
-        "title": "4. Paddle as Merchant of Record",
-        "body1": "Payments for Gallurio may be processed by Paddle, Gallurio's Merchant of Record. Paddle may handle payment processing, taxes, invoices, billing support, and eligible refund processing.",
-        "body2": "If a user purchases a Gallurio subscription through Paddle, their billing statement may show Paddle or a related Paddle billing descriptor."
+      "merchantOfRecord": {
+        "title": "4. Lemon Squeezy as Merchant of Record",
+        "body1": "Payments for Gallurio may be processed by Lemon Squeezy, Gallurio's Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and eligible refund processing.",
+        "body2": "If a user purchases a Gallurio subscription through Lemon Squeezy, their billing statement may show Lemon Squeezy or a related Lemon Squeezy billing descriptor."
       },
       "nonRefundable": {
         "title": "5. Non-Refundable Situations",

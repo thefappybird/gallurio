@@ -174,7 +174,7 @@
         "feature6": "Akses keutamaan kepada ciri"
       },
       "billingNotice": {
-        "body1": "Apabila langganan berbayar tersedia, pembayaran akan diproses dengan selamat oleh Paddle, Merchant of Record kami. Paddle mungkin mengendalikan pemprosesan pembayaran, pengiraan cukai, invois, sokongan pengebilan, dan pemprosesan bayaran balik yang layak.",
+        "body1": "Apabila langganan berbayar tersedia, pembayaran akan diproses dengan selamat oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy mungkin mengendalikan pemprosesan pembayaran, pengiraan cukai, invois, sokongan pengebilan, dan pemprosesan bayaran balik yang layak.",
         "body2": "Tiada pembayaran sebenar dikutip semasa beta melainkan dinyatakan dengan jelas semasa checkout."
       },
       "pricingTransparency": {
@@ -235,7 +235,7 @@
       "subscriptions": {
         "title": "8. Langganan dan Pembayaran",
         "body1": "Sesetengah ciri Gallurio mungkin memerlukan langganan berbayar.",
-        "body2": "Apabila pelan berbayar tersedia, pengebilan mungkin diproses oleh Paddle, Merchant of Record kami. Paddle mungkin mengendalikan pemprosesan pembayaran, cukai, invois, sokongan pengebilan, dan aliran kerja bayaran balik yang berkenaan.",
+        "body2": "Apabila pelan berbayar tersedia, pengebilan mungkin diproses oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy mungkin mengendalikan pemprosesan pembayaran, cukai, invois, sokongan pengebilan, dan aliran kerja bayaran balik yang berkenaan.",
         "body3": "Pengguna akan ditunjukkan harga dan terma pengebilan yang berkenaan sebelum melengkapkan pembelian."
       },
       "cancellations": {
@@ -299,7 +299,7 @@
         },
         "payment": {
           "title": "Maklumat Pembayaran",
-          "body": "Apabila ciri berbayar tersedia, pembayaran mungkin diproses oleh Paddle, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung butiran penuh kad pembayaran. Paddle mungkin mengumpul dan memproses butiran pengebilan, maklumat pembayaran, maklumat cukai, dan invois mengikut terma dan amalan privasinya sendiri."
+          "body": "Apabila ciri berbayar tersedia, pembayaran mungkin diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung butiran penuh kad pembayaran. Lemon Squeezy mungkin mengumpul dan memproses butiran pengebilan, maklumat pembayaran, maklumat cukai, dan invois mengikut terma dan amalan privasinya sendiri."
         }
       },
       "useOfInfo": {
@@ -362,7 +362,7 @@
     "refunds": {
       "metadata": {
         "title": "Dasar Bayaran Balik — Gallurio",
-        "description": "Ketahui bagaimana Gallurio mengendalikan pembatalan, bayaran balik, dan pemprosesan pembayaran Paddle."
+        "description": "Ketahui bagaimana Gallurio mengendalikan pembatalan, bayaran balik, dan pemprosesan pembayaran Lemon Squeezy."
       },
       "title": "Dasar Bayaran Balik",
       "effectiveDate": "Tarikh Berkuat Kuasa: [Bulan Hari, Tahun]",
@@ -387,13 +387,13 @@
         "item5": "Isu teknikal",
         "item6": "Caj berganda",
         "item7": "Undang-undang perlindungan pengguna yang berkenaan",
-        "item8": "Proses pembayaran dan bayaran balik Paddle",
+        "item8": "Proses pembayaran dan bayaran balik Lemon Squeezy",
         "outro": "Menghantar permintaan bayaran balik tidak menjamin bahawa bayaran balik akan diluluskan."
       },
-      "paddleMor": {
-        "title": "4. Paddle sebagai Merchant of Record",
-        "body1": "Pembayaran untuk Gallurio mungkin diproses oleh Paddle, Merchant of Record Gallurio. Paddle mungkin mengendalikan pemprosesan pembayaran, cukai, invois, sokongan pengebilan, dan pemprosesan bayaran balik yang layak.",
-        "body2": "Jika pengguna membeli langganan Gallurio melalui Paddle, penyata pengebilan mereka mungkin menunjukkan Paddle atau penerangan pengebilan Paddle yang berkaitan."
+      "merchantOfRecord": {
+        "title": "4. Lemon Squeezy sebagai Merchant of Record",
+        "body1": "Pembayaran untuk Gallurio mungkin diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Lemon Squeezy mungkin mengendalikan pemprosesan pembayaran, cukai, invois, sokongan pengebilan, dan pemprosesan bayaran balik yang layak.",
+        "body2": "Jika pengguna membeli langganan Gallurio melalui Lemon Squeezy, penyata pengebilan mereka mungkin menunjukkan Lemon Squeezy atau penerangan pengebilan Lemon Squeezy yang berkaitan."
       },
       "nonRefundable": {
         "title": "5. Situasi Tidak Boleh Dibayar Balik",

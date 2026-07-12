@@ -57,9 +57,9 @@ export default async function RefundsPage({ params }: Props) {
         <p>{t("refundRequests.outro")}</p>
       </LegalSection>
 
-      <LegalSection title={t("paddleMor.title")}>
-        <p>{t("paddleMor.body1")}</p>
-        <p>{t("paddleMor.body2")}</p>
+      <LegalSection title={t("merchantOfRecord.title")}>
+        <p>{t("merchantOfRecord.body1")}</p>
+        <p>{t("merchantOfRecord.body2")}</p>
       </LegalSection>
 
       <LegalSection title={t("nonRefundable.title")}>

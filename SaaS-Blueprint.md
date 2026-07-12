@@ -951,7 +951,7 @@ If Gallurio production runs on Hetzner, the deployment path should be explicit a
 3. Prepare the application directory.
    Clone the repo into a stable path such as `/var/www/gallurio`, and keep ownership under the deploy user.
 4. Sync production environment variables.
-   Copy the full production env set before the first build, including MongoDB, WorkOS, Paddle, Cloudinary, Resend, and any cookie secrets.
+   Copy the full production env set before the first build, including MongoDB, WorkOS, Lemon Squeezy, Cloudinary, Resend, and any cookie secrets.
 5. Install and build exactly as the repo expects.
    Run `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
 6. Start the production app as a managed process.
@@ -978,7 +978,7 @@ If Gallurio production runs on Hetzner, the deployment path should be explicit a
 - TLS works on the production domain
 - WorkOS auth callbacks and sealed cookies work over HTTPS
 - MongoDB Atlas allows the Hetzner server IPs
-- Paddle webhooks reach the app reliably
+- Lemon Squeezy webhooks reach the app reliably
 - Backups, logs, and restart behavior are verified
 
 ---

@@ -2,7 +2,7 @@
 
 ## Short answer
 
-A marketplace/split-payment feature (Paddle calls theirs "Paddle Connect"; Lemon Squeezy has no direct equivalent for this use case) is **not needed for Gallurio's current scope.** No code, no setup, no marketplace enrollment is required. This document explains why, so future sessions don't revisit it accidentally.
+A marketplace/split-payment feature (some providers call this a Connect-style marketplace; Lemon Squeezy has no direct equivalent for this use case) is **not needed for Gallurio's current scope.** No code, no setup, and no marketplace enrollment are required. This document explains why, so future sessions don't revisit it accidentally.
 
 ---
 

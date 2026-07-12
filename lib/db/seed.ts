@@ -1,41 +1,28 @@
 /**
- * Dev seed script — populates the DB with two demo workspaces and fixture data.
+ * Development seed script.
  *
- * Usage:  pnpm seed
+ * Usage:
+ *   pnpm seed
  *
- * WARNING: this drops the tenant-scoped collections (workspaces, users, clients,
- * bookings, inquiries, gallery_collections, gallery_items, transactions, activity_logs,
- * teams, teammemberships, invitations, notifications).
- * Never run against production.
+ * This script hard-resets the CURRENT development database, recreates indexes,
+ * then seeds two real-login owners:
  *
- * Three dev accounts share the PRIMARY workspace (sarah-bell-photo) so team +
- * notification flows are testable together. All three accounts must exist as real
- * WorkOS users so AuthKit sign-in works — the seed wires their WorkOS user IDs
- * directly into User.workosUserId, which is how ensureUser() identifies returning
- * users at sign-in time.
+ * - `SEED_OWNER_*` -> the main demo workspace with healthy dashboard, bookings,
+ *   inquiries, teams, and a published minimal portfolio.
+ * - `SUB_EXPIRED_*` -> a gated owner on a free workspace whose paid
+ *   subscription has already expired.
  *
- * Required env vars (set in .env.local):
+ * Required env vars:
+ *   SEED_OWNER_WORKOS_USER_ID
+ *   SEED_OWNER_EMAIL
+ *   SEED_OWNER_PASSWORD
+ *   SUB_EXPIRED_WORKOS_USER_ID
+ *   SUB_EXPIRED_WORKOS_EMAIL
+ *   SUB_EXPIRED_WORKOS_PASSWORD
  *
- *   SEED_OWNER_WORKOS_USER_ID   owner's real WorkOS user_... id
- *   SEED_OWNER_EMAIL            owner email
- *   SEED_OWNER_NAME             owner display name (optional)
- *   SEED_OWNER_PASSWORD         Playwright reads this to sign in as owner
- *
- *   SEED_STAFF_WORKOS_USER_ID   staff member's WorkOS user_... id
- *   SEED_STAFF_EMAIL            staff member email
- *   SEED_STAFF_NAME             staff member display name (optional)
- *   SEED_STAFF_PASSWORD         Playwright reads this to sign in as staff
- *
- *   SEED_LEAD_WORKOS_USER_ID    team lead's WorkOS user_... id
- *   SEED_LEAD_EMAIL             team lead email
- *   SEED_LEAD_NAME              team lead display name (optional)
- *   SEED_LEAD_PASSWORD          Playwright reads this to sign in as lead
- *
- * Staff and lead accounts are skipped gracefully when their *_WORKOS_USER_ID and
- * *_EMAIL are both absent, so the seed still runs with only the owner configured.
- *
- * Fixtures are deterministic — a seeded PRNG (mulberry32) means re-running gives
- * identical data, which keeps screenshots and dashboard widgets stable.
+ * Optional env vars:
+ *   SEED_OWNER_NAME
+ *   SUB_EXPIRED_WORKOS_NAME
  */
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
@@ -56,780 +43,1027 @@ import {
   Team,
   TeamMembership,
   TEAM_COLOR_PALETTE,
+  PortfolioDraft,
+  PageviewRollup,
   PromoCode,
 } from "./models";
 import { Notification } from "./models/Notification";
-import { recordBookingForClient } from "./clientTransactions";
 import { buildSeedGalleryItem } from "./seedGalleryItem";
-import type { BookingStatus } from "@/lib/validators/booking";
+import { recordBookingForClient } from "./clientTransactions";
+import {
+  buildExpiredSubscriptionState,
+  buildPortfolioPageviewFixtures,
+  readExpiredSeedOwner,
+  readSeedOwner,
+  PROMO_CODE_SEEDS,
+  type SeedIdentity,
+} from "./seed-fixtures";
+import { getTemplate } from "@/lib/page-builder/templates";
 
-const DEMO_WORKSPACES = [
-  {
-    slug: "sarah-bell-photo",
-    name: "Sarah Bell Photography",
-    businessType: "photographer" as const,
-    ownerUserId: "user_demo_sarah",
-    ownerEmail: "sarah@example.com",
-    ownerName: "Sarah Bell",
-    primaryColor: "#1a1a1a",
-  },
-  {
-    slug: "rosewood-venue",
-    name: "Rosewood Venue",
-    businessType: "venue" as const,
-    ownerUserId: "user_demo_rosewood",
-    ownerEmail: "owner@rosewood.example",
-    ownerName: "Marcus Hale",
-    primaryColor: "#2d3b2a",
-  },
+type SessionRange = { startAt: Date; endAt: Date };
+type TeamRef = { _id: mongoose.Types.ObjectId; name: string; color: string };
+type ClientRef = { _id: mongoose.Types.ObjectId; name: string; email: string | null; phone: string | null };
+
+const MAIN_WORKSPACE = {
+  slug: "seed-owner-demo",
+  name: "North Star Stories",
+  businessType: "photographer" as const,
+  country: "PH",
+  currency: "PHP",
+  timezone: "Asia/Manila",
+};
+
+const EXPIRED_WORKSPACE = {
+  slug: "expired-sub-demo",
+  name: "Archive House Studio",
+  businessType: "photographer" as const,
+  country: "PH",
+  currency: "PHP",
+  timezone: "Asia/Manila",
+};
+
+const TEAM_NAMES = [
+  "Main",
+  "Wedding North",
+  "Wedding South",
+  "Studio",
+  "Portraits",
+  "Corporate",
+  "Weekend Crew",
+  "Films",
+  "Luxury Events",
+  "After Dark",
+  "Travel Unit",
+  "Brand Shoots",
+] as const;
+
+const DUMMY_MEMBER_NAMES = [
+  "Jules Mercer",
+  "Avery Sloan",
+  "Noah Harlan",
+  "Mika Torres",
+  "Lena Rowe",
+  "Kai Bennett",
+  "Sage Harper",
+  "Tess Morgan",
+  "Ira Foster",
+  "Milo Graham",
+  "Nina Cruz",
+  "Parker Dean",
+  "Remy Cole",
+  "Skye Porter",
+  "Theo Lane",
+  "Zoe Ellis",
+  "Arlo Kent",
+  "Cora Blake",
+  "Drew Logan",
+  "Esme Reid",
 ];
 
-const CLIENT_NAMES = [
-  "Emma & Liam Carter",
-  "Priya Shah",
-  "Ana & Tomás Ribeiro",
-  "Northwood Corp Events",
-  "Jordan Patel",
-  "Lena Okafor",
-  "Maya Tanaka",
-  "Diego & Sofia Vasquez",
-  "Aiyana Cloud",
-  "The Hendersons",
-  "Olivia Park",
-  "Westridge Holdings",
-];
+const CLIENT_SEEDS = [
+  ["Emma and Liam Carter", "emma.carter@example.com", "+63 917 555 1001", "VIP"],
+  ["Priya Shah", "priya.shah@example.com", "+63 917 555 1002", "repeat"],
+  ["Jordan Patel", "jordan.patel@example.com", "+63 917 555 1003", "corporate"],
+  ["Maya Tan", "maya.tan@example.com", "+63 917 555 1004", "portrait"],
+  ["Olivia Park", "olivia.park@example.com", "+63 917 555 1005", "wedding"],
+  ["Diego Santos", "diego.santos@example.com", "+63 917 555 1006", "referral"],
+  ["Ariana Bloom", "ariana.bloom@example.com", "+63 917 555 1007", "editorial"],
+  ["Northline Events", "ops@northline.example.com", "+63 917 555 1008", "b2b"],
+  ["Hannah Wells", "hannah.wells@example.com", "+63 917 555 1009", "family"],
+  ["Marcus Doyle", "marcus.doyle@example.com", "+63 917 555 1010", "venue"],
+  ["Mia Serrano", "mia.serrano@example.com", "+63 917 555 1011", "brand"],
+  ["Evergreen Hotels", "events@evergreen.example.com", "+63 917 555 1012", "hotel"],
+  ["Sofia Reed", "sofia.reed@example.com", "+63 917 555 1013", "elopement"],
+  ["Noel Bishop", "noel.bishop@example.com", "+63 917 555 1014", "repeat"],
+  ["Camila Hart", "camila.hart@example.com", "+63 917 555 1015", "referral"],
+  ["Summit Peak Co", "marketing@summitpeak.example.com", "+63 917 555 1016", "campaign"],
+] as const;
 
-const EVENT_TYPES = ["wedding", "corporate", "portrait", "engagement", "anniversary", "other"];
-
-function mulberry32(seed: number) {
-  let t = seed >>> 0;
-  return function rand() {
-    t = (t + 0x6d2b79f5) >>> 0;
-    let r = t;
-    r = Math.imul(r ^ (r >>> 15), r | 1);
-    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
-    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const EVENT_TYPES = [
+  "wedding",
+  "corporate",
+  "portrait",
+  "engagement",
+  "anniversary",
+  "other",
+] as const;
 
 function dayOffset(days: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d;
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date;
 }
 
-async function dropTenantCollections() {
-  const collections = await mongoose.connection.db?.collections();
-  if (!collections) return;
-  const tenantNames = [
-    "workspaces",
-    "users",
-    "clients",
-    "bookings",
-    "inquiries",
-    "gallerycollections",
-    "galleryitems",
-    "transactions",
-    "activitylogs",
-    "teams",
-    "teammemberships",
-    "invitations",
-    "notifications",
-    "promocodes",
-  ];
-  for (const c of collections) {
-    if (tenantNames.includes(c.collectionName)) {
-      await c.deleteMany({});
-    }
-  }
+function dateAt(dayDelta: number, hour: number, minute: number, durationHours: number): SessionRange {
+  const startAt = new Date();
+  startAt.setDate(startAt.getDate() + dayDelta);
+  startAt.setHours(hour, minute, 0, 0);
+  const endAt = new Date(startAt);
+  endAt.setHours(endAt.getHours() + durationHours);
+  return { startAt, endAt };
 }
 
-async function seedWorkspace(
-  w: (typeof DEMO_WORKSPACES)[number],
-  seedNumber: number,
-  ownerUserId: string
+function isoDateLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function buildPayments(
+  firstSessionStart: Date,
+  total: number,
+  deposit: number,
+  status: "booked" | "completed" | "cancelled"
 ) {
-  const now = new Date();
-  const rand = mulberry32(0xc0ffee + seedNumber);
-  const pick = <T>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
-  const range = (min: number, max: number) =>
-    Math.floor(rand() * (max - min + 1)) + min;
+  const depositCreatedAt = new Date(firstSessionStart);
+  depositCreatedAt.setDate(depositCreatedAt.getDate() - 21);
+  const balanceCreatedAt = new Date(firstSessionStart);
+  balanceCreatedAt.setDate(balanceCreatedAt.getDate() - 7);
+  const balance = Math.max(total - deposit, 0);
 
-  const workspace = await Workspace.create({
-    slug: w.slug,
-    name: w.name,
-    ownerUserId,
-    businessType: w.businessType,
-    country: "PH",
-    currency: "PHP",
-    timezone: "Asia/Manila",
-    publicPage: { templateId: "minimal" },
-    plan: "starter",
-    onboardingCompletedAt: now,
-  });
-
-  const mainTeam = await Team.create({
-    workspaceId: workspace._id,
-    name: "Main",
-    color: TEAM_COLOR_PALETTE[0],
-    isDefault: true,
-    isActive: true,
-    memberCount: 0,
-    createdByWorkosUserId: ownerUserId,
-  });
-
-  // The owner User is created once in main() after all workspaces are seeded,
-  // so a shared (env-driven) owner gets a single User doc with a membership for
-  // every workspace instead of colliding on the unique workosUserId index.
-
-  // 12 clients with varied totalSpent so "Top clients" has signal.
-  const clients = await Client.insertMany(
-    CLIENT_NAMES.map((name, i) => ({
-      workspaceId: workspace._id,
-      name,
-      email: `${name.split(/\s+/)[0].toLowerCase()}@example.com`,
-      phone: i % 3 === 0 ? null : `+63 917 555 ${String(1000 + i).padStart(4, "0")}`,
-      source: pick(["form", "manual", "referral", "import"] as const),
-      totalSpent: range(15, 350) * 1000,
-      tags: i === 0 ? ["VIP"] : i % 5 === 0 ? ["repeat"] : [],
-      lastBookingAt: dayOffset(-range(5, 180)),
-    }))
-  );
-
-  // 25 bookings spread from -90 to +90 days. Guarantee at least 1 on today,
-  // 2-3 in the next 7 days, and a healthy mix of statuses for the pipeline funnel.
-  const bookingPayloads: Array<{
-    workspaceId: mongoose.Types.ObjectId;
-    teamId: mongoose.Types.ObjectId;
-    clientId: mongoose.Types.ObjectId;
-    clientName: string;
-    title: string;
-    eventType: string;
-    status: BookingStatus;
-    sessions: { startAt: Date; endAt: Date }[];
-    firstSessionStart: Date;
-    lastSessionEnd: Date;
-    location: { address: string };
-    amount: { total: number; deposit: number; currency: string };
-  }> = [];
-
-  // Realistic start/end time helper so calendar events render in the time
-  // grid (not the all-day strip). 2–6 hours, business hours.
-  const timedSlot = (dayDelta: number): { start: Date; end: Date } => {
-    const start = new Date();
-    start.setDate(start.getDate() + dayDelta);
-    const startHour = range(9, 17); // 9am – 5pm start
-    const durationHours = range(2, 6);
-    start.setHours(startHour, 0, 0, 0);
-    const end = new Date(start);
-    end.setHours(start.getHours() + durationHours);
-    return { start, end };
-  };
-
-  // Today's event — guaranteed.
-  const todaySlot = timedSlot(0);
-  bookingPayloads.push({
-    workspaceId: workspace._id,
-    teamId: mainTeam._id,
-    clientId: clients[0]._id,
-    clientName: clients[0].name,
-    title: `${clients[0].name.split("&")[0].trim()} — ${w.businessType === "venue" ? "Venue Walkthrough" : "Editorial Shoot"}`,
-    eventType: "wedding",
-    status: "booked",
-    sessions: [{ startAt: todaySlot.start, endAt: todaySlot.end }],
-    firstSessionStart: todaySlot.start,
-    lastSessionEnd: todaySlot.end,
-    location: { address: "100 Ayala Ave, Makati, Metro Manila" },
-    amount: { total: 75_000, deposit: 25_000, currency: workspace.currency },
-  });
-
-  for (let i = 0; i < 24; i += 1) {
-    const dayDelta = range(-90, 90);
-    const client = pick(clients);
-    const status: BookingStatus =
-      dayDelta < -7
-        ? rand() > 0.85
-          ? "cancelled"
-          : "completed"
-        : dayDelta < 0
-          ? "completed"
-          : rand() > 0.7
-            ? "booked"
-            : rand() > 0.4
-              ? "booked"
-              : "booked";
-    const eventType = pick(EVENT_TYPES);
-    const total = range(20, 250) * 1000;
-    const slot = timedSlot(dayDelta);
-    bookingPayloads.push({
-      workspaceId: workspace._id,
-      teamId: mainTeam._id,
-      clientId: client._id,
-      clientName: client.name,
-      title: `${client.name.split("&")[0].trim()} — ${eventType[0].toUpperCase()}${eventType.slice(1)}`,
-      eventType,
-      status,
-      sessions: [{ startAt: slot.start, endAt: slot.end }],
-      firstSessionStart: slot.start,
-      lastSessionEnd: slot.end,
-      location: { address: `${100 + i} Ayala Ave, Makati, Metro Manila` },
-      amount: {
-        total,
-        deposit: Math.floor(total * 0.3),
-        currency: workspace.currency,
-      },
-    });
-  }
-
-  const bookings = await Booking.insertMany(bookingPayloads);
-
-  // recordBookingForClient creates Transaction docs and updates client summaries
-  // — replaces the old explicit Transaction.insertMany.
-  for (const b of bookings) {
-    await recordBookingForClient({
-      workspaceId: workspace._id,
-      clientId: b.clientId,
-      booking: {
-        _id: b._id,
-        amount: b.amount,
-        firstSessionStart: b.firstSessionStart,
-        teamId: mainTeam._id,
-      },
-      source: "seed",
-    });
-  }
-
-  // Supplementary transactions for demo variety (does not roll up to Client summaries).
-  // Adds balance payments, refunds, and mixed methods so revenue-by-method and refund
-  // widgets have meaningful data on demo dashboards.
-  const completedBookings = bookings.filter((b) => b.status === "completed");
-  const supplementaryTxs: Array<{
-    workspaceId: mongoose.Types.ObjectId;
-    bookingId: mongoose.Types.ObjectId;
-    clientId: mongoose.Types.ObjectId;
-    amount: number;
-    currency: string;
-    type: "balance" | "refund";
-    method: "lemonsqueezy" | "cash" | "transfer";
-    paidAt: Date;
-  }> = [];
-
-  const methods = ["lemonsqueezy", "cash", "transfer"] as const;
-
-  // Balance payments for completed bookings.
-  for (const b of completedBookings) {
-    const total = (b.amount as { total: number }).total;
-    const deposit = (b.amount as { deposit: number }).deposit;
-    const balance = Math.floor(total - deposit);
-    if (balance <= 0) continue;
-    const offsetDays = range(-89, -1);
-    supplementaryTxs.push({
-      workspaceId: workspace._id,
-      bookingId: b._id,
-      clientId: b.clientId,
-      amount: balance,
-      currency: workspace.currency,
-      type: "balance",
-      method: pick(methods),
-      paidAt: dayOffset(offsetDays),
-    });
-  }
-
-  // A handful of refunds spread across the trailing 90 days.
-  const refundCount = Math.min(5, completedBookings.length);
-  for (let i = 0; i < refundCount; i += 1) {
-    const b = pick(completedBookings);
-    const total = (b.amount as { total: number }).total;
-    supplementaryTxs.push({
-      workspaceId: workspace._id,
-      bookingId: b._id,
-      clientId: b.clientId,
-      amount: -Math.floor(total * range(5, 20) / 100),
-      currency: workspace.currency,
-      type: "refund",
-      method: pick(methods),
-      paidAt: dayOffset(-range(1, 89)),
-    });
-  }
-
-  if (supplementaryTxs.length > 0) {
-    await Transaction.insertMany(supplementaryTxs);
-  }
-
-  // Format a Date as "YYYY-MM-DD" wall-clock string (no UTC shift needed — the
-  // date is already constructed via setDate on a local Date, matching dayOffset).
-  const toDateStr = (d: Date): string => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  };
-  const toTimeStr = (h: number, min = 0): string =>
-    `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-
-  // Conflict anchors: two "inquiry" inquiries share today's booking date+time window
-  // so the calendar conflict filter and conflict-color gating are exercisable.
-  const conflictDateStr = toDateStr(todaySlot.start);
-  const conflictStartH = todaySlot.start.getHours();
-  const conflictEndH = todaySlot.end.getHours();
-
-  // 15 inquiries across trailing 30 days, mix of statuses (some converted).
-  const inquiryPayloads = Array.from({ length: 15 }).map((_, i) => {
-    const status = pick(["inquiry", "inquiry", "booked", "booked", "archived"] as const);
-    const eventDate = dayOffset(range(30, 200));
-    const startH = range(9, 15); // 9am–3pm start for a business-hours feel
-    const durationH = range(2, 5);
-
-    // Inquiries 13 and 14 are forced "inquiry" and overlap the today booking so the
-    // Inquiry/Conflicted calendar filter and conflict coloring can be verified.
-    const isConflict = i >= 13;
-    // Inquiries 0 and 1 are forced to a PAST "inquiry" so the calendar's past
-    // handling (dimmed candle + Past pill + read-only modal) is demoable/testable.
-    const isPastSeed = i < 2;
-    // Fixed recent-past offsets so both past inquiries land within the current
-    // calendar month and are reliably visible on the default month view.
-    const pastDate = dayOffset(i === 0 ? -7 : -14);
-    const sessionDate = isConflict
-      ? conflictDateStr
-      : isPastSeed
-      ? toDateStr(pastDate)
-      : toDateStr(eventDate);
-    const sessionStartH = isConflict ? conflictStartH : startH;
-    const sessionEndH = isConflict ? conflictEndH : startH + durationH;
-
-    return {
-      workspaceId: workspace._id,
-      clientId: clients[i % clients.length]._id,
-      name: pick([
-        "Lena Okafor",
-        "Jordan Patel",
-        "Maya Tanaka",
-        "Diego Vasquez",
-        "Olivia Park",
-        "Aiyana Cloud",
-        "Hiroshi Sato",
-        "Mia Bernal",
-      ]),
-      email: `lead${i}@example.com`,
-      phone: rand() > 0.4 ? `+63 917 555 ${String(2000 + i).padStart(4, "0")}` : null,
-      message: pick([
-        "Hi! Looking for availability later this year.",
-        "Brand portrait session for a launch — do you take corporate work?",
-        "Considering you for our wedding — what's your starting package?",
-        "Need a venue for ~120 guests in October.",
-      ]),
-      sessions: [
-        {
-          startDate: sessionDate,
-          startTime: toTimeStr(sessionStartH),
-          endTime: toTimeStr(sessionEndH),
-        },
-      ],
-      eventDate: isConflict ? todaySlot.start : isPastSeed ? pastDate : eventDate,
-      eventType: pick(EVENT_TYPES),
-      budgetRange: pick(["under 50k", "50-100k", "100-250k", "250k+"]),
-      status: isConflict ? ("inquiry" as const) : isPastSeed ? ("inquiry" as const) : status,
-      createdAt: dayOffset(-range(0, 30)),
-    };
-  });
-  await Inquiry.insertMany(inquiryPayloads);
-
-  const collection = await GalleryCollection.create({
-    workspaceId: workspace._id,
-    name: "Featured Work",
-    slug: "featured",
-    isPublic: true,
-    order: 0,
-  });
-
-  await GalleryItem.insertMany(
-    [1, 2, 3, 4].map((n) =>
-      buildSeedGalleryItem({
-        workspaceId: workspace._id,
-        collectionId: collection._id,
-        assetId: `seed-${workspace._id}-sample-${n}`,
-        url: `https://picsum.photos/seed/seed-${n}/1600/1067`,
-        width: 1600,
-        height: 1067,
-        format: "jpg",
-        sizeBytes: 250_000,
-        caption: `Sample ${n}`,
-        altText: `Sample ${n}`,
-        order: n,
-      })
-    )
-  );
-
-  // 20 activity log entries spanning the booking/inquiry/transaction creates.
-  const activityPayloads: Array<{
-    workspaceId: mongoose.Types.ObjectId;
-    actorUserId: string;
-    entity: "booking" | "client" | "inquiry" | "gallery" | "transaction" | "workspace";
-    entityId: mongoose.Types.ObjectId | null;
-    action: "created" | "updated" | "deleted" | "status_changed";
-  }> = [
+  return [
     {
-      workspaceId: workspace._id,
-      actorUserId: ownerUserId,
-      entity: "workspace",
-      entityId: null,
-      action: "created",
+      price: deposit,
+      status: "paid" as const,
+      createdAt: depositCreatedAt,
+      paidAt: depositCreatedAt,
+      title: "Reservation deposit",
+    },
+    {
+      price: balance,
+      status: status === "completed" ? ("paid" as const) : ("unpaid" as const),
+      createdAt: balanceCreatedAt,
+      paidAt: status === "completed" ? balanceCreatedAt : null,
+      title: status === "cancelled" ? "Cancelled balance" : "Final balance",
     },
   ];
-  for (let i = 0; i < 19; i += 1) {
-    const kind = pick(["booking", "client", "inquiry", "transaction"] as const);
-    activityPayloads.push({
-      workspaceId: workspace._id,
-      actorUserId: ownerUserId,
-      entity: kind,
-      entityId:
-        kind === "booking"
-          ? pick(bookings)._id
-          : kind === "client"
-            ? pick(clients)._id
-            : null,
-      action: pick(["created", "updated", "status_changed"] as const),
-    });
-  }
-  await ActivityLog.insertMany(activityPayloads);
+}
 
-  console.log(
-    `  ✓ ${w.slug} — ${clients.length} clients, ${bookings.length} bookings (+ transactions), ${inquiryPayloads.length} inquiries`
-  );
-  return { workspace, mainTeam, bookings };
+function firstAndLastSession(sessions: SessionRange[]) {
+  const starts = sessions.map((session) => session.startAt.getTime());
+  const ends = sessions.map((session) => session.endAt.getTime());
+  return {
+    firstSessionStart: new Date(Math.min(...starts)),
+    lastSessionEnd: new Date(Math.max(...ends)),
+  };
+}
+
+function teamForIndex(teams: TeamRef[], index: number): TeamRef {
+  return teams[index % teams.length]!;
+}
+
+function clientForIndex(clients: ClientRef[], index: number): ClientRef {
+  return clients[index % clients.length]!;
+}
+
+function eventTypeForIndex(index: number) {
+  return EVENT_TYPES[index % EVENT_TYPES.length]!;
+}
+
+async function wipeDatabase() {
+  if (!mongoose.connection.db) {
+    throw new Error("MongoDB connection not ready");
+  }
+  await mongoose.connection.db.dropDatabase();
 }
 
 async function syncAllIndexes() {
   for (const name of mongoose.modelNames()) {
     const model = mongoose.model(name);
-    const dropped = await model.syncIndexes();
-    if (dropped.length > 0) {
-      console.log(`  ✓ ${name}: dropped ${dropped.length} stale → ${dropped.join(", ")}`);
-    }
+    await model.syncIndexes();
   }
 }
 
-type OwnerInfo = {
-  email: string;
-  name: string;
-  memberships: Array<{
-    workspaceId: mongoose.Types.ObjectId;
-    role: "owner";
-    lastAccessedAt: Date | null;
-  }>;
-};
-
-/** Build seed notification docs for a user in the primary workspace. */
-function buildSeedNotifications(opts: {
+async function createUser(identity: SeedIdentity, membership: {
   workspaceId: mongoose.Types.ObjectId;
-  recipientWorkosUserId: string;
-  triggeredByWorkosUserId: string;
-  bookingIds: mongoose.Types.ObjectId[];
-  primaryBookingId: mongoose.Types.ObjectId;
-  teamId: mongoose.Types.ObjectId;
-  now: Date;
+  role: "owner" | "staff";
+  lastAccessedAt: Date | null;
 }) {
-  const {
+  return User.create({
+    workosUserId: identity.workosUserId,
+    email: identity.email,
+    name: identity.name,
+    memberships: [membership],
+    onboardingStep: "done",
+    onboardingCompletedAt: new Date(),
+    timeFormat: "12h",
+  });
+}
+
+async function createMainWorkspace(owner: SeedIdentity) {
+  const now = new Date();
+  const workspace = await Workspace.create({
+    slug: MAIN_WORKSPACE.slug,
+    name: MAIN_WORKSPACE.name,
+    ownerUserId: owner.workosUserId,
+    businessType: MAIN_WORKSPACE.businessType,
+    country: MAIN_WORKSPACE.country,
+    currency: MAIN_WORKSPACE.currency,
+    timezone: MAIN_WORKSPACE.timezone,
+    contact: {
+      email: owner.email,
+      phone: "+63 917 000 4242",
+      address: "Level 8, 111 Paseo de Roxas, Makati, Metro Manila",
+      socials: {
+        instagram: "https://instagram.com/northstarstories",
+        facebook: "https://facebook.com/northstarstories",
+        website: "https://northstarstories.example.com",
+      },
+    },
+    plan: "pro",
+    everSubscribed: true,
+    lsSubscriptionId: "seed_owner_active_subscription",
+    lsCustomerId: "seed_owner_customer",
+    lsSubscriptionStatus: "active",
+    lsCurrentPeriodEnd: new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000),
+    onboardingCompletedAt: now,
+  });
+
+  await createUser(owner, {
+    workspaceId: workspace._id,
+    role: "owner",
+    lastAccessedAt: now,
+  });
+
+  return workspace;
+}
+
+async function createExpiredWorkspace(owner: SeedIdentity) {
+  const now = new Date();
+  const billingState = buildExpiredSubscriptionState(now);
+
+  const workspace = await Workspace.create({
+    slug: EXPIRED_WORKSPACE.slug,
+    name: EXPIRED_WORKSPACE.name,
+    ownerUserId: owner.workosUserId,
+    businessType: EXPIRED_WORKSPACE.businessType,
+    country: EXPIRED_WORKSPACE.country,
+    currency: EXPIRED_WORKSPACE.currency,
+    timezone: EXPIRED_WORKSPACE.timezone,
+    onboardingCompletedAt: now,
+    ...billingState,
+  });
+
+  await createUser(owner, {
+    workspaceId: workspace._id,
+    role: "owner",
+    lastAccessedAt: now,
+  });
+
+  const team = await Team.create({
+    workspaceId: workspace._id,
+    name: "Main",
+    color: TEAM_COLOR_PALETTE[0]!,
+    isDefault: true,
+    isActive: true,
+    memberCount: 1,
+    createdByWorkosUserId: owner.workosUserId,
+  });
+
+  await TeamMembership.create({
+    workspaceId: workspace._id,
+    teamId: team._id,
+    workosUserId: owner.workosUserId,
+    role: "lead",
+  });
+
+  return workspace;
+}
+
+async function createTeamsAndMembers(
+  workspaceId: mongoose.Types.ObjectId,
+  owner: SeedIdentity
+): Promise<TeamRef[]> {
+  const teams = await Team.insertMany(
+    TEAM_NAMES.map((name, index) => ({
+      workspaceId,
+      name,
+      color: TEAM_COLOR_PALETTE[index % TEAM_COLOR_PALETTE.length]!,
+      isDefault: index === 0,
+      isActive: true,
+      memberCount: 0,
+      createdByWorkosUserId: owner.workosUserId,
+    }))
+  );
+
+  const users = await User.insertMany(
+    DUMMY_MEMBER_NAMES.map((name, index) => ({
+      workosUserId: `seed_dummy_member_${String(index + 1).padStart(2, "0")}`,
+      email: `seed-member-${String(index + 1).padStart(2, "0")}@example.com`,
+      name,
+      memberships: [{ workspaceId, role: "staff", lastAccessedAt: null }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+      timeFormat: index % 2 === 0 ? "12h" : "24h",
+    }))
+  );
+
+  const membershipMap = new Map<string, { teamId: mongoose.Types.ObjectId; workosUserId: string; role: "member" | "lead" }>();
+  const teamMemberCounts = new Map<string, number>();
+
+  function addMembership(teamId: mongoose.Types.ObjectId, workosUserId: string, role: "member" | "lead") {
+    const key = `${teamId.toString()}::${workosUserId}`;
+    if (membershipMap.has(key)) return;
+    membershipMap.set(key, { teamId, workosUserId, role });
+    teamMemberCounts.set(teamId.toString(), (teamMemberCounts.get(teamId.toString()) ?? 0) + 1);
+  }
+
+  addMembership(teams[0]!._id, owner.workosUserId, "lead");
+
+  for (let teamIndex = 0; teamIndex < teams.length; teamIndex += 1) {
+    const team = teams[teamIndex]!;
+    const leadUser = users[teamIndex % users.length]!;
+    addMembership(team._id, leadUser.workosUserId, "lead");
+
+    const memberOne = users[(teamIndex + 5) % users.length]!;
+    const memberTwo = users[(teamIndex + 9) % users.length]!;
+    addMembership(team._id, memberOne.workosUserId, "member");
+    addMembership(team._id, memberTwo.workosUserId, "member");
+
+    if (teamIndex % 2 === 0) {
+      const crossMember = users[(teamIndex + 13) % users.length]!;
+      addMembership(team._id, crossMember.workosUserId, "member");
+    }
+  }
+
+  await TeamMembership.insertMany([...membershipMap.values()].map((row) => ({
     workspaceId,
-    recipientWorkosUserId,
-    triggeredByWorkosUserId,
-    bookingIds,
-    primaryBookingId,
-    teamId,
-    now,
-  } = opts;
+    ...row,
+  })));
 
-  const dayAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
+  await Promise.all(
+    teams.map((team) =>
+      Team.updateOne(
+        { _id: team._id },
+        { $set: { memberCount: teamMemberCounts.get(team._id.toString()) ?? 0 } }
+      )
+    )
+  );
 
-  return [
+  return teams.map((team) => ({
+    _id: team._id,
+    name: team.name,
+    color: team.color,
+  }));
+}
+
+async function createClients(workspaceId: mongoose.Types.ObjectId): Promise<ClientRef[]> {
+  const clients = await Client.insertMany(
+    CLIENT_SEEDS.map(([name, email, phone, tag], index) => ({
+      workspaceId,
+      name,
+      email,
+      phone,
+      tags: [tag],
+      source: index % 3 === 0 ? "form" : index % 3 === 1 ? "manual" : "referral",
+      totalSpent: 18_000 + index * 7_500,
+      lastBookingAt: dayOffset(-(index + 2)),
+      bookingsCount: 1 + (index % 4),
+      notes:
+        index % 2 === 0
+          ? "Prefers quick approvals and evening touchpoints."
+          : "Open to upsell bundles when turnaround is clear.",
+      lastPaymentAmount: 8_000 + index * 1_250,
+      lastPaymentDate: dayOffset(-(index + 3)),
+    }))
+  );
+
+  return clients.map((client) => ({
+    _id: client._id,
+    name: client.name,
+    email: client.email ?? null,
+    phone: client.phone ?? null,
+  }));
+}
+
+async function createGalleryFixtures(workspaceId: mongoose.Types.ObjectId) {
+  const collections = await GalleryCollection.insertMany([
     {
       workspaceId,
-      recipientWorkosUserId,
-      type: "inquiry.created" as const,
-      entityId: new mongoose.Types.ObjectId(),
-      entityType: "inquiry" as const,
-      triggeredByWorkosUserId,
-      read: false,
-      readAt: null,
-      title: "New inquiry received",
-      body: "You have a new inquiry from Emma Carter.",
-      href: "/en/inquiries",
-      createdAt: dayAgo(1),
+      name: "Weddings",
+      slug: "weddings",
+      isPublic: true,
+      order: 0,
     },
     {
       workspaceId,
-      recipientWorkosUserId,
-      type: "booking.team_assigned" as const,
-      entityId: primaryBookingId,
-      entityType: "booking" as const,
-      triggeredByWorkosUserId,
-      read: false,
-      readAt: null,
-      title: "New booking assigned to your team",
-      body: "Owner assigned a booking to your team.",
-      href: `/en/bookings?detail=${primaryBookingId}`,
-      createdAt: dayAgo(2),
+      name: "Editorial",
+      slug: "editorial",
+      isPublic: true,
+      order: 1,
+    },
+  ]);
+
+  const items = collections.flatMap((collection, collectionIndex) =>
+    Array.from({ length: 6 }, (_, itemIndex) =>
+      buildSeedGalleryItem({
+        workspaceId,
+        collectionId: collection._id,
+        assetId: `seed-${workspaceId}-${collection.slug}-${itemIndex + 1}`,
+        url: `https://picsum.photos/seed/${collection.slug}-${itemIndex + 1}/1600/1067`,
+        width: 1600,
+        height: 1067,
+        format: "jpg",
+        sizeBytes: 280_000,
+        caption: `${collection.name} sample ${itemIndex + 1}`,
+        altText: `${collection.name} sample ${itemIndex + 1}`,
+        order: collectionIndex * 10 + itemIndex,
+      })
+    )
+  );
+
+  await GalleryItem.insertMany(items);
+}
+
+async function createPublishedPortfolio(workspace: {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+}) {
+  const minimalTemplate = getTemplate("minimal");
+  if (!minimalTemplate) {
+    throw new Error("Minimal portfolio template not found");
+  }
+
+  const seed = minimalTemplate.seedData({ workspace: { name: workspace.name } });
+  const publishedAt = new Date();
+
+  await PortfolioDraft.create({
+    workspaceId: workspace._id,
+    name: "Minimal Draft",
+    templateId: "minimal",
+    data: seed,
+    brandKit: minimalTemplate.defaultBrandKit,
+    contact: minimalTemplate.defaultContact,
+    header: minimalTemplate.defaultHeader,
+    collectionsPopup: minimalTemplate.defaultCollectionsPopup,
+    seoTitle: `${workspace.name} | Event Photography Portfolio`,
+    seoDescription: "Documentary wedding, portrait, and brand photography in Metro Manila.",
+    seo: {
+      keywords: ["wedding photographer", "metro manila", "editorial portraits"],
+      galleryDescription: "Selected work across weddings, portraits, and live events.",
+      noindex: false,
+    },
+  });
+
+  await Workspace.updateOne(
+    { _id: workspace._id },
+    {
+      $set: {
+        publicPage: {
+          templateId: "minimal",
+          data: seed,
+          brandKit: minimalTemplate.defaultBrandKit,
+          contact: minimalTemplate.defaultContact,
+          header: minimalTemplate.defaultHeader,
+          collectionsPopup: minimalTemplate.defaultCollectionsPopup,
+          seoTitle: `${workspace.name} | Event Photography Portfolio`,
+          seoDescription: "Documentary wedding, portrait, and brand photography in Metro Manila.",
+          inquiryRecipientEmail: "hello@northstarstories.example.com",
+          publishedAt,
+          lastPublishedAt: publishedAt,
+          latestVersion: 1,
+          guideDismissedAt: publishedAt,
+          storyPromptCompletedAt: publishedAt,
+          formLocale: "en",
+          formDir: "",
+          siteIcon: {
+            url: "https://picsum.photos/seed/site-icon/256/256",
+            assetId: "seed-site-icon",
+          },
+          seo: {
+            keywords: ["wedding photographer", "metro manila", "editorial portraits"],
+            ogImageUrl: "https://picsum.photos/seed/og-image/1200/630",
+            ogImageAssetId: "seed-og-image",
+            galleryDescription: "Selected work across weddings, portraits, and live events.",
+            noindex: false,
+          },
+          settingsDraft: {
+            seoTitle: `${workspace.name} | Event Photography Portfolio`,
+            seoDescription: "Documentary wedding, portrait, and brand photography in Metro Manila.",
+            siteIcon: {
+              url: "https://picsum.photos/seed/site-icon/256/256",
+              assetId: "seed-site-icon",
+            },
+            seo: {
+              keywords: ["wedding photographer", "metro manila", "editorial portraits"],
+              ogImageUrl: "https://picsum.photos/seed/og-image/1200/630",
+              ogImageAssetId: "seed-og-image",
+              galleryDescription: "Selected work across weddings, portraits, and live events.",
+              noindex: false,
+            },
+          },
+        },
+      },
+    }
+  );
+}
+
+async function createBookingsAndTransactions(
+  workspace: {
+    _id: mongoose.Types.ObjectId;
+    currency: string;
+  },
+  owner: SeedIdentity,
+  teams: TeamRef[],
+  clients: ClientRef[]
+) {
+  const featured = [
+    {
+      team: teams[0]!,
+      client: clients[0]!,
+      title: "Emma and Liam Carter - Editorial wedding coverage",
+      eventType: "wedding",
+      status: "booked" as const,
+      sessions: [dateAt(0, 11, 0, 5)],
+      total: 128_000,
+      deposit: 48_000,
+      location: "Makati Shangri-La Ballroom, Makati",
+      notes: "Second shooter arrives 90 minutes early for prep and detail coverage.",
     },
     {
-      workspaceId,
-      recipientWorkosUserId,
-      type: "booking.status_changed" as const,
-      entityId: bookingIds[1] ?? primaryBookingId,
-      entityType: "booking" as const,
-      triggeredByWorkosUserId,
-      read: false,
-      readAt: null,
-      title: "Booking status updated",
-      body: "Owner changed a booking status to completed.",
-      href: `/en/bookings?detail=${bookingIds[1] ?? primaryBookingId}`,
-      createdAt: dayAgo(3),
+      team: teams[1]!,
+      client: clients[1]!,
+      title: "Priya Shah - Engagement session",
+      eventType: "engagement",
+      status: "booked" as const,
+      sessions: [dateAt(2, 15, 30, 3)],
+      total: 32_000,
+      deposit: 12_000,
+      location: "Pinto Art Museum, Antipolo",
+      notes: "Golden-hour outdoor portraits plus 30-minute indoor backup plan.",
     },
     {
-      workspaceId,
-      recipientWorkosUserId,
-      type: "team.invitation" as const,
-      entityId: teamId,
-      entityType: "team" as const,
-      triggeredByWorkosUserId,
-      read: true,
-      readAt: dayAgo(4),
-      title: "You've been invited to a team",
-      body: "Owner invited you to join Main.",
-      href: "/en/teams",
-      createdAt: dayAgo(5),
+      team: teams[2]!,
+      client: clients[2]!,
+      title: "Northline Events - Leadership summit day one",
+      eventType: "corporate",
+      status: "booked" as const,
+      sessions: [dateAt(4, 9, 0, 8), dateAt(5, 9, 0, 7)],
+      total: 94_000,
+      deposit: 35_000,
+      location: "The Peninsula Manila, Makati",
+      notes: "Need fast same-day selects for the keynote screen.",
     },
     {
-      workspaceId,
-      recipientWorkosUserId,
-      type: "booking.status_changed" as const,
-      entityId: bookingIds[2] ?? primaryBookingId,
-      entityType: "booking" as const,
-      triggeredByWorkosUserId,
-      read: true,
-      readAt: dayAgo(6),
-      title: "Booking status updated",
-      body: "Owner changed a booking status to booked.",
-      href: `/en/bookings?detail=${bookingIds[2] ?? primaryBookingId}`,
-      createdAt: dayAgo(7),
+      team: teams[4]!,
+      client: clients[4]!,
+      title: "Olivia Park - Bridal editorial",
+      eventType: "portrait",
+      status: "booked" as const,
+      sessions: [dateAt(7, 13, 0, 4)],
+      total: 28_000,
+      deposit: 10_000,
+      location: "BGC studio loft, Taguig",
+      notes: "White seamless setup plus window-light portraits.",
+    },
+    {
+      team: teams[5]!,
+      client: clients[5]!,
+      title: "Diego Santos - Anniversary film stills",
+      eventType: "anniversary",
+      status: "completed" as const,
+      sessions: [dateAt(-4, 16, 0, 4)],
+      total: 42_000,
+      deposit: 14_000,
+      location: "Las Casas Filipinas de Acuzar, Quezon City",
+      notes: "Client requested a strong blue-hour set before dinner.",
+    },
+    {
+      team: teams[6]!,
+      client: clients[6]!,
+      title: "Ariana Bloom - Brand relaunch portraits",
+      eventType: "corporate",
+      status: "completed" as const,
+      sessions: [dateAt(-12, 10, 0, 6)],
+      total: 58_000,
+      deposit: 20_000,
+      location: "Whitespace Manila, Makati",
+      notes: "Deliver hero selects first for the campaign deck.",
     },
   ];
+
+  const generated = Array.from({ length: 24 }, (_, index) => {
+    const team = teamForIndex(teams, index + 3);
+    const client = clientForIndex(clients, index + 2);
+    const status =
+      index % 9 === 0 ? ("cancelled" as const) : index % 4 === 0 ? ("completed" as const) : ("booked" as const);
+    const dayDelta = -40 + index * 4;
+    const startHour = 9 + (index % 7);
+    const duration = 2 + (index % 5);
+    const total = 26_000 + index * 4_500;
+    const deposit = Math.floor(total * 0.35);
+
+    return {
+      team,
+      client,
+      title: `${client.name} - ${eventTypeForIndex(index + 3)} coverage`,
+      eventType: eventTypeForIndex(index + 3),
+      status,
+      sessions: [dateAt(dayDelta, startHour, 0, duration)],
+      total,
+      deposit,
+      location: `${180 + index} Ayala Avenue, Makati`,
+      notes:
+        status === "cancelled"
+          ? "Client postponed after venue availability changed."
+          : "Keep a fast-turnaround teaser set in the first delivery batch.",
+    };
+  });
+
+  const allSpecs = [...featured, ...generated];
+
+  const bookings = await Booking.insertMany(
+    allSpecs.map((spec, index) => {
+      const { firstSessionStart, lastSessionEnd } = firstAndLastSession(spec.sessions);
+      return {
+        workspaceId: workspace._id,
+        teamId: spec.team._id,
+        clientId: spec.client._id,
+        clientName: spec.client.name,
+        title: spec.title,
+        eventType: spec.eventType,
+        status: spec.status,
+        sessions: spec.sessions,
+        firstSessionStart,
+        lastSessionEnd,
+        location: {
+          label: spec.location.split(",")[0],
+          address: spec.location,
+        },
+        amount: {
+          total: spec.total,
+          deposit: spec.deposit,
+          currency: workspace.currency,
+        },
+        payments: buildPayments(firstSessionStart, spec.total, spec.deposit, spec.status),
+        invoiceNumber: `INV-${String(index + 1).padStart(4, "0")}`,
+        notes: spec.notes,
+        customFields: {
+          deliveryWindow: spec.status === "completed" ? "7 days" : "14 days",
+          shotListReady: index % 3 === 0,
+        },
+      };
+    })
+  );
+
+  for (const booking of bookings) {
+    await recordBookingForClient({
+      workspaceId: workspace._id,
+      clientId: booking.clientId,
+      booking: {
+        _id: booking._id,
+        amount: booking.amount,
+        firstSessionStart: booking.firstSessionStart,
+        teamId: booking.teamId,
+      },
+      source: "seed",
+    });
+  }
+
+  const supplementalTransactions = bookings.flatMap((booking, index) => {
+    const paidAt = new Date(booking.firstSessionStart);
+    paidAt.setDate(paidAt.getDate() - 2);
+    const balance = Math.max((booking.amount?.total ?? 0) - (booking.amount?.deposit ?? 0), 0);
+    const rows: Array<Record<string, unknown>> = [];
+
+    if (booking.status === "completed" && balance > 0) {
+      rows.push({
+        workspaceId: workspace._id,
+        bookingId: booking._id,
+        teamId: booking.teamId,
+        clientId: booking.clientId,
+        amount: balance,
+        currency: workspace.currency,
+        type: "balance",
+        method: index % 2 === 0 ? "transfer" : "cash",
+        paidAt,
+        notes: "Final balance settled in full.",
+      });
+    }
+
+    if (booking.status === "completed" && index % 7 === 0) {
+      rows.push({
+        workspaceId: workspace._id,
+        bookingId: booking._id,
+        teamId: booking.teamId,
+        clientId: booking.clientId,
+        amount: -4_000,
+        currency: workspace.currency,
+        type: "refund",
+        method: "transfer",
+        paidAt: new Date(paidAt.getTime() + 24 * 60 * 60 * 1000),
+        notes: "Travel fee adjustment refunded after venue moved closer.",
+      });
+    }
+
+    return rows;
+  });
+
+  if (supplementalTransactions.length > 0) {
+    await Transaction.insertMany(supplementalTransactions);
+  }
+
+  await ActivityLog.insertMany(
+    bookings.slice(0, 18).map((booking, index) => ({
+      workspaceId: workspace._id,
+      actorUserId: owner.workosUserId,
+      entity: "booking" as const,
+      entityId: booking._id,
+      action: index % 3 === 0 ? "created" : index % 3 === 1 ? "updated" : "status_changed",
+      createdAt: dayOffset(-(index + 1)),
+      meta: {
+        title: booking.title,
+        status: booking.status,
+      },
+    }))
+  );
+
+  return bookings;
+}
+
+async function createInquiries(
+  workspace: {
+    _id: mongoose.Types.ObjectId;
+    currency: string;
+  },
+  teams: TeamRef[],
+  owner: SeedIdentity
+) {
+  const leadClients = await Client.insertMany(
+    Array.from({ length: 14 }, (_, index) => ({
+      workspaceId: workspace._id,
+      name: `Lead Prospect ${index + 1}`,
+      email: `lead-prospect-${index + 1}@example.com`,
+      phone: `+63 917 700 ${String(2000 + index).slice(-4)}`,
+      source: "form",
+      totalSpent: 0,
+      bookingsCount: 0,
+      notes: "Public portfolio inquiry lead.",
+    }))
+  );
+
+  const conflictA = dateAt(0, 11, 0, 5);
+  const conflictB = dateAt(4, 9, 0, 8);
+
+  const inquirySpecs = Array.from({ length: 14 }, (_, index) => {
+    const status =
+      index < 6 ? "inquiry" : index < 10 ? "booked" : index < 12 ? "converted" : "archived";
+
+    const baseSession =
+      index === 0
+        ? conflictA
+        : index === 1
+          ? conflictB
+          : dateAt(9 + index * 2, 10 + (index % 5), 0, 2 + (index % 4));
+
+    const eventDate = new Date(baseSession.startAt);
+    return {
+      status,
+      client: leadClients[index]!,
+      team: teamForIndex(teams, index + 1),
+      title:
+        status === "inquiry"
+          ? "New portfolio inquiry"
+          : status === "archived"
+            ? "Archived lead follow-up"
+            : "Approved inquiry booking",
+      eventTitle: index % 2 === 0 ? "Garden celebration" : "Brand launch coverage",
+      eventType: eventTypeForIndex(index + 1),
+      guestCount: 30 + index * 12,
+      location: {
+        label: index % 2 === 0 ? "Outdoor venue" : "City venue",
+        address:
+          index % 2 === 0
+            ? `${220 + index} Rizal Drive, Taguig`
+            : `${75 + index} Molito Complex, Alabang`,
+      },
+      message:
+        status === "archived"
+          ? "Budget shifted for now, but keeping your package notes on file."
+          : "Found the portfolio through Instagram and would love coverage details.",
+      sessions: [
+        {
+          startDate: isoDateLocal(baseSession.startAt),
+          startTime: `${String(baseSession.startAt.getHours()).padStart(2, "0")}:${String(baseSession.startAt.getMinutes()).padStart(2, "0")}`,
+          endTime: `${String(baseSession.endAt.getHours()).padStart(2, "0")}:${String(baseSession.endAt.getMinutes()).padStart(2, "0")}`,
+        },
+      ],
+      eventDate,
+      createdAt: dayOffset(-(index + 1)),
+      preferredContact: index % 2 === 0 ? "email" : "phone",
+      budgetRange: index % 3 === 0 ? "50-100k" : index % 3 === 1 ? "100-250k" : "under 50k",
+      source: {
+        kind: "portfolio",
+        utm_source: index % 2 === 0 ? "instagram" : "google",
+        utm_medium: index % 2 === 0 ? "social" : "search",
+        utm_campaign: index % 4 === 0 ? "summer-showcase" : "evergreen-portfolio",
+        referrer: index % 2 === 0 ? "https://instagram.com" : "https://google.com",
+      },
+    };
+  });
+
+  const relatedBookings: mongoose.Types.ObjectId[] = [];
+
+  for (const [index, spec] of inquirySpecs.entries()) {
+    const draftStatus = spec.status === "inquiry" ? "draft" : "booked";
+    const sessions = spec.sessions.map((session) => {
+      const [year, month, day] = session.startDate.split("-").map(Number);
+      const [startHour, startMinute] = session.startTime.split(":").map(Number);
+      const [endHour, endMinute] = session.endTime.split(":").map(Number);
+      const startAt = new Date(year, month - 1, day, startHour, startMinute, 0, 0);
+      const endAt = new Date(year, month - 1, day, endHour, endMinute, 0, 0);
+      return { startAt, endAt };
+    });
+    const { firstSessionStart, lastSessionEnd } = firstAndLastSession(sessions);
+
+    const booking = await Booking.create({
+      workspaceId: workspace._id,
+      teamId: spec.team._id,
+      clientId: spec.client._id,
+      clientName: spec.client.name,
+      title: `${spec.client.name} - ${spec.eventTitle}`,
+      eventType: spec.eventType,
+      status: draftStatus,
+      sessions,
+      firstSessionStart,
+      lastSessionEnd,
+      location: spec.location,
+      amount: {
+        total: draftStatus === "draft" ? 0 : 46_000 + index * 3_000,
+        deposit: draftStatus === "draft" ? 0 : 16_000 + index * 1_000,
+        currency: workspace.currency,
+      },
+      payments:
+        draftStatus === "draft"
+          ? []
+          : buildPayments(firstSessionStart, 46_000 + index * 3_000, 16_000 + index * 1_000, "booked"),
+      notes:
+        draftStatus === "draft"
+          ? "Draft booking seeded from inquiry for inbox testing."
+          : "Converted inquiry booking for detail modal screenshots.",
+      createdFromInquiryId: null,
+    });
+
+    relatedBookings.push(booking._id);
+  }
+
+  const inquiries = await Inquiry.insertMany(
+    inquirySpecs.map((spec, index) => {
+      const bookingId = relatedBookings[index]!;
+      return {
+        workspaceId: workspace._id,
+        name: spec.client.name,
+        email: spec.client.email,
+        phone: spec.client.phone,
+        preferredContact: spec.preferredContact,
+        message: spec.message,
+        sessions: spec.sessions,
+        eventDate: spec.eventDate,
+        eventTitle: spec.eventTitle,
+        eventType: spec.eventType,
+        guestCount: spec.guestCount,
+        location: spec.location,
+        budgetRange: spec.budgetRange,
+        source: spec.source,
+        status: spec.status,
+        clientId: spec.client._id,
+        draftBookingId: spec.status === "inquiry" ? bookingId : null,
+        convertedClientId: spec.status === "booked" || spec.status === "converted" ? spec.client._id : null,
+        convertedBookingId: spec.status === "booked" || spec.status === "converted" ? bookingId : null,
+        createdAt: spec.createdAt,
+        updatedAt: spec.status === "inquiry" ? spec.createdAt : new Date(spec.createdAt.getTime() + 86_400_000),
+      };
+    })
+  );
+
+  await Promise.all(
+    inquiries.slice(0, 10).map((inquiry, index) =>
+      ActivityLog.create({
+        workspaceId: workspace._id,
+        actorUserId: owner.workosUserId,
+        entity: "inquiry",
+        entityId: inquiry._id,
+        action: index % 2 === 0 ? "created" : "status_changed",
+        createdAt: new Date(inquiry.createdAt),
+        meta: {
+          status: inquiry.status,
+          name: inquiry.name,
+        },
+      })
+    )
+  );
+}
+
+async function createPortfolioAnalytics(workspaceId: mongoose.Types.ObjectId) {
+  const fixtures = buildPortfolioPageviewFixtures(new Date(), 35);
+  await PageviewRollup.insertMany(
+    fixtures.map((fixture) => ({
+      workspaceId,
+      ...fixture,
+    }))
+  );
+}
+
+async function createNotifications(workspaceId: mongoose.Types.ObjectId, owner: SeedIdentity) {
+  await Notification.insertMany([
+    {
+      workspaceId,
+      recipientWorkosUserId: owner.workosUserId,
+      triggeredByWorkosUserId: "system",
+      type: "inquiry.created",
+      entityType: "inquiry",
+      entityId: new mongoose.Types.ObjectId(),
+      title: "New portfolio inquiry",
+      body: "A new inquiry came in from the public contact form.",
+      href: "/inquiries",
+      read: false,
+      readAt: null,
+      createdAt: dayOffset(-1),
+    },
+    {
+      workspaceId,
+      recipientWorkosUserId: owner.workosUserId,
+      triggeredByWorkosUserId: "system",
+      type: "booking.status_changed",
+      entityType: "booking",
+      entityId: new mongoose.Types.ObjectId(),
+      title: "Booking updated",
+      body: "A team updated the status of an upcoming booking.",
+      href: "/bookings",
+      read: true,
+      readAt: dayOffset(-2),
+      createdAt: dayOffset(-2),
+    },
+  ]);
+}
+
+async function seedMainWorkspace(owner: SeedIdentity) {
+  const workspace = await createMainWorkspace(owner);
+  const teams = await createTeamsAndMembers(workspace._id, owner);
+  const clients = await createClients(workspace._id);
+
+  await Promise.all([
+    createGalleryFixtures(workspace._id),
+    createPublishedPortfolio({ _id: workspace._id, name: workspace.name }),
+  ]);
+
+  await createBookingsAndTransactions(
+    { _id: workspace._id, currency: workspace.currency },
+    owner,
+    teams,
+    clients
+  );
+  await createInquiries({ _id: workspace._id, currency: workspace.currency }, teams, owner);
+  await createPortfolioAnalytics(workspace._id);
+  await createNotifications(workspace._id, owner);
+
+  return workspace;
 }
 
 async function main() {
   if (process.env.NODE_ENV === "production") {
-    throw new Error("Refusing to seed in NODE_ENV=production");
+    throw new Error("Refusing to seed in production");
   }
 
-  // --- Owner account (required for a fully functional dev workspace) --------
-  // SEED_OWNER_WORKOS_USER_ID must be the real WorkOS user_... id because
-  // ensureUser() (the JIT-provisioning hook) matches on workosUserId at sign-in;
-  // if the ids don't match, the user lands in onboarding instead of the workspace.
-  const sharedOwnerId = process.env.SEED_OWNER_WORKOS_USER_ID?.trim() || null;
-  const sharedOwnerEmail = process.env.SEED_OWNER_EMAIL?.trim() || null;
-  const sharedOwnerName = process.env.SEED_OWNER_NAME?.trim() || null;
+  const owner = readSeedOwner(process.env);
+  const expiredOwner = readExpiredSeedOwner(process.env);
 
-  // --- Staff member (optional — skip if env vars absent) -------------------
-  const staffId = process.env.SEED_STAFF_WORKOS_USER_ID?.trim() || null;
-  const staffEmail = process.env.SEED_STAFF_EMAIL?.trim() || null;
-  const staffName = process.env.SEED_STAFF_NAME?.trim() || "Staff Member";
-  const seedStaff = !!(staffId && staffEmail);
-
-  // --- Team lead (optional — skip if env vars absent) ----------------------
-  const leadId = process.env.SEED_LEAD_WORKOS_USER_ID?.trim() || null;
-  const leadEmail = process.env.SEED_LEAD_EMAIL?.trim() || null;
-  const leadName = process.env.SEED_LEAD_NAME?.trim() || "Team Lead";
-  const seedLead = !!(leadId && leadEmail);
-
-  const now = new Date();
-
-  console.log("→ Connecting to MongoDB…");
+  console.log("-> Connecting to MongoDB");
   await connectDB();
 
-  // Drop documents BEFORE syncing indexes: a pre-migration collection can hold
-  // legacy docs (e.g. users with no workosUserId) that would break a unique
-  // index build. Emptying first lets indexes rebuild cleanly.
-  console.log("→ Dropping tenant collections…");
-  await dropTenantCollections();
+  console.log("-> Wiping current development database");
+  await wipeDatabase();
 
-  console.log("→ Syncing indexes (drops stale, rebuilds from schemas)…");
+  console.log("-> Rebuilding indexes");
   await syncAllIndexes();
 
-  console.log("→ Seeding demo workspaces…");
-  const owners = new Map<string, OwnerInfo>();
+  console.log("-> Seeding main demo workspace");
+  const mainWorkspace = await seedMainWorkspace(owner);
 
-  // Track primary workspace + team for staff/lead wiring (index 0 = sarah-bell-photo).
-  let primaryWorkspaceId: mongoose.Types.ObjectId | null = null;
-  let primaryTeamId: mongoose.Types.ObjectId | null = null;
-  let primaryBookingIds: mongoose.Types.ObjectId[] = [];
+  console.log("-> Seeding expired subscription workspace");
+  const expiredWorkspace = await createExpiredWorkspace(expiredOwner);
 
-  for (let i = 0; i < DEMO_WORKSPACES.length; i += 1) {
-    const w = DEMO_WORKSPACES[i];
-    const ownerUserId = sharedOwnerId ?? w.ownerUserId;
-    const { workspace, mainTeam, bookings } = await seedWorkspace(w, i, ownerUserId);
+  console.log("-> Seeding promo codes");
+  await PromoCode.insertMany(PROMO_CODE_SEEDS);
 
-    if (i === 0) {
-      // The first workspace (sarah-bell-photo) is the shared "dev" workspace.
-      primaryWorkspaceId = workspace._id;
-      primaryTeamId = mainTeam._id;
-      primaryBookingIds = bookings.map((b) => b._id as mongoose.Types.ObjectId);
-    }
-
-    let owner = owners.get(ownerUserId);
-    if (!owner) {
-      owner = {
-        email: sharedOwnerId ? sharedOwnerEmail ?? w.ownerEmail : w.ownerEmail,
-        name: sharedOwnerId ? sharedOwnerName ?? w.ownerName : w.ownerName,
-        memberships: [],
-      };
-      owners.set(ownerUserId, owner);
-    }
-    owner.memberships.push({
-      workspaceId: workspace._id,
-      role: "owner",
-      // Stamp the FIRST workspace as most-recently-accessed so getActiveWorkspaceId
-      // lands the owner there on sign-in instead of showing a workspace chooser.
-      lastAccessedAt: owner.memberships.length === 0 ? now : null,
-    });
-  }
-
-  console.log("→ Seeding promo codes…");
-  await PromoCode.insertMany([
-    { title: "Lifetime Pro", code: "LIFETIME2026", type: "lifetime", expiresAt: null },
-    { title: "1 Year Pro", code: "YEARPRO2026", type: "yearly", expiresAt: null },
-    { title: "1 Month Pro", code: "MONTHPRO2026", type: "monthly", expiresAt: null },
-    { title: "Beta Access", code: "BETAACCESS", type: "beta", expiresAt: null },
-  ]);
-
-  console.log("→ Creating owner users…");
-  for (const [ownerUserId, info] of owners) {
-    await User.create({
-      workosUserId: ownerUserId,
-      email: info.email,
-      name: info.name,
-      memberships: info.memberships,
-      onboardingStep: "done",
-      onboardingCompletedAt: now,
-    });
-  }
-
-  // --- Add owner to primary team as lead ------------------------------------
-  const ownerWorkosId = sharedOwnerId ?? DEMO_WORKSPACES[0].ownerUserId;
-  if (primaryWorkspaceId && primaryTeamId) {
-    await TeamMembership.create({
-      workspaceId: primaryWorkspaceId,
-      teamId: primaryTeamId,
-      workosUserId: ownerWorkosId,
-      role: "lead",
-    });
-    let memberCount = 1;
-
-    // --- Staff member -------------------------------------------------------
-    if (seedStaff) {
-      console.log("→ Creating staff member user…");
-      // workosUserId must match the real WorkOS user_... id so JIT sign-in
-      // recognises the returning user and finds their pre-seeded membership.
-      await User.create({
-        workosUserId: staffId,
-        email: staffEmail,
-        name: staffName,
-        memberships: [{ workspaceId: primaryWorkspaceId, role: "staff", lastAccessedAt: now }],
-        onboardingStep: "done",
-        onboardingCompletedAt: now,
-      });
-      await TeamMembership.create({
-        workspaceId: primaryWorkspaceId,
-        teamId: primaryTeamId,
-        workosUserId: staffId,
-        role: "member",
-      });
-      memberCount += 1;
-    }
-
-    // --- Team lead ----------------------------------------------------------
-    if (seedLead) {
-      console.log("→ Creating team lead user…");
-      await User.create({
-        workosUserId: leadId,
-        email: leadEmail,
-        name: leadName,
-        memberships: [{ workspaceId: primaryWorkspaceId, role: "staff", lastAccessedAt: now }],
-        onboardingStep: "done",
-        onboardingCompletedAt: now,
-      });
-      await TeamMembership.create({
-        workspaceId: primaryWorkspaceId,
-        teamId: primaryTeamId,
-        workosUserId: leadId,
-        role: "lead",
-      });
-      memberCount += 1;
-    }
-
-    // Reflect actual team roster in memberCount.
-    await Team.updateOne({ _id: primaryTeamId }, { $set: { memberCount } });
-
-    // --- Seed notifications so the bell/badge/modal have real content -------
-    console.log("→ Seeding notifications…");
-    const notificationDocs: ReturnType<typeof buildSeedNotifications> = [];
-    const primaryBookingId = primaryBookingIds[0] ?? new mongoose.Types.ObjectId();
-
-    // Owner notifications (triggered by a placeholder system actor).
-    notificationDocs.push(
-      ...buildSeedNotifications({
-        workspaceId: primaryWorkspaceId,
-        recipientWorkosUserId: ownerWorkosId,
-        triggeredByWorkosUserId: staffId ?? "system",
-        bookingIds: primaryBookingIds,
-        primaryBookingId,
-        teamId: primaryTeamId,
-        now,
-      })
-    );
-
-    // Staff notifications (triggered by owner).
-    if (seedStaff && staffId) {
-      notificationDocs.push(
-        ...buildSeedNotifications({
-          workspaceId: primaryWorkspaceId,
-          recipientWorkosUserId: staffId,
-          triggeredByWorkosUserId: ownerWorkosId,
-          bookingIds: primaryBookingIds,
-          primaryBookingId,
-          teamId: primaryTeamId,
-          now,
-        })
-      );
-    }
-
-    if (notificationDocs.length > 0) {
-      await Notification.insertMany(notificationDocs);
-      console.log(`  ✓ ${notificationDocs.length} notification docs inserted`);
-    }
-  }
-
-  const ownerEmailDisplay = sharedOwnerEmail ?? DEMO_WORKSPACES[0].ownerEmail;
-
-  console.log("\n✓ Seed complete.\n");
-  console.log("  Workspace : sarah-bell-photo (primary dev workspace)");
-  console.log(`  Owner     : ${ownerEmailDisplay} (SEED_OWNER_WORKOS_USER_ID=${ownerWorkosId})`);
-  if (seedStaff) console.log(`  Staff     : ${staffEmail}`);
-  if (seedLead)  console.log(`  Lead      : ${leadEmail}`);
-  if (!seedStaff && !seedLead) {
-    console.log("  Staff/Lead: not configured (set SEED_STAFF_* / SEED_LEAD_* to add them)");
-  }
-  console.log("  Turnstile : bypassed in NODE_ENV=development (no challenge required)");
-
-  if (!sharedOwnerId) {
-    console.log("\nNote: owner WorkOS user IDs are placeholders (user_demo_*), so you");
-    console.log("cannot sign in as these workspaces yet. For a one-step reset, set");
-    console.log("SEED_OWNER_WORKOS_USER_ID (your real user_... id) in .env.local, then re-run.");
-  }
+  console.log("");
+  console.log("Seed complete.");
+  console.log(`  Main owner       : ${owner.email}`);
+  console.log(`  Main workspace   : ${mainWorkspace.slug}`);
+  console.log(`  Expired owner    : ${expiredOwner.email}`);
+  console.log(`  Expired workspace: ${expiredWorkspace.slug}`);
+  console.log("  Notes            : owner workspace is active pro; expired workspace is gated free.");
 
   await mongoose.disconnect();
-  process.exit(0);
 }
 
-main().catch((err) => {
-  console.error(err);
+main().catch(async (error) => {
+  console.error(error);
+  try {
+    await mongoose.disconnect();
+  } catch {
+    // ignore shutdown errors after a seed failure
+  }
   process.exit(1);
 });
