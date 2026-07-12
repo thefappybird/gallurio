@@ -169,7 +169,7 @@
         "feature6": "Akses prioritas ke fitur baru"
       },
       "billingNotice": {
-        "body1": "Ketika langganan berbayar tersedia, pembayaran akan diproses secara aman oleh Paddle, Merchant of Record kami. Paddle dapat menangani pemrosesan pembayaran, perhitungan pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body1": "Ketika langganan berbayar tersedia, pembayaran akan diproses secara aman oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy dapat menangani pemrosesan pembayaran, perhitungan pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
         "body2": "Tidak ada pembayaran nyata yang dikumpulkan selama beta kecuali dinyatakan dengan jelas saat checkout."
       },
       "pricingTransparency": {
@@ -230,7 +230,7 @@
       "subscriptions": {
         "title": "8. Langganan dan Pembayaran",
         "body1": "Beberapa fitur Gallurio mungkin memerlukan langganan berbayar.",
-        "body2": "Ketika paket berbayar tersedia, penagihan dapat diproses oleh Paddle, Merchant of Record kami. Paddle dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan alur kerja pengembalian dana yang berlaku.",
+        "body2": "Ketika paket berbayar tersedia, penagihan dapat diproses oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan alur kerja pengembalian dana yang berlaku.",
         "body3": "Pengguna akan diperlihatkan harga dan ketentuan penagihan yang berlaku sebelum menyelesaikan pembelian."
       },
       "cancellations": {
@@ -294,7 +294,7 @@
         },
         "payment": {
           "title": "Informasi Pembayaran",
-          "body": "Ketika fitur berbayar tersedia, pembayaran dapat diproses oleh Paddle, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran. Paddle dapat mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice sesuai dengan ketentuan dan praktik privasinya sendiri."
+          "body": "Ketika fitur berbayar tersedia, pembayaran dapat diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran. Lemon Squeezy dapat mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice sesuai dengan ketentuan dan praktik privasinya sendiri."
         }
       },
       "useOfInfo": {
@@ -357,7 +357,7 @@
     "refunds": {
       "metadata": {
         "title": "Kebijakan Pengembalian Dana — Gallurio",
-        "description": "Pelajari bagaimana Gallurio menangani pembatalan, pengembalian dana, dan pemrosesan pembayaran Paddle."
+        "description": "Pelajari bagaimana Gallurio menangani pembatalan, pengembalian dana, dan pemrosesan pembayaran Lemon Squeezy."
       },
       "title": "Kebijakan Pengembalian Dana",
       "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
@@ -382,13 +382,13 @@
         "item5": "Masalah teknis",
         "item6": "Biaya ganda",
         "item7": "Hukum perlindungan konsumen yang berlaku",
-        "item8": "Proses pembayaran dan pengembalian dana Paddle",
+        "item8": "Proses pembayaran dan pengembalian dana Lemon Squeezy",
         "outro": "Mengirimkan permintaan pengembalian dana tidak menjamin bahwa pengembalian dana akan disetujui."
       },
-      "paddleMor": {
-        "title": "4. Paddle sebagai Merchant of Record",
-        "body1": "Pembayaran untuk Gallurio dapat diproses oleh Paddle, Merchant of Record Gallurio. Paddle dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
-        "body2": "Jika pengguna membeli langganan Gallurio melalui Paddle, laporan penagihan mereka mungkin menampilkan Paddle atau deskriptor penagihan Paddle terkait."
+      "merchantOfRecord": {
+        "title": "4. Lemon Squeezy sebagai Merchant of Record",
+        "body1": "Pembayaran untuk Gallurio dapat diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Lemon Squeezy dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body2": "Jika pengguna membeli langganan Gallurio melalui Lemon Squeezy, laporan penagihan mereka mungkin menampilkan Lemon Squeezy atau deskriptor penagihan Lemon Squeezy terkait."
       },
       "nonRefundable": {
         "title": "5. Situasi yang Tidak Dapat Dikembalikan Dananya",

@@ -169,7 +169,7 @@
         "feature6": "Priority feature access"
       },
       "billingNotice": {
-        "body1": "Kapag naging available na ang paid subscriptions, ligtas na iproproseso ang bayad ng Paddle, ang aming Merchant of Record. Maaaring pangasiwaan ng Paddle ang payment processing, pagkalkula ng buwis, invoice, billing support, at eligible na refund processing.",
+        "body1": "Kapag naging available na ang paid subscriptions, ligtas na iproproseso ang bayad ng Lemon Squeezy, ang aming Merchant of Record. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, pagkalkula ng buwis, invoice, billing support, at eligible na refund processing.",
         "body2": "Walang totoong bayad na kinokolekta habang beta maliban kung malinaw na nakasaad sa checkout."
       },
       "pricingTransparency": {
@@ -230,7 +230,7 @@
       "subscriptions": {
         "title": "8. Subscriptions at Bayad",
         "body1": "Maaaring mangailangan ng paid subscription ang ilang feature ng Gallurio.",
-        "body2": "Kapag naging available na ang mga paid plan, maaaring iproseso ng Paddle ang billing, ang aming Merchant of Record. Maaaring pangasiwaan ng Paddle ang payment processing, buwis, invoice, billing support, at naaangkop na refund workflows.",
+        "body2": "Kapag naging available na ang mga paid plan, maaaring iproseso ng Lemon Squeezy ang billing, ang aming Merchant of Record. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, buwis, invoice, billing support, at naaangkop na refund workflows.",
         "body3": "Ipapakita sa mga user ang naaangkop na presyo at billing terms bago kumpletuhin ang isang pagbili."
       },
       "cancellations": {
@@ -294,7 +294,7 @@
         },
         "payment": {
           "title": "Impormasyon sa Bayad",
-          "body": "Kapag naging available na ang mga paid feature, maaaring iproseso ng Paddle, ang Merchant of Record ng Gallurio, ang mga bayad. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card. Maaaring kolektahin at iproseso ng Paddle ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice ayon sa sarili nitong mga tuntunin at privacy practices."
+          "body": "Kapag naging available na ang mga paid feature, maaaring iproseso ng Lemon Squeezy, ang Merchant of Record ng Gallurio, ang mga bayad. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card. Maaaring kolektahin at iproseso ng Lemon Squeezy ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice ayon sa sarili nitong mga tuntunin at privacy practices."
         }
       },
       "useOfInfo": {
@@ -357,7 +357,7 @@
     "refunds": {
       "metadata": {
         "title": "Patakaran sa Refund — Gallurio",
-        "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation, refund, at payment processing ng Paddle."
+        "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation, refund, at payment processing ng Lemon Squeezy."
       },
       "title": "Patakaran sa Refund",
       "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
@@ -382,13 +382,13 @@
         "item5": "Mga isyu sa technical",
         "item6": "Duplicate na singil",
         "item7": "Naaangkop na mga batas sa proteksyon ng consumer",
-        "item8": "Proseso ng bayad at refund ng Paddle",
+        "item8": "Proseso ng bayad at refund ng Lemon Squeezy",
         "outro": "Ang pagsusumite ng kahilingan sa refund ay hindi ginagarantiya na maaaprubahan ang refund."
       },
-      "paddleMor": {
-        "title": "4. Paddle bilang Merchant of Record",
-        "body1": "Ang mga bayad para sa Gallurio ay maaaring iproseso ng Paddle, ang Merchant of Record ng Gallurio. Maaaring pangasiwaan ng Paddle ang payment processing, buwis, invoice, billing support, at eligible na refund processing.",
-        "body2": "Kung bumili ang isang user ng subscription ng Gallurio sa pamamagitan ng Paddle, maaaring ipakita sa kanilang billing statement ang Paddle o isang kaugnay na Paddle billing descriptor."
+      "merchantOfRecord": {
+        "title": "4. Lemon Squeezy bilang Merchant of Record",
+        "body1": "Ang mga bayad para sa Gallurio ay maaaring iproseso ng Lemon Squeezy, ang Merchant of Record ng Gallurio. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, buwis, invoice, billing support, at eligible na refund processing.",
+        "body2": "Kung bumili ang isang user ng subscription ng Gallurio sa pamamagitan ng Lemon Squeezy, maaaring ipakita sa kanilang billing statement ang Lemon Squeezy o isang kaugnay na Lemon Squeezy billing descriptor."
       },
       "nonRefundable": {
         "title": "5. Mga Sitwasyong Hindi Maaaring i-Refund",

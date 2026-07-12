@@ -3,10 +3,7 @@
 Gallurio bills tenants (workspace owners) via **Lemon Squeezy**, a Merchant of
 Record (MoR) — it collects payments worldwide, remits VAT/GST/sales tax in
 every jurisdiction it supports, and pays out net proceeds to Gallurio.
-Lemon Squeezy replaced Paddle because Gallurio has no registered PH business
-entity yet: Paddle requires one, Lemon Squeezy accepts an individual/sole
-proprietor seller. This is a hard cutover — no live Paddle subscribers existed,
-so there was no data migration.
+Lemon Squeezy is the current provider because Gallurio does not yet have a registered PH business entity and needed a provider that can onboard an individual/sole-proprietor seller. This was a hard cutover with no live subscribers, so there was no data migration.
 
 **Currently running in test/sandbox mode** (`LEMONSQUEEZY_TEST_MODE=true`) —
 pre-launch, no real subscribers.
@@ -61,7 +58,7 @@ per-store scoping.
 
 ### 5. Enable test mode
 
-Lemon Squeezy has no separate sandbox API base URL like Paddle's — a single
+Lemon Squeezy has no separate sandbox API base URL — a single
 account serves both test and live data, gated by a `testMode` flag on each
 checkout/API call and a `meta.test_mode` boolean on webhook payloads. Toggle
 **test mode** on in the dashboard header while iterating, and keep
@@ -116,7 +113,7 @@ the app errs toward sandbox).
      which hits the Lemon Squeezy SDK's `createCheckout(storeId, variantId, …)`
      with `checkoutData: { email, name, custom: { workspaceId } }` and
      `testMode`. Lemon Squeezy resolves/creates the customer from the checkout
-     email itself — there is no customer pre-create step (unlike Paddle).
+     email itself — there is no customer pre-create step.
    - Returns `{ checkoutUrl, workspaceId }`. The client opens `checkoutUrl` in
      the Lemon Squeezy overlay (`lemon.js`) — no client-side API key needed.
 3. The user pays in the overlay. Lemon Squeezy fires `subscription_created` to
@@ -135,8 +132,7 @@ the app errs toward sandbox).
 
 ### Webhook event handling — the cancelled-vs-expired distinction
 
-This is the one place Lemon Squeezy's lifecycle differs meaningfully from
-Paddle's, and the handler is NOT a naive rename of the old Paddle logic:
+This is the main lifecycle distinction to keep in mind, and the handler is not a naive status mapper:
 
 - **`subscription_cancelled`** fires the instant the user cancels, but the
   subscription's `status` stays `cancelled` and **access continues until
