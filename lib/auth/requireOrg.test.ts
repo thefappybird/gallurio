@@ -100,12 +100,17 @@ async function makeWorkspaceWithOwner(opts?: {
   const ownerWorkosUserId = opts?.ownerWorkosUserId ?? "user_owner";
   const wsId = new Types.ObjectId();
 
+  // Default to an active plan grant (mirrors the one-month free-Pro grant
+  // every new workspace gets) so this shared fixture is entitled by default
+  // — tests that care about auth/onboarding resolution rather than the
+  // subscription gate itself build their own Workspace directly instead.
   await Workspace.create({
     _id: wsId,
     ownerUserId: ownerWorkosUserId,
     name: "Test Workspace",
     slug: `test-ws-${wsId.toString()}`,
-    plan: "free",
+    plan: "pro",
+    planGrantExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
@@ -208,7 +213,8 @@ describe("requireOrg — auth and workspace resolution", () => {
       ownerUserId: "user_owner",
       name: "Test",
       slug: `test-ownerid-${wsId.toString()}`,
-      plan: "free",
+      plan: "pro",
+      planGrantExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       country: "PH",
       currency: "PHP",
       timezone: "Asia/Manila",
@@ -257,7 +263,8 @@ describe("requireOrg — tenant isolation", () => {
       ownerUserId: "user_owner",
       name: "WS1",
       slug: `ws1-${ws1.toString()}`,
-      plan: "free",
+      plan: "pro",
+      planGrantExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       country: "PH",
       currency: "PHP",
       timezone: "Asia/Manila",
@@ -385,7 +392,7 @@ describe("requireOrg — subscription gate", () => {
     expect(ctx.role).toBe("owner");
   });
 
-  it("never-subscribed free workspace (everSubscribed=false) is NOT redirected", async () => {
+  it("workspace with an active plan grant (e.g. the free month) is NOT redirected", async () => {
     const { wsId } = await makeWorkspaceWithOwner();
     const { requireOrg } = await load();
     const ctx = await requireOrg();
@@ -394,7 +401,33 @@ describe("requireOrg — subscription gate", () => {
     expect(ctx.workspaceId).toBe(wsId.toString());
   });
 
-  it("downgrades a workspace with a past planGrantExpiresAt to free before the gate check runs", async () => {
+  it("plain free plan with no grant and never subscribed IS redirected (no permanent free tier)", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `plain-free-${wsId.toString()}`,
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    const { requireOrg } = await load();
+
+    await expect(requireOrg()).rejects.toThrow("REDIRECT:/subscribe");
+  });
+
+  it("downgrades a workspace with a past planGrantExpiresAt to free, then gates it (no active entitlement left)", async () => {
     const wsId = new Types.ObjectId();
     await Workspace.create({
       _id: wsId,
@@ -417,11 +450,10 @@ describe("requireOrg — subscription gate", () => {
     });
 
     const { requireOrg } = await load();
-    const ctx = await requireOrg();
 
-    expect(redirectMock).not.toHaveBeenCalled();
-    expect(ctx.workspace.plan).toBe("free");
-    expect(ctx.workspace.planGrantExpiresAt).toBeNull();
+    // No permanent free tier: once the grant is downgraded to free with no
+    // other entitlement, the (now-updated) gate check redirects to /subscribe.
+    await expect(requireOrg()).rejects.toThrow("REDIRECT:/subscribe");
 
     const persisted = await Workspace.findById(wsId).lean();
     expect(persisted?.plan).toBe("free");

@@ -34,3 +34,10 @@ describe("User.timeFormat", () => {
     expect(updated?.timeFormat).toBe("12h");
   });
 });
+
+describe("User.freeTrialConsumedAt", () => {
+  it("defaults to null", async () => {
+    const u = await User.create({ workosUserId: "user_ftc1", email: "ftc1@example.com" });
+    expect(u.freeTrialConsumedAt).toBeNull();
+  });
+});

@@ -293,8 +293,19 @@ const workspaceSchema = new Schema(
     // Promo codes already applied to this workspace — guards re-redemption.
     codesRedeemed: { type: [Schema.Types.ObjectId], ref: "PromoCode", default: [] },
 
-    trialEndsAt: { type: Date, default: null },
     onboardingCompletedAt: { type: Date, default: null },
+
+    // Daily lifecycle-sweep timestamps (gated-workspace lapse/expiry
+    // reminders + eventual data wipe). Populated by lib/billing/lifecycle
+    // (a later change) — declared here so the schema is ready for it.
+    lifecycle: {
+      lapsedAt: { type: Date, default: null },
+      warned7dAt: { type: Date, default: null },
+      expiredNotifiedAt: { type: Date, default: null },
+      remind1moAt: { type: Date, default: null },
+      remind7wkAt: { type: Date, default: null },
+      wipedAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

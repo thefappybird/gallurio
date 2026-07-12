@@ -133,7 +133,8 @@ describe("businessStepAction", () => {
     expect(workspace).not.toBeNull();
     expect(workspace!.name).toBe("Alice Photography");
     expect(workspace!.ownerUserId).toBe("wos_user_001");
-    expect(workspace!.plan).toBe("free");
+    // First-time user gets the one-month free Pro grant at creation.
+    expect(workspace!.plan).toBe("pro");
 
     // Default team created
     const team = await Team.findOne({ workspaceId: workspace!._id, isDefault: true }).lean();
@@ -263,6 +264,19 @@ describe("businessStepAction", () => {
     const count = await Workspace.countDocuments();
     expect(count).toBe(2);
   });
+
+  it("grants a one-month free Pro plan and stamps freeTrialConsumedAt for a first-time user", async () => {
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+
+    const workspace = await Workspace.findOne({ ownerUserId: "wos_user_001" }).lean();
+    expect(workspace!.plan).toBe("pro");
+    expect(workspace!.planGrantExpiresAt).not.toBeNull();
+    expect(workspace!.planGrantExpiresAt!.getTime()).toBeGreaterThan(Date.now());
+
+    const user = await User.findOne({ workosUserId: "wos_user_001" }).lean();
+    expect(user!.freeTrialConsumedAt).not.toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -315,18 +329,39 @@ describe("selectFreePlanAction", () => {
     expect(result.error).toBe("not_authenticated");
   });
 
-  it("sets plan to free and advances step", async () => {
+  it("advances step for a first-timer without touching their free-month grant", async () => {
     mockGetAuthUser.mockResolvedValue(makeAuthUser());
     await businessStepAction(validBusinessInput);
 
     const result = await selectFreePlanAction();
     expect(result.ok).toBe(true);
 
+    // Grant applied at creation (businessStepAction) is left untouched.
     const workspace = await Workspace.findOne({ ownerUserId: "wos_user_001" }).lean();
-    expect(workspace!.plan).toBe("free");
+    expect(workspace!.plan).toBe("pro");
+    expect(workspace!.planGrantExpiresAt).not.toBeNull();
 
     const user = await User.findOne({ workosUserId: "wos_user_001" }).lean();
     expect(user!.onboardingStep).toBe("done");
+  });
+
+  it("returns free_trial_already_used and does not advance for a repeat user (no grant on the workspace)", async () => {
+    mockGetAuthUser.mockResolvedValue(makeAuthUser("wos_repeat_1"));
+    await User.create({
+      workosUserId: "wos_repeat_1",
+      email: "wos_repeat_1@example.com",
+      freeTrialConsumedAt: new Date(),
+    });
+    await businessStepAction(validBusinessInput);
+
+    const result = await selectFreePlanAction();
+    expect(result.error).toBe("free_trial_already_used");
+
+    const workspace = await Workspace.findOne({ ownerUserId: "wos_repeat_1" }).lean();
+    expect(workspace!.plan).toBe("free");
+
+    const user = await User.findOne({ workosUserId: "wos_repeat_1" }).lean();
+    expect(user!.onboardingStep).not.toBe("done");
   });
 });
 

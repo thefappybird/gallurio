@@ -6,8 +6,36 @@
 export type WorkspaceBillingFields = {
   plan: string;
   everSubscribed: boolean;
+  lsSubscriptionId?: string | null;
+  lsSubscriptionStatus?: string | null;
+  lsCurrentPeriodEnd?: Date | null;
+  planGrantExpiresAt?: Date | null;
 };
 
+const ACTIVE_LS_STATUSES = ["active", "trialing", "past_due", "paused"];
+
+export function isEntitled(ws: WorkspaceBillingFields): boolean {
+  const now = new Date();
+  if (ws.lsSubscriptionId) {
+    if (ws.lsSubscriptionStatus && ACTIVE_LS_STATUSES.includes(ws.lsSubscriptionStatus)) {
+      return true;
+    }
+    if (
+      ws.lsSubscriptionStatus === "canceled" &&
+      ws.lsCurrentPeriodEnd &&
+      ws.lsCurrentPeriodEnd > now
+    ) {
+      return true;
+    }
+  }
+
+  if (ws.planGrantExpiresAt && ws.planGrantExpiresAt > now) return true;
+
+  if (ws.plan === "beta" && ws.planGrantExpiresAt == null) return true;
+
+  return false;
+}
+
 export function isWorkspaceGated(ws: WorkspaceBillingFields): boolean {
-  return ws.plan === "free" && ws.everSubscribed === true;
+  return !isEntitled(ws);
 }
