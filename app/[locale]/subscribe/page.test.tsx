@@ -29,6 +29,12 @@ vi.mock("./_panel", () => ({
   ),
 }));
 
+// signOutAction is a server action; stub it to avoid server-only imports
+// (next/headers, @workos-inc/authkit-nextjs) pulled in via SignOutLink.
+vi.mock("@/lib/auth/signOut", () => ({
+  signOutAction: vi.fn(),
+}));
+
 import SubscribePage from "./page";
 
 const WORKSPACE_STUB = { _id: "ws_1", plan: "free", everSubscribed: true };
@@ -62,6 +68,7 @@ describe("SubscribePage — owner", () => {
     expect(screen.getByTestId("subscribe-panel")).toBeInTheDocument();
     expect(screen.getByText("owner.title")).toBeInTheDocument();
     expect(screen.queryByText("staff.title")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "logout" })).toBeInTheDocument();
   });
 
   it("passes returnTo through to SubscribePanel when present", async () => {
@@ -98,5 +105,6 @@ describe("SubscribePage — staff", () => {
     expect(screen.getByText("staff.title")).toBeInTheDocument();
     expect(screen.getByText("staff.description")).toBeInTheDocument();
     expect(screen.queryByTestId("subscribe-panel")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "logout" })).toBeInTheDocument();
   });
 });

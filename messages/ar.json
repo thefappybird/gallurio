@@ -2906,6 +2906,7 @@
   },
   "subscribe": {
     "pageTitle": "الاشتراك",
+    "logout": "تسجيل الخروج",
     "owner": {
       "title": "انتهى اشتراكك",
       "description": "أعد الاشتراك في Gallurio Pro للعودة إلى لوحة التحكم الخاصة بك.",

@@ -2906,6 +2906,7 @@
   },
   "subscribe": {
     "pageTitle": "Mag-subscribe",
+    "logout": "Mag-log out",
     "owner": {
       "title": "Natapos na ang iyong subscription",
       "description": "Mag-subscribe muli sa Gallurio Pro para bumalik sa iyong dashboard.",

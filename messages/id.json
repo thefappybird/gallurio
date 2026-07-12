@@ -2906,6 +2906,7 @@
   },
   "subscribe": {
     "pageTitle": "Berlangganan",
+    "logout": "Keluar",
     "owner": {
       "title": "Langganan Anda telah berakhir",
       "description": "Berlangganan kembali ke Gallurio Pro untuk kembali ke dasbor Anda.",

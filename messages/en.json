@@ -2906,6 +2906,7 @@
   },
   "subscribe": {
     "pageTitle": "Subscribe",
+    "logout": "Log out",
     "owner": {
       "title": "Your subscription has ended",
       "description": "Resubscribe to Gallurio Pro to get back into your dashboard.",
