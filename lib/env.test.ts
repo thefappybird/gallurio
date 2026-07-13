@@ -5,7 +5,7 @@ const ORIGINAL_ENV = { ...process.env };
 
 const VALID_PROD_ENV: Record<string, string> = {
   NODE_ENV: "production",
-  DATABASE_URL: "mongodb+srv://user:pass@cluster.mongodb.net/db",
+  DATABASE_URL: "mongodb+srv://REDACTED_USER:REDACTED_PW@db.example.com/db",
   WORKOS_API_KEY: "sk_test_abc",
   WORKOS_CLIENT_ID: "client_abc",
   WORKOS_COOKIE_PASSWORD: "a".repeat(32),
@@ -29,7 +29,7 @@ const VALID_PROD_ENV: Record<string, string> = {
   EMAIL_FROM: "Gallurio <hello@gallurio.com>",
   CRON_SECRET: "cron_secret_value",
   WORKFLOW_TARGET_WORLD: "@workflow/world-postgres",
-  WORKFLOW_POSTGRES_URL: "postgres://user:pass@host:5432/db",
+  WORKFLOW_POSTGRES_URL: "postgres://REDACTED_USER:REDACTED_PW@db.example.com:5432/db",
 };
 
 function setEnv(vars: Record<string, string | undefined>) {

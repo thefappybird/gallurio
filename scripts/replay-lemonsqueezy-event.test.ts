@@ -12,18 +12,18 @@ import {
 
 describe("parseDbHost", () => {
   it("extracts the hostname from a mongodb+srv connection string", () => {
-    expect(parseDbHost("mongodb+srv://user:pass@cluster0.abcde.mongodb.net/mydb")).toBe(
-      "cluster0.abcde.mongodb.net"
+    expect(parseDbHost("mongodb+srv://REDACTED_USER:REDACTED_PW@db.example.com/mydb")).toBe(
+      "db.example.com"
     );
   });
 });
 
 describe("redactedFingerprint", () => {
   it("masks all but the last 4 characters of the host", () => {
-    const uri = "mongodb+srv://user:pass@cluster0.abcde.mongodb.net/mydb";
+    const uri = "mongodb+srv://REDACTED_USER:REDACTED_PW@db.example.com/mydb";
     const fp = redactedFingerprint(uri);
-    expect(fp.endsWith(".net")).toBe(true);
-    expect(fp).not.toContain("cluster0.abcde.mongodb");
+    expect(fp.endsWith(".com")).toBe(true);
+    expect(fp).not.toContain("db.example");
   });
 });
 
@@ -34,7 +34,7 @@ describe("assertTargetGuard", () => {
   });
 
   it("throws when --target does not match the connected host", () => {
-    const uri = "mongodb+srv://user:pass@prod-cluster.abcde.mongodb.net/mydb";
+    const uri = "mongodb+srv://REDACTED_USER:REDACTED_PW@prod-db.example.com/mydb";
     expect(() => assertTargetGuard(uri, "localhost")).toThrow(/does not match/);
   });
 
