@@ -1573,6 +1573,8 @@
     },
     "clients": {
       "title": "Mga Kliyente",
+      "listEmpty": "Wala ka pang mga kliyente.",
+      "listEmptyHint": "Magdagdag ng iyong unang kliyente para masubaybayan ang mga booking at kasaysayan.",
       "toolbar": {
         "search": "Hanapin sa pangalan o email",
         "searchLabel": "Maghanap ng kliyente",
@@ -2731,6 +2733,7 @@
       "next": "Susunod"
     },
     "clearFilters": "Tanggalin ang filter",
+    "loading": "Naglo-load…",
     "promoCode": {
       "disclosureLabel": "May promo code ka ba?",
       "placeholder": "Ilagay ang code",

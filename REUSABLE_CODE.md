@@ -13,7 +13,7 @@ See `CLAUDE.md` → **DRY & code reuse (cross-agent)** for the full policy.
 > instead of re-reading source. Prefer it, then the codebase-memory graph
 > (`search_code` / `SIMILAR_TO`), then file reads — in that order.
 
-Last audited: 2026-07-12 (branch `action/backend-beta-audit` — extracted `TurnstileWidget`).
+Last audited: 2026-07-13 (branch `action/beta-release-cleanup` — extracted `EmptyState`).
 
 ---
 
@@ -70,6 +70,7 @@ Composed, app-specific shared components.
 | `components/app/sign-out-confirm.tsx` | `SignOutConfirmDialog` | Controlled logout confirm dialog | `open`, `onOpenChange` |
 | `components/app/sign-out-link.tsx` | `SignOutLink` | Sign-out button form wrapper | children |
 | `components/app/slug-status-indicator.tsx` | `SlugStatusIndicator` | Workspace slug availability indicator — single persistent `aria-live="polite"` live region; text + icon (never color-only); statuses: idle/checking/available/taken/invalid | `status: SlugStatus`, `t: ReturnType<typeof useTranslations>` (must expose `slugChecking`, `slugAvailable`, `slugTaken`, `slugInvalid` keys) |
+| `components/app/empty-state.tsx` | `EmptyState` | "No data yet" placeholder for list surfaces — dashed-border card, decorative icon, heading, optional description + action. Used by clients/teams tables, the inquiry table, and the notifications list. | `icon: LucideIcon`, `title`, `description?`, `action?: ReactNode`, `className?` |
 
 ## 3. Hooks
 

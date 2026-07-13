@@ -1573,6 +1573,8 @@
     },
     "clients": {
       "title": "Klien",
+      "listEmpty": "Anda belum memiliki klien apa pun.",
+      "listEmptyHint": "Tambahkan klien pertama Anda untuk mulai melacak pemesanan dan riwayat.",
       "toolbar": {
         "search": "Cari berdasarkan nama atau email",
         "searchLabel": "Cari klien",
@@ -2731,6 +2733,7 @@
       "next": "Berikutnya"
     },
     "clearFilters": "Hapus filter",
+    "loading": "Memuat…",
     "promoCode": {
       "disclosureLabel": "Punya kode promo?",
       "placeholder": "Masukkan kode",

@@ -248,6 +248,17 @@ export function TeamsPageClient({
         <TeamsTable
           rows={filteredTeams}
           empty={committedQuery ? t("table.empty") : t("listEmpty")}
+          emptyAction={
+            committedQuery ? undefined : (
+              <Button
+                className="bg-brand text-brand-foreground hover:bg-brand/90"
+                onClick={handleCreateClick}
+              >
+                <PlusIcon className="size-4" />
+                {t("createButton")}
+              </Button>
+            )
+          }
           onDetails={openDetails}
           onEdit={setEditTeam}
           onInvite={(team) => openInvite([team.id])}

@@ -1573,6 +1573,8 @@
     },
     "clients": {
       "title": "Clients",
+      "listEmpty": "You don't have any clients yet.",
+      "listEmptyHint": "Add your first client to start tracking bookings and history.",
       "toolbar": {
         "search": "Search by name or email",
         "searchLabel": "Search clients",
@@ -2731,6 +2733,7 @@
       "next": "Next"
     },
     "clearFilters": "Clear filters",
+    "loading": "Loading…",
     "promoCode": {
       "disclosureLabel": "Have a promo code?",
       "placeholder": "Enter code",

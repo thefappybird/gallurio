@@ -118,6 +118,8 @@ function build(overrides: Partial<React.ComponentProps<typeof ClientsPageClient>
     locale: "en",
     availableTags: ["vip", "wedding"],
     empty: "No clients",
+    listEmpty: "No clients yet",
+    listEmptyHint: "Add your first client to get started.",
     ...overrides,
   };
 }
@@ -144,7 +146,11 @@ describe("ClientsPageClient", () => {
 
   it("hides pagination summary when there are no clients", () => {
     renderWithProviders(<ClientsPageClient {...build({ rows: [], total: 0 })} />);
-    expect(screen.getByText("No clients")).toBeInTheDocument();
+    // No filters are active (useSearchParams is mocked empty), so the
+    // genuinely-empty copy + CTA renders, not the "no matches" text.
+    expect(screen.getByText("No clients yet")).toBeInTheDocument();
+    // One "Add Client" button lives in the toolbar, the other in the empty-state CTA.
+    expect(screen.getAllByRole("button", { name: "Add Client" })).toHaveLength(2);
     expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
   });
 

@@ -1573,6 +1573,8 @@
     },
     "clients": {
       "title": "Pelanggan",
+      "listEmpty": "Anda belum mempunyai sebarang pelanggan.",
+      "listEmptyHint": "Tambah pelanggan pertama anda untuk mula menjejaki tempahan dan sejarah.",
       "toolbar": {
         "search": "Cari mengikut nama atau e-mel",
         "searchLabel": "Cari pelanggan",
@@ -2731,6 +2733,7 @@
       "next": "Seterusnya"
     },
     "clearFilters": "Padam penapis",
+    "loading": "Memuatkan…",
     "promoCode": {
       "disclosureLabel": "Ada kod promosi?",
       "placeholder": "Masukkan kod",
