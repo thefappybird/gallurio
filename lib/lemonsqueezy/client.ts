@@ -4,6 +4,8 @@ import {
   getSubscription,
   cancelSubscription,
   listSubscriptions,
+  getStore,
+  listPrices,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import { env } from "@/lib/env";
 
@@ -87,4 +89,31 @@ export async function listActiveSubscriptionsForEmail(email: string) {
   });
   if (error || !data) return [];
   return data.data;
+}
+
+// Store currency is the authoritative live currency for variant prices (Price
+// objects carry no currency field of their own).
+export async function getStoreCurrency(): Promise<string> {
+  ensureConfigured();
+  const storeId = env.LEMONSQUEEZY_STORE_ID;
+  if (!storeId) {
+    throw new Error("Missing env var LEMONSQUEEZY_STORE_ID");
+  }
+  const { data, error } = await getStore(storeId);
+  if (error || !data) {
+    throw error ?? new Error("Lemon Squeezy getStore failed");
+  }
+  return data.data.attributes.currency;
+}
+
+// Variant.price is deprecated on the LS API (can be null/stale) — the Price
+// object's unit_price is the authoritative current price. listPrices returns
+// results ordered by created_at descending, so [0] is the live price.
+export async function getLatestVariantPriceCents(variantId: string): Promise<number> {
+  ensureConfigured();
+  const { data, error } = await listPrices({ filter: { variantId } });
+  if (error || !data || data.data.length === 0) {
+    throw error ?? new Error(`Lemon Squeezy: no price found for variant ${variantId}`);
+  }
+  return data.data[0].attributes.unit_price;
 }
