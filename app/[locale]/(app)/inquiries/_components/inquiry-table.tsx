@@ -3,9 +3,10 @@
 import type { KeyboardEvent, ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/navigation";
-import { AlertTriangleIcon, EyeIcon } from "lucide-react";
+import { AlertTriangleIcon, EyeIcon, InboxIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InquiryStatusBadge } from "./inquiry-status-badge";
+import { EmptyState } from "@/components/app/empty-state";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
 import { cn } from "@/lib/utils";
 
@@ -82,12 +83,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
   }
 
   if (rows.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-2 border border-dashed border-border bg-card p-12 text-center">
-        <p className="text-sm font-medium">{empty}</p>
-        <p className="max-w-sm text-sm text-muted-foreground">{emptyHint}</p>
-      </div>
-    );
+    return <EmptyState icon={InboxIcon} title={empty} description={emptyHint} />;
   }
 
   return (

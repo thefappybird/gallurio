@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Workspace } from "@/lib/db/models";
+import { Workspace, WebhookEvent } from "@/lib/db/models";
 import { Team, TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 
 // ---------------------------------------------------------------------------
@@ -18,9 +18,15 @@ vi.mock("@/lib/db/mongoose", () => ({
 
 // verifyAndParseLemonSqueezyEvent is mocked: each test configures the return
 // value via the `mockResolvedValue` helper exposed below.
-vi.mock("@/lib/lemonsqueezy/webhook", () => ({
-  verifyAndParseLemonSqueezyEvent: vi.fn(),
-}));
+vi.mock("@/lib/lemonsqueezy/webhook", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/lemonsqueezy/webhook")>(
+    "@/lib/lemonsqueezy/webhook"
+  );
+  return {
+    ...actual,
+    verifyAndParseLemonSqueezyEvent: vi.fn(),
+  };
+});
 
 // Workflow API — we never want actual workflow runs in unit tests.
 vi.mock("workflow/api", () => ({
@@ -39,7 +45,7 @@ process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = "1002";
 // Helpers
 // ---------------------------------------------------------------------------
 
-import { verifyAndParseLemonSqueezyEvent } from "@/lib/lemonsqueezy/webhook";
+import { verifyAndParseLemonSqueezyEvent, computeWebhookEventKey } from "@/lib/lemonsqueezy/webhook";
 import { resumeHook } from "workflow/api";
 
 const mockVerify = vi.mocked(verifyAndParseLemonSqueezyEvent);
@@ -68,7 +74,7 @@ function makeSubscriptionAttrs(overrides: Record<string, unknown> = {}) {
 }
 
 async function seedWorkspace(opts: {
-  plan: "free" | "starter" | "pro";
+  plan: "free" | "pro";
   lsSubscriptionId?: string;
   lsCustomerId?: string;
   teamCount?: number;
@@ -134,6 +140,93 @@ beforeEach(async () => {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+describe("lemonsqueezy webhook — event ledger", () => {
+  it("records a WebhookEvent row with status processed after a successful handler run", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_ledger_test";
+
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].eventName).toBe("subscription_created");
+    expect(rows[0].status).toBe("processed");
+    expect(rows[0].processedAt).toBeInstanceOf(Date);
+  });
+
+  it("dedupes an identical redelivered event — single WebhookEvent row, ack carries deduped:true", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_dedupe_test";
+
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const first = await POST(makeReq());
+    expect((await first.json()).deduped).toBeUndefined();
+
+    const second = await POST(makeReq());
+    const secondBody = await second.json();
+    expect(secondBody).toEqual({ received: true, deduped: true });
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(mockResumeHook).toHaveBeenCalledOnce();
+  });
+
+  it("recovers from a concurrent duplicate-key upsert instead of 500ing", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_concurrent_dup";
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const eventKey = computeWebhookEventKey(event as never);
+    // Simulate a concurrent first delivery that already won the upsert race
+    // (the row now exists) before this request's own upsert attempt runs.
+    await WebhookEvent.create({
+      provider: "lemonsqueezy",
+      eventKey,
+      eventName: event.meta.event_name,
+      resourceId: event.data.id,
+      status: "received",
+    });
+    const findOneAndUpdateSpy = vi
+      .spyOn(WebhookEvent, "findOneAndUpdate")
+      .mockRejectedValueOnce(Object.assign(new Error("E11000 duplicate key"), { code: 11000 }));
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.received).toBe(true);
+    findOneAndUpdateSpy.mockRestore();
+
+    const rows = await WebhookEvent.find({ eventKey }).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("processed");
+  });
+});
 
 describe("lemonsqueezy webhook — invalid signature", () => {
   it("returns 401 and writes nothing when verifyAndParseLemonSqueezyEvent returns null", async () => {
@@ -360,10 +453,10 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
     expect(after?.lsCurrentPeriodEnd).toBeNull();
   });
 
-  it("downgrades starter to free even at the free team cap (2 teams > free's 1-team cap)", async () => {
-    const subId = "sub_expired_starter";
+  it("downgrades pro to free even at the free team cap (2 teams > free's 1-team cap)", async () => {
+    const subId = "sub_expired_pro";
     const wsId = await seedWorkspace({
-      plan: "starter",
+      plan: "pro",
       lsSubscriptionId: subId,
       teamCount: 2,
     });
@@ -880,9 +973,148 @@ describe("lemonsqueezy webhook — test-mode events in production", () => {
   });
 });
 
-describe("lemonsqueezy webhook — handler exception acks 200 (never retries into a loop)", () => {
-  it("acks 200 with an error flag instead of 500 when a handler throws unexpectedly", async () => {
-    const subId = "sub_throws";
+describe("lemonsqueezy webhook — lifecycle field mapping", () => {
+  it("sets lifecycle.lapsedAt on subscription_expired when it was previously null", async () => {
+    const subId = "sub_expired_lapse_stamp";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const event = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.lifecycle?.lapsedAt).toBeInstanceOf(Date);
+  });
+
+  it("does not move lifecycle.lapsedAt forward on a replayed subscription_expired event", async () => {
+    const subId = "sub_expired_replayed";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const event = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+    const firstLapse = (await Workspace.findById(wsId).lean())?.lifecycle?.lapsedAt;
+
+    // Replay: subscription id is null'd by now, so route by customer_id.
+    const replay = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+      subscription_id: subId,
+    });
+    mockVerify.mockResolvedValue(replay as never);
+    await POST(makeReq());
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.lapsedAt?.getTime()).toBe(firstLapse?.getTime());
+  });
+
+  it("resets lifecycle.* to null on subscription_resumed", async () => {
+    const subId = "sub_resumed_lifecycle";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    await Workspace.updateOne(
+      { _id: wsId },
+      { $set: { "lifecycle.lapsedAt": new Date(), "lifecycle.remind1moAt": new Date() } }
+    );
+
+    const event = makeEvent("subscription_resumed", subId, { status: "active" });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+    expect(after?.lifecycle?.remind1moAt).toBeNull();
+  });
+
+  it("does NOT reset lifecycle.* on subscription_paused (still entitled)", async () => {
+    const subId = "sub_paused_lifecycle";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    const marker = new Date();
+    await Workspace.updateOne({ _id: wsId }, { $set: { "lifecycle.remind1moAt": marker } });
+
+    const event = makeEvent("subscription_paused", subId, { status: "paused" });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.remind1moAt?.getTime()).toBe(marker.getTime());
+  });
+
+  it("resets lifecycle.* to null on subscription_payment_success", async () => {
+    const subId = "sub_payment_success_lifecycle";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    await Workspace.updateOne({ _id: wsId }, { $set: { "lifecycle.lapsedAt": new Date() } });
+
+    const event = makeEvent("subscription_payment_success", subId, {
+      renews_at: "2026-08-01T00:00:00Z",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+  });
+
+  it("resets lifecycle.* to null on subscription_created (active)", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    await Workspace.updateOne(
+      { _id: wsId },
+      {
+        $set: {
+          "lifecycle.lapsedAt": new Date(),
+          "lifecycle.warned7dAt": new Date(),
+          "lifecycle.expiredNotifiedAt": new Date(),
+          "lifecycle.remind1moAt": new Date(),
+          "lifecycle.remind7wkAt": new Date(),
+          "lifecycle.wipedAt": new Date(),
+        },
+      }
+    );
+
+    const subId = "sub_lifecycle_reset";
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+    expect(after?.lifecycle?.warned7dAt).toBeNull();
+    expect(after?.lifecycle?.expiredNotifiedAt).toBeNull();
+    expect(after?.lifecycle?.remind1moAt).toBeNull();
+    expect(after?.lifecycle?.remind7wkAt).toBeNull();
+    expect(after?.lifecycle?.wipedAt).toBeNull();
+  });
+});
+
+describe("lemonsqueezy webhook — handler exception returns a retryable 5xx", () => {
+  it("returns 500 (not 200) and marks the ledger row failed when a handler throws unexpectedly", async () => {
+    const subId = "sub_throws_retryable";
     await seedWorkspace({ plan: "free", lsSubscriptionId: subId });
 
     const spy = vi
@@ -899,9 +1131,15 @@ describe("lemonsqueezy webhook — handler exception acks 200 (never retries int
     const { POST } = await loadRoute();
     const res = await POST(makeReq());
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body).toEqual({ received: true, error: "handler failed" });
+    expect(body).toEqual({ received: false, error: "handler failed" });
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("failed");
+    expect(rows[0].failedAt).toBeInstanceOf(Date);
+    expect(rows[0].lastError).toContain("db exploded");
 
     spy.mockRestore();
   });

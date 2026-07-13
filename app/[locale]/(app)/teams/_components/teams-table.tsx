@@ -20,9 +20,11 @@ import {
   PencilIcon,
   PowerOffIcon,
   RotateCcwIcon,
+  UsersRoundIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/app/empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +57,8 @@ function CardField({
 type Props = {
   rows: TeamRow[];
   empty: string;
+  /** Primary CTA rendered under the empty state (e.g. "Create team"). */
+  emptyAction?: ReactNode;
   onDetails: (team: TeamRow) => void;
   onEdit: (team: TeamRow) => void;
   onInvite: (team: TeamRow) => void;
@@ -65,6 +69,7 @@ type Props = {
 export function TeamsTable({
   rows,
   empty,
+  emptyAction,
   onDetails,
   onEdit,
   onInvite,
@@ -200,11 +205,7 @@ export function TeamsTable({
   });
 
   if (rows.length === 0) {
-    return (
-      <div className="border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
-        {empty}
-      </div>
-    );
+    return <EmptyState icon={UsersRoundIcon} title={empty} action={emptyAction} />;
   }
 
   return (

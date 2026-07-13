@@ -31,7 +31,7 @@ vi.mock("@/lib/auth/ownerContext", () => ({
     workspace: {
       _id: WORKSPACE_ID,
       ownerUserId: OWNER_USER_ID,
-      plan: "starter",
+      plan: "pro",
       name: "Test Workspace",
       country: "us",
     },
@@ -42,6 +42,7 @@ vi.mock("@/lib/auth/ownerContext", () => ({
 const mockSendEmail = vi.fn().mockResolvedValue({ ok: true, id: "email_1" });
 vi.mock("@/lib/email/send", () => ({
   sendEmail: mockSendEmail,
+  logEmailFailure: vi.fn(),
 }));
 
 // Stub NEXT_PUBLIC_APP_URL so the accept link is deterministic.
@@ -75,7 +76,7 @@ async function makeTeam(
 }
 
 async function makeFullTeam(max = 10) {
-  // "starter" plan max per team is 10. Fill to the limit.
+  // members-per-team cap is 10 for every tier. Fill to the limit.
   return Team.create({
     workspaceId: WORKSPACE_ID,
     name: "Full Crew",

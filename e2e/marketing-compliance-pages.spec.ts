@@ -58,17 +58,17 @@ test("compliance pages render with no horizontal overflow at 375px", async ({ pa
   }
 });
 
-test("pricing page shows the Beta Plan and three planned plans", async ({ page }) => {
+test("pricing page shows a single Pro plan with the 1-month-free story", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/pricing");
 
-  await expect(page.getByText("Beta Plan")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
   await expect(page.getByText("Recommended")).toBeVisible();
-  await expect(page.getByText("Starter", { exact: true })).toBeVisible();
-  await expect(page.getByText("Studio", { exact: true })).toBeVisible();
-  await expect(page.getByText("Business", { exact: true })).toBeVisible();
-  await expect(page.getByText("Planned").first()).toBeVisible();
-  await expect(page.getByRole("main").getByRole("link", { name: "Join the Beta" })).toBeVisible();
+  await expect(page.getByText("Start with 1 month free, no card required.")).toBeVisible();
+  await expect(page.getByText("Beta Plan")).not.toBeVisible();
+  await expect(page.getByText("Studio", { exact: true })).not.toBeVisible();
+  await expect(page.getByText("Business", { exact: true })).not.toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Start my free month" })).toBeVisible();
 });
 
 test("contact page renders a real mailto link", async ({ page }) => {

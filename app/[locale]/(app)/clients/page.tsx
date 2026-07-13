@@ -162,6 +162,8 @@ export default async function ClientsPage({
         locale={locale}
         availableTags={availableTags}
         empty={t("table.empty")}
+        listEmpty={t("listEmpty")}
+        listEmptyHint={t("listEmptyHint")}
         initialDetailClient={detailClient}
       />
     </div>

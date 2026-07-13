@@ -15,8 +15,8 @@ import {
 export type DowngradeBlockModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentPlan: "starter" | "pro";
-  targetPlan: "free" | "starter";
+  currentPlan: "pro";
+  targetPlan: "free";
   currentTeamCount: number;
   maxTeamsOnTargetPlan: number;
   teamsToReview: { id: string; name: string; color: string; isDefault: boolean }[];

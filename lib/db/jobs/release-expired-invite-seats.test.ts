@@ -1,34 +1,34 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import mongoose, { Types } from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { Types } from "mongoose";
+import {
+  startInMemoryMongo,
+  stopInMemoryMongo,
+  clearCollections,
+} from "@/test-utils/mongo";
 import { Invitation } from "@/lib/db/models/Invitation";
 import { Team, TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 import { releaseExpiredInviteSeats } from "./release-expired-invite-seats";
 
 // connectDB is a no-op in this suite — the in-memory Mongo is already wired
-// up via mongoose.connect below.
+// up via startInMemoryMongo below. Replica-set (not single-node) so the job's
+// per-invitation transaction (flip + seat release) can be exercised.
 import { vi } from "vitest";
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
 }));
 
-let mongo: MongoMemoryServer;
-
 beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  await mongoose.connect(mongo.getUri());
+  await startInMemoryMongo();
   await Invitation.createIndexes();
   await Team.createIndexes();
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongo.stop();
+  await stopInMemoryMongo();
 });
 
 beforeEach(async () => {
-  await Invitation.deleteMany({});
-  await Team.deleteMany({});
+  await clearCollections();
 });
 
 // ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ describe("releaseExpiredInviteSeats — expired pending invite", () => {
 
     const report = await releaseExpiredInviteSeats();
 
-    expect(report).toEqual({ scanned: 1, released: 1, skipped: 0 });
+    expect(report).toEqual({ scanned: 1, released: 1, skipped: 0, failed: 0 });
 
     const inv = await Invitation.findOne({ workspaceId }).lean();
     expect(inv?.status).toBe("expired");
@@ -112,7 +112,7 @@ describe("releaseExpiredInviteSeats — expired pending invite", () => {
 
     const report = await releaseExpiredInviteSeats();
 
-    expect(report).toEqual({ scanned: 1, released: 1, skipped: 0 });
+    expect(report).toEqual({ scanned: 1, released: 1, skipped: 0, failed: 0 });
 
     const afterA = await Team.findById(teamA._id).lean();
     const afterB = await Team.findById(teamB._id).lean();
@@ -136,7 +136,7 @@ describe("releaseExpiredInviteSeats — unexpired pending invite", () => {
 
     const report = await releaseExpiredInviteSeats();
 
-    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0 });
+    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0, failed: 0 });
 
     const inv = await Invitation.findOne({ workspaceId }).lean();
     expect(inv?.status).toBe("pending");
@@ -163,7 +163,7 @@ describe("releaseExpiredInviteSeats — non-pending statuses with past expiresAt
 
     const report = await releaseExpiredInviteSeats();
 
-    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0 });
+    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0, failed: 0 });
 
     const teamAfter = await Team.findById(team._id).lean();
     expect(teamAfter?.memberCount).toBe(2);
@@ -185,7 +185,7 @@ describe("releaseExpiredInviteSeats — non-pending statuses with past expiresAt
 
     const report = await releaseExpiredInviteSeats();
 
-    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0 });
+    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0, failed: 0 });
 
     const teamAfter = await Team.findById(team._id).lean();
     expect(teamAfter?.memberCount).toBe(2);
@@ -206,7 +206,7 @@ describe("releaseExpiredInviteSeats — non-pending statuses with past expiresAt
 
     const report = await releaseExpiredInviteSeats();
 
-    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0 });
+    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0, failed: 0 });
 
     const teamAfter = await Team.findById(team._id).lean();
     expect(teamAfter?.memberCount).toBe(1);
@@ -227,11 +227,11 @@ describe("releaseExpiredInviteSeats — idempotency", () => {
     );
 
     const first = await releaseExpiredInviteSeats();
-    expect(first).toEqual({ scanned: 1, released: 1, skipped: 0 });
+    expect(first).toEqual({ scanned: 1, released: 1, skipped: 0, failed: 0 });
 
     // Second sweep: the row is now "expired", so scanned=0.
     const second = await releaseExpiredInviteSeats();
-    expect(second).toEqual({ scanned: 0, released: 0, skipped: 0 });
+    expect(second).toEqual({ scanned: 0, released: 0, skipped: 0, failed: 0 });
 
     const teamAfter = await Team.findById(team._id).lean();
     // Decremented exactly once.
@@ -263,7 +263,7 @@ describe("releaseExpiredInviteSeats — skipped path via atomic claim failure", 
     const report = await releaseExpiredInviteSeats();
 
     // The accepted row is invisible to the status:"pending" find query.
-    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0 });
+    expect(report).toEqual({ scanned: 0, released: 0, skipped: 0, failed: 0 });
 
     // Seat must NOT have been released.
     const teamAfter = await Team.findById(team._id).lean();
@@ -288,15 +288,127 @@ describe("releaseExpiredInviteSeats — skipped path via atomic claim failure", 
 
     // First sweep claims and releases.
     const first = await releaseExpiredInviteSeats();
-    expect(first).toEqual({ scanned: 1, released: 1, skipped: 0 });
+    expect(first).toEqual({ scanned: 1, released: 1, skipped: 0, failed: 0 });
 
     // Second sweep: row is now "expired", find() returns nothing.
     const second = await releaseExpiredInviteSeats();
-    expect(second).toEqual({ scanned: 0, released: 0, skipped: 0 });
+    expect(second).toEqual({ scanned: 0, released: 0, skipped: 0, failed: 0 });
 
     // memberCount decremented exactly once.
     const teamAfter = await Team.findById(team._id).lean();
     expect(teamAfter?.memberCount).toBe(2);
+  });
+});
+
+describe("releaseExpiredInviteSeats — transactional rollback on seat-release failure", () => {
+  it("keeps the invite 'pending' and the seat untouched when releaseTeamSeat throws, then retries it clean next run", async () => {
+    const workspaceId = new Types.ObjectId();
+    const team = await makeTeam(workspaceId, 3);
+
+    await Invitation.create(
+      makeInviteData({
+        workspaceId,
+        teamIds: [team._id],
+        expiresAt: pastDate(60_000),
+      }),
+    );
+
+    const updateOneSpy = vi
+      .spyOn(Team, "updateOne")
+      .mockRejectedValueOnce(new Error("seat release boom"));
+
+    const first = await releaseExpiredInviteSeats();
+    expect(first).toEqual({ scanned: 1, released: 0, skipped: 0, failed: 1 });
+
+    // Rolled back: invite still pending, seat not decremented.
+    const invAfterFailure = await Invitation.findOne({ workspaceId }).lean();
+    expect(invAfterFailure?.status).toBe("pending");
+    const teamAfterFailure = await Team.findById(team._id).lean();
+    expect(teamAfterFailure?.memberCount).toBe(3);
+
+    updateOneSpy.mockRestore();
+
+    const second = await releaseExpiredInviteSeats();
+    expect(second).toEqual({ scanned: 1, released: 1, skipped: 0, failed: 0 });
+
+    const invAfterRetry = await Invitation.findOne({ workspaceId }).lean();
+    expect(invAfterRetry?.status).toBe("expired");
+    const teamAfterRetry = await Team.findById(team._id).lean();
+    expect(teamAfterRetry?.memberCount).toBe(2);
+  });
+});
+
+describe("releaseExpiredInviteSeats — pagination", () => {
+  it("processes every expired pending invite across multiple small batches", async () => {
+    const workspaceId = new Types.ObjectId();
+    const team = await makeTeam(workspaceId, 10);
+    const total = 5;
+    for (let i = 0; i < total; i++) {
+      await Invitation.create(
+        makeInviteData({
+          workspaceId,
+          teamIds: [team._id],
+          expiresAt: pastDate(60_000),
+        }),
+      );
+    }
+
+    const findSpy = vi.spyOn(Invitation, "find");
+    const report = await releaseExpiredInviteSeats(new Date(), { batchSize: 2 });
+
+    expect(report).toEqual({ scanned: total, released: total, skipped: 0, failed: 0 });
+    // 5 rows at batchSize 2 => 3 pages (2, 2, 1) — proves the query is capped
+    // per page rather than loaded in one unbounded find().
+    expect(findSpy).toHaveBeenCalledTimes(3);
+    findSpy.mockRestore();
+
+    const teamAfter = await Team.findById(team._id).lean();
+    expect(teamAfter?.memberCount).toBe(10 - total);
+  });
+});
+
+describe("releaseExpiredInviteSeats — heartbeat summary log", () => {
+  it("logs a single structured, PII-free summary line per run", async () => {
+    const workspaceId = new Types.ObjectId();
+    const team = await makeTeam(workspaceId, 1);
+    await Invitation.create(
+      makeInviteData({
+        workspaceId,
+        email: "secret-owner@example.com",
+        teamIds: [team._id],
+        expiresAt: pastDate(60_000),
+      }),
+    );
+
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    await releaseExpiredInviteSeats();
+
+    const summaryCall = infoSpy.mock.calls.find(
+      (call) => typeof call[0] === "string" && call[0].includes("release-expired-invite-seats"),
+    );
+    expect(summaryCall).toBeDefined();
+    const parsed = JSON.parse(summaryCall![0] as string);
+    expect(parsed).toMatchObject({
+      job: "release-expired-invite-seats",
+      scanned: 1,
+      released: 1,
+      skipped: 0,
+      failed: 0,
+    });
+    expect(typeof parsed.ranAt).toBe("string");
+    // No email/token/workspaceId — heartbeat is a count-only metric.
+    const raw = summaryCall![0] as string;
+    expect(raw).not.toContain("secret-owner@example.com");
+    expect(raw).not.toContain(String(workspaceId));
+    infoSpy.mockRestore();
+  });
+});
+
+describe("releaseExpiredInviteSeats — supporting index", () => {
+  it("has a { status, expiresAt } index backing the global sweep query", () => {
+    const indexes = Invitation.schema.indexes();
+    const hasIndex = indexes.some(([keys]) => keys.status === 1 && keys.expiresAt === 1);
+    expect(hasIndex).toBe(true);
   });
 });
 
@@ -325,7 +437,7 @@ describe("releaseExpiredInviteSeats — tenant scoping", () => {
 
     const report = await releaseExpiredInviteSeats();
 
-    expect(report).toEqual({ scanned: 1, released: 1, skipped: 0 });
+    expect(report).toEqual({ scanned: 1, released: 1, skipped: 0, failed: 0 });
 
     const afterA = await Team.findById(teamA._id).lean();
     const afterB = await Team.findById(teamB._id).lean();

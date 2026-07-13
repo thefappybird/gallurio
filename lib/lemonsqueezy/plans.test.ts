@@ -81,10 +81,6 @@ describe("PLAN_CATALOG shape", () => {
 });
 
 describe("isPaidPlan", () => {
-  it("returns false for starter (merged away)", () => {
-    expect(isPaidPlan("starter")).toBe(false);
-  });
-
   it("returns true for pro", () => {
     expect(isPaidPlan("pro")).toBe(true);
   });

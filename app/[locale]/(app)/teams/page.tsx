@@ -69,7 +69,7 @@ export default async function TeamsPage({
   }));
 
   const { maxTeams, maxMembersPerTeam } = planEntitlements(
-    workspace.plan as "free" | "starter" | "pro",
+    workspace.plan as "free" | "pro" | "beta",
   );
 
   const [memberUsers, memberships, rawPendingInvites] = await Promise.all([
@@ -120,7 +120,7 @@ export default async function TeamsPage({
       <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       <TeamsPageClient
         teams={teams}
-        plan={workspace.plan as "free" | "starter" | "pro"}
+        plan={workspace.plan as "free" | "pro" | "beta"}
         maxTeams={maxTeams}
         maxMembersPerTeam={maxMembersPerTeam}
         members={members}

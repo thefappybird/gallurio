@@ -84,9 +84,9 @@ describe("BillingPanel — renders", () => {
   });
 
   it("shows the current plan name", () => {
-    renderPanel({ currentPlan: "starter" });
-    // The plan name badge shows "Starter"
-    expect(screen.getByText("Starter")).toBeInTheDocument();
+    renderPanel({ currentPlan: "pro" });
+    // The plan name badge shows "Pro"
+    expect(screen.getByText("Pro")).toBeInTheDocument();
   });
 
   it("shows upgrade CTAs for a free plan user", () => {
@@ -119,13 +119,13 @@ describe("BillingPanel — renders", () => {
   });
 
   it("shows subscription status badge when status is set", () => {
-    renderPanel({ currentPlan: "starter", lsSubscriptionStatus: "active" });
+    renderPanel({ currentPlan: "pro", lsSubscriptionStatus: "active" });
     expect(screen.getByText(/active/i)).toBeInTheDocument();
   });
 
   it("shows a renewal date when lsCurrentPeriodEnd is provided", () => {
     renderPanel({
-      currentPlan: "starter",
+      currentPlan: "pro",
       lsSubscriptionStatus: "active",
       lsCurrentPeriodEnd: new Date("2026-07-01"),
     });
@@ -133,7 +133,7 @@ describe("BillingPanel — renders", () => {
   });
 
   it("shows a subscription issue warning for past_due status", () => {
-    renderPanel({ currentPlan: "starter", lsSubscriptionStatus: "past_due" });
+    renderPanel({ currentPlan: "pro", lsSubscriptionStatus: "past_due" });
     expect(screen.getByText(/issue with your subscription/i)).toBeInTheDocument();
   });
 

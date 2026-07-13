@@ -4,7 +4,7 @@
       "pricing": "Pricing",
       "contact": "Contact",
       "signIn": "Sign in",
-      "joinBeta": "Join the Beta"
+      "getStarted": "Get started"
     },
     "footer": {
       "pricing": "Pricing",
@@ -20,7 +20,7 @@
     "hero": {
       "headline": "The booking-ready portfolio, run like a ledger.",
       "body": "Photographers, videographers, and event creatives use Gallurio to publish a page worth trusting a booking to — and manage bookings, clients, and inquiries in one workspace.",
-      "ctaJoinBeta": "Join the Beta"
+      "ctaStart": "Start your free month"
     },
     "whatIs": {
       "title": "What is Gallurio?",
@@ -66,14 +66,10 @@
         "description": "Publish a page designed to look credible, simple, and easy for potential clients to understand."
       }
     },
-    "betaNotice": {
-      "body1": "Gallurio is currently in beta. Some features may change as we improve the product, refine the experience, and gather feedback from early users.",
-      "body2": "During beta, access may be limited and certain paid features may not yet be available."
-    },
     "finalCta": {
       "title": "Start building your creative workspace with Gallurio.",
-      "subtitle": "Join the beta and help shape the platform before public launch.",
-      "button": "Join the Beta"
+      "subtitle": "Start with one month of Pro free — no card required.",
+      "button": "Start your free month"
     },
     "manifesto": {
       "quote": "Every booking accounted for. Every client trusted. Nothing left ambiguous.",
@@ -81,105 +77,58 @@
     },
     "pricingTeaser": {
       "title": "Simple pricing",
-      "subtitle": "Free to start. One paid tier when you're ready to run your full pipeline.",
+      "subtitle": "1 month of Pro, free. Then one plan, monthly or yearly.",
       "viewFullPricing": "View full pricing",
-      "disclaimer": "Pricing shown is planned and may change before public launch.",
+      "disclaimer": "Prices are billed by Lemon Squeezy and shown in your local currency at checkout.",
       "cadence": {
         "monthly": "Monthly",
-        "yearly": "Yearly — save ~30%"
-      },
-      "free": {
-        "name": "Free",
-        "price": "$0",
-        "description": "Build a portfolio and start collecting inquiries — no card required.",
-        "feature1": "Portfolio builder, 1 published page",
-        "feature2": "Booking inquiry form",
-        "feature3": "Workspace dashboard",
-        "cta": "Start free"
+        "yearly": "Yearly — save 2 months"
       },
       "pro": {
-        "badge": "Best value",
+        "badge": "1 month free",
         "name": "Pro",
-        "priceMonthly": "$14/mo",
-        "priceYearly": "$10/mo, billed yearly",
-        "description": "Everything in Free, for studios ready to run their full client pipeline.",
+        "priceSuffixMonthly": "/mo",
+        "priceSuffixYearly": "/yr",
+        "priceNote": "after your free month",
+        "description": "Unlimited bookings, clients, galleries, and your public page.",
         "feature1": "Unlimited bookings and inquiries",
         "feature2": "Custom branding and advanced galleries",
         "feature3": "Priority support",
-        "cta": "Start Pro trial"
-      },
-      "beta": {
-        "badge": "Limited spots",
-        "name": "Beta Tester",
-        "price": "Free",
-        "priceNote": "— Pro features",
-        "description": "Full Pro access at no cost, for early studios who help shape the product.",
-        "feature1": "Everything in Pro",
-        "feature2": "Direct line to the team",
-        "feature3": "Locked-in pricing at launch",
-        "cta": "Apply for beta"
+        "cta": "Start my free month"
       }
     },
     "pricing": {
       "metadata": {
         "title": "Pricing — Gallurio",
-        "description": "View Gallurio beta access and planned subscription options for creative professionals and studios."
+        "description": "See Gallurio Pro pricing for creative professionals and studios — one month free, then a single monthly or yearly plan."
       },
       "header": {
         "headline": "Simple plans for creative professionals and studios.",
-        "body": "Gallurio is currently in beta. Paid subscriptions are planned for public launch after beta testing. Pricing, feature limits, and plan details may change before the final release."
+        "body": "Every new workspace gets one month of full Gallurio Pro, free, no card required. After that, keep going with a single Pro subscription — monthly or yearly."
       },
-      "betaPlan": {
+      "pro": {
         "badge": "Recommended",
-        "name": "Beta Plan",
-        "price": "Free during beta",
-        "description": "For early users who want to test Gallurio, build a portfolio, and help shape the product.",
-        "feature1": "Portfolio page builder",
-        "feature2": "Basic gallery sections",
-        "feature3": "Business profile setup",
-        "feature4": "Booking inquiry form",
-        "feature5": "Workspace dashboard",
-        "feature6": "Early access to new features",
-        "cta": "Join the Beta"
-      },
-      "plannedBadge": "Planned",
-      "starter": {
-        "name": "Starter",
-        "description": "For independent creatives who need a simple portfolio and booking inquiry page.",
-        "feature1": "Published portfolio page",
-        "feature2": "Customizable page sections",
-        "feature3": "Image galleries",
-        "feature4": "Booking inquiry form",
-        "feature5": "Basic business profile",
-        "feature6": "Email support"
-      },
-      "studio": {
-        "name": "Studio",
-        "description": "For growing creative businesses that need more flexibility and stronger client-facing tools.",
-        "feature1": "Everything in Starter",
-        "feature2": "More portfolio sections",
-        "feature3": "Advanced gallery layouts",
-        "feature4": "Service/package presentation",
-        "feature5": "Custom branding options",
-        "feature6": "Priority support"
-      },
-      "business": {
-        "name": "Business",
-        "description": "For teams, studios, or creative businesses with more advanced operational needs.",
-        "feature1": "Everything in Studio",
-        "feature2": "Team-oriented workspace features",
-        "feature3": "Expanded booking setup",
-        "feature4": "Advanced customization",
-        "feature5": "Higher usage limits",
-        "feature6": "Priority feature access"
+        "name": "Pro",
+        "freeMonth": "Start with 1 month free, no card required.",
+        "description": "Everything you need to run bookings, clients, galleries, and your public page.",
+        "priceSuffixMonthly": "/ month",
+        "priceSuffixYearly": "/ year",
+        "yearlyNote": "Or {price} billed yearly — save 2 months.",
+        "feature1": "Portfolio page builder & public site",
+        "feature2": "Unlimited bookings and inquiries",
+        "feature3": "Client management & team roles",
+        "feature4": "Invoice PDFs",
+        "feature5": "Custom branding & advanced galleries",
+        "feature6": "Priority support",
+        "cta": "Start my free month"
       },
       "billingNotice": {
-        "body1": "When paid subscriptions become available, payments will be processed securely by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, tax calculation, invoices, billing support, and eligible refund processing.",
-        "body2": "No real payments are collected during the beta unless clearly stated at checkout."
+        "body1": "Payments are processed securely by Lemon Squeezy, our Merchant of Record. Lemon Squeezy handles payment processing, tax calculation, invoices, billing support, and eligible refund processing.",
+        "body2": "No charge is collected during your first free month."
       },
       "pricingTransparency": {
         "title": "Pricing Transparency",
-        "body": "Final subscription prices will be published before paid plans go live. Users will be able to review the price, billing period, and subscription terms before completing any payment."
+        "body": "The price, billing period, and subscription terms are shown before you complete any payment, and you can cancel anytime from your billing portal."
       }
     },
     "terms": {
@@ -234,9 +183,10 @@
       },
       "subscriptions": {
         "title": "8. Subscriptions and Payments",
-        "body1": "Some Gallurio features may require a paid subscription.",
-        "body2": "When paid plans become available, billing may be processed by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.",
-        "body3": "Users will be shown applicable pricing and billing terms before completing a purchase."
+        "body1": "Gallurio includes a paid Pro subscription, billed monthly or yearly. New workspaces receive one month of full Pro access at no charge, with no card required.",
+        "body2": "After the free month, continuing to use Gallurio requires an active Pro subscription. Billing is processed by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.",
+        "body3": "Users will be shown applicable pricing and billing terms before completing a purchase.",
+        "body4": "If a subscription is not renewed or a payment fails, access to the workspace is limited until the subscription is restored. Account data is retained; a published public page may be taken offline after an extended period without payment, and everything is restored upon resubscribing."
       },
       "cancellations": {
         "title": "9. Cancellations",
@@ -299,7 +249,7 @@
         },
         "payment": {
           "title": "Payment Information",
-          "body": "When paid features become available, payments may be processed by Lemon Squeezy, Gallurio's Merchant of Record. Gallurio does not directly store full payment card details. Lemon Squeezy may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices."
+          "body": "Payments for the Gallurio Pro subscription are processed by Lemon Squeezy, Gallurio's Merchant of Record. Gallurio does not directly store full payment card details. Lemon Squeezy may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices."
         }
       },
       "useOfInfo": {
@@ -367,13 +317,13 @@
       "title": "Refund Policy",
       "effectiveDate": "Effective Date: [Month Day, Year]",
       "betaPeriod": {
-        "title": "1. Beta Period",
-        "body1": "Gallurio is currently in beta. If no paid subscription or real payment is collected during beta, no refund is required because no charge has been made.",
-        "body2": "If paid beta access is offered in the future, the applicable price and refund terms will be shown before checkout."
+        "title": "1. Free Trial",
+        "body1": "New Gallurio workspaces receive one month of full Pro access at no charge, with no card required. No payment is collected during this trial, so no refund applies to it.",
+        "body2": "If you continue with a paid Pro subscription after the trial, the pricing and billing terms shown at checkout apply, and this Refund Policy governs any payment made."
       },
       "subscriptions": {
         "title": "2. Subscriptions",
-        "body1": "When paid plans become available, Gallurio subscriptions may be billed monthly, annually, or according to the billing period shown at checkout.",
+        "body1": "Gallurio Pro subscriptions are billed monthly, annually, or according to the billing period shown at checkout.",
         "body2": "Users may cancel their subscription to prevent future renewal charges. After cancellation, access may continue until the end of the current billing period unless otherwise stated."
       },
       "refundRequests": {
@@ -425,15 +375,15 @@
     "contact": {
       "metadata": {
         "title": "Contact — Gallurio",
-        "description": "Contact Gallurio for support, beta access, billing questions, and general inquiries."
+        "description": "Contact Gallurio for support, account help, billing questions, and general inquiries."
       },
       "header": {
         "headline": "Need help with Gallurio?",
-        "body": "For support, beta access questions, account concerns, billing issues, or general inquiries, contact us at:"
+        "body": "For support, account concerns, billing issues, or general inquiries, contact us at:"
       },
       "supportTopics": {
         "title": "Support Topics",
-        "item1": "Beta access",
+        "item1": "Getting started",
         "item2": "Account setup",
         "item3": "Portfolio pages",
         "item4": "Booking inquiry forms",
@@ -445,7 +395,7 @@
       },
       "responseTime": {
         "title": "Response Time",
-        "body1": "We aim to respond as soon as reasonably possible. During beta, response times may vary as we continue developing and improving Gallurio.",
+        "body1": "We aim to respond as soon as reasonably possible. Response times may vary as we continue developing and improving Gallurio.",
         "body2": "For urgent account or billing concerns, please include as much relevant detail as possible so we can review the request efficiently."
       },
       "businessInfo": {
@@ -1623,6 +1573,8 @@
     },
     "clients": {
       "title": "Clients",
+      "listEmpty": "You don't have any clients yet.",
+      "listEmptyHint": "Add your first client to start tracking bookings and history.",
       "toolbar": {
         "search": "Search by name or email",
         "searchLabel": "Search clients",
@@ -2702,7 +2654,7 @@
       "invalid_data": "Invalid data. Please check your input and try again.",
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
       "onboarding_required": "Finish onboarding to continue.",
-      "subscription_required": "Your subscription has ended. Subscribe to continue.",
+      "subscription_required": "Your Pro access has ended. Subscribe to continue.",
       "promo_code_not_found": "That code isn't valid. Double-check and try again.",
       "promo_code_expired": "That code has expired.",
       "promo_code_already_redeemed": "You've already redeemed this code.",
@@ -2781,6 +2733,7 @@
       "next": "Next"
     },
     "clearFilters": "Clear filters",
+    "loading": "Loading…",
     "promoCode": {
       "disclosureLabel": "Have a promo code?",
       "placeholder": "Enter code",
@@ -2848,7 +2801,7 @@
       "description": "You can change plans or cancel anytime from your workspace settings.",
       "popular": "Popular",
       "cadence": {
-        "forever": "forever",
+        "forever": "first month free",
         "monthly": "/ month",
         "yearly": "/ year"
       },
@@ -2858,7 +2811,7 @@
         "savePill": "Save 2 months"
       },
       "checkoutNote": "A secure checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
-      "ctaFree": "Continue with Free",
+      "ctaFree": "Start my free month",
       "ctaPaid": "Subscribe — {price}",
       "settingUp": "Setting up…",
       "opening": "Opening checkout…",
@@ -2888,25 +2841,14 @@
   "plans": {
     "free": {
       "name": "Free",
-      "description": "15-day full access trial",
-      "tagline": "Use the paid version free for 15 days.",
+      "description": "1 month of full Pro, free",
+      "tagline": "Try every Pro feature free for your first month.",
       "features": {
-        "trial": "15 days of full Pro access",
+        "trial": "1 month of full Pro access",
         "workspace": "1 workspace",
         "bookings": "Up to 10 bookings",
         "storage": "1 GB image storage",
         "publicPage": "Public landing page"
-      }
-    },
-    "starter": {
-      "name": "Starter",
-      "description": "For solo owners getting started.",
-      "tagline": "For solo owners getting started.",
-      "features": {
-        "unlimitedBookings": "Unlimited bookings",
-        "storage": "5 GB image storage",
-        "brandedForm": "Branded inquiry form",
-        "acceptPayments": "Accept GCash, Maya, cards from clients"
       }
     },
     "pro": {
@@ -2914,7 +2856,6 @@
       "description": "Run bookings, clients, teams, invoices, and your public page.",
       "tagline": "The full workspace for growing event businesses.",
       "features": {
-        "everythingStarter": "Everything in Starter",
         "unlimitedBookings": "Unlimited bookings",
         "publicPageControls": "Full public page controls",
         "storage": "50 GB storage",
@@ -2927,8 +2868,9 @@
   },
   "subscribe": {
     "pageTitle": "Subscribe",
+    "logout": "Log out",
     "owner": {
-      "title": "Your subscription has ended",
+      "title": "Your Pro access has ended",
       "description": "Resubscribe to Gallurio Pro to get back into your dashboard.",
       "perMonth": "/ month",
       "perYear": "/ year",

@@ -126,6 +126,31 @@ describe("POST /api/inquiries", () => {
     expect(other.status).toBe(200);
   });
 
+  it("keys the rate limit on cf-connecting-ip, not a spoofable x-forwarded-for", async () => {
+    const req = (cfIp: string, xff: string) =>
+      new Request("http://test/api/inquiries", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "cf-connecting-ip": cfIp,
+          "x-forwarded-for": xff,
+        },
+        body: JSON.stringify(makeBody()),
+      });
+
+    for (let i = 0; i < 5; i += 1) {
+      const ok = await POST(req("7.7.7.7", "same-spoofed-xff"));
+      expect(ok.status).toBe(200);
+    }
+    const sixth = await POST(req("7.7.7.7", "same-spoofed-xff"));
+    expect(sixth.status).toBe(429);
+
+    // A different cf-connecting-ip behind the SAME spoofed x-forwarded-for
+    // gets its own bucket.
+    const other = await POST(req("8.8.8.8", "same-spoofed-xff"));
+    expect(other.status).toBe(200);
+  });
+
   it("returns 400 when Turnstile verification fails, without calling submitInquiry", async () => {
     verifyTurnstileToken.mockResolvedValue(false);
     const res = await POST(makeReq(makeBody({ turnstileToken: "bad-token" })));

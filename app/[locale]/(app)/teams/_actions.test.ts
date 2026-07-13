@@ -27,7 +27,7 @@ vi.mock("@/lib/auth/ownerContext", () => ({
     workspace: {
       _id: WORKSPACE_ID,
       ownerUserId: OWNER_USER_ID,
-      plan: "starter",
+      plan: "free",
     },
   })),
 }));
@@ -168,11 +168,9 @@ describe("reactivateTeamAction", () => {
   });
 
   it("refuses reactivation that would exceed the active-team plan cap", async () => {
-    // Mocked workspace plan is "starter" → cap 3. Fill the 3 active slots, then
-    // try to reactivate a 4th (currently inactive) team.
+    // Mocked workspace plan is "free" → cap 1. Fill the 1 active slot, then
+    // try to reactivate a 2nd (currently inactive) team.
     await makeTeam({ name: "A" });
-    await makeTeam({ name: "B" });
-    await makeTeam({ name: "C" });
     const dead = await makeTeam({ name: "D", isActive: false, deactivatedAt: new Date() });
 
     const { reactivateTeamAction } = await import("./_actions");

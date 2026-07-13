@@ -37,7 +37,7 @@ import type {
 
 type Props = {
   teams: TeamRow[];
-  plan: "free" | "starter" | "pro";
+  plan: "free" | "pro" | "beta";
   maxTeams: number;
   maxMembersPerTeam: number;
   members: MemberSummary[];
@@ -248,6 +248,17 @@ export function TeamsPageClient({
         <TeamsTable
           rows={filteredTeams}
           empty={committedQuery ? t("table.empty") : t("listEmpty")}
+          emptyAction={
+            committedQuery ? undefined : (
+              <Button
+                className="bg-brand text-brand-foreground hover:bg-brand/90"
+                onClick={handleCreateClick}
+              >
+                <PlusIcon className="size-4" />
+                {t("createButton")}
+              </Button>
+            )
+          }
           onDetails={openDetails}
           onEdit={setEditTeam}
           onInvite={(team) => openInvite([team.id])}
@@ -334,8 +345,8 @@ export function TeamsPageClient({
         <DowngradeBlockModal
           open={downgradeBlockOpen}
           onOpenChange={setDowngradeBlockOpen}
-          currentPlan={plan === "free" ? "starter" : (plan as "starter" | "pro")}
-          targetPlan={plan === "pro" ? "starter" : "free"}
+          currentPlan="pro"
+          targetPlan="free"
           currentTeamCount={initialTeams.length}
           maxTeamsOnTargetPlan={maxTeams}
           teamsToReview={initialTeams.map((tm) => ({

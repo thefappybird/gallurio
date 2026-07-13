@@ -13,7 +13,7 @@ See `CLAUDE.md` → **DRY & code reuse (cross-agent)** for the full policy.
 > instead of re-reading source. Prefer it, then the codebase-memory graph
 > (`search_code` / `SIMILAR_TO`), then file reads — in that order.
 
-Last audited: 2026-07-12 (branch `action/backend-beta-audit` — extracted `TurnstileWidget`).
+Last audited: 2026-07-13 (branch `action/beta-release-cleanup` — extracted `EmptyState`).
 
 ---
 
@@ -70,6 +70,7 @@ Composed, app-specific shared components.
 | `components/app/sign-out-confirm.tsx` | `SignOutConfirmDialog` | Controlled logout confirm dialog | `open`, `onOpenChange` |
 | `components/app/sign-out-link.tsx` | `SignOutLink` | Sign-out button form wrapper | children |
 | `components/app/slug-status-indicator.tsx` | `SlugStatusIndicator` | Workspace slug availability indicator — single persistent `aria-live="polite"` live region; text + icon (never color-only); statuses: idle/checking/available/taken/invalid | `status: SlugStatus`, `t: ReturnType<typeof useTranslations>` (must expose `slugChecking`, `slugAvailable`, `slugTaken`, `slugInvalid` keys) |
+| `components/app/empty-state.tsx` | `EmptyState` | "No data yet" placeholder for list surfaces — dashed-border card, decorative icon, heading, optional description + action. Used by clients/teams tables, the inquiry table, and the notifications list. | `icon: LucideIcon`, `title`, `description?`, `action?: ReactNode`, `className?` |
 
 ## 3. Hooks
 
@@ -103,6 +104,11 @@ Composed, app-specific shared components.
 | `lib/utils/time-format.ts` | `formatTime`, `formatTimeRange`, `formatRangeFromParts`, `DEFAULT_TIME_MODE`, `TIME_INPUT_LANG` | — | Display Date/time range as 24h/12h; `formatRangeFromParts(startHHMM, endHHMM, mode)` is the shared primitive both `formatTimeRange` and `formatSessionTimeRange` delegate to — use it when you already have wall-clock HH:MM strings |
 | `lib/utils/get-user-time-format.ts` | `getUserTimeFormat` | `() => Promise<TimeMode>` | Read user time-format pref from cookie (fallback 24h) |
 | `lib/pagination.ts` | `PAGE_SIZE_OPTIONS` | `[10,20,30,50]` | Shared page sizes (client + server) |
+
+### `lib/workflows/`
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/workflows/world.ts` | `startWorld`, `stopWorld`, `worldReady` | Workflow DevKit World lifecycle wrappers around `workflow/runtime`'s `getWorld()`. `startWorld()` called from `instrumentation.ts` on boot; `stopWorld()` called from `server.ts`'s graceful-shutdown handler (`lib/server/gracefulShutdown.ts`) on SIGTERM/SIGINT; `worldReady()` returns `{healthy, error?}`, consumed by `app/api/health/route.ts`'s readiness check |
 
 ### `lib/bookings/`
 | Import | Export | Purpose |
@@ -138,6 +144,7 @@ Composed, app-specific shared components.
 | Import | Export | Purpose |
 |--------|--------|---------|
 | `lib/db/mongoose.ts` | `connectDB` | Lazy cached connection (pool 10, bufferCommands off) |
+| `lib/db/scriptGuard.ts` | `parseDbTarget(uri)`, `printDbFingerprint(uri)`, `assertSafeTarget(uri, opts?)` | Target-safety guard for one-off DB scripts (migrations, reindex, backfills). `parseDbTarget`/`printDbFingerprint` extract/log only `{host, dbName}` — never credentials or the query string. `assertSafeTarget` throws unless a dev-looking target (`localhost`/`127.0.0.1` host or `dev`/`test`/`local` in the db name) gets `--allow-dev`, or a production-looking target gets `--i-understand-production` / `CONFIRM_PRODUCTION=1`; `--dry-run` (or `opts.dryRun`) downgrades both checks to a `console.warn` so read-only previews never need confirmation. Flags/env are read from `process.argv`/`process.env` by default, overridable via `opts` for tests. Wired into `lib/db/reindex.ts`, `scripts/backfill-inquiries.ts`, and every `lib/db/migrations/*.ts` file — use it for any new DB script instead of connecting/dropping unchecked. |
 | `lib/db/clientTransactions.ts` | `recordBookingForClient`, `reassignBookingBetweenClients` | Atomic client financial-footprint writes |
 | `lib/db/queries/inquiry-conflicts.ts` | `computeInquiryConflicts(workspaceId, inquiries, tz)`, `sessionConflictsWithBookings(workspaceId, tz, session, excludeBookingId?)` | Booking-only conflict detection for inquiries: bulk check across all inquiries (calendar list view) or single-session check (reschedule action); one Booking query per call |
 
@@ -156,15 +163,16 @@ Composed, app-specific shared components.
 | `lib/email/brand.ts` | `Brand`, `gallurioBrand()`, `resolveWorkspaceBrand(ws)`, `ctaTextColor(accentHex)` | Typed brand struct + factory functions. `gallurioBrand()` returns the platform brand; `resolveWorkspaceBrand(ws)` derives a partner brand from a workspace doc; `ctaTextColor` picks `#ffffff` or `#1a1a1a` for readable CTA button text via WCAG relative luminance. |
 | `lib/email/layout.ts` | `EmailBlock` (incl. `divider` variant), `RenderEmailOpts`, `LocaleContent`, `LANGUAGE_NAME`, `renderBrandedEmail(opts) => { html, text }`, `bilingualSubject(en, localized, locale)`, `renderBilingualEmail({ brand, preheader, secondaryLocale, build }) => { html, text }` | Branded transactional email renderer. Table-based, 600px, fully inline styles, platform/partner modes, dark-mode `@media` block, bulletproof CTA buttons, plain-text fallback. `divider` block renders a thin rule with optional uppercase label. `renderBilingualEmail` builds English-first then appends workspace-locale section separated by a divider (no-op when `secondaryLocale === "en"`). `bilingualSubject` produces `"EN · LOC"` subject or plain English when locale matches. Every caller string is HTML-escaped internally. |
 | `lib/email/messages.ts` | `EMAIL_COPY`, `emailLocale` | Typed, multi-locale (en/fil/ms/id) copy map for all transactional emails. Always add new email copy here; never hardcode strings in senders. `emailLocale` wraps `localeForCountry` for workspace-locale resolution. |
-| `lib/email/send.ts` | `sendEmail(input)`, `SendEmailInput`, `SendEmailResult` | Low-level Resend gateway. All email senders must go through this; handles API key guard, timeout, and error logging. |
+| `lib/email/send.ts` | `sendEmail(input)`, `SendEmailInput`, `SendEmailResult`, `logEmailFailure(emailType, to, result)` | Low-level Resend gateway. All email senders must go through this; handles API key guard, timeout, and error logging. Missing `RESEND_API_KEY` is a silent dev-only skip-success — in production it returns `{ ok: false, error: "no_transport" }`. `logEmailFailure` is the shared, redacted (no recipient address/body, just type + count + error code) failure log used by the critical sender wrappers (verification, password reset, team invite, lifecycle). |
 | `lib/email/teamInvite.ts` | `sendTeamInviteEmail(input)`, `TeamInviteEmailInput` | Branded team-invite email (workspace-branded, locale-aware, with teams list). |
 | `lib/email/inquiryNotification.ts` | `sendInquiryNotification(data)`, `InquiryNotificationData` | Branded internal notification email to the workspace owner when a new inquiry arrives. Platform-branded (teal). |
 | `lib/email/inquiryClientConfirmation.ts` | `sendInquiryClientConfirmation(data)`, `InquiryClientConfirmationData` | Branded confirmation email to the client after they submit an inquiry. |
-| `lib/email/sendPasswordResetEmail.ts` | `sendPasswordResetEmail(email, token, locale)` | Branded password-reset email with locale-aware copy from `EMAIL_COPY.passwordReset`. |
+| `lib/email/sendPasswordResetEmail.ts` | `sendPasswordResetEmail(email, token, locale) => Promise<SendEmailResult>` | Branded password-reset email with locale-aware copy from `EMAIL_COPY.passwordReset`. Returns the `SendEmailResult` (logs via `logEmailFailure` on failure) — never throws. |
 | `lib/email/notifications.ts` | `sendNotificationEmail(opts)` | Sends an in-app notification as a branded email digest when the recipient has email notifications enabled. |
 | `lib/email/booking/bookingConfirmed.ts` | `sendBookingConfirmedClient(params)`, `sendBookingConfirmedOwner(params)`, `BookingConfirmedClientParams`, `BookingConfirmedOwnerParams` | Branded booking-confirmed emails: client copy (workspace-branded) and owner copy (platform-branded). |
 | `lib/email/booking/bookingCancelled.ts` | `sendBookingCancelledClient(params)`, `sendBookingCancelledOwner(params)`, `BookingCancelledClientParams`, `BookingCancelledOwnerParams` | Branded booking-cancelled emails: client copy (workspace-branded) and owner copy (platform-branded). |
 | `lib/email/booking/inquiryDecline.ts` | `sendInquiryDeclineClient(params)`, `InquiryDeclineClientParams` | Branded inquiry-decline email to the client when an inquiry is declined. |
+| `lib/email/lifecycle.ts` | `sendLifecycleEmail(stage, to, country)`, `LifecycleEmailStage` | Platform-branded lapse-lifecycle email (`preExpiry`/`expired`/`remind1`/`remind2`), locale via `emailLocale(country)`, CTA always to absolute `/subscribe`. Sent by `lib/db/jobs/billing-lifecycle-sweep.ts`. |
 
 ### `lib/notifications/`
 | Import | Export | Purpose |
@@ -186,6 +194,8 @@ Composed, app-specific shared components.
 | `lib/i18n/navigation.ts` | `Link`, `redirect`, `usePathname`, `useRouter`, `getPathname` | Locale-aware navigation (next-intl) |
 | `lib/i18n/request.ts` | default | next-intl per-request config |
 | `lib/server/rateLimit.ts` | `rateLimit`, `__resetRateLimitForTests` | In-memory sliding-window limiter (best-effort, NOT distributed) |
+| `lib/server/getClientIp.ts` | `getClientIp(headers: Headers)` | Resolves the visitor IP for rate-limiting/abuse control. Checks `CF-Connecting-IP` first (Cloudflare-set, unspoofable once the origin is firewalled to Cloudflare IP ranges — the launch config), then `x-vercel-forwarded-for`, then the first `x-forwarded-for` hop, then `x-real-ip`; returns `"unknown"` if none present. Used by `app/api/inquiries/route.ts`, `app/api/public/pageviews/route.ts`, and `app/[locale]/(auth)/_actions.ts`'s `getIp()`. Reuse for any new public/rate-limited endpoint instead of re-parsing headers. |
+| `lib/server/gracefulShutdown.ts` | `gracefulShutdown(deps)` | Builds a SIGTERM/SIGINT handler: closes the HTTP server, then Socket.IO, then `stopWorld()`, then the Mongo connection, then exits — bounded by a timeout (default 10s) so a hung close still exits. Dependency-injected (`httpServer`, `io`, `stopWorld`, `closeMongoConnection`, `exit`, `timeoutMs?`) for testability; wired in `server.ts`. |
 | `lib/teams/team-colors.ts` | `TEAM_COLOR_PALETTE`, `INACTIVE_TEAM_COLOR` | Client-safe team color presets |
 | `lib/page-builder/brandKitContext.tsx` | `BrandKitProvider`, `useBrandKit` | Workspace brand-kit context |
 | `lib/page-builder/responsive.ts` | `PF_PAGE_CONTAINER`, `PF_PAGE_CONTAINER_CSS`, `PF_RESPONSIVE_CSS`, `padVar`, `gridColsVar`, `masonryColsVar`, `PF_CONTAINER_NAME`, breakpoint consts | Portfolio block responsiveness via a single `pfpage` container scope + custom-property indirection. Mark the page surface with `PF_PAGE_CONTAINER` (public root render) or `PF_PAGE_CONTAINER_CSS` (editor canvas via `RootCanvasStyle`), inject `PF_RESPONSIVE_CSS` once, and have blocks reference `var(--pf-pad/...)` inline so they reflow on the public page AND in the editor viewport toggle. New blocks must reuse these helpers, not re-implement breakpoints. |

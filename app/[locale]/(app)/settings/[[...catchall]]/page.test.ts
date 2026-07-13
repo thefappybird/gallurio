@@ -167,7 +167,7 @@ const WORKSPACE_STUB = {
   country: "PH",
   currency: "PHP",
   timezone: "Asia/Manila",
-  plan: "starter",
+  plan: "pro",
   ownerUserId: "user_owner",
   publicPage: null,
 };

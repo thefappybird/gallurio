@@ -27,7 +27,7 @@ vi.mock("@/lib/auth/ownerContext", () => ({
     workspace: {
       _id: WORKSPACE_ID,
       ownerUserId: OWNER_USER_ID,
-      plan: "starter",
+      plan: "pro",
     },
   })),
 }));

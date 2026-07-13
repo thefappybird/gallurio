@@ -200,7 +200,7 @@ export function BillingPanel({
       {/* Beta tester — full access, nothing to upgrade or manage */}
       {isBeta ? (
         <p className="text-sm text-muted-foreground">{t("betaAccessNote")}</p>
-      ) : !isActiveSubscriber || currentPlan === "starter" ? (
+      ) : !isActiveSubscriber ? (
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("availablePlans")}

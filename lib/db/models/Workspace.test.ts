@@ -102,6 +102,62 @@ describe("Workspace.contact.addressLat / addressLng defaults", () => {
   });
 });
 
+describe("Workspace.lifecycle defaults", () => {
+  it("new workspace has lifecycle.lapsedAt defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "lifecycle-studio",
+      name: "Lifecycle Studio",
+      ownerUserId: "user_lifecycle_1",
+    });
+    expect(ws.lifecycle?.lapsedAt).toBeNull();
+  });
+
+  it("new workspace has lifecycle.warned7dAt defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "lifecycle-studio-2",
+      name: "Lifecycle Studio 2",
+      ownerUserId: "user_lifecycle_2",
+    });
+    expect(ws.lifecycle?.warned7dAt).toBeNull();
+  });
+
+  it("new workspace has lifecycle.expiredNotifiedAt defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "lifecycle-studio-3",
+      name: "Lifecycle Studio 3",
+      ownerUserId: "user_lifecycle_3",
+    });
+    expect(ws.lifecycle?.expiredNotifiedAt).toBeNull();
+  });
+
+  it("new workspace has lifecycle.remind1moAt defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "lifecycle-studio-4",
+      name: "Lifecycle Studio 4",
+      ownerUserId: "user_lifecycle_4",
+    });
+    expect(ws.lifecycle?.remind1moAt).toBeNull();
+  });
+
+  it("new workspace has lifecycle.remind7wkAt defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "lifecycle-studio-5",
+      name: "Lifecycle Studio 5",
+      ownerUserId: "user_lifecycle_5",
+    });
+    expect(ws.lifecycle?.remind7wkAt).toBeNull();
+  });
+
+  it("new workspace has lifecycle.wipedAt defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "lifecycle-studio-6",
+      name: "Lifecycle Studio 6",
+      ownerUserId: "user_lifecycle_6",
+    });
+    expect(ws.lifecycle?.wipedAt).toBeNull();
+  });
+});
+
 describe("Workspace.invoiceTheme defaults", () => {
   it("new workspace has invoiceTheme defaulting to the classic preset", async () => {
     const ws = await Workspace.create({

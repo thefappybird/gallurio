@@ -18,12 +18,17 @@ loadEnv();
 
 import mongoose from "mongoose";
 import { connectDB } from "../mongoose";
+import { assertSafeTarget, printDbFingerprint } from "../scriptGuard";
 
 const isDryRun = process.argv.includes("--dry-run");
 
 async function run() {
   console.log(`→ Migration: portfolio-page-shape (${isDryRun ? "DRY RUN" : "LIVE"})`);
   await connectDB();
+
+  const uri = process.env.DATABASE_URL!;
+  printDbFingerprint(uri);
+  assertSafeTarget(uri, { dryRun: isDryRun });
 
   const db = mongoose.connection.db;
   if (!db) throw new Error("No DB connection");

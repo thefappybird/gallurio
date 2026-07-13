@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/lib/i18n/navigation";
+import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { formatMoney } from "@/lib/utils/format-currency";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -21,57 +23,19 @@ export default async function PricingPage({ params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations("marketing.pricing");
+  const proPricing = await getProPricing();
 
-  const betaFeatures = [
-    t("betaPlan.feature1"),
-    t("betaPlan.feature2"),
-    t("betaPlan.feature3"),
-    t("betaPlan.feature4"),
-    t("betaPlan.feature5"),
-    t("betaPlan.feature6"),
+  const proFeatures = [
+    t("pro.feature1"),
+    t("pro.feature2"),
+    t("pro.feature3"),
+    t("pro.feature4"),
+    t("pro.feature5"),
+    t("pro.feature6"),
   ];
 
-  const plannedPlans = [
-    {
-      key: "starter",
-      name: t("starter.name"),
-      description: t("starter.description"),
-      features: [
-        t("starter.feature1"),
-        t("starter.feature2"),
-        t("starter.feature3"),
-        t("starter.feature4"),
-        t("starter.feature5"),
-        t("starter.feature6"),
-      ],
-    },
-    {
-      key: "studio",
-      name: t("studio.name"),
-      description: t("studio.description"),
-      features: [
-        t("studio.feature1"),
-        t("studio.feature2"),
-        t("studio.feature3"),
-        t("studio.feature4"),
-        t("studio.feature5"),
-        t("studio.feature6"),
-      ],
-    },
-    {
-      key: "business",
-      name: t("business.name"),
-      description: t("business.description"),
-      features: [
-        t("business.feature1"),
-        t("business.feature2"),
-        t("business.feature3"),
-        t("business.feature4"),
-        t("business.feature5"),
-        t("business.feature6"),
-      ],
-    },
-  ];
+  const monthlyPrice = formatMoney(proPricing.monthly, proPricing.currency, locale);
+  const yearlyPrice = formatMoney(proPricing.yearly, proPricing.currency, locale);
 
   return (
     <>
@@ -85,23 +49,32 @@ export default async function PricingPage({ params }: Props) {
         </div>
       </section>
 
-      {/* Beta Plan — the one highlighted card */}
+      {/* Pro Plan */}
       <section className="border-t border-border px-4 py-12 sm:px-6">
         <div className="mx-auto max-w-3xl">
           <Card className="ring-2 ring-brand">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <CardTitle className="text-lg">{t("betaPlan.name")}</CardTitle>
+                <CardTitle className="text-lg">{t("pro.name")}</CardTitle>
                 <Badge variant="default" className="bg-brand text-brand-foreground">
-                  {t("betaPlan.badge")}
+                  {t("pro.badge")}
                 </Badge>
               </div>
-              <p className="text-2xl font-semibold tracking-tight">{t("betaPlan.price")}</p>
-              <CardDescription>{t("betaPlan.description")}</CardDescription>
+              <p className="text-sm font-semibold text-brand">{t("pro.freeMonth")}</p>
+              <p className="text-2xl font-semibold tracking-tight">
+                {monthlyPrice}
+                <span className="ms-1 text-sm font-normal text-muted-foreground">
+                  {t("pro.priceSuffixMonthly")}
+                </span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("pro.yearlyNote", { price: yearlyPrice })}
+              </p>
+              <CardDescription>{t("pro.description")}</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="list-disc space-y-1 ps-5 text-sm text-muted-foreground">
-                {betaFeatures.map((feature) => (
+                {proFeatures.map((feature) => (
                   <li key={feature}>{feature}</li>
                 ))}
               </ul>
@@ -109,34 +82,10 @@ export default async function PricingPage({ params }: Props) {
                 href="/sign-up"
                 className={buttonVariants({ variant: "brand", size: "lg", className: "mt-6" })}
               >
-                {t("betaPlan.cta")}
+                {t("pro.cta")}
               </Link>
             </CardContent>
           </Card>
-        </div>
-      </section>
-
-      {/* Planned Paid Plans */}
-      <section className="border-t border-border px-4 py-12 sm:px-6">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-3">
-          {plannedPlans.map((plan) => (
-            <Card key={plan.key}>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">{plan.name}</CardTitle>
-                  <Badge variant="outline">{t("plannedBadge")}</Badge>
-                </div>
-                <CardDescription>{plan.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="list-disc space-y-1 ps-5 text-sm text-muted-foreground">
-                  {plan.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       </section>
 

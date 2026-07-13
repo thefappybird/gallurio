@@ -37,7 +37,12 @@ describe("InquiryRedirectPage", () => {
 
   it("redirects to the inquiry modal path for an active (non-gated) workspace", async () => {
     mockRequireOrg.mockResolvedValue({
-      workspace: { plan: "pro", everSubscribed: true },
+      workspace: {
+        plan: "pro",
+        everSubscribed: true,
+        lsSubscriptionId: "sub_1",
+        lsSubscriptionStatus: "active",
+      },
     } as never);
 
     await expect(

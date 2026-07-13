@@ -55,34 +55,6 @@ describe("assertCanAddTeam — free plan (max 1)", () => {
   });
 });
 
-describe("assertCanAddTeam — starter plan (max 3)", () => {
-  it("resolves when workspace has 2 teams", async () => {
-    const workspaceId = makeWorkspaceId();
-    await seedTeams(workspaceId, 2);
-    await expect(assertCanAddTeam(workspaceId, "starter")).resolves.toBeUndefined();
-  });
-
-  it("throws TeamCapExceededError when already at 3 teams", async () => {
-    const workspaceId = makeWorkspaceId();
-    await seedTeams(workspaceId, 3);
-
-    const err = await assertCanAddTeam(workspaceId, "starter").catch((e) => e);
-    expect(err).toBeInstanceOf(TeamCapExceededError);
-    expect(err.plan).toBe("starter");
-    expect(err.currentCount).toBe(3);
-    expect(err.max).toBe(3);
-  });
-
-  it("excludes deactivated teams from the cap count", async () => {
-    const workspaceId = makeWorkspaceId();
-    await seedTeams(workspaceId, 3); // 3 active → at the starter cap
-    // Deactivating one frees a slot — only ACTIVE teams count.
-    const one = await Team.findOne({ workspaceId });
-    await Team.updateOne({ _id: one!._id }, { $set: { isActive: false, deactivatedAt: new Date() } });
-    await expect(assertCanAddTeam(workspaceId, "starter")).resolves.toBeUndefined();
-  });
-});
-
 describe("assertCanAddTeam — pro plan (max 15)", () => {
   it("resolves when workspace has 14 teams", async () => {
     const workspaceId = makeWorkspaceId();
@@ -123,7 +95,7 @@ describe("createTeamWithCapEnforcement — atomic cap guard", () => {
         memberCount: 0,
         createdByWorkosUserId: "user_test",
       },
-      "starter",
+      "pro",
     );
     expect(team).toBeTruthy();
     expect(await Team.countDocuments({ workspaceId })).toBe(1);
@@ -167,14 +139,14 @@ describe("createTeamWithCapEnforcement — atomic cap guard", () => {
 
 describe("TeamCapExceededError", () => {
   it("inherits from Error and sets all fields correctly", () => {
-    const err = new TeamCapExceededError("starter", 3, 3);
+    const err = new TeamCapExceededError("pro", 3, 3);
     expect(err).toBeInstanceOf(Error);
     expect(err).toBeInstanceOf(TeamCapExceededError);
     expect(err.name).toBe("TeamCapExceededError");
-    expect(err.plan).toBe("starter");
+    expect(err.plan).toBe("pro");
     expect(err.currentCount).toBe(3);
     expect(err.max).toBe(3);
-    expect(err.message).toMatch(/starter/);
+    expect(err.message).toMatch(/pro/);
     expect(err.message).toMatch(/3\/3/);
   });
 });

@@ -35,7 +35,7 @@ test("landing page renders all sections with no horizontal overflow at 1280px", 
   await expect(page.getByRole("link", { name: "Pricing" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Contact" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Join the Beta" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Get started" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Refunds" })).toBeVisible();
@@ -54,7 +54,7 @@ test("landing page renders all sections with no horizontal overflow at 768px", a
   await expectCoreSectionsVisible(page);
   await expect(page.getByRole("link", { name: "Pricing" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Join the Beta" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Get started" }).first()).toBeVisible();
 
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(
@@ -71,7 +71,7 @@ test("landing page renders all sections with no horizontal overflow at 375px", a
   await expect(page.getByRole("link", { name: "Pricing" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Contact" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Join the Beta" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Get started" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Refunds" })).toBeVisible();
@@ -87,9 +87,10 @@ test("cadence toggle switches the Pro price between monthly and yearly", async (
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
 
-  await expect(page.getByText("$14/mo", { exact: false })).toBeVisible();
+  await expect(page.getByText("1 month free")).toBeVisible();
+  await expect(page.getByText("/mo", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: /Yearly/ }).click();
-  await expect(page.getByText("$10/mo, billed yearly", { exact: false })).toBeVisible();
+  await expect(page.getByText("/yr", { exact: false })).toBeVisible();
 });
 
 test("hero ambient background follows the site theme toggle", async ({ page }) => {

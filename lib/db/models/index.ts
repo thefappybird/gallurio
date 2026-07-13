@@ -42,3 +42,9 @@ export {
   type PromoCodeType,
   type PromoCodeDoc,
 } from "./PromoCode";
+export {
+  WebhookEvent,
+  WEBHOOK_EVENT_STATUSES,
+  type WebhookEventStatus,
+  type WebhookEventDoc,
+} from "./WebhookEvent";

@@ -21,6 +21,7 @@ import {
   PencilIcon,
   PowerOffIcon,
   RotateCcwIcon,
+  UsersIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/app/empty-state";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
 import { SourceBadge } from "./source-badge";
@@ -78,6 +80,10 @@ type Props = {
   rows: ClientRow[];
   locale: string;
   empty: string;
+  /** Guidance shown under `empty` (e.g. only in the true "no clients yet" case). */
+  emptyHint?: string;
+  /** Primary CTA rendered under the empty state (e.g. "Add Client"). */
+  emptyAction?: ReactNode;
   onClickClient: (row: ClientRow) => void;
   onView: (row: ClientRow) => void;
   onEdit: (row: ClientRow) => void;
@@ -91,6 +97,8 @@ export function ClientsTable({
   rows,
   locale,
   empty,
+  emptyHint,
+  emptyAction,
   onClickClient,
   onView,
   onEdit,
@@ -236,9 +244,7 @@ export function ClientsTable({
 
   if (rows.length === 0) {
     return (
-      <div className="border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
-        {empty}
-      </div>
+      <EmptyState icon={UsersIcon} title={empty} description={emptyHint} action={emptyAction} />
     );
   }
 

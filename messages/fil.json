@@ -4,7 +4,7 @@
       "pricing": "Presyo",
       "contact": "Makipag-ugnayan",
       "signIn": "Mag-sign in",
-      "joinBeta": "Sumali sa Beta"
+      "getStarted": "Magsimula"
     },
     "footer": {
       "pricing": "Presyo",
@@ -20,7 +20,7 @@
     "hero": {
       "headline": "Ang handa-sa-booking na portfolio, pinapatakbo tulad ng isang ledger.",
       "body": "Ginagamit ng mga photographer, videographer, at event creative ang Gallurio para mag-publish ng page na karapat-dapat pagkatiwalaan ng booking — at pamahalaan ang mga booking, kliyente, at inquiry sa iisang workspace.",
-      "ctaJoinBeta": "Sumali sa Beta"
+      "ctaStart": "Simulan ang libreng buwan ko"
     },
     "whatIs": {
       "title": "Ano ang Gallurio?",
@@ -66,14 +66,10 @@
         "description": "Mag-publish ng page na idinisenyo para maging kapani-paniwala, simple, at madaling maintindihan ng mga potensyal na kliyente."
       }
     },
-    "betaNotice": {
-      "body1": "Kasalukuyang nasa beta ang Gallurio. Maaaring magbago ang ilang feature habang pinapabuti namin ang produkto, ginagawang mas maayos ang karanasan, at nangangalap ng feedback mula sa mga unang user.",
-      "body2": "Sa panahon ng beta, maaaring limitado ang access at ang ilang paid feature ay maaaring hindi pa available."
-    },
     "finalCta": {
       "title": "Simulan ang pagbuo ng iyong creative workspace gamit ang Gallurio.",
-      "subtitle": "Sumali sa beta at tumulong hubugin ang platform bago ang public launch.",
-      "button": "Sumali sa Beta"
+      "subtitle": "Magsimula nang may isang buwan ng Pro nang libre — walang kailangang card.",
+      "button": "Simulan ang libreng buwan ko"
     },
     "manifesto": {
       "quote": "Bawat booking ay naitatala. Bawat kliyente ay mapagkakatiwalaan. Walang naiiwang malabo.",
@@ -81,105 +77,58 @@
     },
     "pricingTeaser": {
       "title": "Simpleng presyo",
-      "subtitle": "Libre sa simula. Iisang paid tier kapag handa ka nang patakbuhin ang buong pipeline mo.",
+      "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",
       "viewFullPricing": "Tingnan ang buong presyo",
-      "disclaimer": "Ang mga presyong ipinapakita ay planado at maaaring magbago bago ang pampublikong paglulunsad.",
+      "disclaimer": "Ang mga presyo ay sinisingil ng Lemon Squeezy at ipinapakita sa iyong lokal na currency sa checkout.",
       "cadence": {
         "monthly": "Buwanan",
-        "yearly": "Taunan — makatipid ng ~30%"
-      },
-      "free": {
-        "name": "Libre",
-        "price": "₱0",
-        "description": "Bumuo ng portfolio at simulang mangalap ng inquiry — walang kailangang card.",
-        "feature1": "Portfolio builder, 1 na na-publish na page",
-        "feature2": "Booking inquiry form",
-        "feature3": "Workspace dashboard",
-        "cta": "Simulan nang libre"
+        "yearly": "Taunan — makatipid ng 2 buwan"
       },
       "pro": {
-        "badge": "Pinakamalaking value",
+        "badge": "1 buwang libre",
         "name": "Pro",
-        "priceMonthly": "₱780/buwan",
-        "priceYearly": "₱560/buwan, taunang bayad",
-        "description": "Lahat ng nasa Libre, para sa mga studio na handa nang patakbuhin ang buong client pipeline nila.",
+        "priceSuffixMonthly": "/buwan",
+        "priceSuffixYearly": "/taon",
+        "priceNote": "pagkatapos ng libreng buwan",
+        "description": "Walang limit na booking, client, gallery, at ang pampublikong page mo.",
         "feature1": "Walang limit na booking at inquiry",
         "feature2": "Custom branding at advanced na galleries",
         "feature3": "Priority support",
-        "cta": "Simulan ang Pro trial"
-      },
-      "beta": {
-        "badge": "Limitadong slot",
-        "name": "Beta Tester",
-        "price": "Libre",
-        "priceNote": "— mga Pro feature",
-        "description": "Buong Pro access nang walang bayad, para sa mga unang studio na tutulong hubugin ang produkto.",
-        "feature1": "Lahat ng nasa Pro",
-        "feature2": "Direktang linya sa team",
-        "feature3": "Naka-lock na presyo sa paglunsad",
-        "cta": "Mag-apply para sa beta"
+        "cta": "Simulan ang libreng buwan ko"
       }
     },
     "pricing": {
       "metadata": {
         "title": "Presyo — Gallurio",
-        "description": "Tingnan ang beta access at planadong subscription options ng Gallurio para sa mga creative professional at studio."
+        "description": "Tingnan ang presyo ng Gallurio Pro para sa mga creative professional at studio — isang buwang libre, tapos iisang buwanan o taunang plano."
       },
       "header": {
         "headline": "Simpleng mga plano para sa mga creative professional at studio.",
-        "body": "Kasalukuyang nasa beta ang Gallurio. Ang mga paid subscription ay planadong ilulunsad pagkatapos ng beta testing. Maaaring magbago ang presyo, feature limits, at detalye ng plano bago ang final release."
+        "body": "Bawat bagong workspace ay may isang buwan ng buong Gallurio Pro, libre, walang kailangang card. Pagkatapos, magpatuloy sa iisang Pro subscription — buwanan o taunan."
       },
-      "betaPlan": {
+      "pro": {
         "badge": "Rekomendado",
-        "name": "Beta Plan",
-        "price": "Libre habang beta",
-        "description": "Para sa mga unang user na gustong subukan ang Gallurio, bumuo ng portfolio, at tumulong hubugin ang produkto.",
-        "feature1": "Portfolio page builder",
-        "feature2": "Batayang gallery sections",
-        "feature3": "Business profile setup",
-        "feature4": "Booking inquiry form",
-        "feature5": "Workspace dashboard",
-        "feature6": "Maagang access sa mga bagong feature",
-        "cta": "Sumali sa Beta"
-      },
-      "plannedBadge": "Planado",
-      "starter": {
-        "name": "Starter",
-        "description": "Para sa mga independent na creative na kailangan lang ng simpleng portfolio at booking inquiry page.",
-        "feature1": "Naka-publish na portfolio page",
-        "feature2": "Customizable na mga section ng page",
-        "feature3": "Image gallery",
-        "feature4": "Booking inquiry form",
-        "feature5": "Batayang business profile",
-        "feature6": "Email support"
-      },
-      "studio": {
-        "name": "Studio",
-        "description": "Para sa lumalaking creative business na kailangan ng mas malaking flexibility at mas malakas na client-facing tools.",
-        "feature1": "Lahat ng nasa Starter",
-        "feature2": "Mas maraming portfolio section",
-        "feature3": "Advanced na gallery layout",
-        "feature4": "Presentasyon ng service/package",
-        "feature5": "Custom branding options",
-        "feature6": "Priority support"
-      },
-      "business": {
-        "name": "Business",
-        "description": "Para sa mga team, studio, o creative business na may mas advanced na operational na pangangailangan.",
-        "feature1": "Lahat ng nasa Studio",
-        "feature2": "Team-oriented na workspace feature",
-        "feature3": "Pinalawak na booking setup",
-        "feature4": "Advanced na customization",
-        "feature5": "Mas mataas na usage limits",
-        "feature6": "Priority feature access"
+        "name": "Pro",
+        "freeMonth": "Simulan nang may 1 buwang libre, walang kailangang card.",
+        "description": "Lahat ng kailangan mo para patakbuhin ang mga booking, client, gallery, at ang pampublikong page mo.",
+        "priceSuffixMonthly": "/ buwan",
+        "priceSuffixYearly": "/ taon",
+        "yearlyNote": "O {price} taunang bayad — makatipid ng 2 buwan.",
+        "feature1": "Portfolio page builder & pampublikong site",
+        "feature2": "Walang limit na booking at inquiry",
+        "feature3": "Client management at team roles",
+        "feature4": "Invoice PDFs",
+        "feature5": "Custom branding at advanced na galleries",
+        "feature6": "Priority support",
+        "cta": "Simulan ang libreng buwan ko"
       },
       "billingNotice": {
-        "body1": "Kapag naging available na ang paid subscriptions, ligtas na iproproseso ang bayad ng Lemon Squeezy, ang aming Merchant of Record. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, pagkalkula ng buwis, invoice, billing support, at eligible na refund processing.",
-        "body2": "Walang totoong bayad na kinokolekta habang beta maliban kung malinaw na nakasaad sa checkout."
+        "body1": "Ligtas na iproproseso ang mga bayad ng Lemon Squeezy, ang aming Merchant of Record. Pinangangasiwaan ng Lemon Squeezy ang payment processing, pagkalkula ng buwis, invoice, billing support, at eligible na refund processing.",
+        "body2": "Walang bayad na kinokolekta sa iyong unang libreng buwan."
       },
       "pricingTransparency": {
         "title": "Transparency sa Presyo",
-        "body": "Ilalathala ang final na subscription prices bago mailunsad ang mga paid plan. Makikita ng mga user ang presyo, billing period, at subscription terms bago kumpletuhin ang anumang bayad."
+        "body": "Ipinapakita ang presyo, billing period, at subscription terms bago ka kumpletuhin ang anumang bayad, at maaari kang mag-cancel anumang oras mula sa iyong billing portal."
       }
     },
     "terms": {
@@ -234,9 +183,10 @@
       },
       "subscriptions": {
         "title": "8. Subscriptions at Bayad",
-        "body1": "Maaaring mangailangan ng paid subscription ang ilang feature ng Gallurio.",
-        "body2": "Kapag naging available na ang mga paid plan, maaaring iproseso ng Lemon Squeezy ang billing, ang aming Merchant of Record. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, buwis, invoice, billing support, at naaangkop na refund workflows.",
-        "body3": "Ipapakita sa mga user ang naaangkop na presyo at billing terms bago kumpletuhin ang isang pagbili."
+        "body1": "Kasama sa Gallurio ang isang paid na Pro subscription, na sinisingil buwan-buwan o taun-taon. Ang mga bagong workspace ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang card.",
+        "body2": "Pagkatapos ng libreng buwan, kailangan ng aktibong Pro subscription para magpatuloy sa paggamit ng Gallurio. Ang billing ay iproproseso ng Lemon Squeezy, ang aming Merchant of Record. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, buwis, invoice, billing support, at naaangkop na refund workflows.",
+        "body3": "Ipapakita sa mga user ang naaangkop na presyo at billing terms bago kumpletuhin ang isang pagbili.",
+        "body4": "Kung hindi na-renew ang subscription o nabigo ang bayad, limitado ang access sa workspace hanggang maibalik ang subscription. Napapanatili ang data ng account; maaaring itanggal offline ang na-publish na pampublikong page pagkatapos ng mahabang panahon na walang bayad, at maibabalik ang lahat pagkatapos mag-resubscribe."
       },
       "cancellations": {
         "title": "9. Mga Cancellation",
@@ -299,7 +249,7 @@
         },
         "payment": {
           "title": "Impormasyon sa Bayad",
-          "body": "Kapag naging available na ang mga paid feature, maaaring iproseso ng Lemon Squeezy, ang Merchant of Record ng Gallurio, ang mga bayad. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card. Maaaring kolektahin at iproseso ng Lemon Squeezy ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice ayon sa sarili nitong mga tuntunin at privacy practices."
+          "body": "Ang mga bayad para sa Gallurio Pro subscription ay iproproseso ng Lemon Squeezy, ang Merchant of Record ng Gallurio. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card. Maaaring kolektahin at iproseso ng Lemon Squeezy ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice ayon sa sarili nitong mga tuntunin at privacy practices."
         }
       },
       "useOfInfo": {
@@ -367,13 +317,13 @@
       "title": "Patakaran sa Refund",
       "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
       "betaPeriod": {
-        "title": "1. Panahon ng Beta",
-        "body1": "Kasalukuyang nasa beta ang Gallurio. Kung walang paid subscription o totoong bayad na kinokolekta habang beta, walang kinakailangang refund dahil walang naisingil.",
-        "body2": "Kung mag-aalok ng paid beta access sa hinaharap, ipapakita ang naaangkop na presyo at refund terms bago ang checkout."
+        "title": "1. Libreng Trial",
+        "body1": "Ang mga bagong workspace ng Gallurio ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang card. Walang totoong bayad na kinokolekta habang ang trial na ito, kaya walang kinakailangang refund dito.",
+        "body2": "Kung magpapatuloy ka sa isang paid na Pro subscription pagkatapos ng trial, ang presyo at billing terms na ipinapakita sa checkout ang mag-aapply, at ang Patakaran sa Refund na ito ang mamahala sa anumang bayad na nagawa."
       },
       "subscriptions": {
         "title": "2. Mga Subscription",
-        "body1": "Kapag naging available na ang mga paid plan, maaaring singilin ang mga subscription ng Gallurio buwan-buwan, taun-taon, o ayon sa billing period na ipinapakita sa checkout.",
+        "body1": "Ang mga subscription ng Gallurio Pro ay sinisingil buwan-buwan, taun-taon, o ayon sa billing period na ipinapakita sa checkout.",
         "body2": "Maaaring i-cancel ng mga user ang kanilang subscription para pigilan ang mga susunod na renewal charge. Pagkatapos ng cancellation, maaaring magpatuloy ang access hanggang sa katapusan ng kasalukuyang billing period maliban kung nakasaad."
       },
       "refundRequests": {
@@ -425,15 +375,15 @@
     "contact": {
       "metadata": {
         "title": "Makipag-ugnayan — Gallurio",
-        "description": "Makipag-ugnayan sa Gallurio para sa suporta, beta access, mga tanong sa billing, at mga pangkalahatang katanungan."
+        "description": "Makipag-ugnayan sa Gallurio para sa suporta, tulong sa account, mga tanong sa billing, at mga pangkalahatang katanungan."
       },
       "header": {
         "headline": "Kailangan mo ba ng tulong sa Gallurio?",
-        "body": "Para sa suporta, mga tanong sa beta access, alalahanin sa account, isyu sa billing, o pangkalahatang katanungan, makipag-ugnayan sa amin sa:"
+        "body": "Para sa suporta, alalahanin sa account, isyu sa billing, o pangkalahatang katanungan, makipag-ugnayan sa amin sa:"
       },
       "supportTopics": {
         "title": "Mga Paksa ng Suporta",
-        "item1": "Beta access",
+        "item1": "Pagsisimula",
         "item2": "Pag-set up ng account",
         "item3": "Mga portfolio page",
         "item4": "Mga booking inquiry form",
@@ -445,7 +395,7 @@
       },
       "responseTime": {
         "title": "Oras ng Pagtugon",
-        "body1": "Layunin naming tumugon sa lalong madaling panahon na makatwiran. Habang beta, maaaring mag-iba ang oras ng pagtugon habang patuloy naming pinapabuti ang Gallurio.",
+        "body1": "Layunin naming tumugon sa lalong madaling panahon na makatwiran. Maaaring mag-iba ang oras ng pagtugon habang patuloy naming pinapabuti ang Gallurio.",
         "body2": "Para sa mga agarang alalahanin sa account o billing, mangyaring isama ang lahat ng kaugnay na detalye para masuri namin ang kahilingan nang mahusay."
       },
       "businessInfo": {
@@ -1623,6 +1573,8 @@
     },
     "clients": {
       "title": "Mga Kliyente",
+      "listEmpty": "Wala ka pang mga kliyente.",
+      "listEmptyHint": "Magdagdag ng iyong unang kliyente para masubaybayan ang mga booking at kasaysayan.",
       "toolbar": {
         "search": "Hanapin sa pangalan o email",
         "searchLabel": "Maghanap ng kliyente",
@@ -2702,7 +2654,7 @@
       "invalid_data": "Hindi wastong datos. Pakisuri ang iyong input at subukan muli.",
       "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
       "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
-      "subscription_required": "Natapos na ang iyong subscription. Mag-subscribe para magpatuloy.",
+      "subscription_required": "Natapos na ang iyong Pro access. Mag-subscribe para magpatuloy.",
       "promo_code_not_found": "Hindi valid ang code na iyon. I-check ulit at subukan muli.",
       "promo_code_expired": "Nag-expire na ang code na iyon.",
       "promo_code_already_redeemed": "Na-redeem mo na ang code na ito.",
@@ -2781,6 +2733,7 @@
       "next": "Susunod"
     },
     "clearFilters": "Tanggalin ang filter",
+    "loading": "Naglo-load…",
     "promoCode": {
       "disclosureLabel": "May promo code ka ba?",
       "placeholder": "Ilagay ang code",
@@ -2848,7 +2801,7 @@
       "description": "Maaari kang magpalit ng plano o magkansela anumang oras mula sa mga setting ng iyong workspace.",
       "popular": "Popular",
       "cadence": {
-        "forever": "habambuhay",
+        "forever": "unang buwan libre",
         "monthly": "/ buwan",
         "yearly": "/ taon"
       },
@@ -2858,7 +2811,7 @@
         "savePill": "Makatipid ng 2 buwan"
       },
       "checkoutNote": "Magbubukas ang secure na checkout overlay. Ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
-      "ctaFree": "Magpatuloy sa Free",
+      "ctaFree": "Simulan ang libreng buwan ko",
       "ctaPaid": "Mag-subscribe — {price}",
       "settingUp": "Sine-set up…",
       "opening": "Binubuksan ang checkout…",
@@ -2888,25 +2841,14 @@
   "plans": {
     "free": {
       "name": "Free",
-      "description": "15-araw na trial na may buong access",
-      "tagline": "Gamitin ang paid version nang libre sa loob ng 15 araw.",
+      "description": "1 buwan ng buong Pro, libre",
+      "tagline": "Subukan nang libre ang lahat ng Pro feature sa unang buwan mo.",
       "features": {
-        "trial": "15 araw ng buong Pro access",
+        "trial": "1 buwan ng buong Pro access",
         "workspace": "1 workspace",
         "bookings": "Hanggang 10 booking",
         "storage": "1 GB image storage",
         "publicPage": "Pampublikong landing page"
-      }
-    },
-    "starter": {
-      "name": "Starter",
-      "description": "Para sa mga solong may-ari na nagsisimula.",
-      "tagline": "Para sa mga solong may-ari na nagsisimula.",
-      "features": {
-        "unlimitedBookings": "Walang limitasyon na booking",
-        "storage": "5 GB image storage",
-        "brandedForm": "Branded inquiry form",
-        "acceptPayments": "Tumanggap ng GCash, Maya, card mula sa mga kliyente"
       }
     },
     "pro": {
@@ -2914,7 +2856,6 @@
       "description": "Pamahalaan ang bookings, clients, teams, invoices, at public page.",
       "tagline": "Buong workspace para sa lumalaking event businesses.",
       "features": {
-        "everythingStarter": "Lahat ng nasa Starter",
         "unlimitedBookings": "Walang limitasyon na booking",
         "publicPageControls": "Buong kontrol sa public page",
         "storage": "50 GB storage",
@@ -2927,8 +2868,9 @@
   },
   "subscribe": {
     "pageTitle": "Mag-subscribe",
+    "logout": "Mag-log out",
     "owner": {
-      "title": "Natapos na ang iyong subscription",
+      "title": "Natapos na ang iyong Pro access",
       "description": "Mag-subscribe muli sa Gallurio Pro para bumalik sa iyong dashboard.",
       "perMonth": "/ buwan",
       "perYear": "/ taon",

@@ -154,6 +154,9 @@ async function seedWorkspaceA() {
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
+    // Entitled workspace (active free-month grant) so settings actions aren't
+    // gated to /subscribe — there is no permanent free tier.
+    planGrantExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   });
 }
 
@@ -167,6 +170,7 @@ async function seedWorkspaceB() {
     country: "SG",
     currency: "SGD",
     timezone: "Asia/Singapore",
+    planGrantExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   });
 }
 

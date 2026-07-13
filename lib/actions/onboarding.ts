@@ -93,10 +93,16 @@ export async function businessStepAction(
   // point at this same user's own workspace (upserted by ownerUserId below).
   const existingUser = await User.findOne(
     { workosUserId: authUser.workosUserId },
-    { memberships: 1 },
+    { memberships: 1, freeTrialConsumedAt: 1 },
   ).lean();
   const belongsElsewhere = existingUser?.memberships.some((m) => m.role !== "owner");
   if (belongsElsewhere) return { error: "already_member_elsewhere" };
+
+  // One free Pro month per user (email), applied at workspace creation only
+  // — a repeat businessStepAction call (workspace already exists) hits the
+  // upsert's update path, not insert, so $setOnInsert below never re-grants.
+  const grantFreeMonth = !existingUser?.freeTrialConsumedAt;
+  const freeMonthExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   // The workspace's URL slug is edited on the next step, but the Workspace
   // schema requires one on insert — auto-derive it from the business name
@@ -117,7 +123,11 @@ export async function businessStepAction(
           $setOnInsert: {
             ownerUserId: authUser.workosUserId,
             slug: autoSlug,
-            plan: "free",
+            // First workspace for this user (email): full-Pro one-month grant,
+            // no card. Repeat user (trial already consumed): plain free —
+            // gated until they subscribe. See lib/billing/access.ts.
+            plan: grantFreeMonth ? "pro" : "free",
+            ...(grantFreeMonth ? { planGrantExpiresAt: freeMonthExpiresAt } : {}),
             // Seed the inquiry recipient with the owner's auth email so
             // notifications are delivered from day one, without requiring a
             // settings visit.
@@ -136,7 +146,10 @@ export async function businessStepAction(
       await User.findOneAndUpdate(
         { workosUserId: authUser.workosUserId },
         {
-          $set: { name: fullName },
+          $set: {
+            name: fullName,
+            ...(grantFreeMonth ? { freeTrialConsumedAt: new Date() } : {}),
+          },
           $setOnInsert: {
             workosUserId: authUser.workosUserId,
             email: authUser.email,
@@ -239,7 +252,11 @@ export async function workspaceStepAction(
 // ---------------------------------------------------------------------------
 
 export async function selectFreePlanAction(): Promise<ActionResult> {
-  // Free plan path: no Lemon Squeezy checkout, just record the choice and advance.
+  // No permanent free tier: this step no longer grants anything. A
+  // first-timer's workspace already carries the one-month free-Pro grant
+  // applied at creation (businessStepAction) — this just advances past the
+  // plan step. A repeat user (trial already consumed, no grant on this
+  // workspace) must subscribe instead.
   const authUser = await getAuthUser();
   if (!authUser) return { error: "not_authenticated" };
 
@@ -252,16 +269,14 @@ export async function selectFreePlanAction(): Promise<ActionResult> {
   const ownerMembership = user?.memberships.find((m) => m.role === "owner");
   if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
 
-  await Workspace.updateOne(
+  const workspace = await Workspace.findOne(
     { _id: ownerMembership.workspaceId },
-    {
-      $set: {
-        plan: "free",
-        lsSubscriptionStatus: null,
-        lsCurrentPeriodEnd: null,
-      },
-    }
-  );
+    { planGrantExpiresAt: 1 }
+  ).lean();
+
+  const hasActiveGrant =
+    !!workspace?.planGrantExpiresAt && workspace.planGrantExpiresAt > new Date();
+  if (!hasActiveGrant) return { error: "free_trial_already_used" };
 
   await setUserStep(authUser.workosUserId, "done");
   return { ok: true };

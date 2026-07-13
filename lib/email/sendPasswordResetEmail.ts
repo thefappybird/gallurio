@@ -2,7 +2,7 @@ import "server-only";
 import { renderBrandedEmail } from "@/lib/email/layout";
 import { gallurioBrand } from "@/lib/email/brand";
 import { EMAIL_COPY } from "@/lib/email/messages";
-import { sendEmail } from "@/lib/email/send";
+import { sendEmail, logEmailFailure, type SendEmailResult } from "@/lib/email/send";
 
 type Locale = "en" | "fil" | "ms" | "id";
 
@@ -18,7 +18,7 @@ export async function sendPasswordResetEmail(
   email: string,
   token: string,
   locale: Locale = "en",
-): Promise<void> {
+): Promise<SendEmailResult> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gallurio.app";
   const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
 
@@ -34,10 +34,12 @@ export async function sendPasswordResetEmail(
     supportLine: copy.expiry,
   });
 
-  await sendEmail({
+  const result = await sendEmail({
     to: email,
     subject: copy.subject,
     html,
     text,
   });
+  if (!result.ok) logEmailFailure("password_reset", email, result);
+  return result;
 }

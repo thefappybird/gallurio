@@ -12,6 +12,7 @@ import { DeactivateClientDialog } from "./deactivate-client-dialog";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 import { reactivateClientAction } from "@/lib/actions/clients";
 import { toast } from "sonner";
+import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { TableSkeleton } from "@/components/app/table-skeleton";
@@ -29,6 +30,10 @@ type Props = {
   locale: string;
   availableTags: string[];
   empty: string;
+  /** Heading shown when the workspace has zero clients (no filters applied). */
+  listEmpty: string;
+  /** Guidance shown under `listEmpty`. */
+  listEmptyHint: string;
   initialDetailClient?: ClientRow | null;
 };
 
@@ -40,6 +45,8 @@ export function ClientsPageClient({
   locale,
   availableTags,
   empty,
+  listEmpty,
+  listEmptyHint,
   initialDetailClient = null,
 }: Props) {
   const t = useTranslations("app.clients");
@@ -175,6 +182,12 @@ export function ClientsPageClient({
     void triggerReactivate(client);
   }
 
+  // True once any narrowing filter is active — distinguishes "no clients match
+  // your filters" from a genuinely empty workspace (which gets a CTA instead).
+  const hasFilters = Boolean(
+    searchParams.get("q") || searchParams.get("source") || searchParams.get("tags")
+  );
+
   // Pagination helpers
   const totalPages = Math.ceil(total / limit);
   const from = Math.min((page - 1) * limit + 1, total);
@@ -202,7 +215,16 @@ export function ClientsPageClient({
         <ClientsTable
           rows={rows}
           locale={locale}
-          empty={empty}
+          empty={hasFilters ? empty : listEmpty}
+          emptyHint={hasFilters ? undefined : listEmptyHint}
+          emptyAction={
+            hasFilters ? undefined : (
+              <Button size="sm" className="bg-brand text-brand-foreground hover:bg-brand/90" onClick={openAdd}>
+                <PlusIcon className="size-4" />
+                {t("toolbar.add")}
+              </Button>
+            )
+          }
           onClickClient={openDetail}
           onView={openDetail}
           onEdit={openEdit}

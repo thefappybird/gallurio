@@ -77,12 +77,16 @@ async function makeWorkspace(opts?: {
 }): Promise<Types.ObjectId> {
   const ownerUserId = opts?.ownerUserId ?? "user_owner";
   const wsId = new Types.ObjectId();
+  // Default to an active plan grant (mirrors the one-month free-Pro grant
+  // every new workspace gets) so this shared fixture is entitled by default
+  // — tests about the subscription gate itself build their own Workspace.
   await Workspace.create({
     _id: wsId,
     ownerUserId,
     name: "Test",
     slug: `test-${wsId.toString()}`,
-    plan: "free",
+    plan: "pro",
+    planGrantExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
@@ -261,7 +265,7 @@ describe("ownerContext — subscription gate", () => {
     expect("error" in result).toBe(false);
   });
 
-  it("never-subscribed free workspace (everSubscribed=false) is NOT gated", async () => {
+  it("workspace with an active plan grant (e.g. the free month) is NOT gated", async () => {
     const wsId = await makeWorkspace();
     await User.create({
       workosUserId: "user_owner",
@@ -274,6 +278,33 @@ describe("ownerContext — subscription gate", () => {
     const { ownerContext } = await load();
     const result = await ownerContext();
     expect("error" in result).toBe(false);
+  });
+
+  it("plain free plan with no grant and never subscribed IS gated (no permanent free tier)", async () => {
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `plain-free-${wsId.toString()}`,
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    const { ownerContext } = await load();
+    const result = await ownerContext();
+    expect("error" in result).toBe(true);
+    if ("error" in result) expect(result.error).toBe("subscription_required");
   });
 
   it("onboarding-incomplete owner gets onboarding_required even when also gated (onboarding check runs first)", async () => {
@@ -315,7 +346,8 @@ describe("ownerContext — tenant isolation", () => {
       ownerUserId: "user_owner",
       name: "Legit",
       slug: `legit-${legitWsId.toString()}`,
-      plan: "free",
+      plan: "pro",
+      planGrantExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       country: "PH",
       currency: "PHP",
       timezone: "Asia/Manila",

@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 // Events we act on. Anything else gets a 200 so Lemon Squeezy doesn't retry
 // forever.
@@ -64,4 +64,39 @@ export async function verifyAndParseLemonSqueezyEvent(
     console.error("[lemonsqueezy-webhook] failed to parse verified body", err);
     return null;
   }
+}
+
+// Lemon Squeezy webhook payloads carry no per-delivery event UUID — data.id
+// is the resource's own id (subscription/invoice), reused by every event
+// about that resource, and meta has no eventId field either. A genuine
+// redelivery resends byte-identical content for the same logical event, so a
+// content hash over the verified event's identifying fields is a stable
+// dedupe key: same delivery -> same hash; a distinct event (even for the same
+// resource) carries different attributes/status and hashes differently.
+export function computeWebhookEventKey(event: LemonSqueezyWebhookEvent): string {
+  const material = JSON.stringify({
+    event_name: event.meta.event_name,
+    data_id: event.data.id,
+    attributes: event.data.attributes,
+    custom_data: event.meta.custom_data ?? null,
+  });
+  return createHash("sha256").update(material).digest("hex");
+}
+
+// Attribute keys known to carry PII in Lemon Squeezy subscription payloads.
+// None of the handlers in app/api/webhooks/lemonsqueezy/route.ts read these —
+// safe to strip before persisting the event to the WebhookEvent ledger.
+const PII_ATTRIBUTE_KEYS = ["user_email", "user_name"];
+
+// Redacted copy of the verified event, safe to store on the WebhookEvent
+// ledger for scripts/replay-lemonsqueezy-event.ts to resend later.
+export function redactWebhookEventForStorage(
+  event: LemonSqueezyWebhookEvent
+): LemonSqueezyWebhookEvent {
+  const attributes = { ...event.data.attributes };
+  for (const key of PII_ATTRIBUTE_KEYS) delete attributes[key];
+  return {
+    meta: { ...event.meta },
+    data: { ...event.data, attributes },
+  };
 }

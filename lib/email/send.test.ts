@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { sendEmail } from "./send";
+import { sendEmail, logEmailFailure } from "./send";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -28,6 +28,24 @@ describe("sendEmail", () => {
 
     expect(res).toEqual({ ok: true, id: null, skipped: true });
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns ok:false, error:no_transport when no API key is configured in production", async () => {
+    delete process.env.RESEND_API_KEY;
+    vi.stubEnv("NODE_ENV", "production");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const res = await sendEmail({
+      to: "owner@example.com",
+      subject: "Hi",
+      html: "<p>Hi</p>",
+      text: "Hi",
+    });
+
+    expect(res).toEqual({ ok: false, error: "no_transport" });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledOnce();
   });
 
   it("logs the full body only in development, never the PII in other envs", async () => {
@@ -108,5 +126,30 @@ describe("sendEmail", () => {
     });
 
     expect(res).toEqual({ ok: false, error: "transport_error" });
+  });
+});
+
+describe("logEmailFailure", () => {
+  it("logs a redacted error with email type, recipient count, and error code — no PII body", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    logEmailFailure("password_reset", ["a@example.com", "b@example.com"], {
+      ok: false,
+      error: "resend_403",
+    });
+
+    expect(errorSpy).toHaveBeenCalledOnce();
+    const [msg] = errorSpy.mock.calls[0];
+    expect(msg).toContain("password_reset");
+    expect(msg).toContain("2");
+    expect(msg).toContain("resend_403");
+    expect(msg).not.toContain("a@example.com");
+    expect(msg).not.toContain("b@example.com");
+  });
+
+  it("is a no-op when the result is ok", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    logEmailFailure("password_reset", "a@example.com", { ok: true, id: "msg_1" });
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 });

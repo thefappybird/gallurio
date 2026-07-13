@@ -9,7 +9,6 @@ export const DRAFT_NAME_MAX = 60;
 /** Per-plan ceiling on the number of saved drafts a workspace may keep. */
 export const DRAFT_CAP_BY_PLAN: Record<PlanTier, number> = {
   free: 5,
-  starter: 15,
   pro: Number.POSITIVE_INFINITY,
   beta: Number.POSITIVE_INFINITY,
 };

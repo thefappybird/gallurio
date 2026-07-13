@@ -83,6 +83,7 @@ export default async function TermsPage({ params }: Props) {
         <p>{t("subscriptions.body1")}</p>
         <p>{t("subscriptions.body2")}</p>
         <p>{t("subscriptions.body3")}</p>
+        <p>{t("subscriptions.body4")}</p>
       </LegalSection>
 
       <LegalSection title={t("cancellations.title")}>

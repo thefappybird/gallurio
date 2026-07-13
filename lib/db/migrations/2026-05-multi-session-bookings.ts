@@ -14,10 +14,15 @@ loadEnv();
 
 import mongoose from "mongoose";
 import { connectDB } from "../mongoose";
+import { assertSafeTarget, printDbFingerprint } from "../scriptGuard";
 
 async function run() {
   console.log("→ Connecting to MongoDB…");
   await connectDB();
+
+  const uri = process.env.DATABASE_URL!;
+  printDbFingerprint(uri);
+  assertSafeTarget(uri);
 
   const db = mongoose.connection.db;
   if (!db) throw new Error("No DB connection");

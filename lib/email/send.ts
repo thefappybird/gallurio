@@ -39,7 +39,17 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   const recipients = Array.isArray(input.to) ? input.to : [input.to];
 
   if (!apiKey) {
-    // No transport configured — log and succeed so dev flows aren't blocked.
+    // Env validation requires RESEND_API_KEY in production (fails at startup),
+    // so reaching here in production means a runtime misconfiguration — treat
+    // it as a real failure, never a silent success, so callers can react.
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        `[email] RESEND_API_KEY is not set in production — failed to send "${input.subject}" to ${recipients.length} recipient(s).`
+      );
+      return { ok: false, error: "no_transport" };
+    }
+
+    // Non-prod (dev/test) — log and succeed so those flows aren't blocked.
     // Only print the full body (which contains client PII) in local dev. In a
     // prod-like env without a key (e.g. a misconfigured preview deploy) log just
     // the envelope so PII doesn't leak into shared function logs.
@@ -87,4 +97,21 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     console.error("[email] Failed to reach Resend:", err);
     return { ok: false, error: "transport_error" };
   }
+}
+
+// Structured, redacted failure log for critical-email sender wrappers (email
+// verification, password reset, team invite, lifecycle reminders). `emailType`
+// is a short semantic label (e.g. "password_reset"), never the recipient
+// address or message body — only the count/type of recipients and the
+// SendEmailResult error code are logged.
+export function logEmailFailure(
+  emailType: string,
+  to: string | string[],
+  result: SendEmailResult
+): void {
+  if (result.ok) return;
+  const count = Array.isArray(to) ? to.length : 1;
+  console.error(
+    `[email] ${emailType} failed to send to ${count} recipient(s): ${result.error}`
+  );
 }

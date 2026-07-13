@@ -35,6 +35,11 @@ function makeWorkspace(overrides: Record<string, unknown> = {}) {
     clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
     currency: "PHP",
     timezone: "Asia/Manila",
+    // Default to an active plan grant (mirrors the one-month free-Pro grant
+    // every new workspace gets) so this fixture is entitled by default —
+    // tests about the gate itself override plan/everSubscribed explicitly.
+    plan: "pro",
+    planGrantExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     publicPage: { publishedAt: new Date(), inquiryRecipientEmail: "owner@studio.test" },
     ...overrides,
   };
@@ -257,7 +262,9 @@ describe("submitInquiry", () => {
   });
 
   it("marks the owner notification as gated when the workspace has lapsed to gated free", async () => {
-    await Workspace.create(makeWorkspace({ plan: "free", everSubscribed: true }));
+    await Workspace.create(
+      makeWorkspace({ plan: "free", everSubscribed: true, planGrantExpiresAt: null })
+    );
     await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
     expect(sendInquiryNotification).toHaveBeenCalledOnce();
     expect(sendInquiryNotification.mock.calls[0][0].isRecipientGated).toBe(true);

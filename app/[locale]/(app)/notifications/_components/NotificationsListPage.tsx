@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Bell, MessageSquare, Calendar, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/app/empty-state";
 import { markNotificationReadAction, markAllNotificationsReadAction } from "@/app/[locale]/(app)/notifications/_actions";
 import {
   loadMoreNotificationsAction,
@@ -116,10 +117,7 @@ export function NotificationsListPage({
       </div>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
-          <Bell className="size-8 opacity-40" />
-          <p className="text-sm">{messages.empty}</p>
-        </div>
+        <EmptyState icon={Bell} title={messages.empty} className="border-0 p-16" />
       ) : (
         <ul className="divide-y">
           {items.map((item) => {

@@ -58,7 +58,7 @@ const mockGetRun = vi.mocked(getRun);
 // ---------------------------------------------------------------------------
 
 async function seedWorkspace(opts: {
-  plan?: "free" | "starter" | "pro";
+  plan?: "free" | "pro";
   lsCheckoutWorkflowRunId?: string | null;
 } = {}): Promise<Types.ObjectId> {
   const ws = await Workspace.create({

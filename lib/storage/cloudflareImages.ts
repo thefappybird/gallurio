@@ -1,9 +1,10 @@
 import "server-only";
+import { env } from "@/lib/env";
 
 if (
-  !process.env.CLOUDFLARE_ACCOUNT_ID ||
-  !process.env.CLOUDFLARE_IMAGES_API_TOKEN ||
-  !process.env.CLOUDFLARE_IMAGES_ACCOUNT_HASH
+  !env.CLOUDFLARE_ACCOUNT_ID ||
+  !env.CLOUDFLARE_IMAGES_API_TOKEN ||
+  !env.CLOUDFLARE_IMAGES_ACCOUNT_HASH
 ) {
   if (process.env.NODE_ENV !== "production") {
     console.warn("[cloudflareImages] missing CLOUDFLARE_* env vars — uploads will fail");
@@ -13,8 +14,8 @@ if (
 const CF_FETCH_TIMEOUT_MS = 15_000;
 
 async function cfFetch(path: string, init?: RequestInit): Promise<Response> {
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
-  const apiToken = process.env.CLOUDFLARE_IMAGES_API_TOKEN ?? "";
+  const accountId = env.CLOUDFLARE_ACCOUNT_ID ?? "";
+  const apiToken = env.CLOUDFLARE_IMAGES_API_TOKEN ?? "";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CF_FETCH_TIMEOUT_MS);
   try {
@@ -110,7 +111,7 @@ export function imageDeliveryUrl(
     fit?: "scale-down" | "contain" | "cover" | "crop" | "pad";
   } = {}
 ): string {
-  const hash = process.env.CLOUDFLARE_IMAGES_ACCOUNT_HASH;
+  const hash = env.CLOUDFLARE_IMAGES_ACCOUNT_HASH;
   if (!hash || !imageId) return "";
   if (!opts.width && !opts.height) {
     return `https://imagedelivery.net/${hash}/${imageId}/public`;

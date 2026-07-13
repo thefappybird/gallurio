@@ -1,20 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { CheckIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
+import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
+import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
 
-// Landing-page pricing summary — deliberately separate from the full /pricing
-// page's `marketing.pricing` namespace (Starter/Studio/Business, still under
-// review for the LemonSqueezy migration). This teaser reflects the current
-// model: Free, Pro (monthly/yearly), and a free-during-beta Pro tier for
-// early testers. Provider-neutral copy — no payment processor named here.
-export function PricingTeaser() {
+// Landing-page pricing summary — mirrors the live /pricing page's single-Pro
+// story: 1 month free, then a paid Pro subscription (monthly/yearly) priced
+// live from Lemon Squeezy. No free tier, no Studio/Business — those aren't
+// sold. Provider-neutral copy — no payment processor named in the teaser
+// itself.
+export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
   const t = useTranslations("marketing.pricingTeaser");
+  const locale = useLocale();
   const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
+
+  const price =
+    cadence === "monthly"
+      ? `${formatMoney(proPricing.monthly, proPricing.currency, locale)}${t("pro.priceSuffixMonthly")}`
+      : `${formatMoney(proPricing.yearly, proPricing.currency, locale)}${t("pro.priceSuffixYearly")}`;
 
   return (
     <section id="pricing" data-anim="slide-up" className="border-t border-border px-4 py-16 sm:px-6 sm:py-24">
@@ -51,32 +59,19 @@ export function PricingTeaser() {
           </div>
         </div>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-3">
-          <PlanCard
-            name={t("free.name")}
-            price={t("free.price")}
-            description={t("free.description")}
-            features={[t("free.feature1"), t("free.feature2"), t("free.feature3")]}
-            cta={t("free.cta")}
-          />
-          <PlanCard
-            name={t("pro.name")}
-            price={cadence === "monthly" ? t("pro.priceMonthly") : t("pro.priceYearly")}
-            description={t("pro.description")}
-            features={[t("pro.feature1"), t("pro.feature2"), t("pro.feature3")]}
-            cta={t("pro.cta")}
-            badge={t("pro.badge")}
-            featured
-          />
-          <PlanCard
-            name={t("beta.name")}
-            price={t("beta.price")}
-            priceNote={t("beta.priceNote")}
-            description={t("beta.description")}
-            features={[t("beta.feature1"), t("beta.feature2"), t("beta.feature3")]}
-            cta={t("beta.cta")}
-            badge={t("beta.badge")}
-          />
+        <div className="mt-8 flex justify-center">
+          <div className="w-full max-w-sm">
+            <PlanCard
+              name={t("pro.name")}
+              price={price}
+              priceNote={t("pro.priceNote")}
+              description={t("pro.description")}
+              features={[t("pro.feature1"), t("pro.feature2"), t("pro.feature3")]}
+              cta={t("pro.cta")}
+              badge={t("pro.badge")}
+              featured
+            />
+          </div>
         </div>
 
         <p className="mt-8 text-center">

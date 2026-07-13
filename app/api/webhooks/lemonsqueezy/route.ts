@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace } from "@/lib/db/models";
+import { Workspace, WebhookEvent } from "@/lib/db/models";
+import type { WebhookEventDoc } from "@/lib/db/models";
 import { Team } from "@/lib/db/models/team";
 import {
   verifyAndParseLemonSqueezyEvent,
+  computeWebhookEventKey,
+  redactWebhookEventForStorage,
   type LemonSqueezyWebhookEvent,
 } from "@/lib/lemonsqueezy/webhook";
 import { planForVariantId } from "@/lib/lemonsqueezy/plans";
 import { planEntitlements } from "@/lib/plans/entitlements";
 import { mapLemonSqueezySubscriptionStatus } from "@/lib/lemonsqueezy/status";
+import { lifecycleResetFields } from "@/lib/billing/lifecycle";
 import { resumeHook } from "workflow/api";
 
 export const runtime = "nodejs";
@@ -24,6 +28,10 @@ function stringAttr(attrs: Record<string, unknown>, key: string): string | null 
   if (typeof v === "string") return v;
   if (typeof v === "number") return String(v);
   return null;
+}
+
+function isDuplicateKeyError(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: unknown }).code === 11000;
 }
 
 // Shared routing precedence for every handler except handleSubscriptionUpsert
@@ -112,6 +120,12 @@ async function handleSubscriptionUpsert(
   };
   if (status) update.lsSubscriptionStatus = status;
   if (periodEnd) update.lsCurrentPeriodEnd = periodEnd;
+  // Entitled again (active/trialing) - clear every lapse-lifecycle timestamp so
+  // a previously-gated workspace gets a fresh start (its draft is still there
+  // to re-publish if the sweep already wiped the live page).
+  if (status === "active" || status === "trialing") {
+    Object.assign(update, lifecycleResetFields());
+  }
 
   // Resolve the new plan from the variantId. Only promote when the resolved
   // tier is paid — a variantId miss (e.g. env var unset in dev) must not
@@ -202,34 +216,55 @@ async function handleSubscriptionExpired(event: LemonSqueezyWebhookEvent): Promi
   const filter = resolveWorkspaceFilter(event);
   if (!filter) return;
 
-  await Workspace.updateOne(filter, {
-    $set: {
-      plan: "free",
-      lsSubscriptionStatus: "canceled",
-      lsCurrentPeriodEnd: null,
-      // Clear lsSubscriptionId — otherwise a later resubscribe's
-      // subscription_created event finds this workspace already "bound" to
-      // the expired subscription id, trips handleSubscriptionUpsert's
-      // mismatch guard, and reroutes to a filter matching zero documents
-      // (the new subscription id was never persisted), silently failing to
-      // promote the plan.
-      lsSubscriptionId: null,
-    },
-  });
+  // Read _id + lifecycle.lapsedAt first (rather than mutating via `filter`
+  // directly) because this update clears lsSubscriptionId — a second update
+  // keyed on the original filter (which may itself be { lsSubscriptionId })
+  // would no longer match once that field is nulled.
+  const ws = await Workspace.findOne(filter).select({ _id: 1, "lifecycle.lapsedAt": 1 }).lean();
+  if (!ws) return;
+
+  const set: Record<string, unknown> = {
+    plan: "free",
+    lsSubscriptionStatus: "canceled",
+    lsCurrentPeriodEnd: null,
+    // Clear lsSubscriptionId — otherwise a later resubscribe's
+    // subscription_created event finds this workspace already "bound" to
+    // the expired subscription id, trips handleSubscriptionUpsert's
+    // mismatch guard, and reroutes to a filter matching zero documents
+    // (the new subscription id was never persisted), silently failing to
+    // promote the plan.
+    lsSubscriptionId: null,
+  };
+  // Stamp the lapse anchor exactly once — a stray/replayed expiry event must
+  // not push the reminder/wipe timeline back out.
+  if (!ws.lifecycle?.lapsedAt) {
+    set["lifecycle.lapsedAt"] = new Date();
+  }
+
+  await Workspace.updateOne({ _id: ws._id }, { $set: set });
 }
 
 // ---------------------------------------------------------------------------
 // subscription_paused / subscription_unpaused / subscription_resumed /
 // subscription_payment_failed — status-only update.
 // ---------------------------------------------------------------------------
-async function handleSubscriptionStatusOnly(event: LemonSqueezyWebhookEvent): Promise<void> {
+async function handleSubscriptionStatusOnly(
+  event: LemonSqueezyWebhookEvent,
+  resetLifecycle: boolean
+): Promise<void> {
   const status = mapLemonSqueezySubscriptionStatus(stringAttr(event.data.attributes, "status"));
   if (!status) return;
 
   const filter = resolveWorkspaceFilter(event);
   if (!filter) return;
 
-  await Workspace.updateOne(filter, { $set: { lsSubscriptionStatus: status } });
+  const update: Record<string, unknown> = { lsSubscriptionStatus: status };
+  // resumed/unpaused mean entitled again - clear the lapse-lifecycle timestamps
+  // (paused/payment_failed stay entitled the whole time, so lifecycle is
+  // untouched for those; see the route switch below).
+  if (resetLifecycle) Object.assign(update, lifecycleResetFields());
+
+  await Workspace.updateOne(filter, { $set: update });
 }
 
 // ---------------------------------------------------------------------------
@@ -243,7 +278,10 @@ async function handleSubscriptionPaymentSuccess(event: LemonSqueezyWebhookEvent)
   if (!filter) return;
 
   const attrs = event.data.attributes;
-  const update: Record<string, unknown> = { lsSubscriptionStatus: "active" };
+  const update: Record<string, unknown> = {
+    lsSubscriptionStatus: "active",
+    ...lifecycleResetFields(),
+  };
   const renewsAt = stringAttr(attrs, "renews_at");
   if (renewsAt) update.lsCurrentPeriodEnd = new Date(renewsAt);
 
@@ -278,6 +316,44 @@ export async function POST(req: Request) {
 
   await connectDB();
 
+  const eventKey = computeWebhookEventKey(event);
+
+  // Atomic dedupe gate: first delivery inserts the ledger row via
+  // $setOnInsert (the unique index on provider+eventKey enforces this even
+  // under concurrent redelivery); every subsequent delivery for the same
+  // eventKey matches the existing row instead of erroring. Two concurrent
+  // first deliveries can still race the unique index — the loser's upsert
+  // throws E11000; treat that as "already received" and re-fetch the row
+  // the winner just inserted instead of 500ing.
+  let ledger: WebhookEventDoc;
+  try {
+    ledger = await WebhookEvent.findOneAndUpdate(
+      { provider: "lemonsqueezy", eventKey },
+      {
+        $setOnInsert: {
+          provider: "lemonsqueezy",
+          eventKey,
+          eventName: event.meta.event_name,
+          resourceId: event.data.id || null,
+          status: "received",
+          payload: redactWebhookEventForStorage(event),
+        },
+        $inc: { attemptCount: 1 },
+      },
+      { upsert: true, new: true }
+    );
+  } catch (err) {
+    if (!isDuplicateKeyError(err)) throw err;
+    const existing = await WebhookEvent.findOne({ provider: "lemonsqueezy", eventKey });
+    if (!existing) throw err;
+    ledger = existing;
+  }
+
+  if (ledger.status === "processed") {
+    // Already durably applied — ack without reprocessing.
+    return NextResponse.json({ received: true, deduped: true });
+  }
+
   try {
     switch (event.meta.event_name) {
       case "subscription_created":
@@ -298,10 +374,16 @@ export async function POST(req: Request) {
         break;
 
       case "subscription_paused":
+      case "subscription_payment_failed":
+        // Still entitled the whole time (see lib/billing/access.ts) — lifecycle
+        // timestamps are untouched.
+        await handleSubscriptionStatusOnly(event, false);
+        break;
+
       case "subscription_unpaused":
       case "subscription_resumed":
-      case "subscription_payment_failed":
-        await handleSubscriptionStatusOnly(event);
+        // Entitled again — clear the lapse-lifecycle timestamps.
+        await handleSubscriptionStatusOnly(event, true);
         break;
 
       case "subscription_payment_success":
@@ -313,13 +395,23 @@ export async function POST(req: Request) {
         break;
     }
   } catch (err) {
-    // Ack 200 after signature verification even when a handler fails — never
-    // 500 into a provider retry loop (a deterministic bug would otherwise get
-    // retried forever). Log for follow-up instead of dead-lettering to a queue,
-    // since none exists yet.
     console.error(`[lemonsqueezy-webhook] handler failed for ${event.meta.event_name}`, err);
-    return NextResponse.json({ received: true, error: "handler failed" });
+    const message = err instanceof Error ? err.message : String(err);
+    await WebhookEvent.updateOne(
+      { _id: ledger._id },
+      { $set: { status: "failed", failedAt: new Date(), lastError: message.slice(0, 500) } }
+    );
+    // Retryable 5xx — never ack 200 on a failed authoritative update. Lemon
+    // Squeezy will redeliver; the ledger row's status !== "processed" lets
+    // the dedupe gate above re-run the handler on retry instead of skipping
+    // it as already-applied.
+    return NextResponse.json({ received: false, error: "handler failed" }, { status: 500 });
   }
+
+  await WebhookEvent.updateOne(
+    { _id: ledger._id },
+    { $set: { status: "processed", processedAt: new Date() } }
+  );
 
   return NextResponse.json({ received: true });
 }

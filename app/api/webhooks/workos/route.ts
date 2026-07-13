@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { workos } from "@/lib/workos";
+import { connectDB } from "@/lib/db/mongoose";
+import { WebhookEvent } from "@/lib/db/models";
+import type { WebhookEventDoc } from "@/lib/db/models";
 import { renderBrandedEmail } from "@/lib/email/layout";
 import { gallurioBrand } from "@/lib/email/brand";
-import { sendEmail } from "@/lib/email/send";
+import { sendEmail, logEmailFailure } from "@/lib/email/send";
 import { EMAIL_COPY } from "@/lib/email/messages";
 
 // This route is public but signature-gated — the HMAC verification below IS
@@ -14,6 +17,10 @@ export const dynamic = "force-dynamic";
 // workspace, so there is no reliable locale signal. Resolve to "en" — the
 // established convention for platform emails (sendInquiryNotification,
 // sendBookingConfirmedOwner). No User/Workspace lookup needed.
+function isDuplicateKeyError(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: unknown }).code === 11000;
+}
+
 async function handleEmailVerificationCreated(data: { id: string }) {
   const copy = EMAIL_COPY.verification.en;
   const verification = await workos.userManagement.getEmailVerification(data.id);
@@ -32,12 +39,19 @@ async function handleEmailVerificationCreated(data: { id: string }) {
       { type: "p", text: copy.ignore },
     ],
   });
-  await sendEmail({
+  const result = await sendEmail({
     to: verification.email,
     subject: copy.subject,
     html,
     text,
   });
+  if (!result.ok) {
+    logEmailFailure("email_verification", verification.email, result);
+    // Throw so the outer dispatch try/catch marks the ledger row "failed"
+    // and returns a retryable 5xx — WorkOS redelivers and this handler
+    // re-sends the code (recovery path for a transient Resend outage).
+    throw new Error(`email_verification send failed: ${result.error}`);
+  }
 }
 
 export async function POST(req: Request) {
@@ -59,10 +73,46 @@ export async function POST(req: Request) {
     return new NextResponse("Invalid signature", { status: 400 });
   }
 
+  await connectDB();
+
+  // Atomic dedupe gate, mirroring the Lemon Squeezy webhook ledger pattern:
+  // WorkOS events carry a stable per-delivery id (unlike LS), used directly
+  // as eventKey. First delivery inserts via $setOnInsert (unique index on
+  // provider+eventKey enforces this under concurrent redelivery); every
+  // subsequent delivery for the same id matches the existing row. Two
+  // concurrent first deliveries can still race the unique index — the
+  // loser's upsert throws E11000; treat that as "already received" and
+  // re-fetch the row the winner just inserted instead of 500ing.
+  const eventId = (event as { id: string }).id;
+  let ledger: WebhookEventDoc;
+  try {
+    ledger = await WebhookEvent.findOneAndUpdate(
+      { provider: "workos", eventKey: eventId },
+      {
+        $setOnInsert: {
+          provider: "workos",
+          eventKey: eventId,
+          eventName: event.event,
+          status: "received",
+        },
+        $inc: { attemptCount: 1 },
+      },
+      { upsert: true, new: true }
+    );
+  } catch (err) {
+    if (!isDuplicateKeyError(err)) throw err;
+    const existing = await WebhookEvent.findOne({ provider: "workos", eventKey: eventId });
+    if (!existing) throw err;
+    ledger = existing;
+  }
+
+  if (ledger.status === "processed") {
+    // Already durably applied — ack without reprocessing.
+    return NextResponse.json({ received: true, deduped: true });
+  }
+
   // Dispatch by event type. Each case can be filled in as new event handlers
   // are added (e.g. Task 18 adds "email_verification.created").
-  // The entire dispatch is wrapped so a handler failure never propagates a 500
-  // into WorkOS's retry loop — always ack with 200 after verified.
   try {
     switch (event.event) {
       case "email_verification.created":
@@ -75,8 +125,21 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     console.error(`[workos-webhook] handler failed for ${event.event}`, err);
-    // Still return 200: ack to WorkOS so it doesn't retry. The error is logged.
+    const message = err instanceof Error ? err.message : String(err);
+    await WebhookEvent.updateOne(
+      { _id: ledger._id },
+      { $set: { status: "failed", failedAt: new Date(), lastError: message.slice(0, 500) } }
+    );
+    // Retryable 5xx — never ack 200 on a failed handler. WorkOS redelivers;
+    // the ledger row's status !== "processed" lets the dedupe gate above
+    // re-run the handler on retry instead of skipping it as already-applied.
+    return NextResponse.json({ received: false, error: "handler failed" }, { status: 500 });
   }
 
-  return new NextResponse(null, { status: 200 });
+  await WebhookEvent.updateOne(
+    { _id: ledger._id },
+    { $set: { status: "processed", processedAt: new Date() } }
+  );
+
+  return NextResponse.json({ received: true });
 }
