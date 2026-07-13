@@ -55,6 +55,12 @@ const UNAUTHENTICATED_PATHS = [
   "/api/webhooks/(.*)",
   // Public inquiry submission (portfolio contact form)
   "/api/inquiries(.*)",
+  // Public portfolio data + analytics endpoints resolve tenancy by org slug.
+  "/api/public/(.*)",
+  // External liveness/readiness probe; returns non-sensitive status only.
+  "/api/health",
+  // Scheduled jobs authenticate with Authorization: Bearer CRON_SECRET.
+  "/api/cron/(.*)",
   // Public portfolio pages live outside the [locale] segment
   "/w/(.*)",
 ];
@@ -132,7 +138,29 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   // 2. API routes — auth-gate non-public ones, no intl middleware.
   // -------------------------------------------------------------------------
   if (pathname.startsWith("/api")) {
-    return authMiddleware(req, {} as never) as Promise<NextMiddlewareResult>;
+    const authResponse = await (authMiddleware(req, {} as never) as Promise<Response | NextMiddlewareResult>);
+
+    // Browser fetches must never be redirected to the hosted authentication
+    // UI. Following that cross-origin redirect surfaces as a misleading CORS
+    // error and hides the real condition from the caller. Navigation routes
+    // still use the localized sign-in redirect below; API callers receive an
+    // in-band JSON response they can handle explicitly.
+    if (authResponse && (authResponse as Response).status >= 300 && (authResponse as Response).status < 400) {
+      const response = NextResponse.json(
+        { error: "not_authenticated" },
+        { status: 401, headers: { "cache-control": "no-store" } },
+      );
+
+      // AuthKit may clear an invalid/expired session cookie on its redirect.
+      // Preserve every Set-Cookie header while intentionally dropping Location.
+      for (const cookie of (authResponse as Response).headers.getSetCookie()) {
+        response.headers.append("set-cookie", cookie);
+      }
+
+      return response;
+    }
+
+    return authResponse as NextMiddlewareResult;
   }
 
   // -------------------------------------------------------------------------

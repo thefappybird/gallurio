@@ -1,5 +1,8 @@
-import "server-only";
 import { z } from "zod";
+
+// This module is also imported by the raw `tsx server.ts` entrypoint before
+// Next.js installs its compiler aliases, so it cannot use Next's `server-only`
+// marker. Keep its consumers server-side instead.
 
 // Fail-fast production environment validation.
 //

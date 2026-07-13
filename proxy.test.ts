@@ -29,6 +29,41 @@ describe("proxy", () => {
     expect(intlMiddlewareMock).not.toHaveBeenCalled();
   });
 
+  it("configures public and self-authenticated APIs as unauthenticated paths", async () => {
+    await import("./proxy");
+
+    expect(authkitMiddlewareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        middlewareAuth: expect.objectContaining({
+          unauthenticatedPaths: expect.arrayContaining([
+            "/api/public/(.*)",
+            "/api/health",
+            "/api/cron/(.*)",
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it("returns JSON 401 instead of leaking an authentication redirect to API fetches", async () => {
+    const redirect = NextResponse.redirect(
+      new URL("https://api.workos.com/user_management/authorize?client_id=test")
+    );
+    redirect.headers.append("set-cookie", "wos-session=; Max-Age=0; Path=/");
+    authMiddlewareMock.mockResolvedValueOnce(redirect);
+
+    const { proxy } = await import("./proxy");
+    const response = (await proxy(
+      new NextRequest("http://localhost:3000/api/bookings")
+    )) as Response;
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("set-cookie")).toContain("wos-session=");
+    await expect(response.json()).resolves.toEqual({ error: "not_authenticated" });
+  });
+
   it("routes the marketing root (any locale) through AuthKit so the landing page can read the session", async () => {
     const { proxy } = await import("./proxy");
     for (const url of ["http://localhost/", "http://localhost/en", "http://localhost/ar"]) {

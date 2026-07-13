@@ -1,6 +1,8 @@
-import "server-only";
 import type { Server as HttpServer } from "http";
 import type { Server as SocketIOServer } from "socket.io";
+
+// This dependency-injected helper is shared with the raw `tsx server.ts`
+// entrypoint and therefore cannot use Next's `server-only` marker.
 
 export type GracefulShutdownDeps = {
   httpServer: Pick<HttpServer, "close">;

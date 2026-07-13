@@ -1,19 +1,13 @@
 import "server-only";
 
+export { stopWorld } from "./stopWorld";
+
 // Thin wrapper around workflow/runtime's getWorld() lifecycle, used by:
 // - instrumentation.ts (startWorld() on boot)
-// - server.ts's future graceful-shutdown handler (stopWorld() on SIGTERM/SIGINT)
+// - server.ts's graceful-shutdown handler (stopWorld() on SIGTERM/SIGINT)
 export async function startWorld(): Promise<void> {
   const { getWorld } = await import("workflow/runtime");
   await getWorld().start?.();
-}
-
-// World.stop() does not exist on the interface — the lifecycle method is
-// close(). Named stopWorld (not "close") so server.ts's future SIGTERM/
-// SIGINT handler has one clear symbol to call.
-export async function stopWorld(): Promise<void> {
-  const { getWorld } = await import("workflow/runtime");
-  await getWorld().close?.();
 }
 
 // Cheap readiness probe for a future health route — round-trips a health

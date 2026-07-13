@@ -60,14 +60,27 @@ Use this as the release gate for the first production deployment. Checked items 
 
 ### Hetzner production server
 
-- [ ] Provision a dedicated Ubuntu LTS VPS in the region closest to primary customers. Start at no less than 2 vCPU, 4 GiB RAM, and 40-80 GiB SSD for beta; document load-test evidence, image/storage growth assumptions, and the resize trigger.
+#### Verified bootstrap record — 2026-07-14
+
+- **Host:** `gallurio-prod`, Ubuntu 26.04 LTS, x86_64. Current shape is **1 vCPU, 1.9 GiB RAM, and 38 GiB root disk**. It is below the 2 vCPU / 4 GiB beta minimum, so it remains an unchecked launch gate; resize before real traffic or representative load testing. A persistent 2 GiB `/swapfile` is active to reduce build/restart OOM risk during temporary setup.
+- **OS and access:** system update/reboot, UTC/NTP, and hostname setup were completed. `gallurio` is the locked-password deployment user. `gallurio-admin` is the key-only break-glass admin account with sudo. Password authentication and direct root SSH login are disabled. Add a distinct second trusted administrator key before launch; the current two accounts use one operator key.
+- **Firewall:** UFW is active with deny-incoming/allow-outgoing defaults. SSH is temporarily rate-limited from any IPv4/IPv6 address; tighten this to administrator/VPN IP allowlists before launch. Ports 80/443 are not open yet; port 3000 and MongoDB remain unexposed.
+- **Runtime installed:** Node `v22.22.1`, npm `9.2.0`, pnpm `11.5.2`, PM2 `7.0.3`, Git `2.53.0`, build tools, and official-repository Caddy `2.11.4`. Ubuntu's packaged Corepack `0.24.0` crashed with Node 22, so Corepack is disabled and pnpm is installed directly at the recorded version.
+- **Release layout:** `/var/www/gallurio/releases` is owned by `gallurio`; `/etc/gallurio/gallurio.env` is an empty `root:gallurio` 0640 environment file. No release directory, `current` symlink, production environment values, or PM2 application process exists yet.
+- **Repository access:** a read-only, passphrase-free deploy key is configured for the `gallurio` user and was verified against `thefappybird/gallurio` using GitHub's published ED25519 host-key fingerprint. Do not clone or label a production release until the launch commit SHA is frozen.
+
+- [x] Provision the initial dedicated Ubuntu LTS VPS: `gallurio-prod` on Ubuntu 26.04 LTS, x86_64. Completed 2026-07-14.
+- [ ] Resize the VPS to the beta minimum of 2 vCPU and 4 GiB RAM before real traffic or representative load testing; document load-test evidence, image/storage growth assumptions, and the resize trigger. Current temporary shape is 1 vCPU / 1.9 GiB RAM / 38 GiB root disk.
 - [ ] Record server ID, region, public IPv4/IPv6, rescue access, billing owner, renewal alerts, and data-processing location.
-- [ ] Patch the OS, enable unattended security updates, set NTP/timezone, set a hostname, and reboot once before deployment.
-- [ ] Create a non-root `gallurio` deployment user with a locked password and least-privilege `sudo`; prohibit routine application operation as root.
-- [ ] Install only approved SSH public keys, disable password authentication and direct root login, verify a second administrator can connect, and store recovery steps securely.
-- [ ] Configure firewall rules: SSH only from administrator/VPN IPs where practical; 80/443 as required by the chosen Cloudflare/origin strategy; never expose port 3000 or MongoDB publicly.
-- [ ] Install a pinned Node.js version satisfying Next.js 16 (minimum 20.9), Corepack/pnpm matching the lockfile workflow, PM2, Caddy, Git, and required build tooling. Record versions with the release evidence.
-- [ ] Create `/var/www/gallurio` (or an approved equivalent), owned by the deployment user. Keep releases and shared secrets separate, for example `releases/<sha>`, `current`, and `/etc/gallurio/gallurio.env`.
+- [x] Patch the OS, enable unattended security updates, retain UTC/NTP, set hostname `gallurio-prod`, and reboot once before deployment. Completed 2026-07-14.
+- [x] Create the non-root `gallurio` deployment user with a locked password; routine application operation will not run as root. A separate `gallurio-admin` key-only break-glass account holds the current administrative sudo access. Completed 2026-07-14.
+- [x] Install approved SSH public keys, disable password authentication and direct root login, and verify `gallurio-admin` can connect and use sudo. Completed 2026-07-14.
+- [ ] Add a distinct SSH key for a second trusted administrator and record recovery steps securely; the current `gallurio` and `gallurio-admin` accounts use one operator key.
+- [x] Configure the initial host firewall: UFW has deny-incoming/allow-outgoing defaults, SSH is rate-limited, and ports 3000/MongoDB are not exposed. Completed 2026-07-14.
+- [ ] Tighten SSH from the temporary global rate limit to administrator/VPN IP allowlists where practical; later add 80/443 only for the chosen Cloudflare/origin strategy.
+- [x] Install a pinned Node.js version satisfying Next.js 16 (minimum 20.9), Corepack/pnpm matching the lockfile workflow, PM2, Caddy, Git, and required build tooling. Record versions with the release evidence. Verified 2026-07-14: Node `22.22.1`, pnpm `11.5.2`, PM2 `7.0.3`, Git `2.53.0`, and Caddy `2.11.4`; direct pnpm installation is intentional because Ubuntu's Corepack fails under this Node version.
+- [x] Create the initial release/secrets layout: `/var/www/gallurio/releases` is owned by `gallurio`; `/etc/gallurio/gallurio.env` is root-controlled and app-readable. Completed 2026-07-14.
+- [ ] Create the first immutable `releases/<sha>` checkout and the `current` symlink only after the launch commit SHA is frozen.
 - [ ] Configure PM2 from `deploy/ecosystem.config.js`, set explicit memory/restart limits after measuring the build, run `pm2 save`, install the boot service with `pm2 startup`, reboot, and verify the process returns.
 - [ ] Configure log rotation for PM2, Caddy, system logs, and cron/timer output. Redact cookies, tokens, authorization headers, customer data, webhook bodies, and email bodies.
 - [x] Add non-sensitive liveness/readiness checks for the process, MongoDB, and Workflow World, plus graceful application shutdown.

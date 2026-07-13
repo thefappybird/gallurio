@@ -17,3 +17,7 @@ allowBuilds:
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+overrides:
+  builtin-modules: 3.3.0
+patchedDependencies:
+  builtin-modules@3.3.0: patches/builtin-modules@3.3.0.patch

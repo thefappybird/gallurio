@@ -5,7 +5,7 @@ import mongoose from 'mongoose'
 import { Server as SocketIOServer } from 'socket.io'
 import { setIO } from './lib/sockets/io'
 import { verifySocketToken } from './lib/sockets/auth'
-import { stopWorld } from './lib/workflows/world'
+import { stopWorld } from './lib/workflows/stopWorld'
 import { gracefulShutdown } from './lib/server/gracefulShutdown'
 
 // Ensure NODE_ENV is set so that downstream code (e.g. Turnstile dev bypass,

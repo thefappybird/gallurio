@@ -61,14 +61,6 @@
     "workflow": "^4.6.0",
     "zod": "^3.24.1"
   },
-  "pnpm": {
-    "overrides": {
-      "builtin-modules": "3.3.0"
-    },
-    "patchedDependencies": {
-      "builtin-modules@3.3.0": "patches/builtin-modules@3.3.0.patch"
-    }
-  },
   "devDependencies": {
     "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "^4",
