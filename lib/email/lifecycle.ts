@@ -2,7 +2,7 @@ import "server-only";
 import { renderBrandedEmail } from "./layout";
 import { gallurioBrand } from "./brand";
 import { EMAIL_COPY, emailLocale } from "./messages";
-import { sendEmail, type SendEmailResult } from "./send";
+import { sendEmail, logEmailFailure, type SendEmailResult } from "./send";
 
 export type LifecycleEmailStage = "preExpiry" | "expired" | "remind1" | "remind2";
 
@@ -40,10 +40,12 @@ export async function sendLifecycleEmail(
     cta: { label: copy.cta, url: subscribeUrl },
   });
 
-  return sendEmail({
+  const result = await sendEmail({
     to,
     subject: copy.subject,
     html,
     text,
   });
+  if (!result.ok) logEmailFailure(`lifecycle_${stage}`, to, result);
+  return result;
 }

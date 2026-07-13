@@ -3,7 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 const { mockSendEmail } = vi.hoisted(() => ({
   mockSendEmail: vi.fn().mockResolvedValue({ ok: true, id: "email_1" }),
 }));
-vi.mock("@/lib/email/send", () => ({ sendEmail: mockSendEmail }));
+vi.mock("@/lib/email/send", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email/send")>("@/lib/email/send");
+  return { ...actual, sendEmail: mockSendEmail };
+});
 
 import { sendLifecycleEmail } from "./lifecycle";
 
@@ -54,5 +57,18 @@ describe("sendLifecycleEmail", () => {
 
     const arg = mockSendEmail.mock.calls[0]![0]!;
     expect(arg.subject).toBe("Last week to keep your portfolio online");
+  });
+
+  it("logs a redacted failure and propagates it when sendEmail fails", async () => {
+    mockSendEmail.mockResolvedValue({ ok: false, error: "resend_500" });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await sendLifecycleEmail("preExpiry", "owner@example.com", "xx");
+
+    expect(result).toEqual({ ok: false, error: "resend_500" });
+    expect(errorSpy).toHaveBeenCalledOnce();
+    const [msg] = errorSpy.mock.calls[0];
+    expect(msg).not.toContain("owner@example.com");
+    expect(msg).toContain("resend_500");
   });
 });

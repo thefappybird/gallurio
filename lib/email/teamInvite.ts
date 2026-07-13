@@ -2,7 +2,7 @@
 import { renderBilingualEmail, bilingualSubject } from "./layout";
 import { resolveWorkspaceBrand, type Brand } from "./brand";
 import { EMAIL_COPY } from "./messages";
-import { sendEmail, type SendEmailResult } from "./send";
+import { sendEmail, logEmailFailure, type SendEmailResult } from "./send";
 
 export type TeamInviteEmailInput = {
   to: string;
@@ -54,11 +54,13 @@ export async function sendTeamInviteEmail(
     locale,
   );
 
-  return sendEmail({
+  const result = await sendEmail({
     to: input.to,
     subject,
     html,
     text,
     replyTo: brand.replyTo,
   });
+  if (!result.ok) logEmailFailure("team_invite", input.to, result);
+  return result;
 }

@@ -3,7 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 const { mockSendEmail } = vi.hoisted(() => ({
   mockSendEmail: vi.fn().mockResolvedValue({ ok: true, id: "email_1" }),
 }));
-vi.mock("@/lib/email/send", () => ({ sendEmail: mockSendEmail }));
+vi.mock("@/lib/email/send", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email/send")>("@/lib/email/send");
+  return { ...actual, sendEmail: mockSendEmail };
+});
 
 import { sendPasswordResetEmail } from "./sendPasswordResetEmail";
 
@@ -92,5 +95,18 @@ describe("sendPasswordResetEmail", () => {
     const arg = mockSendEmail.mock.calls[0]![0]!;
     expect(arg.text).toContain("expires");
     expect(arg.text).toContain("ignore");
+  });
+
+  it("propagates a redacted failure to the caller when sendEmail fails", async () => {
+    mockSendEmail.mockResolvedValue({ ok: false, error: "resend_500" });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await sendPasswordResetEmail("user@example.com", "tok_abc");
+
+    expect(result).toEqual({ ok: false, error: "resend_500" });
+    expect(errorSpy).toHaveBeenCalledOnce();
+    const [msg] = errorSpy.mock.calls[0];
+    expect(msg).not.toContain("user@example.com");
+    expect(msg).toContain("resend_500");
   });
 });

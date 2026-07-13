@@ -42,6 +42,7 @@ vi.mock("@/lib/auth/ownerContext", () => ({
 const mockSendEmail = vi.fn().mockResolvedValue({ ok: true, id: "email_1" });
 vi.mock("@/lib/email/send", () => ({
   sendEmail: mockSendEmail,
+  logEmailFailure: vi.fn(),
 }));
 
 // Stub NEXT_PUBLIC_APP_URL so the accept link is deterministic.

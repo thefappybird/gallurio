@@ -1,7 +1,13 @@
 ﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendEmail = vi.fn();
-vi.mock("./send", () => ({ sendEmail: (...args: unknown[]) => sendEmail(...args) }));
+vi.mock("./send", async () => {
+  const actual = await vi.importActual<typeof import("./send")>("./send");
+  return {
+    ...actual,
+    sendEmail: (...args: unknown[]) => sendEmail(...args),
+  };
+});
 
 import { sendTeamInviteEmail } from "./teamInvite";
 
@@ -103,5 +109,25 @@ describe("sendTeamInviteEmail", () => {
     expect(arg.subject).toContain(String.fromCharCode(183));
     expect(arg.subject).toContain("Studio Aurora");
     expect(arg.subject).toContain("Anda dijemput untuk menyertai");
+  });
+
+  it("logs a redacted failure and still returns the failed result when sendEmail fails", async () => {
+    sendEmail.mockResolvedValue({ ok: false, error: "resend_500" });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await sendTeamInviteEmail({
+      to: "staff@example.com",
+      inviterName: "Maria Santos",
+      workspaceName: "Studio Aurora",
+      teamNames: ["Photography"],
+      acceptUrl: "https://app.gallurio.com/invite/accept?token=abc123",
+      locale: "en",
+    });
+
+    expect(result).toEqual({ ok: false, error: "resend_500" });
+    expect(errorSpy).toHaveBeenCalledOnce();
+    const [msg] = errorSpy.mock.calls[0];
+    expect(msg).not.toContain("staff@example.com");
+    expect(msg).toContain("resend_500");
   });
 });
