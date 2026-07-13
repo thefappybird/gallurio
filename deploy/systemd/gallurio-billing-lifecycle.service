@@ -1,0 +1,20 @@
+[Unit]
+Description=Gallurio: billing lifecycle sweep (daily)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Root-readable only (chmod 600, chown root:root) — holds CRON_SECRET.
+EnvironmentFile=/etc/gallurio/cron.env
+# --fail: non-2xx exits non-zero so systemd marks the unit failed.
+# --max-time 60: this sweep touches more rows per run than the invite-seat
+# job — give it more headroom before we call it stuck.
+ExecStart=/usr/bin/curl --fail --silent --show-error --max-time 60 \
+  -H "Authorization: Bearer ${CRON_SECRET}" \
+  "${APP_ORIGIN}/api/cron/billing-lifecycle"
+
+# Alert hook: point OnFailure at a notify unit once one exists, e.g.
+#   OnFailure=gallurio-cron-alert@%n.service
+# A bare failed unit is otherwise silent — `systemctl --failed` only surfaces
+# it if someone looks.

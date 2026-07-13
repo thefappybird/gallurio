@@ -85,12 +85,25 @@ async function stagePreExpiryWarn(now: Date, batchSize: number): Promise<number>
 
   return forEachBatch<PreExpiryDoc>(filter, projection, batchSize, async (batch) => {
     const emails = await ownerEmailsFor(batch);
+    let sentCount = 0;
     for (const ws of batch) {
       const email = emails.get(ws.ownerUserId);
-      if (email) await sendLifecycleEmail("preExpiry", email, ws.country);
-      await Workspace.updateOne({ _id: ws._id }, { $set: { "lifecycle.warned7dAt": now } });
+      // No owner email on file — nothing to retry, stamp so the sweep does
+      // not loop on this row forever.
+      if (!email) {
+        await Workspace.updateOne({ _id: ws._id }, { $set: { "lifecycle.warned7dAt": now } });
+        sentCount += 1;
+        continue;
+      }
+      const result = await sendLifecycleEmail("preExpiry", email, ws.country);
+      // Only stamp on a confirmed send. A failed send leaves the guard field
+      // null so tomorrow's sweep retries this workspace (at-least-once).
+      if (result.ok) {
+        await Workspace.updateOne({ _id: ws._id }, { $set: { "lifecycle.warned7dAt": now } });
+        sentCount += 1;
+      }
     }
-    return batch.length;
+    return sentCount;
   });
 }
 
@@ -132,12 +145,22 @@ async function stageExpiredNotify(now: Date, batchSize: number): Promise<number>
 
   return forEachBatch<ExpiredNotifyDoc>(filter, projection, batchSize, async (batch) => {
     const emails = await ownerEmailsFor(batch);
+    let sentCount = 0;
     for (const ws of batch) {
       const email = emails.get(ws.ownerUserId);
-      if (email) await sendLifecycleEmail("expired", email, ws.country);
-      await Workspace.updateOne({ _id: ws._id }, { $set: { "lifecycle.expiredNotifiedAt": now } });
+      if (!email) {
+        await Workspace.updateOne({ _id: ws._id }, { $set: { "lifecycle.expiredNotifiedAt": now } });
+        sentCount += 1;
+        continue;
+      }
+      const result = await sendLifecycleEmail("expired", email, ws.country);
+      // Only stamp on a confirmed send — a failure retries next sweep.
+      if (result.ok) {
+        await Workspace.updateOne({ _id: ws._id }, { $set: { "lifecycle.expiredNotifiedAt": now } });
+        sentCount += 1;
+      }
     }
-    return batch.length;
+    return sentCount;
   });
 }
 
@@ -177,12 +200,22 @@ async function stageRemind(
     const stillGated = batch.filter((ws) => !isEntitled(ws));
     if (stillGated.length === 0) return 0;
     const emails = await ownerEmailsFor(stillGated);
+    let sentCount = 0;
     for (const ws of stillGated) {
       const email = emails.get(ws.ownerUserId);
-      if (email) await sendLifecycleEmail(stage, email, ws.country);
-      await Workspace.updateOne({ _id: ws._id }, { $set: { [`lifecycle.${guardField}`]: now } });
+      if (!email) {
+        await Workspace.updateOne({ _id: ws._id }, { $set: { [`lifecycle.${guardField}`]: now } });
+        sentCount += 1;
+        continue;
+      }
+      const result = await sendLifecycleEmail(stage, email, ws.country);
+      // Only stamp on a confirmed send — a failure retries next sweep.
+      if (result.ok) {
+        await Workspace.updateOne({ _id: ws._id }, { $set: { [`lifecycle.${guardField}`]: now } });
+        sentCount += 1;
+      }
     }
-    return stillGated.length;
+    return sentCount;
   });
 }
 

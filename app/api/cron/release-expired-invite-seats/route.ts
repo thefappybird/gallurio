@@ -14,10 +14,13 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-// Vercel Cron hits this route hourly (configured in vercel.json/cron).
-// Auth model: Vercel injects `Authorization: Bearer ${CRON_SECRET}` for
-// scheduled invocations; we reject anything else so manual hits from the
-// internet 401 instead of running the job.
+// Hetzner deploy: a systemd timer (deploy/systemd/gallurio-invite-seats.timer,
+// hourly) curls this route with `Authorization: Bearer ${CRON_SECRET}` — see
+// deploy/systemd/gallurio-invite-seats.service and
+// docs/dev-reference.md#production-hosting for install steps. Not a Vercel
+// Cron target (this app is not deployed on Vercel). We reject any request
+// without a matching bearer token so manual hits from the internet 401
+// instead of running the job.
 export async function GET(req: Request) {
   const expected = process.env.CRON_SECRET;
   if (!expected) {

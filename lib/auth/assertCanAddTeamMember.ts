@@ -66,11 +66,12 @@ export async function assertCanAddTeamMember(
 export async function releaseTeamSeat(
   teamId: mongoose.Types.ObjectId | string,
   workspaceId?: mongoose.Types.ObjectId | string,
+  session?: mongoose.ClientSession,
 ): Promise<void> {
   const filter: Record<string, unknown> = {
     _id: teamId,
     memberCount: { $gt: 0 },
   };
   if (workspaceId !== undefined) filter.workspaceId = workspaceId;
-  await Team.updateOne(filter, { $inc: { memberCount: -1 } });
+  await Team.updateOne(filter, { $inc: { memberCount: -1 } }, { session });
 }

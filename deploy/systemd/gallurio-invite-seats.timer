@@ -1,0 +1,12 @@
+[Unit]
+Description=Hourly timer for gallurio-invite-seats.service
+
+[Timer]
+OnCalendar=hourly
+# Catch up on a missed run after downtime/reboot.
+Persistent=true
+# Spread load if this host runs other hourly timers.
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

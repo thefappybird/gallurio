@@ -54,6 +54,12 @@ invitationSchema.index({ tokenHash: 1 }, { unique: true });
 // Sweep job: find pending invites past their TTL.
 invitationSchema.index({ workspaceId: 1, expiresAt: 1 });
 
+// Hourly global sweep (release-expired-invite-seats) queries across all
+// workspaces by { status, expiresAt } — not workspace-scoped by design (it is
+// a cron job, not a tenant request path). Accepted added-index cost per the
+// release checklist.
+invitationSchema.index({ status: 1, expiresAt: 1 });
+
 export type InvitationDoc = InferSchemaType<typeof invitationSchema> & {
   _id: mongoose.Types.ObjectId;
 };

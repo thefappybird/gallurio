@@ -111,6 +111,30 @@ describe("runBillingLifecycleSweep — remind1", () => {
   });
 });
 
+describe("runBillingLifecycleSweep — retry on email failure", () => {
+  it("leaves remind1moAt null and does not count the row when sendLifecycleEmail fails, then stamps and counts it on a clean retry", async () => {
+    const wsId = await seedLapsedWorkspace({ lapsedAt: daysAgo(31) });
+    // Pre-stamp expiredNotifiedAt so stageExpiredNotify (which runs before
+    // stageRemind and also calls sendLifecycleEmail) does not consume the
+    // once-mocked failure meant for the remind1 send below.
+    await Workspace.updateOne({ _id: wsId }, { $set: { "lifecycle.expiredNotifiedAt": daysAgo(31) } });
+    mockSendLifecycleEmail.mockResolvedValueOnce({ ok: false, error: "resend down" });
+
+    const first = await runBillingLifecycleSweep(new Date());
+    expect(first.remind1Sent).toBe(0);
+    const afterFailure = await Workspace.findById(wsId).lean();
+    expect(afterFailure?.lifecycle?.remind1moAt).toBeNull();
+
+    const second = await runBillingLifecycleSweep(new Date());
+    expect(second.remind1Sent).toBe(1);
+    const afterRetry = await Workspace.findById(wsId).lean();
+    expect(afterRetry?.lifecycle?.remind1moAt).toBeInstanceOf(Date);
+
+    const remind1Calls = mockSendLifecycleEmail.mock.calls.filter((call) => call[0] === "remind1");
+    expect(remind1Calls).toHaveLength(2);
+  });
+});
+
 describe("runBillingLifecycleSweep — wipe", () => {
   it("unpublishes the live public page at +58d while preserving draft data and CRM records", async () => {
     const ownerUserId = "wos_owner_wipe";

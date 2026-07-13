@@ -63,6 +63,24 @@ Acceptance criteria for every Server Action, uoute Handler, and public/server-co
 
 - Hetzner is the default prod target (materially cheaper than Vercel for steady-state). Shape: Ubuntu LTS VPS, Node 20+, `pnpm`, long-lived process (`pm2`/`systemd`), Caddy/Nginx reverse proxy on 80/443 → local Next on 3000.
 - Deploys via GitHub Actions gated on tests + lint + typecheck + build. Audit any Vercel-coupled capability before a full cutover. Configure logs, restarts, backups, health checks, TLS before calling it production-ready.
+- `vercel.json`'s `crons` entry only fires if this app is deployed on Vercel — it is not, on Hetzner. It is dead config on this host; the two scheduled jobs below are the real schedule source.
+
+### Scheduled jobs (systemd timers, not Vercel Cron)
+
+Two cron routes, both Node runtime, timing-safe Bearer `CRON_SECRET` auth (401 without it): `/api/cron/release-expired-invite-seats` (hourly) and `/api/cron/billing-lifecycle` (daily). On Hetzner these are driven by systemd timers, not Vercel Cron. Units: `deploy/systemd/gallurio-invite-seats.{service,timer}` and `deploy/systemd/gallurio-billing-lifecycle.{service,timer}` — each unit is a `curl --fail --max-time <n>` against the local app with an `Authorization: Bearer` header sourced from a root-only env file.
+
+Install:
+```
+sudo install -m 600 -o root -g root /dev/null /etc/gallurio/cron.env
+sudo tee /etc/gallurio/cron.env <<'EOF'
+CRON_SECRET=<same value as the app's CRON_SECRET env var>
+APP_ORIGIN=http://127.0.0.1:3000
+EOF
+sudo cp deploy/systemd/gallurio-invite-seats.* deploy/systemd/gallurio-billing-lifecycle.* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now gallurio-invite-seats.timer gallurio-billing-lifecycle.timer
+```
+`CRON_SECRET` in `/etc/gallurio/cron.env` must match the app process's own `CRON_SECRET` env var (pm2/systemd EnvironmentFile) — never log or print it. Check status with `systemctl list-timers`, `journalctl -u gallurio-invite-seats.service`. Each `.service` has a commented `OnFailure=` hook for wiring a failed-unit alert once a notify target exists — a failed run is otherwise silent outside `systemctl --failed`.
 
 ---
 
