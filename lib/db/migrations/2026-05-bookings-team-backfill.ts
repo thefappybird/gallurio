@@ -19,6 +19,7 @@ loadEnv();
 
 import mongoose from "mongoose";
 import { connectDB } from "../mongoose";
+import { assertSafeTarget, printDbFingerprint } from "../scriptGuard";
 import { Booking } from "../models/Booking";
 import { Team } from "../models/team";
 
@@ -28,6 +29,10 @@ const BATCH_LOG_EVERY = 500;
 async function run() {
   console.log(`→ Connecting to MongoDB…${DRY_RUN ? " (DRY RUN — no writes)" : ""}`);
   await connectDB();
+
+  const uri = process.env.DATABASE_URL!;
+  printDbFingerprint(uri);
+  assertSafeTarget(uri, { dryRun: DRY_RUN });
 
   // Per-workspace Main-team cache so we resolve each workspace's default team at
   // most once. A workspace missing a Main team is reported and its bookings are

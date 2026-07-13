@@ -20,6 +20,7 @@ loadEnv();
 
 import mongoose from "mongoose";
 import { connectDB } from "../mongoose";
+import { assertSafeTarget, printDbFingerprint } from "../scriptGuard";
 import { Booking } from "../models/Booking";
 import { Transaction } from "../models/Transaction";
 
@@ -29,6 +30,10 @@ const BATCH_LOG_EVERY = 500;
 async function run() {
   console.log(`→ Connecting to MongoDB…${DRY_RUN ? " (DRY RUN — no writes)" : ""}`);
   await connectDB();
+
+  const uri = process.env.DATABASE_URL!;
+  printDbFingerprint(uri);
+  assertSafeTarget(uri, { dryRun: DRY_RUN });
 
   // Cache booking → teamId so each booking is resolved at most once.
   const teamByBooking = new Map<string, mongoose.Types.ObjectId | null>();

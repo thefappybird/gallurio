@@ -13,12 +13,17 @@ loadEnv();
 
 import mongoose from "mongoose";
 import { connectDB } from "../mongoose";
+import { assertSafeTarget, printDbFingerprint } from "../scriptGuard";
 import { Workspace } from "../models/Workspace";
 import { ensureDefaultTeam, Team } from "../models/team";
 
 async function run() {
   console.log("→ Connecting to MongoDB…");
   await connectDB();
+
+  const uri = process.env.DATABASE_URL!;
+  printDbFingerprint(uri);
+  assertSafeTarget(uri);
 
   const workspaces = await Workspace.find({}, { _id: 1, ownerUserId: 1 }).lean();
   console.log(`→ Found ${workspaces.length} workspace(s) to process`);
