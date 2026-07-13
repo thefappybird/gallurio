@@ -1,0 +1,81 @@
+diff --git a/index.js b/index.js
+index 8596b8da0dae2a25ba79c3588a2742ed7b333cf5..d705266753f4c46ffaacef57e8545a3d352420ca 100644
+--- a/index.js
++++ b/index.js
+@@ -1,11 +1,68 @@
+ 'use strict';
+-const {builtinModules} = require('module');
+ 
+-const ignoreList = [
+-	'sys'
++// PATCHED (pnpm patch, see patches/builtin-modules@3.3.0.patch):
++// Upstream calls `require('module').builtinModules` at import time. That
++// breaks in two mutually-exclusive ways for @workflow/builders' bundled
++// serde-checker (which imports this package and gets esbuild-bundled into
++// the durable workflow script executed via `vm.Script.runInContext`):
++//   - builtin-modules@5.x is ESM-only + reads a `.json` file with an import
++//     attribute; Node's synchronous require(esm) interop cannot load it
++//     (ERR_IMPORT_ATTRIBUTE_MISSING) when esbuild leaves it as an external
++//     require for the CJS call site.
++//   - builtin-modules@3.3.0 (unpatched) is CJS and bundles cleanly via
++//     esbuild's __commonJS wrapper, but its body calls the bare global
++//     `require('module')` — the sandboxed VM context @workflow/core uses to
++//     replay workflow code has no `require` global at all, so this throws
++//     `ReferenceError: require is not defined`.
++// Fix: ship the resolved module list as a static literal (no require call,
++// no JSON import) so the bundled code is fully self-contained in both the
++// normal Node process and the sandboxed VM. Regenerated from
++// `require('module').builtinModules` on Node 24, filtered with upstream's
++// original predicate (excludes `_`-prefixed, internal/v8/node-inspect, and
++// any subpath name containing "/").
++module.exports = [
++	'assert',
++	'async_hooks',
++	'buffer',
++	'child_process',
++	'cluster',
++	'console',
++	'constants',
++	'crypto',
++	'dgram',
++	'diagnostics_channel',
++	'dns',
++	'domain',
++	'events',
++	'fs',
++	'http',
++	'http2',
++	'https',
++	'inspector',
++	'module',
++	'net',
++	'node:sea',
++	'node:sqlite',
++	'node:test',
++	'os',
++	'path',
++	'perf_hooks',
++	'process',
++	'punycode',
++	'querystring',
++	'readline',
++	'repl',
++	'stream',
++	'string_decoder',
++	'timers',
++	'tls',
++	'trace_events',
++	'tty',
++	'url',
++	'util',
++	'v8',
++	'vm',
++	'wasi',
++	'worker_threads',
++	'zlib',
+ ];
+-
+-// eslint-disable-next-line node/no-deprecated-api
+-module.exports = (builtinModules || (process.binding ? Object.keys(process.binding('natives')) : []) || [])
+-	.filter(x => !/^_|^(internal|v8|node-inspect)\/|\//.test(x) && !ignoreList.includes(x))
+-	.sort();
