@@ -49,7 +49,7 @@ export function MarketingHeader() {
               {tNav("signIn")}
             </Link>
             <Link href="/sign-up" className={buttonVariants({ variant: "brand", size: "sm" })}>
-              {tNav("joinBeta")}
+              {tNav("getStarted")}
             </Link>
             <ThemeToggle variant="standalone" />
             <Suspense fallback={<div className="size-9" />}>

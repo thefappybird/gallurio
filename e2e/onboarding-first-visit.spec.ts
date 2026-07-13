@@ -54,7 +54,7 @@ test("first-time owner: onboarding wizard, then story prompt skips the guide", a
   // --- Onboarding: plan step (Free + Pro cards, monthly/yearly toggle) ---
   await page.waitForURL(/\/onboarding\/plan/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Pick the plan that fits" })).toBeVisible();
-  await page.getByRole("button", { name: "Continue with Free" }).click();
+  await page.getByRole("button", { name: "Start my free month" }).click();
 
   // --- Onboarding: done step ---
   await page.waitForURL(/\/onboarding\/done/, { timeout: 30_000 });

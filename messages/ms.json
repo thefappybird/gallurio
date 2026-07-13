@@ -4,7 +4,7 @@
       "pricing": "Harga",
       "contact": "Hubungi",
       "signIn": "Log masuk",
-      "joinBeta": "Sertai Beta"
+      "getStarted": "Mula sekarang"
     },
     "footer": {
       "pricing": "Harga",
@@ -20,7 +20,7 @@
     "hero": {
       "headline": "Portfolio sedia-tempahan, dijalankan seperti buku lejar.",
       "body": "Jurugambar, videografer, dan pereka acara menggunakan Gallurio untuk menerbitkan halaman yang layak dipercayai untuk tempahan — serta menguruskan tempahan, pelanggan, dan pertanyaan dalam satu ruang kerja.",
-      "ctaJoinBeta": "Sertai Beta"
+      "ctaStart": "Mula bulan percuma saya"
     },
     "whatIs": {
       "title": "Apakah Gallurio?",
@@ -66,14 +66,10 @@
         "description": "Terbitkan halaman yang direka supaya kelihatan dipercayai, ringkas, dan mudah difahami oleh bakal pelanggan."
       }
     },
-    "betaNotice": {
-      "body1": "Gallurio kini dalam fasa beta. Sesetengah ciri mungkin berubah semasa kami menambah baik produk, memperhalusi pengalaman, dan mengumpul maklum balas daripada pengguna awal.",
-      "body2": "Semasa fasa beta, akses mungkin terhad dan sesetengah ciri berbayar mungkin belum tersedia."
-    },
     "finalCta": {
       "title": "Mula bina ruang kerja kreatif anda dengan Gallurio.",
-      "subtitle": "Sertai beta dan bantu membentuk platform ini sebelum pelancaran awam.",
-      "button": "Sertai Beta"
+      "subtitle": "Mula dengan satu bulan Pro percuma — tanpa kad diperlukan.",
+      "button": "Mula bulan percuma saya"
     },
     "manifesto": {
       "quote": "Setiap tempahan direkodkan. Setiap pelanggan dipercayai. Tiada apa yang kabur.",
@@ -81,95 +77,58 @@
     },
     "pricingTeaser": {
       "title": "Harga mudah",
-      "subtitle": "Percuma untuk bermula. Satu peringkat berbayar apabila anda bersedia menjalankan keseluruhan aliran kerja.",
+      "subtitle": "1 bulan Pro, percuma. Kemudian satu pelan, bulanan atau tahunan.",
       "viewFullPricing": "Lihat harga penuh",
-      "disclaimer": "Harga yang dipaparkan adalah dirancang dan mungkin berubah sebelum pelancaran awam.",
+      "disclaimer": "Harga dibil oleh Lemon Squeezy dan dipaparkan dalam mata wang tempatan anda semasa checkout.",
       "cadence": {
         "monthly": "Bulanan",
-        "yearly": "Tahunan — jimat ~30%"
-      },
-      "free": {
-        "name": "Percuma",
-        "price": "RM0",
-        "description": "Bina portfolio dan mula kumpul pertanyaan — tiada kad diperlukan.",
-        "feature1": "Pembina portfolio, 1 halaman diterbitkan",
-        "feature2": "Borang pertanyaan tempahan",
-        "feature3": "Papan pemuka ruang kerja",
-        "cta": "Mula percuma"
+        "yearly": "Tahunan — jimat 2 bulan"
       },
       "pro": {
-        "badge": "Nilai terbaik",
+        "badge": "1 bulan percuma",
         "name": "Pro",
-        "priceMonthly": "RM60/bulan",
-        "priceYearly": "RM43/bulan, bil tahunan",
-        "description": "Semua dalam Percuma, untuk studio yang bersedia menjalankan keseluruhan aliran kerja pelanggan.",
+        "priceSuffixMonthly": "/bulan",
+        "priceSuffixYearly": "/tahun",
+        "priceNote": "selepas bulan percuma anda",
+        "description": "Tempahan, pelanggan, galeri, dan halaman awam anda tanpa had.",
         "feature1": "Tempahan dan pertanyaan tanpa had",
         "feature2": "Penjenamaan tersuai dan galeri lanjutan",
         "feature3": "Sokongan keutamaan",
-        "cta": "Mula percubaan Pro"
-      },
-      "beta": {
-        "badge": "Tempat terhad",
-        "name": "Penguji Beta",
-        "price": "Percuma",
-        "priceNote": "— ciri Pro",
-        "description": "Akses Pro penuh tanpa kos, untuk studio awal yang membantu membentuk produk.",
-        "feature1": "Semua dalam Pro",
-        "feature2": "Talian terus dengan pasukan",
-        "feature3": "Harga dikunci semasa pelancaran",
-        "cta": "Mohon untuk beta"
+        "cta": "Mula bulan percuma saya"
       }
     },
     "pricing": {
       "metadata": {
         "title": "Harga — Gallurio",
-        "description": "Lihat akses beta dan pilihan langganan yang dirancang oleh Gallurio untuk profesional dan studio kreatif."
+        "description": "Lihat harga Gallurio Pro untuk profesional dan studio kreatif — satu bulan percuma, kemudian satu pelan bulanan atau tahunan sahaja."
       },
       "header": {
         "headline": "Pelan mudah untuk profesional dan studio kreatif.",
-        "body": "Gallurio kini dalam fasa beta. Langganan berbayar dirancang untuk pelancaran awam selepas ujian beta. Harga, had ciri, dan butiran pelan mungkin berubah sebelum pelepasan akhir."
+        "body": "Setiap ruang kerja baharu mendapat satu bulan Gallurio Pro penuh, percuma, tanpa kad diperlukan. Selepas itu, teruskan dengan satu langganan Pro — bulanan atau tahunan."
       },
-      "betaPlan": {
+      "pro": {
         "badge": "Disyorkan",
-        "name": "Pelan Beta",
-        "price": "Percuma semasa beta",
-        "description": "Untuk pengguna awal yang ingin menguji Gallurio, membina portfolio, dan membantu membentuk produk ini.",
-        "feature1": "Pembina halaman portfolio",
-        "feature2": "Bahagian galeri asas",
-        "feature3": "Persediaan profil perniagaan",
-        "feature4": "Borang pertanyaan tempahan",
-        "feature5": "Papan pemuka ruang kerja",
-        "feature6": "Akses awal kepada ciri baharu",
-        "cta": "Sertai Beta"
-      },
-      "plannedBadge": "Dirancang",
-      "studio": {
-        "name": "Studio",
-        "description": "Untuk perniagaan kreatif yang berkembang dan memerlukan lebih fleksibiliti serta alat menghadap pelanggan yang lebih kukuh.",
-        "feature1": "Semua dalam Starter",
-        "feature2": "Lebih banyak bahagian portfolio",
-        "feature3": "Susun atur galeri lanjutan",
-        "feature4": "Persembahan perkhidmatan/pakej",
-        "feature5": "Pilihan penjenamaan tersuai",
-        "feature6": "Sokongan keutamaan"
-      },
-      "business": {
-        "name": "Business",
-        "description": "Untuk pasukan, studio, atau perniagaan kreatif dengan keperluan operasi yang lebih maju.",
-        "feature1": "Semua dalam Studio",
-        "feature2": "Ciri ruang kerja berorientasikan pasukan",
-        "feature3": "Persediaan tempahan yang diperluas",
-        "feature4": "Penyesuaian lanjutan",
-        "feature5": "Had penggunaan yang lebih tinggi",
-        "feature6": "Akses keutamaan kepada ciri"
+        "name": "Pro",
+        "freeMonth": "Mula dengan 1 bulan percuma, tanpa kad diperlukan.",
+        "description": "Semua yang anda perlukan untuk menjalankan tempahan, pelanggan, galeri, dan halaman awam anda.",
+        "priceSuffixMonthly": "/ bulan",
+        "priceSuffixYearly": "/ tahun",
+        "yearlyNote": "Atau {price} dibil tahunan — jimat 2 bulan.",
+        "feature1": "Pembina halaman portfolio & laman awam",
+        "feature2": "Tempahan dan pertanyaan tanpa had",
+        "feature3": "Pengurusan pelanggan & peranan pasukan",
+        "feature4": "Invois PDF",
+        "feature5": "Penjenamaan tersuai & galeri lanjutan",
+        "feature6": "Sokongan keutamaan",
+        "cta": "Mula bulan percuma saya"
       },
       "billingNotice": {
-        "body1": "Apabila langganan berbayar tersedia, pembayaran akan diproses dengan selamat oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy mungkin mengendalikan pemprosesan pembayaran, pengiraan cukai, invois, sokongan pengebilan, dan pemprosesan bayaran balik yang layak.",
-        "body2": "Tiada pembayaran sebenar dikutip semasa beta melainkan dinyatakan dengan jelas semasa checkout."
+        "body1": "Pembayaran diproses dengan selamat oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy mengendalikan pemprosesan pembayaran, pengiraan cukai, invois, sokongan pengebilan, dan pemprosesan bayaran balik yang layak.",
+        "body2": "Tiada caj dikutip semasa bulan percuma pertama anda."
       },
       "pricingTransparency": {
         "title": "Ketelusan Harga",
-        "body": "Harga langganan akhir akan diterbitkan sebelum pelan berbayar dilancarkan. Pengguna akan dapat menyemak harga, tempoh pengebilan, dan terma langganan sebelum melengkapkan sebarang pembayaran."
+        "body": "Harga, tempoh pengebilan, dan terma langganan ditunjukkan sebelum anda melengkapkan sebarang pembayaran, dan anda boleh membatalkan pada bila-bila masa dari portal pengebilan anda."
       }
     },
     "terms": {
@@ -224,9 +183,10 @@
       },
       "subscriptions": {
         "title": "8. Langganan dan Pembayaran",
-        "body1": "Sesetengah ciri Gallurio mungkin memerlukan langganan berbayar.",
-        "body2": "Apabila pelan berbayar tersedia, pengebilan mungkin diproses oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy mungkin mengendalikan pemprosesan pembayaran, cukai, invois, sokongan pengebilan, dan aliran kerja bayaran balik yang berkenaan.",
-        "body3": "Pengguna akan ditunjukkan harga dan terma pengebilan yang berkenaan sebelum melengkapkan pembelian."
+        "body1": "Gallurio termasuk langganan Pro berbayar, dikenakan bil bulanan atau tahunan. Ruang kerja baharu menerima satu bulan akses Pro penuh secara percuma, tanpa kad diperlukan.",
+        "body2": "Selepas bulan percuma, akses berterusan kepada Gallurio memerlukan langganan Pro yang aktif. Pengebilan diproses oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy mungkin mengendalikan pemprosesan pembayaran, cukai, invois, sokongan pengebilan, dan aliran kerja bayaran balik yang berkenaan.",
+        "body3": "Pengguna akan ditunjukkan harga dan terma pengebilan yang berkenaan sebelum melengkapkan pembelian.",
+        "body4": "Jika langganan tidak diperbaharui atau pembayaran gagal, akses kepada ruang kerja adalah terhad sehingga langganan dipulihkan. Data akaun dikekalkan; halaman awam yang diterbitkan mungkin dialih keluar selepas tempoh panjang tanpa pembayaran, dan semuanya dipulihkan semula apabila melanggan semula."
       },
       "cancellations": {
         "title": "9. Pembatalan",
@@ -289,7 +249,7 @@
         },
         "payment": {
           "title": "Maklumat Pembayaran",
-          "body": "Apabila ciri berbayar tersedia, pembayaran mungkin diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung butiran penuh kad pembayaran. Lemon Squeezy mungkin mengumpul dan memproses butiran pengebilan, maklumat pembayaran, maklumat cukai, dan invois mengikut terma dan amalan privasinya sendiri."
+          "body": "Pembayaran untuk langganan Gallurio Pro diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung butiran penuh kad pembayaran. Lemon Squeezy mungkin mengumpul dan memproses butiran pengebilan, maklumat pembayaran, maklumat cukai, dan invois mengikut terma dan amalan privasinya sendiri."
         }
       },
       "useOfInfo": {
@@ -357,13 +317,13 @@
       "title": "Dasar Bayaran Balik",
       "effectiveDate": "Tarikh Berkuat Kuasa: [Bulan Hari, Tahun]",
       "betaPeriod": {
-        "title": "1. Tempoh Beta",
-        "body1": "Gallurio kini dalam fasa beta. Jika tiada langganan berbayar atau pembayaran sebenar dikutip semasa beta, tiada bayaran balik diperlukan kerana tiada caj dibuat.",
-        "body2": "Jika akses beta berbayar ditawarkan pada masa hadapan, harga dan terma bayaran balik yang berkenaan akan ditunjukkan sebelum checkout."
+        "title": "1. Percubaan Percuma",
+        "body1": "Ruang kerja Gallurio baharu menerima satu bulan akses Pro penuh secara percuma, tanpa kad diperlukan. Tiada pembayaran sebenar dikutip semasa percubaan ini, jadi tiada bayaran balik dikenakan untuknya.",
+        "body2": "Jika anda meneruskan dengan langganan Pro berbayar selepas percubaan, harga dan terma pengebilan yang ditunjukkan semasa checkout terpakai, dan Dasar Bayaran Balik ini mentadbir sebarang pembayaran yang dibuat."
       },
       "subscriptions": {
         "title": "2. Langganan",
-        "body1": "Apabila pelan berbayar tersedia, langganan Gallurio mungkin dikenakan bil bulanan, tahunan, atau mengikut tempoh pengebilan yang ditunjukkan semasa checkout.",
+        "body1": "Langganan Gallurio Pro dikenakan bil bulanan, tahunan, atau mengikut tempoh pengebilan yang ditunjukkan semasa checkout.",
         "body2": "Pengguna boleh membatalkan langganan mereka untuk menghalang caj pembaharuan masa hadapan. Selepas pembatalan, akses mungkin diteruskan sehingga akhir tempoh pengebilan semasa melainkan dinyatakan sebaliknya."
       },
       "refundRequests": {
@@ -415,15 +375,15 @@
     "contact": {
       "metadata": {
         "title": "Hubungi Kami — Gallurio",
-        "description": "Hubungi Gallurio untuk sokongan, akses beta, soalan pengebilan, dan pertanyaan am."
+        "description": "Hubungi Gallurio untuk sokongan, bantuan akaun, soalan pengebilan, dan pertanyaan am."
       },
       "header": {
         "headline": "Perlukan bantuan dengan Gallurio?",
-        "body": "Untuk sokongan, soalan akses beta, kebimbangan akaun, isu pengebilan, atau pertanyaan am, hubungi kami di:"
+        "body": "Untuk sokongan, kebimbangan akaun, isu pengebilan, atau pertanyaan am, hubungi kami di:"
       },
       "supportTopics": {
         "title": "Topik Sokongan",
-        "item1": "Akses beta",
+        "item1": "Cara bermula",
         "item2": "Persediaan akaun",
         "item3": "Halaman portfolio",
         "item4": "Borang pertanyaan tempahan",
@@ -435,7 +395,7 @@
       },
       "responseTime": {
         "title": "Masa Tindak Balas",
-        "body1": "Kami berusaha untuk bertindak balas secepat yang munasabah. Semasa beta, masa tindak balas mungkin berbeza-beza semasa kami terus membangunkan dan menambah baik Gallurio.",
+        "body1": "Kami berusaha untuk bertindak balas secepat yang munasabah. Masa tindak balas mungkin berbeza-beza semasa kami terus membangunkan dan menambah baik Gallurio.",
         "body2": "Untuk kebimbangan akaun atau pengebilan yang mendesak, sila sertakan butiran berkaitan sebanyak mungkin supaya kami dapat menyemak permintaan dengan cekap."
       },
       "businessInfo": {
@@ -2692,7 +2652,7 @@
       "invalid_data": "Data tidak sah. Sila semak input anda dan cuba lagi.",
       "completion_requires_full_payment": "Tandakan semua bayaran sebagai dibayar dan padankan jumlah sebelum melengkapkan tempahan ini.",
       "onboarding_required": "Selesaikan onboarding untuk teruskan.",
-      "subscription_required": "Langganan anda telah tamat. Langgan untuk teruskan.",
+      "subscription_required": "Akses Pro anda telah tamat. Langgan untuk teruskan.",
       "promo_code_not_found": "Kod itu tidak sah. Semak semula dan cuba lagi.",
       "promo_code_expired": "Kod itu telah tamat tempoh.",
       "promo_code_already_redeemed": "Anda sudah menebus kod ini.",
@@ -2838,7 +2798,7 @@
       "description": "Anda boleh menukar pelan atau membatalkan bila-bila masa dari tetapan ruang kerja anda.",
       "popular": "Popular",
       "cadence": {
-        "forever": "selamanya",
+        "forever": "bulan pertama percuma",
         "monthly": "/ bulan",
         "yearly": "/ tahun"
       },
@@ -2848,7 +2808,7 @@
         "savePill": "Jimat 2 bulan"
       },
       "checkoutNote": "Overlay pembayaran yang selamat akan dibuka. Masukkan butiran kad anda (Visa atau Mastercard). Kitaran pertama akan dicaj segera dan diperbaharui setiap bulan sehingga anda batal.",
-      "ctaFree": "Teruskan dengan Free",
+      "ctaFree": "Mula bulan percuma saya",
       "ctaPaid": "Langgan — {price}",
       "settingUp": "Menyediakan…",
       "opening": "Membuka pembayaran…",
@@ -2878,10 +2838,10 @@
   "plans": {
     "free": {
       "name": "Free",
-      "description": "Percubaan akses penuh selama 15 hari",
-      "tagline": "Gunakan versi berbayar secara percuma selama 15 hari.",
+      "description": "1 bulan Pro penuh, percuma",
+      "tagline": "Cuba semua ciri Pro secara percuma pada bulan pertama anda.",
       "features": {
-        "trial": "15 hari akses penuh Pro",
+        "trial": "1 bulan akses Pro penuh",
         "workspace": "1 ruang kerja",
         "bookings": "Sehingga 10 tempahan",
         "storage": "Storan imej 1 GB",
@@ -2893,7 +2853,6 @@
       "description": "Urus tempahan, pelanggan, pasukan, invois, dan halaman awam anda.",
       "tagline": "Ruang kerja penuh untuk bisnes acara yang berkembang.",
       "features": {
-        "everythingStarter": "Semua dalam Starter",
         "unlimitedBookings": "Tempahan tanpa had",
         "publicPageControls": "Kawalan penuh halaman awam",
         "storage": "Storan 50 GB",
@@ -2908,7 +2867,7 @@
     "pageTitle": "Langgan",
     "logout": "Log keluar",
     "owner": {
-      "title": "Langganan anda telah tamat",
+      "title": "Akses Pro anda telah tamat",
       "description": "Langgan semula Gallurio Pro untuk kembali ke papan pemuka anda.",
       "perMonth": "/ bulan",
       "perYear": "/ tahun",

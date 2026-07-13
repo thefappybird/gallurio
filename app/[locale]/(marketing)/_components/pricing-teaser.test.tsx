@@ -12,20 +12,28 @@ function wrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-describe("PricingTeaser", () => {
-  it("renders all three plan names", () => {
-    render(<PricingTeaser />, { wrapper });
+const proPricing = { currency: "PHP", monthly: 250, yearly: 2500 };
 
-    expect(screen.getAllByText("Free").length).toBeGreaterThan(0);
+describe("PricingTeaser", () => {
+  it("renders a single Pro plan with the live monthly price", () => {
+    render(<PricingTeaser proPricing={proPricing} />, { wrapper });
+
     expect(screen.getByText("Pro")).toBeInTheDocument();
-    expect(screen.getByText("Beta Tester")).toBeInTheDocument();
+    expect(screen.getByText("1 month free")).toBeInTheDocument();
+    expect(screen.getByText(/₱250/)).toBeInTheDocument();
   });
 
-  it("switches the Pro price when the Yearly cadence is selected", () => {
-    render(<PricingTeaser />, { wrapper });
+  it("switches to the live yearly price when the Yearly cadence is selected", () => {
+    render(<PricingTeaser proPricing={proPricing} />, { wrapper });
 
-    expect(screen.getByText("$14/mo")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /yearly/i }));
-    expect(screen.getByText("$10/mo, billed yearly")).toBeInTheDocument();
+    expect(screen.getByText(/₱2,500/)).toBeInTheDocument();
+  });
+
+  it("does not render a Free or Beta Tester card", () => {
+    render(<PricingTeaser proPricing={proPricing} />, { wrapper });
+
+    expect(screen.queryByText("Free")).not.toBeInTheDocument();
+    expect(screen.queryByText("Beta Tester")).not.toBeInTheDocument();
   });
 });

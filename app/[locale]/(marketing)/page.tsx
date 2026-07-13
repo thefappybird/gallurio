@@ -7,6 +7,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/db/models";
+import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { buttonVariants } from "@/components/ui/button";
 import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { AmbientBackground } from "@/components/app/ambient-background";
@@ -41,6 +42,7 @@ export default async function Home({ params }: Props) {
   }
 
   const t = await getTranslations("marketing");
+  const proPricing = await getProPricing();
 
   const builtForItems = [
     t("builtFor.item1"),
@@ -103,7 +105,7 @@ export default async function Home({ params }: Props) {
             href="/sign-up"
             className={buttonVariants({ variant: "brand", size: "lg", className: "mt-9 h-12 px-8 text-base" })}
           >
-            {t("hero.ctaJoinBeta")}
+            {t("hero.ctaStart")}
           </Link>
         </div>
 
@@ -189,15 +191,7 @@ export default async function Home({ params }: Props) {
         </cite>
       </section>
 
-      <PricingTeaser />
-
-      {/* Beta Notice — plain text, quiet tone. */}
-      <section data-anim="slide-up" className="border-t border-border px-4 py-12 sm:px-6">
-        <div className="mx-auto max-w-3xl text-start text-sm leading-6 text-muted-foreground">
-          <p>{t("betaNotice.body1")}</p>
-          <p className="mt-3">{t("betaNotice.body2")}</p>
-        </div>
-      </section>
+      <PricingTeaser proPricing={proPricing} />
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}
       <section data-anim="slide-up" className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">

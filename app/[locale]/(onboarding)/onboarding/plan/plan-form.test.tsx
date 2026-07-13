@@ -100,12 +100,12 @@ describe("PlanStepForm — renders", () => {
 
   it("shows the main CTA button", () => {
     renderForm();
-    expect(screen.getByRole("button", { name: /continue with free/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /free month/i })).toBeInTheDocument();
   });
 
   it("pre-selects Free when currentPlan is free", () => {
     renderForm({ currentPlan: "free" });
-    expect(screen.getByRole("button", { name: /continue with free/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /free month/i })).toBeInTheDocument();
   });
 
   it("shows a paid CTA when a paid plan is selected", async () => {
@@ -149,7 +149,7 @@ describe("PlanStepForm — free plan submission", () => {
 
     renderForm({ currentPlan: "free" });
 
-    const cta = screen.getByRole("button", { name: /continue with free/i });
+    const cta = screen.getByRole("button", { name: /free month/i });
     fireEvent.click(cta);
 
     await waitFor(() => {
@@ -162,7 +162,7 @@ describe("PlanStepForm — free plan submission", () => {
 
     renderForm({ currentPlan: "free", furthestStep: "done" });
 
-    const cta = screen.getByRole("button", { name: /continue with free/i });
+    const cta = screen.getByRole("button", { name: /free month/i });
     fireEvent.click(cta);
 
     await waitFor(() => {
@@ -260,7 +260,7 @@ describe("PlanStepForm — paid plan checkout", () => {
   it("does not call fetch for free plan selection", async () => {
     renderForm({ currentPlan: "free" });
 
-    const cta = screen.getByRole("button", { name: /continue with free/i });
+    const cta = screen.getByRole("button", { name: /free month/i });
     fireEvent.click(cta);
 
     await act(async () => {});
