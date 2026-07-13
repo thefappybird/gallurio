@@ -104,6 +104,61 @@ describe("verifyAndParseLemonSqueezyEvent — missing secret", () => {
   });
 });
 
+describe("computeWebhookEventKey", () => {
+  it("returns the same key for two structurally identical events (redelivery)", async () => {
+    const { computeWebhookEventKey } = await import("./webhook");
+    const eventA = {
+      meta: { event_name: "subscription_created", custom_data: { workspaceId: "ws_1" } },
+      data: { id: "sub_1", attributes: { status: "active" } },
+    };
+    const eventB = {
+      meta: { event_name: "subscription_created", custom_data: { workspaceId: "ws_1" } },
+      data: { id: "sub_1", attributes: { status: "active" } },
+    };
+    expect(computeWebhookEventKey(eventA)).toBe(computeWebhookEventKey(eventB));
+  });
+
+  it("returns a different key when attributes differ (a distinct event, not a redelivery)", async () => {
+    const { computeWebhookEventKey } = await import("./webhook");
+    const eventA = {
+      meta: { event_name: "subscription_updated", custom_data: null },
+      data: { id: "sub_1", attributes: { status: "active" } },
+    };
+    const eventB = {
+      meta: { event_name: "subscription_updated", custom_data: null },
+      data: { id: "sub_1", attributes: { status: "paused" } },
+    };
+    expect(computeWebhookEventKey(eventA)).not.toBe(computeWebhookEventKey(eventB));
+  });
+});
+
+describe("redactWebhookEventForStorage", () => {
+  it("strips user_email and user_name from data.attributes", async () => {
+    const { redactWebhookEventForStorage } = await import("./webhook");
+    const event = {
+      meta: { event_name: "subscription_created", custom_data: { workspaceId: "ws_1" } },
+      data: {
+        id: "sub_1",
+        attributes: {
+          status: "active",
+          user_email: "customer@example.com",
+          user_name: "Jane Customer",
+          customer_id: 555,
+        },
+      },
+    };
+
+    const redacted = redactWebhookEventForStorage(event);
+
+    expect(redacted.data.attributes.user_email).toBeUndefined();
+    expect(redacted.data.attributes.user_name).toBeUndefined();
+    expect(redacted.data.attributes.status).toBe("active");
+    expect(redacted.data.attributes.customer_id).toBe(555);
+    // Original event is untouched.
+    expect(event.data.attributes.user_email).toBe("customer@example.com");
+  });
+});
+
 describe("HANDLED_LEMONSQUEEZY_EVENTS", () => {
   it("contains the ten expected event names", async () => {
     const { HANDLED_LEMONSQUEEZY_EVENTS } = await import("./webhook");

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace } from "@/lib/db/models";
+import { Workspace, WebhookEvent } from "@/lib/db/models";
 import { Team } from "@/lib/db/models/team";
 import {
   verifyAndParseLemonSqueezyEvent,
+  computeWebhookEventKey,
+  redactWebhookEventForStorage,
   type LemonSqueezyWebhookEvent,
 } from "@/lib/lemonsqueezy/webhook";
 import { planForVariantId } from "@/lib/lemonsqueezy/plans";
@@ -309,6 +311,33 @@ export async function POST(req: Request) {
 
   await connectDB();
 
+  const eventKey = computeWebhookEventKey(event);
+
+  // Atomic dedupe gate: first delivery inserts the ledger row via
+  // $setOnInsert (the unique index on provider+eventKey enforces this even
+  // under concurrent redelivery); every subsequent delivery for the same
+  // eventKey matches the existing row instead of erroring.
+  const ledger = await WebhookEvent.findOneAndUpdate(
+    { provider: "lemonsqueezy", eventKey },
+    {
+      $setOnInsert: {
+        provider: "lemonsqueezy",
+        eventKey,
+        eventName: event.meta.event_name,
+        resourceId: event.data.id || null,
+        status: "received",
+        payload: redactWebhookEventForStorage(event),
+      },
+      $inc: { attemptCount: 1 },
+    },
+    { upsert: true, new: true }
+  );
+
+  if (ledger.status === "processed") {
+    // Already durably applied — ack without reprocessing.
+    return NextResponse.json({ received: true, deduped: true });
+  }
+
   try {
     switch (event.meta.event_name) {
       case "subscription_created":
@@ -350,13 +379,23 @@ export async function POST(req: Request) {
         break;
     }
   } catch (err) {
-    // Ack 200 after signature verification even when a handler fails — never
-    // 500 into a provider retry loop (a deterministic bug would otherwise get
-    // retried forever). Log for follow-up instead of dead-lettering to a queue,
-    // since none exists yet.
     console.error(`[lemonsqueezy-webhook] handler failed for ${event.meta.event_name}`, err);
-    return NextResponse.json({ received: true, error: "handler failed" });
+    const message = err instanceof Error ? err.message : String(err);
+    await WebhookEvent.updateOne(
+      { _id: ledger._id },
+      { $set: { status: "failed", failedAt: new Date(), lastError: message.slice(0, 500) } }
+    );
+    // Retryable 5xx — never ack 200 on a failed authoritative update. Lemon
+    // Squeezy will redeliver; the ledger row's status !== "processed" lets
+    // the dedupe gate above re-run the handler on retry instead of skipping
+    // it as already-applied.
+    return NextResponse.json({ received: false, error: "handler failed" }, { status: 500 });
   }
+
+  await WebhookEvent.updateOne(
+    { _id: ledger._id },
+    { $set: { status: "processed", processedAt: new Date() } }
+  );
 
   return NextResponse.json({ received: true });
 }

@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Workspace } from "@/lib/db/models";
+import { Workspace, WebhookEvent } from "@/lib/db/models";
 import { Team, TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 
 // ---------------------------------------------------------------------------
@@ -18,9 +18,15 @@ vi.mock("@/lib/db/mongoose", () => ({
 
 // verifyAndParseLemonSqueezyEvent is mocked: each test configures the return
 // value via the `mockResolvedValue` helper exposed below.
-vi.mock("@/lib/lemonsqueezy/webhook", () => ({
-  verifyAndParseLemonSqueezyEvent: vi.fn(),
-}));
+vi.mock("@/lib/lemonsqueezy/webhook", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/lemonsqueezy/webhook")>(
+    "@/lib/lemonsqueezy/webhook"
+  );
+  return {
+    ...actual,
+    verifyAndParseLemonSqueezyEvent: vi.fn(),
+  };
+});
 
 // Workflow API — we never want actual workflow runs in unit tests.
 vi.mock("workflow/api", () => ({
@@ -134,6 +140,55 @@ beforeEach(async () => {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+describe("lemonsqueezy webhook — event ledger", () => {
+  it("records a WebhookEvent row with status processed after a successful handler run", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_ledger_test";
+
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].eventName).toBe("subscription_created");
+    expect(rows[0].status).toBe("processed");
+    expect(rows[0].processedAt).toBeInstanceOf(Date);
+  });
+
+  it("dedupes an identical redelivered event — single WebhookEvent row, ack carries deduped:true", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_dedupe_test";
+
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const first = await POST(makeReq());
+    expect((await first.json()).deduped).toBeUndefined();
+
+    const second = await POST(makeReq());
+    const secondBody = await second.json();
+    expect(secondBody).toEqual({ received: true, deduped: true });
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(mockResumeHook).toHaveBeenCalledOnce();
+  });
+});
 
 describe("lemonsqueezy webhook — invalid signature", () => {
   it("returns 401 and writes nothing when verifyAndParseLemonSqueezyEvent returns null", async () => {
@@ -1019,9 +1074,9 @@ describe("lemonsqueezy webhook — lifecycle field mapping", () => {
   });
 });
 
-describe("lemonsqueezy webhook — handler exception acks 200 (never retries into a loop)", () => {
-  it("acks 200 with an error flag instead of 500 when a handler throws unexpectedly", async () => {
-    const subId = "sub_throws";
+describe("lemonsqueezy webhook — handler exception returns a retryable 5xx", () => {
+  it("returns 500 (not 200) and marks the ledger row failed when a handler throws unexpectedly", async () => {
+    const subId = "sub_throws_retryable";
     await seedWorkspace({ plan: "free", lsSubscriptionId: subId });
 
     const spy = vi
@@ -1038,9 +1093,15 @@ describe("lemonsqueezy webhook — handler exception acks 200 (never retries int
     const { POST } = await loadRoute();
     const res = await POST(makeReq());
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body).toEqual({ received: true, error: "handler failed" });
+    expect(body).toEqual({ received: false, error: "handler failed" });
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("failed");
+    expect(rows[0].failedAt).toBeInstanceOf(Date);
+    expect(rows[0].lastError).toContain("db exploded");
 
     spy.mockRestore();
   });

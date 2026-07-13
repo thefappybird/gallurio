@@ -15,6 +15,7 @@
     "seed:portfolio": "tsx lib/db/seed-portfolio.ts",
     "reindex": "tsx lib/db/reindex.ts",
     "lemonsqueezy:sim": "tsx scripts/lemonsqueezy-sim.ts",
+    "lemonsqueezy:replay": "tsx scripts/replay-lemonsqueezy-event.ts",
     "backfill:inquiries": "tsx scripts/backfill-inquiries.ts"
   },
   "dependencies": {
