@@ -3,25 +3,12 @@ import { inquirySubmissionSchema } from "@/lib/validators/inquiry";
 import { submitInquiry } from "@/lib/server/inquirySubmission";
 import { rateLimit } from "@/lib/server/rateLimit";
 import { verifyTurnstileToken } from "@/lib/server/turnstile";
+import { getClientIp } from "@/lib/server/getClientIp";
 
 // Public, unauthenticated endpoint — never Edge (transactions need Node).
 export const runtime = "nodejs";
 
 const RATE_LIMIT = { limit: 5, windowMs: 10 * 60_000 };
-
-// Resolve the client IP for rate-limit keying. Prefer Vercel's tamper-resistant
-// `x-vercel-forwarded-for` (set by the platform, not the client) so a spoofed
-// `X-Forwarded-For` can't mint a fresh bucket per request. Fall back to the
-// first XFF hop for non-Vercel/local runs. NOTE: this in-process limiter is
-// best-effort spam control; real abuse protection belongs at the edge/WAF
-// (see docs/RELEASE-CHECKLIST.md).
-function getClientIp(req: Request): string {
-  const trusted = req.headers.get("x-vercel-forwarded-for");
-  if (trusted) return trusted.split(",")[0]?.trim() || "unknown";
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]?.trim() || "unknown";
-  return req.headers.get("x-real-ip")?.trim() || "unknown";
-}
 
 export async function POST(req: Request) {
   const json = (await req.json().catch(() => null)) as Record<string, unknown> | null;
@@ -36,7 +23,7 @@ export async function POST(req: Request) {
   }
 
   // Per-IP rate limit — blunt the form against spam and double-submits.
-  const ip = getClientIp(req);
+  const ip = getClientIp(req.headers);
   const limited = rateLimit(`inquiry:${ip}`, RATE_LIMIT);
   if (!limited.ok) {
     return NextResponse.json(

@@ -18,6 +18,7 @@ import { isPasswordReusedError } from "@/lib/auth/passwordErrors";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
+import { getClientIp } from "@/lib/server/getClientIp";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -29,19 +30,10 @@ function getClientId(): string {
 
 async function getIp(): Promise<string | undefined> {
   const h = await headers();
-  // On Vercel, x-vercel-forwarded-for is set by the platform to the real client
-  // IP and cannot be spoofed by the client. Prefer it. Otherwise fall back to
-  // the LAST entry of x-forwarded-for: the platform appends the real client IP
-  // last, while leftmost entries are client-controlled and must never be trusted
-  // for rate limiting (a client could rotate them to bypass the per-IP limit).
-  const vercelIp = h.get("x-vercel-forwarded-for")?.trim();
-  if (vercelIp) return vercelIp;
-  const xff = h.get("x-forwarded-for");
-  if (xff) {
-    const parts = xff.split(",").map((p) => p.trim()).filter(Boolean);
-    if (parts.length) return parts[parts.length - 1];
-  }
-  return h.get("x-real-ip")?.trim() ?? undefined;
+  const ip = getClientIp(h);
+  // getClientIp's "unknown" sentinel means no IP header was resolvable —
+  // callers here treat that as "no IP" (undefined), same as before.
+  return ip === "unknown" ? undefined : ip;
 }
 
 /**

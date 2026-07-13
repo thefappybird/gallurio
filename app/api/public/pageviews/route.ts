@@ -10,6 +10,7 @@ import {
   PAGEVIEW_PAGES,
 } from "@/lib/analytics/pageview";
 import { recordPageview } from "@/lib/analytics/recordPageview";
+import { getClientIp } from "@/lib/server/getClientIp";
 
 // Public, unauthenticated write — Node runtime (Mongo). Must never 500 the page.
 export const runtime = "nodejs";
@@ -28,21 +29,11 @@ const beaconSchema = z.object({
   referrer: z.string().max(1024).optional(),
 });
 
-// Prefer platform-set forwarded headers so a spoofed X-Forwarded-For can't mint
-// a fresh bucket per request (mirrors app/api/inquiries/route.ts).
-function getClientIp(req: Request): string {
-  const trusted = req.headers.get("x-vercel-forwarded-for");
-  if (trusted) return trusted.split(",")[0]?.trim() || "unknown";
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]?.trim() || "unknown";
-  return req.headers.get("x-real-ip")?.trim() || "unknown";
-}
-
 export async function POST(req: Request): Promise<Response> {
   try {
     if (isBotUserAgent(req.headers.get("user-agent"))) return NO_CONTENT();
 
-    const ip = getClientIp(req);
+    const ip = getClientIp(req.headers);
     if (!rateLimit(`pv:${ip}`, IP_RATE).ok) return NO_CONTENT();
 
     const json = await req.json().catch(() => null);

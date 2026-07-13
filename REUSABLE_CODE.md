@@ -107,7 +107,7 @@ Composed, app-specific shared components.
 ### `lib/workflows/`
 | Import | Export | Purpose |
 |--------|--------|---------|
-| `lib/workflows/world.ts` | `startWorld`, `stopWorld`, `worldReady` | Workflow DevKit World lifecycle wrappers around `workflow/runtime`'s `getWorld()`. `startWorld()` called from `instrumentation.ts` on boot; `stopWorld()` for a future graceful-shutdown handler (SIGTERM/SIGINT in `server.ts`); `worldReady()` returns `{healthy, error?}` for a future health/readiness route |
+| `lib/workflows/world.ts` | `startWorld`, `stopWorld`, `worldReady` | Workflow DevKit World lifecycle wrappers around `workflow/runtime`'s `getWorld()`. `startWorld()` called from `instrumentation.ts` on boot; `stopWorld()` called from `server.ts`'s graceful-shutdown handler (`lib/server/gracefulShutdown.ts`) on SIGTERM/SIGINT; `worldReady()` returns `{healthy, error?}`, consumed by `app/api/health/route.ts`'s readiness check |
 
 ### `lib/bookings/`
 | Import | Export | Purpose |
@@ -192,6 +192,8 @@ Composed, app-specific shared components.
 | `lib/i18n/navigation.ts` | `Link`, `redirect`, `usePathname`, `useRouter`, `getPathname` | Locale-aware navigation (next-intl) |
 | `lib/i18n/request.ts` | default | next-intl per-request config |
 | `lib/server/rateLimit.ts` | `rateLimit`, `__resetRateLimitForTests` | In-memory sliding-window limiter (best-effort, NOT distributed) |
+| `lib/server/getClientIp.ts` | `getClientIp(headers: Headers)` | Resolves the visitor IP for rate-limiting/abuse control. Checks `CF-Connecting-IP` first (Cloudflare-set, unspoofable once the origin is firewalled to Cloudflare IP ranges — the launch config), then `x-vercel-forwarded-for`, then the first `x-forwarded-for` hop, then `x-real-ip`; returns `"unknown"` if none present. Used by `app/api/inquiries/route.ts`, `app/api/public/pageviews/route.ts`, and `app/[locale]/(auth)/_actions.ts`'s `getIp()`. Reuse for any new public/rate-limited endpoint instead of re-parsing headers. |
+| `lib/server/gracefulShutdown.ts` | `gracefulShutdown(deps)` | Builds a SIGTERM/SIGINT handler: closes the HTTP server, then Socket.IO, then `stopWorld()`, then the Mongo connection, then exits — bounded by a timeout (default 10s) so a hung close still exits. Dependency-injected (`httpServer`, `io`, `stopWorld`, `closeMongoConnection`, `exit`, `timeoutMs?`) for testability; wired in `server.ts`. |
 | `lib/teams/team-colors.ts` | `TEAM_COLOR_PALETTE`, `INACTIVE_TEAM_COLOR` | Client-safe team color presets |
 | `lib/page-builder/brandKitContext.tsx` | `BrandKitProvider`, `useBrandKit` | Workspace brand-kit context |
 | `lib/page-builder/responsive.ts` | `PF_PAGE_CONTAINER`, `PF_PAGE_CONTAINER_CSS`, `PF_RESPONSIVE_CSS`, `padVar`, `gridColsVar`, `masonryColsVar`, `PF_CONTAINER_NAME`, breakpoint consts | Portfolio block responsiveness via a single `pfpage` container scope + custom-property indirection. Mark the page surface with `PF_PAGE_CONTAINER` (public root render) or `PF_PAGE_CONTAINER_CSS` (editor canvas via `RootCanvasStyle`), inject `PF_RESPONSIVE_CSS` once, and have blocks reference `var(--pf-pad/...)` inline so they reflow on the public page AND in the editor viewport toggle. New blocks must reuse these helpers, not re-implement breakpoints. |

@@ -1,9 +1,12 @@
 import { createServer } from 'http'
 import { parse } from 'url'
 import next from 'next'
+import mongoose from 'mongoose'
 import { Server as SocketIOServer } from 'socket.io'
 import { setIO } from './lib/sockets/io'
 import { verifySocketToken } from './lib/sockets/auth'
+import { stopWorld } from './lib/workflows/world'
+import { gracefulShutdown } from './lib/server/gracefulShutdown'
 
 // Ensure NODE_ENV is set so that downstream code (e.g. Turnstile dev bypass,
 // Next.js internals) can distinguish dev from prod. The pnpm scripts set
@@ -64,4 +67,18 @@ app.prepare().then(() => {
   httpServer.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`)
   })
+
+  // Graceful shutdown on SIGTERM (PM2 restart/reboot) and SIGINT (Ctrl+C):
+  // stop accepting new connections, close Socket.IO, stop the Workflow
+  // World, close the Mongo connection, then exit — bounded by a timeout so a
+  // hung close still exits.
+  const shutdown = gracefulShutdown({
+    httpServer,
+    io,
+    stopWorld,
+    closeMongoConnection: () => mongoose.connection.close(),
+    exit: (code) => process.exit(code),
+  })
+  process.on('SIGTERM', shutdown)
+  process.on('SIGINT', shutdown)
 })

@@ -1,17 +1,28 @@
-# Reverse proxy for Gallurio on a Hetzner VPS.
+# Reverse proxy for Gallurio on a Hetzner VPS, sitting behind Cloudflare
+# (proxied/orange-cloud DNS).
 # Copy to /etc/caddy/Caddyfile, replace the domain below, then:
 #   systemctl reload caddy
 # Caddy handles automatic HTTPS (Let's Encrypt) and the HTTP->HTTPS redirect
 # for any domain listed here — DNS must already resolve to this box first.
+#
+# IMPORTANT — Cloudflare trust boundary:
+# Do NOT overwrite X-Forwarded-For with {http.request.remote.host} here. With
+# Cloudflare proxied, the TCP peer at this origin is a Cloudflare edge IP, not
+# the visitor — overwriting XFF with it would destroy the real client IP for
+# every request. Caddy forwards all incoming headers (including Cloudflare's
+# `CF-Connecting-IP`, the visitor's true IP) through to the app unchanged by
+# default; the app reads `CF-Connecting-IP` first (see
+# lib/server/getClientIp.ts) for rate limiting / abuse control.
+# This header is only trustworthy because the origin firewall is locked to
+# Cloudflare's published IP ranges (https://www.cloudflare.com/ips/) — or,
+# alternatively, a Cloudflare Tunnel / Authenticated Origin Pulls — so nothing
+# but Cloudflare can reach this box directly and spoof it. If that origin lock
+# is ever removed, CF-Connecting-IP can no longer be trusted.
 
 your-domain.com, www.your-domain.com {
 	encode zstd gzip
 
-	reverse_proxy localhost:3000 {
-		# Overwrite (not append) X-Forwarded-For with the real connecting IP.
-		# Without this, a client-supplied X-Forwarded-For survives as the
-		# first hop and defeats the per-IP rate limiter in
-		# app/api/inquiries/route.ts (see docs/RELEASE-CHECKLIST.md §4c).
-		header_up X-Forwarded-For {http.request.remote.host}
-	}
+	# WebSocket (Socket.IO) traffic upgrades transparently through this same
+	# reverse_proxy — no separate directive needed for ws://.
+	reverse_proxy localhost:3000
 }
