@@ -134,6 +134,14 @@ describe("lib/env", () => {
     expect(() => validateEnv()).toThrow(/SEED_OWNER_EMAIL/);
   });
 
+  it("rejects SUB_EXPIRED_WORKOS_* vars present in production", () => {
+    resetEnv();
+    setEnv(VALID_PROD_ENV);
+    process.env.SUB_EXPIRED_WORKOS_PASSWORD = "seed-password";
+
+    expect(() => validateEnv()).toThrow(/SUB_EXPIRED_WORKOS_PASSWORD/);
+  });
+
   it("rejects the Local World as WORKFLOW_TARGET_WORLD in production", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);

@@ -280,6 +280,45 @@ describe("WorkOS webhook — dedupe via WebhookEvent ledger", () => {
     expect(mockSendEmail).toHaveBeenCalledOnce();
   });
 
+  it("recovers from a concurrent duplicate-key upsert instead of 500ing", async () => {
+    mockConstructEvent.mockResolvedValue({
+      id: "wevt_concurrent_dup",
+      event: "email_verification.created",
+      data: { id: "emv_concurrent_dup", userId: "user_1", email: "test@example.com" },
+    } as never);
+    mockGetEmailVerification.mockResolvedValue({
+      id: "emv_concurrent_dup",
+      userId: "user_1",
+      email: "test@example.com",
+      code: "333333",
+      expiresAt: "2099-01-01T00:00:00.000Z",
+    } as never);
+
+    // Simulate a concurrent first delivery that already won the upsert race
+    // (the row now exists) before this request's own upsert attempt runs.
+    await WebhookEvent.create({
+      provider: "workos",
+      eventKey: "wevt_concurrent_dup",
+      eventName: "email_verification.created",
+      status: "received",
+    });
+    const findOneAndUpdateSpy = vi
+      .spyOn(WebhookEvent, "findOneAndUpdate")
+      .mockRejectedValueOnce(Object.assign(new Error("E11000 duplicate key"), { code: 11000 }));
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.received).toBe(true);
+    findOneAndUpdateSpy.mockRestore();
+
+    const rows = await WebhookEvent.find({ eventKey: "wevt_concurrent_dup" }).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("processed");
+  });
+
   it("returns a retryable 5xx and marks the ledger row failed when the handler throws, and reprocesses on redelivery", async () => {
     mockConstructEvent.mockResolvedValue({
       id: "wevt_fail_1",

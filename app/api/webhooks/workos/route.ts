@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { workos } from "@/lib/workos";
 import { connectDB } from "@/lib/db/mongoose";
 import { WebhookEvent } from "@/lib/db/models";
+import type { WebhookEventDoc } from "@/lib/db/models";
 import { renderBrandedEmail } from "@/lib/email/layout";
 import { gallurioBrand } from "@/lib/email/brand";
 import { sendEmail, logEmailFailure } from "@/lib/email/send";
@@ -16,6 +17,10 @@ export const dynamic = "force-dynamic";
 // workspace, so there is no reliable locale signal. Resolve to "en" — the
 // established convention for platform emails (sendInquiryNotification,
 // sendBookingConfirmedOwner). No User/Workspace lookup needed.
+function isDuplicateKeyError(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: unknown }).code === 11000;
+}
+
 async function handleEmailVerificationCreated(data: { id: string }) {
   const copy = EMAIL_COPY.verification.en;
   const verification = await workos.userManagement.getEmailVerification(data.id);
@@ -74,21 +79,32 @@ export async function POST(req: Request) {
   // WorkOS events carry a stable per-delivery id (unlike LS), used directly
   // as eventKey. First delivery inserts via $setOnInsert (unique index on
   // provider+eventKey enforces this under concurrent redelivery); every
-  // subsequent delivery for the same id matches the existing row.
+  // subsequent delivery for the same id matches the existing row. Two
+  // concurrent first deliveries can still race the unique index — the
+  // loser's upsert throws E11000; treat that as "already received" and
+  // re-fetch the row the winner just inserted instead of 500ing.
   const eventId = (event as { id: string }).id;
-  const ledger = await WebhookEvent.findOneAndUpdate(
-    { provider: "workos", eventKey: eventId },
-    {
-      $setOnInsert: {
-        provider: "workos",
-        eventKey: eventId,
-        eventName: event.event,
-        status: "received",
+  let ledger: WebhookEventDoc;
+  try {
+    ledger = await WebhookEvent.findOneAndUpdate(
+      { provider: "workos", eventKey: eventId },
+      {
+        $setOnInsert: {
+          provider: "workos",
+          eventKey: eventId,
+          eventName: event.event,
+          status: "received",
+        },
+        $inc: { attemptCount: 1 },
       },
-      $inc: { attemptCount: 1 },
-    },
-    { upsert: true, new: true }
-  );
+      { upsert: true, new: true }
+    );
+  } catch (err) {
+    if (!isDuplicateKeyError(err)) throw err;
+    const existing = await WebhookEvent.findOne({ provider: "workos", eventKey: eventId });
+    if (!existing) throw err;
+    ledger = existing;
+  }
 
   if (ledger.status === "processed") {
     // Already durably applied — ack without reprocessing.

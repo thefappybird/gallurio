@@ -7,6 +7,7 @@ export type ReleaseExpiredInviteSeatsReport = {
   scanned: number;
   released: number;
   skipped: number;
+  failed: number;
 };
 
 const DEFAULT_BATCH_SIZE = 200;
@@ -115,5 +116,5 @@ export async function releaseExpiredInviteSeats(
     }),
   );
 
-  return { scanned, released, skipped };
+  return { scanned, released, skipped, failed };
 }

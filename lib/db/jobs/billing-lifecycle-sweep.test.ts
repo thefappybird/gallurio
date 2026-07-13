@@ -111,6 +111,34 @@ describe("runBillingLifecycleSweep — remind1", () => {
   });
 });
 
+describe("runBillingLifecycleSweep — expired-notify re-entitlement guard", () => {
+  it("skips the expired email for a workspace that resubscribed despite a stale lifecycle.lapsedAt", async () => {
+    const wsId = await seedLapsedWorkspace({ lapsedAt: daysAgo(1) });
+    // Simulate a resubscribe whose webhook handler has not yet cleared
+    // lifecycle.lapsedAt (race between the sweep and lifecycleResetFields()).
+    await Workspace.updateOne(
+      { _id: wsId },
+      {
+        $set: {
+          lsSubscriptionId: "sub_active_again",
+          lsSubscriptionStatus: "active",
+        },
+      },
+    );
+
+    const report = await runBillingLifecycleSweep(new Date());
+
+    expect(report.expiredNotified).toBe(0);
+    expect(mockSendLifecycleEmail).not.toHaveBeenCalledWith(
+      "expired",
+      expect.anything(),
+      expect.anything(),
+    );
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lifecycle?.expiredNotifiedAt).toBeNull();
+  });
+});
+
 describe("runBillingLifecycleSweep — retry on email failure", () => {
   it("leaves remind1moAt null and does not count the row when sendLifecycleEmail fails, then stamps and counts it on a clean retry", async () => {
     const wsId = await seedLapsedWorkspace({ lapsedAt: daysAgo(31) });
@@ -233,6 +261,60 @@ describe("runBillingLifecycleSweep — lapse detection (free-month / grant expir
     expect(after?.plan).toBe("free");
     expect(after?.planGrantExpiresAt).toBeNull();
     expect(after?.lifecycle?.lapsedAt).toBeInstanceOf(Date);
+  });
+});
+
+describe("runBillingLifecycleSweep — defensive canceled-sub lapse anchor", () => {
+  it("stamps lifecycle.lapsedAt for a canceled subscription past its period end without touching plan/subscription fields", async () => {
+    const ownerUserId = "wos_owner_canceled_no_webhook";
+    await User.create({ workosUserId: ownerUserId, email: "owner_canceled_no_webhook@example.com" });
+    const periodEnd = daysAgo(1);
+    const ws = await Workspace.create({
+      slug: "canceled-no-webhook-ws",
+      name: "Canceled No Webhook WS",
+      ownerUserId,
+      plan: "pro",
+      country: "PH",
+      lsSubscriptionId: "sub_canceled_stuck",
+      lsSubscriptionStatus: "canceled",
+      lsCurrentPeriodEnd: periodEnd,
+    });
+
+    const report = await runBillingLifecycleSweep(new Date());
+
+    expect(report.lapsed).toBe(1);
+    const after = await Workspace.findById(ws._id).lean();
+    expect(after?.lifecycle?.lapsedAt).toBeInstanceOf(Date);
+    // Only the lifecycle anchor changes — plan/subscription fields untouched.
+    expect(after?.plan).toBe("pro");
+    expect(after?.lsSubscriptionId).toBe("sub_canceled_stuck");
+    expect(after?.lsSubscriptionStatus).toBe("canceled");
+    expect(after?.lsCurrentPeriodEnd?.getTime()).toBe(periodEnd.getTime());
+  });
+
+  it("does not double-stamp lifecycle.lapsedAt on a second sweep run (idempotent)", async () => {
+    const ownerUserId = "wos_owner_canceled_idempotent";
+    await User.create({ workosUserId: ownerUserId, email: "owner_canceled_idempotent@example.com" });
+    const ws = await Workspace.create({
+      slug: "canceled-idempotent-ws",
+      name: "Canceled Idempotent WS",
+      ownerUserId,
+      plan: "pro",
+      country: "PH",
+      lsSubscriptionId: "sub_canceled_idempotent",
+      lsSubscriptionStatus: "canceled",
+      lsCurrentPeriodEnd: daysAgo(1),
+    });
+
+    const first = await runBillingLifecycleSweep(new Date());
+    expect(first.lapsed).toBe(1);
+    const afterFirst = await Workspace.findById(ws._id).lean();
+    const stampedAt = afterFirst?.lifecycle?.lapsedAt;
+
+    const second = await runBillingLifecycleSweep(new Date());
+    expect(second.lapsed).toBe(0);
+    const afterSecond = await Workspace.findById(ws._id).lean();
+    expect(afterSecond?.lifecycle?.lapsedAt?.getTime()).toBe(stampedAt?.getTime());
   });
 });
 

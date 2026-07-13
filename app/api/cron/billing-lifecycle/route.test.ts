@@ -46,6 +46,17 @@ describe("GET /api/cron/billing-lifecycle — auth", () => {
     expect(mockRun).not.toHaveBeenCalled();
   });
 
+  it("returns 401 for a same-length wrong bearer token (equal-length mismatch)", async () => {
+    // CRON_SECRET is "test-secret" (11 chars) — this candidate is also 11
+    // chars, exercising the equal-length comparison path now that the
+    // length-mismatch short-circuit is gone (constant-time hash compare).
+    const { GET } = await import("./route");
+    const res = await GET(makeReq("Bearer test-secreX"));
+
+    expect(res.status).toBe(401);
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
   it("returns 500 without running the sweep when CRON_SECRET is unset", async () => {
     vi.stubEnv("CRON_SECRET", "");
     const { GET } = await import("./route");

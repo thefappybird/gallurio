@@ -45,7 +45,7 @@ process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = "1002";
 // Helpers
 // ---------------------------------------------------------------------------
 
-import { verifyAndParseLemonSqueezyEvent } from "@/lib/lemonsqueezy/webhook";
+import { verifyAndParseLemonSqueezyEvent, computeWebhookEventKey } from "@/lib/lemonsqueezy/webhook";
 import { resumeHook } from "workflow/api";
 
 const mockVerify = vi.mocked(verifyAndParseLemonSqueezyEvent);
@@ -187,6 +187,44 @@ describe("lemonsqueezy webhook — event ledger", () => {
     const rows = await WebhookEvent.find({}).lean();
     expect(rows).toHaveLength(1);
     expect(mockResumeHook).toHaveBeenCalledOnce();
+  });
+
+  it("recovers from a concurrent duplicate-key upsert instead of 500ing", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_concurrent_dup";
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const eventKey = computeWebhookEventKey(event as never);
+    // Simulate a concurrent first delivery that already won the upsert race
+    // (the row now exists) before this request's own upsert attempt runs.
+    await WebhookEvent.create({
+      provider: "lemonsqueezy",
+      eventKey,
+      eventName: event.meta.event_name,
+      resourceId: event.data.id,
+      status: "received",
+    });
+    const findOneAndUpdateSpy = vi
+      .spyOn(WebhookEvent, "findOneAndUpdate")
+      .mockRejectedValueOnce(Object.assign(new Error("E11000 duplicate key"), { code: 11000 }));
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.received).toBe(true);
+    findOneAndUpdateSpy.mockRestore();
+
+    const rows = await WebhookEvent.find({ eventKey }).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("processed");
   });
 });
 

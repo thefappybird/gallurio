@@ -189,7 +189,11 @@ const envSchema = z.object(shape).superRefine((data, ctx) => {
     }
 
     for (const key of Object.keys(process.env)) {
-      const isSeedKey = key.startsWith("SEED_OWNER_") || key === "SEED_PORTFOLIO_SLUG" || key === "LEMONSQUEEZY_SIM_URL";
+      const isSeedKey =
+        key.startsWith("SEED_OWNER_") ||
+        key.startsWith("SUB_EXPIRED_WORKOS_") ||
+        key === "SEED_PORTFOLIO_SLUG" ||
+        key === "LEMONSQUEEZY_SIM_URL";
       if (isSeedKey && process.env[key]) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

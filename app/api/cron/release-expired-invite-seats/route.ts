@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { releaseExpiredInviteSeats } from "@/lib/db/jobs/release-expired-invite-seats";
 
@@ -6,12 +6,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Constant-time string compare so the bearer-token check does not leak the
-// secret's length/prefix through response-timing differences.
+// secret's length or prefix through response-timing differences. Hashing
+// both sides to a fixed 32-byte digest first means timingSafeEqual never
+// takes the differing-length short-circuit that would otherwise leak length.
 function safeEqual(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (ab.length !== bb.length) return false;
-  return timingSafeEqual(ab, bb);
+  const ah = createHash("sha256").update(a).digest();
+  const bh = createHash("sha256").update(b).digest();
+  return timingSafeEqual(ah, bh);
 }
 
 // Hetzner deploy: a systemd timer (deploy/systemd/gallurio-invite-seats.timer,

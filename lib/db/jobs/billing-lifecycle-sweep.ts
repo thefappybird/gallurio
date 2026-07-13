@@ -107,46 +107,73 @@ async function stagePreExpiryWarn(now: Date, batchSize: number): Promise<number>
   });
 }
 
-// Stage 2a: authoritative grant-expiry detection. Flips a grant-backed
-// workspace (no lsSubscriptionId) whose planGrantExpiresAt has passed to
-// free and stamps lifecycle.lapsedAt exactly once.
+type LapseDoc = WithId & { lsSubscriptionId: string | null };
+
+// Stage 2a: lapse-anchor detection — two independent paths, both guarded by
+// lifecycle.lapsedAt: null:
+//   1. Authoritative grant-expiry: a grant-backed workspace (no
+//      lsSubscriptionId) whose planGrantExpiresAt has passed. Flips plan to
+//      free and stamps lifecycle.lapsedAt.
+//   2. Defensive sweep: a CANCELED subscription past its lsCurrentPeriodEnd
+//      whose subscription_expired webhook never arrived. isEntitled already
+//      gates canceled+past correctly, so this path only anchors
+//      lifecycle.lapsedAt (never touches plan/subscription fields) so the
+//      downstream expired-email/reminder/wipe stages fire for the row.
+// The two $or branches are mutually exclusive (branch 1 requires
+// lsSubscriptionId: null explicitly), so each doc in a batch takes exactly
+// one path.
 async function stageLapseDetect(now: Date, batchSize: number): Promise<number> {
   const filter = {
-    lsSubscriptionId: null,
-    planGrantExpiresAt: { $ne: null, $lte: now },
     "lifecycle.lapsedAt": null,
+    $or: [
+      { lsSubscriptionId: null, planGrantExpiresAt: { $ne: null, $lte: now } },
+      { lsSubscriptionStatus: "canceled", lsCurrentPeriodEnd: { $ne: null, $lte: now } },
+    ],
   };
-  const projection = { _id: 1 } as const;
+  const projection = { _id: 1, lsSubscriptionId: 1 } as const;
 
-  return forEachBatch<WithId>(filter, projection, batchSize, async (batch) => {
+  return forEachBatch<LapseDoc>(filter, projection, batchSize, async (batch) => {
     for (const ws of batch) {
       // Guard lapsedAt: null again in the write filter. A concurrent run
-      // (or the lazy expireGrantIfPast path) may have stamped it already.
-      await Workspace.updateOne(
-        { _id: ws._id, "lifecycle.lapsedAt": null },
-        { $set: { plan: "free", planGrantExpiresAt: null, "lifecycle.lapsedAt": now } }
-      );
+      // (or the lazy expireGrantIfPast path) may have stamped it already —
+      // this keeps each write atomic and prevents a double-stamp.
+      if (ws.lsSubscriptionId == null) {
+        await Workspace.updateOne(
+          { _id: ws._id, "lifecycle.lapsedAt": null },
+          { $set: { plan: "free", planGrantExpiresAt: null, "lifecycle.lapsedAt": now } }
+        );
+      } else {
+        await Workspace.updateOne(
+          { _id: ws._id, "lifecycle.lapsedAt": null },
+          { $set: { "lifecycle.lapsedAt": now } }
+        );
+      }
     }
     return batch.length;
   });
 }
 
-type ExpiredNotifyDoc = WithId & { ownerUserId: string; country: string | null };
+type ExpiredNotifyDoc = WithId &
+  WorkspaceBillingFields & { ownerUserId: string; country: string | null };
 
 // Stage 2b: send the expired email once per workspace that has lapsed
 // (either via the webhook paid-Pro path or stage 2a grant path above) and
-// has not been notified yet.
+// has not been notified yet. Skips a workspace that has become entitled
+// again (its lifecycle.* would normally already be null from the webhook
+// reset, but isEntitled is checked defensively in case that reset has not
+// landed yet — mirrors stageRemind/stageWipe).
 async function stageExpiredNotify(now: Date, batchSize: number): Promise<number> {
   const filter = {
     "lifecycle.lapsedAt": { $ne: null },
     "lifecycle.expiredNotifiedAt": null,
   };
-  const projection = { _id: 1, ownerUserId: 1, country: 1 } as const;
 
-  return forEachBatch<ExpiredNotifyDoc>(filter, projection, batchSize, async (batch) => {
-    const emails = await ownerEmailsFor(batch);
+  return forEachBatch<ExpiredNotifyDoc>(filter, REMIND_PROJECTION, batchSize, async (batch) => {
+    const stillGated = batch.filter((ws) => !isEntitled(ws));
+    if (stillGated.length === 0) return 0;
+    const emails = await ownerEmailsFor(stillGated);
     let sentCount = 0;
-    for (const ws of batch) {
+    for (const ws of stillGated) {
       const email = emails.get(ws.ownerUserId);
       if (!email) {
         await Workspace.updateOne({ _id: ws._id }, { $set: { "lifecycle.expiredNotifiedAt": now } });
