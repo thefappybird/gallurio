@@ -1,6 +1,12 @@
 import "server-only";
 
-export type PendingPromoGrant = { grantMonths: number | null; queuedAt: Date | null };
+// grantMonths/queuedAt are `| undefined` too because Mongoose's inferred
+// lean() type marks nested-optional subdocument fields as optional, not just
+// nullable — matches the shape callers actually pass from a .lean() read.
+export type PendingPromoGrant = {
+  grantMonths?: number | null;
+  queuedAt?: Date | null;
+};
 
 // Returns the $set fragment that applies a queued promo grant, or null if
 // none is queued. Used everywhere a workspace transitions toward
