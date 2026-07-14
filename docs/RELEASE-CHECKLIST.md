@@ -4,6 +4,21 @@ Last updated: 2026-07-15 (reconciled with origin/chore-release-prep, plus Cloudf
 
 Use this as the release gate for the first production deployment. Checked items are supported either by merged-code evidence or by recorded operational evidence from the named production accounts and infrastructure. Any item marked as progress remains open until it is configured and tested in the target environment.
 
+## Short list: what is still pending
+
+- [ ] Clean the working tree and decide which current changes belong in the release.
+- [ ] Resolve, fix, or explicitly accept the 7 remaining unit-test failures.
+- [ ] Freeze the release commit; record the full SHA, image digest, migration list, and rollback SHA.
+- [ ] Finish the VPS deployment path: Docker/Compose, GHCR pull access, Caddy, runtime secrets, backups, monitoring, and rollback.
+- [ ] Deploy and verify Workflow World/Postgres with persistent storage, schema bootstrap, backup/restore, and restart-survival testing.
+- [ ] Install and test the invitation and billing systemd timers on the VPS.
+- [ ] Run guarded production migrations/backfills and seed required baseline data, including portfolio themes/templates and beta promo codes.
+- [ ] Complete Lemon Squeezy live-mode setup and verify checkout, signed webhooks, subscription lifecycle, cancellation, and refund handling.
+- [ ] Run final production checks: tenant isolation, auth/app smoke tests, all launch locales, 375 px checks, email/inquiry flows, WebSockets, monitoring, and rollback.
+- [ ] Record emergency contacts, legal/product approval, backup/RPO decisions, and the final go/no-go decision.
+
+WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4 GiB are treated as completed prerequisites. Their detailed post-deployment smoke tests remain below where they are part of end-to-end verification.
+
 ## Audited product and architecture baseline
 
 - The authoritative billing implementation is **Lemon Squeezy**, not Paddle. Evidence: `@lemonsqueezy/lemonsqueezy.js`, `lib/lemonsqueezy/`, `app/api/billing/checkout/route.ts`, `app/api/webhooks/lemonsqueezy/route.ts`, and `docs/lemonsqueezy-integration/lemonsqueezy-setup.md`. Do not provision Paddle unless the product decision changes; a conditional migration is listed under Delegated Engineering Work.
@@ -14,7 +29,8 @@ Use this as the release gate for the first production deployment. Checked items 
 - The beta policy is a shared two-month beta run, not a separate timer per person. All active beta access ends together when the beta program is closed. A verified beta participant may redeem one two-month Pro promo at any time; the promo grant lasts two months from redemption. This is now code-complete: `BetaProgram` (singleton close-gate), `User.betaParticipation`/`betaPromoRedeemedAt`, the `beta2mo` promo type, `Workspace.pendingPromoGrant` (queued-grant stacking with active Pro, applied identically from both the webhook and the lifecycle sweep so entitlement never reads falsely gated), emergency revocation, and the production seed/backfill scripts all landed and are covered by tests. The legacy perpetual `beta` promo type is unchanged/untouched per the original decision to add a distinct type rather than reuse it. Running the seed/backfill scripts against production and end-to-end reconciliation remain open.
 - On Lemon Squeezy cancellation, `plan` remains `pro`, status becomes `canceled`, and `lsCurrentPeriodEnd` comes from `ends_at`. On `subscription_expired` or `subscription_payment_refunded`, the webhook sets `plan: "free"`, leaves `everSubscribed: true`, clears the subscription ID and period end, and gates normal in-app access for owners and staff. From `lifecycle.lapsedAt`, the sweep sends the expiry email at T0, a reminder at T+30 days, a final one-week warning at T+51 days, and unpublishes the live public page at T+58 days; CRM data and drafts are retained.
 - `subscription_payment_failed`, `past_due`, and `paused` are not by themselves sufficient to expire access. Gallurio expires access only when Lemon Squeezy reports its terminal non-payment state, or sends another provider-authoritative terminal event such as expiry/refund. The route's 12-event coverage was cross-checked against the live Lemon Squeezy dashboard's configured event list on 2026-07-14 (`c636f24`): `subscription_payment_refunded` is a real event and stays terminal; `subscription_payment_recovered` (dunning recovery) and `subscription_plan_changed` were found silently no-op'ing through the default case and are now handled. Production payload verification against a real live-mode delivery is still open.
-- The app is self-hosted through the custom `server.ts` for Socket.IO. `pnpm start` sets `NODE_ENV=production`; PM2 launches that command. `/api/health` now exposes liveness and dependency-aware readiness, and the custom server performs graceful shutdown.
+- The app is self-hosted through the custom `server.ts` for Socket.IO. The final deployment decision is containerized: GitHub Actions runs the checks/build, publishes an immutable Gallurio image, and the Hetzner VPS pulls and runs that image. The VPS must never run `next build` during deployment. `/api/health` exposes liveness and dependency-aware readiness, and the custom server performs graceful shutdown inside the Gallurio container.
+- The final VPS runtime consists of Caddy on the host plus separate Docker Compose services for the Gallurio app image and the Workflow Postgres image. Postgres uses a persistent named volume and a private Docker network; its port is not public. The Gallurio container receives runtime secrets from the VPS environment and connects to MongoDB Atlas and Workflow Postgres. PM2 is not part of the final app supervision path; Docker restart policies and deployment health checks are authoritative.
 - Billing checkout uses Vercel Workflow DevKit with pinned Postgres World support. Startup, shutdown, readiness, production environment validation, and the CI integration command are wired in code. The production PostgreSQL service, schema bootstrap, backup/restore, monitoring, and restart-survival proof remain operational gates.
 - Two scheduled jobs now exist: hourly expired-invitation seat release and daily billing lifecycle processing. Versioned systemd service/timer units are included under `deploy/systemd/`; they still need to be installed, enabled, monitored, and tested on Hetzner.
 - Team management hardening (found during manual testing, 2026-07-14, `e9bcd61`/`1762aac`): a debounced already-registered-email check on the invite form; a distinct `revoked` invite-accept error (previously collapsed into `invalid`); a shared dropdown-positioning fix in `components/ui/select.tsx`/`popover.tsx` (Base UI's default `clipping-ancestors` collision boundary was mis-clipping against a `Sheet`'s scroll container — fixed with an explicit `collisionBoundary`, propagates to every dropdown in the app); a workspace-wide "View Members" sidebar; a two-step team-then-workspace removal confirmation with a persisted "don't ask again" flag; a guard blocking removal of an active team lead; and a read-only teams view for non-owner roles (previously a separate, more limited component). Verified via a new Playwright spec (`e2e/teams-page.spec.ts`, 6/6 passing at 375/768/1280) plus unit/component tests.
@@ -65,15 +81,16 @@ Use this as the release gate for the first production deployment. Checked items 
 
 #### Verified bootstrap record — 2026-07-14
 
-- **Host:** `gallurio-prod`, Ubuntu 26.04 LTS, x86_64. Current shape is **1 vCPU, 1.9 GiB RAM, and 38 GiB root disk**. It is below the 2 vCPU / 4 GiB beta minimum, so it remains an unchecked launch gate; resize before real traffic or representative load testing. A persistent 2 GiB `/swapfile` is active to reduce build/restart OOM risk during temporary setup.
+- **Host:** `gallurio-prod`, Ubuntu 26.04 LTS, x86_64. The VPS has been resized to **2 vCPU and 4 GiB RAM**. A persistent 2 GiB `/swapfile` is active to reduce build/restart OOM risk during temporary setup. Load-test evidence and storage-growth assumptions remain open.
 - **OS and access:** system update/reboot, UTC/NTP, and hostname setup were completed. `gallurio` is the locked-password deployment user. `gallurio-admin` is the key-only break-glass admin account with sudo. Password authentication and direct root SSH login are disabled. Add a distinct second trusted administrator key before launch; the current two accounts use one operator key.
 - **Firewall:** UFW is active with deny-incoming/allow-outgoing defaults. SSH is temporarily rate-limited from any IPv4/IPv6 address; tighten this to administrator/VPN IP allowlists before launch. Ports 80/443 are not open yet; port 3000 and MongoDB remain unexposed.
 - **Runtime installed:** Node `v22.22.1`, npm `9.2.0`, pnpm `11.5.2`, PM2 `7.0.3`, Git `2.53.0`, build tools, and official-repository Caddy `2.11.4`. Ubuntu's packaged Corepack `0.24.0` crashed with Node 22, so Corepack is disabled and pnpm is installed directly at the recorded version.
-- **Release layout:** `/var/www/gallurio/releases` is owned by `gallurio`; `/etc/gallurio/gallurio.env` is an empty `root:gallurio` 0640 environment file. No release directory, `current` symlink, production environment values, or PM2 application process exists yet.
+- **Runtime transition:** Node/pnpm/PM2 are currently installed from the bootstrap phase, but the final app runtime is Docker. The Docker Engine/Compose installation, GHCR pull authentication, immutable image deployment, and Docker-managed boot recovery remain open.
+- **Release layout:** `/var/www/gallurio/releases` is an interim bootstrap layout; the final release artifact is an immutable GHCR image tag/digest. `/etc/gallurio/gallurio.env` remains the root-controlled runtime environment source. No production image, Compose deployment, or production environment values exist yet.
 - **Repository access:** a read-only, passphrase-free deploy key is configured for the `gallurio` user and was verified against `thefappybird/gallurio` using GitHub's published ED25519 host-key fingerprint. Do not clone or label a production release until the launch commit SHA is frozen.
 
 - [x] Provision the initial dedicated Ubuntu LTS VPS: `gallurio-prod` on Ubuntu 26.04 LTS, x86_64. Completed 2026-07-14.
-- [ ] Resize the VPS to the beta minimum of 2 vCPU and 4 GiB RAM before real traffic or representative load testing; document load-test evidence, image/storage growth assumptions, and the resize trigger. Current temporary shape is 1 vCPU / 1.9 GiB RAM / 38 GiB root disk.
+- [x] Resize the VPS to the beta minimum of 2 vCPU and 4 GiB RAM before real traffic or representative load testing. Completed 2026-07-15; document load-test evidence, image/storage growth assumptions, and the resize trigger separately.
 - [ ] Record server ID, region, public IPv4/IPv6, rescue access, billing owner, renewal alerts, and data-processing location.
 - [x] Patch the OS, enable unattended security updates, retain UTC/NTP, set hostname `gallurio-prod`, and reboot once before deployment. Completed 2026-07-14.
 - [x] Create the non-root `gallurio` deployment user with a locked password; routine application operation will not run as root. A separate `gallurio-admin` key-only break-glass account holds the current administrative sudo access. Completed 2026-07-14.
@@ -83,8 +100,9 @@ Use this as the release gate for the first production deployment. Checked items 
 - [ ] Tighten SSH from the temporary global rate limit to administrator/VPN IP allowlists where practical; later add 80/443 only for the chosen Cloudflare/origin strategy.
 - [x] Install a pinned Node.js version satisfying Next.js 16 (minimum 20.9), Corepack/pnpm matching the lockfile workflow, PM2, Caddy, Git, and required build tooling. Record versions with the release evidence. Verified 2026-07-14: Node `22.22.1`, pnpm `11.5.2`, PM2 `7.0.3`, Git `2.53.0`, and Caddy `2.11.4`; direct pnpm installation is intentional because Ubuntu's Corepack fails under this Node version.
 - [x] Create the initial release/secrets layout: `/var/www/gallurio/releases` is owned by `gallurio`; `/etc/gallurio/gallurio.env` is root-controlled and app-readable. Completed 2026-07-14.
-- [ ] Create the first immutable `releases/<sha>` checkout and the `current` symlink only after the launch commit SHA is frozen.
-- [ ] Configure PM2 from `deploy/ecosystem.config.js`, set explicit memory/restart limits after measuring the build, run `pm2 save`, install the boot service with `pm2 startup`, reboot, and verify the process returns.
+- [ ] Install Docker Engine and the Compose plugin, configure the `gallurio` deployment user for the required Docker operations, and verify Docker-managed boot recovery.
+- [ ] Configure read-only GHCR authentication on the VPS and publish the final Gallurio image from GitHub Actions using an immutable commit SHA/digest tag.
+- [ ] Pull and run the Gallurio image with Docker Compose; inject runtime secrets without baking them into the image. Do not run `next build` or build Docker images on the VPS.
 - [ ] Configure log rotation for PM2, Caddy, system logs, and cron/timer output. Redact cookies, tokens, authorization headers, customer data, webhook bodies, and email bodies.
 - [x] Add non-sensitive liveness/readiness checks for the process, MongoDB, and Workflow World, plus graceful application shutdown.
 - [ ] Monitor HTTPS reachability, readiness, disk, memory, load, certificate expiry, cron freshness, and 5xx rate from an external location.
@@ -96,12 +114,11 @@ Use this as the release gate for the first production deployment. Checked items 
 
 ### Deployment and rollback mechanics
 
-- [ ] Use immutable release directories or another atomic deployment method; do not build over the currently running checkout.
-- [ ] Deploy with `pnpm install --frozen-lockfile`, production environment injection, `pnpm build`, and a smoke-start on an unused local port before switching traffic.
-- [ ] Preserve the previous release directory and compatible environment file. Record the exact commands to repoint `current`, reload/restart PM2, and restore the prior Caddy configuration.
+- [ ] Build and test in GitHub Actions, publish the immutable Gallurio image, and deploy on the VPS with `docker compose pull` plus a health-checked `docker compose up -d`; the VPS performs no dependency install or application build.
+- [ ] Preserve the previous known-good Gallurio image tag/digest and compatible environment file. Record the exact commands to roll back the Compose image and restore the prior Caddy configuration.
 - [ ] Decide whether schema/data changes are backward compatible with the prior release. If not, provide a tested database rollback or make the deployment non-rollbackable with explicit approval.
-- [ ] Verify Socket.IO through Caddy and Cloudflare: WebSocket upgrade, authenticated connection, reconnect after PM2 restart, and CORS restricted to `NEXT_PUBLIC_APP_URL`.
-- [ ] Test process crash, `pm2 restart`, server reboot, a failed build, and a failed health check. Confirm traffic remains on or returns to the last healthy release.
+- [ ] Verify Socket.IO through Caddy and Cloudflare: WebSocket upgrade, authenticated connection, reconnect after Docker container restart, and CORS restricted to `NEXT_PUBLIC_APP_URL`.
+- [ ] Test app-container crash, `docker compose restart`, server reboot, a failed CI image/build, a failed health check, and rollback. Confirm traffic remains on or returns to the last healthy image.
 
 ### Cron and scheduled work
 
@@ -204,7 +221,7 @@ Use this as the release gate for the first production deployment. Checked items 
 ### Workflow DevKit production backend
 
 - [ ] Select and document the production World for Hetzner. Do not use `WORKFLOW_TARGET_WORLD=local`; bundled docs state Local World is development-only and loses queued steps on restart.
-- [ ] If using Postgres World, provision a production PostgreSQL service isolated from development, with TLS, least-privilege credentials, network restrictions, backups/PITR, alerts, connection limits, and a tested restore.
+- [ ] If using Postgres World, provision a production PostgreSQL service isolated from development, with TLS, least-privilege credentials, network restrictions, backups/PITR, alerts, connection limits, and a tested restore. *(Preparation exists in `deploy/postgres/compose.yml` and `deploy/postgres/README.md`: separate Postgres container, persistent named volume, private service network, and backup helper; VPS deployment remains open.)*
 - [x] Install/pin `@workflow/world-postgres` and wire application startup, shutdown, readiness, production env validation, and CI integration coverage.
 - [ ] Bootstrap the production Postgres World schema before application activation and record adapter/schema versions with the release.
 - [ ] Set `WORKFLOW_TARGET_WORLD=@workflow/world-postgres` and `WORKFLOW_POSTGRES_URL` explicitly; configure worker concurrency/pool size only after measuring checkout volume and database limits.
@@ -275,7 +292,7 @@ Script-only/development variables must not be injected into the application proc
 
 - [ ] **1. Freeze and verify code:** select release SHA; complete delegated blockers; pass tests, typecheck, lint, build, security/tenant review, locale parity, and 375 px checks.
 - [ ] **2. Protect data:** take/verify Atlas snapshot; record counts/indexes; dry-run migrations/backfills on a clone; approve rollback compatibility.
-- [ ] **3. Prepare services:** finish Hetzner, Atlas, the production Workflow World/Postgres backend, WorkOS, Resend, Cloudflare Images, Turnstile, Lemon Squeezy live store, monitoring, backups, and secret-store setup without directing public traffic.
+- [ ] **3. Prepare services:** finish Hetzner, Atlas, the production Workflow World/Postgres backend, Lemon Squeezy live store, monitoring, backups, and secret-store setup without directing public traffic. WorkOS, Resend, Turnstile, and Cloudflare Images/DNS are treated as complete production prerequisites.
 - [ ] **4. Stage environment:** install the production environment on the server, run startup validation, verify no development/test credentials or flags, and keep live billing webhooks disabled until the app is healthy.
 - [ ] **5. Deploy release:** install from lockfile, build in an immutable release directory, start on a local/staging port, run health/readiness and server-side smoke checks, then atomically switch PM2/Caddy.
 - [ ] **6. Apply data changes:** run only approved idempotent migrations/backfills and reviewed index synchronization; capture before/after results.
