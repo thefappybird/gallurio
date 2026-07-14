@@ -1,8 +1,8 @@
 # Gallurio Beta-to-Production Launch Checklist
 
-Last updated: 2026-07-14 (reconciled after PR #58, Phase 1 decisions, the Resend/WorkOS email verification wiring, and the beta-participation/two-month-promo implementation, team-management fixes, and email/invoice branding consistency work)
+Last updated: 2026-07-15 (reconciled with origin/chore-release-prep, plus Cloudflare Images, MongoDB Atlas, and Resend production setup evidence)
 
-Use this as the release gate for the first production deployment. Checked items are limited to repository work proven by merged code. Production accounts, credentials, servers, backups, DNS records, migrations, timers, monitors, and live transactions remain open until they are configured and tested in the target environment.
+Use this as the release gate for the first production deployment. Checked items are supported either by merged-code evidence or by recorded operational evidence from the named production accounts and infrastructure. Any item marked as progress remains open until it is configured and tested in the target environment.
 
 ## Audited product and architecture baseline
 

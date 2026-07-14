@@ -141,14 +141,20 @@ export function TeamPerformanceCards({
           </CardTitle>
           <InfoHint label={t("hints.bookingsPerTeam")} />
         </CardHeader>
-        <CardContent className="h-48">
+        <CardContent className="min-h-48 flex-1">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={barData}
               layout="vertical"
               margin={{ top: 0, right: isRtl ? 0 : 8, bottom: 0, left: isRtl ? 8 : 0 }}
             >
-              <XAxis type="number" hide allowDecimals={false} reversed={isRtl} />
+              <XAxis
+                type="number"
+                hide
+                allowDecimals={false}
+                domain={[0, "dataMax"]}
+                reversed={isRtl}
+              />
               <YAxis
                 type="category"
                 dataKey="name"
