@@ -1460,7 +1460,17 @@
         "leadOnlyOnePerTeam": "Setiap pasukan hanya boleh mempunyai satu ketua sahaja.",
         "removeFromTeam": "Buang",
         "teamFull": "Pasukan ini sudah penuh.",
-        "close": "Tutup"
+        "close": "Tutup",
+        "removeMemberFlow": {
+          "confirmTitle": "Buang {name} daripada {team}?",
+          "confirmDescription": "Mereka akan kehilangan akses kepada kalendar dan tempahan pasukan ini.",
+          "confirmButton": "Buang daripada pasukan",
+          "workspacePromptTitle": "Buang {name} daripada ruang kerja juga?",
+          "workspacePromptDescription": "Mereka akan kehilangan akses kepada semua pasukan dan ruang kerja sepenuhnya. Ini tidak boleh dibatalkan.",
+          "dontAskAgain": "Jangan tanya saya lagi",
+          "removeFromWorkspaceButton": "Buang daripada ruang kerja",
+          "keepInWorkspaceButton": "Kekalkan dalam ruang kerja"
+        }
       },
       "upsell": {
         "atCapTitle": "Anda telah mencapai had pasukan anda",
@@ -1497,7 +1507,8 @@
           "leadLabel": "Ketua",
           "teamFull": "Penuh",
           "submit": "Hantar jemputan",
-          "sending": "Menghantar…"
+          "sending": "Menghantar…",
+          "emailAlreadyRegistered": "E-mel ini sudah mempunyai akaun Gallurio. Penghantaran dilumpuhkan sehingga anda menggunakan alamat lain."
         },
         "errors": {
           "emailRequired": "Masukkan alamat e-mel yang sah.",
@@ -1528,13 +1539,18 @@
         "removeFromWorkspace": "Buang dari ruang kerja",
         "revokeInvite": "Batalkan jemputan",
         "rowActionsLabel": "Tindakan untuk {name}",
+        "viewButton": "Lihat ahli",
+        "description": "Semua orang yang mempunyai akses ke ruang kerja ini, merentasi semua pasukan.",
+        "noTeams": "Tiada dalam mana-mana pasukan",
+        "removeFromWorkspaceLabel": "Buang {name} daripada ruang kerja",
         "removeDialog": {
           "title": "Buang ahli?",
           "description": "{name} akan kehilangan akses ke ruang kerja ini dengan serta-merta. Tempahan mereka kekal; tempat pasukan dilepaskan. Ini tidak boleh dibatalkan.",
           "confirm": "Buang ahli"
         },
         "errors": {
-          "cannotRemoveOwner": "Pemilik ruang kerja tidak boleh dibuang."
+          "cannotRemoveOwner": "Pemilik ruang kerja tidak boleh dibuang.",
+          "isTeamLead": "{name} ialah ketua pasukan untuk {teamName}. Buang status ketua pasukan mereka dahulu sebelum memadamkan mereka."
         },
         "toasts": {
           "removed": "Ahli telah dibuang."
@@ -3001,6 +3017,10 @@
       "already_accepted": {
         "title": "Sudah menjadi ahli",
         "description": "Anda telah menerima jemputan ini dan telah menyertai ruang kerja."
+      },
+      "revoked": {
+        "title": "Jemputan dibatalkan",
+        "description": "Jemputan ini telah dibatalkan oleh pemilik ruang kerja. Minta mereka menghantar jemputan baru jika anda masih memerlukan akses."
       },
       "already_member": {
         "title": "E-mel sudah digunakan",

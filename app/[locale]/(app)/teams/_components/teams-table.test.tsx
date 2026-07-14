@@ -45,6 +45,7 @@ function makeHandlers() {
     onInvite: vi.fn(),
     onDeactivate: vi.fn(),
     onReactivate: vi.fn(),
+    canManage: true,
   };
 }
 
@@ -149,5 +150,18 @@ describe("TeamsTable", () => {
     handlers.onDeactivate.mockClear();
     fireEvent.click(within(cardList).getByText("Deactivate"));
     expect(handlers.onDeactivate).toHaveBeenCalledWith(ROWS[1]);
+  });
+
+  it("hides the actions menu entirely for non-owners, but row click still opens details", () => {
+    const handlers = makeHandlers();
+    renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...handlers} canManage={false} />);
+
+    expect(screen.queryByText("Edit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Deactivate")).not.toBeInTheDocument();
+    expect(screen.queryByText("Invite teammate")).not.toBeInTheDocument();
+
+    const cardList = screen.getByTestId("teams-card-list");
+    fireEvent.click(within(cardList).getByText("Wedding crew"));
+    expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
   });
 });

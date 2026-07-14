@@ -1460,7 +1460,17 @@
         "leadOnlyOnePerTeam": "Isang lead lang ang maaari sa bawat koponan.",
         "removeFromTeam": "Alisin",
         "teamFull": "Puno na ang koponang ito.",
-        "close": "Isara"
+        "close": "Isara",
+        "removeMemberFlow": {
+          "confirmTitle": "Alisin si {name} mula sa {team}?",
+          "confirmDescription": "Mawawalan sila ng access sa kalendaryo at mga booking ng koponang ito.",
+          "confirmButton": "Alisin sa koponan",
+          "workspacePromptTitle": "Alisin din si {name} sa workspace?",
+          "workspacePromptDescription": "Mawawalan sila ng access sa lahat ng koponan at sa buong workspace. Hindi ito maaaring ibalik.",
+          "dontAskAgain": "Huwag nang itanong ulit",
+          "removeFromWorkspaceButton": "Alisin sa workspace",
+          "keepInWorkspaceButton": "Panatilihin sa workspace"
+        }
       },
       "upsell": {
         "atCapTitle": "Naabot mo na ang iyong limitasyon sa koponan",
@@ -1497,7 +1507,8 @@
           "leadLabel": "Lead",
           "teamFull": "Puno na",
           "submit": "Magpadala ng imbitasyon",
-          "sending": "Nagpapadala…"
+          "sending": "Nagpapadala…",
+          "emailAlreadyRegistered": "May Gallurio account na ang email na ito. Naka-disable ang pagpapadala hangga't hindi mo pinapalitan ang address."
         },
         "errors": {
           "emailRequired": "Maglagay ng wastong email address.",
@@ -1528,13 +1539,18 @@
         "removeFromWorkspace": "Alisin sa workspace",
         "revokeInvite": "Bawiin ang imbitasyon",
         "rowActionsLabel": "Mga aksyon para kay {name}",
+        "viewButton": "Tingnan ang mga miyembro",
+        "description": "Lahat ng may access sa workspace na ito, sa lahat ng koponan.",
+        "noTeams": "Wala sa anumang koponan",
+        "removeFromWorkspaceLabel": "Alisin sa workspace si {name}",
         "removeDialog": {
           "title": "Alisin ang miyembro?",
           "description": "Mawawalan agad ng access si {name} sa workspace na ito. Nananatili ang kanilang mga booking; palalabasin ang mga puwesto sa koponan. Hindi ito maaaring ibalik.",
           "confirm": "Alisin ang miyembro"
         },
         "errors": {
-          "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace."
+          "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace.",
+          "isTeamLead": "Si {name} ay lead ng koponang {teamName}. Alisin muna ang kanilang status bilang lead bago sila tanggalin."
         },
         "toasts": {
           "removed": "Naalis ang miyembro."
@@ -3001,6 +3017,10 @@
       "already_accepted": {
         "title": "Miyembro na",
         "description": "Tinanggap mo na ang imbitasyong ito at sumali ka na sa workspace."
+      },
+      "revoked": {
+        "title": "Binawi ang imbitasyon",
+        "description": "Binawi ng may-ari ng workspace ang imbitasyong ito. Hilingin sa kanya na magpadala ng bago kung kailangan mo pa rin ng access."
       },
       "already_member": {
         "title": "Ginagamit na ang email",

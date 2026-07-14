@@ -79,6 +79,7 @@ vi.mock("../_invite-action", () => ({
 vi.mock("../_member-action", () => ({
   assignMemberToTeamAction: vi.fn(),
   removeMemberFromTeamAction: vi.fn(),
+  removeMemberFromWorkspaceAction: vi.fn(),
   setLeadFlagAction: vi.fn(),
 }));
 
@@ -108,6 +109,8 @@ function build(overrides: Partial<React.ComponentProps<typeof TeamsPageClient>> 
     members: [],
     pendingInvites: [],
     ownerWorkosUserId: "user_owner",
+    workspaceId: "ws1",
+    canManage: true,
     ...overrides,
   };
 }
@@ -174,5 +177,12 @@ describe("TeamsPageClient", () => {
 
     await waitFor(() => expect(createTeamMock).toHaveBeenCalled());
     expect(routerRefresh).not.toHaveBeenCalled();
+  });
+
+  it("hides Invite member and Create team for non-owners, but keeps View members visible", () => {
+    renderTeamsPage(build({ canManage: false }));
+    expect(screen.queryByRole("button", { name: /invite member/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /create team/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /view members/i })).toBeInTheDocument();
   });
 });

@@ -1465,7 +1465,17 @@
         "leadOnlyOnePerTeam": "يمكن أن يكون للفريق قائد واحد فقط.",
         "removeFromTeam": "إزالة",
         "teamFull": "هذا الفريق ممتلئ.",
-        "close": "إغلاق"
+        "close": "إغلاق",
+        "removeMemberFlow": {
+          "confirmTitle": "إزالة {name} من {team}؟",
+          "confirmDescription": "سيفقد الوصول إلى تقويم هذا الفريق وحجوزاته.",
+          "confirmButton": "إزالة من الفريق",
+          "workspacePromptTitle": "هل تريد أيضًا إزالة {name} من مساحة العمل؟",
+          "workspacePromptDescription": "سيفقد الوصول إلى جميع الفِرق وإلى مساحة العمل بأكملها. لا يمكن التراجع عن هذا.",
+          "dontAskAgain": "لا تسألني مرة أخرى",
+          "removeFromWorkspaceButton": "إزالة من مساحة العمل",
+          "keepInWorkspaceButton": "الإبقاء في مساحة العمل"
+        }
       },
       "upsell": {
         "atCapTitle": "لقد وصلت إلى حد الفِرق",
@@ -1502,7 +1512,8 @@
           "leadLabel": "قائد",
           "teamFull": "ممتلئ",
           "submit": "إرسال الدعوة",
-          "sending": "جارٍ الإرسال…"
+          "sending": "جارٍ الإرسال…",
+          "emailAlreadyRegistered": "هذا البريد الإلكتروني مرتبط بالفعل بحساب Gallurio. تم تعطيل الإرسال حتى تستخدم عنوانًا مختلفًا."
         },
         "errors": {
           "emailRequired": "أدخِل عنوان بريد إلكتروني صالحًا.",
@@ -1533,13 +1544,18 @@
         "removeFromWorkspace": "إزالة من مساحة العمل",
         "revokeInvite": "إلغاء الدعوة",
         "rowActionsLabel": "إجراءات لـ {name}",
+        "viewButton": "عرض الأعضاء",
+        "description": "كل من لديه صلاحية الوصول إلى مساحة العمل هذه، عبر جميع الفِرق.",
+        "noTeams": "ليس ضمن أي فريق",
+        "removeFromWorkspaceLabel": "إزالة {name} من مساحة العمل",
         "removeDialog": {
           "title": "إزالة العضو؟",
           "description": "سيفقد {name} الوصول إلى مساحة العمل هذه فورًا. تبقى حجوزاته؛ وتُحرَّر مقاعد الفريق. لا يمكن التراجع عن هذا.",
           "confirm": "إزالة العضو"
         },
         "errors": {
-          "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل."
+          "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل.",
+          "isTeamLead": "{name} قائد فريق {teamName}. أزِل صفته كقائد أولًا قبل حذفه."
         },
         "toasts": {
           "removed": "تمت إزالة العضو."
@@ -3001,6 +3017,10 @@
       "already_accepted": {
         "title": "عضو بالفعل",
         "description": "لقد قبلت هذه الدعوة بالفعل وانضممت إلى مساحة العمل."
+      },
+      "revoked": {
+        "title": "تم إلغاء الدعوة",
+        "description": "تم إلغاء هذه الدعوة من قِبل مالك مساحة العمل. اطلب منه إرسال دعوة جديدة إذا كنت لا تزال بحاجة إلى الوصول."
       },
       "already_member": {
         "title": "البريد الإلكتروني مستخدم بالفعل",

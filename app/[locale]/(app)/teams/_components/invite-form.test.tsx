@@ -9,6 +9,7 @@ vi.mock("@/lib/i18n/navigation", () => ({
 
 vi.mock("../_invite-action", () => ({
   inviteMemberAction: vi.fn(),
+  checkInviteEligibilityAction: vi.fn(),
 }));
 
 const TEAM_WITH_LEAD: InvitableTeam = {
@@ -92,5 +93,31 @@ describe("InviteForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /send invite/i }));
 
     await waitFor(() => expect(onDone).toHaveBeenCalledOnce());
+  });
+
+  it("disables Send and shows an inline message when the typed email is already registered", async () => {
+    const { checkInviteEligibilityAction } = await import("../_invite-action");
+    vi.mocked(checkInviteEligibilityAction).mockResolvedValue({ registered: true });
+
+    renderWithProviders(
+      <InviteForm
+        teams={[TEAM_WITHOUT_LEAD]}
+        open
+        onOpenChange={vi.fn()}
+        defaultTeamIds={["team-2"]}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "registered@test.com" },
+    });
+
+    await waitFor(() =>
+      expect(checkInviteEligibilityAction).toHaveBeenCalledWith("registered@test.com"),
+    );
+    expect(
+      await screen.findByText(/already belongs to a Gallurio account/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /send invite/i })).toBeDisabled();
   });
 });

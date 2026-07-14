@@ -25,10 +25,10 @@ import {
 } from "@/components/ui/select";
 import {
   assignMemberToTeamAction,
-  removeMemberFromTeamAction,
   setLeadFlagAction,
 } from "../_member-action";
 import { revokeInviteAction } from "../_invite-action";
+import { RemoveMemberDialog, type RemoveMemberTarget } from "./remove-member-dialog";
 import type { MemberSummary, PendingInviteRow, TeamRow } from "../_types";
 
 type Props = {
@@ -39,6 +39,8 @@ type Props = {
   pendingInvites: PendingInviteRow[];
   maxMembersPerTeam: number;
   ownerWorkosUserId: string;
+  workspaceId: string;
+  canManage: boolean;
   onInvite: (team: TeamRow) => void;
 };
 
@@ -54,6 +56,8 @@ export function TeamDetailDrawer({
   pendingInvites,
   maxMembersPerTeam,
   ownerWorkosUserId,
+  workspaceId,
+  canManage,
   onInvite,
 }: Props) {
   const t = useTranslations("app.teams");
@@ -61,6 +65,7 @@ export function TeamDetailDrawer({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addValue, setAddValue] = useState("");
   const [leadWarnFor, setLeadWarnFor] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<RemoveMemberTarget | null>(null);
   const [, startTransition] = useTransition();
 
   if (!team) {
@@ -109,20 +114,6 @@ export function TeamDetailDrawer({
         return;
       }
       toast.success(t("assignment.toasts.added"));
-      router.refresh();
-    });
-  }
-
-  function handleRemove(workosUserId: string) {
-    setBusyId(workosUserId);
-    startTransition(async () => {
-      const result = await removeMemberFromTeamAction({ workosUserId, teamId });
-      setBusyId(null);
-      if (result.error) {
-        toast.error(t("errors.generic"));
-        return;
-      }
-      toast.success(t("assignment.toasts.removed"));
       router.refresh();
     });
   }
@@ -212,7 +203,7 @@ export function TeamDetailDrawer({
                           {m.email}
                         </span>
                       </div>
-                      {!isOwner && (
+                      {!isOwner && canManage && (
                         <div className="flex shrink-0 items-center gap-3">
                           <Label
                             htmlFor={`lead-${m.workosUserId}`}
@@ -283,14 +274,15 @@ export function TeamDetailDrawer({
                           <Button
                             size="sm"
                             variant="outline"
-                            disabled={busy}
-                            onClick={() => handleRemove(m.workosUserId)}
+                            onClick={() =>
+                              setRemoveTarget({
+                                workosUserId: m.workosUserId,
+                                name: m.name,
+                                email: m.email,
+                              })
+                            }
                           >
-                            {busy ? (
-                              <Loader2Icon className="size-4 animate-spin" />
-                            ) : (
-                              t("drawer.removeFromTeam")
-                            )}
+                            {t("drawer.removeFromTeam")}
                           </Button>
                         </div>
                       )}
@@ -302,6 +294,7 @@ export function TeamDetailDrawer({
           </section>
 
           {/* Add an existing workspace member */}
+          {canManage && (
           <section className="flex flex-col gap-2">
             <Label htmlFor="add-member-select">{t("drawer.addMemberLabel")}</Label>
             {assignable.length === 0 ? (
@@ -350,6 +343,7 @@ export function TeamDetailDrawer({
               <p className="text-xs text-destructive">{t("drawer.teamFull")}</p>
             )}
           </section>
+          )}
 
           {/* Pending invites for this team */}
           <section className="flex flex-col gap-2">
@@ -375,25 +369,28 @@ export function TeamDetailDrawer({
                           {t("members.pendingBadge")}
                         </Badge>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="shrink-0"
-                        disabled={busy}
-                        aria-label={t("members.revokeInvite")}
-                        onClick={() => handleRevoke(p.invitationId)}
-                      >
-                        {busy ? (
-                          <Loader2Icon className="size-4 animate-spin" />
-                        ) : (
-                          <MailXIcon className="size-4" />
-                        )}
-                      </Button>
+                      {canManage && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="shrink-0"
+                          disabled={busy}
+                          aria-label={t("members.revokeInvite")}
+                          onClick={() => handleRevoke(p.invitationId)}
+                        >
+                          {busy ? (
+                            <Loader2Icon className="size-4 animate-spin" />
+                          ) : (
+                            <MailXIcon className="size-4" />
+                          )}
+                        </Button>
+                      )}
                     </li>
                   );
                 })}
               </ul>
             )}
+            {canManage && (
             <Button
               variant="outline"
               className="self-start"
@@ -402,9 +399,20 @@ export function TeamDetailDrawer({
               <MailPlusIcon className="me-2 size-4" />
               {t("drawer.inviteToTeam")}
             </Button>
+            )}
           </section>
         </div>
       </SheetContent>
+
+      <RemoveMemberDialog
+        mode="team"
+        member={removeTarget}
+        workspaceId={workspaceId}
+        teamId={teamId}
+        teamName={team.name}
+        open={Boolean(removeTarget)}
+        onOpenChange={(next) => !next && setRemoveTarget(null)}
+      />
     </Sheet>
   );
 }
