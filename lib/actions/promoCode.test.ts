@@ -170,6 +170,106 @@ describe("redeemPromoCodeAction — beta2mo", () => {
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("free");
   });
+
+  it("returns beta_promo_already_redeemed when the identity already redeemed once", async () => {
+    await seedOwner();
+    await User.updateOne(
+      { workosUserId: WOS_ID },
+      {
+        $set: {
+          "betaParticipation.recordedAt": new Date(),
+          "betaParticipation.source": "onboarding",
+          betaPromoRedeemedAt: new Date(),
+        },
+      }
+    );
+    await PromoCode.create({
+      title: "beta2mo code b",
+      code: "beta2mocode2",
+      type: "beta2mo",
+    });
+
+    const result = await redeemPromoCodeAction("beta2mocode2");
+    expect(result).toEqual({ error: "beta_promo_already_redeemed" });
+  });
+
+  it("grants pro immediately with ~2mo expiry for an eligible participant on a gated (free) workspace", async () => {
+    const ws = await seedOwner();
+    await User.updateOne(
+      { workosUserId: WOS_ID },
+      { $set: { "betaParticipation.recordedAt": new Date(), "betaParticipation.source": "onboarding" } }
+    );
+    const promo = await PromoCode.create({
+      title: "beta2mo code c",
+      code: "beta2mocode3",
+      type: "beta2mo",
+    });
+
+    const before = Date.now();
+    const result = await redeemPromoCodeAction("beta2mocode3");
+    expect(result).toEqual({ ok: true, startsImmediately: true });
+
+    const updatedWs = await Workspace.findById(ws._id).lean();
+    expect(updatedWs?.plan).toBe("pro");
+    expect(updatedWs?.codesRedeemed?.map(String)).toContain(String(promo._id));
+    const expiresAt = updatedWs?.planGrantExpiresAt as Date;
+    const daysUntilExpiry = (expiresAt.getTime() - before) / (24 * 60 * 60 * 1000);
+    expect(daysUntilExpiry).toBeGreaterThan(55);
+    expect(daysUntilExpiry).toBeLessThan(65);
+
+    const updatedUser = await User.findOne({ workosUserId: WOS_ID }).lean();
+    expect(updatedUser?.betaPromoRedeemedAt).toBeInstanceOf(Date);
+  });
+
+  it("records exactly one redemption when two requests race on the same beta2mo code", async () => {
+    await seedOwner();
+    await User.updateOne(
+      { workosUserId: WOS_ID },
+      { $set: { "betaParticipation.recordedAt": new Date(), "betaParticipation.source": "onboarding" } }
+    );
+    await PromoCode.create({
+      title: "beta2mo code race",
+      code: "beta2moraced1",
+      type: "beta2mo",
+    });
+
+    const [first, second] = await Promise.all([
+      redeemPromoCodeAction("beta2moraced1"),
+      redeemPromoCodeAction("beta2moraced1"),
+    ]);
+    const results = [first, second];
+    expect(results.filter((r) => "ok" in r)).toHaveLength(1);
+    expect(results.filter((r) => "error" in r)).toHaveLength(1);
+  });
+
+  it("queues the grant instead of applying it when the workspace is already entitled (active LS subscription)", async () => {
+    const ws = await seedOwner({
+      plan: "pro",
+      lsSubscriptionId: "sub_active_1",
+      lsSubscriptionStatus: "active",
+      lsCustomerId: "cust_1",
+    });
+    await User.updateOne(
+      { workosUserId: WOS_ID },
+      { $set: { "betaParticipation.recordedAt": new Date(), "betaParticipation.source": "onboarding" } }
+    );
+    await PromoCode.create({
+      title: "beta2mo code entitled",
+      code: "beta2moentitled1",
+      type: "beta2mo",
+    });
+
+    const result = await redeemPromoCodeAction("beta2moentitled1");
+    expect(result).toEqual({ ok: true, startsImmediately: false });
+
+    const updatedWs = await Workspace.findById(ws._id).lean();
+    // Active subscription's own fields must survive untouched.
+    expect(updatedWs?.plan).toBe("pro");
+    expect(updatedWs?.lsSubscriptionId).toBe("sub_active_1");
+    expect(updatedWs?.lsSubscriptionStatus).toBe("active");
+    expect(updatedWs?.pendingPromoGrant?.grantMonths).toBe(2);
+    expect(updatedWs?.pendingPromoGrant?.queuedAt).toBeInstanceOf(Date);
+  });
 });
 
 describe("redeemPromoCodeAction — invalid codes", () => {
@@ -194,6 +294,22 @@ describe("redeemPromoCodeAction — invalid codes", () => {
 
     const result = await redeemPromoCodeAction("expiredcode1");
     expect(result).toEqual({ error: "promo_code_expired" });
+
+    const updated = await Workspace.findById(ws._id).lean();
+    expect(updated?.plan).toBe("free");
+  });
+
+  it("returns promo_code_revoked and does not mutate the workspace", async () => {
+    const ws = await seedOwner();
+    await PromoCode.create({
+      title: "revoked code",
+      code: "revokedcode1",
+      type: "lifetime",
+      revokedAt: new Date(),
+    });
+
+    const result = await redeemPromoCodeAction("revokedcode1");
+    expect(result).toEqual({ error: "promo_code_revoked" });
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("free");

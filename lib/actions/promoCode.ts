@@ -1,8 +1,12 @@
 "use server";
 
+import mongoose from "mongoose";
 import { Workspace, PromoCode, User } from "@/lib/db/models";
 import { ownerContext } from "@/lib/auth/ownerContext";
 import { grantPlan } from "@/lib/billing/grantPlan";
+import { isEntitled } from "@/lib/billing/access";
+
+const BETA2MO_GRANT_MONTHS = 2;
 
 export type RedeemPromoCodeResult =
   | { ok: true; startsImmediately: boolean }
@@ -21,12 +25,76 @@ export async function redeemPromoCodeAction(code: string): Promise<RedeemPromoCo
   if (promoCode.expiresAt && promoCode.expiresAt < new Date()) {
     return { error: "promo_code_expired" };
   }
+  if (promoCode.revokedAt) return { error: "promo_code_revoked" };
 
   if (promoCode.type === "beta2mo") {
     const user = await User.findOne({ workosUserId: ctx.userId }).lean();
     if (!user?.betaParticipation?.recordedAt) {
       return { error: "not_eligible_beta_participant" };
     }
+    if (user.betaPromoRedeemedAt) {
+      return { error: "beta_promo_already_redeemed" };
+    }
+
+    // codesRedeemed + betaPromoRedeemedAt + the grant write must all succeed
+    // or all fail together (a partial failure would leave the code marked
+    // redeemed with no grant applied), so this runs inside one transaction —
+    // this also makes the Workspace $ne guard below atomic under a race.
+    const now = new Date();
+    let result: RedeemPromoCodeResult = { error: "promo_code_already_redeemed" };
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const redeemResult = await Workspace.updateOne(
+          { _id: ctx.workspace._id, codesRedeemed: { $ne: promoCode._id } },
+          { $addToSet: { codesRedeemed: promoCode._id } },
+          { session }
+        );
+        if (redeemResult.modifiedCount === 0) {
+          result = { error: "promo_code_already_redeemed" };
+          await session.abortTransaction();
+          return;
+        }
+
+        const userUpdateResult = await User.updateOne(
+          { workosUserId: ctx.userId, betaPromoRedeemedAt: null },
+          { $set: { betaPromoRedeemedAt: now } },
+          { session }
+        );
+        if (userUpdateResult.modifiedCount === 0) {
+          result = { error: "beta_promo_already_redeemed" };
+          await session.abortTransaction();
+          return;
+        }
+
+        if (isEntitled(ctx.workspace)) {
+          // Already entitled — never overwrite a live LS subscription's ls*
+          // fields or truncate a still-active grant. Queue instead; consumed
+          // by pendingGrantUpdate() at the workspace's next terminal-expiry
+          // transition (webhook / lifecycle sweep / beta close).
+          await Workspace.updateOne(
+            { _id: ctx.workspace._id },
+            {
+              $set: {
+                "pendingPromoGrant.grantMonths": BETA2MO_GRANT_MONTHS,
+                "pendingPromoGrant.queuedAt": now,
+              },
+            },
+            { session }
+          );
+          result = { ok: true, startsImmediately: false };
+        } else {
+          const expiresAt = new Date(now);
+          expiresAt.setMonth(expiresAt.getMonth() + BETA2MO_GRANT_MONTHS);
+          await grantPlan(ctx.workspace._id, { plan: "pro", expiresAt, session });
+          result = { ok: true, startsImmediately: true };
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return result;
   }
 
   // $addToSet is naturally idempotent (adding the same id twice is a no-op),
