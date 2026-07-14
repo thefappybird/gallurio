@@ -293,6 +293,19 @@ const workspaceSchema = new Schema(
     // Promo codes already applied to this workspace — guards re-redemption.
     codesRedeemed: { type: [Schema.Types.ObjectId], ref: "PromoCode", default: [] },
 
+    // A promo grant queued to apply once the workspace's active paid Lemon
+    // Squeezy subscription ends, instead of applying immediately (which
+    // would wipe the live ls* fields via grantPlan — see
+    // lib/billing/grantPlan.ts). Consumed by the webhook's
+    // handleSubscriptionExpired and the lifecycle sweep's canceled-past-
+    // period-end branch (later wave) — both must check this BEFORE marking
+    // the workspace expired, so an active promo grant never reads as a
+    // false "expired" gap. null/null = no grant queued.
+    pendingPromoGrant: {
+      grantMonths: { type: Number, default: null },
+      queuedAt: { type: Date, default: null },
+    },
+
     onboardingCompletedAt: { type: Date, default: null },
 
     // Daily lifecycle-sweep timestamps (gated-workspace lapse/expiry

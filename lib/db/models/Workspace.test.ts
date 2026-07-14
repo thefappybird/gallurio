@@ -158,6 +158,18 @@ describe("Workspace.lifecycle defaults", () => {
   });
 });
 
+describe("Workspace.pendingPromoGrant defaults", () => {
+  it("new workspace has pendingPromoGrant.grantMonths and queuedAt defaulting to null", async () => {
+    const ws = await Workspace.create({
+      slug: "promo-grant-studio",
+      name: "Promo Grant Studio",
+      ownerUserId: "user_promo_grant_1",
+    });
+    expect(ws.pendingPromoGrant?.grantMonths).toBeNull();
+    expect(ws.pendingPromoGrant?.queuedAt).toBeNull();
+  });
+});
+
 describe("Workspace.invoiceTheme defaults", () => {
   it("new workspace has invoiceTheme defaulting to the classic preset", async () => {
     const ws = await Workspace.create({
