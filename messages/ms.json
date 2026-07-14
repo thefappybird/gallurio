@@ -2658,6 +2658,10 @@
       "promo_code_not_found": "Kod itu tidak sah. Semak semula dan cuba lagi.",
       "promo_code_expired": "Kod itu telah tamat tempoh.",
       "promo_code_already_redeemed": "Anda sudah menebus kod ini.",
+      "promo_code_revoked": "Kod itu telah dilumpuhkan.",
+      "not_eligible_beta_participant": "Kod ini hanya untuk peserta beta yang direkodkan.",
+      "beta_promo_already_redeemed": "Anda sudah menebus promo beta sekali sahaja anda.",
+      "beta_program_closed": "Program beta ditutup kepada peserta baharu.",
       "invalid_input": "Sila semak borang dan cuba lagi.",
       "rate_limited": "Terlalu banyak percubaan. Cuba lagi dalam {seconds} saat.",
       "user_not_found": "Pengguna tidak ditemui.",
@@ -2739,7 +2743,8 @@
       "placeholder": "Masukkan kod",
       "submit": "Guna kod",
       "applying": "Menggunakan…",
-      "success": "Kod berjaya digunakan — pelan anda telah dikemas kini."
+      "success": "Kod berjaya digunakan — akses Pro anda kini aktif.",
+      "successQueued": "Kod berjaya digunakan — akses Pro dua bulan anda akan bermula secara automatik sebaik sahaja pelan semasa anda tamat."
     }
   },
   "onboarding": {

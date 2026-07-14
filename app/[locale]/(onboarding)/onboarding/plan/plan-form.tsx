@@ -59,7 +59,7 @@ export function PlanStepForm({
       toast.error(msg);
       return;
     }
-    toast.success(tPromo("success"));
+    toast.success(tPromo(result.startsImmediately ? "success" : "successQueued"));
     router.push("/onboarding/done");
   }
 

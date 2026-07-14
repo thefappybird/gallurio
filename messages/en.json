@@ -2658,6 +2658,10 @@
       "promo_code_not_found": "That code isn't valid. Double-check and try again.",
       "promo_code_expired": "That code has expired.",
       "promo_code_already_redeemed": "You've already redeemed this code.",
+      "promo_code_revoked": "That code has been disabled.",
+      "not_eligible_beta_participant": "This code is only for recorded beta participants.",
+      "beta_promo_already_redeemed": "You've already redeemed your one-time beta promo.",
+      "beta_program_closed": "The beta program is closed to new participants.",
       "invalid_input": "Please check the form and try again.",
       "rate_limited": "Too many attempts. Try again in {seconds} seconds.",
       "user_not_found": "User not found.",
@@ -2739,7 +2743,8 @@
       "placeholder": "Enter code",
       "submit": "Apply",
       "applying": "Applying…",
-      "success": "Code applied — your plan has been updated."
+      "success": "Code applied — your Pro access is active now.",
+      "successQueued": "Code applied — your two-month Pro access will start automatically once your current plan ends."
     }
   },
   "onboarding": {

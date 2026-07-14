@@ -18,7 +18,7 @@ vi.mock("@/lib/actions/billing", () => ({
 }));
 
 vi.mock("@/lib/actions/promoCode", () => ({
-  redeemPromoCodeAction: vi.fn().mockResolvedValue({ ok: true }),
+  redeemPromoCodeAction: vi.fn().mockResolvedValue({ ok: true, startsImmediately: true }),
 }));
 
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
@@ -152,9 +152,9 @@ describe("BillingPanel — promo code redemption", () => {
     expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
   });
 
-  it("hides the promo code disclosure for beta workspaces", () => {
+  it("still shows the promo code disclosure for beta workspaces (queued redemption)", () => {
     renderPanel({ currentPlan: "beta" });
-    expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
   });
 
   it("expands the promo code form when clicked", async () => {

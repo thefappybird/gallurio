@@ -111,7 +111,7 @@ export function BillingPanel({
       toast.error(msg);
       return;
     }
-    toast.success(tPromo("success"));
+    toast.success(tPromo(result.startsImmediately ? "success" : "successQueued"));
     window.location.reload();
   }
 
@@ -296,41 +296,39 @@ export function BillingPanel({
         </div>
       )}
 
-      {!isBeta && (
-        <CollapsibleDrawer title={tPromo("disclosureLabel")} defaultOpen={false}>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                placeholder={tPromo("placeholder")}
-                className="max-w-56"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={submitPromoCode}
-                disabled={promoLoading || !promoCode}
-              >
-                {promoLoading ? (
-                  <>
-                    <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
-                    {tPromo("applying")}
-                  </>
-                ) : (
-                  tPromo("submit")
-                )}
-              </Button>
-            </div>
-            {promoError && (
-              <p role="alert" className="text-xs text-destructive">
-                {promoError}
-              </p>
-            )}
+      <CollapsibleDrawer title={tPromo("disclosureLabel")} defaultOpen={false}>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Input
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              placeholder={tPromo("placeholder")}
+              className="max-w-56"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={submitPromoCode}
+              disabled={promoLoading || !promoCode}
+            >
+              {promoLoading ? (
+                <>
+                  <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
+                  {tPromo("applying")}
+                </>
+              ) : (
+                tPromo("submit")
+              )}
+            </Button>
           </div>
-        </CollapsibleDrawer>
-      )}
+          {promoError && (
+            <p role="alert" className="text-xs text-destructive">
+              {promoError}
+            </p>
+          )}
+        </div>
+      </CollapsibleDrawer>
     </div>
   );
 }

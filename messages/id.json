@@ -2658,6 +2658,10 @@
       "promo_code_not_found": "Kode itu tidak valid. Periksa kembali dan coba lagi.",
       "promo_code_expired": "Kode itu sudah kedaluwarsa.",
       "promo_code_already_redeemed": "Anda sudah menukarkan kode ini.",
+      "promo_code_revoked": "Kode itu telah dinonaktifkan.",
+      "not_eligible_beta_participant": "Kode ini hanya untuk peserta beta yang tercatat.",
+      "beta_promo_already_redeemed": "Anda sudah menukarkan promo beta satu kali Anda.",
+      "beta_program_closed": "Program beta ditutup untuk peserta baru.",
       "invalid_input": "Periksa formulir dan coba lagi.",
       "rate_limited": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
       "user_not_found": "Pengguna tidak ditemukan.",
@@ -2739,7 +2743,8 @@
       "placeholder": "Masukkan kode",
       "submit": "Terapkan",
       "applying": "Menerapkan…",
-      "success": "Kode berhasil diterapkan — paket Anda telah diperbarui."
+      "success": "Kode berhasil diterapkan — akses Pro Anda kini aktif.",
+      "successQueued": "Kode berhasil diterapkan — akses Pro dua bulan Anda akan otomatis dimulai setelah paket Anda saat ini berakhir."
     }
   },
   "onboarding": {

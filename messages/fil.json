@@ -2658,6 +2658,10 @@
       "promo_code_not_found": "Hindi valid ang code na iyon. I-check ulit at subukan muli.",
       "promo_code_expired": "Nag-expire na ang code na iyon.",
       "promo_code_already_redeemed": "Na-redeem mo na ang code na ito.",
+      "promo_code_revoked": "Na-disable na ang code na iyon.",
+      "not_eligible_beta_participant": "Para lang sa mga naitalang beta participant ang code na ito.",
+      "beta_promo_already_redeemed": "Na-redeem mo na ang one-time beta promo mo.",
+      "beta_program_closed": "Sarado na ang beta program sa mga bagong kalahok.",
       "invalid_input": "Pakitingnan ang form at subukan muli.",
       "rate_limited": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",
       "user_not_found": "Hindi natagpuan ang user.",
@@ -2739,7 +2743,8 @@
       "placeholder": "Ilagay ang code",
       "submit": "I-apply",
       "applying": "Ina-apply…",
-      "success": "Na-apply ang code — na-update na ang iyong plan."
+      "success": "Na-apply ang code — aktibo na ang Pro access mo.",
+      "successQueued": "Na-apply ang code — awtomatikong magsisimula ang dalawang buwang Pro access mo pagkatapos matapos ang kasalukuyan mong plan."
     }
   },
   "onboarding": {
