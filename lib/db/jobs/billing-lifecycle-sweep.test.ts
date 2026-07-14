@@ -406,6 +406,93 @@ describe("runBillingLifecycleSweep — tenant isolation", () => {
   });
 });
 
+describe("runBillingLifecycleSweep — resubscribe after wipe", () => {
+  it("restores entitlement without auto-republishing the wiped public page", async () => {
+    const ownerUserId = "wos_owner_resub_after_wipe";
+    await User.create({ workosUserId: ownerUserId, email: "resub_after_wipe@example.com" });
+    const ws = await Workspace.create({
+      slug: "resub-after-wipe-ws",
+      name: "Resub After Wipe WS",
+      ownerUserId,
+      plan: "free",
+      country: "PH",
+      publicPage: { publishedAt: null, data: { home: { content: [{ type: "Hero" }] } } },
+      lifecycle: { lapsedAt: daysAgo(60), wipedAt: daysAgo(1) },
+    });
+
+    // Simulate the LS webhook's resubscribe effect (lifecycleResetFields() +
+    // active subscription) without touching publicPage.
+    await Workspace.updateOne(
+      { _id: ws._id },
+      {
+        $set: {
+          plan: "pro",
+          lsSubscriptionId: "sub_resub_after_wipe",
+          lsSubscriptionStatus: "active",
+          "lifecycle.lapsedAt": null,
+          "lifecycle.warned7dAt": null,
+          "lifecycle.expiredNotifiedAt": null,
+          "lifecycle.remind1moAt": null,
+          "lifecycle.remind7wkAt": null,
+          "lifecycle.wipedAt": null,
+        },
+      },
+    );
+
+    const report = await runBillingLifecycleSweep(new Date());
+
+    expect(report.wiped).toBe(0);
+    expect(report.remind1Sent).toBe(0);
+    expect(report.remind2Sent).toBe(0);
+    expect(report.expiredNotified).toBe(0);
+    const after = await Workspace.findById(ws._id).lean();
+    expect(after?.lsSubscriptionStatus).toBe("active");
+    // Access restored, but the owner must manually republish — the reset
+    // never touches publicPage.publishedAt.
+    expect(after?.publicPage?.publishedAt).toBeNull();
+  });
+});
+
+describe("runBillingLifecycleSweep — resubscribe before wipe", () => {
+  it("restores entitlement and skips remind2/wipe for a workspace that resubscribed after remind1 fired", async () => {
+    const ownerUserId = "wos_owner_resub_before_wipe";
+    await User.create({ workosUserId: ownerUserId, email: "resub_before_wipe@example.com" });
+    const ws = await Workspace.create({
+      slug: "resub-before-wipe-ws",
+      name: "Resub Before Wipe WS",
+      ownerUserId,
+      plan: "free",
+      country: "PH",
+      lifecycle: { lapsedAt: daysAgo(35), remind1moAt: daysAgo(4) },
+    });
+
+    await Workspace.updateOne(
+      { _id: ws._id },
+      {
+        $set: {
+          plan: "pro",
+          lsSubscriptionId: "sub_resub_before_wipe",
+          lsSubscriptionStatus: "active",
+          "lifecycle.lapsedAt": null,
+          "lifecycle.warned7dAt": null,
+          "lifecycle.expiredNotifiedAt": null,
+          "lifecycle.remind1moAt": null,
+          "lifecycle.remind7wkAt": null,
+          "lifecycle.wipedAt": null,
+        },
+      },
+    );
+
+    const report = await runBillingLifecycleSweep(new Date());
+
+    expect(report.remind2Sent).toBe(0);
+    expect(report.wiped).toBe(0);
+    const after = await Workspace.findById(ws._id).lean();
+    expect(after?.lsSubscriptionStatus).toBe("active");
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+  });
+});
+
 describe("runBillingLifecycleSweep — remind2 and wipe boundaries", () => {
   it("fires remind2 at +51d and does not wipe until +58d", async () => {
     const wsId = await seedLapsedWorkspace({ lapsedAt: daysAgo(52) });
