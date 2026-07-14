@@ -9,6 +9,7 @@ Use this as the release gate for the first production deployment. Checked items 
 - [ ] Clean the working tree and decide which current changes belong in the release.
 - [ ] Resolve, fix, or explicitly accept the 7 remaining unit-test failures.
 - [ ] Freeze the release commit; record the full SHA, image digest, migration list, and rollback SHA.
+- [ ] Set up and test GitHub Actions for final checks, immutable image publishing, VPS deployment, health checks, deployment notifications, and rollback.
 - [ ] Finish the VPS deployment path: Docker/Compose, GHCR pull access, Caddy, runtime secrets, backups, monitoring, and rollback.
 - [ ] Deploy and verify Workflow World/Postgres with persistent storage, schema bootstrap, backup/restore, and restart-survival testing.
 - [ ] Install and test the invitation and billing systemd timers on the VPS.
