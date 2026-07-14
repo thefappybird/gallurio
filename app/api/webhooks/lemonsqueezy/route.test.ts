@@ -549,6 +549,39 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
   });
 });
 
+describe("lemonsqueezy webhook — subscription_expired with a queued promo grant", () => {
+  it("applies the queued grant instead of downgrading to free (no false-gated tick)", async () => {
+    const subId = "sub_expired_with_pending_grant";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    await Workspace.updateOne(
+      { _id: wsId },
+      {
+        $set: {
+          "pendingPromoGrant.grantMonths": 2,
+          "pendingPromoGrant.queuedAt": new Date(),
+        },
+      }
+    );
+
+    const event = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.lsSubscriptionId).toBeNull();
+    expect(after?.planGrantExpiresAt).toBeInstanceOf(Date);
+    expect(after?.pendingPromoGrant?.grantMonths).toBeNull();
+    expect(after?.pendingPromoGrant?.queuedAt).toBeNull();
+  });
+});
+
 describe("lemonsqueezy webhook — subscription_expired never touches a workspace with no matching lsSubscriptionId", () => {
   it("no-ops for a beta/promo-granted workspace (lsSubscriptionId null) when the event carries no custom_data.workspaceId", async () => {
     // beta/promo-granted workspaces (planGrantExpiresAt-based) never have an

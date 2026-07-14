@@ -13,6 +13,7 @@ import { planForVariantId } from "@/lib/lemonsqueezy/plans";
 import { planEntitlements } from "@/lib/plans/entitlements";
 import { mapLemonSqueezySubscriptionStatus } from "@/lib/lemonsqueezy/status";
 import { lifecycleResetFields } from "@/lib/billing/lifecycle";
+import { pendingGrantUpdate } from "@/lib/billing/pendingPromoGrant";
 import { resumeHook } from "workflow/api";
 
 export const runtime = "nodejs";
@@ -220,8 +221,19 @@ async function handleSubscriptionExpired(event: LemonSqueezyWebhookEvent): Promi
   // directly) because this update clears lsSubscriptionId — a second update
   // keyed on the original filter (which may itself be { lsSubscriptionId })
   // would no longer match once that field is nulled.
-  const ws = await Workspace.findOne(filter).select({ _id: 1, "lifecycle.lapsedAt": 1 }).lean();
+  const ws = await Workspace.findOne(filter)
+    .select({ _id: 1, "lifecycle.lapsedAt": 1, pendingPromoGrant: 1 })
+    .lean();
   if (!ws) return;
+
+  // A queued promo grant must be consumed HERE, in the terminal-signal
+  // handler itself — not as a follow-up sweep step — so a paying-through-
+  // their-promo user never reads as gated even for one tick.
+  const grantUpdate = pendingGrantUpdate(ws.pendingPromoGrant, new Date());
+  if (grantUpdate) {
+    await Workspace.updateOne({ _id: ws._id }, { $set: grantUpdate });
+    return;
+  }
 
   const set: Record<string, unknown> = {
     plan: "free",
