@@ -11,6 +11,20 @@ export const emailLocale = localeForCountry as (
   country: string | null | undefined,
 ) => Locale;
 
+// Lifecycle emails (lapse-warning/expired/remind1/remind2) additionally
+// support Arabic — narrower than the dashboard/portfolio RTL flip, which is
+// still deferred (see lib/i18n/localeForCountry.ts). Duplicated here rather
+// than exported from localeForCountry.ts, whose job is public-chrome
+// resolution, not a shared Gulf-country registry.
+export type LifecycleLocale = Locale | "ar";
+
+const GULF_COUNTRIES = new Set(["AE", "SA", "QA", "KW", "OM", "BH"]);
+
+export function lifecycleEmailLocale(country: string | null | undefined): LifecycleLocale {
+  if (GULF_COUNTRIES.has((country ?? "").toUpperCase())) return "ar";
+  return localeForCountry(country);
+}
+
 type TeamInviteCopy = {
   subject: (ws: string) => string;
   greeting: string;
@@ -85,10 +99,10 @@ type EmailCopyMap = {
   bookingCancelledClient: Record<Locale, BookingCancelledClientCopy>;
   inquiryDecline: Record<Locale, InquiryDeclineCopy>;
   verification: Record<Locale, VerificationCopy>;
-  lifecyclePreExpiry: Record<Locale, LifecycleCopy>;
-  lifecycleExpired: Record<Locale, LifecycleCopy>;
-  lifecycleRemind1: Record<Locale, LifecycleCopy>;
-  lifecycleRemind2: Record<Locale, LifecycleCopy>;
+  lifecyclePreExpiry: Record<LifecycleLocale, LifecycleCopy>;
+  lifecycleExpired: Record<LifecycleLocale, LifecycleCopy>;
+  lifecycleRemind1: Record<LifecycleLocale, LifecycleCopy>;
+  lifecycleRemind2: Record<LifecycleLocale, LifecycleCopy>;
 };
 
 // Plain text only — never embed HTML here; renderBrandedEmail escapes all interpolated values.
@@ -353,6 +367,12 @@ export const EMAIL_COPY = {
       body: "Bulan gratis Gallurio Pro Anda akan berakhir dalam 7 hari. Berlangganan sekarang agar portofolio Anda tetap online dan semua pemesanan, klien, serta galeri tetap aman.",
       cta: "Berlangganan Pro",
     },
+    ar: {
+      subject: "وصولك إلى Gallurio Pro ينتهي خلال أسبوع",
+      heading: "أسبوع واحد متبقٍ من الوصول الكامل",
+      body: "ينتهي شهرك المجاني من Gallurio Pro خلال 7 أيام. اشترك الآن للحفاظ على صفحتك العامة متاحة على الإنترنت وبقاء جميع حجوزاتك وعملائك ومعرضك سليمة.",
+      cta: "اشترك في Pro",
+    },
   },
   lifecycleExpired: {
     en: {
@@ -378,6 +398,12 @@ export const EMAIL_COPY = {
       heading: "Akses Anda telah berakhir",
       body: "Akses Pro Anda telah berakhir, tetapi tidak ada yang hilang — situs dan semua data Anda tersimpan dengan aman. Berlangganan kembali untuk mengaktifkan kembali portofolio Anda secara instan.",
       cta: "Berlangganan kembali",
+    },
+    ar: {
+      subject: "انتهى وصولك إلى Gallurio Pro",
+      heading: "انتهى وصولك",
+      body: "انتهى وصولك إلى Pro، لكن لا شيء ضاع — موقعك وجميع بياناتك محفوظة بأمان. اشترك لإعادة نشر صفحتك العامة فورًا.",
+      cta: "أعد الاشتراك",
     },
   },
   lifecycleRemind1: {
@@ -405,6 +431,12 @@ export const EMAIL_COPY = {
       body: "Sudah sebulan berlalu. Portofolio dan data Anda masih tersimpan dan siap. Berlangganan kembali kapan saja untuk melanjutkan dari tempat Anda berhenti.",
       cta: "Berlangganan kembali",
     },
+    ar: {
+      subject: "لا تزال صفحتك محفوظة على Gallurio",
+      heading: "حفظنا كل شيء من أجلك",
+      body: "مرّ شهر كامل. لا تزال صفحتك العامة وبياناتك محفوظة وجاهزة. أعد الاشتراك في أي وقت لتكمل تمامًا من حيث توقفت.",
+      cta: "أعد الاشتراك",
+    },
   },
   lifecycleRemind2: {
     en: {
@@ -430,6 +462,12 @@ export const EMAIL_COPY = {
       heading: "Pengingat terakhir",
       body: "Situs Anda yang telah dipublikasikan akan dinonaktifkan dalam satu minggu kecuali Anda berlangganan kembali. Pemesanan, klien, dan galeri Anda tetap aman — tetapi berlangganan sekarang agar situs Anda tetap aktif.",
       cta: "Berlangganan kembali",
+    },
+    ar: {
+      subject: "الأسبوع الأخير للحفاظ على صفحتك متاحة على الإنترنت",
+      heading: "تذكير أخير",
+      body: "سيتم إيقاف موقعك المنشور خلال أسبوع واحد ما لم تُعد الاشتراك. تبقى حجوزاتك وعملاؤك ومعرضك بأمان في كل الأحوال — لكن أعد الاشتراك الآن لإبقاء موقعك نشطًا.",
+      cta: "أعد الاشتراك",
     },
   },
 } as const satisfies EmailCopyMap;

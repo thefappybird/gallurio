@@ -14,7 +14,7 @@ export type EmailBlock =
 
 export type RenderEmailOpts = {
   brand: Brand;
-  locale: "en" | "fil" | "ms" | "id";
+  locale: "en" | "fil" | "ms" | "id" | "ar";
   preheader: string;
   title: string;
   subtitle?: string;
@@ -205,7 +205,7 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
 
   const html = [
     "<!DOCTYPE html>",
-    `<html lang="${locale}">`,
+    locale === "ar" ? `<html lang="ar" dir="rtl">` : `<html lang="${locale}">`,
     "<head>",
     '<meta charset="UTF-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0" />',
