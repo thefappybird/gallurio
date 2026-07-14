@@ -280,10 +280,12 @@ async function handleSubscriptionStatusOnly(
 }
 
 // ---------------------------------------------------------------------------
-// subscription_payment_success — best-effort bump to active. Only touch
-// periodEnd when the payload actually carries a usable renewal date;
-// subscription_updated is the authoritative periodEnd source since Lemon
-// Squeezy also fires it on renewal.
+// subscription_payment_success / subscription_payment_recovered — best-effort
+// bump to active (a recovered dunning payment means the subscription is
+// caught up again, same handling as a plain success). Only touch periodEnd
+// when the payload actually carries a usable renewal date; subscription_updated
+// is the authoritative periodEnd source since Lemon Squeezy also fires it on
+// renewal.
 // ---------------------------------------------------------------------------
 async function handleSubscriptionPaymentSuccess(event: LemonSqueezyWebhookEvent): Promise<void> {
   const filter = resolveWorkspaceFilter(event);
@@ -373,6 +375,10 @@ export async function POST(req: Request) {
         break;
 
       case "subscription_updated":
+      case "subscription_plan_changed":
+        // Lemon Squeezy may fire plan_changed alongside (or instead of)
+        // updated for a plan/variant change — same idempotent upsert handler
+        // handles both safely.
         await handleSubscriptionUpsert(event, false);
         break;
 
@@ -399,6 +405,7 @@ export async function POST(req: Request) {
         break;
 
       case "subscription_payment_success":
+      case "subscription_payment_recovered":
         await handleSubscriptionPaymentSuccess(event);
         break;
 

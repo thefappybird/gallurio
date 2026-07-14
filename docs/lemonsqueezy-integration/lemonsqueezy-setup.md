@@ -53,7 +53,8 @@ per-store scoping.
    `subscription_cancelled`, `subscription_resumed`, `subscription_unpaused`,
    `subscription_paused`, `subscription_expired`,
    `subscription_payment_success`, `subscription_payment_failed`,
-   `subscription_payment_refunded`.
+   `subscription_payment_refunded`, `subscription_payment_recovered`,
+   `subscription_plan_changed`.
 4. Copy the **signing secret** → `LEMONSQUEEZY_WEBHOOK_SECRET`.
 
 ### 5. Enable test mode

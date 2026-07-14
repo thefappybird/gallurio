@@ -160,7 +160,7 @@ describe("redactWebhookEventForStorage", () => {
 });
 
 describe("HANDLED_LEMONSQUEEZY_EVENTS", () => {
-  it("contains the ten expected event names", async () => {
+  it("contains the twelve expected event names", async () => {
     const { HANDLED_LEMONSQUEEZY_EVENTS } = await import("./webhook");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_created");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_updated");
@@ -172,6 +172,8 @@ describe("HANDLED_LEMONSQUEEZY_EVENTS", () => {
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_success");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_failed");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_refunded");
-    expect(HANDLED_LEMONSQUEEZY_EVENTS).toHaveLength(10);
+    expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_recovered");
+    expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_plan_changed");
+    expect(HANDLED_LEMONSQUEEZY_EVENTS).toHaveLength(12);
   });
 });

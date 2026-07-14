@@ -189,6 +189,48 @@ describe("lemonsqueezy webhook — event ledger", () => {
     expect(mockResumeHook).toHaveBeenCalledOnce();
   });
 
+  it("dedupes a redelivered subscription_payment_recovered event", async () => {
+    const subId = "sub_dedupe_payment_recovered";
+    await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const event = makeEvent("subscription_payment_recovered", subId, {
+      renews_at: "2026-08-01T00:00:00Z",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const first = await POST(makeReq());
+    expect((await first.json()).deduped).toBeUndefined();
+
+    const second = await POST(makeReq());
+    expect(await second.json()).toEqual({ received: true, deduped: true });
+
+    const rows = await WebhookEvent.find({ eventName: "subscription_payment_recovered" }).lean();
+    expect(rows).toHaveLength(1);
+  });
+
+  it("dedupes a redelivered subscription_plan_changed event", async () => {
+    const subId = "sub_dedupe_plan_changed";
+    await seedWorkspace({ plan: "free", lsSubscriptionId: subId, teamCount: 5 });
+
+    const event = makeEvent(
+      "subscription_plan_changed",
+      subId,
+      makeSubscriptionAttrs({ status: "active" })
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const first = await POST(makeReq());
+    expect((await first.json()).deduped).toBeUndefined();
+
+    const second = await POST(makeReq());
+    expect(await second.json()).toEqual({ received: true, deduped: true });
+
+    const rows = await WebhookEvent.find({ eventName: "subscription_plan_changed" }).lean();
+    expect(rows).toHaveLength(1);
+  });
+
   it("recovers from a concurrent duplicate-key upsert instead of 500ing", async () => {
     const wsId = await seedWorkspace({ plan: "free" });
     const subId = "sub_concurrent_dup";
@@ -706,6 +748,32 @@ describe("lemonsqueezy webhook — team-cap guard on subscription_updated", () =
   });
 });
 
+describe("lemonsqueezy webhook — subscription_plan_changed", () => {
+  it("routes through the same upsert handler as subscription_updated (plan resolution + team-cap guard wiring)", async () => {
+    const subId = "sub_plan_changed";
+    const wsId = await seedWorkspace({
+      plan: "free",
+      lsSubscriptionId: subId,
+      teamCount: 5,
+    });
+
+    const event = makeEvent(
+      "subscription_plan_changed",
+      subId,
+      makeSubscriptionAttrs({ status: "active" })
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.lsSubscriptionStatus).toBe("active");
+  });
+});
+
 describe("lemonsqueezy webhook — tenant isolation", () => {
   it("an event for workspace A does not modify workspace B", async () => {
     const subIdA = "sub_ws_a";
@@ -770,6 +838,31 @@ describe("lemonsqueezy webhook — subscription_payment_success", () => {
     const after = await Workspace.findById(wsId).lean();
     expect(after?.lsSubscriptionStatus).toBe("active");
     expect(after?.lsCurrentPeriodEnd).toBeNull();
+  });
+});
+
+describe("lemonsqueezy webhook — subscription_payment_recovered", () => {
+  it("bumps subscription status to active and resets lifecycle fields (same handling as payment_success)", async () => {
+    const subId = "sub_payment_recovered";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    await Workspace.updateOne(
+      { _id: wsId },
+      { $set: { lsSubscriptionStatus: "past_due", "lifecycle.lapsedAt": new Date() } }
+    );
+
+    const event = makeEvent("subscription_payment_recovered", subId, {
+      renews_at: "2026-08-01T00:00:00Z",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.lsSubscriptionStatus).toBe("active");
+    expect(after?.lsCurrentPeriodEnd).toBeInstanceOf(Date);
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
   });
 });
 

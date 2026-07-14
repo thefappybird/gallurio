@@ -13,6 +13,8 @@ export const HANDLED_LEMONSQUEEZY_EVENTS = [
   "subscription_payment_success",
   "subscription_payment_failed",
   "subscription_payment_refunded",
+  "subscription_payment_recovered",
+  "subscription_plan_changed",
 ] as const;
 
 export type HandledLemonSqueezyEvent = (typeof HANDLED_LEMONSQUEEZY_EVENTS)[number];
