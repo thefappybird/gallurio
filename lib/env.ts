@@ -55,6 +55,7 @@ const shape = {
   LEMONSQUEEZY_TEST_MODE: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
   CRON_SECRET: z.string().optional(),
   AUTHKIT_DEBUG: z.string().optional(),
   SEED_OWNER_WORKOS_USER_ID: z.string().optional(),
