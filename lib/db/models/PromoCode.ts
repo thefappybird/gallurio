@@ -11,6 +11,8 @@ const promoCodeSchema = new Schema(
     // Client.email/Invitation.email (no Mongo collation anywhere here).
     code: { type: String, required: true, unique: true, lowercase: true, trim: true },
     expiresAt: { type: Date, default: null },
+    // Emergency revocation for abuse/compromise — see lib/billing/promoRevocation.ts.
+    revokedAt: { type: Date, default: null },
     type: { type: String, enum: PROMO_CODE_TYPES, required: true },
   },
   { timestamps: true },

@@ -79,7 +79,7 @@ describe("redeemPromoCodeAction — valid redemption", () => {
     });
 
     const result = await redeemPromoCodeAction("lifetimecode1");
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, startsImmediately: true });
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("pro");
@@ -96,7 +96,7 @@ describe("redeemPromoCodeAction — valid redemption", () => {
     });
 
     const result = await redeemPromoCodeAction("yearlycode1");
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, startsImmediately: true });
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("pro");
@@ -113,7 +113,7 @@ describe("redeemPromoCodeAction — valid redemption", () => {
 
     const before = Date.now();
     const result = await redeemPromoCodeAction("monthlycode1");
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, startsImmediately: true });
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("pro");
@@ -133,11 +133,42 @@ describe("redeemPromoCodeAction — valid redemption", () => {
     });
 
     const result = await redeemPromoCodeAction("betacode1");
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, startsImmediately: true });
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("beta");
     expect(updated?.planGrantExpiresAt).toBeNull();
+  });
+});
+
+describe("redeemPromoCodeAction — startsImmediately contract", () => {
+  it("returns startsImmediately: true for a lifetime code redemption", async () => {
+    await seedOwner();
+    await PromoCode.create({
+      title: "lifetime code b",
+      code: "lifetimecode2",
+      type: "lifetime",
+    });
+
+    const result = await redeemPromoCodeAction("lifetimecode2");
+    expect(result).toEqual({ ok: true, startsImmediately: true });
+  });
+});
+
+describe("redeemPromoCodeAction — beta2mo", () => {
+  it("returns not_eligible_beta_participant when the user never recorded beta participation", async () => {
+    const ws = await seedOwner();
+    await PromoCode.create({
+      title: "beta2mo code",
+      code: "beta2mocode1",
+      type: "beta2mo",
+    });
+
+    const result = await redeemPromoCodeAction("beta2mocode1");
+    expect(result).toEqual({ error: "not_eligible_beta_participant" });
+
+    const updated = await Workspace.findById(ws._id).lean();
+    expect(updated?.plan).toBe("free");
   });
 });
 
@@ -177,7 +208,7 @@ describe("redeemPromoCodeAction — invalid codes", () => {
     });
 
     const first = await redeemPromoCodeAction("oneshotcode1");
-    expect(first).toEqual({ ok: true });
+    expect(first).toEqual({ ok: true, startsImmediately: true });
 
     const second = await redeemPromoCodeAction("oneshotcode1");
     expect(second).toEqual({ error: "promo_code_already_redeemed" });
@@ -195,7 +226,7 @@ describe("redeemPromoCodeAction — invalid codes", () => {
     });
 
     const first = await redeemPromoCodeAction("monthlyresubmit1");
-    expect(first).toEqual({ ok: true });
+    expect(first).toEqual({ ok: true, startsImmediately: true });
     const afterFirst = await Workspace.findById(ws._id).lean();
     const expiryAfterFirst = afterFirst?.planGrantExpiresAt?.getTime();
 
@@ -243,7 +274,7 @@ describe("redeemPromoCodeAction — tenant isolation", () => {
     });
 
     const result = await redeemPromoCodeAction("tenantcode1");
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, startsImmediately: true });
 
     const untouchedB = await Workspace.findById(wsB._id).lean();
     expect(untouchedB?.plan).toBe("free");
@@ -264,7 +295,7 @@ describe("redeemPromoCodeAction — case-insensitive input", () => {
     });
 
     const result = await redeemPromoCodeAction("CASECODE1");
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, startsImmediately: true });
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("pro");
