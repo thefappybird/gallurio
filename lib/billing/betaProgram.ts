@@ -1,5 +1,6 @@
 import "server-only";
 import { BetaProgram, Workspace } from "@/lib/db/models";
+import { pendingGrantUpdate } from "@/lib/billing/pendingPromoGrant";
 
 // Gate for new beta activation (onboarding + dev toggle). A missing
 // BetaProgram document means the program has never been explicitly closed —
@@ -31,10 +32,30 @@ export async function closeBetaProgram(
     { $set: { closedAt: new Date(), closedByUserId } }
   );
 
+  const now = new Date();
+
+  // Common case: no pending grant — flip straight to free via the lapse
+  // pipeline, as before.
   await Workspace.updateMany(
-    { plan: "beta" },
-    { $set: { plan: "free", "lifecycle.lapsedAt": new Date() } }
+    { plan: "beta", "pendingPromoGrant.queuedAt": null },
+    { $set: { plan: "free", "lifecycle.lapsedAt": now } }
   );
+
+  // Rare case: a still-active beta workspace redeemed a promo (e.g. beta2mo)
+  // while still on plan:"beta", queuing a grant. Dumping it straight to
+  // free/gated here would wipe that queued grant's effect — the same
+  // no-false-expiry invariant as the webhook/sweep paths. Apply the grant
+  // instead. Low volume — no .lean() needed.
+  const pendingWorkspaces = await Workspace.find({
+    plan: "beta",
+    "pendingPromoGrant.queuedAt": { $ne: null },
+  });
+  for (const ws of pendingWorkspaces) {
+    const grantUpdate = pendingGrantUpdate(ws.pendingPromoGrant, now);
+    if (grantUpdate) {
+      await Workspace.updateOne({ _id: ws._id }, { $set: grantUpdate });
+    }
+  }
 
   return { alreadyClosed: false };
 }
