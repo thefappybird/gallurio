@@ -264,6 +264,35 @@ describe("runBillingLifecycleSweep — lapse detection (free-month / grant expir
   });
 });
 
+describe("runBillingLifecycleSweep — queued promo grant at lapse detection", () => {
+  it("applies a queued grant instead of flipping to free when a canceled subscription's period ends", async () => {
+    const ownerUserId = "wos_owner_queued_grant_lapse";
+    await User.create({ workosUserId: ownerUserId, email: "owner_queued_grant_lapse@example.com" });
+    const periodEnd = daysAgo(1);
+    const ws = await Workspace.create({
+      slug: "queued-grant-lapse-ws",
+      name: "Queued Grant Lapse WS",
+      ownerUserId,
+      plan: "pro",
+      country: "PH",
+      lsSubscriptionId: "sub_queued_grant",
+      lsSubscriptionStatus: "canceled",
+      lsCurrentPeriodEnd: periodEnd,
+      pendingPromoGrant: { grantMonths: 2, queuedAt: daysAgo(2) },
+    });
+
+    const report = await runBillingLifecycleSweep(new Date());
+
+    expect(report.lapsed).toBe(1);
+    const after = await Workspace.findById(ws._id).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.lsSubscriptionId).toBeNull();
+    expect(after?.planGrantExpiresAt).toBeInstanceOf(Date);
+    expect(after?.pendingPromoGrant?.grantMonths).toBeNull();
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+  });
+});
+
 describe("runBillingLifecycleSweep — defensive canceled-sub lapse anchor", () => {
   it("stamps lifecycle.lapsedAt for a canceled subscription past its period end without touching plan/subscription fields", async () => {
     const ownerUserId = "wos_owner_canceled_no_webhook";

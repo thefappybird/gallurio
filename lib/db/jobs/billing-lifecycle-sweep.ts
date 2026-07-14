@@ -11,6 +11,7 @@ import {
   WIPE_DAYS,
 } from "@/lib/billing/lifecycle";
 import { sendLifecycleEmail } from "@/lib/email/lifecycle";
+import { pendingGrantUpdate } from "@/lib/billing/pendingPromoGrant";
 
 export type BillingLifecycleSweepReport = {
   preExpiryWarned: number;
@@ -107,7 +108,10 @@ async function stagePreExpiryWarn(now: Date, batchSize: number): Promise<number>
   });
 }
 
-type LapseDoc = WithId & { lsSubscriptionId: string | null };
+type LapseDoc = WithId & {
+  lsSubscriptionId: string | null;
+  pendingPromoGrant?: { grantMonths: number | null; queuedAt: Date | null } | null;
+};
 
 // Stage 2a: lapse-anchor detection — two independent paths, both guarded by
 // lifecycle.lapsedAt: null:
@@ -130,14 +134,25 @@ async function stageLapseDetect(now: Date, batchSize: number): Promise<number> {
       { lsSubscriptionStatus: "canceled", lsCurrentPeriodEnd: { $ne: null, $lte: now } },
     ],
   };
-  const projection = { _id: 1, lsSubscriptionId: 1 } as const;
+  const projection = { _id: 1, lsSubscriptionId: 1, pendingPromoGrant: 1 } as const;
 
   return forEachBatch<LapseDoc>(filter, projection, batchSize, async (batch) => {
     for (const ws of batch) {
       // Guard lapsedAt: null again in the write filter. A concurrent run
       // (or the lazy expireGrantIfPast path) may have stamped it already —
       // this keeps each write atomic and prevents a double-stamp.
-      if (ws.lsSubscriptionId == null) {
+      const grantUpdate = pendingGrantUpdate(ws.pendingPromoGrant, now);
+      if (grantUpdate) {
+        // A queued promo grant covers both cases: a canceled paid sub whose
+        // period just ended, or a grant-backed workspace (e.g. still-
+        // perpetual-beta) whose current grant lapses while a different
+        // promo is queued on top. Apply it instead of either branch below
+        // so the workspace never reads as gated even for one tick.
+        await Workspace.updateOne(
+          { _id: ws._id, "lifecycle.lapsedAt": null },
+          { $set: grantUpdate }
+        );
+      } else if (ws.lsSubscriptionId == null) {
         await Workspace.updateOne(
           { _id: ws._id, "lifecycle.lapsedAt": null },
           { $set: { plan: "free", planGrantExpiresAt: null, "lifecycle.lapsedAt": now } }
