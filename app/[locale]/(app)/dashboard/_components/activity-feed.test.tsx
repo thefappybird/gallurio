@@ -77,7 +77,7 @@ describe("ActivityFeed", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     renderWithProviders(
       <ActivityFeed
-        activity={[makeActivity({ action: "legacy_action" })]}
+        activity={[makeActivity({ action: "legacy_action" as SerializedActivity["action"] })]}
         locale="en"
         title="Recent activity"
         empty="Nothing here yet."
