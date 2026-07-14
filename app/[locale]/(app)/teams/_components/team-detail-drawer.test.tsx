@@ -1,8 +1,9 @@
+import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { TeamDetailDrawer } from "./team-detail-drawer";
-import { setLeadFlagAction } from "../_member-action";
+import { setLeadFlagAction, removeMemberFromTeamAction } from "../_member-action";
 import type { MemberSummary, TeamRow } from "../_types";
 
 vi.mock("@/lib/i18n/navigation", () => ({
@@ -12,6 +13,7 @@ vi.mock("@/lib/i18n/navigation", () => ({
 vi.mock("../_member-action", () => ({
   assignMemberToTeamAction: vi.fn(),
   removeMemberFromTeamAction: vi.fn(),
+  removeMemberFromWorkspaceAction: vi.fn(),
   setLeadFlagAction: vi.fn(),
 }));
 
@@ -41,7 +43,7 @@ const MEMBERS: MemberSummary[] = [
   { workosUserId: "u_free", email: "free@test.com", name: "Teamless Tom", teams: [] },
 ];
 
-function renderDrawer() {
+function renderDrawer(overrides: Partial<ComponentProps<typeof TeamDetailDrawer>> = {}) {
   return renderWithProviders(
     <TeamDetailDrawer
       team={TEAM}
@@ -51,7 +53,10 @@ function renderDrawer() {
       pendingInvites={[]}
       maxMembersPerTeam={10}
       ownerWorkosUserId={OWNER}
+      workspaceId="ws1"
+      canManage
       onInvite={vi.fn()}
+      {...overrides}
     />,
   );
 }
@@ -106,6 +111,8 @@ describe("TeamDetailDrawer", () => {
         pendingInvites={[]}
         maxMembersPerTeam={10}
         ownerWorkosUserId={OWNER}
+        workspaceId="ws1"
+        canManage
         onInvite={vi.fn()}
       />,
     );
@@ -147,6 +154,8 @@ describe("TeamDetailDrawer", () => {
         pendingInvites={[]}
         maxMembersPerTeam={10}
         ownerWorkosUserId={OWNER}
+        workspaceId="ws1"
+        canManage
         onInvite={vi.fn()}
       />,
     );
@@ -181,5 +190,24 @@ describe("TeamDetailDrawer", () => {
 
     await waitFor(() => expect(toggle).toHaveAttribute("aria-disabled", "true"));
     expect(toggle).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("hides every mutating control for non-owners, but keeps the member list read-only", () => {
+    renderDrawer({ canManage: false });
+
+    expect(screen.getByText("On The Team")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    expect(screen.queryByText("Add existing member")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Invite to this team/i })).not.toBeInTheDocument();
+  });
+
+  it("clicking Remove opens a confirmation dialog instead of removing immediately", () => {
+    renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    expect(
+      screen.getByText("Remove On The Team from Wedding crew?"),
+    ).toBeInTheDocument();
+    expect(removeMemberFromTeamAction).not.toHaveBeenCalled();
   });
 });

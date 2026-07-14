@@ -1460,7 +1460,17 @@
         "leadOnlyOnePerTeam": "Setiap tim hanya boleh memiliki satu lead.",
         "removeFromTeam": "Hapus",
         "teamFull": "Tim ini sudah penuh.",
-        "close": "Tutup"
+        "close": "Tutup",
+        "removeMemberFlow": {
+          "confirmTitle": "Hapus {name} dari {team}?",
+          "confirmDescription": "Mereka akan kehilangan akses ke kalender dan pemesanan tim ini.",
+          "confirmButton": "Hapus dari tim",
+          "workspacePromptTitle": "Hapus juga {name} dari ruang kerja?",
+          "workspacePromptDescription": "Mereka akan kehilangan akses ke semua tim dan ruang kerja sepenuhnya. Tindakan ini tidak dapat dibatalkan.",
+          "dontAskAgain": "Jangan tanya lagi",
+          "removeFromWorkspaceButton": "Hapus dari ruang kerja",
+          "keepInWorkspaceButton": "Pertahankan di ruang kerja"
+        }
       },
       "upsell": {
         "atCapTitle": "Anda telah mencapai batas tim Anda",
@@ -1497,7 +1507,8 @@
           "leadLabel": "Lead",
           "teamFull": "Penuh",
           "submit": "Kirim undangan",
-          "sending": "Mengirim…"
+          "sending": "Mengirim…",
+          "emailAlreadyRegistered": "Email ini sudah memiliki akun Gallurio. Pengiriman dinonaktifkan sampai Anda menggunakan alamat lain."
         },
         "errors": {
           "emailRequired": "Masukkan alamat email yang valid.",
@@ -1528,13 +1539,18 @@
         "removeFromWorkspace": "Hapus dari ruang kerja",
         "revokeInvite": "Cabut undangan",
         "rowActionsLabel": "Tindakan untuk {name}",
+        "viewButton": "Lihat anggota",
+        "description": "Semua orang yang memiliki akses ke ruang kerja ini, di semua tim.",
+        "noTeams": "Tidak berada di tim mana pun",
+        "removeFromWorkspaceLabel": "Hapus {name} dari ruang kerja",
         "removeDialog": {
           "title": "Hapus anggota?",
           "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. Pemesanan mereka tetap ada; kursi tim dibebaskan. Tindakan ini tidak dapat dibatalkan.",
           "confirm": "Hapus anggota"
         },
         "errors": {
-          "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus."
+          "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",
+          "isTeamLead": "{name} adalah lead tim untuk {teamName}. Hapus status lead mereka terlebih dahulu sebelum menghapus mereka."
         },
         "toasts": {
           "removed": "Anggota dihapus."
@@ -3001,6 +3017,10 @@
       "already_accepted": {
         "title": "Sudah menjadi anggota",
         "description": "Anda telah menerima undangan ini dan telah bergabung dengan workspace."
+      },
+      "revoked": {
+        "title": "Undangan dicabut",
+        "description": "Undangan ini telah dicabut oleh pemilik workspace. Minta mereka mengirim undangan baru jika Anda masih memerlukan akses."
       },
       "already_member": {
         "title": "Email sudah digunakan",

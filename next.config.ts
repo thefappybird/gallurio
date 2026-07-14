@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
     root: workspaceRoot,
   },
   outputFileTracingRoot: workspaceRoot,
-  allowedDevOrigins: ["http://localhost:3000", "disabled-vincent-voip-conservation.trycloudflare.com"],
+  allowedDevOrigins: ["http://localhost:3000"],
   images: {
     remotePatterns: [
       {

@@ -26,8 +26,8 @@ import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"] as const;
-const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-const LOGO_MAX_DIM = 2000;
+const LOGO_MAX_BYTES = 250 * 1024;
+const LOGO_MAX_DIM = 256;
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   PH: "Philippines",
@@ -115,7 +115,7 @@ export function WorkspaceBusinessForm({
           maxWidth: LOGO_MAX_DIM,
           maxHeight: LOGO_MAX_DIM,
         },
-        { subfolder: "logo" },
+        { subfolder: "logo", delivery: { width: 256, height: 256, fit: "scale-down" } },
       );
       if ("error" in result) {
         const msgKey = (

@@ -22,6 +22,7 @@ import { sendNotification } from "@/lib/notifications/send";
 import {
   inviteMemberSchema,
   revokeInviteSchema,
+  checkInviteEligibilitySchema,
   type InviteMemberInput,
   type RevokeInviteInput,
 } from "@/lib/validators/team";
@@ -266,6 +267,19 @@ export async function inviteMemberAction(
 
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
+}
+
+export async function checkInviteEligibilityAction(
+  email: string,
+): Promise<{ registered: boolean } | { error: string }> {
+  const ctx = await ownerContext();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const parsed = checkInviteEligibilitySchema.safeParse({ email });
+  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+
+  const user = await User.findOne({ email: parsed.data.email }).select({ _id: 1 }).lean();
+  return { registered: Boolean(user) };
 }
 
 export async function revokeInviteAction(

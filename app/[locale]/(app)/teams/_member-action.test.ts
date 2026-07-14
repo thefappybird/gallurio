@@ -205,4 +205,32 @@ describe("removeMemberFromWorkspaceAction — transaction + seat release", () =>
     });
     expect(result.error).toBe("CANNOT_REMOVE_OWNER");
   });
+
+  it("refuses to remove a team lead and does not touch any membership", async () => {
+    const team = await makeTeam();
+    await seedMemberUser("user_lead");
+    await TeamMembership.create({
+      workspaceId: WORKSPACE_ID,
+      teamId: team._id,
+      workosUserId: "user_lead",
+      role: "lead",
+    });
+
+    const { removeMemberFromWorkspaceAction } = await import("./_member-action");
+    const result = await removeMemberFromWorkspaceAction({
+      workosUserId: "user_lead",
+    });
+
+    expect(result).toEqual({ error: "IS_TEAM_LEAD", teamName: "Crew" });
+
+    const row = await TeamMembership.findOne({
+      teamId: team._id,
+      workosUserId: "user_lead",
+    }).lean();
+    expect(row).toBeTruthy();
+    expect(row?.role).toBe("lead");
+
+    const userAfter = await User.findOne({ workosUserId: "user_lead" }).lean();
+    expect(userAfter?.memberships).toHaveLength(1);
+  });
 });

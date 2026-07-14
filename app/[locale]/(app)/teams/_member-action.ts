@@ -213,11 +213,15 @@ export async function setLeadFlagAction(
   return { ok: true };
 }
 
+export type RemoveMemberFromWorkspaceResult = ActionResult & {
+  teamName?: string;
+};
+
 // Workspace-level member removal. Removes workspace membership, all team
 // memberships, and releases the occupied team seats — in a single transaction.
 export async function removeMemberFromWorkspaceAction(
   input: RemoveMemberFromWorkspaceInput,
-): Promise<ActionResult> {
+): Promise<RemoveMemberFromWorkspaceResult> {
   const ctx = await ownerContext();
   if ("error" in ctx) return { error: ctx.error };
 
@@ -229,6 +233,20 @@ export async function removeMemberFromWorkspaceAction(
 
   if (workosUserId === ctx.workspace.ownerUserId) {
     return { error: "CANNOT_REMOVE_OWNER" };
+  }
+
+  const leadMembership = await TeamMembership.findOne({
+    workspaceId: ctx.workspace._id,
+    workosUserId,
+    role: "lead",
+  })
+    .select({ teamId: 1 })
+    .lean();
+  if (leadMembership) {
+    const team = await Team.findOne({ _id: leadMembership.teamId })
+      .select({ name: 1 })
+      .lean();
+    return { error: "IS_TEAM_LEAD", teamName: team?.name };
   }
 
   const memberships = await TeamMembership.find({

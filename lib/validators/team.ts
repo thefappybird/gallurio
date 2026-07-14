@@ -91,3 +91,8 @@ export const revokeInviteSchema = z.object({
   invitationId: z.string().min(1, "Invitation ID is required"),
 });
 export type RevokeInviteInput = z.infer<typeof revokeInviteSchema>;
+
+export const checkInviteEligibilitySchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+});
+export type CheckInviteEligibilityInput = z.infer<typeof checkInviteEligibilitySchema>;

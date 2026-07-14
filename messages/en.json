@@ -1465,7 +1465,17 @@
         "leadOnlyOnePerTeam": "A team can only have one lead.",
         "removeFromTeam": "Remove",
         "teamFull": "This team is full.",
-        "close": "Close"
+        "close": "Close",
+        "removeMemberFlow": {
+          "confirmTitle": "Remove {name} from {team}?",
+          "confirmDescription": "They'll lose access to this team's calendar and bookings.",
+          "confirmButton": "Remove from team",
+          "workspacePromptTitle": "Also remove {name} from the workspace?",
+          "workspacePromptDescription": "They'll lose access to every team and to the workspace entirely. This can't be undone.",
+          "dontAskAgain": "Don't ask me again",
+          "removeFromWorkspaceButton": "Remove from workspace",
+          "keepInWorkspaceButton": "Keep in workspace"
+        }
       },
       "upsell": {
         "atCapTitle": "You've reached your team limit",
@@ -1502,7 +1512,8 @@
           "leadLabel": "Lead",
           "teamFull": "Full",
           "submit": "Send invite",
-          "sending": "Sending…"
+          "sending": "Sending…",
+          "emailAlreadyRegistered": "This email already belongs to a Gallurio account. Sending is disabled until you use a different address."
         },
         "errors": {
           "emailRequired": "Enter a valid email address.",
@@ -1533,13 +1544,18 @@
         "removeFromWorkspace": "Remove from workspace",
         "revokeInvite": "Revoke invite",
         "rowActionsLabel": "Actions for {name}",
+        "viewButton": "View members",
+        "description": "Everyone with access to this workspace, across every team.",
+        "noTeams": "Not on any team",
+        "removeFromWorkspaceLabel": "Remove from workspace for {name}",
         "removeDialog": {
           "title": "Remove member?",
           "description": "{name} will lose access to this workspace immediately. Their bookings stay; team seats are released. This cannot be undone.",
           "confirm": "Remove member"
         },
         "errors": {
-          "cannotRemoveOwner": "The workspace owner can't be removed."
+          "cannotRemoveOwner": "The workspace owner can't be removed.",
+          "isTeamLead": "{name} is a team lead for {teamName}. Remove their team lead status first in order to delete them."
         },
         "toasts": {
           "removed": "Member removed."
@@ -3001,6 +3017,10 @@
       "already_accepted": {
         "title": "Already a member",
         "description": "You have already accepted this invitation and joined the workspace."
+      },
+      "revoked": {
+        "title": "Invitation revoked",
+        "description": "This invitation has been revoked by the workspace owner. Ask them to send a new one if you still need access."
       },
       "already_member": {
         "title": "Email already in use",

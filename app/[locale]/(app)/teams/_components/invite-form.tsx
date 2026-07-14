@@ -16,7 +16,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { inviteMemberAction } from "../_invite-action";
+import { useDebounce } from "@/lib/hooks/useDebounce";
+import { inviteMemberAction, checkInviteEligibilityAction } from "../_invite-action";
 import type { InvitableTeam } from "../_types";
 
 export type { InvitableTeam };
@@ -45,7 +46,13 @@ export function InviteForm({
   const [selectedTeamIds, setSelectedTeamIds] = useState<Set<string>>(new Set());
   const [leadOnTeamIds, setLeadOnTeamIds] = useState<Set<string>>(new Set());
   const [formError, setFormError] = useState<string | null>(null);
+  const [emailRegistered, setEmailRegistered] = useState(false);
   const [pending, startTransition] = useTransition();
+  const { debounced: checkEligibility } = useDebounce<string>((value) => {
+    checkInviteEligibilityAction(value).then((result) => {
+      setEmailRegistered("registered" in result && result.registered);
+    });
+  }, 300);
 
   const noTeamsAvailable = teams.length === 0;
 
@@ -59,6 +66,7 @@ export function InviteForm({
       setEmail("");
       setLeadOnTeamIds(new Set());
       setFormError(null);
+      setEmailRegistered(false);
       setSelectedTeamIds(new Set(defaultTeamIds ?? []));
     });
   }, [open, defaultTeamIds]);
@@ -161,10 +169,19 @@ export function InviteForm({
                 type="email"
                 placeholder={t("invite.dialog.emailPlaceholder")}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailRegistered(false);
+                  checkEligibility(e.target.value);
+                }}
                 disabled={pending}
                 autoFocus
               />
+              {emailRegistered && (
+                <p className="text-xs text-destructive">
+                  {t("invite.dialog.emailAlreadyRegistered")}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">
@@ -239,7 +256,10 @@ export function InviteForm({
           <Button variant="outline" disabled={pending} onClick={() => handleOpenChange(false)}>
             {t("createDialog.cancel")}
           </Button>
-          <Button disabled={pending || noTeamsAvailable} onClick={handleSubmit}>
+          <Button
+            disabled={pending || noTeamsAvailable || emailRegistered}
+            onClick={handleSubmit}
+          >
             {pending ? (
               <>
                 <Loader2Icon className="me-2 size-4 animate-spin" />
