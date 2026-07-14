@@ -67,7 +67,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (invitation.status !== "pending") {
     const errorParam =
-      invitation.status === "accepted" ? "already_accepted" : "invalid";
+      invitation.status === "accepted"
+        ? "already_accepted"
+        : invitation.status === "revoked"
+          ? "revoked"
+          : invitation.status === "expired"
+            ? "expired"
+            : "invalid";
     return NextResponse.redirect(
       new URL(localizedUrl(req, `/invite/accept?error=${errorParam}`)),
     );

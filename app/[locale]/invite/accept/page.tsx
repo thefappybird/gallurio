@@ -23,6 +23,7 @@ type InviteError =
   | "already_accepted"
   | "already_member"
   | "email_mismatch"
+  | "revoked"
   | "failed";
 
 function isInviteError(v: string | undefined): v is InviteError {
@@ -32,6 +33,7 @@ function isInviteError(v: string | undefined): v is InviteError {
     v === "already_accepted" ||
     v === "already_member" ||
     v === "email_mismatch" ||
+    v === "revoked" ||
     v === "failed"
   );
 }

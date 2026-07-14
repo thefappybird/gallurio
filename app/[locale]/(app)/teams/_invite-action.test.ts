@@ -9,6 +9,7 @@ import {
 import { Team, TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 import { Invitation } from "@/lib/db/models/Invitation";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
+import { User } from "@/lib/db/models/User";
 
 const WORKSPACE_ID = new Types.ObjectId();
 const OTHER_WORKSPACE_ID = new Types.ObjectId();
@@ -326,6 +327,46 @@ describe("revokeInviteAction — basic", () => {
     // Foreign invite is untouched.
     const after = await Invitation.findById(foreignInvite._id).lean();
     expect(after?.status).toBe("pending");
+  });
+});
+
+describe("checkInviteEligibilityAction", () => {
+  it("returns registered:true when a User exists with that email", async () => {
+    await User.create({
+      workosUserId: "user_registered",
+      email: "registered@example.com",
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+      memberships: [],
+    });
+    const { checkInviteEligibilityAction } = await import("./_invite-action");
+
+    const result = await checkInviteEligibilityAction("registered@example.com");
+    expect(result).toEqual({ registered: true });
+  });
+
+  it("returns registered:false when no User exists with that email", async () => {
+    const { checkInviteEligibilityAction } = await import("./_invite-action");
+
+    const result = await checkInviteEligibilityAction("nobody@example.com");
+    expect(result).toEqual({ registered: false });
+  });
+
+  it("returns an error for an invalid email format", async () => {
+    const { checkInviteEligibilityAction } = await import("./_invite-action");
+
+    const result = await checkInviteEligibilityAction("not-an-email");
+    expect(result).toEqual({ error: expect.any(String) });
+    expect("registered" in result).toBe(false);
+  });
+
+  it("returns owner_only error for a non-owner caller", async () => {
+    const { ownerContext } = await import("@/lib/auth/ownerContext");
+    vi.mocked(ownerContext).mockResolvedValueOnce({ error: "owner_only" });
+    const { checkInviteEligibilityAction } = await import("./_invite-action");
+
+    const result = await checkInviteEligibilityAction("registered@example.com");
+    expect(result).toEqual({ error: "owner_only" });
   });
 });
 
