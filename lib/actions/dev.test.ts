@@ -13,7 +13,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { User, Workspace } from "@/lib/db/models";
+import { User, Workspace, BetaProgram } from "@/lib/db/models";
 import { Team, TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 
 // ---------------------------------------------------------------------------
@@ -133,6 +133,17 @@ describe("devActivatePlanAction", () => {
     expect(updated?.lsSubscriptionId).toBeNull();
     expect(updated?.lsCustomerId).toBeNull();
     expect(updated?.lsCurrentPeriodEnd).toBeNull();
+  });
+
+  it("refuses to grant beta when the global beta program is closed", async () => {
+    const ws = await seedOwner();
+    await BetaProgram.create({ closedAt: new Date(), closedByUserId: "wos_operator" });
+
+    const result = await devActivatePlanAction("beta");
+    expect(result.error).toBe("beta_program_closed");
+
+    const updated = await Workspace.findById(ws._id).lean();
+    expect(updated?.plan).toBe("free");
   });
 
   it("respects the team-cap downgrade guard when switching to beta", async () => {

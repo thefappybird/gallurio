@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi, type MockedFunction } from "vitest";
 import mongoose from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { User, Workspace } from "@/lib/db/models";
+import { User, Workspace, BetaProgram } from "@/lib/db/models";
 import { Team } from "@/lib/db/models/team";
 
 // ---------------------------------------------------------------------------
@@ -398,6 +398,47 @@ describe("activateBetaTesterAction", () => {
 
     const user = await User.findOne({ workosUserId: "wos_user_001" }).lean();
     expect(user!.onboardingStep).toBe("done");
+  });
+
+  it("refuses with beta_program_closed when the global beta window is closed", async () => {
+    process.env.BETA_TESTER_ENABLED = "true";
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+    await BetaProgram.create({ closedAt: new Date(), closedByUserId: "wos_operator" });
+
+    const result = await activateBetaTesterAction();
+    expect(result.error).toBe("beta_program_closed");
+    expect(result.ok).toBeUndefined();
+  });
+
+  it("stamps User.betaParticipation.recordedAt/source on first activation", async () => {
+    process.env.BETA_TESTER_ENABLED = "true";
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+
+    await activateBetaTesterAction();
+
+    const user = await User.findOne({ workosUserId: "wos_user_001" }).lean();
+    expect(user!.betaParticipation?.recordedAt).not.toBeNull();
+    expect(user!.betaParticipation?.source).toBe("onboarding");
+  });
+
+  it("does not re-stamp betaParticipation.recordedAt on a repeat activation", async () => {
+    process.env.BETA_TESTER_ENABLED = "true";
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+
+    await activateBetaTesterAction();
+    const firstStamp = (
+      await User.findOne({ workosUserId: "wos_user_001" }).lean()
+    )!.betaParticipation!.recordedAt;
+
+    await activateBetaTesterAction();
+    const secondStamp = (
+      await User.findOne({ workosUserId: "wos_user_001" }).lean()
+    )!.betaParticipation!.recordedAt;
+
+    expect(secondStamp?.getTime()).toBe(firstStamp?.getTime());
   });
 });
 

@@ -17,6 +17,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
 import { grantPlan } from "@/lib/billing/grantPlan";
+import { isBetaProgramClosed } from "@/lib/billing/betaProgram";
 import {
   businessStepSchema,
   workspaceSetupSchema,
@@ -298,6 +299,8 @@ export async function activateBetaTesterAction(): Promise<ActionResult> {
 
   await connectDB();
 
+  if (await isBetaProgramClosed()) return { error: "beta_program_closed" };
+
   const user = await User.findOne(
     { workosUserId: authUser.workosUserId },
     { memberships: 1 }
@@ -306,6 +309,13 @@ export async function activateBetaTesterAction(): Promise<ActionResult> {
   if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
 
   await grantPlan(ownerMembership.workspaceId, { plan: "beta", expiresAt: null });
+
+  // Set once, permanently — durable identity-level evidence of beta
+  // participation, independent of the workspace's plan.
+  await User.updateOne(
+    { workosUserId: authUser.workosUserId, "betaParticipation.recordedAt": null },
+    { $set: { "betaParticipation.recordedAt": new Date(), "betaParticipation.source": "onboarding" } }
+  );
 
   await setUserStep(authUser.workosUserId, "done");
   return { ok: true };
