@@ -92,8 +92,8 @@ const PARTNER_LOGO_URL = "https://placehold.co/120x32/c05621/ffffff?text=Studio+
 
 const partnerBrand = resolveWorkspaceBrand({
   name: "Studio Aurora",
+  logoUrl: PARTNER_LOGO_URL,
   publicPage: {
-    header: { logoUrl: PARTNER_LOGO_URL },
     brandKit: { accentColor: PARTNER_ACCENT },
   },
   contact: { email: "hello@studio-aurora.test" },

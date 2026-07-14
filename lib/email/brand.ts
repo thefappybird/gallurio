@@ -1,6 +1,9 @@
 const GALLURIO_TEAL = "#0d8fa1";
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
 
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://gallurio.app").replace(/\/$/, "");
+export const GALLURIO_LOGO_URL = `${APP_URL}/brand/gallurio-sq-white.png`;
+
 export type Brand = {
   kind: "platform" | "partner";
   name: string;
@@ -12,17 +15,24 @@ export type Brand = {
 
 type WorkspaceBrandInput = {
   name?: string;
+  logoUrl?: string;
   publicPage?: { header?: { logoUrl?: string }; brandKit?: { accentColor?: string } };
   contact?: { email?: string };
 };
 
 export function gallurioBrand(): Brand {
-  return { kind: "platform", name: "Gallurio", accentHex: GALLURIO_TEAL, poweredByGallurio: false };
+  return {
+    kind: "platform",
+    name: "Gallurio",
+    logoUrl: GALLURIO_LOGO_URL,
+    accentHex: GALLURIO_TEAL,
+    poweredByGallurio: false,
+  };
 }
 
 export function resolveWorkspaceBrand(ws: WorkspaceBrandInput): Brand {
   const accent = ws.publicPage?.brandKit?.accentColor;
-  const logoUrl = ws.publicPage?.header?.logoUrl;
+  const logoUrl = ws.logoUrl;
   return {
     kind: "partner",
     name: ws.name?.trim() || "Gallurio",

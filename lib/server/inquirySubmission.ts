@@ -246,6 +246,7 @@ export async function submitInquiry(
       ownerEmail: recipient,
       brand: resolveWorkspaceBrand({
         name: workspace.name,
+        logoUrl: workspace.logoUrl,
         publicPage: workspace.publicPage
           ? {
               header: { logoUrl: workspace.publicPage.header?.logoUrl },

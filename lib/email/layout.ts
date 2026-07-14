@@ -1,5 +1,5 @@
 import { escapeHtml } from "./escapeHtml";
-import { Brand, ctaTextColor } from "./brand";
+import { Brand, ctaTextColor, GALLURIO_LOGO_URL } from "./brand";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -149,24 +149,34 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
   const headerBg = isPlatform ? accentHex : WHITE;
   const headerTextColor = isPlatform ? ctaTextColor(accentHex) : LIGHT_TEXT;
   const headerBorderBottom = isPlatform ? "" : `border-bottom:3px solid ${accentHex};`;
-  const brandDisplay = brand.logoUrl
+  const nameSpan = `<span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:${headerTextColor};">${e(brand.name)}</span>`;
+  const logoImg = brand.logoUrl
     ? `<img src="${e(brand.logoUrl)}" height="28" alt="${e(brand.name)}" style="display:block;border:0;" />`
-    : `<span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:${headerTextColor};">${e(brand.name)}</span>`;
+    : null;
+  const isRtl = locale === "ar";
+  const brandDisplay = logoImg
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${
+        isRtl
+          ? `<td style="padding-right:8px;">${nameSpan}</td><td>${logoImg}</td>`
+          : `<td>${logoImg}</td><td style="padding-left:8px;">${nameSpan}</td>`
+      }</tr></table>`
+    : nameSpan;
 
   // Footer
   let footerHtml: string;
   let footerText: string;
+  const footerMark = `<img src="${e(GALLURIO_LOGO_URL)}" height="16" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:6px;" />`;
   if (isPlatform) {
     footerHtml = [
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">Your event business, beautifully managed.</p>`,
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;"><a href="mailto:support@gallurio.com" style="color:#aaaaaa;">support@gallurio.com</a></p>`,
-      `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">&copy; ${year} Gallurio. All rights reserved.</p>`,
+      `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">${footerMark}&copy; ${year} Gallurio. All rights reserved.</p>`,
     ].join("\n");
     footerText = `Your event business, beautifully managed.\nsupport@gallurio.com\n© ${year} Gallurio. All rights reserved.`;
   } else {
     footerHtml = [
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">${e(brand.name)}</p>`,
-      `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;"><a href="https://gallurio.com" style="color:#aaaaaa;">Powered by Gallurio</a></p>`,
+      `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">${footerMark}<a href="https://gallurio.com" style="color:#aaaaaa;">Powered by Gallurio</a></p>`,
     ].join("\n");
     footerText = `${brand.name}\nPowered by Gallurio`;
   }

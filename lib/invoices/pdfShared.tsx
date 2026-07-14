@@ -21,8 +21,9 @@ export function buildInvoiceStyles(theme: PdfTheme) {
       justifyContent: "space-between",
     },
     accentStrip: { height: 4, backgroundColor: theme.accent },
-    logo: { width: 40, height: 40, marginBottom: 8, objectFit: "contain" },
-    businessName: { fontSize: 18, fontWeight: 700, color: "#FFFFFF", marginBottom: 4 },
+    logoRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+    logo: { width: 40, height: 40, objectFit: "contain" },
+    businessName: { fontSize: 18, fontWeight: 700, color: "#FFFFFF" },
     businessMeta: { fontSize: 9, color: "rgba(255,255,255,0.75)" },
     headerRight: { alignItems: "flex-end" },
     kindLabel: { fontSize: 10, color: "#FFFFFF", letterSpacing: 2, marginBottom: 6 },
@@ -79,12 +80,20 @@ export function DocumentHeader({
   styles: PdfStyles;
 }) {
   const dateFmt = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" });
+  const isRtl = locale.startsWith("ar");
   return (
     <>
       <View style={styles.headerBlock}>
         <View>
-          {business.logoUrl ? <Image src={business.logoUrl} style={styles.logo} /> : null}
-          <Text style={styles.businessName}>{business.name}</Text>
+          <View style={[styles.logoRow, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
+            {business.logoUrl ? (
+              <Image
+                src={business.logoUrl}
+                style={[styles.logo, isRtl ? { marginLeft: 8 } : { marginRight: 8 }]}
+              />
+            ) : null}
+            <Text style={styles.businessName}>{business.name}</Text>
+          </View>
           {business.address ? <Text style={styles.businessMeta}>{business.address}</Text> : null}
         </View>
         <View style={styles.headerRight}>

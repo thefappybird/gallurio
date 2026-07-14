@@ -215,6 +215,7 @@ export async function approveInquiryBookingAction(
   if (client?.email) {
     const brand = resolveWorkspaceBrand({
       name: ctx.workspace.name,
+      logoUrl: ctx.workspace.logoUrl,
       publicPage: ctx.workspace.publicPage
         ? {
             header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },
@@ -498,6 +499,7 @@ export async function declineInquiryAction(inquiryId: string): Promise<InquiryAc
       if (client?.email) {
         const brand = resolveWorkspaceBrand({
           name: ctx.workspace.name,
+          logoUrl: ctx.workspace.logoUrl,
           publicPage: ctx.workspace.publicPage
             ? {
                 header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },

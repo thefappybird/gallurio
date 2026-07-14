@@ -570,6 +570,7 @@ export async function PATCH(req: Request, { params }: Params) {
     const ownerEmail = ctx.workspace.contact?.email;
     const brand = resolveWorkspaceBrand({
       name: ctx.workspace.name,
+      logoUrl: ctx.workspace.logoUrl,
       publicPage: ctx.workspace.publicPage
         ? {
             header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },

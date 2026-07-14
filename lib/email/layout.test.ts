@@ -26,6 +26,35 @@ describe("renderBrandedEmail", () => {
     expect(html).toContain("Aperture");
     expect(html).toMatch(/Powered by\s*Gallurio/i);
   });
+  it("header renders logo image AND name side by side when logoUrl is set", () => {
+    const brand = resolveWorkspaceBrand({ name: "Aperture", logoUrl: "https://cdn.test/logo.png", contact: { email: "h@a.test" } });
+    const { html } = renderBrandedEmail({ brand, ...base });
+    expect(html).toContain('<img src="https://cdn.test/logo.png"');
+    expect(html).toContain(">Aperture<");
+  });
+  it("header renders name-only span (no logo img) when logoUrl is absent", () => {
+    const brand = resolveWorkspaceBrand({ name: "Aperture", contact: { email: "h@a.test" } });
+    const { html } = renderBrandedEmail({ brand, ...base });
+    expect(html).not.toMatch(/<img[^>]*alt="Aperture"/);
+  });
+  it("footer contains the Gallurio mark image for both platform and partner brand kinds", () => {
+    const platform = renderBrandedEmail({ brand: gallurioBrand(), ...base }).html;
+    const partner = renderBrandedEmail({
+      brand: resolveWorkspaceBrand({ name: "Aperture", contact: { email: "h@a.test" } }),
+      ...base,
+    }).html;
+    expect(platform).toContain("gallurio-sq-white.png");
+    expect(partner).toContain("gallurio-sq-white.png");
+  });
+  it("RTL locale (ar) swaps header cell order: name cell before logo cell", () => {
+    const brand = resolveWorkspaceBrand({ name: "Aperture", logoUrl: "https://cdn.test/logo.png", contact: { email: "h@a.test" } });
+    const { html } = renderBrandedEmail({ ...base, locale: "ar", brand });
+    const nameIdx = html.indexOf(">Aperture<");
+    const logoIdx = html.indexOf('<img src="https://cdn.test/logo.png"');
+    expect(nameIdx).toBeGreaterThan(-1);
+    expect(logoIdx).toBeGreaterThan(-1);
+    expect(nameIdx).toBeLessThan(logoIdx);
+  });
   it("includes a dark-mode style block and the preheader", () => {
     const { html } = renderBrandedEmail({ brand: gallurioBrand(), ...base });
     expect(html).toContain("prefers-color-scheme: dark");
