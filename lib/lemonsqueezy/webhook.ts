@@ -64,7 +64,12 @@ export async function verifyAndParseLemonSqueezyEvent(
     console.warn(
       "[lemonsqueezy-webhook] LEMONSQUEEZY_WEBHOOK_SECRET unset — accepting unsigned dev event"
     );
-    return JSON.parse(rawBody) as LemonSqueezyWebhookEvent;
+    try {
+      return JSON.parse(rawBody) as LemonSqueezyWebhookEvent;
+    } catch (err) {
+      console.error("[lemonsqueezy-webhook] failed to parse unsigned dev body", err);
+      return null;
+    }
   }
 
   if (!signature) return null;

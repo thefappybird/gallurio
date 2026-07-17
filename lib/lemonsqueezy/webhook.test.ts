@@ -102,6 +102,22 @@ describe("verifyAndParseLemonSqueezyEvent — missing secret", () => {
     process.env.LEMONSQUEEZY_WEBHOOK_SECRET = origSecret;
     vi.resetModules();
   });
+
+  it("returns null instead of throwing when the unsigned dev body is malformed JSON", async () => {
+    const origSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+    process.env.LEMONSQUEEZY_WEBHOOK_SECRET = "";
+
+    vi.resetModules();
+    const mod = await import("./webhook");
+
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = await mod.verifyAndParseLemonSqueezyEvent("{not valid json", "any-sig");
+    expect(result).toBeNull();
+
+    consoleSpy.mockRestore();
+    process.env.LEMONSQUEEZY_WEBHOOK_SECRET = origSecret;
+    vi.resetModules();
+  });
 });
 
 describe("computeWebhookEventKey", () => {

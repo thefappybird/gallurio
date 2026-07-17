@@ -37,10 +37,17 @@ export async function applyOrderedWorkspaceUpdate(
     return;
   }
 
+  // $lte, not $lt: two distinct events can legitimately share a provider
+  // timestamp at second granularity (e.g. subscription_created +
+  // subscription_updated fired together at checkout). Exact-duplicate
+  // redeliveries never reach here — the {provider,eventKey} claim in
+  // app/api/webhooks/lemonsqueezy/route.ts already suppresses those upstream
+  // — so accepting an equal timestamp is safe and required for the
+  // second-processed same-timestamp event to still apply.
   await Workspace.updateOne(
     {
       ...filter,
-      $or: [{ lsLastEventAt: null }, { lsLastEventAt: { $lt: eventTimestamp } }],
+      $or: [{ lsLastEventAt: null }, { lsLastEventAt: { $lte: eventTimestamp } }],
     },
     { $set: { ...set, lsLastEventAt: eventTimestamp } }
   );

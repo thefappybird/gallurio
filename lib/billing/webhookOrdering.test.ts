@@ -73,6 +73,23 @@ describe("applyOrderedWorkspaceUpdate", () => {
     expect(after?.lsLastEventAt?.getTime()).toBe(new Date("2026-08-05T00:00:00Z").getTime());
   });
 
+  it("applies the update when eventTimestamp equals the workspace's lsLastEventAt (two events sharing a timestamp)", async () => {
+    const sameTs = new Date("2026-08-05T00:00:00Z");
+    const ws = await Workspace.create({
+      slug: "ws-ordering-equal-ts",
+      name: "Ordering WS Equal",
+      ownerUserId: "user_1",
+      plan: "free",
+      lsLastEventAt: sameTs,
+    });
+
+    await applyOrderedWorkspaceUpdate({ _id: ws._id }, { plan: "pro" }, sameTs);
+
+    const after = await Workspace.findById(ws._id).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.lsLastEventAt?.getTime()).toBe(sameTs.getTime());
+  });
+
   it("applies unconditionally without touching lsLastEventAt when eventTimestamp is null (degraded fallback)", async () => {
     const ws = await Workspace.create({
       slug: "ws-ordering-3",

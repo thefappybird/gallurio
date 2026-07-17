@@ -326,7 +326,7 @@ export async function activateBetaTesterAction(): Promise<ActionResult> {
 // ---------------------------------------------------------------------------
 
 // Eagerly reconcile the workspace's Lemon Squeezy subscription state on the
-// done page. The webhook + workflow are the authoritative path; this is the
+// done page. The webhook is the authoritative path; this is the
 // safety net for cases where the user reaches the done page before the
 // webhook fires. Never throws — logs errors and returns silently so the done
 // page always loads.

@@ -143,4 +143,28 @@ describe("applySubscriptionSnapshot", () => {
     const after = await Workspace.findById(ws._id).lean();
     expect(after?.plan).toBe("pro");
   });
+
+  it("does not overwrite an existing lsCustomerId with null when the snapshot omits customer_id", async () => {
+    const ws = await Workspace.create({
+      slug: "snap-5",
+      name: "Snapshot WS 5",
+      ownerUserId: "user_1",
+      plan: "pro",
+      lsCustomerId: "cust_existing",
+    });
+
+    const applySubscriptionSnapshot = await loadApplySubscriptionSnapshot();
+    await applySubscriptionSnapshot({
+      filter: { _id: ws._id },
+      subscriptionId: "sub_5",
+      customerId: null,
+      rawStatus: "active",
+      variantId: "1001",
+      renewsAt: null,
+      eventTimestamp: null,
+    });
+
+    const after = await Workspace.findById(ws._id).lean();
+    expect(after?.lsCustomerId).toBe("cust_existing");
+  });
 });

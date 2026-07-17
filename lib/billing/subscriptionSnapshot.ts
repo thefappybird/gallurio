@@ -35,8 +35,10 @@ export async function applySubscriptionSnapshot(input: SubscriptionSnapshotInput
 
   const set: Record<string, unknown> = {
     lsSubscriptionId: subscriptionId,
-    lsCustomerId: customerId,
   };
+  // Only write when present — a payload that omits customer_id must not
+  // null out an already-stored good value.
+  if (customerId) set.lsCustomerId = customerId;
   if (status) set.lsSubscriptionStatus = status;
   if (periodEnd) set.lsCurrentPeriodEnd = periodEnd;
   // Entitled again (active/trialing) - clear every lapse-lifecycle timestamp
