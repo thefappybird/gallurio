@@ -159,6 +159,44 @@ describe("redactWebhookEventForStorage", () => {
   });
 });
 
+describe("lemonSqueezyEventEnvelopeSchema", () => {
+  it("accepts a well-formed verified envelope", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created", custom_data: { workspaceId: "ws_1" } },
+      data: { id: "sub_1", attributes: { status: "active" } },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a payload missing meta.event_name", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: {},
+      data: { id: "sub_1", attributes: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload missing data.id", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created" },
+      data: { attributes: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload missing data.attributes", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created" },
+      data: { id: "sub_1" },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("HANDLED_LEMONSQUEEZY_EVENTS", () => {
   it("contains the twelve expected event names", async () => {
     const { HANDLED_LEMONSQUEEZY_EVENTS } = await import("./webhook");

@@ -28,12 +28,6 @@ vi.mock("@/lib/lemonsqueezy/webhook", async () => {
   };
 });
 
-// Workflow API — we never want actual workflow runs in unit tests.
-vi.mock("workflow/api", () => ({
-  start: vi.fn().mockResolvedValue({ runId: "run_mock" }),
-  resumeHook: vi.fn().mockResolvedValue(undefined),
-}));
-
 // ---------------------------------------------------------------------------
 // Env vars — must be set before the route module is imported so
 // planForVariantId resolves correctly.
@@ -46,10 +40,8 @@ process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = "1002";
 // ---------------------------------------------------------------------------
 
 import { verifyAndParseLemonSqueezyEvent, computeWebhookEventKey } from "@/lib/lemonsqueezy/webhook";
-import { resumeHook } from "workflow/api";
 
 const mockVerify = vi.mocked(verifyAndParseLemonSqueezyEvent);
-const mockResumeHook = vi.mocked(resumeHook);
 
 function makeEvent(
   eventName: string,
@@ -186,7 +178,6 @@ describe("lemonsqueezy webhook — event ledger", () => {
 
     const rows = await WebhookEvent.find({}).lean();
     expect(rows).toHaveLength(1);
-    expect(mockResumeHook).toHaveBeenCalledOnce();
   });
 
   it("dedupes a redelivered subscription_payment_recovered event", async () => {
@@ -231,7 +222,7 @@ describe("lemonsqueezy webhook — event ledger", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("recovers from a concurrent duplicate-key upsert instead of 500ing", async () => {
+  it("recovers from a concurrent duplicate-key upsert against a live claim instead of 500ing", async () => {
     const wsId = await seedWorkspace({ plan: "free" });
     const subId = "sub_concurrent_dup";
     const event = makeEvent(
@@ -243,14 +234,18 @@ describe("lemonsqueezy webhook — event ledger", () => {
     mockVerify.mockResolvedValue(event as never);
 
     const eventKey = computeWebhookEventKey(event as never);
-    // Simulate a concurrent first delivery that already won the upsert race
-    // (the row now exists) before this request's own upsert attempt runs.
+    // Simulate a concurrent first delivery that already won the claim (the
+    // row now exists, status "processing", live lease) before this request's
+    // own upsert attempt runs.
     await WebhookEvent.create({
       provider: "lemonsqueezy",
       eventKey,
       eventName: event.meta.event_name,
       resourceId: event.data.id,
-      status: "received",
+      status: "processing",
+      claimToken: "concurrent-winner-token",
+      claimedAt: new Date(),
+      leaseExpiresAt: new Date(Date.now() + 60_000),
     });
     const findOneAndUpdateSpy = vi
       .spyOn(WebhookEvent, "findOneAndUpdate")
@@ -261,12 +256,13 @@ describe("lemonsqueezy webhook — event ledger", () => {
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.received).toBe(true);
+    expect(body).toEqual({ received: true, processing: true });
     findOneAndUpdateSpy.mockRestore();
 
     const rows = await WebhookEvent.find({ eventKey }).lean();
     expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe("processed");
+    expect(rows[0].status).toBe("processing");
+    expect(rows[0].claimToken).toBe("concurrent-winner-token");
   });
 });
 
@@ -314,15 +310,6 @@ describe("lemonsqueezy webhook — subscription_created", () => {
     expect(after?.lsSubscriptionStatus).toBe("active");
     expect(after?.lsSubscriptionId).toBe(subId);
     expect(after?.lsCurrentPeriodEnd).toBeInstanceOf(Date);
-
-    expect(mockResumeHook).toHaveBeenCalledOnce();
-    expect(mockResumeHook).toHaveBeenCalledWith(
-      `ls-checkout-${wsId.toString()}`,
-      expect.objectContaining({
-        subscriptionId: subId,
-        status: "active",
-      })
-    );
   });
 
   it("resolves plan to pro when the variant is the yearly pro variant id", async () => {
@@ -350,7 +337,7 @@ describe("lemonsqueezy webhook — subscription_created", () => {
     expect(after?.lsSubscriptionId).toBe(subId);
   });
 
-  it("does NOT call resumeHook when custom_data.workspaceId is absent", async () => {
+  it("applies the same status/subscription-id update when custom_data.workspaceId is absent", async () => {
     const wsId = await seedWorkspace({ plan: "free", lsSubscriptionId: "sub_no_custom" });
 
     const event = makeEvent(
@@ -365,7 +352,6 @@ describe("lemonsqueezy webhook — subscription_created", () => {
     const { POST } = await loadRoute();
     await POST(makeReq());
 
-    expect(mockResumeHook).not.toHaveBeenCalled();
     const after = await Workspace.findById(wsId).lean();
     expect(after?.lsSubscriptionStatus).toBe("active");
   });
@@ -1100,7 +1086,7 @@ describe("lemonsqueezy webhook — test-mode events in production", () => {
 });
 
 describe("lemonsqueezy webhook — lifecycle field mapping", () => {
-  it("sets lifecycle.lapsedAt on subscription_expired when it was previously null", async () => {
+  it("does NOT stamp lifecycle.lapsedAt on subscription_expired (the lazy grant-expiry path stamps it once the 15-day buffer lapses)", async () => {
     const subId = "sub_expired_lapse_stamp";
     const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
 
@@ -1116,34 +1102,8 @@ describe("lemonsqueezy webhook — lifecycle field mapping", () => {
 
     const after = await Workspace.findById(wsId).lean();
     expect(after?.plan).toBe("free");
-    expect(after?.lifecycle?.lapsedAt).toBeInstanceOf(Date);
-  });
-
-  it("does not move lifecycle.lapsedAt forward on a replayed subscription_expired event", async () => {
-    const subId = "sub_expired_replayed";
-    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
-
-    const event = makeEvent("subscription_expired", subId, {
-      status: "expired",
-      customer_id: "ctm_1",
-    });
-    mockVerify.mockResolvedValue(event as never);
-
-    const { POST } = await loadRoute();
-    await POST(makeReq());
-    const firstLapse = (await Workspace.findById(wsId).lean())?.lifecycle?.lapsedAt;
-
-    // Replay: subscription id is null'd by now, so route by customer_id.
-    const replay = makeEvent("subscription_expired", subId, {
-      status: "expired",
-      customer_id: "ctm_1",
-      subscription_id: subId,
-    });
-    mockVerify.mockResolvedValue(replay as never);
-    await POST(makeReq());
-
-    const after = await Workspace.findById(wsId).lean();
-    expect(after?.lifecycle?.lapsedAt?.getTime()).toBe(firstLapse?.getTime());
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+    expect(after?.planGrantExpiresAt).toBeInstanceOf(Date);
   });
 
   it("resets lifecycle.* to null on subscription_resumed", async () => {

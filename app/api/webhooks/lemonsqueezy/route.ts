@@ -1,318 +1,59 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace, WebhookEvent } from "@/lib/db/models";
+import { WebhookEvent } from "@/lib/db/models";
 import type { WebhookEventDoc } from "@/lib/db/models";
-import { Team } from "@/lib/db/models/team";
+import { WEBHOOK_CLAIM_LEASE_MS } from "@/lib/db/models/WebhookEvent";
 import {
   verifyAndParseLemonSqueezyEvent,
+  lemonSqueezyEventEnvelopeSchema,
   computeWebhookEventKey,
   redactWebhookEventForStorage,
   type LemonSqueezyWebhookEvent,
+  type HandledLemonSqueezyEvent,
 } from "@/lib/lemonsqueezy/webhook";
-import { planForVariantId } from "@/lib/lemonsqueezy/plans";
-import { planEntitlements } from "@/lib/plans/entitlements";
-import { mapLemonSqueezySubscriptionStatus } from "@/lib/lemonsqueezy/status";
-import { lifecycleResetFields } from "@/lib/billing/lifecycle";
-import { pendingGrantUpdate } from "@/lib/billing/pendingPromoGrant";
-import { resumeHook } from "workflow/api";
+import { resolveProviderEventTimestamp } from "@/lib/billing/webhookOrdering";
+import { LEMONSQUEEZY_WEBHOOK_HANDLERS } from "@/lib/lemonsqueezy/webhookHandlers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function workspaceIdFromEvent(event: LemonSqueezyWebhookEvent): string | null {
-  const raw = event.meta.custom_data?.workspaceId;
-  return typeof raw === "string" ? raw : null;
-}
-
-function stringAttr(attrs: Record<string, unknown>, key: string): string | null {
-  const v = attrs[key];
-  if (typeof v === "string") return v;
-  if (typeof v === "number") return String(v);
-  return null;
-}
 
 function isDuplicateKeyError(err: unknown): boolean {
   return typeof err === "object" && err !== null && (err as { code?: unknown }).code === 11000;
 }
 
-// Shared routing precedence for every handler except handleSubscriptionUpsert
-// (which additionally needs the mismatch-guard DB read): custom_data.workspaceId,
-// then the Lemon Squeezy subscription id, then the customer id. Returns null when
-// none are usable so callers can no-op instead of falling through to a filter
-// like { lsCustomerId: null } that could match an unrelated workspace.
-function resolveWorkspaceFilter(event: LemonSqueezyWebhookEvent): Record<string, unknown> | null {
-  const wsIdFromCustomData = workspaceIdFromEvent(event);
-  if (wsIdFromCustomData) return { _id: wsIdFromCustomData };
-
-  // subscription_payment_* events are "subscription-invoices" resources:
-  // event.data.id is the invoice's own id, and the subscription id lives in
-  // attributes.subscription_id instead. Subscription-typed events (created/
-  // updated/cancelled/expired/paused/...) have no subscription_id attribute,
-  // so this only takes effect for invoice events — event.data.id remains the
-  // correct subscription id for every other event this handler routes.
-  const attrSubscriptionId = stringAttr(event.data.attributes, "subscription_id");
-  const subscriptionId = attrSubscriptionId ?? event.data.id;
-  if (subscriptionId) return { lsSubscriptionId: subscriptionId };
-
-  const customerId = stringAttr(event.data.attributes, "customer_id");
-  if (customerId) return { lsCustomerId: customerId };
-
-  return null;
-}
-
-// ---------------------------------------------------------------------------
-// subscription_created  &  subscription_updated
-// ---------------------------------------------------------------------------
-async function handleSubscriptionUpsert(
-  event: LemonSqueezyWebhookEvent,
-  isActivation: boolean
-): Promise<void> {
-  const subscriptionId = event.data.id;
-  const attrs = event.data.attributes;
-  const wsIdFromCustomData = workspaceIdFromEvent(event);
-
-  // Defence-in-depth: when routing by customData.workspaceId, verify the
-  // target workspace isn't already bound to a *different* subscription. This
-  // guards against a stale client customData value mis-routing a new
-  // subscription onto the wrong workspace doc.
-  let filter: Record<string, unknown>;
-  if (wsIdFromCustomData) {
-    const existingWs = await Workspace.findOne({ _id: wsIdFromCustomData })
-      .select({ _id: 1, lsSubscriptionId: 1 })
-      .lean();
-    const existingSubId = existingWs?.lsSubscriptionId ?? null;
-
-    if (existingSubId && existingSubId !== subscriptionId) {
-      console.warn(
-        `[lemonsqueezy-webhook] customData.workspaceId ${wsIdFromCustomData} ` +
-          `already has subscription ${existingSubId}, got ${subscriptionId} — ` +
-          `routing by lsSubscriptionId instead`
-      );
-      filter = { lsSubscriptionId: subscriptionId };
-    } else {
-      filter = { _id: wsIdFromCustomData };
-    }
-  } else if (subscriptionId) {
-    filter = { lsSubscriptionId: subscriptionId };
-  } else {
-    // Same null-filter hazard resolveWorkspaceFilter guards against: an empty
-    // customer_id here would build { lsCustomerId: null }, which matches any
-    // never-billed workspace and could promote an unrelated tenant to paid.
-    const customerId = stringAttr(attrs, "customer_id");
-    if (!customerId) {
-      console.warn(
-        `[lemonsqueezy-webhook] ${event.meta.event_name} has no usable identifier ` +
-          "(no custom_data.workspaceId, subscription id, or customer_id) — skipping"
-      );
-      return;
-    }
-    filter = { lsCustomerId: customerId };
-  }
-
-  const rawStatus = stringAttr(attrs, "status");
-  const status = mapLemonSqueezySubscriptionStatus(rawStatus);
-  const variantId = stringAttr(attrs, "variant_id");
-  const renewsAt = stringAttr(attrs, "renews_at");
-  const periodEnd = renewsAt ? new Date(renewsAt) : undefined;
-
-  const update: Record<string, unknown> = {
-    lsSubscriptionId: subscriptionId,
-    lsCustomerId: stringAttr(attrs, "customer_id"),
-  };
-  if (status) update.lsSubscriptionStatus = status;
-  if (periodEnd) update.lsCurrentPeriodEnd = periodEnd;
-  // Entitled again (active/trialing) - clear every lapse-lifecycle timestamp so
-  // a previously-gated workspace gets a fresh start (its draft is still there
-  // to re-publish if the sweep already wiped the live page).
-  if (status === "active" || status === "trialing") {
-    Object.assign(update, lifecycleResetFields());
-  }
-
-  // Resolve the new plan from the variantId. Only promote when the resolved
-  // tier is paid — a variantId miss (e.g. env var unset in dev) must not
-  // silently downgrade a workspace. Also refuse to promote on a terminal
-  // status: subscription_updated fires on ANY attribute change, so a trailing
-  // update carrying a cancelled/expired status (variant_id is still populated
-  // on those) must not re-promote a workspace the dedicated
-  // subscription_cancelled/subscription_expired handlers already settled —
-  // those handlers are authoritative for terminal transitions, this one isn't.
-  const newTier = variantId ? planForVariantId(variantId) : "free";
-  if (newTier !== "free" && status !== "canceled") {
-    // Team-cap guard: if the workspace currently has more teams than the new
-    // tier allows, drop the plan from this update. The owner must delete teams
-    // first before the downgrade can take effect (UI surfaces this).
-    const ws = await Workspace.findOne(filter).select({ _id: 1, plan: 1 }).lean();
-    if (ws) {
-      const entitlements = planEntitlements(newTier);
-      const currentTeamCount = await Team.countDocuments({ workspaceId: ws._id });
-      if (currentTeamCount > entitlements.maxTeams) {
-        console.warn(
-          `[lemonsqueezy-webhook] refused plan update for workspace ${String(ws._id)}: ` +
-            `${currentTeamCount} teams > ${entitlements.maxTeams} maxTeams (${newTier})`
-        );
-        // Don't include plan in the update — keep existing value.
-      } else {
-        update.plan = newTier;
-        update.everSubscribed = true;
-      }
-    } else {
-      // Workspace not yet found by filter; safe to include plan.
-      update.plan = newTier;
-      update.everSubscribed = true;
-    }
-  }
-
-  // update always carries at least lsSubscriptionId/lsCustomerId (set above).
-  await Workspace.updateOne(filter, { $set: update });
-
-  // For activations: attempt to resume the in-flight checkout workflow hook.
-  // If the run already completed (or never existed) the resumeHook call will
-  // throw — that's a non-fatal condition because the DB update above already
-  // persisted the subscription state. We swallow and log.
-  if (isActivation && wsIdFromCustomData) {
-    try {
-      await resumeHook(`ls-checkout-${wsIdFromCustomData}`, {
-        subscriptionId,
-        customerId: stringAttr(attrs, "customer_id") ?? "",
-        status: rawStatus ?? "",
-        periodEnd: renewsAt,
-      });
-    } catch (e) {
-      console.warn(
-        `[lemonsqueezy-webhook] resumeHook ls-checkout-${wsIdFromCustomData} failed (non-fatal):`,
-        e
-      );
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// subscription_cancelled — cancel is NOT immediate. Access continues until
-// `ends_at`; only mark status, never downgrade plan here.
-// ---------------------------------------------------------------------------
-async function handleSubscriptionCancelled(event: LemonSqueezyWebhookEvent): Promise<void> {
-  const filter = resolveWorkspaceFilter(event);
-  if (!filter) return;
-
-  const attrs = event.data.attributes;
-  const update: Record<string, unknown> = { lsSubscriptionStatus: "canceled" };
-  const endsAt = stringAttr(attrs, "ends_at");
-  if (endsAt) update.lsCurrentPeriodEnd = new Date(endsAt);
-
-  await Workspace.updateOne(filter, { $set: update });
-}
-
-// ---------------------------------------------------------------------------
-// subscription_expired / subscription_payment_refunded — hard access-ended
-// boundaries: always downgrade to free, bypassing the team-cap guard. Over-cap
-// teams are surfaced in the UI; leaving an expired-or-refunded account on paid
-// entitlements is a billing leak and is never acceptable. A refund (full or
-// partial) means the customer got money back, so they lose paid access
-// immediately rather than waiting for a separate cancellation.
-// everSubscribed is never reset here — a workspace that has ever paid stays
-// locked out of free-tier access after expiry until it resubscribes (see
-// lib/billing/access.ts).
-// ---------------------------------------------------------------------------
-async function handleSubscriptionExpired(event: LemonSqueezyWebhookEvent): Promise<void> {
-  const filter = resolveWorkspaceFilter(event);
-  if (!filter) return;
-
-  // Read _id + lifecycle.lapsedAt first (rather than mutating via `filter`
-  // directly) because this update clears lsSubscriptionId — a second update
-  // keyed on the original filter (which may itself be { lsSubscriptionId })
-  // would no longer match once that field is nulled.
-  const ws = await Workspace.findOne(filter)
-    .select({ _id: 1, "lifecycle.lapsedAt": 1, pendingPromoGrant: 1 })
-    .lean();
-  if (!ws) return;
-
-  // A queued promo grant must be consumed HERE, in the terminal-signal
-  // handler itself — not as a follow-up sweep step — so a paying-through-
-  // their-promo user never reads as gated even for one tick.
-  const grantUpdate = pendingGrantUpdate(ws.pendingPromoGrant, new Date());
-  if (grantUpdate) {
-    await Workspace.updateOne({ _id: ws._id }, { $set: grantUpdate });
-    return;
-  }
-
-  const set: Record<string, unknown> = {
-    plan: "free",
-    lsSubscriptionStatus: "canceled",
-    lsCurrentPeriodEnd: null,
-    // Clear lsSubscriptionId — otherwise a later resubscribe's
-    // subscription_created event finds this workspace already "bound" to
-    // the expired subscription id, trips handleSubscriptionUpsert's
-    // mismatch guard, and reroutes to a filter matching zero documents
-    // (the new subscription id was never persisted), silently failing to
-    // promote the plan.
-    lsSubscriptionId: null,
-  };
-  // Stamp the lapse anchor exactly once — a stray/replayed expiry event must
-  // not push the reminder/wipe timeline back out.
-  if (!ws.lifecycle?.lapsedAt) {
-    set["lifecycle.lapsedAt"] = new Date();
-  }
-
-  await Workspace.updateOne({ _id: ws._id }, { $set: set });
-}
-
-// ---------------------------------------------------------------------------
-// subscription_paused / subscription_unpaused / subscription_resumed /
-// subscription_payment_failed — status-only update.
-// ---------------------------------------------------------------------------
-async function handleSubscriptionStatusOnly(
-  event: LemonSqueezyWebhookEvent,
-  resetLifecycle: boolean
-): Promise<void> {
-  const status = mapLemonSqueezySubscriptionStatus(stringAttr(event.data.attributes, "status"));
-  if (!status) return;
-
-  const filter = resolveWorkspaceFilter(event);
-  if (!filter) return;
-
-  const update: Record<string, unknown> = { lsSubscriptionStatus: status };
-  // resumed/unpaused mean entitled again - clear the lapse-lifecycle timestamps
-  // (paused/payment_failed stay entitled the whole time, so lifecycle is
-  // untouched for those; see the route switch below).
-  if (resetLifecycle) Object.assign(update, lifecycleResetFields());
-
-  await Workspace.updateOne(filter, { $set: update });
-}
-
-// ---------------------------------------------------------------------------
-// subscription_payment_success / subscription_payment_recovered — best-effort
-// bump to active (a recovered dunning payment means the subscription is
-// caught up again, same handling as a plain success). Only touch periodEnd
-// when the payload actually carries a usable renewal date; subscription_updated
-// is the authoritative periodEnd source since Lemon Squeezy also fires it on
-// renewal.
-// ---------------------------------------------------------------------------
-async function handleSubscriptionPaymentSuccess(event: LemonSqueezyWebhookEvent): Promise<void> {
-  const filter = resolveWorkspaceFilter(event);
-  if (!filter) return;
-
-  const attrs = event.data.attributes;
-  const update: Record<string, unknown> = {
-    lsSubscriptionStatus: "active",
-    ...lifecycleResetFields(),
-  };
-  const renewsAt = stringAttr(attrs, "renews_at");
-  if (renewsAt) update.lsCurrentPeriodEnd = new Date(renewsAt);
-
-  await Workspace.updateOne(filter, { $set: update });
-}
-
 // ---------------------------------------------------------------------------
 // Route handler
+//
+// Delivery guarantee: Lemon Squeezy delivers at-least-once (redelivers on any
+// non-2xx response or timeout). The claim-lease protocol below makes handler
+// APPLICATION idempotent/effectively-once, not mathematically exactly-once
+// execution: the unique (provider, eventKey) index plus a per-claim token
+// ensures at most one live worker ever applies a given logical event, and a
+// worker whose 2-minute lease has already expired can never overwrite a
+// newer claimant's outcome (the completion/failure writes below filter on
+// {_id, claimToken} together).
 // ---------------------------------------------------------------------------
 export async function POST(req: Request) {
   const rawBody = await req.text();
   const signature = req.headers.get("x-signature");
 
-  const event = await verifyAndParseLemonSqueezyEvent(rawBody, signature);
-  if (!event) {
+  const verified = await verifyAndParseLemonSqueezyEvent(rawBody, signature);
+  if (!verified) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
+
+  // HMAC verification only proves the bytes came from Lemon Squeezy, not that
+  // they parse into the envelope shape every handler assumes.
+  const parsed = lemonSqueezyEventEnvelopeSchema.safeParse(verified);
+  if (!parsed.success) {
+    console.warn(
+      "[lemonsqueezy-webhook] malformed verified payload",
+      parsed.error.flatten()
+    );
+    return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
+  }
+  const event = parsed.data as LemonSqueezyWebhookEvent;
 
   // Lemon Squeezy signs test-mode and live-mode events with the same webhook
   // secret, unlike Paddle's separate sandbox/production credentials. A prod
@@ -331,26 +72,38 @@ export async function POST(req: Request) {
   await connectDB();
 
   const eventKey = computeWebhookEventKey(event);
+  const now = new Date();
+  const claimToken = randomUUID();
+  const leaseExpiresAt = new Date(now.getTime() + WEBHOOK_CLAIM_LEASE_MS);
 
-  // Atomic dedupe gate: first delivery inserts the ledger row via
-  // $setOnInsert (the unique index on provider+eventKey enforces this even
-  // under concurrent redelivery); every subsequent delivery for the same
-  // eventKey matches the existing row instead of erroring. Two concurrent
-  // first deliveries can still race the unique index — the loser's upsert
-  // throws E11000; treat that as "already received" and re-fetch the row
-  // the winner just inserted instead of 500ing.
+  // Atomic claim: matches a genuinely-new eventKey (upsert path), a "failed"
+  // row (retry), or a "processing" row whose lease has expired (reclaim).
+  // A "processed" row or a "processing" row with a live lease matches
+  // nothing here, so Mongo attempts an insert — which collides on the
+  // unique (provider, eventKey) index and throws E11000; that's the signal
+  // this delivery did NOT win the claim (caught below).
   let ledger: WebhookEventDoc;
+  let claimed = true;
   try {
     ledger = await WebhookEvent.findOneAndUpdate(
-      { provider: "lemonsqueezy", eventKey },
+      {
+        provider: "lemonsqueezy",
+        eventKey,
+        $or: [{ status: "failed" }, { status: "processing", leaseExpiresAt: { $lt: now } }],
+      },
       {
         $setOnInsert: {
           provider: "lemonsqueezy",
           eventKey,
           eventName: event.meta.event_name,
           resourceId: event.data.id || null,
-          status: "received",
           payload: redactWebhookEventForStorage(event),
+        },
+        $set: {
+          status: "processing",
+          claimToken,
+          claimedAt: now,
+          leaseExpiresAt,
         },
         $inc: { attemptCount: 1 },
       },
@@ -361,74 +114,45 @@ export async function POST(req: Request) {
     const existing = await WebhookEvent.findOne({ provider: "lemonsqueezy", eventKey });
     if (!existing) throw err;
     ledger = existing;
+    claimed = false;
   }
 
-  if (ledger.status === "processed") {
-    // Already durably applied — ack without reprocessing.
-    return NextResponse.json({ received: true, deduped: true });
+  if (!claimed) {
+    if (ledger.status === "processed") {
+      // Already durably applied — ack without reprocessing.
+      return NextResponse.json({ received: true, deduped: true });
+    }
+    // Someone else currently holds a live claim on this eventKey.
+    return NextResponse.json({ received: true, processing: true });
   }
+
+  const eventTimestamp = resolveProviderEventTimestamp(event.data.attributes);
+  const handler =
+    LEMONSQUEEZY_WEBHOOK_HANDLERS[event.meta.event_name as HandledLemonSqueezyEvent];
 
   try {
-    switch (event.meta.event_name) {
-      case "subscription_created":
-        await handleSubscriptionUpsert(event, true);
-        break;
-
-      case "subscription_updated":
-      case "subscription_plan_changed":
-        // Lemon Squeezy may fire plan_changed alongside (or instead of)
-        // updated for a plan/variant change — same idempotent upsert handler
-        // handles both safely.
-        await handleSubscriptionUpsert(event, false);
-        break;
-
-      case "subscription_cancelled":
-        await handleSubscriptionCancelled(event);
-        break;
-
-      case "subscription_expired":
-      case "subscription_payment_refunded":
-        await handleSubscriptionExpired(event);
-        break;
-
-      case "subscription_paused":
-      case "subscription_payment_failed":
-        // Still entitled the whole time (see lib/billing/access.ts) — lifecycle
-        // timestamps are untouched.
-        await handleSubscriptionStatusOnly(event, false);
-        break;
-
-      case "subscription_unpaused":
-      case "subscription_resumed":
-        // Entitled again — clear the lapse-lifecycle timestamps.
-        await handleSubscriptionStatusOnly(event, true);
-        break;
-
-      case "subscription_payment_success":
-      case "subscription_payment_recovered":
-        await handleSubscriptionPaymentSuccess(event);
-        break;
-
-      default:
-        // Acknowledge unmodelled events so Lemon Squeezy doesn't retry forever.
-        break;
-    }
+    // Acknowledge unmodelled events so Lemon Squeezy doesn't retry forever —
+    // no handler means no billing mutation is performed.
+    if (handler) await handler(event, eventTimestamp);
   } catch (err) {
     console.error(`[lemonsqueezy-webhook] handler failed for ${event.meta.event_name}`, err);
     const message = err instanceof Error ? err.message : String(err);
     await WebhookEvent.updateOne(
-      { _id: ledger._id },
+      { _id: ledger._id, claimToken },
       { $set: { status: "failed", failedAt: new Date(), lastError: message.slice(0, 500) } }
     );
     // Retryable 5xx — never ack 200 on a failed authoritative update. Lemon
     // Squeezy will redeliver; the ledger row's status !== "processed" lets
-    // the dedupe gate above re-run the handler on retry instead of skipping
-    // it as already-applied.
+    // the claim gate above reclaim it (status "failed" is reclaimable
+    // unconditionally, no lease wait needed).
     return NextResponse.json({ received: false, error: "handler failed" }, { status: 500 });
   }
 
+  // Filtered on claimToken too: if our lease expired and someone else
+  // reclaimed this row while the handler above was running, this update
+  // matches nothing and silently no-ops instead of clobbering their result.
   await WebhookEvent.updateOne(
-    { _id: ledger._id },
+    { _id: ledger._id, claimToken },
     { $set: { status: "processed", processedAt: new Date() } }
   );
 
