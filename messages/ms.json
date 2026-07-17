@@ -542,8 +542,8 @@
         "status": "{page} daripada {total}"
       },
       "kpi": {
-        "revenueThisMonth": "Pendapatan bulan ini",
-        "activeBookings": "Tempahan aktif bulan ini",
+        "revenueThisMonth": "Hasil dikutip",
+        "activeBookings": "Tempahan dijadualkan",
         "newInquiries": "Pertanyaan baru",
         "outstandingBalance": "Baki tertunggak"
       },
@@ -557,7 +557,8 @@
         "eventTypes": "Pecahan jenis acara",
         "topClients": "Pelanggan teratas mengikut perbelanjaan",
         "teamPerformance": "Prestasi pasukan",
-        "bookingsPerTeam": "Tempahan mengikut pasukan"
+        "bookingsPerTeam": "Tempahan mengikut pasukan",
+        "operations": "Operasi"
       },
       "quickAdd": {
         "title": "Tambah cepat",
@@ -590,7 +591,36 @@
         "inquiryInsights": "Cerapan pertanyaan",
         "inquiryToBooking": "Pertanyaan → tempahan",
         "bookedFromInquiries": "Ditempah daripada pertanyaan",
-        "newClientsFromForm": "Pelanggan baharu daripada borang"
+        "newClientsFromForm": "Pelanggan baharu daripada borang",
+        "visitorDays": "Hari-pelawat",
+        "submissionRate": "Kadar penyerahan",
+        "bookedLeads": "Prospek ditempah",
+        "visitorsInquiriesTitle": "Pelawat & pertanyaan dari masa ke masa",
+        "funnel": {
+          "title": "Corong penukaran",
+          "visitorDays": "Hari-pelawat",
+          "contactOpened": "Hubungan dibuka",
+          "inquirySubmitted": "Pertanyaan dihantar",
+          "ofVisitors": "daripada pelawat",
+          "ofOpened": "daripada dibuka",
+          "ofTotal": "daripada jumlah",
+          "collectingData": "Mengumpul data"
+        },
+        "pipeline": {
+          "title": "Saluran pertanyaan",
+          "new": "Baharu",
+          "booked": "Ditempah",
+          "archived": "Diarkib",
+          "total": "Jumlah pertanyaan"
+        },
+        "demand": {
+          "title": "Profil permintaan",
+          "eventTypeMix": "Jenis acara (mengikut pertanyaan)",
+          "requestedMonth": "Bulan acara diminta",
+          "medianLeadTime": "Masa petunjuk median",
+          "days": "hari",
+          "basedOn": "berdasarkan"
+        }
       },
       "team": {
         "bookingsCount": "{count, plural, one {# tempahan} other {# tempahan}}"
@@ -633,6 +663,57 @@
         "client_changed": "pelanggan ditukar",
         "payment_added": "bayaran ditambah",
         "payment_updated": "bayaran dikemas kini"
+      },
+      "eventTypes": {
+        "wedding": "Perkahwinan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Ulang tahun",
+        "social": "Sosial",
+        "other": "Lain-lain"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "Nilai ditempah vs hasil dikutip",
+          "bookedValue": "Nilai ditempah",
+          "collectedRevenue": "Hasil dikutip"
+        },
+        "coverage": {
+          "title": "Liputan kutipan",
+          "asOf": "setakat",
+          "confirmedValue": "Nilai disahkan",
+          "confirmedHint": "Jumlah nilai tempahan yang disahkan",
+          "paid": "Dibayar (dikutip)",
+          "paidHint": "Pembayaran diterima setakat ini",
+          "remaining": "Baki tertunggak",
+          "remainingHint": "Belum dikutip",
+          "coverageText": "Liputan: {pct}% daripada nilai disahkan telah dikutip"
+        },
+        "heatmap": {
+          "title": "Peta haba jam ditempah",
+          "weekOf": "Minggu",
+          "bookedHours": "Jam ditempah",
+          "weekdays": [
+            "Isn",
+            "Sel",
+            "Rab",
+            "Kha",
+            "Jum",
+            "Sab",
+            "Ahd"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "Campuran acara dari masa ke masa"
+        }
       }
     },
     "calendar": {

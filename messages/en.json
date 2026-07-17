@@ -542,8 +542,8 @@
         "status": "{page} of {total}"
       },
       "kpi": {
-        "revenueThisMonth": "Revenue this month",
-        "activeBookings": "Active bookings this month",
+        "revenueThisMonth": "Collected revenue",
+        "activeBookings": "Scheduled bookings",
         "newInquiries": "New inquiries",
         "outstandingBalance": "Outstanding balance"
       },
@@ -557,7 +557,8 @@
         "eventTypes": "Event type breakdown",
         "topClients": "Top clients by spend",
         "teamPerformance": "Team performance",
-        "bookingsPerTeam": "Bookings by team"
+        "bookingsPerTeam": "Bookings by team",
+        "operations": "Operations"
       },
       "quickAdd": {
         "title": "Quick add",
@@ -590,7 +591,36 @@
         "inquiryInsights": "Inquiry insights",
         "inquiryToBooking": "Inquiry → booking",
         "bookedFromInquiries": "Booked from inquiries",
-        "newClientsFromForm": "New clients from form"
+        "newClientsFromForm": "New clients from form",
+        "visitorDays": "Visitor-days",
+        "submissionRate": "Submission rate",
+        "bookedLeads": "Booked leads",
+        "visitorsInquiriesTitle": "Visitors & inquiries over time",
+        "funnel": {
+          "title": "Conversion funnel",
+          "visitorDays": "Visitor-days",
+          "contactOpened": "Contact opened",
+          "inquirySubmitted": "Inquiry submitted",
+          "ofVisitors": "of visitors",
+          "ofOpened": "of opened",
+          "ofTotal": "of total",
+          "collectingData": "Collecting data"
+        },
+        "pipeline": {
+          "title": "Inquiry pipeline",
+          "new": "New",
+          "booked": "Booked",
+          "archived": "Archived",
+          "total": "Total inquiries"
+        },
+        "demand": {
+          "title": "Demand profile",
+          "eventTypeMix": "Event type (by inquiries)",
+          "requestedMonth": "Requested event month",
+          "medianLeadTime": "Median lead time",
+          "days": "days",
+          "basedOn": "based on"
+        }
       },
       "team": {
         "bookingsCount": "{count, plural, one {# booking} other {# bookings}}"
@@ -633,6 +663,57 @@
         "client_changed": "client changed",
         "payment_added": "payment added",
         "payment_updated": "payment updated"
+      },
+      "eventTypes": {
+        "wedding": "Weddings",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "social": "Social",
+        "other": "Other"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "Booked value vs collected revenue",
+          "bookedValue": "Booked value",
+          "collectedRevenue": "Collected revenue"
+        },
+        "coverage": {
+          "title": "Collection coverage",
+          "asOf": "as of",
+          "confirmedValue": "Confirmed value",
+          "confirmedHint": "Total value of confirmed bookings",
+          "paid": "Paid (collected)",
+          "paidHint": "Payments received to date",
+          "remaining": "Remaining balance",
+          "remainingHint": "Yet to be collected",
+          "coverageText": "Coverage: {pct}% of confirmed value collected"
+        },
+        "heatmap": {
+          "title": "Booked hours heatmap",
+          "weekOf": "Week of",
+          "bookedHours": "Booked hours",
+          "weekdays": [
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+            "Sun"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "Event mix over time"
+        }
       }
     },
     "calendar": {

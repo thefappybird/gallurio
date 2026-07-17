@@ -16,12 +16,17 @@ import {
   getActivityFeed,
   getRevenueTrend,
   getBookingsByDay,
-  getEventTypeBreakdown,
   getTransactionsByTeam,
   getBookingsCountByTeam,
   getTopClients,
   type DateRange,
 } from "./_data/dashboard-metrics";
+import {
+  getEventTypeValueTrend,
+  getBookedHoursHeatmap,
+  getScheduledVsCollectedSeries,
+  getCollectionCoverage,
+} from "./_data/booking-analytics";
 import { KpiStrip } from "./_components/kpi-strip";
 import { TodaysEventsList } from "./_components/todays-events-list";
 import { UpcomingWeekList } from "./_components/upcoming-week-list";
@@ -29,9 +34,12 @@ import { ActivityFeed } from "./_components/activity-feed";
 import { QuickAdd } from "./_components/quick-add";
 import { RevenueTrendChart } from "./_components/revenue-trend-chart";
 import { MiniBookingCalendar } from "./_components/mini-booking-calendar";
-import { EventTypeDonut } from "./_components/event-type-donut";
 import { TopClientsBar } from "./_components/top-clients-bar";
 import { TeamPerformanceCards } from "./_components/team-performance-cards";
+import { BookingValueCollectionChart } from "./_components/booking-value-collection-chart";
+import { CollectionCoverageCard } from "./_components/collection-coverage-card";
+import { BookedHoursHeatmap } from "./_components/booked-hours-heatmap";
+import { BookingEventTypeTrendChart } from "./_components/booking-event-type-trend-chart";
 import { DashboardPendingShell } from "./_components/dashboard-pending-shell";
 import { PortfolioDashboard } from "./_components/portfolio-dashboard";
 import { getBookingTeamOptions } from "../bookings/_data/team-options";
@@ -147,6 +155,7 @@ async function BookingsTab({
   range: DateRange;
 }) {
   const timeMode = await getUserTimeFormat();
+  const tz = resolveWorkspaceTimezone(workspace);
 
   const [
     kpi,
@@ -155,24 +164,34 @@ async function BookingsTab({
     activity,
     revenue,
     monthBookings,
-    eventTypes,
     revenueByTeam,
     bookingsByTeam,
     topClients,
     teamOptions,
+    valueSeries,
+    coverage,
+    heatmap,
+    eventTrend,
   ] = await Promise.all([
     getKpiSnapshotWithDeltas(wid, range),
     getTodaysEvents(wid),
     getUpcomingWeek(wid),
     getActivityFeed(wid, 20),
-    getRevenueTrend(wid, 30, range, resolveWorkspaceTimezone(workspace)),
+    getRevenueTrend(wid, 30, range, tz),
     getBookingsByDay(wid, new Date()),
-    getEventTypeBreakdown(wid, range),
     getTransactionsByTeam(wid, range),
     getBookingsCountByTeam(wid, range),
     getTopClients(wid, 5),
     getBookingTeamOptions({ role, userId, workspace }),
+    getScheduledVsCollectedSeries(wid, range, tz),
+    getCollectionCoverage(wid, range),
+    getBookedHoursHeatmap(wid, range, tz),
+    getEventTypeValueTrend(wid, range, tz),
   ]);
+
+  const eventTypeLabels = t.raw("eventTypes") as Record<string, string>;
+  const weekdayLabels = t.raw("booking.heatmap.weekdays") as string[];
+  const heatmapLegend = t.raw("booking.heatmap.legend") as string[];
 
   return (
     <div className="flex flex-col gap-3">
@@ -189,25 +208,66 @@ async function BookingsTab({
         }}
       />
 
+      {/* Scheduled value + collected (2/3) | Collection coverage (1/3) */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <MiniBookingCalendar
-          month={new Date()}
-          days={monthBookings}
-          locale={locale}
-          title={t("sections.calendar")}
-          teams={teamOptions}
-        />
-        <EventTypeDonut
-          data={eventTypes}
-          title={t("sections.eventTypes")}
-          empty={t("empty")}
-        />
-        <TopClientsBar
-          clients={topClients}
+        <div className="lg:col-span-2">
+          <BookingValueCollectionChart
+            data={valueSeries}
+            currency={workspace.currency}
+            locale={locale}
+            labels={{
+              title: t("booking.valueCollection.title"),
+              bookedValue: t("booking.valueCollection.bookedValue"),
+              collectedRevenue: t("booking.valueCollection.collectedRevenue"),
+              empty: t("empty"),
+            }}
+          />
+        </div>
+        <CollectionCoverageCard
+          coverage={coverage}
           currency={workspace.currency}
           locale={locale}
-          title={t("sections.topClients")}
-          empty={t("empty")}
+          labels={{
+            title: t("booking.coverage.title"),
+            asOf: t("booking.coverage.asOf"),
+            confirmedValue: t("booking.coverage.confirmedValue"),
+            confirmedHint: t("booking.coverage.confirmedHint"),
+            paid: t("booking.coverage.paid"),
+            paidHint: t("booking.coverage.paidHint"),
+            remaining: t("booking.coverage.remaining"),
+            remainingHint: t("booking.coverage.remainingHint"),
+            // Raw: contains a literal {pct} token the card substitutes itself (no ICU).
+            coverage: t.raw("booking.coverage.coverageText") as string,
+            empty: t("empty"),
+          }}
+        />
+      </div>
+
+      {/* Booked-hours heatmap (2/3) | Event-type trend (1/3) */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <BookedHoursHeatmap
+            cells={heatmap}
+            locale={locale}
+            labels={{
+              title: t("booking.heatmap.title"),
+              weekOf: t("booking.heatmap.weekOf"),
+              bookedHours: t("booking.heatmap.bookedHours"),
+              weekdays: weekdayLabels,
+              legend: heatmapLegend,
+              empty: t("empty"),
+            }}
+          />
+        </div>
+        <BookingEventTypeTrendChart
+          trend={eventTrend}
+          currency={workspace.currency}
+          locale={locale}
+          labels={{
+            title: t("booking.trend.title"),
+            eventTypes: eventTypeLabels,
+            empty: t("empty"),
+          }}
         />
       </div>
 
@@ -218,6 +278,7 @@ async function BookingsTab({
         locale={locale}
       />
 
+      {/* Analytics extras: collected-cash trend (2/3) + top clients (1/3) */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="lg:col-span-2 h-full">
           <RevenueTrendChart
@@ -227,45 +288,70 @@ async function BookingsTab({
             title={t("sections.revenueTrend")}
           />
         </div>
-
-        <QuickAdd
-          title={t("quickAdd.title")}
-          labels={{
-            booking: t("quickAdd.booking"),
-            client: t("quickAdd.client"),
-            inquiry: t("quickAdd.inquiry"),
-          }}
+        <TopClientsBar
+          clients={topClients}
+          currency={workspace.currency}
+          locale={locale}
+          title={t("sections.topClients")}
+          empty={t("empty")}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <div className="lg:col-span-2 h-full">
-          <TodaysEventsList
-            bookings={todays as BookingDoc[]}
-            locale={locale}
-            title={t("sections.todaysEvents")}
-            empty={t("empty")}
-            timeMode={timeMode}
+      {/* Operations — day-to-day tools, separated from analytics */}
+      <section className="mt-2 flex flex-col gap-3 border-t border-border pt-4">
+        <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
+          {t("sections.operations")}
+        </h2>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <div className="lg:col-span-2 h-full">
+            <MiniBookingCalendar
+              month={new Date()}
+              days={monthBookings}
+              locale={locale}
+              title={t("sections.calendar")}
+              teams={teamOptions}
+            />
+          </div>
+          <QuickAdd
+            title={t("quickAdd.title")}
+            labels={{
+              booking: t("quickAdd.booking"),
+              client: t("quickAdd.client"),
+              inquiry: t("quickAdd.inquiry"),
+            }}
           />
         </div>
-        <div className="h-full lg:row-span-2">
-          <UpcomingWeekList
-            bookings={upcoming as BookingDoc[]}
-            locale={locale}
-            title={t("sections.upcomingWeek")}
-            empty={t("empty")}
-            viewAll={t("viewAll")}
-          />
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <div className="lg:col-span-2 h-full">
+            <TodaysEventsList
+              bookings={todays as BookingDoc[]}
+              locale={locale}
+              title={t("sections.todaysEvents")}
+              empty={t("empty")}
+              timeMode={timeMode}
+            />
+          </div>
+          <div className="h-full lg:row-span-2">
+            <UpcomingWeekList
+              bookings={upcoming as BookingDoc[]}
+              locale={locale}
+              title={t("sections.upcomingWeek")}
+              empty={t("empty")}
+              viewAll={t("viewAll")}
+            />
+          </div>
+          <div className="lg:col-span-2 h-full">
+            <ActivityFeed
+              activity={activity}
+              locale={locale}
+              title={t("sections.activity")}
+              empty={t("empty")}
+            />
+          </div>
         </div>
-        <div className="lg:col-span-2 h-full">
-          <ActivityFeed
-            activity={activity}
-            locale={locale}
-            title={t("sections.activity")}
-            empty={t("empty")}
-          />
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
