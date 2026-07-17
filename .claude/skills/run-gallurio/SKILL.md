@@ -41,8 +41,8 @@ fresh clone/worktree. It also pulls `cross-env`, which `pnpm dev` needs.
 
 ## Run (agent path) — driver
 
-**1. Start the dev server** (background; ~28s to ready — it discovers Workflow
-directives for ~19s first). `NODE_ENV=development` is what bypasses Turnstile:
+**1. Start the dev server** (background; several seconds to ready).
+`NODE_ENV=development` is what bypasses Turnstile:
 
 ```bash
 pnpm dev

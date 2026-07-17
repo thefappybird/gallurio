@@ -105,11 +105,6 @@ Composed, app-specific shared components.
 | `lib/utils/get-user-time-format.ts` | `getUserTimeFormat` | `() => Promise<TimeMode>` | Read user time-format pref from cookie (fallback 24h) |
 | `lib/pagination.ts` | `PAGE_SIZE_OPTIONS` | `[10,20,30,50]` | Shared page sizes (client + server) |
 
-### `lib/workflows/`
-| Import | Export | Purpose |
-|--------|--------|---------|
-| `lib/workflows/world.ts` | `startWorld`, `stopWorld`, `worldReady` | Workflow DevKit World lifecycle wrappers around `workflow/runtime`'s `getWorld()`. `startWorld()` called from `instrumentation.ts` on boot; `stopWorld()` called from `server.ts`'s graceful-shutdown handler (`lib/server/gracefulShutdown.ts`) on SIGTERM/SIGINT; `worldReady()` returns `{healthy, error?}`, consumed by `app/api/health/route.ts`'s readiness check |
-
 ### `lib/bookings/`
 | Import | Export | Purpose |
 |--------|--------|---------|

@@ -11,7 +11,6 @@ Use this as the release gate for the first production deployment. Checked items 
 - [ ] Freeze the release commit; record the full SHA, image digest, migration list, and rollback SHA.
 - [ ] Set up and test GitHub Actions for final checks, immutable image publishing, VPS deployment, health checks, deployment notifications, and rollback.
 - [ ] Finish the VPS deployment path: Docker/Compose, GHCR pull access, Caddy, runtime secrets, backups, monitoring, and rollback.
-- [ ] Deploy and verify Workflow World/Postgres with persistent storage, schema bootstrap, backup/restore, and restart-survival testing.
 - [ ] Install and test the invitation and billing systemd timers on the VPS.
 - [ ] Run guarded production migrations/backfills and seed required baseline data, including portfolio themes/templates and beta promo codes.
 - [ ] Complete Lemon Squeezy live-mode setup and verify checkout, signed webhooks, subscription lifecycle, cancellation, and refund handling.
@@ -30,9 +29,9 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4
 - The beta policy is a shared two-month beta run, not a separate timer per person. All active beta access ends together when the beta program is closed. A verified beta participant may redeem one two-month Pro promo at any time; the promo grant lasts two months from redemption. This is now code-complete: `BetaProgram` (singleton close-gate), `User.betaParticipation`/`betaPromoRedeemedAt`, the `beta2mo` promo type, `Workspace.pendingPromoGrant` (queued-grant stacking with active Pro, applied identically from both the webhook and the lifecycle sweep so entitlement never reads falsely gated), emergency revocation, and the production seed/backfill scripts all landed and are covered by tests. The legacy perpetual `beta` promo type is unchanged/untouched per the original decision to add a distinct type rather than reuse it. Running the seed/backfill scripts against production and end-to-end reconciliation remain open.
 - On Lemon Squeezy cancellation, `plan` remains `pro`, status becomes `canceled`, and `lsCurrentPeriodEnd` comes from `ends_at`. On `subscription_expired` or `subscription_payment_refunded`, the webhook sets `plan: "free"`, leaves `everSubscribed: true`, clears the subscription ID and period end, and gates normal in-app access for owners and staff. From `lifecycle.lapsedAt`, the sweep sends the expiry email at T0, a reminder at T+30 days, a final one-week warning at T+51 days, and unpublishes the live public page at T+58 days; CRM data and drafts are retained.
 - `subscription_payment_failed`, `past_due`, and `paused` are not by themselves sufficient to expire access. Gallurio expires access only when Lemon Squeezy reports its terminal non-payment state, or sends another provider-authoritative terminal event such as expiry/refund. The route's 12-event coverage was cross-checked against the live Lemon Squeezy dashboard's configured event list on 2026-07-14 (`c636f24`): `subscription_payment_refunded` is a real event and stays terminal; `subscription_payment_recovered` (dunning recovery) and `subscription_plan_changed` were found silently no-op'ing through the default case and are now handled. Production payload verification against a real live-mode delivery is still open.
-- The app is self-hosted through the custom `server.ts` for Socket.IO. The final deployment decision is containerized: GitHub Actions runs the checks/build, publishes an immutable Gallurio image, and the Hetzner VPS pulls and runs that image. The VPS must never run `next build` during deployment. `/api/health` exposes liveness and dependency-aware readiness, and the custom server performs graceful shutdown inside the Gallurio container.
-- The final VPS runtime consists of Caddy on the host plus separate Docker Compose services for the Gallurio app image and the Workflow Postgres image. Postgres uses a persistent named volume and a private Docker network; its port is not public. The Gallurio container receives runtime secrets from the VPS environment and connects to MongoDB Atlas and Workflow Postgres. PM2 is not part of the final app supervision path; Docker restart policies and deployment health checks are authoritative.
-- Billing checkout uses Vercel Workflow DevKit with pinned Postgres World support. Startup, shutdown, readiness, production environment validation, and the CI integration command are wired in code. The production PostgreSQL service, schema bootstrap, backup/restore, monitoring, and restart-survival proof remain operational gates.
+- The app is self-hosted through the custom `server.ts` for Socket.IO. The final deployment decision is containerized: GitHub Actions runs the checks/build, publishes an immutable Gallurio image, and the Hetzner VPS pulls and runs that image. The VPS must never run `next build` during deployment. `/api/health` exposes liveness and Mongo-only readiness, and the custom server performs graceful shutdown inside the Gallurio container.
+- The final VPS runtime is the Gallurio app image plus MongoDB Atlas — no separate billing database, queue, or worker process. Caddy runs on the host in front of a single Docker Compose service for the Gallurio app. The Gallurio container receives runtime secrets from the VPS environment and connects only to MongoDB Atlas and Lemon Squeezy's API. PM2 is not part of the final app supervision path; Docker restart policies and deployment health checks are authoritative.
+- Billing checkout is a synchronous Route Handler that calls Lemon Squeezy directly and returns the checkout URL; subscription state changes are applied entirely by the Lemon Squeezy webhook handler (`app/api/webhooks/lemonsqueezy/route.ts`) against MongoDB. Durability is at-least-once webhook delivery with idempotent, effectively-once application via an atomic claim-lease ledger (`WebhookEvent`) — not a durable workflow engine or separate database. See item #3 under Delegated Engineering Work for the full durability gate.
 - Two scheduled jobs now exist: hourly expired-invitation seat release and daily billing lifecycle processing. Versioned systemd service/timer units are included under `deploy/systemd/`; they still need to be installed, enabled, monitored, and tested on Hetzner.
 - Team management hardening (found during manual testing, 2026-07-14, `e9bcd61`/`1762aac`): a debounced already-registered-email check on the invite form; a distinct `revoked` invite-accept error (previously collapsed into `invalid`); a shared dropdown-positioning fix in `components/ui/select.tsx`/`popover.tsx` (Base UI's default `clipping-ancestors` collision boundary was mis-clipping against a `Sheet`'s scroll container — fixed with an explicit `collisionBoundary`, propagates to every dropdown in the app); a workspace-wide "View Members" sidebar; a two-step team-then-workspace removal confirmation with a persisted "don't ask again" flag; a guard blocking removal of an active team lead; and a read-only teams view for non-owner roles (previously a separate, more limited component). Verified via a new Playwright spec (`e2e/teams-page.spec.ts`, 6/6 passing at 375/768/1280) plus unit/component tests.
 - Business/email/invoice branding consistency (2026-07-14, `321dd85`): the Business Details logo upload was unbounded (2000x2000/2MB, no delivery variant) — now capped to 256x256/250KB with a Cloudflare delivery transform, matching the portfolio-header logo pattern. Transactional emails now source the business logo from `Workspace.logoUrl` (previously the portfolio nav logo field) and render it beside the business/Gallurio name in both the header and a small footer mark, RTL-aware for Arabic (table-based cell reordering, not reliant on CSS `dir` alone, for Outlook compatibility). Invoice/receipt PDFs (`@react-pdf/renderer`) render the same logo-beside-name layout with an explicit `flexDirection` for RTL. Covered by `lib/email/brand.test.ts`, `lib/email/layout.test.ts`, and `lib/invoices/pdfShared.test.tsx`.
@@ -63,10 +62,9 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4
 ### Code and data gates
 
 - [x] Merge the `action/beta-release-cleanup` implementation target: PR #58 / merge commit `914de573` covers Delegated Engineering Work #1-#12 plus the code-wiring portion of #14. #13 (Paddle) was intentionally excluded because Lemon Squeezy remains authoritative.
-- [ ] Close the residual items recorded under Delegated Engineering Work, especially verified beta promo redemption, terminal Lemon Squeezy payment mapping, concurrent webhook claiming, lifecycle in-app recovery, universal email recovery/monitoring, migration-ledger gaps, cron failure alerting, full async-state coverage, and production Workflow infrastructure.
+- [ ] Close the residual items recorded under Delegated Engineering Work, especially verified beta promo redemption, terminal Lemon Squeezy payment mapping, lifecycle in-app recovery, universal email recovery/monitoring, migration-ledger gaps, cron failure alerting, and full async-state coverage.
 - [x] Add the guarded operator tooling for the two-month beta promo: `scripts/seed-promo-code.ts` (idempotent `beta2mo` PromoCode creation, code value never logged) and `lib/db/migrations/2026-07-beta-participation-backfill.ts` (backfills `User.betaParticipation` for pre-existing `plan:"beta"` workspace owners). Both use the shared `lib/db/scriptGuard.ts` dev/production guard. Running them against production, and reconciling redemption/eligibility end-to-end, remain open.
-- [x] Add `pnpm test:integration` to `.github/workflows/ci.yml` alongside typecheck, lint, unit tests, and build.
-- [ ] Pass `rtk vitest`, `pnpm test:integration`, `rtk tsc`, `rtk lint`, and `rtk next build` against the final release commit and retain the full CI logs. *(Progress 2026-07-14: typecheck clean, lint clean (0 errors; only pre-existing unrelated warnings in vendored/skill scripts and one false-positive `jsx-a11y/alt-text` on `@react-pdf/renderer`'s non-DOM `Image`), `pnpm test:integration` 4/4 passing, `pnpm build` completes successfully. `pnpm test` is 4633/4640 passing — the remaining 7 failures span `seedPortfolio`, `(auth)/_actions`, `table-booking-manager`, and `EditorShell` (the same pre-existing `EditorShell` failure noted below), none touched by this session's beta/billing/team-management/branding work. This has not yet been run against a frozen final release commit or retained as archived CI evidence — that step remains open.)*
+- [ ] Pass `rtk vitest`, `rtk tsc`, `rtk lint`, and `rtk next build` against the final release commit and retain the full CI logs. *(Progress 2026-07-14: typecheck clean, lint clean (0 errors; only pre-existing unrelated warnings in vendored/skill scripts and one false-positive `jsx-a11y/alt-text` on `@react-pdf/renderer`'s non-DOM `Image`), `pnpm build` completes successfully. `pnpm test` is 4633/4640 passing — the remaining 7 failures span `seedPortfolio`, `(auth)/_actions`, `table-booking-manager`, and `EditorShell` (the same pre-existing `EditorShell` failure noted below), none touched by this session's beta/billing/team-management/branding work. This has not yet been run against a frozen final release commit or retained as archived CI evidence — that step remains open.)*
 - [ ] Run a strict tenant-isolation review of every launch-critical query and mutation: authenticated tenant scope must come from session plus MongoDB membership, and every `_id` mutation must also filter by `workspaceId`.
 - [ ] Audit production bundles/routes for `lib/actions/dev.ts`, the dev-plan settings panel, sample-data toggles, seed entrypoints, billing simulators, `AUTHKIT_DEBUG`, test credentials, and test-mode provider flags. Verify all bypasses are absent, unreachable, or fail closed under `NODE_ENV=production`.
 - [ ] Never run `pnpm seed` against production. It refuses `NODE_ENV=production`, but operational access and the production database URI must also make accidental execution impossible.
@@ -105,10 +103,8 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4
 - [ ] Configure read-only GHCR authentication on the VPS and publish the final Gallurio image from GitHub Actions using an immutable commit SHA/digest tag.
 - [ ] Pull and run the Gallurio image with Docker Compose; inject runtime secrets without baking them into the image. Do not run `next build` or build Docker images on the VPS.
 - [ ] Configure log rotation for PM2, Caddy, system logs, and cron/timer output. Redact cookies, tokens, authorization headers, customer data, webhook bodies, and email bodies.
-- [x] Add non-sensitive liveness/readiness checks for the process, MongoDB, and Workflow World, plus graceful application shutdown.
+- [x] Add non-sensitive liveness/readiness checks for the process and MongoDB, plus graceful application shutdown.
 - [ ] Monitor HTTPS reachability, readiness, disk, memory, load, certificate expiry, cron freshness, and 5xx rate from an external location.
-- [ ] Provision and validate the production Workflow World before accepting checkout traffic. For Postgres World, use a dedicated production PostgreSQL database/user, install the adapter, set `WORKFLOW_TARGET_WORLD` and `WORKFLOW_POSTGRES_URL`, bootstrap its schema, start the long-lived worker during application instrumentation/startup, and monitor queue/run/hook failures.
-- [ ] Back up and restore-test the Workflow database separately from MongoDB. A MongoDB snapshot alone cannot recover checkout workflow state.
 - [ ] Create alert routes and thresholds, a one-page incident runbook, provider status links, and an escalation rule. Test one synthetic alert before launch.
 - [ ] Enable Hetzner snapshots/backups as an infrastructure recovery layer, but do not treat VPS snapshots as MongoDB backups. Document retention and restore ownership.
 - [ ] Set disk-usage alerts and a cleanup policy for old releases, package caches, PM2 logs, Caddy logs, crash dumps, and temporary upload files.
@@ -217,24 +213,13 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4
 - [x] Persist a unique webhook-event ledger, return retryable 5xx responses on authoritative processing failures, redact stored payloads, and provide an operator replay script.
 - [ ] Add an atomic processing claim/lease and a true simultaneous-delivery test. The unique ledger deduplicates processed events, but two requests that observe the same non-processed row can currently execute the handler concurrently.
 - [ ] Configure the customer portal for payment methods, invoices, and cancellation only. Verify no plan-switch/downgrade option exposes Starter or another product.
-- [ ] Document support procedures for refunds, chargebacks, duplicate charges, failed checkout, stuck workflow runs, missing webhooks, manual replay/reconciliation, cancellation, expiry, and resubscription.
-
-### Workflow DevKit production backend
-
-- [ ] Select and document the production World for Hetzner. Do not use `WORKFLOW_TARGET_WORLD=local`; bundled docs state Local World is development-only and loses queued steps on restart.
-- [ ] If using Postgres World, provision a production PostgreSQL service isolated from development, with TLS, least-privilege credentials, network restrictions, backups/PITR, alerts, connection limits, and a tested restore. *(Preparation exists in `deploy/postgres/compose.yml` and `deploy/postgres/README.md`: separate Postgres container, persistent named volume, private service network, and backup helper; VPS deployment remains open.)*
-- [x] Install/pin `@workflow/world-postgres` and wire application startup, shutdown, readiness, production env validation, and CI integration coverage.
-- [ ] Bootstrap the production Postgres World schema before application activation and record adapter/schema versions with the release.
-- [ ] Set `WORKFLOW_TARGET_WORLD=@workflow/world-postgres` and `WORKFLOW_POSTGRES_URL` explicitly; configure worker concurrency/pool size only after measuring checkout volume and database limits.
-- [x] Start the World worker from `instrumentation.ts` and stop it through the custom server's graceful-shutdown path.
-- [ ] Monitor workflow run age, failed/retried steps, parked hooks, queue depth, worker heartbeat, and Postgres health. Provide operator inspection, cancellation, and replay procedures.
-- [ ] Prove durability: start Pro checkout, stop/reboot PM2 before the billing webhook, restart, deliver the signed event, and confirm the persisted run resumes, updates only the intended workspace, clears its run ID, and completes exactly once.
+- [ ] Document support procedures for refunds, chargebacks, duplicate charges, failed checkout, missing webhooks, manual replay/reconciliation, cancellation, expiry, and resubscription.
 
 ## Phase 3: Production configuration
 
 ### Environment-variable matrix
 
-Secrets must live in a production secret store or root-readable environment file, never Git, PM2 config, shell history, screenshots, tickets, or logs. “Prod differs” means the production value must not be copied from development. The Workflow variables below become required only after the blocking production-World implementation is merged; their current absence is itself a launch blocker.
+Secrets must live in a production secret store or root-readable environment file, never Git, PM2 config, shell history, screenshots, tickets, or logs. “Prod differs” means the production value must not be copied from development.
 
 | Variable | Owner / source | Prod differs | Secret | Missing or wrong impact | Safe verification |
 | --- | --- | --- | --- | --- | --- |
@@ -243,7 +228,7 @@ Secrets must live in a production secret store or root-readable environment file
 | `NEXT_PUBLIC_APP_NAME` | Present in `.env.example`, but no production source read was found | No | No | No current runtime impact; stale configuration until consumed or removed | Confirm with repository search |
 | `NEXT_PUBLIC_APP_URL` | Production canonical HTTPS origin | Yes | No | Broken email links, metadata, public URLs, Socket.IO CORS | Compare generated links and WebSocket origin |
 | `NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN` | DNS/product decision; optional | Yes | No | Empty uses `/w/<slug>`; wrong value breaks subdomain portfolios | Open two portfolio URLs and inspect generated links |
-| `DATABASE_URL` | Atlas production application user URI | Yes | Yes | App/workflows cannot connect; wrong value risks dev data | Redacted host/database fingerprint plus read-only health check |
+| `DATABASE_URL` | Atlas production application user URI | Yes | Yes | App cannot connect; wrong value risks dev data | Redacted host/database fingerprint plus read-only health check |
 | `WORKOS_API_KEY` | WorkOS production environment | Yes | Yes | Auth API and custom verification lookup fail | Production signup/callback; never print key |
 | `WORKOS_CLIENT_ID` | WorkOS production application | Yes | No | Authorization/code exchange fails | Compare dashboard suffix and complete sign-in |
 | `WORKOS_COOKIE_PASSWORD` | Generated secret, at least 32 chars | Yes | Yes | Session sealing/unsealing fails | Length/presence check plus sign-in/restart test |
@@ -270,18 +255,13 @@ Secrets must live in a production secret store or root-readable environment file
 | `CRON_SECRET` | Generated scheduler bearer secret | Yes | Yes | Cron endpoint rejects scheduler or is forgeable | Valid and invalid manual calls; never echo secret |
 | `PAGEVIEW_SALT_SECRET` | Generated analytics pseudonymization secret; optional fallback is active-workspace secret | Yes | Yes | Changing fallback/secret changes visitor hashes | Presence check and aggregate pageview smoke test |
 | `BETA_TESTER_ENABLED` | Product decision; optional `true` | Yes | No | Exposes production beta activation when enabled | Inspect onboarding with approved test identity |
-| `WORKFLOW_TARGET_WORLD` | Deployment/Workflow adapter; production value expected to be `@workflow/world-postgres` if chosen | Yes | No | Local/dev backend can lose checkout workflows on restart | Startup diagnostics and restart-survival checkout test |
-| `WORKFLOW_POSTGRES_URL` | Production Workflow PostgreSQL application user | Yes | Yes | Worker cannot persist/resume checkout workflows | Redacted host/database fingerprint plus readiness/queue test |
-| `WORKFLOW_POSTGRES_JOB_PREFIX` | Workflow deployment; optional namespacing | Usually | No | Queue-name collisions if a database is shared | Inspect configured prefix, not jobs' customer payloads |
-| `WORKFLOW_POSTGRES_WORKER_CONCURRENCY` | Workflow capacity tuning; optional | Usually | No | Under/over-provisioned workers | Compare metrics to documented value |
-| `WORKFLOW_POSTGRES_MAX_POOL_SIZE` | Workflow/Postgres capacity tuning; optional | Usually | No | Connection exhaustion or worker starvation | Compare Postgres connections and documented value |
 
 Script-only/development variables must not be injected into the application process: `SEED_OWNER_*`, `SUB_EXPIRED_*`, `SEED_PORTFOLIO_SLUG`, `LEMONSQUEEZY_SIM_URL`, and development/test passwords. `scripts/backfill-inquiries.ts` now uses `DATABASE_URL` via `connectDB()` (the earlier `MONGODB_URI` mismatch was resolved in the `action/beta-release-cleanup` branch). Future/unused placeholders such as Sentry, PostHog, Upstash, and `FIGMA_ACCESS_TOKEN` are not production requirements until code actually consumes them.
 
 ### Secret and configuration validation
 
 - [ ] Generate a production environment file from the matrix and have two people compare names—not values—against actual code reads and `.env.example`.
-- [x] Add fail-fast runtime startup validation for production-required variables, HTTPS URLs, secret lengths, live/test-mode consistency, matching Cloudflare hashes, production Workflow settings, and forbidden seed/debug variables.
+- [x] Add fail-fast runtime startup validation for production-required variables, HTTPS URLs, secret lengths, live/test-mode consistency, matching Cloudflare hashes, and forbidden seed/debug variables.
 - [ ] Execute that validation using the final production secret set and retain the redacted startup/readiness evidence.
 - [ ] Verify file ownership/mode, PM2 environment inheritance, restart persistence, and that `pm2 env`, logs, crash reports, and deployment output do not reveal secrets.
 - [ ] Rotate any credential ever placed in chat, a ticket, shell history, repository, CI log, screenshot, or shared development environment.
@@ -293,7 +273,7 @@ Script-only/development variables must not be injected into the application proc
 
 - [ ] **1. Freeze and verify code:** select release SHA; complete delegated blockers; pass tests, typecheck, lint, build, security/tenant review, locale parity, and 375 px checks.
 - [ ] **2. Protect data:** take/verify Atlas snapshot; record counts/indexes; dry-run migrations/backfills on a clone; approve rollback compatibility.
-- [ ] **3. Prepare services:** finish Hetzner, Atlas, the production Workflow World/Postgres backend, Lemon Squeezy live store, monitoring, backups, and secret-store setup without directing public traffic. WorkOS, Resend, Turnstile, and Cloudflare Images/DNS are treated as complete production prerequisites.
+- [ ] **3. Prepare services:** finish Hetzner, Atlas, the Lemon Squeezy live store, monitoring, backups, and secret-store setup without directing public traffic. WorkOS, Resend, Turnstile, and Cloudflare Images/DNS are treated as complete production prerequisites.
 - [ ] **4. Stage environment:** install the production environment on the server, run startup validation, verify no development/test credentials or flags, and keep live billing webhooks disabled until the app is healthy.
 - [ ] **5. Deploy release:** install from lockfile, build in an immutable release directory, start on a local/staging port, run health/readiness and server-side smoke checks, then atomically switch PM2/Caddy.
 - [ ] **6. Apply data changes:** run only approved idempotent migrations/backfills and reviewed index synchronization; capture before/after results.
@@ -337,17 +317,23 @@ Script-only/development variables must not be injected into the application proc
 
 ## Phase 6: Billing verification
 
-- [ ] In Lemon Squeezy test mode/staging, test Pro monthly and yearly checkout, duplicate clicks/rate limiting, abandoned overlay/workflow cleanup, application/worker/Postgres restart during an in-flight checkout, webhook replay, portal, cancellation, resume, renewal, payment failure/recovery, pause/unpause, refund, expiry, and resubscription.
+- [ ] In Lemon Squeezy test mode/staging, test Pro monthly and yearly checkout, duplicate clicks/rate limiting, and every one of the 12 registered subscription events (`subscription_created`, `_updated`, `_cancelled`, `_resumed`, `_expired`, `_paused`, `_unpaused`, `_payment_success`, `_payment_failed`, `_payment_refunded`, `_payment_recovered`, `_plan_changed`).
+- [ ] Test duplicate and truly concurrent delivery of the same event: confirm the claim-lease ledger applies it exactly once, a processed duplicate dedupes without reprocessing, and a live in-flight claim acks 200 without a second handler run.
+- [ ] Test a failed handler: confirm the ledger row is marked `failed`, the route returns 500 so Lemon Squeezy redelivers, and the retry succeeds without double-applying the first attempt's effects.
+- [ ] Test stale/out-of-order delivery: an older event (by `attributes.updated_at`) must not overwrite a newer subscription state already applied.
 - [ ] In production, make one controlled real Pro monthly purchase and one Pro yearly purchase/refund where financially and legally appropriate. Confirm displayed and charged amount/currency/tax, receipt, payout record, workspace mapping, and no cross-tenant update.
-- [ ] Confirm `subscription_created`/`updated` activates Pro, persists customer/subscription/status/period fields, sets `everSubscribed`, resumes/clears the checkout workflow, and remains correct on duplicate/out-of-order delivery.
+- [ ] Confirm `subscription_created`/`updated` activates Pro, persists customer/subscription/status/period fields, sets `everSubscribed`, and remains correct on duplicate/out-of-order delivery.
 - [ ] Cancel through the customer portal. Confirm future renewal stops, `lsSubscriptionStatus` becomes `canceled`, period end matches Lemon Squeezy, and Pro access continues until that time.
 - [ ] Trigger/simulate expiry after cancellation. Confirm `plan` becomes `free`, `everSubscribed` stays true, subscription ID/period clear, owners and staff are routed to localized `/subscribe`, data is retained, and resubscription is possible.
+- [ ] Verify refund (`subscription_payment_refunded`) ends paid access immediately and consumes any pending promo grant, same as expiry.
+- [ ] Verify resubscription after expiry/refund correctly reactivates Pro and is not blocked by a stale prior event.
 - [ ] Verify the approved expiry messaging: advance warning, at-expiry in-app state, owner/staff behavior, support/export route, and owner email. This cannot pass until the delegated expiry messaging work is complete.
 - [ ] Test an over-entitlement expired workspace. Confirm no team/member/data deletion occurs automatically and access/recovery exactly matches policy.
 - [ ] Test `past_due`, payment failure/recovery, `paused`, `unpaused`, refund, and webhook loss/replay against the approved grace policy. Confirm no indefinite unintended Pro access.
 - [ ] Prove Starter cannot be selected through UI, direct checkout POST, customer portal, live product catalog, webhook variant mapping, tests, messages, or production configuration.
-- [ ] Verify there is no downgrade workflow. Cancellation is allowed; resubscription purchases Pro; internal expiry-to-free state is an access boundary, not a selectable plan change.
-- [ ] Reconcile Lemon Squeezy subscription/customer IDs and statuses against MongoDB for every smoke-test workspace; document a safe reconciliation/replay procedure.
+- [ ] Verify there is no downgrade flow. Cancellation is allowed; resubscription purchases Pro; internal expiry-to-free state is an access boundary, not a selectable plan change.
+- [ ] Confirm the existing customer-portal flow (manage payment method/invoices/cancel) is unaffected by the webhook changes.
+- [ ] Reconcile Lemon Squeezy subscription/customer IDs and statuses against MongoDB for every smoke-test workspace; document a safe reconciliation/replay procedure using `scripts/replay-lemonsqueezy-event.ts` and dashboard resend.
 
 ## Phase 7: Rollback readiness
 
@@ -358,7 +344,7 @@ Script-only/development variables must not be injected into the application proc
 - [ ] For each migration/backfill, state whether rollback is code-only, reverse migration, or point-in-time restore. Never restore the whole production database to fix one tenant without explicit incident approval.
 - [ ] Test Atlas restore into isolation and the application against that restored database without sending email, accepting live billing, or mutating production providers.
 - [ ] Prepare customer/support communication templates for outage, delayed email, payment issue, expiry error, security incident, rollback, and recovery.
-- [ ] After any rollback, reconcile webhook events, workflow runs, email failures, uploads, cron jobs, and database writes that occurred while versions differed.
+- [ ] After any rollback, reconcile webhook events, email failures, uploads, cron jobs, and database writes that occurred while versions differed.
 
 ## Delegated Engineering Work
 
@@ -379,12 +365,11 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 - [x] **#11 Launch copy/pricing foundation:** aligned launch copy with the one-month/Pro-only model and reads both live Lemon Squeezy variants with a fallback.
 - [x] **#12 Async-state foundation:** added route loading skeletons and a shared accessible empty-state primitive to the targeted launch surfaces.
 - [ ] **#13 Paddle migration:** intentionally deferred/not applicable while Lemon Squeezy remains the signed launch provider.
-- [x] **#14 Workflow code wiring:** pinned Postgres World and wired startup, shutdown, readiness, env validation, and CI integration execution.
 
 ### 1. Remove legacy Starter billing state
 
 - **Priority:** blocking
-- **Likely files/modules:** `lib/db/models/Workspace.ts`, `lib/plans/entitlements.ts`, `lib/page-builder/drafts.ts`, `lib/auth/assertCanAddTeam*`, `app/[locale]/(app)/settings/billing/_panel*`, teams plan props/components, portfolio draft actions, billing/workflow/webhook tests, `messages/{en,fil,ms,id,ar}.json`, `docs/dev-reference.md`, and Lemon Squeezy docs. Do not confuse billing Starter with ordinary phrases such as “starter template” or “starter items.”
+- **Likely files/modules:** `lib/db/models/Workspace.ts`, `lib/plans/entitlements.ts`, `lib/page-builder/drafts.ts`, `lib/auth/assertCanAddTeam*`, `app/[locale]/(app)/settings/billing/_panel*`, teams plan props/components, portfolio draft actions, billing/webhook tests, `messages/{en,fil,ms,id,ar}.json`, `docs/dev-reference.md`, and Lemon Squeezy docs. Do not confuse billing Starter with ordinary phrases such as “starter template” or “starter items.”
 - **Current behavior after PR #58:** current billing types, entitlements, draft caps, checkout mappings, and launch UI use `free | beta | pro`; `2026-07-drop-starter-plan.ts` handles persisted Starter workspaces. `docs/dev-reference.md` and historical design documents still contain stale billing-tier references.
 - [ ] Remove or clearly archive stale billing Starter documentation, then dry-run and apply the migration to the approved production target.
 - **Required behavior:** persisted billing tiers and launch UI contain only the approved free/beta/Pro states; no Starter product, selector, transition, copy, or production variant exists.
@@ -405,16 +390,25 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 - **Tests:** billing settings, portal action, dev-action removal, cancellation/expiry, direct request validation, locale parity.
 - **Locales:** yes, all five.
 
-### 3. Make Lemon Squeezy webhooks durable and idempotent
+### 3. Lemon Squeezy webhook durability and idempotency — the sole billing-durability gate
 
 - **Priority:** blocking
-- **Likely files/modules:** `app/api/webhooks/lemonsqueezy/route.ts`, `lib/lemonsqueezy/webhook.ts`, `lib/workflows/subscriptionCheckout*`, Workspace/billing event persistence or queue/reconciliation modules, replay/admin script, and webhook tests.
-- **Current behavior after PR #58:** verified events are persisted in a unique ledger, processed events dedupe, handler failures are recorded and return 500, payloads are redacted, and operators have a replay script. A concurrent request can still process the same non-processed ledger row because processing is not claimed atomically.
-- [ ] Add an atomic processing claim/lease and a true concurrent-delivery regression test before declaring exactly-once application complete.
-- **Required behavior:** durably record/deduplicate events and process with retries/dead-letter/replay, or return retryable failure until the authoritative update commits. Preserve raw-body signature verification and tenant-safe routing.
-- **Why:** a transient database or workflow failure can permanently lose activation, renewal, refund, or expiry.
-- **Acceptance criteria:** duplicate/out-of-order events are safe; injected DB failure is retried/replayable; operations can list/reconcile failures; no unrelated tenant can be updated; provider receives 2xx only after durable acceptance.
-- **Tests:** signature, event-ID dedupe, transaction/failure injection, retries, replay, out-of-order lifecycle, workflow resume, tenant isolation, and production test-mode rejection.
+- **Likely files/modules:** `app/api/webhooks/lemonsqueezy/route.ts`, `lib/lemonsqueezy/webhook.ts`, `lib/lemonsqueezy/webhookHandlers.ts`, `lib/billing/webhookOrdering.ts`, `lib/billing/subscriptionSnapshot.ts`, `lib/db/models/WebhookEvent.ts`, `scripts/replay-lemonsqueezy-event.ts`, and webhook/model/migration tests.
+- **Current behavior:** this item is code-complete. Billing durability rests entirely on this webhook pipeline — there is no separate durable-workflow engine or billing database. The gate covers:
+  - **Signature verification:** raw-body HMAC-SHA256 verify before any parsing (`verifyAndParseLemonSqueezyEvent`), then Zod validation of the envelope shape.
+  - **Supported-event registry:** exactly 12 subscription events are handled — `subscription_created`, `_updated`, `_cancelled`, `_resumed`, `_expired`, `_paused`, `_unpaused`, `_payment_success`, `_payment_failed`, `_payment_refunded`, `_payment_recovered`, `_plan_changed`. Everything else is acked 200 and ignored.
+  - **Atomic claim lease:** a unique `{provider, eventKey}` ledger row (`WebhookEvent`) with a 2-minute processing lease. First delivery claims atomically; a live claim acks 200 as already-processing; a processed duplicate acks 200 deduped; a failed or lease-expired row is reclaimable.
+  - **Idempotent effects:** the shared subscription-snapshot helper applies provider state the same way from the webhook and the onboarding reconciliation path, so re-application of an already-applied event is a no-op.
+  - **Stale-event protection:** `Workspace.lsLastEventAt` (from `attributes.updated_at`, falling back to `created_at`) gates writes so an older event can never overwrite a newer subscription state; a genuinely newer resubscription still activates.
+  - **Failed-event replay:** handler failure records a redacted error, marks the ledger row `failed`, and returns 500 so Lemon Squeezy redelivers; `scripts/replay-lemonsqueezy-event.ts` lets an operator manually replay a specific failed row.
+  - **Dashboard resend:** the same claim-lease/dedupe protocol makes a manual "resend" from the Lemon Squeezy dashboard safe to run against an already-processed event.
+  - **Reconciliation:** `reconcileLemonSqueezySubscription` (onboarding path) and the webhook path share the same snapshot-application logic so scheduled/manual reconciliation cannot drift from webhook-driven state.
+  - **Tenant isolation:** every workspace lookup resolves by subscription/customer/workspace identifiers persisted at checkout time; no cross-tenant update path exists.
+  - **Production test-mode rejection:** a verified event with `meta.test_mode === true` is acked and ignored (never mutates billing state) when `NODE_ENV === "production"`.
+- **Required behavior:** durably record/deduplicate events and process with retries/replay, or return retryable failure until the authoritative update commits. Preserve raw-body signature verification and tenant-safe routing.
+- **Why:** a transient database failure or a redelivered/out-of-order event must never permanently lose or corrupt activation, renewal, refund, or expiry state. Guarantee is at-least-once delivery with idempotent, effectively-once application — not mathematically exactly-once execution.
+- **Acceptance criteria:** duplicate/concurrent/out-of-order events are safe; a failed handler is retried/replayable; operations can list/reconcile failures; no unrelated tenant can be updated; provider receives 2xx only after durable acceptance or an explicit ignore.
+- **Tests:** signature (valid/invalid/malformed), the exact 12-event registry, real concurrent identical deliveries, processed dedupe, live-lease duplicate handling, expired-lease reclaim, failed retry, stale-claim completion rejection, redacted failure storage, older-vs-newer event ordering, tenant isolation, and production test-mode rejection.
 - **Locales:** no.
 
 ### 4. Complete expiry, dunning, paused, and refund policy UX
@@ -449,7 +443,7 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 
 - **Priority:** blocking
 - **Likely files/modules:** a server-only environment schema loaded before startup, `server.ts`, billing/auth/storage/email initialization, `deploy/ecosystem.config.js`, `.env.example`, and validation tests.
-- **Current behavior after PR #58:** `server.ts` runs a tested central environment validator at runtime startup. Production requires the launch service matrix, HTTPS origins, strong secrets, live Lemon Squeezy mode, matching Cloudflare hashes, a non-local Workflow World, and rejects seed/debug variables.
+- **Current behavior after PR #58:** `server.ts` runs a tested central environment validator at runtime startup. Production requires the launch service matrix, HTTPS origins, strong secrets, live Lemon Squeezy mode, matching Cloudflare hashes, and rejects seed/debug variables.
 - [ ] Run the validator with the final production secret set and retain redacted startup/readiness evidence.
 - **Required behavior:** production refuses to start with missing/invalid credentials, non-HTTPS origins/callbacks, test billing mode, dev/test keys, mismatched Cloudflare hashes, weak cookie secrets, or forbidden seed/debug flags.
 - **Why:** runtime-only failures create a superficially healthy but unusable or unsafe launch.
@@ -461,7 +455,7 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 
 - **Priority:** blocking
 - **Likely files/modules:** new health/readiness route(s), `server.ts`, `deploy/Caddyfile`, PM2 config, public inquiry client-IP extraction/rate limiter, and deployment tests/docs.
-- **Current behavior after PR #58:** `/api/health` provides liveness and Mongo/Workflow readiness; the custom server shuts down HTTP, Socket.IO, Workflow, and Mongo gracefully; visitor IP uses `CF-Connecting-IP`; Caddy documents the required Cloudflare-only origin boundary.
+- **Current behavior after PR #58:** `/api/health` provides liveness and Mongo readiness; the custom server shuts down HTTP, Socket.IO, and Mongo gracefully; visitor IP uses `CF-Connecting-IP`; Caddy documents the required Cloudflare-only origin boundary.
 - [ ] Configure the origin restriction and external monitor, then verify spoof resistance, WebSocket reconnection, PM2 restart, and server reboot in the deployed environment.
 - **Required behavior:** non-sensitive liveness/readiness signals, graceful shutdown/restart, correct trusted visitor IP behind a Cloudflare-restricted origin, WebSockets, and monitorable Caddy/PM2 behavior.
 - **Why:** rollback/monitoring cannot distinguish a running process from a usable app, and incorrect IP trust breaks abuse controls.
@@ -533,25 +527,13 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 ### 13. Conditional Paddle migration only if the product decision changes
 
 - **Priority:** later, but blocking before launch if Paddle is reaffirmed
-- **Likely files/modules:** replace `@lemonsqueezy/lemonsqueezy.js`, `lib/lemonsqueezy/*`, checkout/webhook routes, billing actions/UI/copy, workflow payloads/steps, Workspace `ls*` fields and migration, env schema/example, tests, and provider documentation.
+- **Likely files/modules:** replace `@lemonsqueezy/lemonsqueezy.js`, `lib/lemonsqueezy/*`, checkout/webhook routes, billing actions/UI/copy, Workspace `ls*` fields and migration, env schema/example, tests, and provider documentation.
 - **Current behavior:** Lemon Squeezy is implemented end to end and is the repository authority; Paddle exists only in stale project guidance.
-- **Required behavior:** if Paddle is selected, produce and execute a deliberate provider migration with live price IDs for Pro monthly/yearly, raw-body HMAC verification, durable webhooks/workflow resume, customer portal/cancellation, data migration/reconciliation, and removal of Lemon Squeezy code/config.
+- **Required behavior:** if Paddle is selected, produce and execute a deliberate provider migration with live price IDs for Pro monthly/yearly, raw-body HMAC verification, durable idempotent webhooks, customer portal/cancellation, data migration/reconciliation, and removal of Lemon Squeezy code/config.
 - **Why:** silently mixing provider guidance and implementation can charge customers incorrectly or lose subscription state.
 - **Acceptance criteria:** a signed architecture decision names one provider; only that provider appears in dependencies, env, routes, fields, UI, legal copy, tests, and operations; migration/cutover/rollback is rehearsed.
-- **Tests:** signature, price mapping, checkout/workflow, webhook retry/idempotency, cancellation/expiry/refund/dunning, tenant isolation, migration, locale parity.
+- **Tests:** signature, price mapping, checkout, webhook retry/idempotency, cancellation/expiry/refund/dunning, tenant isolation, migration, locale parity.
 - **Locales:** yes, all five.
-
-### 14. Configure a production Workflow World for durable checkout
-
-- **Priority:** blocking
-- **Likely files/modules:** `package.json`/lockfile, `next.config.ts`, new `instrumentation.ts` or custom-server lifecycle wiring, environment schema/example, `deploy/ecosystem.config.js`, CI, `lib/workflows/subscriptionCheckout*`, operations scripts/docs, and integration tests.
-- [ ] Provision the production Postgres service, bootstrap its schema, configure backups/monitoring, and prove checkout survival across application/worker restart before checking this engineering item complete.
-- **Current behavior:** `@workflow/world-postgres` is a runtime dependency, `instrumentation.ts` starts the World on boot (`lib/workflows/world.ts`: `startWorld`/`stopWorld`/`worldReady`), `lib/env.ts` requires `WORKFLOW_TARGET_WORLD`/`WORKFLOW_POSTGRES_URL` in production and fails closed if `WORKFLOW_TARGET_WORLD` is still the Local World, and CI runs `pnpm test:integration`. Dev still defaults to the implicit Local World (env unset). Remaining gap: this is code-level wiring only — the actual production Postgres database still needs to be provisioned, its schema bootstrapped (`pnpm exec workflow-postgres-setup`), and the restart-survival test below still needs to be run against real infra before launch.
-- **Required behavior:** use a production-supported self-hosted World (normally Postgres World on Hetzner), bootstrap and start its long-lived worker, back up/monitor it, fail readiness when unavailable, and include Workflow integration/restart tests in CI.
-- **Why:** checkout runs and hooks can be lost across PM2 restart/reboot, invalidating the claimed durable billing flow.
-- **Acceptance criteria:** production never selects Local World; adapter/schema/env/worker are deployed; in-flight checkout survives app and worker restarts; duplicate webhook resumes once; workflow data restore is tested; queue/run failures alert; CI runs the integration suite.
-- **Tests:** adapter configuration, bootstrap/idempotency, worker startup/shutdown, app/DB restart survival, hook resume/dedupe, failure/retry, tenant isolation, backup restore, and CI integration job.
-- **Locales:** no.
 
 ## Open Decisions / Assumptions
 
