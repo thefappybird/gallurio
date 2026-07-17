@@ -523,7 +523,7 @@
       "dateFilter": {
         "label": "Rentang tanggal",
         "filter": "Filter",
-        "day": "Harian",
+        "week": "Mingguan",
         "month": "Bulanan",
         "year": "Tahunan",
         "custom": "Kustom",

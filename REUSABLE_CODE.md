@@ -103,6 +103,7 @@ Composed, app-specific shared components.
 | `lib/utils/timezones.ts` | `formatUtcOffset`, `TIMEZONE_GROUPS` | — | Offset formatting; grouped tz options |
 | `lib/utils/time-format.ts` | `formatTime`, `formatTimeRange`, `formatRangeFromParts`, `DEFAULT_TIME_MODE`, `TIME_INPUT_LANG` | — | Display Date/time range as 24h/12h; `formatRangeFromParts(startHHMM, endHHMM, mode)` is the shared primitive both `formatTimeRange` and `formatSessionTimeRange` delegate to — use it when you already have wall-clock HH:MM strings |
 | `lib/utils/get-user-time-format.ts` | `getUserTimeFormat` | `() => Promise<TimeMode>` | Read user time-format pref from cookie (fallback 24h) |
+| `lib/utils/iso-week.ts` | `addDaysStr`, `weekStartMonday`, `isoWeekStartDate`, `isoWeekOf` | `("YYYY-MM-DD", n) => str`; `(str) => Monday str`; `(isoYear, isoWeek) => Monday str`; `(str) => {isoYear, isoWeek}` | Pure ISO-8601 week-string arithmetic, no tz — safe for both server and client (`"use client"`) files |
 | `lib/pagination.ts` | `PAGE_SIZE_OPTIONS` | `[10,20,30,50]` | Shared page sizes (client + server) |
 
 ### `lib/bookings/`

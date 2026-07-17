@@ -2,6 +2,7 @@ import "server-only";
 import { Types } from "mongoose";
 import { PageviewRollup, Inquiry, Client } from "@/lib/db/models";
 import { BOOKED_INQUIRY_STATUS, CONVERTED_INQUIRY_STATUS } from "@/lib/inquiries/status";
+import { addDaysStr, weekStartMonday } from "@/lib/utils/iso-week";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -167,31 +168,33 @@ export async function getVisitorInquirySeries(
     .select({ date: 1, visitors: 1, inquiries: 1 })
     .lean<{ date: Date; visitors: number; inquiries: number }[]>();
 
-  const byDate = new Map(
-    rows.map((r) => [localDayKey(r.date, timezone), { visitors: r.visitors ?? 0, inquiries: r.inquiries ?? 0 }])
-  );
+  const byWeek = new Map<string, { visitors: number; inquiries: number }>();
+  for (const r of rows) {
+    const week = weekStartMonday(localDayKey(r.date, timezone));
+    const cur = byWeek.get(week) ?? { visitors: 0, inquiries: 0 };
+    cur.visitors += r.visitors ?? 0;
+    cur.inquiries += r.inquiries ?? 0;
+    byWeek.set(week, cur);
+  }
 
-  let startKey: string;
-  let endKey: string;
+  let startWeek: string;
+  let endWeek: string;
   if (range.from && range.to) {
-    startKey = localDayKey(range.from, timezone);
-    endKey = localDayKey(range.to, timezone);
+    startWeek = weekStartMonday(localDayKey(range.from, timezone));
+    endWeek = weekStartMonday(localDayKey(range.to, timezone));
   } else {
-    const keys = [...byDate.keys()].sort();
-    if (!keys.length) return [];
-    startKey = keys[0];
-    endKey = keys[keys.length - 1];
+    const weeks = [...byWeek.keys()].sort();
+    if (!weeks.length) return [];
+    startWeek = weeks[0];
+    endWeek = weeks[weeks.length - 1];
   }
 
   const out: VisitorInquiryPoint[] = [];
-  const [sy, sm, sd] = startKey.split("-").map(Number);
-  const cursor = new Date(Date.UTC(sy, sm - 1, sd));
-  let key = startKey;
-  while (key <= endKey) {
-    const v = byDate.get(key);
-    out.push({ date: key, visitors: v?.visitors ?? 0, inquiries: v?.inquiries ?? 0 });
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-    key = cursor.toISOString().slice(0, 10);
+  let week = startWeek;
+  while (week <= endWeek) {
+    const v = byWeek.get(week);
+    out.push({ date: week, visitors: v?.visitors ?? 0, inquiries: v?.inquiries ?? 0 });
+    week = addDaysStr(week, 7);
   }
   return out;
 }

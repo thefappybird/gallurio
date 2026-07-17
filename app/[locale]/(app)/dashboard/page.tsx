@@ -9,6 +9,7 @@ import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { resolveStoredDashboardTab } from "@/lib/dashboard-preferences.server";
 import { parseDashboardRange } from "@/lib/dashboard/date-range";
 import { resolveWorkspaceTimezone } from "@/lib/utils/timezone";
+import { isoWeekOf } from "@/lib/utils/iso-week";
 import {
   getKpiSnapshotWithDeltas,
   getTodaysEvents,
@@ -92,6 +93,9 @@ export default async function DashboardPage({
     day: "2-digit",
   }).format(new Date()); // YYYY-MM-DD
 
+  const { isoYear, isoWeek } = isoWeekOf(today);
+  const currentWeek = `${isoYear}-W${String(isoWeek).padStart(2, "0")}`;
+
   const ownerFirstName = (authUser?.name ?? "").split(" ")[0] ?? "";
 
   return (
@@ -115,6 +119,7 @@ export default async function DashboardPage({
         today={today}
         currentMonth={today.slice(0, 7)}
         currentYear={Number(today.slice(0, 4))}
+        currentWeek={currentWeek}
         tab={tab}
       >
         {tab === "portfolio" ? (

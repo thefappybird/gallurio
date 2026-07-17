@@ -11,7 +11,7 @@ describe("robots()", () => {
 
     expect(rule.userAgent).toBe("*");
     expect(rule.allow).toBe("/w/");
-    expect(rule.disallow).toEqual(["/en/", "/fil/", "/ms/", "/id/", "/ar/", "/api/"]);
+    expect(rule.disallow).toEqual(["/en/", "/fil/", "/id/", "/ar/", "/th/", "/api/"]);
   });
 
   it("includes /sitemap.xml in the sitemap field", () => {

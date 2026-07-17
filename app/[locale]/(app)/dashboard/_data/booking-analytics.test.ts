@@ -185,14 +185,36 @@ describe("getBookedHoursHeatmap", () => {
     await seedBooking({ sessions: [sessA, sessB] });
 
     const cells = await getBookedHoursHeatmap(wid, range, tz);
-    expect(cells).toEqual([
+    // Dense grid: fromWeek=2026-05-25 (Mon) .. toWeek=2026-06-15 (Mon) = 4 weeks x 7 weekdays.
+    expect(cells.length).toBe(28);
+    expect(cells[0].weekStart).toBe("2026-05-25");
+    expect(cells[cells.length - 1].weekStart).toBe("2026-06-15");
+    expect(cells.filter((c) => c.hours > 0)).toEqual([
       { weekStart: "2026-06-01", weekday: 0, hours: 8 }, // Monday
       { weekStart: "2026-06-01", weekday: 2, hours: 8 }, // Wednesday
       { weekStart: "2026-06-01", weekday: 3, hours: 8 }, // Thursday
     ]);
   });
 
-  it("excludes draft/cancelled/other-workspace sessions; empty range yields []", async () => {
+  it("returns a dense grid: every week in [fromWeek, toWeek] x 7 weekdays, zero-filled around actual hours", async () => {
+    const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-15T00:00:00.000Z") };
+    const sessA = {
+      startAt: new Date("2026-06-01T01:00:00.000Z"),
+      endAt: new Date("2026-06-01T09:00:00.000Z"),
+    };
+    await seedBooking({ sessions: [sessA] });
+
+    const cells = await getBookedHoursHeatmap(wid, range, tz);
+    // fromWeek=2026-05-25 (Mon) .. toWeek=2026-06-15 (Mon) = 4 weeks x 7 weekdays.
+    expect(cells.length).toBe(28);
+    expect(cells[0].weekStart).toBe("2026-05-25");
+    expect(cells[cells.length - 1].weekStart).toBe("2026-06-15");
+    expect(cells.filter((c) => c.hours > 0)).toEqual([
+      { weekStart: "2026-06-01", weekday: 0, hours: 8 },
+    ]);
+  });
+
+  it("excludes draft/cancelled/other-workspace sessions: all cells stay zero", async () => {
     const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-15T00:00:00.000Z") };
     const sess = [{
       startAt: new Date("2026-06-01T01:00:00.000Z"),
@@ -203,11 +225,32 @@ describe("getBookedHoursHeatmap", () => {
     await seedBooking({ status: "cancelled", sessions: sess });
     await seedBooking({ workspaceId: other, sessions: sess });
 
-    expect(await getBookedHoursHeatmap(wid, range, tz)).toEqual([]);
+    const cells = await getBookedHoursHeatmap(wid, range, tz);
+    expect(cells.length).toBe(28); // 4 weeks x 7 weekdays, never empty
+    expect(cells.every((c) => c.hours === 0)).toBe(true);
+  });
+
+  it("returns an all-zero dense grid sized to the window, not [], when no booking overlaps at all", async () => {
+    const sess = [{
+      startAt: new Date("2026-06-01T01:00:00.000Z"),
+      endAt: new Date("2026-06-01T09:00:00.000Z"),
+    }];
+    await seedBooking({ sessions: sess });
 
     const emptyRange = { from: new Date("2020-01-01T00:00:00.000Z"), to: new Date("2020-01-02T00:00:00.000Z") };
-    await seedBooking({ sessions: sess });
-    expect(await getBookedHoursHeatmap(wid, emptyRange, tz)).toEqual([]);
+    const cells = await getBookedHoursHeatmap(wid, emptyRange, tz);
+    expect(cells.length).toBe(7); // single week window
+    expect(cells.every((c) => c.hours === 0)).toBe(true);
+  });
+
+  it("defaults to a 12-week trailing window ending at the resolved week when `from` is unbounded", async () => {
+    // to = 2026-06-15T00:00Z -> Manila-local 2026-06-15 08:00, week Mon 2026-06-15.
+    const range = { from: null, to: new Date("2026-06-15T00:00:00.000Z") };
+    const cells = await getBookedHoursHeatmap(wid, range, tz);
+    expect(cells.length).toBe(12 * 7);
+    expect(cells[0].weekStart).toBe("2026-03-30"); // 11 weeks before 2026-06-15
+    expect(cells[cells.length - 1].weekStart).toBe("2026-06-15");
+    expect(cells.every((c) => c.hours === 0)).toBe(true);
   });
 });
 

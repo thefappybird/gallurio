@@ -2,6 +2,8 @@ import "server-only";
 import { Types } from "mongoose";
 import { Booking, Transaction } from "@/lib/db/models";
 import { splitSessionIntoCandles } from "@/lib/bookings/candle-split";
+import { addDaysStr, weekStartMonday } from "@/lib/utils/iso-week";
+import { dayBoundInTz } from "@/lib/utils/timezone";
 import { type DateRange } from "./dashboard-metrics";
 
 type WorkspaceId = Types.ObjectId;
@@ -28,24 +30,11 @@ function localDateKey(d: Date, timeZone: string): string {
   }).format(d);
 }
 
-/** Add `n` days to a "YYYY-MM-DD" string via pure calendar arithmetic (no timezone). */
-function addDaysStr(dateStr: string, n: number): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() + n);
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
-}
-
-/** 0=Monday..6=Sunday for a "YYYY-MM-DD" calendar date. */
+/** 0=Monday..6=Sunday for a "YYYY-MM-DD" calendar date. Kept local: only used for this file's cell keys. */
 function weekdayMonday0(dateStr: string): number {
   const [y, m, d] = dateStr.split("-").map(Number);
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0=Sun..6=Sat
   return (dow + 6) % 7;
-}
-
-// ponytail: weekly buckets; switch to monthly if ranges ever span years
-function weekStartMonday(dateStr: string): string {
-  return addDaysStr(dateStr, -weekdayMonday0(dateStr));
 }
 
 export type EventTypeValueTrend = {
@@ -94,23 +83,41 @@ export async function getEventTypeValueTrend(
 
 export type BookedHoursCell = { weekStart: string; weekday: number; hours: number };
 
+// Trailing window shown when the filter is unbounded (or only `to` is set) --
+// anchors the rightmost column at "today" like a GitHub contribution graph.
+const TRAILING_WEEKS = 12;
+
 export async function getBookedHoursHeatmap(
   workspaceId: WorkspaceId,
   range: DateRange,
   timezone: string
 ): Promise<BookedHoursCell[]> {
-  // Overlap prefilter (indexed via {workspaceId, lastSessionEnd, firstSessionStart}):
-  // a booking may start before the range but still have sessions landing inside it.
-  const match: Record<string, unknown> = { workspaceId, status: { $in: ACTIVE_STATUSES } };
-  if (range.to) match.firstSessionStart = { $lte: range.to };
-  if (range.from) match.lastSessionEnd = { $gte: range.from };
+  const todayKey = localDateKey(new Date(), timezone);
+  const toKey = range.to ? localDateKey(range.to, timezone) : todayKey;
+  const toWeek = weekStartMonday(toKey);
+  const fromWeek = range.from
+    ? weekStartMonday(localDateKey(range.from, timezone))
+    : addDaysStr(toWeek, -7 * (TRAILING_WEEKS - 1));
+
+  // Query bounds = the full display window (Monday of fromWeek .. Sunday of
+  // toWeek), not the raw range.from/to -- this anchors "today" as the
+  // rightmost column when unbounded, and caps history fetched to the window.
+  const queryFrom = dayBoundInTz(fromWeek, timezone, 0, 0, 0, 0);
+  const queryTo = dayBoundInTz(addDaysStr(toWeek, 6), timezone, 23, 59, 59, 999);
+
+  const match: Record<string, unknown> = {
+    workspaceId,
+    status: { $in: ACTIVE_STATUSES },
+    firstSessionStart: { $lte: queryTo },
+    lastSessionEnd: { $gte: queryFrom },
+  };
 
   const bookings = await Booking.find(match)
     .select({ sessions: 1 })
     .lean<{ sessions: { startAt: Date; endAt: Date }[] }[]>();
 
-  const fromKey = range.from ? localDateKey(range.from, timezone) : null;
-  const toKey = range.to ? localDateKey(range.to, timezone) : null;
+  const fromKey = fromWeek;
+  const toKeyEnd = addDaysStr(toWeek, 6);
 
   const cellMap = new Map<string, number>(); // `${weekStart}|${weekday}` -> hours
   const referenceDate = new Date();
@@ -119,8 +126,7 @@ export async function getBookedHoursHeatmap(
     for (const session of b.sessions) {
       const { candles } = splitSessionIntoCandles(session, referenceDate, timezone);
       for (const c of candles) {
-        if (fromKey && c.dayKey < fromKey) continue;
-        if (toKey && c.dayKey > toKey) continue;
+        if (c.dayKey < fromKey || c.dayKey > toKeyEnd) continue;
         const hours = (c.end.getTime() - c.start.getTime()) / 3_600_000;
         const key = `${weekStartMonday(c.dayKey)}|${weekdayMonday0(c.dayKey)}`;
         cellMap.set(key, (cellMap.get(key) ?? 0) + hours);
@@ -128,12 +134,16 @@ export async function getBookedHoursHeatmap(
     }
   }
 
-  return [...cellMap.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([key, hours]) => {
-      const [weekStart, weekdayStr] = key.split("|");
-      return { weekStart, weekday: Number(weekdayStr), hours };
-    });
+  // Dense output: every week in [fromWeek, toWeek] x all 7 weekdays, zero-filled.
+  const cells: BookedHoursCell[] = [];
+  let week = fromWeek;
+  while (week <= toWeek) {
+    for (let weekday = 0; weekday < 7; weekday++) {
+      cells.push({ weekStart: week, weekday, hours: cellMap.get(`${week}|${weekday}`) ?? 0 });
+    }
+    week = addDaysStr(week, 7);
+  }
+  return cells;
 }
 
 export type ValueCollectedPoint = { bucket: string; scheduledValue: number; collected: number };

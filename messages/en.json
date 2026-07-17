@@ -523,7 +523,7 @@
       "dateFilter": {
         "label": "Date range",
         "filter": "Filter",
-        "day": "Daily",
+        "week": "Weekly",
         "month": "Monthly",
         "year": "Yearly",
         "custom": "Custom",

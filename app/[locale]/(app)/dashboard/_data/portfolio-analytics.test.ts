@@ -119,13 +119,12 @@ describe("getInquiryInsights", () => {
 });
 
 describe("getVisitorInquirySeries", () => {
-  it("returns zero-filled daily visitors/inquiries for the _site page across the range", async () => {
+  it("sums both days of the same ISO week into a single weekly point", async () => {
     await seed();
     const series = await getVisitorInquirySeries(wid, { from: day1, to: day2 }, "UTC");
-    expect(series).toEqual([
-      { date: "2026-06-01", visitors: 6, inquiries: 2 },
-      { date: "2026-06-02", visitors: 3, inquiries: 1 },
-    ]);
+    // day1 (Mon 2026-06-01) and day2 (Tue 2026-06-02) fall in the same ISO
+    // week (Mon 2026-06-01), so weekly bucketing collapses them into one point.
+    expect(series).toEqual([{ date: "2026-06-01", visitors: 9, inquiries: 3 }]);
   });
 
   it("excludes other workspaces' rollups", async () => {
@@ -140,9 +139,9 @@ describe("getVisitorInquirySeries", () => {
   });
 
   it("zero-fills a bounded window that has no matching data", async () => {
-    const day3 = new Date("2026-06-03T00:00:00.000Z");
+    const day3 = new Date("2026-06-03T00:00:00.000Z"); // Wed, same ISO week as day1/day2 (Mon 2026-06-01)
     const series = await getVisitorInquirySeries(wid, { from: day3, to: day3 }, "UTC");
-    expect(series).toEqual([{ date: "2026-06-03", visitors: 0, inquiries: 0 }]);
+    expect(series).toEqual([{ date: "2026-06-01", visitors: 0, inquiries: 0 }]);
   });
 });
 

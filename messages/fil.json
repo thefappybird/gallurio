@@ -523,7 +523,7 @@
       "dateFilter": {
         "label": "Saklaw ng petsa",
         "filter": "Salain",
-        "day": "Araw-araw",
+        "week": "Lingguhan",
         "month": "Buwanan",
         "year": "Taunan",
         "custom": "Pasadya",

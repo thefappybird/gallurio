@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/w/",
-        disallow: ["/en/", "/fil/", "/ms/", "/id/", "/ar/", "/api/"],
+        disallow: ["/en/", "/fil/", "/id/", "/ar/", "/th/", "/api/"],
       },
     ],
     sitemap: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/sitemap.xml`,

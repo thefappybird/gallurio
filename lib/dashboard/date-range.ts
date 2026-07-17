@@ -1,6 +1,7 @@
 import { dayBoundInTz } from "@/lib/utils/timezone";
+import { addDaysStr, isoWeekStartDate } from "@/lib/utils/iso-week";
 
-export type DateFilterMode = "day" | "month" | "year" | "custom" | "all";
+export type DateFilterMode = "week" | "month" | "year" | "custom" | "all";
 
 export type DashboardRange = {
   /** Inclusive lower bound (UTC instant of local start-of-day), or null = open. */
@@ -35,13 +36,16 @@ export function parseDashboardRange(
 
   if (df === "all") return { from: null, to: null, mode: "all" };
 
-  if (df === "day") {
-    const d = pick(sp, "d");
-    if (d && DATE_RE.test(d)) {
+  if (df === "week") {
+    const w = pick(sp, "w");
+    const m = w ? /^(\d{4})-W(\d{2})$/.exec(w) : null;
+    if (m) {
+      const monday = isoWeekStartDate(Number(m[1]), Number(m[2]));
+      const sunday = addDaysStr(monday, 6);
       return {
-        from: dayBoundInTz(d, tz, 0, 0, 0, 0),
-        to: dayBoundInTz(d, tz, 23, 59, 59, 999),
-        mode: "day",
+        from: dayBoundInTz(monday, tz, 0, 0, 0, 0),
+        to: dayBoundInTz(sunday, tz, 23, 59, 59, 999),
+        mode: "week",
       };
     }
   }

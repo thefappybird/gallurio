@@ -121,4 +121,17 @@ describe("BookingValueCollectionChart", () => {
     );
     expect(screen.getByText("No data yet")).toBeInTheDocument();
   });
+
+  it("compacts large Y-axis tick values so 5+ digit PHP amounts don't overflow the card", () => {
+    renderWithProviders(
+      <BookingValueCollectionChart
+        data={[{ bucket: "2026-01-05", scheduledValue: 150000, collected: 90000 }]}
+        currency="PHP"
+        locale="en"
+        labels={labels}
+      />
+    );
+    expect(captured.yAxis?.tickFormatter).toBeInstanceOf(Function);
+    expect((captured.yAxis?.tickFormatter as (v: number) => string)(150000)).toBe("150K");
+  });
 });

@@ -74,6 +74,12 @@ export function BookingValueCollectionChart({ data, currency, locale, labels }: 
             <YAxis
               orientation={isRtl ? "right" : "left"}
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+              tickFormatter={(v: number) =>
+                new Intl.NumberFormat(locale, {
+                  notation: "compact",
+                  maximumFractionDigits: 1,
+                }).format(v)
+              }
               axisLine={false}
               tickLine={false}
               width={40}

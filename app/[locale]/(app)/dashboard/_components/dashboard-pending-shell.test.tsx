@@ -35,6 +35,7 @@ function renderShell() {
       today="2026-07-09"
       currentMonth="2026-07"
       currentYear={2026}
+      currentWeek="2026-W28"
       tab="bookings"
     >
       <div>widget content</div>
