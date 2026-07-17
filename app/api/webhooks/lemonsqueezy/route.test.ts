@@ -328,6 +328,34 @@ describe("lemonsqueezy webhook — malformed verified payload", () => {
   });
 });
 
+describe("lemonsqueezy webhook — unsupported (unmodelled) event", () => {
+  it("returns 200 and performs no billing mutation for an event name outside the 12-event registry", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+
+    const event = makeEvent(
+      "order_created",
+      "order_1",
+      { status: "paid" },
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ received: true });
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.lsSubscriptionId).toBeNull();
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("processed");
+  });
+});
+
 describe("lemonsqueezy webhook — subscription_created", () => {
   it("sets plan to pro, status active, subscription id", async () => {
     const wsId = await seedWorkspace({ plan: "free" });
