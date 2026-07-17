@@ -36,7 +36,12 @@ export function CollectionCoverageCard({ coverage, currency, locale, labels }: P
   const header = (
     <CardHeader className="flex flex-row items-center justify-between pb-3">
       <CardTitle className="text-sm font-medium">{labels.title}</CardTitle>
-      {labels.asOf ? <span className="text-xs text-muted-foreground">{labels.asOf}</span> : null}
+      {labels.asOf ? (
+        <span className="text-xs text-muted-foreground">
+          {labels.asOf}{" "}
+          {new Date().toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" })}
+        </span>
+      ) : null}
     </CardHeader>
   );
 

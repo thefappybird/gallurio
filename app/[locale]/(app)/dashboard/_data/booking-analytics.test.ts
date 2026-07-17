@@ -75,7 +75,7 @@ describe("getCollectionCoverage", () => {
     expect(coverage.confirmedValue).toBe(10_000);
     expect(coverage.collected).toBe(4_000);
     expect(coverage.remaining).toBe(6_000);
-    expect(coverage.coveragePct).toBeCloseTo(0.4, 5);
+    expect(coverage.coveragePct).toBeCloseTo(40, 5);
   });
 
   it("excludes draft/cancelled bookings and other workspaces; empty range yields zeros", async () => {

@@ -224,7 +224,7 @@ export async function getCollectionCoverage(
 
   const collected = agg[0]?.total ?? 0;
   const remaining = Math.max(confirmedValue - collected, 0);
-  const coveragePct = confirmedValue > 0 ? collected / confirmedValue : 0;
+  const coveragePct = confirmedValue > 0 ? (collected / confirmedValue) * 100 : 0;
 
   return { confirmedValue, collected, remaining, coveragePct };
 }

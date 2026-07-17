@@ -57,7 +57,20 @@ describe("CollectionCoverageCard", () => {
     expect(screen.getByText("Total value of confirmed bookings")).toBeInTheDocument();
     expect(screen.getByText("Amount collected so far")).toBeInTheDocument();
     expect(screen.getByText("Balance still due")).toBeInTheDocument();
-    expect(screen.getByText("As of Jul 17")).toBeInTheDocument();
+    expect(screen.getByText(/As of Jul 17/)).toBeInTheDocument();
+  });
+
+  it("appends today's date after the asOf label in the header", () => {
+    renderWithProviders(
+      <CollectionCoverageCard
+        coverage={{ confirmedValue: 100000, collected: 40000, remaining: 60000, coveragePct: 40 }}
+        currency="PHP"
+        locale="en"
+        labels={{ ...labels, asOf: "As of" }}
+      />
+    );
+    const year = new Date().getFullYear().toString();
+    expect(screen.getByText(new RegExp(`As of.*${year}`))).toBeInTheDocument();
   });
 
   it("shows 100% coverage with 0% remaining", () => {
