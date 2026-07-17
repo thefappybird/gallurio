@@ -545,8 +545,8 @@
         "status": "{page} من {total}"
       },
       "kpi": {
-        "revenueThisMonth": "إيرادات هذا الشهر",
-        "activeBookings": "الحجوزات النشطة هذا الشهر",
+        "revenueThisMonth": "الإيرادات المُحصّلة",
+        "activeBookings": "الحجوزات المجدولة",
         "newInquiries": "استفسارات جديدة",
         "outstandingBalance": "الرصيد المستحق"
       },
@@ -560,7 +560,8 @@
         "eventTypes": "توزيع أنواع المناسبات",
         "topClients": "أكثر العملاء إنفاقًا",
         "teamPerformance": "أداء الفريق",
-        "bookingsPerTeam": "الحجوزات حسب الفريق"
+        "bookingsPerTeam": "الحجوزات حسب الفريق",
+        "operations": "العمليات"
       },
       "quickAdd": {
         "title": "إضافة سريعة",
@@ -593,7 +594,36 @@
         "inquiryInsights": "رؤى الاستفسارات",
         "inquiryToBooking": "من استفسار إلى حجز",
         "bookedFromInquiries": "محجوز من الاستفسارات",
-        "newClientsFromForm": "عملاء جدد من النموذج"
+        "newClientsFromForm": "عملاء جدد من النموذج",
+        "visitorDays": "أيام-الزوار",
+        "submissionRate": "معدل الإرسال",
+        "bookedLeads": "العملاء المحجوزون",
+        "visitorsInquiriesTitle": "الزوار والاستفسارات عبر الزمن",
+        "funnel": {
+          "title": "مسار التحويل",
+          "visitorDays": "أيام-الزوار",
+          "contactOpened": "فتح التواصل",
+          "inquirySubmitted": "تم إرسال الاستفسار",
+          "ofVisitors": "من الزوار",
+          "ofOpened": "مما فُتح",
+          "ofTotal": "من الإجمالي",
+          "collectingData": "جارٍ جمع البيانات"
+        },
+        "pipeline": {
+          "title": "مسار الاستفسارات",
+          "new": "جديد",
+          "booked": "محجوز",
+          "archived": "مؤرشف",
+          "total": "إجمالي الاستفسارات"
+        },
+        "demand": {
+          "title": "ملف الطلب",
+          "eventTypeMix": "نوع المناسبة (حسب الاستفسارات)",
+          "requestedMonth": "شهر المناسبة المطلوب",
+          "medianLeadTime": "الوسيط لمهلة الحجز",
+          "days": "يوم",
+          "basedOn": "بناءً على"
+        }
       },
       "team": {
         "bookingsCount": "{count, plural, one {# حجز} other {# حجوزات}}"
@@ -636,6 +666,57 @@
         "client_changed": "تغيّر العميل",
         "payment_added": "أُضيفت دفعة",
         "payment_updated": "حُدِّثت دفعة"
+      },
+      "eventTypes": {
+        "wedding": "أعراس",
+        "corporate": "شركات",
+        "portrait": "بورتريه",
+        "engagement": "خطوبة",
+        "anniversary": "ذكرى سنوية",
+        "social": "اجتماعي",
+        "other": "أخرى"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "القيمة المحجوزة مقابل الإيرادات المُحصّلة",
+          "bookedValue": "القيمة المحجوزة",
+          "collectedRevenue": "الإيرادات المُحصّلة"
+        },
+        "coverage": {
+          "title": "تغطية التحصيل",
+          "asOf": "حتى",
+          "confirmedValue": "القيمة المؤكدة",
+          "confirmedHint": "إجمالي قيمة الحجوزات المؤكدة",
+          "paid": "المدفوع (المُحصّل)",
+          "paidHint": "المدفوعات المستلمة حتى الآن",
+          "remaining": "الرصيد المتبقي",
+          "remainingHint": "لم يُحصّل بعد",
+          "coverageText": "التغطية: {pct}% من القيمة المؤكدة تم تحصيلها"
+        },
+        "heatmap": {
+          "title": "خريطة حرارية للساعات المحجوزة",
+          "weekOf": "أسبوع",
+          "bookedHours": "الساعات المحجوزة",
+          "weekdays": [
+            "الإثنين",
+            "الثلاثاء",
+            "الأربعاء",
+            "الخميس",
+            "الجمعة",
+            "السبت",
+            "الأحد"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "مزيج المناسبات عبر الزمن"
+        }
       }
     },
     "calendar": {

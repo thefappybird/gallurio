@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { ContactModal, type ContactModalLabels } from "./ContactModal";
 
@@ -131,5 +131,28 @@ describe("ContactModal", () => {
     open();
     fireEvent.click(await screen.findByRole("tab", { name: "Event details" }));
     expect(screen.getByLabelText("Start time")).toHaveAttribute("lang", "en-US");
+  });
+
+  it("fires a fire-and-forget contact-page pageview beacon when opened", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<ContactModal workspaceSlug="luna" labels={labels} />);
+    open();
+    await waitFor(() => expect(screen.getByText("Get in touch")).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/public/pageviews");
+    const body = JSON.parse((options as RequestInit).body as string);
+    expect(body.page).toBe("contact");
+    expect(body.orgSlug).toBe("luna");
+    vi.unstubAllGlobals();
+  });
+
+  it("still opens the modal even when the beacon fetch rejects", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    render(<ContactModal workspaceSlug="luna" labels={labels} />);
+    open();
+    await waitFor(() => expect(screen.getByText("Get in touch")).toBeInTheDocument());
+    vi.unstubAllGlobals();
   });
 });

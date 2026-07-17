@@ -542,8 +542,8 @@
         "status": "{page} ng {total}"
       },
       "kpi": {
-        "revenueThisMonth": "Kita ngayong buwan",
-        "activeBookings": "Aktibong mga booking ngayong buwan",
+        "revenueThisMonth": "Nakolektang kita",
+        "activeBookings": "Nakaiskedyul na booking",
         "newInquiries": "Mga bagong inquiry",
         "outstandingBalance": "Natitirang balanse"
       },
@@ -557,7 +557,8 @@
         "eventTypes": "Breakdown ng uri ng event",
         "topClients": "Mga nangungunang kliyente ayon sa gastos",
         "teamPerformance": "Performance ng team",
-        "bookingsPerTeam": "Mga booking kada team"
+        "bookingsPerTeam": "Mga booking kada team",
+        "operations": "Mga operasyon"
       },
       "quickAdd": {
         "title": "Mabilis na dagdag",
@@ -590,7 +591,36 @@
         "inquiryInsights": "Mga insight sa inquiry",
         "inquiryToBooking": "Inquiry → booking",
         "bookedFromInquiries": "Na-book mula sa inquiry",
-        "newClientsFromForm": "Bagong kliyente mula sa form"
+        "newClientsFromForm": "Bagong kliyente mula sa form",
+        "visitorDays": "Bisita-araw",
+        "submissionRate": "Rate ng pagsusumite",
+        "bookedLeads": "Na-book na lead",
+        "visitorsInquiriesTitle": "Mga bisita at inquiry sa paglipas ng panahon",
+        "funnel": {
+          "title": "Funnel ng conversion",
+          "visitorDays": "Bisita-araw",
+          "contactOpened": "Binuksan ang contact",
+          "inquirySubmitted": "Naisumite ang inquiry",
+          "ofVisitors": "ng mga bisita",
+          "ofOpened": "ng binuksan",
+          "ofTotal": "ng kabuuan",
+          "collectingData": "Nangongolekta ng datos"
+        },
+        "pipeline": {
+          "title": "Pipeline ng inquiry",
+          "new": "Bago",
+          "booked": "Na-book",
+          "archived": "Naka-archive",
+          "total": "Kabuuang inquiry"
+        },
+        "demand": {
+          "title": "Profile ng demand",
+          "eventTypeMix": "Uri ng event (ayon sa inquiry)",
+          "requestedMonth": "Hiniling na buwan ng event",
+          "medianLeadTime": "Median na lead time",
+          "days": "araw",
+          "basedOn": "batay sa"
+        }
       },
       "team": {
         "bookingsCount": "{count, plural, one {# booking} other {# na booking}}"
@@ -633,6 +663,57 @@
         "client_changed": "binago ang kliyente",
         "payment_added": "nagdagdag ng bayad",
         "payment_updated": "na-update ang bayad"
+      },
+      "eventTypes": {
+        "wedding": "Kasal",
+        "corporate": "Korporado",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anibersaryo",
+        "social": "Panlipunan",
+        "other": "Iba pa"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "Na-book na halaga vs nakolektang kita",
+          "bookedValue": "Na-book na halaga",
+          "collectedRevenue": "Nakolektang kita"
+        },
+        "coverage": {
+          "title": "Saklaw ng koleksyon",
+          "asOf": "sa",
+          "confirmedValue": "Nakumpirmang halaga",
+          "confirmedHint": "Kabuuang halaga ng mga nakumpirmang booking",
+          "paid": "Bayad (nakolekta)",
+          "paidHint": "Mga natanggap na bayad hanggang ngayon",
+          "remaining": "Natitirang balanse",
+          "remainingHint": "Hindi pa nakokolekta",
+          "coverageText": "Saklaw: {pct}% ng nakumpirmang halaga ang nakolekta"
+        },
+        "heatmap": {
+          "title": "Heatmap ng na-book na oras",
+          "weekOf": "Linggo ng",
+          "bookedHours": "Na-book na oras",
+          "weekdays": [
+            "Lun",
+            "Mar",
+            "Miy",
+            "Huw",
+            "Biy",
+            "Sab",
+            "Lin"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "Halo ng event sa paglipas ng panahon"
+        }
       }
     },
     "calendar": {
