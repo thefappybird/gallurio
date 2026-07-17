@@ -267,7 +267,7 @@ describe("AppSidebar bell button", () => {
     // First arrival shows the cue alongside the bell nudge.
     bumpTick(1);
     act(() => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(500);
     });
 
     // Two more arrivals land inside the window — must NOT reset/extend the timer.

@@ -62,7 +62,7 @@ export function BookedHoursHeatmap({ cells, locale, labels }: Props) {
           <div
             className="grid gap-1"
             style={{
-              gridTemplateColumns: `max-content repeat(${weekStarts.length}, minmax(2.25rem, 1fr))`,
+              gridTemplateColumns: `max-content repeat(${weekStarts.length}, 1.75rem)`,
             }}
           >
             <div />
