@@ -275,8 +275,14 @@ const workspaceSchema = new Schema(
       default: null,
     },
     lsCurrentPeriodEnd: { type: Date, default: null },
-    // In-flight durable checkout workflow run id; cleared on activation.
-    lsCheckoutWorkflowRunId: { type: String, default: null },
+    // Provider timestamp (attributes.updated_at, falling back to created_at)
+    // of the last webhook/reconciliation write that was actually applied —
+    // never the delivery/receipt time. Gates every timestamped billing update
+    // so an older, out-of-order event can never overwrite newer subscription
+    // state; null means no timestamped event has landed yet (degraded
+    // fallback — the next update applies unconditionally). See
+    // lib/billing/webhookOrdering.ts.
+    lsLastEventAt: { type: Date, default: null },
 
     // Set once, permanently, the first time this workspace's plan is promoted
     // to a paid tier by the webhook below. Never cleared — including by the
