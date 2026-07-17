@@ -507,6 +507,11 @@
     }
   },
   "app": {
+    "betaEndingBanner": {
+      "title": "Beta access is ending soon",
+      "body": "Your beta access will end within the next week. After beta ends, your workspace will return to the free plan.",
+      "dismiss": "Dismiss for this session"
+    },
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Welcome back, {name}",

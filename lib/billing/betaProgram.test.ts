@@ -5,7 +5,8 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models";
-import { closeBetaProgram } from "./betaProgram";
+import { closeBetaProgram, scheduleBetaProgramEnd, shouldShowBetaEndingWarning } from "./betaProgram";
+import { BetaProgram } from "@/lib/db/models";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -48,5 +49,31 @@ describe("closeBetaProgram", () => {
     expect(after?.plan).toBe("pro");
     expect(after?.planGrantExpiresAt).toBeInstanceOf(Date);
     expect(after?.pendingPromoGrant?.grantMonths).toBeNull();
+  });
+});
+
+describe("beta end announcement", () => {
+  it("shows only during the final week and until beta closes", () => {
+    const now = new Date("2026-07-17T00:00:00.000Z");
+    expect(shouldShowBetaEndingWarning(new Date("2026-07-24T00:00:00.000Z"), null, now)).toBe(true);
+    expect(shouldShowBetaEndingWarning(new Date("2026-07-25T00:00:00.000Z"), null, now)).toBe(false);
+    expect(shouldShowBetaEndingWarning(new Date("2026-07-24T00:00:00.000Z"), new Date(), now)).toBe(false);
+  });
+
+  it("stores an operator-set future beta end date without closing the program", async () => {
+    const scheduledEndAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    await scheduleBetaProgramEnd(scheduledEndAt, "wos_operator");
+
+    const program = await BetaProgram.findOne({}).lean();
+    expect(program?.scheduledEndAt?.getTime()).toBe(scheduledEndAt.getTime());
+    expect(program?.scheduledByUserId).toBe("wos_operator");
+    expect(program?.closedAt).toBeNull();
+  });
+
+  it("refuses to schedule a beta program that is already closed", async () => {
+    await closeBetaProgram("wos_operator");
+    await expect(
+      scheduleBetaProgramEnd(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), "wos_operator")
+    ).rejects.toThrow(/already closed/i);
   });
 });

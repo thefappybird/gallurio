@@ -507,6 +507,11 @@
     }
   },
   "app": {
+    "betaEndingBanner": {
+      "title": "Malapit nang matapos ang beta access",
+      "body": "Matatapos ang iyong beta access sa loob ng susunod na linggo. Pagkatapos ng beta, babalik ang iyong workspace sa libreng plan.",
+      "dismiss": "Isara para sa session na ito"
+    },
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Maligayang pagbabalik, {name}",

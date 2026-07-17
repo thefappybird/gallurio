@@ -8,6 +8,10 @@ import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 const betaProgramSchema = new Schema(
   {
     startedAt: { type: Date, default: null },
+    // Operator-announced target date. This does not close beta automatically;
+    // it only drives the final-week in-app warning until an operator closes it.
+    scheduledEndAt: { type: Date, default: null },
+    scheduledByUserId: { type: String, default: null },
     closedAt: { type: Date, default: null },
     // workosUserId of the operator who closed the program — same convention
     // as Workspace.ownerUserId (plain string, not an ObjectId ref).

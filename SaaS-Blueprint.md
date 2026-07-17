@@ -50,7 +50,6 @@ If you only remember six things from this document:
 ### Nice-to-have (v1.2+)
 
 - QR check-in for events
-- Client portal (clients log in to see their booking)
 - Mobile app
 - Workflow automation (Zapier-like)
 - Multi-language
@@ -59,8 +58,6 @@ If you only remember six things from this document:
 ### Cut entirely (or don't even prototype this month)
 
 - AI assistants / chatbots
-- Marketplace / discovery directory
-- **Marketplace payments** (tenants accepting end-client payments via Gallurio-managed sub-accounts) — dropped during the HitPay swap; tenants can collect end-client payments via their own HitPay/GCash accounts out-of-band for MVP
 - Internal team chat
 - Resource scheduling (rooms, equipment)
 - Multi-currency accounting
@@ -549,9 +546,7 @@ Default booking lists hide only `cancelled`; the inquiry-status booking surfaces
 
 **Stage 2 — Owner Approves** (Lead Inbox → confirmed booking)
 
-Owner opens `/inquiries`, reviews the lead, and clicks **"Approve booking"**. The existing Create-Booking modal opens pre-filled with the inquiry's client + event details. The owner adds the pricing, deposit, and terms they agreed with the client **off-platform**, then saves. The booking is promoted (not duplicated): `Booking.status` → `booked`, `Inquiry.status` → `converted`, `Inquiry.convertedBookingId` set.
-
-Gallurio does **not** broker the owner↔client conversation. There is no in-app quoting, counter-offer loop, client portal, or durable workflow — those were removed. Owners and clients negotiate through their own channels; Gallurio records the final booking.
+Owner opens `/inquiries`, reviews the lead, and clicks **"Approve booking"**. The existing Create-Booking modal opens pre-filled with the inquiry's client + event details. The owner adds the final pricing, deposit, and terms, then saves. The booking is promoted (not duplicated): `Booking.status` → `booked`, `Inquiry.status` → `converted`, `Inquiry.convertedBookingId` set.
 
 ### SEO
 
@@ -923,7 +918,7 @@ This isn't comprehensive coverage for its own sake. It's a forcing function: **i
 | **Observability** | Sentry + PostHog + Better Stack | Errors + product analytics + uptime — the trio |
 | **Background jobs** | Hetzner-hosted scheduled worker + Inngest if it gets complex | Start simple on the same infra, split only when jobs justify it |
 | **Email** | Resend | Developer-friendly, React Email templates, fairly priced |
-| **Payments** | HitPay (Recurring Billing, card-only for subscriptions) | Stripe doesn't onboard PH businesses; Xendit's PH KYC for the marketplace was too much friction for MVP. HitPay ships subscription billing with simpler onboarding across SG/MY/PH/ID/TH. Marketplace dropped from MVP. |
+| **Payments** | Lemon Squeezy (subscriptions) | Merchant of Record for Gallurio workspace subscriptions. |
 | **Linting** | Biome (or ESLint + Prettier) | Biome is faster; either is fine |
 | **Type safety** | TypeScript strict mode | Non-negotiable. Saves you weeks of bugs. |
 

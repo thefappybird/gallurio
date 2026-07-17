@@ -1,16 +1,11 @@
 /**
- * Operator CLI: seed the production two-month beta-redemption promo code.
- *
- * Always creates `type: "beta2mo"` with `expiresAt: null` — per the approved
- * beta-close policy the promo is eligibility-gated (redeemer must have a
- * recorded betaParticipation), not date-gated, so it carries no ordinary
- * expiry.
+ * Operator CLI: create one general promo code.
  *
  * SECURITY: the actual code value (--code=) is never logged. Only the title
  * and a redacted DB fingerprint are printed.
  *
  * Usage:
- *   pnpm tsx scripts/seed-promo-code.ts --code=<code> --title=<title> [--dry-run]
+ *   pnpm seed:promo -- --code=<code> --title=<title> --type=<monthly|yearly|lifetime|beta|beta2mo> [--expires-at=<ISO date>] [--dry-run]
  */
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
@@ -19,25 +14,37 @@ loadEnv();
 import mongoose from "mongoose";
 import { fileURLToPath } from "node:url";
 import { connectDB } from "@/lib/db/mongoose";
-import { PromoCode } from "@/lib/db/models";
-import { assertSafeTarget, printDbFingerprint } from "@/lib/db/scriptGuard";
+import { PromoCode, PROMO_CODE_TYPES, type PromoCodeType } from "@/lib/db/models";
+import { assertSafeTarget, parseDbTarget, printDbFingerprint } from "@/lib/db/scriptGuard";
 
 export type ParsedArgs = {
   code?: string;
   title?: string;
+  type?: PromoCodeType;
+  expiresAt?: Date | null;
   dryRun: boolean;
 };
 
 export function parseArgs(argv: string[]): ParsedArgs {
   let code: string | undefined;
   let title: string | undefined;
+  let type: PromoCodeType | undefined;
+  let expiresAt: Date | null | undefined;
   let dryRun = false;
   for (const arg of argv) {
     if (arg.startsWith("--code=")) code = arg.slice("--code=".length);
     else if (arg.startsWith("--title=")) title = arg.slice("--title=".length);
+    else if (arg.startsWith("--type=")) {
+      const candidate = arg.slice("--type=".length) as PromoCodeType;
+      if ((PROMO_CODE_TYPES as readonly string[]).includes(candidate)) type = candidate;
+    } else if (arg.startsWith("--expires-at=")) {
+      const value = arg.slice("--expires-at=".length);
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) expiresAt = parsed;
+    }
     else if (arg === "--dry-run") dryRun = true;
   }
-  return { code, title, dryRun };
+  return { code, title, type, expiresAt, dryRun };
 }
 
 export type SeedResult = { created: boolean; title: string };
@@ -49,7 +56,8 @@ export type SeedResult = { created: boolean; title: string };
 export async function seedPromoCode(
   code: string,
   title: string,
-  opts: { dryRun?: boolean } = {}
+  type: PromoCodeType,
+  opts: { dryRun?: boolean; expiresAt?: Date | null } = {}
 ): Promise<SeedResult> {
   const normalizedCode = code.trim().toLowerCase();
   const existing = await PromoCode.findOne({ code: normalizedCode }).lean();
@@ -64,30 +72,36 @@ export async function seedPromoCode(
   await PromoCode.create({
     title,
     code: normalizedCode,
-    expiresAt: null,
+    expiresAt: opts.expiresAt ?? null,
     revokedAt: null,
-    type: "beta2mo",
+    type,
   });
   return { created: true, title };
 }
 
 async function main() {
-  const { code, title, dryRun } = parseArgs(process.argv.slice(2));
-  if (!code || !title) {
+  const { code, title, type, expiresAt, dryRun } = parseArgs(process.argv.slice(2));
+  if (!code || !title || !type) {
     console.error(
-      "Usage: pnpm tsx scripts/seed-promo-code.ts --code=<code> --title=<title> [--dry-run]"
+      "Usage: pnpm seed:promo -- --code=<code> --title=<title> --type=<monthly|yearly|lifetime|beta|beta2mo> [--expires-at=<ISO date>] [--dry-run]"
     );
     process.exit(1);
   }
 
   console.log(`-> Seed promo code (${dryRun ? "DRY RUN" : "LIVE"})`);
-  await connectDB();
-
   const uri = process.env.DATABASE_URL!;
   printDbFingerprint(uri);
-  assertSafeTarget(uri, { dryRun });
 
-  const result = await seedPromoCode(code, title, { dryRun });
+  if (parseDbTarget(uri).dbName === "(default)") {
+    throw new Error(
+      "Refusing to seed a URI without an explicit database name. Add the intended database to DATABASE_URL first."
+    );
+  }
+
+  assertSafeTarget(uri, { dryRun });
+  await connectDB();
+
+  const result = await seedPromoCode(code, title, type, { dryRun, expiresAt });
 
   if (dryRun) {
     console.log(`  title="${result.title}" -> would ${result.created ? "create" : "no-op (already exists)"}`);

@@ -261,5 +261,4 @@ Gate before done: affected tests, `pnpm typecheck`, `pnpm lint`. Check mobile at
 
 - Draft version history / per-draft undo beyond the existing `previousData`.
 - Sharing/duplicating drafts across workspaces.
-- Quote negotiation or any inquiry-flow changes.
 ```

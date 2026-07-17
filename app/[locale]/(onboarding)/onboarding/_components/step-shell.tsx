@@ -9,8 +9,7 @@ import { ArrowLeft, Building2, Globe, CreditCard, Flag, CheckCircle2 } from "luc
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// Onboarding step order. The payments step was removed when marketplace was
-// dropped from MVP; the template step was moved to Page Builder / workspace
+// Onboarding step order. The template step was moved to Page Builder / workspace
 // settings. Keep this list in sync with ONBOARDING_STEPS in
 // lib/db/models/User.ts.
 export const STEP_META = [

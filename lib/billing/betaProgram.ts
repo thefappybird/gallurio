@@ -1,6 +1,42 @@
 import "server-only";
 import { BetaProgram, Workspace } from "@/lib/db/models";
+import { connectDB } from "@/lib/db/mongoose";
 import { pendingGrantUpdate } from "@/lib/billing/pendingPromoGrant";
+
+const BETA_WARNING_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function shouldShowBetaEndingWarning(
+  scheduledEndAt: Date | null | undefined,
+  closedAt: Date | null | undefined,
+  now = new Date()
+): boolean {
+  return !!scheduledEndAt && !closedAt && scheduledEndAt.getTime() - now.getTime() <= BETA_WARNING_WINDOW_MS;
+}
+
+export async function getBetaProgramAnnouncement() {
+  await connectDB();
+  return BetaProgram.findOne({}, { scheduledEndAt: 1, closedAt: 1 }).lean();
+}
+
+export async function scheduleBetaProgramEnd(scheduledEndAt: Date, scheduledByUserId: string): Promise<void> {
+  if (scheduledEndAt <= new Date()) {
+    throw new Error("The beta end date must be in the future.");
+  }
+
+  const existing = await BetaProgram.findOne({}, { _id: 1, closedAt: 1 }).lean();
+  if (existing?.closedAt) {
+    throw new Error("The beta program is already closed.");
+  }
+
+  await BetaProgram.findOneAndUpdate(
+    existing ? { _id: existing._id } : {},
+    {
+      $setOnInsert: { startedAt: new Date() },
+      $set: { scheduledEndAt, scheduledByUserId },
+    },
+    { upsert: true, new: true }
+  );
+}
 
 // Gate for new beta activation (onboarding + dev toggle). A missing
 // BetaProgram document means the program has never been explicitly closed —

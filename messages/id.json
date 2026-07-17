@@ -507,6 +507,11 @@
     }
   },
   "app": {
+    "betaEndingBanner": {
+      "title": "Akses beta akan segera berakhir",
+      "body": "Akses beta Anda akan berakhir dalam minggu depan. Setelah beta berakhir, ruang kerja Anda akan kembali ke paket gratis.",
+      "dismiss": "Tutup untuk sesi ini"
+    },
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Selamat datang kembali, {name}",

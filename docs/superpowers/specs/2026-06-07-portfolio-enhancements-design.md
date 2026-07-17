@@ -35,8 +35,6 @@ Implement:
 
 Do not implement:
 
-- Quote negotiation
-- Client portal flow
 - Localized client confirmation emails
 - Interactive location picker inside editor preview
 - New public-page collections
