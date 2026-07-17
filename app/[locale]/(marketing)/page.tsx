@@ -116,7 +116,7 @@ export default async function Home({ params }: Props) {
         >
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] shadow-2xl shadow-black/40">
             <Image
-              src="/marketing/screenshots/portfolio-builder-canvas.png"
+              src="/marketing/screenshots/dashboard-overview.png"
               alt={t("features.portfolioBuilder.title")}
               fill
               sizes="(min-width: 80rem) 64rem, 100vw"
