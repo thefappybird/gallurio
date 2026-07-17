@@ -333,9 +333,7 @@ export async function activateBetaTesterAction(): Promise<ActionResult> {
 export async function reconcileLemonSqueezySubscription(workspaceId: string): Promise<void> {
   try {
     await connectDB();
-    const workspace = await Workspace.findOne({ _id: workspaceId }).select({
-      lsSubscriptionId: 1,
-    });
+    const workspace = await Workspace.findOne({ _id: workspaceId }).select({ _id: 1 }).lean();
     if (!workspace) return;
 
     const authUser = await getAuthUser();
@@ -344,7 +342,8 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
 
     const { listActiveSubscriptionsForEmail } = await import("@/lib/lemonsqueezy/client");
     const { planForVariantId } = await import("@/lib/lemonsqueezy/plans");
-    const { mapLemonSqueezySubscriptionStatus } = await import("@/lib/lemonsqueezy/status");
+    const { applySubscriptionSnapshot } = await import("@/lib/billing/subscriptionSnapshot");
+    const { resolveProviderEventTimestamp } = await import("@/lib/billing/webhookOrdering");
 
     const subs = await listActiveSubscriptionsForEmail(email);
     if (subs.length === 0) return;
@@ -357,8 +356,7 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
     )[0];
 
     const variantId = sub.attributes.variant_id != null ? String(sub.attributes.variant_id) : "";
-    const plan = planForVariantId(variantId);
-    if (plan === "free") return;
+    if (planForVariantId(variantId) === "free") return;
 
     // Defence-in-depth: listActiveSubscriptionsForEmail is scoped by the
     // signed-in user's email, not this workspace. A user who owns multiple
@@ -374,27 +372,22 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
       .lean();
     if (boundElsewhere) return;
 
-    // Map raw Lemon Squeezy status through the shared normaliser — never
-    // write an unmapped string to the DB enum field.
-    const lsSubscriptionStatus = mapLemonSqueezySubscriptionStatus(
-      sub.attributes.status as string | null | undefined
-    );
+    const customerId =
+      sub.attributes.customer_id != null ? String(sub.attributes.customer_id) : null;
 
-    const renewsAt = sub.attributes.renews_at as string | null | undefined;
-    const periodEnd = renewsAt ? new Date(renewsAt) : null;
-
-    const $set: Record<string, unknown> = {
-      plan,
-      everSubscribed: true,
-      lsSubscriptionId: sub.id,
-      lsCurrentPeriodEnd: periodEnd,
-    };
-    // Only write status when the mapper recognised the value.
-    if (lsSubscriptionStatus !== null) {
-      $set.lsSubscriptionStatus = lsSubscriptionStatus;
-    }
-
-    await Workspace.updateOne({ _id: workspaceId }, { $set });
+    // Same application path as the webhook's created/updated handler — team-
+    // cap guard, no-downgrade-on-variant-miss, and terminal-status-refuses-
+    // promotion all apply here too, so this safety net can never drift from
+    // the webhook's own rules.
+    await applySubscriptionSnapshot({
+      filter: { _id: workspaceId },
+      subscriptionId: sub.id,
+      customerId,
+      rawStatus: sub.attributes.status as string | null | undefined,
+      variantId,
+      renewsAt: sub.attributes.renews_at as string | null | undefined,
+      eventTimestamp: resolveProviderEventTimestamp(sub.attributes as Record<string, unknown>),
+    });
   } catch (err) {
     console.error("[onboarding/done] lemonsqueezy reconcile failed", err);
   }
