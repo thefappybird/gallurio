@@ -54,8 +54,11 @@ export function PortfolioConversionFunnelCard({ funnel, labels }: Props) {
             <div className="flex items-center justify-between gap-2 text-sm">
               <span className="font-medium">{labels.inquirySubmitted}</span>
               <span className="tabular-nums text-muted-foreground">
-                {inquiries} · {pct(inquiries, contactVisitorDays)}% {labels.ofOpened} ·{" "}
-                {pct(inquiries, visitorDays)}% {labels.ofTotal}
+                {inquiries} ·{" "}
+                {contactTracked
+                  ? `${Math.min(100, pct(inquiries, contactVisitorDays))}% ${labels.ofOpened} · `
+                  : ""}
+                {Math.min(100, pct(inquiries, visitorDays))}% {labels.ofTotal}
               </span>
             </div>
           </>

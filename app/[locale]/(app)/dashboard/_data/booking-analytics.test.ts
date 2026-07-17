@@ -78,6 +78,44 @@ describe("getCollectionCoverage", () => {
     expect(coverage.coveragePct).toBeCloseTo(40, 5);
   });
 
+  it("clamps coveragePct to 100 on overpayment", async () => {
+    const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-08T00:00:00.000Z") };
+
+    const booking = await seedBooking({
+      sessions: [{ startAt: monWeek1_10am, endAt: new Date(monWeek1_10am.getTime() + 2 * 3_600_000) }],
+      total: 10_000,
+    });
+
+    await Transaction.create([
+      { workspaceId: wid, bookingId: booking._id, amount: 8_000, type: "deposit", paidAt: null },
+      { workspaceId: wid, bookingId: booking._id, amount: 5_000, type: "balance", paidAt: null },
+    ]);
+
+    const coverage = await getCollectionCoverage(wid, range);
+    expect(coverage.collected).toBe(13_000);
+    expect(coverage.remaining).toBe(0);
+    expect(coverage.coveragePct).toBe(100);
+  });
+
+  it("clamps coveragePct to 0 on refund-heavy negative net collected", async () => {
+    const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-08T00:00:00.000Z") };
+
+    const booking = await seedBooking({
+      sessions: [{ startAt: monWeek1_10am, endAt: new Date(monWeek1_10am.getTime() + 2 * 3_600_000) }],
+      total: 10_000,
+    });
+
+    await Transaction.create([
+      { workspaceId: wid, bookingId: booking._id, amount: 1_000, type: "deposit", paidAt: null },
+      { workspaceId: wid, bookingId: booking._id, amount: -3_000, type: "refund", paidAt: null },
+    ]);
+
+    const coverage = await getCollectionCoverage(wid, range);
+    expect(coverage.collected).toBe(-2_000);
+    expect(coverage.remaining).toBe(12_000);
+    expect(coverage.coveragePct).toBe(0);
+  });
+
   it("excludes draft/cancelled bookings and other workspaces; empty range yields zeros", async () => {
     const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-08T00:00:00.000Z") };
     const sessions = [{ startAt: monWeek1_10am, endAt: new Date(monWeek1_10am.getTime() + 3_600_000) }];
