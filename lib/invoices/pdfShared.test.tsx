@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { View, Image } from "@react-pdf/renderer";
-import { DocumentHeader, buildInvoiceStyles } from "./pdfShared";
+import { DocumentFooter, DocumentHeader, buildInvoiceStyles } from "./pdfShared";
 
 function collectElements(node: unknown, out: Array<{ type: unknown; props: Record<string, unknown> }> = []) {
   if (node == null || typeof node === "boolean") return out;
@@ -37,5 +37,24 @@ describe("DocumentHeader", () => {
         ?.props.style as Array<Record<string, unknown>>;
     expect(findRowStyle(ltr)?.[1]?.flexDirection).toBe("row");
     expect(findRowStyle(rtl)?.[1]?.flexDirection).toBe("row-reverse");
+  });
+
+  it("constrains long business addresses so the right-side document label remains separate", () => {
+    const element = DocumentFooter({
+      business: { address: "A very long business address that should wrap inside the footer without colliding with the thank you label", email: "owner@example.com" },
+      styles,
+    });
+    const all = collectElements(element);
+    const footerLeft = all.find(
+      (el) => el.type === View && el.props.style === styles.footerLeft,
+    );
+    const footerRight = all.find(
+      (el) => el.type === View && el.props.style === styles.headerRight,
+    );
+
+    expect(footerLeft).toBeDefined();
+    expect(styles.footerLeft).toMatchObject({ flexGrow: 1, flexBasis: 0, flexShrink: 1 });
+    expect(styles.headerRight).toMatchObject({ flexShrink: 0 });
+    expect(footerRight).toBeDefined();
   });
 });

@@ -5,6 +5,7 @@ import { setRequestLocale } from "next-intl/server";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/app/theme-provider";
+import { DisableNumberInputSteppers } from "@/components/app/disable-number-input-steppers";
 import { routing } from "@/lib/i18n/routing";
 import { isRtl } from "@/lib/i18n/rtl";
 import { portfolioFontVariables } from "@/lib/fonts/portfolio";
@@ -54,6 +55,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <NextIntlClientProvider>
+            <DisableNumberInputSteppers />
             <TooltipProvider>{children}</TooltipProvider>
             <Toaster />
           </NextIntlClientProvider>

@@ -19,7 +19,7 @@ const transactionSchema = new Schema(
     },
     method: {
       type: String,
-      enum: ["lemonsqueezy", "cash", "transfer", "other"],
+      enum: ["lemonsqueezy", "cash", "card", "remit", "transfer", "other"],
       default: "lemonsqueezy",
     },
     // Lemon Squeezy identifiers. orderId covers one-off charges; subscriptionId

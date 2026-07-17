@@ -45,6 +45,6 @@ describe("DoneStepForm — sample data toggle", () => {
     // @ts-expect-error — NODE_ENV is read-only in the types but writable at runtime
     process.env.NODE_ENV = "development";
     renderForm();
-    expect(screen.getByText(/start with sample data/i)).toBeInTheDocument();
+    expect(screen.queryByText(/start with sample data/i)).not.toBeInTheDocument();
   });
 });

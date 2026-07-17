@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { SUPPORTED_CURRENCIES } from "./workspace";
-import { optionalPhone } from "./client";
+import { clientFormSchema } from "./client";
 
 export const BOOKING_STATUSES = [
   "booked",
@@ -10,6 +10,7 @@ export const BOOKING_STATUSES = [
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
 export const BOOKING_PAYMENT_STATUSES = ["unpaid", "paid"] as const;
+export const BOOKING_PAYMENT_METHODS = ["cash", "card", "remit"] as const;
 
 export const EVENT_TYPES = [
   "wedding",
@@ -36,18 +37,16 @@ export const bookingPaymentSchema = z.object({
   createdAt: isoDate.optional(),
   paidAt: isoDate.nullable().optional(),
   title: z.string().max(120).trim().default(""),
+  method: z.enum(BOOKING_PAYMENT_METHODS).default("cash"),
 });
 
 const clientExistingBlock = z.object({
   mode: z.literal("existing"),
   clientId: objectIdString,
 });
-const clientNewBlock = z.object({
-  mode: z.literal("new"),
-  name: z.string().min(1, "Required").max(120).trim(),
-  email: z.string().email("Invalid email").toLowerCase().trim().optional().nullable(),
-  phone: optionalPhone,
-});
+// Keep booking-wizard client creation in lockstep with the Clients "Add client"
+// form: same contact validation plus source, tags, and notes.
+const clientNewBlock = clientFormSchema.extend({ mode: z.literal("new") });
 export const bookingClientSchema = z.discriminatedUnion("mode", [
   clientExistingBlock,
   clientNewBlock,

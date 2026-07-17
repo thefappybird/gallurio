@@ -34,6 +34,8 @@ import { EmptyState } from "@/components/app/empty-state";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
 import { SourceBadge } from "./source-badge";
+import { TagPill } from "@/components/app/tag-pill";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -57,6 +59,25 @@ function CardField({
         {label}
       </dt>
       <dd className={cn("text-sm text-foreground", valueClassName)}>{value}</dd>
+    </div>
+  );
+}
+
+function ClientTags({ tags }: { tags: string[] }) {
+  if (tags.length === 0) return null;
+  const shown = tags.slice(0, 3);
+  const more = tags.length - shown.length;
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1" onClick={(event) => event.stopPropagation()}>
+      {shown.map((tag) => <TagPill key={tag} tag={tag} />)}
+      {more > 0 && (
+        <Popover>
+          <PopoverTrigger render={<button type="button" className="border border-border px-1.5 py-px text-[11px] leading-4 hover:bg-muted">+{more}</button>} />
+          <PopoverContent className="w-48 p-2" side="bottom" align="start">
+            <div className="flex flex-wrap gap-1">{tags.map((tag) => <TagPill key={tag} tag={tag} />)}</div>
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 }
@@ -181,6 +202,7 @@ export function ClientsTable({
           return (
             <div className="flex flex-col">
               <span className="font-semibold leading-snug">{row.name}</span>
+              <ClientTags tags={row.tags} />
               <span className="text-xs text-muted-foreground">
                 {bookingsSubtext(row)}
               </span>
@@ -275,6 +297,7 @@ export function ClientsTable({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold leading-snug">{client.name}</p>
+                  <ClientTags tags={client.tags} />
                   <p className="mt-1 text-xs text-muted-foreground">
                     {bookingsSubtext(client)}
                   </p>

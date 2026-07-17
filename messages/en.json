@@ -1016,6 +1016,10 @@
         "title": "Title",
         "price": "Price",
         "status": "Status",
+        "method": "Method",
+        "cash": "Cash",
+        "card": "Card",
+        "remit": "Remit",
         "paid": "Paid",
         "unpaid": "Unpaid",
         "paidOn": "Paid on {date}",
@@ -1285,12 +1289,12 @@
         "logoHint": "Shown on your generated invoices.",
         "logoLabel": "Upload logo",
         "logoUploading": "Uploading…",
-        "logoRequirements": "PNG, JPEG, WebP or SVG · max 2 MB · up to 2000 × 2000 px",
+        "logoRequirements": "PNG, JPEG, WebP or SVG - max 250 KB - square, up to 256 x 256 px",
         "logoRemove": "Remove",
         "logoErrors": {
           "type": "Only PNG, JPEG, WebP or SVG files are accepted.",
-          "size": "File must be 2 MB or smaller.",
-          "dimensions": "Image must be 2000 × 2000 px or smaller.",
+          "size": "File must be 250 KB or smaller.",
+          "dimensions": "Logo must be square and 256 x 256 px or smaller.",
           "image": "Could not read the image. Please try another file.",
           "upload": "Upload failed. Please try again."
         }
@@ -1620,7 +1624,7 @@
           "totalSpent": "Total Spent",
           "actions": "Actions"
         },
-        "bookings": "{count} bookings",
+        "bookings": "{count} booking(s)",
         "lastBooking": "Last: {date}",
         "noBookings": "No bookings yet",
         "openMenu": "Open client actions",
@@ -1646,6 +1650,7 @@
         "notes": "Notes",
         "notesPlaceholder": "Any notes about this client…",
         "save": "Save",
+        "view": "View",
         "saving": "Saving…",
         "cancel": "Cancel",
         "createSuccess": "Client created.",

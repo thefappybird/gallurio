@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  EyeIcon,
   Loader2Icon,
   XIcon,
 } from "lucide-react";
@@ -261,7 +262,9 @@ export function BookingWizardModal({
             deposit: b.amount?.deposit ?? 0,
             currency: b.amount?.currency ?? defaultCurrency,
           },
-          payments: Array.isArray(b.payments) ? b.payments : [],
+          payments: Array.isArray(b.payments)
+            ? b.payments.map((payment: { method?: "cash" | "card" | "remit" }) => ({ ...payment, method: payment.method ?? "cash" }))
+            : [],
           notes: b.notes ?? "",
           teamId: b.teamId ?? "",
         };
@@ -774,17 +777,31 @@ export function BookingWizardModal({
               })}
             </ol>
           </div>
-          <DialogClose
-            render={
+          <div className="flex items-center gap-1">
+            {mode === "edit" && bookingId ? (
               <Button
+                type="button"
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => attemptClose(false)}
+                aria-label="View booking"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.delete("edit");
+                  params.set("detail", bookingId);
+                  router.push(`${pathname}?${params.toString()}`);
+                }}
               >
-                <XIcon className="size-4" />
+                <EyeIcon className="size-4" />
               </Button>
-            }
-          />
+            ) : null}
+            <DialogClose
+              render={
+                <Button variant="ghost" size="icon-sm" onClick={() => attemptClose(false)}>
+                  <XIcon className="size-4" />
+                </Button>
+              }
+            />
+          </div>
         </div>
 
         <form
@@ -816,6 +833,7 @@ export function BookingWizardModal({
                   <ClientStep
                     control={control}
                     errors={errors}
+                    showExistingError={stepErrors.has(stepIndex)}
                     readOnly={isReadOnlyClient}
                     readOnlyClientName={editClientName}
                     clients={clients}
@@ -861,12 +879,12 @@ export function BookingWizardModal({
             ) : null}
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-border bg-muted/30 px-4 py-3">
+          <div className="flex flex-row flex-wrap items-center justify-between gap-2 border-t border-border bg-muted/30 px-4 py-3">
             {submitError ? (
-              <p className="text-xs text-destructive">{submitError}</p>
+              <p className="basis-full text-xs text-destructive">{submitError}</p>
             ) : null}
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -891,7 +909,7 @@ export function BookingWizardModal({
                   </Button>
                 ) : null}
               </div>
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="ghost"
@@ -1071,7 +1089,7 @@ function buildCreatePayload(v: WizardValues, timeZone: string) {
       deposit: v.amount.deposit,
       currency: v.amount.currency,
     },
-    payments: v.payments.map((p) => ({ price: p.price, status: p.status, title: p.title })),
+    payments: v.payments.map((p) => ({ price: p.price, status: p.status, title: p.title, method: p.method ?? "cash" })),
     notes: v.notes,
     teamId: v.teamId || undefined,
   };
@@ -1111,7 +1129,7 @@ function buildEditDiff(
   const paymentsChanged =
     JSON.stringify(v.payments) !== JSON.stringify(defaults.payments);
   if (paymentsChanged) {
-    diff.payments = v.payments.map((p) => ({ price: p.price, status: p.status, title: p.title }));
+    diff.payments = v.payments.map((p) => ({ price: p.price, status: p.status, title: p.title, method: p.method ?? "cash" }));
   }
 
   if (v.notes !== defaults.notes) diff.notes = v.notes;

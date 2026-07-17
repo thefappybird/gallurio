@@ -632,7 +632,7 @@ function CalendarToolbar({
     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
       {/* Left cluster: nav + optional trailing controls (legend chips, team filter) */}
       <div className="flex flex-wrap items-center gap-2">
-                <span className="hidden lg:block font-semibold text-sm me-1">{label}</span>
+        <span className="text-sm font-semibold me-1">{label}</span>
         {/* Jump-to popover */}
         <Popover>
           <PopoverTrigger

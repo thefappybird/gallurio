@@ -16,7 +16,9 @@ export type RedeemPromoCodeResult =
 // Mongo at insert time in the test fixture, so the only way to record it on
 // Workspace.codesRedeemed is a DB read keyed by the submitted code string.
 export async function redeemPromoCodeAction(code: string): Promise<RedeemPromoCodeResult> {
-  const ctx = await ownerContext({ allowWhenGated: true });
+  // The code drawer is part of the onboarding plan step. Keep the owner and
+  // billing safeguards, but let an unfinished onboarding session redeem here.
+  const ctx = await ownerContext({ allowDuringOnboarding: true, allowWhenGated: true });
   if ("error" in ctx) return { error: ctx.error };
 
   const normalized = code.trim().toLowerCase();

@@ -15,7 +15,7 @@ import {
   type SupportedCountry,
 } from "@/lib/validators/workspace";
 import { workspaceStepAction } from "@/lib/actions/onboarding";
-import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
+import { StepShell, StepBackButton } from "../_components/step-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,22 +69,20 @@ export function WorkspaceStepForm({
     handleSubmit,
     setValue,
     control,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting },
   } = useForm<WorkspaceSetupInput>({
     resolver: zodResolver(workspaceSetupSchema),
     defaultValues: defaults,
   });
 
   const slugValue = useWatch({ control, name: "slug" });
-  const { status: slugStatus } = useSlugAvailability(slugValue, defaults.slug);
+  // The value starts as an automatically generated slug. It still needs a
+  // live check: another workspace may have claimed it since step one, and the
+  // submit action performs the authoritative race-safe check before advancing.
+  const { status: slugStatus } = useSlugAvailability(slugValue);
   const timeFormatValue = useWatch({ control, name: "timeFormat" });
 
   async function onSubmit(data: WorkspaceSetupInput) {
-    if (isStepCompleted("workspace", furthestStep) && !isDirty) {
-      startTransition(() => router.push("/onboarding/plan"));
-      return;
-    }
-
     const result = await workspaceStepAction(data);
     if (result?.error) {
       toast.error(errMsg(result.error));
@@ -99,8 +97,31 @@ export function WorkspaceStepForm({
       furthestStep={furthestStep}
       title={t("title")}
       description={t("description")}
+      footer={
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <StepBackButton from="workspace" />
+          </div>
+          <Button
+            form="workspace-step-form"
+            type="submit"
+            variant="brand"
+            disabled={isSubmitting || slugStatus === "checking" || slugStatus === "taken" || slugStatus === "invalid"}
+            className="min-w-40"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {tShell("saving")}
+              </>
+            ) : (
+              tShell("continue")
+            )}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col gap-5">
+      <form id="workspace-step-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="slug">
             {tSlug("workspaceUrl")}{" "}
@@ -186,26 +207,6 @@ export function WorkspaceStepForm({
           </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-between pt-2">
-          <div>
-            <StepBackButton from="workspace" />
-          </div>
-          <Button
-            type="submit"
-            variant="brand"
-            disabled={isSubmitting || slugStatus === "checking" || slugStatus === "taken" || slugStatus === "invalid"}
-            className="min-w-40"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {tShell("saving")}
-              </>
-            ) : (
-              tShell("continue")
-            )}
-          </Button>
-        </div>
       </form>
     </StepShell>
   );

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 
@@ -41,23 +40,39 @@ export function SettingsUserProfile({
   const visiblePages = pages.filter(
     (p) => !p.ownerOnly || role === "owner",
   );
+  const visiblePageSlugs = visiblePages.map((page) => page.slug).join(",");
 
-  const currentPage = visiblePages.find((p) => p.slug === activeSlug);
+  const serverActiveSlug = activeSlug ?? "account";
+  const [activePageSlug, setActivePageSlug] = useState(serverActiveSlug);
+  const [previousServerActiveSlug, setPreviousServerActiveSlug] = useState(serverActiveSlug);
 
-  const isPageActive = (page: SettingsPage) => page.slug === activeSlug;
+  // A direct URL navigation still comes through the server and must become the
+  // active client panel. Ordinary tab switches stay client-side so each form
+  // remains mounted and keeps unsaved values instead of triggering a refetch.
+  if (serverActiveSlug !== previousServerActiveSlug) {
+    setPreviousServerActiveSlug(serverActiveSlug);
+    setActivePageSlug(serverActiveSlug);
+  }
+
+  const currentPage = visiblePages.find((p) => p.slug === activePageSlug);
+
+  const isPageActive = (page: SettingsPage) => page.slug === activePageSlug;
   const hrefFor = (page: SettingsPage) =>
     page.slug === "account" ? "/settings" : `/settings/${page.slug}`;
 
-  // Manual pending flag: a tab click can't rely on next/link's own pending
-  // instrumentation here (this nav renders in both a mobile strip and a
-  // desktop sidebar sharing one piece of state). Set on click, cleared once
-  // the server round trip lands and `activeSlug` catches up to the click.
-  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
-  const [prevActiveSlug, setPrevActiveSlug] = useState(activeSlug);
-  if (activeSlug !== prevActiveSlug) {
-    setPrevActiveSlug(activeSlug);
-    setPendingSlug(null);
-  }
+  useEffect(() => {
+    const syncFromHistory = () => {
+      const segments = window.location.pathname.split("/").filter(Boolean);
+      const settingsIndex = segments.lastIndexOf("settings");
+      const slugFromUrl = settingsIndex === -1 ? "account" : segments[settingsIndex + 1] ?? "account";
+      if (visiblePageSlugs.split(",").includes(slugFromUrl)) {
+        setActivePageSlug(slugFromUrl);
+      }
+    };
+
+    window.addEventListener("popstate", syncFromHistory);
+    return () => window.removeEventListener("popstate", syncFromHistory);
+  }, [visiblePageSlugs]);
 
   return (
     <div className="flex w-full flex-col gap-0">
@@ -76,14 +91,28 @@ export function SettingsUserProfile({
         >
           {visiblePages.map((page) => {
             const isActive = isPageActive(page);
-            const isPending = pendingSlug === page.slug;
             return (
               <Link
                 key={page.slug}
                 href={hrefFor(page) as never}
                 aria-current={isActive ? "page" : undefined}
-                aria-busy={isPending ? "true" : undefined}
-                onClick={() => { if (!isActive) setPendingSlug(page.slug); }}
+                onClick={(event) => {
+                  // Keep modifier-clicks and new tabs as normal links. A
+                  // regular click only changes the mounted panel locally.
+                  if (
+                    isActive ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey ||
+                    event.button !== 0
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  setActivePageSlug(page.slug);
+                  window.history.pushState(null, "", event.currentTarget.href);
+                }}
                 className={cn(
                   "flex min-h-14 shrink-0 snap-start flex-col items-center justify-center gap-1 border-b-2 border-transparent px-3 py-2 text-xs transition-colors",
                   "sm:min-h-11 sm:flex-row sm:gap-2 sm:px-4 sm:py-3 sm:text-sm",
@@ -92,11 +121,10 @@ export function SettingsUserProfile({
                   isActive
                     ? "border-brand font-medium text-brand"
                     : "text-muted-foreground",
-                  isPending && "opacity-60",
                 )}
               >
                 <span className="shrink-0 [&_svg]:size-4" aria-hidden>
-                  {isPending ? <Loader2 className="animate-spin" /> : page.icon}
+                  {page.icon}
                 </span>
                 <span>{page.label}</span>
               </Link>
@@ -106,9 +134,11 @@ export function SettingsUserProfile({
 
         {/* Panel */}
         <div className="min-w-0 flex-1 p-6">
-          {currentPage ? (
-            currentPage.body
-          ) : (
+          {currentPage ? visiblePages.map((page) => (
+            <div key={page.slug} hidden={!isPageActive(page)}>
+              {page.body}
+            </div>
+          )) : (
             <p className="text-sm text-muted-foreground">{t("selectPage")}</p>
           )}
         </div>

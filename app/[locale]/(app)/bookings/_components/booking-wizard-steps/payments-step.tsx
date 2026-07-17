@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BOOKING_PAYMENT_STATUSES } from "@/lib/validators/booking";
+import { BOOKING_PAYMENT_STATUSES, BOOKING_PAYMENT_METHODS } from "@/lib/validators/booking";
 import {
   SUPPORTED_CURRENCIES,
   type SupportedCurrency,
@@ -68,6 +68,7 @@ function PaymentCard({
     <CollapsibleDrawer
       title={
         <div onClick={(e) => e.stopPropagation()}>
+          <div className="grid grid-cols-4 gap-2">
           <Input
             id={`wiz-payment-title-${index}`}
             {...register(`payments.${index}.title`, {
@@ -75,8 +76,15 @@ function PaymentCard({
             })}
             placeholder={tPayments("label", { n: index + 1 })}
             aria-invalid={paymentErrors?.title ? "true" : undefined}
-            className="h-auto border-none bg-transparent p-0 text-sm font-semibold shadow-none focus-visible:ring-0"
+            className="col-span-3 h-auto border-none bg-transparent px-3 py-1.5 text-sm font-semibold shadow-none focus-visible:ring-0"
           />
+          <Controller control={control} name={`payments.${index}.method`} render={({ field }) => (
+            <Select value={field.value} onValueChange={(v) => v && field.onChange(v)}>
+              <SelectTrigger aria-label={tPayments("method")} className="h-auto border-none bg-transparent px-2 py-1.5 text-xs"><SelectValue>{tPayments(field.value ?? "cash")}</SelectValue></SelectTrigger>
+              <SelectContent>{BOOKING_PAYMENT_METHODS.map((method) => <SelectItem key={method} value={method}>{tPayments(method)}</SelectItem>)}</SelectContent>
+            </Select>
+          )} />
+          </div>
           {paymentErrors?.title?.message ? (
             <p className="text-xs text-destructive">{paymentErrors.title.message}</p>
           ) : null}
@@ -159,7 +167,7 @@ export function PaymentsStep({ control, register, watch, errors }: Props) {
   });
 
   function addPayment() {
-    append({ price: 0, status: "unpaid", title: "" });
+    append({ price: 0, status: "unpaid", title: "", method: "cash" });
   }
 
   const paymentsWatched = watch("payments") ?? [];

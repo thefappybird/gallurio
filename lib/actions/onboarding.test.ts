@@ -449,7 +449,7 @@ describe("activateBetaTesterAction", () => {
 describe("completeOnboardingAction", () => {
   it("rejects unauthenticated requests", async () => {
     mockGetAuthUser.mockResolvedValue(null);
-    const result = await completeOnboardingAction({ seedSampleData: false });
+    const result = await completeOnboardingAction();
     expect(result.error).toBe("not_authenticated");
   });
 
@@ -460,7 +460,7 @@ describe("completeOnboardingAction", () => {
     mockGetAuthUser.mockResolvedValue(makeAuthUser());
     await businessStepAction(validBusinessInput);
 
-    await completeOnboardingAction({ seedSampleData: false });
+    await completeOnboardingAction();
 
     const workspace = await Workspace.findOne({ ownerUserId: "wos_user_001" }).lean();
     expect(workspace!.onboardingCompletedAt).not.toBeNull();
@@ -472,16 +472,6 @@ describe("completeOnboardingAction", () => {
     expect(mockRedirect).toHaveBeenCalledWith("/dashboard");
   });
 
-  it("skips sample data when seedSampleData is false", async () => {
-    mockGetAuthUser.mockResolvedValue(makeAuthUser());
-    await businessStepAction(validBusinessInput);
-    await completeOnboardingAction({ seedSampleData: false });
-
-    const { Client } = await import("@/lib/db/models");
-    const clientCount = await Client.countDocuments();
-    expect(clientCount).toBe(0);
-  });
-
   it("seeds sample clients when seedSampleData is true in development", async () => {
     mockGetAuthUser.mockResolvedValue(makeAuthUser());
     await businessStepAction(validBusinessInput);
@@ -490,7 +480,7 @@ describe("completeOnboardingAction", () => {
     // @ts-expect-error — NODE_ENV is read-only in the types but writable at runtime
     process.env.NODE_ENV = "development";
     try {
-      await completeOnboardingAction({ seedSampleData: true });
+      await completeOnboardingAction();
     } finally {
       // @ts-expect-error — restore
       process.env.NODE_ENV = prev;
@@ -498,14 +488,14 @@ describe("completeOnboardingAction", () => {
 
     const { Client } = await import("@/lib/db/models");
     const clientCount = await Client.countDocuments();
-    expect(clientCount).toBeGreaterThan(0);
+    expect(clientCount).toBe(0);
   });
 
   it("ignores seedSampleData outside development (defense in depth against a crafted request)", async () => {
     mockGetAuthUser.mockResolvedValue(makeAuthUser());
     await businessStepAction(validBusinessInput);
     // Test env's NODE_ENV is "test", not "development" — the gate should block seeding.
-    await completeOnboardingAction({ seedSampleData: true });
+    await completeOnboardingAction();
 
     const { Client } = await import("@/lib/db/models");
     const clientCount = await Client.countDocuments();

@@ -132,7 +132,7 @@ type BookingDoc = {
   lastSessionEnd: string;
   location: { address: string; lat: number | null; lng: number | null };
   amount: { total: number; deposit: number; currency: string };
-  payments: { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null; title: string }[];
+  payments: { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null; title: string; method?: "cash" | "card" | "remit" }[];
   notes: string;
 };
 
@@ -195,13 +195,20 @@ type DraftSession = {
 type DraftPayment = {
   /** Stable key for React rendering — not sent to the API. */
   draftId: string;
-  price: number;
+  /** Empty is kept while the user is editing so Backspace does not snap to 0. */
+  price: number | "";
   status: "unpaid" | "paid";
   title: string;
+  method: "cash" | "card" | "remit";
 };
 
 /** Pending edit for an existing payment (keyed by payment index in booking.payments). */
-type PendingPaymentEdit = { price: number; status: "unpaid" | "paid"; title: string };
+type PendingPaymentEdit = {
+  price: number | "";
+  status: "unpaid" | "paid";
+  title: string;
+  method: "cash" | "card" | "remit";
+};
 
 /**
  * Describes an in-flight session edit that requires confirmation before commit.
@@ -238,6 +245,7 @@ export function BookingDetailModal({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.detail");
+  const tPayments = useTranslations("app.bookings.payments");
   const tDnd = useTranslations("app.bookings.dnd");
   const tEvent = useTranslations("app.bookings.eventTypes");
   const errMsg = useActionError();
@@ -640,6 +648,9 @@ export function BookingDetailModal({
     Object.keys(pendingPaymentEdits).length +
     removedPaymentIndexes.size;
   const hasPending = pendingCount > 0;
+  const hasInvalidDraftPayment = draftPayments.some(
+    (payment) => payment.price === "" || payment.price <= 0
+  );
 
   // Count open inline editors for EXISTING sessions (keys are numeric strings).
   const openSessionEditorCount = Object.keys(editingDraftDates).filter(
@@ -734,6 +745,10 @@ export function BookingDetailModal({
 
   function save() {
     if (!hasPending || !booking) return;
+    if (hasInvalidDraftPayment) {
+      setSaveError(tPayments("priceRequired"));
+      return;
+    }
     if (hasUndrafted) {
       setUnconfirmedDraftsOpen(true);
       return;
@@ -823,6 +838,10 @@ export function BookingDetailModal({
       Object.keys(pendingPaymentEdits).length > 0 ||
       removedPaymentIndexes.size > 0;
     if (!hasSomethingToSave || !booking) return;
+    if (draftPayments.some((payment) => payment.price === "" || payment.price <= 0)) {
+      setSaveError(tPayments("priceRequired"));
+      return;
+    }
     if (hasAnyConflict) {
       setSaveError(t("conflictBlocksSave"));
       toast.error(t("conflictBlocksSave"));
@@ -893,12 +912,12 @@ export function BookingDetailModal({
         const existing = previous.payments
           .map((p, i) => {
             const edit = pendingPaymentEdits[i];
-            return edit ? { price: edit.price, status: edit.status, title: edit.title } : p;
+            return edit ? { price: edit.price as number, status: edit.status, title: edit.title, method: edit.method } : p;
           })
           .filter((_, i) => !removedPaymentIndexes.has(i));
         body["payments"] = [
           ...existing,
-          ...draftPayments.map((d) => ({ price: d.price, status: d.status, title: d.title })),
+          ...draftPayments.map((d) => ({ price: d.price as number, status: d.status, title: d.title, method: d.method })),
         ];
       }
       const res = await fetch(`/api/bookings/${bookingId}`, {
@@ -1192,7 +1211,7 @@ export function BookingDetailModal({
   function handleAddPayment() {
     setDraftPayments((prev) => [
       ...prev,
-      { draftId: crypto.randomUUID(), price: 0, status: "unpaid", title: "" },
+      { draftId: crypto.randomUUID(), price: 0, status: "unpaid", title: "", method: "cash" },
     ]);
   }
 
@@ -1406,6 +1425,11 @@ export function BookingDetailModal({
                   prev.map((d, i) => (i === index ? { ...d, title } : d))
                 )
               }
+              onUpdateDraftPaymentMethod={(index, method) =>
+                setDraftPayments((prev) =>
+                  prev.map((d, i) => (i === index ? { ...d, method } : d))
+                )
+              }
               onRemoveDraftPayment={(draftId) =>
                 setDraftPayments((prev) => prev.filter((d) => d.draftId !== draftId))
               }
@@ -1435,7 +1459,7 @@ export function BookingDetailModal({
             pendingCount={pendingCount}
             saving={saving}
             saveError={saveError}
-            saveBlocked={hasAnyConflict}
+            saveBlocked={hasAnyConflict || hasInvalidDraftPayment}
             sessionActionBusy={sessionActionBusyIdx !== null}
             businessComplete={businessComplete}
             workspaceId={workspaceId}
@@ -1629,11 +1653,11 @@ function DialogHeaderBar({
         .map((p, i) => {
           const edit = pendingPaymentEdits[i];
           return edit
-            ? { price: edit.price, status: edit.status ?? p.status }
+            ? { price: typeof edit.price === "number" ? edit.price : 0, status: edit.status ?? p.status }
             : { price: p.price, status: p.status };
         })
         .filter((_, i) => !removedPaymentIndexes.has(i)),
-      ...draftPayments.map((d) => ({ price: d.price, status: d.status })),
+      ...draftPayments.map((d) => ({ price: typeof d.price === "number" ? d.price : 0, status: d.status })),
     ];
     const paidOnly = effectivePayments.filter((p) => p.status === "paid");
     outstanding = Math.max(0, remainingBalance(paidOnly, { total, deposit }));
@@ -1797,7 +1821,7 @@ function DialogHeaderBar({
           </Badge>
         ) : null}
         <div className="ms-auto flex shrink-0 items-center gap-2">
-          {booking && !readOnly ? (
+          {booking && !readOnly && booking.status !== "completed" ? (
             <Button
               type="button"
               variant="outline"
@@ -1867,6 +1891,7 @@ function BookingTabs({
   onUpdateDraftPayment,
   onUpdateDraftPaymentStatus,
   onUpdateDraftPaymentTitle,
+  onUpdateDraftPaymentMethod,
   onRemoveDraftPayment,
   onCommitPaymentEdit,
   removedPaymentIndexes,
@@ -1919,9 +1944,10 @@ function BookingTabs({
   draftPayments: DraftPayment[];
   pendingPaymentEdits: Record<number, PendingPaymentEdit>;
   onAddPayment: () => void;
-  onUpdateDraftPayment: (index: number, price: number) => void;
+  onUpdateDraftPayment: (index: number, price: number | "") => void;
   onUpdateDraftPaymentStatus: (index: number, status: "unpaid" | "paid") => void;
   onUpdateDraftPaymentTitle: (index: number, title: string) => void;
+  onUpdateDraftPaymentMethod: (index: number, method: "cash" | "card" | "remit") => void;
   onRemoveDraftPayment: (draftId: string) => void;
   onCommitPaymentEdit: (index: number, edit: PendingPaymentEdit) => void;
   removedPaymentIndexes: Set<number>;
@@ -1948,14 +1974,33 @@ function BookingTabs({
   const currency =
     (pending["amount.currency"] as string) ?? booking.amount.currency;
   const total = (pending["amount.total"] as number) ?? booking.amount.total;
+  const deposit = (pending["amount.deposit"] as number) ?? booking.amount.deposit;
+  const [editingPaymentIndex, setEditingPaymentIndex] = useState<number | null>(null);
+  const [editPaymentPrice, setEditPaymentPrice] = useState<number | "">(0);
+  const [editPaymentStatus, setEditPaymentStatus] = useState<"unpaid" | "paid">("unpaid");
+  const [editPaymentTitle, setEditPaymentTitle] = useState("");
+  const [editPaymentMethod, setEditPaymentMethod] = useState<"cash" | "card" | "remit">("cash");
+  const effectivePaymentBalance = Math.max(
+    0,
+    remainingBalance(
+      [
+        ...booking.payments
+          .map((payment, index) => ({
+            price: editingPaymentIndex === index
+              ? (typeof editPaymentPrice === "number" ? editPaymentPrice : 0)
+              : typeof pendingPaymentEdits[index]?.price === "number" ? pendingPaymentEdits[index].price : payment.price,
+            index,
+          }))
+          .filter(({ index }) => !removedPaymentIndexes.has(index)),
+        ...draftPayments.map((payment) => ({ price: typeof payment.price === "number" ? payment.price : 0 })),
+      ],
+      { total, deposit }
+    )
+  );
 
   const tSections = useTranslations("app.bookings.detail.sections");
 
   const [showPast, setShowPast] = useState(false);
-  const [editingPaymentIndex, setEditingPaymentIndex] = useState<number | null>(null);
-  const [editPaymentPrice, setEditPaymentPrice] = useState(0);
-  const [editPaymentStatus, setEditPaymentStatus] = useState<"unpaid" | "paid">("unpaid");
-  const [editPaymentTitle, setEditPaymentTitle] = useState("");
 
   const { upcomingSessions, pastSessions } = useMemo(() => {
     const allSessions = booking?.sessions ?? [];
@@ -1996,6 +2041,8 @@ function BookingTabs({
   const tWiz = useTranslations("app.bookings.wizard");
   const tTeam = useTranslations("app.bookings.teamPicker");
   const isCancelled = booking.status === "cancelled";
+  const isCompleted = booking.status === "completed";
+  const immutable = !!readOnly || isCompleted;
 
   // Team is editable only when the caller can choose among >1 writable teams.
   // Options are the writable (active, owned/led) teams; the saved display name
@@ -2162,8 +2209,8 @@ function BookingTabs({
             {...get("eventType")}
             onCommit={(v) => onCommit("eventType", v)}
             onDiscardPending={() => onDiscard("eventType")}
-            disabled={disabled || isCancelled || !!readOnly}
-            readOnly={!!readOnly}
+            disabled={disabled || immutable}
+            readOnly={immutable}
             editKey="eventType"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -2177,8 +2224,8 @@ function BookingTabs({
               {...get("teamId")}
               onCommit={(v) => onCommit("teamId", v || null)}
               onDiscardPending={() => onDiscard("teamId")}
-              disabled={disabled || isCancelled || !!readOnly}
-              readOnly={!!readOnly}
+              disabled={disabled || immutable}
+              readOnly={immutable}
               editKey="teamId"
               registerHandle={registerFieldHandle}
               onEditingChange={onFieldEditingChange}
@@ -2253,8 +2300,8 @@ function BookingTabs({
             {...get("amount.total")}
             onCommit={(v) => onCommit("amount.total", v)}
             onDiscardPending={() => onDiscard("amount.total")}
-            disabled={disabled || !!readOnly}
-            readOnly={!!readOnly}
+            disabled={disabled || immutable}
+            readOnly={immutable}
             editKey="amount.total"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -2267,8 +2314,8 @@ function BookingTabs({
             {...get("amount.deposit")}
             onCommit={(v) => onCommit("amount.deposit", v)}
             onDiscardPending={() => onDiscard("amount.deposit")}
-            disabled={disabled || !!readOnly}
-            readOnly={!!readOnly}
+            disabled={disabled || immutable}
+            readOnly={immutable}
             validate={(v) => {
               const n = Number(v);
               if (Number.isFinite(n) && n > 0 && total <= 0) {
@@ -2290,31 +2337,35 @@ function BookingTabs({
             {...get("amount.currency")}
             onCommit={(v) => onCommit("amount.currency", v)}
             onDiscardPending={() => onDiscard("amount.currency")}
-            disabled={disabled || !!readOnly}
-            readOnly={!!readOnly}
+            disabled={disabled || immutable}
+            readOnly={immutable}
             editKey="amount.currency"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
           />
         </div>
 
-        <SectionHeader label={tSections("payments")} />
+        <div className="mt-4 mb-1 flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{tSections("payments")}</span>
+          <span className="h-px flex-1 bg-border" aria-hidden />
+          <span className="text-xs font-medium tabular-nums text-muted-foreground">AMOUNT DUE: {formatMoney(effectivePaymentBalance, currency, locale)}</span>
+        </div>
         {(() => {
           const depositForAddGate =
             (pending["amount.deposit"] as number) ?? booking.amount.deposit;
           const remainingPaymentsCount = booking.payments.length - removedPaymentIndexes.size;
           const allPaymentsForGate = [
             ...booking.payments
-              .map((p, i) => ({ price: pendingPaymentEdits[i]?.price ?? p.price, i }))
+              .map((p, i) => ({ price: typeof pendingPaymentEdits[i]?.price === "number" ? pendingPaymentEdits[i].price : p.price, i }))
               .filter(({ i }) => !removedPaymentIndexes.has(i)),
-            ...draftPayments.map((d) => ({ price: d.price })),
+            ...draftPayments.map((d) => ({ price: typeof d.price === "number" ? d.price : 0 })),
           ];
           const noBalanceRemaining =
             remainingBalance(allPaymentsForGate, { total, deposit: depositForAddGate }) <= 0;
           return remainingPaymentsCount <= 0 && draftPayments.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <p className="text-sm text-muted-foreground">{tPayments("empty")}</p>
-            {!readOnly ? (
+            {!immutable ? (
               <Button
                 type="button"
                 variant="outline"
@@ -2333,16 +2384,17 @@ function BookingTabs({
           {booking.payments.map((payment, idx) => {
             if (removedPaymentIndexes.has(idx)) return null;
             const edit = pendingPaymentEdits[idx];
-            const effectivePrice = edit?.price ?? payment.price;
+            const effectivePrice = typeof edit?.price === "number" ? edit.price : payment.price;
             const effectiveStatus = edit?.status ?? payment.status;
             const effectiveTitle = edit?.title ?? payment.title;
+            const effectiveMethod = edit?.method ?? payment.method ?? "cash";
             const depositForCap =
               (pending["amount.deposit"] as number) ?? booking.amount.deposit;
             const otherPayments = [
               ...booking.payments.map((p, i) => ({
-                price: removedPaymentIndexes.has(i) ? 0 : (pendingPaymentEdits[i]?.price ?? p.price),
+                price: removedPaymentIndexes.has(i) ? 0 : (typeof pendingPaymentEdits[i]?.price === "number" ? pendingPaymentEdits[i].price : p.price),
               })),
-              ...draftPayments.map((d) => ({ price: d.price })),
+              ...draftPayments.map((d) => ({ price: typeof d.price === "number" ? d.price : 0 })),
             ];
             const maxForExisting = remainingBalance(
               otherPayments,
@@ -2350,10 +2402,12 @@ function BookingTabs({
               idx
             );
             const existingExceedsCap =
-              editingPaymentIndex === idx && editPaymentPrice > maxForExisting;
+              editingPaymentIndex === idx && typeof editPaymentPrice === "number" && editPaymentPrice > maxForExisting;
+            const editPriceInvalid = editPaymentPrice === "" || editPaymentPrice <= 0;
             return editingPaymentIndex === idx ? (
               <div key={idx} className="flex flex-col gap-1">
-                <div className="flex flex-col gap-1">
+                <div className="grid grid-cols-4 items-center gap-3">
+                <div className="col-span-3 flex flex-col justify-center gap-1">
                   <Label htmlFor={`existing-payment-title-${idx}`}>{tPayments("title")}</Label>
                   <Input
                     id={`existing-payment-title-${idx}`}
@@ -2361,20 +2415,34 @@ function BookingTabs({
                     onChange={(e) => setEditPaymentTitle(e.target.value)}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
+                <div className="flex flex-col justify-center gap-1">
+                  <Label htmlFor={`existing-payment-method-${idx}`}>{tPayments("method")}</Label>
+                  <Select<"cash" | "card" | "remit"> value={editPaymentMethod} onValueChange={(v) => v && setEditPaymentMethod(v)}>
+                    <SelectTrigger id={`existing-payment-method-${idx}`}><SelectValue>{tPayments(editPaymentMethod)}</SelectValue></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">{tPayments("cash")}</SelectItem>
+                      <SelectItem value="card">{tPayments("card")}</SelectItem>
+                      <SelectItem value="remit">{tPayments("remit")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                </div>
+                <div className="grid grid-cols-2 items-center gap-3">
+                  <div className="flex flex-col justify-center gap-1">
                     <Label htmlFor={`existing-payment-price-${idx}`}>{tPayments("price")}</Label>
                     <Input
                       id={`existing-payment-price-${idx}`}
                       type="number"
                       value={editPaymentPrice}
-                      onChange={(e) => setEditPaymentPrice(Number(e.target.value) || 0)}
+                      onChange={(e) => setEditPaymentPrice(e.target.value === "" ? "" : Number(e.target.value))}
                     />
-                    {existingExceedsCap ? (
+                    {editPriceInvalid ? (
+                      <p className="text-xs text-destructive">{tPayments("priceRequired")}</p>
+                    ) : existingExceedsCap ? (
                       <p className="text-xs text-destructive">{tPayments("exceedsBalance")}</p>
                     ) : null}
                   </div>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col justify-center gap-1">
                     <Label htmlFor={`existing-payment-status-${idx}`}>{tPayments("status")}</Label>
                     <Select<"unpaid" | "paid">
                       value={editPaymentStatus}
@@ -2393,12 +2461,13 @@ function BookingTabs({
                 <Button
                   type="button"
                   size="sm"
-                  disabled={existingExceedsCap}
+                  disabled={existingExceedsCap || editPriceInvalid}
                   onClick={() => {
                     onCommitPaymentEdit(idx, {
                       price: editPaymentPrice,
                       status: editPaymentStatus,
                       title: editPaymentTitle,
+                      method: editPaymentMethod,
                     });
                     setEditingPaymentIndex(null);
                   }}
@@ -2422,6 +2491,7 @@ function BookingTabs({
                   <Badge variant={effectiveStatus === "paid" ? "default" : "outline"}>
                     {tPayments(effectiveStatus)}
                   </Badge>
+                  <span className="text-xs uppercase text-muted-foreground">{effectiveMethod}</span>
                   {payment.paidAt ? (
                     <span className="text-xs text-muted-foreground">
                       {tPayments("paidOn", {
@@ -2430,7 +2500,7 @@ function BookingTabs({
                     </span>
                   ) : null}
                 </div>
-                <Button
+                {!immutable ? <Button
                   type="button"
                   size="icon-sm"
                   variant="ghost"
@@ -2439,12 +2509,13 @@ function BookingTabs({
                     setEditPaymentPrice(effectivePrice);
                     setEditPaymentStatus(effectiveStatus);
                     setEditPaymentTitle(effectiveTitle);
+                    setEditPaymentMethod(effectiveMethod);
                     setEditingPaymentIndex(idx);
                   }}
                 >
                   <PencilIcon className="size-4" />
-                </Button>
-                {!readOnly ? (
+                </Button> : null}
+                {!immutable ? (
                   <Button
                     type="button"
                     size="icon-sm"
@@ -2464,21 +2535,24 @@ function BookingTabs({
               (pending["amount.deposit"] as number) ?? booking.amount.deposit;
             const otherPayments = [
               ...booking.payments.map((p, i) => ({
-                price: removedPaymentIndexes.has(i) ? 0 : (pendingPaymentEdits[i]?.price ?? p.price),
+                price: removedPaymentIndexes.has(i) ? 0 : (typeof pendingPaymentEdits[i]?.price === "number" ? pendingPaymentEdits[i].price : p.price),
               })),
-              ...draftPayments.map((d) => ({ price: d.price })),
+              ...draftPayments.map((d) => ({ price: typeof d.price === "number" ? d.price : 0 })),
             ];
             const maxForDraft = remainingBalance(
               otherPayments,
               { total, deposit: depositForCap },
               booking.payments.length + idx
             );
-            const exceedsCap = draft.price > maxForDraft;
+            const priceIsEmpty = draft.price === "";
+            const numericPrice = typeof draft.price === "number" ? draft.price : 0;
+            const priceIsInvalid = priceIsEmpty || numericPrice <= 0;
+            const exceedsCap = !priceIsEmpty && numericPrice > maxForDraft;
             return (
-            <div key={draft.draftId} className="flex flex-col gap-1">
+            <div key={draft.draftId} className="flex flex-col gap-1 border border-border p-3">
             <div className="flex items-end gap-2">
             <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-1">
+              <div className="sm:col-span-2 flex flex-col gap-1">
                 <Label htmlFor={`payment-title-${idx}`}>{tPayments("title")}</Label>
                 <Input
                   id={`payment-title-${idx}`}
@@ -2487,14 +2561,30 @@ function BookingTabs({
                 />
               </div>
               <div className="flex flex-col gap-1">
+                <Label htmlFor={`payment-method-${idx}`}>{tPayments("method")}</Label>
+                <Select<"cash" | "card" | "remit">
+                  value={draft.method}
+                  onValueChange={(v) => v && onUpdateDraftPaymentMethod(idx, v)}
+                >
+                  <SelectTrigger id={`payment-method-${idx}`}><SelectValue>{tPayments(draft.method)}</SelectValue></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">{tPayments("cash")}</SelectItem>
+                    <SelectItem value="card">{tPayments("card")}</SelectItem>
+                    <SelectItem value="remit">{tPayments("remit")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
                 <Label htmlFor={`payment-price-${idx}`}>{tPayments("price")}</Label>
                 <Input
                   id={`payment-price-${idx}`}
                   type="number"
                   value={draft.price}
-                  onChange={(e) => onUpdateDraftPayment(idx, Number(e.target.value) || 0)}
+                  onChange={(e) => onUpdateDraftPayment(idx, e.target.value === "" ? "" : Number(e.target.value))}
                 />
-                {exceedsCap ? (
+                {priceIsInvalid ? (
+                  <p className="text-xs text-destructive">{tPayments("priceRequired")}</p>
+                ) : exceedsCap ? (
                   <p className="text-xs text-destructive">{tPayments("exceedsBalance")}</p>
                 ) : null}
               </div>
@@ -2514,7 +2604,7 @@ function BookingTabs({
                 </Select>
               </div>
             </div>
-            {!readOnly ? (
+            {!immutable ? (
               <Button
                 type="button"
                 size="icon-sm"
@@ -2531,7 +2621,7 @@ function BookingTabs({
             );
           })}
         </div>
-        {!readOnly ? (
+        {!immutable ? (
           <Button
             type="button"
             variant="outline"
@@ -3766,7 +3856,7 @@ function DialogFooterBar({
       {saveError ? (
         <p className="text-xs text-destructive">{saveError}</p>
       ) : null}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Button
           type="button"
           variant={cancelled ? "outline" : "destructive"}
@@ -3776,7 +3866,7 @@ function DialogFooterBar({
         >
           {cancelled ? t("restore") : t("cancel")}
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {hasPayments ? (
             <Button
               type="button"

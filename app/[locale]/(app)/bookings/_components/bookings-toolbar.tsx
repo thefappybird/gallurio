@@ -199,29 +199,30 @@ export function BookingsToolbar({
           />
         ) : null}
 
-        <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
-          <Switch
-            checked={includeCancelled}
-            onCheckedChange={(v: boolean) =>
-              pushParams({ includeCancelled: v ? "1" : null })
-            }
-          />
-          <span className="select-none text-muted-foreground">
-            {t("showCancelled")}
-          </span>
-        </label>
-
-        <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
-          <Switch
-            checked={showPast}
-            onCheckedChange={(v: boolean) =>
-              pushParams({ showPast: v ? "1" : null })
-            }
-          />
-          <span className="select-none text-muted-foreground">
-            {t("showPast")}
-          </span>
-        </label>
+        <div className="flex gap-2">
+          <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
+            <Switch
+              checked={includeCancelled}
+              onCheckedChange={(v: boolean) =>
+                pushParams({ includeCancelled: v ? "1" : null })
+              }
+            />
+            <span className="select-none text-muted-foreground">
+              {t("showCancelled")}
+            </span>
+          </label>
+          <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
+            <Switch
+              checked={showPast}
+              onCheckedChange={(v: boolean) =>
+                pushParams({ showPast: v ? "1" : null })
+              }
+            />
+            <span className="select-none text-muted-foreground">
+              {t("showPast")}
+            </span>
+          </label>
+        </div>
       </div>
 
       <div className="flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto">

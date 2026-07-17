@@ -114,6 +114,7 @@ export function WorkspaceBusinessForm({
           maxBytes: LOGO_MAX_BYTES,
           maxWidth: LOGO_MAX_DIM,
           maxHeight: LOGO_MAX_DIM,
+          requireSquare: true,
         },
         { subfolder: "logo", delivery: { width: 256, height: 256, fit: "scale-down" } },
       );

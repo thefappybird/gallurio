@@ -69,6 +69,23 @@ describe("uploadAsset", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("rejects a rectangular image when square dimensions are required", async () => {
+    vi.stubGlobal("Image", class RectangularImage extends MockImage {
+      naturalWidth = 200;
+      naturalHeight = 160;
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await uploadAsset(makeFile("image/png"), {
+      ...BASE_CONSTRAINTS,
+      requireSquare: true,
+    });
+
+    expect(result).toEqual({ error: "dimensions_too_large" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("returns asset on success", async () => {
     const fetchMock = vi
       .fn()

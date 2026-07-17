@@ -6,9 +6,6 @@ import { connectDB } from "@/lib/db/mongoose";
 import {
   Workspace,
   User,
-  Client,
-  Booking,
-  Inquiry,
   ONBOARDING_STEPS,
   type OnboardingStep,
 } from "@/lib/db/models";
@@ -404,9 +401,7 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
 // Complete onboarding
 // ---------------------------------------------------------------------------
 
-export async function completeOnboardingAction(opts: {
-  seedSampleData: boolean;
-}): Promise<ActionResult> {
+export async function completeOnboardingAction(): Promise<ActionResult> {
   const authUser = await getAuthUser();
   if (!authUser) return { error: "not_authenticated" };
 
@@ -422,10 +417,6 @@ export async function completeOnboardingAction(opts: {
   const workspace = await Workspace.findOne({ _id: ownerMembership.workspaceId });
   if (!workspace) return { error: "workspace_not_found" };
 
-  if (opts.seedSampleData && process.env.NODE_ENV === "development") {
-    await seedSampleData(workspace._id.toString());
-  }
-
   const now = new Date();
   await Promise.all([
     Workspace.updateOne({ _id: workspace._id }, { $set: { onboardingCompletedAt: now } }),
@@ -437,119 +428,4 @@ export async function completeOnboardingAction(opts: {
 
   revalidatePath("/dashboard");
   redirect("/dashboard");
-}
-
-// ---------------------------------------------------------------------------
-// Sample data seed
-// ---------------------------------------------------------------------------
-
-async function seedSampleData(workspaceId: string) {
-  const existing = await Client.countDocuments({ workspaceId });
-  if (existing > 0) return;
-
-  const now = new Date();
-  const day = (n: number) => new Date(now.getTime() + n * 24 * 60 * 60 * 1000);
-  const slot = (n: number, startHour = 10, endHour = 18) => {
-    const start = day(n);
-    start.setHours(startHour, 0, 0, 0);
-    const end = day(n);
-    end.setHours(endHour, 0, 0, 0);
-    return { start, end };
-  };
-
-  const clients = await Client.insertMany([
-    {
-      workspaceId,
-      name: "Emma & Liam Carter",
-      email: "emma.carter@example.com",
-      phone: "+1 415 555 0142",
-      source: "form",
-      tags: ["VIP", "sample"],
-    },
-    {
-      workspaceId,
-      name: "Priya Shah",
-      email: "priya@example.com",
-      phone: "+1 415 555 0188",
-      source: "manual",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Ana & Tomas Ribeiro",
-      email: "ana.ribeiro@example.com",
-      source: "referral",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Northwood Corp Events",
-      email: "events@northwood.example",
-      phone: "+1 415 555 0211",
-      source: "manual",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Jordan Patel",
-      email: "jordan.patel@example.com",
-      source: "form",
-      tags: ["sample"],
-    },
-  ]);
-
-  const carterSlot = slot(28);
-  const shahSlot = slot(14);
-  const galaSlot = slot(70);
-
-  await Booking.insertMany([
-    {
-      workspaceId,
-      clientId: clients[0]._id,
-      clientName: clients[0].name,
-      title: "Carter Wedding -- Pier 27",
-      eventType: "wedding",
-      status: "booked",
-      sessions: [{ startAt: carterSlot.start, endAt: carterSlot.end }],
-      firstSessionStart: carterSlot.start,
-      lastSessionEnd: carterSlot.end,
-      amount: { total: 65000, deposit: 20000, currency: "PHP" },
-    },
-    {
-      workspaceId,
-      clientId: clients[1]._id,
-      clientName: clients[1].name,
-      title: "Shah Engagement Shoot",
-      eventType: "wedding",
-      status: "booked",
-      sessions: [{ startAt: shahSlot.start, endAt: shahSlot.end }],
-      firstSessionStart: shahSlot.start,
-      lastSessionEnd: shahSlot.end,
-      amount: { total: 15000, deposit: 5000, currency: "PHP" },
-    },
-    {
-      workspaceId,
-      clientId: clients[3]._id,
-      clientName: clients[3].name,
-      title: "Northwood Annual Gala",
-      eventType: "corporate",
-      status: "booked",
-      sessions: [{ startAt: galaSlot.start, endAt: galaSlot.end }],
-      firstSessionStart: galaSlot.start,
-      lastSessionEnd: galaSlot.end,
-      amount: { total: 90000, deposit: 30000, currency: "PHP" },
-    },
-  ]);
-
-  await Inquiry.insertMany([
-    {
-      workspaceId,
-      name: "Lena Okafor",
-      email: "lena.o@example.com",
-      message: "Brand portrait session -- do you take corporate work?",
-      eventType: "corporate",
-      status: "inquiry",
-      eventDate: slot(21).start,
-    },
-  ]);
 }

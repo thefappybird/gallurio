@@ -152,8 +152,23 @@ export function PlanStepForm({
       furthestStep={furthestStep}
       title={t("title")}
       description={t("description")}
+      footer={
+        <div className="flex items-center justify-between gap-2">
+          <StepBackButton from="plan" />
+          <Button onClick={submit} variant="brand" disabled={busy} className="min-w-48">
+            {busy ? (
+              <>
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                {selected === "free" ? t("settingUp") : t("opening")}
+              </>
+            ) : (
+              cta
+            )}
+          </Button>
+        </div>
+      }
     >
-      <div className="flex h-full flex-col gap-5">
+      <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <SegmentedToggle
@@ -301,19 +316,6 @@ export function PlanStepForm({
           </p>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <StepBackButton from="plan" />
-          <Button onClick={submit} variant="brand" disabled={busy} className="min-w-48">
-            {busy ? (
-              <>
-                <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                {selected === "free" ? t("settingUp") : t("opening")}
-              </>
-            ) : (
-              cta
-            )}
-          </Button>
-        </div>
       </div>
     </StepShell>
   );

@@ -25,7 +25,9 @@ export function buildInvoiceStyles(theme: PdfTheme) {
     logo: { width: 40, height: 40, objectFit: "contain" },
     businessName: { fontSize: 18, fontWeight: 700, color: "#FFFFFF" },
     businessMeta: { fontSize: 9, color: "rgba(255,255,255,0.75)" },
-    headerRight: { alignItems: "flex-end" },
+    headerLeft: { flexGrow: 1, flexBasis: 0, flexShrink: 1, paddingRight: 16 },
+    footerLeft: { flexGrow: 1, flexBasis: 0, flexShrink: 1, paddingRight: 16 },
+    headerRight: { alignItems: "flex-end", flexShrink: 0 },
     kindLabel: { fontSize: 10, color: "#FFFFFF", letterSpacing: 2, marginBottom: 6 },
     docNumber: { fontSize: 16, fontWeight: 700, color: "#FFFFFF", marginBottom: 4 },
     docDate: { fontSize: 9, color: "rgba(255,255,255,0.75)" },
@@ -84,7 +86,7 @@ export function DocumentHeader({
   return (
     <>
       <View style={styles.headerBlock}>
-        <View>
+        <View style={styles.headerLeft}>
           <View style={[styles.logoRow, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
             {business.logoUrl ? (
               <Image
@@ -117,7 +119,7 @@ export function DocumentFooter({
   return (
     <>
       <View style={styles.footerBlock}>
-        <View>
+        <View style={styles.footerLeft}>
           {business.address ? <Text style={styles.businessMeta}>{business.address}</Text> : null}
           {business.email ? <Text style={styles.businessMeta}>{business.email}</Text> : null}
         </View>

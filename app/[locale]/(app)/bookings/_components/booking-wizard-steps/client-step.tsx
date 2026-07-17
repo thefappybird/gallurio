@@ -3,10 +3,13 @@
 import { useMemo, useState } from "react";
 import { Controller, type Control, type FieldErrors } from "react-hook-form";
 import { useTranslations } from "next-intl";
-import { SearchIcon, CheckIcon } from "lucide-react";
+import { SearchIcon, CheckIcon, UsersIcon, XIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/app/empty-state";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { WizardValues } from "./types";
 
@@ -24,6 +27,8 @@ type Props = {
   readOnlyClientName?: string;
   /** Pre-fetched client list for synchronous filtering (no network on keystroke). */
   clients?: ClientHit[];
+  /** True only after the user has tried to advance from this step. */
+  showExistingError?: boolean;
 };
 
 export function ClientStep({
@@ -32,6 +37,7 @@ export function ClientStep({
   readOnly,
   readOnlyClientName,
   clients = [],
+  showExistingError = false,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.client");
 
@@ -57,6 +63,7 @@ export function ClientStep({
           onChange={field.onChange}
           errors={errors}
           clients={clients}
+          showExistingError={showExistingError}
         />
       )}
     />
@@ -68,13 +75,16 @@ function ClientPicker({
   onChange,
   errors,
   clients,
+  showExistingError,
 }: {
   value: WizardValues["client"];
   onChange: (next: WizardValues["client"]) => void;
   errors: FieldErrors<WizardValues>;
   clients: ClientHit[];
+  showExistingError: boolean;
 }) {
   const t = useTranslations("app.bookings.wizard.client");
+  const tClients = useTranslations("app.clients");
   const [query, setQuery] = useState("");
 
   const isNew = value.mode === "new";
@@ -98,6 +108,21 @@ function ClientPicker({
     () => (value.mode === "existing" ? value.clientId : null),
     [value]
   );
+  const newClient = value.mode === "new" ? value : null;
+  const setNewClient = (patch: Partial<Extract<WizardValues["client"], { mode: "new" }>>) =>
+    onChange({
+      mode: "new",
+      name: newClient?.name ?? "",
+      email: newClient?.email ?? "",
+      phone: newClient?.phone ?? "",
+      source: newClient?.source ?? "manual",
+      tags: newClient?.tags ?? [],
+      notes: newClient?.notes ?? "",
+      ...patch,
+    });
+
+  const switchToNew = () =>
+    onChange({ mode: "new", name: "", email: "", phone: "", source: "manual", tags: [], notes: "" });
 
   return (
     <div className="flex flex-col gap-3">
@@ -117,7 +142,7 @@ function ClientPicker({
         <button
           type="button"
           onClick={() =>
-            onChange({ mode: "new", name: "", email: "", phone: "" })
+            switchToNew()
           }
           className={cn(
             "px-3 py-1.5 font-medium transition-colors",
@@ -130,6 +155,20 @@ function ClientPicker({
 
       {!isNew ? (
         <div className="flex flex-col gap-2">
+          {clients.length === 0 ? (
+            <EmptyState
+              icon={UsersIcon}
+              title={tClients("listEmpty")}
+              description={tClients("listEmptyHint")}
+              action={
+                <Button type="button" size="sm" onClick={switchToNew}>
+                  {tClients("toolbar.add")}
+                </Button>
+              }
+              className="p-8"
+            />
+          ) : (
+            <>
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -179,23 +218,20 @@ function ClientPicker({
               </ul>
             )}
           </div>
-          {value.mode === "existing" && !value.clientId ? (
+          {showExistingError && value.mode === "existing" && !value.clientId ? (
             <p className="text-xs text-destructive">{t("selectRequired")}</p>
           ) : null}
+            </>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1 sm:col-span-2">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="client-new-name">{t("name")}</Label>
             <Input
               id="client-new-name"
-              value={value.mode === "new" ? value.name : ""}
-              onChange={(e) =>
-                onChange({
-                  ...(value as Extract<WizardValues["client"], { mode: "new" }>),
-                  name: e.target.value,
-                })
-              }
+              value={newClient?.name ?? ""}
+              onChange={(e) => setNewClient({ name: e.target.value })}
               placeholder={t("namePlaceholder")}
             />
             {errors.client && "name" in (errors.client as object) ? (
@@ -204,34 +240,43 @@ function ClientPicker({
               </p>
             ) : null}
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="client-new-email">{t("email")}</Label>
             <Input
               id="client-new-email"
               type="email"
-              value={value.mode === "new" ? (value.email ?? "") : ""}
-              onChange={(e) =>
-                onChange({
-                  ...(value as Extract<WizardValues["client"], { mode: "new" }>),
-                  email: e.target.value,
-                })
-              }
+              value={newClient?.email ?? ""}
+              onChange={(e) => setNewClient({ email: e.target.value })}
               placeholder={t("emailPlaceholder")}
             />
           </div>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="client-new-phone">{t("phone")}</Label>
-            <PhoneInput
-              id="client-new-phone"
-              value={(value.mode === "new" ? (value.phone ?? "") : "") as string | undefined}
-              onChange={(phoneValue: string | undefined) =>
-                onChange({
-                  ...(value as Extract<WizardValues["client"], { mode: "new" }>),
-                  phone: phoneValue ?? "",
-                })
-              }
-              placeholder={t("phonePlaceholder")}
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="client-new-phone">{t("phone")}</Label>
+              <PhoneInput id="client-new-phone" value={newClient?.phone ?? ""} onChange={(phone) => setNewClient({ phone: phone ?? "" })} placeholder={t("phonePlaceholder")} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>{tClients("form.source")}</Label>
+              <Select value={newClient?.source ?? "manual"} onValueChange={(source) => source && setNewClient({ source: source as "form" | "manual" | "referral" | "import" })}>
+                <SelectTrigger><SelectValue>{(source: string) => <span className="capitalize">{tClients(`sourceValues.${source}`)}</span>}</SelectValue></SelectTrigger>
+                <SelectContent>{(["form", "manual", "referral", "import"] as const).map((source) => <SelectItem key={source} value={source}>{tClients(`sourceValues.${source}`)}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>{tClients("form.tags")}</Label>
+            <Input placeholder={tClients("form.tagsPlaceholder")} onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== ",") return;
+              e.preventDefault();
+              const tag = e.currentTarget.value.trim().slice(0, 40);
+              if (tag && !(newClient?.tags ?? []).includes(tag)) setNewClient({ tags: [...(newClient?.tags ?? []), tag] });
+              e.currentTarget.value = "";
+            }} />
+            {(newClient?.tags?.length ?? 0) > 0 ? <div className="flex flex-wrap gap-1">{newClient!.tags!.map((tag) => <span key={tag} className="inline-flex items-center gap-1 border border-border bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{tag}<button type="button" onClick={() => setNewClient({ tags: newClient!.tags!.filter((item) => item !== tag) })} aria-label={tClients("form.removeTag", { tag })}><XIcon className="size-3" /></button></span>)}</div> : null}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="client-new-notes">{tClients("form.notes")}</Label>
+            <textarea id="client-new-notes" rows={3} value={newClient?.notes ?? ""} onChange={(e) => setNewClient({ notes: e.target.value })} placeholder={tClients("form.notesPlaceholder")} className="w-full resize-none border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
           </div>
         </div>
       )}

@@ -108,8 +108,18 @@ export function ClientsPageClient({
     if (!searchParams.has("client")) return;
     const params = new URLSearchParams(searchParams.toString());
     params.delete("client");
+    const qs = params.toString();
     startTransition(() => {
-      router.replace(`${pathname}?${params.toString()}`);
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
+    });
+  }
+
+  function setClientParam(clientId: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("client", clientId);
+    const qs = params.toString();
+    startTransition(() => {
+      router.push(`${pathname}?${qs}`);
     });
   }
 
@@ -143,6 +153,15 @@ export function ClientsPageClient({
   function openDetail(client: ClientRow) {
     setDetailClient(client);
     setDetailOpen(true);
+    setClientParam(client.id);
+  }
+
+  function returnToDetailFromEdit() {
+    if (!editTarget) return;
+    setFormOpen(false);
+    setDetailClient(editTarget);
+    setDetailOpen(true);
+    setClientParam(editTarget.id);
   }
 
   function openDeactivate(client: ClientRow) {
@@ -271,6 +290,7 @@ export function ClientsPageClient({
         initialData={editTarget ?? undefined}
         onSuccess={refreshPage}
         onDirtyChange={setFormDirty}
+        onView={editTarget ? returnToDetailFromEdit : undefined}
       />
 
       <UnsavedChangesDialog

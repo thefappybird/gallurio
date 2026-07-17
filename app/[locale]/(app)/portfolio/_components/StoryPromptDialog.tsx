@@ -20,6 +20,7 @@ import { resolveScheme } from "@/lib/theme/themes";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { useImageRetry } from "@/hooks/useImageRetry";
 import { AmbientBackground } from "@/components/app/ambient-background";
+import { tagBorderClass } from "@/components/app/tag-pill";
 import { completeStoryPromptAction } from "../_actions";
 
 const MAX_DESCRIPTION = 300;
@@ -479,7 +480,7 @@ export function StoryPromptDialog({
                         type="button"
                         aria-pressed={selected}
                         onClick={() => toggleTag(tag)}
-                        className={storyChipClass(selected)}
+                        className={cn(storyChipClass(selected), tagBorderClass(tag))}
                       >
                         {selected && <Check className="h-3 w-3" aria-hidden="true" />}
                         {tag}
@@ -498,7 +499,7 @@ export function StoryPromptDialog({
                     {draftTags.map((tag) => (
                       <span
                         key={tag}
-                        className={cn(storyChipClass(true), "max-w-full")}
+                        className={cn(storyChipClass(true), tagBorderClass(tag), "max-w-full")}
                       >
                         <span className="max-w-36 truncate">{tag}</span>
                         <button

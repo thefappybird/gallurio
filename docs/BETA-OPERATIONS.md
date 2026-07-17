@@ -58,6 +58,14 @@ The development full seed creates these general, single-redemption promo codes:
 
 Beta access has no base promo code because eligible users use the beta-tester onboarding flow instead.
 
+To create only these three base promos in any configured database (without adding demo data), run:
+
+```powershell
+pnpm promo:seed-base -- --allow-dev
+```
+
+For production, use `--i-understand-production` instead. The command is idempotent: it creates missing codes and leaves any existing code records unchanged.
+
 To create another promo code later:
 
 ```powershell

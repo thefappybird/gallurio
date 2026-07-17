@@ -10,8 +10,8 @@ import { gracefulShutdown } from './lib/server/gracefulShutdown'
 
 // Ensure NODE_ENV is set so that downstream code (e.g. Turnstile dev bypass,
 // Next.js internals) can distinguish dev from prod. The pnpm scripts set
-// NODE_ENV explicitly via cross-env ("dev" => "development", "start" =>
-// "production"). This fallback only fires for a bare `tsx server.ts`
+// NODE_ENV explicitly via cross-env ("dev"/"start" => "development",
+// "start:prod" => "production"). This fallback only fires for a bare `tsx server.ts`
 // invocation (e.g. a CI script that forgot to export NODE_ENV). It MUST
 // default to "production" so the Turnstile bypass can never accidentally
 // enable. NODE_ENV is typed read-only in @types/node; we set it early via the

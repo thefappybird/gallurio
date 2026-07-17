@@ -1,6 +1,6 @@
 import "server-only";
 import { Types } from "mongoose";
-import { Client, Booking } from "@/lib/db/models";
+import { Client, Booking, Transaction } from "@/lib/db/models";
 import type { ClientDoc } from "@/lib/db/models/Client";
 
 type WorkspaceId = Types.ObjectId;
@@ -156,6 +156,52 @@ export type ClientBookingRow = {
   total: number;
   currency: string;
 };
+
+export type ClientPaymentRow = {
+  id: string;
+  bookingTitle: string;
+  paymentTitle: string;
+  amount: number;
+  currency: string;
+  method: "cash" | "card" | "remit" | "other";
+  paidAt: Date | null;
+};
+
+export async function getClientPayments(
+  workspaceId: WorkspaceId,
+  clientId: WorkspaceId,
+  page = 1,
+  limit = 20
+): Promise<{ items: ClientPaymentRow[]; hasMore: boolean }> {
+  const skip = (page - 1) * limit;
+  const transactions = await Transaction.find({
+    workspaceId,
+    clientId,
+    type: { $in: ["deposit", "balance"] },
+  })
+    .sort({ paidAt: -1, _id: -1 })
+    .skip(skip)
+    .limit(limit + 1)
+    .lean();
+  const visible = transactions.slice(0, limit);
+  const bookingIds = [...new Set(visible.map((row) => String(row.bookingId)).filter(Boolean))];
+  const bookings = bookingIds.length
+    ? await Booking.find({ workspaceId, _id: { $in: bookingIds } }).select({ _id: 1, title: 1 }).lean()
+    : [];
+  const titles = new Map(bookings.map((booking) => [String(booking._id), booking.title]));
+  return {
+    items: visible.map((row) => ({
+      id: String(row._id),
+      bookingTitle: titles.get(String(row.bookingId)) ?? "Booking",
+      paymentTitle: row.notes || (row.type === "deposit" ? "Deposit" : "Payment"),
+      amount: row.amount,
+      currency: row.currency ?? "PHP",
+      method: (row.method === "card" || row.method === "remit" || row.method === "cash" ? row.method : "other"),
+      paidAt: row.paidAt ?? null,
+    })),
+    hasMore: transactions.length > limit,
+  };
+}
 
 export async function getClientBookings(
   workspaceId: WorkspaceId,
