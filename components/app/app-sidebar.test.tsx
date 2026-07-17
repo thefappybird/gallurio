@@ -306,7 +306,7 @@ describe("AppSidebar bell button", () => {
     expect(screen.queryByText(/you have a new notification/i)).toBeNull();
   });
 
-  it("renders popup beside bell on LTR", () => {
+  it("renders the popup outside the sidebar's clipped scroll container", () => {
     mockLiveArrivalTick.value = 0;
     const { rerender } = renderSidebar("owner");
 
@@ -325,14 +325,14 @@ describe("AppSidebar bell button", () => {
         </Wrapper>
       );
     });
-    const popup = screen.getByText(/you have a new notification/i).closest("span");
-    if (!popup) throw new Error("Bell popup missing");
-    expect(popup.className).toContain("start-full");
-    expect(popup.className).toContain("ms-2");
-    expect(popup.className).not.toContain("hidden");
+    const popup = screen.getByText(/you have a new notification/i);
+    // SidebarContent clips overflow — a popup nested inside it renders in the
+    // DOM but is visually hidden. It must be portaled outside that box.
+    const sidebarContent = document.querySelector('[data-slot="sidebar-content"]');
+    expect(sidebarContent?.contains(popup)).toBe(false);
   });
 
-  it("mirrors popup beside bell for RTL", () => {
+  it("still escapes the clipped scroll container in RTL", () => {
     mockIsRtl.value = true;
     mockLiveArrivalTick.value = 0;
     const { rerender } = renderSidebar("owner");
@@ -352,10 +352,9 @@ describe("AppSidebar bell button", () => {
         </Wrapper>
       );
     });
-    const popup = screen.getByText(/you have a new notification/i).closest("span");
-    if (!popup) throw new Error("Bell popup missing");
-    expect(popup.className).toContain("end-full");
-    expect(popup.className).toContain("me-2");
+    const popup = screen.getByText(/you have a new notification/i);
+    const sidebarContent = document.querySelector('[data-slot="sidebar-content"]');
+    expect(sidebarContent?.contains(popup)).toBe(false);
   });
 
   it("keeps unread badge text white", () => {
