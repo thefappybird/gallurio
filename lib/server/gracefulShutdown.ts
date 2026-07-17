@@ -7,7 +7,6 @@ import type { Server as SocketIOServer } from "socket.io";
 export type GracefulShutdownDeps = {
   httpServer: Pick<HttpServer, "close">;
   io: Pick<SocketIOServer, "close">;
-  stopWorld: () => Promise<void>;
   closeMongoConnection: () => Promise<void>;
   exit: (code: number) => void;
   /** Hard ceiling so a hung close still exits. Default 10s. */
@@ -15,9 +14,9 @@ export type GracefulShutdownDeps = {
 };
 
 // Builds a SIGTERM/SIGINT handler: stop accepting new connections, close
-// Socket.IO, stop the Workflow World, close the Mongo connection, then exit.
-// Bounded by a timeout so a hung dependency close can't wedge the process
-// (PM2 restarts/reboots would otherwise hang past their grace period).
+// Socket.IO, close the Mongo connection, then exit. Bounded by a timeout so a
+// hung dependency close can't wedge the process (PM2 restarts/reboots would
+// otherwise hang past their grace period).
 export function gracefulShutdown(deps: GracefulShutdownDeps): () => void {
   let shuttingDown = false;
 
@@ -36,7 +35,6 @@ export function gracefulShutdown(deps: GracefulShutdownDeps): () => void {
       try {
         await new Promise<void>((resolve) => deps.httpServer.close(() => resolve()));
         await new Promise<void>((resolve) => deps.io.close(() => resolve()));
-        await deps.stopWorld();
         await deps.closeMongoConnection();
       } catch (err) {
         console.error("[shutdown] error during graceful shutdown:", err);

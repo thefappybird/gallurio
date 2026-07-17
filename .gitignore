@@ -51,10 +51,6 @@ skills-lock.json
 # paddle cli
 /cli
 
-# vercel workflow devkit — local durable-run + test artifacts
-/.workflow-data/
-/.workflow-vitest/
-
 # clerk configuration (can include secrets)
 /.clerk/
 

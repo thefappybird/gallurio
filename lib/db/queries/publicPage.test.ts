@@ -181,7 +181,6 @@ describe("findPublishedWorkspaceBySlug", () => {
     expect(doc.lsCustomerId).toBeUndefined();
     expect(doc.lsSubscriptionStatus).toBeUndefined();
     expect(doc.lsCurrentPeriodEnd).toBeUndefined();
-    expect(doc.lsCheckoutWorkflowRunId).toBeUndefined();
     expect(doc.ownerUserId).toBeUndefined();
     expect(doc.plan).toBeUndefined();
   });

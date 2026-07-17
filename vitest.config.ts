@@ -14,15 +14,7 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     globals: false,
     include: ["**/*.test.{ts,tsx}"],
-    // Integration tests need the @workflow/vitest plugin (see
-    // vitest.integration.config.ts) — keep them out of the default unit run.
-    exclude: [
-      "**/node_modules/**",
-      "**/.next/**",
-      "**/dist/**",
-      "**/.claude/worktrees/**",
-      "**/*.integration.test.ts",
-    ],
+    exclude: ["**/node_modules/**", "**/.next/**", "**/dist/**", "**/.claude/worktrees/**"],
     testTimeout: 30_000,
     hookTimeout: 180_000,
     pool: "forks",

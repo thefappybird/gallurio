@@ -66,11 +66,6 @@ const shape = {
   LEMONSQUEEZY_SIM_URL: z.string().optional(),
 
   // --- Optional today; promote to REQUIRED_IN_PROD later (one-line move) ---
-  WORKFLOW_TARGET_WORLD: z.string().optional(),
-  WORKFLOW_POSTGRES_URL: z.string().optional(),
-  WORKFLOW_POSTGRES_JOB_PREFIX: z.string().optional(),
-  WORKFLOW_POSTGRES_WORKER_CONCURRENCY: z.string().optional(),
-  WORKFLOW_POSTGRES_MAX_POOL_SIZE: z.string().optional(),
   WORKOS_COOKIE_NAME: z.string().optional(),
   EMAIL_REPLY_TO: z.string().optional(),
   NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN: z.string().optional(),
@@ -107,8 +102,6 @@ const REQUIRED_IN_PROD: Partial<Record<EnvKey, FieldRule>> = {
   RESEND_API_KEY: {},
   EMAIL_FROM: {},
   CRON_SECRET: {},
-  WORKFLOW_TARGET_WORLD: {},
-  WORKFLOW_POSTGRES_URL: {},
 };
 
 const envSchema = z.object(shape).superRefine((data, ctx) => {
@@ -177,18 +170,6 @@ const envSchema = z.object(shape).superRefine((data, ctx) => {
         code: z.ZodIssueCode.custom,
         path: ["AUTHKIT_DEBUG"],
         message: "AUTHKIT_DEBUG must not be true in production",
-      });
-    }
-
-    if (
-      data.WORKFLOW_TARGET_WORLD === "local" ||
-      data.WORKFLOW_TARGET_WORLD === "@workflow/world-local"
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["WORKFLOW_TARGET_WORLD"],
-        message:
-          "WORKFLOW_TARGET_WORLD must not be the Local World in production (loses queued checkouts on restart)",
       });
     }
 

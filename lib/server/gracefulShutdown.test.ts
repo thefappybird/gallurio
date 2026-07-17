@@ -15,9 +15,6 @@ function makeDeps(overrides: Partial<Parameters<typeof gracefulShutdown>[0]> = {
       cb();
     }),
   } as unknown as Parameters<typeof gracefulShutdown>[0]["io"];
-  const stopWorld = vi.fn(async () => {
-    calls.push("stopWorld");
-  });
   const closeMongoConnection = vi.fn(async () => {
     calls.push("closeMongoConnection");
   });
@@ -30,7 +27,6 @@ function makeDeps(overrides: Partial<Parameters<typeof gracefulShutdown>[0]> = {
     deps: {
       httpServer,
       io,
-      stopWorld,
       closeMongoConnection,
       exit,
       ...overrides,
@@ -39,7 +35,7 @@ function makeDeps(overrides: Partial<Parameters<typeof gracefulShutdown>[0]> = {
 }
 
 describe("gracefulShutdown", () => {
-  it("closes the http server, io, stops the world, closes mongoose, then exits 0 in order", async () => {
+  it("closes the http server, io, closes mongoose, then exits 0 in order", async () => {
     const { calls, deps } = makeDeps();
     const shutdown = gracefulShutdown(deps);
     shutdown();
@@ -48,7 +44,6 @@ describe("gracefulShutdown", () => {
     expect(calls).toEqual([
       "httpServer.close",
       "io.close",
-      "stopWorld",
       "closeMongoConnection",
       "exit(0)",
     ]);
