@@ -25,7 +25,7 @@ export async function sendNotificationEmail(opts: NotificationEmailOpts): Promis
   const subject = isTeam ? opts.title : 'New notification — Gallurio'
   const ctaUrl = appUrl ? `${appUrl}${opts.href}` : null
 
-  const { html, text } = renderBrandedEmail({
+  const { html, text, attachments } = renderBrandedEmail({
     brand: gallurioBrand(),
     locale: 'en',
     preheader: opts.body,
@@ -37,5 +37,5 @@ export async function sendNotificationEmail(opts: NotificationEmailOpts): Promis
     ...(ctaUrl ? { cta: { label: 'View', url: ctaUrl } } : {}),
   })
 
-  await sendEmail({ to: opts.recipient.email, subject, html, text }).catch(() => {})
+  await sendEmail({ to: opts.recipient.email, subject, html, text, attachments }).catch(() => {})
 }

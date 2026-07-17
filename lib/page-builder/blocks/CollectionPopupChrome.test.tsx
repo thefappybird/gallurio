@@ -47,8 +47,8 @@ describe("CollectionPopupChrome", () => {
   // var(--x, fallback) syntax (it silently drops the whole declaration), so the
   // background resolution is tested as a pure function rather than via DOM style
   // introspection. See resolvePopupBackground in CollectionPopupChrome.tsx.
-  it("resolves to var(--pf-color-primary) with a literal fallback when backgroundColor is unset", () => {
-    expect(resolvePopupBackground(undefined)).toBe("var(--pf-color-primary, #111111)");
+  it("resolves to the theme background with a literal fallback when backgroundColor is unset", () => {
+    expect(resolvePopupBackground(undefined)).toBe("var(--pf-color-bg, #ffffff)");
   });
 
   it("resolves an explicit backgroundColor token over the primary fallback", () => {

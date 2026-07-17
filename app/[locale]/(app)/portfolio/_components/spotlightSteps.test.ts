@@ -71,6 +71,21 @@ describe("SPOTLIGHT_STEPS", () => {
     // Tooltip should be placed to the left of the right panel
     expect(step?.placement).toBe("left");
   });
+
+  it("teaches the responsive canvas controls before preview and uses stable compact anchors", () => {
+    const controlsIdx = SPOTLIGHT_STEPS.findIndex((s) => s.id === "canvas-controls");
+    const previewIdx = SPOTLIGHT_STEPS.findIndex((s) => s.id === "preview-device");
+    const controls = SPOTLIGHT_STEPS[controlsIdx];
+    const translate = SPOTLIGHT_STEPS.find((s) => s.id === "translate");
+    const actions = SPOTLIGHT_STEPS.find((s) => s.id === "save-drafts");
+
+    expect(controlsIdx).toBeGreaterThan(-1);
+    expect(controlsIdx).toBeLessThan(previewIdx);
+    expect(controls.anchorId).toBe("canvas-controls");
+    expect(controls.body).toContain("smaller screens");
+    expect(translate?.anchorId).toBe("canvas-controls");
+    expect(actions?.anchorId).toBe("workspace-actions");
+  });
 });
 
 describe("guideStepPanel", () => {

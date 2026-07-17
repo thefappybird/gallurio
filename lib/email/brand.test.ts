@@ -10,7 +10,7 @@ describe("brand", () => {
     expect(b.name).toBe("Gallurio");
     expect(b.accentHex).toBe(GALLURIO_TEAL);
     expect(b.poweredByGallurio).toBe(false);
-    expect(b.logoUrl).toMatch(/^https?:\/\/.*\/brand\/gallurio-sq-white\.png$/);
+    expect(b.logoUrl).toBe("https://gallurio.com/brand/gallurio-sq-white.png");
   });
   it("resolveWorkspaceBrand reads logoUrl from the top-level workspace field, not publicPage.header", () => {
     const b = resolveWorkspaceBrand({
@@ -37,6 +37,15 @@ describe("brand", () => {
       publicPage: { header: { logoUrl: "https://imagedelivery.net/x/y/public" } },
     });
     expect(b.logoUrl).toBeUndefined();
+  });
+  it("uses a PNG Cloudflare variant for email-safe workspace logos", () => {
+    const b = resolveWorkspaceBrand({
+      name: "Aperture Studio",
+      logoUrl: "https://imagedelivery.net/account/logo-id/w=256,h=256,fit=scale-down,q=85,f=auto",
+    });
+    expect(b.logoUrl).toBe(
+      "https://imagedelivery.net/account/logo-id/w=256,h=256,fit=scale-down,q=85,f=png"
+    );
   });
   it("ctaTextColor picks readable text by luminance", () => {
     expect(ctaTextColor("#0d8fa1")).toBe("#ffffff"); // dark teal -> white

@@ -24,6 +24,7 @@ function setup(props: Partial<React.ComponentProps<typeof StoryPromptDialog>> = 
       workspaceName="Studio Aurora"
       initialDescription=""
       initialKeywords={[]}
+      initialInquiryRecipientEmail="owner@example.com"
       businessType="photographer"
       onContinueWithGuide={vi.fn()}
       onExploreSelf={vi.fn()}
@@ -110,6 +111,9 @@ describe("StoryPromptDialog", () => {
         logoAssetId: "",
         siteIconUrl: "",
         siteIconAssetId: "",
+        ogImageUrl: "",
+        ogImageAssetId: "",
+        inquiryRecipientEmail: "owner@example.com",
       });
       expect(onExploreSelf).toHaveBeenCalled();
     });
@@ -258,6 +262,9 @@ describe("StoryPromptDialog", () => {
         logoAssetId: "",
         siteIconUrl: "",
         siteIconAssetId: "",
+        ogImageUrl: "",
+        ogImageAssetId: "",
+        inquiryRecipientEmail: "owner@example.com",
       });
       expect(onContinueWithGuide).toHaveBeenCalled();
     });
@@ -290,13 +297,15 @@ describe("StoryPromptDialog", () => {
     setup();
     await goToBrandingStep();
     expect(screen.getByRole("heading", { name: /add your branding/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/inquiry recipient email/i)).toHaveClass("bg-popover", "dark:bg-popover");
+    expect(screen.getByText(/new inquiry notifications/i)).toHaveClass("dark:text-foreground");
   });
 
   it("uploads a logo on the branding step and shows a preview", async () => {
     uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-1", url: "https://cdn/logo.png" } });
     setup();
     await goToBrandingStep();
-    const fileInput = document.querySelector('input[type="file"][accept*="image/png,image/jpeg,image/webp"]') as HTMLInputElement;
+    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/jpg,image/webp"]') as HTMLInputElement;
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(fileInput, { target: { files: [file] } });
     await waitFor(() => {
@@ -305,11 +314,21 @@ describe("StoryPromptDialog", () => {
     expect(screen.getByRole("button", { name: /remove logo/i })).toBeInTheDocument();
   });
 
+  it("accepts a dropped logo or site icon on the branding step", async () => {
+    uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-drop", url: "https://cdn/logo-drop.png" } });
+    setup();
+    await goToBrandingStep();
+    fireEvent.drop(screen.getByTestId("story-prompt-logo-dropzone"), {
+      dataTransfer: { files: [new File(["logo"], "logo.png", { type: "image/png" })] },
+    });
+    await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo-drop.png"]')).toBeInTheDocument());
+  });
+
   it("shows a mapped error message when the logo upload fails validation", async () => {
     uploadAsset.mockResolvedValueOnce({ error: "file_too_large" });
     setup();
     await goToBrandingStep();
-    const fileInput = document.querySelector('input[type="file"][accept*="image/png,image/jpeg,image/webp"]') as HTMLInputElement;
+    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/jpg,image/webp"]') as HTMLInputElement;
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(fileInput, { target: { files: [file] } });
     expect(await screen.findByRole("alert")).toHaveTextContent(/250 KB or smaller/i);
@@ -342,6 +361,9 @@ describe("StoryPromptDialog", () => {
         logoAssetId: "",
         siteIconUrl: "",
         siteIconAssetId: "",
+        ogImageUrl: "",
+        ogImageAssetId: "",
+        inquiryRecipientEmail: "owner@example.com",
       });
       expect(onContinueWithGuide).toHaveBeenCalled();
     });
@@ -369,7 +391,7 @@ describe("StoryPromptDialog", () => {
     await screen.findByRole("heading", { name: /add your branding/i });
     await waitForSingle(/^continue$/i);
     const logoInput = document.querySelector(
-      'input[type="file"][accept*="image/png,image/jpeg,image/webp"]'
+      'input[type="file"][accept="image/png,image/jpeg,image/jpg,image/webp"]'
     ) as HTMLInputElement;
     fireEvent.change(logoInput, { target: { files: [new File(["logo"], "logo.png", { type: "image/png" })] } });
     await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo.png"]')).toBeInTheDocument());
@@ -389,6 +411,9 @@ describe("StoryPromptDialog", () => {
         logoAssetId: "logo-1",
         siteIconUrl: "https://cdn/icon.png",
         siteIconAssetId: "icon-1",
+        ogImageUrl: "",
+        ogImageAssetId: "",
+        inquiryRecipientEmail: "owner@example.com",
       });
       expect(onContinueWithGuide).toHaveBeenCalled();
     });

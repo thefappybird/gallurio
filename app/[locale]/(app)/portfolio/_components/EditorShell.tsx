@@ -9,9 +9,26 @@ import { useDebounce } from "@/lib/hooks/useDebounce";
 import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Loader2, Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
+import {
+  CircleHelp,
+  ExternalLinkIcon,
+  Files,
+  Images,
+  Loader2,
+  Monitor,
+  Palette,
+  PanelLeft,
+  PanelRight,
+  Redo2,
+  Save,
+  SlidersHorizontal,
+  Smartphone,
+  Tablet,
+  Undo2,
+} from "lucide-react";
 import { CanvasViewportControls } from "./CanvasViewportControls";
 import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/lib/page-builder/hasFeaturedWork";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
@@ -148,6 +165,10 @@ type Props = {
   initialSeoDescription: string;
   /** Owner's current SEO/style keywords (seeds the story prompt). */
   initialSeoKeywords: string[];
+  /** Live recipient for inquiry-form submissions (seeds the story prompt). */
+  initialInquiryRecipientEmail: string;
+  /** Whether this workspace's public portfolio has been published at least once. */
+  hasBeenPublished: boolean;
   /** Workspace business type, used to pick suggested vibe tags. */
   workspaceBusinessType: string;
   /** Owner's saved named themes (server-loaded). */
@@ -327,6 +348,40 @@ function EditCanvasControls({
   );
 }
 
+function ResponsiveEditCanvasControls(
+  props: Parameters<typeof EditCanvasControls>[0]
+) {
+  const t = useTranslations("app.pageBuilder.editor");
+  return (
+    <div data-tour-id="canvas-controls" className="shrink-0">
+      <div className="portfolio-canvas-controls-inline">
+        <EditCanvasControls {...props} />
+      </div>
+      <div className="portfolio-canvas-controls-compact">
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="outline"
+                aria-label={t("controls.editorControls")}
+                title={t("controls.editorControls")}
+                data-testid="canvas-controls-trigger"
+              />
+            }
+          >
+            <SlidersHorizontal className="size-4" aria-hidden />
+          </PopoverTrigger>
+          <PopoverContent side="bottom" align="center" className="w-auto max-w-[calc(100vw-1rem)] p-2">
+            <EditCanvasControls {...props} />
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  );
+}
+
 /** Iframe-preview device toggle — clamps the standalone preview iframe width. */
 function DeviceTogglePreview({
   value,
@@ -419,6 +474,8 @@ export function EditorShell({
   storyPromptCompleted,
   initialSeoDescription,
   initialSeoKeywords,
+  initialInquiryRecipientEmail,
+  hasBeenPublished,
   workspaceBusinessType,
   initialSavedThemes,
   initialDrafts = [],
@@ -1541,40 +1598,52 @@ export function EditorShell({
           type="button"
           size="sm"
           variant="outline"
-          className="shrink-0"
+          className="shrink-0 px-2"
+          aria-label={t("photos")}
+          title={t("photos")}
           data-tour-id="photos"
           onClick={() => setPhotosOpen(true)}
         >
-          {t("photos")}
+          <Images className="size-3.5" aria-hidden />
+          <span className="portfolio-toolbar-action-label">{t("photos")}</span>
         </Button>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          className="shrink-0"
+          className="shrink-0 px-2"
+          aria-label={t("theme")}
+          title={t("theme")}
           data-tour-id="theme"
           onClick={openTheme}
         >
-          {t("theme")}
+          <Palette className="size-3.5" aria-hidden />
+          <span className="portfolio-toolbar-action-label">{t("theme")}</span>
         </Button>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          className="shrink-0"
+          className="shrink-0 px-2"
+          aria-label={t("guide")}
+          title={t("guide")}
           onClick={() => { setSpotlightStepIndex(0); setGuideOpen(true); }}
         >
-          {t("guide")}
+          <CircleHelp className="size-3.5" aria-hidden />
+          <span className="portfolio-toolbar-action-label">{t("guide")}</span>
         </Button>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          className="shrink-0"
+          className="shrink-0 px-2"
+          aria-label={t("drafts")}
+          title={t("drafts")}
           data-tour-id="drafts"
           onClick={() => setDraftsOpen(true)}
         >
-          {t("drafts")}
+          <Files className="size-3.5" aria-hidden />
+          <span className="portfolio-toolbar-action-label">{t("drafts")}</span>
         </Button>
         <div data-testid="draft-title-slot" className="min-w-0 shrink-0">
           <DraftNameEditor
@@ -1591,7 +1660,7 @@ export function EditorShell({
   function fixedActionsCluster(publishSlot: ReactNode) {
     const saveDisabled = (!isDirty && activeDraftId !== null) || nameError !== null;
     return (
-      <div data-testid="portfolio-toolbar-fixed-actions" className="flex w-max shrink-0 items-center gap-2">
+      <div data-testid="portfolio-toolbar-fixed-actions" className="flex w-max shrink-0 items-center gap-1">
         <Button
           type="button"
           size="sm"
@@ -1600,8 +1669,12 @@ export function EditorShell({
           disabled={saveDisabled}
           loading={savingChanges}
           onClick={() => void handleSaveChanges()}
+          aria-label={t("saveChanges")}
+          title={t("saveChanges")}
+          className="px-2"
         >
-          {t("saveChanges")}
+          <Save className="size-3.5" aria-hidden />
+          <span className="portfolio-toolbar-action-label">{t("saveChanges")}</span>
         </Button>
         {publishSlot}
       </div>
@@ -1611,7 +1684,7 @@ export function EditorShell({
   // Three-section top bar: nav (left) · device toggle (center) · tools (right).
   function previewControlsCluster() {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1" data-tour-id="canvas-controls">
         {!sidePanelOpen ? (
           <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />
         ) : null}
@@ -1627,21 +1700,29 @@ export function EditorShell({
 
   function topBar(center: ReactNode, publishSlot: ReactNode) {
     return (
-      <div className="relative w-full min-w-0 pe-44">
+      <div className="flex w-full min-w-0 items-center gap-2">
         <div
           data-testid="portfolio-toolbar-scroll"
-          className="min-w-0 overflow-x-auto"
+          className="min-w-0 flex-1 overflow-x-auto"
         >
           <div
             data-testid="portfolio-toolbar-grid"
-            className="grid w-max min-w-full grid-cols-[minmax(max-content,1fr)_max-content_minmax(max-content,1fr)] items-center gap-2"
+            className="grid w-max grid-cols-[max-content] items-center"
           >
-            <div className="flex min-w-max justify-start">{navCluster()}</div>
-            <div className="flex min-w-max justify-center">{center}</div>
-            <div className="flex min-w-max justify-end gap-2">{toolbarToolsCluster()}</div>
+            <div className="flex min-w-max">{navCluster()}</div>
           </div>
         </div>
-        <div className="absolute end-0 top-1/2 -translate-y-1/2">
+        <div data-testid="portfolio-toolbar-canvas-controls" className="shrink-0">
+          {center}
+        </div>
+        <div
+          data-testid="portfolio-toolbar-actions"
+          data-tour-id="workspace-actions"
+          className="flex shrink-0 items-center gap-1"
+          role="group"
+          aria-label={t("controls.workspaceActions")}
+        >
+          {toolbarToolsCluster()}
           {fixedActionsCluster(publishSlot)}
         </div>
       </div>
@@ -1723,7 +1804,7 @@ export function EditorShell({
                     }}
                   />
                   {topBar(
-                    <EditCanvasControls
+                    <ResponsiveEditCanvasControls
                       formLocale={formLocale}
                       formDir={formDir}
                       onFormLocaleChange={handleFormLocaleChange}
@@ -1846,6 +1927,7 @@ export function EditorShell({
         onConfirm={doPublish}
         publicUrl={portfolioPublicUrl(currentSlug)}
         currentSlug={currentSlug}
+        hasBeenPublished={hasBeenPublished}
         onSlugSaved={setCurrentSlug}
         onUpdateSlug={updatePortfolioSlugAction}
       />
@@ -1893,6 +1975,7 @@ export function EditorShell({
           workspaceName={workspaceName}
           initialDescription={initialSeoDescription}
           initialKeywords={initialSeoKeywords}
+          initialInquiryRecipientEmail={initialInquiryRecipientEmail}
           businessType={workspaceBusinessType}
           persistOnExit
           onBrandingSaved={({ logoUrl, logoAssetId }) => {

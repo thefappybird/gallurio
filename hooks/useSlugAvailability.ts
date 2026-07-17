@@ -13,17 +13,21 @@ export type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid"
  *                    When slug === currentSlug the check is skipped and
  *                    status stays "idle" so the indicator does not fire on
  *                    the initial form render.
+ * @param checkCurrentSlug Set for first-time publishing, where the workspace's
+ *                         provisional slug must still be checked before it can
+ *                         become publicly reachable.
  */
 export function useSlugAvailability(
   slug: string,
   currentSlug?: string,
+  checkCurrentSlug = false,
 ): { status: SlugStatus } {
   const [status, setStatus] = useState<SlugStatus>("idle");
   // Monotonically-increasing request counter used to ignore stale responses.
   const seqRef = useRef(0);
 
   useEffect(() => {
-    const skip = !slug || slug === currentSlug;
+    const skip = !slug || (!checkCurrentSlug && slug === currentSlug);
     const id = seqRef.current + 1;
     seqRef.current = id;
 
@@ -51,7 +55,7 @@ export function useSlugAvailability(
     }, skip ? 0 : 400);
 
     return () => clearTimeout(timer);
-  }, [slug, currentSlug]);
+  }, [slug, currentSlug, checkCurrentSlug]);
 
   return { status };
 }

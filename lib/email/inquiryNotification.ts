@@ -54,7 +54,7 @@ export async function sendInquiryNotification(
 
   const subject = `New inquiry from ${data.clientName} - ${data.workspaceName}`;
 
-  const { html, text } = renderBrandedEmail({
+  const { html, text, attachments } = renderBrandedEmail({
     brand: gallurioBrand(),
     locale: "en",
     preheader: `${data.clientName} submitted a booking inquiry on ${data.workspaceName}.`,
@@ -94,5 +94,6 @@ export async function sendInquiryNotification(
     subject,
     text,
     html,
+    attachments,
   });
 }

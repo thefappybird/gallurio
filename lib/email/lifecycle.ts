@@ -32,7 +32,7 @@ export async function sendLifecycleEmail(
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://gallurio.app").replace(/\/$/, "");
   const subscribeUrl = `${appUrl}/subscribe`;
 
-  const { html, text } = renderBrandedEmail({
+  const { html, text, attachments } = renderBrandedEmail({
     brand: gallurioBrand(),
     locale,
     preheader: copy.body,
@@ -46,6 +46,7 @@ export async function sendLifecycleEmail(
     subject: copy.subject,
     html,
     text,
+    attachments,
   });
   if (!result.ok) logEmailFailure(`lifecycle_${stage}`, to, result);
   return result;

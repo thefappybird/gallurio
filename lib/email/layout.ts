@@ -1,5 +1,12 @@
 import { escapeHtml } from "./escapeHtml";
-import { Brand, ctaTextColor, GALLURIO_LOGO_URL } from "./brand";
+import { Brand, ctaTextColor } from "./brand";
+import type { EmailAttachment } from "./send";
+import {
+  GALLURIO_LOGO_CID,
+  WORKSPACE_LOGO_CID,
+  gallurioLogoInlineAttachment,
+  workspaceLogoInlineAttachment,
+} from "./inlineImages";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -139,7 +146,7 @@ function blockText(block: EmailBlock): string {
 // Main render
 // ---------------------------------------------------------------------------
 
-export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text: string } {
+export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text: string; attachments: EmailAttachment[] } {
   const { brand, locale, preheader, title, subtitle, blocks, cta, secondaryCta, supportLine } = opts;
   const isPlatform = brand.kind === "platform";
   const accentHex = brand.accentHex;
@@ -150,8 +157,15 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
   const headerTextColor = isPlatform ? ctaTextColor(accentHex) : LIGHT_TEXT;
   const headerBorderBottom = isPlatform ? "" : `border-bottom:3px solid ${accentHex};`;
   const nameSpan = `<span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:${headerTextColor};">${e(brand.name)}</span>`;
-  const logoImg = brand.logoUrl
-    ? `<img src="${e(brand.logoUrl)}" height="28" alt="${e(brand.name)}" style="display:block;border:0;" />`
+  const gallurioAttachment = gallurioLogoInlineAttachment();
+  const workspaceAttachment = !isPlatform && brand.logoUrl
+    ? workspaceLogoInlineAttachment(brand.logoUrl)
+    : null;
+  const logoCid = isPlatform
+    ? (gallurioAttachment ? GALLURIO_LOGO_CID : null)
+    : (workspaceAttachment ? WORKSPACE_LOGO_CID : null);
+  const logoImg = logoCid
+    ? `<img src="cid:${logoCid}" height="28" alt="${e(brand.name)}" style="display:block;border:0;" />`
     : null;
   const isRtl = locale === "ar";
   const brandDisplay = logoImg
@@ -165,7 +179,9 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
   // Footer
   let footerHtml: string;
   let footerText: string;
-  const footerMark = `<img src="${e(GALLURIO_LOGO_URL)}" height="16" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:6px;" />`;
+  const footerMark = gallurioAttachment
+    ? `<img src="cid:${GALLURIO_LOGO_CID}" height="16" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:6px;" />`
+    : "";
   if (isPlatform) {
     footerHtml = [
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">Your event business, beautifully managed.</p>`,
@@ -286,7 +302,13 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
   if (supportLine) textParts.push("", supportLine);
   textParts.push("", footerText);
 
-  return { html, text: textParts.join("\n") };
+  return {
+    html,
+    text: textParts.join("\n"),
+    attachments: [gallurioAttachment, workspaceAttachment].filter(
+      (attachment): attachment is EmailAttachment => attachment !== null
+    ),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -298,7 +320,7 @@ export function renderBilingualEmail(opts: {
   preheader: string;
   secondaryLocale: "en" | "fil" | "ms" | "id";
   build: (locale: "en" | "fil" | "ms" | "id") => LocaleContent;
-}): { html: string; text: string } {
+}): { html: string; text: string; attachments: EmailAttachment[] } {
   const { brand, preheader, secondaryLocale, build } = opts;
   const primary = build("en");
 

@@ -29,6 +29,7 @@ function renderDialog(
     onConfirm: vi.fn().mockResolvedValue(undefined),
     publicUrl: "https://gallurio.com/w/test-studio",
     currentSlug: "test-studio",
+    hasBeenPublished: false,
     onSlugSaved: vi.fn(),
     onUpdateSlug: mockUpdateSlug,
   };
@@ -52,6 +53,28 @@ describe("PublishDialog", () => {
     const input = screen.getByRole("textbox", { name: /portfolio url/i });
     expect((input as HTMLInputElement).value).toBe("test-studio");
     expect(document.getElementById("publish-dialog-full-url")?.textContent).toContain("/w/test-studio");
+  });
+
+  it("checks the provisional URL immediately before a first publish", async () => {
+    renderDialog({ hasBeenPublished: false });
+
+    await waitFor(() => {
+      expect(mockCheckSlugAvailability).toHaveBeenCalledWith("test-studio");
+    });
+    expect(screen.getByRole("button", { name: /publish now/i })).toBeEnabled();
+  });
+
+  it("hides a previously published URL behind an edit control", () => {
+    renderDialog({ hasBeenPublished: true });
+    expect(screen.queryByRole("textbox", { name: /portfolio url/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /edit portfolio url/i }));
+    expect(screen.getByRole("textbox", { name: /portfolio url/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /publish now/i })).toBeDisabled();
+
+    fireEvent.click(screen.getAllByRole("button", { name: /^cancel$/i })[0]);
+    expect(screen.queryByRole("textbox", { name: /portfolio url/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /publish now/i })).toBeEnabled();
   });
 
   it("updates the full URL live as the user types", () => {

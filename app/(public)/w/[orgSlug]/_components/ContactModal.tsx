@@ -163,7 +163,10 @@ export function ContactModal({
             </DialogPrimitive.Close>
           </div>
 
-          <div className="pf-contact-popup-body" style={{ padding: "0 1.25rem 1.25rem", overflowY: "auto" }}>
+          <div
+            className="pf-contact-popup-body"
+            style={{ flex: 1, minHeight: 0, padding: "0 1.25rem 1.25rem", overflowY: "auto" }}
+          >
             {submitted ? (
               <ContactConfirmation
                 title={labels.confirmTitle}

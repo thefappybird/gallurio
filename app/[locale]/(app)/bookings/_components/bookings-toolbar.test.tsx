@@ -8,6 +8,16 @@ import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import { BookingsToolbar } from "./bookings-toolbar";
 
+describe("BookingsToolbar compact filter layout", () => {
+  it("wraps filters only when needed instead of forcing each control into its own row", () => {
+    const { getByTestId } = render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    const filters = getByTestId("booking-filter-controls");
+
+    expect(filters).toHaveClass("flex-wrap");
+    expect(filters).not.toHaveClass("flex-col");
+  });
+});
+
 // ── Navigation stubs ──────────────────────────────────────────────────────────
 const mockPush = vi.fn();
 const mockReplace = vi.fn();

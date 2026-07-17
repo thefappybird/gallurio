@@ -509,7 +509,7 @@
   "app": {
     "betaEndingBanner": {
       "title": "Akses beta akan tamat tidak lama lagi",
-      "body": "Akses beta anda akan tamat dalam minggu hadapan. Selepas beta tamat, ruang kerja anda akan kembali ke pelan percuma.",
+      "message": "Terima kasih kerana menjadi sebahagian daripada Gallurio Beta. Akses beta anda akan tamat dalam minggu hadapan, selepas itu ruang kerja anda akan kembali ke pelan Free. Untuk terus menikmati ciri Pro, gunakan kod <promoCode>{code}</promoCode> untuk menuntut dua bulan akses Pro percuma.",
       "dismiss": "Tutup untuk sesi ini"
     },
     "dashboard": {
@@ -1962,6 +1962,7 @@
           "slugLabel": "URL portfolio",
           "slugSuffix": ".gallurio.com",
           "slugSave": "Simpan URL",
+          "slugEdit": "Edit URL portfolio",
           "slugSaving": "Menyimpan...",
           "slugSaved": "Disimpan",
           "slugError": "Tidak dapat mengemas kini URL, sila cuba lagi",
@@ -2146,6 +2147,7 @@
         },
         "controls": {
           "editorControls": "Kawalan editor",
+          "workspaceActions": "Tindakan portfolio",
           "toggleBlocks": "Togol panel blok",
           "toggleProperties": "Togol panel sifat",
           "previewDevice": "Peranti pratonton",
@@ -2523,9 +2525,9 @@
             "logoUpload": "Muat naik logo",
             "logoUploading": "Memuat naik…",
             "logoRemove": "Alih keluar logo",
-            "logoRequirements": "PNG, JPEG atau WEBP · maks 250 KB · sehingga 512×256",
+            "logoRequirements": "PNG, JPG atau JPEG, atau WEBP · maks 250 KB · sehingga 512×256",
             "logoErrors": {
-              "type": "Logo mesti imej PNG, JPEG, atau WEBP.",
+              "type": "Logo mesti imej PNG, JPG atau JPEG, atau WEBP.",
               "size": "Logo mesti 250 KB atau lebih kecil.",
               "dimensions": "Logo mesti 512 x 256 px atau lebih kecil.",
               "image": "Imej logo ini tidak dapat dibaca.",
@@ -2535,14 +2537,28 @@
             "iconUpload": "Pilih imej",
             "iconUploading": "Memuat naik…",
             "iconRemove": "Alih keluar",
-            "iconRequirements": "PNG, JPEG, WebP atau AVIF · maks 1 MB · sehingga 512 × 512 px",
+            "iconRequirements": "PNG, JPG atau JPEG, WebP atau AVIF · maks 1 MB · sehingga 512 × 512 px",
             "iconErrors": {
-              "type": "Hanya fail PNG, JPEG, WebP atau AVIF diterima.",
+              "type": "Hanya fail PNG, JPG atau JPEG, WebP atau AVIF diterima.",
               "size": "Ikon mesti 1 MB atau lebih kecil.",
               "dimensions": "Ikon mesti 512 x 512 px atau lebih kecil.",
               "image": "Imej ikon ini tidak dapat dibaca.",
               "upload": "Muat naik ikon gagal. Sila cuba lagi."
-            }
+            },
+            "shareImageLabel": "Imej kongsi",
+            "shareImageUpload": "Muat naik imej kongsi",
+            "shareImageUploading": "Memuat naik...",
+            "shareImageRemove": "Alih keluar imej kongsi",
+            "shareImageRequirements": "JPG atau JPEG, PNG, WebP atau AVIF · maks 10 MB · 1200 × 630 px disyorkan",
+            "shareImageErrors": {
+              "type": "Gunakan imej JPG atau JPEG, PNG, WebP, atau AVIF.",
+              "size": "Imej kongsi mesti 10 MB atau lebih kecil.",
+              "dimensions": "Imej kongsi mesti sekurang-kurangnya 1200 × 630 px.",
+              "upload": "Muat naik imej kongsi gagal. Sila cuba lagi."
+            },
+            "inquiryRecipientLabel": "E-mel penerima pertanyaan",
+            "inquiryRecipientPlaceholder": "anda@contoh.com",
+            "inquiryRecipientHint": "Notifikasi pertanyaan baharu akan dihantar ke sini."
           },
           "done": {
             "title": "Halaman anda sedia untuk bersinar",

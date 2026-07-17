@@ -142,6 +142,13 @@ describe("AppSidebar footer logout", () => {
     expect(screen.getByText("Log out?")).toBeInTheDocument();
   });
 
+  it("keeps logout confirmation actions compact and aligned to the right", () => {
+    renderSidebar("owner");
+    fireEvent.click(screen.getByRole("button", { name: /log.?out/i }));
+    const footer = screen.getByRole("button", { name: "Cancel" }).parentElement;
+    expect(footer?.className).toContain("[&>button]:!flex-none");
+  });
+
   it("renders the logout button for staff too", () => {
     renderSidebar("staff");
     expect(screen.getByRole("button", { name: /log.?out/i })).toBeInTheDocument();
@@ -235,7 +242,7 @@ describe("AppSidebar bell button", () => {
     expect(bellSvg?.getAttribute("class") ?? "").toContain("animate-bell-nudge");
   });
 
-  it("bundles a burst of live arrivals within 5s into a single toast with the total count", async () => {
+  it("shows the arrival popup immediately and increments it for a burst", async () => {
     mockLiveArrivalTick.value = 0;
     const { rerender } = renderSidebar("owner");
 
@@ -257,7 +264,7 @@ describe("AppSidebar bell button", () => {
       });
     }
 
-    // First arrival arms the 5s bundling window.
+    // First arrival shows the cue alongside the bell nudge.
     bumpTick(1);
     act(() => {
       vi.advanceTimersByTime(2000);
@@ -267,16 +274,10 @@ describe("AppSidebar bell button", () => {
     bumpTick(2);
     bumpTick(3);
 
-    expect(screen.queryByText(/new notification/i)).toBeNull();
-
-    act(() => {
-      vi.advanceTimersByTime(3000); // total 5000ms since the first arrival
-    });
-
     expect(screen.getByText(/you have 3 new notifications/i)).toBeInTheDocument();
   });
 
-  it("shows the singular toast after the bundling window for a single arrival, then auto-dismisses it", async () => {
+  it("shows the singular toast with the bell nudge, then auto-dismisses it", async () => {
     mockLiveArrivalTick.value = 0;
     const { rerender } = renderSidebar("owner");
 
@@ -294,25 +295,18 @@ describe("AppSidebar bell button", () => {
           />
         </Wrapper>
       );
-    });
-
-    // A single arrival still waits out the 5s bundling window before showing.
-    expect(screen.queryByText(/you have a new notification/i)).toBeNull();
-
-    act(() => {
-      vi.advanceTimersByTime(5000);
     });
 
     expect(screen.getByText(/you have a new notification/i)).toBeInTheDocument();
 
     act(() => {
-      vi.advanceTimersByTime(3000);
+      vi.advanceTimersByTime(1500);
     });
 
     expect(screen.queryByText(/you have a new notification/i)).toBeNull();
   });
 
-  it("renders popup beside bell on LTR after burst window closes", () => {
+  it("renders popup beside bell on LTR", () => {
     mockLiveArrivalTick.value = 0;
     const { rerender } = renderSidebar("owner");
 
@@ -331,10 +325,6 @@ describe("AppSidebar bell button", () => {
         </Wrapper>
       );
     });
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-
     const popup = screen.getByText(/you have a new notification/i).closest("span");
     if (!popup) throw new Error("Bell popup missing");
     expect(popup.className).toContain("start-full");
@@ -362,10 +352,6 @@ describe("AppSidebar bell button", () => {
         </Wrapper>
       );
     });
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-
     const popup = screen.getByText(/you have a new notification/i).closest("span");
     if (!popup) throw new Error("Bell popup missing");
     expect(popup.className).toContain("end-full");

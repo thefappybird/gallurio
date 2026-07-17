@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { InfoIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { BETA_TWO_MONTH_PROMO_CODE } from "@/lib/billing/betaPromo";
 
 const DISMISS_KEY_PREFIX = "gw_beta_ending_banner_dismissed:";
 
@@ -24,7 +25,12 @@ export function BetaEndingBanner({ scheduledEndAt }: { scheduledEndAt: string })
       <InfoIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p className="font-semibold">{t("title")}</p>
-        <p className="mt-0.5 text-muted-foreground">{t("body")}</p>
+        <p className="mt-0.5 text-muted-foreground">
+          {t.rich("message", {
+            code: BETA_TWO_MONTH_PROMO_CODE,
+            promoCode: (chunks) => <strong className="font-semibold text-foreground">{chunks}</strong>,
+          })}
+        </p>
       </div>
       <button
         type="button"

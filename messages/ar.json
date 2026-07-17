@@ -511,6 +511,9 @@
       "title": "سينتهي الوصول التجريبي قريباً",
       "body": "سينتهي وصولك التجريبي خلال الأسبوع القادم. بعد انتهاء التجربة، ستعود مساحة العمل إلى الخطة المجانية.",
       "dismiss": "إغلاق لهذه الجلسة"
+      , "subscribe": "Subscribe to Pro now to keep your access after beta ends.",
+      "promo": "Thank you for using Gallurio Beta. Use code {code} to claim your two free months of Pro access after beta ends.",
+      "message": "Thank you for being part of the Gallurio Beta. Your beta access ends within the next week, after which your workspace will return to the Free plan. To continue enjoying Pro features, use code <promoCode>{code}</promoCode> to claim two free months of Pro access."
     },
     "dashboard": {
       "title": "{workspaceName}",
@@ -1962,6 +1965,7 @@
           "slugLabel": "رابط معرض الأعمال",
           "slugSuffix": ".gallurio.com",
           "slugSave": "حفظ الرابط",
+          "slugEdit": "تعديل رابط معرض الأعمال",
           "slugSaving": "جارٍ الحفظ...",
           "slugSaved": "تم الحفظ",
           "slugError": "تعذّر تحديث الرابط، يرجى المحاولة مرة أخرى",
@@ -2146,6 +2150,7 @@
         },
         "controls": {
           "editorControls": "أدوات المحرّر",
+          "workspaceActions": "إجراءات معرض الأعمال",
           "toggleBlocks": "إظهار/إخفاء لوحة الأقسام",
           "toggleProperties": "إظهار/إخفاء لوحة الخصائص",
           "previewDevice": "معاينة الجهاز",
@@ -2542,7 +2547,21 @@
               "dimensions": "يجب ألا تتجاوز أبعاد الأيقونة 512 × 512 بكسل.",
               "image": "تعذّرت قراءة صورة الأيقونة هذه.",
               "upload": "فشل رفع الأيقونة. يرجى المحاولة مرة أخرى."
-            }
+            },
+            "shareImageLabel": "Share image",
+            "shareImageUpload": "Upload share image",
+            "shareImageUploading": "Uploading...",
+            "shareImageRemove": "Remove share image",
+            "shareImageRequirements": "JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+            "shareImageErrors": {
+              "type": "Use a JPEG, PNG, WebP, or AVIF image.",
+              "size": "Share image must be 10 MB or smaller.",
+              "dimensions": "Share image must be at least 1200 × 630 px.",
+              "upload": "Share image upload failed. Please try again."
+            },
+            "inquiryRecipientLabel": "Inquiry recipient email",
+            "inquiryRecipientPlaceholder": "you@example.com",
+            "inquiryRecipientHint": "New inquiry notifications will be sent here."
           },
           "done": {
             "title": "صفحتك جاهزة لتتألق",

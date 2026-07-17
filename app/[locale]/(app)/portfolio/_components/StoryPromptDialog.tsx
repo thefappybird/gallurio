@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { DragEvent, ReactNode } from "react";
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
@@ -18,6 +18,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { resolveScheme } from "@/lib/theme/themes";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useImageRetry } from "@/hooks/useImageRetry";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { tagBorderClass } from "@/components/app/tag-pill";
@@ -28,9 +31,9 @@ const MAX_DESCRIPTION = 300;
 const LOGO_MAX_BYTES = 250 * 1024;
 const LOGO_MAX_WIDTH = 512;
 const LOGO_MAX_HEIGHT = 256;
-const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"] as const;
 
-const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
+const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/avif"] as const;
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
 const SITE_ICON_MAX_DIM = 512;
 
@@ -188,6 +191,7 @@ export function StoryPromptDialog({
   workspaceName,
   initialDescription,
   initialKeywords,
+  initialInquiryRecipientEmail,
   businessType,
   persistOnExit = true,
   onContinueWithGuide,
@@ -198,6 +202,7 @@ export function StoryPromptDialog({
   workspaceName: string;
   initialDescription: string;
   initialKeywords: string[];
+  initialInquiryRecipientEmail: string;
   businessType: string;
   persistOnExit?: boolean;
   onContinueWithGuide: () => void;
@@ -225,9 +230,17 @@ export function StoryPromptDialog({
   const [iconAssetId, setIconAssetId] = useState("");
   const [iconUploading, setIconUploading] = useState(false);
   const [iconError, setIconError] = useState<string | null>(null);
+  const [shareImageUrl, setShareImageUrl] = useState("");
+  const [shareImageAssetId, setShareImageAssetId] = useState("");
+  const [shareImageUploading, setShareImageUploading] = useState(false);
+  const [shareImageError, setShareImageError] = useState<string | null>(null);
+  const [inquiryRecipientEmail, setInquiryRecipientEmail] = useState(initialInquiryRecipientEmail);
   const logo = useImageRetry(logoUrl);
   const icon = useImageRetry(iconUrl);
+  const shareImage = useImageRetry(shareImageUrl);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const iconFileInputRef = useRef<HTMLInputElement>(null);
+  const shareImageFileInputRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
 
   const suggestedTags = SUGGESTED_TAGS[businessType] ?? SUGGESTED_TAGS.other;
@@ -366,6 +379,41 @@ export function StoryPromptDialog({
     setIconError(null);
   }
 
+  async function uploadShareImage(file: File) {
+    setShareImageUploading(true);
+    setShareImageError(null);
+    try {
+      const result = await uploadImage(file);
+      setShareImageUrl(result.url);
+      setShareImageAssetId(result.assetId);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "";
+      const key = ({
+        type_not_accepted: "type",
+        file_too_large: "size",
+        dimension_too_small: "dimensions",
+      } as Record<string, string>)[reason] ?? "upload";
+      setShareImageError(t(`branding.shareImageErrors.${key}` as Parameters<typeof t>[0]));
+    } finally {
+      setShareImageUploading(false);
+    }
+  }
+
+  function removeShareImage() {
+    setShareImageUrl("");
+    setShareImageAssetId("");
+    setShareImageError(null);
+  }
+
+  function handleDrop(
+    event: DragEvent<HTMLElement>,
+    upload: (file: File) => Promise<void>
+  ) {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (file) void upload(file);
+  }
+
   async function handleExit(kind: "guide" | "explore") {
     setSavingAction(kind);
     try {
@@ -377,6 +425,9 @@ export function StoryPromptDialog({
           logoAssetId,
           siteIconUrl: iconUrl,
           siteIconAssetId: iconAssetId,
+          ogImageUrl: shareImageUrl,
+          ogImageAssetId: shareImageAssetId,
+          inquiryRecipientEmail,
         });
         if ("error" in res) {
           toast.error(tEditor("errorToast"));
@@ -562,6 +613,7 @@ export function StoryPromptDialog({
                   <DialogTitle className="text-lg">{t("branding.title")}</DialogTitle>
                   <DialogDescription className="text-foreground/85">{t("branding.subtitle")}</DialogDescription>
                 </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
                   <p className="text-xs font-medium text-foreground/80">{t("branding.logoLabel")}</p>
                   {logoUrl && !logo.failed ? (
@@ -586,6 +638,9 @@ export function StoryPromptDialog({
                       type="button"
                       disabled={logoUploading}
                       onClick={() => logoFileInputRef.current?.click()}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => handleDrop(event, uploadLogo)}
+                      data-testid="story-prompt-logo-dropzone"
                       className="inline-flex min-h-24 flex-col items-center justify-center gap-2 border border-dashed border-border bg-popover px-3 text-center text-xs font-medium text-popover-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60"
                     >
                       <Upload className="size-3.5" aria-hidden />
@@ -630,14 +685,19 @@ export function StoryPromptDialog({
                       </button>
                     </div>
                   ) : (
-                    <label
-                      htmlFor="story-prompt-icon-file"
-                      className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-border bg-popover px-3 text-center text-xs font-medium text-popover-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    <button
+                      type="button"
+                      disabled={iconUploading}
+                      onClick={() => iconFileInputRef.current?.click()}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => handleDrop(event, uploadIcon)}
+                      data-testid="story-prompt-icon-dropzone"
+                      className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-border bg-popover px-3 text-center text-xs font-medium text-popover-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
                     >
                       <Upload className="size-3.5" aria-hidden />
                       <span>{iconUploading ? t("branding.iconUploading") : t("branding.iconUpload")}</span>
                       <span>{t("branding.iconRequirements")}</span>
-                    </label>
+                    </button>
                   )}
                   {iconError ? (
                     <p role="alert" className="text-xs text-destructive">
@@ -645,6 +705,7 @@ export function StoryPromptDialog({
                     </p>
                   ) : null}
                   <input
+                    ref={iconFileInputRef}
                     id="story-prompt-icon-file"
                     type="file"
                     accept={SITE_ICON_TYPES.join(",")}
@@ -655,6 +716,69 @@ export function StoryPromptDialog({
                       e.target.value = "";
                     }}
                   />
+                </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs font-medium text-foreground/80">{t("branding.shareImageLabel")}</p>
+                  {shareImageUrl && !shareImage.failed ? (
+                    <div className="flex flex-col gap-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={shareImage.src}
+                        alt=""
+                        onError={shareImage.onError}
+                        className="aspect-[1200/630] w-full border border-border object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeShareImage}
+                        className="self-start text-xs font-medium text-foreground/80 underline hover:text-foreground"
+                      >
+                        {t("branding.shareImageRemove")}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={shareImageUploading}
+                      onClick={() => shareImageFileInputRef.current?.click()}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => handleDrop(event, uploadShareImage)}
+                      data-testid="story-prompt-share-image-dropzone"
+                      className="flex min-h-24 w-full flex-col items-center justify-center gap-2 border border-dashed border-border bg-popover px-3 text-center text-xs font-medium text-popover-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
+                    >
+                      <Upload className="size-3.5" aria-hidden />
+                      <span>{shareImageUploading ? t("branding.shareImageUploading") : t("branding.shareImageUpload")}</span>
+                      <span>{t("branding.shareImageRequirements")}</span>
+                    </button>
+                  )}
+                  {shareImageError ? <p role="alert" className="text-xs text-destructive">{shareImageError}</p> : null}
+                  <input
+                    ref={shareImageFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void uploadShareImage(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="story-prompt-inquiry-recipient">{t("branding.inquiryRecipientLabel")}</Label>
+                  <Input
+                    id="story-prompt-inquiry-recipient"
+                    type="email"
+                    autoComplete="email"
+                    value={inquiryRecipientEmail}
+                    onChange={(event) => setInquiryRecipientEmail(event.target.value)}
+                    placeholder={t("branding.inquiryRecipientPlaceholder")}
+                    className="bg-popover dark:bg-popover"
+                  />
+                  <p className="text-xs text-muted-foreground dark:text-foreground">{t("branding.inquiryRecipientHint")}</p>
                 </div>
                 </div>
                 <StepFooter className="justify-between">

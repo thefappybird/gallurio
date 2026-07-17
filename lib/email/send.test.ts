@@ -81,6 +81,9 @@ describe("sendEmail", () => {
       html: "<p>x</p>",
       text: "x",
       replyTo: "client@example.com",
+      attachments: [
+        { filename: "gallurio-logo.png", content: "aGVsbG8=", contentId: "gallurio-logo" },
+      ],
     });
 
     expect(res).toEqual({ ok: true, id: "msg_123" });
@@ -94,6 +97,9 @@ describe("sendEmail", () => {
     expect(body.from).toBe("Gallurio <hello@gallurio.test>");
     expect(body.to).toEqual(["owner@example.com"]);
     expect(body.reply_to).toBe("client@example.com");
+    expect(body.attachments).toEqual([
+      { filename: "gallurio-logo.png", content: "aGVsbG8=", content_id: "gallurio-logo" },
+    ]);
   });
 
   it("returns an error result (never throws) when Resend rejects", async () => {

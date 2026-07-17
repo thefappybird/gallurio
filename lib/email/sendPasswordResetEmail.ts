@@ -24,7 +24,7 @@ export async function sendPasswordResetEmail(
 
   const copy = EMAIL_COPY.passwordReset[locale];
 
-  const { html, text } = renderBrandedEmail({
+  const { html, text, attachments } = renderBrandedEmail({
     brand: gallurioBrand(),
     locale,
     preheader: copy.intro,
@@ -39,6 +39,7 @@ export async function sendPasswordResetEmail(
     subject: copy.subject,
     html,
     text,
+    attachments,
   });
   if (!result.ok) logEmailFailure("password_reset", email, result);
   return result;

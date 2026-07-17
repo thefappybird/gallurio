@@ -25,7 +25,7 @@ describe("sendInquiryClientConfirmation", () => {
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
-    expect(arg.subject).toContain("Studio Aurora");
+    expect(arg.subject).toBe("Your inquiry is with Studio Aurora");
     expect(arg.html).toContain("Studio Aurora");
     expect(arg.replyTo).toBe("owner@studio.test");
     // No raw <strong> tags — the template escapes all caller strings
@@ -45,8 +45,8 @@ describe("sendInquiryClientConfirmation", () => {
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
-    // ms locale: "Kami telah menerima pertanyaan anda"
-    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    // The localized title remains part of the bilingual email body.
+    expect(arg.html).toContain("Pertanyaan anda bersama Studio Aurora");
     expect(arg.html).toContain("Studio Aurora");
     expect(arg.html).toContain("Powered by Gallurio");
   });
@@ -55,6 +55,7 @@ describe("sendInquiryClientConfirmation", () => {
     const brand = {
       kind: "partner" as const,
       name: "Aurora Events",
+      logoUrl: "https://images.example.test/aurora-logo.png",
       accentHex: "#ff5500",
       poweredByGallurio: true,
     };
@@ -72,7 +73,8 @@ describe("sendInquiryClientConfirmation", () => {
     const arg = sendEmail.mock.calls[0][0];
     // Brand name takes precedence
     expect(arg.html).toContain("Aurora Events");
-    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    expect(arg.html).toContain('src="https://images.example.test/aurora-logo.png"');
+    expect(arg.html).toContain("Pertanyaan anda bersama Aurora Events");
     expect(arg.html).toContain("Powered by Gallurio");
   });
 
@@ -88,15 +90,13 @@ describe("sendInquiryClientConfirmation", () => {
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
     // English section
-    expect(arg.html).toContain("Thanks for reaching out");
+    expect(arg.html).toContain("Thank you for getting in touch");
     // Localized (ms) section
-    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    expect(arg.html).toContain("Pertanyaan anda bersama Studio Aurora");
     // Divider
     expect(arg.html).toContain("email-divider");
-    // Bilingual subject
-    expect(arg.subject).toContain("·");
-    expect(arg.subject).toContain("We received your inquiry");
-    expect(arg.subject).toContain("Kami telah menerima pertanyaan anda");
+    // Inbox subjects are English-only, while the body remains bilingual.
+    expect(arg.subject).toBe("Your inquiry is with Studio Aurora");
   });
 
   it("is best-effort: returns error result without throwing when render fails", async () => {

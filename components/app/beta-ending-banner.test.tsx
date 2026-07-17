@@ -20,6 +20,8 @@ describe("BetaEndingBanner", () => {
   it("hides after dismissal for the current browser session", () => {
     renderBanner();
     expect(screen.getByText("Beta access is ending soon")).toBeInTheDocument();
+    expect(screen.getByText(/Thank you for being part of the Gallurio Beta/)).toBeInTheDocument();
+    expect(screen.getByText("BETA2PRO")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Dismiss for this session" }));
     expect(screen.queryByText("Beta access is ending soon")).not.toBeInTheDocument();

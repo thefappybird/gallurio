@@ -170,6 +170,18 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
+  // The wrapper remains in the sandbox editor at every supported width. The
+  // compact popover itself is portaled, so the guide deliberately targets this
+  // stable trigger/group rather than content outside guideQueryRoot.
+  {
+    id: "canvas-controls",
+    slug: "canvasControls",
+    anchorId: "canvas-controls",
+    title: "Adjust your editing canvas",
+    body: "Use these controls to toggle panels, undo or redo, choose a canvas width, zoom, and change page language. On smaller screens, open the sliders button to find them.",
+    placement: "bottom",
+  },
+
   // Preview + device toggle
   {
     id: "preview-device",
@@ -186,9 +198,9 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   {
     id: "translate",
     slug: "translate",
-    anchorId: "language-control",
+    anchorId: "canvas-controls",
     title: "Translate your public pages",
-    body: "Switch the language of your navigation, contact form, and collection popups all at once. Right-to-left languages flip the layout automatically.",
+    body: "Use the language control here to switch your navigation, contact form, and collection popups all at once. On smaller screens, open the sliders button first.",
     placement: "bottom",
   },
 
@@ -216,9 +228,9 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   {
     id: "save-drafts",
     slug: "draftsStep",
-    anchorId: "save-changes",
+    anchorId: "workspace-actions",
     title: "Save drafts and switch versions",
-    body: "Save changes at any time. Use Drafts to manage multiple versions. Reopen this tour via the Guide button.",
+    body: "This action group keeps Photos, Theme, Guide, Drafts, Save, and Publish together. On smaller screens, the icons keep every action within reach.",
     placement: "bottom",
   },
 

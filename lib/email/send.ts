@@ -23,7 +23,22 @@ export type SendEmailInput = {
   html: string;
   text: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 };
+
+export type EmailAttachment = {
+  filename: string;
+  contentId?: string;
+  content?: string;
+  path?: string;
+};
+
+function resendAttachments(attachments: EmailAttachment[] | undefined) {
+  return attachments?.map(({ contentId, ...attachment }) => ({
+    ...attachment,
+    ...(contentId ? { content_id: contentId } : {}),
+  }));
+}
 
 export type SendEmailResult =
   | { ok: true; id: string | null; skipped?: boolean }
@@ -80,6 +95,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
         html: input.html,
         text: input.text,
         ...(replyTo ? { reply_to: replyTo } : {}),
+        ...(input.attachments?.length ? { attachments: resendAttachments(input.attachments) } : {}),
       }),
     });
 

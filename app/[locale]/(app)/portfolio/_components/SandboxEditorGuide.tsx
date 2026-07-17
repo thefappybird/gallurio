@@ -82,6 +82,8 @@ export function SandboxEditorGuide({ templates, onFinished, onSkipped }: Props) 
         storyPromptCompleted={true}
         initialSeoDescription=""
         initialSeoKeywords={[]}
+        initialInquiryRecipientEmail=""
+        hasBeenPublished
         workspaceBusinessType=""
         initialSavedThemes={[]}
         initialDrafts={[]}

@@ -171,7 +171,7 @@ export function AccountPanel({
   const initials = getInitials(displayName, email);
 
   return (
-    <div className="flex max-w-3xl flex-col gap-8">
+    <div className="flex w-full flex-col gap-8">
       {/* Avatar */}
       <section className="flex flex-col gap-4">
         <div>

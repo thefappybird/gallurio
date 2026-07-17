@@ -55,6 +55,7 @@ export async function submitInquiry(
     .select({
       _id: 1,
       name: 1,
+      logoUrl: 1,
       ownerUserId: 1,
       currency: 1,
       timezone: 1,

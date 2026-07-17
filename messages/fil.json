@@ -509,7 +509,7 @@
   "app": {
     "betaEndingBanner": {
       "title": "Malapit nang matapos ang beta access",
-      "body": "Matatapos ang iyong beta access sa loob ng susunod na linggo. Pagkatapos ng beta, babalik ang iyong workspace sa libreng plan.",
+      "message": "Salamat sa pagiging bahagi ng Gallurio Beta. Matatapos ang iyong beta access sa loob ng susunod na linggo, at babalik ang iyong workspace sa Free plan. Para magpatuloy sa mga Pro feature, gamitin ang code na <promoCode>{code}</promoCode> para makuha ang dalawang libreng buwan ng Pro access.",
       "dismiss": "Isara para sa session na ito"
     },
     "dashboard": {
@@ -1962,6 +1962,7 @@
           "slugLabel": "URL ng portfolio",
           "slugSuffix": ".gallurio.com",
           "slugSave": "I-save ang URL",
+          "slugEdit": "I-edit ang URL ng portfolio",
           "slugSaving": "Sine-save...",
           "slugSaved": "Na-save",
           "slugError": "Hindi na-update ang URL, pakisubukan muli",
@@ -2146,6 +2147,7 @@
         },
         "controls": {
           "editorControls": "Mga kontrol ng editor",
+          "workspaceActions": "Mga action ng portfolio",
           "toggleBlocks": "I-toggle ang panel ng mga block",
           "toggleProperties": "I-toggle ang panel ng mga properties",
           "previewDevice": "Device para sa preview",
@@ -2523,9 +2525,9 @@
             "logoUpload": "Mag-upload ng logo",
             "logoUploading": "Ina-upload…",
             "logoRemove": "Alisin ang logo",
-            "logoRequirements": "PNG, JPEG, o WEBP · max 250 KB · hanggang 512×256",
+            "logoRequirements": "PNG, JPG o JPEG, o WEBP · max 250 KB · hanggang 512×256",
             "logoErrors": {
-              "type": "Ang logo ay dapat na larawang PNG, JPEG, o WEBP.",
+              "type": "Ang logo ay dapat na larawang PNG, JPG o JPEG, o WEBP.",
               "size": "Ang logo ay dapat na 250 KB o mas maliit.",
               "dimensions": "Ang logo ay dapat na 512 x 256 px o mas maliit.",
               "image": "Hindi mabasa ang larawang ito ng logo.",
@@ -2535,14 +2537,28 @@
             "iconUpload": "Pumili ng larawan",
             "iconUploading": "Ina-upload…",
             "iconRemove": "Alisin",
-            "iconRequirements": "PNG, JPEG, WebP, o AVIF · max 1 MB · hanggang 512 × 512 px",
+            "iconRequirements": "PNG, JPG o JPEG, WebP, o AVIF · max 1 MB · hanggang 512 × 512 px",
             "iconErrors": {
-              "type": "Mga PNG, JPEG, WebP, o AVIF na file lang ang tinatanggap.",
+              "type": "Mga PNG, JPG o JPEG, WebP, o AVIF na file lang ang tinatanggap.",
               "size": "Ang icon ay dapat na 1 MB o mas maliit.",
               "dimensions": "Ang icon ay dapat na 512 x 512 px o mas maliit.",
               "image": "Hindi mabasa ang larawang ito ng icon.",
               "upload": "Nabigo ang pag-upload ng icon. Pakisubukan muli."
-            }
+            },
+            "shareImageLabel": "Larawan sa pagbabahagi",
+            "shareImageUpload": "Mag-upload ng larawan sa pagbabahagi",
+            "shareImageUploading": "Ina-upload...",
+            "shareImageRemove": "Alisin ang larawan sa pagbabahagi",
+            "shareImageRequirements": "JPG o JPEG, PNG, WebP o AVIF · max 10 MB · 1200 × 630 px ang inirerekomenda",
+            "shareImageErrors": {
+              "type": "Gumamit ng JPG o JPEG, PNG, WebP, o AVIF na larawan.",
+              "size": "Dapat 10 MB o mas maliit ang larawan sa pagbabahagi.",
+              "dimensions": "Dapat hindi bababa sa 1200 × 630 px ang larawan sa pagbabahagi.",
+              "upload": "Nabigo ang pag-upload ng larawan sa pagbabahagi. Pakisubukan muli."
+            },
+            "inquiryRecipientLabel": "Email ng tatanggap ng inquiry",
+            "inquiryRecipientPlaceholder": "ikaw@halimbawa.com",
+            "inquiryRecipientHint": "Dito ipapadala ang mga bagong notification ng inquiry."
           },
           "done": {
             "title": "Handa nang magningning ang iyong pahina",

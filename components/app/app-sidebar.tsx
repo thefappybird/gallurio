@@ -102,7 +102,7 @@ export function AppSidebar({
     prevTickRef.current = liveArrivalTick;
     setBellNudge(true);
   }, [liveArrivalTick]);
-  // Toast text bundles arrivals into one message across a 5s window.
+  // Toast text appears with the bell nudge and bundles arrivals while visible.
   const { showToast: showBellToast, count: bundledCount } = useNotificationBurstToast(liveArrivalTick);
   const closeOnNav = () => {
     if (isMobile) {
@@ -151,7 +151,7 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
               {/* Bell / notifications — same structure as nav items */}
-              <SidebarMenuItem>
+              <SidebarMenuItem className="relative overflow-visible">
                 <SidebarMenuButton
                   render={<button type="button" />}
                   onClick={() => setBellOpen((v) => !v)}

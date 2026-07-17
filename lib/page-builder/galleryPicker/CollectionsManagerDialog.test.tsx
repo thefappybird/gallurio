@@ -34,6 +34,12 @@ describe("CollectionsManagerDialog", () => {
     expect(screen.queryByText("Photos & collections")).toBeNull();
   });
 
+  it("keeps an empty manager comfortably sized", async () => {
+    renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    const emptyState = await screen.findByTestId("collections-empty-state");
+    expect(emptyState).toHaveClass("min-h-52");
+  });
+
   it("does not show the create form until 'Add new collection' is clicked", async () => {
     renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
     await screen.findByText("Photos & collections");

@@ -509,7 +509,7 @@
   "app": {
     "betaEndingBanner": {
       "title": "Beta access is ending soon",
-      "body": "Your beta access will end within the next week. After beta ends, your workspace will return to the free plan.",
+      "message": "Thank you for being part of the Gallurio Beta. Your beta access ends within the next week, after which your workspace will return to the Free plan. To continue enjoying Pro features, use code <promoCode>{code}</promoCode> to claim two free months of Pro access.",
       "dismiss": "Dismiss for this session"
     },
     "dashboard": {
@@ -1962,6 +1962,7 @@
           "slugLabel": "Portfolio URL",
           "slugSuffix": ".gallurio.com",
           "slugSave": "Save URL",
+          "slugEdit": "Edit portfolio URL",
           "slugSaving": "Saving...",
           "slugSaved": "Saved",
           "slugError": "Could not update URL, please try again",
@@ -2146,6 +2147,7 @@
         },
         "controls": {
           "editorControls": "Editor controls",
+          "workspaceActions": "Portfolio actions",
           "toggleBlocks": "Toggle blocks panel",
           "toggleProperties": "Toggle properties panel",
           "previewDevice": "Preview device",
@@ -2523,9 +2525,9 @@
             "logoUpload": "Upload logo",
             "logoUploading": "Uploading…",
             "logoRemove": "Remove logo",
-            "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · up to 512×256",
+            "logoRequirements": "PNG, JPG or JPEG, or WEBP · max 250 KB · up to 512×256",
             "logoErrors": {
-              "type": "Logo must be a PNG, JPEG, or WEBP image.",
+              "type": "Logo must be a PNG, JPG or JPEG, or WEBP image.",
               "size": "Logo must be 250 KB or smaller.",
               "dimensions": "Logo must be 512 x 256 px or smaller.",
               "image": "This logo image could not be read.",
@@ -2535,14 +2537,28 @@
             "iconUpload": "Choose image",
             "iconUploading": "Uploading…",
             "iconRemove": "Remove",
-            "iconRequirements": "PNG, JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
+            "iconRequirements": "PNG, JPG or JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
             "iconErrors": {
-              "type": "Only PNG, JPEG, WebP or AVIF files are accepted.",
+              "type": "Only PNG, JPG or JPEG, WebP or AVIF files are accepted.",
               "size": "Icon must be 1 MB or smaller.",
               "dimensions": "Icon must be 512 x 512 px or smaller.",
               "image": "This icon image could not be read.",
               "upload": "Icon upload failed. Please try again."
-            }
+            },
+            "shareImageLabel": "Share image",
+            "shareImageUpload": "Upload share image",
+            "shareImageUploading": "Uploading...",
+            "shareImageRemove": "Remove share image",
+            "shareImageRequirements": "JPG or JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+            "shareImageErrors": {
+              "type": "Use a JPG or JPEG, PNG, WebP, or AVIF image.",
+              "size": "Share image must be 10 MB or smaller.",
+              "dimensions": "Share image must be at least 1200 × 630 px.",
+              "upload": "Share image upload failed. Please try again."
+            },
+            "inquiryRecipientLabel": "Inquiry recipient email",
+            "inquiryRecipientPlaceholder": "you@example.com",
+            "inquiryRecipientHint": "New inquiry notifications will be sent here."
           },
           "done": {
             "title": "Your page is ready to shine",

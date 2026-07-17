@@ -24,7 +24,7 @@ function isDuplicateKeyError(err: unknown): boolean {
 async function handleEmailVerificationCreated(data: { id: string }) {
   const copy = EMAIL_COPY.verification.en;
   const verification = await workos.userManagement.getEmailVerification(data.id);
-  const { html, text } = renderBrandedEmail({
+  const { html, text, attachments } = renderBrandedEmail({
     brand: gallurioBrand(),
     locale: "en",
     preheader: copy.intro,
@@ -44,6 +44,7 @@ async function handleEmailVerificationCreated(data: { id: string }) {
     subject: copy.subject,
     html,
     text,
+    attachments,
   });
   if (!result.ok) {
     logEmailFailure("email_verification", verification.email, result);

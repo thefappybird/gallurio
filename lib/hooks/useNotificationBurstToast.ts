@@ -1,23 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 
-const BUNDLE_WINDOW_MS = 5000;
-const TOAST_DISPLAY_MS = 3000;
+const TOAST_DISPLAY_MS = 1500;
 
 /**
- * Bundles real-time notification arrivals into a single toast.
+ * Shows a compact arrival cue at the same time as the bell nudge. Arrivals
+ * received while it is visible increment the count and restart its dismissal.
  *
  * `liveArrivalTick` must be a counter that increments ONLY on live socket
  * arrivals (never on initial/mount-time fetches) — see
  * NotificationProvider's `liveArrivalTick`. On the first arrival of a burst
- * a single 5s timer is armed; further arrivals within that window bump the
- * pending count but do NOT reset or extend the timer. When the timer fires,
- * the toast shows the bundled count and auto-hides after `TOAST_DISPLAY_MS`.
+ * every arrival updates the visible count immediately and auto-hides after
+ * `TOAST_DISPLAY_MS` of inactivity.
  */
 export function useNotificationBurstToast(liveArrivalTick: number) {
   const [showToast, setShowToast] = useState(false);
   const [count, setCount] = useState(0);
-  const burstCountRef = useRef(0);
-  const burstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevTickRef = useRef(liveArrivalTick);
 
@@ -25,26 +22,18 @@ export function useNotificationBurstToast(liveArrivalTick: number) {
     if (liveArrivalTick === prevTickRef.current) return;
     prevTickRef.current = liveArrivalTick;
 
-    burstCountRef.current += 1;
-    if (burstTimerRef.current !== null) return;
-
-    burstTimerRef.current = setTimeout(() => {
-      setCount(burstCountRef.current);
-      setShowToast(true);
-      burstCountRef.current = 0;
-      burstTimerRef.current = null;
-
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = setTimeout(() => {
-        setShowToast(false);
-        hideTimerRef.current = null;
-      }, TOAST_DISPLAY_MS);
-    }, BUNDLE_WINDOW_MS);
+    setCount((count) => count + 1);
+    setShowToast(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      setShowToast(false);
+      setCount(0);
+      hideTimerRef.current = null;
+    }, TOAST_DISPLAY_MS);
   }, [liveArrivalTick]);
 
   useEffect(() => {
     return () => {
-      if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };
   }, []);

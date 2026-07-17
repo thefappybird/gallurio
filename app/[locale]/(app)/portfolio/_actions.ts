@@ -250,6 +250,9 @@ const completeStoryPromptSchema = z.object({
   logoAssetId: z.string().max(200).optional().or(z.literal("")),
   siteIconUrl: z.string().max(500).optional().or(z.literal("")),
   siteIconAssetId: z.string().max(200).optional().or(z.literal("")),
+  ogImageUrl: z.string().max(500).optional().or(z.literal("")),
+  ogImageAssetId: z.string().max(200).optional().or(z.literal("")),
+  inquiryRecipientEmail: z.union([z.string().trim().email(), z.literal("")]).optional().default(""),
 });
 
 /**
@@ -274,6 +277,7 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
   const draftId = await resolveActiveDraftId(ctx.workspace._id);
   const newLogoAssetId = parsed.data.logoAssetId || undefined;
   const newSiteIconAssetId = parsed.data.siteIconAssetId || undefined;
+  const newOgImageAssetId = parsed.data.ogImageAssetId || undefined;
 
   // Verify ownership before persisting any new asset id — prevents a
   // workspace from referencing an image uploaded by a different workspace.
@@ -285,6 +289,10 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
     const owned = await verifyImageOwnership(newSiteIconAssetId, workspaceId);
     if (!owned) return { error: "invalid_site_icon" };
   }
+  if (newOgImageAssetId) {
+    const owned = await verifyImageOwnership(newOgImageAssetId, workspaceId);
+    if (!owned) return { error: "invalid_og_image" };
+  }
 
   // Fetch the draft's current header/siteIcon so we can delete replaced
   // assets and — since `header` is a Mixed field that may be null — merge the
@@ -294,14 +302,16 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
   let currentHeader: Record<string, unknown> | null = null;
   let oldLogoAssetId: string | undefined;
   let oldSiteIconAssetId: string | undefined;
-  if (newLogoAssetId || newSiteIconAssetId) {
+  let oldOgImageAssetId: string | undefined;
+  if (newLogoAssetId || newSiteIconAssetId || newOgImageAssetId) {
     const current = await PortfolioDraft.findOne(
       { _id: draftId },
-      { header: 1, "siteIcon.assetId": 1 }
+      { header: 1, "siteIcon.assetId": 1, "seo.ogImageAssetId": 1 }
     ).lean();
     currentHeader = (current?.header as Record<string, unknown> | null | undefined) ?? null;
     oldLogoAssetId = (currentHeader?.logoAssetId as string | undefined) || undefined;
     oldSiteIconAssetId = current?.siteIcon?.assetId || undefined;
+    oldOgImageAssetId = current?.seo?.ogImageAssetId || undefined;
   }
 
   const draftSet: Record<string, unknown> = {
@@ -319,11 +329,20 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
     draftSet["siteIcon.url"] = parsed.data.siteIconUrl ?? "";
     draftSet["siteIcon.assetId"] = newSiteIconAssetId;
   }
+  if (newOgImageAssetId) {
+    draftSet["seo.ogImageUrl"] = parsed.data.ogImageUrl ?? "";
+    draftSet["seo.ogImageAssetId"] = newOgImageAssetId;
+  }
 
   await Promise.all([
     Workspace.updateOne(
       { _id: ctx.workspace._id },
-      { $set: { "publicPage.storyPromptCompletedAt": new Date() } }
+      {
+        $set: {
+          "publicPage.storyPromptCompletedAt": new Date(),
+          "publicPage.inquiryRecipientEmail": parsed.data.inquiryRecipientEmail,
+        },
+      }
     ),
     PortfolioDraft.updateOne({ _id: draftId, workspaceId: ctx.workspace._id }, { $set: draftSet }),
   ]);
@@ -340,6 +359,13 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
       await deleteImage(oldSiteIconAssetId);
     } catch (err) {
       console.warn("[portfolio] failed to delete old story-prompt site icon asset", err);
+    }
+  }
+  if (newOgImageAssetId && oldOgImageAssetId && oldOgImageAssetId !== newOgImageAssetId) {
+    try {
+      await deleteImage(oldOgImageAssetId);
+    } catch (err) {
+      console.warn("[portfolio] failed to delete old story-prompt share image asset", err);
     }
   }
 

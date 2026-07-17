@@ -41,7 +41,7 @@ export function SignOutConfirmDialog({
           <AlertDialogTitle>{t("logOutConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>{t("logOutConfirmBody")}</AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="gap-2">
+        <AlertDialogFooter className="gap-2 [&>button]:!flex-none">
           <Button
             type="button"
             variant="outline"

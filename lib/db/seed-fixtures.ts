@@ -7,7 +7,7 @@ export type SeedIdentity = {
 export type PromoCodeSeed = {
   title: string;
   code: string;
-  type: "lifetime" | "yearly" | "monthly" | "beta";
+  type: "lifetime" | "yearly" | "monthly" | "beta" | "beta2mo";
   expiresAt: null;
 };
 
@@ -15,6 +15,7 @@ export const PROMO_CODE_SEEDS: PromoCodeSeed[] = [
   { title: "Lifetime Pro", code: "LIFETIME2026", type: "lifetime", expiresAt: null },
   { title: "1 Year Pro", code: "YEARPRO2026", type: "yearly", expiresAt: null },
   { title: "1 Month Pro", code: "MONTHPRO2026", type: "monthly", expiresAt: null },
+  { title: "Beta thank-you: 2 months Pro", code: "BETA2PRO", type: "beta2mo", expiresAt: null },
 ];
 
 export type SeedPageviewFixture = {

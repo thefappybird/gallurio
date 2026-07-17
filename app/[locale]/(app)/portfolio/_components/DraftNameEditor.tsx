@@ -84,7 +84,7 @@ export const DraftNameEditor = forwardRef<
         </div>
       ) : (
         <div className="flex min-w-0 items-center gap-0.5">
-          <span className="max-w-24 truncate text-sm font-medium" title={name}>
+          <span className="portfolio-draft-name-label max-w-24 truncate text-sm font-medium" title={name}>
             {name}
           </span>
           <Button
