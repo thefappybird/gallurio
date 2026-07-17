@@ -128,14 +128,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   const { pathname } = req.nextUrl;
 
   // -------------------------------------------------------------------------
-  // 1. Workflow DevKit internal endpoints — skip everything.
-  // -------------------------------------------------------------------------
-  if (pathname.startsWith("/.well-known/workflow")) {
-    return NextResponse.next();
-  }
-
-  // -------------------------------------------------------------------------
-  // 2. API routes — auth-gate non-public ones, no intl middleware.
+  // 1. API routes — auth-gate non-public ones, no intl middleware.
   // -------------------------------------------------------------------------
   if (pathname.startsWith("/api")) {
     const authResponse = await (authMiddleware(req, {} as never) as Promise<Response | NextMiddlewareResult>);
@@ -164,7 +157,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   }
 
   // -------------------------------------------------------------------------
-  // 3. Public portfolio routes — no auth, no intl.
+  // 2. Public portfolio routes — no auth, no intl.
   //    /w/[orgSlug] lives outside the [locale] segment. Running next-intl here
   //    would rewrite /w/... to /[locale]/w/... (a non-existent route) and 404.
   // -------------------------------------------------------------------------
@@ -173,7 +166,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   }
 
   // -------------------------------------------------------------------------
-  // 4. Public routes — skip auth check, run intl for locale routing.
+  // 3. Public routes — skip auth check, run intl for locale routing.
   //
   //    EXCEPTION: the marketing root ("/" for any locale) needs authkit session
   //    context so the page can read the session and redirect an already-signed-in
@@ -189,7 +182,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   }
 
   // -------------------------------------------------------------------------
-  // 5. Protected routes — run authkit for session refresh / unauthn redirect,
+  // 4. Protected routes — run authkit for session refresh / unauthn redirect,
   //    then run intl so next-intl locale routing works on authenticated pages.
   //
   //    authkitMiddleware may return a redirect (to /sign-in) or a response
@@ -279,10 +272,7 @@ export default proxy;
 
 export const config = {
   matcher: [
-    // Exclude the Workflow DevKit's internal endpoints (.well-known/workflow/*)
-    // so neither authkit nor next-intl middleware intercepts workflow resumption
-    // traffic — Next.js 16 + proxy.ts makes this easy to miss.
-    "/((?!_next|\\.well-known/workflow|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
   ],
 };

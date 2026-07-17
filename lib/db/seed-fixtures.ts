@@ -58,7 +58,6 @@ export function buildExpiredSubscriptionState(now: Date) {
     lsCustomerId: "seed_expired_customer",
     lsSubscriptionStatus: "canceled" as const,
     lsCurrentPeriodEnd: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
-    lsCheckoutWorkflowRunId: null,
   };
 }
 

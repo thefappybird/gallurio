@@ -584,4 +584,37 @@ describe("reconcileLemonSqueezySubscription", () => {
     // just like the webhook's own upsert does, or a later lapse won't gate.
     expect(afterC!.everSubscribed).toBe(true);
   });
+
+  it("refuses to promote when the workspace exceeds the resolved tier's team cap (shared snapshot helper's team-cap guard)", async () => {
+    const wsD = await Workspace.create({
+      ownerUserId: "wos_user_004",
+      name: "Workspace D",
+      slug: "workspace-d",
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    const { TEAM_COLOR_PALETTE } = await import("@/lib/db/models/team");
+    for (let i = 0; i < 20; i++) {
+      await Team.create({
+        workspaceId: wsD._id,
+        name: `Team ${i + 1}`,
+        color: TEAM_COLOR_PALETTE[i % TEAM_COLOR_PALETTE.length],
+        isDefault: i === 0,
+        memberCount: 0,
+        createdByWorkosUserId: "wos_user_004",
+      });
+    }
+
+    mockGetAuthUser.mockResolvedValue(makeAuthUser("wos_user_004"));
+    mockListActiveSubscriptionsForEmail.mockResolvedValue([makeSub("sub_over_cap_for_d")]);
+
+    await reconcileLemonSqueezySubscription(wsD._id.toString());
+
+    const afterD = await Workspace.findById(wsD._id).lean();
+    expect(afterD!.plan).toBe("free");
+    expect(afterD!.everSubscribed).toBe(false);
+  });
 });

@@ -28,12 +28,6 @@ vi.mock("@/lib/lemonsqueezy/webhook", async () => {
   };
 });
 
-// Workflow API — we never want actual workflow runs in unit tests.
-vi.mock("workflow/api", () => ({
-  start: vi.fn().mockResolvedValue({ runId: "run_mock" }),
-  resumeHook: vi.fn().mockResolvedValue(undefined),
-}));
-
 // ---------------------------------------------------------------------------
 // Env vars — must be set before the route module is imported so
 // planForVariantId resolves correctly.
@@ -46,10 +40,8 @@ process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = "1002";
 // ---------------------------------------------------------------------------
 
 import { verifyAndParseLemonSqueezyEvent, computeWebhookEventKey } from "@/lib/lemonsqueezy/webhook";
-import { resumeHook } from "workflow/api";
 
 const mockVerify = vi.mocked(verifyAndParseLemonSqueezyEvent);
-const mockResumeHook = vi.mocked(resumeHook);
 
 function makeEvent(
   eventName: string,
@@ -186,7 +178,6 @@ describe("lemonsqueezy webhook — event ledger", () => {
 
     const rows = await WebhookEvent.find({}).lean();
     expect(rows).toHaveLength(1);
-    expect(mockResumeHook).toHaveBeenCalledOnce();
   });
 
   it("dedupes a redelivered subscription_payment_recovered event", async () => {
@@ -231,7 +222,37 @@ describe("lemonsqueezy webhook — event ledger", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("recovers from a concurrent duplicate-key upsert instead of 500ing", async () => {
+  it("processes two REAL concurrent identical deliveries with exactly one handler execution", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_real_concurrent";
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const [resA, resB] = await Promise.all([POST(makeReq()), POST(makeReq())]);
+    const [bodyA, bodyB] = await Promise.all([resA.json(), resB.json()]);
+
+    const outcomes = [bodyA, bodyB];
+    const freshCount = outcomes.filter(
+      (b) => b.received === true && !b.deduped && !b.processing
+    ).length;
+    expect(freshCount).toBe(1);
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("processed");
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.lsSubscriptionId).toBe(subId);
+  });
+
+  it("recovers from a concurrent duplicate-key upsert against a live claim instead of 500ing", async () => {
     const wsId = await seedWorkspace({ plan: "free" });
     const subId = "sub_concurrent_dup";
     const event = makeEvent(
@@ -243,14 +264,18 @@ describe("lemonsqueezy webhook — event ledger", () => {
     mockVerify.mockResolvedValue(event as never);
 
     const eventKey = computeWebhookEventKey(event as never);
-    // Simulate a concurrent first delivery that already won the upsert race
-    // (the row now exists) before this request's own upsert attempt runs.
+    // Simulate a concurrent first delivery that already won the claim (the
+    // row now exists, status "processing", live lease) before this request's
+    // own upsert attempt runs.
     await WebhookEvent.create({
       provider: "lemonsqueezy",
       eventKey,
       eventName: event.meta.event_name,
       resourceId: event.data.id,
-      status: "received",
+      status: "processing",
+      claimToken: "concurrent-winner-token",
+      claimedAt: new Date(),
+      leaseExpiresAt: new Date(Date.now() + 60_000),
     });
     const findOneAndUpdateSpy = vi
       .spyOn(WebhookEvent, "findOneAndUpdate")
@@ -261,12 +286,13 @@ describe("lemonsqueezy webhook — event ledger", () => {
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.received).toBe(true);
+    expect(body).toEqual({ received: true, processing: true });
     findOneAndUpdateSpy.mockRestore();
 
     const rows = await WebhookEvent.find({ eventKey }).lean();
     expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe("processed");
+    expect(rows[0].status).toBe("processing");
+    expect(rows[0].claimToken).toBe("concurrent-winner-token");
   });
 });
 
@@ -288,8 +314,50 @@ describe("lemonsqueezy webhook — invalid signature", () => {
   });
 });
 
+describe("lemonsqueezy webhook — malformed verified payload", () => {
+  it("returns 400 and writes nothing when the verified body doesn't match the envelope shape", async () => {
+    mockVerify.mockResolvedValue({ meta: {}, data: {} } as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body).toEqual({ error: "invalid_payload" });
+    expect(await WebhookEvent.countDocuments({})).toBe(0);
+  });
+});
+
+describe("lemonsqueezy webhook — unsupported (unmodelled) event", () => {
+  it("returns 200 and performs no billing mutation for an event name outside the 12-event registry", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+
+    const event = makeEvent(
+      "order_created",
+      "order_1",
+      { status: "paid" },
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ received: true });
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.lsSubscriptionId).toBeNull();
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("processed");
+  });
+});
+
 describe("lemonsqueezy webhook — subscription_created", () => {
-  it("sets plan to pro, status active, subscription id, and calls resumeHook", async () => {
+  it("sets plan to pro, status active, subscription id", async () => {
     const wsId = await seedWorkspace({ plan: "free" });
     const subId = "sub_created_test";
 
@@ -314,15 +382,6 @@ describe("lemonsqueezy webhook — subscription_created", () => {
     expect(after?.lsSubscriptionStatus).toBe("active");
     expect(after?.lsSubscriptionId).toBe(subId);
     expect(after?.lsCurrentPeriodEnd).toBeInstanceOf(Date);
-
-    expect(mockResumeHook).toHaveBeenCalledOnce();
-    expect(mockResumeHook).toHaveBeenCalledWith(
-      `ls-checkout-${wsId.toString()}`,
-      expect.objectContaining({
-        subscriptionId: subId,
-        status: "active",
-      })
-    );
   });
 
   it("resolves plan to pro when the variant is the yearly pro variant id", async () => {
@@ -350,7 +409,7 @@ describe("lemonsqueezy webhook — subscription_created", () => {
     expect(after?.lsSubscriptionId).toBe(subId);
   });
 
-  it("does NOT call resumeHook when custom_data.workspaceId is absent", async () => {
+  it("applies the same status/subscription-id update when custom_data.workspaceId is absent", async () => {
     const wsId = await seedWorkspace({ plan: "free", lsSubscriptionId: "sub_no_custom" });
 
     const event = makeEvent(
@@ -365,7 +424,6 @@ describe("lemonsqueezy webhook — subscription_created", () => {
     const { POST } = await loadRoute();
     await POST(makeReq());
 
-    expect(mockResumeHook).not.toHaveBeenCalled();
     const after = await Workspace.findById(wsId).lean();
     expect(after?.lsSubscriptionStatus).toBe("active");
   });
@@ -493,6 +551,33 @@ describe("lemonsqueezy webhook — subscription_expired (downgrades)", () => {
     expect(after?.plan).toBe("free");
     expect(after?.lsSubscriptionStatus).toBe("canceled");
     expect(after?.lsCurrentPeriodEnd).toBeNull();
+  });
+
+  it("grants a ~15-day planGrantExpiresAt buffer on expiry, even if the workspace already had everSubscribed", async () => {
+    const subId = "sub_expired_grant_buffer";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+    await Workspace.updateOne(
+      { _id: wsId },
+      { $set: { everSubscribed: true, planGrantExpiresAt: new Date(Date.now() - 1000) } }
+    );
+
+    const event = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+    });
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.planGrantExpiresAt).toBeInstanceOf(Date);
+    const days =
+      (after!.planGrantExpiresAt!.getTime() - Date.now()) / (24 * 60 * 60 * 1000);
+    expect(days).toBeGreaterThan(14);
+    expect(days).toBeLessThan(16);
   });
 
   it("downgrades pro to free even at the free team cap (2 teams > free's 1-team cap)", async () => {
@@ -1100,7 +1185,7 @@ describe("lemonsqueezy webhook — test-mode events in production", () => {
 });
 
 describe("lemonsqueezy webhook — lifecycle field mapping", () => {
-  it("sets lifecycle.lapsedAt on subscription_expired when it was previously null", async () => {
+  it("does NOT stamp lifecycle.lapsedAt on subscription_expired (the lazy grant-expiry path stamps it once the 15-day buffer lapses)", async () => {
     const subId = "sub_expired_lapse_stamp";
     const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
 
@@ -1116,34 +1201,8 @@ describe("lemonsqueezy webhook — lifecycle field mapping", () => {
 
     const after = await Workspace.findById(wsId).lean();
     expect(after?.plan).toBe("free");
-    expect(after?.lifecycle?.lapsedAt).toBeInstanceOf(Date);
-  });
-
-  it("does not move lifecycle.lapsedAt forward on a replayed subscription_expired event", async () => {
-    const subId = "sub_expired_replayed";
-    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
-
-    const event = makeEvent("subscription_expired", subId, {
-      status: "expired",
-      customer_id: "ctm_1",
-    });
-    mockVerify.mockResolvedValue(event as never);
-
-    const { POST } = await loadRoute();
-    await POST(makeReq());
-    const firstLapse = (await Workspace.findById(wsId).lean())?.lifecycle?.lapsedAt;
-
-    // Replay: subscription id is null'd by now, so route by customer_id.
-    const replay = makeEvent("subscription_expired", subId, {
-      status: "expired",
-      customer_id: "ctm_1",
-      subscription_id: subId,
-    });
-    mockVerify.mockResolvedValue(replay as never);
-    await POST(makeReq());
-
-    const after = await Workspace.findById(wsId).lean();
-    expect(after?.lifecycle?.lapsedAt?.getTime()).toBe(firstLapse?.getTime());
+    expect(after?.lifecycle?.lapsedAt).toBeNull();
+    expect(after?.planGrantExpiresAt).toBeInstanceOf(Date);
   });
 
   it("resets lifecycle.* to null on subscription_resumed", async () => {
@@ -1268,5 +1327,202 @@ describe("lemonsqueezy webhook — handler exception returns a retryable 5xx", (
     expect(rows[0].lastError).toContain("db exploded");
 
     spy.mockRestore();
+  });
+
+  it("truncates a long handler error message to 500 characters before storing it", async () => {
+    const subId = "sub_throws_long_error";
+    await seedWorkspace({ plan: "free", lsSubscriptionId: subId });
+
+    const spy = vi
+      .spyOn(Team, "countDocuments")
+      .mockRejectedValueOnce(new Error(`db exploded ${"x".repeat(600)}`) as never);
+
+    const event = makeEvent(
+      "subscription_updated",
+      subId,
+      makeSubscriptionAttrs({ status: "active" })
+    );
+    mockVerify.mockResolvedValue(event as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(500);
+
+    const rows = await WebhookEvent.find({}).lean();
+    expect(rows[0].lastError!.length).toBeLessThanOrEqual(500);
+
+    spy.mockRestore();
+  });
+});
+
+describe("lemonsqueezy webhook — claim lease (expired-lease reclaim)", () => {
+  it("reclaims a row whose lease has expired even though status is still 'processing'", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_expired_lease_reclaim";
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+    const eventKey = computeWebhookEventKey(event as never);
+
+    await WebhookEvent.create({
+      provider: "lemonsqueezy",
+      eventKey,
+      eventName: event.meta.event_name,
+      resourceId: event.data.id,
+      status: "processing",
+      claimToken: "stale-worker-token",
+      claimedAt: new Date(Date.now() - 3 * 60_000),
+      leaseExpiresAt: new Date(Date.now() - 60_000),
+    });
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ received: true });
+
+    const rows = await WebhookEvent.find({ eventKey }).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("processed");
+    expect(rows[0].claimToken).not.toBe("stale-worker-token");
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+  });
+
+  it("reclaims and retries a row with status 'failed' regardless of its lease", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_failed_retry";
+    const event = makeEvent(
+      "subscription_created",
+      subId,
+      makeSubscriptionAttrs({ status: "active" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(event as never);
+    const eventKey = computeWebhookEventKey(event as never);
+
+    await WebhookEvent.create({
+      provider: "lemonsqueezy",
+      eventKey,
+      eventName: event.meta.event_name,
+      resourceId: event.data.id,
+      status: "failed",
+      claimToken: "old-failed-token",
+      claimedAt: new Date(),
+      leaseExpiresAt: new Date(Date.now() + 60_000), // still "live" but failed is always reclaimable
+      lastError: "previous attempt exploded",
+    });
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const rows = await WebhookEvent.find({ eventKey }).lean();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("processed");
+    expect(rows[0].attemptCount).toBe(2);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+  });
+
+  it("does not let a stale (expired-lease, since-reclaimed) worker's completion overwrite a newer claimant's row", async () => {
+    // Simulates worker A's lease already expired and worker B reclaiming the
+    // row (different claimToken, live lease) before A's completion write
+    // lands. A's write must no-op, not clobber B's claim/result.
+    const ledger = await WebhookEvent.create({
+      provider: "lemonsqueezy",
+      eventKey: "hash_stale_claim_test",
+      eventName: "subscription_created",
+      resourceId: "sub_stale_claim",
+      status: "processing",
+      claimToken: "worker-b-token",
+      claimedAt: new Date(),
+      leaseExpiresAt: new Date(Date.now() + 60_000),
+    });
+
+    await WebhookEvent.updateOne(
+      { _id: ledger._id, claimToken: "worker-a-token-already-expired" },
+      { $set: { status: "processed", processedAt: new Date() } }
+    );
+
+    const after = await WebhookEvent.findById(ledger._id).lean();
+    expect(after?.status).toBe("processing");
+    expect(after?.claimToken).toBe("worker-b-token");
+  });
+});
+
+describe("lemonsqueezy webhook — out-of-order event ordering", () => {
+  it("a delayed OLDER active update cannot restore access after a newer expiry already processed", async () => {
+    const subId = "sub_ordering_old_active_after_expiry";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const newerExpired = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+      updated_at: "2026-08-10T00:00:00Z",
+    });
+    mockVerify.mockResolvedValue(newerExpired as never);
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const afterExpiry = await Workspace.findById(wsId).lean();
+    expect(afterExpiry?.plan).toBe("free");
+
+    // A delayed, OLDER active update for the same subscription arrives after
+    // the newer expiry already processed — route by customer_id since
+    // lsSubscriptionId was cleared by the expiry.
+    const olderActive = makeEvent(
+      "subscription_updated",
+      subId,
+      makeSubscriptionAttrs({
+        status: "active",
+        customer_id: "ctm_1",
+        updated_at: "2026-08-01T00:00:00Z",
+      })
+    );
+    mockVerify.mockResolvedValue(olderActive as never);
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("free");
+  });
+
+  it("a genuinely newer resubscription activates Pro after an older processed expiry", async () => {
+    const subId = "sub_ordering_newer_resub";
+    const wsId = await seedWorkspace({ plan: "pro", lsSubscriptionId: subId });
+
+    const olderExpired = makeEvent("subscription_expired", subId, {
+      status: "expired",
+      customer_id: "ctm_1",
+      updated_at: "2026-08-01T00:00:00Z",
+    });
+    mockVerify.mockResolvedValue(olderExpired as never);
+    const { POST } = await loadRoute();
+    await POST(makeReq());
+
+    const afterExpiry = await Workspace.findById(wsId).lean();
+    expect(afterExpiry?.plan).toBe("free");
+
+    const newSubId = "sub_ordering_newer_resub_2";
+    const newerResub = makeEvent(
+      "subscription_created",
+      newSubId,
+      makeSubscriptionAttrs({ status: "active", updated_at: "2026-08-15T00:00:00Z" }),
+      { workspaceId: wsId.toString() }
+    );
+    mockVerify.mockResolvedValue(newerResub as never);
+    const res = await POST(makeReq());
+    expect(res.status).toBe(200);
+
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.lsSubscriptionId).toBe(newSubId);
   });
 });

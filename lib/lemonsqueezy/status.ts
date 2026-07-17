@@ -1,7 +1,6 @@
-// Zero-dependency leaf module — safe to import from the workflow step bundler.
-// Defines LemonSqueezySubscriptionStatus inline (not imported from @/lib/db/models)
-// so that the @workflow/vitest builder does not externalise a project-local file
-// chain at runtime. The values are identical to LS_SUBSCRIPTION_STATUSES in
+// Zero-dependency leaf module. Defines LemonSqueezySubscriptionStatus inline
+// (not imported from @/lib/db/models) to avoid pulling in Workspace's full
+// dependency chain. The values are identical to LS_SUBSCRIPTION_STATUSES in
 // Workspace.ts; keep them in sync.
 
 export type LemonSqueezySubscriptionStatus =

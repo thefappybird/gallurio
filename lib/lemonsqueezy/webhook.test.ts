@@ -102,6 +102,22 @@ describe("verifyAndParseLemonSqueezyEvent — missing secret", () => {
     process.env.LEMONSQUEEZY_WEBHOOK_SECRET = origSecret;
     vi.resetModules();
   });
+
+  it("returns null instead of throwing when the unsigned dev body is malformed JSON", async () => {
+    const origSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+    process.env.LEMONSQUEEZY_WEBHOOK_SECRET = "";
+
+    vi.resetModules();
+    const mod = await import("./webhook");
+
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = await mod.verifyAndParseLemonSqueezyEvent("{not valid json", "any-sig");
+    expect(result).toBeNull();
+
+    consoleSpy.mockRestore();
+    process.env.LEMONSQUEEZY_WEBHOOK_SECRET = origSecret;
+    vi.resetModules();
+  });
 });
 
 describe("computeWebhookEventKey", () => {
@@ -156,6 +172,44 @@ describe("redactWebhookEventForStorage", () => {
     expect(redacted.data.attributes.customer_id).toBe(555);
     // Original event is untouched.
     expect(event.data.attributes.user_email).toBe("customer@example.com");
+  });
+});
+
+describe("lemonSqueezyEventEnvelopeSchema", () => {
+  it("accepts a well-formed verified envelope", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created", custom_data: { workspaceId: "ws_1" } },
+      data: { id: "sub_1", attributes: { status: "active" } },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a payload missing meta.event_name", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: {},
+      data: { id: "sub_1", attributes: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload missing data.id", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created" },
+      data: { attributes: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload missing data.attributes", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created" },
+      data: { id: "sub_1" },
+    });
+    expect(result.success).toBe(false);
   });
 });
 

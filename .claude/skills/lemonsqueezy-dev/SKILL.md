@@ -22,23 +22,29 @@ Test/sandbox mode is the default (`LEMONSQUEEZY_TEST_MODE` unset or `true`).
   enum (`active|canceled|past_due|paused|trialing`).
 - `lib/lemonsqueezy/webhook.ts` — manual HMAC-SHA256 verify (LS's SDK has no
   built-in verify helper) + `HANDLED_LEMONSQUEEZY_EVENTS`.
-- `app/api/webhooks/lemonsqueezy/route.ts` — webhook handler. 10 events are
-  wired up: `subscription_created/updated/cancelled/expired/paused/unpaused/
-  resumed/payment_failed/payment_success/payment_refunded`. `payment_refunded`
-  is routed to the same handler as `expired` — a refund revokes access
-  immediately. Everything else (orders, disputes, license keys, affiliates)
-  is acked 200 and ignored — there's nothing listening. Note:
-  `subscription_payment_*` events are *subscription-invoice* resources, not
-  subscriptions — `event.data.id` is the invoice's own id there, and the real
-  subscription id is `attributes.subscription_id` instead; the shared
-  `resolveWorkspaceFilter` helper checks that field first.
-- `app/api/billing/checkout/route.ts` — Route Handler that starts the durable
-  checkout workflow and calls Lemon Squeezy to create the checkout.
-- `lib/workflows/subscriptionCheckout.ts` — Vercel Workflow DevKit `"use
-  workflow"` function; suspends on a `createHook` until the webhook resumes it
-  (or `reconcileLemonSqueezySubscription` in `lib/actions/onboarding.ts`
-  reconciles it as a race-condition safety net when the user lands on
-  `/onboarding/done`).
+- `app/api/webhooks/lemonsqueezy/route.ts` — webhook handler: claims the event
+  in the `WebhookEvent` ledger, then dispatches to
+  `LEMONSQUEEZY_WEBHOOK_HANDLERS`. 12 events are wired up:
+  `subscription_created/updated/cancelled/resumed/expired/paused/unpaused/
+  payment_success/payment_failed/payment_refunded/payment_recovered/
+  plan_changed`. `payment_refunded` is routed to the same handler as
+  `expired` — a refund revokes access immediately. Everything else (orders,
+  disputes, license keys, affiliates) is acked 200 and ignored — there's
+  nothing listening. Note: `subscription_payment_*` events are
+  *subscription-invoice* resources, not subscriptions — `event.data.id` is
+  the invoice's own id there, and the real subscription id is
+  `attributes.subscription_id` instead; the shared `resolveWorkspaceFilter`
+  helper checks that field first.
+- `app/api/billing/checkout/route.ts` — Route Handler that authenticates,
+  rate-limits, resolves the variant, and calls Lemon Squeezy to create the
+  checkout — synchronous, no durable workflow/hook step.
+- `lib/lemonsqueezy/webhookHandlers.ts` — typed registry of the 12 supported
+  subscription event handlers; `lib/billing/subscriptionSnapshot.ts` is the
+  shared upsert logic used by both the webhook and
+  `reconcileLemonSqueezySubscription` (`lib/actions/onboarding.ts`, the
+  race-condition safety net for `/onboarding/done`), so they can't drift.
+- `lib/db/models/WebhookEvent.ts` — the claim-lease ledger backing webhook
+  idempotency (unique `{provider, eventKey}`, 2-minute processing lease).
 - `hooks/use-lemon-squeezy-checkout.ts` — shared client hook. Loads
   `lemon.js`, wires `LemonSqueezy.Setup({eventHandler})`, listens for
   `Checkout.Success`, exposes `open(url)`. Used by both the onboarding plan
@@ -67,10 +73,14 @@ Generate a webhook signing secret locally, no need to ask LS for one:
 
 ## Webhook dashboard: which events to enable
 
-Check only the 10 handled events (see file map above). Leave the rest
+Check exactly the 12 handled subscription events (see file map above):
+`subscription_created`, `subscription_updated`, `subscription_cancelled`,
+`subscription_resumed`, `subscription_unpaused`, `subscription_paused`,
+`subscription_expired`, `subscription_payment_success`,
+`subscription_payment_failed`, `subscription_payment_refunded`,
+`subscription_payment_recovered`, `subscription_plan_changed`. Leave the rest
 unchecked — `affiliate_activated`, `customer_updated`, `dispute_*`,
-`order_*`, `subscription_payment_recovered`, `subscription_plan_changed`,
-`license_key_*` are all unhandled today.
+`order_*`, `license_key_*` are all unhandled.
 
 ## Post-payment redirect
 
@@ -102,55 +112,28 @@ need LS to deliver webhooks to a public URL), you're likely running
 
 ## Local dev-server latency: what's normal vs. a bug
 
-The first real hit to any route that touches the workflow (`/api/billing/checkout`,
-the internal `/.well-known/workflow/v1/flow`) pays a one-time Turbopack
-compile cost in this dev process's lifetime — can be tens of seconds. This is
+The first real hit to `/api/billing/checkout` pays a one-time Turbopack
+compile cost in this dev process's lifetime — can be several seconds. This is
 normal Next.js dev-mode on-demand compilation, not a bug: click again and it
 should return in under a second, because the route stays compiled for the
 rest of that server process.
 
-What is **not** normal, and was traced to real bugs in this session:
-
-- **`workflow` package must be current.** `4.2.6` has multiple relevant bugs,
-  fixed by `4.6.0`: a runaway "Discovering workflow directives" rescan loop
-  (workflow loader running on every JS/TS file with lazy discovery on),
-  wrong monorepo/workspace-root resolution, and — most damaging — orphaned
-  hook-token claims from a crashed process turning into a
-  `HookConflictError` that compounds on every subsequent checkout attempt
-  (71s → 75s → 2.4min → 4.8min → …, observed firsthand). Keep this package
-  current; `package.json` already declares `^4.2.6` so `pnpm update workflow
-  @workflow/vitest` is enough once a newer patch is out.
-- **Set `PORT` explicitly.** The local world (`@workflow/world-local`) makes
-  a loopback HTTP call back into the app to enqueue steps, and needs the dev
-  server's port. `server.ts` already defaults `port` to 3000 internally via
-  `process.env.PORT ?? '3000'`, but that never actually sets the env var —
-  so the workflow package can't read it and falls back to OS-level port
-  auto-detection. `package.json`'s `dev` script sets `PORT=3000` explicitly
-  for this reason.
 - **`turbopack.root` / `outputFileTracingRoot`.** This repo is a monorepo
   with git worktrees under `.claude/worktrees/`, each with its own
   `pnpm-workspace.yaml`. Next.js auto-detects the *outer* monorepo root as
   the workspace root unless told otherwise, which drags every sibling
-  worktree's `node_modules` into Turbopack's and the workflow package's file
-  scanning. `next.config.ts` pins both to this directory.
-- **Never force-kill (`Stop-Process -Force` / `taskkill /F`) the dev server
-  mid-checkout.** A killed process leaves `.workflow-data/.locks` and
-  parked hook-token claims behind — exactly the orphaned-run scenario above.
-  `.workflow-data/` is local-only durable-run state (already gitignored),
-  safe to `rm -rf .workflow-data` (alongside `.next`) if a checkout attempt
-  ever starts taking minutes instead of seconds — that's the state
-  corruption, not a fresh bug.
-- **`cancelInFlightCheckout`** (in the checkout route) already exists
-  specifically to cancel a prior abandoned run before starting a new one —
-  it's a real safety net, but it can only clean up runs the package's own
-  hook-conflict recovery lets it see. On old/buggy versions it silently
-  wasn't enough; on `4.6.0`+ it's reliable.
+  worktree's `node_modules` into Turbopack's file scanning. `next.config.ts`
+  pins both to this directory.
+
+If checkout stays slow beyond the first-hit compile, the route itself is a
+synchronous `POST` (auth + rate-limit + one Lemon Squeezy API call) — there is
+no durable-workflow suspend/resume step to debug. Check the raw API call in
+isolation (below) to rule out Lemon Squeezy latency.
 
 ## Verifying the raw Lemon Squeezy API in isolation
 
 If checkout is slow/failing and you're not sure whether it's Lemon Squeezy or
-local dev-server plumbing, call the SDK directly, bypassing Next/Workflow
-entirely:
+local dev-server plumbing, call the SDK directly, bypassing Next entirely:
 
 ```js
 import { lemonSqueezySetup, createCheckout } from "@lemonsqueezy/lemonsqueezy.js";

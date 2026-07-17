@@ -28,8 +28,6 @@ const VALID_PROD_ENV: Record<string, string> = {
   RESEND_API_KEY: "re_abc",
   EMAIL_FROM: "Gallurio <hello@gallurio.com>",
   CRON_SECRET: "cron_secret_value",
-  WORKFLOW_TARGET_WORLD: "@workflow/world-postgres",
-  WORKFLOW_POSTGRES_URL: "postgres://REDACTED_USER:REDACTED_PW@db.example.com:5432/db",
 };
 
 function setEnv(vars: Record<string, string | undefined>) {
@@ -140,14 +138,6 @@ describe("lib/env", () => {
     process.env.SUB_EXPIRED_WORKOS_PASSWORD = "seed-password";
 
     expect(() => validateEnv()).toThrow(/SUB_EXPIRED_WORKOS_PASSWORD/);
-  });
-
-  it("rejects the Local World as WORKFLOW_TARGET_WORLD in production", () => {
-    resetEnv();
-    setEnv(VALID_PROD_ENV);
-    process.env.WORKFLOW_TARGET_WORLD = "@workflow/world-local";
-
-    expect(() => validateEnv()).toThrow(/WORKFLOW_TARGET_WORLD/);
   });
 
   it("never includes secret values in the thrown error message", () => {

@@ -22,11 +22,6 @@ vi.mock("@/lib/lemonsqueezy/webhook", async () => {
   );
   return { ...actual, verifyAndParseLemonSqueezyEvent: vi.fn() };
 });
-vi.mock("workflow/api", () => ({
-  start: vi.fn().mockResolvedValue({ runId: "run_mock" }),
-  resumeHook: vi.fn().mockResolvedValue(undefined),
-}));
-
 process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID = "1001";
 process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = "1002";
 

@@ -1,4 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 
 // Events we act on. Anything else gets a 200 so Lemon Squeezy doesn't retry
 // forever.
@@ -31,6 +32,20 @@ export type LemonSqueezyWebhookEvent = {
   };
 };
 
+// Runtime shape check for the verified-but-still-untrusted JSON body — see
+// usage in app/api/webhooks/lemonsqueezy/route.ts.
+export const lemonSqueezyEventEnvelopeSchema = z.object({
+  meta: z.object({
+    event_name: z.string().min(1),
+    custom_data: z.record(z.string(), z.unknown()).nullish(),
+    test_mode: z.boolean().optional(),
+  }),
+  data: z.object({
+    id: z.string(),
+    attributes: z.record(z.string(), z.unknown()),
+  }),
+});
+
 // Lemon Squeezy's SDK has no webhook-verification helper — verify manually:
 // HMAC-SHA256 of the raw body against the signing secret, compared to the
 // X-Signature header with a timing-safe equality check.
@@ -49,7 +64,12 @@ export async function verifyAndParseLemonSqueezyEvent(
     console.warn(
       "[lemonsqueezy-webhook] LEMONSQUEEZY_WEBHOOK_SECRET unset — accepting unsigned dev event"
     );
-    return JSON.parse(rawBody) as LemonSqueezyWebhookEvent;
+    try {
+      return JSON.parse(rawBody) as LemonSqueezyWebhookEvent;
+    } catch (err) {
+      console.error("[lemonsqueezy-webhook] failed to parse unsigned dev body", err);
+      return null;
+    }
   }
 
   if (!signature) return null;
