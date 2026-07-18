@@ -58,7 +58,7 @@ export function BookingValueCollectionChart({ data, currency, locale, labels }: 
   return (
     <Card className="h-full rounded-[var(--radius)]">
       {header}
-      <CardContent className="h-64 p-0 pl-1">
+      <CardContent className="h-64 p-0 px-4">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}

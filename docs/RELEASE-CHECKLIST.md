@@ -10,7 +10,6 @@ Use this as the release gate for the first production deployment. Checked items 
 - [ ] Fix the 3 current lint errors and make the full Vitest suite complete; it exceeded the 120-second review window, while TypeScript and the production build pass.
 - [ ] Freeze the release commit; record the full SHA, image digest, migration list, and rollback SHA.
 - [ ] Make beta-only mode a server-enforced production mode: allow startup with no selected MoR credentials, reject direct checkout requests, hide/disable checkout and subscription-management controls outside onboarding, and remove active public Lemon Squeezy/MoR claims until a provider is selected.
-- [ ] Replace the stale PM2/host-build deployment artifacts with the final Docker/Compose shape: Dockerfile, Compose file, production Caddy configuration, and Docker-safe startup command.
 - [ ] Set up and test GitHub Actions for final checks, immutable image publishing, VPS deployment, health checks, deployment notifications, and rollback.
 - [ ] Finish the VPS deployment path: Docker/Compose, GHCR pull access, Caddy, runtime secrets, backups, monitoring, and rollback.
 - [ ] Install and test the invitation and billing systemd timers on the VPS.
@@ -101,17 +100,17 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, the VPS resize to 2 vCPU/4 GiB
 - [ ] Add a distinct SSH key for a second trusted administrator and record recovery steps securely; the current `gallurio` and `gallurio-admin` accounts use one operator key.
 - [x] Configure the initial host firewall: UFW has deny-incoming/allow-outgoing defaults, SSH is rate-limited, and ports 3000/MongoDB are not exposed. Completed 2026-07-14.
 - [ ] Tighten SSH from the temporary global rate limit to administrator/VPN IP allowlists where practical; later add 80/443 only for the chosen Cloudflare/origin strategy.
-- [x] Install a pinned Node.js version satisfying Next.js 16 (minimum 20.9), Corepack/pnpm matching the lockfile workflow, PM2, Caddy, Git, and required build tooling. Record versions with the release evidence. Verified 2026-07-14: Node `22.22.1`, pnpm `11.5.2`, PM2 `7.0.3`, Git `2.53.0`, and Caddy `2.11.4`; direct pnpm installation is intentional because Ubuntu's Corepack fails under this Node version.
+- [x] Install the initial bootstrap tooling: Node `22.22.1`, pnpm `11.5.2`, PM2 `7.0.3`, Git `2.53.0`, and Caddy `2.11.4`. PM2 and host-side Node builds are bootstrap-only and are not part of the final Docker runtime. Completed 2026-07-14.
 - [x] Create the initial release/secrets layout: `/var/www/gallurio/releases` is owned by `gallurio`; `/etc/gallurio/gallurio.env` is root-controlled and app-readable. Completed 2026-07-14.
 - [ ] Install Docker Engine and the Compose plugin, configure the `gallurio` deployment user for the required Docker operations, and verify Docker-managed boot recovery.
 - [ ] Configure read-only GHCR authentication on the VPS and publish the final Gallurio image from GitHub Actions using an immutable commit SHA/digest tag.
 - [ ] Pull and run the Gallurio image with Docker Compose; inject runtime secrets without baking them into the image. Do not run `next build` or build Docker images on the VPS.
-- [ ] Configure log rotation for PM2, Caddy, system logs, and cron/timer output. Redact cookies, tokens, authorization headers, customer data, webhook bodies, and email bodies.
+- [ ] Configure retention/rotation for Docker container logs, Caddy, system logs, and cron/timer output. Redact cookies, tokens, authorization headers, customer data, webhook bodies, and email bodies.
 - [x] Add non-sensitive liveness/readiness checks for the process and MongoDB, plus graceful application shutdown.
 - [ ] Monitor HTTPS reachability, readiness, disk, memory, load, certificate expiry, cron freshness, and 5xx rate from an external location.
 - [ ] Create alert routes and thresholds, a one-page incident runbook, provider status links, and an escalation rule. Test one synthetic alert before launch.
 - [ ] Enable Hetzner snapshots/backups as an infrastructure recovery layer, but do not treat VPS snapshots as MongoDB backups. Document retention and restore ownership.
-- [ ] Set disk-usage alerts and a cleanup policy for old releases, package caches, PM2 logs, Caddy logs, crash dumps, and temporary upload files.
+- [ ] Set disk-usage alerts and a cleanup policy for old images/layers, Docker logs, Caddy logs, crash dumps, and temporary upload files.
 
 ### Deployment and rollback mechanics
 
@@ -223,11 +222,11 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, the VPS resize to 2 vCPU/4 GiB
 
 ### Environment-variable matrix
 
-Secrets must live in a production secret store or root-readable environment file, never Git, PM2 config, shell history, screenshots, tickets, or logs. “Prod differs” means the production value must not be copied from development.
+Secrets must live in a production secret store or root-readable environment file, never Git, Compose files, shell history, screenshots, tickets, or logs. “Prod differs” means the production value must not be copied from development.
 
 | Variable | Owner / source | Prod differs | Secret | Missing or wrong impact | Safe verification |
 | --- | --- | --- | --- | --- | --- |
-| `NODE_ENV` | Deployment; literal `production` | Yes | No | Dev bypasses/logging/test behavior may activate | Inspect PM2 environment and a non-sensitive diagnostics check |
+| `NODE_ENV` | Docker Compose; literal `production` | Yes | No | Dev bypasses/logging/test behavior may activate | Inspect the non-secret Compose configuration and a diagnostics check |
 | `PORT` | Deployment; default `3000` | Usually | No | Caddy upstream mismatch if changed | `ss`/local HTTP check; do not expose publicly |
 | `NEXT_PUBLIC_APP_NAME` | Present in `.env.example`, but no production source read was found | No | No | No current runtime impact; stale configuration until consumed or removed | Confirm with repository search |
 | `NEXT_PUBLIC_APP_URL` | Production canonical HTTPS origin | Yes | No | Broken email links, metadata, public URLs, Socket.IO CORS | Compare generated links and WebSocket origin |
@@ -240,7 +239,7 @@ Secrets must live in a production secret store or root-readable environment file
 | `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | Exact WorkOS allowed HTTPS callback | Yes | No | OAuth/password flows cannot complete | Compare exact dashboard URI and run callback |
 | `WORKOS_WEBHOOK_SECRET` | WorkOS production webhook endpoint | Yes | Yes | Verification webhook rejects events | Send dashboard test event and tampered control |
 | `WORKOS_COOKIE_NAME` | Optional deployment choice; default `wos-session` | Usually no | No | Mismatch can break session lookup/logout | Inspect cookie name only, never value |
-| `AUTHKIT_DEBUG` | Operations; leave unset/false | Yes | No | Verbose auth logging may expose sensitive context | Assert unset in PM2 environment |
+| `AUTHKIT_DEBUG` | Operations; leave unset/false | Yes | No | Verbose auth logging may expose sensitive context | Assert absent from the root-controlled runtime environment file |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare production Turnstile widget | Yes | No | Widget cannot produce valid tokens | Inspect public key ID and complete protected forms |
 | `TURNSTILE_SECRET_KEY` | Cloudflare production Turnstile secret | Yes | Yes | Production verification fails closed | Valid/invalid token tests; never print secret |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare production account | Yes | Sensitive | Upload API calls fail or target wrong account | Compare masked ID and request one upload URL |
@@ -267,7 +266,7 @@ Script-only/development variables must not be injected into the application proc
 - [ ] Generate a production environment file from the matrix and have two people compare names—not values—against actual code reads and `.env.example`.
 - [x] Add fail-fast runtime startup validation for production-required variables, HTTPS URLs, secret lengths, live/test-mode consistency, matching Cloudflare hashes, and forbidden seed/debug variables.
 - [ ] Execute that validation using the final production secret set and retain the redacted startup/readiness evidence.
-- [ ] Verify file ownership/mode, PM2 environment inheritance, restart persistence, and that `pm2 env`, logs, crash reports, and deployment output do not reveal secrets.
+- [ ] Verify file ownership/mode, Compose environment injection, Docker restart persistence, and that container logs, crash reports, and deployment output do not reveal secrets.
 - [ ] Rotate any credential ever placed in chat, a ticket, shell history, repository, CI log, screenshot, or shared development environment.
 - [ ] Store a break-glass copy and rotation runbook. Test rotation in staging for WorkOS cookies/state, billing webhooks, Resend, Turnstile, Cloudflare Images, MongoDB, cron, and analytics salt.
 
@@ -279,7 +278,7 @@ Script-only/development variables must not be injected into the application proc
 - [ ] **2. Protect data:** take/verify Atlas snapshot; record counts/indexes; dry-run migrations/backfills on a clone; approve rollback compatibility.
 - [ ] **3. Prepare services:** finish Hetzner, Atlas, the selected MoR's live store/account, monitoring, backups, and secret-store setup without directing public traffic. WorkOS, Resend, Turnstile, and Cloudflare Images/DNS are treated as complete production prerequisites.
 - [ ] **4. Stage environment:** install the production environment on the server, run startup validation, verify no development/test credentials or flags, and keep live billing webhooks disabled until the app is healthy.
-- [ ] **5. Deploy release:** install from lockfile, build in an immutable release directory, start on a local/staging port, run health/readiness and server-side smoke checks, then atomically switch PM2/Caddy.
+- [ ] **5. Deploy release:** have GitHub Actions publish the immutable image, then pull its pinned digest on the VPS, run `docker compose up -d --wait`, verify health/readiness and server-side smoke checks, then reload Caddy if traffic configuration changed.
 - [ ] **6. Apply data changes:** run only approved idempotent migrations/backfills and reviewed index synchronization; capture before/after results.
 - [ ] **7. Activate DNS/TLS:** point/proxy DNS, verify Full (strict), canonical host, wildcard portfolios if applicable, origin protection, visitor IPs, WebSockets, caching exclusions, and external monitoring.
 - [ ] **8. Activate callbacks/webhooks:** enable WorkOS and the selected MoR's production endpoints, exempt them from challenges/cache, send signed tests, and verify logs/DB state without PII.
@@ -292,8 +291,8 @@ Script-only/development variables must not be injected into the application proc
 
 ### Platform and infrastructure
 
-- [ ] External health monitor is green over HTTPS; certificate, DNS, canonical redirect, security headers, Cloudflare proxy, Caddy, PM2, MongoDB, and WebSockets are healthy.
-- [ ] Reboot the server during a controlled window and confirm Caddy, PM2, the app, monitoring, and timers recover without manual intervention.
+- [ ] External health monitor is green over HTTPS; certificate, DNS, canonical redirect, security headers, Cloudflare proxy, Caddy, Docker, MongoDB, and WebSockets are healthy.
+- [ ] Reboot the server during a controlled window and confirm Caddy, Docker, the app, monitoring, and timers recover without manual intervention.
 - [ ] Trigger a controlled application error and cron failure; verify logs are redacted, rotated, searchable, and alerts reach the incident channel.
 - [ ] Confirm disk/memory/CPU/connection baselines and record scale thresholds after representative load.
 - [ ] Verify Atlas snapshot completion and perform or schedule the first isolated restore test.
@@ -342,7 +341,7 @@ Script-only/development variables must not be injected into the application proc
 ## Phase 7: Rollback readiness
 
 - [ ] Define rollback triggers: health failure, auth outage, tenant leak, data corruption, broken uploads/email, billing mismatch, webhook loss, high 5xx, resource exhaustion, or unsafe migration.
-- [ ] Keep the previous release built and startable. Test atomic code rollback and Caddy/PM2 rollback before launch.
+- [ ] Keep the previous immutable image digest available. Test Docker Compose image rollback and Caddy rollback before launch.
 - [ ] Document how to disable new checkouts without blocking existing customer-portal access or losing signed webhook events.
 - [ ] Document provider rollback/containment: DNS/proxy bypass, WorkOS callback rollback, Resend sender/key rollback, Cloudflare Images token rollback, Turnstile emergency handling, Lemon Squeezy webhook disable/replay, and Atlas credential rotation.
 - [ ] For each migration/backfill, state whether rollback is code-only, reverse migration, or point-in-time restore. Never restore the whole production database to fix one tenant without explicit incident approval.
@@ -446,22 +445,22 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 ### 6. Add fail-fast production environment validation
 
 - **Priority:** blocking
-- **Likely files/modules:** a server-only environment schema loaded before startup, `server.ts`, billing/auth/storage/email initialization, `deploy/ecosystem.config.js`, `.env.example`, and validation tests.
+- **Likely files/modules:** a server-only environment schema loaded before startup, `server.ts`, billing/auth/storage/email initialization, `deploy/compose.yml`, `.env.example`, and validation tests.
 - **Current behavior after PR #58:** `server.ts` runs a tested central environment validator at runtime startup. Production requires the launch service matrix, HTTPS origins, strong secrets, live Lemon Squeezy mode, matching Cloudflare hashes, and rejects seed/debug variables.
 - [ ] Run the validator with the final production secret set and retain redacted startup/readiness evidence.
 - **Required behavior:** production refuses to start with missing/invalid credentials, non-HTTPS origins/callbacks, test billing mode, dev/test keys, mismatched Cloudflare hashes, weak cookie secrets, or forbidden seed/debug flags.
 - **Why:** runtime-only failures create a superficially healthy but unusable or unsafe launch.
-- **Acceptance criteria:** schema covers the matrix, secrets never log, optional variables are explicit, production and test fixtures are separate, and PM2 health fails on invalid configuration.
+- **Acceptance criteria:** schema covers the matrix, secrets never log, optional variables are explicit, production and test fixtures are separate, and Docker health fails on invalid configuration.
 - **Tests:** required/optional combinations, URL/length/boolean validation, redaction, production test-mode rejection, and development behavior.
 - **Locales:** no.
 
 ### 7. Add health/readiness and deployment-safe proxy handling
 
 - **Priority:** blocking
-- **Likely files/modules:** new health/readiness route(s), `server.ts`, `deploy/Caddyfile`, PM2 config, public inquiry client-IP extraction/rate limiter, and deployment tests/docs.
+- **Likely files/modules:** new health/readiness route(s), `server.ts`, `deploy/Caddyfile`, `deploy/compose.yml`, public inquiry client-IP extraction/rate limiter, and deployment tests/docs.
 - **Current behavior after PR #58:** `/api/health` provides liveness and Mongo readiness; the custom server shuts down HTTP, Socket.IO, and Mongo gracefully; visitor IP uses `CF-Connecting-IP`; Caddy documents the required Cloudflare-only origin boundary.
-- [ ] Configure the origin restriction and external monitor, then verify spoof resistance, WebSocket reconnection, PM2 restart, and server reboot in the deployed environment.
-- **Required behavior:** non-sensitive liveness/readiness signals, graceful shutdown/restart, correct trusted visitor IP behind a Cloudflare-restricted origin, WebSockets, and monitorable Caddy/PM2 behavior.
+- [ ] Configure the origin restriction and external monitor, then verify spoof resistance, WebSocket reconnection, Docker container restart, and server reboot in the deployed environment.
+- **Required behavior:** non-sensitive liveness/readiness signals, graceful shutdown/restart, correct trusted visitor IP behind a Cloudflare-restricted origin, WebSockets, and monitorable Caddy/Docker behavior.
 - **Why:** rollback/monitoring cannot distinguish a running process from a usable app, and incorrect IP trust breaks abuse controls.
 - **Acceptance criteria:** external monitor detects app/DB failure; direct origin/header spoofing cannot forge visitor identity; two visitors remain distinct; WebSockets reconnect through proxy; config validates before reload.
 - **Tests:** health success/failure/redaction, trusted/untrusted proxy headers, rate limits, graceful shutdown, WebSocket integration.

@@ -133,7 +133,7 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
         ) : (
           <div ref={gridRef} className="overflow-hidden" aria-label={labels.bookedHours}>
             <div
-              className="grid w-full justify-items-center gap-1 pr-2"
+              className="grid w-full justify-items-center gap-1 p-2"
               style={{
                 gridTemplateColumns: `max-content repeat(${weekStarts.length}, minmax(0, 1fr))`,
               }}

@@ -16,7 +16,7 @@ type Props = {
 
 export function RevenueTrendChart({ data, currency, locale, title }: Props) {
   return (
-    <Card className="h-full rounded-[var(--radius)]">
+    <Card className="h-full rounded-[var(--radius)] px-4">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <DashboardInfoHint hint="revenueTrend" />

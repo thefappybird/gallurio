@@ -696,36 +696,54 @@ async function createBookingsAndTransactions(
     },
   ];
 
-  // A full year of weekly work keeps the date-filtered charts, team averages,
-  // and heatmap populated. The featured bookings above still provide strong
-  // today/upcoming/detail states for hero screenshots.
-  const generated = Array.from({ length: 64 }, (_, index) => {
-    const team = teamForIndex(teams, index + 3);
-    const client = clientForIndex(clients, index + 2);
-    const status =
-      index % 9 === 0 ? ("cancelled" as const) : index % 4 === 0 ? ("completed" as const) : ("booked" as const);
-    const dayDelta = -308 + index * 7;
-    const startHour = 9 + (index % 7);
-    const duration = 2 + (index % 5);
-    const total = 26_000 + index * 4_500;
-    const deposit = Math.floor(total * 0.35);
+  // Fill the dashboard's trailing 52-week heatmap with a believable operating
+  // rhythm: three or four bookings each week, spread across weekdays. Rotating
+  // the patterns prevents a synthetic stripe while keeping weekends visibly
+  // busier for marketing screenshots.
+  const weeklyBookingPatterns = [
+    [0, 2, 5], // Mon, Wed, Sat
+    [1, 3, 5], // Tue, Thu, Sat
+    [0, 3, 4, 6], // Mon, Thu, Fri, Sun
+    [1, 2, 4, 5], // Tue, Wed, Fri, Sat
+  ] as const;
+  const generated = Array.from({ length: 64 }, (_, weekIndex) => {
+    const weekdays = weeklyBookingPatterns[weekIndex % weeklyBookingPatterns.length]!;
 
-    return {
-      team,
-      client,
-      title: `${client.name} - ${eventTypeForIndex(index + 3)} coverage`,
-      eventType: eventTypeForIndex(index + 3),
-      status,
-      sessions: [dateAt(dayDelta, startHour, 0, duration)],
-      total,
-      deposit,
-      location: `${180 + index} Ayala Avenue, Makati`,
-      notes:
-        status === "cancelled"
-          ? "Client postponed after venue availability changed."
-          : "Keep a fast-turnaround teaser set in the first delivery batch.",
-    };
-  });
+    return weekdays.map((weekdayOffset, bookingInWeek) => {
+      const index = weekIndex * 4 + bookingInWeek;
+      const team = teamForIndex(teams, index + 3);
+      const client = clientForIndex(clients, index + 2);
+      const status =
+        index % 11 === 0
+          ? ("cancelled" as const)
+          : index % 4 === 0
+            ? ("completed" as const)
+            : ("booked" as const);
+      // Starts 52 weeks ago, with enough forward bookings to keep the calendar
+      // and upcoming-work cards full after a reseed.
+      const dayDelta = -364 + weekIndex * 7 + weekdayOffset;
+      const startHour = 9 + ((index + weekdayOffset) % 7);
+      const duration = 2 + (index % 5);
+      const total = 26_000 + index * 4_500;
+      const deposit = Math.floor(total * 0.35);
+
+      return {
+        team,
+        client,
+        title: `${client.name} - ${eventTypeForIndex(index + 3)} coverage`,
+        eventType: eventTypeForIndex(index + 3),
+        status,
+        sessions: [dateAt(dayDelta, startHour, 0, duration)],
+        total,
+        deposit,
+        location: `${180 + index} Ayala Avenue, Makati`,
+        notes:
+          status === "cancelled"
+            ? "Client postponed after venue availability changed."
+            : "Keep a fast-turnaround teaser set in the first delivery batch.",
+      };
+    });
+  }).flat();
 
   const allSpecs = [...featured, ...generated];
 

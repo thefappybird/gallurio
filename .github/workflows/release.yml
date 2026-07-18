@@ -1,0 +1,185 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full 40-character commit SHA to verify, build, and deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: gallurio-production
+  cancel-in-progress: false
+
+# Dummy values only for CI verification. Production application secrets never
+# enter GitHub Actions; the VPS injects them from /etc/gallurio/gallurio.env.
+env:
+  DATABASE_URL: mongodb://127.0.0.1:27017/ci
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  WORKOS_API_KEY: ci_dummy_workos_api_key
+  WORKOS_CLIENT_ID: ci_dummy_workos_client_id
+  WORKOS_COOKIE_PASSWORD: ci_dummy_cookie_password_at_least_32_chars_long
+  ACTIVE_WORKSPACE_COOKIE_SECRET: ci_dummy_active_workspace_secret
+  NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://localhost:3000/api/auth/callback
+  WORKOS_WEBHOOK_SECRET: ci_dummy_workos_webhook_secret
+  CLOUDFLARE_ACCOUNT_ID: ci_dummy
+  CLOUDFLARE_IMAGES_API_TOKEN: ci_dummy
+  CLOUDFLARE_IMAGES_ACCOUNT_HASH: ci_dummy
+  NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH: ci_dummy
+  LEMONSQUEEZY_API_KEY: ci_dummy
+  LEMONSQUEEZY_STORE_ID: "0"
+  LEMONSQUEEZY_WEBHOOK_SECRET: ci_dummy
+  LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: "0"
+  LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: "0"
+  RESEND_API_KEY: re_ci_dummy
+  EMAIL_FROM: "Gallurio <ci@example.com>"
+  CRON_SECRET: ci_dummy_cron_secret
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate requested commit SHA
+        env:
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+        run: |
+          if [[ ! "$COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "commit_sha must be a full lowercase 40-character SHA" >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+          fetch-depth: 0
+      - name: Confirm checked-out commit
+        env:
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+        run: test "$(git rev-parse HEAD)" = "$COMMIT_SHA"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+
+  build_and_push:
+    needs: verify
+    runs-on: ubuntu-latest
+    outputs:
+      image_ref: ${{ steps.image.outputs.image_ref }}
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/gallurio
+      NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+      NEXT_PUBLIC_WORKOS_REDIRECT_URI: ${{ vars.NEXT_PUBLIC_WORKOS_REDIRECT_URI }}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+      NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH: ${{ vars.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH }}
+      NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN: ${{ vars.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN }}
+      NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL: ${{ vars.NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL }}
+      NEXT_PUBLIC_SOCIAL_FACEBOOK_URL: ${{ vars.NEXT_PUBLIC_SOCIAL_FACEBOOK_URL }}
+      NEXT_PUBLIC_SOCIAL_REDDIT_URL: ${{ vars.NEXT_PUBLIC_SOCIAL_REDDIT_URL }}
+      NEXT_PUBLIC_SOCIAL_LINKEDIN_URL: ${{ vars.NEXT_PUBLIC_SOCIAL_LINKEDIN_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+      - name: Validate public build configuration
+        run: |
+          for name in \
+            NEXT_PUBLIC_APP_URL \
+            NEXT_PUBLIC_WORKOS_REDIRECT_URI \
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY \
+            NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH; do
+            if [[ -z "${!name}" ]]; then
+              echo "$name must be set as a GitHub Actions variable" >&2
+              exit 1
+            fi
+          done
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: type=raw,value=sha-${{ inputs.commit_sha }}
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_WORKOS_REDIRECT_URI=${{ env.NEXT_PUBLIC_WORKOS_REDIRECT_URI }}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ env.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+            NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH=${{ env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH }}
+            NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN=${{ env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN }}
+            NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL=${{ env.NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL }}
+            NEXT_PUBLIC_SOCIAL_FACEBOOK_URL=${{ env.NEXT_PUBLIC_SOCIAL_FACEBOOK_URL }}
+            NEXT_PUBLIC_SOCIAL_REDDIT_URL=${{ env.NEXT_PUBLIC_SOCIAL_REDDIT_URL }}
+            NEXT_PUBLIC_SOCIAL_LINKEDIN_URL=${{ env.NEXT_PUBLIC_SOCIAL_LINKEDIN_URL }}
+      - id: image
+        run: echo "image_ref=${IMAGE_NAME}@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://gallurio.com
+    env:
+      IMAGE_REF: ${{ needs.build_and_push.outputs.image_ref }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+    steps:
+      - name: Configure SSH
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+      - name: Pull pinned image and deploy it
+        run: |
+          ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" "IMAGE_REF='$IMAGE_REF' bash -s" <<'REMOTE'
+          set -euo pipefail
+          deploy_dir=/opt/gallurio
+
+          test -d "$deploy_dir"
+          test -w "$deploy_dir"
+          test -f "$deploy_dir/compose.yml"
+
+          umask 077
+          printf 'GALLURIO_IMAGE=%s\n' "$IMAGE_REF" > "$deploy_dir/.env.next"
+          mv "$deploy_dir/.env.next" "$deploy_dir/.env"
+
+          cd "$deploy_dir"
+          docker compose pull
+          docker compose up -d --wait
+          curl --fail --silent --show-error http://127.0.0.1:3000/api/health?ready=1
+          REMOTE
+      - name: Publish deployment summary
+        run: |
+          {
+            echo "## Production deployment"
+            echo
+            echo "- Commit: \`${{ inputs.commit_sha }}\`"
+            echo "- Image: \`${IMAGE_REF}\`"
+            echo "- Health: passed on the VPS readiness endpoint"
+          } >> "$GITHUB_STEP_SUMMARY"

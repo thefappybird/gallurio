@@ -1,0 +1,73 @@
+name: Roll back production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_ref:
+        description: Previous immutable GHCR image digest (ghcr.io/...@sha256:...)
+        required: true
+        type: string
+      reason:
+        description: Reason for the rollback; included in the workflow summary
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gallurio-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://gallurio.com
+    env:
+      IMAGE_REF: ${{ inputs.image_ref }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+    steps:
+      - name: Validate immutable image reference
+        run: |
+          if [[ ! "$IMAGE_REF" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$ ]]; then
+            echo "image_ref must be an immutable lowercase GHCR digest" >&2
+            exit 1
+          fi
+      - name: Configure SSH
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+      - name: Restore the pinned image
+        run: |
+          ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" "IMAGE_REF='$IMAGE_REF' bash -s" <<'REMOTE'
+          set -euo pipefail
+          deploy_dir=/opt/gallurio
+          test -d "$deploy_dir"
+          test -w "$deploy_dir"
+          test -f "$deploy_dir/compose.yml"
+
+          umask 077
+          printf 'GALLURIO_IMAGE=%s\n' "$IMAGE_REF" > "$deploy_dir/.env.next"
+          mv "$deploy_dir/.env.next" "$deploy_dir/.env"
+
+          cd "$deploy_dir"
+          docker compose pull
+          docker compose up -d --wait
+          curl --fail --silent --show-error http://127.0.0.1:3000/api/health?ready=1
+          REMOTE
+      - name: Publish rollback summary
+        run: |
+          {
+            echo "## Production rollback"
+            echo
+            echo "- Image: \`${IMAGE_REF}\`"
+            echo "- Reason: ${{ inputs.reason }}"
+            echo "- Health: passed on the VPS readiness endpoint"
+          } >> "$GITHUB_STEP_SUMMARY"
