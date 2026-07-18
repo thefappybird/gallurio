@@ -3,8 +3,8 @@ import { localeForCountry, resolvePublicChromeLocale } from "./localeForCountry"
 import { routing } from "./routing";
 
 describe("i18n routing", () => {
-  it("supports en, fil, ms, id, and ar app locales", () => {
-    expect(routing.locales).toEqual(["en", "fil", "ms", "id", "ar"]);
+  it("supports en, fil, id, ar, and th app locales", () => {
+    expect(routing.locales).toEqual(["en", "fil", "id", "ar", "th"]);
   });
 
   it("falls back to English for unsupported countries", () => {

@@ -9,10 +9,10 @@ export function localeForCountry(country: string | null | undefined): Locale {
   switch ((country ?? "").toUpperCase()) {
     case "PH":
       return "fil";
-    case "MY":
-      return "ms";
     case "ID":
       return "id";
+    case "TH":
+      return "th";
     // Gulf markets stay on English chrome for now. The Arabic locale ("ar")
     // exists and is user-selectable, but auto-defaulting Gulf tenants to it is
     // deferred until the remaining surfaces (dashboard, portfolio, onboarding,

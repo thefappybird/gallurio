@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import en from "./en.json";
 import fil from "./fil.json";
 import id from "./id.json";
-import ms from "./ms.json";
 import ar from "./ar.json";
+import th from "./th.json";
 
 // Full-catalog parity guard. Every non-English catalog must carry the exact same
 // key tree as English — a missing key renders the raw key path to users, and an
 // extra key is dead weight that drifts out of sync. Added when Arabic (ar / RTL)
 // shipped; covers the whole tree, not just individual blocks.
-const LOCALES = { fil, id, ms, ar } as Record<string, typeof en>;
+const LOCALES = { fil, id, ar, th } as Record<string, typeof en>;
 
 function deepKeys(value: unknown, prefix = ""): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];

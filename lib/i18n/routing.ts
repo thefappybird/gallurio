@@ -4,15 +4,15 @@ import { defineRouting } from "next-intl/routing";
 //   en — default; all markets without a dedicated catalog fall through to this
 //        (incl. SG/AU/CA/NZ/GB/US).
 //   fil — Philippines (Filipino / Tagalog)
-//   ms — Malaysia (and Singapore Malay speakers)
 //   id — Indonesia
 //   ar — Arabic / RTL (Gulf markets). Selectable now; localeForCountry does NOT
 //        yet auto-default Gulf tenants to it — see lib/i18n/localeForCountry.ts.
+//   th — Thailand
 //
-// Non-English catalogs at messages/{fil,ms,id,ar}.json were machine-translated
+// Non-English catalogs at messages/{fil,id,ar,th}.json were machine-translated
 // and tagged in-source - see CLAUDE.md "i18n" section.
 export const routing = defineRouting({
-  locales: ["en", "fil", "ms", "id", "ar"] as const,
+  locales: ["en", "fil", "id", "ar", "th"] as const,
   defaultLocale: "en",
   // English URLs have no /en/ prefix; non-English locales are prefixed
   // (e.g. /fil/dashboard). Keeps SEO clean for the primary market while
