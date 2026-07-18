@@ -9,7 +9,7 @@
  *   - Brands:  platform (gallurioBrand) and partner (resolveWorkspaceBrand with
  *              a warm accent #c05621 + logo URL to stress contrast checks).
  *   - CTA variants: with NEXT_PUBLIC_APP_URL set and unset (for emails that branch).
- *   - Locales:  en, fil, ms, id (partner-branded emails only; platform emails are
+ *   - Locales:  en, fil, id, th (partner-branded emails only; platform emails are
  *              English-only by convention).
  *   - Templates: all 9 distinct templates covered (see RENDERED_LOG below).
  *
@@ -317,7 +317,7 @@ describe("platform emails", () => {
 // ===========================================================================
 
 describe("partner emails — all locales", () => {
-  const locales = ["en", "fil", "ms", "id"] as const;
+  const locales = ["en", "fil", "id", "th"] as const;
 
   // -------------------------------------------------------------------------
   // 2a. Team invite (partner brand)
@@ -359,8 +359,8 @@ describe("partner emails — all locales", () => {
     const countryByLocale: Record<typeof locale, string> = {
       en: "SG",
       fil: "PH",
-      ms: "MY",
       id: "ID",
+      th: "TH",
     };
     it(`inquiry client confirmation — ${locale}`, async () => {
       await sendInquiryClientConfirmation({
@@ -391,7 +391,7 @@ describe("partner emails — all locales", () => {
     it(`booking confirmed client — ${locale}`, async () => {
       await sendBookingConfirmedClient({
         brand: partnerBrand,
-        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "ms" ? "MY" : "ID",
+        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "id" ? "ID" : "TH",
         clientName: "Maria Santos",
         clientEmail: "client@test.com",
         businessName: "Studio Aurora",
@@ -419,7 +419,7 @@ describe("partner emails — all locales", () => {
     it(`booking cancelled client — ${locale}`, async () => {
       await sendBookingCancelledClient({
         brand: partnerBrand,
-        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "ms" ? "MY" : "ID",
+        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "id" ? "ID" : "TH",
         clientName: "Maria Santos",
         clientEmail: "client@test.com",
         businessName: "Studio Aurora",
@@ -446,7 +446,7 @@ describe("partner emails — all locales", () => {
     it(`inquiry decline client — ${locale}`, async () => {
       await sendInquiryDeclineClient({
         brand: partnerBrand,
-        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "ms" ? "MY" : "ID",
+        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "id" ? "ID" : "TH",
         clientName: "Maria Santos",
         clientEmail: "client@test.com",
         businessName: "Studio Aurora",

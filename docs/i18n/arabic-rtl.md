@@ -2,7 +2,7 @@
 
 ## Problem
 
-Gallurio shipped in `en`, `fil`, `ms`, `id` only. The Gulf markets are already
+Gallurio shipped in `en`, `fil`, `id`, `th` only. The Gulf markets are already
 supported for billing/currency but their tenants saw English chrome, and the app
 had no right-to-left (RTL) layout. This adds **Arabic (`ar`) as a fifth, RTL
 locale** and the cross-cutting RTL foundation, then makes each non-deferred page
@@ -48,7 +48,7 @@ RTL-correct.
   - *Translations:* `messages/ar.json` `app.dashboard` had drifted from `en`
     (the dashboard-enhancement PR added 64 keys — `tabs`, `dateFilter`,
     `pagination`, `portfolio.*`, `hints.*`, `totalLabel`, `team` — only to
-    en/fil/ms/id, and `ar` kept 6 stale keys). Reconciled `ar`; the Arabic
+    en/fil/id/th, and `ar` kept 6 stale keys). Reconciled `ar`; the Arabic
     dashboard no longer renders raw key paths. Added keyed `activityEntity` /
     `activityAction` labels in **all 5** locales so the activity feed stops
     leaking raw DB enums ("booking updated"). Relative timestamps keep their

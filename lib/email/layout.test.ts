@@ -110,7 +110,7 @@ describe("bilingualSubject", () => {
     expect(bilingualSubject("Hello", "Kumusta", "en")).toBe("Hello");
     expect(bilingualSubject("Hello", "Hello", "fil")).toBe("Hello");
     expect(bilingualSubject("A", "B", "fil")).toBe("A · B");
-    expect(bilingualSubject("A", "B", "ms")).toBe("A · B");
+    expect(bilingualSubject("A", "B", "th")).toBe("A · B");
     expect(bilingualSubject("A", "B", "id")).toBe("A · B");
   });
 });

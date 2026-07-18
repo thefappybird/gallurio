@@ -166,7 +166,7 @@ A single toolbar row directly above the grid:
   preset click routes through `onChange(fullBrandKit)`.
 - `app/[locale]/(app)/portfolio/_components/ThemePanelDialog.tsx` — layout
   adjustments if the toolbar/grid restructure requires it.
-- Locale message files: `en`, `fil`, `ms`, `id` — search placeholder, save
+- Locale message files: `en`, `fil`, `id`, `th` — search placeholder, save
   tooltip/label, pagination labels, empty/limit messages, 6 preset display names.
 - `resolveBrandKit.ts` — unchanged (mechanism reused as-is).
 - Server actions / Workspace schema — unchanged.
@@ -184,7 +184,7 @@ A single toolbar row directly above the grid:
   query change, page step-back on last-item delete).
 - Save popover → `saveThemeAction`; delete → `deleteThemeAction`; both still
   enforce tenant isolation (workspace-scoped) — unchanged behavior covered.
-- Locale keys present and non-empty for `en`, `fil`, `ms`, `id`.
+- Locale keys present and non-empty for `en`, `fil`, `id`, `th`.
 
 ## Done criteria
 

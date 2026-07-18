@@ -221,9 +221,9 @@ Only the orchestrator edits:
 - `app/[locale]/(app)/dashboard/_components/portfolio-dashboard.tsx`
 - `messages/en.json`
 - `messages/fil.json`
-- `messages/ms.json`
 - `messages/id.json`
 - `messages/ar.json`
+- `messages/th.json`
 - this consolidated dashboard document if implementation details changed.
 
 Integration work:

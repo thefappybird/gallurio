@@ -373,7 +373,7 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
 }
 
 // "" = auto (locale derived from the workspace country).
-const formLocaleSchema = z.enum(["", "en", "fil", "ms", "id"]);
+const formLocaleSchema = z.enum(["", "en", "fil", "id", "ar", "th"]);
 
 /**
  * Persist the per-page chrome language for the public portfolio (inquiry form,

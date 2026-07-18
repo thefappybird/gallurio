@@ -4,7 +4,7 @@ import { gallurioBrand } from "@/lib/email/brand";
 import { EMAIL_COPY } from "@/lib/email/messages";
 import { sendEmail, logEmailFailure, type SendEmailResult } from "@/lib/email/send";
 
-type Locale = "en" | "fil" | "ms" | "id";
+type Locale = "en" | "fil" | "id" | "th";
 
 /**
  * Sends a password reset / set-password link to `email` using the shared

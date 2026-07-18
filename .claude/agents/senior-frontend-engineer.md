@@ -43,7 +43,7 @@ overrides defaults.
   ships idle/hover/focus-visible/active/disabled. No hover-only UX. Drag
   interactions need visible affordances. Accessibility is required (semantic HTML,
   labels, keyboard, focus management, color never the sole signal).
-- **Locales:** update `en`, `fil`, `ms`, `id`, `ar` together (never add `th`).
+- **Locales:** update `en`, `fil`, `id`, `ar`, `th` together (never add `ms`).
   `ar` is RTL — use logical Tailwind utilities (`ms/me/ps/pe/start/end/text-start`),
   never physical; RTL flips the public wrapper div, not `<html>`. Public workspace
   chrome uses workspace-country locale; editor chrome is English-only.

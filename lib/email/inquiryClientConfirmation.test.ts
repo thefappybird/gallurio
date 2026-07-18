@@ -34,19 +34,19 @@ describe("sendInquiryClientConfirmation", () => {
     expect(arg.html).toContain("Powered by Gallurio");
   });
 
-  it("uses ms locale copy when country is MY", async () => {
+  it("uses th locale copy when country is TH", async () => {
     await sendInquiryClientConfirmation({
       workspaceName: "Studio Aurora",
       clientEmail: "emma@example.com",
       clientName: "Emma Carter",
       ownerEmail: "owner@studio.test",
-      country: "MY",
+      country: "TH",
     });
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
     // The localized title remains part of the bilingual email body.
-    expect(arg.html).toContain("Pertanyaan anda bersama Studio Aurora");
+    expect(arg.html).toContain("คำถามของคุณถึง Studio Aurora แล้ว");
     expect(arg.html).toContain("Studio Aurora");
     expect(arg.html).toContain("Powered by Gallurio");
   });
@@ -66,7 +66,7 @@ describe("sendInquiryClientConfirmation", () => {
       clientName: "Emma Carter",
       ownerEmail: "owner@studio.test",
       brand,
-      country: "MY",
+      country: "TH",
     });
 
     expect(sendEmail).toHaveBeenCalledOnce();
@@ -74,7 +74,7 @@ describe("sendInquiryClientConfirmation", () => {
     // Brand name takes precedence
     expect(arg.html).toContain("Aurora Events");
     expect(arg.html).toContain('src="https://images.example.test/aurora-logo.png"');
-    expect(arg.html).toContain("Pertanyaan anda bersama Aurora Events");
+    expect(arg.html).toContain("คำถามของคุณถึง Aurora Events แล้ว");
     expect(arg.html).toContain("Powered by Gallurio");
   });
 
@@ -84,15 +84,15 @@ describe("sendInquiryClientConfirmation", () => {
       clientEmail: "emma@example.com",
       clientName: "Emma Carter",
       ownerEmail: "owner@studio.test",
-      country: "MY",
+      country: "TH",
     });
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
     // English section
     expect(arg.html).toContain("Thank you for getting in touch");
-    // Localized (ms) section
-    expect(arg.html).toContain("Pertanyaan anda bersama Studio Aurora");
+    // Localized (th) section
+    expect(arg.html).toContain("คำถามของคุณถึง Studio Aurora แล้ว");
     // Divider
     expect(arg.html).toContain("email-divider");
     // Inbox subjects are English-only, while the body remains bilingual.

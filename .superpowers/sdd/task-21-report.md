@@ -9,7 +9,7 @@ Merge-base: `6412f5fa0a906811321ecafecb2f8e9e2d48f332`
 
 ## 1. Locale Parity
 
-All new i18n keys verified across all four locale files (`messages/en.json`, `messages/fil.json`, `messages/ms.json`, `messages/id.json`). No `th` locale files exist (correct).
+All new i18n keys verified across all four locale files (`messages/en.json`, `messages/fil.json`, `messages/id.json`, `messages/th.json`). No `ms` locale files exist (correct).
 
 ### Key audit results
 

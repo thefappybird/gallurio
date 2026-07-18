@@ -40,7 +40,7 @@ describe("oauthState — sign and verify", () => {
 
   it("accepts an explicit issuedAt", () => {
     const now = Date.now();
-    const state = signOAuthState({ locale: "ms", issuedAt: now });
+    const state = signOAuthState({ locale: "th", issuedAt: now });
     const result = verifyOAuthState(state);
 
     expect(result).not.toBeNull();

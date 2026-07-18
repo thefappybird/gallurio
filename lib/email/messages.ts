@@ -1,8 +1,8 @@
 import { localeForCountry } from "@/lib/i18n/localeForCountry";
 
-type Locale = "en" | "fil" | "ms" | "id";
+type Locale = "en" | "fil" | "id" | "th";
 
-// Email copy is authored for en/fil/ms/id only — Arabic email copy is deferred
+// Email copy is authored for en/fil/id/th only — Arabic email copy is deferred
 // (see lib/i18n/localeForCountry.ts, which keeps Gulf tenants on "en" for now,
 // so localeForCountry never returns "ar" at runtime). The cast narrows the
 // return type to the email-supported locales; when the Arabic flip lands it must
@@ -130,16 +130,16 @@ export const EMAIL_COPY = {
       expiry: "Mag-eexpire ang imbitasyong ito sa loob ng 7 araw.",
       footer: "Kung hindi mo inaasahan ang imbitasyong ito, maaari mong balewalain ang email na ito.",
     },
-    ms: {
-      subject: (ws: string) => `Anda dijemput untuk menyertai ${ws}`,
-      greeting: `Hai,`,
+    th: {
+      subject: (ws: string) => `คุณได้รับเชิญให้เข้าร่วม ${ws}`,
+      greeting: `สวัสดีครับ/ค่ะ,`,
       body: (inviter: string, ws: string) =>
-        `${inviter} telah menjemput anda untuk menyertai ruang kerja ${ws} di Gallurio.`,
+        `${inviter} ได้เชิญคุณให้เข้าร่วมพื้นที่ทำงาน ${ws} บน Gallurio`,
       teamsIntro: (teamsJoined: string, _plural: boolean) =>
-        `Anda akan ditambahkan ke pasukan berikut: ${teamsJoined}.`,
-      cta: "Terima jemputan",
-      expiry: "Jemputan ini akan tamat tempoh dalam 7 hari.",
-      footer: "Jika anda tidak menjangka jemputan ini, anda boleh mengabaikan e-mel ini.",
+        `คุณจะถูกเพิ่มเข้าทีมต่อไปนี้: ${teamsJoined}`,
+      cta: "ยอมรับคำเชิญ",
+      expiry: "คำเชิญนี้จะหมดอายุใน 7 วัน",
+      footer: "หากคุณไม่ได้คาดหวังคำเชิญนี้ คุณสามารถละเว้นอีเมลนี้ได้อย่างปลอดภัย",
     },
     id: {
       subject: (ws: string) => `Anda diundang untuk bergabung dengan ${ws}`,
@@ -168,12 +168,12 @@ export const EMAIL_COPY = {
       body2: () => `Ligtas nang naipasa ang iyong katanungan sa team, at may makikipag-ugnayan sa iyo sa lalong madaling panahon.`,
       body3: () => `Salamat sa pagsasaalang-alang sa amin para sa iyong event.`,
     },
-    ms: {
-      subject: (ws: string) => `Pertanyaan anda bersama ${ws}`,
-      greeting: (name: string) => `Hai ${name},`,
-      body1: (ws: string) => `Terima kasih kerana menghubungi ${ws}. Kami sangat gembira anda menghubungi kami.`,
-      body2: () => `Pertanyaan anda telah selamat diterima oleh pasukan, dan seseorang akan menghubungi anda tidak lama lagi.`,
-      body3: () => `Kami menghargai pertimbangan anda untuk acara anda.`,
+    th: {
+      subject: (ws: string) => `คำถามของคุณถึง ${ws} แล้ว`,
+      greeting: (name: string) => `สวัสดีคุณ ${name},`,
+      body1: (ws: string) => `ขอบคุณที่ติดต่อ ${ws} เรายินดีเป็นอย่างยิ่งที่คุณติดต่อมา`,
+      body2: () => `คำถามของคุณถึงทีมงานเรียบร้อยแล้ว และจะมีคนติดต่อกลับไปในเร็ว ๆ นี้`,
+      body3: () => `เราขอขอบคุณที่คุณพิจารณาเราสำหรับงานของคุณ`,
     },
     id: {
       subject: (ws: string) => `Pertanyaan Anda sudah bersama ${ws}`,
@@ -196,11 +196,11 @@ export const EMAIL_COPY = {
       cta: "I-reset ang password",
       expiry: "Mag-eexpire ang link na ito sa lalong madaling panahon. Kung hindi mo hiniling ang pag-reset ng password, maaari mong balewalain ang email na ito.",
     },
-    ms: {
-      subject: "Tetapkan semula kata laluan Gallurio anda",
-      intro: "Kami menerima permintaan untuk menetapkan semula kata laluan akaun anda. Klik butang di bawah untuk memilih kata laluan baharu.",
-      cta: "Tetapkan semula kata laluan",
-      expiry: "Pautan ini akan tamat tempoh tidak lama lagi. Jika anda tidak meminta penetapan semula kata laluan, anda boleh mengabaikan e-mel ini.",
+    th: {
+      subject: "รีเซ็ตรหัสผ่าน Gallurio ของคุณ",
+      intro: "เราได้รับคำขอให้รีเซ็ตรหัสผ่านสำหรับบัญชีของคุณ คลิกปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่",
+      cta: "รีเซ็ตรหัสผ่าน",
+      expiry: "ลิงก์นี้จะหมดอายุในไม่ช้า หากคุณไม่ได้ร้องขอการรีเซ็ตรหัสผ่าน คุณสามารถละเว้นอีเมลนี้ได้อย่างปลอดภัย",
     },
     id: {
       subject: "Reset kata sandi Gallurio Anda",
@@ -226,13 +226,13 @@ export const EMAIL_COPY = {
       sessions: (dates: string) => `Mga Petsa: ${dates}`,
       body3: (ws: string) => `Inaabangan namin ang pagtatrabaho para sa iyo. Kung mayroon kang mga katanungan, makipag-ugnayan sa ${ws}.`,
     },
-    ms: {
-      subject: (ws: string) => `Tempahan anda telah disahkan - ${ws}`,
-      greeting: (name: string) => `Hai ${name},`,
-      body1: (ws: string) => `Berita baik! ${ws} telah mengesahkan tempahan anda.`,
-      body2: (eventTitle: string) => `Acara: ${eventTitle}`,
-      sessions: (dates: string) => `Tarikh: ${dates}`,
-      body3: (ws: string) => `Kami menanti untuk bekerja bersama anda. Jika anda mempunyai sebarang soalan, sila hubungi ${ws}.`,
+    th: {
+      subject: (ws: string) => `การจองของคุณได้รับการยืนยันแล้ว - ${ws}`,
+      greeting: (name: string) => `สวัสดีคุณ ${name},`,
+      body1: (ws: string) => `ข่าวดี! ${ws} ได้ยืนยันการจองของคุณแล้ว`,
+      body2: (eventTitle: string) => `กิจกรรม: ${eventTitle}`,
+      sessions: (dates: string) => `วันที่: ${dates}`,
+      body3: (ws: string) => `เรารอคอยที่จะได้ร่วมงานกับคุณ หากมีคำถามใด ๆ กรุณาติดต่อ ${ws}`,
     },
     id: {
       subject: (ws: string) => `Pemesanan Anda telah dikonfirmasi - ${ws}`,
@@ -260,13 +260,13 @@ export const EMAIL_COPY = {
       sessions: (dates: string) => `Mga Petsa: ${dates}`,
       body3: (ws: string) => `Kung mayroon kang mga katanungan, makipag-ugnayan sa ${ws}.`,
     },
-    ms: {
-      subject: (ws: string) => `Tempahan anda telah dibatalkan - ${ws}`,
-      greeting: (name: string) => `Hai ${name},`,
-      body1: (ws: string) => `Kami ingin memaklumkan bahawa tempahan anda dengan ${ws} telah dibatalkan.`,
-      body2: (eventTitle: string) => `Acara: ${eventTitle}`,
-      sessions: (dates: string) => `Tarikh: ${dates}`,
-      body3: (ws: string) => `Jika anda mempunyai sebarang soalan, sila hubungi ${ws}.`,
+    th: {
+      subject: (ws: string) => `การจองของคุณถูกยกเลิกแล้ว - ${ws}`,
+      greeting: (name: string) => `สวัสดีคุณ ${name},`,
+      body1: (ws: string) => `เราต้องการแจ้งให้ทราบว่าการจองของคุณกับ ${ws} ถูกยกเลิกแล้ว`,
+      body2: (eventTitle: string) => `กิจกรรม: ${eventTitle}`,
+      sessions: (dates: string) => `วันที่: ${dates}`,
+      body3: (ws: string) => `หากมีคำถามใด ๆ กรุณาติดต่อ ${ws}`,
     },
     id: {
       subject: (ws: string) => `Pemesanan Anda telah dibatalkan - ${ws}`,
@@ -290,11 +290,11 @@ export const EMAIL_COPY = {
       body1: (ws: string) => `Salamat sa pagkomunika sa ${ws}. Sa kasamaang-palad, hindi namin matutugunan ang iyong kahilingan sa ngayon.`,
       body2: `Nagnanais kami sa inyo ng lahat ng pinakamabuti at umaasa kaming magtrabaho nang magkasama sa hinaharap.`,
     },
-    ms: {
-      subject: (ws: string) => `Kemaskini mengenai pertanyaan anda - ${ws}`,
-      greeting: (name: string) => `Hai ${name},`,
-      body1: (ws: string) => `Terima kasih kerana menghubungi ${ws}. Malangnya, kami tidak dapat memenuhi permintaan anda pada masa ini.`,
-      body2: `Kami mengucapkan yang terbaik untuk anda dan berharap dapat bekerjasama pada masa hadapan.`,
+    th: {
+      subject: (ws: string) => `อัปเดตเกี่ยวกับคำถามของคุณ - ${ws}`,
+      greeting: (name: string) => `สวัสดีคุณ ${name},`,
+      body1: (ws: string) => `ขอบคุณที่ติดต่อ ${ws} แต่น่าเสียดายที่เราไม่สามารถรองรับคำขอของคุณได้ในขณะนี้`,
+      body2: `เราขออวยพรให้คุณโชคดี และหวังว่าจะได้ร่วมงานกันในอนาคต`,
     },
     id: {
       subject: (ws: string) => `Pembaruan mengenai pertanyaan Anda - ${ws}`,
@@ -325,13 +325,13 @@ export const EMAIL_COPY = {
       expiry: "Mag-eexpire ang code na ito sa lalong madaling panahon. Huwag itong ibahagi sa iba.",
       ignore: "Kung hindi ka gumawa ng Gallurio account, maaari mong balewalain ang email na ito.",
     },
-    ms: {
-      subject: "Sahkan e-mel anda - Gallurio",
-      greeting: "Hai,",
-      intro: "Gunakan kod ini untuk mengesahkan alamat e-mel anda:",
-      codeLabel: "Kod pengesahan",
-      expiry: "Kod ini akan tamat tempoh tidak lama lagi. Jangan kongsi dengan sesiapa.",
-      ignore: "Jika anda tidak mencipta akaun Gallurio, anda boleh mengabaikan e-mel ini.",
+    th: {
+      subject: "ยืนยันอีเมลของคุณ - Gallurio",
+      greeting: "สวัสดีครับ/ค่ะ,",
+      intro: "ใช้รหัสนี้เพื่อยืนยันที่อยู่อีเมลของคุณ:",
+      codeLabel: "รหัสยืนยัน",
+      expiry: "รหัสนี้จะหมดอายุในไม่ช้า อย่าแชร์ให้ผู้อื่น",
+      ignore: "หากคุณไม่ได้สร้างบัญชี Gallurio คุณสามารถละเว้นอีเมลนี้ได้",
     },
     id: {
       subject: "Verifikasi email Anda - Gallurio",
@@ -355,17 +355,17 @@ export const EMAIL_COPY = {
       body: "Magtatapos sa loob ng 7 araw ang iyong libreng buwan ng Gallurio Pro. Mag-subscribe na ngayon para manatiling online ang iyong portfolio at ligtas ang lahat ng booking, client, at gallery.",
       cta: "Mag-subscribe sa Pro",
     },
-    ms: {
-      subject: "Akses Gallurio Pro anda tamat dalam seminggu",
-      heading: "Seminggu lagi akses penuh anda",
-      body: "Bulan percuma Gallurio Pro anda akan tamat dalam 7 hari. Langgan sekarang untuk memastikan portfolio anda kekal dalam talian dan semua tempahan, pelanggan, serta galeri anda kekal utuh.",
-      cta: "Langgan Pro",
-    },
     id: {
       subject: "Akses Gallurio Pro Anda berakhir dalam seminggu",
       heading: "Seminggu lagi akses penuh Anda",
       body: "Bulan gratis Gallurio Pro Anda akan berakhir dalam 7 hari. Berlangganan sekarang agar portofolio Anda tetap online dan semua pemesanan, klien, serta galeri tetap aman.",
       cta: "Berlangganan Pro",
+    },
+    th: {
+      subject: "สิทธิ์การใช้งาน Gallurio Pro ของคุณจะหมดอายุในอีกหนึ่งสัปดาห์",
+      heading: "เหลือเวลาใช้งานเต็มรูปแบบอีกหนึ่งสัปดาห์",
+      body: "เดือนฟรีของ Gallurio Pro จะหมดอายุใน 7 วัน สมัครสมาชิกตอนนี้เพื่อให้พอร์ตโฟลิโอของคุณออนไลน์อยู่เสมอ พร้อมรักษาการจอง ลูกค้า และแกลเลอรีทั้งหมดของคุณไว้",
+      cta: "สมัครสมาชิก Pro",
     },
     ar: {
       subject: "وصولك إلى Gallurio Pro ينتهي خلال أسبوع",
@@ -387,17 +387,17 @@ export const EMAIL_COPY = {
       body: "Natapos na ang iyong Pro access, pero walang nawala — ligtas na naka-save ang iyong site at lahat ng data mo. Mag-subscribe muli para agad na ma-online ulit ang iyong portfolio.",
       cta: "Mag-subscribe muli",
     },
-    ms: {
-      subject: "Akses Gallurio Pro anda telah tamat",
-      heading: "Akses anda telah tamat",
-      body: "Akses Pro anda telah tamat, tetapi tiada apa yang hilang — laman web dan semua data anda disimpan dengan selamat. Langgan semula untuk mengembalikan portfolio anda dalam talian dengan segera.",
-      cta: "Langgan semula",
-    },
     id: {
       subject: "Akses Gallurio Pro Anda telah berakhir",
       heading: "Akses Anda telah berakhir",
       body: "Akses Pro Anda telah berakhir, tetapi tidak ada yang hilang — situs dan semua data Anda tersimpan dengan aman. Berlangganan kembali untuk mengaktifkan kembali portofolio Anda secara instan.",
       cta: "Berlangganan kembali",
+    },
+    th: {
+      subject: "สิทธิ์การใช้งาน Gallurio Pro ของคุณสิ้นสุดลงแล้ว",
+      heading: "สิทธิ์การใช้งานของคุณสิ้นสุดลงแล้ว",
+      body: "สิทธิ์การใช้งาน Pro ของคุณสิ้นสุดลงแล้ว แต่ไม่มีอะไรสูญหาย เว็บไซต์และข้อมูลทั้งหมดของคุณถูกบันทึกไว้อย่างปลอดภัย สมัครสมาชิกเพื่อเปิดพอร์ตโฟลิโอของคุณกลับมาออนไลน์ได้ทันที",
+      cta: "สมัครสมาชิกอีกครั้ง",
     },
     ar: {
       subject: "انتهى وصولك إلى Gallurio Pro",
@@ -419,17 +419,17 @@ export const EMAIL_COPY = {
       body: "Isang buwan na ang nakalipas. Naka-save pa rin at handa ang iyong portfolio at data. Mag-subscribe muli anumang oras para ituloy mula sa kung saan ka huminto.",
       cta: "Mag-subscribe muli",
     },
-    ms: {
-      subject: "Portfolio anda masih disimpan di Gallurio",
-      heading: "Kami simpan semuanya untuk anda",
-      body: "Sudah sebulan berlalu. Portfolio dan data anda masih disimpan dan sedia. Langgan semula pada bila-bila masa untuk sambung semula dari tempat anda berhenti.",
-      cta: "Langgan semula",
-    },
     id: {
       subject: "Portofolio Anda masih tersimpan di Gallurio",
       heading: "Kami menyimpan semuanya untuk Anda",
       body: "Sudah sebulan berlalu. Portofolio dan data Anda masih tersimpan dan siap. Berlangganan kembali kapan saja untuk melanjutkan dari tempat Anda berhenti.",
       cta: "Berlangganan kembali",
+    },
+    th: {
+      subject: "พอร์ตโฟลิโอของคุณยังคงถูกบันทึกไว้ที่ Gallurio",
+      heading: "เราบันทึกทุกอย่างไว้ให้คุณแล้ว",
+      body: "ผ่านมาหนึ่งเดือนแล้ว พอร์ตโฟลิโอและข้อมูลของคุณยังคงถูกบันทึกและพร้อมใช้งาน สมัครสมาชิกอีกครั้งได้ทุกเมื่อเพื่อดำเนินการต่อจากจุดที่คุณค้างไว้",
+      cta: "สมัครสมาชิกอีกครั้ง",
     },
     ar: {
       subject: "لا تزال صفحتك محفوظة على Gallurio",
@@ -451,17 +451,17 @@ export const EMAIL_COPY = {
       body: "Mao-offline ang iyong naka-publish na site sa loob ng isang linggo maliban kung mag-subscribe ka muli. Ligtas pa rin ang iyong mga booking, client, at gallery — pero mag-subscribe na ngayon para manatiling live ang iyong site.",
       cta: "Mag-subscribe muli",
     },
-    ms: {
-      subject: "Minggu terakhir untuk kekalkan portfolio anda dalam talian",
-      heading: "Peringatan terakhir",
-      body: "Laman web anda yang diterbitkan akan dinyahsiarkan dalam masa seminggu melainkan anda melanggan semula. Tempahan, pelanggan, dan galeri anda kekal selamat — tetapi langgan semula sekarang untuk memastikan laman web anda kekal aktif.",
-      cta: "Langgan semula",
-    },
     id: {
       subject: "Minggu terakhir untuk menjaga portofolio Anda tetap online",
       heading: "Pengingat terakhir",
       body: "Situs Anda yang telah dipublikasikan akan dinonaktifkan dalam satu minggu kecuali Anda berlangganan kembali. Pemesanan, klien, dan galeri Anda tetap aman — tetapi berlangganan sekarang agar situs Anda tetap aktif.",
       cta: "Berlangganan kembali",
+    },
+    th: {
+      subject: "สัปดาห์สุดท้ายเพื่อให้พอร์ตโฟลิโอของคุณออนไลน์อยู่",
+      heading: "การแจ้งเตือนครั้งสุดท้าย",
+      body: "เว็บไซต์ที่เผยแพร่ของคุณจะถูกนำออกจากระบบออนไลน์ในอีกหนึ่งสัปดาห์ เว้นแต่คุณจะสมัครสมาชิกอีกครั้ง การจอง ลูกค้า และแกลเลอรีของคุณยังคงปลอดภัยไม่ว่าจะเกิดอะไรขึ้น แต่สมัครสมาชิกตอนนี้เพื่อให้เว็บไซต์ของคุณใช้งานได้ต่อไป",
+      cta: "สมัครสมาชิกอีกครั้ง",
     },
     ar: {
       subject: "الأسبوع الأخير للحفاظ على صفحتك متاحة على الإنترنت",

@@ -10,7 +10,7 @@ export type TeamInviteEmailInput = {
   workspaceName: string;
   teamNames: string[];
   acceptUrl: string;
-  locale?: "en" | "fil" | "ms" | "id";
+  locale?: "en" | "fil" | "id" | "th";
   /** Full partner brand resolved at call site via resolveWorkspaceBrand(). When
    *  absent a name-only partner brand is built from workspaceName. */
   brand?: Brand;

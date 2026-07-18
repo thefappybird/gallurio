@@ -94,21 +94,21 @@ describe("sendTeamInviteEmail", () => {
       workspaceName: "Studio Aurora",
       teamNames: ["Photography"],
       acceptUrl: "https://app.gallurio.com/invite/accept?token=abc123",
-      locale: "ms",
+      locale: "th",
     });
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
     // English section in HTML body
     expect(arg.html).toContain("Hi there,");
-    // Localized (ms) section in HTML body
-    expect(arg.html).toContain("Hai,");
+    // Localized (th) section in HTML body
+    expect(arg.html).toContain("สวัสดีครับ/ค่ะ,");
     // Divider separating sections
     expect(arg.html).toContain("email-divider");
     // Bilingual subject (plain text, not HTML-escaped)
     expect(arg.subject).toContain(String.fromCharCode(183));
     expect(arg.subject).toContain("Studio Aurora");
-    expect(arg.subject).toContain("Anda dijemput untuk menyertai");
+    expect(arg.subject).toContain("คุณได้รับเชิญให้เข้าร่วม");
   });
 
   it("logs a redacted failure and still returns the failed result when sendEmail fails", async () => {

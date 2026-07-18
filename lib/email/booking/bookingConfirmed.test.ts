@@ -50,7 +50,7 @@ describe("sendBookingConfirmedClient", () => {
   it("includes localized confirmation copy resolved from locale/country", async () => {
     await sendBookingConfirmedClient({
       brand: partnerBrand,
-      locale: "MY",
+      locale: "TH",
       clientName: "Ali Hassan",
       clientEmail: "ali@example.com",
       businessName: "Studio Aurora",
@@ -61,10 +61,10 @@ describe("sendBookingConfirmedClient", () => {
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
-    // MY country resolves to ms locale — assert ms-specific copy, not just the name
-    expect(arg.html).toContain("Berita baik!");
-    expect(arg.html).toContain("Hai Ali Hassan,");
-    expect(arg.subject).toContain("Tempahan anda telah disahkan");
+    // TH country resolves to th locale — assert th-specific copy, not just the name
+    expect(arg.html).toContain("ข่าวดี! Studio Aurora ได้ยืนยันการจองของคุณแล้ว");
+    expect(arg.html).toContain("สวัสดีคุณ Ali Hassan,");
+    expect(arg.subject).toContain("การจองของคุณได้รับการยืนยันแล้ว");
   });
 
   it("shows Powered by Gallurio in the footer", async () => {
@@ -136,7 +136,7 @@ describe("sendBookingConfirmedClient", () => {
   it("renders bilingual content (English + workspace locale) when locale resolves to non-en", async () => {
     await sendBookingConfirmedClient({
       brand: partnerBrand,
-      locale: "MY",
+      locale: "TH",
       clientName: "Ali Hassan",
       clientEmail: "ali@example.com",
       businessName: "Studio Aurora",
@@ -149,14 +149,14 @@ describe("sendBookingConfirmedClient", () => {
     const arg = sendEmail.mock.calls[0][0];
     // English section must appear
     expect(arg.html).toContain("Great news!");
-    // Localized (ms) section must appear
-    expect(arg.html).toContain("Berita baik!");
+    // Localized (th) section must appear
+    expect(arg.html).toContain("ข่าวดี! Studio Aurora ได้ยืนยันการจองของคุณแล้ว");
     // Divider separating the two sections
     expect(arg.html).toContain("email-divider");
     // Subject must be bilingual (contains middot ·)
     expect(arg.subject).toContain("·");
     expect(arg.subject).toContain("Your booking is confirmed");
-    expect(arg.subject).toContain("Tempahan anda telah disahkan");
+    expect(arg.subject).toContain("การจองของคุณได้รับการยืนยันแล้ว");
   });
 });
 

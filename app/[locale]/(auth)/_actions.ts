@@ -398,10 +398,10 @@ export async function forgotPasswordAction(
   try {
     const reset = await workos.userManagement.createPasswordReset({ email });
     const locale = await getLocale();
-    const safeLocale = (["en", "fil", "ms", "id"] as const).includes(
-      locale as "en" | "fil" | "ms" | "id",
+    const safeLocale = (["en", "fil", "th", "id"] as const).includes(
+      locale as "en" | "fil" | "th" | "id",
     )
-      ? (locale as "en" | "fil" | "ms" | "id")
+      ? (locale as "en" | "fil" | "th" | "id")
       : "en";
     await sendPasswordResetEmail(email, reset.passwordResetToken, safeLocale);
   } catch {

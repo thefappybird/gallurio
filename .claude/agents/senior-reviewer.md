@@ -23,7 +23,7 @@ defaults.
   isolation (`workspaceId` scoping on every read/mutation), auth/tenancy
   (`requireOrg`/`ownerContext`/`requireRole`), endpoint hardening, design
   tokens (`--radius`/`--radius-surface`, semantic colors, brand teal accent),
-  locale coverage (en/fil/ms/id/ar), test coverage (data layer, components,
+  locale coverage (en/fil/id/ar/th), test coverage (data layer, components,
   handlers, validators, tenant isolation — real in-memory Mongo, never
   mocked), and the 3-breakpoint UI rule.
 - **Boundary check (specific to this team):** confirm the frontend engineer

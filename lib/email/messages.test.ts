@@ -9,7 +9,7 @@ describe("email messages", () => {
   });
   it("every copy key has all four locales", () => {
     for (const key of (Object.keys(EMAIL_COPY) as Array<keyof typeof EMAIL_COPY>)) {
-      for (const loc of ["en", "fil", "ms", "id"] as const) {
+      for (const loc of ["en", "fil", "id", "th"] as const) {
         expect(EMAIL_COPY[key][loc], `${key}.${loc}`).toBeTruthy();
       }
     }

@@ -87,7 +87,7 @@ describe("CustomizePanel", () => {
     expect(screen.getByText("Language")).toBeInTheDocument();
   });
 
-  it("renders buttons for the five active locales (en, fil, ms, id, ar), not removed Thai", () => {
+  it("renders buttons for the five active locales (en, fil, id, ar, th), not removed Malay", () => {
     renderWithProviders(
       <Wrapper>
         <CustomizePanel />
@@ -95,10 +95,10 @@ describe("CustomizePanel", () => {
     );
     expect(screen.getByText("English")).toBeInTheDocument();
     expect(screen.getByText("Filipino")).toBeInTheDocument();
-    expect(screen.getByText("Bahasa Melayu")).toBeInTheDocument();
     expect(screen.getByText("Bahasa Indonesia")).toBeInTheDocument();
     expect(screen.getByText("العربية")).toBeInTheDocument();
-    expect(screen.queryByText("ภาษาไทย")).not.toBeInTheDocument();
+    expect(screen.getByText("ภาษาไทย")).toBeInTheDocument();
+    expect(screen.queryByText("Bahasa Melayu")).not.toBeInTheDocument();
   });
 
   it("disables the language buttons and shows a spinner on the clicked one while the locale change is pending", () => {

@@ -65,8 +65,8 @@ robustness:
 
 ## i18n
 New UI strings (checking / available / taken / invalid) added to all four
-locales `en`, `fil`, `ms`, `id` under the relevant onboarding + settings
-namespaces. No `th`.
+locales `en`, `fil`, `id`, `th` under the relevant onboarding + settings
+namespaces. No `ms`.
 
 ## Acceptance
 - Typing a slug in onboarding and in settings shows debounced live

@@ -37,6 +37,7 @@ import {
   saveThemeAction,
   updateThemeAction,
   updatePortfolioSlugAction,
+  updateFormLocaleAction,
 } from "./_actions";
 
 let workspaceId: Types.ObjectId;
@@ -708,5 +709,27 @@ describe("updatePortfolioSlugAction", () => {
     await updatePortfolioSlugAction("new-slug");
     const other = await Workspace.findById(otherWs._id).lean();
     expect(other?.slug).toBe("other-studio");
+  });
+});
+
+describe("updateFormLocaleAction", () => {
+  it("accepts every routing locale, including ar", async () => {
+    const result = await updateFormLocaleAction("ar");
+    expect(result).toEqual({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws?.publicPage?.formLocale).toBe("ar");
+  });
+
+  it("rejects a removed locale (ms) as invalid_locale", async () => {
+    const result = await updateFormLocaleAction("ms");
+    expect(result).toEqual({ error: "invalid_locale" });
+  });
+
+  it("staff role — returns owner_only, formLocale unchanged", async () => {
+    mockCtx.role = "staff";
+    const result = await updateFormLocaleAction("th");
+    expect(result).toEqual({ error: "owner_only" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws?.publicPage?.formLocale).toBe("");
   });
 });

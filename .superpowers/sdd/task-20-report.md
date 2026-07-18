@@ -34,17 +34,17 @@ Writes 112 `.png` files alongside the HTML (4 screenshots per HTML: desktop×lig
 | Platform | notification email | en | with-cta + no-cta | 2 |
 | Platform | verification email | en | no-cta | 1 |
 | Platform | password reset | en | with-cta | 1 |
-| Partner | team invite | en, fil, ms, id | with-cta | 4 |
-| Partner | inquiry client confirmation | en, fil, ms, id | no-cta | 4 |
-| Partner | booking confirmed (client) | en, fil, ms, id | no-cta | 4 |
-| Partner | booking cancelled (client) | en, fil, ms, id | no-cta | 4 |
-| Partner | inquiry decline (client) | en, fil, ms, id | no-cta | 4 |
+| Partner | team invite | en, fil, id, th | with-cta | 4 |
+| Partner | inquiry client confirmation | en, fil, id, th | no-cta | 4 |
+| Partner | booking confirmed (client) | en, fil, id, th | no-cta | 4 |
+| Partner | booking cancelled (client) | en, fil, id, th | no-cta | 4 |
+| Partner | inquiry decline (client) | en, fil, id, th | no-cta | 4 |
 
 **Total HTML files:** 28  
 **Total PNG screenshots:** 112 (28 × 4: desktop-light, desktop-dark, mobile-light, mobile-dark)
 
 ### Intentionally skipped / not covered
-- `sendPasswordResetEmail` for locales `fil`, `ms`, `id`: this is a platform email, uses gallurioBrand, no locale-specific visual difference in the template structure. English-only for platform per convention.
+- `sendPasswordResetEmail` for locales `fil`, `id`, `th`: this is a platform email, uses gallurioBrand, no locale-specific visual difference in the template structure. English-only for platform per convention.
 - `sendBookingCancelledOwner`: covered structurally by `sendBookingConfirmedOwner` which shares the same template pattern and platform brand. Skipping avoids redundant matrix expansion.
 - `data-export` template (`buildDataExportEmailBody`): plain-text-only function with no `renderBrandedEmail` call, no HTML output. No screenshot artifact applicable.
 - Verification email for locales fil/ms/id: English-only per explicit convention (comment in `app/api/webhooks/workos/route.ts`).
@@ -95,7 +95,7 @@ The dark-mode `a { color: #2fb3d9 !important; }` link rule DOES work (links are 
 
 ### 4. Locale text overflow at 375px
 
-**PASS.** All 4 locales render cleanly at 375px. Longest text strings (Tagalog team-invite CTA "Tanggapin ang imbitasyon", Malay booking-cancelled body) wrap naturally within the card without overflow. No text truncation or overflow observed in any mobile screenshot.
+**PASS.** All 4 locales render cleanly at 375px. Longest text strings (Tagalog team-invite CTA "Tanggapin ang imbitasyon", Thai booking-cancelled body) wrap naturally within the card without overflow. No text truncation or overflow observed in any mobile screenshot.
 
 ---
 

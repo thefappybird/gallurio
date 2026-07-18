@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import en from "@/messages/en.json";
 import fil from "@/messages/fil.json";
-import ms from "@/messages/ms.json";
+import th from "@/messages/th.json";
 import id from "@/messages/id.json";
 
 const REQUIRED_KEYS = [
@@ -36,7 +36,7 @@ const REQUIRED_KEYS = [
   "saveThemeName",
 ] as const;
 
-const locales = { en, fil, ms, id } as const;
+const locales = { en, fil, th, id } as const;
 
 describe("brandKit locale keys", () => {
   for (const [name, messages] of Object.entries(locales)) {

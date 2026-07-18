@@ -57,7 +57,7 @@ vi.mock("@/lib/storage/cloudflareImages", () => ({
 }));
 
 vi.mock("@/lib/i18n/routing", () => ({
-  routing: { defaultLocale: "en", locales: ["en", "fil", "ms", "id"] },
+  routing: { defaultLocale: "en", locales: ["en", "fil", "id", "th"] },
 }));
 
 vi.mock("next-intl/server", () => ({

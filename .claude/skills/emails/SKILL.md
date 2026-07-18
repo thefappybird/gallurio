@@ -86,11 +86,11 @@ replyTo?; poweredByGallurio }`.
 - Subject: `bilingualSubject(enSubject, localizedSubject, locale)` →
   `"<en> · <localized>"` (middot), or just `en` when locale is `en`.
 
-`LANGUAGE_NAME`: `en→English, fil→Filipino, ms→Bahasa Melayu, id→Bahasa Indonesia`.
+`LANGUAGE_NAME`: `en→English, fil→Filipino, id→Bahasa Indonesia, th→ภาษาไทย`.
 
 ## Locales (`lib/email/messages.ts`)
 
-- Locales: `en`, `fil`, `ms`, `id`. **Never `th`.**
+- Locales: `en`, `fil`, `id`, `th`. **Never `ms`.**
 - `emailLocale = localeForCountry` maps workspace country → locale (the
   `secondaryLocale` for client mail).
 - `EMAIL_COPY[emailType][locale]` holds all copy as **plain text** (functions for

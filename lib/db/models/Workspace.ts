@@ -150,7 +150,7 @@ const workspaceSchema = new Schema(
       // Per-page language for the Gallurio chrome (inquiry form, nav, footer,
       // gallery labels) on the public portfolio — isolated from the owner's own
       // app locale. "" → fall back to the locale derived from workspace.country.
-      formLocale: { type: String, enum: ["en", "fil", "ms", "id", "ar", ""], default: "" },
+      formLocale: { type: String, enum: ["en", "fil", "id", "ar", "th", ""], default: "" },
       // Owner-override for the public page writing direction. "" → inferred from formLocale.
       formDir: { type: String, enum: ["ltr", "rtl", ""], default: "" },
       // Customizable chrome for the prebuilt contact modal. The form fields are

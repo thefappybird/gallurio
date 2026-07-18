@@ -119,10 +119,10 @@ resubscribe now to keep your site live.
 
 ## Localization status
 
-Launch locales are `en`, `fil`, `ms`, `id`, and `ar`. The pricing, terms,
+Launch locales are `en`, `fil`, `id`, `ar`, and `th`. The pricing, terms,
 refund, and application message catalogs already include Arabic routing work,
 but the transactional lifecycle email catalog currently has four locales only:
-`en`, `fil`, `ms`, and `id`. Arabic lifecycle email copy is still a required
+`en`, `fil`, `id`, and `th`. Arabic lifecycle email copy is still a required
 release task.
 
 Source references: `messages/en.json`, `lib/email/messages.ts`,

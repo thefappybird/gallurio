@@ -95,7 +95,7 @@ vi.mock("@/lib/auth/activeWorkspace", () => ({
 }));
 
 vi.mock("@/lib/i18n/routing", () => ({
-  routing: { defaultLocale: "en", locales: ["en", "fil", "ms", "id"] },
+  routing: { defaultLocale: "en", locales: ["en", "fil", "id", "th"] },
 }));
 
 // ---- Lazy imports (after mocks are registered) ------------------------------

@@ -21,7 +21,7 @@ export type EmailBlock =
 
 export type RenderEmailOpts = {
   brand: Brand;
-  locale: "en" | "fil" | "ms" | "id" | "ar";
+  locale: "en" | "fil" | "id" | "ar" | "th";
   preheader: string;
   title: string;
   subtitle?: string;
@@ -40,17 +40,17 @@ export type LocaleContent = {
   supportLine?: string;
 };
 
-export const LANGUAGE_NAME: Record<"en" | "fil" | "ms" | "id", string> = {
+export const LANGUAGE_NAME: Record<"en" | "fil" | "id" | "th", string> = {
   en: "English",
   fil: "Filipino",
-  ms: "Bahasa Melayu",
   id: "Bahasa Indonesia",
+  th: "ภาษาไทย",
 };
 
 export function bilingualSubject(
   en: string,
   localized: string,
-  locale: "en" | "fil" | "ms" | "id",
+  locale: "en" | "fil" | "id" | "th",
 ): string {
   return locale === "en" || en === localized ? en : `${en} · ${localized}`;
 }
@@ -318,8 +318,8 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
 export function renderBilingualEmail(opts: {
   brand: Brand;
   preheader: string;
-  secondaryLocale: "en" | "fil" | "ms" | "id";
-  build: (locale: "en" | "fil" | "ms" | "id") => LocaleContent;
+  secondaryLocale: "en" | "fil" | "id" | "th";
+  build: (locale: "en" | "fil" | "id" | "th") => LocaleContent;
 }): { html: string; text: string; attachments: EmailAttachment[] } {
   const { brand, preheader, secondaryLocale, build } = opts;
   const primary = build("en");

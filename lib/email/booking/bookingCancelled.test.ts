@@ -50,7 +50,7 @@ describe("sendBookingCancelledClient", () => {
   it("includes localized cancellation copy resolved from locale/country", async () => {
     await sendBookingCancelledClient({
       brand: partnerBrand,
-      locale: "MY",
+      locale: "TH",
       clientName: "Ali Hassan",
       clientEmail: "ali@example.com",
       businessName: "Studio Aurora",
@@ -61,10 +61,10 @@ describe("sendBookingCancelledClient", () => {
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
-    // MY country resolves to ms locale — assert ms-specific copy
-    expect(arg.html).toContain("Kami ingin memaklumkan");
-    expect(arg.html).toContain("Hai Ali Hassan,");
-    expect(arg.subject).toContain("Tempahan anda telah dibatalkan");
+    // TH country resolves to th locale — assert th-specific copy
+    expect(arg.html).toContain("เราต้องการแจ้งให้ทราบว่าการจองของคุณกับ Studio Aurora ถูกยกเลิกแล้ว");
+    expect(arg.html).toContain("สวัสดีคุณ Ali Hassan,");
+    expect(arg.subject).toContain("การจองของคุณถูกยกเลิกแล้ว");
   });
 
   it("escapes HTML in client-supplied fields (XSS guard)", async () => {
@@ -120,7 +120,7 @@ describe("sendBookingCancelledClient", () => {
   it("renders bilingual content (English + workspace locale) when locale resolves to non-en", async () => {
     await sendBookingCancelledClient({
       brand: partnerBrand,
-      locale: "MY",
+      locale: "TH",
       clientName: "Ali Hassan",
       clientEmail: "ali@example.com",
       businessName: "Studio Aurora",
@@ -133,14 +133,14 @@ describe("sendBookingCancelledClient", () => {
     const arg = sendEmail.mock.calls[0][0];
     // English section
     expect(arg.html).toContain("We wanted to let you know");
-    // Localized (ms) section
-    expect(arg.html).toContain("Kami ingin memaklumkan");
+    // Localized (th) section
+    expect(arg.html).toContain("เราต้องการแจ้งให้ทราบว่าการจองของคุณกับ Studio Aurora ถูกยกเลิกแล้ว");
     // Divider
     expect(arg.html).toContain("email-divider");
     // Bilingual subject
     expect(arg.subject).toContain("·");
     expect(arg.subject).toContain("Your booking has been cancelled");
-    expect(arg.subject).toContain("Tempahan anda telah dibatalkan");
+    expect(arg.subject).toContain("การจองของคุณถูกยกเลิกแล้ว");
   });
 });
 

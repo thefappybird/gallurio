@@ -60,7 +60,7 @@
 Added slugChecking/slugAvailable/slugTaken/slugInvalid to onboarding.business in all 4 locales:
 - messages/en.json: "Checking...", "Available", "Already taken", "Invalid format"
 - messages/fil.json: "Tinitingnan...", "Available", "Hindi available", "Hindi tamang format"
-- messages/ms.json: "Menyemak...", "Tersedia", "Sudah diambil", "Format tidak sah"
+- messages/th.json: "กำลังตรวจสอบ...", "ว่าง", "ถูกใช้แล้ว", "รูปแบบไม่ถูกต้อง"
 - messages/id.json: "Memeriksa...", "Tersedia", "Sudah digunakan", "Format tidak valid"
 
 ## Technical decisions
