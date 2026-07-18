@@ -1,5 +1,5 @@
 /**
- * Operator CLI: create the three standard Gallurio promo codes.
+ * Operator CLI: create the four standard Gallurio promo codes.
  *
  * Usage:
  *   pnpm promo:seed-base -- --allow-dev

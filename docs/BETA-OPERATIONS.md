@@ -48,17 +48,18 @@ For a production-looking database target, replace `--allow-dev` with `--i-unders
 
 ## Base promo codes
 
-The development full seed creates these general, single-redemption promo codes:
+The development full seed and `promo:seed-base` command create these single-redemption promo codes:
 
 | Code | Access |
 | --- | --- |
 | `MONTHPRO2026` | One month of Pro |
 | `YEARPRO2026` | One year of Pro |
 | `LIFETIME2026` | Perpetual Pro |
+| `BETA2PRO` | Two months of Pro for a verified beta participant; eligibility and one-time identity redemption are enforced server-side |
 
-Beta access has no base promo code because eligible users use the beta-tester onboarding flow instead.
+Beta access itself has no promo code: eligible users use the beta-tester onboarding flow. `BETA2PRO` is the separate post-beta thank-you offer.
 
-To create only these three base promos in any configured database (without adding demo data), run:
+To create only these four base promos in any configured database (without adding demo data), run:
 
 ```powershell
 pnpm promo:seed-base -- --allow-dev
