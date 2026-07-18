@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/lib/i18n/navigation";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useTranslations, useLocale } from "next-intl";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction, activateBetaTesterAction } from "@/lib/actions/onboarding";
@@ -18,7 +18,6 @@ import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
-import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { cn } from "@/lib/utils";
 
 export function PlanStepForm({
@@ -45,8 +44,14 @@ export function PlanStepForm({
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoOpen, setPromoOpen] = useState(false);
+  const promoInputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const lemonSqueezy = useLemonSqueezyCheckout(() => router.push("/onboarding/done"));
+
+  useEffect(() => {
+    if (promoOpen) promoInputRef.current?.focus({ preventScroll: true });
+  }, [promoOpen]);
 
   async function submitPromoCode() {
     setPromoError(null);
@@ -281,39 +286,77 @@ export function PlanStepForm({
           <p className="text-xs text-muted-foreground">{t("checkoutNote")}</p>
         )}
 
-        <CollapsibleDrawer title={tPromo("disclosureLabel")} defaultOpen={false}>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                placeholder={tPromo("placeholder")}
-                className="max-w-56"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={submitPromoCode}
-                disabled={promoLoading || !promoCode}
-              >
-                {promoLoading ? (
-                  <>
-                    <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />
-                    {tPromo("applying")}
-                  </>
-                ) : (
-                  tPromo("submit")
-                )}
-              </Button>
-            </div>
-            {promoError && (
-              <p role="alert" className="text-xs text-destructive">
-                {promoError}
-              </p>
-            )}
+        <div className="border border-border bg-card text-card-foreground">
+          <div className="relative h-12">
+            <AnimatePresence initial={false}>
+              {promoOpen ? (
+                <motion.div
+                  key="promo-form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center gap-2 p-2"
+                >
+                  <Input
+                    ref={promoInputRef}
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                    placeholder={tPromo("placeholder")}
+                    className="min-w-0 flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={submitPromoCode}
+                    disabled={promoLoading || !promoCode}
+                  >
+                    {promoLoading ? (
+                      <>
+                        <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />
+                        {tPromo("applying")}
+                      </>
+                    ) : (
+                      tPromo("submit")
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={tPromo("close")}
+                    disabled={promoLoading}
+                    onClick={() => {
+                      setPromoOpen(false);
+                      setPromoError(null);
+                    }}
+                  >
+                    <X />
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.button
+                  key="promo-toggle"
+                  type="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
+                  onClick={() => setPromoOpen(true)}
+                  className="absolute inset-0 w-full px-3 text-start focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  {tPromo("disclosureLabel")}
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
-        </CollapsibleDrawer>
+          {promoError && promoOpen && (
+            <p role="alert" className="border-t border-border px-3 py-2 text-xs text-destructive">
+              {promoError}
+            </p>
+          )}
+        </div>
 
         {checkoutError && (
           <p role="alert" className="text-xs text-destructive">

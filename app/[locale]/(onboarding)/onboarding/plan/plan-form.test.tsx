@@ -328,7 +328,23 @@ describe("PlanStepForm — promo code redemption", () => {
     fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
 
     await waitFor(() => {
+      expect(screen.getByPlaceholderText(/enter code/i)).toHaveFocus();
+    });
+  });
+
+  it("returns to the promo code toggle when closed", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    await waitFor(() => {
       expect(screen.getByPlaceholderText(/enter code/i)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /close promo code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
     });
   });
 

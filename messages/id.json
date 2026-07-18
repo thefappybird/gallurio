@@ -2873,6 +2873,7 @@
     "loading": "Memuat…",
     "promoCode": {
       "disclosureLabel": "Punya kode promo?",
+      "close": "Tutup kode promo",
       "placeholder": "Masukkan kode",
       "submit": "Terapkan",
       "applying": "Menerapkan…",

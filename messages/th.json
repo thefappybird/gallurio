@@ -2873,6 +2873,7 @@
     "loading": "กำลังโหลด…",
     "promoCode": {
       "disclosureLabel": "มีโค้ดโปรโมชันหรือไม่?",
+      "close": "ปิดโค้ดโปรโมชัน",
       "placeholder": "กรอกโค้ด",
       "submit": "ใช้งาน",
       "applying": "กำลังใช้งาน…",

@@ -2873,6 +2873,7 @@
     "loading": "Naglo-load…",
     "promoCode": {
       "disclosureLabel": "May promo code ka ba?",
+      "close": "Isara ang promo code",
       "placeholder": "Ilagay ang code",
       "submit": "I-apply",
       "applying": "Ina-apply…",

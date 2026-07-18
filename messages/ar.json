@@ -2876,6 +2876,7 @@
     "loading": "جارٍ التحميل…",
     "promoCode": {
       "disclosureLabel": "هل لديك رمز ترويجي؟",
+      "close": "إغلاق الرمز الترويجي",
       "placeholder": "أدخل الرمز",
       "submit": "تطبيق",
       "applying": "جارٍ التطبيق…",
