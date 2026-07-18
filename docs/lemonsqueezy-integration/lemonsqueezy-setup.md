@@ -1,9 +1,9 @@
 # Lemon Squeezy Billing — Setup & Architecture
 
-Gallurio bills tenants (workspace owners) via **Lemon Squeezy**, a Merchant of
+Gallurio currently bills tenants (workspace owners) in code via **Lemon Squeezy**, a Merchant of
 Record (MoR) — it collects payments worldwide, remits VAT/GST/sales tax in
 every jurisdiction it supports, and pays out net proceeds to Gallurio.
-Lemon Squeezy is the current provider because Gallurio does not yet have a registered PH business entity and needed a provider that can onboard an individual/sole-proprietor seller. This was a hard cutover with no live subscribers, so there was no data migration.
+This document describes the current Lemon Squeezy implementation. For live launch, Lemon Squeezy, Creem, and a possible Paddle sole-proprietor application are candidates. Use this setup only if Lemon Squeezy is explicitly selected after live eligibility and approval verification; Creem and Paddle are not integrated today. This was a hard cutover with no live subscribers, so there was no data migration.
 
 **Currently running in test/sandbox mode** (`LEMONSQUEEZY_TEST_MODE=true`) —
 pre-launch, no real subscribers.

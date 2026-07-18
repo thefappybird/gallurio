@@ -1,5 +1,10 @@
 # Lemon Squeezy Product Copy Draft
 
+Status: use only if Lemon Squeezy is explicitly selected as Gallurio's live
+Merchant of Record. Lemon Squeezy is implemented today, but Creem and Paddle
+remain unintegrated launch candidates; do not publish this provider-specific
+copy before the MoR decision.
+
 Status: working draft from the current Gallurio product and billing copy.
 
 Use the live Lemon Squeezy API/dashboard as the authority for currency, prices,

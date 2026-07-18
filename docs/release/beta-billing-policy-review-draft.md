@@ -33,13 +33,15 @@ not silently shorten paid access or extend the promo repeatedly.
 
 Gallurio Pro has monthly and yearly variants only. There is no Starter product
 and no customer-selected downgrade target. Pricing and currency come from the
-live Lemon Squeezy product/variant data.
+live data from the selected MoR. Lemon Squeezy is the current implementation;
+Lemon Squeezy, Creem, and Paddle remain candidates until live activation is
+approved.
 
 ## Failed payment and expiry
 
-Gallurio follows Lemon Squeezy's payment decision. A transient payment-failed,
+Gallurio follows the selected provider's payment decision. A transient payment-failed,
 past-due, or paused notification does not by itself expire the workspace.
-Gallurio expires access only after Lemon Squeezy reports a terminal
+Gallurio expires access only after the selected provider reports a terminal
 non-payment/expiry decision or another provider-authoritative terminal event.
 
 After terminal expiry, the workspace is routed to subscription recovery. The
@@ -59,6 +61,7 @@ Resubscribing restores access and allows the owner to republish the page.
 - What database evidence proves beta participation after beta is closed?
 - Is the no-expiry redemption rule and emergency revocation process acceptable?
 - What happens when an eligible participant already has active paid Pro?
-- Which exact Lemon Squeezy event/status is the terminal non-payment decision?
+- For the current Lemon Squeezy implementation, which exact event/status is the
+  terminal non-payment decision? Re-derive this mapping if Creem or Paddle is selected.
 - Which legal jurisdiction, contact address, and support/refund SLA should be
   published?

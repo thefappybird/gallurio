@@ -26,8 +26,8 @@ events, and diagnostic logs.
 
 Gallurio records billing and entitlement information needed to operate Pro,
 including plan state, subscription status, provider identifiers, period dates,
-expiry/lapse timestamps, and promo redemption history. Lemon Squeezy processes
-payment details as Gallurio's Merchant of Record; Gallurio does not directly
+expiry/lapse timestamps, and promo redemption history. `[Selected Merchant of
+Record]` processes payment details as Gallurio's Merchant of Record; Gallurio does not directly
 store full payment-card details.
 
 ## 2. Beta participation and promo eligibility
@@ -97,7 +97,8 @@ and how material policy changes are communicated.
 ## Review checklist
 
 - Confirm controller/business identity and privacy contact.
-- Replace the provider list with the actual production stack.
+- Replace `[Selected Merchant of Record]` and the provider list with the actual
+  production stack. Do not list unselected MoR candidates as processors.
 - Confirm retention, backup deletion, and beta-participant record periods.
 - Confirm applicable jurisdiction and user-rights language.
 - Publish the approved version in `en`, `fil`, `id`, `ar`, and `th`.

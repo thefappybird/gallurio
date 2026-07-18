@@ -2,7 +2,9 @@
 
 Status: current English launch copy collected for review and localization.
 This is a handoff draft, not final legal approval. Prices must be populated
-from the live Lemon Squeezy API.
+from the live API of the selected Merchant of Record (MoR). Lemon Squeezy is
+the current implementation, but Lemon Squeezy, Creem, and Paddle remain launch
+candidates; do not publish a provider name until the decision is final.
 
 ## Pricing page
 
@@ -41,9 +43,9 @@ your public page.
 
 ### Billing notice
 
-Payments are processed securely by Lemon Squeezy, our Merchant of Record.
-Lemon Squeezy handles payment processing, tax calculation, invoices, billing
-support, and eligible refund processing.
+Payments are processed securely by `[Selected Merchant of Record]`.
+`[Selected Merchant of Record]` handles payment processing, tax calculation,
+invoices, billing support, and eligible refund processing.
 
 No charge is collected during your first free month.
 

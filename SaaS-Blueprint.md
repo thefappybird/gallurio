@@ -918,7 +918,7 @@ This isn't comprehensive coverage for its own sake. It's a forcing function: **i
 | **Observability** | Sentry + PostHog + Better Stack | Errors + product analytics + uptime — the trio |
 | **Background jobs** | Hetzner-hosted scheduled worker + Inngest if it gets complex | Start simple on the same infra, split only when jobs justify it |
 | **Email** | Resend | Developer-friendly, React Email templates, fairly priced |
-| **Payments** | Lemon Squeezy (subscriptions) | Merchant of Record for Gallurio workspace subscriptions. |
+| **Payments** | Lemon Squeezy implementation; Lemon Squeezy, Creem, or Paddle candidate for launch | Lemon Squeezy is the current webhook-only integration. Select one MoR only after live eligibility and approval verification; Creem/Paddle require an explicit migration. |
 | **Linting** | Biome (or ESLint + Prettier) | Biome is faster; either is fine |
 | **Type safety** | TypeScript strict mode | Non-negotiable. Saves you weeks of bugs. |
 
@@ -946,7 +946,7 @@ If Gallurio production runs on Hetzner, the deployment path should be explicit a
 3. Prepare the application directory.
    Clone the repo into a stable path such as `/var/www/gallurio`, and keep ownership under the deploy user.
 4. Sync production environment variables.
-   Copy the full production env set before the first build, including MongoDB, WorkOS, Lemon Squeezy, Cloudinary, Resend, and any cookie secrets.
+   Copy the full production env set before the first build, including MongoDB, WorkOS, the selected MoR (currently Lemon Squeezy in code), Cloudflare Images, Resend, and any cookie secrets.
 5. Install and build exactly as the repo expects.
    Run `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
 6. Start the production app as a managed process.
@@ -973,7 +973,7 @@ If Gallurio production runs on Hetzner, the deployment path should be explicit a
 - TLS works on the production domain
 - WorkOS auth callbacks and sealed cookies work over HTTPS
 - MongoDB Atlas allows the Hetzner server IPs
-- Lemon Squeezy webhooks reach the app reliably
+- The selected MoR's webhooks reach the app reliably (Lemon Squeezy is the current implementation)
 - Backups, logs, and restart behavior are verified
 
 ---

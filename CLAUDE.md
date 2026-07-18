@@ -3,7 +3,7 @@
 Multi-tenant CRM SaaS for event businesses. Each workspace has bookings, clients, calendar, gallery, public pages, and inquiry forms.
 
 ## Stack
-Next.js 16 App Router + Turbopack · React 19.2 · Tailwind v4 · Mongoose 8 + MongoDB Atlas · WorkOS AuthKit (identity only — WorkOS Organizations are NOT used) · Zod · react-hook-form · Puck · Cloudflare Images · Lemon Squeezy · next-intl · pnpm · RTK (token-efficient CLI).
+Next.js 16 App Router + Turbopack · React 19.2 · Tailwind v4 · Mongoose 8 + MongoDB Atlas · WorkOS AuthKit (identity only — WorkOS Organizations are NOT used) · Zod · react-hook-form · Puck · Cloudflare Images · next-intl · pnpm · RTK (token-efficient CLI). Lemon Squeezy is the current implemented billing integration; Lemon Squeezy, Creem, and a possible Paddle sole-proprietor application are the live-payment candidates.
 
 ## Framework rules
 - Next.js 16 only; prefer current repo/library docs (context7 + `node_modules/.../docs`) over model memory.
@@ -103,10 +103,10 @@ Semantic tokens only, flat UI, brand teal (hue 195) as deliberate accent (~10–
 Direct Creator Upload only — API token never reaches client. Scope uploads by `workspaceId` metadata; verify ownership before every create. Full implementation details: `docs/dev-reference.md#cloudflare-images`.
 
 ## Billing
-Lemon Squeezy subscriptions via a synchronous checkout Route Handler and a webhook-only durability pipeline (atomic claim-lease ledger, no separate workflow engine). `Workspace.plan` is provider-agnostic (`free|starter|pro`). Webhook: raw body + HMAC before parse, Node runtime, ack 200 after verify. Full flow + field names: `docs/dev-reference.md#billing`.
+The current implementation is Lemon Squeezy subscriptions through a synchronous checkout Route Handler and a webhook-only durability pipeline (atomic claim-lease ledger, no separate workflow engine). `Workspace.plan` is `free|pro|beta`. Lemon Squeezy, Creem, and a possible Paddle sole-proprietor application remain candidates until one can legitimately activate live payments first. Do not add Creem/Paddle configuration, claim either is integrated, or create a provider abstraction before an explicit provider decision. Selecting Creem or Paddle is a deliberate migration: replace checkout/webhooks and provider fields, audit schema/env/docs/tests, and preserve raw-body signature verification plus idempotent webhook processing. Full current flow + field names: `docs/dev-reference.md#billing`.
 
 ## Production hosting
-Hetzner VPS, Node 20+, pm2/systemd, Caddy/Nginx → Next on 3000. GitHub Actions gated on tests+lint+typecheck+build. Details: `docs/dev-reference.md#production-hosting`.
+Hetzner VPS, Docker/Compose app container, Caddy, and systemd timers. GitHub Actions is gated on tests+lint+typecheck+build and publishes the immutable image; the VPS never builds the app. Details: `docs/dev-reference.md#production-hosting`.
 
 ## i18n
 Locales: `en`, `fil`, `id`, `ar` (RTL), `th`. Malay (`ms`) dropped 2026-07-18 (overlapped too closely with `id` to justify a separate catalog); Thai (`th`) reintroduced 2026-07-18 after the original mojibake-corruption issue was root-caused (PowerShell UTF-8 corruption) and an automated encoding-sanity test (`messages/encoding-sanity.test.ts`) was added to catch any recurrence. Use logical Tailwind utilities (`ms/me/ps/pe/start/end/text-start`), not physical. Full RTL/locale details: `docs/dev-reference.md#i18n`.
@@ -120,7 +120,7 @@ Preserve UTF-8 everywhere; never output/save mojibake. Verify user-facing Unicod
 - A worktree starts without `.env.local`; you may copy values from the canonical `dev` checkout's `.env.local` for local Playwright verification only — never commit, print, or paste secret values anywhere.
 
 ## Testing
-Every change ships tests: data-layer, components, handlers, validators, tenant isolation. Mock external services only; never mock Mongoose (use in-memory Mongo). Run targeted: `pnpm test --run <fragment>`; full sweep only pre-merge. Billing tests cover: webhook signature verification, price/plan mapping, workflow resume, tenant isolation.
+Every change ships tests: data-layer, components, handlers, validators, tenant isolation. Mock external services only; never mock Mongoose (use in-memory Mongo). Run targeted: `pnpm test --run <fragment>`; full sweep only pre-merge. Billing tests cover: webhook signature verification, price/plan mapping, idempotent webhook application, and tenant isolation.
 
 ## Done criteria
 Implementation complete · tests passing · lint + typecheck pass · locales updated · 3 breakpoints verified · optimistic UI where appropriate · errors surfaced · indexes confirmed for new queries.

@@ -13,7 +13,7 @@ Use this as the release gate for the first production deployment. Checked items 
 - [ ] Finish the VPS deployment path: Docker/Compose, GHCR pull access, Caddy, runtime secrets, backups, monitoring, and rollback.
 - [ ] Install and test the invitation and billing systemd timers on the VPS.
 - [ ] Run guarded production migrations/backfills and seed required baseline data, including portfolio themes/templates and beta promo codes.
-- [ ] Complete Lemon Squeezy live-mode setup and verify checkout, signed webhooks, subscription lifecycle, cancellation, and refund handling.
+- [ ] Select the first eligible live MoR (Lemon Squeezy, Creem, or Paddle as a sole proprietor), then complete its live-mode setup and verify checkout, signed webhooks, subscription lifecycle, cancellation, and refund handling.
 - [ ] Run final production checks: tenant isolation, auth/app smoke tests, all launch locales, 375 px checks, email/inquiry flows, WebSockets, monitoring, and rollback.
 - [ ] Record emergency contacts, legal/product approval, backup/RPO decisions, and the final go/no-go decision.
 
@@ -21,8 +21,8 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4
 
 ## Audited product and architecture baseline
 
-- The authoritative billing implementation is **Lemon Squeezy**, not Paddle. Evidence: `@lemonsqueezy/lemonsqueezy.js`, `lib/lemonsqueezy/`, `app/api/billing/checkout/route.ts`, `app/api/webhooks/lemonsqueezy/route.ts`, and `docs/lemonsqueezy-integration/lemonsqueezy-setup.md`. Do not provision Paddle unless the product decision changes; a conditional migration is listed under Delegated Engineering Work.
-- **MoR verification hedge (2026-07-18):** Lemon Squeezy's own live-mode verification is the launch-timeline risk (some reported KYC turnaround is 2+ weeks). Paddle remains excluded regardless of its own verification speed — it requires a registered business entity, and Gallurio still has none (PH individual/sole-proprietor only); that was the original reason for the Paddle→Lemon Squeezy migration and nothing has changed. As a hedge on the paperwork bottleneck only, a Creem.io verification/KYC application is being run in parallel with Lemon Squeezy's — no Creem integration code exists or is planned unless Creem clears first or Lemon Squeezy stalls/is rejected past an acceptable point, and Creem's PH sole-proprietor eligibility still needs direct confirmation from Creem before it's relied on. There is no `PaymentProvider` abstraction in the codebase; adding any second provider is a real migration (new client/plan/status/webhook modules, new routes, `Workspace` schema fields, env vars), not a config flag — see the Conditional Paddle migration item below for the shape that migration takes. Any future MoR, Creem included, must follow the same webhook-only durability pattern as Lemon Squeezy (see the checkout/webhook line below) — no reintroducing a durable workflow engine.
+- The authoritative billing implementation is **Lemon Squeezy** today. Evidence: `@lemonsqueezy/lemonsqueezy.js`, `lib/lemonsqueezy/`, `app/api/billing/checkout/route.ts`, `app/api/webhooks/lemonsqueezy/route.ts`, and `docs/lemonsqueezy-integration/lemonsqueezy-setup.md`. Lemon Squeezy, Creem, and a possible Paddle sole-proprietor application are the three launch MoR candidates; only the provider selected after live eligibility and approval verification may be provisioned for production billing.
+- **MoR decision gate (2026-07-18):** live activation timing is the launch risk. Lemon Squeezy and Creem verification/KYC may proceed in parallel, and Gallurio may also apply to Paddle as a PH sole proprietor. Confirm each provider's current sole-proprietor eligibility, Merchant-of-Record terms, payout/tax fit, and live approval directly before relying on it. Creem and Paddle have no integration code. There is no `PaymentProvider` abstraction: choosing either is a real migration (new client/plan/status/webhook modules, routes, `Workspace` fields, env vars, tests, and docs), not a config flag. Every selected provider must use the existing webhook-only durability principles; do not reintroduce a durable workflow engine.
 - The saleable catalog is **Gallurio Pro monthly** and **Gallurio Pro yearly**. Checkout accepts only `plan: "pro"`; the two cadences map to separate Lemon Squeezy variant IDs. Launch pages request live variant pricing and fall back to catalog amounts when the provider lookup fails, so live checkout/display parity still requires production verification.
 - The billing `starter` tier was removed from `PlanTier`, entitlements, draft caps, checkout mappings, and launch UI in PR #58. A guarded `2026-07-drop-starter-plan.ts` migration converts persisted Starter workspaces to `free`. Historical documentation and non-billing phrases such as "starter template" must not be confused with an active billing tier.
 - There is no owner-initiated production downgrade flow. Lemon Squeezy's customer portal is for payment-method updates, invoices, and cancellation. Cancellation preserves Pro access until the paid period ends. A development-only plan simulator and legacy "downgrade" recovery terminology remain fail-closed in production and are tracked below.
@@ -64,7 +64,7 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4
 
 ### Code and data gates
 
-- [x] Merge the `action/beta-release-cleanup` implementation target: PR #58 / merge commit `914de573` covers Delegated Engineering Work #1-#12 plus the code-wiring portion of #14. #13 (Paddle) was intentionally excluded because Lemon Squeezy remains authoritative.
+- [x] Merge the `action/beta-release-cleanup` implementation target: PR #58 / merge commit `914de573` covers Delegated Engineering Work #1-#12 plus the code-wiring portion of #14. The conditional alternative-MoR migration was intentionally excluded because Lemon Squeezy remains the implemented provider.
 - [ ] Close the residual items recorded under Delegated Engineering Work, especially verified beta promo redemption, terminal Lemon Squeezy payment mapping, lifecycle in-app recovery, universal email recovery/monitoring, migration-ledger gaps, cron failure alerting, and full async-state coverage.
 - [x] Add the guarded operator tooling for the two-month beta promo: `scripts/seed-promo-code.ts` (idempotent `beta2mo` PromoCode creation, code value never logged) and `lib/db/migrations/2026-07-beta-participation-backfill.ts` (backfills `User.betaParticipation` for pre-existing `plan:"beta"` workspace owners). Both use the shared `lib/db/scriptGuard.ts` dev/production guard. Running them against production, and reconciling redemption/eligibility end-to-end, remain open.
 - [ ] Pass `rtk vitest`, `rtk tsc`, `rtk lint`, and `rtk next build` against the final release commit and retain the full CI logs. *(Progress 2026-07-14: typecheck clean, lint clean (0 errors; only pre-existing unrelated warnings in vendored/skill scripts and one false-positive `jsx-a11y/alt-text` on `@react-pdf/renderer`'s non-DOM `Image`), `pnpm build` completes successfully. `pnpm test` is 4633/4640 passing — the remaining 7 failures span `seedPortfolio`, `(auth)/_actions`, `table-booking-manager`, and `EditorShell` (the same pre-existing `EditorShell` failure noted below), none touched by this session's beta/billing/team-management/branding work. This has not yet been run against a frozen final release commit or retained as archived CI evidence — that step remains open.)*
@@ -203,7 +203,7 @@ WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4
 - [ ] Configure delivery/bounce/complaint monitoring and alerts. If Resend webhooks are added, verify signatures, make processing idempotent, and exclude the endpoint from Cloudflare challenges/caching. *(Progress: the Resend bounce/complaint webhook is implemented — `app/api/webhooks/resend/route.ts` verifies the svix signature, dedupes via the shared `WebhookEvent` ledger, and logs `email.bounced`/`email.complained` events. Not yet done: actual alert routing on those log lines, and excluding the endpoint from Cloudflare challenges/caching, which needs the production Cloudflare setup from Phase 2's Domain/DNS section.)*
 - [ ] Verify an email API failure is visible to operations and recoverable; current transport returns a failure/skipped result while many callers treat delivery as best effort.
 
-### Lemon Squeezy billing
+### Lemon Squeezy billing (complete only if Lemon Squeezy is selected)
 
 - [ ] Complete live-store activation, business/identity verification, tax details, bank/payout setup, support contact, statement descriptor, refund policy, terms/privacy URLs, and payout alerts.
 - [ ] Create exactly one live **Gallurio Pro** subscription product with two variants: monthly and yearly. Do not create Starter or a downgrade target.
@@ -276,12 +276,12 @@ Script-only/development variables must not be injected into the application proc
 
 - [ ] **1. Freeze and verify code:** select release SHA; complete delegated blockers; pass tests, typecheck, lint, build, security/tenant review, locale parity, and 375 px checks.
 - [ ] **2. Protect data:** take/verify Atlas snapshot; record counts/indexes; dry-run migrations/backfills on a clone; approve rollback compatibility.
-- [ ] **3. Prepare services:** finish Hetzner, Atlas, the Lemon Squeezy live store, monitoring, backups, and secret-store setup without directing public traffic. WorkOS, Resend, Turnstile, and Cloudflare Images/DNS are treated as complete production prerequisites.
+- [ ] **3. Prepare services:** finish Hetzner, Atlas, the selected MoR's live store/account, monitoring, backups, and secret-store setup without directing public traffic. WorkOS, Resend, Turnstile, and Cloudflare Images/DNS are treated as complete production prerequisites.
 - [ ] **4. Stage environment:** install the production environment on the server, run startup validation, verify no development/test credentials or flags, and keep live billing webhooks disabled until the app is healthy.
 - [ ] **5. Deploy release:** install from lockfile, build in an immutable release directory, start on a local/staging port, run health/readiness and server-side smoke checks, then atomically switch PM2/Caddy.
 - [ ] **6. Apply data changes:** run only approved idempotent migrations/backfills and reviewed index synchronization; capture before/after results.
 - [ ] **7. Activate DNS/TLS:** point/proxy DNS, verify Full (strict), canonical host, wildcard portfolios if applicable, origin protection, visitor IPs, WebSockets, caching exclusions, and external monitoring.
-- [ ] **8. Activate callbacks/webhooks:** enable WorkOS and Lemon Squeezy production endpoints, exempt them from challenges/cache, send signed tests, and verify logs/DB state without PII.
+- [ ] **8. Activate callbacks/webhooks:** enable WorkOS and the selected MoR's production endpoints, exempt them from challenges/cache, send signed tests, and verify logs/DB state without PII.
 - [ ] **9. Activate live billing:** confirm live mode, live variants, exact prices/currency/tax, customer portal, dunning, and payouts; then allow production checkout traffic.
 - [ ] **10. Run smoke tests:** execute the post-deployment and billing suites below with controlled accounts and clean up test workspaces/subscriptions according to policy.
 - [ ] **11. Observe:** maintain an elevated monitoring window covering auth, email, uploads, database, cron, Socket.IO, checkout, webhooks, expiry/replay, 4xx/5xx, CPU/memory/disk, and support channels.
@@ -367,7 +367,7 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 - [x] **#10 Scheduled-job foundation:** added transactional/paginated invitation-seat processing, its supporting index, and versioned systemd units for both jobs.
 - [x] **#11 Launch copy/pricing foundation:** aligned launch copy with the one-month/Pro-only model and reads both live Lemon Squeezy variants with a fallback.
 - [x] **#12 Async-state foundation:** added route loading skeletons and a shared accessible empty-state primitive to the targeted launch surfaces.
-- [ ] **#13 Paddle migration:** intentionally deferred/not applicable while Lemon Squeezy remains the signed launch provider.
+- [ ] **#13 Alternative-MoR migration:** required only if Creem or Paddle is selected; intentionally deferred while Lemon Squeezy remains the implemented provider.
 
 ### 1. Remove legacy Starter billing state
 
@@ -527,12 +527,12 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 - **Tests:** component/route state tests and focused Playwright flows at 375 px plus desktop.
 - **Locales:** yes for any added user copy in all five.
 
-### 13. Conditional Paddle migration only if the product decision changes
+### 13. Conditional Creem or Paddle migration if either is selected for launch
 
-- **Priority:** later, but blocking before launch if Paddle is reaffirmed
+- **Priority:** blocking before launch if Creem or Paddle is selected
 - **Likely files/modules:** replace `@lemonsqueezy/lemonsqueezy.js`, `lib/lemonsqueezy/*`, checkout/webhook routes, billing actions/UI/copy, Workspace `ls*` fields and migration, env schema/example, tests, and provider documentation.
-- **Current behavior:** Lemon Squeezy is implemented end to end and is the repository authority; Paddle exists only in stale project guidance.
-- **Required behavior:** if Paddle is selected, produce and execute a deliberate provider migration with live price IDs for Pro monthly/yearly, raw-body HMAC verification, durable idempotent webhooks, customer portal/cancellation, data migration/reconciliation, and removal of Lemon Squeezy code/config.
+- **Current behavior:** Lemon Squeezy is implemented end to end and is the repository authority; Creem and Paddle have no code/configuration here.
+- **Required behavior:** if Creem or Paddle is selected, produce and execute a deliberate provider migration with live price IDs for Pro monthly/yearly, raw-body signature verification, durable idempotent webhooks, customer portal/cancellation, data migration/reconciliation, and removal of obsolete Lemon Squeezy code/config.
 - **Why:** silently mixing provider guidance and implementation can charge customers incorrectly or lose subscription state.
 - **Acceptance criteria:** a signed architecture decision names one provider; only that provider appears in dependencies, env, routes, fields, UI, legal copy, tests, and operations; migration/cutover/rollback is rehearsed.
 - **Tests:** signature, price mapping, checkout, webhook retry/idempotency, cancellation/expiry/refund/dunning, tenant isolation, migration, locale parity.
@@ -540,8 +540,8 @@ PR #58 merged the beta-release cleanup implementation on 2026-07-13. The checked
 
 ## Open Decisions / Assumptions
 
-- Lemon Squeezy is assumed to remain the launch billing provider because it is the only implemented provider. Paddle guidance is treated as stale until a signed product/architecture decision says otherwise.
-- Creem.io verification is running in parallel with Lemon Squeezy's as a KYC-turnaround hedge only (see "MoR verification hedge" above); no Creem code exists or is planned unless it's actually needed. If it becomes needed, its migration follows the same shape as item #13 above (new provider modules/routes/schema fields, not a flag), and it must stay webhook-only per the existing durability architecture — no durable workflow engine.
+- Lemon Squeezy is the only implemented provider, not a final launch commitment. Lemon Squeezy, Creem, and Paddle are candidates until one is live-approved and explicitly selected.
+- Creem and Paddle have no code/configuration. If either is selected, its migration follows item #13 (new provider modules/routes/schema fields, not a flag) and must remain webhook-only per the existing durability architecture — no durable workflow engine.
 - The beta host decision is `https://www.gallurio.com/w/<slug>` for now. Wildcard portfolio subdomains and custom hostnames are deferred until after beta.
 - The live Pro currency, monthly/yearly amounts, taxes, trial, dunning, refund, and payout configuration cannot be confirmed from code. The live API/dashboard must remain authoritative; static PHP fallback values are not proof of live checkout configuration.
 - The code now implements one free month, optional beta grants, active/canceled Pro, dunning retention, a staged lapse lifecycle, the two-month global beta-close, and the participant-only two-month promo (with active-Pro stacking). Final legal/support copy approval is still open.

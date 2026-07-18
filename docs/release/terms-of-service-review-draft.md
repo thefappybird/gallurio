@@ -1,9 +1,8 @@
 # Gallurio Terms of Service Review Draft
 
-Status: published — merged into live pages on 2026-07-18.
-
-Status: review draft. Replace placeholders and obtain legal approval before
-publishing. This draft is not legal advice.
+Status: provider-selection and legal review draft. Replace placeholders only
+after the MoR decision, then obtain legal approval before publishing. This draft
+is not legal advice.
 
 **Effective date:** `[Month Day, Year]`
 
@@ -51,12 +50,12 @@ misleading, or confidential material without authorization.
 
 ## 5. Pro subscriptions
 
-Gallurio Pro is offered through monthly and yearly Lemon Squeezy variants only.
+Gallurio Pro is offered through monthly and yearly `[Selected Merchant of Record]` variants only.
 There is no Starter product or customer-selected downgrade plan. Prices,
 currency, taxes, billing period, and checkout terms are shown before payment
-and are authoritative as displayed by the live Lemon Squeezy configuration.
+and are authoritative as displayed by the live selected-provider configuration.
 
-Lemon Squeezy is Gallurio's Merchant of Record and may process payments, taxes,
+`[Selected Merchant of Record]` is Gallurio's Merchant of Record and may process payments, taxes,
 invoices, billing support, and eligible refunds under its terms and applicable
 law.
 
@@ -66,9 +65,9 @@ Users may cancel through the available billing portal. Cancellation normally
 stops future renewal and does not immediately remove access during the paid
 period.
 
-Gallurio follows Lemon Squeezy's payment status. A transient payment failure,
+Gallurio follows the selected provider's payment status. A transient payment failure,
 past-due status, or pause does not by itself determine that access has ended.
-Gallurio limits access when Lemon Squeezy reports a terminal non-payment,
+Gallurio limits access when the selected provider reports a terminal non-payment,
 expiry, refund, or other provider-authoritative terminal event.
 
 After expiry, access is routed to subscription recovery. Gallurio retains the
@@ -78,7 +77,7 @@ retention period; resubscribing can restore access and permit republishing.
 ## 7. Refunds
 
 Refunds and payment disputes are handled under the applicable Refund Policy,
-Lemon Squeezy's process, and applicable consumer-protection law. Cancellation
+the selected provider's process, and applicable consumer-protection law. Cancellation
 does not automatically create a refund for prior charges or unused time unless
 required by law or approved under the applicable process.
 
@@ -95,6 +94,7 @@ termination language for the operating jurisdiction.
 
 - Confirm operator identity, jurisdiction, governing law, and dispute process.
 - Confirm the final beta close date and participant promo redemption rule.
-- Confirm provider-terminal payment language against Lemon Squeezy behavior.
+- Insert the selected MoR and confirm provider-terminal payment language against
+  its actual behavior before publishing.
 - Reconcile retention/unpublish language with the lifecycle implementation.
 - Publish the approved version in `en`, `fil`, `id`, `ar`, and `th`.

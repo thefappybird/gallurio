@@ -1,9 +1,8 @@
 # Gallurio Refund and Cancellation Policy Review Draft
 
-Status: published — merged into live pages on 2026-07-18.
-
-Status: review draft. Replace placeholders and obtain legal/provider approval
-before publishing. This draft is not legal advice.
+Status: provider-selection and legal review draft. Replace placeholders only
+after the MoR decision, then obtain legal/provider approval before publishing.
+This draft is not legal advice.
 
 **Effective date:** `[Month Day, Year]`
 
@@ -18,21 +17,21 @@ verified beta participant and expires two months after redemption.
 
 ## 2. Paid subscriptions
 
-Gallurio Pro is billed monthly or yearly through Lemon Squeezy. The price,
+Gallurio Pro is billed monthly or yearly through `[Selected Merchant of Record]`. The price,
 currency, billing period, taxes, and checkout terms shown by the live provider
 configuration govern the transaction.
 
 ## 3. Cancellation
 
 Users may cancel through the Gallurio billing portal or the billing-management
-flow provided by Lemon Squeezy. Cancellation stops future renewal charges. It
+flow provided by `[Selected Merchant of Record]`. Cancellation stops future renewal charges. It
 does not normally refund a previous charge or remove access before the end of
 the paid period.
 
 ## 4. Failed payment and terminal expiry
 
-Gallurio follows Lemon Squeezy's decision. A payment-failed, past-due, or
-paused notification is not treated as final on its own. When Lemon Squeezy
+Gallurio follows the selected provider's decision. A payment-failed, past-due, or
+paused notification is not treated as final on its own. When the selected provider
 reports a terminal non-payment/expiry decision, Gallurio gates workspace access
 and starts the retained-data lifecycle.
 
@@ -43,13 +42,13 @@ resubscription recovery.
 
 ## 5. Refund requests
 
-Refund requests are reviewed under Lemon Squeezy's process, applicable law, and
+Refund requests are reviewed under the selected provider's process, applicable law, and
 the facts of the transaction. A request may consider purchase date, billing
 period, duplicate charges, technical failure, account activity, usage, and
 applicable consumer-protection requirements. Submitting a request does not
 guarantee approval.
 
-Where Lemon Squeezy is the Merchant of Record, the customer may be directed to
+Where the selected provider is the Merchant of Record, the customer may be directed to
 the provider's billing/refund process. Gallurio should provide a clear support
 path for account mapping, duplicate-charge investigation, and technical
 issues.
@@ -61,13 +60,13 @@ renewal, temporary non-use, or a change of mind after substantial use.
 ## 6. How to request help
 
 Contact `[billing/support email]` with the account email, workspace/business
-name, payment date, Lemon Squeezy receipt or billing reference, and a concise
+name, payment date, provider receipt or billing reference, and a concise
 description of the issue. Do not send full payment-card details.
 
 ## Review checklist
 
-- Confirm Lemon Squeezy's live refund/cancellation workflow and customer-facing
-  contact path.
+- Insert the selected MoR, then confirm its live refund/cancellation workflow
+  and customer-facing contact path. Do not publish this draft before selection.
 - Confirm whether the provider or Gallurio owns each refund decision.
 - Confirm any statutory cooling-off, tax, or consumer-rights language.
 - Confirm beta promo grants are clearly distinguished from paid purchases.

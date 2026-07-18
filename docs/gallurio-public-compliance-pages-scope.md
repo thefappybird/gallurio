@@ -2,7 +2,7 @@
 
 ## Objective
 
-Create the minimum public-facing pages required to make Gallurio presentable for Lemon Squeezy review and early beta credibility.
+Create the minimum public-facing pages required to make Gallurio presentable for Merchant-of-Record (MoR) review and early beta credibility.
 
 This task is for implementing **content structure only**. Do not over-design these pages. The visual design, layout refinements, branding, spacing, components, and final UX decisions will be handled separately.
 
@@ -13,7 +13,7 @@ The goal is to publish a credible SaaS public shell that clearly explains:
 - What the product does
 - How pricing/beta access works
 - How terms, privacy, refunds, and support are handled
-- That payments will be processed through Lemon Squeezy when paid plans go live
+- That payments will be processed through the selected MoR when paid plans go live
 
 Gallurio should be framed as a **software/SaaS product for creative professionals**, not as a photography/event service provider.
 
@@ -31,7 +31,7 @@ Core product direction:
 - Booking inquiry forms
 - Business profile/workspace setup
 - Future subscription plans
-- Lemon Squeezy as Merchant of Record for payments
+- The selected MoR for payments (insert only after the provider decision)
 
 The product may still be in beta. The site should be honest about that while still looking credible and production-ready enough for review.
 
@@ -56,7 +56,7 @@ Each page should be publicly accessible without authentication.
 
 Do not require a logged-in session to view any of these pages.
 
-Do not connect live Lemon Squeezy checkout unless explicitly configured elsewhere. These pages are informational and compliance-oriented.
+Do not connect live checkout unless the selected MoR is explicitly configured elsewhere. These pages are informational and compliance-oriented.
 
 ---
 
@@ -93,7 +93,7 @@ Route:
 
 Purpose:
 
-Explain what Gallurio is and make the product credible to visitors, beta users, and Lemon Squeezy reviewers.
+Explain what Gallurio is and make the product credible to visitors, beta users, and MoR reviewers.
 
 ### Required Sections
 
@@ -204,7 +204,7 @@ Route:
 
 Purpose:
 
-Give Lemon Squeezy and users a clear understanding of pricing intent, even if real paid plans are not live yet.
+Give the selected MoR and users a clear understanding of pricing intent, even if real paid plans are not live yet.
 
 ### Required Sections
 
@@ -325,7 +325,7 @@ Priority feature access
 Include:
 
 ```txt
-When paid subscriptions become available, payments will be processed securely by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, tax calculation, invoices, billing support, and eligible refund processing.
+When paid subscriptions become available, payments will be processed securely by `[Selected Merchant of Record]`. `[Selected Merchant of Record]` may handle payment processing, tax calculation, invoices, billing support, and eligible refund processing.
 
 No real payments are collected during the beta unless clearly stated at checkout.
 ```
@@ -462,7 +462,7 @@ Include:
 ```txt
 Some Gallurio features may require a paid subscription.
 
-When paid plans become available, billing may be processed by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.
+When paid plans become available, billing may be processed by `[Selected Merchant of Record]`. `[Selected Merchant of Record]` may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.
 
 Users will be shown applicable pricing and billing terms before completing a purchase.
 ```
@@ -545,7 +545,7 @@ Route:
 
 Purpose:
 
-Publish a basic privacy policy explaining what Gallurio collects, why, and how third-party processors like Lemon Squeezy may be involved.
+Publish a basic privacy policy explaining what Gallurio collects, why, and how the selected MoR may be involved.
 
 Add a visible effective date placeholder:
 
@@ -594,7 +594,7 @@ Gallurio may collect technical and usage data such as device information, browse
 ##### Payment Information
 
 ```txt
-When paid features become available, payments may be processed by Lemon Squeezy, Gallurio’s Merchant of Record. Gallurio does not directly store full payment card details. Lemon Squeezy may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices.
+When paid features become available, payments may be processed by `[Selected Merchant of Record]`, Gallurio's Merchant of Record. Gallurio does not directly store full payment card details. `[Selected Merchant of Record]` may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices.
 ```
 
 #### 2. How We Use Information
@@ -715,7 +715,7 @@ Route:
 
 Purpose:
 
-Clearly state beta/payment/refund expectations and Lemon Squeezy’s role.
+Clearly state beta/payment/refund expectations and the selected MoR's role.
 
 Add a visible effective date placeholder:
 
@@ -763,7 +763,7 @@ Account activity
 Technical issues
 Duplicate charges
 Applicable consumer protection laws
-Lemon Squeezy’s payment and refund process
+The selected MoR's payment and refund process
 ```
 
 Include:
@@ -772,14 +772,14 @@ Include:
 Submitting a refund request does not guarantee that a refund will be approved.
 ```
 
-#### 4. Lemon Squeezy as Merchant of Record
+#### 4. Selected Merchant of Record
 
 Include:
 
 ```txt
-Payments for Gallurio may be processed by Lemon Squeezy, Gallurio’s Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and eligible refund processing.
+Payments for Gallurio may be processed by `[Selected Merchant of Record]`, Gallurio's Merchant of Record. `[Selected Merchant of Record]` may handle payment processing, taxes, invoices, billing support, and eligible refund processing.
 
-If a user purchases a Gallurio subscription through Lemon Squeezy, their billing statement may show Lemon Squeezy or a related Lemon Squeezy billing descriptor.
+If a user purchases a Gallurio subscription through `[Selected Merchant of Record]`, their billing statement may show that provider's billing descriptor.
 ```
 
 #### 5. Non-Refundable Situations
@@ -854,7 +854,7 @@ Route:
 
 Purpose:
 
-Give users and Lemon Squeezy reviewers a clear support/contact path.
+Give users and MoR reviewers a clear support/contact path.
 
 ### Required Sections
 
@@ -945,7 +945,7 @@ Footer links should be visible on all public pages.
 - Pages must be accessible without authentication.
 - Avoid relying on user workspace data for these public pages.
 - Avoid fetching private app data for these routes.
-- Avoid adding Lemon Squeezy checkout buttons unless the project already has a clear beta/payment flow.
+- Avoid adding checkout buttons until the selected MoR has a clear beta/payment flow.
 - Use placeholders for contact/legal details where exact business information is not available.
 - Keep content easy to edit later.
 - Use semantic HTML headings.
@@ -956,14 +956,14 @@ Footer links should be visible on all public pages.
 
 ---
 
-## Lemon Squeezy Review Notes
+## Merchant of Record Review Notes
 
 These pages should help communicate that:
 
 ```txt
 Gallurio is a SaaS product.
 Gallurio sells software access, not direct photography or event services.
-Lemon Squeezy will be the Merchant of Record for future paid subscriptions.
+`[Selected Merchant of Record]` will be the Merchant of Record for paid subscriptions. Do not replace this placeholder until the provider decision is final.
 Users can understand pricing intent before paying.
 Users can find refund, privacy, terms, and support information.
 The product can be beta-stage while still having credible public policies.
@@ -979,8 +979,8 @@ The task is complete when:
 / is publicly available and explains Gallurio clearly.
 /pricing is publicly available and explains beta access plus planned paid subscriptions.
 /terms is publicly available and includes SaaS terms.
-/privacy is publicly available and explains data collection, public content, booking inquiries, and Lemon Squeezy payment handling.
-/refunds is publicly available and explains cancellations, refund requests, beta payment status, and Lemon Squeezy’s role.
+/privacy is publicly available and explains data collection, public content, booking inquiries, and selected-MoR payment handling.
+/refunds is publicly available and explains cancellations, refund requests, beta payment status, and the selected MoR's role.
 /contact is publicly available and includes a support email placeholder.
 All public pages are linked in the footer.
 No page requires authentication.
@@ -999,10 +999,10 @@ Do not implement:
 Final visual design system
 Custom illustrations
 Final marketing copy polish
-Live Lemon Squeezy checkout
+Live selected-MoR checkout
 Subscription checkout logic
 User billing portal
-Lemon Squeezy webhook handling
+Selected-MoR webhook handling
 Authentication changes
 Database schema changes
 Admin CMS editing
@@ -1036,7 +1036,7 @@ Description: Learn how Gallurio collects, uses, stores, and protects information
 
 Refunds
 Title: Refund Policy — Gallurio
-Description: Learn how Gallurio handles cancellations, refunds, and Lemon Squeezy payment processing.
+Description: Learn how Gallurio handles cancellations, refunds, and payment processing.
 
 Contact
 Title: Contact — Gallurio

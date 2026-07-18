@@ -1,7 +1,8 @@
 # Beta and Billing Follow-up Tasks for Delegation
 
-Scope: implement the approved Gallurio beta and Lemon Squeezy billing policy.
-Keep the existing decisions: Lemon Squeezy is authoritative, Gallurio Pro has
+Scope: implement the approved Gallurio beta and payment-provider policy.
+Keep the existing decisions: Lemon Squeezy is the current implementation,
+while Lemon Squeezy, Creem, and Paddle are launch candidates; Gallurio Pro has
 monthly/yearly variants only, public portfolios use `/w/<slug>` during beta,
 and no user data is deleted when access ends.
 
@@ -44,13 +45,14 @@ and no user data is deleted when access ends.
    - Update subscription/access messaging so beta closure and the two-month
      promo are not described as perpetual beta access.
 
-## Lemon Squeezy payment policy
+## Current Lemon Squeezy payment policy
 
 5. Identify the provider-authoritative terminal payment signal.
    - Verify the exact Lemon Squeezy event/status payload for exhausted retries,
      unpaid/terminal subscriptions, expiry, and refunds in test mode.
    - Keep `subscription_payment_failed`, `past_due`, and `paused` as non-final
-     unless Lemon Squeezy explicitly marks the subscription terminal.
+     unless Lemon Squeezy explicitly marks the subscription terminal. Re-derive
+     this provider mapping if Creem or Paddle is selected.
    - Expire the workspace only from the approved terminal provider signal.
 
 6. Implement and test terminal mapping.
