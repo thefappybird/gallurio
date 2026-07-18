@@ -1,23 +1,24 @@
 # Gallurio Beta-to-Production Launch Checklist
 
-Last updated: 2026-07-15 (reconciled with origin/chore-release-prep, plus Cloudflare Images, MongoDB Atlas, and Resend production setup evidence)
+Last updated: 2026-07-18 (current-branch release review; beta-first launch while Merchant-of-Record approval is pending)
 
 Use this as the release gate for the first production deployment. Checked items are supported either by merged-code evidence or by recorded operational evidence from the named production accounts and infrastructure. Any item marked as progress remains open until it is configured and tested in the target environment.
 
 ## Short list: what is still pending
 
 - [ ] Clean the working tree and decide which current changes belong in the release.
-- [ ] Resolve, fix, or explicitly accept the 7 remaining unit-test failures.
+- [ ] Fix the 3 current lint errors and make the full Vitest suite complete; it exceeded the 120-second review window, while TypeScript and the production build pass.
 - [ ] Freeze the release commit; record the full SHA, image digest, migration list, and rollback SHA.
+- [ ] Make beta-only mode a server-enforced production mode: allow startup with no selected MoR credentials, reject direct checkout requests, hide/disable checkout and subscription-management controls outside onboarding, and remove active public Lemon Squeezy/MoR claims until a provider is selected.
+- [ ] Replace the stale PM2/host-build deployment artifacts with the final Docker/Compose shape: Dockerfile, Compose file, production Caddy configuration, and Docker-safe startup command.
 - [ ] Set up and test GitHub Actions for final checks, immutable image publishing, VPS deployment, health checks, deployment notifications, and rollback.
 - [ ] Finish the VPS deployment path: Docker/Compose, GHCR pull access, Caddy, runtime secrets, backups, monitoring, and rollback.
 - [ ] Install and test the invitation and billing systemd timers on the VPS.
-- [ ] Run guarded production migrations/backfills and seed required baseline data, including portfolio themes/templates and beta promo codes.
-- [ ] Select the first eligible live MoR (Lemon Squeezy, Creem, or Paddle as a sole proprietor), then complete its live-mode setup and verify checkout, signed webhooks, subscription lifecycle, cancellation, and refund handling.
-- [ ] Run final production checks: tenant isolation, auth/app smoke tests, all launch locales, 375 px checks, email/inquiry flows, WebSockets, monitoring, and rollback.
+- [ ] Run guarded production migrations/backfills and seed only required baseline data: beta promo codes and beta-participation records. Portfolio themes/templates are code-defined and generated on demand; do not run the development seed against production.
+- [ ] Run deployed-host-only checks: tenant isolation, production auth/email/inquiry/upload flows, WebSockets, timers, monitoring, backup/restore, and rollback. Application end-to-end and notification testing are recorded as complete for this beta release.
 - [ ] Record emergency contacts, legal/product approval, backup/RPO decisions, and the final go/no-go decision.
 
-WorkOS, Resend, Turnstile, Cloudflare Images/DNS, and the VPS resize to 2 vCPU/4 GiB are treated as completed prerequisites. Their detailed post-deployment smoke tests remain below where they are part of end-to-end verification.
+WorkOS, Resend, Turnstile, Cloudflare Images/DNS, the VPS resize to 2 vCPU/4 GiB, and application end-to-end/notification testing are treated as completed prerequisites. Workflow/Postgres is removed from the deployment plan. Lemon Squeezy, Creem, and Paddle live billing are deferred until one provider approves Gallurio; they are not beta-launch blockers.
 
 ## Audited product and architecture baseline
 
