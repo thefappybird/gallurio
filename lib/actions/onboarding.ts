@@ -15,6 +15,7 @@ import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
 import { grantPlan } from "@/lib/billing/grantPlan";
 import { isBetaProgramClosed } from "@/lib/billing/betaProgram";
+import { hasActivatedOnboardingPlan } from "@/lib/onboarding/planActivation";
 import {
   businessStepSchema,
   workspaceSetupSchema,
@@ -277,6 +278,10 @@ export async function selectFreePlanAction(): Promise<ActionResult> {
   if (!hasActiveGrant) return { error: "free_trial_already_used" };
 
   await setUserStep(authUser.workosUserId, "done");
+  await Workspace.updateOne(
+    { _id: ownerMembership.workspaceId },
+    { $set: { onboardingPlanSelection: "free" } }
+  );
   return { ok: true };
 }
 
@@ -305,7 +310,17 @@ export async function activateBetaTesterAction(): Promise<ActionResult> {
   const ownerMembership = user?.memberships.find((m) => m.role === "owner");
   if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
 
+  const workspace = await Workspace.findById(ownerMembership.workspaceId)
+    .select({ plan: 1, everSubscribed: 1, codesRedeemed: 1 })
+    .lean();
+  if (!workspace) return { error: "workspace_not_found" };
+  if (hasActivatedOnboardingPlan(workspace)) return { error: "onboarding_plan_locked" };
+
   await grantPlan(ownerMembership.workspaceId, { plan: "beta", expiresAt: null });
+  await Workspace.updateOne(
+    { _id: ownerMembership.workspaceId },
+    { $set: { onboardingPlanSelection: "beta" } }
+  );
 
   // Set once, permanently — durable identity-level evidence of beta
   // participation, independent of the workspace's plan.

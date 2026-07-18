@@ -192,6 +192,22 @@ describe("GET /api/auth/callback — invite cookie forwarding", () => {
     expect(res.headers.get("location") ?? "").toContain("/bookings");
   });
 
+  it("uses the configured public app origin instead of an internal request origin", async () => {
+    const previousAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "https://dev.gallurio.com/";
+    try {
+      const { GET } = await loadRoute();
+      const url = buildCallbackUrl({ code: "code_abc", state: signedState() });
+
+      const res = await GET(makeReq(url));
+
+      expect(res.headers.get("location")).toBe("https://dev.gallurio.com/onboarding");
+    } finally {
+      if (previousAppUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+      else process.env.NEXT_PUBLIC_APP_URL = previousAppUrl;
+    }
+  });
+
   it("invite cookie takes priority over returnTo when both are present", async () => {
     const { GET } = await loadRoute();
     const url = buildCallbackUrl({

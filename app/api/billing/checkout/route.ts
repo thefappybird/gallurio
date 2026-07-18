@@ -7,6 +7,7 @@ import { createSubscriptionCheckout } from "@/lib/lemonsqueezy/client";
 import { getPlanCatalog, isPaidPlan } from "@/lib/lemonsqueezy/plans";
 import { rateLimit } from "@/lib/server/rateLimit";
 import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
+import { hasActivatedOnboardingPlan } from "@/lib/onboarding/planActivation";
 
 export const runtime = "nodejs";
 
@@ -46,6 +47,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
   const { plan, cadence, onboarding, returnTo } = parsed.data;
+
+  if (onboarding && hasActivatedOnboardingPlan(ctx.workspace)) {
+    return NextResponse.json({ error: "onboarding_plan_locked" }, { status: 409 });
+  }
 
   if (!isPaidPlan(plan)) {
     return NextResponse.json(

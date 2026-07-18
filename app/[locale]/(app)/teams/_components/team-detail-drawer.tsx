@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/navigation";
 import { Loader2Icon, MailPlusIcon, MailXIcon, UserPlusIcon } from "lucide-react";
@@ -56,7 +56,6 @@ export function TeamDetailDrawer({
   pendingInvites,
   maxMembersPerTeam,
   ownerWorkosUserId,
-  workspaceId,
   canManage,
   onInvite,
 }: Props) {
@@ -64,9 +63,19 @@ export function TeamDetailDrawer({
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addValue, setAddValue] = useState("");
-  const [leadWarnFor, setLeadWarnFor] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<RemoveMemberTarget | null>(null);
+  const [roleOverrides, setRoleOverrides] = useState<Map<string, "member" | "lead">>(new Map());
   const [, startTransition] = useTransition();
+  const previousMembers = useRef(members);
+
+  // Keep successful optimistic roles visible until a refresh delivers new
+  // members props. Clearing them before that creates a visible snap-back.
+  useEffect(() => {
+    if (members !== previousMembers.current) {
+      previousMembers.current = members;
+      setRoleOverrides((previous) => (previous.size ? new Map() : previous));
+    }
+  }, [members]);
 
   if (!team) {
     return (
@@ -89,12 +98,10 @@ export function TeamDetailDrawer({
   const atCap = team.memberCount >= maxMembersPerTeam;
 
   function roleOf(m: MemberSummary): "member" | "lead" {
-    return m.teams.find((tm) => tm.teamId === teamId)?.role ?? "member";
+    return roleOverrides.get(m.workosUserId)
+      ?? m.teams.find((tm) => tm.teamId === teamId)?.role
+      ?? "member";
   }
-
-  // A team may have at most one lead. Once one exists, every other member's lead
-  // toggle is disabled; clicking it surfaces a validation popover instead.
-  const teamHasLead = teamMembers.some((m) => roleOf(m) === "lead");
 
   function handleAdd(workosUserId: string) {
     if (!workosUserId) return;
@@ -119,18 +126,36 @@ export function TeamDetailDrawer({
   }
 
   function handleSetLead(workosUserId: string, isLead: boolean) {
+    if (busyId !== null) return;
+    const previousRoles = new Map(roleOverrides);
+    setRoleOverrides(() => {
+      const next = new Map(roleOverrides);
+      if (isLead) {
+        for (const member of teamMembers) {
+          if (roleOf(member) === "lead") next.set(member.workosUserId, "member");
+        }
+      }
+      next.set(workosUserId, isLead ? "lead" : "member");
+      return next;
+    });
     setBusyId(workosUserId);
     startTransition(async () => {
-      const result = await setLeadFlagAction({ workosUserId, teamId, isLead });
-      setBusyId(null);
-      if (result.error) {
-        toast.error(t("errors.generic"));
-        return;
+      const request = setLeadFlagAction({ workosUserId, teamId, isLead }).then((result) => {
+        if (result.error) throw new Error(result.error);
+      });
+      toast.promise(request, {
+        loading: isLead ? t("assignment.toasts.promoting") : t("assignment.toasts.demoting"),
+        success: isLead ? t("assignment.toasts.promoted") : t("assignment.toasts.demoted"),
+        error: () => t("errors.generic"),
+      });
+      try {
+        await request;
+        router.refresh();
+      } catch {
+        setRoleOverrides(previousRoles);
+      } finally {
+        setBusyId(null);
       }
-      toast.success(
-        isLead ? t("assignment.toasts.promoted") : t("assignment.toasts.demoted"),
-      );
-      router.refresh();
     });
   }
 
@@ -183,8 +208,7 @@ export function TeamDetailDrawer({
                 {teamMembers.map((m) => {
                   const isOwner = m.workosUserId === ownerWorkosUserId;
                   const isLead = roleOf(m) === "lead";
-                  const blocked = teamHasLead && !isLead;
-                  const busy = busyId === m.workosUserId;
+                  const busy = busyId !== null;
                   return (
                     <li
                       key={m.workosUserId}
@@ -202,6 +226,11 @@ export function TeamDetailDrawer({
                         <span className="truncate text-xs text-muted-foreground">
                           {m.email}
                         </span>
+                        {!isOwner && (
+                          <Badge variant="outline" className="mt-1 w-fit text-xs">
+                            {isLead ? t("drawer.leadToggleLabel") : t("members.memberBadge")}
+                          </Badge>
+                        )}
                       </div>
                       {!isOwner && canManage && (
                         <div className="flex shrink-0 items-center gap-3">
@@ -210,66 +239,16 @@ export function TeamDetailDrawer({
                             className="flex items-center gap-1.5 text-xs text-muted-foreground"
                           >
                             {t("drawer.leadToggleLabel")}
-                            {blocked ? (
-                              // Lead already taken: render a disabled-looking
-                              // switch that surfaces a validation popup just above
-                              // it on hover, keyboard focus, or tap (kept off
-                              // hover-only so touch + keyboard users see it too). A
-                              // real button with aria-disabled keeps it
-                              // keyboard-focusable and announces the disabled state
-                              // (color is not the only signal). It mirrors the
-                              // Switch's off-state styles.
-                              <span className="relative inline-flex">
-                                <button
-                                  type="button"
-                                  id={`lead-${m.workosUserId}`}
-                                  role="switch"
-                                  aria-checked={false}
-                                  aria-disabled
-                                  aria-label={t("drawer.leadToggleLabel")}
-                                  aria-describedby={
-                                    leadWarnFor === m.workosUserId
-                                      ? `lead-warn-${m.workosUserId}`
-                                      : undefined
-                                  }
-                                  onMouseEnter={() => setLeadWarnFor(m.workosUserId)}
-                                  onMouseLeave={() => setLeadWarnFor(null)}
-                                  onFocus={() => setLeadWarnFor(m.workosUserId)}
-                                  onBlur={() => setLeadWarnFor(null)}
-                                  onClick={() => setLeadWarnFor(m.workosUserId)}
-                                  className="inline-flex h-5 w-9 shrink-0 cursor-not-allowed items-center border border-input bg-input opacity-50 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                                >
-                                  <span className="pointer-events-none block size-4 translate-x-0 bg-background" />
-                                </button>
-                                {leadWarnFor === m.workosUserId && (
-                                  <span
-                                    id={`lead-warn-${m.workosUserId}`}
-                                    role="alert"
-                                    className="absolute bottom-full end-0 z-50 mb-2 w-48 border border-destructive bg-popover p-2 text-xs leading-snug text-destructive shadow-md"
-                                  >
-                                    {t("drawer.leadOnlyOnePerTeam")}
-                                  </span>
-                                )}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5">
-                                <Switch
-                                  id={`lead-${m.workosUserId}`}
-                                  checked={isLead}
-                                  disabled={busy}
-                                  aria-busy={busy}
-                                  onCheckedChange={(v) =>
-                                    handleSetLead(m.workosUserId, v)
-                                  }
-                                />
-                                {busy && (
-                                  <Loader2Icon
-                                    className="size-3 shrink-0 animate-spin text-muted-foreground"
-                                    aria-hidden="true"
-                                  />
-                                )}
-                              </span>
-                            )}
+                            <span className="inline-flex items-center gap-1.5">
+                              <Switch
+                                id={`lead-${m.workosUserId}`}
+                                checked={isLead}
+                                disabled={busy}
+                                aria-busy={busy}
+                                onCheckedChange={(value) => handleSetLead(m.workosUserId, value)}
+                              />
+                              {busy && <Loader2Icon className="size-3 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />}
+                            </span>
                           </Label>
                           <Button
                             size="sm"
@@ -279,6 +258,7 @@ export function TeamDetailDrawer({
                                 workosUserId: m.workosUserId,
                                 name: m.name,
                                 email: m.email,
+                                teams: m.teams,
                               })
                             }
                           >
@@ -407,7 +387,6 @@ export function TeamDetailDrawer({
       <RemoveMemberDialog
         mode="team"
         member={removeTarget}
-        workspaceId={workspaceId}
         teamId={teamId}
         teamName={team.name}
         open={Boolean(removeTarget)}

@@ -62,18 +62,19 @@ export function DoneStepForm({
         </div>
       }
       footer={
-        <div className="flex items-center justify-between gap-2 pt-2">
+        <div className="flex items-center justify-between gap-1 pt-2 sm:gap-2 [&>a]:px-2 sm:[&>a]:px-4">
           <StepBackButton from="done" />
-          <Button onClick={finish} variant="brand" disabled={pending} className="min-w-48" size="lg">
+          <Button onClick={finish} variant="brand" disabled={pending} className="min-w-0 flex-1 sm:min-w-48 sm:flex-none" size="lg">
             {pending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t("settingUp")}
+                <Loader2 className="me-1.5 h-4 w-4 shrink-0 animate-spin sm:me-2" />
+                <span className="sm:hidden">{t("settingUpCompact")}</span>
+                <span className="hidden sm:inline">{t("settingUp")}</span>
               </>
             ) : (
               <>
                 {t("goToDashboard")}
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ms-2 h-4 w-4 shrink-0" />
               </>
             )}
           </Button>

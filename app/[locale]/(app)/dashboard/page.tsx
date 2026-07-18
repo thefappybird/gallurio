@@ -39,7 +39,7 @@ import { TopClientsBar } from "./_components/top-clients-bar";
 import { TeamPerformanceCards } from "./_components/team-performance-cards";
 import { BookingValueCollectionChart } from "./_components/booking-value-collection-chart";
 import { CollectionCoverageCard } from "./_components/collection-coverage-card";
-import { BookedHoursHeatmap } from "./_components/booked-hours-heatmap";
+import { BookedHoursHeatmapClient } from "./_components/booked-hours-heatmap-client";
 import { BookingEventTypeTrendChart } from "./_components/booking-event-type-trend-chart";
 import { DashboardPendingShell } from "./_components/dashboard-pending-shell";
 import { PortfolioDashboard } from "./_components/portfolio-dashboard";
@@ -230,7 +230,7 @@ async function BookingsTab({
               title: t("booking.valueCollection.title"),
               bookedValue: t("booking.valueCollection.bookedValue"),
               collectedRevenue: t("booking.valueCollection.collectedRevenue"),
-              empty: t("empty"),
+              empty: t("filteredEmpty"),
             }}
           />
         </div>
@@ -249,7 +249,7 @@ async function BookingsTab({
             remainingHint: t("booking.coverage.remainingHint"),
             // Raw: contains a literal {pct} token the card substitutes itself (no ICU).
             coverage: t.raw("booking.coverage.coverageText") as string,
-            empty: t("empty"),
+            empty: t("filteredEmpty"),
           }}
         />
       </div>
@@ -257,7 +257,7 @@ async function BookingsTab({
       {/* Booked-hours heatmap (2/3) | Event-type trend (1/3) */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <BookedHoursHeatmap
+          <BookedHoursHeatmapClient
             {...heatmap}
             locale={workspace.country ? `${locale}-${workspace.country}` : locale}
             labels={{
@@ -266,7 +266,7 @@ async function BookingsTab({
               bookedHours: t("booking.heatmap.bookedHours"),
               weekdays: weekdayLabels,
               legend: heatmapLegend,
-              empty: t("empty"),
+              empty: t("filteredEmpty"),
               previous: t("booking.heatmap.previous"),
               today: t("booking.heatmap.today"),
               next: t("booking.heatmap.next"),
@@ -280,7 +280,7 @@ async function BookingsTab({
           labels={{
             title: t("booking.trend.title"),
             eventTypes: eventTypeLabels,
-            empty: t("empty"),
+            empty: t("filteredEmpty"),
           }}
         />
       </div>

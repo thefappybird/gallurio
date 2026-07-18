@@ -491,6 +491,7 @@
       "codeLabel": "Kode verifikasi",
       "submit": "Verifikasi email",
       "resend": "Kirim ulang kode",
+      "expiresIn": "Kode akan kedaluwarsa dalam {time}.",
       "resendSent": "Kode dikirim ulang — periksa kotak masuk Anda."
     },
     "fields": {
@@ -577,6 +578,7 @@
         "inquiry": "Lihat pertanyaan"
       },
       "empty": "Belum ada apa-apa di sini.",
+      "filteredEmpty": "Tidak ada data yang cocok dengan rentang tanggal yang dipilih.",
       "viewAll": "Lihat semua",
       "portfolio": {
         "analyticsSoon": "Analitik portofolio segera hadir.",
@@ -871,6 +873,7 @@
       },
       "table": {
         "empty": "Tidak ada pemesanan yang sesuai dengan filter Anda.",
+        "listEmpty": "Belum ada pemesanan.",
         "past": "Lalu",
         "showPast": "Tampilkan yang lalu",
         "hidePast": "Sembunyikan yang lalu",
@@ -1507,6 +1510,7 @@
           "color": "Warna",
           "name": "Tim",
           "members": "Anggota",
+          "monthlyAverage": "Rata-rata Bulanan",
           "actions": "Tindakan"
         },
         "details": "Detail",
@@ -1549,6 +1553,7 @@
       },
       "team": {
         "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}",
+        "monthlyBookings": "{count, plural, one {# booking/bln} other {# booking/bln}}",
         "defaultBadge": "Default",
         "rename": "Ganti nama",
         "changeColor": "Ubah warna",
@@ -1578,6 +1583,9 @@
           "confirmTitle": "Hapus {name} dari {team}?",
           "confirmDescription": "Mereka akan kehilangan akses ke kalender dan pemesanan tim ini.",
           "confirmButton": "Hapus dari tim",
+          "removeFromTeamAndWorkspace": "Hapus dari tim + ruang kerja",
+          "otherTeamsBlocked": "Anggota ini juga berada di tim lain. Hapus dari tim tersebut terlebih dahulu.",
+          "removing": "Menghapus…",
           "workspacePromptTitle": "Hapus juga {name} dari ruang kerja?",
           "workspacePromptDescription": "Mereka akan kehilangan akses ke semua tim dan ruang kerja sepenuhnya. Tindakan ini tidak dapat dibatalkan.",
           "dontAskAgain": "Jangan tanya lagi",
@@ -1647,13 +1655,26 @@
         "empty": "Belum ada rekan kerja. Undang seseorang untuk memulai.",
         "ownerBadge": "Pemilik",
         "leadBadge": "Lead",
+        "memberBadge": "Anggota",
         "pendingBadge": "Menunggu",
         "manageTeams": "Kelola tim",
         "removeFromWorkspace": "Hapus dari ruang kerja",
         "revokeInvite": "Cabut undangan",
         "rowActionsLabel": "Tindakan untuk {name}",
         "viewButton": "Lihat anggota",
+        "inviteCountsLabel": "Jumlah undangan",
+        "newlyAcceptedCount": "Baru {count}",
+        "pendingCount": "Tertunda {count}",
         "description": "Semua orang yang memiliki akses ke ruang kerja ini, di semua tim.",
+        "modeLabel": "Daftar anggota",
+        "active": "Aktif",
+        "pending": "Menunggu",
+        "searchPlaceholder": "Cari nama atau email",
+        "noActiveMatches": "Tidak ada anggota yang cocok dengan pencarian Anda.",
+        "noPendingMatches": "Tidak ada undangan tertunda yang cocok dengan pencarian Anda.",
+        "noPending": "Tidak ada undangan tertunda.",
+        "moreTeams": "+{count} tim lainnya",
+        "ownerAllTeams": "Dapat mengawasi semua tim",
         "noTeams": "Tidak berada di tim mana pun",
         "removeFromWorkspaceLabel": "Hapus {name} dari ruang kerja",
         "removeDialog": {
@@ -1661,9 +1682,16 @@
           "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. Pemesanan mereka tetap ada; kursi tim dibebaskan. Tindakan ini tidak dapat dibatalkan.",
           "confirm": "Hapus anggota"
         },
+        "details": {
+          "tabsLabel": "Detail anggota", "tabs": { "details": "Detail", "history": "Riwayat" },
+          "teams": "Tim", "noTeams": "Tidak ada tim", "completed": "Selesai", "workingNow": "Sedang berjalan", "future": "Mendatang",
+          "fromDate": "Dari tanggal", "toDate": "Sampai tanggal", "action": "Tindakan", "allActions": "Semua tindakan",
+          "actions": { "created": "Dibuat", "updated": "Diperbarui", "deleted": "Dihapus", "statusChanged": "Status diubah", "paymentAdded": "Pembayaran ditambahkan" },
+          "loadingHistory": "Memuat riwayat aktivitas", "loading": "Memuat…", "loadMore": "Muat lebih banyak", "noActivity": "Tidak ada aktivitas ditemukan."
+        },
         "errors": {
           "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",
-          "isTeamLead": "{name} adalah lead tim untuk {teamName}. Hapus status lead mereka terlebih dahulu sebelum menghapus mereka."
+          "isTeamLead": "{name} adalah lead tim untuk setidaknya satu tim. Hapus status lead tim mereka terlebih dahulu sebelum menghapusnya."
         },
         "toasts": {
           "removed": "Anggota dihapus."
@@ -1684,7 +1712,9 @@
           "added": "Ditambahkan ke tim.",
           "removed": "Dihapus dari tim.",
           "promoted": "Dipromosikan menjadi lead.",
-          "demoted": "Diturunkan menjadi anggota."
+          "demoted": "Diturunkan menjadi anggota.",
+          "promoting": "Memindahkan lead…",
+          "demoting": "Menghapus lead…"
         }
       },
       "downgradeBlock": {
@@ -1849,6 +1879,7 @@
       },
       "table": {
         "empty": "Belum ada pertanyaan.",
+        "filteredEmpty": "Tidak ada pertanyaan yang cocok dengan filter Anda.",
         "emptyHint": "Ketika seseorang mengisi formulir kontak portofolio Anda, permintaan mereka akan muncul di sini.",
         "viewPublicPage": "Lihat halaman publik Anda",
         "open": "Buka pertanyaan dari {name}",
@@ -2777,6 +2808,10 @@
             "title": "Anda diundang ke tim",
             "body": "{inviterName} mengundang Anda untuk bergabung dengan {teamName}."
           },
+          "invite_accepted": {
+            "title": "{memberName} menerima undangan Anda",
+            "body": "Mereka telah bergabung dengan {teamName}."
+          },
           "removed": {
             "title": "Dihapus dari tim",
             "body": "Anda telah dihapus dari {teamName}."
@@ -2800,6 +2835,7 @@
       "invalid_data": "Data tidak valid. Periksa input Anda dan coba lagi.",
       "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
       "onboarding_required": "Selesaikan orientasi untuk melanjutkan.",
+      "onboarding_plan_locked": "Paket Anda sudah aktif. Selesaikan onboarding untuk mengelolanya dari pengaturan tagihan.",
       "subscription_required": "Akses Pro Anda telah berakhir. Berlangganan untuk melanjutkan.",
       "promo_code_not_found": "Kode itu tidak valid. Periksa kembali dan coba lagi.",
       "promo_code_expired": "Kode itu sudah kedaluwarsa.",
@@ -2970,6 +3006,10 @@
       "opening": "Membuka pembayaran…",
       "checkoutFailed": "Pembayaran gagal. Silakan coba lagi.",
       "checkoutNotReady": "Sistem pembayaran belum siap. Silakan refresh dan coba lagi.",
+      "activatedNotice": "Paket Gallurio Anda sekarang aktif. Selesaikan onboarding untuk mengubah paket langganan Anda.",
+      "activePill": "Aktif",
+      "finishOnboarding": "Selesaikan onboarding",
+      "acceptedPromoCode": "Kode promo {code}",
       "betaTester": {
         "label": "Beta Tester",
         "headline": "Dapatkan akses beta gratis sekarang",
@@ -2978,12 +3018,13 @@
     },
     "done": {
       "title": "Anda sudah siap, {workspaceName}.",
-      "description": "Paket {planLabel} Anda aktif. Satu hal terakhir sebelum kami bawa Anda ke dasbor.",
+      "description": "Paket {planLabel} Anda aktif. Selamat datang di Gallurio — ruang kerja Anda siap digunakan.",
       "seedToggle": {
         "label": "Mulai dengan data contoh",
         "description": "Kami akan menambah 5 klien demo, 3 pemesanan demo, dan 1 pertanyaan demo agar Anda dapat menjelajahi aplikasi. Semuanya ditandai sample agar dapat dihapus dengan satu klik."
       },
       "settingUp": "Menyiapkan dasbor Anda…",
+      "settingUpCompact": "Menyiapkan…",
       "goToDashboard": "Pergi ke dasbor Anda",
       "footer": {
         "everything": "Semuanya di satu tempat",

@@ -28,6 +28,7 @@ validateEnv()
 
 const dev = process.env.NODE_ENV !== 'production'
 const port = parseInt(process.env.PORT ?? '3000', 10)
+const publicAppOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
 const app = next({ dev })
 const handle = app.getRequestHandler()
 
@@ -39,7 +40,10 @@ app.prepare().then(() => {
 
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.NEXT_PUBLIC_APP_URL,
+      // Local tunnels have a distinct, temporary browser origin. Permit them
+      // only while developing; production remains restricted to the configured
+      // public app URL.
+      origin: dev ? true : publicAppOrigin,
       credentials: true,
     },
     transports: ['websocket', 'polling'],

@@ -14,7 +14,7 @@
       "contact": "Contact"
     },
     "metadata": {
-      "title": "Gallurio — Portfolio and Booking Tools for Creative Businesses",
+      "title": "Gallurio | Portfolio and Booking Tools for Creative Businesses",
       "description": "Create a polished portfolio page, showcase your work, and collect booking inquiries with Gallurio."
     },
     "hero": {
@@ -491,6 +491,7 @@
       "codeLabel": "Verification code",
       "submit": "Verify email",
       "resend": "Resend code",
+      "expiresIn": "Code expires in {time}.",
       "resendSent": "Code resent — check your inbox."
     },
     "fields": {
@@ -577,6 +578,7 @@
         "inquiry": "View inquiries"
       },
       "empty": "Nothing here yet.",
+      "filteredEmpty": "No data matches the selected date range.",
       "viewAll": "View all",
       "portfolio": {
         "analyticsSoon": "Portfolio analytics are coming soon.",
@@ -871,6 +873,7 @@
       },
       "table": {
         "empty": "No bookings match your filters.",
+        "listEmpty": "No bookings yet.",
         "past": "Past",
         "showPast": "Show past",
         "hidePast": "Hide past",
@@ -1507,6 +1510,7 @@
           "color": "Color",
           "name": "Team",
           "members": "Members",
+          "monthlyAverage": "Monthly Average",
           "actions": "Actions"
         },
         "details": "Details",
@@ -1549,6 +1553,7 @@
       },
       "team": {
         "memberCount": "{count, plural, =0 {No members yet} =1 {1 member} other {# members}}",
+        "monthlyBookings": "{count, plural, one {# booking/mo} other {# bookings/mo}}",
         "defaultBadge": "Default",
         "edit": "Edit",
         "rename": "Rename",
@@ -1583,6 +1588,9 @@
           "confirmTitle": "Remove {name} from {team}?",
           "confirmDescription": "They'll lose access to this team's calendar and bookings.",
           "confirmButton": "Remove from team",
+          "removeFromTeamAndWorkspace": "Remove from team + workspace",
+          "otherTeamsBlocked": "This member belongs to other teams. Remove them from those teams first.",
+          "removing": "Removing…",
           "workspacePromptTitle": "Also remove {name} from the workspace?",
           "workspacePromptDescription": "They'll lose access to every team and to the workspace entirely. This can't be undone.",
           "dontAskAgain": "Don't ask me again",
@@ -1652,23 +1660,44 @@
         "empty": "No teammates yet. Invite someone to get started.",
         "ownerBadge": "Owner",
         "leadBadge": "Lead",
+        "memberBadge": "Member",
         "pendingBadge": "Pending",
         "manageTeams": "Manage teams",
         "removeFromWorkspace": "Remove from workspace",
         "revokeInvite": "Revoke invite",
         "rowActionsLabel": "Actions for {name}",
         "viewButton": "View members",
+        "inviteCountsLabel": "Invitation counts",
+        "newlyAcceptedCount": "New {count}",
+        "pendingCount": "Pending {count}",
         "description": "Everyone with access to this workspace, across every team.",
+        "modeLabel": "Member list",
+        "active": "Active",
+        "pending": "Pending",
+        "searchPlaceholder": "Search name or email",
+        "noActiveMatches": "No members match your search.",
+        "noPendingMatches": "No pending invites match your search.",
+        "noPending": "No pending invites.",
+        "moreTeams": "+{count} more teams",
+        "ownerAllTeams": "Can oversee all teams",
         "noTeams": "Not on any team",
-        "removeFromWorkspaceLabel": "Remove from workspace for {name}",
+        "removeFromWorkspaceLabel": "Remove {name} from workspace.",
         "removeDialog": {
           "title": "Remove member?",
           "description": "{name} will lose access to this workspace immediately. Their bookings stay; team seats are released. This cannot be undone.",
           "confirm": "Remove member"
         },
+        "details": {
+          "tabsLabel": "Member details",
+          "tabs": { "details": "Details", "history": "History" },
+          "teams": "Teams", "noTeams": "No teams", "completed": "Completed", "workingNow": "Working now", "future": "Future",
+          "fromDate": "From date", "toDate": "To date", "action": "Action", "allActions": "All actions",
+          "actions": { "created": "Created", "updated": "Updated", "deleted": "Deleted", "statusChanged": "Status changed", "paymentAdded": "Payment added" },
+          "loadingHistory": "Loading activity history", "loading": "Loading…", "loadMore": "Load more", "noActivity": "No activity found."
+        },
         "errors": {
           "cannotRemoveOwner": "The workspace owner can't be removed.",
-          "isTeamLead": "{name} is a team lead for {teamName}. Remove their team lead status first in order to delete them."
+          "isTeamLead": "{name} is a team lead for at least one team. Remove their team lead status first in order to delete them."
         },
         "toasts": {
           "removed": "Member removed."
@@ -1689,7 +1718,9 @@
           "added": "Added to team.",
           "removed": "Removed from team.",
           "promoted": "Promoted to lead.",
-          "demoted": "Demoted to member."
+          "demoted": "Demoted to member.",
+          "promoting": "Transferring lead…",
+          "demoting": "Removing lead…"
         }
       },
       "downgradeBlock": {
@@ -1849,6 +1880,7 @@
       },
       "table": {
         "empty": "No inquiries yet.",
+        "filteredEmpty": "No inquiries match your filters.",
         "emptyHint": "When someone submits your portfolio contact form, their request lands here.",
         "viewPublicPage": "View your public page",
         "open": "Open inquiry from {name}",
@@ -2777,6 +2809,10 @@
             "title": "You've been invited to a team",
             "body": "{inviterName} invited you to join {teamName}."
           },
+          "invite_accepted": {
+            "title": "{memberName} accepted your invitation",
+            "body": "{memberName} has accepted your invite as a {role, select, owner {workspace owner} staff {staff member} other {member}} in {teamName}. Click to view."
+          },
           "removed": {
             "title": "Removed from team",
             "body": "You have been removed from {teamName}."
@@ -2800,6 +2836,7 @@
       "invalid_data": "Invalid data. Please check your input and try again.",
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
       "onboarding_required": "Finish onboarding to continue.",
+      "onboarding_plan_locked": "Your plan is already activated. Finish onboarding to manage it from billing settings.",
       "subscription_required": "Your Pro access has ended. Subscribe to continue.",
       "promo_code_not_found": "That code isn't valid. Double-check and try again.",
       "promo_code_expired": "That code has expired.",
@@ -2970,6 +3007,10 @@
       "opening": "Opening checkout…",
       "checkoutFailed": "Checkout failed. Please try again.",
       "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
+      "activatedNotice": "Your Gallurio Plan is now activated. Finish onboarding to change your subscription plan.",
+      "activePill": "Active",
+      "finishOnboarding": "Finish onboarding",
+      "acceptedPromoCode": "Promo code {code}",
       "betaTester": {
         "label": "Beta tester",
         "headline": "Get free beta access now",
@@ -2978,12 +3019,13 @@
     },
     "done": {
       "title": "You're all set, {workspaceName}.",
-      "description": "Your {planLabel} plan is active. One last thing before we drop you into the dashboard.",
+      "description": "Your {planLabel} plan is active. Welcome to Gallurio — your workspace is ready to go.",
       "seedToggle": {
         "label": "Start with sample data",
         "description": "We'll add 5 demo clients, 3 demo bookings, and 1 demo inquiry so you can explore the app. Everything is tagged sample so you can delete it in one click."
       },
       "settingUp": "Setting up your dashboard…",
+      "settingUpCompact": "Preparing…",
       "goToDashboard": "Go to your dashboard",
       "footer": {
         "everything": "Everything in one place",

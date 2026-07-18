@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
     root: workspaceRoot,
   },
   outputFileTracingRoot: workspaceRoot,
-  allowedDevOrigins: ["http://localhost:3000"],
+  allowedDevOrigins: ["http://localhost:3000", "dev.gallurio.com"],
   images: {
     remotePatterns: [
       {

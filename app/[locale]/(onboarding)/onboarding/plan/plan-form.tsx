@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/lib/i18n/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslations, useLocale } from "next-intl";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, TicketPercent, X } from "lucide-react";
 import { toast } from "sonner";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction, activateBetaTesterAction } from "@/lib/actions/onboarding";
@@ -22,18 +22,23 @@ import { cn } from "@/lib/utils";
 
 export function PlanStepForm({
   currentPlan,
+  planChoiceLocked = false,
+  activation = null,
+  acceptedPromoCode = null,
   furthestStep,
   proPricing,
   betaTesterEnabled = false,
 }: {
   currentPlan: string;
+  planChoiceLocked?: boolean;
+  activation?: "free" | "pro" | "beta" | "promo" | null;
+  acceptedPromoCode?: string | null;
   furthestStep: OnboardingStep;
   proPricing: ProPricing;
   betaTesterEnabled?: boolean;
 }) {
   const t = useTranslations("onboarding.plan");
   const tPlans = useTranslations("plans");
-  const tPromo = useTranslations("common.promoCode");
   const errMsg = useActionError();
   const locale = useLocale();
   const router = useRouter();
@@ -41,34 +46,14 @@ export function PlanStepForm({
   const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [promoCode, setPromoCode] = useState("");
-  const [promoLoading, setPromoLoading] = useState(false);
-  const [promoError, setPromoError] = useState<string | null>(null);
-  const [promoOpen, setPromoOpen] = useState(false);
-  const promoInputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const lemonSqueezy = useLemonSqueezyCheckout(() => router.push("/onboarding/done"));
 
-  useEffect(() => {
-    if (promoOpen) promoInputRef.current?.focus({ preventScroll: true });
-  }, [promoOpen]);
-
-  async function submitPromoCode() {
-    setPromoError(null);
-    setPromoLoading(true);
-    const result = await redeemPromoCodeAction(promoCode);
-    setPromoLoading(false);
-    if ("error" in result) {
-      const msg = errMsg(result.error);
-      setPromoError(msg);
-      toast.error(msg);
+  async function submit() {
+    if (planChoiceLocked) {
+      router.push("/onboarding/done");
       return;
     }
-    toast.success(tPromo(result.startsImmediately ? "success" : "successQueued"));
-    router.push("/onboarding/done");
-  }
-
-  async function submit() {
     setCheckoutError(null);
     const savedPlan = currentPlan === "pro" ? "pro" : "free";
     const unchangedSavedSelection = selected === savedPlan && cadence === "monthly";
@@ -124,6 +109,7 @@ export function PlanStepForm({
   }
 
   function activateBeta() {
+    if (planChoiceLocked) return;
     setCheckoutError(null);
     startTransition(async () => {
       const result = await activateBetaTesterAction();
@@ -147,7 +133,9 @@ export function PlanStepForm({
     : "";
 
   const cta =
-    selected === "free"
+    planChoiceLocked
+      ? t("finishOnboarding")
+      : selected === "free"
       ? t("ctaFree")
       : t("ctaPaid", { price: selectedPrice });
 
@@ -174,29 +162,43 @@ export function PlanStepForm({
       }
     >
       <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-2">
-          <SegmentedToggle
-            value={cadence}
-            onChange={setCadence}
-            ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
-            options={[
-              { key: "monthly", label: t("cadenceToggle.monthly") },
-              { key: "yearly", label: t("cadenceToggle.yearly") },
-            ]}
-          />
-          {cadence === "yearly" && (
-            <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
-              {t("cadenceToggle.savePill")}
-            </span>
-          )}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex items-center gap-2">
+            <SegmentedToggle
+              value={cadence}
+              onChange={setCadence}
+              disabled={planChoiceLocked}
+              ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+              options={[
+                { key: "monthly", label: t("cadenceToggle.monthly") },
+                { key: "yearly", label: t("cadenceToggle.yearly") },
+              ]}
+            />
+            {cadence === "yearly" && (
+              <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
+                {t("cadenceToggle.savePill")}
+              </span>
+            )}
+          </div>
+          <div className="hidden w-56 sm:block">
+            <PromoCodePanel planChoiceLocked={planChoiceLocked} acceptedPromoCode={acceptedPromoCode} />
+          </div>
         </div>
 
         {betaTesterEnabled && (
           <div className="flex flex-col items-start justify-between gap-3 border border-brand bg-brand/5 p-4 sm:flex-row sm:items-center">
             <div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand">
-                {t("betaTester.label")}
-              </span>
+              <div className="flex gap-2 items-center">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-brand">
+                  {t("betaTester.label")}
+                </span>
+                {planChoiceLocked && activation === "beta" && (
+                  <span className="bg-brand text-brand-foreground px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider">
+                    {t("activePill")}
+                  </span>
+                )}
+                
+              </div>
               <h3 className="font-heading text-lg font-semibold">{t("betaTester.headline")}</h3>
             </div>
             <Button
@@ -204,7 +206,7 @@ export function PlanStepForm({
               variant="brand"
               size="lg"
               onClick={activateBeta}
-              disabled={busy}
+              disabled={busy || planChoiceLocked}
               className="w-full sm:w-auto"
             >
               {t("betaTester.activate")}
@@ -227,22 +229,24 @@ export function PlanStepForm({
                 : cadence === "yearly"
                   ? t("cadence.yearly")
                   : t("cadence.monthly");
+            const isCurrentPlan = activation === p.id;
+            const disabled = p.id === "pro" || (planChoiceLocked && !isCurrentPlan);
             return (
               <motion.button
                 key={p.id}
                 type="button"
-                disabled={p.id === "pro"}
-                whileHover={p.id === "pro" ? undefined : { y: -2 }}
-                whileTap={p.id === "pro" ? undefined : { scale: 0.985 }}
+                disabled={disabled}
+                whileHover={disabled ? undefined : { y: -2 }}
+                whileTap={disabled ? undefined : { scale: 0.985 }}
                 onClick={() => {
-                  if (p.id === "pro") return;
+                  if (disabled) return;
                   setSelected(p.id);
                   setCheckoutError(null);
                 }}
                 className={cn(
                   "relative flex flex-col gap-3 border bg-background p-4 text-left transition-colors",
                   active ? "border-brand" : "border-border hover:border-brand/40 focus-visible:border-brand/40",
-                  p.id === "pro" && "cursor-not-allowed opacity-50 hover:border-border"
+                  disabled && "cursor-not-allowed opacity-50 hover:border-border"
                 )}
               >
                 {/* Coming soon: Lemon Squeezy checkout paused pending MoR verification, see docs/RELEASE-CHECKLIST.md */}
@@ -253,10 +257,22 @@ export function PlanStepForm({
                 )}
                 <div className="flex items-baseline justify-between">
                   <h3 className="font-heading text-lg font-semibold">{tPlans(`${p.id}.name`)}</h3>
-                  {active && (
-                    <span className="flex h-5 w-5 items-center justify-center bg-brand text-brand-foreground">
-                      <Check className="h-3.5 w-3.5" />
+                  {planChoiceLocked ? (
+                    isCurrentPlan && (
+                      <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
+                        {t("activePill")}
+                      </span>
+                    )
+                  ) : isCurrentPlan ? (
+                    <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
+                      {t("activePill")}
                     </span>
+                  ) : (
+                    active && (
+                      <span className="flex h-5 w-5 items-center justify-center bg-brand text-brand-foreground">
+                        <Check className="h-3.5 w-3.5" />
+                      </span>
+                    )
                   )}
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -286,77 +302,15 @@ export function PlanStepForm({
           <p className="text-xs text-muted-foreground">{t("checkoutNote")}</p>
         )}
 
-        <div className="border border-border bg-card text-card-foreground">
-          <div className="relative h-12">
-            <AnimatePresence initial={false}>
-              {promoOpen ? (
-                <motion.div
-                  key="promo-form"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.12, ease: "easeOut" }}
-                  className="absolute inset-0 flex items-center gap-2 p-2"
-                >
-                  <Input
-                    ref={promoInputRef}
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                    placeholder={tPromo("placeholder")}
-                    className="min-w-0 flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={submitPromoCode}
-                    disabled={promoLoading || !promoCode}
-                  >
-                    {promoLoading ? (
-                      <>
-                        <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />
-                        {tPromo("applying")}
-                      </>
-                    ) : (
-                      tPromo("submit")
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={tPromo("close")}
-                    disabled={promoLoading}
-                    onClick={() => {
-                      setPromoOpen(false);
-                      setPromoError(null);
-                    }}
-                  >
-                    <X />
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.button
-                  key="promo-toggle"
-                  type="button"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.12, ease: "easeOut" }}
-                  onClick={() => setPromoOpen(true)}
-                  className="absolute inset-0 w-full px-3 text-start focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  {tPromo("disclosureLabel")}
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
-          {promoError && promoOpen && (
-            <p role="alert" className="border-t border-border px-3 py-2 text-xs text-destructive">
-              {promoError}
-            </p>
-          )}
+        <div className="sm:hidden">
+          <PromoCodePanel planChoiceLocked={planChoiceLocked} acceptedPromoCode={acceptedPromoCode} />
         </div>
+
+        {planChoiceLocked && (
+          <p role="status" className="border border-brand bg-brand/5 px-3 py-2 text-sm text-foreground">
+            {t("activatedNotice")}
+          </p>
+        )}
 
         {checkoutError && (
           <p role="alert" className="text-xs text-destructive">
@@ -366,5 +320,94 @@ export function PlanStepForm({
 
       </div>
     </StepShell>
+  );
+}
+
+function PromoCodePanel({
+  planChoiceLocked,
+  acceptedPromoCode,
+}: {
+  planChoiceLocked: boolean;
+  acceptedPromoCode: string | null;
+}) {
+  const t = useTranslations("onboarding.plan");
+  const tPromo = useTranslations("common.promoCode");
+  const errMsg = useActionError();
+  const router = useRouter();
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoOpen, setPromoOpen] = useState(false);
+  const promoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (promoOpen) promoInputRef.current?.focus({ preventScroll: true });
+  }, [promoOpen]);
+
+  async function submitPromoCode() {
+    setPromoError(null);
+    setPromoLoading(true);
+    const result = await redeemPromoCodeAction(promoCode, { onboarding: true });
+    setPromoLoading(false);
+    if ("error" in result) {
+      const message = errMsg(result.error);
+      setPromoError(message);
+      toast.error(message);
+      return;
+    }
+    toast.success(tPromo(result.startsImmediately ? "success" : "successQueued"));
+    router.push("/onboarding/done");
+  }
+
+  if (acceptedPromoCode) {
+    return (
+      <div className="flex h-9 items-center gap-2 border border-border bg-card px-3 text-card-foreground">
+        <Check className="h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+        <span className="min-w-0 truncate text-sm font-medium">
+          {t("acceptedPromoCode", { code: acceptedPromoCode })}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("text-card-foreground", promoOpen && "border border-border bg-card")}>
+      <div className={cn("relative", promoOpen && "h-12")}>
+        <AnimatePresence initial={false}>
+          {promoOpen ? (
+            <motion.div
+              key="promo-form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              className="absolute inset-0 flex items-center gap-2 p-2"
+            >
+              <Input ref={promoInputRef} value={promoCode} onChange={(event) => setPromoCode(event.target.value)} placeholder={tPromo("placeholder")} className="min-w-0 flex-1" />
+              <Button type="button" variant="outline" size="sm" onClick={submitPromoCode} disabled={promoLoading || !promoCode || planChoiceLocked}>
+                {promoLoading ? <><Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />{tPromo("applying")}</> : tPromo("submit")}
+              </Button>
+              <Button type="button" variant="ghost" size="icon" aria-label={tPromo("close")} disabled={promoLoading} onClick={() => { setPromoOpen(false); setPromoError(null); }}><X /></Button>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="promo-toggle"
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              onClick={() => setPromoOpen(true)}
+              disabled={planChoiceLocked}
+              className="flex h-9 w-full items-center gap-2 border border-border bg-background px-3 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:bg-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <TicketPercent className="h-4 w-4 shrink-0" />
+              <span>{tPromo("disclosureLabel")}</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
+      {promoError && promoOpen && <p role="alert" className="border-t border-border px-3 py-2 text-xs text-destructive">{promoError}</p>}
+    </div>
   );
 }

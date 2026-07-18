@@ -52,7 +52,7 @@ vi.mock("@/components/ui/dropdown-menu", () => {
 const routerPush = vi.fn();
 const routerRefresh = vi.fn();
 vi.mock("@/lib/i18n/navigation", () => ({
-  useRouter: () => ({ push: routerPush, refresh: routerRefresh }),
+  useRouter: () => ({ push: routerPush, replace: vi.fn(), refresh: routerRefresh }),
   usePathname: () => "/teams",
   Link: ({ children, ...props }: React.ComponentProps<"a">) =>
     createElement("a", props, children),
@@ -108,6 +108,7 @@ function build(overrides: Partial<React.ComponentProps<typeof TeamsPageClient>> 
     maxMembersPerTeam: 10,
     members: [],
     pendingInvites: [],
+    newlyAcceptedInviteCount: 0,
     ownerWorkosUserId: "user_owner",
     workspaceId: "ws1",
     canManage: true,

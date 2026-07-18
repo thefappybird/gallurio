@@ -6,9 +6,9 @@ export type PlanEntitlements = {
 };
 
 export const PLAN_ENTITLEMENTS = {
-  free: { maxTeams: 1, maxMembersPerTeam: 10 },
-  pro: { maxTeams: 15, maxMembersPerTeam: 10 },
-  beta: { maxTeams: 15, maxMembersPerTeam: 10 },
+  free: { maxTeams: 10, maxMembersPerTeam: 10 },
+  pro: { maxTeams: 10, maxMembersPerTeam: 10 },
+  beta: { maxTeams: 10, maxMembersPerTeam: 10 },
 } satisfies Record<PlanTier, PlanEntitlements>;
 
 export function planEntitlements(plan: PlanTier): PlanEntitlements {

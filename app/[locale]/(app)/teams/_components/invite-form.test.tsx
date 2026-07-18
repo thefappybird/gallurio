@@ -70,6 +70,30 @@ describe("InviteForm", () => {
     });
   });
 
+  it("selects a team when enabling its lead toggle", async () => {
+    renderWithProviders(
+      <InviteForm
+        teams={[TEAM_WITHOUT_LEAD]}
+        open
+        onOpenChange={vi.fn()}
+      />,
+    );
+
+    const teamCheckbox = screen.getByRole("checkbox");
+    const leadSwitch = screen.getByRole("switch", { name: "Lead" });
+    await waitFor(() => {
+      expect(teamCheckbox).not.toBeChecked();
+      expect(leadSwitch).not.toHaveAttribute("aria-disabled");
+    });
+
+    fireEvent.click(leadSwitch);
+
+    await waitFor(() => {
+      expect(teamCheckbox).toBeChecked();
+      expect(leadSwitch).toHaveAttribute("aria-checked", "true");
+    });
+  });
+
   it("calls onDone (the same callback the other team dialogs use) after a successful invite, instead of refreshing directly", async () => {
     const { inviteMemberAction } = await import("../_invite-action");
     vi.mocked(inviteMemberAction).mockResolvedValue({});

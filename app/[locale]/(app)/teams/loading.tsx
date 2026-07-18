@@ -2,8 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 
-// TeamsTable columns: color, name, memberCount, actions = 4
-const TEAMS_TABLE_COLUMNS = 4;
+// TeamsTable columns: color, name, memberCount, monthlyAverage, actions = 5
+const TEAMS_TABLE_COLUMNS = 5;
 
 export default async function TeamsLoading() {
   const t = await getTranslations("common");

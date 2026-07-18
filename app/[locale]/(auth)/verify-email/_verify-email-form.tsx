@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +13,14 @@ import {
 } from "../_actions";
 import type { ActionResult } from "../_actions";
 
-export function VerifyEmailForm() {
+type VerifyEmailFormProps = {
+  locale?: string;
+  expiresAt?: number | null;
+};
+
+export function VerifyEmailForm({ locale = "en", expiresAt = null }: VerifyEmailFormProps) {
   const t = useTranslations("auth");
+  const router = useRouter();
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     verifyEmailAction,
     null,
@@ -26,6 +33,26 @@ export function VerifyEmailForm() {
   const error = state && "error" in state ? state.error : null;
   const resendOk = resendState && "ok" in resendState;
   const resendError = resendState && "error" in resendState ? resendState.error : null;
+  const [remainingSeconds, setRemainingSeconds] = useState(() =>
+    expiresAt == null ? null : Math.max(0, Math.ceil((expiresAt - Date.now()) / 1_000)),
+  );
+
+  useEffect(() => {
+    if (expiresAt == null) return;
+
+    const updateRemainingTime = () => {
+      const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1_000));
+      setRemainingSeconds(seconds);
+      if (seconds === 0) router.replace(`/${locale}/sign-in?notice=session_expired`);
+    };
+    updateRemainingTime();
+    const interval = window.setInterval(updateRemainingTime, 1_000);
+    return () => window.clearInterval(interval);
+  }, [expiresAt, locale, router]);
+
+  const expiresIn = remainingSeconds == null
+    ? null
+    : `${Math.floor(remainingSeconds / 60)}:${String(remainingSeconds % 60).padStart(2, "0")}`;
 
   return (
     <div className="w-full max-w-sm rounded-[var(--radius-surface)] border border-border bg-card p-8">
@@ -33,6 +60,11 @@ export function VerifyEmailForm() {
       <p className="mb-6 text-sm text-muted-foreground">
         {t("verifyEmail.description")}
       </p>
+      {expiresIn && (
+        <p className="mb-4 text-xs text-muted-foreground" role="status" aria-live="polite">
+          {t("verifyEmail.expiresIn", { time: expiresIn })}
+        </p>
+      )}
 
       <form action={formAction} className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">

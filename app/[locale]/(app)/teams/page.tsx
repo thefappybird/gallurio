@@ -4,6 +4,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import {
   Team,
+  Booking,
   TeamMembership,
   User,
   Invitation,
@@ -13,6 +14,7 @@ import {
   type InvitationDoc,
 } from "@/lib/db/models";
 import { planEntitlements } from "@/lib/plans/entitlements";
+import { resolveWorkspaceTimezone } from "@/lib/utils/timezone";
 import { TeamsPageClient } from "./_components/teams-page-client";
 import type { MemberSummary, PendingInviteRow, TeamRow } from "./_types";
 
@@ -44,6 +46,44 @@ export default async function TeamsPage({
     .sort({ isActive: -1, isDefault: -1, createdAt: 1 })
     .lean<TeamDoc[]>();
 
+  // A month is bucketed in the workspace's timezone. Drafts are inquiry
+  // placeholders rather than confirmed bookings, so they do not affect this
+  // team activity metric.
+  const monthlyBookingRows = await Booking.aggregate<{
+    _id: { toString(): string };
+    average: number;
+  }>([
+    {
+      $match: {
+        workspaceId: workspace._id,
+        teamId: { $ne: null },
+        status: { $ne: "draft" },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          teamId: "$teamId",
+          month: {
+            $dateToString: {
+              format: "%Y-%m",
+              date: "$createdAt",
+              timezone: resolveWorkspaceTimezone(workspace),
+            },
+          },
+        },
+        bookings: { $sum: 1 },
+      },
+    },
+    { $group: { _id: "$_id.teamId", average: { $avg: "$bookings" } } },
+  ]);
+  const monthlyAverageByTeam = new Map(
+    monthlyBookingRows.map((row) => [
+      String(row._id),
+      Math.round(row.average * 10) / 10,
+    ]),
+  );
+
   const teams: TeamRow[] = rawTeams.map((tm) => ({
     id: String(tm._id),
     name: tm.name,
@@ -51,6 +91,7 @@ export default async function TeamsPage({
     isDefault: tm.isDefault ?? false,
     isActive: tm.isActive ?? true,
     memberCount: tm.memberCount ?? 0,
+    monthlyAverage: monthlyAverageByTeam.get(String(tm._id)) ?? 0,
   }));
 
   const { maxTeams, maxMembersPerTeam } = planEntitlements(
@@ -83,13 +124,49 @@ export default async function TeamsPage({
     membershipsByUser.set(uid, list);
   }
 
-  const members: MemberSummary[] = memberUsers.map((u) => ({
+  const teamIds = rawTeams.map((team) => team._id);
+  const now = new Date();
+  const bookingStatsByTeam = new Map(
+    (await Booking.aggregate<{
+      _id: { toString(): string };
+      completed: number;
+      active: number;
+      future: number;
+    }>([
+      { $match: { workspaceId: workspace._id, teamId: { $in: teamIds } } },
+      {
+        $group: {
+          _id: "$teamId",
+          completed: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
+          active: { $sum: { $cond: [{ $and: [{ $eq: ["$status", "booked"] }, { $lte: ["$firstSessionStart", now] }, { $gte: ["$lastSessionEnd", now] }] }, 1, 0] } },
+          future: { $sum: { $cond: [{ $and: [{ $eq: ["$status", "booked"] }, { $gt: ["$firstSessionStart", now] }] }, 1, 0] } },
+        },
+      },
+    ])).map((row) => [String(row._id), row]),
+  );
+
+  const members: MemberSummary[] = memberUsers.map((u) => {
+    const memberTeams = membershipsByUser.get(u.workosUserId) ?? [];
+    const bookingStats = memberTeams.reduce(
+      (totals, membership) => {
+        const teamStats = bookingStatsByTeam.get(membership.teamId);
+        return {
+          completed: totals.completed + (teamStats?.completed ?? 0),
+          active: totals.active + (teamStats?.active ?? 0),
+          future: totals.future + (teamStats?.future ?? 0),
+        };
+      },
+      { completed: 0, active: 0, future: 0 },
+    );
+    return {
     workosUserId: u.workosUserId,
     email: u.email,
     name: u.name ?? "",
     avatarUrl: u.avatarUrl ?? null,
-    teams: membershipsByUser.get(u.workosUserId) ?? [],
-  }));
+    teams: memberTeams,
+    bookingStats,
+  };
+  });
 
   const pendingInvites: PendingInviteRow[] = rawPendingInvites.map((p) => ({
     invitationId: String(p._id),

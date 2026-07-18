@@ -149,6 +149,15 @@ export default async function BookingsPage({
     // selection falls back to the full visibility scope (owner: undefined = all).
     teamIds: selectedTeamIds.length > 0 ? selectedTeamIds : allowedTeamIds,
   };
+  const hasFilters = Boolean(
+    sp.q ||
+    (sp.status && sp.status !== "all") ||
+    sp.from ||
+    sp.to ||
+    sp.includeCancelled === "1" ||
+    sp.showPast === "1" ||
+    selectedTeamIds.length > 0,
+  );
 
   // These two reads are independent — run them together to save a round-trip.
   //  - Calendar view: fetch all bookings (no pagination) for event splitting.
@@ -342,7 +351,7 @@ export default async function BookingsPage({
               page={tablePage}
               limit={tableLimit}
               locale={locale}
-              empty={t("table.empty")}
+              empty={hasFilters ? t("table.empty") : t("table.listEmpty")}
               workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
             />
           )}

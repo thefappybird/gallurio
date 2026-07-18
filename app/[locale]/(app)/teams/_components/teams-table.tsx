@@ -184,6 +184,15 @@ export function TeamsTable({
         ),
       },
       {
+        accessorKey: "monthlyAverage",
+        header: () => t("table.col.monthlyAverage"),
+        cell: (info) => (
+          <span className="tabular-nums text-muted-foreground">
+            {t("team.monthlyBookings", { count: info.getValue<number>() ?? 0 })}
+          </span>
+        ),
+      },
+      {
         id: "actions",
         header: () => <span className="sr-only">{t("table.col.actions")}</span>,
         cell: (info) => (
@@ -271,6 +280,11 @@ export function TeamsTable({
                 <CardField
                   label={t("table.col.members")}
                   value={t("team.memberCount", { count: team.memberCount })}
+                  valueClassName="tabular-nums text-muted-foreground"
+                />
+                <CardField
+                  label={t("table.col.monthlyAverage")}
+                  value={t("team.monthlyBookings", { count: team.monthlyAverage ?? 0 })}
                   valueClassName="tabular-nums text-muted-foreground"
                 />
               </dl>

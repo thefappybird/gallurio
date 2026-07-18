@@ -1,6 +1,6 @@
 "use server";
 
-import { randomBytes } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
@@ -10,7 +10,6 @@ import { AuthenticationException } from "@workos-inc/node";
 
 import { workos } from "@/lib/workos";
 import { ensureUser } from "@/lib/auth/ensureUser";
-import { getAuthUser } from "@/lib/auth/session";
 import { verifyTurnstileToken } from "@/lib/server/turnstile";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { signOAuthState } from "@/lib/auth/oauthState";
@@ -47,6 +46,8 @@ const SESSION_COOKIE = process.env.WORKOS_COOKIE_NAME ?? "wos-session";
  * Short-lived, httpOnly, not accessible to JS.
  */
 const MFA_PENDING_COOKIE = "wos-mfa-pending";
+const EMAIL_VERIFICATION_PENDING_COOKIE = "wos-email-verify-pending";
+const EMAIL_VERIFICATION_TTL_MS = 10 * 60 * 1000;
 
 async function setMfaPendingCookie(
   pendingToken: string,
@@ -61,6 +62,98 @@ async function setMfaPendingCookie(
     path: "/",
     maxAge: 600,
   });
+}
+
+type EmailVerificationPending = {
+  pendingToken: string;
+  userId?: string;
+  issuedAt?: number;
+};
+
+function emailVerificationCookieSecret(): string {
+  const secret = process.env.ACTIVE_WORKSPACE_COOKIE_SECRET;
+  if (!secret) throw new Error("ACTIVE_WORKSPACE_COOKIE_SECRET is not set");
+  return secret;
+}
+
+function emailVerificationUserId(err: AuthenticationException): string | undefined {
+  const userId = (err.rawData as { user?: { id?: unknown } })?.user?.id;
+  return typeof userId === "string" && userId.length > 0 ? userId : undefined;
+}
+
+async function setEmailVerificationPendingCookie(
+  pendingToken: string,
+  userId?: string,
+): Promise<void> {
+  const jar = await cookies();
+  let value = pendingToken;
+
+  // The verification code exchange only needs the pending token. Resend also
+  // needs the WorkOS user ID, so preserve it in a signed, short-lived cookie
+  // rather than calling withAuth() before WorkOS has issued a session.
+  if (userId) {
+    const payload = Buffer.from(
+      JSON.stringify({ pendingToken, userId, issuedAt: Date.now() }),
+    ).toString("base64url");
+    const signature = createHmac("sha256", emailVerificationCookieSecret())
+      .update(payload)
+      .digest("hex");
+    value = `v1.${payload}.${signature}`;
+  }
+
+  jar.set(EMAIL_VERIFICATION_PENDING_COOKIE, value, {
+    httpOnly: true,
+    secure: await authCookieSecure(),
+    sameSite: "lax",
+    path: "/",
+    maxAge: 600,
+  });
+}
+
+async function getEmailVerificationPending(): Promise<EmailVerificationPending | null> {
+  const raw = (await cookies()).get(EMAIL_VERIFICATION_PENDING_COOKIE)?.value;
+  if (!raw) return null;
+
+  if (!raw.startsWith("v1.")) {
+    // Compatibility with a token written before signed resend context existed.
+    return { pendingToken: raw };
+  }
+
+  const dot = raw.lastIndexOf(".");
+  const payload = raw.slice(3, dot);
+  const signature = raw.slice(dot + 1);
+  if (!payload || !signature) return null;
+  const expected = createHmac("sha256", emailVerificationCookieSecret())
+    .update(payload)
+    .digest("hex");
+  try {
+    const signatureBuffer = Buffer.from(signature, "hex");
+    const expectedBuffer = Buffer.from(expected, "hex");
+    if (
+      signatureBuffer.length !== expectedBuffer.length ||
+      !timingSafeEqual(signatureBuffer, expectedBuffer)
+    ) {
+      return null;
+    }
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as EmailVerificationPending;
+    if (
+      typeof parsed.pendingToken !== "string" ||
+      typeof parsed.userId !== "string" ||
+      typeof parsed.issuedAt !== "number" ||
+      Date.now() - parsed.issuedAt > EMAIL_VERIFICATION_TTL_MS
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/** Server-rendered expiry timestamp for the verification-code countdown. */
+export async function getEmailVerificationExpiresAt(): Promise<number | null> {
+  const pending = await getEmailVerificationPending();
+  return pending?.issuedAt ? pending.issuedAt + EMAIL_VERIFICATION_TTL_MS : null;
 }
 
 function sanitizeReturnTo(returnTo: string | undefined): string | undefined {
@@ -97,6 +190,11 @@ async function postAuthRedirect(
 
   const dest = sanitizeReturnTo(returnTo) ?? defaultPostAuthPath(user, locale);
   redirect(dest);
+}
+
+async function redirectExpiredVerificationToSignIn(locale: string): Promise<never> {
+  (await cookies()).delete(EMAIL_VERIFICATION_PENDING_COOKIE);
+  redirect(`/${locale}/sign-in?notice=session_expired`);
 }
 
 // ---------------------------------------------------------------------------
@@ -218,14 +316,10 @@ export async function signInAction(
       if (err.code === "email_verification_required") {
         const pendingToken = err.pendingAuthenticationToken;
         if (pendingToken) {
-          const jar = await cookies();
-          jar.set("wos-email-verify-pending", pendingToken, {
-            httpOnly: true,
-            secure: await authCookieSecure(),
-            sameSite: "lax",
-            path: "/",
-            maxAge: 600,
-          });
+          await setEmailVerificationPendingCookie(
+            pendingToken,
+            emailVerificationUserId(err),
+          );
         }
         redirect(`/${locale}/verify-email`);
       }
@@ -333,14 +427,10 @@ export async function signUpAction(
       if (err.code === "email_verification_required") {
         const pendingToken = err.pendingAuthenticationToken;
         if (pendingToken) {
-          const jar = await cookies();
-          jar.set("wos-email-verify-pending", pendingToken, {
-            httpOnly: true,
-            secure: await authCookieSecure(),
-            sameSite: "lax",
-            path: "/",
-            maxAge: 600,
-          });
+          await setEmailVerificationPendingCookie(
+            pendingToken,
+            emailVerificationUserId(err),
+          );
         }
         redirect(`/${locale}/verify-email`);
       }
@@ -482,12 +572,13 @@ export async function verifyEmailAction(
     return { error: t("errors.invalidCode") };
   }
 
-  const jar = await cookies();
-  const pendingToken = jar.get("wos-email-verify-pending")?.value;
+  const pending = await getEmailVerificationPending();
+  const pendingToken = pending?.pendingToken;
 
   if (!pendingToken) {
-    return { error: t("errors.sessionExpired") };
+    return redirectExpiredVerificationToSignIn(locale);
   }
+  const jar = await cookies();
 
   try {
     const response =
@@ -506,7 +597,7 @@ export async function verifyEmailAction(
       maxAge: 34_560_000,
     });
 
-    jar.delete("wos-email-verify-pending");
+    jar.delete(EMAIL_VERIFICATION_PENDING_COOKIE);
 
     const user = await ensureUser({
       workosUserId: response.user.id,
@@ -531,11 +622,12 @@ export async function resendVerificationEmailAction(
   formData: FormData, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<ActionResult> {
   const t = await getTranslations("auth");
+  const locale = await getLocale();
   const ip = await getIp();
 
-  const authUser = await getAuthUser();
-  if (!authUser) {
-    return { error: t("errors.sessionExpired") };
+  const pending = await getEmailVerificationPending();
+  if (!pending?.userId) {
+    return redirectExpiredVerificationToSignIn(locale);
   }
 
   // Rate limit — prevents inbox spam / WorkOS 429s. Keyed by IP only
@@ -555,7 +647,7 @@ export async function resendVerificationEmailAction(
     // WorkOS re-emitting `email_verification.created` on resend — the
     // §4g "re-test the resend path end-to-end" step verifies this live.
     await workos.userManagement.sendVerificationEmail({
-      userId: authUser.workosUserId,
+      userId: pending.userId,
     });
   } catch (err) {
     console.error("[resendVerificationEmailAction]", err);

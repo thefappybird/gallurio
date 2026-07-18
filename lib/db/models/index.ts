@@ -49,3 +49,4 @@ export {
   type WebhookEventDoc,
 } from "./WebhookEvent";
 export { BetaProgram, type BetaProgramDoc } from "./BetaProgram";
+export { Notification, type INotification } from "./Notification";

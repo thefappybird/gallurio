@@ -14,6 +14,8 @@ import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 
 export const PLAN_TIERS = ["free", "pro", "beta"] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
+export const ONBOARDING_PLAN_SELECTIONS = ["free", "pro", "beta", "promo"] as const;
+export type OnboardingPlanSelection = (typeof ONBOARDING_PLAN_SELECTIONS)[number];
 
 // The portfolio template the workspace was seeded from. Canonical ids live in
 // the template registry so adding a template there makes it persistable here.
@@ -265,6 +267,14 @@ const workspaceSchema = new Schema(
       accent: { type: String, default: "#FFFFFF" },
     },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
+    // Records the route the owner chose during onboarding independently from
+    // the entitlement tier. For example, a complimentary Pro month must not
+    // be mistaken for a paid-Pro selection.
+    onboardingPlanSelection: {
+      type: String,
+      enum: [...ONBOARDING_PLAN_SELECTIONS, null],
+      default: null,
+    },
 
     // Lemon Squeezy subscription — Gallurio billing the tenant (Merchant of Record).
     lsSubscriptionId: { type: String, default: null, index: true, sparse: true },

@@ -95,7 +95,11 @@ vi.mock("@/lib/server/turnstile", () => ({
 vi.mock("@/lib/workos", () => ({ workos: mockWorkos }));
 
 vi.mock("@/lib/auth/ensureUser", () => ({
-  ensureUser: vi.fn(async () => ({ _id: "mongo-user-id" })),
+  ensureUser: vi.fn(async () => ({
+    _id: "mongo-user-id",
+    memberships: [],
+    onboardingCompletedAt: null,
+  })),
 }));
 
 vi.mock("@/lib/auth/oauthState", () => ({
@@ -136,6 +140,9 @@ import {
 import { signOAuthState } from "@/lib/auth/oauthState";
 import { AuthenticationException, UnprocessableEntityException } from "@workos-inc/node";
 
+// The signed pending-verification cookie shares this session-lifecycle secret.
+process.env.ACTIVE_WORKSPACE_COOKIE_SECRET = "test-email-verification-secret";
+
 // Helper: build FormData
 function fd(fields: Record<string, string>): FormData {
   const form = new FormData();
@@ -143,6 +150,24 @@ function fd(fields: Record<string, string>): FormData {
     form.set(k, v);
   }
   return form;
+}
+
+async function beginEmailVerification(userId = "wos-user-unverified"): Promise<void> {
+  const ex = Object.assign(new Error("email verification required"), {
+    code: "email_verification_required",
+    pendingAuthenticationToken: "pending-email-token",
+    rawData: { user: { id: userId } },
+  });
+  Object.setPrototypeOf(ex, AuthenticationException.prototype);
+  mockWorkos.userManagement.authenticateWithPassword.mockRejectedValueOnce(ex);
+
+  await expect(
+    signInAction(null, fd({
+      email: "unverified@example.com",
+      password: "Password1!",
+      "cf-turnstile-response": "valid-token",
+    })),
+  ).rejects.toThrow("REDIRECT:/en/verify-email");
 }
 
 function sealedResponse(overrides: Partial<{
@@ -529,9 +554,9 @@ describe("resetPasswordAction", () => {
 // ---------------------------------------------------------------------------
 
 describe("verifyEmailAction", () => {
-  it("returns sessionExpired when no pending cookie", async () => {
-    const result = await verifyEmailAction(null, fd({ code: "123456" }));
-    expect(result).toMatchObject({ error: "Your session has expired. Please sign in again." });
+  it("redirects to sign-in with an expiry notice when no pending cookie remains", async () => {
+    await expect(verifyEmailAction(null, fd({ code: "123456" })))
+      .rejects.toThrow("REDIRECT:/en/sign-in?notice=session_expired");
   });
 
   it("verifies and sets session cookie when cookie exists", async () => {
@@ -666,25 +691,28 @@ describe("googleSignInAction", () => {
 // ---------------------------------------------------------------------------
 
 describe("resendVerificationEmailAction", () => {
-  it("calls sendVerificationEmail with the session user id and returns ok", async () => {
+  it("uses the signed pending-verification user id and returns ok without an AuthKit session", async () => {
+    await beginEmailVerification();
     mockWorkos.userManagement.sendVerificationEmail.mockResolvedValue(undefined);
+
     const result = await resendVerificationEmailAction(null, new FormData());
+
+    expect(mockCookieJar["wos-email-verify-pending"]).toMatch(/^v1\./);
     expect(mockWorkos.userManagement.sendVerificationEmail).toHaveBeenCalledOnce();
     expect(mockWorkos.userManagement.sendVerificationEmail).toHaveBeenCalledWith({
-      userId: "wos-user-123",
+      userId: "wos-user-unverified",
     });
     expect(result).toMatchObject({ ok: true });
   });
 
-  it("returns sessionExpired error and skips sendVerificationEmail when no session", async () => {
-    const { getAuthUser } = await import("@/lib/auth/session");
-    vi.mocked(getAuthUser).mockResolvedValueOnce(null);
-    const result = await resendVerificationEmailAction(null, new FormData());
+  it("redirects to sign-in and skips sendVerificationEmail without pending verification", async () => {
+    await expect(resendVerificationEmailAction(null, new FormData()))
+      .rejects.toThrow("REDIRECT:/en/sign-in?notice=session_expired");
     expect(mockWorkos.userManagement.sendVerificationEmail).not.toHaveBeenCalled();
-    expect(result).toMatchObject({ error: "Your session has expired. Please sign in again." });
   });
 
   it("returns generic error when sendVerificationEmail rejects", async () => {
+    await beginEmailVerification();
     mockWorkos.userManagement.sendVerificationEmail.mockRejectedValue(
       new Error("WorkOS API error"),
     );
@@ -693,6 +721,7 @@ describe("resendVerificationEmailAction", () => {
   });
 
   it("rejects on rate-limit breach (IP)", async () => {
+    await beginEmailVerification();
     mockWorkos.userManagement.sendVerificationEmail.mockResolvedValue(undefined);
     // Exhaust the IP limit (20 per window) using distinct calls.
     for (let i = 0; i < 20; i++) {
@@ -700,7 +729,8 @@ describe("resendVerificationEmailAction", () => {
     }
     const result = await resendVerificationEmailAction(null, new FormData());
     expect(result).toMatchObject({ error: expect.stringContaining("Too many attempts") });
-    // WorkOS must not have been called on the rate-limited request.
-    expect(mockWorkos.userManagement.sendVerificationEmail).toHaveBeenCalledTimes(20);
+    // The sign-in attempt that created the pending cookie used one IP-budget
+    // slot, so 19 resend calls succeed and the twentieth is rate-limited.
+    expect(mockWorkos.userManagement.sendVerificationEmail).toHaveBeenCalledTimes(19);
   });
 });

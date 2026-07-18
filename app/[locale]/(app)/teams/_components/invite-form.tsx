@@ -67,9 +67,14 @@ export function InviteForm({
       setLeadOnTeamIds(new Set());
       setFormError(null);
       setEmailRegistered(false);
-      setSelectedTeamIds(new Set(defaultTeamIds ?? []));
+      setSelectedTeamIds(new Set(
+        (defaultTeamIds ?? []).filter((id) => {
+          const team = teams.find((candidate) => candidate.id === id);
+          return team && team.memberCount < team.maxMembersPerTeam;
+        }),
+      ));
     });
-  }, [open, defaultTeamIds]);
+  }, [open, defaultTeamIds, teams]);
 
   function handleOpenChange(next: boolean) {
     if (pending) return;
@@ -94,6 +99,9 @@ export function InviteForm({
   }
 
   function toggleLead(id: string, next: boolean) {
+    if (next) {
+      setSelectedTeamIds((prev) => new Set(prev).add(id));
+    }
     setLeadOnTeamIds((prev) => {
       const out = new Set(prev);
       if (next) out.add(id);
@@ -201,7 +209,7 @@ export function InviteForm({
                         id={`invite-team-${team.id}`}
                         type="checkbox"
                         checked={selected}
-                        disabled={pending || (atCap && !selected)}
+                        disabled={pending || atCap}
                         onChange={(e) => toggleTeam(team.id, e.target.checked)}
                         className="size-4 cursor-pointer accent-foreground"
                       />
@@ -234,7 +242,8 @@ export function InviteForm({
                         <Switch
                           id={`invite-lead-${team.id}`}
                           checked={isLead}
-                          disabled={pending || !selected || leadTaken}
+                          disabled={pending || leadTaken || atCap}
+                          className={pending || leadTaken || atCap ? "cursor-not-allowed" : undefined}
                           onCheckedChange={(v) => toggleLead(team.id, v)}
                         />
                       </div>

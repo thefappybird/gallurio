@@ -100,6 +100,23 @@ function isPublicRoute(req: NextRequest): boolean {
   return matchesPublicBase(stripped);
 }
 
+/**
+ * The server can receive an internal origin (for example localhost behind a
+ * tunnel or reverse proxy). Browser-facing redirects must use the configured
+ * public application origin instead.
+ */
+function publicOrigin(req: NextRequest): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (appUrl) {
+    try {
+      return new URL(appUrl).origin;
+    } catch {
+      // Keep local development usable when the optional value is malformed.
+    }
+  }
+  return req.nextUrl.origin;
+}
+
 // ---------------------------------------------------------------------------
 // authkitMiddleware composition approach
 //
@@ -178,11 +195,11 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   // -------------------------------------------------------------------------
   const isRoot = stripLocale(pathname) === "/";
   // These public pages call getAuthUser() in a server action or error state.
-  // Keep them publicly accessible, but run AuthKit so withAuth() receives its
-  // session headers.
+  // Invite acceptance needs an existing session when present. Email
+  // verification is different: WorkOS deliberately has not issued a session
+  // yet, and the page verifies the short-lived pending token in its action.
   const isInviteAccept = stripLocale(pathname) === "/invite/accept";
-  const isVerifyEmail = stripLocale(pathname) === "/verify-email";
-  if (isPublicRoute(req) && !isRoot && !isInviteAccept && !isVerifyEmail) {
+  if (isPublicRoute(req) && !isRoot && !isInviteAccept) {
     return intlMiddleware(req);
   }
 
@@ -223,7 +240,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           // Localize the sign-in redirect based on the incoming request locale.
           const localeMatch = pathname.match(LOCALE_PREFIX_RE);
           const prefix = localeMatch ? localeMatch[0] : "";
-          const redirectUrl = req.nextUrl.clone();
+          const redirectUrl = new URL(publicOrigin(req));
           redirectUrl.pathname = `${prefix}/sign-in`;
           redirectUrl.search = "";
           // Preserve the originally-requested destination so email deep links /

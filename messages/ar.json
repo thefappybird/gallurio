@@ -491,6 +491,7 @@
       "codeLabel": "رمز التحقّق",
       "submit": "تأكيد البريد الإلكتروني",
       "resend": "إعادة إرسال الرمز",
+      "expiresIn": "تنتهي صلاحية الرمز خلال {time}.",
       "resendSent": "تمت إعادة إرسال الرمز — تحقّق من صندوق الوارد."
     },
     "fields": {
@@ -580,6 +581,7 @@
         "inquiry": "عرض الاستفسارات"
       },
       "empty": "لا يوجد شيء هنا بعد.",
+      "filteredEmpty": "لا توجد بيانات تطابق النطاق الزمني المحدد.",
       "viewAll": "عرض الكل",
       "portfolio": {
         "analyticsSoon": "تحليلات معرض الأعمال قادمة قريبًا.",
@@ -874,6 +876,7 @@
       },
       "table": {
         "empty": "لا توجد حجوزات تطابق عوامل التصفية.",
+        "listEmpty": "لا توجد حجوزات بعد.",
         "past": "سابق",
         "showPast": "إظهار السابقة",
         "hidePast": "إخفاء السابقة",
@@ -1510,6 +1513,7 @@
           "color": "اللون",
           "name": "الفريق",
           "members": "الأعضاء",
+          "monthlyAverage": "المتوسط الشهري",
           "actions": "إجراءات"
         },
         "details": "التفاصيل",
@@ -1552,6 +1556,7 @@
       },
       "team": {
         "memberCount": "{count, plural, =0 {لا أعضاء بعد} =1 {عضو واحد} zero {لا أعضاء} two {عضوان} few {# أعضاء} many {# عضوًا} other {# عضو}}",
+        "monthlyBookings": "{count, number} حجز/شهر",
         "defaultBadge": "افتراضي",
         "edit": "تعديل",
         "rename": "إعادة تسمية",
@@ -1586,6 +1591,9 @@
           "confirmTitle": "إزالة {name} من {team}؟",
           "confirmDescription": "سيفقد الوصول إلى تقويم هذا الفريق وحجوزاته.",
           "confirmButton": "إزالة من الفريق",
+          "removeFromTeamAndWorkspace": "إزالة من الفريق + مساحة العمل",
+          "otherTeamsBlocked": "هذا العضو ينتمي إلى فرق أخرى. أزله من تلك الفرق أولاً.",
+          "removing": "جارٍ الإزالة…",
           "workspacePromptTitle": "هل تريد أيضًا إزالة {name} من مساحة العمل؟",
           "workspacePromptDescription": "سيفقد الوصول إلى جميع الفِرق وإلى مساحة العمل بأكملها. لا يمكن التراجع عن هذا.",
           "dontAskAgain": "لا تسألني مرة أخرى",
@@ -1655,13 +1663,26 @@
         "empty": "لا يوجد زملاء بعد. ادعُ شخصًا للبدء.",
         "ownerBadge": "المالك",
         "leadBadge": "قائد",
+        "memberBadge": "عضو",
         "pendingBadge": "معلّق",
         "manageTeams": "إدارة الفِرق",
         "removeFromWorkspace": "إزالة من مساحة العمل",
         "revokeInvite": "إلغاء الدعوة",
         "rowActionsLabel": "إجراءات لـ {name}",
         "viewButton": "عرض الأعضاء",
+        "inviteCountsLabel": "أعداد الدعوات",
+        "newlyAcceptedCount": "جديد {count}",
+        "pendingCount": "قيد الانتظار {count}",
         "description": "كل من لديه صلاحية الوصول إلى مساحة العمل هذه، عبر جميع الفِرق.",
+        "modeLabel": "قائمة الأعضاء",
+        "active": "نشط",
+        "pending": "معلّق",
+        "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني",
+        "noActiveMatches": "لا يوجد أعضاء يطابقون بحثك.",
+        "noPendingMatches": "لا توجد دعوات معلّقة تطابق بحثك.",
+        "noPending": "لا توجد دعوات معلّقة.",
+        "moreTeams": "+{count} فِرق أخرى",
+        "ownerAllTeams": "يمكنه الإشراف على جميع الفِرق",
         "noTeams": "ليس ضمن أي فريق",
         "removeFromWorkspaceLabel": "إزالة {name} من مساحة العمل",
         "removeDialog": {
@@ -1669,9 +1690,16 @@
           "description": "سيفقد {name} الوصول إلى مساحة العمل هذه فورًا. تبقى حجوزاته؛ وتُحرَّر مقاعد الفريق. لا يمكن التراجع عن هذا.",
           "confirm": "إزالة العضو"
         },
+        "details": {
+          "tabsLabel": "تفاصيل العضو", "tabs": { "details": "التفاصيل", "history": "السجل" },
+          "teams": "الفِرق", "noTeams": "لا توجد فِرق", "completed": "مكتمل", "workingNow": "قيد التنفيذ", "future": "مستقبلية",
+          "fromDate": "من تاريخ", "toDate": "إلى تاريخ", "action": "الإجراء", "allActions": "كل الإجراءات",
+          "actions": { "created": "تم الإنشاء", "updated": "تم التحديث", "deleted": "تم الحذف", "statusChanged": "تم تغيير الحالة", "paymentAdded": "تمت إضافة دفعة" },
+          "loadingHistory": "جارٍ تحميل سجل النشاط", "loading": "جارٍ التحميل…", "loadMore": "تحميل المزيد", "noActivity": "لم يتم العثور على نشاط."
+        },
         "errors": {
           "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل.",
-          "isTeamLead": "{name} قائد فريق {teamName}. أزِل صفته كقائد أولًا قبل حذفه."
+          "isTeamLead": "{name} قائد فريق واحد على الأقل. أزل عنه صفة قائد الفريق أولًا قبل حذفه."
         },
         "toasts": {
           "removed": "تمت إزالة العضو."
@@ -1692,7 +1720,9 @@
           "added": "تمت الإضافة إلى الفريق.",
           "removed": "تمت الإزالة من الفريق.",
           "promoted": "تمت الترقية إلى قائد.",
-          "demoted": "تم التخفيض إلى عضو."
+          "demoted": "تم التخفيض إلى عضو.",
+          "promoting": "جارٍ نقل القائد…",
+          "demoting": "جارٍ إزالة دور القائد…"
         }
       },
       "downgradeBlock": {
@@ -1852,6 +1882,7 @@
       },
       "table": {
         "empty": "لا توجد استفسارات بعد.",
+        "filteredEmpty": "لا توجد استفسارات تطابق عوامل التصفية.",
         "emptyHint": "عندما يرسل شخص ما نموذج التواصل في معرض أعمالك، يصل طلبه إلى هنا.",
         "viewPublicPage": "عرض صفحتك العامة",
         "open": "فتح استفسار من {name}",
@@ -2780,6 +2811,10 @@
             "title": "تمت دعوتك إلى فريق",
             "body": "دعاك {inviterName} للانضمام إلى {teamName}."
           },
+          "invite_accepted": {
+            "title": "قبل {memberName} دعوتك",
+            "body": "لقد انضم إلى {teamName}."
+          },
           "removed": {
             "title": "تمت إزالتك من الفريق",
             "body": "تمت إزالتك من {teamName}."
@@ -2803,6 +2838,7 @@
       "invalid_data": "بيانات غير صالحة. يرجى مراجعة المدخلات والمحاولة مرة أخرى.",
       "completion_requires_full_payment": "ضع علامة على جميع الدفعات كمدفوعة وطابق الإجمالي قبل إكمال هذا الحجز.",
       "onboarding_required": "أكمل الإعداد الأولي للمتابعة.",
+      "onboarding_plan_locked": "خطتك مفعلة بالفعل. أكمل الإعداد الأولي لإدارتها من إعدادات الفوترة.",
       "subscription_required": "انتهى وصولك إلى Pro. اشترك للمتابعة.",
       "promo_code_not_found": "هذا الرمز غير صالح. تحقّق منه وحاول مرة أخرى.",
       "promo_code_expired": "انتهت صلاحية هذا الرمز.",
@@ -2973,6 +3009,10 @@
       "opening": "جارٍ فتح الدفع…",
       "checkoutFailed": "فشل الدفع. يرجى المحاولة مرة أخرى.",
       "checkoutNotReady": "نظام الدفع غير جاهز. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+      "activatedNotice": "خطة Gallurio الخاصة بك مفعلة الآن. أكمل الإعداد الأولي لتغيير خطة اشتراكك.",
+      "activePill": "نشط",
+      "finishOnboarding": "إكمال الإعداد الأولي",
+      "acceptedPromoCode": "رمز العرض {code}",
       "betaTester": {
         "label": "مختبِر تجريبي",
         "headline": "احصل على وصول تجريبي مجاني الآن",
@@ -2981,12 +3021,13 @@
     },
     "done": {
       "title": "كل شيء جاهز، {workspaceName}.",
-      "description": "خطتك {planLabel} نشطة. أمر أخير قبل أن ننقلك إلى لوحة التحكّم.",
+      "description": "خطتك {planLabel} نشطة. أهلاً بك في Gallurio — مساحة عملك جاهزة للانطلاق.",
       "seedToggle": {
         "label": "ابدأ ببيانات تجريبية",
         "description": "سنضيف 5 عملاء تجريبيين و3 حجوزات تجريبية واستفسارًا تجريبيًا واحدًا لتتمكّن من استكشاف التطبيق. كل شيء موسوم كتجريبي لتتمكّن من حذفه بنقرة واحدة."
       },
       "settingUp": "جارٍ إعداد لوحة التحكّم…",
+      "settingUpCompact": "جارٍ التحضير…",
       "goToDashboard": "الانتقال إلى لوحة التحكّم",
       "footer": {
         "everything": "كل شيء في مكان واحد",

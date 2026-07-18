@@ -39,13 +39,16 @@ describe("proxy", () => {
     expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
   });
 
-  it("runs AuthKit on the localized verify-email page so resend can read the session", async () => {
+  it("keeps the localized verify-email page public while applying locale routing", async () => {
     const { proxy } = await import("./proxy");
     const req = new NextRequest("http://localhost/en/verify-email");
 
     await proxy(req);
 
-    expect(authMiddlewareMock).toHaveBeenCalledTimes(1);
+    // `email_verification_required` has a pending verification token, not an
+    // authenticated WorkOS session. Running AuthKit here would redirect it
+    // back to sign-in before the verification code can be entered.
+    expect(authMiddlewareMock).not.toHaveBeenCalled();
     expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
   });
 
@@ -125,6 +128,26 @@ describe("proxy", () => {
     const redirected = new URL(location!);
     expect(redirected.pathname).toBe("/sign-in");
     expect(redirected.searchParams.get("returnTo")).toBe("/bookings?detail=abc");
+  });
+
+  it("uses NEXT_PUBLIC_APP_URL for the browser-facing sign-in redirect", async () => {
+    const previousAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "https://dev.gallurio.com/";
+    try {
+      authMiddlewareMock.mockResolvedValueOnce(
+        NextResponse.redirect(new URL("http://localhost/sign-in")),
+      );
+      const { proxy } = await import("./proxy");
+
+      const response = await proxy(new NextRequest("http://localhost/bookings"));
+
+      expect((response as Response).headers.get("location")).toBe(
+        "https://dev.gallurio.com/sign-in?returnTo=%2Fbookings",
+      );
+    } finally {
+      if (previousAppUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+      else process.env.NEXT_PUBLIC_APP_URL = previousAppUrl;
+    }
   });
 
   it("preserves original path+query as returnTo when authkitMiddleware redirects to the hosted WorkOS auth endpoint", async () => {

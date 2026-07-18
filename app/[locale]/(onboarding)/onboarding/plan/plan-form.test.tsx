@@ -78,6 +78,9 @@ function renderForm(
     currentPlan?: string;
     furthestStep?: "business" | "workspace" | "plan" | "done";
     betaTesterEnabled?: boolean;
+    planChoiceLocked?: boolean;
+    activation?: "free" | "pro" | "beta" | "promo" | null;
+    acceptedPromoCode?: string | null;
   } = {}
 ) {
   return renderWithProviders(
@@ -86,6 +89,9 @@ function renderForm(
       furthestStep={props.furthestStep ?? "plan"}
       proPricing={{ currency: "PHP", monthly: 250, yearly: 2500 }}
       betaTesterEnabled={props.betaTesterEnabled}
+      planChoiceLocked={props.planChoiceLocked}
+      activation={props.activation}
+      acceptedPromoCode={props.acceptedPromoCode}
     />
   );
 }
@@ -147,6 +153,37 @@ describe("PlanStepForm — plan card selection", () => {
     await act(async () => {});
     expect(screen.getByRole("button", { name: /free month/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
+  });
+
+  it("locks alternatives after a paid, promo, or beta plan activation", () => {
+    renderForm({ currentPlan: "beta", planChoiceLocked: true, betaTesterEnabled: true, activation: "beta" });
+
+    expect(screen.getByRole("status")).toHaveTextContent(/plan is now activated/i);
+    expect(screen.getByText(/^active$/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /finish onboarding/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Free" }).closest("button")).toBeDisabled();
+    expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /activate beta access/i })).toBeDisabled();
+    expect(screen.getByRole("tab", { name: /monthly/i })).toBeDisabled();
+  });
+
+  it("keeps plan options available after choosing the free path", () => {
+    renderForm({ currentPlan: "free", planChoiceLocked: false, activation: "free" });
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    const freeCard = screen.getByRole("heading", { name: "Free" }).closest("button")!;
+    expect(freeCard).not.toBeDisabled();
+    expect(within(freeCard).getByText(/^active$/i)).toBeInTheDocument();
+  });
+
+  it("shows an accepted promo code instead of another redemption prompt", () => {
+    renderForm({ planChoiceLocked: true, activation: "promo", acceptedPromoCode: "WELCOME25" });
+
+    expect(screen.getByText(/WELCOME25/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^active$/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
   });
 });
 
@@ -359,7 +396,7 @@ describe("PlanStepForm — promo code redemption", () => {
     fireEvent.click(screen.getByRole("button", { name: /apply/i }));
 
     await waitFor(() => {
-      expect(redeemPromoCodeAction).toHaveBeenCalledWith("SAVE20");
+      expect(redeemPromoCodeAction).toHaveBeenCalledWith("SAVE20", { onboarding: true });
     });
   });
 

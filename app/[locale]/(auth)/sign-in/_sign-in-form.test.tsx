@@ -1,18 +1,19 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { useEffect } from "react";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { toast } from "sonner";
 import { renderWithProviders } from "@/test-utils/render";
 import { SignInForm } from "./_sign-in-form";
 
 const { resetMock } = vi.hoisted(() => ({ resetMock: vi.fn() }));
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
-}));
-
 vi.mock("../_actions", () => ({
   signInAction: vi.fn(),
   googleSignInAction: vi.fn(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { error: vi.fn() },
 }));
 
 vi.mock("@/components/ui/turnstile-widget", () => ({
@@ -46,5 +47,32 @@ describe("SignInForm — bot check reset", () => {
     await waitFor(() => {
       expect(resetMock).toHaveBeenCalled();
     });
+  });
+});
+
+describe("Google authorization", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("uses a top-level browser navigation for the cross-origin WorkOS URL", async () => {
+    const { googleSignInAction } = await import("../_actions");
+    vi.mocked(googleSignInAction).mockResolvedValue({ url: "https://api.workos.com/authorize" });
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+
+    renderWithProviders(<SignInForm returnTo="/onboarding/plan" />);
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    await waitFor(() => {
+      expect(assign).toHaveBeenCalledWith("https://api.workos.com/authorize");
+    });
+  });
+});
+
+describe("expired verification session", () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it("shows an expiry toast after being redirected to sign-in", () => {
+    renderWithProviders(<SignInForm sessionExpired />);
+
+    expect(toast.error).toHaveBeenCalledWith("Your session has expired. Please sign in again.");
   });
 });

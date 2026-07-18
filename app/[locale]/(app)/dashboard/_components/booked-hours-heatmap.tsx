@@ -37,8 +37,9 @@ const PREFERRED_CELL_SIZE = 28;
 const MIN_CELL_SIZE = 18;
 const CELL_GAP = 4;
 const WEEKDAY_COLUMN_WIDTH = 48;
-const DEFAULT_VISIBLE_WEEKS = 20;
-const MIN_PREFERRED_WEEKS = 12;
+const INITIAL_GRID_WIDTH = 688;
+const MIN_VISIBLE_WEEKS = 12;
+const MIN_LABEL_WIDTH = 24;
 
 function bucketIndex(hours: number): number {
   if (hours <= 0) return 0;
@@ -69,7 +70,9 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   const [isPending, startTransition] = useTransition();
   const allWeekStarts = Array.from(new Set(cells.map((c) => c.weekStart))).sort();
   const gridRef = useRef<HTMLDivElement>(null);
-  const [gridWidth, setGridWidth] = useState(0);
+  // The initial width is deterministic for SSR and the first client render.
+  // ResizeObserver updates it only after hydration has completed.
+  const [gridWidth, setGridWidth] = useState(INITIAL_GRID_WIDTH);
   useEffect(() => {
     const element = gridRef.current;
     if (!element) return;
@@ -79,14 +82,18 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   }, []);
   const usableWidth = Math.max(0, gridWidth - WEEKDAY_COLUMN_WIDTH);
   const atPreferredSize = Math.floor((usableWidth + CELL_GAP) / (PREFERRED_CELL_SIZE + CELL_GAP));
-  const atMinimumSize = Math.max(1, Math.floor((usableWidth + CELL_GAP) / (MIN_CELL_SIZE + CELL_GAP)));
-  // Keep cells at their preferred size whenever a useful baseline window
-  // fits. Only then shrink cells, and finally reduce columns, on narrow cards.
-  const responsiveWeekCount =
-    atPreferredSize >= MIN_PREFERRED_WEEKS ? atPreferredSize : atMinimumSize;
+  const atMinimumLabelWidth = Math.max(
+    1,
+    Math.floor((usableWidth + CELL_GAP) / (Math.max(MIN_CELL_SIZE, MIN_LABEL_WIDTH) + CELL_GAP))
+  );
+  // Keep 28px cells while they fit. On narrow cards, preserve twelve labelled
+  // columns by shrinking cells first; only then remove the oldest column.
+  const responsiveWeekCount = atPreferredSize >= MIN_VISIBLE_WEEKS
+    ? atPreferredSize
+    : Math.min(MIN_VISIBLE_WEEKS, atMinimumLabelWidth);
   const visibleCount = Math.min(
     allWeekStarts.length,
-    gridWidth === 0 ? DEFAULT_VISIBLE_WEEKS : responsiveWeekCount
+    responsiveWeekCount
   );
   const weekStarts = allWeekStarts.slice(-visibleCount);
   const lastVisibleWeek = weekStarts.at(-1);
@@ -96,9 +103,6 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   );
   const hasPrevious = Boolean(weekStarts[0] && weekStarts[0] > earliestWeek);
   const hasNext = Boolean(lastVisibleWeek && lastVisibleWeek < latestWeek);
-  // A numeric date needs roughly 34 px to remain legible. If cells become
-  // tighter, retain clear labels at regular intervals instead of letting them overlap.
-  const labelEvery = Math.max(1, Math.ceil(34 / (cellSize + CELL_GAP)));
   const byKey = new Map(cells.map((cell) => [`${cell.weekStart}|${cell.weekday}`, cell.hours]));
 
   function goTo(endWeek?: string) {
@@ -127,29 +131,27 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
         {cells.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">{labels.empty}</p>
         ) : (
-          <div className="overflow-x-auto" aria-label={labels.bookedHours}>
+          <div ref={gridRef} className="overflow-hidden" aria-label={labels.bookedHours}>
             <div
-              ref={gridRef}
-              className="grid w-full gap-1"
+              className="grid w-full justify-items-center gap-1 pr-2"
               style={{
-                gridTemplateColumns: `max-content repeat(${weekStarts.length}, ${cellSize}px)`,
-                justifyContent: "space-between",
+                gridTemplateColumns: `max-content repeat(${weekStarts.length}, minmax(0, 1fr))`,
               }}
             >
               <div />
-              {weekStarts.map((ws, index) => (
+              {weekStarts.map((ws) => (
                 <div
                   key={ws}
-                  className={`pb-1 text-center text-[9px] font-medium whitespace-nowrap ${
+                  className={`w-full pb-1 text-center text-[8px] leading-none font-medium whitespace-nowrap ${
                     ws === todayWeek ? "text-brand" : "text-muted-foreground"
                   }`}
                 >
-                  {index % labelEvery === 0 || ws === todayWeek ? formatCol(ws, locale) : ""}
+                  {formatCol(ws, locale)}
                 </div>
               ))}
               {labels.weekdays.map((wd, weekday) => (
                 <Fragment key={weekday}>
-                  <div className="flex items-center pe-2 text-xs text-muted-foreground">{wd}</div>
+                  <div className="justify-self-start flex items-center pe-2 text-xs text-muted-foreground">{wd}</div>
                   {weekStarts.map((ws) => {
                     const hours = byKey.get(`${ws}|${weekday}`) ?? 0;
                     const title = `${labels.weekOf} ${formatCol(ws, locale)}, ${wd}: ${hours}h`;
@@ -159,10 +161,12 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
                         key={`${ws}-${weekday}`}
                         title={title}
                         aria-label={title}
-                        className={`aspect-square rounded-[2px] ${
+                        className={`rounded-[2px] ${
                           isToday ? "ring-1 ring-brand/80 ring-offset-1 ring-offset-card" : ""
                         }`}
                         style={{
+                          width: cellSize,
+                          height: cellSize,
                           backgroundColor: `color-mix(in srgb, var(--chart-1) ${BUCKET_PCT[bucketIndex(hours)]}%, transparent)`,
                         }}
                       />

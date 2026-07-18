@@ -86,7 +86,7 @@ describe("TeamDetailDrawer", () => {
     expect(screen.getByText("Add existing member")).toBeInTheDocument();
   });
 
-  it("disables the lead toggle for other members once the team has a lead", () => {
+  it("keeps other members eligible to receive a transferred lead role", () => {
     const membersWithLead: MemberSummary[] = [
       { workosUserId: OWNER, email: "owner@test.com", name: "Owner", teams: [] },
       {
@@ -117,66 +117,8 @@ describe("TeamDetailDrawer", () => {
       />,
     );
 
-    // The existing lead can still toggle themselves off…
-    expect(document.getElementById("lead-u_lead")).not.toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
-    // …but every other member's lead toggle is disabled.
-    expect(document.getElementById("lead-u_other")).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
-  });
-
-  it("reveals the one-lead warning on hover and focus without requiring a click", () => {
-    const membersWithLead: MemberSummary[] = [
-      { workosUserId: OWNER, email: "owner@test.com", name: "Owner", teams: [] },
-      {
-        workosUserId: "u_lead",
-        email: "lead@test.com",
-        name: "Lead Member",
-        teams: [{ teamId: "t1", role: "lead" }],
-      },
-      {
-        workosUserId: "u_other",
-        email: "other@test.com",
-        name: "Other Member",
-        teams: [{ teamId: "t1", role: "member" }],
-      },
-    ];
-    renderWithProviders(
-      <TeamDetailDrawer
-        team={TEAM}
-        open
-        onOpenChange={vi.fn()}
-        members={membersWithLead}
-        pendingInvites={[]}
-        maxMembersPerTeam={10}
-        ownerWorkosUserId={OWNER}
-        workspaceId="ws1"
-        canManage
-        onInvite={vi.fn()}
-      />,
-    );
-
-    const toggle = document.getElementById("lead-u_other")!;
-    const warning = "A team can only have one lead.";
-
-    // Idle: no warning.
-    expect(screen.queryByText(warning)).not.toBeInTheDocument();
-
-    // Hover reveals it (no click), leaving hides it.
-    fireEvent.mouseEnter(toggle);
-    expect(screen.getByText(warning)).toBeInTheDocument();
-    fireEvent.mouseLeave(toggle);
-    expect(screen.queryByText(warning)).not.toBeInTheDocument();
-
-    // Keyboard focus also reveals it (not hover-only), blur hides it.
-    fireEvent.focus(toggle);
-    expect(screen.getByText(warning)).toBeInTheDocument();
-    fireEvent.blur(toggle);
-    expect(screen.queryByText(warning)).not.toBeInTheDocument();
+    expect(document.getElementById("lead-u_lead")).not.toHaveAttribute("aria-disabled", "true");
+    expect(document.getElementById("lead-u_other")).not.toHaveAttribute("aria-disabled", "true");
   });
 
   it("shows a distinct busy indicator on the lead toggle while the promote action is in flight", async () => {

@@ -491,6 +491,7 @@
       "codeLabel": "Verification code",
       "submit": "I-verify ang email",
       "resend": "Muling ipadala ang code",
+      "expiresIn": "Mag-e-expire ang code sa {time}.",
       "resendSent": "Naipadala na ang code — tingnan ang iyong inbox."
     },
     "fields": {
@@ -577,6 +578,7 @@
         "inquiry": "Tingnan ang mga inquiry"
       },
       "empty": "Wala pa rito.",
+      "filteredEmpty": "Walang data na tumutugma sa napiling saklaw ng petsa.",
       "viewAll": "Tingnan lahat",
       "portfolio": {
         "analyticsSoon": "Malapit nang dumating ang portfolio analytics.",
@@ -871,6 +873,7 @@
       },
       "table": {
         "empty": "Walang booking na tumutugma sa iyong mga filter.",
+        "listEmpty": "Wala pang booking.",
         "past": "Lipas na",
         "showPast": "Ipakita ang nakaraan",
         "hidePast": "Itago ang nakaraan",
@@ -1507,6 +1510,7 @@
           "color": "Kulay",
           "name": "Koponan",
           "members": "Mga Miyembro",
+          "monthlyAverage": "Buwanang Average",
           "actions": "Mga Aksyon"
         },
         "details": "Mga Detalye",
@@ -1549,6 +1553,7 @@
       },
       "team": {
         "memberCount": "{count, plural, =0 {Walang miyembro pa} =1 {1 miyembro} other {# mga miyembro}}",
+        "monthlyBookings": "{count, plural, one {# booking/buwan} other {# booking/buwan}}",
         "defaultBadge": "Default",
         "rename": "Palitan ang pangalan",
         "changeColor": "Baguhin ang kulay",
@@ -1578,6 +1583,9 @@
           "confirmTitle": "Alisin si {name} mula sa {team}?",
           "confirmDescription": "Mawawalan sila ng access sa kalendaryo at mga booking ng koponang ito.",
           "confirmButton": "Alisin sa koponan",
+          "removeFromTeamAndWorkspace": "Alisin sa koponan + workspace",
+          "otherTeamsBlocked": "Kasapi pa ang miyembrong ito sa ibang mga koponan. Alisin muna sila roon.",
+          "removing": "Inaalis…",
           "workspacePromptTitle": "Alisin din si {name} sa workspace?",
           "workspacePromptDescription": "Mawawalan sila ng access sa lahat ng koponan at sa buong workspace. Hindi ito maaaring ibalik.",
           "dontAskAgain": "Huwag nang itanong ulit",
@@ -1647,13 +1655,26 @@
         "empty": "Wala pang katrabaho. Mag-imbita ng isa para makapagsimula.",
         "ownerBadge": "May-ari",
         "leadBadge": "Lead",
+        "memberBadge": "Miyembro",
         "pendingBadge": "Nakabinbin",
         "manageTeams": "Pamahalaan ang mga koponan",
         "removeFromWorkspace": "Alisin sa workspace",
         "revokeInvite": "Bawiin ang imbitasyon",
         "rowActionsLabel": "Mga aksyon para kay {name}",
         "viewButton": "Tingnan ang mga miyembro",
+        "inviteCountsLabel": "Bilang ng mga imbitasyon",
+        "newlyAcceptedCount": "Bago {count}",
+        "pendingCount": "Nakabinbin {count}",
         "description": "Lahat ng may access sa workspace na ito, sa lahat ng koponan.",
+        "modeLabel": "Listahan ng miyembro",
+        "active": "Aktibo",
+        "pending": "Nakabinbin",
+        "searchPlaceholder": "Maghanap ng pangalan o email",
+        "noActiveMatches": "Walang miyembrong tumutugma sa iyong paghahanap.",
+        "noPendingMatches": "Walang nakabinbing imbitasyong tumutugma sa iyong paghahanap.",
+        "noPending": "Walang nakabinbing imbitasyon.",
+        "moreTeams": "+{count} pang koponan",
+        "ownerAllTeams": "Maaaring mangasiwa sa lahat ng koponan",
         "noTeams": "Wala sa anumang koponan",
         "removeFromWorkspaceLabel": "Alisin sa workspace si {name}",
         "removeDialog": {
@@ -1661,9 +1682,16 @@
           "description": "Mawawalan agad ng access si {name} sa workspace na ito. Nananatili ang kanilang mga booking; palalabasin ang mga puwesto sa koponan. Hindi ito maaaring ibalik.",
           "confirm": "Alisin ang miyembro"
         },
+        "details": {
+          "tabsLabel": "Mga detalye ng miyembro", "tabs": { "details": "Mga detalye", "history": "Kasaysayan" },
+          "teams": "Mga koponan", "noTeams": "Walang koponan", "completed": "Natapos", "workingNow": "Kasalukuyang ginagawa", "future": "Hinaharap",
+          "fromDate": "Mula petsa", "toDate": "Hanggang petsa", "action": "Aksyon", "allActions": "Lahat ng aksyon",
+          "actions": { "created": "Ginawa", "updated": "Na-update", "deleted": "Tinanggal", "statusChanged": "Binago ang status", "paymentAdded": "Idinagdag ang bayad" },
+          "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad", "loading": "Naglo-load…", "loadMore": "Mag-load pa", "noActivity": "Walang nakitang aktibidad."
+        },
         "errors": {
           "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace.",
-          "isTeamLead": "Si {name} ay lead ng koponang {teamName}. Alisin muna ang kanilang status bilang lead bago sila tanggalin."
+          "isTeamLead": "Si {name} ay lead ng hindi bababa sa isang koponan. Alisin muna ang status nila bilang lead ng koponan bago sila tanggalin."
         },
         "toasts": {
           "removed": "Naalis ang miyembro."
@@ -1684,7 +1712,9 @@
           "added": "Naidagdag sa koponan.",
           "removed": "Naalis sa koponan.",
           "promoted": "Na-promote bilang lead.",
-          "demoted": "Nababa sa miyembro."
+          "demoted": "Nababa sa miyembro.",
+          "promoting": "Inililipat ang lead…",
+          "demoting": "Inaalis ang lead…"
         }
       },
       "downgradeBlock": {
@@ -1849,6 +1879,7 @@
       },
       "table": {
         "empty": "Wala pang mga katanungan.",
+        "filteredEmpty": "Walang katanungang tumutugma sa iyong mga filter.",
         "emptyHint": "Kapag may nag-submit ng iyong portfolio contact form, lalabas dito ang kanilang kahilingan.",
         "viewPublicPage": "Tingnan ang iyong pampublikong pahina",
         "open": "Buksan ang katanungan mula kay {name}",
@@ -2777,6 +2808,10 @@
             "title": "Inimbitahan ka sa isang koponan",
             "body": "Inimbitahan ka ni {inviterName} na sumali sa {teamName}."
           },
+          "invite_accepted": {
+            "title": "Tinanggap ni {memberName} ang imbitasyon mo",
+            "body": "Sumali na sila sa {teamName}."
+          },
           "removed": {
             "title": "Tinanggal sa koponan",
             "body": "Natanggal ka sa {teamName}."
@@ -2800,6 +2835,7 @@
       "invalid_data": "Hindi wastong datos. Pakisuri ang iyong input at subukan muli.",
       "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
       "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
+      "onboarding_plan_locked": "Aktibo na ang iyong plano. Tapusin ang onboarding upang pamahalaan ito sa mga billing setting.",
       "subscription_required": "Natapos na ang iyong Pro access. Mag-subscribe para magpatuloy.",
       "promo_code_not_found": "Hindi valid ang code na iyon. I-check ulit at subukan muli.",
       "promo_code_expired": "Nag-expire na ang code na iyon.",
@@ -2970,6 +3006,10 @@
       "opening": "Binubuksan ang checkout…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
       "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
+      "activatedNotice": "Aktibo na ang iyong Gallurio Plan. Tapusin ang onboarding para baguhin ang iyong subscription plan.",
+      "activePill": "Aktibo",
+      "finishOnboarding": "Tapusin ang onboarding",
+      "acceptedPromoCode": "Promo code {code}",
       "betaTester": {
         "label": "Beta Tester",
         "headline": "Kumuha ng libreng beta access ngayon",
@@ -2978,12 +3018,13 @@
     },
     "done": {
       "title": "Handa ka na, {workspaceName}.",
-      "description": "Aktibo na ang iyong planong {planLabel}. Isang huling bagay bago ka pumunta sa dashboard.",
+      "description": "Aktibo na ang iyong planong {planLabel}. Maligayang pagdating sa Gallurio — handa nang gamitin ang iyong workspace.",
       "seedToggle": {
         "label": "Magsimula gamit ang sample data",
         "description": "Magdadagdag kami ng 5 demo client, 3 demo booking, at 1 demo inquiry para makapaglibot ka sa app. Lahat ay may tag na sample para mabura mo sa isang click."
       },
       "settingUp": "Sine-set up ang iyong dashboard…",
+      "settingUpCompact": "Inihahanda…",
       "goToDashboard": "Pumunta sa iyong dashboard",
       "footer": {
         "everything": "Lahat nasa iisang lugar",

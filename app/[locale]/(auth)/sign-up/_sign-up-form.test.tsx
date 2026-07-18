@@ -1,14 +1,10 @@
 import { useEffect } from "react";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test-utils/render";
 import { SignUpForm } from "./_sign-up-form";
 
 const { resetMock } = vi.hoisted(() => ({ resetMock: vi.fn() }));
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
-}));
 
 vi.mock("../_actions", () => ({
   signUpAction: vi.fn(),
@@ -50,6 +46,23 @@ describe("SignUpForm", () => {
     const emailInput = screen.getByLabelText("Email");
     expect(emailInput).toBeEnabled();
     expect(emailInput).toHaveAttribute("name", "email");
+  });
+});
+
+describe("Google authorization", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("uses a top-level browser navigation for the cross-origin WorkOS URL", async () => {
+    const { googleSignInAction } = await import("../_actions");
+    vi.mocked(googleSignInAction).mockResolvedValue({ url: "https://api.workos.com/authorize" });
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+
+    renderWithProviders(<SignUpForm />);
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    await waitFor(() => {
+      expect(assign).toHaveBeenCalledWith("https://api.workos.com/authorize");
+    });
   });
 });
 

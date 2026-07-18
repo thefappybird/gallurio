@@ -75,6 +75,14 @@ export const removeMemberFromTeamSchema = z.object({
 });
 export type RemoveMemberFromTeamInput = z.infer<typeof removeMemberFromTeamSchema>;
 
+export const removeMemberFromTeamAndWorkspaceSchema = z.object({
+  workosUserId: z.string().min(1),
+  teamId: z.string().min(1),
+});
+export type RemoveMemberFromTeamAndWorkspaceInput = z.infer<
+  typeof removeMemberFromTeamAndWorkspaceSchema
+>;
+
 export const setLeadFlagSchema = z.object({
   workosUserId: z.string().min(1),
   teamId: z.string().min(1),

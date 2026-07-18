@@ -2,9 +2,9 @@
 
 import { useActionState, useTransition, useRef, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,11 @@ import type { ActionResult } from "../_actions";
 
 interface SignInFormProps {
   returnTo?: string;
+  sessionExpired?: boolean;
 }
 
-export function SignInForm({ returnTo }: SignInFormProps) {
+export function SignInForm({ returnTo, sessionExpired = false }: SignInFormProps) {
   const t = useTranslations("auth");
-  const router = useRouter();
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     signInAction,
     null,
@@ -41,11 +41,18 @@ export function SignInForm({ returnTo }: SignInFormProps) {
     turnstileRef.current?.reset();
   }, [error]);
 
+  useEffect(() => {
+    if (sessionExpired) toast.error(t("errors.sessionExpired"));
+  }, [sessionExpired, t]);
+
   function handleGoogleSignIn() {
     startGoogleTransition(async () => {
       const result = await googleSignInAction(returnTo);
       if ("url" in result) {
-        router.push(result.url);
+        // WorkOS lives on another origin. This must be a browser navigation,
+        // not a Next.js router transition (which requests RSC data via fetch
+        // and is consequently blocked by the browser's CORS policy).
+        window.location.assign(result.url);
       }
     });
   }

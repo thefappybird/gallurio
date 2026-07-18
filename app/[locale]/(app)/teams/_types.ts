@@ -5,6 +5,8 @@ export type TeamRow = {
   isDefault: boolean;
   isActive: boolean;
   memberCount: number;
+  /** Average non-draft bookings created in each month where this team had bookings. */
+  monthlyAverage?: number;
 };
 
 export type TeamMemberRole = "member" | "lead";
@@ -15,6 +17,7 @@ export type MemberSummary = {
   name: string;
   avatarUrl?: string | null;
   teams: { teamId: string; role: TeamMemberRole }[];
+  bookingStats?: { completed: number; active: number; future: number };
 };
 
 export type PendingInviteRow = {

@@ -114,7 +114,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
               labels={{
                 visitors: t("portfolio.visitors"),
                 inquiries: t("portfolio.inquiries"),
-                empty: t("portfolio.noTraffic"),
+                empty: t("filteredEmpty"),
               }}
             />
           </CardContent>
@@ -132,7 +132,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
             ofOpened: t("portfolio.funnel.ofOpened"),
             ofTotal: t("portfolio.funnel.ofTotal"),
             collectingData: t("portfolio.funnel.collectingData"),
-            empty: t("portfolio.noTraffic"),
+            empty: t("filteredEmpty"),
           }}
         />
       </div>
@@ -148,7 +148,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
             booked: t("portfolio.pipeline.booked"),
             archived: t("portfolio.pipeline.archived"),
             total: t("portfolio.pipeline.total"),
-            empty: t("empty"),
+            empty: t("filteredEmpty"),
           }}
         />
         <div className="lg:col-span-2">
@@ -162,7 +162,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
               medianLeadTime: t("portfolio.demand.medianLeadTime"),
               days: t("portfolio.demand.days"),
               basedOn: t("portfolio.demand.basedOn"),
-              empty: t("empty"),
+              empty: t("filteredEmpty"),
               eventTypes,
             }}
           />

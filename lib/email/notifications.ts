@@ -6,6 +6,7 @@ import type { NotificationType } from '@/lib/notifications/types'
 
 const TEAM_TYPES = new Set<NotificationType>([
   'team.invitation',
+  'team.invite_accepted',
   'team.removed',
   'team.deleted',
 ])
