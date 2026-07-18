@@ -79,7 +79,7 @@
       "title": "Simpleng presyo",
       "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",
       "viewFullPricing": "Tingnan ang buong presyo",
-      "disclaimer": "Ang mga presyo ay sinisingil ng Lemon Squeezy at ipinapakita sa iyong lokal na currency sa checkout.",
+      "disclaimer": "Hindi pa available ang mga paid plan. Malinaw na ipapakita ang presyo at mga tuntunin sa pagsingil bago ang checkout kapag inilunsad na ang mga ito.",
       "cadence": {
         "monthly": "Buwanan",
         "yearly": "Taunan — makatipid ng 2 buwan"
@@ -125,7 +125,7 @@
         "cta": "Simulan ang libreng buwan ko"
       },
       "billingNotice": {
-        "body1": "Ligtas na iproproseso ang mga bayad ng Lemon Squeezy, ang aming Merchant of Record. Pinangangasiwaan ng Lemon Squeezy ang payment processing, pagkalkula ng buwis, invoice, billing support, at eligible na refund processing.",
+        "body1": "Hindi pa available ang mga paid na Pro subscription. Kapag inilunsad na ang mga ito, malinaw na ipapakita ang presyo, mga tuntunin sa pagsingil, at detalye ng bayad bago mo makumpleto ang anumang pagbili.",
         "body2": "Walang bayad na kinokolekta sa iyong unang libreng buwan."
       },
       "pricingTransparency": {
@@ -186,7 +186,7 @@
       "subscriptions": {
         "title": "8. Subscriptions at Bayad",
         "body1": "Kasama sa Gallurio ang isang paid na Pro subscription, na sinisingil buwan-buwan o taun-taon. Ang mga bagong workspace ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang card.",
-        "body2": "Pagkatapos ng libreng buwan, kailangan ng aktibong Pro subscription para magpatuloy sa paggamit ng Gallurio. Ang billing ay iproproseso ng Lemon Squeezy, ang aming Merchant of Record. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, buwis, invoice, billing support, at naaangkop na refund workflows.",
+        "body2": "Pagkatapos ng libreng buwan, kailangan ng aktibong Pro subscription para magpatuloy sa paggamit ng Gallurio. Hindi pa available ang mga paid subscription; malinaw na ipapakita ang mga tuntunin sa pagsingil at detalye ng bayad bago ang anumang singil kapag inilunsad na ang mga ito.",
         "body3": "Ipapakita sa mga user ang naaangkop na presyo at billing terms bago kumpletuhin ang isang pagbili.",
         "body4": "Kung hindi na-renew ang subscription o nabigo ang bayad, limitado ang access sa workspace hanggang maibalik ang subscription. Napapanatili ang data ng account; maaaring itanggal offline ang na-publish na pampublikong page pagkatapos ng mahabang panahon na walang bayad, at maibabalik ang lahat pagkatapos mag-resubscribe."
       },
@@ -251,7 +251,7 @@
         },
         "payment": {
           "title": "Impormasyon sa Bayad",
-          "body": "Ang mga bayad para sa Gallurio Pro subscription ay iproproseso ng Lemon Squeezy, ang Merchant of Record ng Gallurio. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card. Maaaring kolektahin at iproseso ng Lemon Squeezy ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice ayon sa sarili nitong mga tuntunin at privacy practices."
+          "body": "Hindi pa available ang mga paid na Pro subscription. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card; kapag nailunsad na ang mga bayad, papangalanan sa bahaging ito ang payment processor at ilalarawan kung paano nito kinokolekta at pinoproseso ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice."
         }
       },
       "useOfInfo": {
@@ -314,7 +314,7 @@
     "refunds": {
       "metadata": {
         "title": "Patakaran sa Refund — Gallurio",
-        "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation, refund, at payment processing ng Lemon Squeezy."
+        "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation at refund."
       },
       "title": "Patakaran sa Refund",
       "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
@@ -341,13 +341,13 @@
         "item5": "Mga isyu sa technical",
         "item6": "Duplicate na singil",
         "item7": "Naaangkop na mga batas sa proteksyon ng consumer",
-        "item8": "Proseso ng bayad at refund ng Lemon Squeezy",
+        "item8": "Proseso ng refund ng payment processor",
         "outro": "Ang pagsusumite ng kahilingan sa refund ay hindi ginagarantiya na maaaprubahan ang refund."
       },
       "merchantOfRecord": {
-        "title": "4. Lemon Squeezy bilang Merchant of Record",
-        "body1": "Ang mga bayad para sa Gallurio ay maaaring iproseso ng Lemon Squeezy, ang Merchant of Record ng Gallurio. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, buwis, invoice, billing support, at eligible na refund processing.",
-        "body2": "Kung bumili ang isang user ng subscription ng Gallurio sa pamamagitan ng Lemon Squeezy, maaaring ipakita sa kanilang billing statement ang Lemon Squeezy o isang kaugnay na Lemon Squeezy billing descriptor."
+        "title": "4. Pagproseso ng Bayad",
+        "body1": "Hindi pa available ang mga paid subscription. Kapag nailunsad na ang mga ito, papangalanan dito ng Gallurio ang kanyang payment processor at ilalarawan kung paano nito pinangangasiwaan ang payment processing, buwis, invoice, billing support, at eligible na refund processing.",
+        "body2": "Kapag nailunsad na ang mga bayad, maaaring ipakita sa billing statement ng user ang pangalan ng napiling payment processor o isang kaugnay na billing descriptor."
       },
       "nonRefundable": {
         "title": "5. Mga Sitwasyong Hindi Maaaring i-Refund",
@@ -1358,6 +1358,7 @@
           "paused": "Naka-pause",
           "trialing": "Trial"
         },
+        "notYetAvailable": "Hindi pa available ang mga paid subscription. Bumalik ulit sa lalong madaling panahon, o gumamit ng promo code sa ibaba kung mayroon ka.",
         "manageSection": "Pamahalaan ang subscription",
         "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
         "manageButton": "Pamahalaan ang subscription",
@@ -2896,6 +2897,7 @@
       "export_too_large": "Masyadong maraming booking para i-export. I-paliitin ang iyong mga filter at subukan muli.",
       "free_plan_no_checkout": "Hindi kailangan ng checkout ang libreng plano.",
       "lemonsqueezy_variant_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
+      "billing_unavailable": "Hindi pa available ang mga paid subscription. Bumalik ulit sa lalong madaling panahon.",
       "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
       "checkout_init_failed": "Hindi masimulaan ang checkout. Pakisubukan muli.",
       "no_subscription": "Wala kang aktibong subscription na mapapamahalaan.",

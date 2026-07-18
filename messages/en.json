@@ -79,7 +79,7 @@
       "title": "Simple pricing",
       "subtitle": "1 month of Pro, free. Then one plan, monthly or yearly.",
       "viewFullPricing": "View full pricing",
-      "disclaimer": "Prices are billed by Lemon Squeezy and shown in your local currency at checkout.",
+      "disclaimer": "Paid plans aren't available yet. Pricing and billing terms will be shown clearly before checkout once they launch.",
       "cadence": {
         "monthly": "Monthly",
         "yearly": "Yearly — save 2 months"
@@ -125,7 +125,7 @@
         "cta": "Start my free month"
       },
       "billingNotice": {
-        "body1": "Payments are processed securely by Lemon Squeezy, our Merchant of Record. Lemon Squeezy handles payment processing, tax calculation, invoices, billing support, and eligible refund processing.",
+        "body1": "Paid Pro subscriptions are not yet available. When they launch, pricing, billing terms, and payment details will be shown clearly before you complete any purchase.",
         "body2": "No charge is collected during your first free month."
       },
       "pricingTransparency": {
@@ -186,7 +186,7 @@
       "subscriptions": {
         "title": "8. Subscriptions and Payments",
         "body1": "Gallurio includes a paid Pro subscription, billed monthly or yearly. New workspaces receive one month of full Pro access at no charge, with no card required.",
-        "body2": "After the free month, continuing to use Gallurio requires an active Pro subscription. Billing is processed by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.",
+        "body2": "After the free month, continuing to use Gallurio requires an active Pro subscription. Paid subscriptions are not yet available; billing terms and payment details will be shown clearly before any charge once they launch.",
         "body3": "Users will be shown applicable pricing and billing terms before completing a purchase.",
         "body4": "If a subscription is not renewed or a payment fails, access to the workspace is limited until the subscription is restored. Account data is retained; a published public page may be taken offline after an extended period without payment, and everything is restored upon resubscribing."
       },
@@ -251,7 +251,7 @@
         },
         "payment": {
           "title": "Payment Information",
-          "body": "Payments for the Gallurio Pro subscription are processed by Lemon Squeezy, Gallurio's Merchant of Record. Gallurio does not directly store full payment card details. Lemon Squeezy may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices."
+          "body": "Paid Pro subscriptions are not yet available. Gallurio does not directly store full payment card details; once payments launch, this section will name the payment processor and describe how it collects and processes billing details, payment information, tax information, and invoices."
         }
       },
       "useOfInfo": {
@@ -314,7 +314,7 @@
     "refunds": {
       "metadata": {
         "title": "Refund Policy — Gallurio",
-        "description": "Learn how Gallurio handles cancellations, refunds, and Lemon Squeezy payment processing."
+        "description": "Learn how Gallurio handles cancellations and refunds."
       },
       "title": "Refund Policy",
       "effectiveDate": "Effective Date: July 18, 2026",
@@ -341,13 +341,13 @@
         "item5": "Technical issues",
         "item6": "Duplicate charges",
         "item7": "Applicable consumer protection laws",
-        "item8": "Lemon Squeezy's payment and refund process",
+        "item8": "The payment processor's refund process",
         "outro": "Submitting a refund request does not guarantee that a refund will be approved."
       },
       "merchantOfRecord": {
-        "title": "4. Lemon Squeezy as Merchant of Record",
-        "body1": "Payments for Gallurio may be processed by Lemon Squeezy, Gallurio's Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and eligible refund processing.",
-        "body2": "If a user purchases a Gallurio subscription through Lemon Squeezy, their billing statement may show Lemon Squeezy or a related Lemon Squeezy billing descriptor."
+        "title": "4. Payment Processing",
+        "body1": "Paid subscriptions are not yet available. Once they launch, Gallurio will name its payment processor here and describe how it handles payment processing, taxes, invoices, billing support, and eligible refund processing.",
+        "body2": "Once payments launch, a user's billing statement may show the selected payment processor's name or a related billing descriptor."
       },
       "nonRefundable": {
         "title": "5. Non-Refundable Situations",
@@ -1358,6 +1358,7 @@
           "paused": "Paused",
           "trialing": "Trialing"
         },
+        "notYetAvailable": "Paid subscriptions aren't available yet. Check back soon, or use a promo code below if you have one.",
         "manageSection": "Manage subscription",
         "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
         "manageButton": "Manage subscription",
@@ -2897,6 +2898,7 @@
       "export_too_large": "Too many bookings to export. Narrow your filters and try again.",
       "free_plan_no_checkout": "The free plan doesn't require checkout.",
       "lemonsqueezy_variant_not_configured": "This plan isn't available right now. Please contact support.",
+      "billing_unavailable": "Paid subscriptions aren't available yet. Please check back soon.",
       "no_verified_email": "Add and verify an email before subscribing.",
       "checkout_init_failed": "Couldn't start checkout. Please try again.",
       "no_subscription": "You don't have an active subscription to manage.",

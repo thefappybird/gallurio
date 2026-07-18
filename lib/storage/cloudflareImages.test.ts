@@ -195,8 +195,13 @@ describe("deleteImage", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const promise = deleteImage("img_timeout");
+    // Attach the rejection expectation before advancing timers — advancing
+    // first would reject `promise` with no handler attached yet, tripping
+    // Node's unhandledRejection detector even though it's handled moments
+    // later (a PromiseRejectionHandledWarning, not a real leak).
+    const expectation = expect(promise).rejects.toThrow(/timed out/i);
     await vi.advanceTimersByTimeAsync(15_000);
-    await expect(promise).rejects.toThrow(/timed out/i);
+    await expectation;
 
     // clearAllTimers before switching back so no stray fake-timer-scheduled
     // callback (e.g. a duplicate setTimeout from cfFetch's `finally` running

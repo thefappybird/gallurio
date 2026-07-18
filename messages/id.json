@@ -79,7 +79,7 @@
       "title": "Harga sederhana",
       "subtitle": "1 bulan Pro, gratis. Lalu satu paket, bulanan atau tahunan.",
       "viewFullPricing": "Lihat harga lengkap",
-      "disclaimer": "Harga ditagih oleh Lemon Squeezy dan ditampilkan dalam mata uang lokal Anda saat checkout.",
+      "disclaimer": "Paket berbayar belum tersedia. Harga dan ketentuan penagihan akan ditampilkan dengan jelas sebelum checkout setelah diluncurkan.",
       "cadence": {
         "monthly": "Bulanan",
         "yearly": "Tahunan — hemat 2 bulan"
@@ -125,7 +125,7 @@
         "cta": "Mulai bulan gratis saya"
       },
       "billingNotice": {
-        "body1": "Pembayaran diproses secara aman oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy menangani pemrosesan pembayaran, perhitungan pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body1": "Langganan Pro berbayar belum tersedia. Ketika diluncurkan, harga, ketentuan penagihan, dan detail pembayaran akan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian apa pun.",
         "body2": "Tidak ada biaya yang dikumpulkan selama bulan gratis pertama Anda."
       },
       "pricingTransparency": {
@@ -186,7 +186,7 @@
       "subscriptions": {
         "title": "8. Langganan dan Pembayaran",
         "body1": "Gallurio mencakup langganan Pro berbayar, ditagih bulanan atau tahunan. Workspace baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu diperlukan.",
-        "body2": "Setelah bulan gratis berakhir, melanjutkan penggunaan Gallurio memerlukan langganan Pro yang aktif. Penagihan diproses oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan alur kerja pengembalian dana yang berlaku.",
+        "body2": "Setelah bulan gratis berakhir, melanjutkan penggunaan Gallurio memerlukan langganan Pro yang aktif. Langganan berbayar belum tersedia; ketentuan penagihan dan detail pembayaran akan ditampilkan dengan jelas sebelum ada biaya apa pun setelah diluncurkan.",
         "body3": "Pengguna akan diperlihatkan harga dan ketentuan penagihan yang berlaku sebelum menyelesaikan pembelian.",
         "body4": "Jika langganan tidak diperpanjang atau pembayaran gagal, akses ke workspace dibatasi hingga langganan dipulihkan. Data akun tetap disimpan; halaman publik yang dipublikasikan dapat dinonaktifkan setelah periode panjang tanpa pembayaran, dan semuanya dipulihkan setelah berlangganan kembali."
       },
@@ -251,7 +251,7 @@
         },
         "payment": {
           "title": "Informasi Pembayaran",
-          "body": "Pembayaran untuk langganan Gallurio Pro diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran. Lemon Squeezy dapat mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice sesuai dengan ketentuan dan praktik privasinya sendiri."
+          "body": "Langganan Pro berbayar belum tersedia. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran; setelah pembayaran diluncurkan, bagian ini akan mencantumkan nama pemroses pembayaran dan menjelaskan bagaimana pihaknya mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice."
         }
       },
       "useOfInfo": {
@@ -314,7 +314,7 @@
     "refunds": {
       "metadata": {
         "title": "Kebijakan Pengembalian Dana — Gallurio",
-        "description": "Pelajari bagaimana Gallurio menangani pembatalan, pengembalian dana, dan pemrosesan pembayaran Lemon Squeezy."
+        "description": "Pelajari bagaimana Gallurio menangani pembatalan dan pengembalian dana."
       },
       "title": "Kebijakan Pengembalian Dana",
       "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
@@ -341,13 +341,13 @@
         "item5": "Masalah teknis",
         "item6": "Biaya ganda",
         "item7": "Hukum perlindungan konsumen yang berlaku",
-        "item8": "Proses pembayaran dan pengembalian dana Lemon Squeezy",
+        "item8": "Proses pengembalian dana dari pemroses pembayaran",
         "outro": "Mengirimkan permintaan pengembalian dana tidak menjamin bahwa pengembalian dana akan disetujui."
       },
       "merchantOfRecord": {
-        "title": "4. Lemon Squeezy sebagai Merchant of Record",
-        "body1": "Pembayaran untuk Gallurio dapat diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Lemon Squeezy dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
-        "body2": "Jika pengguna membeli langganan Gallurio melalui Lemon Squeezy, laporan penagihan mereka mungkin menampilkan Lemon Squeezy atau deskriptor penagihan Lemon Squeezy terkait."
+        "title": "4. Pemrosesan Pembayaran",
+        "body1": "Langganan berbayar belum tersedia. Setelah diluncurkan, Gallurio akan mencantumkan nama pemroses pembayarannya di sini dan menjelaskan bagaimana pihaknya menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body2": "Setelah pembayaran diluncurkan, laporan penagihan pengguna mungkin menampilkan nama pemroses pembayaran yang dipilih atau deskriptor penagihan terkait."
       },
       "nonRefundable": {
         "title": "5. Situasi yang Tidak Dapat Dikembalikan Dananya",
@@ -1358,6 +1358,7 @@
           "paused": "Dijeda",
           "trialing": "Masa percobaan"
         },
+        "notYetAvailable": "Langganan berbayar belum tersedia. Periksa kembali nanti, atau gunakan kode promo di bawah jika Anda memilikinya.",
         "manageSection": "Kelola langganan",
         "manageDescription": "Perbarui metode pembayaran, lihat faktur, atau batalkan langganan Anda langsung melalui Lemon Squeezy.",
         "manageButton": "Kelola langganan",
@@ -2896,6 +2897,7 @@
       "export_too_large": "Terlalu banyak pemesanan untuk diekspor. Persempit filter dan coba lagi.",
       "free_plan_no_checkout": "Paket gratis tidak memerlukan pembayaran.",
       "lemonsqueezy_variant_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
+      "billing_unavailable": "Langganan berbayar belum tersedia. Silakan periksa kembali nanti.",
       "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
       "checkout_init_failed": "Gagal memulai pembayaran. Silakan coba lagi.",
       "no_subscription": "Anda tidak memiliki langganan aktif untuk dikelola.",

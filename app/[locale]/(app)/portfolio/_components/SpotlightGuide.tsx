@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
@@ -67,6 +68,14 @@ export type SpotlightGuideProps = {
 };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
+
+// Nothing external ever changes this snapshot after the initial client
+// render, so subscribe is a no-op — the point of useSyncExternalStore here is
+// purely to report `false` during SSR/hydration and `true` on the client,
+// without a setState-in-effect render cascade.
+const noopSubscribe = () => () => {};
+const getMountedSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 /** Padding (px) added around the anchor element's bounding rect for the cutout. */
 const CUTOUT_PADDING = 6;
@@ -640,10 +649,7 @@ export function SpotlightGuide({
   const step = steps[stepIndex];
   const cardRef = useRef<HTMLDivElement | null>(null);
   const isRtl = useIsRtl();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(noopSubscribe, getMountedSnapshot, getServerSnapshot);
 
   // Measure the active anchor element, scoped to queryRoot when provided to
   // avoid resolving to a sibling editor shell's element with the same tour id.

@@ -41,6 +41,16 @@ function renderPanel(overrides: Partial<SubscribePanelProps> = {}) {
   return renderWithProviders(<SubscribePanel {...defaultProps} {...overrides} />);
 }
 
+describe("SubscribePanel — beta-only mode (billingAvailable=false)", () => {
+  it("shows a not-yet-available message instead of the subscribe CTA, and never opens checkout", () => {
+    renderPanel({ billingAvailable: false });
+
+    expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /monthly/i })).not.toBeInTheDocument();
+    expect(useLemonSqueezyCheckoutMock).toHaveBeenCalledWith(expect.any(Function), false);
+  });
+});
+
 describe("SubscribePanel — renders", () => {
   it("defaults to monthly pricing", () => {
     renderPanel();

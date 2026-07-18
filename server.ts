@@ -1,11 +1,21 @@
 import { createServer } from 'http'
 import { parse } from 'url'
+import path from 'path'
 import next from 'next'
 import mongoose from 'mongoose'
+import dotenv from 'dotenv'
 import { Server as SocketIOServer } from 'socket.io'
 import { setIO } from './lib/sockets/io'
 import { verifySocketToken } from './lib/sockets/auth'
 import { gracefulShutdown } from './lib/server/gracefulShutdown'
+
+// `tsx server.ts` is a bare Node process — unlike `next dev`/`next start`,
+// nothing loads .env.local into process.env automatically. Next.js does its
+// own env loading once app.prepare() runs, but validateEnv() below must run
+// first (see its comment), so load explicitly here. Same file + convention
+// as .claude/skills/run-gallurio/driver.mjs. Never overrides real shell-
+// exported env vars (dotenv's default).
+dotenv.config({ path: path.join(__dirname, '.env.local') })
 
 // Ensure NODE_ENV is set so that downstream code (e.g. Turnstile dev bypass,
 // Next.js internals) can distinguish dev from prod. The pnpm scripts set
