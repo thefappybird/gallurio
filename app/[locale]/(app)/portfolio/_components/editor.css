@@ -138,9 +138,9 @@
 }
 
 /* The editor header gets the width left after the app sidebar, so viewport
- * breakpoints are too optimistic on 1024-1440px devices. At constrained editor
- * widths, keep the primary portfolio actions visible as icon buttons and move
- * the wider canvas-control cluster into a popover trigger. */
+ * breakpoints are too optimistic on 1024-1440px devices. The right-side
+ * portfolio actions are icon buttons at every width; constrained widths also
+ * move the wider canvas-control cluster into a popover trigger. */
 .portfolio-canvas-controls-inline {
   display: block;
 }
@@ -158,7 +158,6 @@
     display: block;
   }
 
-  .portfolio-toolbar-action-label,
   .portfolio-draft-name-label {
     display: none;
   }

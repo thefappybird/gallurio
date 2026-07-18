@@ -673,12 +673,15 @@ describe("EditorShell", () => {
     expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
   });
 
-  it("Publish button in editor header has the same size (h-7) as Save changes", async () => {
+  it("Publish button in editor header is icon-only and has the same size (h-7) as Save changes", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const saveBtn = screen.getByRole("button", { name: "Save changes" });
     const publishBtn = screen.getByRole("button", { name: "Publish" });
     expect(saveBtn.className).toContain("h-7");
     expect(publishBtn.className).toContain("h-7");
+    expect(publishBtn).toHaveAttribute("title", "Publish");
+    expect(publishBtn).not.toHaveTextContent("Publish");
+    expect(publishBtn.querySelector("svg")).not.toBeNull();
   });
 
   it("styles Save changes with the brand variant and Preview with the secondary variant", async () => {
@@ -716,11 +719,15 @@ describe("EditorShell", () => {
     expect(fixedActions).toContainElement(screen.getByRole("button", { name: "Publish" }));
   });
 
-  it("renders compact-screen icons for portfolio actions", async () => {
+  it("renders icon-only portfolio actions with accessible labels", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     for (const name of ["Photos", "Theme", "Guide", "Drafts", "Save changes"]) {
-      expect(screen.getByRole("button", { name }).querySelector("svg")).not.toBeNull();
+      const action = screen.getByRole("button", { name });
+      expect(action.querySelector("svg")).not.toBeNull();
+      expect(action).toHaveAttribute("title", name);
+      expect(action).not.toHaveTextContent(name);
     }
+    expect(screen.getByRole("button", { name: "Guide" })).toHaveAttribute("data-tour-id", "guide");
   });
 
   it("renders the Preview button as a sibling of the section tabs inside the nav cluster", async () => {

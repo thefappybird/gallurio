@@ -41,7 +41,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     anchorId: "blocks-panel",
     secondaryAnchorId: "canvas-viewport",
     title: "Drag a block onto your page",
-    body: "The panel on the left lists every available block. Drag any block from here onto the canvas to add it to your page.",
+    body: "Choose a Preset block from the panel on the left, then drag it onto the canvas. Presets include the editing controls used in the next steps.",
     placement: "right",
     gated: true,
     passthrough: true,
@@ -170,18 +170,6 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // The wrapper remains in the sandbox editor at every supported width. The
-  // compact popover itself is portaled, so the guide deliberately targets this
-  // stable trigger/group rather than content outside guideQueryRoot.
-  {
-    id: "canvas-controls",
-    slug: "canvasControls",
-    anchorId: "canvas-controls",
-    title: "Adjust your editing canvas",
-    body: "Use these controls to toggle panels, undo or redo, choose a canvas width, zoom, and change page language. On smaller screens, open the sliders button to find them.",
-    placement: "bottom",
-  },
-
   // Preview + device toggle
   {
     id: "preview-device",
@@ -192,13 +180,25 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
+  // The wrapper remains in the sandbox editor at every supported width. The
+  // compact popover itself is portaled, so the guide deliberately targets this
+  // stable trigger/group rather than content outside guideQueryRoot.
+  {
+    id: "canvas-controls",
+    slug: "canvasControls",
+    anchorId: "canvas-controls",
+    title: "Adjust your editing canvas",
+    body: "Use these controls to toggle panels, undo or redo, choose a canvas width, and zoom. On smaller screens, open the sliders button to find them.",
+    placement: "bottom",
+  },
+
   // Language + RTL control — page-wide translation of the public chrome.
   // Always present in the edit header (beside the viewport controls), so it
   // needs no gating or panel restore.
   {
     id: "translate",
     slug: "translate",
-    anchorId: "canvas-controls",
+    anchorId: "language-control",
     title: "Translate your public pages",
     body: "Use the language control here to switch your navigation, contact form, and collection popups all at once. On smaller screens, open the sliders button first.",
     placement: "bottom",
@@ -224,13 +224,33 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // Save + Drafts
+  // Guide
   {
-    id: "save-drafts",
+    id: "guide",
+    slug: "guide",
+    anchorId: "guide",
+    title: "Return to this guide anytime",
+    body: "Open Guide whenever you want to replay this walkthrough.",
+    placement: "bottom",
+  },
+
+  // Drafts
+  {
+    id: "drafts",
     slug: "draftsStep",
-    anchorId: "workspace-actions",
+    anchorId: "drafts",
     title: "Save drafts and switch versions",
-    body: "This action group keeps Photos, Theme, Guide, Drafts, Save, and Publish together. On smaller screens, the icons keep every action within reach.",
+    body: "Open Drafts to create and manage independent versions of your portfolio.",
+    placement: "bottom",
+  },
+
+  // Save
+  {
+    id: "save",
+    slug: "save",
+    anchorId: "save-changes",
+    title: "Save your changes",
+    body: "Save changes to keep the current draft ready to return to later.",
     placement: "bottom",
   },
 

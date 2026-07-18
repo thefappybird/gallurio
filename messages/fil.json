@@ -2558,7 +2558,7 @@
             },
             "dragBlock": {
               "title": "Mag-drag ng block sa iyong pahina",
-              "body": "Naglilista ang panel ng bawat available na block. Mag-drag ng anumang block mula dito papunta sa canvas para idagdag ito sa iyong pahina."
+              "body": "Pumili ng Preset block mula sa panel, pagkatapos ay i-drag ito papunta sa canvas. May kasama ang mga preset na editing controls na gagamitin sa mga susunod na hakbang."
             },
             "blockProps": {
               "title": "Nandito ang mga properties ng block",
@@ -2623,6 +2623,18 @@
             "preview": {
               "title": "I-preview ang iyong site sa anumang laki ng screen",
               "body": "Lumipat sa preview mode at gamitin ang device toggle para suriin ang iyong layout sa mobile, tablet, at desktop."
+            },
+            "canvasControls": {
+              "title": "Ayusin ang iyong editing canvas",
+              "body": "Gamitin ang mga control na ito para mag-toggle ng mga panel, mag-undo o mag-redo, pumili ng lapad ng canvas, at mag-zoom. Sa mas maliliit na screen, buksan ang sliders button para makita ang mga ito."
+            },
+            "guide": {
+              "title": "Bumalik sa gabay na ito anumang oras",
+              "body": "Buksan ang Gabay anumang oras para ulitin ang walkthrough na ito."
+            },
+            "save": {
+              "title": "I-save ang iyong mga pagbabago",
+              "body": "I-save ang mga pagbabago para manatiling handa ang kasalukuyang draft na balikan sa ibang pagkakataon."
             },
             "publish": {
               "title": "Mag-publish para maging live",

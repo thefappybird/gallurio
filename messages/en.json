@@ -2547,7 +2547,7 @@
             },
             "dragBlock": {
               "title": "Drag a block onto your page",
-              "body": "The panel lists every available block. Drag any block from here onto the canvas to add it to your page."
+              "body": "Choose a Preset block from the panel, then drag it onto the canvas. Presets include the editing controls used in the next steps."
             },
             "blockProps": {
               "title": "Block properties live here",
@@ -2612,6 +2612,18 @@
             "preview": {
               "title": "Preview your site at any screen size",
               "body": "Switch to preview mode and use the device toggle to check your layout on mobile, tablet, and desktop."
+            },
+            "canvasControls": {
+              "title": "Adjust your editing canvas",
+              "body": "Use these controls to toggle panels, undo or redo, choose a canvas width, and zoom. On smaller screens, open the sliders button to find them."
+            },
+            "guide": {
+              "title": "Return to this guide anytime",
+              "body": "Open Guide whenever you want to replay this walkthrough."
+            },
+            "save": {
+              "title": "Save your changes",
+              "body": "Save changes to keep the current draft ready to return to later."
             },
             "publish": {
               "title": "Publish to go live",

@@ -20,6 +20,7 @@ import {
   PanelLeft,
   PanelRight,
   Redo2,
+  Rocket,
   Save,
   SlidersHorizontal,
   Smartphone,
@@ -34,6 +35,7 @@ import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/li
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
 import { createEditorConfig } from "@/lib/page-builder/editorConfig";
+import { PRESET_BLOCK_KEYS } from "@/lib/page-builder/blockCategories";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolveEffectiveFonts } from "@/lib/page-builder/fonts";
 import { BrandColorsContext } from "@/lib/page-builder/brandColors";
@@ -422,13 +424,17 @@ function DeviceTogglePreview({
 function PuckGateReader({
   onState,
 }: {
-  onState: (state: { contentCount: number }) => void;
+  onState: (state: { contentCount: number; hasPresetBlock: boolean }) => void;
 }) {
-  const contentCount = usePuckStore((s) => s.appState.data.content?.length ?? 0);
+  const content = usePuckStore((s) => s.appState.data.content ?? []);
+  const contentCount = content.length;
+  const hasPresetBlock = content.some((block) =>
+    (PRESET_BLOCK_KEYS as readonly string[]).includes(block.type)
+  );
 
   useEffect(() => {
-    onState({ contentCount });
-  });
+    onState({ contentCount, hasPresetBlock });
+  }, [contentCount, hasPresetBlock, onState]);
 
   return null;
 }
@@ -490,7 +496,22 @@ export function EditorShell({
   const tPublicForm = useTranslations("publicPage.inquiryForm");
   const tLocationPicker = useTranslations("app.bookings.locationPicker");
   const errMsg = useActionError();
-  const editorConfig = useMemo(() => createEditorConfig(t), [t]);
+  const editorConfig = useMemo(() => {
+    const config = createEditorConfig(t);
+    if (!guideMode) return config;
+    const categories = config.categories ?? {};
+
+    // The guide's first task must create a block with the Style Toolkit tabs
+    // used by steps 4â€“6. Keep manual blocks (including bare Video) out of the
+    // sandbox drawer so only composed preset sections can be dropped.
+    return {
+      ...config,
+      categories: {
+        ...categories,
+        manual: { ...categories.manual, visible: false },
+      },
+    };
+  }, [guideMode, t]);
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [previewMode, setPreviewMode] = useState(false);
@@ -547,6 +568,7 @@ export function EditorShell({
 
   // Puck gate state (populated by PuckGateReader when Puck is mounted)
   const [puckContentCount, setPuckContentCount] = useState(0);
+  const [puckHasPresetBlock, setPuckHasPresetBlock] = useState(false);
   // Baseline content count captured when the drag-block step becomes active
   const [dragBaseline, setDragBaseline] = useState<number | null>(null);
 
@@ -1385,7 +1407,7 @@ export function EditorShell({
     switch (currentStepId) {
       case "drag-block":
         return dragBaseline !== null
-          ? puckContentCount > dragBaseline
+          ? puckContentCount > dragBaseline && puckHasPresetBlock
           : false;
       case "header-tab":
         return headerOpen;
@@ -1605,7 +1627,6 @@ export function EditorShell({
           onClick={() => setPhotosOpen(true)}
         >
           <Images className="size-3.5" aria-hidden />
-          <span className="portfolio-toolbar-action-label">{t("photos")}</span>
         </Button>
         <Button
           type="button"
@@ -1618,7 +1639,6 @@ export function EditorShell({
           onClick={openTheme}
         >
           <Palette className="size-3.5" aria-hidden />
-          <span className="portfolio-toolbar-action-label">{t("theme")}</span>
         </Button>
         <Button
           type="button"
@@ -1627,10 +1647,10 @@ export function EditorShell({
           className="shrink-0 px-2"
           aria-label={t("guide")}
           title={t("guide")}
+          data-tour-id="guide"
           onClick={() => { setSpotlightStepIndex(0); setGuideOpen(true); }}
         >
           <CircleHelp className="size-3.5" aria-hidden />
-          <span className="portfolio-toolbar-action-label">{t("guide")}</span>
         </Button>
         <Button
           type="button"
@@ -1643,7 +1663,6 @@ export function EditorShell({
           onClick={() => setDraftsOpen(true)}
         >
           <Files className="size-3.5" aria-hidden />
-          <span className="portfolio-toolbar-action-label">{t("drafts")}</span>
         </Button>
         <div data-testid="draft-title-slot" className="min-w-0 shrink-0">
           <DraftNameEditor
@@ -1674,7 +1693,6 @@ export function EditorShell({
           className="px-2"
         >
           <Save className="size-3.5" aria-hidden />
-          <span className="portfolio-toolbar-action-label">{t("saveChanges")}</span>
         </Button>
         {publishSlot}
       </div>
@@ -1799,8 +1817,9 @@ export function EditorShell({
                   style={{ gridArea: "header" }}
                 >
                   <PuckGateReader
-                    onState={({ contentCount }) => {
+                    onState={({ contentCount, hasPresetBlock }) => {
                       setPuckContentCount(contentCount);
+                      setPuckHasPresetBlock(hasPresetBlock);
                     }}
                   />
                   {topBar(
@@ -1813,10 +1832,13 @@ export function EditorShell({
                     <Button
                       type="button"
                       size="sm"
+                      className="px-2"
                       data-tour-id="publish"
+                      aria-label={t("publish")}
+                      title={t("publish")}
                       onClick={() => void handlePublish()}
                     >
-                      {t("publish")}
+                      <Rocket className="size-3.5" aria-hidden />
                     </Button>,
                   )}
                 </header>
@@ -1834,8 +1856,16 @@ export function EditorShell({
             <div className="border-b border-border bg-card px-3 py-2">
               {topBar(
                 previewControlsCluster(),
-                <Button type="button" size="sm" data-tour-id="publish" onClick={() => void handlePublish()}>
-                  {t("publish")}
+                <Button
+                  type="button"
+                  size="sm"
+                  className="px-2"
+                  data-tour-id="publish"
+                  aria-label={t("publish")}
+                  title={t("publish")}
+                  onClick={() => void handlePublish()}
+                >
+                  <Rocket className="size-3.5" aria-hidden />
                 </Button>
               )}
             </div>

@@ -2558,7 +2558,7 @@
             },
             "dragBlock": {
               "title": "Seret blok ke halaman Anda",
-              "body": "Panel mencantumkan setiap blok yang tersedia. Seret blok apa pun dari sini ke kanvas untuk menambahkannya ke halaman Anda."
+              "body": "Pilih blok Preset dari panel, lalu seret ke kanvas. Preset menyertakan kontrol pengeditan yang digunakan pada langkah berikutnya."
             },
             "blockProps": {
               "title": "Properti blok ada di sini",
@@ -2623,6 +2623,18 @@
             "preview": {
               "title": "Pratinjau situs Anda di ukuran layar apa pun",
               "body": "Beralih ke mode pratinjau dan gunakan tombol perangkat untuk memeriksa tata letak Anda di perangkat mobile, tablet, dan desktop."
+            },
+            "canvasControls": {
+              "title": "Sesuaikan kanvas pengeditan Anda",
+              "body": "Gunakan kontrol ini untuk mengganti panel, membatalkan atau mengulangi, memilih lebar kanvas, dan memperbesar. Di layar yang lebih kecil, buka tombol slider untuk menemukannya."
+            },
+            "guide": {
+              "title": "Kembali ke panduan ini kapan saja",
+              "body": "Buka Panduan kapan saja untuk mengulang walkthrough ini."
+            },
+            "save": {
+              "title": "Simpan perubahan Anda",
+              "body": "Simpan perubahan agar draf saat ini siap dibuka kembali nanti."
             },
             "publish": {
               "title": "Terbitkan untuk tayang",
