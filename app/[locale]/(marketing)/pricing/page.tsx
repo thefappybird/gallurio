@@ -54,11 +54,13 @@ export default async function PricingPage({ params }: Props) {
         <div className="mx-auto max-w-3xl">
           <Card className="ring-2 ring-brand">
             <CardHeader>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <CardTitle className="text-lg">{t("pro.name")}</CardTitle>
                 <Badge variant="default" className="bg-brand text-brand-foreground">
                   {t("pro.badge")}
                 </Badge>
+                {/* Coming soon: Lemon Squeezy checkout paused pending MoR verification, see docs/RELEASE-CHECKLIST.md */}
+                <Badge variant="outline">{t("pro.comingSoon")}</Badge>
               </div>
               <p className="text-sm font-semibold text-brand">{t("pro.freeMonth")}</p>
               <p className="text-2xl font-semibold tracking-tight">

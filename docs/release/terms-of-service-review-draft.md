@@ -1,5 +1,7 @@
 # Gallurio Terms of Service Review Draft
 
+Status: published — merged into live pages on 2026-07-18.
+
 Status: review draft. Replace placeholders and obtain legal approval before
 publishing. This draft is not legal advice.
 
@@ -95,4 +97,4 @@ termination language for the operating jurisdiction.
 - Confirm the final beta close date and participant promo redemption rule.
 - Confirm provider-terminal payment language against Lemon Squeezy behavior.
 - Reconcile retention/unpublish language with the lifecycle implementation.
-- Publish the approved version in `en`, `fil`, `ms`, `id`, and `ar`.
+- Publish the approved version in `en`, `fil`, `id`, `ar`, and `th`.

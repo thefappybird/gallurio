@@ -169,42 +169,43 @@ export function PlanStepForm({
       }
     >
       <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <SegmentedToggle
-              value={cadence}
-              onChange={setCadence}
-              ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
-              options={[
-                { key: "monthly", label: t("cadenceToggle.monthly") },
-                { key: "yearly", label: t("cadenceToggle.yearly") },
-              ]}
-            />
-            {cadence === "yearly" && (
-              <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
-                {t("cadenceToggle.savePill")}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center gap-2">
+          <SegmentedToggle
+            value={cadence}
+            onChange={setCadence}
+            ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+            options={[
+              { key: "monthly", label: t("cadenceToggle.monthly") },
+              { key: "yearly", label: t("cadenceToggle.yearly") },
+            ]}
+          />
+          {cadence === "yearly" && (
+            <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
+              {t("cadenceToggle.savePill")}
+            </span>
+          )}
+        </div>
 
-          {betaTesterEnabled && (
-            <div className="flex items-center gap-2 border border-dashed border-brand/40 bg-brand/5 px-2 py-1">
+        {betaTesterEnabled && (
+          <div className="flex flex-col items-start justify-between gap-3 border border-brand bg-brand/5 p-4 sm:flex-row sm:items-center">
+            <div>
               <span className="text-[10px] font-semibold uppercase tracking-wider text-brand">
                 {t("betaTester.label")}
               </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={activateBeta}
-                disabled={busy}
-                className="h-7 px-2 text-xs"
-              >
-                {t("betaTester.activate")}
-              </Button>
+              <h3 className="font-heading text-lg font-semibold">{t("betaTester.headline")}</h3>
             </div>
-          )}
-        </div>
+            <Button
+              type="button"
+              variant="brand"
+              size="lg"
+              onClick={activateBeta}
+              disabled={busy}
+              className="w-full sm:w-auto"
+            >
+              {t("betaTester.activate")}
+            </Button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {PLAN_CATALOG.map((p) => {
@@ -225,20 +226,24 @@ export function PlanStepForm({
               <motion.button
                 key={p.id}
                 type="button"
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.985 }}
+                disabled={p.id === "pro"}
+                whileHover={p.id === "pro" ? undefined : { y: -2 }}
+                whileTap={p.id === "pro" ? undefined : { scale: 0.985 }}
                 onClick={() => {
+                  if (p.id === "pro") return;
                   setSelected(p.id);
                   setCheckoutError(null);
                 }}
                 className={cn(
                   "relative flex flex-col gap-3 border bg-background p-4 text-left transition-colors",
-                  active ? "border-brand" : "border-border hover:border-brand/40 focus-visible:border-brand/40"
+                  active ? "border-brand" : "border-border hover:border-brand/40 focus-visible:border-brand/40",
+                  p.id === "pro" && "cursor-not-allowed opacity-50 hover:border-border"
                 )}
               >
-                {p.highlight && (
+                {/* Coming soon: Lemon Squeezy checkout paused pending MoR verification, see docs/RELEASE-CHECKLIST.md */}
+                {p.id === "pro" && (
                   <span className="absolute -top-2 right-3 bg-brand px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-foreground">
-                    {t("popular")}
+                    {t("comingSoon")}
                   </span>
                 )}
                 <div className="flex items-baseline justify-between">

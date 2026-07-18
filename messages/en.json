@@ -86,6 +86,7 @@
       },
       "pro": {
         "badge": "1 month free",
+        "comingSoon": "Coming soon",
         "name": "Pro",
         "priceSuffixMonthly": "/mo",
         "priceSuffixYearly": "/yr",
@@ -108,6 +109,7 @@
       },
       "pro": {
         "badge": "Recommended",
+        "comingSoon": "Coming soon",
         "name": "Pro",
         "freeMonth": "Start with 1 month free, no card required.",
         "description": "Everything you need to run bookings, clients, galleries, and your public page.",
@@ -137,7 +139,7 @@
         "description": "Read the terms that govern access to and use of Gallurio."
       },
       "title": "Terms of Service",
-      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "effectiveDate": "Effective Date: July 18, 2026",
       "intro1": "These Terms of Service govern your access to and use of Gallurio, including our website, application, portfolio tools, booking inquiry features, and related services.",
       "intro2": "By using Gallurio, you agree to these Terms. If you do not agree, you should not use the service.",
       "about": {
@@ -227,7 +229,7 @@
         "description": "Learn how Gallurio collects, uses, stores, and protects information."
       },
       "title": "Privacy Policy",
-      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "effectiveDate": "Effective Date: July 18, 2026",
       "intro": "This Privacy Policy explains how Gallurio collects, uses, stores, and protects information when users access the website, application, and related services.",
       "collect": {
         "title": "1. Information We Collect",
@@ -315,16 +317,18 @@
         "description": "Learn how Gallurio handles cancellations, refunds, and Lemon Squeezy payment processing."
       },
       "title": "Refund Policy",
-      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "effectiveDate": "Effective Date: July 18, 2026",
       "betaPeriod": {
         "title": "1. Free Trial",
         "body1": "New Gallurio workspaces receive one month of full Pro access at no charge, with no card required. No payment is collected during this trial, so no refund applies to it.",
-        "body2": "If you continue with a paid Pro subscription after the trial, the pricing and billing terms shown at checkout apply, and this Refund Policy governs any payment made."
+        "body2": "If you continue with a paid Pro subscription after the trial, the pricing and billing terms shown at checkout apply, and this Refund Policy governs any payment made.",
+        "body3": "Verified beta participants may also receive a separate two-month Pro promo grant. It may be redeemed once per verified beta participant and expires two months after redemption; like the free trial, it is a promotional grant rather than a payment, so no refund applies to it."
       },
       "subscriptions": {
         "title": "2. Subscriptions",
         "body1": "Gallurio Pro subscriptions are billed monthly, annually, or according to the billing period shown at checkout.",
-        "body2": "Users may cancel their subscription to prevent future renewal charges. After cancellation, access may continue until the end of the current billing period unless otherwise stated."
+        "body2": "Users may cancel their subscription to prevent future renewal charges. After cancellation, access may continue until the end of the current billing period unless otherwise stated.",
+        "body3": "When a subscription lapses due to a failed or terminal non-payment, Gallurio sends an expiry notice immediately, a saved-data reminder after 30 days, and a final public-page warning after 51 days, then unpublishes the public page after 58 days. Workspace, CRM, and draft data remain retained so everything can be restored upon resubscribing."
       },
       "refundRequests": {
         "title": "3. Refund Requests",
@@ -400,9 +404,15 @@
       },
       "businessInfo": {
         "title": "Business Information",
-        "legalNamePlaceholder": "[Business Legal Name, if applicable]",
-        "addressPlaceholder": "[Business Address or Registered Country, if applicable]",
+        "body": "Gallurio is a small, independent startup. We don't have a registered legal name or business address to list yet — for now, the best way to reach us is by email.",
         "emailLabel": "Email:"
+      },
+      "social": {
+        "title": "Follow Us",
+        "instagram": "Follow us on Instagram",
+        "facebook": "Follow us on Facebook",
+        "reddit": "Join us on Reddit",
+        "linkedin": "Follow us on LinkedIn"
       }
     }
   },
@@ -1388,9 +1398,9 @@
         "languages": {
           "en": "English",
           "fil": "Filipino",
-          "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
-          "ar": "العربية"
+          "ar": "العربية",
+          "th": "ภาษาไทย"
         },
         "timeFormatSection": "Time Format",
         "timeFormatHint": "Choose how times are displayed across the app.",
@@ -2928,6 +2938,7 @@
       "title": "Pick the plan that fits",
       "description": "You can change plans or cancel anytime from your workspace settings.",
       "popular": "Popular",
+      "comingSoon": "Coming soon",
       "cadence": {
         "forever": "first month free",
         "monthly": "/ month",
@@ -2947,6 +2958,7 @@
       "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
       "betaTester": {
         "label": "Beta tester",
+        "headline": "Get free beta access now",
         "activate": "Activate beta access"
       }
     },

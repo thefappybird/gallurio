@@ -34,9 +34,11 @@ Delegation is a cost trade-off, not a reflex: every subagent pays a fixed contex
 - **Tight, closed-ended prompts**: name exact files + line ranges, state the exact question, cap the return ("return ONLY the 3 exported signatures, nothing else"). Open-ended prompts make agents wander and dump verbose context.
 - **Workflow two-phase pattern**: reader phase (`lean-reader` agent, haiku, parallel) returns raw excerpts → executor phase receives those excerpts inline. Executors never explore.
 - Never use Sonnet with 1M context. Prompt-polishing helpers live in `.claude/`.
+- **Max 2 concurrent subagents**: this machine has limited RAM and crashes on wide parallel fan-out. Dispatch any multi-agent work — including the fixed roster below — in waves of at most 2 running at once, even where the task would otherwise justify more parallelism.
+- **Orchestrator-only builds, queued**: subagents never run `pnpm build`/`pnpm dev`/`next build`/`next dev` themselves — only the top-level orchestrating session runs builds, one at a time, after a subagent reports its change is green. Subagents may still run their own targeted tests/lint/typecheck.
 
 ### Fixed team roster
-When dispatching the full team, use this fixed 7-seat roster only — one flat layer, no further fan-out:
+When dispatching the full team, use this fixed 7-seat roster only — one flat layer, no further fan-out — dispatched in waves of at most 2 per the concurrency cap above, not all at once:
 - `senior-backend-engineer` ×2 (sonnet) — server-only work.
 - `senior-frontend-engineer` ×2 (sonnet) — UI-only work.
 - `lean-reader` ×2 (haiku) — read-only context for the four engineers above.
@@ -70,7 +72,7 @@ Operate as a senior full-stack engineer with strong mobile-first UI and backend/
 - Every async surface: loading/empty/error/populated. Every control: idle/hover-focus-visible/active/disabled.
 - No hover-only UX. Drag needs visible affordances. Large mobile flows: steps/tabs, not tall modals.
 - Accessibility: semantic HTML, labels, keyboard support, focus management, color never the sole signal.
-- Update all 5 locales together (`en`, `fil`, `ms`, `id`, `ar`). Prefer optimistic UI for high-confidence mutations.
+- Update all 5 locales together (`en`, `fil`, `id`, `ar`, `th`). Prefer optimistic UI for high-confidence mutations.
 
 ### Backend
 - Server Components by default; Server Actions for in-app mutations; Route Handlers for webhooks/public APIs. Node runtime unless Edge is justified.
@@ -107,7 +109,7 @@ Lemon Squeezy subscriptions via a synchronous checkout Route Handler and a webho
 Hetzner VPS, Node 20+, pm2/systemd, Caddy/Nginx → Next on 3000. GitHub Actions gated on tests+lint+typecheck+build. Details: `docs/dev-reference.md#production-hosting`.
 
 ## i18n
-Locales: `en`, `fil`, `ms`, `id`, `ar` (RTL). No `th` — phased out 2026-06-11; do not reintroduce. Use logical Tailwind utilities (`ms/me/ps/pe/start/end/text-start`), not physical. Full RTL/locale details: `docs/dev-reference.md#i18n`.
+Locales: `en`, `fil`, `id`, `ar` (RTL), `th`. Malay (`ms`) dropped 2026-07-18 (overlapped too closely with `id` to justify a separate catalog); Thai (`th`) reintroduced 2026-07-18 after the original mojibake-corruption issue was root-caused (PowerShell UTF-8 corruption) and an automated encoding-sanity test (`messages/encoding-sanity.test.ts`) was added to catch any recurrence. Use logical Tailwind utilities (`ms/me/ps/pe/start/end/text-start`), not physical. Full RTL/locale details: `docs/dev-reference.md#i18n`.
 
 ## Encoding safety
 Preserve UTF-8 everywhere; never output/save mojibake. Verify user-facing Unicode renders; fix corruption before continuing. Prefer ASCII in code/config unless Unicode is intentional.

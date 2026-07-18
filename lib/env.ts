@@ -72,6 +72,12 @@ const shape = {
   PAGEVIEW_SALT_SECRET: z.string().optional(),
   BETA_TESTER_ENABLED: z.string().optional(),
   PORT: z.string().optional(),
+
+  // --- Social links (contact page) — unset hides the icon; fill in later ---
+  NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL: z.string().optional(),
+  NEXT_PUBLIC_SOCIAL_FACEBOOK_URL: z.string().optional(),
+  NEXT_PUBLIC_SOCIAL_REDDIT_URL: z.string().optional(),
+  NEXT_PUBLIC_SOCIAL_LINKEDIN_URL: z.string().optional(),
 };
 
 type EnvKey = keyof typeof shape;

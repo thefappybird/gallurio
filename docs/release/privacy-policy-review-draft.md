@@ -1,5 +1,7 @@
 # Gallurio Privacy Policy Review Draft
 
+Status: published — merged into live pages on 2026-07-18.
+
 Status: review draft. Replace placeholders and obtain legal approval before
 publishing. This draft reflects the current product and the approved beta
 incentive direction; it is not legal advice.
@@ -98,4 +100,4 @@ and how material policy changes are communicated.
 - Replace the provider list with the actual production stack.
 - Confirm retention, backup deletion, and beta-participant record periods.
 - Confirm applicable jurisdiction and user-rights language.
-- Publish the approved version in `en`, `fil`, `ms`, `id`, and `ar`.
+- Publish the approved version in `en`, `fil`, `id`, `ar`, and `th`.

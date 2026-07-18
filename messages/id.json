@@ -86,6 +86,7 @@
       },
       "pro": {
         "badge": "1 bulan gratis",
+        "comingSoon": "Segera hadir",
         "name": "Pro",
         "priceSuffixMonthly": "/bln",
         "priceSuffixYearly": "/thn",
@@ -108,6 +109,7 @@
       },
       "pro": {
         "badge": "Direkomendasikan",
+        "comingSoon": "Segera hadir",
         "name": "Pro",
         "freeMonth": "Mulai dengan 1 bulan gratis, tanpa kartu diperlukan.",
         "description": "Semua yang Anda butuhkan untuk menjalankan booking, klien, galeri, dan halaman publik Anda.",
@@ -137,7 +139,7 @@
         "description": "Baca ketentuan yang mengatur akses ke dan penggunaan Gallurio."
       },
       "title": "Ketentuan Layanan",
-      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
       "intro1": "Ketentuan Layanan ini mengatur akses Anda ke dan penggunaan Gallurio, termasuk situs web, aplikasi, alat portfolio, fitur permintaan booking, dan layanan terkait kami.",
       "intro2": "Dengan menggunakan Gallurio, Anda menyetujui Ketentuan ini. Jika Anda tidak setuju, Anda tidak boleh menggunakan layanan ini.",
       "about": {
@@ -227,7 +229,7 @@
         "description": "Pelajari bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi."
       },
       "title": "Kebijakan Privasi",
-      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
       "intro": "Kebijakan Privasi ini menjelaskan bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi ketika pengguna mengakses situs web, aplikasi, dan layanan terkait.",
       "collect": {
         "title": "1. Informasi yang Kami Kumpulkan",
@@ -315,16 +317,18 @@
         "description": "Pelajari bagaimana Gallurio menangani pembatalan, pengembalian dana, dan pemrosesan pembayaran Lemon Squeezy."
       },
       "title": "Kebijakan Pengembalian Dana",
-      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
       "betaPeriod": {
         "title": "1. Uji Coba Gratis",
         "body1": "Workspace Gallurio baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu diperlukan. Tidak ada pembayaran nyata yang dikumpulkan selama uji coba ini, sehingga tidak ada pengembalian dana yang berlaku untuknya.",
-        "body2": "Jika Anda melanjutkan dengan langganan Pro berbayar setelah uji coba, harga dan ketentuan penagihan yang ditampilkan saat checkout berlaku, dan Kebijakan Pengembalian Dana ini mengatur setiap pembayaran yang dilakukan."
+        "body2": "Jika Anda melanjutkan dengan langganan Pro berbayar setelah uji coba, harga dan ketentuan penagihan yang ditampilkan saat checkout berlaku, dan Kebijakan Pengembalian Dana ini mengatur setiap pembayaran yang dilakukan.",
+        "body3": "Peserta beta terverifikasi juga dapat menerima hibah promo Pro dua bulan yang terpisah. Promo ini dapat ditukarkan satu kali per peserta beta terverifikasi dan berakhir dua bulan setelah penukaran; seperti uji coba gratis, ini adalah hibah promosi, bukan pembayaran, sehingga tidak ada pengembalian dana yang berlaku untuknya."
       },
       "subscriptions": {
         "title": "2. Langganan",
         "body1": "Langganan Gallurio Pro ditagih bulanan, tahunan, atau sesuai periode penagihan yang ditampilkan saat checkout.",
-        "body2": "Pengguna dapat membatalkan langganan mereka untuk mencegah biaya perpanjangan di masa depan. Setelah pembatalan, akses dapat berlanjut hingga akhir periode penagihan saat ini kecuali dinyatakan lain."
+        "body2": "Pengguna dapat membatalkan langganan mereka untuk mencegah biaya perpanjangan di masa depan. Setelah pembatalan, akses dapat berlanjut hingga akhir periode penagihan saat ini kecuali dinyatakan lain.",
+        "body3": "Ketika langganan berakhir karena kegagalan pembayaran atau non-pembayaran terminal, Gallurio segera mengirim pemberitahuan kedaluwarsa, pengingat data tersimpan setelah 30 hari, dan peringatan akhir halaman publik setelah 51 hari, lalu membatalkan publikasi halaman publik setelah 58 hari. Data workspace, CRM, dan draf tetap disimpan sehingga semuanya dapat dipulihkan saat berlangganan kembali."
       },
       "refundRequests": {
         "title": "3. Permintaan Pengembalian Dana",
@@ -400,9 +404,15 @@
       },
       "businessInfo": {
         "title": "Informasi Bisnis",
-        "legalNamePlaceholder": "[Nama Resmi Bisnis, jika berlaku]",
-        "addressPlaceholder": "[Alamat Bisnis atau Negara Terdaftar, jika berlaku]",
+        "body": "Gallurio adalah startup kecil dan independen. Kami belum memiliki nama badan hukum atau alamat bisnis terdaftar untuk dicantumkan — untuk saat ini, cara terbaik menghubungi kami adalah melalui email.",
         "emailLabel": "Email:"
+      },
+      "social": {
+        "title": "Ikuti Kami",
+        "instagram": "Ikuti kami di Instagram",
+        "facebook": "Ikuti kami di Facebook",
+        "reddit": "Gabung dengan kami di Reddit",
+        "linkedin": "Ikuti kami di LinkedIn"
       }
     }
   },
@@ -1388,9 +1398,9 @@
         "languages": {
           "en": "English",
           "fil": "Filipino",
-          "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
-          "ar": "العربية"
+          "ar": "العربية",
+          "th": "ภาษาไทย"
         },
         "timeFormatSection": "Format Waktu",
         "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
@@ -2928,6 +2938,7 @@
       "title": "Pilih paket yang sesuai",
       "description": "Anda dapat mengubah paket atau membatalkan kapan saja dari pengaturan ruang kerja Anda.",
       "popular": "Populer",
+      "comingSoon": "Segera hadir",
       "cadence": {
         "forever": "bulan pertama gratis",
         "monthly": "/ bulan",
@@ -2947,6 +2958,7 @@
       "checkoutNotReady": "Sistem pembayaran belum siap. Silakan refresh dan coba lagi.",
       "betaTester": {
         "label": "Beta Tester",
+        "headline": "Dapatkan akses beta gratis sekarang",
         "activate": "Aktifkan akses beta"
       }
     },

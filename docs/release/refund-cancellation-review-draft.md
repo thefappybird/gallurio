@@ -1,5 +1,7 @@
 # Gallurio Refund and Cancellation Policy Review Draft
 
+Status: published — merged into live pages on 2026-07-18.
+
 Status: review draft. Replace placeholders and obtain legal/provider approval
 before publishing. This draft is not legal advice.
 
@@ -69,4 +71,4 @@ description of the issue. Do not send full payment-card details.
 - Confirm whether the provider or Gallurio owns each refund decision.
 - Confirm any statutory cooling-off, tax, or consumer-rights language.
 - Confirm beta promo grants are clearly distinguished from paid purchases.
-- Publish the approved version in `en`, `fil`, `ms`, `id`, and `ar`.
+- Publish the approved version in `en`, `fil`, `id`, `ar`, and `th`.

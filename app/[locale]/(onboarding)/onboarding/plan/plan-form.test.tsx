@@ -127,19 +127,26 @@ describe("PlanStepForm — renders", () => {
 });
 
 describe("PlanStepForm — plan card selection", () => {
-  it("switching to Pro changes the CTA to paid text", async () => {
+  it("Pro card is disabled and shows a Coming soon badge instead of Popular", () => {
     renderForm({ currentPlan: "free" });
 
-    // Find the Pro plan card specifically by its heading
     const proHeading = screen.getByRole("heading", { name: "Pro" });
-    // The heading is inside the card button — click the closest button ancestor
     const proCard = proHeading.closest("button");
     expect(proCard).not.toBeNull();
-    fireEvent.click(proCard!);
+    expect(proCard).toBeDisabled();
+    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^popular$/i)).not.toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /subscribe.*₱/i })).toBeInTheDocument();
-    });
+  it("clicking the disabled Pro card does not change the CTA from free text", async () => {
+    renderForm({ currentPlan: "free" });
+
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
+    fireEvent.click(proCard);
+
+    await act(async () => {});
+    expect(screen.getByRole("button", { name: /free month/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
   });
 });
 

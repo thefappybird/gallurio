@@ -86,6 +86,7 @@
       },
       "pro": {
         "badge": "1 buwang libre",
+        "comingSoon": "Malapit na",
         "name": "Pro",
         "priceSuffixMonthly": "/buwan",
         "priceSuffixYearly": "/taon",
@@ -108,6 +109,7 @@
       },
       "pro": {
         "badge": "Rekomendado",
+        "comingSoon": "Malapit na",
         "name": "Pro",
         "freeMonth": "Simulan nang may 1 buwang libre, walang kailangang card.",
         "description": "Lahat ng kailangan mo para patakbuhin ang mga booking, client, gallery, at ang pampublikong page mo.",
@@ -137,7 +139,7 @@
         "description": "Basahin ang mga tuntuning namamahala sa access at paggamit ng Gallurio."
       },
       "title": "Mga Tuntunin ng Serbisyo",
-      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
       "intro1": "Ang mga Tuntunin ng Serbisyong ito ay namamahala sa iyong access at paggamit ng Gallurio, kasama ang aming website, application, portfolio tools, booking inquiry features, at kaugnay na mga serbisyo.",
       "intro2": "Sa paggamit ng Gallurio, sumasang-ayon ka sa mga Tuntuning ito. Kung hindi ka sumasang-ayon, hindi mo dapat gamitin ang serbisyo.",
       "about": {
@@ -227,7 +229,7 @@
         "description": "Alamin kung paano kinokolekta, ginagamit, ini-imbak, at pinoprotektahan ng Gallurio ang impormasyon."
       },
       "title": "Patakaran sa Privacy",
-      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
       "intro": "Ipinapaliwanag ng Patakaran sa Privacy na ito kung paano kinokolekta, ginagamit, ini-imbak, at pinoprotektahan ng Gallurio ang impormasyon kapag ina-access ng mga user ang website, application, at kaugnay na mga serbisyo.",
       "collect": {
         "title": "1. Impormasyong Kinokolekta Namin",
@@ -315,16 +317,18 @@
         "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation, refund, at payment processing ng Lemon Squeezy."
       },
       "title": "Patakaran sa Refund",
-      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
       "betaPeriod": {
         "title": "1. Libreng Trial",
         "body1": "Ang mga bagong workspace ng Gallurio ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang card. Walang totoong bayad na kinokolekta habang ang trial na ito, kaya walang kinakailangang refund dito.",
-        "body2": "Kung magpapatuloy ka sa isang paid na Pro subscription pagkatapos ng trial, ang presyo at billing terms na ipinapakita sa checkout ang mag-aapply, at ang Patakaran sa Refund na ito ang mamahala sa anumang bayad na nagawa."
+        "body2": "Kung magpapatuloy ka sa isang paid na Pro subscription pagkatapos ng trial, ang presyo at billing terms na ipinapakita sa checkout ang mag-aapply, at ang Patakaran sa Refund na ito ang mamahala sa anumang bayad na nagawa.",
+        "body3": "Maaari ding makatanggap ang mga verified na beta participant ng hiwalay na dalawang-buwang Pro promo grant. Maaari itong i-redeem nang isang beses lamang bawat verified na beta participant at mag-e-expire dalawang buwan pagkatapos i-redeem; tulad ng libreng trial, isa itong promotional grant sa halip na bayad, kaya walang refund na naaangkop dito."
       },
       "subscriptions": {
         "title": "2. Mga Subscription",
         "body1": "Ang mga subscription ng Gallurio Pro ay sinisingil buwan-buwan, taun-taon, o ayon sa billing period na ipinapakita sa checkout.",
-        "body2": "Maaaring i-cancel ng mga user ang kanilang subscription para pigilan ang mga susunod na renewal charge. Pagkatapos ng cancellation, maaaring magpatuloy ang access hanggang sa katapusan ng kasalukuyang billing period maliban kung nakasaad."
+        "body2": "Maaaring i-cancel ng mga user ang kanilang subscription para pigilan ang mga susunod na renewal charge. Pagkatapos ng cancellation, maaaring magpatuloy ang access hanggang sa katapusan ng kasalukuyang billing period maliban kung nakasaad.",
+        "body3": "Kapag na-lapse ang isang subscription dahil sa nabigong o terminal na hindi pagbabayad, magpapadala ang Gallurio ng expiry notice kaagad, isang saved-data reminder pagkatapos ng 30 araw, at isang huling public-page warning pagkatapos ng 51 araw, pagkatapos ay ia-unpublish ang public page pagkatapos ng 58 araw. Nananatiling naka-retain ang workspace, CRM, at draft data para maibalik ang lahat kapag nag-resubscribe."
       },
       "refundRequests": {
         "title": "3. Mga Kahilingan sa Refund",
@@ -400,9 +404,15 @@
       },
       "businessInfo": {
         "title": "Impormasyon ng Negosyo",
-        "legalNamePlaceholder": "[Legal na Pangalan ng Negosyo, kung naaangkop]",
-        "addressPlaceholder": "[Address ng Negosyo o Rehistradong Bansa, kung naaangkop]",
+        "body": "Ang Gallurio ay maliit at independiyenteng startup. Wala pa kaming nakarehistrong legal na pangalan o business address na ilalagay — sa ngayon, ang pinakamainam na paraan para makontak kami ay sa pamamagitan ng email.",
         "emailLabel": "Email:"
+      },
+      "social": {
+        "title": "Sundan Kami",
+        "instagram": "Sundan kami sa Instagram",
+        "facebook": "Sundan kami sa Facebook",
+        "reddit": "Sumali sa amin sa Reddit",
+        "linkedin": "Sundan kami sa LinkedIn"
       }
     }
   },
@@ -1388,9 +1398,9 @@
         "languages": {
           "en": "English",
           "fil": "Filipino",
-          "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
-          "ar": "العربية"
+          "ar": "العربية",
+          "th": "ภาษาไทย"
         },
         "timeFormatSection": "Format ng Oras",
         "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
@@ -2928,6 +2938,7 @@
       "title": "Pumili ng planong angkop",
       "description": "Maaari kang magpalit ng plano o magkansela anumang oras mula sa mga setting ng iyong workspace.",
       "popular": "Popular",
+      "comingSoon": "Malapit na",
       "cadence": {
         "forever": "unang buwan libre",
         "monthly": "/ buwan",
@@ -2947,6 +2958,7 @@
       "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
       "betaTester": {
         "label": "Beta Tester",
+        "headline": "Kumuha ng libreng beta access ngayon",
         "activate": "I-activate ang beta access"
       }
     },
