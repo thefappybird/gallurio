@@ -17,7 +17,11 @@ declare global {
 // callers to trigger the overlay; it returns false (instead of opening
 // anything) when the script hasn't finished loading yet, so callers can
 // surface their own "not ready" message.
-export function useLemonSqueezyCheckout(onCheckoutSuccess: () => void) {
+//
+// `enabled` (default true) gates the script injection entirely — pass
+// `isPaidBillingAvailable()` through so beta-only mode never loads or invokes
+// Lemon Squeezy checkout behavior client-side.
+export function useLemonSqueezyCheckout(onCheckoutSuccess: () => void, enabled = true) {
   const [ready, setReady] = useState(false);
   const onSuccessRef = useRef(onCheckoutSuccess);
 
@@ -28,6 +32,7 @@ export function useLemonSqueezyCheckout(onCheckoutSuccess: () => void) {
   });
 
   useEffect(() => {
+    if (!enabled) return;
     const script = document.createElement("script");
     script.src = "https://app.lemonsqueezy.com/js/lemon.js";
     script.defer = true;
@@ -45,10 +50,10 @@ export function useLemonSqueezyCheckout(onCheckoutSuccess: () => void) {
     return () => {
       document.body.removeChild(script);
     };
-  }, []);
+  }, [enabled]);
 
   function open(url: string): boolean {
-    if (!ready || !window.LemonSqueezy) return false;
+    if (!enabled || !ready || !window.LemonSqueezy) return false;
     window.LemonSqueezy.Url.Open(url);
     return true;
   }

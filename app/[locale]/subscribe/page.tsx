@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { LogOutIcon } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
 import { SignOutLink } from "@/components/app/sign-out-link";
@@ -49,7 +50,11 @@ export default async function SubscribePage({
           <p className="mb-6 text-sm text-muted-foreground">
             {t("owner.description")}
           </p>
-          <SubscribePanel proPricing={proPricing} returnTo={returnTo} />
+          <SubscribePanel
+            proPricing={proPricing}
+            returnTo={returnTo}
+            billingAvailable={isPaidBillingAvailable()}
+          />
         </div>
         <SignOutLink>
           <LogOutIcon className="size-3.5 shrink-0" aria-hidden />

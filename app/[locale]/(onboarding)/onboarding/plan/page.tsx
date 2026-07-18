@@ -1,4 +1,5 @@
 import { loadOnboardingContext, requireStep } from "@/lib/auth/onboardingStep";
+import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { PromoCode } from "@/lib/db/models";
 import { PlanStepForm } from "./plan-form";
@@ -38,6 +39,7 @@ export default async function PlanStepPage() {
       acceptedPromoCode={acceptedPromoCodes[0]?.code ?? null}
       proPricing={proPricing}
       betaTesterEnabled={process.env.BETA_TESTER_ENABLED === "true"}
+      billingAvailable={isPaidBillingAvailable()}
     />
   );
 }

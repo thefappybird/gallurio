@@ -81,6 +81,7 @@ function renderForm(
     planChoiceLocked?: boolean;
     activation?: "free" | "pro" | "beta" | "promo" | null;
     acceptedPromoCode?: string | null;
+    billingAvailable?: boolean;
   } = {}
 ) {
   return renderWithProviders(
@@ -92,6 +93,7 @@ function renderForm(
       planChoiceLocked={props.planChoiceLocked}
       activation={props.activation}
       acceptedPromoCode={props.acceptedPromoCode}
+      billingAvailable={props.billingAvailable ?? true}
     />
   );
 }
@@ -133,8 +135,17 @@ describe("PlanStepForm — renders", () => {
 });
 
 describe("PlanStepForm — plan card selection", () => {
-  it("Pro card is disabled and shows a Coming soon badge instead of Popular", () => {
+  it("Pro card is enabled with no Coming soon badge when billing is available (paid mode)", () => {
     renderForm({ currentPlan: "free" });
+
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button");
+    expect(proCard).not.toBeNull();
+    expect(proCard).not.toBeDisabled();
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+  });
+
+  it("Pro card is disabled and shows a Coming soon badge in beta-only mode (billingAvailable=false)", () => {
+    renderForm({ currentPlan: "free", billingAvailable: false });
 
     const proHeading = screen.getByRole("heading", { name: "Pro" });
     const proCard = proHeading.closest("button");
@@ -144,8 +155,8 @@ describe("PlanStepForm — plan card selection", () => {
     expect(screen.queryByText(/^popular$/i)).not.toBeInTheDocument();
   });
 
-  it("clicking the disabled Pro card does not change the CTA from free text", async () => {
-    renderForm({ currentPlan: "free" });
+  it("clicking the disabled Pro card does not change the CTA from free text in beta-only mode", async () => {
+    renderForm({ currentPlan: "free", billingAvailable: false });
 
     const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
     fireEvent.click(proCard);
@@ -184,6 +195,14 @@ describe("PlanStepForm — plan card selection", () => {
     expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/^active$/i)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
+  });
+});
+
+describe("PlanStepForm — beta-only mode never loads Lemon Squeezy", () => {
+  it("never injects the lemon.js script when billingAvailable is false", () => {
+    renderForm({ currentPlan: "free", billingAvailable: false });
+    expect(document.querySelector('script[src*="lemon.js"]')).toBeNull();
+    expect(createLemonSqueezyMock).not.toHaveBeenCalled();
   });
 });
 

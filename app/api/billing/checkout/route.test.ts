@@ -266,6 +266,31 @@ describe("billing checkout — gated workspace", () => {
   });
 });
 
+describe("billing checkout — beta-only mode", () => {
+  const ORIGINAL_BETA = process.env.BETA_TESTER_ENABLED;
+
+  afterAll(() => {
+    if (ORIGINAL_BETA === undefined) delete process.env.BETA_TESTER_ENABLED;
+    else process.env.BETA_TESTER_ENABLED = ORIGINAL_BETA;
+  });
+
+  it("fails closed before any Lemon Squeezy call when beta-only mode is active", async () => {
+    process.env.BETA_TESTER_ENABLED = "true";
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }));
+
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body).toEqual({ error: "billing_unavailable" });
+    expect(mockCreateCheckout).not.toHaveBeenCalled();
+
+    delete process.env.BETA_TESTER_ENABLED;
+  });
+});
+
 describe("billing checkout — checkout creation failure", () => {
   it("returns 502 when createSubscriptionCheckout throws", async () => {
     const wsId = await seedWorkspace();

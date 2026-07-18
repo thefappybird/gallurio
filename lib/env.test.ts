@@ -140,6 +140,31 @@ describe("lib/env", () => {
     expect(() => validateEnv()).toThrow(/SUB_EXPIRED_WORKOS_PASSWORD/);
   });
 
+  it("passes validation in beta-only production mode with no Lemon Squeezy configuration", () => {
+    resetEnv();
+    setEnv(VALID_PROD_ENV);
+    setEnv({
+      BETA_TESTER_ENABLED: "true",
+      LEMONSQUEEZY_API_KEY: undefined,
+      LEMONSQUEEZY_STORE_ID: undefined,
+      LEMONSQUEEZY_WEBHOOK_SECRET: undefined,
+      LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: undefined,
+      LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: undefined,
+      LEMONSQUEEZY_TEST_MODE: undefined,
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("still requires valid live Lemon Squeezy configuration in production when beta-only mode is off", () => {
+    resetEnv();
+    setEnv(VALID_PROD_ENV);
+    setEnv({ LEMONSQUEEZY_API_KEY: undefined });
+
+    expect(() => validateEnv()).toThrow(/LEMONSQUEEZY_API_KEY/);
+  });
+
   it("never includes secret values in the thrown error message", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);

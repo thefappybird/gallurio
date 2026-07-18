@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
+import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { connectDB } from "@/lib/db/mongoose";
 import { createSubscriptionCheckout } from "@/lib/lemonsqueezy/client";
 import { getPlanCatalog, isPaidPlan } from "@/lib/lemonsqueezy/plans";
@@ -24,6 +25,12 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Cheap, zero-I/O check first — avoids an auth session decrypt + 2 Mongo
+  // round trips on every request for as long as beta-only mode is on.
+  if (!isPaidBillingAvailable()) {
+    return NextResponse.json({ error: "billing_unavailable" }, { status: 403 });
+  }
+
   // A gated owner must be able to POST here too - re-subscribing is how they
   // un-gate themselves.
   const ctx = await requireOrg({ allowDuringOnboarding: true, allowWhenGated: true });

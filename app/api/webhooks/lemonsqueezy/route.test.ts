@@ -314,6 +314,19 @@ describe("lemonsqueezy webhook — invalid signature", () => {
   });
 });
 
+describe("lemonsqueezy webhook — misconfigured secret", () => {
+  it("returns a retryable 500 instead of an uncaught exception when verification throws", async () => {
+    mockVerify.mockRejectedValue(new Error("Missing env var LEMONSQUEEZY_WEBHOOK_SECRET"));
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({ error: "webhook_verification_failed" });
+  });
+});
+
 describe("lemonsqueezy webhook — malformed verified payload", () => {
   it("returns 400 and writes nothing when the verified body doesn't match the envelope shape", async () => {
     mockVerify.mockResolvedValue({ meta: {}, data: {} } as never);

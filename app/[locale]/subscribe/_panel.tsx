@@ -14,9 +14,10 @@ import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 export type SubscribePanelProps = {
   proPricing: ProPricing;
   returnTo?: string;
+  billingAvailable?: boolean;
 };
 
-export function SubscribePanel({ proPricing, returnTo }: SubscribePanelProps) {
+export function SubscribePanel({ proPricing, returnTo, billingAvailable = true }: SubscribePanelProps) {
   const t = useTranslations("subscribe.owner");
   const tPlans = useTranslations("plans");
   const errMsg = useActionError();
@@ -33,7 +34,7 @@ export function SubscribePanel({ proPricing, returnTo }: SubscribePanelProps) {
     // plan/everSubscribed is reflected — mirrors settings/billing's own
     // window.location.reload() after checkout success.
     window.location.href = returnTo || "/";
-  });
+  }, billingAvailable);
 
   const monthlyPrice = proPricing.monthly;
   const yearlyPrice = proPricing.yearly;
@@ -69,6 +70,14 @@ export function SubscribePanel({ proPricing, returnTo }: SubscribePanelProps) {
       toast.error(msg);
       setLoading(false);
     }
+  }
+
+  if (!billingAvailable) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">{errMsg("billing_unavailable")}</p>
+      </div>
+    );
   }
 
   return (

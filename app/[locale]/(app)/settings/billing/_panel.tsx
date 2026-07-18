@@ -25,6 +25,7 @@ export type BillingPanelProps = {
   workspaceId: string;
   customerEmail: string;
   proPricing: ProPricing;
+  billingAvailable: boolean;
 };
 
 function formatDate(d: Date | null): string {
@@ -39,6 +40,7 @@ export function BillingPanel({
   lsSubscriptionStatus,
   lsCurrentPeriodEnd,
   proPricing,
+  billingAvailable,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
@@ -58,7 +60,7 @@ export function BillingPanel({
     toast.success(t("upgradeSuccess"));
     // Reload page to reflect new plan from server.
     window.location.reload();
-  });
+  }, billingAvailable);
 
   async function openUpgradeCheckout(plan: PlanTier) {
     if (plan === "free" || plan === currentPlan) return;
@@ -200,6 +202,8 @@ export function BillingPanel({
       {/* Beta tester — full access, nothing to upgrade or manage */}
       {isBeta ? (
         <p className="text-sm text-muted-foreground">{t("betaAccessNote")}</p>
+      ) : !billingAvailable ? (
+        <p className="text-sm text-muted-foreground">{t("notYetAvailable")}</p>
       ) : !isActiveSubscriber ? (
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">

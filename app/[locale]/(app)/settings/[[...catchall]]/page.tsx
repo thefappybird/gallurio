@@ -27,6 +27,7 @@ import { PublicPageSettingsForm } from "../public-page/_form";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
 import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { AccountPanel } from "../account/_panel";
 import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import type {
@@ -218,6 +219,7 @@ export default async function SettingsCatchallPage({
               workspaceId={String(workspace._id)}
               customerEmail={authUser?.email ?? ""}
               proPricing={proPricing}
+              billingAvailable={isPaidBillingAvailable()}
             />
           ),
         },

@@ -28,6 +28,7 @@ export function PlanStepForm({
   furthestStep,
   proPricing,
   betaTesterEnabled = false,
+  billingAvailable = true,
 }: {
   currentPlan: string;
   planChoiceLocked?: boolean;
@@ -36,6 +37,7 @@ export function PlanStepForm({
   furthestStep: OnboardingStep;
   proPricing: ProPricing;
   betaTesterEnabled?: boolean;
+  billingAvailable?: boolean;
 }) {
   const t = useTranslations("onboarding.plan");
   const tPlans = useTranslations("plans");
@@ -47,7 +49,7 @@ export function PlanStepForm({
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const lemonSqueezy = useLemonSqueezyCheckout(() => router.push("/onboarding/done"));
+  const lemonSqueezy = useLemonSqueezyCheckout(() => router.push("/onboarding/done"), billingAvailable);
 
   async function submit() {
     if (planChoiceLocked) {
@@ -230,7 +232,8 @@ export function PlanStepForm({
                   ? t("cadence.yearly")
                   : t("cadence.monthly");
             const isCurrentPlan = activation === p.id;
-            const disabled = p.id === "pro" || (planChoiceLocked && !isCurrentPlan);
+            const disabled =
+              (!billingAvailable && p.id === "pro") || (planChoiceLocked && !isCurrentPlan);
             return (
               <motion.button
                 key={p.id}
@@ -249,8 +252,8 @@ export function PlanStepForm({
                   disabled && "cursor-not-allowed opacity-50 hover:border-border"
                 )}
               >
-                {/* Coming soon: Lemon Squeezy checkout paused pending MoR verification, see docs/RELEASE-CHECKLIST.md */}
-                {p.id === "pro" && (
+                {/* Coming soon: paid checkout unavailable while beta-only mode is active (no Merchant of Record selected yet), see docs/RELEASE-CHECKLIST.md */}
+                {!billingAvailable && p.id === "pro" && (
                   <span className="absolute -top-2 right-3 bg-brand px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-foreground">
                     {t("comingSoon")}
                   </span>

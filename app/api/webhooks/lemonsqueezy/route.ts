@@ -38,7 +38,19 @@ export async function POST(req: Request) {
   const rawBody = await req.text();
   const signature = req.headers.get("x-signature");
 
-  const verified = await verifyAndParseLemonSqueezyEvent(rawBody, signature);
+  // verifyAndParseLemonSqueezyEvent throws (not returns null) when the
+  // signing secret itself is missing in production — a startup misconfig,
+  // not a bad request. Beta-only production mode legitimately allows
+  // startup with no Lemon Squeezy secret configured (see lib/env.ts), which
+  // makes that throw reachable here for the first time; return the
+  // ledger's normal retryable-5xx instead of an uncaught exception.
+  let verified: Awaited<ReturnType<typeof verifyAndParseLemonSqueezyEvent>>;
+  try {
+    verified = await verifyAndParseLemonSqueezyEvent(rawBody, signature);
+  } catch (err) {
+    console.error("[lemonsqueezy-webhook] verification failed", err);
+    return NextResponse.json({ error: "webhook_verification_failed" }, { status: 500 });
+  }
   if (!verified) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }

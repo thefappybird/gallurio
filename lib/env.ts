@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isPaidBillingAvailable } from "./billing/availability";
 
 // This module is also imported by the raw `tsx server.ts` entrypoint before
 // Next.js installs its compiler aliases, so it cannot use Next's `server-only`
@@ -100,18 +101,33 @@ const REQUIRED_IN_PROD: Partial<Record<EnvKey, FieldRule>> = {
   CLOUDFLARE_IMAGES_API_TOKEN: {},
   CLOUDFLARE_IMAGES_ACCOUNT_HASH: {},
   NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH: {},
-  LEMONSQUEEZY_API_KEY: {},
-  LEMONSQUEEZY_STORE_ID: {},
-  LEMONSQUEEZY_WEBHOOK_SECRET: {},
-  LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: {},
-  LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: {},
   RESEND_API_KEY: {},
   EMAIL_FROM: {},
   CRON_SECRET: {},
 };
 
+// Required only in normal paid-production mode. While BETA_TESTER_ENABLED is
+// "true" (the beta-only launch mode — no Merchant of Record selected/approved
+// yet, see docs/RELEASE-CHECKLIST.md), paid checkout/portal stay unavailable
+// server-side (lib/billing/availability.ts) so Lemon Squeezy credentials must
+// not block startup.
+const REQUIRED_IN_PROD_PAID_MODE: Partial<Record<EnvKey, FieldRule>> = {
+  LEMONSQUEEZY_API_KEY: {},
+  LEMONSQUEEZY_STORE_ID: {},
+  LEMONSQUEEZY_WEBHOOK_SECRET: {},
+  LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: {},
+  LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: {},
+};
+const REQUIRED_IN_PROD_ALL: Partial<Record<EnvKey, FieldRule>> = {
+  ...REQUIRED_IN_PROD,
+  ...REQUIRED_IN_PROD_PAID_MODE,
+};
+
 const envSchema = z.object(shape).superRefine((data, ctx) => {
-  for (const [key, rule] of Object.entries(REQUIRED_IN_PROD) as [EnvKey, FieldRule][]) {
+  const betaOnlyMode = !isPaidBillingAvailable();
+  const requiredInProd = betaOnlyMode ? REQUIRED_IN_PROD : REQUIRED_IN_PROD_ALL;
+
+  for (const [key, rule] of Object.entries(requiredInProd) as [EnvKey, FieldRule][]) {
     const val = data[key];
     if (!val) {
       ctx.addIssue({
@@ -161,7 +177,7 @@ const envSchema = z.object(shape).superRefine((data, ctx) => {
       });
     }
 
-    if (data.LEMONSQUEEZY_TEST_MODE !== "false") {
+    if (!betaOnlyMode && data.LEMONSQUEEZY_TEST_MODE !== "false") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["LEMONSQUEEZY_TEST_MODE"],
