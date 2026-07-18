@@ -177,7 +177,12 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   //    landing page renders normally.
   // -------------------------------------------------------------------------
   const isRoot = stripLocale(pathname) === "/";
-  if (isPublicRoute(req) && !isRoot) {
+  // These public pages call getAuthUser() in a server action or error state.
+  // Keep them publicly accessible, but run AuthKit so withAuth() receives its
+  // session headers.
+  const isInviteAccept = stripLocale(pathname) === "/invite/accept";
+  const isVerifyEmail = stripLocale(pathname) === "/verify-email";
+  if (isPublicRoute(req) && !isRoot && !isInviteAccept && !isVerifyEmail) {
     return intlMiddleware(req);
   }
 

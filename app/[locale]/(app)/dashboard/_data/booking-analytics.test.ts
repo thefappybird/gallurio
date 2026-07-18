@@ -184,10 +184,9 @@ describe("getBookedHoursHeatmap", () => {
 
     await seedBooking({ sessions: [sessA, sessB] });
 
-    const cells = await getBookedHoursHeatmap(wid, range, tz);
-    // Dense grid: fromWeek=2026-05-25 (Mon) .. toWeek=2026-06-15 (Mon) = 4 weeks x 7 weekdays.
-    expect(cells.length).toBe(28);
-    expect(cells[0].weekStart).toBe("2026-05-25");
+    const { cells } = await getBookedHoursHeatmap(wid, range, tz, { workspaceCreatedAt: new Date("2026-01-01T00:00:00.000Z") });
+    expect(cells.length).toBe(52 * 7);
+    expect(cells[0].weekStart).toBe("2025-06-23");
     expect(cells[cells.length - 1].weekStart).toBe("2026-06-15");
     expect(cells.filter((c) => c.hours > 0)).toEqual([
       { weekStart: "2026-06-01", weekday: 0, hours: 8 }, // Monday
@@ -204,10 +203,9 @@ describe("getBookedHoursHeatmap", () => {
     };
     await seedBooking({ sessions: [sessA] });
 
-    const cells = await getBookedHoursHeatmap(wid, range, tz);
-    // fromWeek=2026-05-25 (Mon) .. toWeek=2026-06-15 (Mon) = 4 weeks x 7 weekdays.
-    expect(cells.length).toBe(28);
-    expect(cells[0].weekStart).toBe("2026-05-25");
+    const { cells } = await getBookedHoursHeatmap(wid, range, tz, { workspaceCreatedAt: new Date("2026-01-01T00:00:00.000Z") });
+    expect(cells.length).toBe(52 * 7);
+    expect(cells[0].weekStart).toBe("2025-06-23");
     expect(cells[cells.length - 1].weekStart).toBe("2026-06-15");
     expect(cells.filter((c) => c.hours > 0)).toEqual([
       { weekStart: "2026-06-01", weekday: 0, hours: 8 },
@@ -225,8 +223,8 @@ describe("getBookedHoursHeatmap", () => {
     await seedBooking({ status: "cancelled", sessions: sess });
     await seedBooking({ workspaceId: other, sessions: sess });
 
-    const cells = await getBookedHoursHeatmap(wid, range, tz);
-    expect(cells.length).toBe(28); // 4 weeks x 7 weekdays, never empty
+    const { cells } = await getBookedHoursHeatmap(wid, range, tz, { workspaceCreatedAt: new Date("2026-01-01T00:00:00.000Z") });
+    expect(cells.length).toBe(52 * 7);
     expect(cells.every((c) => c.hours === 0)).toBe(true);
   });
 
@@ -238,19 +236,38 @@ describe("getBookedHoursHeatmap", () => {
     await seedBooking({ sessions: sess });
 
     const emptyRange = { from: new Date("2020-01-01T00:00:00.000Z"), to: new Date("2020-01-02T00:00:00.000Z") };
-    const cells = await getBookedHoursHeatmap(wid, emptyRange, tz);
-    expect(cells.length).toBe(7); // single week window
+    const { cells } = await getBookedHoursHeatmap(wid, emptyRange, tz, { workspaceCreatedAt: new Date("2020-01-01T00:00:00.000Z") });
+    expect(cells.length).toBe(52 * 7);
     expect(cells.every((c) => c.hours === 0)).toBe(true);
   });
 
   it("defaults to a 12-week trailing window ending at the resolved week when `from` is unbounded", async () => {
     // to = 2026-06-15T00:00Z -> Manila-local 2026-06-15 08:00, week Mon 2026-06-15.
     const range = { from: null, to: new Date("2026-06-15T00:00:00.000Z") };
-    const cells = await getBookedHoursHeatmap(wid, range, tz);
-    expect(cells.length).toBe(12 * 7);
-    expect(cells[0].weekStart).toBe("2026-03-30"); // 11 weeks before 2026-06-15
+    const { cells, earliestWeek, latestWeek } = await getBookedHoursHeatmap(wid, range, tz, { workspaceCreatedAt: new Date("2026-01-01T00:00:00.000Z") });
+    expect(cells.length).toBe(52 * 7);
+    expect(cells[0].weekStart).toBe("2025-06-23");
     expect(cells[cells.length - 1].weekStart).toBe("2026-06-15");
     expect(cells.every((c) => c.hours === 0)).toBe(true);
+    expect(earliestWeek).toBe("2025-12-29");
+    expect(latestWeek).toBe("2026-06-15");
+  });
+
+  it("pads a new workspace backwards to fill the first page without enabling previous navigation", async () => {
+    const range = {
+      from: new Date("2026-06-01T00:00:00.000Z"),
+      to: new Date("2026-06-15T00:00:00.000Z"),
+      mode: "custom" as const,
+    };
+    const heatmap = await getBookedHoursHeatmap(wid, range, tz, {
+      workspaceCreatedAt: new Date("2026-06-10T00:00:00.000Z"),
+    });
+
+    expect(heatmap.cells).toHaveLength(52 * 7);
+    expect(heatmap.cells[0].weekStart).toBe("2025-06-23");
+    expect(heatmap.cells.at(-1)?.weekStart).toBe("2026-06-15");
+    expect(heatmap.earliestWeek).toBe("2026-06-08");
+    expect(heatmap.latestWeek).toBe("2026-06-15");
   });
 });
 

@@ -38,10 +38,12 @@ function MetricCard({
   label,
   value,
   icon: Icon,
+  hint,
 }: {
   label: string;
   value: string;
   icon: LucideIcon;
+  hint: string;
 }) {
   return (
     <Card className="rounded-[var(--radius)] border-border">
@@ -52,6 +54,7 @@ function MetricCard({
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {label}
+            <DashboardInfoHint hint={hint} />
           </span>
           <span className="text-xl font-semibold tracking-tight">{value}</span>
         </div>
@@ -86,14 +89,15 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
     <div className="flex flex-col gap-3">
       {/* KPI strip: Visitor-days | Inquiries | Submission rate | Booked leads */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <MetricCard label={t("portfolio.visitorDays")} value={nf.format(totals.visitors)} icon={UsersIcon} />
-        <MetricCard label={t("portfolio.inquiries")} value={nf.format(totals.inquiries)} icon={MessageSquareIcon} />
+        <MetricCard label={t("portfolio.visitorDays")} value={nf.format(totals.visitors)} icon={UsersIcon} hint="portfolioKpi" />
+        <MetricCard label={t("portfolio.inquiries")} value={nf.format(totals.inquiries)} icon={MessageSquareIcon} hint="portfolioKpi" />
         <MetricCard
           label={t("portfolio.submissionRate")}
           value={pct.format(totals.conversionRate)}
           icon={TrendingUpIcon}
+          hint="portfolioKpi"
         />
-        <MetricCard label={t("portfolio.bookedLeads")} value={nf.format(pipeline.booked)} icon={CalendarCheckIcon} />
+        <MetricCard label={t("portfolio.bookedLeads")} value={nf.format(pipeline.booked)} icon={CalendarCheckIcon} hint="portfolioKpi" />
       </div>
 
       {/* Visitors + inquiries over time (2/3) | Conversion funnel (1/3) */}
@@ -101,7 +105,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
         <Card className="rounded-[var(--radius)] lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-sm font-medium">{t("portfolio.visitorsInquiriesTitle")}</CardTitle>
-            <DashboardInfoHint hint="revenueTrend" />
+            <DashboardInfoHint hint="portfolioVisitorsInquiries" />
           </CardHeader>
           <CardContent className="h-56 p-0 pr-2">
             <PortfolioVisitorsInquiriesChart
@@ -179,7 +183,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
 
         <Card className="rounded-[var(--radius)]">
           <CardHeader className="pb-3 flex justify-between">
-            <CardTitle className="text-sm font-medium">{t("portfolio.publishStatus")}</CardTitle>
+            <span className="flex items-center gap-1.5"><CardTitle className="text-sm font-medium">{t("portfolio.publishStatus")}</CardTitle><DashboardInfoHint hint="portfolioPublishStatus" /></span>
             <span
               className={`inline-flex w-fit items-center rounded-[var(--radius)] px-2 py-0.5 text-[11px] font-medium ${
                 publishedAt ? "bg-[var(--event-completed)] text-white" : "bg-muted text-muted-foreground"

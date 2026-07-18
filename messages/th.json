@@ -638,6 +638,16 @@
       "showMore": "แสดงเพิ่มเติม",
       "showLess": "แสดงน้อยลง",
       "hints": {
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "ยอดรวมของเดือนนี้ ลูกศรเปรียบเทียบกับเดือนที่แล้ว",
         "calendar": "การจองต่อวัน กรองตามทีม แตะวันที่เพื่อเปิดปฏิทินที่วันนั้น",
         "eventTypes": "สัดส่วนการจองตามประเภทงาน",
@@ -701,6 +711,9 @@
           "coverageText": "ความครอบคลุม: เก็บได้ {pct}% ของมูลค่าที่ยืนยันแล้ว"
         },
         "heatmap": {
+          "previous": "วันที่ก่อนหน้าในฮีตแมป",
+          "today": "วันนี้",
+          "next": "วันที่ถัดไปในฮีตแมป",
           "title": "แผนที่ความหนาแน่นชั่วโมงการจอง",
           "weekOf": "สัปดาห์ของ",
           "bookedHours": "ชั่วโมงที่จองแล้ว",

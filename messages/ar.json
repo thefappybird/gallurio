@@ -641,6 +641,16 @@
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
       "hints": {
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "إجماليات هذا الشهر. الأسهم تقارن بالشهر الماضي.",
         "calendar": "الحجوزات لكل يوم. صفِّ حسب الفريق؛ اضغط على يوم لفتح التقويم عنده.",
         "eventTypes": "حصة الحجوزات حسب نوع المناسبة.",
@@ -704,6 +714,9 @@
           "coverageText": "التغطية: {pct}% من القيمة المؤكدة تم تحصيلها"
         },
         "heatmap": {
+          "previous": "تواريخ الخريطة السابقة",
+          "today": "اليوم",
+          "next": "تواريخ الخريطة التالية",
           "title": "خريطة حرارية للساعات المحجوزة",
           "weekOf": "أسبوع",
           "bookedHours": "الساعات المحجوزة",

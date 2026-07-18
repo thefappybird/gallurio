@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useIsRtl } from "@/lib/i18n/rtl";
 import { CHART_TOOLTIP } from "@/lib/charts/tooltip";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 export type ValueCollectedPoint = {
   bucket: string; // week-start "YYYY-MM-DD"
@@ -35,8 +36,8 @@ function formatWeek(bucket: string, locale: string) {
 export function BookingValueCollectionChart({ data, currency, locale, labels }: Props) {
   const isRtl = useIsRtl();
   const header = labels.title ? (
-    <CardHeader className="pb-3">
-      <CardTitle className="text-sm font-medium">{labels.title}</CardTitle>
+    <CardHeader className="flex flex-row items-center gap-1.5 pb-3">
+      <CardTitle className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="valueCollection" />
     </CardHeader>
   ) : null;
 

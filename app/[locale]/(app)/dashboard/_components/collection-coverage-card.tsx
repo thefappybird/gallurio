@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 export type CollectionCoverage = {
   confirmedValue: number;
@@ -35,7 +36,7 @@ function formatTemplate(template: string, values: Record<string, string | number
 export function CollectionCoverageCard({ coverage, currency, locale, labels }: Props) {
   const header = (
     <CardHeader className="flex flex-row items-center justify-between pb-3">
-      <CardTitle className="text-sm font-medium">{labels.title}</CardTitle>
+      <span className="flex items-center gap-1.5"><CardTitle className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="collectionCoverage" /></span>
       {labels.asOf ? (
         <span className="text-xs text-muted-foreground">
           {labels.asOf}{" "}

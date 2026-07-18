@@ -133,6 +133,7 @@ export default async function DashboardPage({
             role={role}
             userId={userId}
             range={range}
+            heatmapEndWeek={typeof sp.hm === "string" ? sp.hm : undefined}
           />
         )}
       </DashboardPendingShell>
@@ -150,6 +151,7 @@ async function BookingsTab({
   role,
   userId,
   range,
+  heatmapEndWeek,
 }: {
   wid: import("mongoose").Types.ObjectId;
   workspace: Awaited<ReturnType<typeof requireOrg>>["workspace"];
@@ -158,6 +160,7 @@ async function BookingsTab({
   role: "owner" | "staff";
   userId: string;
   range: DateRange;
+  heatmapEndWeek?: string;
 }) {
   const timeMode = await getUserTimeFormat();
   const tz = resolveWorkspaceTimezone(workspace);
@@ -190,7 +193,10 @@ async function BookingsTab({
     getBookingTeamOptions({ role, userId, workspace }),
     getScheduledVsCollectedSeries(wid, range, tz),
     getCollectionCoverage(wid, range),
-    getBookedHoursHeatmap(wid, range, tz),
+    getBookedHoursHeatmap(wid, range, tz, {
+      workspaceCreatedAt: workspace.createdAt,
+      endWeek: heatmapEndWeek,
+    }),
     getEventTypeValueTrend(wid, range, tz),
   ]);
 
@@ -252,8 +258,8 @@ async function BookingsTab({
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <BookedHoursHeatmap
-            cells={heatmap}
-            locale={locale}
+            {...heatmap}
+            locale={workspace.country ? `${locale}-${workspace.country}` : locale}
             labels={{
               title: t("booking.heatmap.title"),
               weekOf: t("booking.heatmap.weekOf"),
@@ -261,6 +267,9 @@ async function BookingsTab({
               weekdays: weekdayLabels,
               legend: heatmapLegend,
               empty: t("empty"),
+              previous: t("booking.heatmap.previous"),
+              today: t("booking.heatmap.today"),
+              next: t("booking.heatmap.next"),
             }}
           />
         </div>

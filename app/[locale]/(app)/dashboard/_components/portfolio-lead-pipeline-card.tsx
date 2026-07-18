@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 export type InquiryPipeline = {
   total: number;
@@ -36,8 +37,8 @@ export function PortfolioLeadPipelineCard({ pipeline, locale, labels }: Props) {
 
   return (
     <Card className="h-full rounded-[var(--radius)]">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium">{labels.title}</CardTitle>
+      <CardHeader className="flex flex-row items-center gap-1.5 pb-3">
+        <CardTitle className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="portfolioPipeline" />
       </CardHeader>
       <CardContent className="flex flex-col gap-4 p-4 pt-0">
         {total === 0 ? (

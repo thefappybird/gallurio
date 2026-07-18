@@ -638,7 +638,17 @@
       "showMore": "Show more",
       "showLess": "Show less",
       "hints": {
-        "kpi": "Totals for this month. Arrows compare to last month.",
+        "kpi": "Range-based dashboard totals. Arrows compare with the prior matching period; outstanding balance is a current snapshot.",
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period. Visitor-days are daily totals, not unique visitors across the whole period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries. Contact opens show Collecting data until tracking is available.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "What visitors are asking for: event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when its published page was last updated.",
         "calendar": "Bookings per day. Filter by team; tap a day to open the calendar there.",
         "eventTypes": "Share of bookings by event type.",
         "teamPerformance": "How each team is performing by revenue and booking volume.",
@@ -701,6 +711,9 @@
           "coverageText": "Coverage: {pct}% of confirmed value collected"
         },
         "heatmap": {
+          "previous": "Previous heatmap dates",
+          "today": "Today",
+          "next": "Next heatmap dates",
           "title": "Booked hours heatmap",
           "weekOf": "Week of",
           "bookedHours": "Booked hours",

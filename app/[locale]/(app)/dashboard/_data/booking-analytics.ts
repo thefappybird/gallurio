@@ -5,6 +5,7 @@ import { splitSessionIntoCandles } from "@/lib/bookings/candle-split";
 import { addDaysStr, weekStartMonday } from "@/lib/utils/iso-week";
 import { dayBoundInTz } from "@/lib/utils/timezone";
 import { type DateRange } from "./dashboard-metrics";
+import type { DateFilterMode } from "@/lib/dashboard/date-range";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -83,21 +84,52 @@ export async function getEventTypeValueTrend(
 
 export type BookedHoursCell = { weekStart: string; weekday: number; hours: number };
 
-// Trailing window shown when the filter is unbounded (or only `to` is set) --
-// anchors the rightmost column at "today" like a GitHub contribution graph.
-const TRAILING_WEEKS = 12;
+export type BookedHoursHeatmap = {
+  cells: BookedHoursCell[];
+  earliestWeek: string;
+  latestWeek: string;
+  todayWeek: string;
+  todayWeekday: number;
+};
+
+// A fixed number of flexible columns lets the grid occupy its card width at
+// every breakpoint while retaining predictable, GitHub-style paging.
+const TRAILING_WEEKS = 52;
+
+type BookedHoursHeatmapOptions = {
+  workspaceCreatedAt: Date;
+  /** Monday key of the requested rightmost column, from the dashboard URL. */
+  endWeek?: string;
+};
+
+type HeatmapRange = DateRange & { mode?: DateFilterMode | null };
 
 export async function getBookedHoursHeatmap(
   workspaceId: WorkspaceId,
-  range: DateRange,
-  timezone: string
-): Promise<BookedHoursCell[]> {
+  range: HeatmapRange,
+  timezone: string,
+  { workspaceCreatedAt, endWeek: requestedEndWeek }: BookedHoursHeatmapOptions
+): Promise<BookedHoursHeatmap> {
   const todayKey = localDateKey(new Date(), timezone);
-  const toKey = range.to ? localDateKey(range.to, timezone) : todayKey;
-  const toWeek = weekStartMonday(toKey);
-  const fromWeek = range.from
-    ? weekStartMonday(localDateKey(range.from, timezone))
-    : addDaysStr(toWeek, -7 * (TRAILING_WEEKS - 1));
+  // Callers that predate DashboardRange.mode still pass bounded ranges; keep
+  // those precise. The live dashboard uses the access-to-today view for named
+  // periods and only lets a custom range redefine the heatmap's endpoint.
+  const useRangeBounds = range.mode === "custom" || range.mode === undefined;
+  const selectedEndKey = useRangeBounds && range.to ? localDateKey(range.to, timezone) : todayKey;
+  const latestWeek = weekStartMonday(selectedEndKey > todayKey ? todayKey : selectedEndKey);
+  const requestedWeek = requestedEndWeek && /^\d{4}-\d{2}-\d{2}$/.test(requestedEndWeek)
+    ? weekStartMonday(requestedEndWeek)
+    : latestWeek;
+  const toWeek = requestedWeek > latestWeek ? latestWeek : requestedWeek;
+  const workspaceStartWeek = weekStartMonday(localDateKey(workspaceCreatedAt, timezone));
+  const customStartWeek =
+    useRangeBounds && range.from ? weekStartMonday(localDateKey(range.from, timezone)) : null;
+  const earliestWeek = customStartWeek && customStartWeek > workspaceStartWeek
+    ? customStartWeek
+    : workspaceStartWeek;
+  // Do not move the requested window before the first date the user could
+  // have used Gallurio. Before that point, zero cells are visual padding only.
+  const fromWeek = addDaysStr(toWeek, -7 * (TRAILING_WEEKS - 1));
 
   // Query bounds = the full display window (Monday of fromWeek .. Sunday of
   // toWeek), not the raw range.from/to -- this anchors "today" as the
@@ -143,7 +175,13 @@ export async function getBookedHoursHeatmap(
     }
     week = addDaysStr(week, 7);
   }
-  return cells;
+  return {
+    cells,
+    earliestWeek,
+    latestWeek,
+    todayWeek: weekStartMonday(todayKey),
+    todayWeekday: weekdayMonday0(todayKey),
+  };
 }
 
 export type ValueCollectedPoint = { bucket: string; scheduledValue: number; collected: number };

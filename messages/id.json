@@ -638,6 +638,16 @@
       "showMore": "Tampilkan lebih",
       "showLess": "Tampilkan lebih sedikit",
       "hints": {
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "Total untuk bulan ini. Panah membandingkan dengan bulan lalu.",
         "calendar": "Pemesanan per hari. Filter berdasarkan tim; ketuk satu hari untuk membuka kalender di sana.",
         "eventTypes": "Bagian pemesanan menurut jenis acara.",
@@ -701,6 +711,9 @@
           "coverageText": "Cakupan: {pct}% dari nilai terkonfirmasi telah tertagih"
         },
         "heatmap": {
+          "previous": "Tanggal heatmap sebelumnya",
+          "today": "Hari ini",
+          "next": "Tanggal heatmap berikutnya",
           "title": "Peta panas jam dipesan",
           "weekOf": "Minggu",
           "bookedHours": "Jam dipesan",

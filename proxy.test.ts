@@ -29,6 +29,26 @@ describe("proxy", () => {
     expect(intlMiddlewareMock).not.toHaveBeenCalled();
   });
 
+  it("runs AuthKit on the localized invite-accept page so error states can read the session", async () => {
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/en/invite/accept?error=email_mismatch");
+
+    await proxy(req);
+
+    expect(authMiddlewareMock).toHaveBeenCalledTimes(1);
+    expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs AuthKit on the localized verify-email page so resend can read the session", async () => {
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/en/verify-email");
+
+    await proxy(req);
+
+    expect(authMiddlewareMock).toHaveBeenCalledTimes(1);
+    expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
+  });
+
   it("configures public and self-authenticated APIs as unauthenticated paths", async () => {
     await import("./proxy");
 
