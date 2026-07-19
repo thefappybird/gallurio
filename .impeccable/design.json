@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-09T00:00:00Z",
+  "title": "Design System: Gallurio",
+  "extensions": {
+    "colorMeta": {
+      "background": { "role": "neutral", "displayName": "Ledger Paper", "canonical": "oklch(0.972 0.004 235)", "tonalRamp": ["oklch(0.15 0.004 235)", "oklch(0.28 0.004 235)", "oklch(0.40 0.004 235)", "oklch(0.52 0.004 235)", "oklch(0.65 0.004 235)", "oklch(0.78 0.004 235)", "oklch(0.90 0.004 235)", "oklch(0.972 0.004 235)"] },
+      "foreground": { "role": "neutral", "displayName": "Ink", "canonical": "oklch(0.26 0.008 255)", "tonalRamp": ["oklch(0.15 0.008 255)", "oklch(0.26 0.008 255)", "oklch(0.36 0.008 255)", "oklch(0.46 0.008 255)", "oklch(0.58 0.008 255)", "oklch(0.70 0.008 255)", "oklch(0.83 0.008 255)", "oklch(0.95 0.008 255)"] },
+      "brand": { "role": "primary", "displayName": "Studio Teal", "canonical": "oklch(0.55 0.10 195)", "tonalRamp": ["oklch(0.18 0.06 195)", "oklch(0.28 0.08 195)", "oklch(0.38 0.09 195)", "oklch(0.48 0.10 195)", "oklch(0.55 0.10 195)", "oklch(0.65 0.10 195)", "oklch(0.78 0.08 195)", "oklch(0.88 0.05 195)"] },
+      "destructive": { "role": "status", "displayName": "Cancelled Red", "canonical": "oklch(0.577 0.245 27.325)", "tonalRamp": ["oklch(0.20 0.15 25)", "oklch(0.30 0.18 25)", "oklch(0.40 0.20 25)", "oklch(0.50 0.22 25)", "oklch(0.577 0.245 27.325)", "oklch(0.68 0.20 25)", "oklch(0.80 0.14 25)", "oklch(0.90 0.08 25)"] },
+      "event-completed": { "role": "status", "displayName": "Completed Green", "canonical": "oklch(0.55 0.13 145)", "tonalRamp": ["oklch(0.20 0.09 145)", "oklch(0.30 0.11 145)", "oklch(0.40 0.12 145)", "oklch(0.50 0.13 145)", "oklch(0.55 0.13 145)", "oklch(0.65 0.13 145)", "oklch(0.78 0.10 145)", "oklch(0.90 0.06 145)"] },
+      "event-inquiry": { "role": "status", "displayName": "Inquiry Slate", "canonical": "oklch(0.55 0.04 250)", "tonalRamp": ["oklch(0.20 0.02 250)", "oklch(0.30 0.03 250)", "oklch(0.40 0.03 250)", "oklch(0.50 0.04 250)", "oklch(0.55 0.04 250)", "oklch(0.65 0.04 250)", "oklch(0.78 0.03 250)", "oklch(0.90 0.02 250)"] },
+      "onboarding-warm": { "role": "neutral", "displayName": "Onboarding Warm", "canonical": "oklch(0.975 0.014 85)", "tonalRamp": ["oklch(0.24 0.010 75)", "oklch(0.35 0.012 80)", "oklch(0.48 0.013 82)", "oklch(0.62 0.014 84)", "oklch(0.78 0.015 85)", "oklch(0.88 0.015 85)", "oklch(0.94 0.014 85)", "oklch(0.975 0.014 85)"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Page-level h1s — Bookings, Teams, onboarding step titles." },
+      "title": { "displayName": "Title", "purpose": "Dialog and auth-form headings, card titles." },
+      "body": { "displayName": "Body", "purpose": "Default UI text — table cells, form labels, descriptions." },
+      "label": { "displayName": "Label", "purpose": "Table column headers and small status chips; the only tracked-uppercase usage." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out-standard", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Toast entry and other overshoot-out transitions." },
+      { "name": "duration-fast", "value": "150ms", "purpose": "Hover/focus color and border transitions." },
+      { "name": "duration-standard", "value": "280ms", "purpose": "Toast and larger state-change transitions." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "375px" },
+      { "name": "tablet", "value": "768px" },
+      { "name": "desktop", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default-emphasis action — most buttons in the app.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; height: 2rem; padding: 0 0.625rem; border-radius: var(--radius, 0.25rem); font-size: 0.875rem; font-weight: 500; font-family: var(--font-sans, \"Plus Jakarta Sans\", system-ui, sans-serif); border: 1px solid transparent; cursor: pointer; transition: background-color 150ms ease, transform 100ms ease; } .ds-btn-primary { background: var(--primary, #282828); color: var(--primary-foreground, #fff); } .ds-btn-primary:hover { background: color-mix(in oklch, var(--primary) 80%, transparent); } .ds-btn-primary:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Brand Button",
+      "kind": "button",
+      "refersTo": "button-brand",
+      "description": "Reserved for the single most important action on a screen.",
+      "html": "<button class=\"ds-btn ds-btn-brand\">Confirm booking</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; height: 2rem; padding: 0 0.625rem; border-radius: var(--radius, 0.25rem); font-size: 0.875rem; font-weight: 500; font-family: var(--font-sans, \"Plus Jakarta Sans\", system-ui, sans-serif); border: 1px solid transparent; cursor: pointer; transition: background-color 150ms ease, transform 100ms ease; } .ds-btn-brand { background: var(--brand, #2f8f96); color: var(--brand-foreground, #fff); } .ds-btn-brand:hover { background: color-mix(in oklch, var(--brand) 90%, transparent); } .ds-btn-brand:focus-visible { outline: none; border-color: color-mix(in oklch, var(--brand) 40%, transparent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--brand) 50%, transparent); } .ds-btn-brand:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard text field — transparent fill, hairline border.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Client name\" />",
+      "css": ".ds-input { height: 2rem; width: 100%; box-sizing: border-box; padding: 0.25rem 0.625rem; border-radius: var(--radius, 0.25rem); border: 1px solid var(--input); background: transparent; font-size: 0.875rem; color: var(--foreground); outline: none; transition: border-color 150ms ease; } .ds-input::placeholder { color: var(--muted-foreground); } .ds-input:focus-visible { border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Sharp-cornered structural frame; separates via a hairline ring and a tonal shift, never a shadow.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">Upcoming booking</div><div class=\"ds-card-body\">Aug 14 — Sunset Studio</div></div>",
+      "css": ".ds-card { background: var(--card); border-radius: var(--radius-surface, 0); padding: 1rem; box-sizing: border-box; outline: 1px solid color-mix(in oklch, var(--foreground) 10%, transparent); outline-offset: -1px; } .ds-card-title { font-size: 1rem; font-weight: 500; color: var(--card-foreground); margin-bottom: 0.25rem; } .ds-card-body { font-size: 0.875rem; color: var(--muted-foreground); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-default",
+      "description": "Small status/label chip; shares the button variant ladder.",
+      "html": "<span class=\"ds-badge\">Booked</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; height: 1.25rem; padding: 0 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; background: var(--primary); color: var(--primary-foreground); }"
+    },
+    {
+      "name": "Calendar Event",
+      "kind": "custom",
+      "refersTo": "calendar-event",
+      "description": "Signature component — sharp-cornered event candle colored by the theme-invariant status vocabulary.",
+      "html": "<div class=\"ds-event ds-event-booked\"><span class=\"ds-event-time\">2:00 PM</span><span class=\"ds-event-title\">Sunset Shoot</span></div>",
+      "css": ".ds-event { border-radius: 0; padding: 2px 4px; font-size: 0.75rem; color: #fff; overflow: hidden; white-space: nowrap; } .ds-event-booked { background: var(--event-booked, var(--brand)); } .ds-event-completed { background: var(--event-completed); } .ds-event-cancelled { background: var(--event-cancelled); } .ds-event-inquiry { background: var(--event-inquiry); } .ds-event-time { opacity: 0.85; margin-inline-end: 0.25rem; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Studio Ledger",
+    "overview": "Gallurio sits where creative work meets exact bookkeeping. An event business's calendar is full of shoots, weddings, and launches — messy, human, deadline-driven — but the tool that runs the business underneath has to be as precise as a ledger: every booking accounted for, every client record trustworthy, nothing left ambiguous. The interface reflects that split. It is quiet and neutral-cool at rest (an almost-white \"dirty white\" ground, never stark black/white), so the work itself — photos, client names, dates — carries the visual weight. One deliberate accent, a deep teal, marks what's actionable: primary buttons, the active nav item, today's date, a booked event. Everything else stays disciplined and gets out of the way. This system explicitly rejects the generic SaaS-cream dashboard look (gradient hero-metric tiles, glassmorphism, warm sand/parchment backgrounds, identical icon-card grids), sterile enterprise/legacy-ERP chrome, and visual clutter — competing badges and accents fighting for attention on one screen. Surfaces are flat, edges are sharp by default, and depth comes from tone, not shadow.",
+    "keyCharacteristics": [
+      "Neutral-cool \"dirty white\" / soft-charcoal base — never pure black or pure white.",
+      "One brand accent (teal, hue 195) used sparingly and consistently for anything actionable.",
+      "Flat surfaces: a hairline ring border does the job shadows would elsewhere.",
+      "Controls are gently rounded; structural frames (cards, dialogs, sidebar) are sharp-cornered by default.",
+      "A theme-invariant event-status vocabulary (booked/completed/cancelled/inquiry) that reads identically in light and dark mode.",
+      "Single type family, Plus Jakarta Sans, carrying the whole hierarchy through weight and size, not font-pairing."
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Teal is the only color allowed to mean \"act on this.\" It never appears decoratively — only on buttons, active states, focus rings, and the booked-event vocabulary.", "section": "colors" },
+      { "name": "The Never-Pure Rule", "body": "Backgrounds and text never hit true #000/#fff. Every neutral carries a faint cool tint (hue ~235 light / ~255 dark) so light and dark mode feel like the same product.", "section": "colors" },
+      { "name": "The One Voice Rule", "body": "No second type family. Hierarchy is built from size, weight, and tracking on a single face.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "If you reach for box-shadow on an app surface, stop — use a hairline ring and a tonal shift instead. Shadows are reserved for true floating layers (dropdowns, tooltips), never for cards or panels at rest.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Studio Teal (--brand) for exactly one primary action per view — CTA, active nav, or the \"in progress right now\" state.",
+      "Do separate cards and panels with a ring-1 ring-foreground/10 hairline and a one-step lightness shift, never a box-shadow.",
+      "Do keep controls (buttons, inputs, badges) on the 0.25rem control radius and structural frames (cards, dialogs, sidebar) at 0rem — the soft-controls/sharp-frames split is load-bearing, not incidental.",
+      "Do build hierarchy from Plus Jakarta Sans weight/size/tracking alone."
+    ],
+    "donts": [
+      "Don't build a generic SaaS-cream dashboard: no gradient hero-metric cards, no glassmorphism, no cream/sand/parchment backgrounds standing in for \"warm.\"",
+      "Don't let the UI read as sterile enterprise/ERP software — no cold, over-dense corporate chrome.",
+      "Don't clutter one view with competing badges, accents, or multiple \"loud\" colors at once — status colors (event vocabulary) are for the calendar, not for decorating arbitrary UI.",
+      "Don't use border-left/border-right as a colored accent stripe on cards or list items.",
+      "Don't mix in a second display typeface — the one-family system is deliberate.",
+      "Don't apply drop shadows to cards, dialogs, or panels at rest."
+    ]
+  }
+}

@@ -1,300 +1,439 @@
 "use server";
 
-import { auth, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { connectDB } from "@/lib/db/mongoose";
 import {
   Workspace,
   User,
-  Client,
-  Booking,
-  Inquiry,
+  ONBOARDING_STEPS,
   type OnboardingStep,
 } from "@/lib/db/models";
+import { ensureDefaultTeam } from "@/lib/db/models/team";
+import { getAuthUser } from "@/lib/auth/session";
+import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
+import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
+import { grantPlan } from "@/lib/billing/grantPlan";
+import { isBetaProgramClosed } from "@/lib/billing/betaProgram";
+import { hasActivatedOnboardingPlan } from "@/lib/onboarding/planActivation";
 import {
   businessStepSchema,
-  brandingStepSchema,
-  templateStepSchema,
+  workspaceSetupSchema,
+  COUNTRY_TO_CURRENCY,
   type BusinessStepInput,
-  type BrandingStepInput,
-  type TemplateStepInput,
+  type WorkspaceSetupInput,
 } from "@/lib/validators/workspace";
+import mongoose from "mongoose";
 
 type ActionResult = { error?: string; ok?: boolean };
-type BusinessStepResult = ActionResult & { orgIdToActivate?: string };
 
-async function setUserStep(clerkUserId: string, step: OnboardingStep) {
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+function slugifyName(name: string): string {
+  const base = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
+  return base || "workspace";
+}
+
+// businessStepAction has no slug field of its own (it moved to the workspace
+// step) but still needs SOME unique slug to satisfy the required+unique
+// index on first insert. Auto-derive one from the business name; the owner
+// can rename it on the next step.
+async function generateUniqueSlug(name: string): Promise<string> {
+  const base = slugifyName(name);
+  let candidate = base;
+  let suffix = 1;
+  while (await Workspace.exists({ slug: candidate })) {
+    suffix += 1;
+    candidate = `${base}-${suffix}`.slice(0, 50);
+  }
+  return candidate;
+}
+
+async function setUserStep(workosUserId: string, step: OnboardingStep) {
+  // Only advance — never regress. If the user is already at a later step
+  // (e.g., they went back to edit), keep the existing furthest step.
+  const idx = ONBOARDING_STEPS.indexOf(step);
+  const earlierSteps = ONBOARDING_STEPS.slice(0, idx);
   await User.findOneAndUpdate(
-    { clerkUserId },
-    { $set: { onboardingStep: step } },
-    { upsert: false }
+    { workosUserId, onboardingStep: { $in: earlierSteps } },
+    { $set: { onboardingStep: step } }
   );
 }
+
+// ---------------------------------------------------------------------------
+// Business step
+// ---------------------------------------------------------------------------
 
 export async function businessStepAction(
   input: BusinessStepInput
-): Promise<BusinessStepResult> {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
+): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "not_authenticated" };
 
   const parsed = businessStepSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+  if (!parsed.success) return { error: "invalid_input" };
 
-  const { firstName, lastName, name, slug, businessType, country, timezone } = parsed.data;
+  const { firstName, lastName, name, businessType } = parsed.data;
+
   await connectDB();
 
-  const slugClash = await Workspace.findOne({ slug, clerkOrgId: { $ne: session.orgId ?? "" } }).lean();
-  if (slugClash) return { error: "That slug is already taken — try another." };
+  // One workspace per email — a user who already belongs to someone else's
+  // workspace (as staff) can't also start their own. They must use another
+  // email. An existing owner membership is safe to proceed with: it can only
+  // point at this same user's own workspace (upserted by ownerUserId below).
+  const existingUser = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1, freeTrialConsumedAt: 1 },
+  ).lean();
+  const belongsElsewhere = existingUser?.memberships.some((m) => m.role !== "owner");
+  if (belongsElsewhere) return { error: "already_member_elsewhere" };
 
-  const clerk = await clerkClient();
+  // One free Pro month per user (email), applied at workspace creation only
+  // — a repeat businessStepAction call (workspace already exists) hits the
+  // upsert's update path, not insert, so $setOnInsert below never re-grants.
+  const grantFreeMonth = !existingUser?.freeTrialConsumedAt;
+  const freeMonthExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-  let clerkOrgId = session.orgId ?? null;
+  // The workspace's URL slug is edited on the next step, but the Workspace
+  // schema requires one on insert — auto-derive it from the business name
+  // now; $setOnInsert below means it only applies the first time.
+  const autoSlug = await generateUniqueSlug(name);
 
-  if (!clerkOrgId) {
-    const memberships = await clerk.users.getOrganizationMembershipList({
-      userId: session.userId,
-    });
-    clerkOrgId = memberships.data[0]?.organization.id ?? null;
-  }
-
-  let orgIdToActivate: string | undefined;
-
-  try {
-    if (clerkOrgId) {
-      await clerk.organizations.updateOrganization(clerkOrgId, { name });
-    } else {
-      const org = await clerk.organizations.createOrganization({
-        name,
-        createdBy: session.userId,
-      });
-      clerkOrgId = org.id;
-      orgIdToActivate = org.id;
-    }
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Failed to update organization";
-    return { error: msg };
-  }
-
-  const workspace = await Workspace.findOneAndUpdate(
-    { clerkOrgId },
-    {
-      $set: { name, slug, businessType, country, timezone },
-      $setOnInsert: { ownerUserId: session.userId, clerkOrgId, plan: "free" },
-    },
-    { upsert: true, new: true }
-  );
-
-  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
-
-  await User.findOneAndUpdate(
-    { clerkUserId: session.userId },
-    {
-      $set: { onboardingStep: "branding", name: fullName },
-      $setOnInsert: { clerkUserId: session.userId, email: "" },
-      $addToSet: { memberships: { workspaceId: workspace._id, role: "owner" } },
-    },
-    { upsert: true }
-  );
+  let workspaceId: string;
+  let session: mongoose.ClientSession | null = null;
 
   try {
-    await clerk.users.updateUser(session.userId, {
-      firstName,
-      lastName: lastName || undefined,
+    session = await mongoose.startSession();
+    await session.withTransaction(async () => {
+      // Upsert workspace — keyed by ownerUserId (the WorkOS user id).
+      const workspace = await Workspace.findOneAndUpdate(
+        { ownerUserId: authUser.workosUserId },
+        {
+          $set: { name, businessType },
+          $setOnInsert: {
+            ownerUserId: authUser.workosUserId,
+            slug: autoSlug,
+            // First workspace for this user (email): full-Pro one-month grant,
+            // no card. Repeat user (trial already consumed): plain free —
+            // gated until they subscribe. See lib/billing/access.ts.
+            plan: grantFreeMonth ? "pro" : "free",
+            ...(grantFreeMonth ? { planGrantExpiresAt: freeMonthExpiresAt } : {}),
+            // Seed the inquiry recipient with the owner's auth email so
+            // notifications are delivered from day one, without requiring a
+            // settings visit.
+            "publicPage.inquiryRecipientEmail": authUser.email,
+          },
+        },
+        { upsert: true, new: true, session }
+      );
+      workspaceId = String(workspace._id);
+
+      // Ensure the default team exists for this workspace.
+      await ensureDefaultTeam(workspace._id, authUser.workosUserId);
+
+      // Upsert the User document and add owner membership (idempotent via $addToSet).
+      const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+      await User.findOneAndUpdate(
+        { workosUserId: authUser.workosUserId },
+        {
+          $set: {
+            name: fullName,
+            ...(grantFreeMonth ? { freeTrialConsumedAt: new Date() } : {}),
+          },
+          $setOnInsert: {
+            workosUserId: authUser.workosUserId,
+            email: authUser.email,
+            onboardingStep: "business",
+          },
+          $addToSet: {
+            memberships: { workspaceId: workspace._id, role: "owner" },
+          },
+        },
+        { upsert: true, session }
+      );
     });
   } catch (err) {
-    console.warn("[onboarding] failed to update Clerk user name", err);
-  }
-
-  return { ok: true, orgIdToActivate };
-}
-
-export async function brandingStepAction(input: BrandingStepInput): Promise<ActionResult> {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  if (!session.orgId) return { error: "No active workspace — restart onboarding." };
-
-  const parsed = brandingStepSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
-
-  await connectDB();
-  await Workspace.updateOne(
-    { clerkOrgId: session.orgId },
-    {
-      $set: {
-        "branding.logoUrl": parsed.data.logoUrl ?? null,
-        "branding.logoCloudinaryPublicId": parsed.data.logoCloudinaryPublicId ?? null,
-        "branding.primaryColor": parsed.data.primaryColor,
-        "branding.secondaryColor": parsed.data.secondaryColor,
-        "branding.tagline": parsed.data.tagline ?? "",
-        "branding.description": parsed.data.description ?? "",
-      },
+    // Race-safe: if two concurrent requests slip through the pre-write check
+    // simultaneously, the second hits the unique index on `slug` (E11000).
+    // Map this to the same friendly message instead of propagating the error.
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 11000
+    ) {
+      return { error: "url_taken" };
     }
-  );
-  await setUserStep(session.userId, "template");
-  return { ok: true };
-}
-
-export async function templateStepAction(input: TemplateStepInput): Promise<ActionResult> {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  if (!session.orgId) return { error: "No active workspace — restart onboarding." };
-
-  const parsed = templateStepSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
-
-  await connectDB();
-  await Workspace.updateOne(
-    { clerkOrgId: session.orgId },
-    { $set: { "publicPage.templateId": parsed.data.templateId } }
-  );
-  await setUserStep(session.userId, "payments");
-  return { ok: true };
-}
-
-export async function skipPaymentsStepAction(): Promise<ActionResult> {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  await connectDB();
-  await setUserStep(session.userId, "plan");
-  return { ok: true };
-}
-
-export async function advanceFromPaymentsAction(): Promise<ActionResult> {
-  // Called after the Connect onboarding return URL — the step status route
-  // already updated workspace flags. We just bump the step.
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  await connectDB();
-  await setUserStep(session.userId, "plan");
-  return { ok: true };
-}
-
-export async function completeOnboardingAction(opts: {
-  seedSampleData: boolean;
-}): Promise<ActionResult> {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  if (!session.orgId) return { error: "No active workspace — restart onboarding." };
-
-  await connectDB();
-  const workspace = await Workspace.findOne({ clerkOrgId: session.orgId });
-  if (!workspace) return { error: "Workspace not found." };
-
-  if (opts.seedSampleData) {
-    await seedSampleData(workspace._id.toString());
+    throw err;
+  } finally {
+    if (session) await session.endSession();
   }
+
+  await setUserStep(authUser.workosUserId, "workspace");
+
+  // Set the signed active-workspace cookie so subsequent steps can resolve
+  // the workspace without relying on query params.
+  await setActiveWorkspace(authUser.workosUserId, workspaceId!);
+
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Workspace setup step
+// ---------------------------------------------------------------------------
+
+export async function workspaceStepAction(
+  input: WorkspaceSetupInput
+): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "not_authenticated" };
+
+  const parsed = workspaceSetupSchema.safeParse(input);
+  if (!parsed.success) return { error: "invalid_input" };
+
+  const { slug, country, timezone, timeFormat } = parsed.data;
+  // Currency is never client-submitted — always derived from country.
+  const currency = COUNTRY_TO_CURRENCY[country];
+
+  await connectDB();
+
+  const user = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 }
+  ).lean();
+  const ownerMembership = user?.memberships.find((m) => m.role === "owner");
+  if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
+
+  // Slug must be globally unique. Exclude the user's own workspace so
+  // keeping (or re-submitting) their existing slug never self-clashes.
+  const slugClash = await Workspace.findOne({
+    slug,
+    _id: { $ne: ownerMembership.workspaceId },
+  }).lean();
+  if (slugClash) return { error: "url_taken" };
+
+  try {
+    await Workspace.updateOne(
+      { _id: ownerMembership.workspaceId },
+      { $set: { slug, country, currency, timezone } }
+    );
+  } catch (err) {
+    // Race-safe: if two concurrent requests slip through the pre-write check
+    // simultaneously, the second hits the unique index on `slug` (E11000).
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 11000
+    ) {
+      return { error: "url_taken" };
+    }
+    throw err;
+  }
+
+  await persistUserTimeFormat(authUser.workosUserId, timeFormat);
+
+  await setUserStep(authUser.workosUserId, "plan");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Plan step
+// ---------------------------------------------------------------------------
+
+export async function selectFreePlanAction(): Promise<ActionResult> {
+  // No permanent free tier: this step no longer grants anything. A
+  // first-timer's workspace already carries the one-month free-Pro grant
+  // applied at creation (businessStepAction) — this just advances past the
+  // plan step. A repeat user (trial already consumed, no grant on this
+  // workspace) must subscribe instead.
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "not_authenticated" };
+
+  await connectDB();
+
+  const user = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 }
+  ).lean();
+  const ownerMembership = user?.memberships.find((m) => m.role === "owner");
+  if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
+
+  const workspace = await Workspace.findOne(
+    { _id: ownerMembership.workspaceId },
+    { planGrantExpiresAt: 1 }
+  ).lean();
+
+  const hasActiveGrant =
+    !!workspace?.planGrantExpiresAt && workspace.planGrantExpiresAt > new Date();
+  if (!hasActiveGrant) return { error: "free_trial_already_used" };
+
+  await setUserStep(authUser.workosUserId, "done");
+  await Workspace.updateOne(
+    { _id: ownerMembership.workspaceId },
+    { $set: { onboardingPlanSelection: "free" } }
+  );
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Beta tester activation — gated by an env var rather than NODE_ENV so it
+// can be flipped on in any environment (including production, for real beta
+// testers) and removed later just by unsetting the var.
+// ---------------------------------------------------------------------------
+
+export async function activateBetaTesterAction(): Promise<ActionResult> {
+  if (process.env.BETA_TESTER_ENABLED !== "true") {
+    return { error: "Beta tester program is not enabled" };
+  }
+
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "not_authenticated" };
+
+  await connectDB();
+
+  if (await isBetaProgramClosed()) return { error: "beta_program_closed" };
+
+  const user = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 }
+  ).lean();
+  const ownerMembership = user?.memberships.find((m) => m.role === "owner");
+  if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
+
+  const workspace = await Workspace.findById(ownerMembership.workspaceId)
+    .select({ plan: 1, everSubscribed: 1, codesRedeemed: 1 })
+    .lean();
+  if (!workspace) return { error: "workspace_not_found" };
+  if (hasActivatedOnboardingPlan(workspace)) return { error: "onboarding_plan_locked" };
+
+  await grantPlan(ownerMembership.workspaceId, { plan: "beta", expiresAt: null });
+  await Workspace.updateOne(
+    { _id: ownerMembership.workspaceId },
+    { $set: { onboardingPlanSelection: "beta" } }
+  );
+
+  // Set once, permanently — durable identity-level evidence of beta
+  // participation, independent of the workspace's plan.
+  await User.updateOne(
+    { workosUserId: authUser.workosUserId, "betaParticipation.recordedAt": null },
+    { $set: { "betaParticipation.recordedAt": new Date(), "betaParticipation.source": "onboarding" } }
+  );
+
+  await setUserStep(authUser.workosUserId, "done");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Lemon Squeezy reconciliation (done page safety net)
+// ---------------------------------------------------------------------------
+
+// Eagerly reconcile the workspace's Lemon Squeezy subscription state on the
+// done page. The webhook is the authoritative path; this is the
+// safety net for cases where the user reaches the done page before the
+// webhook fires. Never throws — logs errors and returns silently so the done
+// page always loads.
+export async function reconcileLemonSqueezySubscription(workspaceId: string): Promise<void> {
+  try {
+    await connectDB();
+    const workspace = await Workspace.findOne({ _id: workspaceId }).select({ _id: 1 }).lean();
+    if (!workspace) return;
+
+    const authUser = await getAuthUser();
+    const email = authUser?.email;
+    if (!email) return;
+
+    const { listActiveSubscriptionsForEmail } = await import("@/lib/lemonsqueezy/client");
+    const { planForVariantId } = await import("@/lib/lemonsqueezy/plans");
+    const { applySubscriptionSnapshot } = await import("@/lib/billing/subscriptionSnapshot");
+    const { resolveProviderEventTimestamp } = await import("@/lib/billing/webhookOrdering");
+
+    const subs = await listActiveSubscriptionsForEmail(email);
+    if (subs.length === 0) return;
+
+    // Pick the most recently created subscription.
+    const sub = subs.sort(
+      (a, b) =>
+        new Date(b.attributes.created_at as string).getTime() -
+        new Date(a.attributes.created_at as string).getTime()
+    )[0];
+
+    const variantId = sub.attributes.variant_id != null ? String(sub.attributes.variant_id) : "";
+    if (planForVariantId(variantId) === "free") return;
+
+    // Defence-in-depth: listActiveSubscriptionsForEmail is scoped by the
+    // signed-in user's email, not this workspace. A user who owns multiple
+    // workspaces (or reuses an email across workspaces) could otherwise reach
+    // this safety net for a brand-new, unpaid workspace and have it silently
+    // inherit a DIFFERENT workspace's already-active subscription. Refuse to
+    // bind a subscription that's already claimed by another workspace.
+    const boundElsewhere = await Workspace.findOne({
+      _id: { $ne: workspaceId },
+      lsSubscriptionId: sub.id,
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (boundElsewhere) return;
+
+    const customerId =
+      sub.attributes.customer_id != null ? String(sub.attributes.customer_id) : null;
+
+    // Same application path as the webhook's created/updated handler — team-
+    // cap guard, no-downgrade-on-variant-miss, and terminal-status-refuses-
+    // promotion all apply here too, so this safety net can never drift from
+    // the webhook's own rules.
+    await applySubscriptionSnapshot({
+      filter: { _id: workspaceId },
+      subscriptionId: sub.id,
+      customerId,
+      rawStatus: sub.attributes.status as string | null | undefined,
+      variantId,
+      renewsAt: sub.attributes.renews_at as string | null | undefined,
+      eventTimestamp: resolveProviderEventTimestamp(sub.attributes as Record<string, unknown>),
+    });
+  } catch (err) {
+    console.error("[onboarding/done] lemonsqueezy reconcile failed", err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Complete onboarding
+// ---------------------------------------------------------------------------
+
+export async function completeOnboardingAction(): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "not_authenticated" };
+
+  await connectDB();
+
+  const user = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 }
+  ).lean();
+  const ownerMembership = user?.memberships.find((m) => m.role === "owner");
+  if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
+
+  const workspace = await Workspace.findOne({ _id: ownerMembership.workspaceId });
+  if (!workspace) return { error: "workspace_not_found" };
 
   const now = new Date();
   await Promise.all([
     Workspace.updateOne({ _id: workspace._id }, { $set: { onboardingCompletedAt: now } }),
     User.updateOne(
-      { clerkUserId: session.userId },
+      { workosUserId: authUser.workosUserId },
       { $set: { onboardingStep: "done", onboardingCompletedAt: now } }
     ),
   ]);
 
-  const clerk = await clerkClient();
-  await clerk.users.updateUser(session.userId, {
-    publicMetadata: { onboardingComplete: true },
-  });
-
   revalidatePath("/dashboard");
   redirect("/dashboard");
-}
-
-async function seedSampleData(workspaceId: string) {
-  const existing = await Client.countDocuments({ workspaceId });
-  if (existing > 0) return;
-
-  const now = new Date();
-  const day = (n: number) => new Date(now.getTime() + n * 24 * 60 * 60 * 1000);
-
-  const clients = await Client.insertMany([
-    {
-      workspaceId,
-      name: "Emma & Liam Carter",
-      email: "emma.carter@example.com",
-      phone: "+1 415 555 0142",
-      source: "form",
-      tags: ["VIP", "sample"],
-    },
-    {
-      workspaceId,
-      name: "Priya Shah",
-      email: "priya@example.com",
-      phone: "+1 415 555 0188",
-      source: "manual",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Ana & Tomás Ribeiro",
-      email: "ana.ribeiro@example.com",
-      source: "referral",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Northwood Corp Events",
-      email: "events@northwood.example",
-      phone: "+1 415 555 0211",
-      source: "manual",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Jordan Patel",
-      email: "jordan.patel@example.com",
-      source: "form",
-      tags: ["sample"],
-    },
-  ]);
-
-  await Booking.insertMany([
-    {
-      workspaceId,
-      clientId: clients[0]._id,
-      clientName: clients[0].name,
-      title: "Carter Wedding — Pier 27",
-      eventType: "wedding",
-      status: "booked",
-      startAt: day(28),
-      endAt: day(28),
-      amount: { total: 6500, deposit: 2000, currency: "USD" },
-    },
-    {
-      workspaceId,
-      clientId: clients[1]._id,
-      clientName: clients[1].name,
-      title: "Shah Engagement Shoot",
-      eventType: "wedding",
-      status: "quoted",
-      startAt: day(14),
-      endAt: day(14),
-      amount: { total: 1500, deposit: 500, currency: "USD" },
-    },
-    {
-      workspaceId,
-      clientId: clients[3]._id,
-      clientName: clients[3].name,
-      title: "Northwood Annual Gala",
-      eventType: "corporate",
-      status: "inquiry",
-      startAt: day(70),
-      endAt: day(70),
-      amount: { total: 9000, deposit: 3000, currency: "USD" },
-    },
-  ]);
-
-  await Inquiry.insertMany([
-    {
-      workspaceId,
-      name: "Lena Okafor",
-      email: "lena.o@example.com",
-      message: "Brand portrait session — do you take corporate work?",
-      eventType: "corporate",
-      status: "new",
-    },
-  ]);
 }

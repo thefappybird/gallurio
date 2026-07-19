@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily timer for gallurio-billing-lifecycle.service
+
+[Timer]
+OnCalendar=daily
+# Catch up on a missed run after downtime/reboot.
+Persistent=true
+# Spread load if this host runs other daily timers.
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

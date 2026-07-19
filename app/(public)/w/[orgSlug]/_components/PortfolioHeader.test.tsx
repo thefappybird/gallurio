@@ -1,0 +1,247 @@
+﻿import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import { PortfolioHeader, type PortfolioHeaderLabels } from "./PortfolioHeader";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/w/luna-studio",
+}));
+
+const labels: PortfolioHeaderLabels = {
+  brand: "Luna Studio",
+  navLandmark: "Portfolio",
+  home: "Home",
+  gallery: "Gallery",
+  contact: "Contact",
+  openMenu: "Open menu",
+  closeMenu: "Close menu",
+};
+
+describe("PortfolioHeader", () => {
+  it("renders a labelled Portfolio nav", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    expect(screen.getByRole("navigation", { name: "Portfolio" })).toBeInTheDocument();
+  });
+
+  it("links Home and Gallery to the correct workspace URLs", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    const home = within(nav).getByRole("link", { name: "Home" });
+    const gallery = within(nav).getByRole("link", { name: "Gallery" });
+    expect(home).toHaveAttribute("href", "/w/luna-studio");
+    expect(gallery).toHaveAttribute("href", "/w/luna-studio/gallery");
+  });
+
+  it("renders a Contact button carrying data-cta=contact for the modal delegate", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const contact = screen.getByRole("button", { name: "Contact" });
+    expect(contact).toHaveAttribute("data-cta", "contact");
+  });
+
+  it("applies configured contact button color, opacity, radius, and text color", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{
+          contactButtonColor: "accent",
+          contactButtonOpacity: 64,
+          contactButtonRadius: "rounded",
+          contactButtonTextColor: "foreground",
+        }}
+      />,
+    );
+    const contact = screen.getByRole("button", { name: "Contact" });
+    expect(contact.getAttribute("style")).toContain("--pf-contact-button-fill: var(--pf-color-accent)");
+    expect(contact.getAttribute("style")).toContain("--pf-contact-button-opacity: 64%");
+    expect(contact.style.borderRadius).toBe("0.5rem");
+    expect(contact.style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("applies active-link highlight opacity and radius to the current page", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{
+          activeLinkHighlight: true,
+          highlightColor: "accent",
+          highlightOpacity: 45,
+          activeLinkRadius: "rounded",
+        }}
+      />,
+    );
+    const home = screen.getByRole("link", { name: "Home" });
+    expect(home.getAttribute("style")).toContain("--pf-active-link-highlight-fill: var(--pf-color-accent)");
+    expect(home.getAttribute("style")).toContain("--pf-active-link-highlight-opacity: 45%");
+    expect(home.style.borderRadius).toBe("0.5rem");
+  });
+
+  it("respects an explicit active path override for preview surfaces", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        activePath="/w/luna-studio/gallery"
+        config={{ activeLinkColor: "accent" }}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Gallery" }).style.color).toBe("var(--pf-color-accent)");
+    expect(screen.getByRole("link", { name: "Home" }).style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("supports flashy navbar sizing", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ navbarSize: "flashy" }}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Luna Studio" }).style.fontSize).toBe("1.375rem");
+    expect(screen.getByRole("button", { name: "Contact" }).style.minHeight).toBe("52px");
+  });
+
+  it("uses a dedicated heading color when configured", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ linkColor: "foreground", brandTextColor: "accent" }}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Luna Studio" }).style.color).toBe("var(--pf-color-accent)");
+    expect(screen.getByRole("link", { name: "Home" }).style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("opens contact directly from the header button", () => {
+    window.__gallurioOpenContact = vi.fn();
+
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact" }));
+
+    expect(window.__gallurioOpenContact).toHaveBeenCalledTimes(1);
+  });
+
+  it("exposes an accessible menu toggle that flips aria-expanded", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const toggle = screen.getByLabelText("Open menu");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(screen.getByLabelText("Close menu")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("opens a mobile panel with the same nav targets", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    fireEvent.click(screen.getByLabelText("Open menu"));
+    // After opening, Home appears in both the desktop and mobile lists.
+    const homeLinks = screen.getAllByRole("link", { name: "Home", hidden: true });
+    expect(homeLinks.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("keeps the brand heading empty when brandText is intentionally empty", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} config={{ brandText: "" }} />);
+    expect(screen.queryByRole("link", { name: "Luna Studio" })).not.toBeInTheDocument();
+  });
+
+  it("preview mode: uses homeHref prop for logo and Home nav instead of /w/slug", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        homeHref="/en/portfolio-preview"
+      />
+    );
+    const logoLink = screen.getByRole("link", { name: "Luna Studio" });
+    expect(logoLink).toHaveAttribute("href", "/en/portfolio-preview");
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    expect(homeLink).toHaveAttribute("href", "/en/portfolio-preview");
+  });
+
+  it("brand link has minWidth:0 and overflow:hidden to prevent hamburger push-off at narrow viewports", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const brandLink = screen.getByRole("link", { name: "Luna Studio" });
+    expect(brandLink.style.minWidth).toBe("0");
+    expect(brandLink.style.overflow).toBe("hidden");
+  });
+
+  it("mobile drawer nav links are horizontally centered", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    fireEvent.click(screen.getByLabelText("Open menu"));
+    const drawerLinks = screen.getAllByRole("link", { name: "Home", hidden: true });
+    // The mobile drawer link is a flex container with justifyContent: center
+    const drawerHomeLink = drawerLinks.find((el) => el.closest(".pf-nav-mobile"));
+    expect(drawerHomeLink).toBeTruthy();
+    expect(drawerHomeLink!.style.justifyContent).toBe("center");
+    expect(drawerHomeLink!.style.display).toBe("flex");
+  });
+
+  it("hamburger toggle inherits contact button fill, text color, and radius from config", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{
+          contactButtonColor: "accent",
+          // opacity 100 → no color-mix(), so happy-dom can parse the CSS var
+          contactButtonOpacity: 100,
+          contactButtonRadius: "rounded",
+          contactButtonTextColor: "foreground",
+        }}
+      />,
+    );
+    const toggle = screen.getByLabelText("Open menu");
+    expect(toggle.style.backgroundColor).toBe("var(--pf-color-accent)");
+    expect(toggle.style.color).toBe("var(--pf-color-fg)");
+    expect(toggle.style.borderRadius).toBe("0.5rem");
+    // no border — the original had a visible border; the new toggle uses border:none
+    expect(toggle.style.borderStyle).not.toBe("solid");
+  });
+
+  it("preview mode: uses galleryHref prop for Gallery nav instead of /w/slug/gallery", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        galleryHref="/en/portfolio-preview?zone=gallery"
+      />
+    );
+    const galleryLinks = screen.getAllByRole("link", { name: "Gallery" });
+    expect(galleryLinks.length).toBeGreaterThan(0);
+    expect(galleryLinks[0]).toHaveAttribute("href", "/en/portfolio-preview?zone=gallery");
+  });
+
+  it("preview mode: gallery falls back to /w/slug/gallery when galleryHref is omitted", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const galleryLinks = screen.getAllByRole("link", { name: "Gallery" });
+    expect(galleryLinks[0]).toHaveAttribute("href", "/w/luna-studio/gallery");
+  });
+
+  // C2: active-link underline effective default — undefined must show the underline
+  it("active link shows underline by default (no config = effective default ON)", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    // happy-dom parses the border shorthand — check the individual borderBottomColor
+    // is the accent token, NOT transparent
+    expect(homeLink.style.borderBottomColor).not.toBe("transparent");
+    expect(homeLink.getAttribute("style")).toContain("--pf-color-accent");
+  });
+
+  // Regression: brandTextColor must not bleed linkColor — unset brandTextColor should
+  // always resolve to var(--pf-color-fg), regardless of what linkColor is set to.
+  it("unset brandTextColor falls back to fg token, not linkColor (bleed regression)", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ linkColor: "accent" }}
+      />,
+    );
+    // Brand heading must use fg (not accent), even though linkColor is accent
+    expect(screen.getByRole("link", { name: "Luna Studio" }).style.color).toBe("var(--pf-color-fg)");
+    // Gallery is inactive so it uses linkColor, not activeLinkColor
+    expect(screen.getByRole("link", { name: "Gallery" }).style.color).toBe("var(--pf-color-accent)");
+  });
+});

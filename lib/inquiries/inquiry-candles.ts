@@ -1,0 +1,67 @@
+import type { CalendarEvent } from "@/app/[locale]/(app)/bookings/_components/booking-calendar";
+import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
+import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
+
+export type InquiryCalendarInput = {
+  _id: string;
+  status?: string | null;
+  eventName?: string | null;
+  sessions: Array<{
+    startDate: string; // "YYYY-MM-DD"
+    startTime: string; // "HH:MM" wall-clock
+    endTime: string;   // "HH:MM" wall-clock
+  }>;
+  clientName?: string | null;
+  /** True when this inquiry's sessions overlap another booking/inquiry. */
+  hasConflict?: boolean;
+};
+
+export function buildInquiryCalendarEvents(
+  inquiries: InquiryCalendarInput[],
+  opts: { today: Date; tz: string }
+): CalendarEvent[] {
+  const events: CalendarEvent[] = [];
+
+  for (const inq of inquiries) {
+    inq.sessions.forEach((session, idx) => {
+      const startUtc = wallTimeInTzToUtc(session.startDate, session.startTime, opts.tz);
+      const endUtc = wallTimeInTzToUtc(session.startDate, session.endTime, opts.tz);
+
+      if (!startUtc || !endUtc) return;
+
+      const start = new Date(startUtc);
+      const end = new Date(endUtc);
+      const rangeStart = new Date(start);
+
+      events.push({
+        id: `${inq._id}_s${idx}`,
+        bookingId: inq._id,
+        title: inq.eventName ?? "Inquiry",
+        start,
+        end,
+        status: "booked",
+        clientName: inq.clientName ?? "",
+        clientEmail: null,
+        rangeStart,
+        rangeEnd: rangeStart,
+        sessionIndex: idx,
+        sessionStartAt: start,
+        sessionEndAt: end,
+        sessionDayCount: 1,
+        sessionPastDayCount: start < opts.today ? 1 : 0,
+        teamId: null,
+        kind: "inquiry",
+        inquiryId: inq._id,
+        colorOverride: isBookedInquiryStatus(inq.status)
+          ? undefined
+          : inq.hasConflict
+          ? CONFLICT_COLOR_VAR
+          : "var(--event-inquiry)",
+        workspaceTz: opts.tz,
+      });
+    });
+  }
+
+  return events;
+}

@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+
+# Dummy values so module-scope env reads (e.g. lib/workos.ts) don't crash
+# typecheck/build in CI. Tests use mongodb-memory-server, not DATABASE_URL.
+env:
+  DATABASE_URL: mongodb://127.0.0.1:27017/ci
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  WORKOS_API_KEY: ci_dummy_workos_api_key
+  WORKOS_CLIENT_ID: ci_dummy_workos_client_id
+  WORKOS_COOKIE_PASSWORD: ci_dummy_cookie_password_at_least_32_chars_long
+  ACTIVE_WORKSPACE_COOKIE_SECRET: ci_dummy_active_workspace_secret
+  NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://localhost:3000/api/auth/callback
+  WORKOS_WEBHOOK_SECRET: ci_dummy_workos_webhook_secret
+  CLOUDFLARE_ACCOUNT_ID: ci_dummy
+  CLOUDFLARE_IMAGES_API_TOKEN: ci_dummy
+  CLOUDFLARE_IMAGES_ACCOUNT_HASH: ci_dummy
+  NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH: ci_dummy
+  LEMONSQUEEZY_API_KEY: ci_dummy
+  LEMONSQUEEZY_STORE_ID: "0"
+  LEMONSQUEEZY_WEBHOOK_SECRET: ci_dummy
+  LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: "0"
+  LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: "0"
+  RESEND_API_KEY: re_ci_dummy
+  EMAIL_FROM: "Gallurio <ci@example.com>"
+  CRON_SECRET: ci_dummy_cron_secret
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build

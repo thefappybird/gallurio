@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -42,8 +43,26 @@ next-env.d.ts
 
 #claude
 /.agents
-/.claude
-AGENTS.md
-SaaS-Blueprint.md
-CLAUDE.md
+/.claude/*
+!/.claude/agents/
+!/.claude/skills/
 skills-lock.json
+
+# paddle cli
+/cli
+
+# clerk configuration (can include secrets)
+/.clerk/
+
+# Playwright MCP browser artifacts (screenshots, snapshots, console logs)
+.playwright-mcp/
+
+# Playwright CLI artifacts — may capture filled form values (incl. credentials)
+/test-results/
+/playwright-report/
+/e2e/.auth/
+# run-gallurio driver screenshots (may capture seeded data)
+/.driver-shots/
+/e2e/.artifacts/
+*.log
+/.swc
