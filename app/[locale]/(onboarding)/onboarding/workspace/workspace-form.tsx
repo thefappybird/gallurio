@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
-import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { useActionError } from "@/lib/i18n/actionError";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
@@ -170,21 +170,21 @@ export function WorkspaceStepForm({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="timezone">{t("timezone")}</Label>
-            <select
-              id="timezone"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("timezone")}
-            >
-              {Object.entries(TIMEZONE_GROUPS).map(([region, zones]) => (
-                <optgroup key={region} label={region}>
-                  {zones.map((tz) => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="timezone"
+              render={({ field }) => (
+                <TimezoneCombobox
+                  id="timezone"
+                  name={field.name}
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={field.disabled}
+                  searchPlaceholder={tSlug("timezoneSearchPlaceholder")}
+                  noMatchesLabel={tSlug("timezoneNoMatches")}
+                />
+              )}
+            />
             {errors.timezone && (
               <p className="text-sm text-destructive">{errors.timezone.message}</p>
             )}

@@ -17,11 +17,11 @@ import {
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
 import { updateWorkspaceBusinessAction } from "../_actions";
-import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocationPicker } from "@/components/ui/location-picker";
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 
@@ -265,21 +265,21 @@ export function WorkspaceBusinessForm({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="timezone">{tOnb("timezone")}</Label>
-            <select
-              id="timezone"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("timezone")}
-            >
-              {Object.entries(TIMEZONE_GROUPS).map(([region, zones]) => (
-                <optgroup key={region} label={region}>
-                  {zones.map((tz) => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="timezone"
+              render={({ field }) => (
+                <TimezoneCombobox
+                  id="timezone"
+                  name={field.name}
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={field.disabled}
+                  searchPlaceholder={tOnb("timezoneSearchPlaceholder")}
+                  noMatchesLabel={tOnb("timezoneNoMatches")}
+                />
+              )}
+            />
             {errors.timezone && (
               <p className="text-sm text-destructive">{errors.timezone.message}</p>
             )}
