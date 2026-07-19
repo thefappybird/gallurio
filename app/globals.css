@@ -145,6 +145,9 @@
      off-white (not pure-white) text, plus the same three bridging tiers. Faint
      cool hue (~255) matches the light ramp so brand teal sits the same way in
      both. Tuned visually. */
+  /* Render native controls (date/time picker glyphs, spinners, scrollbars) with
+     the dark UA scheme so their icons aren't dark-on-dark. */
+  color-scheme: dark;
   --background: oklch(0.205 0.006 255);
   --foreground: oklch(0.92 0.004 235);
   --card: oklch(0.245 0.006 255);
