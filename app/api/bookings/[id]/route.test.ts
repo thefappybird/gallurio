@@ -1001,15 +1001,15 @@ describe("PATCH /api/bookings/[id] — cancellation emails", () => {
     expect(cancelledMocks.sendBookingCancelledOwner).not.toHaveBeenCalled();
   });
 
-  it("fires both senders when a completed booking is cancelled", async () => {
+  it("refuses to cancel a completed booking — it's a read-only financial record", async () => {
     auth.workspaceOverrides = { contact: { email: "owner@studio.test" } };
     const c = await seedClient(workspaceId, { email: "ali@example.com" });
     const b = await seedBooking(workspaceId, c._id, { status: "completed" });
     const { PATCH } = await load();
     const res = await PATCH(makePatch({ status: "cancelled" }, b._id.toString()), ctx(b._id.toString()));
-    expect(res.status).toBe(200);
-    expect(cancelledMocks.sendBookingCancelledClient).toHaveBeenCalledOnce();
-    expect(cancelledMocks.sendBookingCancelledOwner).toHaveBeenCalledOnce();
+    expect(res.status).toBe(409);
+    expect(cancelledMocks.sendBookingCancelledClient).not.toHaveBeenCalled();
+    expect(cancelledMocks.sendBookingCancelledOwner).not.toHaveBeenCalled();
   });
 
   it("does NOT fire cancellation senders when status changes to something other than cancelled", async () => {

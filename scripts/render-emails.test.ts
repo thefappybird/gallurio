@@ -45,6 +45,7 @@ import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { renderBrandedEmail } from "@/lib/email/layout";
 import { gallurioBrand, resolveWorkspaceBrand } from "@/lib/email/brand";
 import { EMAIL_COPY } from "@/lib/email/messages";
+import { WORKSPACE_LOGO_CID } from "@/lib/email/inlineImages";
 
 // ---------------------------------------------------------------------------
 // Artifact directory
@@ -81,6 +82,13 @@ function capturedHtml(): string {
   const calls = sendEmail.mock.calls;
   if (!calls.length) throw new Error("sendEmail was not called");
   return (calls[calls.length - 1][0] as { html: string }).html;
+}
+
+/** Capture the attachments from the last sendEmail call. */
+function capturedAttachments(): Array<{ filename: string; path?: string; contentId?: string }> {
+  const calls = sendEmail.mock.calls;
+  if (!calls.length) throw new Error("sendEmail was not called");
+  return (calls[calls.length - 1][0] as { attachments?: Array<{ filename: string; path?: string; contentId?: string }> }).attachments ?? [];
 }
 
 // ---------------------------------------------------------------------------
@@ -336,9 +344,12 @@ describe("partner emails — all locales", () => {
       const html = capturedHtml();
       expect(html).toContain("<!DOCTYPE html>");
       expect(html).toContain(PARTNER_ACCENT);
-      // Logo img tag present
+      // Logo img tag present, embedded via a CID attachment rather than a raw URL
       expect(html).toContain("<img");
-      expect(html).toContain(PARTNER_LOGO_URL);
+      expect(html).toContain(`cid:${WORKSPACE_LOGO_CID}`);
+      expect(capturedAttachments()).toContainEqual(
+        expect.objectContaining({ contentId: WORKSPACE_LOGO_CID, path: PARTNER_LOGO_URL }),
+      );
       // CTA present (team invite always has one)
       expect(html).toContain("min-height:44px");
       expect(html).toContain("@media (prefers-color-scheme: dark)");

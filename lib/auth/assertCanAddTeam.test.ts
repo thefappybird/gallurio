@@ -35,42 +35,42 @@ async function seedTeams(workspaceId: mongoose.Types.ObjectId, count: number) {
   }
 }
 
-describe("assertCanAddTeam — free plan (max 1)", () => {
+describe("assertCanAddTeam — free plan (max 10)", () => {
   it("resolves when workspace has 0 teams", async () => {
     const workspaceId = makeWorkspaceId();
     await expect(assertCanAddTeam(workspaceId, "free")).resolves.toBeUndefined();
   });
 
-  it("throws TeamCapExceededError when already at 1 team", async () => {
+  it("throws TeamCapExceededError when already at 10 teams", async () => {
     const workspaceId = makeWorkspaceId();
-    await seedTeams(workspaceId, 1);
+    await seedTeams(workspaceId, 10);
 
     const err = await assertCanAddTeam(workspaceId, "free").catch((e) => e);
     expect(err).toBeInstanceOf(TeamCapExceededError);
     expect(err.plan).toBe("free");
-    expect(err.currentCount).toBe(1);
-    expect(err.max).toBe(1);
+    expect(err.currentCount).toBe(10);
+    expect(err.max).toBe(10);
     expect(err.message).toContain("free");
     expect(err.name).toBe("TeamCapExceededError");
   });
 });
 
-describe("assertCanAddTeam — pro plan (max 15)", () => {
-  it("resolves when workspace has 14 teams", async () => {
+describe("assertCanAddTeam — pro plan (max 10)", () => {
+  it("resolves when workspace has 9 teams", async () => {
     const workspaceId = makeWorkspaceId();
-    await seedTeams(workspaceId, 14);
+    await seedTeams(workspaceId, 9);
     await expect(assertCanAddTeam(workspaceId, "pro")).resolves.toBeUndefined();
   });
 
-  it("throws TeamCapExceededError when already at 15 teams", async () => {
+  it("throws TeamCapExceededError when already at 10 teams", async () => {
     const workspaceId = makeWorkspaceId();
-    await seedTeams(workspaceId, 15);
+    await seedTeams(workspaceId, 10);
 
     const err = await assertCanAddTeam(workspaceId, "pro").catch((e) => e);
     expect(err).toBeInstanceOf(TeamCapExceededError);
     expect(err.plan).toBe("pro");
-    expect(err.currentCount).toBe(15);
-    expect(err.max).toBe(15);
+    expect(err.currentCount).toBe(10);
+    expect(err.max).toBe(10);
   });
 
   it("resolves at 0 teams (edge: fresh pro workspace)", async () => {
@@ -103,11 +103,11 @@ describe("createTeamWithCapEnforcement — atomic cap guard", () => {
 
   it("rejects and rolls back the row when two concurrent creates race past the cap", async () => {
     const workspaceId = makeWorkspaceId();
-    // Pre-seed the workspace right under the free-plan cap of 1.
+    // Pre-seed the workspace right under the free-plan cap of 10.
     // Two concurrent creates from here must result in exactly 1 success
-    // and exactly 1 cap-exceeded rejection, with at most 1 team in the DB
-    // (the original seeded one). The race-loser's row must be rolled back.
-    await seedTeams(workspaceId, 0);
+    // and exactly 1 cap-exceeded rejection, with at most 10 teams in the DB
+    // (the 9 seeded plus the race winner). The race-loser's row must be rolled back.
+    await seedTeams(workspaceId, 9);
 
     const make = (name: string) =>
       createTeamWithCapEnforcement(
@@ -132,8 +132,8 @@ describe("createTeamWithCapEnforcement — atomic cap guard", () => {
       TeamCapExceededError,
     );
 
-    // Exactly one team in the DB — the race-loser's insert was rolled back.
-    expect(await Team.countDocuments({ workspaceId })).toBe(1);
+    // Exactly the seeded 9 plus the race winner — the race-loser's insert was rolled back.
+    expect(await Team.countDocuments({ workspaceId })).toBe(10);
   });
 });
 

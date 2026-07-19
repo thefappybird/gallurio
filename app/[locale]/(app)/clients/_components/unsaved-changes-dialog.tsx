@@ -23,8 +23,8 @@ export function UnsavedChangesDialog({ open, onKeepEditing, onDiscard }: Props) 
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => !next && onKeepEditing()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
+      <AlertDialogContent className="max-h-[calc(100dvh-2rem)]">
+        <AlertDialogHeader className="min-h-0 flex-1 overflow-y-auto">
           <AlertDialogTitle>{t("title")}</AlertDialogTitle>
           <AlertDialogDescription>{t("body")}</AlertDialogDescription>
         </AlertDialogHeader>

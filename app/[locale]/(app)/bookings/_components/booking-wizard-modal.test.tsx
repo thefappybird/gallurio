@@ -1754,7 +1754,7 @@ describe("BookingWizardModal — payments payload", () => {
       );
       expect(postCall).toBeDefined();
       const body = JSON.parse((postCall![1] as RequestInit).body as string);
-      expect(body.payments).toEqual([{ price: 500, status: "unpaid", title: "Deposit" }]);
+      expect(body.payments).toEqual([{ price: 500, status: "unpaid", title: "Deposit", method: "cash" }]);
     });
   });
 });
@@ -1834,7 +1834,7 @@ describe("BookingWizardModal — payments edit diff", () => {
       );
       expect(patchCall).toBeDefined();
       const body = JSON.parse((patchCall![1] as RequestInit).body as string);
-      expect(body.payments).toEqual([{ price: 250, status: "unpaid", title: "Deposit" }]);
+      expect(body.payments).toEqual([{ price: 250, status: "unpaid", title: "Deposit", method: "cash" }]);
     });
   });
 });

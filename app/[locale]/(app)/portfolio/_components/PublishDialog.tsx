@@ -230,7 +230,7 @@ export function PublishDialog({
                   <SaveIcon className="size-4" />
                 </Button>
               </>
-            ) : editingSlug ? (
+            ) : editingSlug && hasBeenPublished ? (
               <Button
                 type="button"
                 size="sm"
@@ -242,7 +242,7 @@ export function PublishDialog({
               >
                 <RotateCcwIcon className="size-4" />
               </Button>
-            ) : (
+            ) : !editingSlug ? (
               <Button
                 type="button"
                 size="sm"
@@ -254,7 +254,7 @@ export function PublishDialog({
               >
                 <PencilIcon className="size-4" />
               </Button>
-            )}
+            ) : null}
           </div>
           <div id="publish-dialog-slug-status">
             {slugSaveError ? (

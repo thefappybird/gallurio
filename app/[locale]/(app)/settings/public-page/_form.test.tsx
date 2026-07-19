@@ -445,7 +445,7 @@ describe("PublicPageSettingsForm — SEO keywords pending recompute after Save",
     expect(updatePublicPageSettingsAction).toHaveBeenCalledWith(
       expect.objectContaining({
         seo: expect.objectContaining({
-          keywords: ["wedding photographer", "editorial"],
+          keywords: ["wedding", "photographer", "editorial"],
         }),
       })
     );

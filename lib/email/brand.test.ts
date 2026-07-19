@@ -21,7 +21,8 @@ describe("brand", () => {
     });
     expect(b).toMatchObject({
       kind: "partner", name: "Aperture Studio",
-      logoUrl: "https://imagedelivery.net/biz/logo/public",
+      // emailSafeImageUrl forces a PNG variant for imagedelivery.net URLs.
+      logoUrl: "https://imagedelivery.net/biz/logo/public,f=png",
       accentHex: "#2f5d56", replyTo: "hi@aperture.test", poweredByGallurio: true,
     });
   });

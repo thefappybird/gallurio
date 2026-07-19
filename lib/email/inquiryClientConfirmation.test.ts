@@ -4,6 +4,7 @@ const sendEmail = vi.fn();
 vi.mock("./send", () => ({ sendEmail: (...args: unknown[]) => sendEmail(...args) }));
 
 import { sendInquiryClientConfirmation } from "./inquiryClientConfirmation";
+import { WORKSPACE_LOGO_CID } from "./inlineImages";
 
 beforeEach(() => {
   sendEmail.mockReset();
@@ -73,7 +74,14 @@ describe("sendInquiryClientConfirmation", () => {
     const arg = sendEmail.mock.calls[0][0];
     // Brand name takes precedence
     expect(arg.html).toContain("Aurora Events");
-    expect(arg.html).toContain('src="https://images.example.test/aurora-logo.png"');
+    // Logo is embedded via a CID attachment rather than a raw URL
+    expect(arg.html).toContain(`src="cid:${WORKSPACE_LOGO_CID}"`);
+    expect(arg.attachments).toContainEqual(
+      expect.objectContaining({
+        contentId: WORKSPACE_LOGO_CID,
+        path: "https://images.example.test/aurora-logo.png",
+      }),
+    );
     expect(arg.html).toContain("คำถามของคุณถึง Aurora Events แล้ว");
     expect(arg.html).toContain("Powered by Gallurio");
   });

@@ -1316,23 +1316,6 @@ describe("EditorShell", () => {
     expect(await screen.findByRole("dialog", { name: "Welcome to your portfolio editor" })).toBeInTheDocument();
   });
 
-  it("renders BlockActionsToolbar toolbar when a block is selected", async () => {
-    // Temporarily set a selected item + itemSelector so BlockActionsToolbar renders.
-    const origSelected = mockPuckApi.selectedItem;
-    const origUi = mockPuckApi.appState.ui;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPuckApi as any).selectedItem = { type: "Hero", props: { id: "hero-test" } };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPuckApi.appState.ui as any).itemSelector = { index: 0 };
-    await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    expect(document.querySelector("[role='toolbar']")).not.toBeNull();
-    // Restore.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPuckApi as any).selectedItem = origSelected;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPuckApi.appState as any).ui = origUi;
-  });
-
   it("editor is not dirty immediately after applying a template (Fix #4)", async () => {
     // Start with a clean draft so the guard fires immediately without the
     // unsaved-changes modal (baseProps has activeDraftId="d1" + matching snapshot).

@@ -101,12 +101,15 @@ describe("ViewMembersSidebar", () => {
       />,
     );
     const removeButton = screen.getByRole("button", {
-      name: "Remove from workspace for On The Team",
+      name: "Remove On The Team from workspace.",
     });
     expect(removeButton).toBeInTheDocument();
-    expect(removeButton).toHaveAttribute("title", "Remove from workspace for On The Team");
+    expect(removeButton).toHaveAttribute(
+      "title",
+      "On The Team is a team lead for at least one team. Remove their team lead status first in order to delete them.",
+    );
     expect(
-      screen.queryByRole("button", { name: "Remove from workspace for Owner" }),
+      screen.queryByRole("button", { name: "Remove Owner from workspace." }),
     ).not.toBeInTheDocument();
   });
 

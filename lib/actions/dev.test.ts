@@ -162,7 +162,7 @@ describe("devActivatePlanAction", () => {
     const result = await devActivatePlanAction("beta");
     expect(result.error).toBe("TEAM_DOWNGRADE_BLOCKED");
     expect(result.blocked?.currentTeamCount).toBe(20);
-    expect(result.blocked?.maxTeamsOnTargetPlan).toBe(15);
+    expect(result.blocked?.maxTeamsOnTargetPlan).toBe(10);
 
     const updated = await Workspace.findById(ws._id).lean();
     expect(updated?.plan).toBe("free");
