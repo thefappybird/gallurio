@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, GALLERY_COLUMN_OPTIONS, GALLERY_GAP_OPTIONS, type BlockStyle } from "./styleToolkit";
 import { headingDefaultProps, textDefaultProps } from "./blocks/manualBlocks";
 
@@ -141,9 +141,13 @@ describe("resolveBlockStyle", () => {
   });
 
   it("omits a background image when the public cloud name is unset (test env)", () => {
+    // CI sets NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH globally for the whole job
+    // (build/typecheck steps need it); stub it unset here so this assertion
+    // is deterministic regardless of the ambient environment.
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "");
     const css = resolveBlockStyle({ bgImagePublicId: "gallurio/x/y.jpg" });
-    // No NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH in the test env → no backgroundImage.
     expect(css.backgroundImage).toBeUndefined();
+    vi.unstubAllEnvs();
   });
 });
 
