@@ -6,6 +6,15 @@ Target: Hetzner VPS (materially cheaper than Vercel at steady state) — Ubuntu 
 
 `vercel.json`'s `crons` entry is dead config on this host (only fires if deployed on Vercel, which this isn't) — the systemd timers below are the real schedule source.
 
+### Tenant subdomains (`*.gallurio.com`)
+
+Published portfolios are served on per-tenant subdomains. Operator setup (Cloudflare Origin CA wildcard cert, DNS, the Caddy `*.gallurio.com` site block, the `GALLURIO_WILDCARD_HOST`/`GALLURIO_ORIGIN_CERT`/`GALLURIO_ORIGIN_KEY` env) lives in `deploy/README.md` — not duplicated here. The app-side pieces:
+
+- **Routing (`proxy.ts`)**, gated on `NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN` (no-op when unset): a `{slug}.{base}` host is rewritten to `/w/{slug}` before auth+intl run (mirrors the `/w/` bypass); the canonical host (apex or `www`) 301-redirects `/w/{slug}(/subpath)` to the subdomain. A **reserved-label denylist** (`lib/portfolio/reservedSlugs.ts`: `www,auth,autoconfig,dev,send,staging,app,api,admin,mail,static,cdn,assets,status`) is skipped in the rewrite and rejected as a workspace slug. The 301 validates the captured slug against `WORKSPACE_SLUG_RE` before using it as the redirect host label — an unvalidated value containing `:` would drop the `.{base}` suffix and open-redirect off the trusted apex.
+- **`NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN=gallurio.com`** must stay set (build-time GitHub Actions var + matching runtime env). It both drives the public URL display and gates the proxy rewrite/redirect; unsetting it silently reverts every portfolio link to path-based `/w/{slug}`.
+- **`/opengraph-image`** (the platform root OG image, not locale-prefixed) gets an early proxy bypass — falling through to intl would rewrite it under `/[locale]` and 404.
+- **Cookie posture**: session cookies stay **host-only**. Never set `WORKOS_COOKIE_DOMAIN` (or any AuthKit cookie-domain option) to `.gallurio.com` — a domain-scoped cookie would be sent to every tenant subdomain, leaking an authenticated session to a public page. See `docs/modules/auth-tenancy.md`.
+
 ### Scheduled jobs (systemd timers, not Vercel Cron)
 
 Two cron routes, both Node runtime, timing-safe Bearer `CRON_SECRET` auth (401 without it):
