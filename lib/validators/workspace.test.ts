@@ -43,6 +43,13 @@ describe("slugSchema", () => {
     expect(slugSchema.safeParse("ab").success).toBe(false);
     expect(slugSchema.safeParse("a".repeat(51)).success).toBe(false);
   });
+
+  it("rejects reserved infra labels", () => {
+    expect(slugSchema.safeParse("dev").success).toBe(false);
+    expect(slugSchema.safeParse("admin").success).toBe(false);
+    expect(slugSchema.safeParse("www").success).toBe(false);
+    expect(slugSchema.safeParse("banaag-studio").success).toBe(true);
+  });
 });
 
 describe("businessStepSchema", () => {

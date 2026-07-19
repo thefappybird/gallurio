@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
 
 export const slugSchema = z
   .string()
   .min(3, "At least 3 characters")
   .max(50, "At most 50 characters")
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Lowercase letters, numbers, and hyphens only");
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Lowercase letters, numbers, and hyphens only")
+  .refine((s) => !isReservedSlug(s), { message: "reserved" });
 
 export const BUSINESS_TYPE_VALUES = [
   "photographer",

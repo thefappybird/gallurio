@@ -8,6 +8,7 @@ import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/lib/i18n/routing";
 import { LOCALE_PREFIX_RE, stripLocale } from "@/lib/auth/memberAccess";
 import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
+import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
 
 // ---------------------------------------------------------------------------
 // NOTE: Role-based redirects (non-owner to /bookings, root to role landing)
@@ -227,7 +228,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
         // the subdomain. Never fires on a subdomain host (see else-branch),
         // so it cannot loop with the rewrite below.
         const canonicalMatch = pathname.match(/^\/w\/([^/]+)(\/.*)?$/);
-        if (canonicalMatch) {
+        if (canonicalMatch && !isReservedSlug(canonicalMatch[1])) {
           const redirectUrl = req.nextUrl.clone();
           redirectUrl.protocol = "https:";
           redirectUrl.host = `${canonicalMatch[1]}.${base}`;
@@ -240,7 +241,12 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
         // Guard against looping: only rewrite when the path isn't already
         // under /w/ (e.g. a direct /w/{other-slug} hit on a subdomain host
         // falls through to the existing /w/ bypass below unchanged).
-        if (tenantMatch && pathname !== "/w" && !pathname.startsWith("/w/")) {
+        if (
+          tenantMatch &&
+          pathname !== "/w" &&
+          !pathname.startsWith("/w/") &&
+          !isReservedSlug(tenantMatch[1])
+        ) {
           const rewriteUrl = req.nextUrl.clone();
           rewriteUrl.pathname = `/w/${tenantMatch[1]}${pathname}`;
           return NextResponse.rewrite(rewriteUrl);

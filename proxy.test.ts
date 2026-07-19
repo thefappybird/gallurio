@@ -270,6 +270,57 @@ describe("proxy", () => {
         }
       }));
 
+    it("does not rewrite a reserved infra subdomain (e.g. dev.gallurio.com) to /w/{label}", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/", {
+          headers: { host: "dev.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+      }));
+
+    it("still rewrites a normal (non-reserved) tenant subdomain to /w/{slug}", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/", {
+          headers: { host: "banaag.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        const rewriteTarget = response.headers.get("x-middleware-rewrite");
+        expect(rewriteTarget).not.toBeNull();
+        expect(new URL(rewriteTarget!).pathname).toBe("/w/banaag");
+      }));
+
+    it("does not 301-redirect /w/{reserved-label} on the canonical host", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/w/dev", {
+          headers: { host: "gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.status).not.toBe(301);
+      }));
+
+    it("still 301-redirects /w/{normal-slug} on the canonical host", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/w/banaag", {
+          headers: { host: "gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.status).toBe(301);
+        expect(response.headers.get("location")).toBe("https://banaag.gallurio.com/");
+      }));
+
     it("does not loop: a tenant subdomain requesting a literal /w/ path falls to the existing /w/ bypass", () =>
       withBaseDomain(async () => {
         const { proxy } = await import("./proxy");
