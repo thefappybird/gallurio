@@ -1,0 +1,3229 @@
+{
+  "marketing": {
+    "nav": {
+      "pricing": "Pricing",
+      "contact": "Contact",
+      "signIn": "Sign in",
+      "getStarted": "Get started"
+    },
+    "footer": {
+      "pricing": "Pricing",
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "refunds": "Refunds",
+      "contact": "Contact"
+    },
+    "metadata": {
+      "title": "Gallurio | Portfolio and Booking Tools for Creative Businesses",
+      "description": "Create a polished portfolio page, showcase your work, and collect booking inquiries with Gallurio."
+    },
+    "hero": {
+      "headline": "The booking-ready portfolio, run like a ledger.",
+      "body": "Photographers, videographers, and event creatives use Gallurio to publish a page worth trusting a booking to — and manage bookings, clients, and inquiries in one workspace.",
+      "ctaStart": "Start your free month"
+    },
+    "whatIs": {
+      "title": "What is Gallurio?",
+      "body": "Gallurio is a portfolio and booking platform for creative professionals. It gives users tools to create a public-facing page, showcase their work, receive booking requests, and organize client-facing business details."
+    },
+    "builtFor": {
+      "title": "Built for Creative Businesses",
+      "item1": "Photographers",
+      "item2": "Videographers",
+      "item3": "Event planners",
+      "item4": "Makeup artists",
+      "item5": "Stylists",
+      "item6": "Creative studios",
+      "item7": "Independent service providers"
+    },
+    "features": {
+      "portfolioBuilder": {
+        "title": "Portfolio builder",
+        "panelHeadline": "Every gallery, service, and section — exactly as you'd lay it out yourself.",
+        "description": "Create a clean, professional portfolio page using flexible sections, gallery blocks, service details, and visual layouts made for creative work."
+      },
+      "businessWorkspace": {
+        "title": "Business workspace",
+        "panelHeadline": "One dashboard for everything between shoots.",
+        "description": "Manage public profile content, business details, and booking-related setup from one dashboard."
+      },
+      "bookingInquiryForms": {
+        "title": "Booking inquiry forms",
+        "panelHeadline": "Requests land in your calendar, not your DMs.",
+        "description": "Let visitors send booking requests directly through a user page, including event dates, contact details, service preferences, and project notes."
+      },
+      "teams": {
+        "title": "Team collaboration",
+        "panelHeadline": "Invite the team, assign roles, and work off one shared calendar.",
+        "description": "Bring on staff and collaborators with role-based access to bookings, clients, and the calendar — so everyone knows what's theirs to handle without stepping on each other."
+      },
+      "customBranding": {
+        "title": "Custom branding",
+        "description": "Adjust colors, typography, imagery, and page style so the portfolio feels aligned with the user's creative identity."
+      },
+      "clientReadyPages": {
+        "title": "Client-ready pages",
+        "description": "Publish a page designed to look credible, simple, and easy for potential clients to understand."
+      }
+    },
+    "finalCta": {
+      "title": "Start building your creative workspace with Gallurio.",
+      "subtitle": "Start with one month of Pro free — no card required.",
+      "button": "Start your free month"
+    },
+    "manifesto": {
+      "quote": "Every booking accounted for. Every client trusted. Nothing left ambiguous.",
+      "attribution": "— the idea behind Gallurio"
+    },
+    "pricingTeaser": {
+      "title": "Simple pricing",
+      "subtitle": "1 month of Pro, free. Then one plan, monthly or yearly.",
+      "viewFullPricing": "View full pricing",
+      "disclaimer": "Paid plans aren't available yet. Pricing and billing terms will be shown clearly before checkout once they launch.",
+      "cadence": {
+        "monthly": "Monthly",
+        "yearly": "Yearly — save 2 months"
+      },
+      "pro": {
+        "badge": "1 month free",
+        "comingSoon": "Coming soon",
+        "name": "Pro",
+        "priceSuffixMonthly": "/mo",
+        "priceSuffixYearly": "/yr",
+        "priceNote": "after your free month",
+        "description": "Unlimited bookings, clients, galleries, and your public page.",
+        "feature1": "Unlimited bookings and inquiries",
+        "feature2": "Custom branding and advanced galleries",
+        "feature3": "Priority support",
+        "cta": "Start my free month"
+      }
+    },
+    "pricing": {
+      "metadata": {
+        "title": "Pricing — Gallurio",
+        "description": "See Gallurio Pro pricing for creative professionals and studios — one month free, then a single monthly or yearly plan."
+      },
+      "header": {
+        "headline": "Simple plans for creative professionals and studios.",
+        "body": "Every new workspace gets one month of full Gallurio Pro, free, no card required. After that, keep going with a single Pro subscription — monthly or yearly."
+      },
+      "pro": {
+        "badge": "Recommended",
+        "comingSoon": "Coming soon",
+        "name": "Pro",
+        "freeMonth": "Start with 1 month free, no card required.",
+        "description": "Everything you need to run bookings, clients, galleries, and your public page.",
+        "priceSuffixMonthly": "/ month",
+        "priceSuffixYearly": "/ year",
+        "yearlyNote": "Or {price} billed yearly — save 2 months.",
+        "feature1": "Portfolio page builder & public site",
+        "feature2": "Unlimited bookings and inquiries",
+        "feature3": "Client management & team roles",
+        "feature4": "Invoice PDFs",
+        "feature5": "Custom branding & advanced galleries",
+        "feature6": "Priority support",
+        "cta": "Start my free month"
+      },
+      "billingNotice": {
+        "body1": "Paid Pro subscriptions are not yet available. When they launch, pricing, billing terms, and payment details will be shown clearly before you complete any purchase.",
+        "body2": "No charge is collected during your first free month."
+      },
+      "pricingTransparency": {
+        "title": "Pricing Transparency",
+        "body": "The price, billing period, and subscription terms are shown before you complete any payment, and you can cancel anytime from your billing portal."
+      }
+    },
+    "terms": {
+      "metadata": {
+        "title": "Terms of Service — Gallurio",
+        "description": "Read the terms that govern access to and use of Gallurio."
+      },
+      "title": "Terms of Service",
+      "effectiveDate": "Effective Date: July 18, 2026",
+      "intro1": "These Terms of Service govern your access to and use of Gallurio, including our website, application, portfolio tools, booking inquiry features, and related services.",
+      "intro2": "By using Gallurio, you agree to these Terms. If you do not agree, you should not use the service.",
+      "about": {
+        "title": "1. About Gallurio",
+        "body1": "Gallurio is a software platform that helps creative professionals and businesses create portfolio pages, present their services, and receive booking inquiries.",
+        "body2": "Gallurio does not directly provide photography, videography, event planning, or other creative services to end clients. Users of Gallurio are responsible for the services they offer through their own pages."
+      },
+      "eligibility": {
+        "title": "2. Eligibility",
+        "body": "You may use Gallurio only if you are able to enter into a legally binding agreement. If you use Gallurio on behalf of a business, organization, or studio, you confirm that you are authorized to accept these Terms on its behalf."
+      },
+      "accounts": {
+        "title": "3. Accounts",
+        "body1": "You may need to create an account to use certain Gallurio features. You are responsible for keeping your login credentials secure and for all activity under your account.",
+        "body2": "You agree to provide accurate information and to update it when necessary."
+      },
+      "betaAccess": {
+        "title": "4. Beta Access",
+        "body1": "Gallurio may offer beta access before public launch. During beta, features may be incomplete, changed, limited, suspended, or removed at any time.",
+        "body2": "Beta access does not guarantee continued free access, future feature availability, or permanent account availability."
+      },
+      "userContent": {
+        "title": "5. User Content",
+        "body1": "Users may upload, publish, or submit content such as images, text, business information, service descriptions, portfolio materials, and booking form content.",
+        "body2": "Users retain ownership of their content. By using Gallurio, users grant Gallurio permission to host, store, display, process, and transmit their content as needed to operate and improve the service.",
+        "body3": "Users are responsible for ensuring that they have the rights, licenses, and permissions needed for any content uploaded or published."
+      },
+      "prohibited": {
+        "title": "6. Prohibited Content and Use",
+        "intro": "Users agree not to use Gallurio to upload, publish, distribute, or promote content that is unlawful, harmful, abusive, misleading, infringing, or otherwise inappropriate.",
+        "item1": "Violating applicable laws or regulations",
+        "item2": "Infringing the intellectual property rights of others",
+        "item3": "Uploading malicious code or attempting to disrupt the service",
+        "item4": "Misrepresenting identity, business, or services",
+        "item5": "Using the service for fraud, spam, or deceptive activity",
+        "item6": "Attempting to access accounts, systems, or data without permission",
+        "outro": "Gallurio may remove content or suspend accounts that violate these Terms."
+      },
+      "bookings": {
+        "title": "7. Bookings and Client Inquiries",
+        "body1": "Gallurio may allow visitors to submit booking inquiries through user-created pages. These inquiries do not guarantee a confirmed booking unless separately agreed between the Gallurio user and their client.",
+        "body2": "Gallurio is not responsible for disputes, payments, cancellations, service quality, schedules, or agreements between Gallurio users and their clients unless explicitly stated otherwise."
+      },
+      "subscriptions": {
+        "title": "8. Subscriptions and Payments",
+        "body1": "Gallurio includes a paid Pro subscription, billed monthly or yearly. New workspaces receive one month of full Pro access at no charge, with no card required.",
+        "body2": "After the free month, continuing to use Gallurio requires an active Pro subscription. Paid subscriptions are not yet available; billing terms and payment details will be shown clearly before any charge once they launch.",
+        "body3": "Users will be shown applicable pricing and billing terms before completing a purchase.",
+        "body4": "If a subscription is not renewed or a payment fails, access to the workspace is limited until the subscription is restored. Account data is retained; a published public page may be taken offline after an extended period without payment, and everything is restored upon resubscribing."
+      },
+      "cancellations": {
+        "title": "9. Cancellations",
+        "body1": "Users may cancel subscriptions according to the cancellation process available in their account or through the billing flow provided.",
+        "body2": "Cancellation generally prevents future renewal charges, but it may not automatically result in a refund unless required by law or approved under the applicable refund process."
+      },
+      "serviceChanges": {
+        "title": "10. Service Changes",
+        "body1": "Gallurio may update, modify, suspend, or discontinue parts of the service at any time. Gallurio may also change features, plans, pricing, or usage limits as the product evolves.",
+        "body2": "Where appropriate, Gallurio will make reasonable efforts to notify users of material changes."
+      },
+      "ip": {
+        "title": "11. Intellectual Property",
+        "body1": "Gallurio, including its software, design, branding, interface, features, and related materials, is owned by Gallurio or its licensors.",
+        "body2": "Users may not copy, modify, reverse engineer, resell, or exploit any part of Gallurio except as permitted by these Terms or applicable law."
+      },
+      "disclaimer": {
+        "title": "12. Disclaimer",
+        "body": "Gallurio is provided on an \"as is\" and \"as available\" basis. Gallurio does not guarantee that the service will be uninterrupted, error-free, secure, or suitable for every business need."
+      },
+      "liability": {
+        "title": "13. Limitation of Liability",
+        "body": "To the maximum extent permitted by law, Gallurio will not be liable for indirect, incidental, special, consequential, or punitive damages, including lost profits, lost data, business interruption, or reputational harm."
+      },
+      "termination": {
+        "title": "14. Termination",
+        "body1": "Gallurio may suspend or terminate access if a user violates these Terms, misuses the service, creates risk for other users, or uses the service in a way that may harm Gallurio or third parties.",
+        "body2": "Users may stop using Gallurio at any time."
+      },
+      "contact": {
+        "title": "15. Contact",
+        "body": "For questions about these Terms, contact us at:"
+      }
+    },
+    "privacy": {
+      "metadata": {
+        "title": "Privacy Policy — Gallurio",
+        "description": "Learn how Gallurio collects, uses, stores, and protects information."
+      },
+      "title": "Privacy Policy",
+      "effectiveDate": "Effective Date: July 18, 2026",
+      "intro": "This Privacy Policy explains how Gallurio collects, uses, stores, and protects information when users access the website, application, and related services.",
+      "collect": {
+        "title": "1. Information We Collect",
+        "account": {
+          "title": "Account Information",
+          "body": "This may include name, email address, login details, business name, workspace information, and account preferences."
+        },
+        "business": {
+          "title": "Business and Portfolio Information",
+          "body": "This may include public profile details, service descriptions, images, galleries, branding settings, portfolio content, and other materials users choose to upload or publish."
+        },
+        "bookingInquiry": {
+          "title": "Booking Inquiry Information",
+          "body": "When visitors submit inquiries through a Gallurio page, Gallurio may collect information such as names, email addresses, event dates, project details, messages, and other form responses."
+        },
+        "usage": {
+          "title": "Usage Information",
+          "body": "Gallurio may collect technical and usage data such as device information, browser type, IP address, pages viewed, actions taken, timestamps, and diagnostic logs."
+        },
+        "payment": {
+          "title": "Payment Information",
+          "body": "Paid Pro subscriptions are not yet available. Gallurio does not directly store full payment card details; once payments launch, this section will name the payment processor and describe how it collects and processes billing details, payment information, tax information, and invoices."
+        }
+      },
+      "useOfInfo": {
+        "title": "2. How We Use Information",
+        "item1": "Provide and operate Gallurio",
+        "item2": "Create and manage user accounts",
+        "item3": "Publish and display portfolio pages",
+        "item4": "Process booking inquiries",
+        "item5": "Improve product features and user experience",
+        "item6": "Provide support and respond to requests",
+        "item7": "Maintain security and prevent abuse",
+        "item8": "Analyze usage and performance",
+        "item9": "Comply with legal and billing obligations"
+      },
+      "userContentPublic": {
+        "title": "3. User Content and Public Pages",
+        "body1": "Content published on a Gallurio portfolio page may be visible to the public. This may include business names, images, services, descriptions, contact options, and other information users choose to make public.",
+        "body2": "Users are responsible for ensuring that published content does not include private or sensitive information that they do not want publicly available."
+      },
+      "sharing": {
+        "title": "4. Sharing of Information",
+        "body1": "Gallurio may share information with trusted service providers that help operate the platform, such as hosting providers, authentication providers, analytics tools, email services, file storage providers, and payment processors.",
+        "body2": "Gallurio may also share information when required by law, to protect rights, to prevent fraud or abuse, or as part of a business transfer such as a merger, acquisition, or sale of assets.",
+        "body3": "Gallurio does not sell personal information."
+      },
+      "security": {
+        "title": "5. Data Storage and Security",
+        "body1": "Gallurio uses reasonable technical and organizational measures to protect information. However, no system can be guaranteed to be completely secure.",
+        "body2": "Users are responsible for keeping account credentials safe and notifying Gallurio if they believe their account has been compromised."
+      },
+      "retention": {
+        "title": "6. Data Retention",
+        "body1": "Gallurio retains information for as long as needed to provide the service, comply with legal obligations, resolve disputes, enforce agreements, and maintain legitimate business records.",
+        "body2": "Users may request account deletion or data removal by contacting Gallurio, subject to legal, technical, or operational limitations."
+      },
+      "cookies": {
+        "title": "7. Cookies and Similar Technologies",
+        "body1": "Gallurio may use cookies and similar technologies to keep users signed in, remember preferences, analyze usage, improve performance, and support security.",
+        "body2": "Users can control cookies through browser settings, but disabling some cookies may affect how the service works."
+      },
+      "international": {
+        "title": "8. International Use",
+        "body1": "Gallurio may be accessed from different countries. Information may be processed in countries where Gallurio or its service providers operate.",
+        "body2": "By using Gallurio, users understand that information may be transferred and processed outside their country of residence, subject to applicable law."
+      },
+      "children": {
+        "title": "9. Children's Privacy",
+        "body1": "Gallurio is not intended for children. Gallurio does not knowingly collect personal information from children under the age required by applicable law.",
+        "body2": "If someone believes a child has provided personal information to Gallurio, they should contact Gallurio so the information can be reviewed and removed if appropriate."
+      },
+      "changes": {
+        "title": "10. Changes to This Policy",
+        "body": "Gallurio may update this Privacy Policy from time to time. When material changes are made, Gallurio may notify users through the service, by email, or by updating the effective date."
+      },
+      "contact": {
+        "title": "11. Contact",
+        "body": "For privacy questions or requests, contact us at:"
+      }
+    },
+    "refunds": {
+      "metadata": {
+        "title": "Refund Policy — Gallurio",
+        "description": "Learn how Gallurio handles cancellations and refunds."
+      },
+      "title": "Refund Policy",
+      "effectiveDate": "Effective Date: July 18, 2026",
+      "betaPeriod": {
+        "title": "1. Free Trial",
+        "body1": "New Gallurio workspaces receive one month of full Pro access at no charge, with no card required. No payment is collected during this trial, so no refund applies to it.",
+        "body2": "If you continue with a paid Pro subscription after the trial, the pricing and billing terms shown at checkout apply, and this Refund Policy governs any payment made.",
+        "body3": "Verified beta participants may also receive a separate two-month Pro promo grant. It may be redeemed once per verified beta participant and expires two months after redemption; like the free trial, it is a promotional grant rather than a payment, so no refund applies to it."
+      },
+      "subscriptions": {
+        "title": "2. Subscriptions",
+        "body1": "Gallurio Pro subscriptions are billed monthly, annually, or according to the billing period shown at checkout.",
+        "body2": "Users may cancel their subscription to prevent future renewal charges. After cancellation, access may continue until the end of the current billing period unless otherwise stated.",
+        "body3": "When a subscription lapses due to a failed or terminal non-payment, Gallurio sends an expiry notice immediately, a saved-data reminder after 30 days, and a final public-page warning after 51 days, then unpublishes the public page after 58 days. Workspace, CRM, and draft data remain retained so everything can be restored upon resubscribing."
+      },
+      "refundRequests": {
+        "title": "3. Refund Requests",
+        "intro": "Refund requests are reviewed on a case-by-case basis.",
+        "approvalIntro": "Approval may depend on:",
+        "item1": "The date of purchase",
+        "item2": "The billing period",
+        "item3": "Product usage",
+        "item4": "Account activity",
+        "item5": "Technical issues",
+        "item6": "Duplicate charges",
+        "item7": "Applicable consumer protection laws",
+        "item8": "The payment processor's refund process",
+        "outro": "Submitting a refund request does not guarantee that a refund will be approved."
+      },
+      "merchantOfRecord": {
+        "title": "4. Payment Processing",
+        "body1": "Paid subscriptions are not yet available. Once they launch, Gallurio will name its payment processor here and describe how it handles payment processing, taxes, invoices, billing support, and eligible refund processing.",
+        "body2": "Once payments launch, a user's billing statement may show the selected payment processor's name or a related billing descriptor."
+      },
+      "nonRefundable": {
+        "title": "5. Non-Refundable Situations",
+        "intro": "Unless required by law, refunds may not be provided for:",
+        "item1": "Unused time in a billing period after cancellation",
+        "item2": "Failure to cancel before renewal",
+        "item3": "Temporary lack of use",
+        "item4": "Change of mind after substantial use",
+        "item5": "Issues caused by incorrect account setup or user-provided information",
+        "outro": "Gallurio will still review reasonable requests, especially where there are technical or billing issues."
+      },
+      "howToRequest": {
+        "title": "6. How to Request a Refund",
+        "body": "To request a refund, contact us at:",
+        "includeIntro": "Please include:",
+        "item1": "Account email",
+        "item2": "Business or workspace name",
+        "item3": "Date of payment",
+        "item4": "Reason for the request",
+        "item5": "Relevant screenshots or billing details",
+        "outro": "Gallurio may ask for additional information to verify the payment and review the request."
+      },
+      "cancellations": {
+        "title": "7. Cancellations",
+        "body1": "Users may cancel their subscription through account settings or the billing management flow provided.",
+        "body2": "Cancellation stops future renewals but does not automatically refund previous payments unless a refund is approved or required by law."
+      }
+    },
+    "contact": {
+      "metadata": {
+        "title": "Contact — Gallurio",
+        "description": "Contact Gallurio for support, account help, billing questions, and general inquiries."
+      },
+      "header": {
+        "headline": "Need help with Gallurio?",
+        "body": "For support, account concerns, billing issues, or general inquiries, contact us at:"
+      },
+      "supportTopics": {
+        "title": "Support Topics",
+        "item1": "Getting started",
+        "item2": "Account setup",
+        "item3": "Portfolio pages",
+        "item4": "Booking inquiry forms",
+        "item5": "Billing and subscriptions",
+        "item6": "Refund requests",
+        "item7": "Bug reports",
+        "item8": "Feature feedback",
+        "item9": "Partnership or business inquiries"
+      },
+      "responseTime": {
+        "title": "Response Time",
+        "body1": "We aim to respond as soon as reasonably possible. Response times may vary as we continue developing and improving Gallurio.",
+        "body2": "For urgent account or billing concerns, please include as much relevant detail as possible so we can review the request efficiently."
+      },
+      "businessInfo": {
+        "title": "Business Information",
+        "body": "Gallurio is a small, independent startup. We don't have a registered legal name or business address to list yet — for now, the best way to reach us is by email.",
+        "emailLabel": "Email:"
+      },
+      "social": {
+        "title": "Follow Us",
+        "instagram": "Follow us on Instagram",
+        "facebook": "Follow us on Facebook",
+        "reddit": "Join us on Reddit",
+        "linkedin": "Follow us on LinkedIn"
+      }
+    }
+  },
+  "auth": {
+    "signInTitle": "Sign in",
+    "signUpTitle": "Create account",
+    "brandPane": {
+      "signIn": {
+        "headline": "Welcome back to the ledger.",
+        "body": "Every booking, client, and inquiry — exactly where you left them."
+      },
+      "signUp": {
+        "headline": "Open your ledger.",
+        "body": "One workspace for bookings, clients, and the public portfolio your clients see."
+      },
+      "mfa": {
+        "headline": "One more entry.",
+        "body": "A quick verification keeps your ledger — and your clients' details — secure."
+      },
+      "forgotPassword": {
+        "headline": "Lost your place?",
+        "body": "We'll send a link so you can pick your ledger back up."
+      },
+      "resetPassword": {
+        "headline": "Set a new key.",
+        "body": "Choose a password you'll remember. Your ledger stays exactly as you left it."
+      },
+      "verifyEmail": {
+        "headline": "Almost booked in.",
+        "body": "Confirm your email to finish setting up your ledger."
+      }
+    },
+    "signIn": {
+      "title": "Sign in",
+      "continueWithGoogle": "Continue with Google",
+      "or": "or",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create one"
+    },
+    "signUp": {
+      "title": "Create account",
+      "continueWithGoogle": "Continue with Google",
+      "submit": "Create account",
+      "passwordHint": "At least 8 characters",
+      "hasAccount": "Already have an account?"
+    },
+    "mfa": {
+      "title": "Two-factor verification",
+      "description": "Enter the 6-digit code from your authenticator app.",
+      "codeLabel": "Verification code",
+      "submit": "Verify",
+      "backToSignIn": "Back to sign in"
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "description": "Enter your email and we'll send you a reset link.",
+      "submit": "Send reset link",
+      "successMessage": "If that email is registered, a reset link is on its way. Check your inbox.",
+      "backToSignIn": "Back to sign in"
+    },
+    "resetPassword": {
+      "title": "Set new password",
+      "description": "Choose a strong password for your account.",
+      "passwordLabel": "New password",
+      "submit": "Set new password",
+      "successMessage": "Your password has been updated. You can now sign in.",
+      "signIn": "Sign in",
+      "invalidToken": "This reset link is invalid or has expired.",
+      "requestNewLink": "Request a new reset link"
+    },
+    "verifyEmail": {
+      "title": "Verify your email",
+      "description": "Enter the 6-digit code we sent to your email address.",
+      "codeLabel": "Verification code",
+      "submit": "Verify email",
+      "resend": "Resend code",
+      "expiresIn": "Code expires in {time}.",
+      "resendSent": "Code resent — check your inbox."
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "optional": "optional",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "errors": {
+      "invalidInput": "Please check your input and try again.",
+      "invalidCredentials": "Invalid email or password.",
+      "passwordMismatch": "Passwords do not match.",
+      "botCheck": "Bot check failed. Please try again.",
+      "tooManyAttempts": "Too many attempts. Try again in {seconds} seconds.",
+      "generic": "Something went wrong. Please try again.",
+      "invalidCode": "Invalid or expired code. Please try again.",
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "resetTokenInvalid": "This link is invalid or has expired. Please request a new one.",
+      "passwordReused": "Please choose a password different from your current one."
+    }
+  },
+  "app": {
+    "betaEndingBanner": {
+      "title": "Beta access is ending soon",
+      "message": "Thank you for being part of the Gallurio Beta. Your beta access ends within the next week, after which your workspace will return to the Free plan. To continue enjoying Pro features, use code <promoCode>{code}</promoCode> to claim two free months of Pro access.",
+      "dismiss": "Dismiss for this session"
+    },
+    "dashboard": {
+      "title": "{workspaceName}",
+      "greeting": "Welcome back, {name}",
+      "tabs": {
+        "aria": "Switch dashboard",
+        "bookings": "Bookings",
+        "portfolio": "Portfolio"
+      },
+      "dateFilter": {
+        "label": "Date range",
+        "filter": "Filter",
+        "week": "Weekly",
+        "month": "Monthly",
+        "year": "Yearly",
+        "custom": "Custom",
+        "all": "All time",
+        "allTimeHint": "Showing all dates.",
+        "clear": "Clear",
+        "apply": "Apply",
+        "from": "From",
+        "to": "To",
+        "since": "Since",
+        "until": "Until"
+      },
+      "pagination": {
+        "prev": "Previous",
+        "next": "Next",
+        "status": "{page} of {total}"
+      },
+      "kpi": {
+        "revenueThisMonth": "Collected revenue",
+        "activeBookings": "Scheduled bookings",
+        "newInquiries": "New inquiries",
+        "outstandingBalance": "Outstanding balance"
+      },
+      "sections": {
+        "todaysEvents": "Today's events",
+        "upcomingWeek": "Upcoming this week",
+        "recentInquiries": "Recent inquiries",
+        "activity": "Recent activity",
+        "revenueTrend": "Revenue",
+        "calendar": "Booking calendar",
+        "eventTypes": "Event type breakdown",
+        "topClients": "Top clients by spend",
+        "teamPerformance": "Team performance",
+        "bookingsPerTeam": "Bookings by team",
+        "operations": "Operations"
+      },
+      "quickAdd": {
+        "title": "Quick add",
+        "booking": "New booking",
+        "client": "New client",
+        "inquiry": "View inquiries"
+      },
+      "empty": "Nothing here yet.",
+      "filteredEmpty": "No data matches the selected date range.",
+      "viewAll": "View all",
+      "portfolio": {
+        "analyticsSoon": "Portfolio analytics are coming soon.",
+        "totalViews": "Total views",
+        "uniqueVisitors": "Unique visitors",
+        "inquiries": "Inquiries",
+        "conversionRate": "Conversion rate",
+        "viewsOverTime": "Views & visitors",
+        "views": "Views",
+        "visitors": "Visitors",
+        "topSources": "Top sources",
+        "perPage": "By page",
+        "siteInquiries": "Inquiries from your site",
+        "publishStatus": "Publish status",
+        "published": "Published",
+        "notPublished": "Not published yet",
+        "lastPublished": "Last published {date}",
+        "viewLive": "View live page",
+        "openEditor": "Open editor",
+        "noTraffic": "No visits yet in this period.",
+        "directSource": "Direct",
+        "inquiryInsights": "Inquiry insights",
+        "inquiryToBooking": "Inquiry → booking",
+        "bookedFromInquiries": "Booked from inquiries",
+        "newClientsFromForm": "New clients from form",
+        "visitorDays": "Visitor-days",
+        "submissionRate": "Submission rate",
+        "bookedLeads": "Booked leads",
+        "visitorsInquiriesTitle": "Visitors & inquiries over time",
+        "funnel": {
+          "title": "Conversion funnel",
+          "visitorDays": "Visitor-days",
+          "contactOpened": "Contact opened",
+          "inquirySubmitted": "Inquiry submitted",
+          "ofVisitors": "of visitors",
+          "ofOpened": "of opened",
+          "ofTotal": "of total",
+          "collectingData": "Collecting data"
+        },
+        "pipeline": {
+          "title": "Inquiry pipeline",
+          "new": "New",
+          "booked": "Booked",
+          "archived": "Archived",
+          "total": "Total inquiries"
+        },
+        "demand": {
+          "title": "Demand profile",
+          "eventTypeMix": "Event type (by inquiries)",
+          "requestedMonth": "Requested event month",
+          "medianLeadTime": "Median lead time",
+          "days": "days",
+          "basedOn": "based on"
+        }
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# booking} other {# bookings}}"
+      },
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "hints": {
+        "kpi": "Range-based dashboard totals. Arrows compare with the prior matching period; outstanding balance is a current snapshot.",
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period. Visitor-days are daily totals, not unique visitors across the whole period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries. Contact opens show Collecting data until tracking is available.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "What visitors are asking for: event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when its published page was last updated.",
+        "calendar": "Bookings per day. Filter by team; tap a day to open the calendar there.",
+        "eventTypes": "Share of bookings by event type.",
+        "teamPerformance": "How each team is performing by revenue and booking volume.",
+        "bookingsPerTeam": "Number of bookings handled by each team.",
+        "revenueTrend": "Paid revenue over the selected period.",
+        "inquiryInsights": "Conversion from visits and inquiries, plus new clients captured by your contact form.",
+        "topClients": "Clients ranked by total spend.",
+        "todaysEvents": "Bookings starting today.",
+        "upcomingWeek": "Confirmed bookings in the next 7 days.",
+        "recentInquiries": "Your latest inbound inquiries.",
+        "activity": "Recent changes across your workspace.",
+        "quickAdd": "Create a booking, client, or inquiry."
+      },
+      "totalLabel": "Total",
+      "calendarTeam": {
+        "label": "Filter by team",
+        "all": "All teams"
+      },
+      "activityEntity": {
+        "booking": "booking",
+        "client": "client",
+        "inquiry": "inquiry",
+        "gallery": "gallery",
+        "transaction": "transaction",
+        "workspace": "workspace"
+      },
+      "activityAction": {
+        "created": "created",
+        "updated": "updated",
+        "deleted": "deleted",
+        "status_changed": "status changed",
+        "client_changed": "client changed",
+        "payment_added": "payment added",
+        "payment_updated": "payment updated"
+      },
+      "eventTypes": {
+        "wedding": "Weddings",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "social": "Social",
+        "other": "Other"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "Booked value vs collected revenue",
+          "bookedValue": "Booked value",
+          "collectedRevenue": "Collected revenue"
+        },
+        "coverage": {
+          "title": "Collection coverage",
+          "asOf": "as of",
+          "confirmedValue": "Confirmed value",
+          "confirmedHint": "Total value of confirmed bookings",
+          "paid": "Paid (collected)",
+          "paidHint": "Payments received to date",
+          "remaining": "Remaining balance",
+          "remainingHint": "Yet to be collected",
+          "coverageText": "Coverage: {pct}% of confirmed value collected"
+        },
+        "heatmap": {
+          "previous": "Previous heatmap dates",
+          "today": "Today",
+          "next": "Next heatmap dates",
+          "title": "Booked hours heatmap",
+          "weekOf": "Week of",
+          "bookedHours": "Booked hours",
+          "weekdays": [
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+            "Sun"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "Event mix over time"
+        }
+      }
+    },
+    "calendar": {
+      "title": "Calendar",
+      "today": "Today",
+      "previous": "Back",
+      "next": "Next",
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "noEventsInRange": "No events in this range.",
+      "views": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "agenda": "Agenda"
+      },
+      "goTo": "Jump to date",
+      "scrollToTime": "Scroll to time",
+      "go": "Go"
+    },
+    "bookings": {
+      "title": "Bookings",
+      "titleForTeam": "{team}'s Bookings",
+      "view": {
+        "table": "Table",
+        "card": "Card Mode",
+        "calendar": "Calendar"
+      },
+      "toolbar": {
+        "search": "Search bookings",
+        "statusAll": "All statuses",
+        "showCancelled": "Show cancelled",
+        "showPast": "Show past",
+        "import": "Import CSV",
+        "export": "Export CSV",
+        "add": "New booking",
+        "invoiceTheme": "Invoice theme"
+      },
+      "teamPicker": {
+        "allTeams": "All teams",
+        "allMyTeams": "All my teams",
+        "label": "Filter by team",
+        "inactive": "Inactive",
+        "teams": "Teams",
+        "countLabel": "{count, plural, one {# team} other {# teams}}"
+      },
+      "import": {
+        "title": "Import bookings",
+        "dropzone": "Drop a CSV file here, or click to select",
+        "dropzoneActive": "Drop to upload",
+        "template": "Download CSV template",
+        "preview": "{total} row(s) found",
+        "validCount": "{count} valid",
+        "invalidCount": "{count} with errors",
+        "importButton": "Import {count} booking(s)",
+        "importing": "Importing…",
+        "noValidRows": "No valid rows to import. Fix the errors above.",
+        "success": "Imported {count} booking(s) successfully.",
+        "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
+        "parseError": "Could not read this file. Make sure it's a valid CSV.",
+        "columns": {
+          "row": "#",
+          "title": "Title",
+          "client": "Client",
+          "start": "Start",
+          "error": "Error"
+        },
+        "results": {
+          "title": "Import errors",
+          "kindValidation": "Validation",
+          "kindLookup": "Lookup",
+          "kindServer": "Server",
+          "line": "Line {csvLine}",
+          "rawRow": "Raw row",
+          "summary": "Imported {created} · Skipped {skipped}",
+          "hint": "Fix the rows above and re-upload to import them."
+        },
+        "dialog": {
+          "columnHeader": "Column",
+          "notesHeader": "Notes",
+          "required": "required",
+          "optional": "optional",
+          "failedWithDetails": "Import failed — see details",
+          "failedRetry": "Import failed. Please try again.",
+          "close": "Close",
+          "cancel": "Cancel",
+          "viewErrors": "View {n} error(s)",
+          "spec": {
+            "clientName": {
+              "note": "Full name of the client"
+            },
+            "clientEmail": {
+              "note": "Used to deduplicate existing clients"
+            },
+            "startAt": {
+              "note": "ISO 8601 — e.g. 2026-06-15T09:00"
+            },
+            "endAt": {
+              "note": "Defaults to startAt if omitted"
+            },
+            "title": {
+              "note": "Booking title"
+            },
+            "eventType": {
+              "note": "wedding, corporate, portrait, etc."
+            },
+            "status": {
+              "note": "booked, completed, cancelled"
+            },
+            "amountTotal": {
+              "note": "Total booking amount"
+            },
+            "amountDeposit": {
+              "note": "Deposit amount"
+            },
+            "currency": {
+              "note": "Defaults to workspace currency"
+            },
+            "locationAddress": {
+              "note": "Venue or location text"
+            },
+            "notes": {
+              "note": "Internal notes"
+            }
+          }
+        }
+      },
+      "export": {
+        "tooltip": "Download bookings as CSV",
+        "empty": "No bookings to export"
+      },
+      "table": {
+        "empty": "No bookings match your filters.",
+        "listEmpty": "No bookings yet.",
+        "past": "Past",
+        "showPast": "Show past",
+        "hidePast": "Hide past",
+        "pastBookingsHidden": "{count, plural, one {# past booking hidden} other {# past bookings hidden}}",
+        "col": {
+          "title": "Booking",
+          "client": "Client",
+          "date": "Date",
+          "status": "Status",
+          "total": "Total",
+          "actions": "Actions",
+          "past": "Past"
+        }
+      },
+      "row": {
+        "openMenu": "Open booking actions",
+        "view": "View",
+        "edit": "Edit"
+      },
+      "statusValues": {
+        "booked": "Booked",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "locationPicker": {
+        "searchPlaceholder": "Search venue or address…",
+        "searching": "Searching…",
+        "noResults": "No matches. Try a different search.",
+        "dragHint": "Drag the pin to fine-tune the exact spot.",
+        "clear": "Clear location",
+        "changeLocation": "Change location",
+        "acceptLocation": "Accept location",
+        "discardLocation": "Discard changes",
+        "accept": "Accept",
+        "cancel": "Cancel",
+        "apply": "Apply",
+        "currentAddressLabel": "Selected location",
+        "viewInMap": "View in map"
+      },
+      "eventTypes": {
+        "wedding": "Wedding",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "other": "Other"
+      },
+      "invoiceThemeDialog": {
+        "title": "Invoice theme",
+        "presets": {
+          "classic": "Classic",
+          "slate": "Slate",
+          "navyGold": "Navy Gold",
+          "forest": "Forest",
+          "custom": "Custom"
+        },
+        "mainColor": "Main color",
+        "accentColor": "Accent color",
+        "saveAndApply": "Save and apply",
+        "cancel": "Cancel"
+      },
+      "detail": {
+        "past": "Past",
+        "showPast": "Show past sessions",
+        "hidePast": "Hide past sessions",
+        "pastSessionsHidden": "{count, plural, one {# past session hidden — toggle to show} other {# past sessions hidden — toggle to show}}",
+        "tabs": {
+          "client": "Client",
+          "event": "Event",
+          "pricing": "Pricing",
+          "eventPricing": "Event",
+          "payments": "Payments",
+          "sessionsLocation": "Sessions",
+          "activity": "Notes & activity"
+        },
+        "sections": {
+          "schedule": "Schedule",
+          "pricing": "Pricing",
+          "payments": "Payments",
+          "history": "History"
+        },
+        "fields": {
+          "title": "Title",
+          "titleRequired": "Title can't be empty.",
+          "clientName": "Client name",
+          "status": "Status",
+          "eventType": "Event type",
+          "date": "Date",
+          "startAt": "Shift start",
+          "startTime": "Start time",
+          "endAt": "Shift end",
+          "endTime": "End time",
+          "location": "Location",
+          "total": "Total",
+          "deposit": "Deposit",
+          "depositExceedsTotal": "Deposit can't exceed total.",
+          "depositRequiresTotal": "Cannot add a deposit without setting a price.",
+          "currency": "Currency",
+          "outstanding": "Outstanding balance",
+          "notes": "Notes",
+          "activityEmpty": "No activity yet.",
+          "viewAllHistory": "View all {count} entries",
+          "endBeforeStart": "End can't be before start.",
+          "conflictsLabel": "Shifts already on {date}:",
+          "draftHint": "Adjust the times below, then click Save changes to add this session.",
+          "email": "Email",
+          "phone": "Phone",
+          "openClient": "Open client",
+          "viewClient": "View client",
+          "changeClient": "Change client",
+          "changeClientCancel": "Keep current",
+          "changeClientSearch": "Search clients…",
+          "noEmail": "No email",
+          "noPhone": "No phone",
+          "noClientResults": "No clients found",
+          "changeClientMultiSession": "Reassigning isn't available for multi-session bookings",
+          "searchFailed": "Search failed. Try again.",
+          "editTitle": "Edit title",
+          "confirmTitle": "Confirm",
+          "cancelTitleEdit": "Cancel",
+          "editEventType": "Change event type",
+          "editStatus": "Change status",
+          "sendEmail": "Send email",
+          "callClient": "Call"
+        },
+        "cancelConfirm": {
+          "title": "Cancel this booking?",
+          "body": "We'll mark \"{title}\" as cancelled. The booking won't be deleted — you can restore it from this same window if your client comes back. Audit history stays intact either way.",
+          "keep": "Keep booking",
+          "confirm": "Yes, cancel booking"
+        },
+        "history": {
+          "title": "Booking history",
+          "totalCount": "{count} entries",
+          "pageOf": "Page {page} of {total}",
+          "previous": "Previous page",
+          "next": "Next page",
+          "actions": {
+            "created": "Created",
+            "updated": "Updated",
+            "status_changed": "Status changed",
+            "client_changed": "Client changed",
+            "deleted": "Deleted",
+            "payment_added": "Payment added",
+            "payment_updated": "Payment updated"
+          },
+          "today": "Today",
+          "yesterday": "Yesterday",
+          "timelineLabel": "Activity timeline"
+        },
+        "cancel": "Cancel booking",
+        "restore": "Restore booking",
+        "invoice": "Download invoice",
+        "receipt": "Download receipt",
+        "discardChanges": "Discard changes",
+        "saveChanges": "Save changes",
+        "pendingBadge": "{count} unsaved",
+        "unsavedConfirm": "You have unsaved changes. Discard them?",
+        "discardTitle": "Discard changes?",
+        "discardDescription": "{count, plural, one {# unsaved change will be lost.} other {# unsaved changes will be lost.}}",
+        "discardConfirm": "Discard and close",
+        "keepEditing": "Keep editing",
+        "savedToast": "Booking updated.",
+        "cancelledToast": "Booking cancelled.",
+        "restoredToast": "Booking restored.",
+        "actionFailed": "Something went wrong. Try again.",
+        "notFound": "Booking not found.",
+        "editAll": "Edit all",
+        "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving.",
+        "unconfirmedDrafts": {
+          "title": "Unconfirmed changes",
+          "description": "{count, plural, one {You have # unconfirmed change.} other {You have # unconfirmed changes.}} Submit them along with your saved changes, or discard the unconfirmed ones and save only what you've confirmed.",
+          "submitAll": "Submit all changes",
+          "discard": "Discard unconfirmed & save",
+          "cancel": "Go back",
+          "invalidError": "Some changes have errors — fix them before submitting."
+        },
+        "incompleteBusiness": {
+          "title": "Business info incomplete",
+          "bodyInvoice": "Your business address and contact email are not configured in your settings page. Your invoice will contain incomplete data.",
+          "bodyReceipt": "Your business address and contact email are not configured in your settings page. Your receipt will contain incomplete data.",
+          "dontShowAgain": "Don't show this again",
+          "cancel": "Cancel",
+          "downloadAnyway": "Download anyway"
+        }
+      },
+      "confirm": {
+        "title": "Apply changes",
+        "body": "This session spans {days} days. What would you like to do?",
+        "thisDay": "Apply to this day only",
+        "wholeSession": "Apply to whole session",
+        "pastNote": "Past {count} day(s) will be preserved.",
+        "cancel": "Cancel"
+      },
+      "dnd": {
+        "pastDateWarning": "Moved to a past date",
+        "pastSplitWarning": "Past days preserved — only future days were updated",
+        "thisDayOnlyOnPast": "Cannot edit a past day",
+        "updating": "Updating booking…",
+        "updated": "Booking updated",
+        "updateError": "Failed to update booking",
+        "conflictCheckFailed": "Couldn't verify conflicts — please try again",
+        "overnightNotAllowed": "Bookings cannot span midnight — please adjust the time",
+        "conflictBlockSubmit": "Resolve session conflicts before saving.",
+        "conflictBlockDnd": "This time overlaps with \"{title}\" — move cancelled",
+        "conflictBlockDndMany": "This time overlaps with \"{title}\" and {more} other shift(s) — move cancelled",
+        "pastDropNotAllowed": "Can't move to a past date or time."
+      },
+      "calendar": {
+        "past": "Past",
+        "togglePast": "Past",
+        "dropConflict": {
+          "title": "Schedule conflict on {date}",
+          "description": "Moving this booking creates an overlap with one or more existing shifts. You can move it anyway or cancel.",
+          "cancel": "Cancel",
+          "moveAnyway": "Move anyway"
+        },
+        "pastDateConfirm": {
+          "title": "Move to a past date?",
+          "description": "You're moving this booking to a date in the past. This is allowed but unusual — confirm to continue.",
+          "confirm": "Move to past",
+          "cancel": "Cancel"
+        },
+        "showPast": "Show past",
+        "hidePast": "Hide past",
+        "filterByStatus": "Filter by status",
+        "filterActive": "Filtering by {status} — tap again to clear",
+        "teamsLegend": "Teams",
+        "inactiveTeam": "Inactive team"
+      },
+      "sessions": {
+        "label": "Session {n}",
+        "add": "Add session",
+        "remove": "Remove session",
+        "reviewLabel": "Sessions",
+        "past": "Past",
+        "showPast": "Show past",
+        "hidePast": "Hide past",
+        "pastHidden": "{count, plural, one {# past session hidden} other {# past sessions hidden}} — toggle to show",
+        "unsaved": "Unsaved"
+      },
+      "payments": {
+        "label": "Payment {n}",
+        "add": "Add payment",
+        "remove": "Remove payment",
+        "reviewLabel": "Payments",
+        "title": "Title",
+        "price": "Price",
+        "status": "Status",
+        "method": "Method",
+        "cash": "Cash",
+        "card": "Card",
+        "remit": "Remit",
+        "paid": "Paid",
+        "unpaid": "Unpaid",
+        "paidOn": "Paid on {date}",
+        "empty": "No payments scheduled yet for this booking",
+        "exceedsBalance": "Exceeds remaining balance",
+        "titleRequired": "Title is required",
+        "priceRequired": "Amount must be greater than 0"
+      },
+      "wizard": {
+        "createTitle": "New booking",
+        "editTitle": "Edit booking",
+        "editTitleNamed": "Edit {title}",
+        "loading": "Loading booking…",
+        "previous": "Previous",
+        "next": "Next",
+        "cancel": "Cancel",
+        "create": "Create booking",
+        "creating": "Creating…",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "createdToast": "Booking created.",
+        "savedToast": "Booking updated.",
+        "depositExceedsTotal": "Deposit can't exceed total.",
+        "unsavedConfirm": "You'll lose your progress if you exit now. Are you sure?",
+        "unsaved": {
+          "title": "Discard your changes?",
+          "body": "You'll lose anything you've entered in this booking if you leave now. Your changes haven't been saved.",
+          "keep": "Keep editing",
+          "discard": "Discard and close"
+        },
+        "conflictConfirm": {
+          "title": "Scheduling conflicts detected",
+          "description": "One or more sessions overlap with existing bookings. You can submit anyway or go back to adjust the dates.",
+          "confirm": "Submit anyway",
+          "cancel": "Go back"
+        },
+        "steps": {
+          "client": "Client",
+          "event": "Event",
+          "pricing": "Pricing",
+          "eventPricing": "Event",
+          "payments": "Payments",
+          "sessionsLocation": "Sessions",
+          "review": "Review"
+        },
+        "client": {
+          "tabExisting": "Existing client",
+          "tabNew": "Create new",
+          "searchPlaceholder": "Search by name or email",
+          "noResults": "No clients match. Try a different search.",
+          "selectRequired": "Pick a client to continue.",
+          "name": "Name",
+          "namePlaceholder": "e.g. Emma Carter",
+          "email": "Email",
+          "emailPlaceholder": "emma@example.com",
+          "phone": "Phone",
+          "phonePlaceholder": "+63 917 555 0142",
+          "readOnlyLabel": "Client",
+          "readOnlyHint": "Re-assigning a booking to a different client isn't supported in this view yet.",
+          "multiSessionReadOnly": "Client is locked on multi-session bookings."
+        },
+        "event": {
+          "title": "Title",
+          "titleRequired": "Give this booking a title.",
+          "titlePlaceholder": "e.g. Carter Wedding — Pier 27",
+          "eventType": "Event type",
+          "startAt": "Shift start date",
+          "startAtRequired": "Pick a start date.",
+          "startTime": "Shift start time",
+          "endAt": "Shift end date",
+          "endTime": "Shift end time",
+          "conflictsLabel": "Shifts already on {date}:",
+          "allowPastDate": "Adding an old booking? Allow past dates",
+          "location": "Location",
+          "checkingConflicts": "Checking for conflicts…",
+          "repeatingSessions": "Repeating sessions",
+          "repeatingHint": "Generate one same-day session per day in a date range.",
+          "rangeStartDate": "Start date",
+          "rangeEndDate": "End date",
+          "rangeApply": "Apply",
+          "rangeCancel": "Cancel",
+          "rangeAllFieldsRequired": "Fill in all four fields.",
+          "rangeEndBeforeStart": "End date must be on or after start date.",
+          "rangeEndTimeBeforeStart": "End time must be after start time.",
+          "rangeTooLong": "Range too long (max 366 days).",
+          "startTimeRequired": "Start time is required.",
+          "endTimeRequired": "End time is required.",
+          "endTimeBeforeStart": "End time must be after start time.",
+          "locationRequired": "Pick a location before continuing."
+        },
+        "pricing": {
+          "total": "Total",
+          "deposit": "Deposit",
+          "currency": "Currency",
+          "hint": "Pricing in the workspace's default currency. You can change the currency per booking.",
+          "depositRequiresTotal": "Cannot add a deposit without setting a price."
+        },
+        "review": {
+          "intro": "Quick check — confirm everything looks right before you save."
+        },
+        "teamLabel": "Team",
+        "teamPlaceholder": "Select a team"
+      }
+    },
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "bookings": "Bookings",
+      "clients": "Clients",
+      "calendar": "Calendar",
+      "inquiries": "Inquiries",
+      "gallery": "Gallery",
+      "teams": "Teams",
+      "settings": "Settings",
+      "account": "Account",
+      "logOut": "Log out",
+      "logOutConfirmTitle": "Log out?",
+      "logOutConfirmBody": "You’ll need to sign in again to get back into your workspace.",
+      "logOutConfirmCancel": "Cancel",
+      "portfolio": "Portfolio",
+      "accountMenu": "Account menu"
+    },
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your account, workspace, and preferences.",
+      "navigationLabel": "Settings navigation",
+      "selectPage": "Select a page from the sidebar.",
+      "account": {
+        "profileSection": "Profile",
+        "profileHint": "Your name and avatar as shown to teammates.",
+        "avatarHint": "Upload a square JPG, PNG, or WebP, up to 10 MB.",
+        "avatarUpload": "Upload",
+        "avatarReplace": "Replace",
+        "avatarRemove": "Remove",
+        "avatarUploading": "Uploading…",
+        "avatarSaving": "Saving…",
+        "avatarSaved": "Photo updated",
+        "avatarRemoved": "Photo removed",
+        "avatarUploadError": "We couldn’t upload your photo. Please try again.",
+        "avatarTypeError": "That file type isn’t supported. Please choose a JPG, PNG, or WebP image.",
+        "avatarSizeError": "That image is too large. Please choose one under 10 MB.",
+        "nameSection": "Display name",
+        "nameLabel": "Full name",
+        "emailLabel": "Email address",
+        "emailReadOnly": "Email changes are not supported yet. Contact support.",
+        "saving": "Saving…",
+        "saveName": "Save name",
+        "nameSaved": "Name updated.",
+        "passwordSection": "Password",
+        "passwordHint": "Change the password you use to sign in.",
+        "currentPasswordLabel": "Current password",
+        "newPasswordLabel": "New password",
+        "confirmPasswordLabel": "Confirm new password",
+        "newPasswordHint": "At least 8 characters",
+        "changePassword": "Change password",
+        "updatingPassword": "Updating…",
+        "passwordSaved": "Password updated.",
+        "passwordMismatch": "Passwords do not match.",
+        "passwordTooShort": "Password must be at least 8 characters.",
+        "passwordRequired": "Enter your current password.",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
+        "setPasswordHint": "You sign in with Google. We’ll email you a secure link to set or reset a password for email sign-in.",
+        "setPassword": "Set a password",
+        "sendingSetPassword": "Sending…",
+        "setPasswordSent": "Check your email for a link to set your password.",
+        "resetPassword": "Reset your password",
+        "avatarPreview": "View full photo",
+        "avatarPreviewTitle": "Profile photo"
+      },
+      "security": {
+        "mfaSection": "Two-factor authentication",
+        "mfaHint": "Add a second layer of security to your account using an authenticator app.",
+        "mfaEnabledLabel": "Authenticator app",
+        "mfaNotEnabledLabel": "Two-factor authentication is not enabled.",
+        "enabled": "Enabled",
+        "mfaSetup": "Set up authenticator",
+        "mfaStarting": "Starting…",
+        "mfaDisable": "Disable two-factor authentication",
+        "mfaDisableAriaLabel": "Disable two-factor authentication for your account",
+        "disabling": "Disabling…",
+        "mfaEnabled": "Two-factor authentication enabled.",
+        "mfaDisabled": "Two-factor authentication disabled.",
+        "mfaScanHeading": "Scan this QR code",
+        "mfaScanHint": "Open your authenticator app and scan the code below. If you can't scan, enter the secret key manually.",
+        "mfaQrAlt": "QR code for authenticator app setup",
+        "mfaSecretLabel": "Secret key",
+        "mfaSecretHint": "Store this key somewhere safe. You'll need it to recover access if you lose your device.",
+        "mfaCodeLabel": "Verification code",
+        "verifyCode": "Verify and enable",
+        "verifying": "Verifying…",
+        "cancel": "Cancel",
+        "mfaRefresh": "Refresh code",
+        "mfaExpiresIn": "Expires in {time}",
+        "mfaExpired": "This setup code expired. Refresh to get a new one."
+      },
+      "tabs": {
+        "account": "Account",
+        "customize": "Customize",
+        "workspace": "Business Details",
+        "teams": "Teams",
+        "publicPage": "Public page",
+        "billing": "Billing",
+        "devPlan": "Dev · plan",
+        "currentWorkspace": "Current workspace"
+      },
+      "billing": {
+        "currentPlanLabel": "Current plan",
+        "renewsOn": "Renews on {date}",
+        "availablePlans": "Available plans",
+        "perMonth": "/ month",
+        "perYear": "/ year",
+        "upgradeTo": "Upgrade to {plan}",
+        "upgradeToAriaLabel": "Upgrade to the {plan} plan",
+        "opening": "Opening…",
+        "upgradeSuccess": "Subscription activated! Your plan has been updated.",
+        "checkoutFailed": "Checkout failed. Please try again.",
+        "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
+        "subscriptionIssue": "There is an issue with your subscription. Please check your payment method or contact support.",
+        "subscriptionStatus": {
+          "active": "Active",
+          "canceled": "Canceled",
+          "past_due": "Past due",
+          "paused": "Paused",
+          "trialing": "Trialing"
+        },
+        "notYetAvailable": "Paid subscriptions aren't available yet. Check back soon, or use a promo code below if you have one.",
+        "manageSection": "Manage subscription",
+        "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
+        "manageButton": "Manage subscription",
+        "betaPlanLabel": "Beta tester",
+        "betaAccessNote": "You have full Pro access as part of our beta program — no billing required.",
+        "cadenceToggle": {
+          "monthly": "Monthly",
+          "yearly": "Yearly",
+          "savePill": "Save 2 months"
+        }
+      },
+      "devPlan": {
+        "title": "Dev plan switcher",
+        "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "currentLabel": "Current plan",
+        "teamsSuffix": "teams",
+        "perTeamSuffix": "members/team",
+        "active": "Active",
+        "switch": "Switch",
+        "toasts": {
+          "switched": "Plan switched to {plan}."
+        }
+      },
+      "workspace": {
+        "businessSection": "Business details",
+        "businessSectionHint": "Your business identity and where you operate.",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "savedToast": "Workspace updated.",
+        "currencyWarning": "Applies to new bookings. Existing amounts keep their original currency.",
+        "contactEmail": "Contact email",
+        "contactEmailPlaceholder": "you@example.com",
+        "contactAddress": "Business address",
+        "contactAddressPlaceholder": "123 Main St, City, Country",
+        "logoSection": "Business logo",
+        "logoHint": "Shown on your generated invoices.",
+        "logoLabel": "Upload logo",
+        "logoUploading": "Uploading…",
+        "logoRequirements": "PNG, JPEG, WebP or SVG - max 250 KB - square, up to 256 x 256 px",
+        "logoRemove": "Remove",
+        "logoErrors": {
+          "type": "Only PNG, JPEG, WebP or SVG files are accepted.",
+          "size": "File must be 250 KB or smaller.",
+          "dimensions": "Logo must be square and 256 x 256 px or smaller.",
+          "image": "Could not read the image. Please try another file.",
+          "upload": "Upload failed. Please try again."
+        }
+      },
+      "customize": {
+        "themeSection": "Theme",
+        "themeHint": "Light or dark mode — saved on this device.",
+        "languageSection": "Language",
+        "languageHint": "Switches the app interface. The URL will update to match.",
+        "languages": {
+          "en": "English",
+          "fil": "Filipino",
+          "id": "Bahasa Indonesia",
+          "ar": "العربية",
+          "th": "ภาษาไทย"
+        },
+        "timeFormatSection": "Time Format",
+        "timeFormatHint": "Choose how times are displayed across the app.",
+        "time24h": "24h",
+        "time12h": "12h"
+      },
+      "publicPage": {
+        "visibilitySection": "Visibility",
+        "visibilityHint": "Control whether your public page is reachable.",
+        "publish": "Publish",
+        "unpublish": "Unpublish",
+        "publishedAt": "Published {date}",
+        "unpublished": "Not published",
+        "publicUrl": "Your public URL",
+        "copy": "Copy",
+        "copied": "Copied",
+        "seoSection": "SEO",
+        "seoSectionHint": "Title and description shown when your page is shared or indexed.",
+        "seoTitle": "SEO title",
+        "seoTitlePlaceholder": "Sarah Bell Photography — Wedding & Portrait",
+        "seoDescription": "SEO description",
+        "seoDescriptionPlaceholder": "Wedding and portrait photography across the Bay Area…",
+        "inquirySection": "Inquiry routing",
+        "inquirySectionHint": "Where submissions from your inquiry form are forwarded.",
+        "inquiryRecipientEmail": "Recipient email",
+        "inquiryRecipientEmailPlaceholder": "you@example.com",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "savedToast": "Public page settings updated.",
+        "visibilityUpdatedToast": "Visibility updated.",
+        "siteIconSection": "Site icon",
+        "siteIconHint": "Shown as the browser tab icon for your public portfolio pages. Falls back to your header logo if not set.",
+        "siteIconLabel": "Upload site icon",
+        "siteIconUpload": "Choose image",
+        "siteIconUploading": "Uploading…",
+        "siteIconRequirements": "PNG, JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
+        "siteIconRemove": "Remove",
+        "siteIconErrors": {
+          "type": "Only PNG, JPEG, WebP or AVIF files are accepted.",
+          "size": "File must be 1 MB or smaller.",
+          "dimensions": "Image must be 512 × 512 px or smaller.",
+          "image": "Could not read the image. Please try another file.",
+          "upload": "Upload failed. Please try again."
+        },
+        "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
+        "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
+        "seoKeywords": "SEO tags",
+        "seoKeywordsPlaceholder": "wedding photographer, editorial, bay area",
+        "seoKeywordsHint": "Optional comma-separated tags for search engines and structured data. Add up to 10.",
+        "galleryDescriptionLabel": "Gallery page description",
+        "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
+        "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",
+        "ogImageSection": "Share image",
+        "ogImageHint": "The photo shown when your link is shared on Facebook, Instagram, WhatsApp, or iMessage. Use your best shot.",
+        "ogImageLabel": "Upload share image",
+        "ogImageUploading": "Uploading…",
+        "ogImageRequirements": "JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+        "ogImageRemove": "Remove",
+        "ogImageReplace": "Replace",
+        "ogImageErrors": {
+          "type": "Only JPEG, PNG, WebP or AVIF files are accepted.",
+          "size": "File must be 10 MB or smaller.",
+          "dimensions": "Image must be at least 600 px on the shorter side.",
+          "upload": "Upload failed. Please try again."
+        },
+        "noindexSection": "Search visibility",
+        "noindexLabel": "Hide from search engines",
+        "noindexHint": "Keep this portfolio out of Google search results. Useful for drafts or soft launches. Your direct link still works.",
+        "publishChanges": "Publish changes",
+        "publishingChanges": "Publishing…",
+        "publishChangesSuccessToast": "Changes published to your public page.",
+        "unpublishedBannerTitle": "Not published yet",
+        "unpublishedBannerBody": "Your website isn't published yet — these settings won't appear on your public page until you publish.",
+        "pendingChangesBannerTitle": "Unpublished changes",
+        "pendingChangesBannerBody": "You have unpublished changes — publish to make them visible on your public page."
+      }
+    },
+    "teams": {
+      "title": "Teams",
+      "description": "Group teammates into teams. Each team has its own calendar. Members only see bookings from teams they belong to.",
+      "listEmpty": "You don't have any teams yet.",
+      "createButton": "Create team",
+      "toolbar": {
+        "search": "Search teams",
+        "searchLabel": "Search teams by name",
+        "showDeactivated": "Show deactivated"
+      },
+      "table": {
+        "empty": "No teams match your search.",
+        "col": {
+          "color": "Color",
+          "name": "Team",
+          "members": "Members",
+          "monthlyAverage": "Monthly Average",
+          "actions": "Actions"
+        },
+        "details": "Details",
+        "openTeam": "Open {name}"
+      },
+      "colorPicker": {
+        "presetsLabel": "Presets",
+        "customLabel": "Custom color",
+        "hexLabel": "Hex"
+      },
+      "createDialog": {
+        "title": "Create team",
+        "description": "Give the team a name and pick a color for its calendar chips.",
+        "nameLabel": "Team name",
+        "namePlaceholder": "e.g. Wedding crew",
+        "colorLabel": "Color",
+        "submit": "Create team",
+        "cancel": "Cancel",
+        "creating": "Creating…"
+      },
+      "renameDialog": {
+        "title": "Rename team",
+        "submit": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel"
+      },
+      "deactivateDialog": {
+        "title": "Deactivate team?",
+        "description": "\"{name}\" will be hidden from your active teams and can no longer take new bookings. Its members, bookings, and history are kept, and you can reactivate it anytime.",
+        "confirm": "Deactivate team",
+        "deactivating": "Deactivating…",
+        "cancel": "Cancel"
+      },
+      "reactivateDialog": {
+        "title": "Reactivate team?",
+        "description": "\"{name}\" will become active again and can take new bookings. This counts toward your plan’s active-team limit.",
+        "confirm": "Reactivate team",
+        "reactivating": "Reactivating…",
+        "cancel": "Cancel"
+      },
+      "team": {
+        "memberCount": "{count, plural, =0 {No members yet} =1 {1 member} other {# members}}",
+        "monthlyBookings": "{count, plural, one {# booking/mo} other {# bookings/mo}}",
+        "defaultBadge": "Default",
+        "edit": "Edit",
+        "rename": "Rename",
+        "changeColor": "Change color",
+        "invite": "Invite teammate",
+        "actionsLabel": "Actions for {name}",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "inactiveBadge": "Inactive"
+      },
+      "editDialog": {
+        "title": "Edit team",
+        "submit": "Save changes",
+        "saving": "Saving…"
+      },
+      "drawer": {
+        "membersHeading": "Members",
+        "memberCount": "{count}/{max} members",
+        "noMembers": "No members on this team yet.",
+        "addMemberLabel": "Add existing member",
+        "addMemberPlaceholder": "Select a member…",
+        "noAssignableMembers": "Everyone in this workspace is already on this team.",
+        "pendingHeading": "Pending invites",
+        "noPending": "No pending invites for this team.",
+        "inviteToTeam": "Invite to this team",
+        "leadToggleLabel": "Lead",
+        "leadOnlyOnePerTeam": "A team can only have one lead.",
+        "removeFromTeam": "Remove",
+        "teamFull": "This team is full.",
+        "close": "Close",
+        "removeMemberFlow": {
+          "confirmTitle": "Remove {name} from {team}?",
+          "confirmDescription": "They'll lose access to this team's calendar and bookings.",
+          "confirmButton": "Remove from team",
+          "removeFromTeamAndWorkspace": "Remove from team + workspace",
+          "otherTeamsBlocked": "This member belongs to other teams. Remove them from those teams first.",
+          "removing": "Removing…",
+          "workspacePromptTitle": "Also remove {name} from the workspace?",
+          "workspacePromptDescription": "They'll lose access to every team and to the workspace entirely. This can't be undone.",
+          "dontAskAgain": "Don't ask me again",
+          "removeFromWorkspaceButton": "Remove from workspace",
+          "keepInWorkspaceButton": "Keep in workspace"
+        }
+      },
+      "upsell": {
+        "atCapTitle": "You've reached your team limit",
+        "atCapBody": "Your {plan} plan allows {max} {max, plural, =1 {team} other {teams}}. Upgrade to add more.",
+        "cta": "See plans",
+        "proAtCapBody": "Pro is capped at {max} teams. Contact support if you need more."
+      },
+      "errors": {
+        "nameRequired": "Team name is required.",
+        "nameTooLong": "Team name must be 40 characters or fewer.",
+        "duplicateName": "A team with this name already exists in this workspace.",
+        "teamNotFound": "Team not found.",
+        "generic": "Something went wrong. Please try again.",
+        "cannotDeactivateDefault": "The default team can't be deactivated.",
+        "reactivateCapExceeded": "Reactivating would exceed your plan's active-team limit. Deactivate another team or upgrade your plan first."
+      },
+      "toasts": {
+        "created": "Team created.",
+        "renamed": "Team renamed.",
+        "colorChanged": "Color updated.",
+        "saved": "Team updated.",
+        "deactivated": "Team deactivated.",
+        "reactivated": "Team reactivated."
+      },
+      "teamsHeading": "Teams",
+      "invite": {
+        "button": "Invite member",
+        "dialog": {
+          "title": "Invite a teammate",
+          "description": "They'll get an email invitation. Once they accept, they'll appear in your member list assigned to the teams you choose.",
+          "emailLabel": "Email address",
+          "emailPlaceholder": "teammate@example.com",
+          "teamsLabel": "Add to these teams",
+          "leadLabel": "Lead",
+          "teamFull": "Full",
+          "submit": "Send invite",
+          "sending": "Sending…",
+          "emailAlreadyRegistered": "This email already belongs to a Gallurio account. Sending is disabled until you use a different address."
+        },
+        "errors": {
+          "emailRequired": "Enter a valid email address.",
+          "pickAtLeastOneTeam": "Pick at least one team to add them to.",
+          "teamFull": "These teams are full and can't accept new members: {teams}.",
+          "teamAlreadyHasLead": "These teams already have a lead assigned: {teams}.",
+          "teamNotFound": "One of the selected teams was not found.",
+          "alreadyInvitedOrMember": "That email already has an invite or is already a workspace member.",
+          "noTeamsExist": "Create a team first before inviting members."
+        },
+        "toasts": {
+          "sent": "Invite sent.",
+          "revoked": "Invite revoked."
+        },
+        "revokeDialog": {
+          "title": "Revoke invite?",
+          "description": "The invite for {email} will be cancelled and the reserved team seats will be released.",
+          "confirm": "Revoke invite"
+        }
+      },
+      "members": {
+        "heading": "Members",
+        "empty": "No teammates yet. Invite someone to get started.",
+        "ownerBadge": "Owner",
+        "leadBadge": "Lead",
+        "memberBadge": "Member",
+        "pendingBadge": "Pending",
+        "manageTeams": "Manage teams",
+        "removeFromWorkspace": "Remove from workspace",
+        "revokeInvite": "Revoke invite",
+        "rowActionsLabel": "Actions for {name}",
+        "viewButton": "View members",
+        "inviteCountsLabel": "Invitation counts",
+        "newlyAcceptedCount": "New {count}",
+        "pendingCount": "Pending {count}",
+        "description": "Everyone with access to this workspace, across every team.",
+        "modeLabel": "Member list",
+        "active": "Active",
+        "pending": "Pending",
+        "searchPlaceholder": "Search name or email",
+        "noActiveMatches": "No members match your search.",
+        "noPendingMatches": "No pending invites match your search.",
+        "noPending": "No pending invites.",
+        "moreTeams": "+{count} more teams",
+        "ownerAllTeams": "Can oversee all teams",
+        "noTeams": "Not on any team",
+        "removeFromWorkspaceLabel": "Remove {name} from workspace.",
+        "removeDialog": {
+          "title": "Remove member?",
+          "description": "{name} will lose access to this workspace immediately. Their bookings stay; team seats are released. This cannot be undone.",
+          "confirm": "Remove member"
+        },
+        "details": {
+          "tabsLabel": "Member details",
+          "tabs": { "details": "Details", "history": "History" },
+          "teams": "Teams", "noTeams": "No teams", "completed": "Completed", "workingNow": "Working now", "future": "Future",
+          "fromDate": "From date", "toDate": "To date", "action": "Action", "allActions": "All actions",
+          "actions": { "created": "Created", "updated": "Updated", "deleted": "Deleted", "statusChanged": "Status changed", "paymentAdded": "Payment added" },
+          "loadingHistory": "Loading activity history", "loading": "Loading…", "loadMore": "Load more", "noActivity": "No activity found."
+        },
+        "errors": {
+          "cannotRemoveOwner": "The workspace owner can't be removed.",
+          "isTeamLead": "{name} is a team lead for at least one team. Remove their team lead status first in order to delete them."
+        },
+        "toasts": {
+          "removed": "Member removed."
+        }
+      },
+      "assignment": {
+        "dialog": {
+          "title": "Manage team assignments",
+          "description": "Add or remove {name} from teams. Toggle the lead flag to give them edit rights within a team.",
+          "add": "Add",
+          "remove": "Remove",
+          "done": "Done"
+        },
+        "errors": {
+          "alreadyOnTeam": "That member is already on this team."
+        },
+        "toasts": {
+          "added": "Added to team.",
+          "removed": "Removed from team.",
+          "promoted": "Promoted to lead.",
+          "demoted": "Demoted to member.",
+          "promoting": "Transferring lead…",
+          "demoting": "Removing lead…"
+        }
+      },
+      "downgradeBlock": {
+        "title": "Downgrade blocked",
+        "description": "You're on the {currentPlan} plan with more teams than the {targetPlan} plan allows ({maxTeams} max). Delete {excess} team(s) before changing plans.",
+        "teamsHeading": "Current teams",
+        "dismiss": "Got it",
+        "manageTeams": "Manage teams"
+      }
+    },
+    "clients": {
+      "title": "Clients",
+      "listEmpty": "You don't have any clients yet.",
+      "listEmptyHint": "Add your first client to start tracking bookings and history.",
+      "toolbar": {
+        "search": "Search by name or email",
+        "searchLabel": "Search clients",
+        "sourceAll": "All sources",
+        "tagsAll": "All tags",
+        "tagsSelected": "{count} {count, plural, one {tag} other {tags}}",
+        "showInactive": "Show inactive",
+        "add": "Add Client"
+      },
+      "sourceValues": {
+        "form": "Form",
+        "manual": "Manual",
+        "referral": "Referral",
+        "import": "Import"
+      },
+      "table": {
+        "empty": "No clients match your filters.",
+        "col": {
+          "name": "Name",
+          "contact": "Contact",
+          "source": "Source",
+          "totalSpent": "Total Spent",
+          "actions": "Actions"
+        },
+        "bookings": "{count} booking(s)",
+        "lastBooking": "Last: {date}",
+        "noBookings": "No bookings yet",
+        "openMenu": "Open client actions",
+        "openClient": "Open {name}",
+        "view": "View",
+        "edit": "Edit",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate"
+      },
+      "form": {
+        "addTitle": "Add Client",
+        "editTitle": "Edit Client",
+        "name": "Name",
+        "namePlaceholder": "e.g. Maria Santos",
+        "email": "Email",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "Phone",
+        "phonePlaceholder": "+63 917 555 0142",
+        "source": "Source",
+        "tags": "Tags",
+        "tagsPlaceholder": "Add tag and press Enter",
+        "removeTag": "Remove tag {tag}",
+        "notes": "Notes",
+        "notesPlaceholder": "Any notes about this client…",
+        "save": "Save",
+        "view": "View",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "createSuccess": "Client created.",
+        "updateSuccess": "Client updated.",
+        "error": "Something went wrong. Try again."
+      },
+      "detail": {
+        "inactive": "Inactive",
+        "tabs": {
+          "overview": "Overview",
+          "bookings": "Bookings",
+          "payments": "Payments"
+        },
+        "overview": {
+          "totalSpent": "Total Spent",
+          "bookingsCount": "Bookings",
+          "lastBooking": "Last Booking",
+          "never": "Never",
+          "contact": "Contact",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "Source",
+          "tags": "Tags",
+          "noTags": "No tags",
+          "notes": "Notes",
+          "noNotes": "No notes"
+        },
+        "bookings": {
+          "loading": "Loading bookings…",
+          "empty": "No bookings yet.",
+          "error": "Failed to load bookings."
+        },
+        "payments": {
+          "empty": "No payment records yet."
+        },
+        "edit": "Edit",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "close": "Close"
+      },
+      "deactivate": {
+        "title": "Deactivate this client?",
+        "body": "This client will be hidden from the active list. You can reactivate them at any time by enabling 'Show inactive' in the client list.",
+        "cancel": "Cancel",
+        "confirm": "Deactivate"
+      },
+      "unsaved": {
+        "title": "Discard your changes?",
+        "body": "You have unsaved changes to this client. They'll be lost if you close now.",
+        "keep": "Keep editing",
+        "discard": "Discard and close"
+      },
+      "toasts": {
+        "reactivating": "Reactivating client…",
+        "deactivating": "Deactivating client…"
+      }
+    },
+    "inquiries": {
+      "title": "Inquiries",
+      "subtitle": "Booking requests from your public portfolio.",
+      "toolbar": {
+        "from": "From",
+        "to": "To",
+        "clear": "Clear dates",
+        "date": "Date",
+        "apply": "Apply"
+      },
+      "tabs": {
+        "all": "All",
+        "inquiry": "Inquiry",
+        "booked": "Booked",
+        "archived": "Archived"
+      },
+      "statusValues": {
+        "inquiry": "Inquiry",
+        "archived": "Archived",
+        "booked": "Booked",
+        "converted": "Converted To Booking"
+      },
+      "eventTypes": {
+        "wedding": "Wedding",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "other": "Other"
+      },
+      "preferred": {
+        "email": "Email",
+        "phone": "Phone",
+        "either": "Either"
+      },
+      "table": {
+        "empty": "No inquiries yet.",
+        "filteredEmpty": "No inquiries match your filters.",
+        "emptyHint": "When someone submits your portfolio contact form, their request lands here.",
+        "viewPublicPage": "View your public page",
+        "open": "Open inquiry from {name}",
+        "noDate": "No date",
+        "directSource": "Direct",
+        "col": {
+          "status": "Status",
+          "client": "Client",
+          "eventDate": "Event date",
+          "eventType": "Type",
+          "submitted": "Submitted",
+          "source": "Source",
+          "eventTitle": "Event title",
+          "actions": "Actions"
+        },
+        "noTitle": "Untitled event",
+        "conflict": "Conflict",
+        "actions": {
+          "view": "View",
+          "menuLabel": "Open inquiry actions"
+        }
+      },
+      "detail": {
+        "back": "Back to inquiries",
+        "conflictBanner": "One or more sessions conflict with existing bookings.",
+        "submittedOn": "Submitted {date}",
+        "notFound": "Inquiry not found.",
+        "clientInfo": {
+          "title": "Client info",
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "preferredContact": "Preferred contact",
+          "none": "—",
+          "editPhone": "Edit",
+          "savePhone": "Save",
+          "cancelEdit": "Cancel",
+          "savedToast": "Phone updated."
+        },
+        "eventRequest": {
+          "title": "Event request",
+          "eventType": "Event type",
+          "guestCount": "Guests",
+          "location": "Location",
+          "sessions": "Requested dates",
+          "message": "Message",
+          "none": "—"
+        },
+        "bookingDraft": {
+          "title": "Booking draft",
+          "description": "Converting this creates a booking on your calendar. Set your price now or later.",
+          "total": "Total",
+          "deposit": "Deposit",
+          "notes": "Internal notes",
+          "notesPlaceholder": "Notes only you can see…",
+          "save": "Save edits",
+          "saving": "Saving…",
+          "approve": "Convert to booking",
+          "approving": "Converting…",
+          "approved": "Converted",
+          "missing": "No linked draft booking for this inquiry.",
+          "alreadyConverted": "This inquiry has been approved.",
+          "viewBooking": "View booking",
+          "approveError": "Could not convert. Please try again.",
+          "saveError": "Could not save. Please try again.",
+          "savedToast": "Draft saved.",
+          "ownerOnly": "Only the workspace owner can convert bookings.",
+          "conflictBlocks": "Resolve the scheduling conflict above before converting.",
+          "team": "Team"
+        },
+        "actions": {
+          "decline": "Decline & notify",
+          "declinedToast": "Inquiry declined — the client has been notified.",
+          "archive": "Archive",
+          "working": "Saving…",
+          "archivedToast": "Inquiry archived.",
+          "approvedToast": "Converted to booking.",
+          "errorToast": "Something went wrong. Please try again."
+        },
+        "history": {
+          "title": "History",
+          "submitted": "Inquiry submitted",
+          "booked": "Approved to booking"
+        },
+        "sessionsEditor": {
+          "edit": "Edit sessions",
+          "save": "Save changes",
+          "saving": "Saving…",
+          "discard": "Discard",
+          "conflictBlocks": "One or more sessions conflict with existing bookings.",
+          "pastDate": "Sessions must be in the future.",
+          "lockedConverted": "Sessions locked after conversion.",
+          "lockedArchived": "Sessions locked (archived).",
+          "phoneLabel": "Phone",
+          "emailReadonly": "Email (read-only)",
+          "sessionLabel": "Session {n}",
+          "checking": "Checking for conflicts…",
+          "conflictInline": "conflict",
+          "dateLabel": "Date",
+          "startLabel": "Start time",
+          "endLabel": "End time",
+          "alterOnlyError": "Session count cannot change.",
+          "savedToast": "Sessions saved.",
+          "saveError": "Could not save sessions. Please try again."
+        }
+      },
+      "view": {
+        "table": "Table",
+        "card": "Card Mode",
+        "calendar": "Calendar"
+      },
+      "calendar": {
+        "empty": "No inquiries or bookings to show.",
+        "filters": {
+          "inquiry": "Inquiry",
+          "booked": "Booked",
+          "conflicted": "Conflicted"
+        },
+        "rescheduleConflict": "This time conflicts with an existing booking; the move was cancelled.",
+        "rescheduleFailed": "Could not reschedule — please try again",
+        "updating": "Rescheduling…",
+        "updated": "Session rescheduled"
+      }
+    },
+    "pageBuilder": {
+      "title": "Page builder",
+      "editorComingSoon": "The full editor arrives in the next update. Your portfolio is set up and ready.",
+      "ownerOnly": "Only the workspace owner can edit the portfolio.",
+      "openPublicPage": "View public page",
+      "editPlaceholderHint": "You can re-run setup any time to start from a fresh template.",
+      "rerunWizard": "Re-run setup",
+      "brandKit": {
+        "themePreset": "Theme",
+        "presets": {
+          "minimal": "Minimal",
+          "editorial": "Editorial",
+          "luxury": "Luxury",
+          "bold": "Bold",
+          "romantic": "Romantic",
+          "modern": "Modern"
+        },
+        "fontPair": "Fonts",
+        "colors": "Colors",
+        "colorLabels": {
+          "primaryColor": "Primary",
+          "secondaryColor": "Secondary",
+          "accentColor": "Accent",
+          "backgroundColor": "Background",
+          "foregroundColor": "Text"
+        },
+        "themes": "Themes",
+        "searchPlaceholder": "Search themes",
+        "noThemesMatch": "No themes match your search.",
+        "prevPage": "Previous themes",
+        "nextPage": "More themes",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "Apply theme: {name}",
+        "deleteTheme": "Delete theme: {name}",
+        "saveCurrentAsTheme": "Save current as theme",
+        "themeNamePlaceholder": "Theme name",
+        "saveAction": "Save",
+        "enterThemeName": "Enter a name for this theme.",
+        "nameTooLong": "Theme name must be 60 characters or fewer.",
+        "saveThemeError": "Could not save theme. Please try again.",
+        "themeLimitReached": "You've reached the maximum of {max} saved themes.",
+        "currentTheme": "Current Theme",
+        "editTheme": "Edit theme: {name}",
+        "editThemeName": "Theme name",
+        "overrideCurrentTitle": "Replace your current theme?",
+        "overrideCurrentBody": "Building on \"{name}\" will replace your unsaved Current Theme.",
+        "continueAction": "Continue",
+        "cancelAction": "Cancel",
+        "unsavedChangesTitle": "You have unsaved changes",
+        "unsavedChangesBody": "Save your changes before closing, or discard them.",
+        "discardAction": "Discard",
+        "saveAndCloseAction": "Save & close",
+        "themeNameExists": "A theme already exists with this name.",
+        "applyAction": "Apply",
+        "saveThemeName": "Save theme",
+        "cancelThemeEdit": "Cancel theme edit",
+        "addNewTheme": "Add new theme",
+        "addNewGuardTitle": "Save before starting new?",
+        "addNewGuardBody": "You have unsaved changes. Save your current theme first, or discard to start fresh.",
+        "addNewGuardNameLabel": "Theme name"
+      },
+      "editor": {
+        "zone": {
+          "home": "Home",
+          "gallery": "Gallery",
+          "contact": "Contact form",
+          "groupLabel": "Page section",
+          "sectionsLabel": "Portfolio sections"
+        },
+        "save": {
+          "saving": "Saving…",
+          "saved": "Saved",
+          "idle": "All changes saved"
+        },
+        "publish": "Publish",
+        "publishing": "Publishing…",
+        "theme": "Theme",
+        "contact": "Contact",
+        "publishedToast": "Published! Your portfolio is live.",
+        "savedToast": "Saved.",
+        "errorToast": "Couldn't save. Please try again.",
+        "done": "Done",
+        "publishDialog": {
+          "title": "Publish your portfolio?",
+          "body": "Anyone with the link will see your latest changes immediately.",
+          "confirm": "Publish now",
+          "cancel": "Cancel",
+          "liveAt": "Live at {url}",
+          "copyLink": "Copy link",
+          "copied": "Copied",
+          "slugLabel": "Portfolio URL",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "Save URL",
+          "slugEdit": "Edit portfolio URL",
+          "slugSaving": "Saving...",
+          "slugSaved": "Saved",
+          "slugError": "Could not update URL, please try again",
+          "slugUrlTaken": "That URL is already taken",
+          "slugChecking": "Checking...",
+          "slugAvailable": "Available",
+          "slugTaken": "Already taken",
+          "slugInvalid": "Invalid format",
+          "qrCodeAlt": "QR code linking to your portfolio",
+          "downloadQr": "Download QR"
+        },
+        "themeDialog": {
+          "title": "Theme & brand"
+        },
+        "contactDialog": {
+          "title": "Contact form",
+          "formFixedNote": "The form fields are fixed. You can edit the heading, message, and button only.",
+          "tabs": {
+            "setup": "Setup",
+            "design": "Design"
+          },
+          "titleLabel": "Heading",
+          "titlePlaceholder": "Let's work together",
+          "descriptionLabel": "Message",
+          "descriptionPlaceholder": "Tell visitors what to expect when they reach out.",
+          "buttonStyleLabel": "Button style",
+          "buttonColorLabel": "Button color",
+          "bgColorLabel": "Background color",
+          "textColorLabel": "Text color",
+          "cornerRadiusLabel": "Corner radius",
+          "borderWidthLabel": "Border width",
+          "borderColorLabel": "Border color",
+          "sectionPopup": "Popup",
+          "sectionButton": "Button",
+          "submitButtonSection": "Submit button",
+          "addSessionButtonSection": "New dates button",
+          "buttonStyles": {
+            "solid": "Solid",
+            "outline": "Outline",
+            "soft": "Soft"
+          },
+          "buttonColors": {
+            "primary": "Primary",
+            "secondary": "Secondary",
+            "accent": "Accent",
+            "background": "Background",
+            "foreground": "Text"
+          },
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
+          "close": "Close",
+          "popupStyleLabel": "Popup style",
+          "save": "Save",
+          "saving": "Saving…",
+          "errorColorLabel": "Error message color",
+          "sectionTabs": "Tabs",
+          "inactiveTabsSection": "Inactive tabs",
+          "activeTabSection": "Active tab",
+          "tabFontSizeLabel": "Tab size",
+          "tabFontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          },
+          "tabColorLabel": "Tab text color",
+          "inactiveTabStyleLabel": "Style",
+          "inactiveTabSubtle": "Subtle",
+          "inactiveTabCompact": "Compact",
+          "activeTabColorLabel": "Active tab text color",
+          "activeTabStyleLabel": "Style",
+          "activeTabStyleScale": "Scale",
+          "activeTabStyleHighlight": "Highlight",
+          "activeTabStyleUnderline": "Underline",
+          "tabHighlightColorLabel": "Highlight color",
+          "tabHighlightOpacityLabel": "Highlight opacity",
+          "tabUnderlineColorLabel": "Underline color"
+        },
+        "headerDialog": {
+          "title": "Navigation",
+          "close": "Close",
+          "save": "Save",
+          "saving": "Saving…",
+          "tabs": {
+            "setup": "Setup",
+            "design": "Design"
+          },
+          "brandTextLabel": "Heading",
+          "brandTextHelp": "Displayed next to your logo in the navigation bar. Leave empty to show the logo only.",
+          "logoLabel": "Logo",
+          "logoHelp": "Upload your business logo to display beside your name in the header.",
+          "logoUpload": "Upload logo",
+          "logoUploading": "Uploading…",
+          "logoRemove": "Remove logo",
+          "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · up to 512×256",
+          "logoErrors": {
+            "type": "Logo must be a PNG, JPEG, or WEBP image. SVG is not supported.",
+            "size": "Logo must be 250 KB or smaller.",
+            "dimensions": "Logo must be 512 x 256 px or smaller.",
+            "image": "This logo image could not be read.",
+            "upload": "Logo upload failed. Please try again."
+          },
+          "sectionBanner": "Banner",
+          "sectionLinks": "Links",
+          "sectionInactiveLinks": "Inactive links",
+          "sectionActiveStyle": "Active link style",
+          "sectionContactButton": "Contact button",
+          "bgColorLabel": "Background color",
+          "bgOpacityLabel": "Background opacity",
+          "linkColorLabel": "Link text color",
+          "brandTextColorLabel": "Heading color",
+          "activeLinkColorLabel": "Active link text color",
+          "borderBottomLabel": "Border bottom",
+          "borderColorLabel": "Border color",
+          "shadowLabel": "Drop shadow",
+          "navbarSizeLabel": "Navbar size",
+          "fontSizeLabel": "Link size",
+          "activeStyleLabel": "Style",
+          "activeStyleScale": "Scale",
+          "activeStyleHighlight": "Highlight",
+          "activeStyleUnderline": "Underline",
+          "highlightColorLabel": "Highlight color",
+          "highlightOpacityLabel": "Highlight opacity",
+          "cornerRadiusLabel": "Corner radius",
+          "underlineColorLabel": "Underline color",
+          "contactButtonColorLabel": "Button color",
+          "contactButtonOpacityLabel": "Button opacity",
+          "contactButtonTextColorLabel": "Button text color",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
+          "shadow": {
+            "none": "None",
+            "sm": "Small",
+            "md": "Medium",
+            "lg": "Large"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "Let's work together",
+          "description": "Tell us about your event.",
+          "submit": "Send inquiry"
+        },
+        "mobileBanner": {
+          "title": "The editor works best on a larger screen",
+          "body": "Drag-and-drop editing is designed for tablet and desktop.",
+          "openPreview": "Open preview",
+          "continue": "Continue anyway"
+        },
+        "contactSettings": "Edit contact settings",
+        "contactSettingsShort": "Contact Form",
+        "headerSettings": "Navigation",
+        "preview": {
+          "show": "Preview",
+          "edit": "Edit",
+          "title": "Live preview",
+          "empty": "Nothing to preview yet. Add some sections, then come back.",
+          "openInTab": "Open in new tab"
+        },
+        "photos": "Photos",
+        "templates": "Templates",
+        "guide": "Guide",
+        "templateSwitchedToast": "Template applied.",
+        "devices": {
+          "mobile": "Mobile",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "controls": {
+          "editorControls": "Editor controls",
+          "workspaceActions": "Portfolio actions",
+          "toggleBlocks": "Toggle blocks panel",
+          "toggleProperties": "Toggle properties panel",
+          "previewDevice": "Preview device",
+          "canvasWidth": "Canvas width",
+          "zoomIn": "Zoom in",
+          "zoomOut": "Zoom out",
+          "zoomReset": "Reset zoom to 100%",
+          "undoTitle": "Undo (Ctrl+Z)",
+          "redoTitle": "Redo (Ctrl+Shift+Z)",
+          "language": "Page language",
+          "directionLabel": "Direction",
+          "directionLtr": "Left to right",
+          "directionRtl": "Right to left"
+        },
+        "drafts": "Drafts",
+        "saveChanges": "Save changes",
+        "loadingDraft": "Loading draft",
+        "loadingDraftEllipsis": "Loading draft…",
+        "featuredPopup": "Featured Popup",
+        "featuredPopupWarningTitle": "Featured Work block not found",
+        "featuredPopupWarningBody": "These styles only apply if you're using the Featured Work block.",
+        "featuredPopupWarningProceed": "Open anyway",
+        "featuredPopupWarningCancel": "Cancel",
+        "draftNameLabel": "Draft name",
+        "draftsDialog": {
+          "title": "Your drafts",
+          "subtitle": "Pick a saved layout to load it onto the canvas. Loading replaces what you're editing now.",
+          "empty": "No drafts yet. Save your current work, or start a new one from a template.",
+          "active": "Active",
+          "addNew": "Add new draft",
+          "close": "Close",
+          "confirmTitle": "Delete this draft?",
+          "confirmBody": "This permanently removes the saved draft. This can't be undone.",
+          "confirmAction": "Delete draft",
+          "cancel": "Cancel",
+          "unsaved": "Unsaved",
+          "applyAria": "Apply {name}",
+          "applyingAria": "Applying {name}",
+          "deletingAria": "Deleting {name}",
+          "deleteAria": "Delete {name}"
+        },
+        "entryDialog": {
+          "title": "Welcome back",
+          "description": "Where would you like to start?",
+          "resumeTitle": "Continue where you left off",
+          "resumeHint": "Resume your most recent unsaved edits.",
+          "loadDraftTitle": "Load an existing draft",
+          "loadDraftHint": "Open one of your saved portfolio layouts.",
+          "scratchTitle": "Start from scratch",
+          "scratchHint": "Pick a template (or an empty canvas) and begin a new draft."
+        },
+        "templatePicker": {
+          "title": "Choose a template",
+          "subtitle": "Switching applies a starter layout, colors, and fonts. Your photos and collections stay; only the page layout and theme change.",
+          "welcomeTitle": "Pick a template to start",
+          "welcomeSubtitle": "Choose a starter layout to kick off your portfolio. You can switch templates any time.",
+          "current": "Current",
+          "use": "Use this template",
+          "scratch": "Start from scratch",
+          "cancel": "Cancel",
+          "switching": "Switching…",
+          "error": "Could not switch the template. Please try again."
+        },
+        "unsavedDialog": {
+          "nameLabel": "Name",
+          "title": "Save your changes?",
+          "body": "You have unsaved changes on this draft. Switching now will lose them unless you save.",
+          "keepEditing": "Keep editing",
+          "discard": "Discard",
+          "save": "Save changes"
+        },
+        "blockActions": {
+          "fallbackLabel": "Block",
+          "actionsAria": "{label} actions",
+          "moveUp": "Move up",
+          "moveDown": "Move down",
+          "moveOut": "Move out",
+          "duplicate": "Duplicate",
+          "delete": "Delete"
+        },
+        "photosDialog": {
+          "title": "Photos & collections",
+          "intro": "Group your photos into collections. Use them in Gallery blocks, or pick any single photo as a Hero / CTA background. Add photos here once — pick them anywhere.",
+          "empty": "No collections yet. Create your first one to get started.",
+          "loading": "Loading…",
+          "error": "Could not load your collections.",
+          "retry": "Retry",
+          "addNew": "Add new collection",
+          "photos": "photos",
+          "done": "Done",
+          "deleteTitle": "Delete this collection?",
+          "deleteBody": "The photos in this collection will be permanently deleted from your library and cannot be recovered. Any gallery blocks using this collection will show nothing until you point them at another one.",
+          "deleting": "Deleting…",
+          "deleteConfirm": "Delete permanently",
+          "cancel": "Cancel",
+          "deleteError": "Could not delete the collection. Please try again.",
+          "deleteCollection": "Delete collection",
+          "editAria": "Edit {name}"
+        },
+        "collectionsDialog": {
+          "featuredPopup": "Featured popup",
+          "popup": "Popup",
+          "background": "Background",
+          "border": "Border",
+          "borderColor": "Border color",
+          "corners": "Corners",
+          "titleStyles": "Title styles",
+          "headerText": "Header text",
+          "headerPlaceholder": "Defaults to collection name",
+          "bold": "Bold",
+          "italic": "Italic",
+          "underline": "Underline",
+          "alignAria": "Align {align}",
+          "font": "Font",
+          "themeFont": "Theme font",
+          "fontSize": "Font size",
+          "titleColor": "Title color",
+          "buttonStyles": "Button styles",
+          "buttonSize": "Button size",
+          "opacity": "Opacity",
+          "sampleCollection": "Sample Collection",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          }
+        },
+        "puckConfig": {
+          "categories": {
+            "presets": "Preset blocks",
+            "manual": "Manual blocks"
+          },
+          "blocks": {
+            "heroPreset": "Hero",
+            "aboutPreset": "About",
+            "servicesPreset": "Services",
+            "ctaPreset": "Call to action",
+            "contactPreset": "Contact",
+            "galleryGridPreset": "Gallery Grid",
+            "galleryMasonryPreset": "Gallery Masonry",
+            "featuredWorkPreset": "Featured Work",
+            "galleryLandingPreset": "Gallery landing",
+            "videoPreset": "Video Highlight",
+            "galleryGrid": "Photo Grid",
+            "galleryMasonry": "Masonry",
+            "featuredWork": "Highlights",
+            "video": "Video",
+            "contactDetails": "Contact Details",
+            "heading": "Heading",
+            "text": "Text",
+            "image": "Image",
+            "button": "Button",
+            "spacer": "Spacer",
+            "divider": "Divider",
+            "columns": "Columns",
+            "container": "Container"
+          },
+          "fields": {
+            "style": "Style",
+            "pageStyle": "Page style",
+            "bgAnimation": "Background animation",
+            "bgAnimationShort": "BG animation",
+            "bgSpeed": "Animation speed",
+            "bgSpeedShort": "BG speed",
+            "overlayOpacity": "Overlay opacity (0-100)",
+            "minHeight": "Min height",
+            "alignX": "Horizontal align",
+            "alignY": "Vertical align",
+            "backgroundImages": "Background images",
+            "headingText": "Heading text",
+            "headingLevel": "Level",
+            "textContent": "Text",
+            "videoUrl": "YouTube or Vimeo URL",
+            "imageField": "Image",
+            "imageUrl": "Image URL (fallback)",
+            "imageAlt": "Alt text",
+            "imageFit": "Fit",
+            "buttonLabel": "Button label",
+            "buttonSize": "Size",
+            "buttonAction": "Action",
+            "buttonAlign": "Alignment",
+            "spacerHeight": "Height",
+            "dividerThickness": "Thickness (px)",
+            "columnsCount": "Columns",
+            "rowsCount": "Rows"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "Crossfade",
+              "kenburns": "Ken Burns",
+              "slide": "Slide"
+            },
+            "bgSpeed": {
+              "slow": "Slow (7s)",
+              "medium": "Medium (5s)",
+              "fast": "Fast (3s)"
+            },
+            "bgSpeedShort": {
+              "slow": "Slow",
+              "medium": "Medium",
+              "fast": "Fast"
+            },
+            "minHeight": {
+              "auto": "Auto",
+              "short": "Short (40vh)",
+              "medium": "Medium (60vh)",
+              "tall": "Tall (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "Auto",
+              "short": "Short",
+              "medium": "Medium",
+              "tall": "Tall"
+            },
+            "alignX": {
+              "left": "Left",
+              "center": "Center",
+              "right": "Right"
+            },
+            "alignY": {
+              "top": "Top",
+              "center": "Center",
+              "bottom": "Bottom"
+            },
+            "headingLevel": {
+              "h1": "Display",
+              "h2": "Title",
+              "h3": "Heading",
+              "h4": "Subheading",
+              "h5": "Caption",
+              "h6": "Label"
+            },
+            "imageFit": {
+              "cover": "Cover",
+              "contain": "Contain"
+            },
+            "buttonSize": {
+              "sm": "Small",
+              "md": "Medium",
+              "lg": "Large"
+            },
+            "buttonAction": {
+              "openContact": "Open contact form",
+              "goToGallery": "Go to Gallery page"
+            },
+            "buttonAlign": {
+              "left": "Left",
+              "center": "Center",
+              "right": "Right"
+            }
+          }
+        },
+        "tour": {
+          "next": "Next",
+          "back": "Back",
+          "skip": "Skip Guide",
+          "steps": {
+            "welcome": {
+              "title": "Welcome to your portfolio editor",
+              "body": "Here's a quick, hands-on tour to get you up to speed. You can skip anytime."
+            },
+            "dragBlock": {
+              "title": "Drag a block onto your page",
+              "body": "Choose a Preset block from the panel, then drag it onto the canvas. Presets include the editing controls used in the next steps."
+            },
+            "blockProps": {
+              "title": "Block properties live here",
+              "body": "Dropping a block selects it automatically — its settings appear in this panel."
+            },
+            "contentTab": {
+              "title": "Content: the block's text and media",
+              "body": "The Content tab is where you edit the block's actual text, images, and links."
+            },
+            "designTab": {
+              "title": "Design: colors, borders, and corners",
+              "body": "The Design tab controls typography, background color, borders, shadows, and animations."
+            },
+            "layoutTab": {
+              "title": "Layout: size, spacing, and position",
+              "body": "The Layout tab controls gap, min-height, alignment, and grid placement."
+            },
+            "switchPages": {
+              "title": "Switch between pages",
+              "body": "Switch between the different parts of your portfolio website."
+            },
+            "openNav": {
+              "title": "Open Navigation",
+              "body": "Click Navigation to set up your site's header — brand, logo, menu links, and styling."
+            },
+            "navSetup": {
+              "title": "Navigation · Setup",
+              "body": "The Setup tab is where you set your brand text, navbar size, logo, and menu links."
+            },
+            "logo": {
+              "title": "Your logo lives here",
+              "body": "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page."
+            },
+            "navDesign": {
+              "title": "Navigation · Design",
+              "body": "The Design tab controls header colors, borders, and typography for your nav links."
+            },
+            "contactForm": {
+              "title": "Your inquiry form",
+              "body": "Click Contact Form to set up the form visitors use to reach you."
+            },
+            "contactSetup": {
+              "title": "Contact · Setup",
+              "body": "The Setup tab sets the form's language, title, and description. The form's fields and layout are fixed."
+            },
+            "contactDesign": {
+              "title": "Contact · Design",
+              "body": "The Design tab restyles the form — text and background colors to match your brand. You can't hide fields, only change how they look."
+            },
+            "photos": {
+              "title": "Upload and organize photos",
+              "body": "Open Photos to create collections and upload images. Gallery blocks pull from a collection."
+            },
+            "translate": {
+              "title": "Translate your public pages",
+              "body": "Switch the language of your navigation, contact form, and collection popups all at once. Right-to-left languages flip the layout automatically."
+            },
+            "theme": {
+              "title": "Pick your colors and fonts",
+              "body": "Theme controls your five brand colors and typography. Every block's style options use this palette."
+            },
+            "preview": {
+              "title": "Preview your site at any screen size",
+              "body": "Switch to preview mode and use the device toggle to check your layout on mobile, tablet, and desktop."
+            },
+            "canvasControls": {
+              "title": "Adjust your editing canvas",
+              "body": "Use these controls to toggle panels, undo or redo, choose a canvas width, and zoom. On smaller screens, open the sliders button to find them."
+            },
+            "guide": {
+              "title": "Return to this guide anytime",
+              "body": "Open Guide whenever you want to replay this walkthrough."
+            },
+            "save": {
+              "title": "Save your changes",
+              "body": "Save changes to keep the current draft ready to return to later."
+            },
+            "publish": {
+              "title": "Publish to go live",
+              "body": "When you're happy with your changes, click Publish to push them to your public page."
+            },
+            "draftsStep": {
+              "title": "Save drafts and switch versions",
+              "body": "Save changes at any time. Use Drafts to manage multiple versions. Reopen this tour via the Guide button."
+            }
+          },
+          "finish": "Finish",
+          "dontShow": "Don't show again",
+          "tryIt": "Try it to continue to the next step",
+          "progress": "{n} of {total}",
+          "loading": "Loading",
+          "skipConfirm": {
+            "heading": "Skip the guide?",
+            "body": "You'll lose your place in the walkthrough. You can restart it anytime.",
+            "back": "Back",
+            "dontShow": "Don't show again",
+            "skip": "Skip Guide"
+          }
+        },
+        "storyPrompt": {
+          "welcome": {
+            "title": "Let's tell your story",
+            "subtitle": "Five quick steps to describe your work and pick your style — then we'll help you build the page.",
+            "cta": "Let's go",
+            "skip": "Skip for now"
+          },
+          "story": {
+            "title": "Tell your story",
+            "subtitle": "This shows up in Google search results and when your page gets shared.",
+            "placeholder": "A short line about who you are and what you do…",
+            "charCount": "{count}/{max}",
+            "previewLabel": "Search preview"
+          },
+          "vibe": {
+            "title": "Your vibe",
+            "subtitle": "Pick a few tags that capture your style — or add your own.",
+            "addPlaceholder": "Add a tag"
+          },
+          "branding": {
+            "title": "Add your branding",
+            "subtitle": "Upload a logo and site icon — you can always change these later.",
+            "logoLabel": "Logo",
+            "logoUpload": "Upload logo",
+            "logoUploading": "Uploading…",
+            "logoRemove": "Remove logo",
+            "logoRequirements": "PNG, JPG or JPEG, or WEBP · max 250 KB · up to 512×256",
+            "logoErrors": {
+              "type": "Logo must be a PNG, JPG or JPEG, or WEBP image.",
+              "size": "Logo must be 250 KB or smaller.",
+              "dimensions": "Logo must be 512 x 256 px or smaller.",
+              "image": "This logo image could not be read.",
+              "upload": "Logo upload failed. Please try again."
+            },
+            "iconLabel": "Site icon",
+            "iconUpload": "Choose image",
+            "iconUploading": "Uploading…",
+            "iconRemove": "Remove",
+            "iconRequirements": "PNG, JPG or JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
+            "iconErrors": {
+              "type": "Only PNG, JPG or JPEG, WebP or AVIF files are accepted.",
+              "size": "Icon must be 1 MB or smaller.",
+              "dimensions": "Icon must be 512 x 512 px or smaller.",
+              "image": "This icon image could not be read.",
+              "upload": "Icon upload failed. Please try again."
+            },
+            "shareImageLabel": "Share image",
+            "shareImageUpload": "Upload share image",
+            "shareImageUploading": "Uploading...",
+            "shareImageRemove": "Remove share image",
+            "shareImageRequirements": "JPG or JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+            "shareImageErrors": {
+              "type": "Use a JPG or JPEG, PNG, WebP, or AVIF image.",
+              "size": "Share image must be 10 MB or smaller.",
+              "dimensions": "Share image must be at least 1200 × 630 px.",
+              "upload": "Share image upload failed. Please try again."
+            },
+            "inquiryRecipientLabel": "Inquiry recipient email",
+            "inquiryRecipientPlaceholder": "you@example.com",
+            "inquiryRecipientHint": "New inquiry notifications will be sent here."
+          },
+          "done": {
+            "title": "Your page is ready to shine",
+            "subtitle": "You've set the foundation. Let's make it look great.",
+            "continueWithGuide": "Continue with guide",
+            "exploreSelf": "I'll explore myself",
+            "footerNote": "You can edit this anytime in Settings → Public Page."
+          },
+          "back": "Back",
+          "continue": "Continue"
+        }
+      },
+      "wizard": {
+        "title": "Let's build your portfolio",
+        "subtitle": "A few quick steps and you'll have a live page.",
+        "skip": "Skip setup",
+        "back": "Back",
+        "next": "Continue",
+        "launch": "Launch editor",
+        "launching": "Setting up…",
+        "stepOf": "Step {current} of {total}",
+        "overwrite": {
+          "title": "You already have a portfolio",
+          "body": "Running setup again replaces your current pages. Your existing content is archived so you can recover it.",
+          "continue": "Continue anyway",
+          "cancel": "Cancel"
+        },
+        "steps": {
+          "template": "Template",
+          "branding": "Branding",
+          "theme": "Theme",
+          "images": "Images",
+          "review": "Review"
+        },
+        "template": {
+          "title": "Pick a starting point",
+          "subtitle": "You can change everything later."
+        },
+        "branding": {
+          "title": "Confirm your branding",
+          "subtitle": "Pulled from your workspace — edit anything.",
+          "tagline": "Tagline",
+          "taglinePlaceholder": "A short line that sums you up",
+          "description": "About",
+          "descriptionPlaceholder": "A sentence or two about your work"
+        },
+        "theme": {
+          "title": "Choose your look",
+          "subtitle": "Theme, fonts, and colors for your public page."
+        },
+        "images": {
+          "title": "Add a few photos",
+          "subtitle": "Drag in a few photos for your gallery — or skip and add them anytime.",
+          "upload": "Upload images",
+          "uploading": "Uploading…",
+          "remove": "Remove image",
+          "empty": "No images yet.",
+          "error": "Some images failed to upload. Please try again.",
+          "count": "{count} {count, plural, one {image} other {images}}",
+          "dropZone": "Drag photos here or click to select",
+          "dropZoneActive": "Drop to upload",
+          "spec": "JPEG, PNG, WebP or AVIF · max 10 MB · min 600 px on the shorter side",
+          "optional": "You can skip this step and upload photos later.",
+          "errorType": "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
+          "errorSize": "Each photo must be under 10 MB.",
+          "errorDim": "Each photo must be at least 600 px on its shorter side (e.g. 600×800 or 800×600)."
+        },
+        "review": {
+          "title": "Review & launch",
+          "subtitle": "Here's what we'll set up.",
+          "template": "Template",
+          "theme": "Theme",
+          "images": "Images",
+          "homeBlocks": "{count} home sections",
+          "galleryBlocks": "{count} gallery sections"
+        },
+        "toasts": {
+          "saved": "Your portfolio is ready!",
+          "error": "Something went wrong. Please try again."
+        }
+      }
+    },
+    "notifications": {
+      "bell": "Notifications",
+      "popoverTitle": "Recent Notifications",
+      "markAllRead": "Mark all read",
+      "newNotification": "You have a new notification",
+      "newNotifications": "{count, plural, one {You have a new notification} other {You have # new notifications}}",
+      "seeAll": "See all notifications",
+      "empty": "You're all caught up",
+      "pageTitle": "Notifications",
+      "loadMore": "Load more",
+      "types": {
+        "inquiry": {
+          "created": {
+            "title": "New inquiry received",
+            "body": "You have a new inquiry from {clientName}."
+          }
+        },
+        "booking": {
+          "team_assigned": {
+            "title": "New booking assigned to your team",
+            "body": "{assignerName} assigned a booking to your team."
+          },
+          "status_changed": {
+            "title": "{newStatus, select, cancelled {Booking cancelled} completed {Booking completed} booked {Booking confirmed} other {Booking status updated}}",
+            "body": "{newStatus, select, cancelled {{actorName} cancelled a booking.} completed {{actorName} marked a booking completed.} booked {{actorName} confirmed a booking.} other {{actorName} changed a booking status to {newStatus}.}}"
+          }
+        },
+        "team": {
+          "invitation": {
+            "title": "You've been invited to a team",
+            "body": "{inviterName} invited you to join {teamName}."
+          },
+          "invite_accepted": {
+            "title": "{memberName} accepted your invitation",
+            "body": "{memberName} has accepted your invite as a {role, select, owner {workspace owner} staff {staff member} other {member}} in {teamName}. Click to view."
+          },
+          "removed": {
+            "title": "Removed from team",
+            "body": "You have been removed from {teamName}."
+          },
+          "deleted": {
+            "title": "Team disbanded",
+            "body": "{teamName} has been deleted."
+          }
+        }
+      }
+    },
+    "errorBoundary": {
+      "retry": "Try again"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "not_authenticated": "You're not signed in. Please sign in and try again.",
+      "no_active_workspace": "No active workspace. Pick a workspace and try again.",
+      "workspace_not_found": "Workspace not found.",
+      "owner_only": "Only the workspace owner can do this.",
+      "invalid_data": "Invalid data. Please check your input and try again.",
+      "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
+      "onboarding_required": "Finish onboarding to continue.",
+      "onboarding_plan_locked": "Your plan is already activated. Finish onboarding to manage it from billing settings.",
+      "subscription_required": "Your Pro access has ended. Subscribe to continue.",
+      "promo_code_not_found": "That code isn't valid. Double-check and try again.",
+      "promo_code_expired": "That code has expired.",
+      "promo_code_already_redeemed": "You've already redeemed this code.",
+      "promo_code_revoked": "That code has been disabled.",
+      "not_eligible_beta_participant": "This code is only for recorded beta participants.",
+      "beta_promo_already_redeemed": "You've already redeemed your one-time beta promo.",
+      "beta_program_closed": "The beta program is closed to new participants.",
+      "invalid_input": "Please check the form and try again.",
+      "rate_limited": "Too many attempts. Try again in {seconds} seconds.",
+      "user_not_found": "User not found.",
+      "url_taken": "That URL is already taken — try another.",
+      "name_update_failed": "Couldn't update your name. Please try again.",
+      "mfa_start_failed": "Couldn't start authenticator setup. Please try again.",
+      "code_six_digits": "Enter the 6-digit code.",
+      "enrollment_expired": "Setup session expired. Start again.",
+      "invalid_code": "Invalid code. Please try again.",
+      "mfa_disable_failed": "Couldn't turn off two-factor. Please try again.",
+      "passwords_mismatch": "Passwords don't match.",
+      "current_password_incorrect": "Your current password is incorrect.",
+      "password_verify_failed": "Couldn't verify your current password. Please try again.",
+      "password_update_failed": "Couldn't update your password. Please try again.",
+      "password_reused": "Please choose a password different from your current one.",
+      "avatar_update_failed": "Couldn't update your photo. Please try again.",
+      "email_send_failed": "Couldn't send the email. Please try again.",
+      "onboarding_no_active_workspace": "No active workspace — restart onboarding.",
+      "already_member_elsewhere": "This email is already a member of another workspace. Sign up with a different email to create a new one.",
+      "client_create_failed": "Couldn't create the client. Please try again.",
+      "client_not_found": "Client not found.",
+      "client_update_failed": "Couldn't update the client. Please try again.",
+      "client_deactivate_failed": "Couldn't deactivate the client. Please try again.",
+      "client_has_active_bookings": "This client has active bookings and can't be deactivated.",
+      "client_reactivate_failed": "Couldn't reactivate the client. Please try again.",
+      "bookings_load_failed": "Couldn't load bookings. Please try again.",
+      "client_load_failed": "Couldn't load the client. Please try again.",
+      "invalid_id": "Invalid request.",
+      "not_found": "Not found.",
+      "forbidden": "You don't have access to do that.",
+      "team_not_found": "Team not found.",
+      "team_deactivated": "You can't assign a booking to a deactivated team.",
+      "session_crosses_midnight": "Session {index} crosses midnight in the workspace time zone.",
+      "client_change_multi_session": "You can't change the client on a multi-session booking.",
+      "invalid_client_id": "Invalid client.",
+      "client_not_found_workspace": "Client not found in this workspace.",
+      "invalid_request": "Invalid request.",
+      "export_too_large": "Too many bookings to export. Narrow your filters and try again.",
+      "free_plan_no_checkout": "The free plan doesn't require checkout.",
+      "lemonsqueezy_variant_not_configured": "This plan isn't available right now. Please contact support.",
+      "billing_unavailable": "Paid subscriptions aren't available yet. Please check back soon.",
+      "no_verified_email": "Add and verify an email before subscribing.",
+      "checkout_init_failed": "Couldn't start checkout. Please try again.",
+      "no_subscription": "You don't have an active subscription to manage.",
+      "subscription_manage_unavailable": "Couldn't open subscription management. Please try again.",
+      "locked": "This item is locked and can't be edited right now.",
+      "conflict": "That time conflicts with another booking.",
+      "edit_sessions_failed": "Couldn't update the sessions. Please try again.",
+      "session_index_out_of_range": "That session no longer exists.",
+      "invalid": "Please check your input and try again.",
+      "field_required": "This field is required.",
+      "name_taken": "A draft with this name already exists.",
+      "draft_limit_reached": "You've reached your draft limit.",
+      "draft_save_failed": "Couldn't save the draft. Please try again.",
+      "draft_load_failed": "Couldn't load the draft. Please try again.",
+      "draft_delete_failed": "Couldn't delete the draft. Please try again.",
+      "theme_delete_failed": "Couldn't delete the theme. Please try again.",
+      "theme_name_exists": "A theme with this name already exists.",
+      "max_themes_reached": "You've reached your theme limit ({count}).",
+      "payload_too_large": "That's too large to save. Please reduce the size and try again.",
+      "collection_load_failed": "Couldn't load the collection. Please try again.",
+      "collection_rename_failed": "Couldn't rename the collection. Please try again.",
+      "cover_set_failed": "Couldn't set the cover. Please try again.",
+      "order_save_failed": "Couldn't save the new order. Please try again.",
+      "photo_remove_failed": "Couldn't remove the photo. Please try again.",
+      "photo_add_failed": "Couldn't add the photo. Please try again."
+    }
+  },
+  "common": {
+    "pagination": {
+      "showing": "Showing {from}–{to} of {total}",
+      "rowsPerPage": "Per page",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "clearFilters": "Clear filters",
+    "loading": "Loading…",
+    "promoCode": {
+      "disclosureLabel": "Have a promo code?",
+      "close": "Close promo code",
+      "placeholder": "Enter code",
+      "submit": "Apply",
+      "applying": "Applying…",
+      "success": "Code applied — your Pro access is active now.",
+      "successQueued": "Code applied — your two-month Pro access will start automatically once your current plan ends."
+    }
+  },
+  "onboarding": {
+    "shell": {
+      "stepCounter": "Step {current} of {total}",
+      "previous": "Previous",
+      "continue": "Continue",
+      "saving": "Saving…"
+    },
+    "steps": {
+      "business": "Business",
+      "workspace": "Workspace",
+      "plan": "Plan",
+      "done": "Finish"
+    },
+    "business": {
+      "title": "Tell us about your business",
+      "description": "Your name and your business basics.",
+      "firstName": "First name",
+      "firstNamePlaceholder": "Sarah",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "Bell",
+      "optional": "optional",
+      "businessName": "Business name",
+      "businessNamePlaceholder": "e.g. Sarah Bell Photography",
+      "workspaceUrl": "Workspace URL",
+      "workspaceUrlNote": "(your public page address)",
+      "slugPlaceholder": "sarah-bell-photo",
+      "slugPreview": "Your page will live at",
+      "businessType": "Business type",
+      "country": "Country",
+      "currency": "Currency",
+      "timezone": "Timezone",
+      "businessTypes": {
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Wedding / Event Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer / DJ / Band",
+        "other": "Other"
+      },
+      "slugChecking": "Checking…",
+      "slugAvailable": "Available",
+      "slugTaken": "Already taken",
+      "slugInvalid": "Invalid format"
+    },
+    "workspace": {
+      "title": "Set up your workspace",
+      "description": "Where you operate and how you'd like times shown.",
+      "country": "Country",
+      "timezone": "Timezone",
+      "timeFormat": "Time format",
+      "time12h": "12h",
+      "time24h": "24h"
+    },
+    "plan": {
+      "title": "Pick the plan that fits",
+      "description": "You can change plans or cancel anytime from your workspace settings.",
+      "popular": "Popular",
+      "comingSoon": "Coming soon",
+      "cadence": {
+        "forever": "first month free",
+        "monthly": "/ month",
+        "yearly": "/ year"
+      },
+      "cadenceToggle": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
+      },
+      "checkoutNote": "A secure checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
+      "ctaFree": "Start my free month",
+      "ctaPaid": "Subscribe — {price}",
+      "settingUp": "Setting up…",
+      "opening": "Opening checkout…",
+      "checkoutFailed": "Checkout failed. Please try again.",
+      "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
+      "activatedNotice": "Your Gallurio Plan is now activated. Finish onboarding to change your subscription plan.",
+      "activePill": "Active",
+      "finishOnboarding": "Finish onboarding",
+      "acceptedPromoCode": "Promo code {code}",
+      "betaTester": {
+        "label": "Beta tester",
+        "headline": "Get free beta access now",
+        "activate": "Activate beta access"
+      }
+    },
+    "done": {
+      "title": "You're all set, {workspaceName}.",
+      "description": "Your {planLabel} plan is active. Welcome to Gallurio — your workspace is ready to go.",
+      "seedToggle": {
+        "label": "Start with sample data",
+        "description": "We'll add 5 demo clients, 3 demo bookings, and 1 demo inquiry so you can explore the app. Everything is tagged sample so you can delete it in one click."
+      },
+      "settingUp": "Setting up your dashboard…",
+      "settingUpCompact": "Preparing…",
+      "goToDashboard": "Go to your dashboard",
+      "footer": {
+        "everything": "Everything in one place",
+        "grow": "Built to grow with you",
+        "support": "Support when you need it"
+      }
+    }
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "1 month of full Pro, free",
+      "tagline": "Try every Pro feature free for your first month.",
+      "features": {
+        "trial": "1 month of full Pro access",
+        "workspace": "1 workspace",
+        "bookings": "Up to 10 bookings",
+        "storage": "1 GB image storage",
+        "publicPage": "Public landing page"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Run bookings, clients, teams, invoices, and your public page.",
+      "tagline": "The full workspace for growing event businesses.",
+      "features": {
+        "unlimitedBookings": "Unlimited bookings",
+        "publicPageControls": "Full public page controls",
+        "storage": "50 GB storage",
+        "invoicePdfs": "Invoice PDFs",
+        "clientManagement": "Client management",
+        "teamManagement": "Team management",
+        "removeBranding": "Remove Gallurio branding"
+      }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "Subscribe",
+    "logout": "Log out",
+    "owner": {
+      "title": "Your Pro access has ended",
+      "description": "Resubscribe to Gallurio Pro to get back into your dashboard.",
+      "perMonth": "/ month",
+      "perYear": "/ year",
+      "subscribeButton": "Subscribe",
+      "subscribeAriaLabel": "Subscribe to Gallurio Pro",
+      "opening": "Opening…",
+      "upgradeSuccess": "Subscription activated! Redirecting…",
+      "checkoutFailed": "Checkout failed. Please try again.",
+      "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
+      "cadenceToggle": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
+      }
+    },
+    "staff": {
+      "title": "Workspace subscription lapsed",
+      "description": "Ask the workspace owner to resubscribe to Gallurio Pro to regain access."
+    }
+  },
+  "publicPage": {
+    "chrome": {
+      "comingSoon": "Coming soon",
+      "poweredBy": "Powered by Gallurio",
+      "notFoundEyebrow": "Gallurio",
+      "notFoundTitle": "Portfolio not found",
+      "notFoundBody": "This portfolio doesn't exist or hasn't been published yet.",
+      "startingFrom": "Starting from {price}",
+      "socialLinkConfirm": "You are visiting an external site: {url}. Continue?",
+      "gallery": {
+        "empty": "No photos in this collection yet.",
+        "noCollection": "No collection selected.",
+        "unavailable": "Gallery not available.",
+        "error": "Gallery temporarily unavailable.",
+        "featuredEmpty": "No featured photos selected yet.",
+        "carouselHint": "Swipe or use the arrows to browse",
+        "carouselPrev": "Previous image",
+        "carouselNext": "Next image"
+      }
+    },
+    "nav": {
+      "home": "Home",
+      "gallery": "Gallery",
+      "contact": "Contact",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "navLandmark": "Portfolio"
+    },
+    "inquiryForm": {
+      "title": "Get in touch",
+      "description": "Tell us about your event and we'll be in touch soon.",
+      "close": "Close",
+      "confirmTitle": "Thanks — we'll be in touch!",
+      "confirmBody": "Your inquiry has been sent. We'll reach out via your preferred contact method soon.",
+      "confirmClose": "Done",
+      "tabClient": "Your details",
+      "tabEvent": "Event details",
+      "tabLocation": "Location & notes",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone (optional)",
+      "preferredContact": "Preferred contact",
+      "preferred": {
+        "email": "Email",
+        "phone": "Phone",
+        "either": "Either"
+      },
+      "sessionsLabel": "Event dates",
+      "sessionLabel": "Day {n}",
+      "startDate": "Date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "addSession": "Add another day",
+      "removeSession": "Remove",
+      "shiftHint": "Each day is one shift — set its start and end time. Add a day for multi-day events.",
+      "eventType": "Event type",
+      "eventTypes": {
+        "wedding": "Wedding",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "other": "Other"
+      },
+      "location": "Location",
+      "locationRequired": "Please pick a location before submitting.",
+      "message": "Tell us more",
+      "messagePlaceholder": "Share details about your event…",
+      "submit": "Send inquiry",
+      "submitting": "Sending…",
+      "errorGeneric": "Could not submit — please try again later.",
+      "requiredHint": "Required",
+      "eventTitle": "Event title",
+      "continue": "Continue"
+    },
+    "collectionPopup": {
+      "close": "Close",
+      "loading": "Loading...",
+      "failed": "Failed to load photos.",
+      "retry": "Retry",
+      "empty": "No photos in this collection yet.",
+      "fullSizeAlt": "Full size photo"
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "backToDashboard": "Back to dashboard"
+  },
+  "inviteAccept": {
+    "pageTitle": "Accept invitation",
+    "signIn": "Sign in",
+    "goToDashboard": "Go to dashboard",
+    "errors": {
+      "invalid": {
+        "title": "Invite link not found",
+        "description": "This invite link is invalid or has already been used. Ask your workspace owner to send a new one."
+      },
+      "expired": {
+        "title": "Invite link expired",
+        "description": "This invite link has expired. Ask your workspace owner to send a new invitation."
+      },
+      "already_accepted": {
+        "title": "Already a member",
+        "description": "You have already accepted this invitation and joined the workspace."
+      },
+      "revoked": {
+        "title": "Invitation revoked",
+        "description": "This invitation has been revoked by the workspace owner. Ask them to send a new one if you still need access."
+      },
+      "already_member": {
+        "title": "Email already in use",
+        "description": "This email is already a member of another workspace. Sign up with a different email to accept this invitation."
+      },
+      "email_mismatch": {
+        "title": "Wrong account",
+        "description": "This invitation was sent to a different email address. Sign in with the invited address to accept it.",
+        "signedInAs": "You are currently signed in as {email}."
+      },
+      "failed": {
+        "title": "Something went wrong",
+        "description": "We could not complete your invitation. Please try again or contact support."
+      }
+    }
+  }
+}

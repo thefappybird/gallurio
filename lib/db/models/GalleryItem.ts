@@ -9,7 +9,8 @@ const galleryItemSchema = new Schema(
       default: null,
       index: true,
     },
-    cloudinaryPublicId: { type: String, required: true },
+    assetId: { type: String, required: true },
+    assetProvider: { type: String, enum: ["cloudflare"], default: "cloudflare" },
     url: { type: String, required: true },
     format: { type: String, default: null },
     width: { type: Number, default: null },
@@ -24,6 +25,13 @@ const galleryItemSchema = new Schema(
 );
 
 galleryItemSchema.index({ workspaceId: 1, collectionId: 1, order: 1 });
+// Backs the "All photos" picker feed (listAllItemsPage): newest-first paginated.
+galleryItemSchema.index({ workspaceId: 1, createdAt: -1 });
+// Backs the newest-item-per-collection lookups (cover fallback in listCollectionsForPicker;
+// listCollectionNewest): match by (workspaceId, collectionId), sort by createdAt desc.
+galleryItemSchema.index({ workspaceId: 1, collectionId: 1, createdAt: -1 });
+// Backs reference-counting (copy semantics): "how many items share this asset?"
+galleryItemSchema.index({ workspaceId: 1, assetId: 1 });
 
 export type GalleryItemDoc = InferSchemaType<typeof galleryItemSchema> & {
   _id: mongoose.Types.ObjectId;

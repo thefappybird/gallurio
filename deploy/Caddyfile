@@ -1,0 +1,45 @@
+# Reverse proxy for the Dockerized Gallurio app on a Hetzner VPS, sitting
+# behind proxied Cloudflare DNS. Copy this to /etc/caddy/Caddyfile.
+#
+# Before validating/reloading Caddy, set these non-secret variables in Caddy's
+# systemd environment:
+#   CADDY_EMAIL=support@gallurio.com
+#   GALLURIO_CANONICAL_HOST=gallurio.com
+#   GALLURIO_REDIRECT_HOST=www.gallurio.com
+#
+# This makes the canonical-host decision explicit and prevents a repository
+# placeholder from accidentally becoming a production hostname. Caddy handles
+# HTTPS and HTTP-to-HTTPS redirects for the configured hosts.
+#
+# Cloudflare trust boundary:
+# Do NOT overwrite X-Forwarded-For with the TCP peer. Caddy forwards
+# CF-Connecting-IP to the app unchanged by default. That header is trustworthy
+# only after the origin is restricted to Cloudflare or an equivalent protected
+# origin path. Otherwise direct requests can spoof it.
+
+{
+	email {$CADDY_EMAIL}
+}
+
+{$GALLURIO_CANONICAL_HOST} {
+	encode zstd gzip
+
+	# Do not enable HSTS until the final hosts and TLS configuration have been
+	# verified. Cloudflare/origin restrictions are enforced at the firewall or
+	# with Authenticated Origin Pulls; do not trust CF-Connecting-IP otherwise.
+	header {
+		-Server
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "SAMEORIGIN"
+		Permissions-Policy "camera=(), geolocation=(), microphone=()"
+	}
+
+	# WebSocket (Socket.IO) traffic upgrades transparently through this same
+	# reverse_proxy. The container port is bound to host loopback only.
+	reverse_proxy 127.0.0.1:3000
+}
+
+{$GALLURIO_REDIRECT_HOST} {
+	redir https://{$GALLURIO_CANONICAL_HOST}{uri} permanent
+}

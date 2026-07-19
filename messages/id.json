@@ -1,0 +1,3228 @@
+{
+  "marketing": {
+    "nav": {
+      "pricing": "Harga",
+      "contact": "Kontak",
+      "signIn": "Masuk",
+      "getStarted": "Mulai sekarang"
+    },
+    "footer": {
+      "pricing": "Harga",
+      "terms": "Ketentuan",
+      "privacy": "Privasi",
+      "refunds": "Pengembalian Dana",
+      "contact": "Kontak"
+    },
+    "metadata": {
+      "title": "Gallurio — Alat Portfolio dan Pemesanan untuk Bisnis Kreatif",
+      "description": "Buat halaman portfolio yang rapi, tampilkan karya Anda, dan kumpulkan permintaan booking dengan Gallurio."
+    },
+    "hero": {
+      "headline": "Portfolio siap-booking, dijalankan seperti buku besar.",
+      "body": "Fotografer, videografer, dan event creative memakai Gallurio untuk menerbitkan halaman yang layak dipercaya untuk booking — sekaligus mengelola booking, klien, dan permintaan dalam satu workspace.",
+      "ctaStart": "Mulai bulan gratis saya"
+    },
+    "whatIs": {
+      "title": "Apa itu Gallurio?",
+      "body": "Gallurio adalah platform portfolio dan pemesanan untuk para profesional kreatif. Platform ini memberi pengguna alat untuk membuat halaman publik, menampilkan karya mereka, menerima permintaan booking, dan mengatur detail bisnis yang berhadapan dengan klien."
+    },
+    "builtFor": {
+      "title": "Dibuat untuk Bisnis Kreatif",
+      "item1": "Fotografer",
+      "item2": "Videografer",
+      "item3": "Perencana Acara",
+      "item4": "Makeup Artist",
+      "item5": "Penata Gaya",
+      "item6": "Studio Kreatif",
+      "item7": "Penyedia Layanan Independen"
+    },
+    "features": {
+      "portfolioBuilder": {
+        "title": "Pembuat portfolio",
+        "panelHeadline": "Setiap galeri, layanan, dan bagian — persis seperti yang ingin Anda susun sendiri.",
+        "description": "Buat halaman portfolio yang bersih dan profesional menggunakan bagian yang fleksibel, blok galeri, detail layanan, dan tata letak visual yang dirancang untuk karya kreatif."
+      },
+      "businessWorkspace": {
+        "title": "Workspace bisnis",
+        "panelHeadline": "Satu dashboard untuk semuanya di antara sesi pemotretan.",
+        "description": "Kelola konten profil publik, detail bisnis, dan pengaturan terkait booking dari satu dashboard."
+      },
+      "bookingInquiryForms": {
+        "title": "Formulir permintaan booking",
+        "panelHeadline": "Permintaan masuk ke kalender Anda, bukan ke DM Anda.",
+        "description": "Biarkan pengunjung mengirim permintaan booking langsung melalui halaman Anda, termasuk tanggal acara, detail kontak, preferensi layanan, dan catatan proyek."
+      },
+      "teams": {
+        "title": "Kolaborasi tim",
+        "panelHeadline": "Undang tim, tetapkan peran, dan bekerja dengan satu kalender bersama.",
+        "description": "Tambahkan staf dan kolaborator dengan akses berbasis peran ke booking, klien, dan kalender — sehingga semua orang tahu tanggung jawabnya tanpa tumpang tindih."
+      },
+      "customBranding": {
+        "title": "Branding kustom",
+        "description": "Sesuaikan warna, tipografi, gambar, dan gaya halaman agar portfolio selaras dengan identitas kreatif pengguna."
+      },
+      "clientReadyPages": {
+        "title": "Halaman siap klien",
+        "description": "Publikasikan halaman yang dirancang agar terlihat kredibel, sederhana, dan mudah dipahami oleh calon klien."
+      }
+    },
+    "finalCta": {
+      "title": "Mulai bangun workspace kreatif Anda bersama Gallurio.",
+      "subtitle": "Mulai dengan satu bulan Pro gratis — tanpa kartu diperlukan.",
+      "button": "Mulai bulan gratis saya"
+    },
+    "manifesto": {
+      "quote": "Setiap booking tercatat. Setiap klien terpercaya. Tidak ada yang samar.",
+      "attribution": "— gagasan di balik Gallurio"
+    },
+    "pricingTeaser": {
+      "title": "Harga sederhana",
+      "subtitle": "1 bulan Pro, gratis. Lalu satu paket, bulanan atau tahunan.",
+      "viewFullPricing": "Lihat harga lengkap",
+      "disclaimer": "Paket berbayar belum tersedia. Harga dan ketentuan penagihan akan ditampilkan dengan jelas sebelum checkout setelah diluncurkan.",
+      "cadence": {
+        "monthly": "Bulanan",
+        "yearly": "Tahunan — hemat 2 bulan"
+      },
+      "pro": {
+        "badge": "1 bulan gratis",
+        "comingSoon": "Segera hadir",
+        "name": "Pro",
+        "priceSuffixMonthly": "/bln",
+        "priceSuffixYearly": "/thn",
+        "priceNote": "setelah bulan gratis Anda",
+        "description": "Booking, klien, galeri, dan halaman publik Anda tanpa batas.",
+        "feature1": "Booking dan permintaan tanpa batas",
+        "feature2": "Branding kustom dan galeri lanjutan",
+        "feature3": "Dukungan prioritas",
+        "cta": "Mulai bulan gratis saya"
+      }
+    },
+    "pricing": {
+      "metadata": {
+        "title": "Harga — Gallurio",
+        "description": "Lihat harga Gallurio Pro untuk profesional dan studio kreatif — satu bulan gratis, lalu satu paket bulanan atau tahunan."
+      },
+      "header": {
+        "headline": "Paket sederhana untuk profesional dan studio kreatif.",
+        "body": "Setiap workspace baru mendapatkan satu bulan Gallurio Pro penuh, gratis, tanpa kartu diperlukan. Setelah itu, lanjutkan dengan satu langganan Pro — bulanan atau tahunan."
+      },
+      "pro": {
+        "badge": "Direkomendasikan",
+        "comingSoon": "Segera hadir",
+        "name": "Pro",
+        "freeMonth": "Mulai dengan 1 bulan gratis, tanpa kartu diperlukan.",
+        "description": "Semua yang Anda butuhkan untuk menjalankan booking, klien, galeri, dan halaman publik Anda.",
+        "priceSuffixMonthly": "/ bulan",
+        "priceSuffixYearly": "/ tahun",
+        "yearlyNote": "Atau {price} ditagih tahunan — hemat 2 bulan.",
+        "feature1": "Pembuat halaman portfolio & situs publik",
+        "feature2": "Booking dan permintaan tanpa batas",
+        "feature3": "Manajemen klien & peran tim",
+        "feature4": "Invoice PDF",
+        "feature5": "Branding kustom & galeri lanjutan",
+        "feature6": "Dukungan prioritas",
+        "cta": "Mulai bulan gratis saya"
+      },
+      "billingNotice": {
+        "body1": "Langganan Pro berbayar belum tersedia. Ketika diluncurkan, harga, ketentuan penagihan, dan detail pembayaran akan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian apa pun.",
+        "body2": "Tidak ada biaya yang dikumpulkan selama bulan gratis pertama Anda."
+      },
+      "pricingTransparency": {
+        "title": "Transparansi Harga",
+        "body": "Harga, periode penagihan, dan ketentuan langganan ditampilkan sebelum Anda menyelesaikan pembayaran apa pun, dan Anda dapat membatalkan kapan saja dari portal penagihan Anda."
+      }
+    },
+    "terms": {
+      "metadata": {
+        "title": "Ketentuan Layanan — Gallurio",
+        "description": "Baca ketentuan yang mengatur akses ke dan penggunaan Gallurio."
+      },
+      "title": "Ketentuan Layanan",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
+      "intro1": "Ketentuan Layanan ini mengatur akses Anda ke dan penggunaan Gallurio, termasuk situs web, aplikasi, alat portfolio, fitur permintaan booking, dan layanan terkait kami.",
+      "intro2": "Dengan menggunakan Gallurio, Anda menyetujui Ketentuan ini. Jika Anda tidak setuju, Anda tidak boleh menggunakan layanan ini.",
+      "about": {
+        "title": "1. Tentang Gallurio",
+        "body1": "Gallurio adalah platform perangkat lunak yang membantu profesional dan bisnis kreatif membuat halaman portfolio, mempresentasikan layanan mereka, dan menerima permintaan booking.",
+        "body2": "Gallurio tidak secara langsung menyediakan layanan fotografi, videografi, perencanaan acara, atau layanan kreatif lainnya kepada klien akhir. Pengguna Gallurio bertanggung jawab atas layanan yang mereka tawarkan melalui halaman mereka sendiri."
+      },
+      "eligibility": {
+        "title": "2. Kelayakan",
+        "body": "Anda hanya dapat menggunakan Gallurio jika Anda mampu mengikatkan diri dalam perjanjian yang sah secara hukum. Jika Anda menggunakan Gallurio atas nama bisnis, organisasi, atau studio, Anda menegaskan bahwa Anda berwenang menerima Ketentuan ini atas namanya."
+      },
+      "accounts": {
+        "title": "3. Akun",
+        "body1": "Anda mungkin perlu membuat akun untuk menggunakan fitur tertentu Gallurio. Anda bertanggung jawab menjaga kerahasiaan kredensial login Anda dan semua aktivitas di bawah akun Anda.",
+        "body2": "Anda setuju untuk memberikan informasi yang akurat dan memperbaruinya bila diperlukan."
+      },
+      "betaAccess": {
+        "title": "4. Akses Beta",
+        "body1": "Gallurio dapat menawarkan akses beta sebelum peluncuran publik. Selama beta, fitur dapat tidak lengkap, berubah, dibatasi, ditangguhkan, atau dihapus kapan saja.",
+        "body2": "Akses beta tidak menjamin akses gratis yang berkelanjutan, ketersediaan fitur di masa mendatang, atau ketersediaan akun secara permanen."
+      },
+      "userContent": {
+        "title": "5. Konten Pengguna",
+        "body1": "Pengguna dapat mengunggah, mempublikasikan, atau mengirimkan konten seperti gambar, teks, informasi bisnis, deskripsi layanan, materi portfolio, dan konten formulir booking.",
+        "body2": "Pengguna tetap memiliki hak atas konten mereka. Dengan menggunakan Gallurio, pengguna memberikan izin kepada Gallurio untuk menghosting, menyimpan, menampilkan, memproses, dan mengirimkan konten mereka sesuai kebutuhan untuk mengoperasikan dan meningkatkan layanan.",
+        "body3": "Pengguna bertanggung jawab memastikan bahwa mereka memiliki hak, lisensi, dan izin yang diperlukan untuk konten apa pun yang diunggah atau dipublikasikan."
+      },
+      "prohibited": {
+        "title": "6. Konten dan Penggunaan yang Dilarang",
+        "intro": "Pengguna setuju untuk tidak menggunakan Gallurio untuk mengunggah, mempublikasikan, mendistribusikan, atau mempromosikan konten yang melanggar hukum, berbahaya, kasar, menyesatkan, melanggar hak, atau tidak pantas.",
+        "item1": "Melanggar hukum atau peraturan yang berlaku",
+        "item2": "Melanggar hak kekayaan intelektual pihak lain",
+        "item3": "Mengunggah kode berbahaya atau mencoba mengganggu layanan",
+        "item4": "Memberikan gambaran yang salah tentang identitas, bisnis, atau layanan",
+        "item5": "Menggunakan layanan untuk penipuan, spam, atau aktivitas menyesatkan",
+        "item6": "Mencoba mengakses akun, sistem, atau data tanpa izin",
+        "outro": "Gallurio dapat menghapus konten atau menangguhkan akun yang melanggar Ketentuan ini."
+      },
+      "bookings": {
+        "title": "7. Booking dan Permintaan Klien",
+        "body1": "Gallurio dapat mengizinkan pengunjung mengirimkan permintaan booking melalui halaman yang dibuat pengguna. Permintaan ini tidak menjamin booking yang terkonfirmasi kecuali disepakati secara terpisah antara pengguna Gallurio dan klien mereka.",
+        "body2": "Gallurio tidak bertanggung jawab atas perselisihan, pembayaran, pembatalan, kualitas layanan, jadwal, atau kesepakatan antara pengguna Gallurio dan klien mereka kecuali dinyatakan secara jelas."
+      },
+      "subscriptions": {
+        "title": "8. Langganan dan Pembayaran",
+        "body1": "Gallurio mencakup langganan Pro berbayar, ditagih bulanan atau tahunan. Workspace baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu diperlukan.",
+        "body2": "Setelah bulan gratis berakhir, melanjutkan penggunaan Gallurio memerlukan langganan Pro yang aktif. Langganan berbayar belum tersedia; ketentuan penagihan dan detail pembayaran akan ditampilkan dengan jelas sebelum ada biaya apa pun setelah diluncurkan.",
+        "body3": "Pengguna akan diperlihatkan harga dan ketentuan penagihan yang berlaku sebelum menyelesaikan pembelian.",
+        "body4": "Jika langganan tidak diperpanjang atau pembayaran gagal, akses ke workspace dibatasi hingga langganan dipulihkan. Data akun tetap disimpan; halaman publik yang dipublikasikan dapat dinonaktifkan setelah periode panjang tanpa pembayaran, dan semuanya dipulihkan setelah berlangganan kembali."
+      },
+      "cancellations": {
+        "title": "9. Pembatalan",
+        "body1": "Pengguna dapat membatalkan langganan sesuai proses pembatalan yang tersedia di akun mereka atau melalui alur penagihan yang disediakan.",
+        "body2": "Pembatalan umumnya mencegah biaya perpanjangan di masa depan, tetapi mungkin tidak secara otomatis menghasilkan pengembalian dana kecuali diwajibkan oleh hukum atau disetujui berdasarkan proses pengembalian dana yang berlaku."
+      },
+      "serviceChanges": {
+        "title": "10. Perubahan Layanan",
+        "body1": "Gallurio dapat memperbarui, mengubah, menangguhkan, atau menghentikan bagian dari layanan kapan saja. Gallurio juga dapat mengubah fitur, paket, harga, atau batas penggunaan seiring perkembangan produk.",
+        "body2": "Jika sesuai, Gallurio akan melakukan upaya yang wajar untuk memberi tahu pengguna tentang perubahan material."
+      },
+      "ip": {
+        "title": "11. Kekayaan Intelektual",
+        "body1": "Gallurio, termasuk perangkat lunak, desain, branding, antarmuka, fitur, dan materi terkaitnya, dimiliki oleh Gallurio atau pemberi lisensinya.",
+        "body2": "Pengguna tidak boleh menyalin, mengubah, melakukan rekayasa balik, menjual kembali, atau mengeksploitasi bagian mana pun dari Gallurio kecuali sebagaimana diizinkan oleh Ketentuan ini atau hukum yang berlaku."
+      },
+      "disclaimer": {
+        "title": "12. Penafian",
+        "body": "Gallurio disediakan atas dasar \"sebagaimana adanya\" dan \"sebagaimana tersedia\". Gallurio tidak menjamin bahwa layanan akan berjalan tanpa gangguan, bebas kesalahan, aman, atau sesuai untuk setiap kebutuhan bisnis."
+      },
+      "liability": {
+        "title": "13. Batasan Tanggung Jawab",
+        "body": "Sejauh diizinkan oleh hukum, Gallurio tidak bertanggung jawab atas kerugian tidak langsung, insidental, khusus, konsekuensial, atau punitif, termasuk kehilangan keuntungan, kehilangan data, gangguan bisnis, atau kerusakan reputasi."
+      },
+      "termination": {
+        "title": "14. Penghentian",
+        "body1": "Gallurio dapat menangguhkan atau menghentikan akses jika pengguna melanggar Ketentuan ini, menyalahgunakan layanan, menciptakan risiko bagi pengguna lain, atau menggunakan layanan dengan cara yang dapat merugikan Gallurio atau pihak ketiga.",
+        "body2": "Pengguna dapat berhenti menggunakan Gallurio kapan saja."
+      },
+      "contact": {
+        "title": "15. Kontak",
+        "body": "Untuk pertanyaan tentang Ketentuan ini, hubungi kami di:"
+      }
+    },
+    "privacy": {
+      "metadata": {
+        "title": "Kebijakan Privasi — Gallurio",
+        "description": "Pelajari bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi."
+      },
+      "title": "Kebijakan Privasi",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
+      "intro": "Kebijakan Privasi ini menjelaskan bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi ketika pengguna mengakses situs web, aplikasi, dan layanan terkait.",
+      "collect": {
+        "title": "1. Informasi yang Kami Kumpulkan",
+        "account": {
+          "title": "Informasi Akun",
+          "body": "Ini dapat mencakup nama, alamat email, detail login, nama bisnis, informasi workspace, dan preferensi akun."
+        },
+        "business": {
+          "title": "Informasi Bisnis dan Portfolio",
+          "body": "Ini dapat mencakup detail profil publik, deskripsi layanan, gambar, galeri, pengaturan branding, konten portfolio, dan materi lain yang dipilih pengguna untuk diunggah atau dipublikasikan."
+        },
+        "bookingInquiry": {
+          "title": "Informasi Permintaan Booking",
+          "body": "Ketika pengunjung mengirimkan permintaan melalui halaman Gallurio, Gallurio dapat mengumpulkan informasi seperti nama, alamat email, tanggal acara, detail proyek, pesan, dan respons formulir lainnya."
+        },
+        "usage": {
+          "title": "Informasi Penggunaan",
+          "body": "Gallurio dapat mengumpulkan data teknis dan penggunaan seperti informasi perangkat, jenis browser, alamat IP, halaman yang dilihat, tindakan yang diambil, stempel waktu, dan log diagnostik."
+        },
+        "payment": {
+          "title": "Informasi Pembayaran",
+          "body": "Langganan Pro berbayar belum tersedia. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran; setelah pembayaran diluncurkan, bagian ini akan mencantumkan nama pemroses pembayaran dan menjelaskan bagaimana pihaknya mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice."
+        }
+      },
+      "useOfInfo": {
+        "title": "2. Bagaimana Kami Menggunakan Informasi",
+        "item1": "Menyediakan dan mengoperasikan Gallurio",
+        "item2": "Membuat dan mengelola akun pengguna",
+        "item3": "Mempublikasikan dan menampilkan halaman portfolio",
+        "item4": "Memproses permintaan booking",
+        "item5": "Meningkatkan fitur produk dan pengalaman pengguna",
+        "item6": "Memberikan dukungan dan menanggapi permintaan",
+        "item7": "Menjaga keamanan dan mencegah penyalahgunaan",
+        "item8": "Menganalisis penggunaan dan kinerja",
+        "item9": "Mematuhi kewajiban hukum dan penagihan"
+      },
+      "userContentPublic": {
+        "title": "3. Konten Pengguna dan Halaman Publik",
+        "body1": "Konten yang dipublikasikan pada halaman portfolio Gallurio dapat terlihat oleh publik. Ini dapat mencakup nama bisnis, gambar, layanan, deskripsi, opsi kontak, dan informasi lain yang dipilih pengguna untuk dijadikan publik.",
+        "body2": "Pengguna bertanggung jawab memastikan konten yang dipublikasikan tidak menyertakan informasi pribadi atau sensitif yang tidak ingin mereka jadikan tersedia untuk publik."
+      },
+      "sharing": {
+        "title": "4. Berbagi Informasi",
+        "body1": "Gallurio dapat membagikan informasi dengan penyedia layanan tepercaya yang membantu mengoperasikan platform, seperti penyedia hosting, penyedia autentikasi, alat analitik, layanan email, penyedia penyimpanan file, dan pemroses pembayaran.",
+        "body2": "Gallurio juga dapat membagikan informasi ketika diwajibkan oleh hukum, untuk melindungi hak, mencegah penipuan atau penyalahgunaan, atau sebagai bagian dari transfer bisnis seperti merger, akuisisi, atau penjualan aset.",
+        "body3": "Gallurio tidak menjual informasi pribadi."
+      },
+      "security": {
+        "title": "5. Penyimpanan Data dan Keamanan",
+        "body1": "Gallurio menggunakan langkah teknis dan organisasi yang wajar untuk melindungi informasi. Namun, tidak ada sistem yang dapat dijamin sepenuhnya aman.",
+        "body2": "Pengguna bertanggung jawab menjaga kerahasiaan kredensial akun dan memberi tahu Gallurio jika mereka yakin akun mereka telah disusupi."
+      },
+      "retention": {
+        "title": "6. Retensi Data",
+        "body1": "Gallurio menyimpan informasi selama diperlukan untuk menyediakan layanan, mematuhi kewajiban hukum, menyelesaikan perselisihan, menegakkan perjanjian, dan menjaga catatan bisnis yang sah.",
+        "body2": "Pengguna dapat meminta penghapusan akun atau data dengan menghubungi Gallurio, tunduk pada batasan hukum, teknis, atau operasional."
+      },
+      "cookies": {
+        "title": "7. Cookie dan Teknologi Serupa",
+        "body1": "Gallurio dapat menggunakan cookie dan teknologi serupa untuk menjaga pengguna tetap masuk, mengingat preferensi, menganalisis penggunaan, meningkatkan kinerja, dan mendukung keamanan.",
+        "body2": "Pengguna dapat mengontrol cookie melalui pengaturan browser, tetapi menonaktifkan beberapa cookie dapat memengaruhi cara kerja layanan."
+      },
+      "international": {
+        "title": "8. Penggunaan Internasional",
+        "body1": "Gallurio dapat diakses dari berbagai negara. Informasi dapat diproses di negara tempat Gallurio atau penyedia layanannya beroperasi.",
+        "body2": "Dengan menggunakan Gallurio, pengguna memahami bahwa informasi dapat ditransfer dan diproses di luar negara tempat tinggal mereka, tunduk pada hukum yang berlaku."
+      },
+      "children": {
+        "title": "9. Privasi Anak",
+        "body1": "Gallurio tidak ditujukan untuk anak-anak. Gallurio tidak dengan sengaja mengumpulkan informasi pribadi dari anak-anak di bawah usia yang disyaratkan oleh hukum yang berlaku.",
+        "body2": "Jika seseorang meyakini bahwa seorang anak telah memberikan informasi pribadi kepada Gallurio, mereka harus menghubungi Gallurio agar informasi tersebut dapat ditinjau dan dihapus jika diperlukan."
+      },
+      "changes": {
+        "title": "10. Perubahan pada Kebijakan Ini",
+        "body": "Gallurio dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Ketika perubahan material dilakukan, Gallurio dapat memberi tahu pengguna melalui layanan, email, atau dengan memperbarui tanggal berlaku."
+      },
+      "contact": {
+        "title": "11. Kontak",
+        "body": "Untuk pertanyaan atau permintaan privasi, hubungi kami di:"
+      }
+    },
+    "refunds": {
+      "metadata": {
+        "title": "Kebijakan Pengembalian Dana — Gallurio",
+        "description": "Pelajari bagaimana Gallurio menangani pembatalan dan pengembalian dana."
+      },
+      "title": "Kebijakan Pengembalian Dana",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
+      "betaPeriod": {
+        "title": "1. Uji Coba Gratis",
+        "body1": "Workspace Gallurio baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu diperlukan. Tidak ada pembayaran nyata yang dikumpulkan selama uji coba ini, sehingga tidak ada pengembalian dana yang berlaku untuknya.",
+        "body2": "Jika Anda melanjutkan dengan langganan Pro berbayar setelah uji coba, harga dan ketentuan penagihan yang ditampilkan saat checkout berlaku, dan Kebijakan Pengembalian Dana ini mengatur setiap pembayaran yang dilakukan.",
+        "body3": "Peserta beta terverifikasi juga dapat menerima hibah promo Pro dua bulan yang terpisah. Promo ini dapat ditukarkan satu kali per peserta beta terverifikasi dan berakhir dua bulan setelah penukaran; seperti uji coba gratis, ini adalah hibah promosi, bukan pembayaran, sehingga tidak ada pengembalian dana yang berlaku untuknya."
+      },
+      "subscriptions": {
+        "title": "2. Langganan",
+        "body1": "Langganan Gallurio Pro ditagih bulanan, tahunan, atau sesuai periode penagihan yang ditampilkan saat checkout.",
+        "body2": "Pengguna dapat membatalkan langganan mereka untuk mencegah biaya perpanjangan di masa depan. Setelah pembatalan, akses dapat berlanjut hingga akhir periode penagihan saat ini kecuali dinyatakan lain.",
+        "body3": "Ketika langganan berakhir karena kegagalan pembayaran atau non-pembayaran terminal, Gallurio segera mengirim pemberitahuan kedaluwarsa, pengingat data tersimpan setelah 30 hari, dan peringatan akhir halaman publik setelah 51 hari, lalu membatalkan publikasi halaman publik setelah 58 hari. Data workspace, CRM, dan draf tetap disimpan sehingga semuanya dapat dipulihkan saat berlangganan kembali."
+      },
+      "refundRequests": {
+        "title": "3. Permintaan Pengembalian Dana",
+        "intro": "Permintaan pengembalian dana ditinjau berdasarkan kasus per kasus.",
+        "approvalIntro": "Persetujuan dapat bergantung pada:",
+        "item1": "Tanggal pembelian",
+        "item2": "Periode penagihan",
+        "item3": "Penggunaan produk",
+        "item4": "Aktivitas akun",
+        "item5": "Masalah teknis",
+        "item6": "Biaya ganda",
+        "item7": "Hukum perlindungan konsumen yang berlaku",
+        "item8": "Proses pengembalian dana dari pemroses pembayaran",
+        "outro": "Mengirimkan permintaan pengembalian dana tidak menjamin bahwa pengembalian dana akan disetujui."
+      },
+      "merchantOfRecord": {
+        "title": "4. Pemrosesan Pembayaran",
+        "body1": "Langganan berbayar belum tersedia. Setelah diluncurkan, Gallurio akan mencantumkan nama pemroses pembayarannya di sini dan menjelaskan bagaimana pihaknya menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body2": "Setelah pembayaran diluncurkan, laporan penagihan pengguna mungkin menampilkan nama pemroses pembayaran yang dipilih atau deskriptor penagihan terkait."
+      },
+      "nonRefundable": {
+        "title": "5. Situasi yang Tidak Dapat Dikembalikan Dananya",
+        "intro": "Kecuali diwajibkan oleh hukum, pengembalian dana mungkin tidak diberikan untuk:",
+        "item1": "Waktu yang tidak digunakan dalam periode penagihan setelah pembatalan",
+        "item2": "Kegagalan membatalkan sebelum perpanjangan",
+        "item3": "Kurangnya penggunaan sementara",
+        "item4": "Perubahan pikiran setelah penggunaan yang substansial",
+        "item5": "Masalah yang disebabkan oleh pengaturan akun yang salah atau informasi yang diberikan pengguna",
+        "outro": "Gallurio akan tetap meninjau permintaan yang wajar, terutama jika ada masalah teknis atau penagihan."
+      },
+      "howToRequest": {
+        "title": "6. Cara Mengajukan Pengembalian Dana",
+        "body": "Untuk mengajukan pengembalian dana, hubungi kami di:",
+        "includeIntro": "Mohon sertakan:",
+        "item1": "Email akun",
+        "item2": "Nama bisnis atau workspace",
+        "item3": "Tanggal pembayaran",
+        "item4": "Alasan permintaan",
+        "item5": "Tangkapan layar atau detail penagihan terkait",
+        "outro": "Gallurio mungkin meminta informasi tambahan untuk memverifikasi pembayaran dan meninjau permintaan."
+      },
+      "cancellations": {
+        "title": "7. Pembatalan",
+        "body1": "Pengguna dapat membatalkan langganan mereka melalui pengaturan akun atau alur pengelolaan penagihan yang disediakan.",
+        "body2": "Pembatalan menghentikan perpanjangan di masa depan tetapi tidak secara otomatis mengembalikan dana pembayaran sebelumnya kecuali pengembalian dana disetujui atau diwajibkan oleh hukum."
+      }
+    },
+    "contact": {
+      "metadata": {
+        "title": "Kontak — Gallurio",
+        "description": "Hubungi Gallurio untuk dukungan, bantuan akun, pertanyaan penagihan, dan pertanyaan umum."
+      },
+      "header": {
+        "headline": "Butuh bantuan dengan Gallurio?",
+        "body": "Untuk dukungan, kekhawatiran akun, masalah penagihan, atau pertanyaan umum, hubungi kami di:"
+      },
+      "supportTopics": {
+        "title": "Topik Dukungan",
+        "item1": "Cara memulai",
+        "item2": "Pengaturan akun",
+        "item3": "Halaman portfolio",
+        "item4": "Formulir permintaan booking",
+        "item5": "Penagihan dan langganan",
+        "item6": "Permintaan pengembalian dana",
+        "item7": "Laporan bug",
+        "item8": "Masukan fitur",
+        "item9": "Pertanyaan kemitraan atau bisnis"
+      },
+      "responseTime": {
+        "title": "Waktu Respons",
+        "body1": "Kami berusaha merespons secepat yang wajar. Waktu respons dapat bervariasi seiring kami terus mengembangkan dan meningkatkan Gallurio.",
+        "body2": "Untuk kekhawatiran akun atau penagihan yang mendesak, mohon sertakan detail relevan sebanyak mungkin agar kami dapat meninjau permintaan secara efisien."
+      },
+      "businessInfo": {
+        "title": "Informasi Bisnis",
+        "body": "Gallurio adalah startup kecil dan independen. Kami belum memiliki nama badan hukum atau alamat bisnis terdaftar untuk dicantumkan — untuk saat ini, cara terbaik menghubungi kami adalah melalui email.",
+        "emailLabel": "Email:"
+      },
+      "social": {
+        "title": "Ikuti Kami",
+        "instagram": "Ikuti kami di Instagram",
+        "facebook": "Ikuti kami di Facebook",
+        "reddit": "Gabung dengan kami di Reddit",
+        "linkedin": "Ikuti kami di LinkedIn"
+      }
+    }
+  },
+  "auth": {
+    "signInTitle": "Masuk",
+    "signUpTitle": "Buat akun",
+    "brandPane": {
+      "signIn": {
+        "headline": "Selamat kembali ke buku besar Anda.",
+        "body": "Semua booking, klien, dan permintaan — tetap di tempatnya."
+      },
+      "signUp": {
+        "headline": "Buka buku besar Anda.",
+        "body": "Satu workspace untuk booking, klien, dan portofolio publik yang dilihat klien Anda."
+      },
+      "mfa": {
+        "headline": "Satu langkah lagi.",
+        "body": "Verifikasi singkat untuk menjaga keamanan buku besar Anda — dan data klien Anda."
+      },
+      "forgotPassword": {
+        "headline": "Lupa tempat terakhir?",
+        "body": "Kami akan mengirim link agar Anda bisa melanjutkan buku besar Anda."
+      },
+      "resetPassword": {
+        "headline": "Atur kunci baru.",
+        "body": "Pilih kata sandi yang mudah diingat. Buku besar Anda tetap seperti semula."
+      },
+      "verifyEmail": {
+        "headline": "Hampir selesai.",
+        "body": "Konfirmasi email Anda untuk menyelesaikan buku besar Anda."
+      }
+    },
+    "signIn": {
+      "title": "Masuk",
+      "continueWithGoogle": "Lanjutkan dengan Google",
+      "or": "atau",
+      "submit": "Masuk",
+      "forgotPassword": "Lupa kata sandi?",
+      "noAccount": "Belum punya akun?",
+      "createAccount": "Buat satu"
+    },
+    "signUp": {
+      "title": "Buat akun",
+      "continueWithGoogle": "Lanjutkan dengan Google",
+      "submit": "Buat akun",
+      "passwordHint": "Minimal 8 karakter",
+      "hasAccount": "Sudah punya akun?"
+    },
+    "mfa": {
+      "title": "Verifikasi dua faktor",
+      "description": "Masukkan kode 6 digit dari aplikasi autentikator Anda.",
+      "codeLabel": "Kode verifikasi",
+      "submit": "Verifikasi",
+      "backToSignIn": "Kembali ke halaman masuk"
+    },
+    "forgotPassword": {
+      "title": "Atur ulang kata sandi",
+      "description": "Masukkan email Anda dan kami akan mengirimkan tautan pengaturan ulang.",
+      "submit": "Kirim tautan pengaturan ulang",
+      "successMessage": "Jika email tersebut terdaftar, tautan pengaturan ulang sedang dikirim. Periksa kotak masuk Anda.",
+      "backToSignIn": "Kembali ke halaman masuk"
+    },
+    "resetPassword": {
+      "title": "Atur kata sandi baru",
+      "description": "Pilih kata sandi yang kuat untuk akun Anda.",
+      "passwordLabel": "Kata sandi baru",
+      "submit": "Atur kata sandi baru",
+      "successMessage": "Kata sandi Anda telah diperbarui. Anda sekarang dapat masuk.",
+      "signIn": "Masuk",
+      "invalidToken": "Tautan pengaturan ulang ini tidak valid atau telah kedaluwarsa.",
+      "requestNewLink": "Minta tautan pengaturan ulang baru"
+    },
+    "verifyEmail": {
+      "title": "Verifikasi email Anda",
+      "description": "Masukkan kode 6 digit yang kami kirimkan ke alamat email Anda.",
+      "codeLabel": "Kode verifikasi",
+      "submit": "Verifikasi email",
+      "resend": "Kirim ulang kode",
+      "expiresIn": "Kode akan kedaluwarsa dalam {time}.",
+      "resendSent": "Kode dikirim ulang — periksa kotak masuk Anda."
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Kata sandi",
+      "confirmPassword": "Konfirmasi kata sandi",
+      "firstName": "Nama depan",
+      "lastName": "Nama belakang",
+      "optional": "opsional",
+      "showPassword": "Tampilkan kata sandi",
+      "hidePassword": "Sembunyikan kata sandi"
+    },
+    "errors": {
+      "invalidInput": "Harap periksa input Anda dan coba lagi.",
+      "invalidCredentials": "Email atau kata sandi tidak valid.",
+      "passwordMismatch": "Kata sandi tidak cocok.",
+      "botCheck": "Pemeriksaan bot gagal. Silakan coba lagi.",
+      "tooManyAttempts": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
+      "generic": "Terjadi kesalahan. Silakan coba lagi.",
+      "invalidCode": "Kode tidak valid atau telah kedaluwarsa. Silakan coba lagi.",
+      "sessionExpired": "Sesi Anda telah kedaluwarsa. Silakan masuk kembali.",
+      "resetTokenInvalid": "Tautan ini tidak valid atau telah kedaluwarsa. Silakan minta yang baru.",
+      "passwordReused": "Silakan pilih kata sandi yang berbeda dari kata sandi Anda saat ini."
+    }
+  },
+  "app": {
+    "betaEndingBanner": {
+      "title": "Akses beta akan segera berakhir",
+      "message": "Terima kasih telah menjadi bagian dari Gallurio Beta. Akses beta Anda berakhir dalam minggu depan, setelah itu ruang kerja Anda akan kembali ke paket Free. Untuk terus menikmati fitur Pro, gunakan kode <promoCode>{code}</promoCode> untuk mengklaim dua bulan akses Pro gratis.",
+      "dismiss": "Tutup untuk sesi ini"
+    },
+    "dashboard": {
+      "title": "{workspaceName}",
+      "greeting": "Selamat datang kembali, {name}",
+      "tabs": {
+        "aria": "Ganti dasbor",
+        "bookings": "Pemesanan",
+        "portfolio": "Portfolio"
+      },
+      "dateFilter": {
+        "label": "Rentang tanggal",
+        "filter": "Filter",
+        "week": "Mingguan",
+        "month": "Bulanan",
+        "year": "Tahunan",
+        "custom": "Kustom",
+        "all": "Sepanjang waktu",
+        "allTimeHint": "Menampilkan semua tanggal.",
+        "clear": "Hapus",
+        "apply": "Terapkan",
+        "from": "Dari",
+        "to": "Sampai",
+        "since": "Mulai dari",
+        "until": "Hingga"
+      },
+      "pagination": {
+        "prev": "Sebelumnya",
+        "next": "Berikutnya",
+        "status": "{page} dari {total}"
+      },
+      "kpi": {
+        "revenueThisMonth": "Pendapatan terkumpul",
+        "activeBookings": "Pemesanan terjadwal",
+        "newInquiries": "Pertanyaan baru",
+        "outstandingBalance": "Saldo tertunggak"
+      },
+      "sections": {
+        "todaysEvents": "Acara hari ini",
+        "upcomingWeek": "Akan datang minggu ini",
+        "recentInquiries": "Pertanyaan terbaru",
+        "activity": "Aktivitas terbaru",
+        "revenueTrend": "Pendapatan",
+        "calendar": "Kalender pemesanan",
+        "eventTypes": "Rincian jenis acara",
+        "topClients": "Klien teratas berdasarkan pengeluaran",
+        "teamPerformance": "Kinerja tim",
+        "bookingsPerTeam": "Pemesanan per tim",
+        "operations": "Operasi"
+      },
+      "quickAdd": {
+        "title": "Tambah cepat",
+        "booking": "Pemesanan baru",
+        "client": "Klien baru",
+        "inquiry": "Lihat pertanyaan"
+      },
+      "empty": "Belum ada apa-apa di sini.",
+      "filteredEmpty": "Tidak ada data yang cocok dengan rentang tanggal yang dipilih.",
+      "viewAll": "Lihat semua",
+      "portfolio": {
+        "analyticsSoon": "Analitik portofolio segera hadir.",
+        "totalViews": "Total tampilan",
+        "uniqueVisitors": "Pengunjung unik",
+        "inquiries": "Pertanyaan",
+        "conversionRate": "Tingkat konversi",
+        "viewsOverTime": "Tampilan & pengunjung",
+        "views": "Tampilan",
+        "visitors": "Pengunjung",
+        "topSources": "Sumber teratas",
+        "perPage": "Per halaman",
+        "siteInquiries": "Pertanyaan dari situs Anda",
+        "publishStatus": "Status terbit",
+        "published": "Diterbitkan",
+        "notPublished": "Belum diterbitkan",
+        "lastPublished": "Terakhir terbit {date}",
+        "viewLive": "Lihat halaman langsung",
+        "openEditor": "Buka editor",
+        "noTraffic": "Belum ada kunjungan pada periode ini.",
+        "directSource": "Langsung",
+        "inquiryInsights": "Wawasan pertanyaan",
+        "inquiryToBooking": "Pertanyaan → pemesanan",
+        "bookedFromInquiries": "Dipesan dari pertanyaan",
+        "newClientsFromForm": "Klien baru dari formulir",
+        "visitorDays": "Hari-pengunjung",
+        "submissionRate": "Tingkat pengiriman",
+        "bookedLeads": "Prospek dipesan",
+        "visitorsInquiriesTitle": "Pengunjung & pertanyaan dari waktu ke waktu",
+        "funnel": {
+          "title": "Corong konversi",
+          "visitorDays": "Hari-pengunjung",
+          "contactOpened": "Kontak dibuka",
+          "inquirySubmitted": "Pertanyaan dikirim",
+          "ofVisitors": "dari pengunjung",
+          "ofOpened": "dari yang dibuka",
+          "ofTotal": "dari total",
+          "collectingData": "Mengumpulkan data"
+        },
+        "pipeline": {
+          "title": "Alur pertanyaan",
+          "new": "Baru",
+          "booked": "Dipesan",
+          "archived": "Diarsipkan",
+          "total": "Total pertanyaan"
+        },
+        "demand": {
+          "title": "Profil permintaan",
+          "eventTypeMix": "Jenis acara (berdasarkan pertanyaan)",
+          "requestedMonth": "Bulan acara yang diminta",
+          "medianLeadTime": "Median waktu tenggang",
+          "days": "hari",
+          "basedOn": "berdasarkan"
+        }
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# pemesanan} other {# pemesanan}}"
+      },
+      "showMore": "Tampilkan lebih",
+      "showLess": "Tampilkan lebih sedikit",
+      "hints": {
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
+        "kpi": "Total untuk bulan ini. Panah membandingkan dengan bulan lalu.",
+        "calendar": "Pemesanan per hari. Filter berdasarkan tim; ketuk satu hari untuk membuka kalender di sana.",
+        "eventTypes": "Bagian pemesanan menurut jenis acara.",
+        "teamPerformance": "Kinerja tiap tim berdasarkan pendapatan dan jumlah pemesanan.",
+        "bookingsPerTeam": "Jumlah pemesanan yang ditangani tiap tim.",
+        "revenueTrend": "Pendapatan dibayar dalam periode yang dipilih.",
+        "inquiryInsights": "Konversi dari kunjungan dan pertanyaan, ditambah klien baru dari formulir kontak Anda.",
+        "topClients": "Klien menurut total pengeluaran.",
+        "todaysEvents": "Pemesanan yang mulai hari ini.",
+        "upcomingWeek": "Pemesanan terkonfirmasi dalam 7 hari ke depan.",
+        "recentInquiries": "Pertanyaan masuk terbaru Anda.",
+        "activity": "Perubahan terbaru di ruang kerja Anda.",
+        "quickAdd": "Buat pemesanan, klien, atau pertanyaan."
+      },
+      "totalLabel": "Total",
+      "calendarTeam": {
+        "label": "Filter berdasarkan tim",
+        "all": "Semua tim"
+      },
+      "activityEntity": {
+        "booking": "pemesanan",
+        "client": "klien",
+        "inquiry": "pertanyaan",
+        "gallery": "galeri",
+        "transaction": "transaksi",
+        "workspace": "ruang kerja"
+      },
+      "activityAction": {
+        "created": "dibuat",
+        "updated": "diperbarui",
+        "deleted": "dihapus",
+        "status_changed": "status diubah",
+        "client_changed": "klien diubah",
+        "payment_added": "pembayaran ditambahkan",
+        "payment_updated": "pembayaran diperbarui"
+      },
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Ulang tahun",
+        "social": "Sosial",
+        "other": "Lainnya"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "Nilai dipesan vs pendapatan terkumpul",
+          "bookedValue": "Nilai dipesan",
+          "collectedRevenue": "Pendapatan terkumpul"
+        },
+        "coverage": {
+          "title": "Cakupan penagihan",
+          "asOf": "per",
+          "confirmedValue": "Nilai terkonfirmasi",
+          "confirmedHint": "Total nilai pemesanan yang terkonfirmasi",
+          "paid": "Dibayar (terkumpul)",
+          "paidHint": "Pembayaran diterima hingga saat ini",
+          "remaining": "Sisa saldo",
+          "remainingHint": "Belum tertagih",
+          "coverageText": "Cakupan: {pct}% dari nilai terkonfirmasi telah tertagih"
+        },
+        "heatmap": {
+          "previous": "Tanggal heatmap sebelumnya",
+          "today": "Hari ini",
+          "next": "Tanggal heatmap berikutnya",
+          "title": "Peta panas jam dipesan",
+          "weekOf": "Minggu",
+          "bookedHours": "Jam dipesan",
+          "weekdays": [
+            "Sen",
+            "Sel",
+            "Rab",
+            "Kam",
+            "Jum",
+            "Sab",
+            "Min"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "Campuran acara dari waktu ke waktu"
+        }
+      }
+    },
+    "calendar": {
+      "title": "Calendar",
+      "today": "Today",
+      "previous": "Back",
+      "next": "Next",
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "noEventsInRange": "No events in this range.",
+      "views": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "agenda": "Agenda"
+      },
+      "goTo": "Jump to date",
+      "scrollToTime": "Scroll to time",
+      "go": "Go"
+    },
+    "bookings": {
+      "title": "Pemesanan",
+      "titleForTeam": "Pemesanan {team}",
+      "view": {
+        "table": "Tabel",
+        "card": "Mode kartu",
+        "calendar": "Kalender"
+      },
+      "toolbar": {
+        "search": "Cari pemesanan",
+        "statusAll": "Semua status",
+        "showCancelled": "Tampilkan yang dibatalkan",
+        "showPast": "Tampilkan yang lalu",
+        "import": "Impor CSV",
+        "export": "Ekspor CSV",
+        "add": "Pemesanan baru",
+        "invoiceTheme": "Tema faktur"
+      },
+      "teamPicker": {
+        "allTeams": "Semua tim",
+        "allMyTeams": "Semua tim saya",
+        "label": "Filter berdasarkan tim",
+        "inactive": "Tidak aktif",
+        "teams": "Tim",
+        "countLabel": "{count, plural, other {# tim}}"
+      },
+      "import": {
+        "title": "Impor pemesanan",
+        "dropzone": "Letakkan file CSV di sini, atau klik untuk memilih",
+        "dropzoneActive": "Lepaskan untuk mengunggah",
+        "template": "Unduh template CSV",
+        "preview": "{total} baris ditemukan",
+        "validCount": "{count} valid",
+        "invalidCount": "{count} dengan kesalahan",
+        "importButton": "Impor {count} pemesanan",
+        "importing": "Mengimpor…",
+        "noValidRows": "Tidak ada baris valid untuk diimpor. Perbaiki kesalahan di atas.",
+        "success": "Berhasil mengimpor {count} pemesanan.",
+        "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
+        "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah CSV yang valid.",
+        "columns": {
+          "row": "#",
+          "title": "Judul",
+          "client": "Klien",
+          "start": "Mulai",
+          "error": "Kesalahan"
+        },
+        "results": {
+          "title": "Kesalahan impor",
+          "kindValidation": "Validasi",
+          "kindLookup": "Pencarian",
+          "kindServer": "Server",
+          "line": "Baris {csvLine}",
+          "rawRow": "Baris mentah",
+          "summary": "Diimpor {created} · Dilewati {skipped}",
+          "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya."
+        },
+        "dialog": {
+          "columnHeader": "Kolom",
+          "notesHeader": "Catatan",
+          "required": "wajib",
+          "optional": "opsional",
+          "failedWithDetails": "Impor gagal — lihat detailnya",
+          "failedRetry": "Impor gagal. Silakan coba lagi.",
+          "close": "Tutup",
+          "cancel": "Batal",
+          "viewErrors": "Lihat {n} kesalahan",
+          "spec": {
+            "clientName": {
+              "note": "Nama lengkap klien"
+            },
+            "clientEmail": {
+              "note": "Digunakan untuk mendeduplikasi klien yang ada"
+            },
+            "startAt": {
+              "note": "ISO 8601 — mis. 2026-06-15T09:00"
+            },
+            "endAt": {
+              "note": "Default ke startAt jika dihilangkan"
+            },
+            "title": {
+              "note": "Judul pemesanan"
+            },
+            "eventType": {
+              "note": "pernikahan, korporat, potret, dll."
+            },
+            "status": {
+              "note": "booked, completed, cancelled"
+            },
+            "amountTotal": {
+              "note": "Total jumlah pemesanan"
+            },
+            "amountDeposit": {
+              "note": "Jumlah deposit"
+            },
+            "currency": {
+              "note": "Default ke mata uang ruang kerja"
+            },
+            "locationAddress": {
+              "note": "Venue atau teks lokasi"
+            },
+            "notes": {
+              "note": "Catatan internal"
+            }
+          }
+        }
+      },
+      "export": {
+        "tooltip": "Unduh pemesanan sebagai CSV",
+        "empty": "Tidak ada pemesanan untuk diekspor"
+      },
+      "table": {
+        "empty": "Tidak ada pemesanan yang sesuai dengan filter Anda.",
+        "listEmpty": "Belum ada pemesanan.",
+        "past": "Lalu",
+        "showPast": "Tampilkan yang lalu",
+        "hidePast": "Sembunyikan yang lalu",
+        "pastBookingsHidden": "{count, plural, one {# pemesanan lalu disembunyikan} other {# pemesanan lalu disembunyikan}}",
+        "col": {
+          "title": "Pemesanan",
+          "client": "Klien",
+          "date": "Tanggal",
+          "status": "Status",
+          "total": "Total",
+          "actions": "Tindakan",
+          "past": "Lalu"
+        }
+      },
+      "row": {
+        "openMenu": "Buka tindakan pemesanan",
+        "view": "Lihat",
+        "edit": "Edit"
+      },
+      "statusValues": {
+        "booked": "Dipesan",
+        "completed": "Selesai",
+        "cancelled": "Dibatalkan"
+      },
+      "locationPicker": {
+        "searchPlaceholder": "Cari venue atau alamat…",
+        "searching": "Mencari…",
+        "noResults": "Tidak ada hasil. Coba pencarian lain.",
+        "dragHint": "Seret pin untuk menyesuaikan titik yang tepat.",
+        "clear": "Hapus lokasi",
+        "changeLocation": "Ubah lokasi",
+        "acceptLocation": "Terima lokasi",
+        "discardLocation": "Buang perubahan",
+        "accept": "Terima",
+        "cancel": "Batal",
+        "apply": "Terapkan",
+        "currentAddressLabel": "Lokasi yang dipilih",
+        "viewInMap": "Lihat di peta"
+      },
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Ulang tahun",
+        "other": "Lainnya"
+      },
+      "invoiceThemeDialog": {
+        "title": "Tema faktur",
+        "presets": {
+          "classic": "Klasik",
+          "slate": "Slate",
+          "navyGold": "Navy Gold",
+          "forest": "Forest",
+          "custom": "Kustom"
+        },
+        "mainColor": "Warna utama",
+        "accentColor": "Warna aksen",
+        "saveAndApply": "Simpan dan terapkan",
+        "cancel": "Batal"
+      },
+      "detail": {
+        "past": "Lalu",
+        "showPast": "Tampilkan sesi yang lalu",
+        "hidePast": "Sembunyikan sesi yang lalu",
+        "pastSessionsHidden": "{count, plural, one {# sesi lalu disembunyikan — toggle untuk tampilkan} other {# sesi lalu disembunyikan — toggle untuk tampilkan}}",
+        "tabs": {
+          "client": "Klien",
+          "event": "Acara",
+          "pricing": "Harga",
+          "eventPricing": "Acara",
+          "payments": "Pembayaran",
+          "sessionsLocation": "Sesi",
+          "activity": "Catatan & aktivitas"
+        },
+        "sections": {
+          "schedule": "Jadwal",
+          "pricing": "Harga",
+          "payments": "Pembayaran",
+          "history": "Riwayat"
+        },
+        "fields": {
+          "title": "Judul",
+          "titleRequired": "Judul tidak boleh kosong.",
+          "clientName": "Nama klien",
+          "status": "Status",
+          "eventType": "Jenis acara",
+          "date": "Tanggal",
+          "startAt": "Mulai shift",
+          "startTime": "Waktu mulai",
+          "endAt": "Selesai shift",
+          "endTime": "Waktu selesai",
+          "location": "Lokasi",
+          "total": "Total",
+          "deposit": "Deposit",
+          "depositExceedsTotal": "Deposit tidak boleh melebihi total.",
+          "depositRequiresTotal": "Anda tidak dapat menambahkan deposit tanpa menetapkan harga terlebih dahulu.",
+          "currency": "Mata uang",
+          "outstanding": "Saldo tertunggak",
+          "notes": "Catatan",
+          "activityEmpty": "Belum ada aktivitas.",
+          "viewAllHistory": "Lihat semua {count} entri",
+          "endBeforeStart": "Selesai tidak boleh sebelum mulai.",
+          "conflictsLabel": "Shift yang sudah ada pada {date}:",
+          "draftHint": "Sesuaikan waktu di bawah, lalu klik Simpan perubahan untuk menambahkan sesi ini.",
+          "email": "Email",
+          "phone": "Telepon",
+          "openClient": "Buka klien",
+          "viewClient": "Lihat klien",
+          "changeClient": "Ganti klien",
+          "changeClientCancel": "Pertahankan saat ini",
+          "changeClientSearch": "Cari klien…",
+          "noEmail": "Tidak ada email",
+          "noPhone": "Tidak ada telepon",
+          "noClientResults": "Tidak ada klien ditemukan",
+          "changeClientMultiSession": "Penugasan ulang tidak tersedia untuk pemesanan multi-sesi",
+          "searchFailed": "Pencarian gagal. Coba lagi.",
+          "editTitle": "Edit judul",
+          "confirmTitle": "Konfirmasi",
+          "cancelTitleEdit": "Batal",
+          "editEventType": "Ubah jenis acara",
+          "editStatus": "Ubah status",
+          "sendEmail": "Kirim email",
+          "callClient": "Hubungi"
+        },
+        "cancelConfirm": {
+          "title": "Batalkan pemesanan ini?",
+          "body": "Kami akan menandai \"{title}\" sebagai dibatalkan. Pemesanan tidak akan dihapus — Anda dapat memulihkannya dari jendela yang sama jika klien Anda kembali. Riwayat audit tetap utuh.",
+          "keep": "Pertahankan pemesanan",
+          "confirm": "Ya, batalkan pemesanan"
+        },
+        "history": {
+          "title": "Riwayat pemesanan",
+          "totalCount": "{count} entri",
+          "pageOf": "Halaman {page} dari {total}",
+          "previous": "Halaman sebelumnya",
+          "next": "Halaman berikutnya",
+          "actions": {
+            "created": "Dibuat",
+            "updated": "Diperbarui",
+            "status_changed": "Status diubah",
+            "client_changed": "Klien diubah",
+            "deleted": "Dihapus",
+            "payment_added": "Pembayaran ditambahkan",
+            "payment_updated": "Pembayaran diperbarui"
+          },
+          "today": "Hari ini",
+          "yesterday": "Kemarin",
+          "timelineLabel": "Linimasa aktivitas"
+        },
+        "cancel": "Batalkan pemesanan",
+        "restore": "Pulihkan pemesanan",
+        "invoice": "Unduh faktur",
+        "receipt": "Unduh kuitansi",
+        "discardChanges": "Buang perubahan",
+        "saveChanges": "Simpan perubahan",
+        "pendingBadge": "{count} belum disimpan",
+        "unsavedConfirm": "Anda memiliki perubahan yang belum disimpan. Buangnya?",
+        "discardTitle": "Buang perubahan?",
+        "discardDescription": "{count, plural, one {# perubahan belum disimpan akan hilang.} other {# perubahan belum disimpan akan hilang.}}",
+        "discardConfirm": "Buang dan tutup",
+        "keepEditing": "Terus mengedit",
+        "savedToast": "Pemesanan diperbarui.",
+        "cancelledToast": "Pemesanan dibatalkan.",
+        "restoredToast": "Pemesanan dipulihkan.",
+        "actionFailed": "Ada yang tidak beres. Coba lagi.",
+        "notFound": "Pemesanan tidak ditemukan.",
+        "editAll": "Edit semua",
+        "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan.",
+        "unconfirmedDrafts": {
+          "title": "Perubahan yang belum dikonfirmasi",
+          "description": "{count, plural, one {Anda memiliki # perubahan yang belum dikonfirmasi.} other {Anda memiliki # perubahan yang belum dikonfirmasi.}} Kirimkan bersama perubahan yang tersimpan, atau buang yang belum dikonfirmasi dan simpan hanya yang telah dikonfirmasi.",
+          "submitAll": "Kirim semua perubahan",
+          "discard": "Buang yang belum dikonfirmasi & simpan",
+          "cancel": "Kembali",
+          "invalidError": "Beberapa perubahan memiliki kesalahan — perbaiki sebelum mengirim."
+        },
+        "incompleteBusiness": {
+          "title": "Informasi bisnis belum lengkap",
+          "bodyInvoice": "Alamat dan email bisnis Anda belum diatur di halaman pengaturan. Invoice Anda akan berisi data yang tidak lengkap.",
+          "bodyReceipt": "Alamat dan email bisnis Anda belum diatur di halaman pengaturan. Kuitansi Anda akan berisi data yang tidak lengkap.",
+          "dontShowAgain": "Jangan tampilkan lagi",
+          "cancel": "Batal",
+          "downloadAnyway": "Tetap unduh"
+        }
+      },
+      "confirm": {
+        "title": "Terapkan perubahan",
+        "body": "Sesi ini mencakup {days} hari. Apa yang ingin Anda lakukan?",
+        "thisDay": "Terapkan untuk hari ini saja",
+        "wholeSession": "Terapkan untuk seluruh sesi",
+        "pastNote": "{count} hari yang lalu akan dipertahankan.",
+        "cancel": "Batal"
+      },
+      "dnd": {
+        "pastDateWarning": "Dipindahkan ke tanggal lampau",
+        "pastSplitWarning": "Hari-hari lampau dipertahankan — hanya hari-hari mendatang yang diperbarui",
+        "thisDayOnlyOnPast": "Tidak dapat mengedit hari yang telah berlalu",
+        "updating": "Memperbarui pemesanan…",
+        "updated": "Pemesanan diperbarui",
+        "updateError": "Gagal memperbarui pemesanan",
+        "conflictCheckFailed": "Tidak dapat memverifikasi konflik — silakan coba lagi",
+        "overnightNotAllowed": "Pemesanan tidak boleh melewati tengah malam. Gunakan sesi berulang untuk beberapa hari.",
+        "conflictBlockSubmit": "Selesaikan konflik sesi sebelum menyimpan.",
+        "conflictBlockDnd": "Bentrok dengan {title} — tidak bisa pindah ke sini.",
+        "conflictBlockDndMany": "Bentrok dengan {title} dan {more} lainnya — tidak bisa pindah ke sini.",
+        "pastDropNotAllowed": "Tidak bisa dipindahkan ke tanggal atau waktu yang sudah lewat."
+      },
+      "calendar": {
+        "past": "Lalu",
+        "togglePast": "Lalu",
+        "dropConflict": {
+          "title": "Konflik jadwal pada {date}",
+          "description": "Memindahkan pemesanan ini menciptakan tumpang tindih dengan satu atau lebih shift yang ada. Anda dapat memindahkannya atau membatalkan.",
+          "cancel": "Batal",
+          "moveAnyway": "Pindahkan saja"
+        },
+        "pastDateConfirm": {
+          "title": "Pindah ke tanggal lampau?",
+          "description": "Anda memindahkan pemesanan ini ke tanggal di masa lalu. Ini diizinkan tapi tidak biasa — konfirmasi untuk melanjutkan.",
+          "confirm": "Pindah ke lampau",
+          "cancel": "Batal"
+        },
+        "showPast": "Tampilkan yang lalu",
+        "hidePast": "Sembunyikan yang lalu",
+        "filterByStatus": "Filter berdasarkan status",
+        "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus",
+        "teamsLegend": "Tim",
+        "inactiveTeam": "Tim tidak aktif"
+      },
+      "sessions": {
+        "label": "Sesi {n}",
+        "add": "Tambah sesi",
+        "remove": "Hapus sesi",
+        "reviewLabel": "Sesi",
+        "past": "Lampau",
+        "showPast": "Tampilkan lampau",
+        "hidePast": "Sembunyikan lampau",
+        "pastHidden": "{count, plural, one {# sesi lampau disembunyikan} other {# sesi lampau disembunyikan}} — toggle untuk tampilkan",
+        "unsaved": "Belum disimpan"
+      },
+      "payments": {
+        "label": "Pembayaran {n}",
+        "add": "Tambah pembayaran",
+        "remove": "Hapus pembayaran",
+        "reviewLabel": "Pembayaran",
+        "title": "Judul",
+        "price": "Harga",
+        "status": "Status",
+        "method": "Metode",
+        "cash": "Tunai",
+        "card": "Kartu",
+        "remit": "Transfer",
+        "paid": "Dibayar",
+        "unpaid": "Belum dibayar",
+        "paidOn": "Dibayar pada {date}",
+        "empty": "Belum ada pembayaran terjadwal untuk pemesanan ini",
+        "exceedsBalance": "Melebihi sisa saldo",
+        "titleRequired": "Judul diperlukan.",
+        "priceRequired": "Jumlah harus lebih besar dari 0."
+      },
+      "wizard": {
+        "createTitle": "Pemesanan baru",
+        "editTitle": "Edit pemesanan",
+        "editTitleNamed": "Edit {title}",
+        "loading": "Memuat pemesanan…",
+        "previous": "Sebelumnya",
+        "next": "Berikutnya",
+        "cancel": "Batal",
+        "create": "Buat pemesanan",
+        "creating": "Membuat…",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "createdToast": "Pemesanan dibuat.",
+        "savedToast": "Pemesanan diperbarui.",
+        "depositExceedsTotal": "Deposit tidak boleh melebihi total.",
+        "unsavedConfirm": "Kemajuan Anda akan hilang jika keluar sekarang. Yakin?",
+        "unsaved": {
+          "title": "Buang perubahan Anda?",
+          "body": "Semua yang Anda masukkan dalam pemesanan ini akan hilang jika Anda pergi sekarang. Perubahan Anda belum disimpan.",
+          "keep": "Terus mengedit",
+          "discard": "Buang dan tutup"
+        },
+        "conflictConfirm": {
+          "title": "Konflik jadwal terdeteksi",
+          "description": "Satu atau lebih sesi tumpang tindih dengan pemesanan yang ada. Anda dapat mengirim tetap atau kembali untuk menyesuaikan tanggal.",
+          "confirm": "Kirim tetap",
+          "cancel": "Kembali"
+        },
+        "steps": {
+          "client": "Klien",
+          "event": "Acara",
+          "pricing": "Harga",
+          "eventPricing": "Acara",
+          "payments": "Pembayaran",
+          "sessionsLocation": "Sesi",
+          "review": "Tinjau"
+        },
+        "client": {
+          "tabExisting": "Klien yang ada",
+          "tabNew": "Buat baru",
+          "searchPlaceholder": "Cari berdasarkan nama atau email",
+          "noResults": "Tidak ada klien yang cocok. Coba pencarian lain.",
+          "selectRequired": "Pilih klien untuk melanjutkan.",
+          "name": "Nama",
+          "namePlaceholder": "mis. Emma Carter",
+          "email": "Email",
+          "emailPlaceholder": "emma@example.com",
+          "phone": "Telepon",
+          "phonePlaceholder": "+62 812 555 0142",
+          "readOnlyLabel": "Klien",
+          "readOnlyHint": "Mengubah klien ke pemesanan yang berbeda belum didukung dalam tampilan ini.",
+          "multiSessionReadOnly": "Klien dikunci pada pemesanan multi-sesi."
+        },
+        "event": {
+          "title": "Judul",
+          "titleRequired": "Beri judul untuk pemesanan ini.",
+          "titlePlaceholder": "mis. Pernikahan Carter — Pier 27",
+          "eventType": "Jenis acara",
+          "startAt": "Tanggal mulai shift",
+          "startAtRequired": "Pilih tanggal mulai.",
+          "startTime": "Waktu mulai shift",
+          "endAt": "Tanggal selesai shift",
+          "endTime": "Waktu selesai shift",
+          "conflictsLabel": "Shift yang sudah ada pada {date}:",
+          "allowPastDate": "Menambahkan pemesanan lama? Izinkan tanggal lampau",
+          "location": "Lokasi",
+          "checkingConflicts": "Memeriksa konflik…",
+          "repeatingSessions": "Sesi berulang",
+          "repeatingHint": "Buat satu sesi pada hari yang sama untuk setiap hari dalam rentang tanggal.",
+          "rangeStartDate": "Tanggal mulai",
+          "rangeEndDate": "Tanggal selesai",
+          "rangeApply": "Terapkan",
+          "rangeCancel": "Batal",
+          "rangeAllFieldsRequired": "Isi keempat kolom.",
+          "rangeEndBeforeStart": "Tanggal selesai harus pada atau setelah tanggal mulai.",
+          "rangeEndTimeBeforeStart": "Waktu selesai harus setelah waktu mulai.",
+          "rangeTooLong": "Rentang terlalu panjang (maks 366 hari).",
+          "startTimeRequired": "Waktu mulai diperlukan.",
+          "endTimeRequired": "Waktu selesai diperlukan.",
+          "endTimeBeforeStart": "Waktu selesai harus setelah waktu mulai.",
+          "locationRequired": "Pilih lokasi sebelum melanjutkan."
+        },
+        "pricing": {
+          "total": "Total",
+          "deposit": "Deposit",
+          "currency": "Mata uang",
+          "hint": "Harga dalam mata uang default ruang kerja. Anda dapat mengubah mata uang per pemesanan.",
+          "depositRequiresTotal": "Anda tidak dapat menambahkan deposit tanpa menetapkan harga terlebih dahulu."
+        },
+        "review": {
+          "intro": "Periksa cepat — pastikan semuanya sudah benar sebelum Anda menyimpan."
+        },
+        "teamLabel": "Tim",
+        "teamPlaceholder": "Pilih tim"
+      }
+    },
+    "sidebar": {
+      "dashboard": "Dasbor",
+      "bookings": "Pemesanan",
+      "clients": "Klien",
+      "calendar": "Kalender",
+      "inquiries": "Pertanyaan",
+      "gallery": "Galeri",
+      "teams": "Tim",
+      "settings": "Pengaturan",
+      "account": "Akun",
+      "logOut": "Keluar",
+      "logOutConfirmTitle": "Keluar?",
+      "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
+      "logOutConfirmCancel": "Batal",
+      "portfolio": "Portfolio",
+      "accountMenu": "Menu akun"
+    },
+    "theme": {
+      "label": "Tema",
+      "light": "Terang",
+      "dark": "Gelap",
+      "system": "Sistem"
+    },
+    "settings": {
+      "title": "Pengaturan",
+      "description": "Kelola akun, ruang kerja, dan preferensi Anda.",
+      "navigationLabel": "Navigasi pengaturan",
+      "selectPage": "Pilih halaman dari bilah sisi.",
+      "account": {
+        "profileSection": "Profil",
+        "profileHint": "Nama dan avatar Anda seperti yang dilihat oleh rekan tim.",
+        "avatarHint": "Unggah gambar persegi JPG, PNG, atau WebP, maksimal 10 MB.",
+        "avatarUpload": "Unggah",
+        "avatarReplace": "Ganti",
+        "avatarRemove": "Hapus",
+        "avatarUploading": "Mengunggah…",
+        "avatarSaving": "Menyimpan…",
+        "avatarSaved": "Foto diperbarui",
+        "avatarRemoved": "Foto dihapus",
+        "avatarUploadError": "Kami tidak dapat mengunggah foto Anda. Silakan coba lagi.",
+        "avatarTypeError": "Tipe file itu tidak didukung. Silakan pilih gambar JPG, PNG, atau WebP.",
+        "avatarSizeError": "Gambar itu terlalu besar. Silakan pilih yang di bawah 10 MB.",
+        "nameSection": "Nama tampilan",
+        "nameLabel": "Nama lengkap",
+        "emailLabel": "Alamat email",
+        "emailReadOnly": "Perubahan email belum didukung. Hubungi dukungan.",
+        "saving": "Menyimpan…",
+        "saveName": "Simpan nama",
+        "nameSaved": "Nama diperbarui.",
+        "passwordSection": "Kata sandi",
+        "passwordHint": "Ubah kata sandi yang Anda gunakan untuk masuk.",
+        "currentPasswordLabel": "Kata sandi saat ini",
+        "newPasswordLabel": "Kata sandi baru",
+        "confirmPasswordLabel": "Konfirmasi kata sandi baru",
+        "newPasswordHint": "Minimal 8 karakter",
+        "changePassword": "Ubah kata sandi",
+        "updatingPassword": "Memperbarui…",
+        "passwordSaved": "Kata sandi diperbarui.",
+        "passwordMismatch": "Kata sandi tidak cocok.",
+        "passwordTooShort": "Kata sandi harus minimal 8 karakter.",
+        "passwordRequired": "Masukkan kata sandi Anda saat ini.",
+        "showPassword": "Tampilkan kata sandi",
+        "hidePassword": "Sembunyikan kata sandi",
+        "setPasswordHint": "Anda masuk dengan Google. Kami akan mengirim tautan aman ke email Anda untuk mengatur atau mengatur ulang kata sandi untuk masuk lewat email.",
+        "setPassword": "Atur kata sandi",
+        "sendingSetPassword": "Mengirim…",
+        "setPasswordSent": "Periksa email Anda untuk tautan mengatur kata sandi.",
+        "resetPassword": "Atur ulang kata sandi Anda",
+        "avatarPreview": "Lihat foto lengkap",
+        "avatarPreviewTitle": "Foto profil"
+      },
+      "security": {
+        "mfaSection": "Autentikasi dua faktor",
+        "mfaHint": "Tambahkan lapisan keamanan kedua ke akun Anda menggunakan aplikasi autentikator.",
+        "mfaEnabledLabel": "Aplikasi autentikator",
+        "mfaNotEnabledLabel": "Autentikasi dua faktor tidak diaktifkan.",
+        "enabled": "Diaktifkan",
+        "mfaSetup": "Siapkan autentikator",
+        "mfaStarting": "Memulai…",
+        "mfaDisable": "Nonaktifkan autentikasi dua faktor",
+        "mfaDisableAriaLabel": "Nonaktifkan autentikasi dua faktor untuk akun Anda",
+        "disabling": "Menonaktifkan…",
+        "mfaEnabled": "Autentikasi dua faktor diaktifkan.",
+        "mfaDisabled": "Autentikasi dua faktor dinonaktifkan.",
+        "mfaScanHeading": "Pindai kode QR ini",
+        "mfaScanHint": "Buka aplikasi autentikator Anda dan pindai kode di bawah. Jika Anda tidak dapat memindai, masukkan kunci rahasia secara manual.",
+        "mfaQrAlt": "Kode QR untuk penyiapan aplikasi autentikator",
+        "mfaSecretLabel": "Kunci rahasia",
+        "mfaSecretHint": "Simpan kunci ini di tempat yang aman. Anda membutuhkannya untuk memulihkan akses jika kehilangan perangkat Anda.",
+        "mfaCodeLabel": "Kode verifikasi",
+        "verifyCode": "Verifikasi dan aktifkan",
+        "verifying": "Memverifikasi…",
+        "cancel": "Batal",
+        "mfaRefresh": "Segarkan kode",
+        "mfaExpiresIn": "Kedaluwarsa dalam {time}",
+        "mfaExpired": "Kode penyiapan ini kedaluwarsa. Segarkan untuk mendapatkan yang baru."
+      },
+      "tabs": {
+        "account": "Akun",
+        "customize": "Sesuaikan",
+        "workspace": "Detail Bisnis",
+        "teams": "Tim",
+        "publicPage": "Halaman publik",
+        "billing": "Tagihan",
+        "devPlan": "Dev · plan",
+        "currentWorkspace": "Ruang kerja saat ini"
+      },
+      "billing": {
+        "currentPlanLabel": "Paket saat ini",
+        "renewsOn": "Diperbarui pada {date}",
+        "availablePlans": "Paket tersedia",
+        "perMonth": "/ bulan",
+        "perYear": "/ tahun",
+        "upgradeTo": "Upgrade ke {plan}",
+        "upgradeToAriaLabel": "Upgrade ke paket {plan}",
+        "opening": "Membuka…",
+        "upgradeSuccess": "Langganan diaktifkan! Paket Anda telah diperbarui.",
+        "checkoutFailed": "Pembayaran gagal. Silakan coba lagi.",
+        "checkoutNotReady": "Sistem pembayaran belum siap. Silakan refresh dan coba lagi.",
+        "subscriptionIssue": "Ada masalah dengan langganan Anda. Periksa metode pembayaran Anda atau hubungi dukungan.",
+        "subscriptionStatus": {
+          "active": "Aktif",
+          "canceled": "Dibatalkan",
+          "past_due": "Jatuh tempo",
+          "paused": "Dijeda",
+          "trialing": "Masa percobaan"
+        },
+        "notYetAvailable": "Langganan berbayar belum tersedia. Periksa kembali nanti, atau gunakan kode promo di bawah jika Anda memilikinya.",
+        "manageSection": "Kelola langganan",
+        "manageDescription": "Perbarui metode pembayaran, lihat faktur, atau batalkan langganan Anda langsung melalui Lemon Squeezy.",
+        "manageButton": "Kelola langganan",
+        "betaPlanLabel": "Beta Tester",
+        "betaAccessNote": "Anda memiliki akses penuh Pro sebagai bagian dari program beta kami — tidak perlu penagihan.",
+        "cadenceToggle": {
+          "monthly": "Bulanan",
+          "yearly": "Tahunan",
+          "savePill": "Hemat 2 bulan"
+        }
+      },
+      "devPlan": {
+        "title": "Dev plan switcher",
+        "description": "Flip workspace.plan without round-tripping Lemon Squeezy. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "currentLabel": "Current plan",
+        "teamsSuffix": "teams",
+        "perTeamSuffix": "members/team",
+        "active": "Active",
+        "switch": "Switch",
+        "toasts": {
+          "switched": "Plan switched to {plan}."
+        }
+      },
+      "workspace": {
+        "businessSection": "Detail bisnis",
+        "businessSectionHint": "Identitas bisnis Anda dan tempat Anda beroperasi.",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "savedToast": "Ruang kerja diperbarui.",
+        "currencyWarning": "Berlaku untuk pemesanan baru. Jumlah yang sudah ada tetap menggunakan mata uang aslinya.",
+        "contactEmail": "Email kontak",
+        "contactEmailPlaceholder": "anda@contoh.com",
+        "contactAddress": "Alamat bisnis",
+        "contactAddressPlaceholder": "Jl. Utama 123, Kota, Negara",
+        "logoSection": "Logo bisnis",
+        "logoHint": "Ditampilkan pada faktur yang Anda hasilkan.",
+        "logoLabel": "Unggah logo",
+        "logoUploading": "Mengunggah…",
+        "logoRequirements": "PNG, JPEG, WebP atau SVG - maks 250 KB - persegi hingga 256 x 256 px",
+        "logoRemove": "Hapus",
+        "logoErrors": {
+          "type": "Hanya file PNG, JPEG, WebP atau SVG yang diterima.",
+          "size": "Ukuran file harus 250 KB atau lebih kecil.",
+          "dimensions": "Logo harus persegi dan 256 x 256 px atau lebih kecil.",
+          "image": "Tidak dapat membaca gambar. Coba file lain.",
+          "upload": "Unggah gagal. Silakan coba lagi."
+        }
+      },
+      "customize": {
+        "themeSection": "Tema",
+        "themeHint": "Mode terang atau gelap — disimpan di perangkat ini.",
+        "languageSection": "Bahasa",
+        "languageHint": "Mengganti antarmuka aplikasi. URL akan diperbarui sesuai.",
+        "languages": {
+          "en": "English",
+          "fil": "Filipino",
+          "id": "Bahasa Indonesia",
+          "ar": "العربية",
+          "th": "ภาษาไทย"
+        },
+        "timeFormatSection": "Format Waktu",
+        "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
+        "time24h": "24h",
+        "time12h": "12h"
+      },
+      "publicPage": {
+        "visibilitySection": "Visibilitas",
+        "visibilityHint": "Kendalikan apakah halaman publik Anda dapat diakses.",
+        "publish": "Terbitkan",
+        "unpublish": "Batalkan penerbitan",
+        "publishedAt": "Diterbitkan {date}",
+        "unpublished": "Belum diterbitkan",
+        "publicUrl": "URL publik Anda",
+        "copy": "Salin",
+        "copied": "Disalin",
+        "seoSection": "SEO",
+        "seoSectionHint": "Judul dan deskripsi yang ditampilkan saat halaman Anda dibagikan atau diindeks.",
+        "seoTitle": "Judul SEO",
+        "seoTitlePlaceholder": "Sarah Bell Photography — Pernikahan & Potret",
+        "seoDescription": "Deskripsi SEO",
+        "seoDescriptionPlaceholder": "Fotografi pernikahan dan potret di seluruh Jakarta…",
+        "inquirySection": "Perutean pertanyaan",
+        "inquirySectionHint": "Ke mana kiriman dari formulir pertanyaan Anda diteruskan.",
+        "inquiryRecipientEmail": "Email penerima",
+        "inquiryRecipientEmailPlaceholder": "anda@contoh.com",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "savedToast": "Pengaturan halaman publik diperbarui.",
+        "visibilityUpdatedToast": "Visibilitas diperbarui.",
+        "siteIconSection": "Ikon situs",
+        "siteIconHint": "Ditampilkan sebagai ikon tab browser untuk halaman portofolio publik Anda. Akan menggunakan logo header jika tidak disetel.",
+        "siteIconLabel": "Unggah ikon situs",
+        "siteIconUpload": "Pilih gambar",
+        "siteIconUploading": "Mengunggah…",
+        "siteIconRequirements": "PNG, JPEG, WebP atau AVIF · maks 1 MB · hingga 512 × 512 px",
+        "siteIconRemove": "Hapus",
+        "siteIconErrors": {
+          "type": "Hanya file PNG, JPEG, WebP atau AVIF yang diterima.",
+          "size": "File harus berukuran 1 MB atau lebih kecil.",
+          "dimensions": "Gambar harus 512 × 512 px atau lebih kecil.",
+          "image": "Tidak dapat membaca gambar. Coba file lain.",
+          "upload": "Pengunggahan gagal. Coba lagi."
+        },
+        "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
+        "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
+        "seoKeywords": "Tag SEO",
+        "seoKeywordsPlaceholder": "fotografer pernikahan, editorial, jakarta",
+        "seoKeywordsHint": "Tag opsional dipisahkan koma untuk mesin pencari dan structured data. Tambahkan hingga 10.",
+        "galleryDescriptionLabel": "Deskripsi halaman Gallery",
+        "galleryDescriptionPlaceholder": "Pameran karya terbaik pernikahan dan potret kami…",
+        "galleryDescriptionHint": "Deskripsi terpisah untuk halaman Gallery agar tidak menduplikasi halaman beranda. Target: ~155 karakter.",
+        "ogImageSection": "Gambar bagikan",
+        "ogImageHint": "Foto yang ditampilkan saat tautan Anda dibagikan di Facebook, Instagram, WhatsApp, atau iMessage. Gunakan foto terbaik Anda. Ukuran 1200 × 630 px direkomendasikan.",
+        "ogImageLabel": "Unggah gambar bagikan",
+        "ogImageUploading": "Mengunggah…",
+        "ogImageRequirements": "JPEG, PNG, WebP atau AVIF · maks 10 MB · 1200 × 630 px direkomendasikan",
+        "ogImageRemove": "Hapus",
+        "ogImageReplace": "Ganti",
+        "ogImageErrors": {
+          "type": "Hanya file JPEG, PNG, WebP atau AVIF yang diterima.",
+          "size": "File harus berukuran 10 MB atau lebih kecil.",
+          "dimensions": "Gambar harus minimal 600 px pada sisi yang lebih pendek.",
+          "upload": "Pengunggahan gagal. Coba lagi."
+        },
+        "noindexSection": "Visibilitas pencarian",
+        "noindexLabel": "Sembunyikan dari mesin pencari",
+        "noindexHint": "Jauhkan portofolio ini dari hasil pencarian Google. Cocok untuk draf atau peluncuran lunak. Tautan langsung Anda tetap berfungsi.",
+        "publishChanges": "Terbitkan perubahan",
+        "publishingChanges": "Menerbitkan…",
+        "publishChangesSuccessToast": "Perubahan telah diterbitkan ke halaman publik Anda.",
+        "unpublishedBannerTitle": "Belum diterbitkan",
+        "unpublishedBannerBody": "Situs Anda belum diterbitkan — pengaturan ini tidak akan muncul di halaman publik Anda sampai Anda menerbitkannya.",
+        "pendingChangesBannerTitle": "Perubahan belum diterbitkan",
+        "pendingChangesBannerBody": "Anda memiliki perubahan yang belum diterbitkan — terbitkan agar terlihat di halaman publik Anda."
+      }
+    },
+    "teams": {
+      "title": "Tim",
+      "description": "Kelompokkan anggota tim ke dalam tim. Setiap tim memiliki kalendarnya sendiri. Anggota hanya dapat melihat pemesanan dari tim yang mereka ikuti.",
+      "listEmpty": "Anda belum memiliki tim apa pun.",
+      "createButton": "Buat tim",
+      "toolbar": {
+        "search": "Cari tim",
+        "searchLabel": "Cari tim berdasarkan nama",
+        "showDeactivated": "Tampilkan yang dinonaktifkan"
+      },
+      "table": {
+        "empty": "Tidak ada tim yang sesuai dengan pencarian Anda.",
+        "col": {
+          "color": "Warna",
+          "name": "Tim",
+          "members": "Anggota",
+          "monthlyAverage": "Rata-rata Bulanan",
+          "actions": "Tindakan"
+        },
+        "details": "Detail",
+        "openTeam": "Buka {name}"
+      },
+      "colorPicker": {
+        "presetsLabel": "Pra-setel",
+        "customLabel": "Warna kustom",
+        "hexLabel": "Hex"
+      },
+      "createDialog": {
+        "title": "Buat tim",
+        "description": "Beri nama tim dan pilih warna untuk chip kalendernya.",
+        "nameLabel": "Nama tim",
+        "namePlaceholder": "mis. Kru pernikahan",
+        "colorLabel": "Warna",
+        "submit": "Buat tim",
+        "cancel": "Batal",
+        "creating": "Membuat…"
+      },
+      "renameDialog": {
+        "title": "Ganti nama tim",
+        "submit": "Simpan",
+        "saving": "Menyimpan…",
+        "cancel": "Batal"
+      },
+      "deactivateDialog": {
+        "title": "Nonaktifkan tim?",
+        "description": "“{name}” akan disembunyikan dari tim aktif Anda dan tidak dapat lagi menerima pemesanan baru. Anggota, pemesanan, dan riwayatnya tetap tersimpan, dan Anda dapat mengaktifkannya kembali kapan saja.",
+        "confirm": "Nonaktifkan tim",
+        "deactivating": "Menonaktifkan…",
+        "cancel": "Batal"
+      },
+      "reactivateDialog": {
+        "title": "Aktifkan kembali tim?",
+        "description": "“{name}” akan aktif kembali dan dapat menerima pemesanan baru. Ini akan dihitung dalam batas tim aktif paket Anda.",
+        "confirm": "Aktifkan kembali tim",
+        "reactivating": "Mengaktifkan kembali…",
+        "cancel": "Batal"
+      },
+      "team": {
+        "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}",
+        "monthlyBookings": "{count, plural, one {# booking/bln} other {# booking/bln}}",
+        "defaultBadge": "Default",
+        "rename": "Ganti nama",
+        "changeColor": "Ubah warna",
+        "invite": "Undang rekan kerja",
+        "actionsLabel": "Tindakan untuk {name}",
+        "edit": "Edit",
+        "deactivate": "Nonaktifkan",
+        "reactivate": "Aktifkan kembali",
+        "inactiveBadge": "Tidak aktif"
+      },
+      "drawer": {
+        "membersHeading": "Anggota",
+        "memberCount": "{count}/{max} anggota",
+        "noMembers": "Belum ada anggota di tim ini.",
+        "addMemberLabel": "Tambah anggota yang sudah ada",
+        "addMemberPlaceholder": "Pilih anggota…",
+        "noAssignableMembers": "Semua orang di ruang kerja ini sudah ada di tim ini.",
+        "pendingHeading": "Undangan tertunda",
+        "noPending": "Tidak ada undangan tertunda untuk tim ini.",
+        "inviteToTeam": "Undang ke tim ini",
+        "leadToggleLabel": "Lead",
+        "leadOnlyOnePerTeam": "Setiap tim hanya boleh memiliki satu lead.",
+        "removeFromTeam": "Hapus",
+        "teamFull": "Tim ini sudah penuh.",
+        "close": "Tutup",
+        "removeMemberFlow": {
+          "confirmTitle": "Hapus {name} dari {team}?",
+          "confirmDescription": "Mereka akan kehilangan akses ke kalender dan pemesanan tim ini.",
+          "confirmButton": "Hapus dari tim",
+          "removeFromTeamAndWorkspace": "Hapus dari tim + ruang kerja",
+          "otherTeamsBlocked": "Anggota ini juga berada di tim lain. Hapus dari tim tersebut terlebih dahulu.",
+          "removing": "Menghapus…",
+          "workspacePromptTitle": "Hapus juga {name} dari ruang kerja?",
+          "workspacePromptDescription": "Mereka akan kehilangan akses ke semua tim dan ruang kerja sepenuhnya. Tindakan ini tidak dapat dibatalkan.",
+          "dontAskAgain": "Jangan tanya lagi",
+          "removeFromWorkspaceButton": "Hapus dari ruang kerja",
+          "keepInWorkspaceButton": "Pertahankan di ruang kerja"
+        }
+      },
+      "upsell": {
+        "atCapTitle": "Anda telah mencapai batas tim Anda",
+        "atCapBody": "Paket {plan} Anda memungkinkan {max} {max, plural, =1 {tim} other {tim}}. Upgrade untuk menambahkan lebih banyak.",
+        "cta": "Lihat paket",
+        "proAtCapBody": "Pro dibatasi hingga {max} tim. Hubungi dukungan jika Anda membutuhkan lebih banyak."
+      },
+      "errors": {
+        "nameRequired": "Nama tim diperlukan.",
+        "nameTooLong": "Nama tim harus 40 karakter atau kurang.",
+        "duplicateName": "Tim dengan nama ini sudah ada di ruang kerja ini.",
+        "teamNotFound": "Tim tidak ditemukan.",
+        "generic": "Terjadi kesalahan. Silakan coba lagi.",
+        "cannotDeactivateDefault": "Tim default tidak dapat dinonaktifkan.",
+        "reactivateCapExceeded": "Mengaktifkan kembali akan melebihi batas tim aktif paket Anda. Nonaktifkan tim lain atau tingkatkan paket Anda terlebih dahulu."
+      },
+      "toasts": {
+        "created": "Tim dibuat.",
+        "renamed": "Tim diganti nama.",
+        "colorChanged": "Warna diperbarui.",
+        "saved": "Tim diperbarui.",
+        "deactivated": "Tim dinonaktifkan.",
+        "reactivated": "Tim diaktifkan kembali."
+      },
+      "teamsHeading": "Tim",
+      "invite": {
+        "button": "Undang anggota",
+        "dialog": {
+          "title": "Undang rekan kerja",
+          "description": "Mereka akan mendapatkan undangan email. Setelah menerima, mereka akan muncul di daftar anggota Anda yang ditugaskan ke tim yang Anda pilih.",
+          "emailLabel": "Alamat email",
+          "emailPlaceholder": "rekankerja@contoh.com",
+          "teamsLabel": "Tambahkan ke tim ini",
+          "leadLabel": "Lead",
+          "teamFull": "Penuh",
+          "submit": "Kirim undangan",
+          "sending": "Mengirim…",
+          "emailAlreadyRegistered": "Email ini sudah memiliki akun Gallurio. Pengiriman dinonaktifkan sampai Anda menggunakan alamat lain."
+        },
+        "errors": {
+          "emailRequired": "Masukkan alamat email yang valid.",
+          "pickAtLeastOneTeam": "Pilih setidaknya satu tim untuk menambahkan mereka.",
+          "teamFull": "Tim-tim ini penuh dan tidak dapat menerima anggota baru: {teams}.",
+          "teamAlreadyHasLead": "Tim-tim ini sudah memiliki lead yang ditetapkan: {teams}.",
+          "teamNotFound": "Salah satu tim yang dipilih tidak ditemukan.",
+          "alreadyInvitedOrMember": "Email tersebut sudah memiliki undangan atau sudah menjadi anggota ruang kerja.",
+          "noTeamsExist": "Buat tim terlebih dahulu sebelum mengundang anggota."
+        },
+        "toasts": {
+          "sent": "Undangan terkirim.",
+          "revoked": "Undangan dicabut."
+        },
+        "revokeDialog": {
+          "title": "Cabut undangan?",
+          "description": "Undangan untuk {email} akan dibatalkan dan kursi tim yang telah dipesan akan dibebaskan.",
+          "confirm": "Cabut undangan"
+        }
+      },
+      "members": {
+        "heading": "Anggota",
+        "empty": "Belum ada rekan kerja. Undang seseorang untuk memulai.",
+        "ownerBadge": "Pemilik",
+        "leadBadge": "Lead",
+        "memberBadge": "Anggota",
+        "pendingBadge": "Menunggu",
+        "manageTeams": "Kelola tim",
+        "removeFromWorkspace": "Hapus dari ruang kerja",
+        "revokeInvite": "Cabut undangan",
+        "rowActionsLabel": "Tindakan untuk {name}",
+        "viewButton": "Lihat anggota",
+        "inviteCountsLabel": "Jumlah undangan",
+        "newlyAcceptedCount": "Baru {count}",
+        "pendingCount": "Tertunda {count}",
+        "description": "Semua orang yang memiliki akses ke ruang kerja ini, di semua tim.",
+        "modeLabel": "Daftar anggota",
+        "active": "Aktif",
+        "pending": "Menunggu",
+        "searchPlaceholder": "Cari nama atau email",
+        "noActiveMatches": "Tidak ada anggota yang cocok dengan pencarian Anda.",
+        "noPendingMatches": "Tidak ada undangan tertunda yang cocok dengan pencarian Anda.",
+        "noPending": "Tidak ada undangan tertunda.",
+        "moreTeams": "+{count} tim lainnya",
+        "ownerAllTeams": "Dapat mengawasi semua tim",
+        "noTeams": "Tidak berada di tim mana pun",
+        "removeFromWorkspaceLabel": "Hapus {name} dari ruang kerja",
+        "removeDialog": {
+          "title": "Hapus anggota?",
+          "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. Pemesanan mereka tetap ada; kursi tim dibebaskan. Tindakan ini tidak dapat dibatalkan.",
+          "confirm": "Hapus anggota"
+        },
+        "details": {
+          "tabsLabel": "Detail anggota", "tabs": { "details": "Detail", "history": "Riwayat" },
+          "teams": "Tim", "noTeams": "Tidak ada tim", "completed": "Selesai", "workingNow": "Sedang berjalan", "future": "Mendatang",
+          "fromDate": "Dari tanggal", "toDate": "Sampai tanggal", "action": "Tindakan", "allActions": "Semua tindakan",
+          "actions": { "created": "Dibuat", "updated": "Diperbarui", "deleted": "Dihapus", "statusChanged": "Status diubah", "paymentAdded": "Pembayaran ditambahkan" },
+          "loadingHistory": "Memuat riwayat aktivitas", "loading": "Memuat…", "loadMore": "Muat lebih banyak", "noActivity": "Tidak ada aktivitas ditemukan."
+        },
+        "errors": {
+          "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",
+          "isTeamLead": "{name} adalah lead tim untuk setidaknya satu tim. Hapus status lead tim mereka terlebih dahulu sebelum menghapusnya."
+        },
+        "toasts": {
+          "removed": "Anggota dihapus."
+        }
+      },
+      "assignment": {
+        "dialog": {
+          "title": "Kelola penugasan tim",
+          "description": "Tambahkan atau hapus {name} dari tim. Aktifkan tanda lead untuk memberi mereka hak edit di dalam tim.",
+          "add": "Tambahkan",
+          "remove": "Hapus",
+          "done": "Selesai"
+        },
+        "errors": {
+          "alreadyOnTeam": "Anggota tersebut sudah ada di tim ini."
+        },
+        "toasts": {
+          "added": "Ditambahkan ke tim.",
+          "removed": "Dihapus dari tim.",
+          "promoted": "Dipromosikan menjadi lead.",
+          "demoted": "Diturunkan menjadi anggota.",
+          "promoting": "Memindahkan lead…",
+          "demoting": "Menghapus lead…"
+        }
+      },
+      "downgradeBlock": {
+        "title": "Downgrade diblokir",
+        "description": "Anda berada di paket {currentPlan} dengan lebih banyak tim daripada yang diizinkan paket {targetPlan} (maks {maxTeams}). Hapus {excess} tim sebelum mengganti paket.",
+        "teamsHeading": "Tim saat ini",
+        "dismiss": "Mengerti",
+        "manageTeams": "Kelola tim"
+      },
+      "editDialog": {
+        "title": "Edit tim",
+        "submit": "Simpan perubahan",
+        "saving": "Menyimpan…"
+      }
+    },
+    "clients": {
+      "title": "Klien",
+      "listEmpty": "Anda belum memiliki klien apa pun.",
+      "listEmptyHint": "Tambahkan klien pertama Anda untuk mulai melacak pemesanan dan riwayat.",
+      "toolbar": {
+        "search": "Cari berdasarkan nama atau email",
+        "searchLabel": "Cari klien",
+        "sourceAll": "Semua sumber",
+        "tagsAll": "Semua tag",
+        "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
+        "showInactive": "Tampilkan tidak aktif",
+        "add": "Tambah Klien"
+      },
+      "sourceValues": {
+        "form": "Formulir",
+        "manual": "Manual",
+        "referral": "Referensi",
+        "import": "Impor"
+      },
+      "table": {
+        "empty": "Tidak ada klien yang cocok dengan filter Anda.",
+        "col": {
+          "name": "Nama",
+          "contact": "Kontak",
+          "source": "Sumber",
+          "totalSpent": "Total Dihabiskan",
+          "actions": "Aksi"
+        },
+        "bookings": "{count} booking",
+        "lastBooking": "Terakhir: {date}",
+        "noBookings": "Belum ada booking",
+        "openMenu": "Buka aksi klien",
+        "openClient": "Buka {name}",
+        "view": "Lihat",
+        "edit": "Ubah",
+        "deactivate": "Nonaktifkan",
+        "reactivate": "Aktifkan kembali"
+      },
+      "form": {
+        "addTitle": "Tambah Klien",
+        "editTitle": "Ubah Klien",
+        "name": "Nama",
+        "namePlaceholder": "mis. Maria Santos",
+        "email": "Email",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "Telepon",
+        "phonePlaceholder": "+62 812 555 0142",
+        "source": "Sumber",
+        "tags": "Tag",
+        "tagsPlaceholder": "Tambahkan tag dan tekan Enter",
+        "removeTag": "Hapus tag {tag}",
+        "notes": "Catatan",
+        "notesPlaceholder": "Catatan apa pun tentang klien ini…",
+        "save": "Simpan",
+        "view": "Lihat",
+        "saving": "Menyimpan…",
+        "cancel": "Batal",
+        "createSuccess": "Klien dibuat.",
+        "updateSuccess": "Klien diperbarui.",
+        "error": "Ada yang salah. Coba lagi."
+      },
+      "detail": {
+        "inactive": "Tidak aktif",
+        "tabs": {
+          "overview": "Ringkasan",
+          "bookings": "Booking",
+          "payments": "Pembayaran"
+        },
+        "overview": {
+          "totalSpent": "Total Dihabiskan",
+          "bookingsCount": "Booking",
+          "lastBooking": "Booking Terakhir",
+          "never": "Tidak pernah",
+          "contact": "Kontak",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "Sumber",
+          "tags": "Tag",
+          "noTags": "Tidak ada tag",
+          "notes": "Catatan",
+          "noNotes": "Tidak ada catatan"
+        },
+        "bookings": {
+          "loading": "Memuat booking…",
+          "empty": "Belum ada booking.",
+          "error": "Gagal memuat booking."
+        },
+        "payments": {
+          "empty": "Belum ada catatan pembayaran."
+        },
+        "edit": "Ubah",
+        "deactivate": "Nonaktifkan",
+        "reactivate": "Aktifkan kembali",
+        "close": "Tutup"
+      },
+      "deactivate": {
+        "title": "Nonaktifkan klien ini?",
+        "body": "Klien ini akan disembunyikan dari daftar aktif. Anda dapat mengaktifkannya kembali kapan saja dengan mengaktifkan 'Tampilkan tidak aktif' di daftar klien.",
+        "cancel": "Batal",
+        "confirm": "Nonaktifkan"
+      },
+      "unsaved": {
+        "title": "Buang perubahan Anda?",
+        "body": "Anda memiliki perubahan yang belum disimpan untuk klien ini. Perubahan akan hilang jika Anda menutup sekarang.",
+        "keep": "Lanjutkan mengubah",
+        "discard": "Buang dan tutup"
+      },
+      "toasts": {
+        "reactivating": "Mengaktifkan kembali klien…",
+        "deactivating": "Menonaktifkan klien…"
+      }
+    },
+    "inquiries": {
+      "title": "Pertanyaan",
+      "subtitle": "Permintaan pemesanan dari portofolio publik Anda.",
+      "toolbar": {
+        "from": "Dari",
+        "to": "Sampai",
+        "clear": "Hapus tanggal",
+        "date": "Tanggal",
+        "apply": "Terapkan"
+      },
+      "tabs": {
+        "all": "Semua",
+        "inquiry": "Pertanyaan",
+        "booked": "Dipesan",
+        "archived": "Diarsipkan"
+      },
+      "statusValues": {
+        "inquiry": "Pertanyaan",
+        "archived": "Diarsipkan",
+        "booked": "Dipesan",
+        "converted": "Dikonversi ke Pemesanan"
+      },
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Ulang tahun",
+        "other": "Lainnya"
+      },
+      "preferred": {
+        "email": "Email",
+        "phone": "Telepon",
+        "either": "Salah satu"
+      },
+      "table": {
+        "empty": "Belum ada pertanyaan.",
+        "filteredEmpty": "Tidak ada pertanyaan yang cocok dengan filter Anda.",
+        "emptyHint": "Ketika seseorang mengisi formulir kontak portofolio Anda, permintaan mereka akan muncul di sini.",
+        "viewPublicPage": "Lihat halaman publik Anda",
+        "open": "Buka pertanyaan dari {name}",
+        "noDate": "Tidak ada tanggal",
+        "directSource": "Langsung",
+        "col": {
+          "status": "Status",
+          "client": "Klien",
+          "eventDate": "Tanggal acara",
+          "eventType": "Jenis",
+          "submitted": "Dikirim",
+          "source": "Sumber",
+          "eventTitle": "Judul acara",
+          "actions": "Tindakan"
+        },
+        "noTitle": "Acara tanpa judul",
+        "conflict": "Konflik",
+        "actions": {
+          "view": "Lihat",
+          "menuLabel": "Buka tindakan pertanyaan"
+        }
+      },
+      "detail": {
+        "back": "Kembali ke pertanyaan",
+        "conflictBanner": "Satu atau lebih sesi bertabrakan dengan pemesanan yang ada.",
+        "submittedOn": "Dikirim {date}",
+        "notFound": "Pertanyaan tidak ditemukan.",
+        "clientInfo": {
+          "title": "Info klien",
+          "name": "Nama",
+          "email": "Email",
+          "phone": "Telepon",
+          "preferredContact": "Kontak pilihan",
+          "none": "—",
+          "editPhone": "Edit",
+          "savePhone": "Simpan",
+          "cancelEdit": "Batal",
+          "savedToast": "Telepon diperbarui."
+        },
+        "eventRequest": {
+          "title": "Permintaan acara",
+          "eventType": "Jenis acara",
+          "guestCount": "Tamu",
+          "location": "Lokasi",
+          "sessions": "Tanggal yang diminta",
+          "message": "Pesan",
+          "none": "—"
+        },
+        "bookingDraft": {
+          "title": "Draf pemesanan",
+          "description": "Mengonversi ini akan membuat pemesanan di kalender Anda. Tetapkan harga sekarang atau nanti.",
+          "total": "Total",
+          "deposit": "Deposit",
+          "notes": "Catatan internal",
+          "notesPlaceholder": "Catatan yang hanya dapat Anda lihat…",
+          "save": "Simpan perubahan",
+          "saving": "Menyimpan…",
+          "approve": "Konversi ke pemesanan",
+          "approving": "Mengonversi…",
+          "approved": "Dikonversi",
+          "missing": "Tidak ada draf pemesanan yang terhubung untuk pertanyaan ini.",
+          "alreadyConverted": "Pertanyaan ini telah disetujui.",
+          "viewBooking": "Lihat pemesanan",
+          "approveError": "Tidak dapat mengonversi. Silakan coba lagi.",
+          "saveError": "Tidak dapat menyimpan. Silakan coba lagi.",
+          "savedToast": "Draf disimpan.",
+          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan.",
+          "conflictBlocks": "Selesaikan konflik jadwal di atas sebelum mengonversi.",
+          "team": "Tim"
+        },
+        "actions": {
+          "decline": "Tolak & beritahu",
+          "declinedToast": "Pertanyaan ditolak — klien telah diberitahu.",
+          "archive": "Arsipkan",
+          "working": "Menyimpan…",
+          "archivedToast": "Pertanyaan diarsipkan.",
+          "approvedToast": "Dikonversi ke pemesanan.",
+          "errorToast": "Ada yang tidak beres. Silakan coba lagi."
+        },
+        "history": {
+          "title": "Riwayat",
+          "submitted": "Pertanyaan dikirim",
+          "booked": "Disetujui menjadi pemesanan"
+        },
+        "sessionsEditor": {
+          "edit": "Edit sesi",
+          "save": "Simpan perubahan",
+          "saving": "Menyimpan…",
+          "discard": "Buang",
+          "conflictBlocks": "Satu atau lebih sesi bertabrakan dengan pemesanan yang ada.",
+          "pastDate": "Sesi harus di masa depan.",
+          "lockedConverted": "Sesi dikunci setelah konversi.",
+          "lockedArchived": "Sesi dikunci (diarsipkan).",
+          "phoneLabel": "Telepon",
+          "emailReadonly": "Email (hanya baca)",
+          "sessionLabel": "Sesi {n}",
+          "checking": "Memeriksa konflik…",
+          "conflictInline": "konflik",
+          "dateLabel": "Tanggal",
+          "startLabel": "Waktu mulai",
+          "endLabel": "Waktu selesai",
+          "alterOnlyError": "Jumlah sesi tidak dapat diubah.",
+          "savedToast": "Sesi disimpan.",
+          "saveError": "Tidak dapat menyimpan sesi. Silakan coba lagi."
+        }
+      },
+      "view": {
+        "table": "Tabel",
+        "card": "Mode kartu",
+        "calendar": "Kalender"
+      },
+      "calendar": {
+        "empty": "Tidak ada pertanyaan atau pemesanan untuk ditampilkan.",
+        "filters": {
+          "inquiry": "Pertanyaan",
+          "booked": "Dipesan",
+          "conflicted": "Konflik"
+        },
+        "rescheduleConflict": "Waktu ini bertentangan dengan pemesanan yang ada — pemindahan dibatalkan",
+        "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi",
+        "updating": "Menjadwalkan ulang…",
+        "updated": "Sesi dijadwalkan ulang"
+      }
+    },
+    "pageBuilder": {
+      "title": "Pembuat halaman",
+      "editorComingSoon": "Editor lengkap hadir di pembaruan berikutnya. Portofolio Anda sudah disiapkan dan siap digunakan.",
+      "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengedit portofolio.",
+      "openPublicPage": "Lihat halaman publik",
+      "editPlaceholderHint": "Anda dapat menjalankan ulang pengaturan kapan saja untuk memulai dari templat baru.",
+      "rerunWizard": "Jalankan ulang pengaturan",
+      "brandKit": {
+        "themePreset": "Tema",
+        "presets": {
+          "minimal": "Minimal",
+          "editorial": "Editorial",
+          "luxury": "Mewah",
+          "bold": "Berani",
+          "romantic": "Romantis",
+          "modern": "Modern"
+        },
+        "fontPair": "Font",
+        "colors": "Warna",
+        "colorLabels": {
+          "primaryColor": "Utama",
+          "secondaryColor": "Sekunder",
+          "accentColor": "Aksen",
+          "backgroundColor": "Latar belakang",
+          "foregroundColor": "Teks"
+        },
+        "themes": "Tema",
+        "searchPlaceholder": "Cari tema",
+        "noThemesMatch": "Tidak ada tema yang cocok dengan pencarian Anda.",
+        "prevPage": "Tema sebelumnya",
+        "nextPage": "Tema berikutnya",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "Terapkan tema: {name}",
+        "deleteTheme": "Hapus tema: {name}",
+        "saveCurrentAsTheme": "Simpan saat ini sebagai tema",
+        "themeNamePlaceholder": "Nama tema",
+        "saveAction": "Simpan",
+        "enterThemeName": "Masukkan nama untuk tema ini.",
+        "nameTooLong": "Nama tema harus 60 karakter atau kurang.",
+        "saveThemeError": "Tidak dapat menyimpan tema. Silakan coba lagi.",
+        "themeLimitReached": "Anda telah mencapai maksimum {max} tema tersimpan.",
+        "currentTheme": "Tema Saat Ini",
+        "editTheme": "Edit tema: {name}",
+        "editThemeName": "Nama tema",
+        "overrideCurrentTitle": "Ganti tema saat ini Anda?",
+        "overrideCurrentBody": "Membangun di atas \"{name}\" akan mengganti Tema Saat Ini Anda yang belum disimpan.",
+        "continueAction": "Lanjutkan",
+        "cancelAction": "Batal",
+        "unsavedChangesTitle": "Anda memiliki perubahan yang belum disimpan",
+        "unsavedChangesBody": "Simpan perubahan Anda sebelum menutup, atau buang perubahan tersebut.",
+        "discardAction": "Buang",
+        "saveAndCloseAction": "Simpan & tutup",
+        "themeNameExists": "Sudah ada tema dengan nama ini.",
+        "applyAction": "Terapkan",
+        "saveThemeName": "Simpan tema",
+        "cancelThemeEdit": "Batalkan edit tema",
+        "addNewTheme": "Tambah tema baru",
+        "addNewGuardTitle": "Simpan sebelum memulai yang baru?",
+        "addNewGuardBody": "Anda memiliki perubahan yang belum disimpan. Simpan tema saat ini dulu, atau buang untuk memulai dari awal.",
+        "addNewGuardNameLabel": "Nama tema"
+      },
+      "editor": {
+        "zone": {
+          "home": "Beranda",
+          "gallery": "Galeri",
+          "contact": "Formulir kontak",
+          "groupLabel": "Bagian halaman",
+          "sectionsLabel": "Bagian portofolio"
+        },
+        "save": {
+          "saving": "Menyimpan…",
+          "saved": "Tersimpan",
+          "idle": "Semua perubahan tersimpan"
+        },
+        "publish": "Terbitkan",
+        "publishing": "Menerbitkan…",
+        "theme": "Tema",
+        "contact": "Kontak",
+        "publishedToast": "Diterbitkan! Portofolio Anda sudah tayang.",
+        "savedToast": "Tersimpan.",
+        "errorToast": "Tidak dapat menyimpan. Silakan coba lagi.",
+        "done": "Selesai",
+        "publishDialog": {
+          "title": "Terbitkan portofolio Anda?",
+          "body": "Siapa pun yang memiliki tautannya akan langsung melihat perubahan terbaru Anda.",
+          "confirm": "Terbitkan sekarang",
+          "cancel": "Batal",
+          "liveAt": "Tayang di {url}",
+          "copyLink": "Salin tautan",
+          "copied": "Disalin",
+          "slugLabel": "URL portofolio",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "Simpan URL",
+          "slugEdit": "Edit URL portofolio",
+          "slugSaving": "Menyimpan...",
+          "slugSaved": "Disimpan",
+          "slugError": "Tidak dapat memperbarui URL, silakan coba lagi",
+          "slugUrlTaken": "URL itu sudah dipakai",
+          "slugChecking": "Memeriksa...",
+          "slugAvailable": "Tersedia",
+          "slugTaken": "Sudah dipakai",
+          "slugInvalid": "Format tidak valid",
+          "qrCodeAlt": "Kode QR yang mengarah ke portofolio Anda",
+          "downloadQr": "Unduh kode QR"
+        },
+        "themeDialog": {
+          "title": "Tema & merek"
+        },
+        "contactDialog": {
+          "title": "Formulir kontak",
+          "formFixedNote": "Kolom formulir bersifat tetap. Anda hanya dapat mengubah judul, pesan, dan tombol.",
+          "titleLabel": "Judul",
+          "titlePlaceholder": "Mari bekerja sama",
+          "descriptionLabel": "Pesan",
+          "descriptionPlaceholder": "Beri tahu pengunjung apa yang bisa mereka harapkan saat menghubungi Anda.",
+          "buttonStyleLabel": "Gaya tombol",
+          "buttonColorLabel": "Warna tombol",
+          "buttonStyles": {
+            "solid": "Solid",
+            "outline": "Garis tepi",
+            "soft": "Lembut"
+          },
+          "buttonColors": {
+            "primary": "Utama",
+            "secondary": "Sekunder",
+            "accent": "Aksen",
+            "foreground": "Teks",
+            "background": "Latar belakang"
+          },
+          "save": "Simpan",
+          "saving": "Menyimpan…",
+          "bgColorLabel": "Warna latar belakang",
+          "textColorLabel": "Warna teks",
+          "cornerRadiusLabel": "Sudut melengkung",
+          "borderWidthLabel": "Lebar batas",
+          "borderColorLabel": "Warna batas",
+          "sectionPopup": "Popup",
+          "sectionButton": "Tombol",
+          "submitButtonSection": "Tombol kirim",
+          "addSessionButtonSection": "Tombol tanggal baru",
+          "radius": {
+            "sharp": "Tajam",
+            "subtle": "Halus",
+            "rounded": "Bulat"
+          },
+          "close": "Tutup",
+          "popupStyleLabel": "Gaya popup",
+          "tabs": {
+            "setup": "Pengaturan",
+            "design": "Desain"
+          },
+          "errorColorLabel": "Warna pesan error",
+          "sectionTabs": "Tab",
+          "inactiveTabsSection": "Tab tidak aktif",
+          "activeTabSection": "Tab aktif",
+          "tabFontSizeLabel": "Ukuran tab",
+          "tabFontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          },
+          "tabColorLabel": "Warna teks tab",
+          "inactiveTabStyleLabel": "Gaya",
+          "inactiveTabSubtle": "Halus",
+          "inactiveTabCompact": "Padat",
+          "activeTabColorLabel": "Warna teks tab aktif",
+          "activeTabStyleLabel": "Gaya",
+          "activeTabStyleScale": "Perbesar",
+          "activeTabStyleHighlight": "Sorot",
+          "activeTabStyleUnderline": "Garis bawah",
+          "tabHighlightColorLabel": "Warna sorotan",
+          "tabHighlightOpacityLabel": "Opacity sorotan",
+          "tabUnderlineColorLabel": "Warna garis bawah"
+        },
+        "headerDialog": {
+          "title": "Navigasi",
+          "close": "Tutup",
+          "save": "Simpan",
+          "saving": "Menyimpan…",
+          "tabs": {
+            "setup": "Pengaturan",
+            "design": "Desain"
+          },
+          "brandTextLabel": "Heading",
+          "brandTextHelp": "Awalnya memakai nama ruang kerja. Kosongkan untuk hanya menampilkan logo.",
+          "logoLabel": "Logo",
+          "logoHelp": "Unggah logo bisnis Anda untuk ditampilkan di sebelah nama Anda di header.",
+          "logoUpload": "Unggah logo",
+          "logoUploading": "Mengunggah…",
+          "logoRemove": "Hapus logo",
+          "logoRequirements": "PNG, JPEG atau WEBP · maks. 250 KB · hingga 512×256",
+          "logoErrors": {
+            "type": "Logo harus berupa gambar PNG, JPEG, atau WEBP. SVG tidak didukung.",
+            "size": "Logo must be 250 KB or smaller.",
+            "dimensions": "Logo must be 512 x 256 px or smaller.",
+            "image": "This logo image could not be read.",
+            "upload": "Logo upload failed. Please try again."
+          },
+          "sectionBanner": "Spanduk",
+          "sectionLinks": "Tautan",
+          "sectionInactiveLinks": "Tautan tidak aktif",
+          "sectionActiveStyle": "Gaya tautan aktif",
+          "sectionContactButton": "Contact button",
+          "bgColorLabel": "Warna latar belakang",
+          "bgOpacityLabel": "Opasitas latar belakang",
+          "linkColorLabel": "Warna teks tautan",
+          "brandTextColorLabel": "Warna heading",
+          "activeLinkColorLabel": "Warna teks tautan aktif",
+          "borderBottomLabel": "Batas bawah",
+          "borderColorLabel": "Warna batas",
+          "shadowLabel": "Bayangan",
+          "navbarSizeLabel": "Ukuran navbar",
+          "fontSizeLabel": "Ukuran tautan",
+          "activeStyleLabel": "Gaya",
+          "activeStyleScale": "Skala",
+          "activeStyleHighlight": "Sorot",
+          "activeStyleUnderline": "Garis bawah",
+          "highlightColorLabel": "Warna sorotan",
+          "highlightOpacityLabel": "Highlight opacity",
+          "cornerRadiusLabel": "Corner radius",
+          "underlineColorLabel": "Warna garis bawah",
+          "contactButtonColorLabel": "Button color",
+          "contactButtonOpacityLabel": "Button opacity",
+          "contactButtonTextColorLabel": "Button text color",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
+          "shadow": {
+            "none": "Tidak ada",
+            "sm": "Kecil",
+            "md": "Sedang",
+            "lg": "Besar"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "Mari bekerja sama",
+          "description": "Ceritakan tentang acara Anda.",
+          "submit": "Kirim pertanyaan"
+        },
+        "mobileBanner": {
+          "title": "Editor bekerja paling baik di layar yang lebih besar",
+          "body": "Pengeditan seret dan lepas dirancang untuk tablet dan desktop.",
+          "openPreview": "Buka pratinjau",
+          "continue": "Lanjutkan saja"
+        },
+        "contactSettings": "Edit pengaturan kontak",
+        "contactSettingsShort": "Contact Form",
+        "headerSettings": "Navigasi",
+        "preview": {
+          "show": "Pratinjau",
+          "edit": "Edit",
+          "title": "Pratinjau langsung",
+          "empty": "Belum ada yang bisa dipratinjau. Tambahkan beberapa bagian, lalu kembali.",
+          "openInTab": "Buka di tab baru"
+        },
+        "photos": "Foto",
+        "templates": "Template",
+        "guide": "Panduan",
+        "templateSwitchedToast": "Template diterapkan.",
+        "devices": {
+          "mobile": "Mobile",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "controls": {
+          "editorControls": "Kontrol editor",
+          "workspaceActions": "Tindakan portofolio",
+          "toggleBlocks": "Alihkan panel blok",
+          "toggleProperties": "Alihkan panel properti",
+          "previewDevice": "Pratinjau perangkat",
+          "canvasWidth": "Lebar kanvas",
+          "zoomIn": "Perbesar",
+          "zoomOut": "Perkecil",
+          "zoomReset": "Atur ulang zoom ke 100%",
+          "undoTitle": "Urungkan (Ctrl+Z)",
+          "redoTitle": "Ulangi (Ctrl+Shift+Z)",
+          "language": "Bahasa halaman",
+          "directionLabel": "Arah",
+          "directionLtr": "Kiri ke kanan",
+          "directionRtl": "Kanan ke kiri"
+        },
+        "drafts": "Draf",
+        "saveChanges": "Simpan perubahan",
+        "loadingDraft": "Memuat draf",
+        "loadingDraftEllipsis": "Memuat draf…",
+        "featuredPopup": "Popup unggulan",
+        "featuredPopupWarningTitle": "Blok Featured Work tidak ditemukan",
+        "featuredPopupWarningBody": "Gaya ini hanya berlaku jika Anda menggunakan blok Featured Work.",
+        "featuredPopupWarningProceed": "Buka saja",
+        "featuredPopupWarningCancel": "Batal",
+        "draftNameLabel": "Nama draf",
+        "draftsDialog": {
+          "title": "Draf Anda",
+          "subtitle": "Pilih tata letak tersimpan untuk memuatnya ke kanvas. Memuat akan mengganti yang sedang Anda edit.",
+          "empty": "Belum ada draf. Simpan pekerjaan Anda saat ini, atau mulai baru dari templat.",
+          "active": "Aktif",
+          "addNew": "Tambah draf baru",
+          "close": "Tutup",
+          "confirmTitle": "Hapus draf ini?",
+          "confirmBody": "Ini akan menghapus draf tersimpan secara permanen. Tindakan ini tidak dapat dibatalkan.",
+          "confirmAction": "Hapus draf",
+          "cancel": "Batal",
+          "unsaved": "Belum disimpan",
+          "applyAria": "Terapkan {name}",
+          "applyingAria": "Menerapkan {name}",
+          "deletingAria": "Menghapus {name}",
+          "deleteAria": "Hapus {name}"
+        },
+        "entryDialog": {
+          "title": "Selamat datang kembali",
+          "description": "Dari mana Anda ingin memulai?",
+          "resumeTitle": "Lanjutkan dari terakhir kali",
+          "resumeHint": "Lanjutkan pengeditan terbaru Anda yang belum disimpan.",
+          "loadDraftTitle": "Muat draf yang ada",
+          "loadDraftHint": "Buka salah satu tata letak portofolio tersimpan Anda.",
+          "scratchTitle": "Mulai dari awal",
+          "scratchHint": "Pilih templat (atau kanvas kosong) dan mulai draf baru."
+        },
+        "templatePicker": {
+          "title": "Pilih templat",
+          "subtitle": "Mengganti templat menerapkan tata letak awal, warna, dan font. Foto dan koleksi Anda tetap ada; hanya tata letak halaman dan tema yang berubah.",
+          "welcomeTitle": "Pilih templat untuk memulai",
+          "welcomeSubtitle": "Pilih tata letak awal untuk memulai portofolio Anda. Anda dapat mengganti templat kapan saja.",
+          "current": "Saat ini",
+          "use": "Gunakan templat ini",
+          "scratch": "Mulai dari awal",
+          "cancel": "Batal",
+          "switching": "Mengganti…",
+          "error": "Tidak dapat mengganti templat. Silakan coba lagi."
+        },
+        "unsavedDialog": {
+          "nameLabel": "Nama",
+          "title": "Simpan perubahan Anda?",
+          "body": "Anda memiliki perubahan yang belum disimpan pada draf ini. Beralih sekarang akan menghilangkannya jika Anda tidak menyimpan.",
+          "keepEditing": "Lanjutkan mengedit",
+          "discard": "Buang",
+          "save": "Simpan perubahan"
+        },
+        "blockActions": {
+          "fallbackLabel": "Blok",
+          "actionsAria": "Tindakan {label}",
+          "moveUp": "Pindah ke atas",
+          "moveDown": "Pindah ke bawah",
+          "moveOut": "Pindah ke luar",
+          "duplicate": "Duplikat",
+          "delete": "Hapus"
+        },
+        "photosDialog": {
+          "title": "Foto & Koleksi",
+          "intro": "Kelompokkan foto Anda ke dalam koleksi. Gunakan di blok Gallery, atau pilih satu foto sebagai latar Hero atau CTA. Upload sekali di sini — pilih di mana saja.",
+          "empty": "Belum ada koleksi. Buat yang pertama untuk memulai.",
+          "loading": "Memuat…",
+          "error": "Tidak dapat memuat koleksi Anda.",
+          "retry": "Coba lagi",
+          "addNew": "Tambah koleksi baru",
+          "photos": "foto",
+          "done": "Selesai",
+          "deleteTitle": "Hapus koleksi ini?",
+          "deleteBody": "Foto dalam koleksi ini akan dihapus secara permanen dari perpustakaan Anda dan tidak dapat dipulihkan. Blok gallery apa pun yang menggunakan koleksi ini tidak akan menampilkan apa pun sampai Anda mengarahkannya ke koleksi lain.",
+          "deleting": "Menghapus…",
+          "deleteConfirm": "Hapus secara permanen",
+          "cancel": "Batal",
+          "deleteError": "Tidak dapat menghapus koleksi. Silakan coba lagi.",
+          "deleteCollection": "Hapus koleksi",
+          "editAria": "Edit {name}"
+        },
+        "collectionsDialog": {
+          "featuredPopup": "Popup unggulan",
+          "popup": "Popup",
+          "background": "Latar belakang",
+          "border": "Batas",
+          "borderColor": "Warna batas",
+          "corners": "Sudut",
+          "titleStyles": "Gaya judul",
+          "headerText": "Teks header",
+          "headerPlaceholder": "Default ke nama koleksi",
+          "bold": "Tebal",
+          "italic": "Miring",
+          "underline": "Garis bawah",
+          "alignAria": "Ratakan {align}",
+          "font": "Font",
+          "themeFont": "Font tema",
+          "fontSize": "Ukuran font",
+          "titleColor": "Warna judul",
+          "buttonStyles": "Gaya tombol",
+          "buttonSize": "Ukuran tombol",
+          "opacity": "Opasitas",
+          "sampleCollection": "Koleksi Contoh",
+          "radius": {
+            "sharp": "Tajam",
+            "subtle": "Halus",
+            "rounded": "Membulat"
+          }
+        },
+        "puckConfig": {
+          "categories": {
+            "presets": "Blok prasetel",
+            "manual": "Blok manual"
+          },
+          "blocks": {
+            "heroPreset": "Hero",
+            "aboutPreset": "Tentang",
+            "servicesPreset": "Layanan",
+            "ctaPreset": "Ajakan bertindak",
+            "contactPreset": "Hubungi",
+            "galleryGridPreset": "Gallery Grid",
+            "galleryMasonryPreset": "Gallery Masonry",
+            "featuredWorkPreset": "Karya Unggulan",
+            "galleryLandingPreset": "Gallery landing",
+            "videoPreset": "Video Highlight",
+            "galleryGrid": "Photo Grid",
+            "galleryMasonry": "Masonry",
+            "featuredWork": "Sorotan",
+            "video": "Video",
+            "contactDetails": "Detail Kontak",
+            "heading": "Judul",
+            "text": "Teks",
+            "image": "Gambar",
+            "button": "Tombol",
+            "spacer": "Spasi",
+            "divider": "Pemisah",
+            "columns": "Kolom",
+            "container": "Container"
+          },
+          "fields": {
+            "style": "Gaya",
+            "pageStyle": "Gaya halaman",
+            "bgAnimation": "Animasi latar belakang",
+            "bgAnimationShort": "Animasi BG",
+            "bgSpeed": "Kecepatan animasi",
+            "bgSpeedShort": "Kecepatan BG",
+            "overlayOpacity": "Opasitas overlay (0-100)",
+            "minHeight": "Tinggi minimum",
+            "alignX": "Rata horizontal",
+            "alignY": "Rata vertikal",
+            "backgroundImages": "Gambar latar belakang",
+            "headingText": "Teks judul",
+            "headingLevel": "Tingkat",
+            "textContent": "Teks",
+            "videoUrl": "URL YouTube atau Vimeo",
+            "imageField": "Gambar",
+            "imageUrl": "URL gambar (cadangan)",
+            "imageAlt": "Teks alt",
+            "imageFit": "Kesesuaian",
+            "buttonLabel": "Label tombol",
+            "buttonSize": "Ukuran",
+            "buttonAction": "Tindakan",
+            "buttonAlign": "Perataan",
+            "spacerHeight": "Tinggi",
+            "dividerThickness": "Ketebalan (px)",
+            "columnsCount": "Kolom",
+            "rowsCount": "Baris"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "Crossfade",
+              "kenburns": "Ken Burns",
+              "slide": "Geser"
+            },
+            "bgSpeed": {
+              "slow": "Lambat (7d)",
+              "medium": "Sedang (5d)",
+              "fast": "Cepat (3d)"
+            },
+            "bgSpeedShort": {
+              "slow": "Lambat",
+              "medium": "Sedang",
+              "fast": "Cepat"
+            },
+            "minHeight": {
+              "auto": "Otomatis",
+              "short": "Pendek (40vh)",
+              "medium": "Sedang (60vh)",
+              "tall": "Tinggi (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "Otomatis",
+              "short": "Pendek",
+              "medium": "Sedang",
+              "tall": "Tinggi"
+            },
+            "alignX": {
+              "left": "Kiri",
+              "center": "Tengah",
+              "right": "Kanan"
+            },
+            "alignY": {
+              "top": "Atas",
+              "center": "Tengah",
+              "bottom": "Bawah"
+            },
+            "headingLevel": {
+              "h1": "Tampilan",
+              "h2": "Judul Utama",
+              "h3": "Heading",
+              "h4": "Subjudul",
+              "h5": "Keterangan",
+              "h6": "Label"
+            },
+            "imageFit": {
+              "cover": "Cover",
+              "contain": "Contain"
+            },
+            "buttonSize": {
+              "sm": "Kecil",
+              "md": "Sedang",
+              "lg": "Besar"
+            },
+            "buttonAction": {
+              "openContact": "Buka formulir kontak",
+              "goToGallery": "Ke halaman Gallery"
+            },
+            "buttonAlign": {
+              "left": "Kiri",
+              "center": "Tengah",
+              "right": "Kanan"
+            }
+          }
+        },
+        "tour": {
+          "next": "Berikutnya",
+          "back": "Kembali",
+          "finish": "Selesai",
+          "skip": "Lewati Panduan",
+          "dontShow": "Jangan tampilkan lagi",
+          "tryIt": "Coba untuk melanjutkan ke langkah berikutnya",
+          "progress": "{n} dari {total}",
+          "loading": "Memuat",
+          "skipConfirm": {
+            "heading": "Lewati panduan?",
+            "body": "Anda akan kehilangan posisi Anda dalam tur. Anda dapat memulainya ulang kapan saja.",
+            "back": "Kembali",
+            "dontShow": "Jangan tampilkan lagi",
+            "skip": "Lewati Panduan"
+          },
+          "steps": {
+            "welcome": {
+              "title": "Selamat datang di editor portofolio Anda",
+              "body": "Berikut tur singkat dan praktis untuk membantu Anda memulai. Anda dapat melewatinya kapan saja."
+            },
+            "dragBlock": {
+              "title": "Seret blok ke halaman Anda",
+              "body": "Pilih blok Preset dari panel, lalu seret ke kanvas. Preset menyertakan kontrol pengeditan yang digunakan pada langkah berikutnya."
+            },
+            "blockProps": {
+              "title": "Properti blok ada di sini",
+              "body": "Menjatuhkan blok memilihnya secara otomatis — pengaturannya muncul di panel ini."
+            },
+            "contentTab": {
+              "title": "Konten: teks dan media blok",
+              "body": "Tab Konten adalah tempat Anda mengedit teks, gambar, dan tautan blok yang sebenarnya."
+            },
+            "designTab": {
+              "title": "Desain: warna, batas, dan sudut",
+              "body": "Tab Desain mengontrol tipografi, warna latar belakang, batas, bayangan, dan animasi."
+            },
+            "layoutTab": {
+              "title": "Tata Letak: ukuran, jarak, dan posisi",
+              "body": "Tab Tata Letak mengontrol jarak, tinggi minimum, perataan, dan penempatan grid."
+            },
+            "switchPages": {
+              "title": "Beralih antar halaman",
+              "body": "Beralih antar bagian berbeda dari situs web portofolio Anda."
+            },
+            "openNav": {
+              "title": "Buka Navigasi",
+              "body": "Klik Navigasi untuk mengatur header situs Anda — merek, logo, tautan menu, dan gaya."
+            },
+            "navSetup": {
+              "title": "Navigasi · Pengaturan",
+              "body": "Tab Pengaturan adalah tempat Anda mengatur teks merek, ukuran navbar, logo, dan tautan menu."
+            },
+            "logo": {
+              "title": "Logo Anda ada di sini",
+              "body": "Ini adalah pengunggah logo Anda — PNG, JPEG, atau WEBP yang diunggah di sini akan tampil di header halaman live Anda."
+            },
+            "navDesign": {
+              "title": "Navigasi · Desain",
+              "body": "Tab Desain mengontrol warna header, batas, dan tipografi untuk tautan navigasi Anda."
+            },
+            "contactForm": {
+              "title": "Formulir pertanyaan Anda",
+              "body": "Klik Formulir Kontak untuk mengatur formulir yang digunakan pengunjung untuk menghubungi Anda."
+            },
+            "contactSetup": {
+              "title": "Kontak · Pengaturan",
+              "body": "Tab Pengaturan menentukan bahasa, judul, dan deskripsi formulir. Kolom dan tata letak formulir sudah tetap."
+            },
+            "contactDesign": {
+              "title": "Kontak · Desain",
+              "body": "Tab Desain mengubah tampilan formulir — warna teks dan latar belakang sesuai merek Anda. Anda tidak dapat menyembunyikan kolom, hanya mengubah tampilannya."
+            },
+            "photos": {
+              "title": "Unggah dan atur foto",
+              "body": "Buka Foto untuk membuat koleksi dan mengunggah gambar. Blok galeri mengambil dari koleksi."
+            },
+            "translate": {
+              "title": "Terjemahkan halaman publik Anda",
+              "body": "Ubah bahasa navigasi, formulir kontak, dan popup koleksi sekaligus. Bahasa kanan-ke-kiri membalik tata letak secara otomatis."
+            },
+            "theme": {
+              "title": "Pilih warna dan font Anda",
+              "body": "Tema mengontrol lima warna merek dan tipografi Anda. Setiap opsi gaya blok menggunakan palet ini."
+            },
+            "preview": {
+              "title": "Pratinjau situs Anda di ukuran layar apa pun",
+              "body": "Beralih ke mode pratinjau dan gunakan tombol perangkat untuk memeriksa tata letak Anda di perangkat mobile, tablet, dan desktop."
+            },
+            "canvasControls": {
+              "title": "Sesuaikan kanvas pengeditan Anda",
+              "body": "Gunakan kontrol ini untuk mengganti panel, membatalkan atau mengulangi, memilih lebar kanvas, dan memperbesar. Di layar yang lebih kecil, buka tombol slider untuk menemukannya."
+            },
+            "guide": {
+              "title": "Kembali ke panduan ini kapan saja",
+              "body": "Buka Panduan kapan saja untuk mengulang walkthrough ini."
+            },
+            "save": {
+              "title": "Simpan perubahan Anda",
+              "body": "Simpan perubahan agar draf saat ini siap dibuka kembali nanti."
+            },
+            "publish": {
+              "title": "Terbitkan untuk tayang",
+              "body": "Saat Anda puas dengan perubahan Anda, klik Terbitkan untuk mendorongnya ke halaman publik Anda."
+            },
+            "draftsStep": {
+              "title": "Simpan draf dan ganti versi",
+              "body": "Simpan perubahan kapan saja. Gunakan Draf untuk mengelola beberapa versi. Buka kembali tur ini melalui tombol Panduan."
+            }
+          }
+        },
+        "storyPrompt": {
+          "welcome": {
+            "title": "Mari ceritakan kisah Anda",
+            "subtitle": "Lima langkah singkat untuk menjelaskan pekerjaan Anda dan memilih gaya Anda — lalu kami bantu Anda membangun halamannya.",
+            "cta": "Mulai",
+            "skip": "Lewati dulu"
+          },
+          "story": {
+            "title": "Ceritakan kisah Anda",
+            "subtitle": "Ini akan muncul di hasil pencarian Google dan saat halaman Anda dibagikan.",
+            "placeholder": "Satu kalimat singkat tentang siapa Anda dan apa yang Anda kerjakan…",
+            "charCount": "{count}/{max}",
+            "previewLabel": "Pratinjau pencarian"
+          },
+          "vibe": {
+            "title": "Gaya Anda",
+            "subtitle": "Pilih beberapa tag yang menggambarkan gaya Anda — atau tambahkan sendiri.",
+            "addPlaceholder": "Tambah tag"
+          },
+          "branding": {
+            "title": "Tambahkan branding Anda",
+            "subtitle": "Unggah logo dan ikon situs — Anda selalu bisa mengubahnya nanti.",
+            "logoLabel": "Logo",
+            "logoUpload": "Unggah logo",
+            "logoUploading": "Mengunggah…",
+            "logoRemove": "Hapus logo",
+            "logoRequirements": "PNG, JPG atau JPEG, atau WEBP · maks 250 KB · hingga 512×256",
+            "logoErrors": {
+              "type": "Logo harus berupa gambar PNG, JPG atau JPEG, atau WEBP.",
+              "size": "Logo harus berukuran 250 KB atau lebih kecil.",
+              "dimensions": "Logo harus berukuran 512 x 256 px atau lebih kecil.",
+              "image": "Gambar logo ini tidak dapat dibaca.",
+              "upload": "Unggah logo gagal. Silakan coba lagi."
+            },
+            "iconLabel": "Ikon situs",
+            "iconUpload": "Pilih gambar",
+            "iconUploading": "Mengunggah…",
+            "iconRemove": "Hapus",
+            "iconRequirements": "PNG, JPG atau JPEG, WebP, atau AVIF · maks 1 MB · hingga 512 × 512 px",
+            "iconErrors": {
+              "type": "Hanya file PNG, JPG atau JPEG, WebP, atau AVIF yang diterima.",
+              "size": "Ikon harus berukuran 1 MB atau lebih kecil.",
+              "dimensions": "Ikon harus berukuran 512 x 512 px atau lebih kecil.",
+              "image": "Gambar ikon ini tidak dapat dibaca.",
+              "upload": "Unggah ikon gagal. Silakan coba lagi."
+            },
+            "shareImageLabel": "Gambar bagikan",
+            "shareImageUpload": "Unggah gambar bagikan",
+            "shareImageUploading": "Mengunggah...",
+            "shareImageRemove": "Hapus gambar bagikan",
+            "shareImageRequirements": "JPG atau JPEG, PNG, WebP, atau AVIF · maks 10 MB · 1200 × 630 px direkomendasikan",
+            "shareImageErrors": {
+              "type": "Gunakan gambar JPG atau JPEG, PNG, WebP, atau AVIF.",
+              "size": "Gambar bagikan harus 10 MB atau lebih kecil.",
+              "dimensions": "Gambar bagikan harus setidaknya 1200 × 630 px.",
+              "upload": "Unggah gambar bagikan gagal. Silakan coba lagi."
+            },
+            "inquiryRecipientLabel": "Email penerima inquiry",
+            "inquiryRecipientPlaceholder": "anda@contoh.com",
+            "inquiryRecipientHint": "Notifikasi inquiry baru akan dikirim ke sini."
+          },
+          "done": {
+            "title": "Halaman Anda siap untuk bersinar",
+            "subtitle": "Anda telah menyiapkan fondasinya. Mari buat tampilannya makin menarik.",
+            "continueWithGuide": "Lanjutkan dengan panduan",
+            "exploreSelf": "Saya jelajahi sendiri",
+            "footerNote": "Anda bisa mengeditnya kapan saja di Pengaturan → Halaman Publik."
+          },
+          "back": "Kembali",
+          "continue": "Lanjutkan"
+        }
+      },
+      "wizard": {
+        "title": "Mari buat portofolio Anda",
+        "subtitle": "Beberapa langkah cepat dan Anda akan memiliki halaman yang siap tayang.",
+        "skip": "Lewati pengaturan",
+        "back": "Kembali",
+        "next": "Lanjutkan",
+        "launch": "Buka editor",
+        "launching": "Menyiapkan…",
+        "stepOf": "Langkah {current} dari {total}",
+        "overwrite": {
+          "title": "Anda sudah memiliki portofolio",
+          "body": "Menjalankan pengaturan lagi akan mengganti halaman Anda saat ini. Konten Anda yang ada akan diarsipkan sehingga dapat dipulihkan.",
+          "continue": "Lanjutkan saja",
+          "cancel": "Batal"
+        },
+        "steps": {
+          "template": "Templat",
+          "branding": "Branding",
+          "theme": "Tema",
+          "images": "Gambar",
+          "review": "Tinjau"
+        },
+        "template": {
+          "title": "Pilih titik awal",
+          "subtitle": "Anda dapat mengubah semuanya nanti."
+        },
+        "branding": {
+          "title": "Konfirmasi branding Anda",
+          "subtitle": "Diambil dari ruang kerja Anda — edit sesuai kebutuhan.",
+          "tagline": "Tagline",
+          "taglinePlaceholder": "Kalimat singkat yang merangkum Anda",
+          "description": "Tentang",
+          "descriptionPlaceholder": "Satu atau dua kalimat tentang pekerjaan Anda"
+        },
+        "theme": {
+          "title": "Pilih tampilan Anda",
+          "subtitle": "Tema, font, dan warna untuk halaman publik Anda."
+        },
+        "images": {
+          "title": "Tambahkan beberapa foto",
+          "subtitle": "Seret beberapa foto untuk galeri Anda — atau lewati dan tambahkan kapan saja.",
+          "upload": "Unggah gambar",
+          "uploading": "Mengunggah…",
+          "remove": "Hapus gambar",
+          "empty": "Belum ada gambar.",
+          "error": "Beberapa gambar gagal diunggah. Silakan coba lagi.",
+          "count": "{count} {count, plural, one {gambar} other {gambar}}",
+          "dropZone": "Seret foto ke sini atau klik untuk memilih",
+          "dropZoneActive": "Lepaskan untuk mengunggah",
+          "spec": "JPEG, PNG, WebP atau AVIF · maks 10 MB · min 600 px pada sisi yang lebih pendek",
+          "optional": "Anda dapat melewati langkah ini dan mengunggah foto nanti.",
+          "errorType": "Hanya foto JPEG, PNG, WebP, dan AVIF yang diterima.",
+          "errorSize": "Setiap foto harus di bawah 10 MB.",
+          "errorDim": "Setiap foto harus minimal 600 px pada sisi yang lebih pendek (mis. 600×800 atau 800×600)."
+        },
+        "review": {
+          "title": "Tinjau & luncurkan",
+          "subtitle": "Inilah yang akan kami siapkan.",
+          "template": "Templat",
+          "theme": "Tema",
+          "images": "Gambar",
+          "homeBlocks": "{count} bagian beranda",
+          "galleryBlocks": "{count} bagian galeri"
+        },
+        "toasts": {
+          "saved": "Portofolio Anda siap!",
+          "error": "Ada yang tidak beres. Silakan coba lagi."
+        }
+      }
+    },
+    "notifications": {
+      "bell": "Notifikasi",
+      "popoverTitle": "Notifikasi Terbaru",
+      "markAllRead": "Tandai semua sudah dibaca",
+      "newNotification": "Anda memiliki notifikasi baru",
+      "newNotifications": "{count, plural, one {Anda memiliki notifikasi baru} other {Anda memiliki # notifikasi baru}}",
+      "seeAll": "Lihat semua notifikasi",
+      "empty": "Tidak ada notifikasi baru",
+      "pageTitle": "Notifikasi",
+      "loadMore": "Muat lebih banyak",
+      "types": {
+        "inquiry": {
+          "created": {
+            "title": "Pertanyaan baru diterima",
+            "body": "Anda memiliki pertanyaan baru dari {clientName}."
+          }
+        },
+        "booking": {
+          "team_assigned": {
+            "title": "Pemesanan baru ditugaskan ke tim Anda",
+            "body": "{assignerName} menugaskan pemesanan ke tim Anda."
+          },
+          "status_changed": {
+            "title": "{newStatus, select, cancelled {Pemesanan dibatalkan} completed {Pemesanan selesai} booked {Pemesanan dikonfirmasi} other {Status pemesanan diperbarui}}",
+            "body": "{newStatus, select, cancelled {{actorName} membatalkan pemesanan.} completed {{actorName} menandai pemesanan selesai.} booked {{actorName} mengonfirmasi pemesanan.} other {{actorName} mengubah status pemesanan menjadi {newStatus}.}}"
+          }
+        },
+        "team": {
+          "invitation": {
+            "title": "Anda diundang ke tim",
+            "body": "{inviterName} mengundang Anda untuk bergabung dengan {teamName}."
+          },
+          "invite_accepted": {
+            "title": "{memberName} menerima undangan Anda",
+            "body": "Mereka telah bergabung dengan {teamName}."
+          },
+          "removed": {
+            "title": "Dihapus dari tim",
+            "body": "Anda telah dihapus dari {teamName}."
+          },
+          "deleted": {
+            "title": "Tim dibubarkan",
+            "body": "{teamName} telah dihapus."
+          }
+        }
+      }
+    },
+    "errorBoundary": {
+      "retry": "Coba lagi"
+    },
+    "errors": {
+      "generic": "Terjadi kesalahan. Silakan coba lagi.",
+      "not_authenticated": "Anda belum masuk. Silakan masuk dan coba lagi.",
+      "no_active_workspace": "Tidak ada ruang kerja aktif. Pilih ruang kerja dan coba lagi.",
+      "workspace_not_found": "Ruang kerja tidak ditemukan.",
+      "owner_only": "Hanya pemilik ruang kerja yang dapat melakukan ini.",
+      "invalid_data": "Data tidak valid. Periksa input Anda dan coba lagi.",
+      "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
+      "onboarding_required": "Selesaikan orientasi untuk melanjutkan.",
+      "onboarding_plan_locked": "Paket Anda sudah aktif. Selesaikan onboarding untuk mengelolanya dari pengaturan tagihan.",
+      "subscription_required": "Akses Pro Anda telah berakhir. Berlangganan untuk melanjutkan.",
+      "promo_code_not_found": "Kode itu tidak valid. Periksa kembali dan coba lagi.",
+      "promo_code_expired": "Kode itu sudah kedaluwarsa.",
+      "promo_code_already_redeemed": "Anda sudah menukarkan kode ini.",
+      "promo_code_revoked": "Kode itu telah dinonaktifkan.",
+      "not_eligible_beta_participant": "Kode ini hanya untuk peserta beta yang tercatat.",
+      "beta_promo_already_redeemed": "Anda sudah menukarkan promo beta satu kali Anda.",
+      "beta_program_closed": "Program beta ditutup untuk peserta baru.",
+      "invalid_input": "Periksa formulir dan coba lagi.",
+      "rate_limited": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
+      "user_not_found": "Pengguna tidak ditemukan.",
+      "url_taken": "URL tersebut sudah digunakan — coba yang lain.",
+      "name_update_failed": "Gagal memperbarui nama Anda. Silakan coba lagi.",
+      "mfa_start_failed": "Gagal memulai penyiapan autentikator. Silakan coba lagi.",
+      "code_six_digits": "Masukkan kode 6 digit.",
+      "enrollment_expired": "Sesi penyiapan kedaluwarsa. Mulai lagi.",
+      "invalid_code": "Kode tidak valid. Silakan coba lagi.",
+      "mfa_disable_failed": "Gagal menonaktifkan verifikasi dua faktor. Silakan coba lagi.",
+      "passwords_mismatch": "Kata sandi tidak cocok.",
+      "current_password_incorrect": "Kata sandi saat ini salah.",
+      "password_verify_failed": "Gagal memverifikasi kata sandi saat ini. Silakan coba lagi.",
+      "password_update_failed": "Gagal memperbarui kata sandi. Silakan coba lagi.",
+      "password_reused": "Silakan pilih kata sandi yang berbeda dari kata sandi Anda saat ini.",
+      "avatar_update_failed": "Gagal memperbarui foto Anda. Silakan coba lagi.",
+      "email_send_failed": "Gagal mengirim email. Silakan coba lagi.",
+      "onboarding_no_active_workspace": "Tidak ada ruang kerja aktif — mulai ulang orientasi.",
+      "already_member_elsewhere": "Email ini sudah menjadi anggota workspace lain. Gunakan email lain untuk membuat yang baru.",
+      "client_create_failed": "Gagal membuat klien. Silakan coba lagi.",
+      "client_not_found": "Klien tidak ditemukan.",
+      "client_update_failed": "Gagal memperbarui klien. Silakan coba lagi.",
+      "client_deactivate_failed": "Gagal menonaktifkan klien. Silakan coba lagi.",
+      "client_has_active_bookings": "Klien ini memiliki pemesanan aktif dan tidak dapat dinonaktifkan.",
+      "client_reactivate_failed": "Gagal mengaktifkan kembali klien. Silakan coba lagi.",
+      "bookings_load_failed": "Gagal memuat pemesanan. Silakan coba lagi.",
+      "client_load_failed": "Gagal memuat klien. Silakan coba lagi.",
+      "invalid_id": "Permintaan tidak valid.",
+      "not_found": "Tidak ditemukan.",
+      "forbidden": "Anda tidak memiliki akses untuk melakukan itu.",
+      "team_not_found": "Tim tidak ditemukan.",
+      "team_deactivated": "Anda tidak dapat menugaskan pemesanan ke tim yang dinonaktifkan.",
+      "session_crosses_midnight": "Sesi {index} melewati tengah malam di zona waktu ruang kerja.",
+      "client_change_multi_session": "Anda tidak dapat mengganti klien pada pemesanan multi-sesi.",
+      "invalid_client_id": "Klien tidak valid.",
+      "client_not_found_workspace": "Klien tidak ditemukan di ruang kerja ini.",
+      "invalid_request": "Permintaan tidak valid.",
+      "export_too_large": "Terlalu banyak pemesanan untuk diekspor. Persempit filter dan coba lagi.",
+      "free_plan_no_checkout": "Paket gratis tidak memerlukan pembayaran.",
+      "lemonsqueezy_variant_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
+      "billing_unavailable": "Langganan berbayar belum tersedia. Silakan periksa kembali nanti.",
+      "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
+      "checkout_init_failed": "Gagal memulai pembayaran. Silakan coba lagi.",
+      "no_subscription": "Anda tidak memiliki langganan aktif untuk dikelola.",
+      "subscription_manage_unavailable": "Gagal membuka pengelolaan langganan. Silakan coba lagi.",
+      "locked": "Item ini terkunci dan tidak dapat diedit saat ini.",
+      "conflict": "Waktu tersebut bertabrakan dengan pemesanan lain.",
+      "edit_sessions_failed": "Gagal memperbarui sesi. Silakan coba lagi.",
+      "session_index_out_of_range": "Sesi tersebut sudah tidak ada.",
+      "invalid": "Periksa input Anda dan coba lagi.",
+      "field_required": "Kolom ini wajib diisi.",
+      "name_taken": "Draf dengan nama ini sudah ada.",
+      "draft_limit_reached": "Anda telah mencapai batas draf.",
+      "draft_save_failed": "Gagal menyimpan draf. Silakan coba lagi.",
+      "draft_load_failed": "Gagal memuat draf. Silakan coba lagi.",
+      "draft_delete_failed": "Gagal menghapus draf. Silakan coba lagi.",
+      "theme_delete_failed": "Gagal menghapus tema. Silakan coba lagi.",
+      "theme_name_exists": "Sudah ada tema dengan nama ini.",
+      "max_themes_reached": "Anda telah mencapai batas tema ({count}).",
+      "payload_too_large": "Ukurannya terlalu besar untuk disimpan. Kurangi ukurannya dan coba lagi.",
+      "collection_load_failed": "Gagal memuat koleksi. Silakan coba lagi.",
+      "collection_rename_failed": "Gagal mengganti nama koleksi. Silakan coba lagi.",
+      "cover_set_failed": "Gagal mengatur sampul. Silakan coba lagi.",
+      "order_save_failed": "Gagal menyimpan urutan baru. Silakan coba lagi.",
+      "photo_remove_failed": "Gagal menghapus foto. Silakan coba lagi.",
+      "photo_add_failed": "Gagal menambahkan foto. Silakan coba lagi."
+    }
+  },
+  "common": {
+    "pagination": {
+      "showing": "Menampilkan {from}–{to} dari {total}",
+      "rowsPerPage": "Per halaman",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    },
+    "clearFilters": "Hapus filter",
+    "loading": "Memuat…",
+    "promoCode": {
+      "disclosureLabel": "Punya kode promo?",
+      "close": "Tutup kode promo",
+      "placeholder": "Masukkan kode",
+      "submit": "Terapkan",
+      "applying": "Menerapkan…",
+      "success": "Kode berhasil diterapkan — akses Pro Anda kini aktif.",
+      "successQueued": "Kode berhasil diterapkan — akses Pro dua bulan Anda akan otomatis dimulai setelah paket Anda saat ini berakhir."
+    }
+  },
+  "onboarding": {
+    "shell": {
+      "stepCounter": "Langkah {current} dari {total}",
+      "previous": "Sebelumnya",
+      "continue": "Lanjutkan",
+      "saving": "Menyimpan…"
+    },
+    "steps": {
+      "business": "Bisnis",
+      "workspace": "Ruang kerja",
+      "plan": "Paket",
+      "done": "Selesai"
+    },
+    "business": {
+      "title": "Ceritakan tentang bisnis Anda",
+      "description": "Nama Anda dan dasar-dasar bisnis Anda.",
+      "firstName": "Nama depan",
+      "firstNamePlaceholder": "Sarah",
+      "lastName": "Nama belakang",
+      "lastNamePlaceholder": "Bell",
+      "optional": "opsional",
+      "businessName": "Nama bisnis",
+      "businessNamePlaceholder": "mis. Sarah Bell Photography",
+      "workspaceUrl": "URL ruang kerja",
+      "workspaceUrlNote": "(alamat halaman publik Anda)",
+      "slugPlaceholder": "sarah-bell-photo",
+      "slugPreview": "Halaman Anda akan berada di",
+      "businessType": "Jenis bisnis",
+      "country": "Negara",
+      "currency": "Mata uang",
+      "timezone": "Zona waktu",
+      "businessTypes": {
+        "photographer": "Fotografer",
+        "venue": "Venue",
+        "planner": "Perencana Pernikahan / Acara",
+        "stylist": "Stylist",
+        "catering": "Katering",
+        "entertainer": "Penghibur / DJ / Band",
+        "other": "Lainnya"
+      },
+      "slugChecking": "Memeriksa…",
+      "slugAvailable": "Tersedia",
+      "slugTaken": "Sudah digunakan",
+      "slugInvalid": "Format tidak valid"
+    },
+    "workspace": {
+      "title": "Siapkan ruang kerja Anda",
+      "description": "Tempat Anda beroperasi dan cara Anda ingin waktu ditampilkan.",
+      "country": "Negara",
+      "timezone": "Zona waktu",
+      "timeFormat": "Format waktu",
+      "time12h": "12j",
+      "time24h": "24j"
+    },
+    "plan": {
+      "title": "Pilih paket yang sesuai",
+      "description": "Anda dapat mengubah paket atau membatalkan kapan saja dari pengaturan ruang kerja Anda.",
+      "popular": "Populer",
+      "comingSoon": "Segera hadir",
+      "cadence": {
+        "forever": "bulan pertama gratis",
+        "monthly": "/ bulan",
+        "yearly": "/ tahun"
+      },
+      "cadenceToggle": {
+        "monthly": "Bulanan",
+        "yearly": "Tahunan",
+        "savePill": "Hemat 2 bulan"
+      },
+      "checkoutNote": "Overlay pembayaran yang aman akan terbuka. Masukkan detail kartu Anda (Visa atau Mastercard). Siklus pertama akan ditagih segera dan diperbarui setiap bulan sampai Anda membatalkan.",
+      "ctaFree": "Mulai bulan gratis saya",
+      "ctaPaid": "Berlangganan — {price}",
+      "settingUp": "Menyiapkan…",
+      "opening": "Membuka pembayaran…",
+      "checkoutFailed": "Pembayaran gagal. Silakan coba lagi.",
+      "checkoutNotReady": "Sistem pembayaran belum siap. Silakan refresh dan coba lagi.",
+      "activatedNotice": "Paket Gallurio Anda sekarang aktif. Selesaikan onboarding untuk mengubah paket langganan Anda.",
+      "activePill": "Aktif",
+      "finishOnboarding": "Selesaikan onboarding",
+      "acceptedPromoCode": "Kode promo {code}",
+      "betaTester": {
+        "label": "Beta Tester",
+        "headline": "Dapatkan akses beta gratis sekarang",
+        "activate": "Aktifkan akses beta"
+      }
+    },
+    "done": {
+      "title": "Anda sudah siap, {workspaceName}.",
+      "description": "Paket {planLabel} Anda aktif. Selamat datang di Gallurio — ruang kerja Anda siap digunakan.",
+      "seedToggle": {
+        "label": "Mulai dengan data contoh",
+        "description": "Kami akan menambah 5 klien demo, 3 pemesanan demo, dan 1 pertanyaan demo agar Anda dapat menjelajahi aplikasi. Semuanya ditandai sample agar dapat dihapus dengan satu klik."
+      },
+      "settingUp": "Menyiapkan dasbor Anda…",
+      "settingUpCompact": "Menyiapkan…",
+      "goToDashboard": "Pergi ke dasbor Anda",
+      "footer": {
+        "everything": "Semuanya di satu tempat",
+        "grow": "Dibangun untuk tumbuh bersama Anda",
+        "support": "Dukungan saat Anda membutuhkannya"
+      }
+    }
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "1 bulan Pro penuh, gratis",
+      "tagline": "Coba semua fitur Pro secara gratis di bulan pertama Anda.",
+      "features": {
+        "trial": "1 bulan akses Pro penuh",
+        "workspace": "1 ruang kerja",
+        "bookings": "Hingga 10 pemesanan",
+        "storage": "Penyimpanan gambar 1 GB",
+        "publicPage": "Halaman pendaratan publik"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Kelola pemesanan, klien, tim, faktur, dan halaman publik Anda.",
+      "tagline": "Ruang kerja lengkap untuk bisnis acara yang berkembang.",
+      "features": {
+        "unlimitedBookings": "Pemesanan tanpa batas",
+        "publicPageControls": "Kontrol penuh halaman publik",
+        "storage": "Penyimpanan 50 GB",
+        "invoicePdfs": "PDF faktur",
+        "clientManagement": "Manajemen klien",
+        "teamManagement": "Manajemen tim",
+        "removeBranding": "Hilangkan branding Gallurio"
+      }
+    }
+  },
+  "subscribe": {
+    "pageTitle": "Berlangganan",
+    "logout": "Keluar",
+    "owner": {
+      "title": "Akses Pro Anda telah berakhir",
+      "description": "Berlangganan kembali ke Gallurio Pro untuk kembali ke dasbor Anda.",
+      "perMonth": "/ bulan",
+      "perYear": "/ tahun",
+      "subscribeButton": "Berlangganan",
+      "subscribeAriaLabel": "Berlangganan Gallurio Pro",
+      "opening": "Membuka…",
+      "upgradeSuccess": "Langganan diaktifkan! Mengalihkan…",
+      "checkoutFailed": "Checkout gagal. Silakan coba lagi.",
+      "checkoutNotReady": "Sistem pembayaran belum siap. Muat ulang dan coba lagi.",
+      "cadenceToggle": {
+        "monthly": "Bulanan",
+        "yearly": "Tahunan",
+        "savePill": "Hemat 2 bulan"
+      }
+    },
+    "staff": {
+      "title": "Langganan workspace telah berakhir",
+      "description": "Minta pemilik workspace untuk berlangganan kembali Gallurio Pro agar akses Anda pulih."
+    }
+  },
+  "publicPage": {
+    "chrome": {
+      "comingSoon": "Segera hadir",
+      "poweredBy": "Didukung oleh Gallurio",
+      "notFoundEyebrow": "Gallurio",
+      "notFoundTitle": "Portofolio tidak ditemukan",
+      "notFoundBody": "Portofolio ini tidak ada atau belum dipublikasikan.",
+      "startingFrom": "Mulai dari {price}",
+      "socialLinkConfirm": "Anda mengunjungi situs eksternal: {url}. Lanjutkan?",
+      "gallery": {
+        "empty": "Belum ada foto di koleksi ini.",
+        "noCollection": "Tidak ada koleksi yang dipilih.",
+        "unavailable": "Galeri tidak tersedia.",
+        "error": "Galeri sementara tidak tersedia.",
+        "featuredEmpty": "Belum ada foto unggulan yang dipilih.",
+        "carouselHint": "Geser atau gunakan panah untuk menjelajah",
+        "carouselPrev": "Gambar sebelumnya",
+        "carouselNext": "Gambar berikutnya"
+      }
+    },
+    "nav": {
+      "home": "Beranda",
+      "gallery": "Galeri",
+      "contact": "Kontak",
+      "openMenu": "Buka menu",
+      "closeMenu": "Tutup menu",
+      "navLandmark": "Portfolio"
+    },
+    "inquiryForm": {
+      "title": "Hubungi kami",
+      "description": "Ceritakan tentang acara Anda dan kami akan segera menghubungi Anda.",
+      "close": "Tutup",
+      "confirmTitle": "Terima kasih — kami akan menghubungi Anda!",
+      "confirmBody": "Pertanyaan Anda telah terkirim. Kami akan menghubungi melalui metode pilihan Anda segera.",
+      "confirmClose": "Selesai",
+      "tabClient": "Detail Anda",
+      "tabEvent": "Detail acara",
+      "tabLocation": "Lokasi & catatan",
+      "name": "Nama",
+      "email": "Email",
+      "phone": "Telepon (opsional)",
+      "preferredContact": "Metode kontak pilihan",
+      "preferred": {
+        "email": "Email",
+        "phone": "Telepon",
+        "either": "Salah satu"
+      },
+      "sessionsLabel": "Tanggal acara",
+      "sessionLabel": "Hari {n}",
+      "startDate": "Tanggal",
+      "startTime": "Waktu mulai",
+      "endTime": "Waktu selesai",
+      "addSession": "Tambah hari",
+      "removeSession": "Hapus",
+      "shiftHint": "Setiap hari adalah satu sesi — atur waktu mulai dan selesainya. Tambahkan hari untuk acara beberapa hari.",
+      "eventType": "Jenis acara",
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Hari jadi",
+        "other": "Lainnya"
+      },
+      "location": "Lokasi",
+      "locationRequired": "Silakan pilih lokasi sebelum mengirim.",
+      "message": "Ceritakan lebih lanjut",
+      "messagePlaceholder": "Bagikan detail acara Anda…",
+      "submit": "Kirim pertanyaan",
+      "submitting": "Mengirim…",
+      "errorGeneric": "Tidak dapat dikirim — silakan coba lagi nanti.",
+      "requiredHint": "Wajib",
+      "eventTitle": "Judul acara",
+      "continue": "Lanjutkan"
+    },
+    "collectionPopup": {
+      "close": "Tutup",
+      "loading": "Memuat...",
+      "failed": "Gagal memuat foto.",
+      "retry": "Coba lagi",
+      "empty": "Belum ada foto di koleksi ini.",
+      "fullSizeAlt": "Foto ukuran penuh"
+    }
+  },
+  "notFound": {
+    "title": "Halaman tidak ditemukan",
+    "description": "Halaman yang Anda cari tidak ada atau telah dipindahkan.",
+    "backToDashboard": "Kembali ke dasbor"
+  },
+  "inviteAccept": {
+    "pageTitle": "Terima undangan",
+    "signIn": "Masuk",
+    "goToDashboard": "Pergi ke dasbor",
+    "errors": {
+      "invalid": {
+        "title": "Tautan undangan tidak ditemukan",
+        "description": "Tautan undangan ini tidak valid atau sudah digunakan. Minta pemilik workspace untuk mengirim tautan baru."
+      },
+      "expired": {
+        "title": "Tautan undangan telah kedaluwarsa",
+        "description": "Tautan undangan ini telah kedaluwarsa. Minta pemilik workspace untuk mengirim undangan baru."
+      },
+      "already_accepted": {
+        "title": "Sudah menjadi anggota",
+        "description": "Anda telah menerima undangan ini dan telah bergabung dengan workspace."
+      },
+      "revoked": {
+        "title": "Undangan dicabut",
+        "description": "Undangan ini telah dicabut oleh pemilik workspace. Minta mereka mengirim undangan baru jika Anda masih memerlukan akses."
+      },
+      "already_member": {
+        "title": "Email sudah digunakan",
+        "description": "Email ini sudah menjadi anggota workspace lain. Daftar dengan email lain untuk menerima undangan ini."
+      },
+      "email_mismatch": {
+        "title": "Akun yang salah",
+        "description": "Undangan ini dikirim ke alamat email yang berbeda. Masuk dengan alamat yang diundang untuk menerimanya.",
+        "signedInAs": "Anda saat ini masuk sebagai {email}."
+      },
+      "failed": {
+        "title": "Terjadi kesalahan",
+        "description": "Kami tidak dapat menyelesaikan undangan Anda. Silakan coba lagi atau hubungi dukungan."
+      }
+    }
+  }
+}

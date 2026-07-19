@@ -7,8 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -18,11 +18,20 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-chart-8: var(--chart-8);
+  --color-chart-7: var(--chart-7);
+  --color-chart-6: var(--chart-6);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-2: var(--brand-2);
+  --color-brand-3: var(--brand-3);
+  --color-brand-4: var(--brand-4);
+  --color-onboarding-bg: var(--onboarding-bg);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -49,72 +58,158 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Light scheme — a neutral-cool ramp, not the old pure-white/near-black
+     poles. Base is a "dirty white" off-white; the contrast pole is a soft
+     charcoal (lighter than black). Three in-between tiers (surface / line /
+     muted-text) bridge the two so nothing reads as harsh. Faint cool hue (~235)
+     keeps the neutrals cohesive under the teal brand. Tuned visually. */
+  --background: oklch(0.972 0.004 235);
+  --foreground: oklch(0.26 0.008 255);
+  --card: oklch(0.988 0.003 235);
+  --card-foreground: oklch(0.26 0.008 255);
+  --popover: oklch(0.988 0.003 235);
+  --popover-foreground: oklch(0.26 0.008 255);
+  --primary: oklch(0.28 0.008 255);
+  --primary-foreground: oklch(0.985 0.002 235);
+  --secondary: oklch(0.945 0.005 235);
+  --secondary-foreground: oklch(0.30 0.008 255);
+  --muted: oklch(0.945 0.005 235);
+  --muted-foreground: oklch(0.52 0.012 250);
+  --accent: oklch(0.945 0.005 235);
+  --accent-foreground: oklch(0.30 0.008 255);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: oklch(0.90 0.006 235);
+  --input: oklch(0.90 0.006 235);
+  /* Focus ring is brand-tinted (teal) so focus state itself reinforces the
+     brand — see CLAUDE.md → Design rules (brand-forward accents). */
+  --ring: oklch(0.60 0.10 195);
+  /* Off-range surfaces (calendar prev/next-month tiles, other "context" cells).
+     A bridge tier that contrasts both poles. The foreground is the matching
+     text color for the tile itself, NOT the page foreground. */
+  --off-range: oklch(0.85 0 0);
+  --off-range-foreground: oklch(0.2 0 0);
+  /* Gallurio brand — deep teal + 3 supporting shades. Use sparingly (~10–20%
+     of any view) for accents that need to pop above the neutral palette. */
+  --brand: oklch(0.55 0.10 195);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-2: oklch(0.65 0.10 195);
+  --brand-3: oklch(0.78 0.08 195);
+  --brand-4: oklch(0.88 0.05 195);
+  /* Onboarding-only warm cream backdrop — never touches the global
+     --background. Scoped by applying bg-onboarding-bg on the onboarding
+     layout's outer wrapper only. Warm hue (~85, amber family) so the wizard
+     reads inviting against the app's default cool-neutral shell. */
+  --onboarding-bg: oklch(0.975 0.014 85);
+  /* Chart palette: teal (brand) stays the lead accent (chart-1); the rest fan
+     out across distinct hues at mid-luminance / moderate chroma so multiple
+     datasets read apart at a glance while staying on-brand and legible on the
+     light card surface. Dark mode lifts L (.dark block) so they pop on charcoal.
+     See CLAUDE.md → Design rules (brand accent ~10–20%). */
+  --chart-1: var(--brand);                 /* teal 195 — lead accent */
+  --chart-2: oklch(0.58 0.13 250);         /* indigo */
+  --chart-3: oklch(0.68 0.14 60);          /* amber */
+  --chart-4: oklch(0.58 0.15 25);          /* coral */
+  --chart-5: oklch(0.55 0.14 300);         /* violet */
+  --chart-6: oklch(0.60 0.13 150);         /* green */
+  --chart-7: oklch(0.66 0.12 95);          /* gold-olive */
+  --chart-8: oklch(0.58 0.02 255);         /* slate — neutral */
+  /* Event status colors — theme-invariant by design (same in light and dark
+     mode) so calendar events read as a stable vocabulary regardless of the
+     surrounding scheme. Saturated mid-luminance palette: white text always
+     contrasts. */
+  --danger: oklch(0.60 0.18 25);           /* shared red — cancelled events, conflicts */
+  --event-booked: oklch(0.55 0.10 195);    /* teal — confident, primary */
+  --event-completed: oklch(0.55 0.13 145); /* green — done */
+  --event-cancelled: var(--danger);        /* red — cancelled */
+  --event-inquiry: oklch(0.55 0.04 250);   /* slate — active inquiry, neutral */
+  /* Corner radii. --radius is the control radius (buttons, inputs, badges,
+     menus); --radius-surface is the structural-frame radius (cards, dialogs,
+     sidebar, tables, panels). Defaults below = the shipped "subtle" look
+     (soft controls, sharp frames); the html[data-radius] blocks after .dark
+     override both for the sharp / rounded presets. */
+  --radius: 0.25rem;
+  --radius-surface: 0rem;
+  --sidebar: oklch(0.96 0.004 235);
+  --sidebar-foreground: oklch(0.26 0.008 255);
+  /* Active nav item uses the brand teal (brand-forward accent). */
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: oklch(0.93 0.006 235);
+  --sidebar-accent-foreground: oklch(0.26 0.008 255);
+  --sidebar-border: oklch(0.90 0.006 235);
+  --sidebar-ring: oklch(0.60 0.10 195);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Dark scheme — a "lighter black" base (charcoal, not near-pure-black) with
+     off-white (not pure-white) text, plus the same three bridging tiers. Faint
+     cool hue (~255) matches the light ramp so brand teal sits the same way in
+     both. Tuned visually. */
+  --background: oklch(0.205 0.006 255);
+  --foreground: oklch(0.92 0.004 235);
+  --card: oklch(0.245 0.006 255);
+  --card-foreground: oklch(0.92 0.004 235);
+  --popover: oklch(0.245 0.006 255);
+  --popover-foreground: oklch(0.92 0.004 235);
+  --primary: oklch(0.90 0.004 235);
+  --primary-foreground: oklch(0.24 0.006 255);
+  --secondary: oklch(0.285 0.006 255);
+  --secondary-foreground: oklch(0.92 0.004 235);
+  --muted: oklch(0.285 0.006 255);
+  --muted-foreground: oklch(0.72 0.01 250);
+  --accent: oklch(0.285 0.006 255);
+  --accent-foreground: oklch(0.92 0.004 235);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.70 0.12 195);
+  --off-range: oklch(0.85 0 0);
+  --off-range-foreground: oklch(0.2 0 0);
+  --brand: oklch(0.70 0.12 195);
+  --brand-foreground: oklch(0.145 0 0);
+  --brand-2: oklch(0.62 0.10 195);
+  --brand-3: oklch(0.50 0.10 195);
+  --brand-4: oklch(0.42 0.08 195);
+  /* Dark equivalent — a faintly warm-tinted charcoal (vs. the cool-hued
+     --background/--card) so the same "warm wizard" identity carries into
+     dark mode without a literal cream (which would fail contrast). */
+  --onboarding-bg: oklch(0.235 0.010 75);
+  --chart-1: var(--brand);                 /* teal 195 — lead accent */
+  --chart-2: oklch(0.70 0.13 250);         /* indigo */
+  --chart-3: oklch(0.78 0.14 60);          /* amber */
+  --chart-4: oklch(0.68 0.15 25);          /* coral */
+  --chart-5: oklch(0.70 0.14 300);         /* violet */
+  --chart-6: oklch(0.74 0.13 150);         /* green */
+  --chart-7: oklch(0.78 0.12 95);          /* gold-olive */
+  --chart-8: oklch(0.72 0.02 255);         /* slate — neutral */
+  --danger: oklch(0.60 0.18 25);
+  --sidebar: oklch(0.235 0.006 255);
+  --sidebar-foreground: oklch(0.92 0.004 235);
+  /* Active nav item uses the brand teal (was a stray purple). */
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: oklch(0.30 0.006 255);
+  --sidebar-accent-foreground: oklch(0.92 0.004 235);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.70 0.12 195);
+}
+
+/* Corner-style presets — driven by <html data-radius> (set from the typed
+   config in lib/theme/appTheme.ts; default "subtle"). This is the seam a future
+   user-theming UI flips. --radius governs controls (buttons, inputs, badges,
+   menus); --radius-surface governs structural frames (cards, dialogs, sidebar,
+   tables, panels). Scheme-independent, so they sit outside :root / .dark. */
+html[data-radius="sharp"] {
+  --radius: 0rem;
+  --radius-surface: 0rem;
+}
+html[data-radius="subtle"] {
+  --radius: 0.25rem;
+  --radius-surface: 0rem;
+}
+html[data-radius="rounded"] {
+  --radius: 0.5rem;
+  --radius-surface: 0.5rem;
 }
 
 @layer base {
@@ -127,4 +222,538 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Wizard validation failure shake — re-triggered by remounting the element
+   with a changing key, so the same element shakes on every failed click. */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.animate-shake {
+  animation: shake 380ms ease-in-out;
+}
+
+/* react-colorful — the picker injects its own stylesheet at runtime (fixed
+   200px width, 8px rounded corners) which lands after globals in the cascade,
+   so we need !important to win. Make it fill the dialog width, flatten to the
+   app's sharp-edge design, and give the saturation area room. Pointers stay
+   circular (a deliberate affordance); the gradients are color data, not theme
+   surfaces, so no token re-pairing is needed. */
+.react-colorful {
+  width: 100% !important;
+  height: 12rem !important;
+}
+.react-colorful,
+.react-colorful__saturation,
+.react-colorful__last-control {
+  border-radius: 0 !important;
+}
+.react-colorful__last-control {
+  height: 1.5rem !important;
+}
+
+/* react-big-calendar — flatten to sharp edges + semantic tokens. */
+.rbc-calendar {
+  @apply font-sans text-sm text-foreground;
+}
+.rbc-toolbar {
+  @apply mb-2 flex flex-wrap items-center justify-between gap-2;
+}
+/* rbc's own CSS is unlayered (highest cascade priority among normal rules),
+   so any @apply we use here gets beaten by rbc's `color: #373a3c` regardless
+   of selector specificity. Writing raw CSS to stay in the same cascade tier. */
+.rbc-calendar .rbc-toolbar button {
+  color: var(--foreground);
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+.rbc-calendar .rbc-toolbar button:hover,
+.rbc-calendar .rbc-toolbar button:focus {
+  color: var(--foreground);
+  background-color: var(--muted);
+  border-color: var(--border);
+  outline: none;
+}
+.rbc-calendar .rbc-toolbar button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.rbc-calendar .rbc-toolbar button.rbc-active,
+.rbc-calendar .rbc-toolbar button.rbc-active:hover,
+.rbc-calendar .rbc-toolbar button.rbc-active:focus {
+  color: var(--brand-foreground);
+  background-color: var(--brand);
+  border-color: var(--brand);
+}
+.rbc-calendar .rbc-toolbar .rbc-btn-group > button + button {
+  margin-inline-start: -1px;
+}
+.rbc-toolbar-label {
+  @apply text-base font-semibold;
+}
+.rbc-month-view,
+.rbc-time-view,
+.rbc-agenda-view {
+  @apply border border-border bg-card;
+  border-radius: 0;
+}
+.rbc-header {
+  @apply border-b border-border bg-muted px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground;
+}
+/* The corner piece in the week/day header row (.rbc-time-header-gutter) has no
+   background by default, breaking the visual header bar. Match it to .rbc-header
+   so the muted bar spans the full table width. */
+.rbc-time-header-gutter {
+  background-color: var(--muted) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.rbc-month-row + .rbc-month-row,
+.rbc-day-bg + .rbc-day-bg,
+.rbc-time-content > * + * > *,
+.rbc-time-header-content,
+.rbc-time-header.rbc-overflowing,
+.rbc-time-content {
+  border-color: var(--border);
+}
+/* Week/day/agenda time-grid lines. rbc's stylesheet is unlayered and uses
+   hardcoded near-black borders that look stark in dark mode; !important
+   because @apply / unprefixed rules lose to unlayered third-party CSS even
+   with higher specificity (same precedent as toolbar button color fix). */
+.rbc-calendar .rbc-time-view,
+.rbc-calendar .rbc-time-content,
+.rbc-calendar .rbc-time-header-content,
+.rbc-calendar .rbc-time-header.rbc-overflowing,
+.rbc-calendar .rbc-time-content > * + * > *,
+.rbc-calendar .rbc-day-slot .rbc-time-slot,
+.rbc-calendar .rbc-timeslot-group,
+.rbc-calendar .rbc-time-header-cell,
+.rbc-calendar .rbc-time-gutter,
+.rbc-calendar .rbc-allday-cell,
+.rbc-calendar .rbc-header + .rbc-header,
+.rbc-calendar .rbc-time-header > .rbc-row,
+.rbc-calendar .rbc-time-header-content > .rbc-row {
+  border-color: var(--border) !important;
+}
+/* rbc ships .rbc-time-content with border-top:2px — our color override above
+   leaves the width at 2px, making it appear thicker than every other 1px grid
+   line. Normalise to 1px so all borders are uniform. */
+.rbc-calendar .rbc-time-content {
+  border-top-width: 1px !important;
+}
+/* Hide the all-day row in week/day views. rbc renders it as the last .rbc-row
+   inside .rbc-time-header-content (distinct from .rbc-time-header-cell which
+   is the date-label row). Hiding both the row and the cells collapses the
+   space cleanly so the date header sits flush above the time grid. */
+.rbc-calendar .rbc-time-header-content > .rbc-row:not(.rbc-time-header-cell):not(.rbc-row-resource),
+.rbc-calendar .rbc-allday-cell {
+  display: none !important;
+}
+/* Off-range cells (prev/next month) use the brand accent — same pattern as
+   the dashboard mini-cal, so the calendar reads as one consistent system.
+   Longer selector chain outranks rbc's bare `.rbc-off-range-bg` on specificity,
+   so hover styles below still apply. */
+.rbc-month-view .rbc-row-bg .rbc-day-bg.rbc-off-range-bg {
+  background-color: var(--brand-4);
+}
+/* Default text inside cells inherits the page foreground.
+   Higher specificity (.rbc-calendar prefix) beats rbc's own CSS which sets
+   .rbc-button-link to a hardcoded near-black that doesn't follow our theme. */
+.rbc-calendar .rbc-button-link,
+.rbc-calendar .rbc-date-cell {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.rbc-calendar .rbc-off-range .rbc-button-link {
+  color: var(--brand);
+  font-weight: 500;
+}
+/* Day cells are clickable — hover shrinks the inner content via inset ring
+   so the affordance is obvious without disturbing the surrounding grid. */
+.rbc-day-bg {
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.rbc-day-bg:hover {
+  background-color: var(--muted);
+  /* Mid-tier ring color — visible on both light and dark cell backgrounds
+     because --muted-foreground sits between the two poles in either theme.
+     Avoids both eye-strain (polar opposite) and invisibility (token == bg). */
+  box-shadow: inset 0 0 0 2px var(--muted-foreground);
+  transform: scale(0.985);
+}
+.rbc-off-range-bg.rbc-day-bg:hover {
+  background-color: var(--brand-4);
+  box-shadow: inset 0 0 0 2px var(--muted-foreground);
+}
+/* Week/day view: cursor pointer on the column so users know clicking opens
+   the new-booking wizard. isolation:isolate creates a stacking context so the
+   JS-rendered hover highlight div (z-index:-1, in HoverableDayWrapper) stays
+   contained within the column and never bleeds behind the page background. */
+.rbc-calendar .rbc-day-slot {
+  cursor: pointer;
+  isolation: isolate;
+}
+/* Today (month view): solid brand teal fill. Text stays at the general
+   --foreground (set by the .rbc-button-link rule above) which contrasts
+   teal in both themes. Hover keeps teal but adds the same inset-ring +
+   scale as regular cells so the affordance is consistent. */
+.rbc-calendar .rbc-month-view .rbc-today {
+  background-color: var(--brand) !important;
+}
+.rbc-calendar .rbc-month-view .rbc-today.rbc-day-bg:hover {
+  background-color: var(--brand) !important;
+  box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--brand-foreground) 60%, transparent);
+  transform: scale(0.985);
+}
+/* Today (week/day/agenda views): subtle teal wash over the page bg so the
+   time-grid column doesn't read as one giant solid teal block. The wash sits
+   close to the page bg so the day-number text uses --foreground (NOT
+   --brand-foreground, which is designed to contrast solid brand). !important
+   defeats rbc's hardcoded `.rbc-today { background: #eaf6ff }` which loads
+   unlayered and otherwise wins. */
+.rbc-calendar .rbc-time-view .rbc-today,
+.rbc-calendar .rbc-time-header .rbc-today,
+.rbc-calendar .rbc-day-slot.rbc-today {
+  background-color: color-mix(in oklch, var(--brand) 12%, transparent) !important;
+}
+.rbc-calendar .rbc-time-view .rbc-today .rbc-button-link,
+.rbc-calendar .rbc-time-header .rbc-today .rbc-button-link,
+.rbc-calendar .rbc-time-view .rbc-today.rbc-header,
+.rbc-calendar .rbc-time-view .rbc-today .rbc-header {
+  color: var(--foreground);
+}
+.rbc-event,
+.rbc-day-slot .rbc-background-event {
+  border-radius: 0;
+  padding: 2px 4px;
+}
+/* rbc auto-renders an `.rbc-event-label` (the time range) above its content
+   slot. Our custom event component already shows the time, so hide rbc's
+   default label to avoid the duplicate. */
+.rbc-calendar .rbc-event-label {
+  display: none;
+}
+/* Custom event content fills the candle — no extra padding from rbc's content
+   wrapper either, so the striped left edge sits flush at the candle's edge. */
+.rbc-calendar .rbc-event-content {
+  width: 100%;
+  height: 100%;
+}
+.rbc-event.rbc-selected,
+.rbc-event:focus,
+.rbc-day-slot .rbc-selected.rbc-background-event {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+/* DnD addon — theme the drag-over highlight and resize handles so they use
+   our brand/border tokens instead of the addon's hardcoded rgba(0,0,0,0.3). */
+.rbc-addons-dnd .rbc-addons-dnd-over {
+  background-color: color-mix(in oklch, var(--brand) 12%, transparent) !important;
+}
+.rbc-addons-dnd .rbc-addons-dnd-resize-ns-anchor .rbc-addons-dnd-resize-ns-icon {
+  border-top-color: var(--brand-foreground);
+  width: 14px;
+}
+.rbc-addons-dnd .rbc-addons-dnd-resize-ew-anchor .rbc-addons-dnd-resize-ew-icon {
+  border-left-color: var(--brand-foreground);
+}
+/* Ghost of the event being dragged: faint so it reads as "in motion". */
+.rbc-addons-dnd .rbc-addons-dnd-dragged-event {
+  opacity: 0.15 !important;
+}
+/*
+ * Bug 3 — disable invalid resize handles on overnight candle halves.
+ *
+ * The bled-tail (isMorningContinuation / .rbc-bled-tail) sits at 00:00 of the
+ * next day. Its TOP (start) anchor would let the user "move the session start
+ * to after midnight" — an invalid mutation. Kill pointer-events on the first
+ * .rbc-addons-dnd-resize-ns-anchor child (the start/top handle).
+ *
+ * The evening-head (isEveningHead / .rbc-evening-head) ends at 23:59:59 of
+ * the first day. Its BOTTOM (end) anchor would let the user push the session
+ * end to midnight — also invalid. Kill pointer-events on the last anchor.
+ *
+ * CSS is the visual layer; the handler guards in handleEventResize are the
+ * primary enforcement so even if rbc's DOM structure changes the mutation
+ * is still blocked in JS.
+ */
+.rbc-calendar .rbc-event.rbc-bled-tail
+  .rbc-addons-dnd-resize-ns-anchor:first-child {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  cursor: default !important;
+}
+.rbc-calendar .rbc-event.rbc-evening-head
+  .rbc-addons-dnd-resize-ns-anchor:last-child {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  cursor: default !important;
+}
+/* Non-dragged events dim slightly while a drag is in progress. */
+.rbc-addons-dnd.rbc-addons-dnd-is-dragging
+  .rbc-event:not(.rbc-addons-dnd-dragged-event):not(.rbc-addons-dnd-drag-preview) {
+  opacity: 0.55 !important;
+}
+
+/* Overflow event pill: rbc wraps the custom event component in .rbc-event which
+   adds its own background/border. Strip those for the overflow placeholder so
+   only the custom pill renders visually. */
+.rbc-calendar .rbc-event.overflow-event {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.rbc-agenda-table {
+  @apply border-collapse;
+}
+.rbc-agenda-table.rbc-agenda-table tbody > tr > td {
+  @apply border-t border-border px-2 py-1.5;
+}
+.rbc-time-slot {
+  border-color: var(--border);
+}
+/* Teams-style: tall hour rows so events have breathing room and don't squish.
+   With step=30 + timeslots=2, each slot = 30 minutes; min-height 30 → 60px/hr.
+   The half-hour line is rendered without a top border so only the hour break
+   is visible (cleaner read). */
+.rbc-calendar .rbc-time-content .rbc-timeslot-group {
+  min-height: 60px;
+}
+.rbc-calendar .rbc-time-slot + .rbc-time-slot {
+  border-top: 0 !important;
+}
+.rbc-calendar .rbc-current-time-indicator {
+  background-color: var(--brand);
+  height: 2px;
+}
+
+/* Leaflet (location picker) — re-pair the library's light-mode-assuming chrome
+   to Gallurio tokens so the zoom controls, attribution, and any popups read
+   correctly in both themes. Tiles are raster images and stay untouched. */
+.leaflet-container {
+  background-color: var(--muted);
+  font-family: inherit;
+  /* Leaflet panes use z-index 400–1000, above our z-50 dialogs. Establish a
+     stacking context so the whole map is contained below an overlaid dialog
+     (Drafts/Template/Publish/Photos) instead of punching through it. */
+  position: relative;
+  isolation: isolate;
+}
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border-bottom-color: var(--border);
+}
+.leaflet-bar a.leaflet-disabled {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+.leaflet-control-attribution {
+  background-color: color-mix(in oklch, var(--card) 80%, transparent);
+  color: var(--muted-foreground);
+}
+.leaflet-control-attribution a {
+  color: var(--foreground);
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+
+/* Bell nudge — a quick decaying swing to signal a new notification.
+   Triggered by adding .animate-bell-nudge to the BellIcon svg; removed on
+   animationend so a subsequent notification can re-trigger it. */
+@keyframes bell-nudge {
+  0%   { transform: rotate(0deg); }
+  15%  { transform: rotate(-18deg); }
+  35%  { transform: rotate(16deg); }
+  55%  { transform: rotate(-10deg); }
+  70%  { transform: rotate(6deg); }
+  85%  { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
+}
+.animate-bell-nudge {
+  animation: bell-nudge 600ms ease-in-out;
+  transform-origin: top center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-bell-nudge { animation: none; }
+}
+
+/* Sonner toast entry animation — subtle scale + slide-in with overshoot. */
+@keyframes toast-in {
+  0% {
+    transform: translateX(20px) scale(0.96);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-2px) scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+.animate-toast-in {
+  animation: toast-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sonner richColors palette override — align with Gallurio's oklch tokens.
+   Sonner expects --[type]-bg, --[type]-text, --[type]-border CSS variables. */
+:root {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --success-bg: oklch(0.95 0.05 145);
+  --success-text: oklch(0.30 0.13 145);
+  --success-border: oklch(0.55 0.13 145);
+  --error-bg: oklch(0.95 0.05 25);
+  --error-text: oklch(0.30 0.18 25);
+  --error-border: oklch(0.60 0.18 25);
+  --warning-bg: oklch(0.95 0.05 75);
+  --warning-text: oklch(0.30 0.14 75);
+  --warning-border: oklch(0.68 0.14 65);
+  --info-bg: oklch(0.95 0.04 230);
+  --info-text: oklch(0.30 0.10 230);
+  --info-border: oklch(0.55 0.10 230);
+}
+.dark {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --success-bg: oklch(0.22 0.06 145);
+  --success-text: oklch(0.95 0.05 145);
+  --success-border: oklch(0.55 0.13 145);
+  --error-bg: oklch(0.22 0.08 25);
+  --error-text: oklch(0.95 0.05 25);
+  --error-border: oklch(0.60 0.18 25);
+  --warning-bg: oklch(0.22 0.07 75);
+  --warning-text: oklch(0.95 0.05 75);
+  --warning-border: oklch(0.68 0.14 65);
+  --info-bg: oklch(0.22 0.05 230);
+  --info-text: oklch(0.95 0.04 230);
+  --info-border: oklch(0.55 0.10 230);
+}
+
+@layer base {
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer base {
+  button:not(:disabled) { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+
+/* Lean inline scrollbar for compact overflow surfaces. */
+.scrollbar-inline-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.scrollbar-inline-subtle::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-inline-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-inline-subtle::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.scrollbar-inline-subtle::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Lean vertical scrollbar — same tokens as .scrollbar-inline-subtle, sized for
+ * height instead of width. */
+.scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Onboarding wizard — short-viewport graceful degradation. The wizard is
+ * designed to avoid nested form scrollbars. On short/landscape windows, hide
+ * decorative chrome before functional content, in this priority order:
+ * 1) progress-bar step-name labels (keep the hairline rule + tick marker),
+ * 2) the step description paragraph (keep the title). */
+@media (max-height: 620px) {
+  .onboarding-progress-label {
+    display: none;
+  }
+}
+@media (max-height: 560px) {
+  .onboarding-step-description {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Portfolio block motion — entrance animations (scroll-triggered: a block gets
+ * `.pf-in-view` from the MotionObserver when it enters the viewport) + hover
+ * effects. Driven by the `data-anim` / `data-hover` attrs from resolveBlockAttrs;
+ * `--pf-anim-duration` is set per-block by resolveBlockStyle. NOT layered so the
+ * public page (which imports this file) always gets it.
+ * ------------------------------------------------------------------------- */
+[data-anim] {
+  opacity: 0;
+  will-change: opacity, transform;
+  transition: opacity var(--pf-anim-duration, 600ms) ease, transform var(--pf-anim-duration, 600ms) ease;
+}
+[data-anim="slide-up"] { transform: translateY(28px); }
+[data-anim="slide-down"] { transform: translateY(-28px); }
+[data-anim="slide-left"] { transform: translateX(28px); }
+[data-anim="slide-right"] { transform: translateX(-28px); }
+[data-anim="zoom"] { transform: scale(0.92); }
+[data-anim].pf-in-view { opacity: 1; transform: none; }
+
+[data-hover] { transition: transform 200ms ease, filter 200ms ease, opacity 200ms ease; }
+[data-hover="scale"]:hover { transform: scale(1.03); }
+[data-hover="lift"]:hover { transform: translateY(-4px); }
+[data-hover="dim"]:hover { opacity: 0.85; }
+[data-hover="brighten"]:hover { filter: brightness(1.08); }
+
+/* In the editor canvas, show blocks at their final state — entrance is a
+ * live-page effect; hover still previews. */
+.gallurio-editor [data-anim] { opacity: 1 !important; transform: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-anim] { opacity: 1 !important; transform: none !important; transition: none !important; }
+  [data-hover] { transition: none !important; }
 }

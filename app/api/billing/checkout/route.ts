@@ -1,74 +1,125 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { getAuthUser } from "@/lib/auth/session";
+import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace } from "@/lib/db/models";
-import { stripe, priceIdForPlan } from "@/lib/stripe/client";
+import { createSubscriptionCheckout } from "@/lib/lemonsqueezy/client";
+import { getPlanCatalog, isPaidPlan } from "@/lib/lemonsqueezy/plans";
+import { rateLimit } from "@/lib/server/rateLimit";
+import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
+import { hasActivatedOnboardingPlan } from "@/lib/onboarding/planActivation";
 
 export const runtime = "nodejs";
 
+// Authenticated but cheaply repeatable and each hit calls the external Lemon
+// Squeezy API — key by workspace (stable, derived from the validated
+// session) rather than IP.
+const RATE_LIMIT = { limit: 5, windowMs: 5 * 60_000 };
+
 const bodySchema = z.object({
-  plan: z.enum(["starter", "pro"]),
+  plan: z.enum(["pro"]),
+  cadence: z.enum(["monthly", "yearly"]).default("monthly"),
   onboarding: z.boolean().optional(),
-  trialDays: z.number().int().min(0).max(30).optional(),
+  returnTo: z.string().startsWith("/").optional(),
 });
 
-function appUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-}
-
 export async function POST(req: Request) {
-  const ctx = await requireOrg({ allowDuringOnboarding: true });
+  // Cheap, zero-I/O check first — avoids an auth session decrypt + 2 Mongo
+  // round trips on every request for as long as beta-only mode is on.
+  if (!isPaidBillingAvailable()) {
+    return NextResponse.json({ error: "billing_unavailable" }, { status: 403 });
+  }
+
+  // A gated owner must be able to POST here too - re-subscribing is how they
+  // un-gate themselves.
+  const ctx = await requireOrg({ allowDuringOnboarding: true, allowWhenGated: true });
+
+  const limited = rateLimit(`checkout:${ctx.workspace._id.toString()}`, RATE_LIMIT);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.max(0, Math.ceil((limited.resetAt - Date.now()) / 1000))),
+        },
+      },
+    );
+  }
 
   const json = await req.json().catch(() => ({}));
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
+    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  }
+  const { plan, cadence, onboarding, returnTo } = parsed.data;
+
+  if (onboarding && hasActivatedOnboardingPlan(ctx.workspace)) {
+    return NextResponse.json({ error: "onboarding_plan_locked" }, { status: 409 });
+  }
+
+  if (!isPaidPlan(plan)) {
     return NextResponse.json(
-      { error: parsed.error.errors[0]?.message ?? "Invalid request" },
-      { status: 400 }
+      { error: "free_plan_no_checkout" },
+      { status: 400 },
     );
   }
-  const { plan, onboarding, trialDays } = parsed.data;
+
+  const catalog = getPlanCatalog(plan);
+  const variantId = cadence === "yearly" ? catalog.yearlyVariantId : catalog.variantId;
+  if (!variantId) {
+    return NextResponse.json(
+      { error: "lemonsqueezy_variant_not_configured" },
+      { status: 500 },
+    );
+  }
 
   await connectDB();
 
-  let customerId = ctx.workspace.stripeCustomerId;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      name: ctx.workspace.name,
-      metadata: {
-        workspaceId: ctx.workspace._id.toString(),
-        clerkOrgId: ctx.clerkOrgId,
-      },
-    });
-    customerId = customer.id;
-    await Workspace.updateOne(
-      { _id: ctx.workspace._id },
-      { $set: { stripeCustomerId: customerId } }
-    );
+  // Resolve email and name from WorkOS session — Lemon Squeezy resolves/
+  // creates the customer from the checkout email, no pre-create step needed.
+  const authUser = await getAuthUser();
+  if (!authUser) {
+    return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
   }
 
-  const successPath = onboarding
-    ? "/onboarding/done?session_id={CHECKOUT_SESSION_ID}"
-    : "/settings/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}";
-  const cancelPath = onboarding ? "/onboarding/plan?checkout=cancelled" : "/settings/billing?checkout=cancelled";
+  const email = authUser.email;
+  if (!email) {
+    return NextResponse.json({ error: "no_verified_email" }, { status: 400 });
+  }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer: customerId,
-    line_items: [{ price: priceIdForPlan(plan), quantity: 1 }],
-    success_url: `${appUrl()}${successPath}`,
-    cancel_url: `${appUrl()}${cancelPath}`,
-    allow_promotion_codes: true,
-    client_reference_id: ctx.workspace._id.toString(),
-    subscription_data: {
-      trial_period_days: trialDays ?? (onboarding ? 14 : undefined),
-      metadata: {
-        workspaceId: ctx.workspace._id.toString(),
-        clerkOrgId: ctx.clerkOrgId,
-      },
-    },
+  const name = authUser.name || ctx.workspace.name;
+  const workspaceId = ctx.workspace._id.toString();
+  // Lemon Squeezy defaults to redirecting to its own hosted order page after
+  // a successful payment unless told otherwise — send the customer back into
+  // the app instead. The embedded overlay's Checkout.Success event (see
+  // useLemonSqueezyCheckout) already navigates on success in normal browser
+  // flows; this is the fallback for when the overlay's own post-payment
+  // screen redirects the top-level page rather than staying embedded.
+  // `returnTo` (e.g. the caller's original destination behind a /subscribe
+  // gate) takes precedence over the onboarding/default targets when present.
+  const redirectUrl = new URL(
+    sanitizeLocalReturnTo(returnTo) ?? (onboarding ? "/onboarding/done" : "/settings/billing"),
+    req.url,
+  ).toString();
+
+  let checkoutUrl: string;
+  try {
+    checkoutUrl = await createSubscriptionCheckout({
+      variantId,
+      email,
+      name,
+      workspaceId,
+      redirectUrl,
+    });
+  } catch (err) {
+    console.error("[billing.checkout] lemonsqueezy checkout init failed", err);
+    return NextResponse.json({ error: "checkout_init_failed" }, { status: 502 });
+  }
+
+  return NextResponse.json({
+    checkoutUrl,
+    workspaceId,
   });
-
-  return NextResponse.json({ url: session.url });
 }

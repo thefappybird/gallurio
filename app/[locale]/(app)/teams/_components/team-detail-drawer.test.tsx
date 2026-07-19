@@ -1,0 +1,155 @@
+import type { ComponentProps } from "react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
+import { TeamDetailDrawer } from "./team-detail-drawer";
+import { setLeadFlagAction, removeMemberFromTeamAction } from "../_member-action";
+import type { MemberSummary, TeamRow } from "../_types";
+
+vi.mock("@/lib/i18n/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
+
+vi.mock("../_member-action", () => ({
+  assignMemberToTeamAction: vi.fn(),
+  removeMemberFromTeamAction: vi.fn(),
+  removeMemberFromWorkspaceAction: vi.fn(),
+  setLeadFlagAction: vi.fn(),
+}));
+
+vi.mock("../_invite-action", () => ({
+  revokeInviteAction: vi.fn(),
+}));
+
+const TEAM: TeamRow = {
+  id: "t1",
+  name: "Wedding crew",
+  color: "#7c5cff",
+  isDefault: false,
+  isActive: true,
+  memberCount: 1,
+};
+
+const OWNER = "user_owner_workos";
+
+const MEMBERS: MemberSummary[] = [
+  { workosUserId: OWNER, email: "owner@test.com", name: "Owner", teams: [] },
+  {
+    workosUserId: "u_on",
+    email: "on@test.com",
+    name: "On The Team",
+    teams: [{ teamId: "t1", role: "member" }],
+  },
+  { workosUserId: "u_free", email: "free@test.com", name: "Teamless Tom", teams: [] },
+];
+
+function renderDrawer(overrides: Partial<ComponentProps<typeof TeamDetailDrawer>> = {}) {
+  return renderWithProviders(
+    <TeamDetailDrawer
+      team={TEAM}
+      open
+      onOpenChange={vi.fn()}
+      members={MEMBERS}
+      pendingInvites={[]}
+      maxMembersPerTeam={10}
+      ownerWorkosUserId={OWNER}
+      workspaceId="ws1"
+      canManage
+      onInvite={vi.fn()}
+      {...overrides}
+    />,
+  );
+}
+
+describe("TeamDetailDrawer", () => {
+  it("lists members who belong to this team", () => {
+    renderDrawer();
+    expect(screen.getByText("On The Team")).toBeInTheDocument();
+  });
+
+  it("does not show teamless members or the owner in the on-team list (select closed)", () => {
+    renderDrawer();
+    // Teamless Tom is assignable (lives behind the closed Select), so he is not
+    // rendered in the visible member list.
+    expect(screen.queryByText("Teamless Tom")).not.toBeInTheDocument();
+    // Owner is excluded from this team's roster here (not assigned).
+    expect(screen.queryByText("Owner")).not.toBeInTheDocument();
+  });
+
+  it("offers the add-existing-member control when assignable members exist", () => {
+    renderDrawer();
+    // Teamless Tom + Owner... owner is excluded, Tom is assignable, so the
+    // 'everyone already on team' empty message must NOT appear.
+    expect(
+      screen.queryByText("Everyone in this workspace is already on this team."),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Add existing member")).toBeInTheDocument();
+  });
+
+  it("keeps other members eligible to receive a transferred lead role", () => {
+    const membersWithLead: MemberSummary[] = [
+      { workosUserId: OWNER, email: "owner@test.com", name: "Owner", teams: [] },
+      {
+        workosUserId: "u_lead",
+        email: "lead@test.com",
+        name: "Lead Member",
+        teams: [{ teamId: "t1", role: "lead" }],
+      },
+      {
+        workosUserId: "u_other",
+        email: "other@test.com",
+        name: "Other Member",
+        teams: [{ teamId: "t1", role: "member" }],
+      },
+    ];
+    renderWithProviders(
+      <TeamDetailDrawer
+        team={TEAM}
+        open
+        onOpenChange={vi.fn()}
+        members={membersWithLead}
+        pendingInvites={[]}
+        maxMembersPerTeam={10}
+        ownerWorkosUserId={OWNER}
+        workspaceId="ws1"
+        canManage
+        onInvite={vi.fn()}
+      />,
+    );
+
+    expect(document.getElementById("lead-u_lead")).not.toHaveAttribute("aria-disabled", "true");
+    expect(document.getElementById("lead-u_other")).not.toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("shows a distinct busy indicator on the lead toggle while the promote action is in flight", async () => {
+    vi.mocked(setLeadFlagAction).mockReturnValue(new Promise(() => {}));
+    renderDrawer();
+
+    const toggle = screen.getByRole("switch");
+    expect(toggle).not.toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-disabled", "true"));
+    expect(toggle).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("hides every mutating control for non-owners, but keeps the member list read-only", () => {
+    renderDrawer({ canManage: false });
+
+    expect(screen.getByText("On The Team")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    expect(screen.queryByText("Add existing member")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Invite to this team/i })).not.toBeInTheDocument();
+  });
+
+  it("clicking Remove opens a confirmation dialog instead of removing immediately", () => {
+    renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    expect(
+      screen.getByText("Remove On The Team from Wedding crew?"),
+    ).toBeInTheDocument();
+    expect(removeMemberFromTeamAction).not.toHaveBeenCalled();
+  });
+});

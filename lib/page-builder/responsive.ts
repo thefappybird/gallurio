@@ -1,0 +1,99 @@
+/**
+ * Shared responsiveness helpers for portfolio blocks.
+ *
+ * Mechanism — a SINGLE container-query scope named `pfpage` is attached to the
+ * page surface: the public root wrapper (`config.ts` `root.render`) and, in the
+ * editor, the width-clamped Puck preview surface (`RootCanvasStyle` / iframe seam).
+ * Block roots and their descendants are queried against that page width, so the
+ * SAME design responds on the public page AND live in the editor viewport toggle.
+ *
+ * Why custom-property indirection — `resolveBlockStyle` (styleToolkit.ts) emits
+ * padding / font-size as INLINE styles that beat any stylesheet rule (even with
+ * `!important`). A stylesheet CANNOT override an inline literal, but a custom
+ * property set in a stylesheet DOES cascade into an inline `var()` reference. So a
+ * block sets `prop: var(--token, default)` inline and `PF_RESPONSIVE_CSS`
+ * reassigns `--token` at breakpoints. When the user sets an explicit toolkit value
+ * the toolkit emits the concrete inline property, which correctly wins.
+ *
+ * Why one container, not 22 — a container-query rule styles DESCENDANTS of the
+ * container, never the container element itself, so a block root cannot restyle
+ * its own padding from its own width. Putting `container-type` only on the page
+ * surface also avoids per-block containment side effects (absolute-positioning
+ * containing-block shifts, paint/layout containment, height collapse).
+ */
+
+import type { CSSProperties } from "react";
+
+/** Container name for the page-level query scope (public root + editor canvas). */
+export const PF_CONTAINER_NAME = "pfpage";
+
+/**
+ * Page-width breakpoints (px), aligned to the editor device-toggle widths
+ * (Mobile 390 / Tablet 768 / Desktop 1280). Slightly above the raw device widths
+ * so a block reliably trips the rule inside the clamped viewport.
+ */
+export const PF_BP_TABLET_MAX = 900; // tablet (768 viewport) upper edge
+export const PF_BP_COMPACT = 600; // mobile (390 viewport)
+export const PF_BP_NARROW = 400; // ultra-narrow phones
+
+/**
+ * Inline style fragment that makes an element the page query container. Spread
+ * onto the public root wrapper. (The editor injects the equivalent CSS string —
+ * `PF_PAGE_CONTAINER_CSS` — onto its preview surface.)
+ */
+export const PF_PAGE_CONTAINER: CSSProperties = {
+  containerType: "inline-size",
+  containerName: PF_CONTAINER_NAME,
+};
+
+/** CSS declaration establishing the page container — for injected `<style>` seams. */
+export const PF_PAGE_CONTAINER_CSS = `container-type: inline-size; container-name: ${PF_CONTAINER_NAME};`;
+
+/** Wrap a default value in the responsive padding custom property. */
+export function padVar(defaultValue: string): string {
+  return `var(--pf-pad, ${defaultValue})`;
+}
+
+/** Wrap a default grid-template-columns value in the responsive custom property. */
+export function gridColsVar(defaultValue: string): string {
+  return `var(--pf-grid-cols, ${defaultValue})`;
+}
+
+/** Wrap a default column-count value in the responsive custom property. */
+export function masonryColsVar(defaultValue: string | number): string {
+  return `var(--pf-masonry-cols, ${defaultValue})`;
+}
+
+/**
+ * Global container-query rules. Reassign shared custom properties on block roots
+ * (`[data-block]`) at page-width breakpoints; blocks reference these vars inline.
+ * Injected once on the public page (`config.ts` `root.render`) and into the editor
+ * canvas surface.
+ *
+ * Ordered widest -> narrowest so the cascade resolves: when several `max-width`
+ * queries match (e.g. 380px matches 900/600/400), the last matching rule wins,
+ * which is the narrowest — exactly the intended step-down.
+ */
+export const PF_RESPONSIVE_CSS = `
+@container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_TABLET_MAX}px) {
+  [data-block] {
+    --pf-pad: 2.5rem 1.25rem;
+    --pf-grid-cols: repeat(2, minmax(0, 1fr));
+    --pf-masonry-cols: 2;
+  }
+}
+@container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_COMPACT}px) {
+  [data-block] {
+    --pf-pad: 2rem 1rem;
+    --pf-overlay-px: 1rem;
+    --pf-overlay-py: 1rem;
+  }
+}
+@container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_NARROW}px) {
+  [data-block] {
+    --pf-pad: 1.5rem 0.875rem;
+    --pf-grid-cols: 1fr;
+    --pf-masonry-cols: 1;
+  }
+}
+`.trim();

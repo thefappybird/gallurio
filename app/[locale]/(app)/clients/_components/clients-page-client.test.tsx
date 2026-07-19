@@ -1,0 +1,248 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { useState, type ReactNode, type ReactElement, createElement } from "react";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
+import { ClientsPageClient } from "./clients-page-client";
+import type { ClientRow } from "./clients-table";
+
+// Base UI's floating portal relies on layout APIs unavailable in happy-dom.
+// Stub the dropdown so menu items render inline on trigger click.
+vi.mock("@/components/ui/dropdown-menu", () => {
+  type DropdownChildren =
+    | ReactNode
+    | ((args: { open: boolean; setOpen: (v: boolean) => void }) => ReactNode);
+  const DropdownMenu = ({ children }: { children: DropdownChildren }) => {
+    const [open, setOpen] = useState<boolean>(false);
+    return createElement(
+      "div",
+      { "data-testid": "dropdown-menu", onClick: () => setOpen((o) => !o) },
+      typeof children === "function" ? children({ open, setOpen }) : children,
+    );
+  };
+  const DropdownMenuTrigger = ({ render, children }: { render?: ReactElement; children?: ReactNode }) =>
+    render ?? createElement("button", null, children);
+  const DropdownMenuContent = ({ children }: { children: ReactNode }) =>
+    createElement("div", { "data-testid": "dropdown-content" }, children);
+  const DropdownMenuItem = ({
+    children,
+    onClick,
+  }: {
+    children: ReactNode;
+    onClick?: () => void;
+  }) => createElement("button", { onClick }, children);
+  return { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem };
+});
+
+// Capture the router so individual tests can assert on push/refresh/replace.
+const routerPush = vi.fn();
+const routerRefresh = vi.fn();
+const routerReplace = vi.fn();
+vi.mock("@/lib/i18n/navigation", () => ({
+  useRouter: () => ({ push: routerPush, refresh: routerRefresh, replace: routerReplace }),
+  usePathname: () => "/clients",
+}));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+// Stub server actions — only reactivate is invoked by these smoke tests.
+const reactivateMock = vi.fn();
+vi.mock("@/lib/actions/clients", () => ({
+  reactivateClientAction: (...args: unknown[]) => reactivateMock(...args),
+}));
+
+// Sonner toasts have no DOM side-effect we care about here; capture the mock so
+// the error path can assert the failure toast fires.
+import { toast } from "sonner";
+vi.mock("sonner", () => ({
+  toast: { loading: vi.fn(() => "toast-id"), success: vi.fn(), error: vi.fn(), dismiss: vi.fn() },
+}));
+
+// Stub ClientDetailModal so the page-client test can assert open/closed state
+// without rendering the full modal tree (tabs, bookings action, etc.).
+vi.mock("./client-detail-modal", () => ({
+  ClientDetailModal: ({
+    open,
+    client,
+    onClose,
+  }: {
+    open: boolean;
+    client: { name: string } | null;
+    onClose: () => void;
+  }) =>
+    open && client
+      ? createElement("div", { "data-testid": "client-detail-modal" }, [
+          createElement("span", { key: "name" }, client.name),
+          createElement("button", { key: "close", onClick: onClose }, "Close"),
+        ])
+      : null,
+}));
+
+const sampleRows: ClientRow[] = [
+  {
+    id: "c-active",
+    name: "Maria Santos",
+    email: "maria@example.com",
+    phone: "+63 917 555 0142",
+    source: "manual",
+    tags: ["vip"],
+    notes: "",
+    totalSpent: 75_000,
+    bookingsCount: 3,
+    lastBookingAt: new Date("2026-04-15"),
+    isActive: true,
+    currency: "PHP",
+  },
+  {
+    id: "c-inactive",
+    name: "John Dela Cruz",
+    email: null,
+    phone: null,
+    source: "form",
+    tags: [],
+    notes: "",
+    totalSpent: 0,
+    bookingsCount: 0,
+    lastBookingAt: null,
+    isActive: false,
+    currency: "PHP",
+  },
+];
+
+function build(overrides: Partial<React.ComponentProps<typeof ClientsPageClient>> = {}) {
+  return {
+    rows: sampleRows,
+    total: 2,
+    page: 1,
+    limit: 25,
+    locale: "en",
+    availableTags: ["vip", "wedding"],
+    empty: "No clients",
+    listEmpty: "No clients yet",
+    listEmptyHint: "Add your first client to get started.",
+    ...overrides,
+  };
+}
+
+describe("ClientsPageClient", () => {
+  beforeEach(() => {
+    routerPush.mockClear();
+    routerRefresh.mockClear();
+    routerReplace.mockClear();
+    reactivateMock.mockReset();
+    vi.mocked(toast.error).mockClear();
+  });
+
+  it("renders toolbar, table rows, and pagination summary together", () => {
+    renderWithProviders(<ClientsPageClient {...build()} />);
+    // toolbar
+    expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
+    // table rows (rendered in both the mobile card list and the desktop table)
+    expect(screen.getAllByText("Maria Santos").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("John Dela Cruz").length).toBeGreaterThan(0);
+    // pagination summary
+    expect(screen.getByText(/showing 1–2 of 2/i)).toBeInTheDocument();
+  });
+
+  it("hides pagination summary when there are no clients", () => {
+    renderWithProviders(<ClientsPageClient {...build({ rows: [], total: 0 })} />);
+    // No filters are active (useSearchParams is mocked empty), so the
+    // genuinely-empty copy + CTA renders, not the "no matches" text.
+    expect(screen.getByText("No clients yet")).toBeInTheDocument();
+    // One "Add Client" button lives in the toolbar, the other in the empty-state CTA.
+    expect(screen.getAllByRole("button", { name: "Add Client" })).toHaveLength(2);
+    expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
+  });
+
+  it("pagination Next button pushes a page=N URL", () => {
+    renderWithProviders(
+      <ClientsPageClient {...build({ total: 60, page: 1, limit: 25 })} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    expect(routerPush).toHaveBeenCalledTimes(1);
+    expect(String(routerPush.mock.calls[0][0])).toMatch(/page=2/);
+  });
+
+  it("Previous button is disabled on page 1", () => {
+    renderWithProviders(<ClientsPageClient {...build()} />);
+    expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
+  });
+
+  it("opens detail modal when View is clicked in the row actions menu", async () => {
+    renderWithProviders(<ClientsPageClient {...build()} />);
+
+    // The dropdown mock renders all menu items inline (no visibility guard), so
+    // all View buttons are already in the DOM. After sorting by name asc,
+    // "John Dela Cruz" (inactive) is first, so viewItems[0] belongs to his row.
+    const viewItems = await screen.findAllByText("View");
+    fireEvent.click(viewItems[0]);
+
+    const modal = await screen.findByTestId("client-detail-modal");
+    expect(modal).toBeInTheDocument();
+    expect(within(modal).getByText("John Dela Cruz")).toBeInTheDocument();
+  });
+
+  it("adds the selected client to the URL when opening its detail modal", async () => {
+    renderWithProviders(<ClientsPageClient {...build()} />);
+
+    const viewItems = await screen.findAllByText("View");
+    fireEvent.click(viewItems[0]);
+
+    expect(routerPush).toHaveBeenCalledWith("/clients?client=c-inactive");
+  });
+
+  it("reactivation calls server action and refreshes the list on success", async () => {
+    reactivateMock.mockResolvedValue({ ok: true });
+    renderWithProviders(<ClientsPageClient {...build()} />);
+
+    // Inactive row menu → Reactivate. After sorting by name asc, John Dela Cruz
+    // (inactive) is the first row, so its action menu is the first one.
+    const menuButtons = screen.getAllByRole("button", { name: /open client actions/i });
+    fireEvent.click(menuButtons[0]);
+    const reactivateButtons = await screen.findAllByText(/reactivate/i);
+    fireEvent.click(reactivateButtons[0]);
+
+    await waitFor(() => expect(reactivateMock).toHaveBeenCalledWith("c-inactive"));
+    await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
+  });
+
+  it("reactivation surfaces an error toast and does not refresh on server error", async () => {
+    reactivateMock.mockResolvedValue({ error: "client_reactivate_failed" });
+
+    renderWithProviders(<ClientsPageClient {...build()} />);
+
+    const menuButtons = screen.getAllByRole("button", { name: /open client actions/i });
+    fireEvent.click(menuButtons[0]);
+    const reactivateButtons = await screen.findAllByText(/reactivate/i);
+    fireEvent.click(reactivateButtons[0]);
+
+    await waitFor(() => expect(reactivateMock).toHaveBeenCalled());
+    // The guarded action handles the failure via toast and never throws, so
+    // there is no unhandled rejection to suppress here.
+    await waitFor(() =>
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        "Couldn't reactivate the client. Please try again.",
+        { id: "toast-id" }
+      )
+    );
+    expect(routerRefresh).not.toHaveBeenCalled();
+  });
+
+  it("opens the detail modal on mount when initialDetailClient is provided", () => {
+    const deepLinked = sampleRows[0]; // Maria Santos (active)
+    renderWithProviders(
+      <ClientsPageClient {...build({ initialDetailClient: deepLinked })} />
+    );
+
+    const modal = screen.getByTestId("client-detail-modal");
+    expect(modal).toBeInTheDocument();
+    // Scope to the modal — "Maria Santos" also appears in the table row, so a
+    // bare getByText would match multiple elements.
+    expect(within(modal).getByText("Maria Santos")).toBeInTheDocument();
+  });
+
+  it("does not open the detail modal when initialDetailClient is null", () => {
+    renderWithProviders(<ClientsPageClient {...build({ initialDetailClient: null })} />);
+    expect(screen.queryByTestId("client-detail-modal")).not.toBeInTheDocument();
+  });
+});
