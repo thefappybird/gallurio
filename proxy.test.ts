@@ -101,6 +101,24 @@ describe("proxy", () => {
     }
   });
 
+  it("passes AuthKit's request context into next-intl for the marketing root", async () => {
+    const authHeaders = new Headers({
+      "x-workos-middleware": "true",
+      "x-url": "http://localhost/",
+    });
+    authMiddlewareMock.mockResolvedValueOnce(
+      NextResponse.next({ request: { headers: authHeaders } }),
+    );
+
+    const { proxy } = await import("./proxy");
+    await proxy(new NextRequest("http://localhost/"));
+
+    expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
+    const intlRequest = (intlMiddlewareMock.mock.calls as unknown as [[NextRequest]])[0][0];
+    expect(intlRequest.headers.get("x-workos-middleware")).toBe("true");
+    expect(intlRequest.headers.get("x-url")).toBe("http://localhost/");
+  });
+
   it("does not run AuthKit on public localized pages", async () => {
     const { proxy } = await import("./proxy");
     const req = new NextRequest("http://localhost/en/sign-in");
