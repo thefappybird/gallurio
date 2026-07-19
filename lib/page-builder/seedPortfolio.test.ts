@@ -64,6 +64,8 @@ describe("seedDefaultPortfolio", () => {
     // Gallery blocks bake images[] directly (no collectionId pointer).
     // FeaturedWork blocks are seeded with empty collections[]; the owner populates them
     // via the editor's collections picker.
+    // First-visit default is the empty "scratch" template, so exercise a
+    // gallery-populated starter template via reseed instead.
     await makeWorkspace();
     await GalleryCollection.create({
       workspaceId,
@@ -76,19 +78,28 @@ describe("seedDefaultPortfolio", () => {
       { workspaceId, assetId: `gallurio/${workspaceId}/p/1.jpg`, url: "u1", order: 0 },
     ]);
 
-    const seed = await seedDefaultPortfolio(workspaceId);
+    const seed = await reseedPortfolioFromTemplate(workspaceId, "editorial");
+
+    // Gallery blocks are nested inside layout/preset wrappers (Columns,
+    // *Preset), so walk the full tree rather than only the top level.
+    function flatten(nodes: { type: string; props: Record<string, unknown> }[]): typeof nodes {
+      return nodes.flatMap((n) => [
+        n,
+        ...flatten((n.props.content as typeof nodes | undefined) ?? []),
+      ]);
+    }
+    const galleryContent = flatten(seed!.data.gallery?.content ?? []);
+    const homeContent = flatten(seed!.data.home?.content ?? []);
+
     // Gallery blocks bake images[] directly — no collectionId pointer is injected.
-    const galleryBlocks = (seed!.data.gallery?.content ?? []).filter((b) => b.type.startsWith("Gallery"));
+    const galleryBlocks = galleryContent.filter((b) => b.type.startsWith("Gallery") && "images" in b.props);
     expect(galleryBlocks.length).toBeGreaterThan(0);
     for (const b of galleryBlocks) {
       expect(b.props.images).toEqual([]);
       expect(b.props).not.toHaveProperty("collectionId");
     }
     // FeaturedWork blocks are seeded with empty collections[]
-    const allContent = [
-      ...(seed!.data.home?.content ?? []),
-      ...(seed!.data.gallery?.content ?? []),
-    ];
+    const allContent = [...homeContent, ...galleryContent];
     const featuredBlocks = allContent.filter((b) => b.type === "FeaturedWork");
     for (const b of featuredBlocks) {
       expect(b.props.collections).toEqual([]);

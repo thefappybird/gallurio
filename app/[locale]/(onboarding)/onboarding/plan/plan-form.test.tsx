@@ -174,7 +174,9 @@ describe("PlanStepForm — plan card selection", () => {
     expect(screen.getByRole("button", { name: /finish onboarding/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Free" }).closest("button")).toBeDisabled();
     expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
-    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeDisabled();
+    for (const btn of screen.getAllByRole("button", { name: /have a promo code/i })) {
+      expect(btn).toBeDisabled();
+    }
     expect(screen.getByRole("button", { name: /activate beta access/i })).toBeDisabled();
     expect(screen.getByRole("tab", { name: /monthly/i })).toBeDisabled();
   });
@@ -191,7 +193,7 @@ describe("PlanStepForm — plan card selection", () => {
   it("shows an accepted promo code instead of another redemption prompt", () => {
     renderForm({ planChoiceLocked: true, activation: "promo", acceptedPromoCode: "WELCOME25" });
 
-    expect(screen.getByText(/WELCOME25/)).toBeInTheDocument();
+    expect(screen.getAllByText(/WELCOME25/).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/^active$/i)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
@@ -375,13 +377,13 @@ describe("PlanStepForm — beta tester activation", () => {
 describe("PlanStepForm — promo code redemption", () => {
   it("shows the promo code disclosure collapsed by default", () => {
     renderForm();
-    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /have a promo code/i })[0]).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
   });
 
   it("expands the promo code form when clicked", async () => {
     renderForm();
-    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /have a promo code/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/enter code/i)).toHaveFocus();
@@ -390,7 +392,7 @@ describe("PlanStepForm — promo code redemption", () => {
 
   it("returns to the promo code toggle when closed", async () => {
     renderForm();
-    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /have a promo code/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/enter code/i)).toBeInTheDocument();
@@ -399,7 +401,7 @@ describe("PlanStepForm — promo code redemption", () => {
     fireEvent.click(screen.getByRole("button", { name: /close promo code/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /have a promo code/i })[0]).toBeInTheDocument();
       expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
     });
   });
@@ -408,7 +410,7 @@ describe("PlanStepForm — promo code redemption", () => {
     const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
 
     renderForm();
-    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /have a promo code/i })[0]);
 
     const input = await screen.findByPlaceholderText(/enter code/i);
     fireEvent.change(input, { target: { value: "SAVE20" } });
@@ -421,7 +423,7 @@ describe("PlanStepForm — promo code redemption", () => {
 
   it("redirects to /onboarding/done on a successful redemption", async () => {
     renderForm();
-    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /have a promo code/i })[0]);
 
     const input = await screen.findByPlaceholderText(/enter code/i);
     fireEvent.change(input, { target: { value: "SAVE20" } });
@@ -439,7 +441,7 @@ describe("PlanStepForm — promo code redemption", () => {
     });
 
     renderForm();
-    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /have a promo code/i })[0]);
 
     const input = await screen.findByPlaceholderText(/enter code/i);
     fireEvent.change(input, { target: { value: "BADCODE" } });
