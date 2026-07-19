@@ -1,3 +1,8 @@
+// Node environment (not the project-wide happy-dom default) is required here:
+// happy-dom's fetch Headers implementation silently strips the "Host" header
+// as a forbidden request header, which breaks the Host-header-driven tenant
+// subdomain tests below. Node's Request/Headers do not enforce that filter.
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -199,6 +204,85 @@ describe("proxy", () => {
     // Should redirect to the local sign-in page, not to authkit.app
     expect(redirected.pathname).toBe("/sign-in");
     expect(redirected.searchParams.get("returnTo")).toBe("/inquiries?inquiryId=abc123");
+  });
+
+  describe("*.gallurio.com tenant subdomain routing", () => {
+    function withBaseDomain(fn: () => Promise<void>): Promise<void> {
+      const previous = process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
+      process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = "gallurio.com";
+      return fn().finally(() => {
+        if (previous === undefined) delete process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
+        else process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = previous;
+      });
+    }
+
+    it("rewrites a tenant subdomain host to /w/{slug}{pathname} and skips AuthKit + intl", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/gallery?tab=1", {
+          headers: { host: "acme.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(authMiddlewareMock).not.toHaveBeenCalled();
+        expect(intlMiddlewareMock).not.toHaveBeenCalled();
+        const rewriteTarget = response.headers.get("x-middleware-rewrite");
+        expect(rewriteTarget).not.toBeNull();
+        const rewriteUrl = new URL(rewriteTarget!);
+        expect(rewriteUrl.pathname).toBe("/w/acme/gallery");
+        expect(rewriteUrl.searchParams.get("tab")).toBe("1");
+      }));
+
+    it("does not rewrite on the canonical apex or www host (normal public-route flow continues)", () =>
+      withBaseDomain(async () => {
+        for (const host of ["gallurio.com", "www.gallurio.com"]) {
+          authMiddlewareMock.mockClear();
+          intlMiddlewareMock.mockClear();
+          const { proxy } = await import("./proxy");
+          const req = new NextRequest("http://localhost/pricing", { headers: { host } });
+
+          const response = (await proxy(req)) as Response;
+
+          expect(response.headers.get("x-middleware-rewrite"), `host ${host}`).toBeNull();
+          expect(intlMiddlewareMock, `host ${host}`).toHaveBeenCalledTimes(1);
+        }
+      }));
+
+    it("301-redirects /w/{slug}{subpath} on the canonical host to the tenant subdomain", () =>
+      withBaseDomain(async () => {
+        for (const host of ["gallurio.com", "www.gallurio.com"]) {
+          authMiddlewareMock.mockClear();
+          intlMiddlewareMock.mockClear();
+          const { proxy } = await import("./proxy");
+          const req = new NextRequest("http://localhost/w/acme/gallery?ref=ig", {
+            headers: { host },
+          });
+
+          const response = (await proxy(req)) as Response;
+
+          expect(response.status, `host ${host}`).toBe(301);
+          expect(response.headers.get("location"), `host ${host}`).toBe(
+            "https://acme.gallurio.com/gallery?ref=ig",
+          );
+          expect(authMiddlewareMock, `host ${host}`).not.toHaveBeenCalled();
+          expect(intlMiddlewareMock, `host ${host}`).not.toHaveBeenCalled();
+        }
+      }));
+
+    it("does not loop: a tenant subdomain requesting a literal /w/ path falls to the existing /w/ bypass", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/w/other-slug", {
+          headers: { host: "acme.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+        expect(authMiddlewareMock).not.toHaveBeenCalled();
+        expect(intlMiddlewareMock).not.toHaveBeenCalled();
+      }));
   });
 
   it("unions both middlewares' request-header manifests so the locale header survives on protected routes", async () => {

@@ -7,6 +7,7 @@ type NextMiddlewareResult = Awaited<ReturnType<NextMiddleware>>;
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/lib/i18n/routing";
 import { LOCALE_PREFIX_RE, stripLocale } from "@/lib/auth/memberAccess";
+import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 
 // ---------------------------------------------------------------------------
 // NOTE: Role-based redirects (non-owner to /bookings, root to role landing)
@@ -206,7 +207,50 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   }
 
   // -------------------------------------------------------------------------
-  // 2. Public portfolio routes — no auth, no intl.
+  // 2. Tenant subdomain routing — {slug}.{NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN}.
+  //    No-op when that env is unset. Runs before auth+intl so tenant public
+  //    pages skip AuthKit/next-intl entirely (same reasoning as the /w/ bypass
+  //    below, which this mirrors). On the canonical host (apex or www),
+  //    /w/{slug}(/subpath) permanently redirects to the subdomain instead.
+  //    ASSUMPTION: the app itself is served only on the apex + www hosts;
+  //    any other {label}.{base} host is a tenant public-page subdomain.
+  // -------------------------------------------------------------------------
+  {
+    const baseDomain = portfolioBaseDomain();
+    if (baseDomain) {
+      const base = baseDomain.toLowerCase();
+      const rawHost = req.headers.get("host") ?? req.nextUrl.hostname;
+      const host = rawHost.split(":")[0].toLowerCase();
+
+      if (host === base || host === `www.${base}`) {
+        // Canonical host requesting a path-based portfolio URL — send it to
+        // the subdomain. Never fires on a subdomain host (see else-branch),
+        // so it cannot loop with the rewrite below.
+        const canonicalMatch = pathname.match(/^\/w\/([^/]+)(\/.*)?$/);
+        if (canonicalMatch) {
+          const redirectUrl = req.nextUrl.clone();
+          redirectUrl.protocol = "https:";
+          redirectUrl.host = `${canonicalMatch[1]}.${base}`;
+          redirectUrl.pathname = canonicalMatch[2] ?? "/";
+          return NextResponse.redirect(redirectUrl, 301);
+        }
+      } else {
+        const escapedBase = base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const tenantMatch = host.match(new RegExp(`^([^.]+)\\.${escapedBase}$`));
+        // Guard against looping: only rewrite when the path isn't already
+        // under /w/ (e.g. a direct /w/{other-slug} hit on a subdomain host
+        // falls through to the existing /w/ bypass below unchanged).
+        if (tenantMatch && pathname !== "/w" && !pathname.startsWith("/w/")) {
+          const rewriteUrl = req.nextUrl.clone();
+          rewriteUrl.pathname = `/w/${tenantMatch[1]}${pathname}`;
+          return NextResponse.rewrite(rewriteUrl);
+        }
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 3. Public portfolio routes — no auth, no intl.
   //    /w/[orgSlug] lives outside the [locale] segment. Running next-intl here
   //    would rewrite /w/... to /[locale]/w/... (a non-existent route) and 404.
   // -------------------------------------------------------------------------
@@ -222,7 +266,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   }
 
   // -------------------------------------------------------------------------
-  // 3. Public routes — skip auth check, run intl for locale routing.
+  // 4. Public routes — skip auth check, run intl for locale routing.
   //
   //    EXCEPTION: the marketing root ("/" for any locale) needs authkit session
   //    context so the page can read the session and redirect an already-signed-in
@@ -243,7 +287,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   }
 
   // -------------------------------------------------------------------------
-  // 4. Protected routes — run authkit for session refresh / unauthn redirect,
+  // 5. Protected routes — run authkit for session refresh / unauthn redirect,
   //    then run intl so next-intl locale routing works on authenticated pages.
   //
   //    authkitMiddleware may return a redirect (to /sign-in) or a response
