@@ -171,17 +171,15 @@ describe("buildCanvasCss", () => {
     expect(document.getElementById("pf-google-font-poppins")).toBeTruthy();
   });
 
-  // C6: canvas must materialize the brand background so Luxury theme shows correctly
-  it("materializes var(--pf-color-bg) as canvas background so brand bg shows in editor (C6)", () => {
+  // C6: canvas must NOT auto-paint the brand background — only an explicit
+  // bgColorToken on the page's root style should paint the canvas surface.
+  it("does not auto-materialize var(--pf-color-bg) as canvas background (C6)", () => {
     const css = buildCanvasCss(undefined);
-    // Must inject a background-color rule using the brand bg var on the canvas surface
-    expect(css).toContain("background-color: var(--pf-color-bg)");
-    // Must appear BEFORE any explicit rootRule (so explicit overrides still win)
-    const bgIdx = css.indexOf("background-color: var(--pf-color-bg)");
-    // rootRule for explicit bgColorToken appears only when style has bgColorToken set
-    const explicitBgCss = buildCanvasCss({ bgColorToken: "primary" });
-    const explicitBgIdx = explicitBgCss.lastIndexOf("background-color");
-    expect(bgIdx).toBeGreaterThan(-1);
-    expect(explicitBgIdx).toBeGreaterThan(bgIdx);
+    expect(css).not.toContain("background-color: var(--pf-color-bg)");
+  });
+
+  it("still paints the canvas surface when the page root style sets an explicit bgColorToken", () => {
+    const css = buildCanvasCss({ bgColorToken: "primary" });
+    expect(css).toContain("background-color: var(--pf-color-primary)");
   });
 });

@@ -123,7 +123,6 @@ export function PreviewBrandShell({
         style={{
           ...(cssVars as React.CSSProperties),
           minHeight: "100dvh",
-          backgroundColor: "var(--pf-color-bg)",
           color: "var(--pf-color-fg)",
         }}
         className={className}
