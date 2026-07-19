@@ -13,6 +13,7 @@ import { appThemeAttributes, DEFAULT_APP_THEME } from "@/lib/theme/appTheme";
 import "../globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
     default: "Gallurio",
     template: "%s · Gallurio",
@@ -20,6 +21,13 @@ export const metadata: Metadata = {
   description:
     "The CRM for event businesses — bookings, clients, galleries, and inquiries in one workspace.",
   icons: { icon: "/brand/gallurio-sq.svg" },
+  openGraph: {
+    images: [{ alt: "Gallurio — Your event business, beautifully managed.", url: "/opengraph-image" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/opengraph-image"],
+  },
 };
 
 export function generateStaticParams() {
