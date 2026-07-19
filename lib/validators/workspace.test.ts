@@ -362,6 +362,15 @@ describe("publicPageSettingsSchema", () => {
       expect((result.data as { siteIconAssetId?: string }).siteIconAssetId).toBe("abc123");
     }
   });
+
+  it("defaults logoUrl and logoAssetId to empty string when omitted", () => {
+    const result = publicPageSettingsSchema.safeParse({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as { logoUrl?: string }).logoUrl).toBe("");
+      expect((result.data as { logoAssetId?: string }).logoAssetId).toBe("");
+    }
+  });
 });
 
 describe("publicPageSettingsSchema — seo sub-object", () => {

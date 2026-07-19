@@ -52,6 +52,12 @@ const publicPageSettingsDraftSchema = new Schema(
   {
     seoTitle: { type: String, default: "" },
     seoDescription: { type: String, default: "" },
+    // Portfolio header logo, staged here by the story-prompt wizard / future
+    // settings UI until Publish promotes it into live publicPage.header.
+    logo: {
+      url: { type: String, default: "" },
+      assetId: { type: String, default: "" },
+    },
     siteIcon: {
       url: { type: String, default: "" },
       assetId: { type: String, default: "" },
