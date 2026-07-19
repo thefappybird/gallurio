@@ -22,6 +22,16 @@ beforeEach(() => {
   });
 });
 
+describe("CreateCollectionDialog required fields", () => {
+  it("shows a required-field asterisk on the collection title label", () => {
+    renderWithProviders(<CreateCollectionDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />);
+    const input = screen.getByLabelText(/collection title/i);
+    const label = input.closest("label");
+    expect(label?.textContent).toContain("*");
+    expect(label?.querySelector(".text-destructive")).toBeTruthy();
+  });
+});
+
 describe("CreateCollectionDialog pick-existing", () => {
   it("copies picked existing photos into the new collection after creation", async () => {
     const onCreated = vi.fn();
