@@ -77,14 +77,6 @@ export async function uploadAsset(
     return { error: "invalid_image" };
   }
 
-  if (
-    (constraints.maxWidth != null && dims.width > constraints.maxWidth) ||
-    (constraints.maxHeight != null && dims.height > constraints.maxHeight) ||
-    (constraints.requireSquare && dims.width !== dims.height)
-  ) {
-    return { error: "dimensions_too_large" };
-  }
-
   const directRes = await fetch("/api/images/direct-upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
