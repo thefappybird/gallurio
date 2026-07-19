@@ -55,6 +55,13 @@ describe("TimezoneCombobox", () => {
     expect(onChange).toHaveBeenCalledWith("Asia/Manila");
   });
 
+  it("caps the options list at a scrollable max-height so it doesn't overflow the page", () => {
+    setup("Etc/UTC");
+    fireEvent.click(screen.getByRole("button"));
+    const listbox = screen.getByRole("listbox");
+    expect(listbox).toHaveClass("max-h-64", "overflow-y-auto");
+  });
+
   it("supports ArrowDown + Enter keyboard selection", () => {
     const onChange = vi.fn();
     setup("Etc/UTC", onChange);
