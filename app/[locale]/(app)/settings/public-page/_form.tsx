@@ -508,6 +508,7 @@ export function PublicPageSettingsForm({
           )}
 
           <input
+            ref={logoFileInputRef}
             id="logoFile"
             type="file"
             accept="image/png,image/jpeg,image/webp"

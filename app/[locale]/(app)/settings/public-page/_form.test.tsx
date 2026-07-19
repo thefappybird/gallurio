@@ -401,6 +401,27 @@ describe("PublicPageSettingsForm — header logo section", () => {
     expect(screen.getByText("logoLabel")).toBeInTheDocument();
   });
 
+  it("clicking Replace opens the file dialog for the hidden logo input", async () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{ ...baseDefaults, logoUrl: "https://cdn.example.com/logo.png" }}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const clickSpy = vi.spyOn(fileInput, "click");
+
+    const replaceBtn = screen.getByRole("button", { name: "logoReplace" });
+    await act(async () => {
+      fireEvent.click(replaceBtn);
+    });
+
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("shows an error alert when the logo upload fails", async () => {
     vi.mocked(uploadAsset).mockResolvedValueOnce({
       error: "file_too_large",
