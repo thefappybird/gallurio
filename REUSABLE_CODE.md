@@ -99,6 +99,7 @@ Composed, app-specific shared components.
 | `lib/utils/csv-parse.ts` | `normalizeCsvHeader` | `(raw) => string` | Map raw header → camelCase |
 | `lib/utils/csv-serialize.ts` | `serializeCsv`, `serializeRow`, `quoteField` | rows/headers → CSV | RFC-4180 serialize (CRLF) |
 | `lib/utils/handleActionResult.ts` | `toastActionResult` | `(result, successMessage) => result is {ok:true}` | Toast error/success + type-guard for server-action results |
+| `lib/utils/fieldMessage.ts` | `fieldMessage` | `(error: {message?:unknown}\|undefined) => string\|undefined` | Narrow RHF `errors.<field>` to a plain string for `<p>{...}</p>` render — needed when the resolver schema is a ZodEffects (`.superRefine`) whose generic wrapper collapses input/output typing to `any` |
 | `lib/utils/timezone.ts` | `wallTimeInTzToUtc` | `(date, time, tz) => ISO` | Wall-clock in IANA tz → UTC ISO |
 | `lib/utils/timezone.ts` | `dayBoundInTz` | `(dateStr, tz, h, min, sec, ms) => Date` | DST-aware day-bound UTC Date |
 | `lib/utils/timezones.ts` | `formatUtcOffset`, `TIMEZONE_GROUPS` | — | Offset formatting; grouped tz options |

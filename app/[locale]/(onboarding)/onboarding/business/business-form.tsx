@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useActionError } from "@/lib/i18n/actionError";
 import { cn } from "@/lib/utils";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 
 export function BusinessStepForm({
   defaults,
@@ -109,7 +110,7 @@ export function BusinessStepForm({
             <Label htmlFor="firstName">{t("firstName")}</Label>
             <Input id="firstName" placeholder={t("firstNamePlaceholder")} {...register("firstName")} />
             {errors.firstName && (
-              <p className="text-sm text-destructive">{errors.firstName.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.firstName)}</p>
             )}
           </div>
           <div className="flex flex-col gap-1.5">
@@ -119,7 +120,7 @@ export function BusinessStepForm({
             </Label>
             <Input id="lastName" placeholder={t("lastNamePlaceholder")} {...register("lastName")} />
             {errors.lastName && (
-              <p className="text-sm text-destructive">{errors.lastName.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.lastName)}</p>
             )}
           </div>
         </div>
@@ -127,7 +128,7 @@ export function BusinessStepForm({
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="name">{t("businessName")}</Label>
           <Input id="name" placeholder={t("businessNamePlaceholder")} {...register("name")} />
-          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+          {errors.name && <p className="text-sm text-destructive">{fieldMessage(errors.name)}</p>}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -162,7 +163,7 @@ export function BusinessStepForm({
             })}
           </div>
           {errors.businessType && (
-            <p className="text-sm text-destructive">{errors.businessType.message}</p>
+            <p className="text-sm text-destructive">{fieldMessage(errors.businessType)}</p>
           )}
         </div>
 
@@ -175,7 +176,7 @@ export function BusinessStepForm({
               {...register("businessTypeOther")}
             />
             {errors.businessTypeOther && (
-              <p className="text-sm text-destructive">{errors.businessTypeOther.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.businessTypeOther)}</p>
             )}
           </div>
         )}

@@ -24,6 +24,7 @@ import { LocationPicker } from "@/components/ui/location-picker";
 import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"] as const;
 const LOGO_MAX_BYTES = 250 * 1024;
@@ -172,7 +173,7 @@ export function WorkspaceBusinessForm({
           <div className="flex flex-col gap-1.5 w-full">
             <Label htmlFor="name">{tOnb("businessName")}</Label>
             <Input id="name" {...register("name")} />
-            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+            {errors.name && <p className="text-sm text-destructive">{fieldMessage(errors.name)}</p>}
           </div>
           <div className="flex flex-col gap-1.5 w-full">
             <Label htmlFor="slug">
@@ -190,7 +191,7 @@ export function WorkspaceBusinessForm({
               />
             </div>
             <SlugStatusIndicator status={slugStatus} t={tOnb} />
-            {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
+            {errors.slug && <p className="text-sm text-destructive">{fieldMessage(errors.slug)}</p>}
           </div>
         </div>
 
@@ -214,7 +215,7 @@ export function WorkspaceBusinessForm({
               <option value="other">{tOnb("businessTypes.other")}</option>
             </select>
             {errors.businessType && (
-              <p className="text-sm text-destructive">{errors.businessType.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.businessType)}</p>
             )}
           </div>
 
@@ -227,7 +228,7 @@ export function WorkspaceBusinessForm({
                 {...register("businessTypeOther")}
               />
               {errors.businessTypeOther && (
-                <p className="text-sm text-destructive">{errors.businessTypeOther.message}</p>
+                <p className="text-sm text-destructive">{fieldMessage(errors.businessTypeOther)}</p>
               )}
             </div>
           )}
@@ -254,7 +255,7 @@ export function WorkspaceBusinessForm({
               ))}
             </select>
             {errors.country && (
-              <p className="text-sm text-destructive">{errors.country.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.country)}</p>
             )}
           </div>
         </div>
@@ -275,7 +276,7 @@ export function WorkspaceBusinessForm({
             </select>
             <p className="text-xs text-muted-foreground">{t("currencyWarning")}</p>
             {errors.currency && (
-              <p className="text-sm text-destructive">{errors.currency.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.currency)}</p>
             )}
           </div>
 
@@ -297,7 +298,7 @@ export function WorkspaceBusinessForm({
               )}
             />
             {errors.timezone && (
-              <p className="text-sm text-destructive">{errors.timezone.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.timezone)}</p>
             )}
           </div>
         </div>
@@ -312,7 +313,7 @@ export function WorkspaceBusinessForm({
               {...register("contactEmail")}
             />
             {errors.contactEmail && (
-              <p className="text-sm text-destructive">{errors.contactEmail.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.contactEmail)}</p>
             )}
           </div>
 
@@ -339,7 +340,7 @@ export function WorkspaceBusinessForm({
               )}
             />
             {errors.contactAddress && (
-              <p className="text-sm text-destructive">{errors.contactAddress.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.contactAddress)}</p>
             )}
           </div>
         </div>
