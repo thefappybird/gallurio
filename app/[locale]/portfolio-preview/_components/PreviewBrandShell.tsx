@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import type {
   PortfolioBrandKit,
@@ -40,6 +41,12 @@ const EMPTY_DRAFT_CONFIGS: PreviewDraftConfigs = {
  * runs is acceptable: this is an owner-only preview surface.
  *
  * Blocks consume `var(--pf-*)` CSS variables — no React brand context is needed.
+ *
+ * Also mounts `MotionObserver` (mirrors the public layout mount) so
+ * entrance-animated (`[data-anim]`) blocks reveal on scroll here too — the
+ * preview iframe is its own document/browsing context, so the observer's
+ * default (viewport) root already resolves to the iframe's own viewport.
+ * Without this, preview showed those blocks permanently at `opacity: 0`.
  */
 export function PreviewBrandShell({
   slug,
@@ -122,6 +129,7 @@ export function PreviewBrandShell({
         className={className}
       >
         {children}
+        <MotionObserver />
       </div>
     </PreviewDraftContext>
   );

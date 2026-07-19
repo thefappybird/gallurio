@@ -1,7 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+
+vi.mock("@/lib/page-builder/MotionObserver.client", () => ({
+  MotionObserver: () => <div data-testid="motion-observer-mounted" />,
+}));
+
 import { PreviewBrandShell } from "./PreviewBrandShell";
 
 const SLUG = "studio-test";
@@ -198,5 +203,19 @@ describe("PreviewBrandShell", () => {
     expect(wrapper.className).not.toContain("pf-theme-undefined");
     expect(wrapper.className).toContain("pf-theme-minimal");
     expect(style).toContain("--pf-color-bg: #fallback");
+  });
+
+  it("mounts MotionObserver so entrance-animated blocks reveal on scroll in preview", () => {
+    render(
+      <PreviewBrandShell
+        slug={SLUG}
+        fallbackCssVars={{}}
+        fallbackClassName=""
+      >
+        <span>content</span>
+      </PreviewBrandShell>,
+    );
+
+    expect(screen.getByTestId("motion-observer-mounted")).toBeInTheDocument();
   });
 });
