@@ -55,6 +55,8 @@ function computeHasPendingChanges(
   return (
     data.seoTitle !== publishedDefaults.seoTitle ||
     data.seoDescription !== publishedDefaults.seoDescription ||
+    data.logoUrl !== publishedDefaults.logoUrl ||
+    data.logoAssetId !== publishedDefaults.logoAssetId ||
     data.siteIconUrl !== publishedDefaults.siteIconUrl ||
     data.siteIconAssetId !== publishedDefaults.siteIconAssetId ||
     JSON.stringify(data.seo?.keywords ?? []) !==
@@ -96,6 +98,10 @@ export function PublicPageSettingsForm({
   const [optimisticPublishedAt, setOptimisticPublishedAt] = useOptimistic<Date | null>(
     publishedAt
   );
+
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   const [iconUploading, setIconUploading] = useState(false);
   const [iconDragActive, setIconDragActive] = useState(false);
@@ -186,6 +192,54 @@ export function PublicPageSettingsForm({
       return;
     }
     handlePublish();
+  }
+
+  async function handleLogoInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoError(null);
+    setLogoUploading(true);
+    try {
+      const result = await uploadAsset(
+        file,
+        {
+          acceptedTypes: ["image/png", "image/jpeg", "image/webp"],
+          maxBytes: 250 * 1024,
+          maxWidth: 512,
+          maxHeight: 256,
+        },
+        {
+          subfolder: "portfolio_header",
+          delivery: { width: 512, height: 256, fit: "scale-down" },
+        },
+      );
+      if ("error" in result) {
+        const msgKey = (
+          {
+            type_not_accepted: "logoErrors.type",
+            file_too_large: "logoErrors.size",
+            dimensions_too_large: "logoErrors.dimensions",
+            invalid_image: "logoErrors.image",
+          } as Record<string, string>
+        )[result.error];
+        setLogoError(t(msgKey as Parameters<typeof t>[0]));
+        return;
+      }
+      setValue("logoUrl", result.asset.url, { shouldDirty: true });
+      setValue("logoAssetId", result.asset.assetId, { shouldDirty: true });
+    } catch {
+      setLogoError(t("logoErrors.upload"));
+    } finally {
+      setLogoUploading(false);
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
+    }
+  }
+
+  function handleRemoveLogo() {
+    setValue("logoUrl", "", { shouldDirty: true });
+    setValue("logoAssetId", "", { shouldDirty: true });
+    setLogoError(null);
+    if (logoFileInputRef.current) logoFileInputRef.current.value = "";
   }
 
   async function handleIconFile(file: File) {
@@ -379,8 +433,100 @@ export function PublicPageSettingsForm({
         </div>
       </section>
 
-      {/* SEO + Site icon + Inquiry (shared form) */}
+      {/* SEO + Logo + Site icon + Inquiry (shared form) */}
       <form id={formId} onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
+        {/* Header logo section */}
+        <section className="flex flex-col gap-4 border-t border-border pt-8">
+          <div>
+            <h2 className="text-lg font-semibold">{t("logoSection")}</h2>
+            <p className="text-sm text-muted-foreground">{t("logoHint")}</p>
+            <p className="text-xs text-muted-foreground">{t("logoRequirements")}</p>
+          </div>
+
+          {watch("logoUrl") ? (
+            <div className="flex flex-col gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={watch("logoUrl")}
+                alt={t("logoLabel")}
+                className="w-full border border-border bg-muted object-contain"
+                style={{ maxWidth: 384, aspectRatio: "512 / 256" }}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={logoUploading}
+                  onClick={() => logoFileInputRef.current?.click()}
+                >
+                  {t("logoReplace")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={logoUploading}
+                  onClick={handleRemoveLogo}
+                  className="flex items-center gap-1.5"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t("logoRemove")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <label
+              htmlFor="logoFile"
+              className={[
+                "flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
+                logoUploading
+                  ? "pointer-events-none opacity-60"
+                  : "border-input hover:border-brand hover:bg-brand/5",
+              ].join(" ")}
+            >
+              {logoUploading ? (
+                <>
+                  <Loader2
+                    className="h-6 w-6 animate-spin text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {t("logoUploading")}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Upload className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+                  <span className="text-sm font-medium">{t("logoLabel")}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t("logoRequirements")}
+                  </span>
+                </>
+              )}
+            </label>
+          )}
+
+          <input
+            id="logoFile"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="sr-only"
+            aria-label={t("logoLabel")}
+            disabled={logoUploading}
+            onChange={handleLogoInputChange}
+          />
+
+          {logoError && (
+            <p className="text-sm text-destructive" role="alert">
+              {logoError}
+            </p>
+          )}
+
+          <input type="hidden" {...register("logoUrl")} />
+          <input type="hidden" {...register("logoAssetId")} />
+        </section>
+
         {/* SEO section */}
         <section className="flex flex-col gap-4 border-t border-border pt-8">
           <div>

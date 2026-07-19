@@ -90,6 +90,7 @@ vi.mock("../_actions", () => ({
 }));
 
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { publishDraftAction } from "../../portfolio/_draftActions";
 import {
   togglePublicPagePublishedAction,
@@ -113,6 +114,8 @@ const baseDefaults: PublicPageSettingsInput = {
   seoTitle: "",
   seoDescription: "",
   inquiryRecipientEmail: "",
+  logoUrl: "",
+  logoAssetId: "",
   siteIconUrl: "",
   siteIconAssetId: "",
   seo: {
@@ -312,6 +315,207 @@ describe("PublicPageSettingsForm — site icon section", () => {
     await act(async () => { fireEvent.click(removeBtn); });
     // After remove, upload area should appear
     expect(screen.getByText("ogImageLabel")).toBeInTheDocument();
+  });
+});
+
+describe("PublicPageSettingsForm — header logo section", () => {
+  it("renders the logo upload area when logoUrl is empty", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+    expect(screen.getByText("logoLabel")).toBeInTheDocument();
+  });
+
+  it("shows logo preview when logoUrl is set in defaults", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{ ...baseDefaults, logoUrl: "https://cdn.example.com/logo.png" }}
+        locale="en"
+      />
+    );
+    const img = screen.getByRole("img", { name: "logoLabel" });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute(
+      "src",
+      expect.stringContaining("https://cdn.example.com/logo.png"),
+    );
+  });
+
+  it("sets the hidden logo inputs after a successful upload", async () => {
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      asset: { assetId: "logo-asset-1", url: "https://cdn.cf.net/logo-new.png" },
+    } as Awaited<ReturnType<typeof uploadAsset>>);
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const file = new File(["data"], "logo.png", { type: "image/png" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(document.querySelector('input[name="logoUrl"]')).toHaveValue(
+      "https://cdn.cf.net/logo-new.png",
+    );
+    expect(document.querySelector('input[name="logoAssetId"]')).toHaveValue(
+      "logo-asset-1",
+    );
+  });
+
+  it("clears the hidden logo inputs when Remove is clicked", async () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{
+          ...baseDefaults,
+          logoUrl: "https://cdn.example.com/logo.png",
+          logoAssetId: "asset-x",
+        }}
+        locale="en"
+      />
+    );
+
+    const removeBtn = screen.getByRole("button", { name: "logoRemove" });
+    await act(async () => {
+      fireEvent.click(removeBtn);
+    });
+
+    expect(document.querySelector('input[name="logoUrl"]')).toHaveValue("");
+    expect(document.querySelector('input[name="logoAssetId"]')).toHaveValue("");
+    expect(screen.getByText("logoLabel")).toBeInTheDocument();
+  });
+
+  it("shows an error alert when the logo upload fails", async () => {
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      error: "file_too_large",
+    } as Awaited<ReturnType<typeof uploadAsset>>);
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const file = new File(["data"], "logo.png", { type: "image/png" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("shows the uploading state while a logo upload is in flight", async () => {
+    let resolveUpload!: (v: Awaited<ReturnType<typeof uploadAsset>>) => void;
+    vi.mocked(uploadAsset).mockReturnValueOnce(
+      new Promise((res) => {
+        resolveUpload = res;
+      }),
+    );
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const file = new File(["data"], "logo.png", { type: "image/png" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(screen.getByText("logoUploading")).toBeInTheDocument();
+
+    await act(async () => {
+      resolveUpload({
+        asset: { assetId: "a", url: "https://cdn.cf.net/x.png" },
+      } as Awaited<ReturnType<typeof uploadAsset>>);
+    });
+  });
+
+  it("shows an error alert when the logo upload throws", async () => {
+    vi.mocked(uploadAsset).mockRejectedValueOnce(new Error("upload_failed"));
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const file = new File(["data"], "logo.png", { type: "image/png" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("flags pending changes after saving a newly uploaded logo", async () => {
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      asset: { assetId: "logo-a", url: "https://cdn.cf.net/logo.png" },
+    } as Awaited<ReturnType<typeof uploadAsset>>);
+    vi.mocked(updatePublicPageSettingsAction).mockResolvedValueOnce({
+      ok: true,
+    } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+        initialHasPendingChanges={false}
+        publishedDefaults={baseDefaults}
+      />
+    );
+
+    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const file = new File(["data"], "logo.png", { type: "image/png" });
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    const saveBtn = screen.getByText("save").closest("button")!;
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
+
+    // These mocks have no shared reset; clear our call so the later
+    // absolute-call-count assertion in the keywords suite stays accurate.
+    vi.mocked(updatePublicPageSettingsAction).mockClear();
   });
 });
 
