@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { TableBookingManager } from "./table-booking-manager";
+import { BookingsPendingShell } from "./bookings-pending-shell";
 
 const replaceSpy = vi.fn();
 let mockSearchParams = new URLSearchParams();
@@ -39,18 +40,20 @@ const INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#F
 
 function renderManager() {
   return renderWithProviders(
-    <TableBookingManager
-      defaultCurrency="PHP"
-      locale="en"
-      clients={[]}
-      canCreate
-      defaultTeamId="507f1f77bcf86cd799439011"
-      teams={[]}
-      selectedTeams={[]}
-      isOwner
-      writableTeams={[]}
-      initialInvoiceTheme={INVOICE_THEME}
-    />
+    <BookingsPendingShell title="Bookings" view="table">
+      <TableBookingManager
+        defaultCurrency="PHP"
+        locale="en"
+        clients={[]}
+        canCreate
+        defaultTeamId="507f1f77bcf86cd799439011"
+        teams={[]}
+        selectedTeams={[]}
+        isOwner
+        writableTeams={[]}
+        initialInvoiceTheme={INVOICE_THEME}
+      />
+    </BookingsPendingShell>
   );
 }
 
