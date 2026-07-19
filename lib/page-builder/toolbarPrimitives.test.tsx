@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ColorSwatchRow, DimensionInput, FloatingLabelInput, IconRow, FontFamilyRow } from "./toolbarPrimitives";
+import { ColorSwatchRow, DimensionInput, FloatingLabelInput, IconRow, FontFamilyRow, NumberInputRow } from "./toolbarPrimitives";
 import { AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, Maximize2 } from "lucide-react";
 
 // Mock brandColors so tests don't need the full provider
@@ -56,6 +56,27 @@ describe("IconRow — onReset prop (A6)", () => {
     expect(screen.getByRole("button", { name: "Right" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Stretch to fill" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reset Align" })).toBeInTheDocument();
+  });
+});
+
+describe("A18 — label+control rows wrap instead of overflowing the narrow sidebar", () => {
+  it("IconRow's row wrapper allows wrapping (flex-wrap) instead of a single non-wrapping line", () => {
+    render(<IconRow label="Align" value={undefined} options={ALIGN_OPTIONS} onChange={vi.fn()} onReset={vi.fn()} />);
+    const row = screen.getByText("Align").parentElement;
+    expect(row?.className).toContain("flex-wrap");
+    expect(row?.className).not.toContain("whitespace-nowrap");
+  });
+
+  it("NumberInputRow's row wrapper allows wrapping (flex-wrap)", () => {
+    render(<NumberInputRow label="Background image opacity" value={100} min={0} max={100} suffix="%" onChange={vi.fn()} />);
+    const row = screen.getByText("Background image opacity").parentElement;
+    expect(row?.className).toContain("flex-wrap");
+  });
+
+  it("DimensionInput's row wrapper allows wrapping (flex-wrap)", () => {
+    render(<DimensionInput label="Width" value={undefined} onChange={vi.fn()} />);
+    const row = screen.getByText("Width").parentElement;
+    expect(row?.className).toContain("flex-wrap");
   });
 });
 
