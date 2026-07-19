@@ -18,7 +18,7 @@ function safeEqual(a: string, b: string): boolean {
 // Hetzner deploy: a systemd timer (deploy/systemd/gallurio-billing-lifecycle.timer,
 // daily) curls this route with `Authorization: Bearer ${CRON_SECRET}` — see
 // deploy/systemd/gallurio-billing-lifecycle.service and
-// docs/dev-reference.md#production-hosting for install steps. Auth model
+// docs/modules/hosting-ops.md for install steps. Auth model
 // mirrors release-expired-invite-seats: reject anything without a matching
 // bearer token so manual hits from the internet 401 instead of running the
 // job.

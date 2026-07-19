@@ -78,7 +78,7 @@ Operate as a senior full-stack engineer with strong mobile-first UI and backend/
 - Server Components by default; Server Actions for in-app mutations; Route Handlers for webhooks/public APIs. Node runtime unless Edge is justified.
 - Validate at boundaries with Zod, then trust parsed types. Shape responses to caller needs. Cache intentionally.
 - Prevent N+1; cursor-paginate unbounded lists; Mongo transactions for multi-doc writes that must succeed together; make retry-prone mutations idempotent; never swallow errors.
-- **Endpoint hardening**: apply the full checklist in `docs/dev-reference.md#endpoint-hardening` on every new/updated endpoint. Known lapses: `docs/backend-audit-findings.md`.
+- **Endpoint hardening**: apply the full checklist in `docs/modules/hosting-ops.md`'s Endpoint hardening section on every new/updated endpoint. Known lapses: `docs/backend-audit-findings.md`.
 
 ## Multi-tenant rules
 - Never trust client-supplied `workspaceId` — resolve scope from the WorkOS session + re-validated active-workspace cookie + MongoDB memberships (never WorkOS Organizations).
@@ -86,13 +86,13 @@ Operate as a senior full-stack engineer with strong mobile-first UI and backend/
 - Public routes resolve `orgSlug -> workspaceId` before any tenant read. Every new compound index starts with `workspaceId`.
 
 ## Auth & tenancy
-Use `getAuthUser()` for identity, `requireOrg()` on pages, `ownerContext()`/`requireRole()` on actions, explicit checks on route handlers. `ensureUser()` JIT-provisions at every authenticated entry. Active workspace = `gw_active_ws` HMAC cookie, always re-validated against DB memberships. Full details: `docs/dev-reference.md#auth--tenancy`.
+Use `getAuthUser()` for identity, `requireOrg()` on pages, `ownerContext()`/`requireRole()` on actions, explicit checks on route handlers. `ensureUser()` JIT-provisions at every authenticated entry. Active workspace = `gw_active_ws` HMAC cookie, always re-validated against DB memberships. Full details: `docs/modules/auth-tenancy.md`.
 
 ## Architecture
 Monolith Next.js app; shared-DB multi-tenancy via `workspaceId`. Workspaces are MongoDB `Workspace` docs (not WorkOS Orgs). Public pages live at `/w/[orgSlug]`.
 
 ## Design
-Semantic tokens only, flat UI, brand teal (hue 195) as deliberate accent (~10–20% of any view), Plus Jakarta Sans app font. Controls: `--radius`; frames: `--radius-surface`. Full palette/radius/theming details: `docs/dev-reference.md#design`.
+Semantic tokens only, flat UI, brand teal (hue 195) as deliberate accent (~10–20% of any view), Plus Jakarta Sans app font. Controls: `--radius`; frames: `--radius-surface`. Full palette/radius/theming details: `docs/modules/i18n-design.md`.
 
 **Design Context** ("The Studio Ledger"): `PRODUCT.md` (register/users/brand personality/anti-references) and `DESIGN.md` (tokens/typography/components) are the source of truth for `/impeccable` and any UI work. Core rules: one accent only (brand teal = "act on this," never decorative), never-pure neutrals, flat surfaces (hairline `ring-foreground/10` + tonal shift, no `box-shadow` on cards/dialogs), soft controls (`--radius`) / sharp frames (`--radius-surface`), single type family (Plus Jakarta Sans) for the whole hierarchy. Reject: SaaS-cream dashboards, sterile enterprise chrome, clutter.
 
@@ -100,16 +100,16 @@ Semantic tokens only, flat UI, brand teal (hue 195) as deliberate accent (~10–
 3 public pages (Home, Gallery, Contact). Source of truth: `Workspace.publicPage`. Shared Puck config for editor + renderer. Inquiry submission is a single transaction (Inquiry + Client + Booking). See `portfolio-*` skills for internals.
 
 ## Cloudflare Images
-Direct Creator Upload only — API token never reaches client. Scope uploads by `workspaceId` metadata; verify ownership before every create. Full implementation details: `docs/dev-reference.md#cloudflare-images`.
+Direct Creator Upload only — API token never reaches client. Scope uploads by `workspaceId` metadata; verify ownership before every create. Full implementation details: `docs/modules/portfolio-and-media.md`.
 
 ## Billing
-The current implementation is Lemon Squeezy subscriptions through a synchronous checkout Route Handler and a webhook-only durability pipeline (atomic claim-lease ledger, no separate workflow engine). `Workspace.plan` is `free|pro|beta`. Lemon Squeezy, Creem, and a possible Paddle sole-proprietor application remain candidates until one can legitimately activate live payments first. Do not add Creem/Paddle configuration, claim either is integrated, or create a provider abstraction before an explicit provider decision. Selecting Creem or Paddle is a deliberate migration: replace checkout/webhooks and provider fields, audit schema/env/docs/tests, and preserve raw-body signature verification plus idempotent webhook processing. Full current flow + field names: `docs/dev-reference.md#billing`.
+The current implementation is Lemon Squeezy subscriptions through a synchronous checkout Route Handler and a webhook-only durability pipeline (atomic claim-lease ledger, no separate workflow engine). `Workspace.plan` is `free|pro|beta`. Lemon Squeezy, Creem, and a possible Paddle sole-proprietor application remain candidates until one can legitimately activate live payments first. Do not add Creem/Paddle configuration, claim either is integrated, or create a provider abstraction before an explicit provider decision. Selecting Creem or Paddle is a deliberate migration: replace checkout/webhooks and provider fields, audit schema/env/docs/tests, and preserve raw-body signature verification plus idempotent webhook processing. Full current flow + field names: `docs/modules/billing.md`.
 
 ## Production hosting
-Hetzner VPS, Docker/Compose app container, Caddy, and systemd timers. GitHub Actions is gated on tests+lint+typecheck+build and publishes the immutable image; the VPS never builds the app. Details: `docs/dev-reference.md#production-hosting`.
+Hetzner VPS, Docker/Compose app container, Caddy, and systemd timers. GitHub Actions is gated on tests+lint+typecheck+build and publishes the immutable image; the VPS never builds the app. Details: `docs/modules/hosting-ops.md`.
 
 ## i18n
-Locales: `en`, `fil`, `id`, `ar` (RTL), `th`. Malay (`ms`) dropped 2026-07-18 (overlapped too closely with `id` to justify a separate catalog); Thai (`th`) reintroduced 2026-07-18 after the original mojibake-corruption issue was root-caused (PowerShell UTF-8 corruption) and an automated encoding-sanity test (`messages/encoding-sanity.test.ts`) was added to catch any recurrence. Use logical Tailwind utilities (`ms/me/ps/pe/start/end/text-start`), not physical. Full RTL/locale details: `docs/dev-reference.md#i18n`.
+Locales: `en`, `fil`, `id`, `ar` (RTL), `th`. Malay (`ms`) dropped 2026-07-18 (overlapped too closely with `id` to justify a separate catalog); Thai (`th`) reintroduced 2026-07-18 after the original mojibake-corruption issue was root-caused (PowerShell UTF-8 corruption) and an automated encoding-sanity test (`messages/encoding-sanity.test.ts`) was added to catch any recurrence. Use logical Tailwind utilities (`ms/me/ps/pe/start/end/text-start`), not physical. Full RTL/locale details: `docs/modules/i18n-design.md`.
 
 ## Encoding safety
 Preserve UTF-8 everywhere; never output/save mojibake. Verify user-facing Unicode renders; fix corruption before continuing. Prefer ASCII in code/config unless Unicode is intentional.
@@ -137,5 +137,5 @@ Implementation complete · tests passing · lint + typecheck pass · locales upd
 `pnpm dev` · `pnpm start` · `pnpm seed`. Prefer RTK for diff/log/read/test/lint/type/build when a summary suffices.
 
 ## References
+- `docs/AGENTS-INDEX.md` (start here — map of every module doc, skill, and living reference doc)
 - `REUSABLE_CODE.md` (read before building shared code)
-- `docs/dev-reference.md` (endpoint hardening, auth details, design, billing, Cloudflare, hosting, i18n)

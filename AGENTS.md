@@ -20,8 +20,9 @@ release-safe changes over speculative refactors.
   routes. Vercel Cron, Workflow, PostgreSQL, PM2, and a separate billing worker
   are not part of the final runtime.
 
-Read the relevant section of `docs/dev-reference.md` before changing auth,
-billing, media, hosting, endpoint hardening, design, or i18n. Treat
+Read the relevant `docs/modules/*.md` file before changing auth, billing,
+media, hosting, endpoint hardening, design, or i18n — `docs/AGENTS-INDEX.md`
+maps each area to its file. Treat
 `docs/RELEASE-CHECKLIST.md` as the launch source of truth and keep its short
 pending list current when release work changes it.
 
@@ -126,8 +127,7 @@ pending list current when release work changes it.
 ## References
 
 - `docs/RELEASE-CHECKLIST.md` — launch gate and current provider/deploy status
-- `docs/dev-reference.md` — authoritative focused architecture guidance
+- `docs/AGENTS-INDEX.md` — map of every module doc, skill, and living reference
+- `docs/modules/billing.md` — current implemented billing integration
 - `.env.example` and `lib/env.ts` — environment contract and production checks
-- `docs/lemonsqueezy-integration/lemonsqueezy-setup.md` — current implemented
-  billing integration
 - `node_modules/next/dist/docs/` — Next.js 16 behavior; consult before coding
