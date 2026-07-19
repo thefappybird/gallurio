@@ -9,6 +9,10 @@ vi.mock("@/lib/page-builder/reconcile", () => ({
   reconcileGalleryImages: async (_wsId: string, data: unknown) => data,
   reconcileFeaturedCollections: async (_wsId: string, data: unknown) => data,
 }));
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  deleteImage: vi.fn().mockResolvedValue(undefined),
+  verifyImageOwnership: vi.fn().mockResolvedValue(true),
+}));
 
 let mockCtx: {
   userId: string;
@@ -25,6 +29,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
+import { deleteImage } from "@/lib/storage/cloudflareImages";
 import { PortfolioDraft, Workspace } from "@/lib/db/models";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import {
@@ -64,6 +69,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   revalidatePath.mockClear();
+  vi.mocked(deleteImage).mockClear();
   setWorkspace();
 });
 
@@ -267,5 +273,125 @@ describe("publishDraftAction", () => {
     expect(ws!.publicPage!.seo?.galleryDescription).toBe("Settings gallery copy");
     expect(ws!.publicPage!.seo?.noindex).toBe(false);
     expect(ws!.publicPage!.seo?.keywords).toEqual(["settings", "override"]);
+  });
+
+  it("settingsDraft.logo overrides the draft's header logo when publishing", async () => {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: {
+        data: { home: null, gallery: null },
+        latestVersion: 0,
+        settingsDraft: {
+          logo: { url: "https://imagedelivery.net/h/settings-logo/public", assetId: "settings-logo-1" },
+        },
+      },
+    });
+    const draft = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "Logo Draft",
+      ...snapshot,
+      header: { logoUrl: "https://imagedelivery.net/h/draft-logo/public", logoAssetId: "draft-logo-1" },
+    });
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.publicPage!.header?.logoUrl).toBe("https://imagedelivery.net/h/settings-logo/public");
+    expect(ws!.publicPage!.header?.logoAssetId).toBe("settings-logo-1");
+  });
+
+  it("deletes the superseded live OG image when publish promotes a different one", async () => {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: {
+        data: { home: null, gallery: null },
+        latestVersion: 0,
+        seo: { ogImageAssetId: "live-og-1" },
+        settingsDraft: {
+          seo: { ogImageUrl: "https://imagedelivery.net/h/new-og/public", ogImageAssetId: "new-og-1" },
+        },
+      },
+    });
+    const draft = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "OG Draft",
+      ...snapshot,
+    });
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-og-1");
+  });
+
+  it("deletes the superseded live site icon when publish promotes a different one", async () => {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: {
+        data: { home: null, gallery: null },
+        latestVersion: 0,
+        siteIcon: { assetId: "live-icon-1" },
+        settingsDraft: {
+          siteIcon: { url: "https://imagedelivery.net/h/new-icon/public", assetId: "new-icon-1" },
+        },
+      },
+    });
+    const draft = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "Icon Draft",
+      ...snapshot,
+    });
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-icon-1");
+  });
+
+  it("deletes the superseded live logo when settingsDraft.logo promotes a different one", async () => {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: {
+        data: { home: null, gallery: null },
+        latestVersion: 0,
+        header: { logoAssetId: "live-logo-1" },
+        settingsDraft: {
+          logo: { url: "https://imagedelivery.net/h/new-logo/public", assetId: "new-logo-1" },
+        },
+      },
+    });
+    const draft = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "Logo Draft 2",
+      ...snapshot,
+      header: { logoUrl: "https://imagedelivery.net/h/draft-logo/public", logoAssetId: "draft-logo-1" },
+    });
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-logo-1");
   });
 });
