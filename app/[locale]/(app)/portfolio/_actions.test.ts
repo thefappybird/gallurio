@@ -23,7 +23,6 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { verifyImageOwnership, deleteImage } from "@/lib/storage/cloudflareImages";
 import { Workspace, PortfolioDraft } from "@/lib/db/models";
-import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import {
   savePortfolioDraftAction,
@@ -290,6 +289,22 @@ describe("completeStoryPromptAction", () => {
     expect(ws!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
   });
 
+  it("writes to publicPage.settingsDraft and creates no PortfolioDraft", async () => {
+    const before = await PortfolioDraft.countDocuments({});
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio capturing candid moments.",
+      keywords: ["wedding", "bali", "candid"],
+    });
+    expect(res).toEqual({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.settingsDraft!.seoDescription).toBe(
+      "Bali wedding studio capturing candid moments."
+    );
+    expect(ws!.publicPage!.settingsDraft!.seo!.keywords).toEqual(["wedding", "bali", "candid"]);
+    const after = await PortfolioDraft.countDocuments({});
+    expect(after).toBe(before);
+  });
+
   it("happy path: persists description/keywords to the draft, completion timestamp live", async () => {
     const res = await completeStoryPromptAction({
       description: "Bali wedding studio capturing candid moments.",
@@ -299,9 +314,10 @@ describe("completeStoryPromptAction", () => {
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.storyPromptCompletedAt).toBeTruthy();
     expect(ws!.publicPage!.seoDescription ?? "").toBe("");
-    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
-    expect(draft!.seoDescription).toBe("Bali wedding studio capturing candid moments.");
-    expect(draft!.seo!.keywords).toEqual(["wedding", "bali", "candid"]);
+    expect(ws!.publicPage!.settingsDraft!.seoDescription).toBe(
+      "Bali wedding studio capturing candid moments."
+    );
+    expect(ws!.publicPage!.settingsDraft!.seo!.keywords).toEqual(["wedding", "bali", "candid"]);
   });
 
   it("persists the first-visit share image and inquiry recipient", async () => {
@@ -316,10 +332,11 @@ describe("completeStoryPromptAction", () => {
     expect(res).toEqual({ ok: true });
     expect(verifyImageOwnership).toHaveBeenCalledWith("share-1", String(workspaceId));
     const ws = await Workspace.findById(workspaceId).lean();
-    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
     expect(ws!.publicPage!.inquiryRecipientEmail).toBe("inquiries@studio.test");
-    expect(draft!.seo!.ogImageUrl).toBe("https://imagedelivery.net/h/share/public");
-    expect(draft!.seo!.ogImageAssetId).toBe("share-1");
+    expect(ws!.publicPage!.settingsDraft!.seo!.ogImageUrl).toBe(
+      "https://imagedelivery.net/h/share/public"
+    );
+    expect(ws!.publicPage!.settingsDraft!.seo!.ogImageAssetId).toBe("share-1");
   });
 
   it("rejects a description over 300 chars", async () => {
@@ -354,8 +371,7 @@ describe("completeStoryPromptAction", () => {
     await completeStoryPromptAction({ description: "Mine", keywords: ["mine"] });
     const other = await Workspace.findById(otherWs._id).lean();
     expect(other!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
-    const otherDraft = await PortfolioDraft.findOne({ workspaceId: otherWs._id }).lean();
-    expect(otherDraft?.seoDescription ?? "").toBe("");
+    expect(other!.publicPage!.settingsDraft?.seoDescription ?? "").toBe("");
   });
 
   it("rejects a logoAssetId not owned by the caller's workspace", async () => {
@@ -367,10 +383,8 @@ describe("completeStoryPromptAction", () => {
       logoAssetId: "not-mine",
     });
     expect(res).toEqual({ error: "invalid_logo" });
-    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
-    expect((draft?.header as { logoAssetId?: string } | null | undefined)?.logoAssetId ?? "").not.toBe(
-      "not-mine"
-    );
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.settingsDraft?.logo?.assetId ?? "").not.toBe("not-mine");
   });
 
   it("deletes the old logo asset when replaced by a new one", async () => {
@@ -378,8 +392,8 @@ describe("completeStoryPromptAction", () => {
       { _id: workspaceId },
       {
         $set: {
-          "publicPage.header.logoAssetId": "old-logo",
-          "publicPage.header.logoUrl": "https://imagedelivery.net/h/old-logo/public",
+          "publicPage.settingsDraft.logo.assetId": "old-logo",
+          "publicPage.settingsDraft.logo.url": "https://imagedelivery.net/h/old-logo/public",
         },
       }
     );
@@ -393,6 +407,28 @@ describe("completeStoryPromptAction", () => {
 
     expect(res).toEqual({ ok: true });
     expect(deleteImage).toHaveBeenCalledWith("old-logo");
+  });
+
+  it("does not delete the draft-buffer logo when it still matches the live published logo", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.header.logoAssetId": "live-logo",
+          "publicPage.settingsDraft.logo.assetId": "live-logo",
+        },
+      }
+    );
+
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio",
+      keywords: ["wedding"],
+      logoUrl: "https://imagedelivery.net/h/new-logo/public",
+      logoAssetId: "new-logo",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(deleteImage).not.toHaveBeenCalledWith("live-logo");
   });
 
   it("does not delete an unrelated pre-existing logo when only a site icon is submitted", async () => {
@@ -415,17 +451,19 @@ describe("completeStoryPromptAction", () => {
 
     expect(res).toEqual({ ok: true });
     expect(deleteImage).not.toHaveBeenCalledWith("L1");
-    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
-    expect((draft?.header as { logoAssetId?: string } | null | undefined)?.logoAssetId).toBe("L1");
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.header!.logoAssetId).toBe("L1");
   });
 
   it("does not delete an unrelated pre-existing site icon when only a logo is submitted", async () => {
-    // siteIcon lives only on the draft (unlike header, migrateDraft doesn't copy
-    // it from a legacy publicPage), so seed it directly on the active draft.
-    const draftId = await resolveActiveDraftId(workspaceId);
-    await PortfolioDraft.updateOne(
-      { _id: draftId },
-      { $set: { "siteIcon.assetId": "I1", "siteIcon.url": "https://imagedelivery.net/h/I1/public" } }
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.settingsDraft.siteIcon.assetId": "I1",
+          "publicPage.settingsDraft.siteIcon.url": "https://imagedelivery.net/h/I1/public",
+        },
+      }
     );
 
     const res = await completeStoryPromptAction({
@@ -437,28 +475,19 @@ describe("completeStoryPromptAction", () => {
 
     expect(res).toEqual({ ok: true });
     expect(deleteImage).not.toHaveBeenCalledWith("I1");
-    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
-    expect(draft?.siteIcon?.assetId).toBe("I1");
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.settingsDraft!.siteIcon!.assetId).toBe("I1");
   });
 
-  it("leaves the draft's header and siteIcon untouched when only description/keywords are sent", async () => {
+  it("leaves the live header and settingsDraft site icon untouched when only description/keywords are sent", async () => {
     await Workspace.updateOne(
       { _id: workspaceId },
       {
         $set: {
           "publicPage.header.logoAssetId": "existing-logo",
           "publicPage.header.logoUrl": "https://imagedelivery.net/h/existing-logo/public",
-        },
-      }
-    );
-    // siteIcon isn't migrated from legacy publicPage — seed it directly on the draft.
-    const draftId = await resolveActiveDraftId(workspaceId);
-    await PortfolioDraft.updateOne(
-      { _id: draftId },
-      {
-        $set: {
-          "siteIcon.assetId": "existing-icon",
-          "siteIcon.url": "https://imagedelivery.net/h/existing-icon/public",
+          "publicPage.settingsDraft.siteIcon.assetId": "existing-icon",
+          "publicPage.settingsDraft.siteIcon.url": "https://imagedelivery.net/h/existing-icon/public",
         },
       }
     );
@@ -469,24 +498,17 @@ describe("completeStoryPromptAction", () => {
     });
     expect(res).toEqual({ ok: true });
 
-    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
-    const header = draft?.header as { logoAssetId?: string; logoUrl?: string } | null | undefined;
-    expect(header?.logoAssetId).toBe("existing-logo");
-    expect(header?.logoUrl).toBe("https://imagedelivery.net/h/existing-logo/public");
-    expect(draft?.siteIcon?.assetId).toBe("existing-icon");
-    expect(draft?.siteIcon?.url).toBe("https://imagedelivery.net/h/existing-icon/public");
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.header!.logoAssetId).toBe("existing-logo");
+    expect(ws!.publicPage!.header!.logoUrl).toBe("https://imagedelivery.net/h/existing-logo/public");
+    expect(ws!.publicPage!.settingsDraft!.siteIcon!.assetId).toBe("existing-icon");
+    expect(ws!.publicPage!.settingsDraft!.siteIcon!.url).toBe(
+      "https://imagedelivery.net/h/existing-icon/public"
+    );
     expect(deleteImage).not.toHaveBeenCalled();
   });
 
-  it("accepts a new logo when the draft's header is null (Mixed-field null-traversal safety)", async () => {
-    await PortfolioDraft.create({
-      workspaceId,
-      name: "Default",
-      templateId: "",
-      data: { home: null, gallery: null },
-      header: null,
-    });
-
+  it("accepts a new logo when no settingsDraft exists yet (creates the nested path)", async () => {
     const res = await completeStoryPromptAction({
       description: "Bali wedding studio",
       keywords: ["wedding"],
@@ -495,8 +517,8 @@ describe("completeStoryPromptAction", () => {
     });
 
     expect(res).toEqual({ ok: true });
-    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
-    expect((draft?.header as { logoAssetId?: string } | null | undefined)?.logoAssetId).toBe("new-logo");
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.settingsDraft!.logo!.assetId).toBe("new-logo");
   });
 });
 
