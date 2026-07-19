@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { screen, fireEvent, within, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BrandKitPicker } from "./BrandKitPicker";
 import { DEFAULT_BRAND_KIT, type PortfolioSavedTheme } from "@/lib/page-builder/types";
@@ -31,8 +31,8 @@ describe("BrandKitPicker", () => {
 
   it("selecting a heading font emits headingFont without touching bodyFont", () => {
     const { onChange } = setup();
-    const headingGroup = screen.getByRole("group", { name: /heading font/i });
-    fireEvent.click(within(headingGroup).getByRole("button", { name: /Playfair Display/i }));
+    const headingSelect = screen.getByRole("combobox", { name: /heading font/i });
+    fireEvent.change(headingSelect, { target: { value: "playfair" } });
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ headingFont: "playfair" })
     );
@@ -44,8 +44,8 @@ describe("BrandKitPicker", () => {
 
   it("selecting a Google Font shortlist entry for heading emits a google: selection", () => {
     const { onChange } = setup();
-    const headingGroup = screen.getByRole("group", { name: /heading font/i });
-    fireEvent.click(within(headingGroup).getByRole("button", { name: "Poppins" }));
+    const headingSelect = screen.getByRole("combobox", { name: /heading font/i });
+    fireEvent.change(headingSelect, { target: { value: "google:Poppins" } });
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ headingFont: "google:Poppins" })
     );
@@ -53,6 +53,8 @@ describe("BrandKitPicker", () => {
 
   it("typing a custom Google Font name does not call onChange per keystroke, only on blur", () => {
     const { onChange } = setup();
+    const headingSelect = screen.getByRole("combobox", { name: /heading font/i });
+    fireEvent.change(headingSelect, { target: { value: "__custom__" } });
     const input = screen.getByRole("textbox", { name: /heading font.*custom google font name/i });
     fireEvent.change(input, { target: { value: "B" } });
     fireEvent.change(input, { target: { value: "Be" } });
@@ -67,8 +69,8 @@ describe("BrandKitPicker", () => {
 
   it("selecting a body font emits bodyFont without touching headingFont", () => {
     const { onChange } = setup();
-    const bodyGroup = screen.getByRole("group", { name: /body font/i });
-    fireEvent.click(within(bodyGroup).getByRole("button", { name: /^Inter/i }));
+    const bodySelect = screen.getByRole("combobox", { name: /body font/i });
+    fireEvent.change(bodySelect, { target: { value: "inter" } });
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ bodyFont: "inter", headingFont: DEFAULT_BRAND_KIT.headingFont })
     );
@@ -81,16 +83,10 @@ describe("BrandKitPicker", () => {
     legacy.fontPair = "playfair-inter";
     const onChange = vi.fn();
     renderWithProviders(<BrandKitPicker value={legacy} onChange={onChange} />);
-    const headingGroup = screen.getByRole("group", { name: /heading font/i });
-    expect(within(headingGroup).getByRole("button", { name: /Playfair Display/i })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-    const bodyGroup = screen.getByRole("group", { name: /body font/i });
-    expect(within(bodyGroup).getByRole("button", { name: /^Inter/i })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
+    const headingSelect = screen.getByRole("combobox", { name: /heading font/i });
+    expect(headingSelect).toHaveValue("playfair");
+    const bodySelect = screen.getByRole("combobox", { name: /body font/i });
+    expect(bodySelect).toHaveValue("inter");
   });
 
   it("propagates a color picked from the accent spectrum popover", () => {
