@@ -41,6 +41,7 @@ export async function updateWorkspaceBusinessAction(
     name,
     slug,
     businessType,
+    businessTypeOther,
     country,
     currency,
     timezone,
@@ -51,6 +52,9 @@ export async function updateWorkspaceBusinessAction(
     logoUrl,
     logoAssetId,
   } = parsed.data;
+  // Only persist the free-text label when businessType is "other" — clears
+  // stale values if the owner switches away from "other".
+  const businessTypeOtherValue = businessType === "other" ? businessTypeOther : "";
 
   const slugClash = await Workspace.findOne({
     slug,
@@ -82,6 +86,7 @@ export async function updateWorkspaceBusinessAction(
           name,
           slug,
           businessType,
+          businessTypeOther: businessTypeOtherValue,
           country,
           currency,
           timezone,

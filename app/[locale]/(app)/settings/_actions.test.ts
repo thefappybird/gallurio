@@ -233,6 +233,22 @@ describe("updateWorkspaceBusinessAction", () => {
     expect(updated?.timezone).toBe("Asia/Kolkata");
   });
 
+  it("persists businessTypeOther when businessType is other, clears it otherwise", async () => {
+    await seedWorkspaceA();
+
+    await updateWorkspaceBusinessAction({
+      ...validInput,
+      businessType: "other",
+      businessTypeOther: "tattoo studio",
+    });
+    let updated = await Workspace.findById(WS_A_ID).lean();
+    expect(updated?.businessTypeOther).toBe("tattoo studio");
+
+    await updateWorkspaceBusinessAction({ ...validInput, businessType: "photographer" });
+    updated = await Workspace.findById(WS_A_ID).lean();
+    expect(updated?.businessTypeOther).toBe("");
+  });
+
   it("slug collision — rejects with error and does NOT update", async () => {
     await seedWorkspaceA();
     await seedWorkspaceB();
