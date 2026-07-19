@@ -717,8 +717,10 @@
           "today": "Hari ini",
           "next": "Tanggal heatmap berikutnya",
           "title": "Peta panas jam dipesan",
-          "weekOf": "Minggu",
           "bookedHours": "Jam dipesan",
+          "bookingsCount": "{count, plural, one {# pemesanan} other {# pemesanan}}",
+          "skipPrevious": "Mundur 5 halaman",
+          "skipNext": "Maju 5 halaman",
           "weekdays": [
             "Sen",
             "Sel",
@@ -2996,8 +2998,11 @@
         "stylist": "Stylist",
         "catering": "Katering",
         "entertainer": "Penghibur / DJ / Band",
+        "artists": "Seniman",
         "other": "Lainnya"
       },
+      "businessTypeOtherLabel": "Jenis bisnis apa?",
+      "businessTypeOtherPlaceholder": "mis. Studio tato, DJ, toko bunga",
       "slugChecking": "Memeriksa…",
       "slugAvailable": "Tersedia",
       "slugTaken": "Sudah digunakan",
@@ -3209,7 +3214,8 @@
   "notFound": {
     "title": "Halaman tidak ditemukan",
     "description": "Halaman yang Anda cari tidak ada atau telah dipindahkan.",
-    "backToDashboard": "Kembali ke dasbor"
+    "backToDashboard": "Kembali ke dasbor",
+    "backToHome": "Kembali ke beranda"
   },
   "inviteAccept": {
     "pageTitle": "Terima undangan",

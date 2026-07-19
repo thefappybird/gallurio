@@ -717,8 +717,10 @@
           "today": "Ngayon",
           "next": "Susunod na mga petsa sa heatmap",
           "title": "Heatmap ng na-book na oras",
-          "weekOf": "Linggo ng",
           "bookedHours": "Na-book na oras",
+          "bookingsCount": "{count, plural, one {# booking} other {# na booking}}",
+          "skipPrevious": "Bumalik ng 5 pahina",
+          "skipNext": "Sumulong ng 5 pahina",
           "weekdays": [
             "Lun",
             "Mar",
@@ -2996,8 +2998,11 @@
         "stylist": "Stylist",
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
+        "artists": "Mga artist",
         "other": "Iba pa"
       },
+      "businessTypeOtherLabel": "Anong uri ng negosyo?",
+      "businessTypeOtherPlaceholder": "hal. Tattoo studio, DJ, florist",
       "slugChecking": "Tinitingnan…",
       "slugAvailable": "Available",
       "slugTaken": "Hindi available",
@@ -3209,7 +3214,8 @@
   "notFound": {
     "title": "Hindi nahanap ang pahina",
     "description": "Ang pahinang hinahanap mo ay hindi umiiral o inilipat na.",
-    "backToDashboard": "Bumalik sa dashboard"
+    "backToDashboard": "Bumalik sa dashboard",
+    "backToHome": "Bumalik sa home"
   },
   "inviteAccept": {
     "pageTitle": "Tanggapin ang imbitasyon",

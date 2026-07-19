@@ -717,8 +717,10 @@
           "today": "اليوم",
           "next": "تواريخ الخريطة التالية",
           "title": "خريطة حرارية للساعات المحجوزة",
-          "weekOf": "أسبوع",
           "bookedHours": "الساعات المحجوزة",
+          "bookingsCount": "{count, plural, zero {لا حجوزات} one {حجز واحد} two {حجزان} few {# حجوزات} many {# حجزًا} other {# حجز}}",
+          "skipPrevious": "الرجوع 5 صفحات",
+          "skipNext": "التقدّم 5 صفحات",
           "weekdays": [
             "الإثنين",
             "الثلاثاء",
@@ -2996,8 +2998,11 @@
         "stylist": "منسِّق",
         "catering": "تموين",
         "entertainer": "فنان / دي جي / فرقة",
+        "artists": "فنّانون",
         "other": "أخرى"
       },
+      "businessTypeOtherLabel": "ما نوع النشاط التجاري؟",
+      "businessTypeOtherPlaceholder": "مثال: استوديو وشم، دي جي، بائع زهور",
       "slugChecking": "جارٍ التحقّق…",
       "slugAvailable": "متاح",
       "slugTaken": "محجوز بالفعل",
@@ -3209,7 +3214,8 @@
   "notFound": {
     "title": "لم يُعثر على الصفحة",
     "description": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
-    "backToDashboard": "العودة إلى لوحة التحكّم"
+    "backToDashboard": "العودة إلى لوحة التحكّم",
+    "backToHome": "العودة إلى الصفحة الرئيسية"
   },
   "inviteAccept": {
     "pageTitle": "قبول الدعوة",

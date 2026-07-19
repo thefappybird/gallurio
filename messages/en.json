@@ -717,8 +717,10 @@
           "today": "Today",
           "next": "Next heatmap dates",
           "title": "Booked hours heatmap",
-          "weekOf": "Week of",
           "bookedHours": "Booked hours",
+          "bookingsCount": "{count, plural, one {# booking} other {# bookings}}",
+          "skipPrevious": "Skip back 5 pages",
+          "skipNext": "Skip forward 5 pages",
           "weekdays": [
             "Mon",
             "Tue",
@@ -2997,8 +2999,11 @@
         "stylist": "Stylist",
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
+        "artists": "Artists",
         "other": "Other"
       },
+      "businessTypeOtherLabel": "What kind of business?",
+      "businessTypeOtherPlaceholder": "e.g. Tattoo studio, DJ, florist",
       "slugChecking": "Checking…",
       "slugAvailable": "Available",
       "slugTaken": "Already taken",
@@ -3210,7 +3215,8 @@
   "notFound": {
     "title": "Page not found",
     "description": "The page you're looking for doesn't exist or has been moved.",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to dashboard",
+    "backToHome": "Back to home"
   },
   "inviteAccept": {
     "pageTitle": "Accept invitation",

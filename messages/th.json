@@ -717,8 +717,10 @@
           "today": "วันนี้",
           "next": "วันที่ถัดไปในฮีตแมป",
           "title": "แผนที่ความหนาแน่นชั่วโมงการจอง",
-          "weekOf": "สัปดาห์ของ",
           "bookedHours": "ชั่วโมงที่จองแล้ว",
+          "bookingsCount": "{count, plural, other {# การจอง}}",
+          "skipPrevious": "ย้อนกลับ 5 หน้า",
+          "skipNext": "ข้ามไป 5 หน้า",
           "weekdays": [
             "จ.",
             "อ.",
@@ -2996,8 +2998,11 @@
         "stylist": "สไตลิสต์",
         "catering": "จัดเลี้ยง",
         "entertainer": "นักแสดง / ดีเจ / วงดนตรี",
+        "artists": "ศิลปิน",
         "other": "อื่น ๆ"
       },
+      "businessTypeOtherLabel": "ธุรกิจประเภทใด?",
+      "businessTypeOtherPlaceholder": "เช่น สตูดิโอสัก, ดีเจ, ร้านดอกไม้",
       "slugChecking": "กำลังตรวจสอบ…",
       "slugAvailable": "ใช้งานได้",
       "slugTaken": "ถูกใช้ไปแล้ว",
@@ -3209,7 +3214,8 @@
   "notFound": {
     "title": "ไม่พบหน้าเว็บ",
     "description": "หน้าเว็บที่คุณกำลังมองหาไม่มีอยู่หรือถูกย้ายแล้ว",
-    "backToDashboard": "กลับไปยังแดชบอร์ด"
+    "backToDashboard": "กลับไปยังแดชบอร์ด",
+    "backToHome": "กลับไปยังหน้าแรก"
   },
   "inviteAccept": {
     "pageTitle": "ยอมรับคำเชิญ",
