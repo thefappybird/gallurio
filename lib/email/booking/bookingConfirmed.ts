@@ -50,7 +50,7 @@ export async function sendBookingConfirmedClient(
     const locale = emailLocale(params.locale ?? null);
     const sessionsText = formatSessions(params.sessions);
 
-    const { html, text } = renderBilingualEmail({
+    const { html, text, attachments } = renderBilingualEmail({
       brand: params.brand,
       preheader: EMAIL_COPY.bookingConfirmedClient.en.body1(params.businessName),
       secondaryLocale: locale,
@@ -83,6 +83,7 @@ export async function sendBookingConfirmedClient(
       subject,
       html,
       text,
+      attachments,
     });
   } catch (err) {
     console.error("[email] sendBookingConfirmedClient failed:", err);
@@ -102,7 +103,7 @@ export async function sendBookingConfirmedOwner(
 
     const subject = `Booking confirmed: ${params.clientName} — ${params.eventTitle}`;
 
-    const { html, text } = renderBrandedEmail({
+    const { html, text, attachments } = renderBrandedEmail({
       brand: gallurioBrand(),
       locale: "en",
       preheader: `${params.clientName}'s booking has been confirmed.`,
@@ -122,6 +123,7 @@ export async function sendBookingConfirmedOwner(
       subject,
       html,
       text,
+      attachments,
     });
   } catch (err) {
     console.error("[email] sendBookingConfirmedOwner failed:", err);

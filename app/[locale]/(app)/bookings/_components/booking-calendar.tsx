@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/popover";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
-import { formatTime, formatTimeRange, TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { formatTimeRange, TIME_INPUT_LANG } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import { STATUS_COLOR_VAR as STATUS_COLOR, CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
@@ -632,7 +632,7 @@ function CalendarToolbar({
     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
       {/* Left cluster: nav + optional trailing controls (legend chips, team filter) */}
       <div className="flex flex-wrap items-center gap-2">
-                <span className="hidden lg:block font-semibold text-sm me-1">{label}</span>
+        <span className="text-sm font-semibold me-1">{label}</span>
         {/* Jump-to popover */}
         <Popover>
           <PopoverTrigger
@@ -900,15 +900,6 @@ export function BookingCalendar({
     [onDateChange]
   );
 
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia("(max-width: 639px)");
-    const sync = () => setIsCompactCalendar(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-
   const availableViews = useMemo<View[]>(
     () => (isCompactCalendar ? [Views.DAY] : [Views.MONTH, Views.WEEK, Views.DAY]),
     [isCompactCalendar]
@@ -946,10 +937,33 @@ export function BookingCalendar({
     [setView, setDate]
   );
 
+  // Keep the latest view in a ref so the matchMedia effect below can read it
+  // without resubscribing the listener on every view change (mirrors the
+  // onSuccessRef pattern in hooks/use-lemon-squeezy-checkout.ts).
+  const viewRef = useRef(view);
   useEffect(() => {
-    if (!isCompactCalendar || view === Views.DAY) return;
-    handleViewChange(Views.DAY);
-  }, [handleViewChange, isCompactCalendar, view]);
+    viewRef.current = view;
+  });
+
+  // Force Day view (and snap to today) whenever the viewport crosses into
+  // compact width. Folded into the same matchMedia subscribe-callback shape
+  // as the compact-flag sync itself (fired once on mount, then on every
+  // breakpoint crossing) rather than a separate effect reacting to derived
+  // state, so the view/date update is a response to the external viewport
+  // change, not a synchronous setState cascading off of it.
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(max-width: 639px)");
+    const sync = () => {
+      setIsCompactCalendar(media.matches);
+      if (media.matches && viewRef.current !== Views.DAY) {
+        handleViewChange(Views.DAY);
+      }
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, [handleViewChange]);
 
   const toolbarCtx = useMemo<CalendarToolbarCtxValue>(
     () => ({

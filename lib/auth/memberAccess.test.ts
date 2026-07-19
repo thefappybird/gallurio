@@ -22,9 +22,9 @@ describe("stripLocale", () => {
     expect(stripLocale("/fil")).toBe("/");
   });
 
-  it("strips a leading /ms prefix", () => {
-    expect(stripLocale("/ms/dashboard")).toBe("/dashboard");
-    expect(stripLocale("/ms")).toBe("/");
+  it("strips a leading /th prefix", () => {
+    expect(stripLocale("/th/dashboard")).toBe("/dashboard");
+    expect(stripLocale("/th")).toBe("/");
   });
 
   it("strips a leading /id prefix", () => {
@@ -44,7 +44,7 @@ describe("stripLocale", () => {
 
   it("returns '/' when path is exactly a locale prefix with no trailing slash", () => {
     expect(stripLocale("/fil")).toBe("/");
-    expect(stripLocale("/ms")).toBe("/");
+    expect(stripLocale("/th")).toBe("/");
   });
 
   it("leaves '/' unchanged", () => {
@@ -97,8 +97,8 @@ describe("isMemberBlocked", () => {
     expect(isMemberBlocked("/fil/dashboard/stats")).toBe(true);
   });
 
-  it("blocks locale-prefixed /ms/teams", () => {
-    expect(isMemberBlocked("/ms/teams")).toBe(true);
+  it("blocks locale-prefixed /th/teams", () => {
+    expect(isMemberBlocked("/th/teams")).toBe(true);
   });
 
   it("blocks locale-prefixed /fil/inquiries and /id/portfolio", () => {

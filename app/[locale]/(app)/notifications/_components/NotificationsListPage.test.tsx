@@ -183,16 +183,10 @@ describe('NotificationsListPage live arrival toast', () => {
       )
     })
 
-    expect(screen.queryByText(/new notification/i)).toBeNull()
-
-    act(() => {
-      vi.advanceTimersByTime(5000)
-    })
-
     expect(screen.getByText(/you have a new notification/i)).toBeInTheDocument()
 
     act(() => {
-      vi.advanceTimersByTime(3000)
+      vi.advanceTimersByTime(1500)
     })
 
     expect(screen.queryByText(/new notification/i)).toBeNull()

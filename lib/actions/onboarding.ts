@@ -6,9 +6,6 @@ import { connectDB } from "@/lib/db/mongoose";
 import {
   Workspace,
   User,
-  Client,
-  Booking,
-  Inquiry,
   ONBOARDING_STEPS,
   type OnboardingStep,
 } from "@/lib/db/models";
@@ -17,6 +14,8 @@ import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
 import { grantPlan } from "@/lib/billing/grantPlan";
+import { isBetaProgramClosed } from "@/lib/billing/betaProgram";
+import { hasActivatedOnboardingPlan } from "@/lib/onboarding/planActivation";
 import {
   businessStepSchema,
   workspaceSetupSchema,
@@ -279,6 +278,10 @@ export async function selectFreePlanAction(): Promise<ActionResult> {
   if (!hasActiveGrant) return { error: "free_trial_already_used" };
 
   await setUserStep(authUser.workosUserId, "done");
+  await Workspace.updateOne(
+    { _id: ownerMembership.workspaceId },
+    { $set: { onboardingPlanSelection: "free" } }
+  );
   return { ok: true };
 }
 
@@ -298,6 +301,8 @@ export async function activateBetaTesterAction(): Promise<ActionResult> {
 
   await connectDB();
 
+  if (await isBetaProgramClosed()) return { error: "beta_program_closed" };
+
   const user = await User.findOne(
     { workosUserId: authUser.workosUserId },
     { memberships: 1 }
@@ -305,7 +310,24 @@ export async function activateBetaTesterAction(): Promise<ActionResult> {
   const ownerMembership = user?.memberships.find((m) => m.role === "owner");
   if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
 
+  const workspace = await Workspace.findById(ownerMembership.workspaceId)
+    .select({ plan: 1, everSubscribed: 1, codesRedeemed: 1 })
+    .lean();
+  if (!workspace) return { error: "workspace_not_found" };
+  if (hasActivatedOnboardingPlan(workspace)) return { error: "onboarding_plan_locked" };
+
   await grantPlan(ownerMembership.workspaceId, { plan: "beta", expiresAt: null });
+  await Workspace.updateOne(
+    { _id: ownerMembership.workspaceId },
+    { $set: { onboardingPlanSelection: "beta" } }
+  );
+
+  // Set once, permanently — durable identity-level evidence of beta
+  // participation, independent of the workspace's plan.
+  await User.updateOne(
+    { workosUserId: authUser.workosUserId, "betaParticipation.recordedAt": null },
+    { $set: { "betaParticipation.recordedAt": new Date(), "betaParticipation.source": "onboarding" } }
+  );
 
   await setUserStep(authUser.workosUserId, "done");
   return { ok: true };
@@ -316,16 +338,14 @@ export async function activateBetaTesterAction(): Promise<ActionResult> {
 // ---------------------------------------------------------------------------
 
 // Eagerly reconcile the workspace's Lemon Squeezy subscription state on the
-// done page. The webhook + workflow are the authoritative path; this is the
+// done page. The webhook is the authoritative path; this is the
 // safety net for cases where the user reaches the done page before the
 // webhook fires. Never throws — logs errors and returns silently so the done
 // page always loads.
 export async function reconcileLemonSqueezySubscription(workspaceId: string): Promise<void> {
   try {
     await connectDB();
-    const workspace = await Workspace.findOne({ _id: workspaceId }).select({
-      lsSubscriptionId: 1,
-    });
+    const workspace = await Workspace.findOne({ _id: workspaceId }).select({ _id: 1 }).lean();
     if (!workspace) return;
 
     const authUser = await getAuthUser();
@@ -334,7 +354,8 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
 
     const { listActiveSubscriptionsForEmail } = await import("@/lib/lemonsqueezy/client");
     const { planForVariantId } = await import("@/lib/lemonsqueezy/plans");
-    const { mapLemonSqueezySubscriptionStatus } = await import("@/lib/lemonsqueezy/status");
+    const { applySubscriptionSnapshot } = await import("@/lib/billing/subscriptionSnapshot");
+    const { resolveProviderEventTimestamp } = await import("@/lib/billing/webhookOrdering");
 
     const subs = await listActiveSubscriptionsForEmail(email);
     if (subs.length === 0) return;
@@ -347,8 +368,7 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
     )[0];
 
     const variantId = sub.attributes.variant_id != null ? String(sub.attributes.variant_id) : "";
-    const plan = planForVariantId(variantId);
-    if (plan === "free") return;
+    if (planForVariantId(variantId) === "free") return;
 
     // Defence-in-depth: listActiveSubscriptionsForEmail is scoped by the
     // signed-in user's email, not this workspace. A user who owns multiple
@@ -364,27 +384,22 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
       .lean();
     if (boundElsewhere) return;
 
-    // Map raw Lemon Squeezy status through the shared normaliser — never
-    // write an unmapped string to the DB enum field.
-    const lsSubscriptionStatus = mapLemonSqueezySubscriptionStatus(
-      sub.attributes.status as string | null | undefined
-    );
+    const customerId =
+      sub.attributes.customer_id != null ? String(sub.attributes.customer_id) : null;
 
-    const renewsAt = sub.attributes.renews_at as string | null | undefined;
-    const periodEnd = renewsAt ? new Date(renewsAt) : null;
-
-    const $set: Record<string, unknown> = {
-      plan,
-      everSubscribed: true,
-      lsSubscriptionId: sub.id,
-      lsCurrentPeriodEnd: periodEnd,
-    };
-    // Only write status when the mapper recognised the value.
-    if (lsSubscriptionStatus !== null) {
-      $set.lsSubscriptionStatus = lsSubscriptionStatus;
-    }
-
-    await Workspace.updateOne({ _id: workspaceId }, { $set });
+    // Same application path as the webhook's created/updated handler — team-
+    // cap guard, no-downgrade-on-variant-miss, and terminal-status-refuses-
+    // promotion all apply here too, so this safety net can never drift from
+    // the webhook's own rules.
+    await applySubscriptionSnapshot({
+      filter: { _id: workspaceId },
+      subscriptionId: sub.id,
+      customerId,
+      rawStatus: sub.attributes.status as string | null | undefined,
+      variantId,
+      renewsAt: sub.attributes.renews_at as string | null | undefined,
+      eventTimestamp: resolveProviderEventTimestamp(sub.attributes as Record<string, unknown>),
+    });
   } catch (err) {
     console.error("[onboarding/done] lemonsqueezy reconcile failed", err);
   }
@@ -394,9 +409,7 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
 // Complete onboarding
 // ---------------------------------------------------------------------------
 
-export async function completeOnboardingAction(opts: {
-  seedSampleData: boolean;
-}): Promise<ActionResult> {
+export async function completeOnboardingAction(): Promise<ActionResult> {
   const authUser = await getAuthUser();
   if (!authUser) return { error: "not_authenticated" };
 
@@ -412,10 +425,6 @@ export async function completeOnboardingAction(opts: {
   const workspace = await Workspace.findOne({ _id: ownerMembership.workspaceId });
   if (!workspace) return { error: "workspace_not_found" };
 
-  if (opts.seedSampleData && process.env.NODE_ENV === "development") {
-    await seedSampleData(workspace._id.toString());
-  }
-
   const now = new Date();
   await Promise.all([
     Workspace.updateOne({ _id: workspace._id }, { $set: { onboardingCompletedAt: now } }),
@@ -427,119 +436,4 @@ export async function completeOnboardingAction(opts: {
 
   revalidatePath("/dashboard");
   redirect("/dashboard");
-}
-
-// ---------------------------------------------------------------------------
-// Sample data seed
-// ---------------------------------------------------------------------------
-
-async function seedSampleData(workspaceId: string) {
-  const existing = await Client.countDocuments({ workspaceId });
-  if (existing > 0) return;
-
-  const now = new Date();
-  const day = (n: number) => new Date(now.getTime() + n * 24 * 60 * 60 * 1000);
-  const slot = (n: number, startHour = 10, endHour = 18) => {
-    const start = day(n);
-    start.setHours(startHour, 0, 0, 0);
-    const end = day(n);
-    end.setHours(endHour, 0, 0, 0);
-    return { start, end };
-  };
-
-  const clients = await Client.insertMany([
-    {
-      workspaceId,
-      name: "Emma & Liam Carter",
-      email: "emma.carter@example.com",
-      phone: "+1 415 555 0142",
-      source: "form",
-      tags: ["VIP", "sample"],
-    },
-    {
-      workspaceId,
-      name: "Priya Shah",
-      email: "priya@example.com",
-      phone: "+1 415 555 0188",
-      source: "manual",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Ana & Tomas Ribeiro",
-      email: "ana.ribeiro@example.com",
-      source: "referral",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Northwood Corp Events",
-      email: "events@northwood.example",
-      phone: "+1 415 555 0211",
-      source: "manual",
-      tags: ["sample"],
-    },
-    {
-      workspaceId,
-      name: "Jordan Patel",
-      email: "jordan.patel@example.com",
-      source: "form",
-      tags: ["sample"],
-    },
-  ]);
-
-  const carterSlot = slot(28);
-  const shahSlot = slot(14);
-  const galaSlot = slot(70);
-
-  await Booking.insertMany([
-    {
-      workspaceId,
-      clientId: clients[0]._id,
-      clientName: clients[0].name,
-      title: "Carter Wedding -- Pier 27",
-      eventType: "wedding",
-      status: "booked",
-      sessions: [{ startAt: carterSlot.start, endAt: carterSlot.end }],
-      firstSessionStart: carterSlot.start,
-      lastSessionEnd: carterSlot.end,
-      amount: { total: 65000, deposit: 20000, currency: "PHP" },
-    },
-    {
-      workspaceId,
-      clientId: clients[1]._id,
-      clientName: clients[1].name,
-      title: "Shah Engagement Shoot",
-      eventType: "wedding",
-      status: "booked",
-      sessions: [{ startAt: shahSlot.start, endAt: shahSlot.end }],
-      firstSessionStart: shahSlot.start,
-      lastSessionEnd: shahSlot.end,
-      amount: { total: 15000, deposit: 5000, currency: "PHP" },
-    },
-    {
-      workspaceId,
-      clientId: clients[3]._id,
-      clientName: clients[3].name,
-      title: "Northwood Annual Gala",
-      eventType: "corporate",
-      status: "booked",
-      sessions: [{ startAt: galaSlot.start, endAt: galaSlot.end }],
-      firstSessionStart: galaSlot.start,
-      lastSessionEnd: galaSlot.end,
-      amount: { total: 90000, deposit: 30000, currency: "PHP" },
-    },
-  ]);
-
-  await Inquiry.insertMany([
-    {
-      workspaceId,
-      name: "Lena Okafor",
-      email: "lena.o@example.com",
-      message: "Brand portrait session -- do you take corporate work?",
-      eventType: "corporate",
-      status: "inquiry",
-      eventDate: slot(21).start,
-    },
-  ]);
 }

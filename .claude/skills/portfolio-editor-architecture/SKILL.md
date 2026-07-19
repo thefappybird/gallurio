@@ -28,7 +28,7 @@ load the focused sub-skill for your actual task.
 - **Chrome is fully localized** (Phase D, RELEASE-CHECKLIST §4f done). Block labels,
   category titles, field labels, option labels, and the draft-saved toast are translated
   via `createEditorConfig(t)` in EditorShell and `useTranslations` in dialog components.
-  All 5 locales: `en`, `fil`, `ms`, `id`, `ar`. Puck's own built-in strings (drag handles,
+  All 5 locales: `en`, `fil`, `id`, `ar`, `th`. Puck's own built-in strings (drag handles,
   Insert drawer header, empty-slot placeholder) cannot be localized — Puck 0.20.x has no
   i18n API for its internal chrome; those strings remain English.
 

@@ -46,6 +46,7 @@ import {
   PortfolioDraft,
   PageviewRollup,
   PromoCode,
+  Invitation,
 } from "./models";
 import { Notification } from "./models/Notification";
 import { buildSeedGalleryItem } from "./seedGalleryItem";
@@ -96,6 +97,11 @@ const TEAM_NAMES = [
   "Travel Unit",
   "Brand Shoots",
 ] as const;
+
+// The final team deliberately remains inactive. It gives the Teams screen an
+// archival state to show without taking away the active teams used by the
+// bookings and dashboard screenshots.
+const INACTIVE_TEAM_NAME = "After Dark";
 
 const DUMMY_MEMBER_NAMES = [
   "Jules Mercer",
@@ -341,7 +347,7 @@ async function createTeamsAndMembers(
       name,
       color: TEAM_COLOR_PALETTE[index % TEAM_COLOR_PALETTE.length]!,
       isDefault: index === 0,
-      isActive: true,
+      isActive: name !== INACTIVE_TEAM_NAME,
       memberCount: 0,
       createdByWorkosUserId: owner.workosUserId,
     }))
@@ -352,6 +358,7 @@ async function createTeamsAndMembers(
       workosUserId: `seed_dummy_member_${String(index + 1).padStart(2, "0")}`,
       email: `seed-member-${String(index + 1).padStart(2, "0")}@example.com`,
       name,
+      avatarUrl: `https://i.pravatar.cc/160?img=${(index % 70) + 1}`,
       memberships: [{ workspaceId, role: "staff", lastAccessedAt: null }],
       onboardingStep: "done",
       onboardingCompletedAt: new Date(),
@@ -453,10 +460,17 @@ async function createGalleryFixtures(workspaceId: mongoose.Types.ObjectId) {
       isPublic: true,
       order: 1,
     },
+    {
+      workspaceId,
+      name: "Celebrations",
+      slug: "celebrations",
+      isPublic: true,
+      order: 2,
+    },
   ]);
 
   const items = collections.flatMap((collection, collectionIndex) =>
-    Array.from({ length: 6 }, (_, itemIndex) =>
+    Array.from({ length: 10 }, (_, itemIndex) =>
       buildSeedGalleryItem({
         workspaceId,
         collectionId: collection._id,
@@ -480,23 +494,20 @@ async function createPublishedPortfolio(workspace: {
   _id: mongoose.Types.ObjectId;
   name: string;
 }) {
+  // Use a current, content-rich template for the marketing screenshots. The
+  // secondary drafts let the refreshed drafts dialog and template switcher
+  // demonstrate real versioning rather than a single empty state.
+  const editorialTemplate = getTemplate("editorial");
+  const boldTemplate = getTemplate("bold");
   const minimalTemplate = getTemplate("minimal");
-  if (!minimalTemplate) {
-    throw new Error("Minimal portfolio template not found");
+  if (!editorialTemplate || !boldTemplate || !minimalTemplate) {
+    throw new Error("Required portfolio templates not found");
   }
 
-  const seed = minimalTemplate.seedData({ workspace: { name: workspace.name } });
+  const seed = editorialTemplate.seedData({ workspace: { name: workspace.name } });
   const publishedAt = new Date();
 
-  await PortfolioDraft.create({
-    workspaceId: workspace._id,
-    name: "Minimal Draft",
-    templateId: "minimal",
-    data: seed,
-    brandKit: minimalTemplate.defaultBrandKit,
-    contact: minimalTemplate.defaultContact,
-    header: minimalTemplate.defaultHeader,
-    collectionsPopup: minimalTemplate.defaultCollectionsPopup,
+  const draftMetadata = {
     seoTitle: `${workspace.name} | Event Photography Portfolio`,
     seoDescription: "Documentary wedding, portrait, and brand photography in Metro Manila.",
     seo: {
@@ -504,19 +515,61 @@ async function createPublishedPortfolio(workspace: {
       galleryDescription: "Selected work across weddings, portraits, and live events.",
       noindex: false,
     },
-  });
+  };
+
+  await PortfolioDraft.insertMany([
+    {
+      workspaceId: workspace._id,
+      name: "Minimal Launch Layout",
+      templateId: minimalTemplate.id,
+      data: minimalTemplate.seedData({ workspace: { name: workspace.name } }),
+      brandKit: minimalTemplate.defaultBrandKit,
+      contact: minimalTemplate.defaultContact,
+      header: minimalTemplate.defaultHeader,
+      collectionsPopup: minimalTemplate.defaultCollectionsPopup,
+      ...draftMetadata,
+      createdAt: dayOffset(-9),
+      updatedAt: dayOffset(-9),
+    },
+    {
+      workspaceId: workspace._id,
+      name: "Bold Campaign Concept",
+      templateId: boldTemplate.id,
+      data: boldTemplate.seedData({ workspace: { name: workspace.name } }),
+      brandKit: boldTemplate.defaultBrandKit,
+      contact: boldTemplate.defaultContact,
+      header: boldTemplate.defaultHeader,
+      collectionsPopup: boldTemplate.defaultCollectionsPopup,
+      ...draftMetadata,
+      createdAt: dayOffset(-4),
+      updatedAt: dayOffset(-4),
+    },
+    {
+      workspaceId: workspace._id,
+      name: "Editorial Summer Refresh",
+      templateId: editorialTemplate.id,
+      data: seed,
+      brandKit: editorialTemplate.defaultBrandKit,
+      contact: editorialTemplate.defaultContact,
+      header: editorialTemplate.defaultHeader,
+      collectionsPopup: editorialTemplate.defaultCollectionsPopup,
+      ...draftMetadata,
+      createdAt: dayOffset(-1),
+      updatedAt: dayOffset(-1),
+    },
+  ]);
 
   await Workspace.updateOne(
     { _id: workspace._id },
     {
       $set: {
         publicPage: {
-          templateId: "minimal",
+          templateId: editorialTemplate.id,
           data: seed,
-          brandKit: minimalTemplate.defaultBrandKit,
-          contact: minimalTemplate.defaultContact,
-          header: minimalTemplate.defaultHeader,
-          collectionsPopup: minimalTemplate.defaultCollectionsPopup,
+          brandKit: editorialTemplate.defaultBrandKit,
+          contact: editorialTemplate.defaultContact,
+          header: editorialTemplate.defaultHeader,
+          collectionsPopup: editorialTemplate.defaultCollectionsPopup,
           seoTitle: `${workspace.name} | Event Photography Portfolio`,
           seoDescription: "Documentary wedding, portrait, and brand photography in Metro Manila.",
           inquiryRecipientEmail: "hello@northstarstories.example.com",
@@ -643,33 +696,54 @@ async function createBookingsAndTransactions(
     },
   ];
 
-  const generated = Array.from({ length: 24 }, (_, index) => {
-    const team = teamForIndex(teams, index + 3);
-    const client = clientForIndex(clients, index + 2);
-    const status =
-      index % 9 === 0 ? ("cancelled" as const) : index % 4 === 0 ? ("completed" as const) : ("booked" as const);
-    const dayDelta = -40 + index * 4;
-    const startHour = 9 + (index % 7);
-    const duration = 2 + (index % 5);
-    const total = 26_000 + index * 4_500;
-    const deposit = Math.floor(total * 0.35);
+  // Fill the dashboard's trailing 52-week heatmap with a believable operating
+  // rhythm: three or four bookings each week, spread across weekdays. Rotating
+  // the patterns prevents a synthetic stripe while keeping weekends visibly
+  // busier for marketing screenshots.
+  const weeklyBookingPatterns = [
+    [0, 2, 5], // Mon, Wed, Sat
+    [1, 3, 5], // Tue, Thu, Sat
+    [0, 3, 4, 6], // Mon, Thu, Fri, Sun
+    [1, 2, 4, 5], // Tue, Wed, Fri, Sat
+  ] as const;
+  const generated = Array.from({ length: 64 }, (_, weekIndex) => {
+    const weekdays = weeklyBookingPatterns[weekIndex % weeklyBookingPatterns.length]!;
 
-    return {
-      team,
-      client,
-      title: `${client.name} - ${eventTypeForIndex(index + 3)} coverage`,
-      eventType: eventTypeForIndex(index + 3),
-      status,
-      sessions: [dateAt(dayDelta, startHour, 0, duration)],
-      total,
-      deposit,
-      location: `${180 + index} Ayala Avenue, Makati`,
-      notes:
-        status === "cancelled"
-          ? "Client postponed after venue availability changed."
-          : "Keep a fast-turnaround teaser set in the first delivery batch.",
-    };
-  });
+    return weekdays.map((weekdayOffset, bookingInWeek) => {
+      const index = weekIndex * 4 + bookingInWeek;
+      const team = teamForIndex(teams, index + 3);
+      const client = clientForIndex(clients, index + 2);
+      const status =
+        index % 11 === 0
+          ? ("cancelled" as const)
+          : index % 4 === 0
+            ? ("completed" as const)
+            : ("booked" as const);
+      // Starts 52 weeks ago, with enough forward bookings to keep the calendar
+      // and upcoming-work cards full after a reseed.
+      const dayDelta = -364 + weekIndex * 7 + weekdayOffset;
+      const startHour = 9 + ((index + weekdayOffset) % 7);
+      const duration = 2 + (index % 5);
+      const total = 26_000 + index * 4_500;
+      const deposit = Math.floor(total * 0.35);
+
+      return {
+        team,
+        client,
+        title: `${client.name} - ${eventTypeForIndex(index + 3)} coverage`,
+        eventType: eventTypeForIndex(index + 3),
+        status,
+        sessions: [dateAt(dayDelta, startHour, 0, duration)],
+        total,
+        deposit,
+        location: `${180 + index} Ayala Avenue, Makati`,
+        notes:
+          status === "cancelled"
+            ? "Client postponed after venue availability changed."
+            : "Keep a fast-turnaround teaser set in the first delivery batch.",
+      };
+    });
+  }).flat();
 
   const allSpecs = [...featured, ...generated];
 
@@ -956,7 +1030,9 @@ async function createInquiries(
 }
 
 async function createPortfolioAnalytics(workspaceId: mongoose.Types.ObjectId) {
-  const fixtures = buildPortfolioPageviewFixtures(new Date(), 35);
+  // Six months makes the year/custom portfolio dashboard filters useful while
+  // retaining enough recent daily detail for the default monthly charts.
+  const fixtures = buildPortfolioPageviewFixtures(new Date(), 180);
   await PageviewRollup.insertMany(
     fixtures.map((fixture) => ({
       workspaceId,
@@ -998,6 +1074,41 @@ async function createNotifications(workspaceId: mongoose.Types.ObjectId, owner: 
   ]);
 }
 
+async function createPendingInvitations(
+  workspaceId: mongoose.Types.ObjectId,
+  teams: TeamRef[],
+  owner: SeedIdentity
+) {
+  await Invitation.insertMany([
+    {
+      workspaceId,
+      email: "marina.lee@example.com",
+      role: "staff",
+      teamIds: [teams[1]!._id, teams[3]!._id],
+      leadOnTeamIds: [teams[3]!._id],
+      tokenHash: "a".repeat(64),
+      invitedByWorkosUserId: owner.workosUserId,
+      status: "pending",
+      expiresAt: dayOffset(5),
+      createdAt: dayOffset(-1),
+      updatedAt: dayOffset(-1),
+    },
+    {
+      workspaceId,
+      email: "samir.khan@example.com",
+      role: "staff",
+      teamIds: [teams[2]!._id],
+      leadOnTeamIds: [],
+      tokenHash: "b".repeat(64),
+      invitedByWorkosUserId: owner.workosUserId,
+      status: "pending",
+      expiresAt: dayOffset(10),
+      createdAt: dayOffset(-2),
+      updatedAt: dayOffset(-2),
+    },
+  ]);
+}
+
 async function seedMainWorkspace(owner: SeedIdentity) {
   const workspace = await createMainWorkspace(owner);
   const teams = await createTeamsAndMembers(workspace._id, owner);
@@ -1017,6 +1128,7 @@ async function seedMainWorkspace(owner: SeedIdentity) {
   await createInquiries({ _id: workspace._id, currency: workspace.currency }, teams, owner);
   await createPortfolioAnalytics(workspace._id);
   await createNotifications(workspace._id, owner);
+  await createPendingInvitations(workspace._id, teams, owner);
 
   return workspace;
 }

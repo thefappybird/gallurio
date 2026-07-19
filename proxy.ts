@@ -55,6 +55,12 @@ const UNAUTHENTICATED_PATHS = [
   "/api/webhooks/(.*)",
   // Public inquiry submission (portfolio contact form)
   "/api/inquiries(.*)",
+  // Public portfolio data + analytics endpoints resolve tenancy by org slug.
+  "/api/public/(.*)",
+  // External liveness/readiness probe; returns non-sensitive status only.
+  "/api/health",
+  // Scheduled jobs authenticate with Authorization: Bearer CRON_SECRET.
+  "/api/cron/(.*)",
   // Public portfolio pages live outside the [locale] segment
   "/w/(.*)",
 ];
@@ -94,6 +100,23 @@ function isPublicRoute(req: NextRequest): boolean {
   return matchesPublicBase(stripped);
 }
 
+/**
+ * The server can receive an internal origin (for example localhost behind a
+ * tunnel or reverse proxy). Browser-facing redirects must use the configured
+ * public application origin instead.
+ */
+function publicOrigin(req: NextRequest): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (appUrl) {
+    try {
+      return new URL(appUrl).origin;
+    } catch {
+      // Keep local development usable when the optional value is malformed.
+    }
+  }
+  return req.nextUrl.origin;
+}
+
 // ---------------------------------------------------------------------------
 // authkitMiddleware composition approach
 //
@@ -122,21 +145,36 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   const { pathname } = req.nextUrl;
 
   // -------------------------------------------------------------------------
-  // 1. Workflow DevKit internal endpoints — skip everything.
-  // -------------------------------------------------------------------------
-  if (pathname.startsWith("/.well-known/workflow")) {
-    return NextResponse.next();
-  }
-
-  // -------------------------------------------------------------------------
-  // 2. API routes — auth-gate non-public ones, no intl middleware.
+  // 1. API routes — auth-gate non-public ones, no intl middleware.
   // -------------------------------------------------------------------------
   if (pathname.startsWith("/api")) {
-    return authMiddleware(req, {} as never) as Promise<NextMiddlewareResult>;
+    const authResponse = await (authMiddleware(req, {} as never) as Promise<Response | NextMiddlewareResult>);
+
+    // Browser fetches must never be redirected to the hosted authentication
+    // UI. Following that cross-origin redirect surfaces as a misleading CORS
+    // error and hides the real condition from the caller. Navigation routes
+    // still use the localized sign-in redirect below; API callers receive an
+    // in-band JSON response they can handle explicitly.
+    if (authResponse && (authResponse as Response).status >= 300 && (authResponse as Response).status < 400) {
+      const response = NextResponse.json(
+        { error: "not_authenticated" },
+        { status: 401, headers: { "cache-control": "no-store" } },
+      );
+
+      // AuthKit may clear an invalid/expired session cookie on its redirect.
+      // Preserve every Set-Cookie header while intentionally dropping Location.
+      for (const cookie of (authResponse as Response).headers.getSetCookie()) {
+        response.headers.append("set-cookie", cookie);
+      }
+
+      return response;
+    }
+
+    return authResponse as NextMiddlewareResult;
   }
 
   // -------------------------------------------------------------------------
-  // 3. Public portfolio routes — no auth, no intl.
+  // 2. Public portfolio routes — no auth, no intl.
   //    /w/[orgSlug] lives outside the [locale] segment. Running next-intl here
   //    would rewrite /w/... to /[locale]/w/... (a non-existent route) and 404.
   // -------------------------------------------------------------------------
@@ -145,7 +183,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   }
 
   // -------------------------------------------------------------------------
-  // 4. Public routes — skip auth check, run intl for locale routing.
+  // 3. Public routes — skip auth check, run intl for locale routing.
   //
   //    EXCEPTION: the marketing root ("/" for any locale) needs authkit session
   //    context so the page can read the session and redirect an already-signed-in
@@ -156,12 +194,17 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   //    landing page renders normally.
   // -------------------------------------------------------------------------
   const isRoot = stripLocale(pathname) === "/";
-  if (isPublicRoute(req) && !isRoot) {
+  // These public pages call getAuthUser() in a server action or error state.
+  // Invite acceptance needs an existing session when present. Email
+  // verification is different: WorkOS deliberately has not issued a session
+  // yet, and the page verifies the short-lived pending token in its action.
+  const isInviteAccept = stripLocale(pathname) === "/invite/accept";
+  if (isPublicRoute(req) && !isRoot && !isInviteAccept) {
     return intlMiddleware(req);
   }
 
   // -------------------------------------------------------------------------
-  // 5. Protected routes — run authkit for session refresh / unauthn redirect,
+  // 4. Protected routes — run authkit for session refresh / unauthn redirect,
   //    then run intl so next-intl locale routing works on authenticated pages.
   //
   //    authkitMiddleware may return a redirect (to /sign-in) or a response
@@ -197,7 +240,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           // Localize the sign-in redirect based on the incoming request locale.
           const localeMatch = pathname.match(LOCALE_PREFIX_RE);
           const prefix = localeMatch ? localeMatch[0] : "";
-          const redirectUrl = req.nextUrl.clone();
+          const redirectUrl = new URL(publicOrigin(req));
           redirectUrl.pathname = `${prefix}/sign-in`;
           redirectUrl.search = "";
           // Preserve the originally-requested destination so email deep links /
@@ -251,10 +294,7 @@ export default proxy;
 
 export const config = {
   matcher: [
-    // Exclude the Workflow DevKit's internal endpoints (.well-known/workflow/*)
-    // so neither authkit nor next-intl middleware intercepts workflow resumption
-    // traffic — Next.js 16 + proxy.ts makes this easy to miss.
-    "/((?!_next|\\.well-known/workflow|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
   ],
 };

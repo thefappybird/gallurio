@@ -34,7 +34,7 @@ RTL is cross-cutting — it touches the layout root, every component that uses d
 
 `lib/i18n/routing.ts`:
 ```typescript
-export const locales = ["en", "fil", "ms", "id", "th", "ar"] as const;
+export const locales = ["en", "fil", "id", "ar", "th"] as const;
 ```
 
 Do not add `"ar"` before `messages/ar.json` exists — next-intl will throw on locale resolution.

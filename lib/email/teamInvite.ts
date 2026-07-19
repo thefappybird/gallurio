@@ -10,7 +10,7 @@ export type TeamInviteEmailInput = {
   workspaceName: string;
   teamNames: string[];
   acceptUrl: string;
-  locale?: "en" | "fil" | "ms" | "id";
+  locale?: "en" | "fil" | "id" | "th";
   /** Full partner brand resolved at call site via resolveWorkspaceBrand(). When
    *  absent a name-only partner brand is built from workspaceName. */
   brand?: Brand;
@@ -26,7 +26,7 @@ export async function sendTeamInviteEmail(
   const teamsJoined = input.teamNames.join(", ");
   const plural = input.teamNames.length > 1;
 
-  const { html, text } = renderBilingualEmail({
+  const { html, text, attachments } = renderBilingualEmail({
     brand,
     preheader: EMAIL_COPY.teamInvite.en.subject(input.workspaceName),
     secondaryLocale: locale,
@@ -59,6 +59,7 @@ export async function sendTeamInviteEmail(
     subject,
     html,
     text,
+    attachments,
     replyTo: brand.replyTo,
   });
   if (!result.ok) logEmailFailure("team_invite", input.to, result);

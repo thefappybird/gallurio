@@ -63,8 +63,11 @@ describe("seed-fixtures", () => {
     ]);
   });
 
-  it("has exactly one sample promo code per PromoCode type", () => {
-    const types = PROMO_CODE_SEEDS.map((c) => c.type).sort();
-    expect(types).toEqual(["beta", "lifetime", "monthly", "yearly"]);
+  it("has the three general Pro promo codes", () => {
+    const types = PROMO_CODE_SEEDS
+      .filter((c) => c.type !== "beta2mo")
+      .map((c) => c.type)
+      .sort();
+    expect(types).toEqual(["lifetime", "monthly", "yearly"]);
   });
 });

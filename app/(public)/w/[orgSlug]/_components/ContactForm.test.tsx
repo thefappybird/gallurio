@@ -533,6 +533,13 @@ describe("ContactForm — responsive container", () => {
     expect(form).toBeTruthy();
     expect(form.style.containerType).toBe("inline-size");
   });
+
+  it("keeps each step action in a sticky footer", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    const footer = screen.getByTestId("contact-step-footer");
+    expect(footer.style.position).toBe("sticky");
+    expect(footer.style.bottom).toBe("0px");
+  });
 });
 
 describe("getActiveTabExtraStyle — underline effective default ON (item 4c)", () => {

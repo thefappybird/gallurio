@@ -14,6 +14,8 @@ export type AssetValidationConstraints = {
   maxBytes: number;
   maxWidth?: number;
   maxHeight?: number;
+  /** Reject rectangular images (for square icons and business logos). */
+  requireSquare?: boolean;
 };
 
 export type AssetValidationError =
@@ -77,7 +79,8 @@ export async function uploadAsset(
 
   if (
     (constraints.maxWidth != null && dims.width > constraints.maxWidth) ||
-    (constraints.maxHeight != null && dims.height > constraints.maxHeight)
+    (constraints.maxHeight != null && dims.height > constraints.maxHeight) ||
+    (constraints.requireSquare && dims.width !== dims.height)
   ) {
     return { error: "dimensions_too_large" };
   }

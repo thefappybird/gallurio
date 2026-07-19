@@ -2,7 +2,6 @@
 
 import { useActionState, useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -20,7 +19,6 @@ type SignUpFormProps = {
 
 export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
   const t = useTranslations("auth");
-  const router = useRouter();
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     signUpAction,
     null,
@@ -46,7 +44,9 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
     startGoogleTransition(async () => {
       const result = await googleSignInAction();
       if ("url" in result) {
-        router.push(result.url);
+        // The WorkOS authorization URL is cross-origin, so use a full browser
+        // navigation rather than Next's RSC-fetching client router.
+        window.location.assign(result.url);
       }
     });
   }

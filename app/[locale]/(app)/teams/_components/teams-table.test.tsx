@@ -45,12 +45,13 @@ function makeHandlers() {
     onInvite: vi.fn(),
     onDeactivate: vi.fn(),
     onReactivate: vi.fn(),
+    canManage: true,
   };
 }
 
 const ROWS: TeamRow[] = [
-  { id: "t1", name: "Main", color: "#0d7377", isDefault: true, isActive: true, memberCount: 1 },
-  { id: "t2", name: "Wedding crew", color: "#7c5cff", isDefault: false, isActive: true, memberCount: 3 },
+  { id: "t1", name: "Main", color: "#0d7377", isDefault: true, isActive: true, memberCount: 1, monthlyAverage: 1.5 },
+  { id: "t2", name: "Wedding crew", color: "#7c5cff", isDefault: false, isActive: true, memberCount: 3, monthlyAverage: 2 },
 ];
 
 describe("TeamsTable", () => {
@@ -62,6 +63,8 @@ describe("TeamsTable", () => {
     expect(screen.getAllByText("Default").length).toBeGreaterThan(0);
     expect(screen.getAllByText("1 member").length).toBeGreaterThan(0);
     expect(screen.getAllByText("3 members").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1.5 bookings/mo").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("2 bookings/mo").length).toBeGreaterThan(0);
   });
 
   it("renders a color swatch carrying each team's color", () => {
@@ -134,6 +137,7 @@ describe("TeamsTable", () => {
     expect(within(cardList).getByText("1 member")).toBeInTheDocument();
     expect(within(cardList).getByText("3 members")).toBeInTheDocument();
     expect(within(cardList).getByText("Default")).toBeInTheDocument();
+    expect(within(cardList).getByText("1.5 bookings/mo")).toBeInTheDocument();
   });
 
   it("opens details from a card click and fires handlers from the card's actions menu", () => {
@@ -149,5 +153,18 @@ describe("TeamsTable", () => {
     handlers.onDeactivate.mockClear();
     fireEvent.click(within(cardList).getByText("Deactivate"));
     expect(handlers.onDeactivate).toHaveBeenCalledWith(ROWS[1]);
+  });
+
+  it("hides the actions menu entirely for non-owners, but row click still opens details", () => {
+    const handlers = makeHandlers();
+    renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...handlers} canManage={false} />);
+
+    expect(screen.queryByText("Edit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Deactivate")).not.toBeInTheDocument();
+    expect(screen.queryByText("Invite teammate")).not.toBeInTheDocument();
+
+    const cardList = screen.getByTestId("teams-card-list");
+    fireEvent.click(within(cardList).getByText("Wedding crew"));
+    expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
   });
 });

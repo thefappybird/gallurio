@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckIcon, CopyIcon, DownloadIcon, RotateCcwIcon, SaveIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, DownloadIcon, PencilIcon, RotateCcwIcon, SaveIcon } from "lucide-react";
 import QRCode from "qrcode";
 import {
   Dialog,
@@ -25,6 +25,8 @@ type Props = {
   onConfirm: () => Promise<void>;
   publicUrl: string;
   currentSlug: string;
+  /** A never-published workspace must verify its provisional URL before first publish. */
+  hasBeenPublished: boolean;
   onSlugSaved: (newSlug: string) => void;
   /** Injected so the component stays server-action-free for tests. */
   onUpdateSlug: (slug: string) => Promise<{ ok: true; savedAt?: string } | { error: string }>;
@@ -36,6 +38,7 @@ export function PublishDialog({
   onConfirm,
   publicUrl,
   currentSlug,
+  hasBeenPublished,
   onSlugSaved,
   onUpdateSlug,
 }: Props) {
@@ -47,9 +50,11 @@ export function PublishDialog({
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [slugSaveError, setSlugSaveError] = useState<string | null>(null);
+  const [editingSlug, setEditingSlug] = useState(!hasBeenPublished);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [debouncedSlugInput, setDebouncedSlugInput] = useState(currentSlug);
-  const livePublicUrl = portfolioPublicUrl(slugInput || currentSlug);
+  const livePublicUrl =
+    slugInput === currentSlug ? publicUrl : portfolioPublicUrl(slugInput || currentSlug);
 
   // Generate the QR code client-side whenever the public URL changes while open.
   useEffect(() => {
@@ -75,15 +80,20 @@ export function PublishDialog({
       setDebouncedSlugInput(currentSlug);
       setSlugSaveState("idle");
       setSlugSaveError(null);
+      setEditingSlug(!hasBeenPublished);
     }
-  }, [open, currentSlug]);
+  }, [open, currentSlug, hasBeenPublished]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSlugInput(slugInput), 250);
     return () => clearTimeout(timer);
   }, [slugInput]);
 
-  const { status: slugStatus } = useSlugAvailability(debouncedSlugInput, currentSlug);
+  const { status: slugStatus } = useSlugAvailability(
+    debouncedSlugInput,
+    currentSlug,
+    !hasBeenPublished,
+  );
 
   const rawSlugChanged = slugInput !== currentSlug;
   const slugChanged = debouncedSlugInput !== currentSlug;
@@ -102,6 +112,7 @@ export function PublishDialog({
     } else {
       setSlugSaveState("saved");
       onSlugSaved(slugInput);
+      setEditingSlug(false);
       setTimeout(() => setSlugSaveState("idle"), 2000);
     }
   }
@@ -113,6 +124,11 @@ export function PublishDialog({
     setSlugSaveError(null);
   }
 
+  function closeSlugEditor() {
+    resetSlug();
+    setEditingSlug(false);
+  }
+
   async function confirm() {
     setPublishing(true);
     try {
@@ -121,6 +137,13 @@ export function PublishDialog({
       setPublishing(false);
     }
   }
+
+  const publishDisabled =
+    publishing ||
+    (editingSlug &&
+      (hasBeenPublished ||
+        slugStatus !== "available" ||
+        (rawSlugChanged && slugSaveState !== "saved")));
 
   async function copyLink() {
     try {
@@ -152,17 +175,23 @@ export function PublishDialog({
         <div className="min-w-0 space-y-1.5">
           <Label htmlFor="publish-dialog-slug">{t("slugLabel")}</Label>
           <div className="flex min-w-0 max-w-full items-center overflow-hidden border border-border bg-background">
-            <Input
-              id="publish-dialog-slug"
-              className="basis-0 min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0"
-              value={slugInput}
-              onChange={(e) => {
-                setSlugInput(e.target.value.toLowerCase().trim());
-                setSlugSaveState("idle");
-                setSlugSaveError(null);
-              }}
-              aria-describedby="publish-dialog-slug-status publish-dialog-full-url"
-            />
+            {editingSlug ? (
+              <Input
+                id="publish-dialog-slug"
+                className="basis-0 min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0"
+                value={slugInput}
+                onChange={(e) => {
+                  setSlugInput(e.target.value.toLowerCase().trim());
+                  setSlugSaveState("idle");
+                  setSlugSaveError(null);
+                }}
+                aria-describedby="publish-dialog-slug-status publish-dialog-full-url"
+              />
+            ) : (
+              <p id="publish-dialog-slug" className="min-w-0 flex-1 truncate px-3 text-sm">
+                {currentSlug}
+              </p>
+            )}
             <Button
               type="button"
               size="sm"
@@ -173,7 +202,7 @@ export function PublishDialog({
             >
               {copied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
             </Button>
-            {rawSlugChanged ? (
+            {editingSlug && rawSlugChanged ? (
               <>
                 <Button
                   type="button"
@@ -181,7 +210,7 @@ export function PublishDialog({
                   variant="ghost"
                   className="shrink-0"
                   disabled={slugSaveState === "saving"}
-                  onClick={resetSlug}
+                  onClick={closeSlugEditor}
                   aria-label={t("cancel")}
                   title={t("cancel")}
                 >
@@ -201,6 +230,30 @@ export function PublishDialog({
                   <SaveIcon className="size-4" />
                 </Button>
               </>
+            ) : editingSlug && hasBeenPublished ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="shrink-0"
+                onClick={closeSlugEditor}
+                aria-label={t("cancel")}
+                title={t("cancel")}
+              >
+                <RotateCcwIcon className="size-4" />
+              </Button>
+            ) : !editingSlug ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="shrink-0"
+                onClick={() => setEditingSlug(true)}
+                aria-label={t("slugEdit")}
+                title={t("slugEdit")}
+              >
+                <PencilIcon className="size-4" />
+              </Button>
             ) : null}
           </div>
           <div id="publish-dialog-slug-status">
@@ -214,7 +267,7 @@ export function PublishDialog({
               </p>
             ) : (
               <SlugStatusIndicator
-                status={rawSlugChanged ? slugStatus : "idle"}
+                status={editingSlug && (!hasBeenPublished || rawSlugChanged) ? slugStatus : "idle"}
                 t={t}
               />
             )}
@@ -264,7 +317,7 @@ export function PublishDialog({
           >
             {t("cancel")}
           </Button>
-          <Button type="button" onClick={confirm} loading={publishing}>
+          <Button type="button" onClick={confirm} loading={publishing} disabled={publishDisabled}>
             {t("confirm")}
           </Button>
         </DialogFooter>

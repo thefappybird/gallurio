@@ -26,6 +26,10 @@ const paymentSchema = new Schema(
     createdAt: { type: Date, required: true },
     paidAt: { type: Date, default: null },
     title: { type: String, default: "" },
+    // How this specific client payment was collected. Keep this on the payment
+    // itself (rather than only its derived Transaction) so edits and receipts
+    // retain the original method.
+    method: { type: String, enum: ["cash", "card", "remit"], default: "cash" },
   },
   { _id: false }
 );

@@ -140,8 +140,11 @@ export function BookingsToolbar({
 
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-2">
-      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative w-full sm:w-80">
+      <div
+        data-testid="booking-filter-controls"
+        className="flex min-w-0 flex-1 flex-wrap items-center gap-3"
+      >
+        <div className="relative w-full min-[420px]:w-64 sm:w-80">
           <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
@@ -157,7 +160,7 @@ export function BookingsToolbar({
           value={status}
           onValueChange={(v) => pushParams({ status: !v || v === ALL ? null : v })}
         >
-          <SelectTrigger className="h-8 w-full rounded-lg border-border px-2.5 font-normal hover:bg-muted hover:text-foreground data-[popup-open]:bg-muted data-[popup-open]:text-foreground sm:w-48">
+          <SelectTrigger className="h-8 w-full shrink-0 rounded-lg border-border px-2.5 font-normal hover:bg-muted hover:text-foreground data-[popup-open]:bg-muted data-[popup-open]:text-foreground min-[360px]:w-40 sm:w-48">
             <SelectValue>
               {(value: string) =>
                 !value || value === ALL ? (
@@ -199,29 +202,30 @@ export function BookingsToolbar({
           />
         ) : null}
 
-        <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
-          <Switch
-            checked={includeCancelled}
-            onCheckedChange={(v: boolean) =>
-              pushParams({ includeCancelled: v ? "1" : null })
-            }
-          />
-          <span className="select-none text-muted-foreground">
-            {t("showCancelled")}
-          </span>
-        </label>
-
-        <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
-          <Switch
-            checked={showPast}
-            onCheckedChange={(v: boolean) =>
-              pushParams({ showPast: v ? "1" : null })
-            }
-          />
-          <span className="select-none text-muted-foreground">
-            {t("showPast")}
-          </span>
-        </label>
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+          <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
+            <Switch
+              checked={includeCancelled}
+              onCheckedChange={(v: boolean) =>
+                pushParams({ includeCancelled: v ? "1" : null })
+              }
+            />
+            <span className="select-none text-muted-foreground">
+              {t("showCancelled")}
+            </span>
+          </label>
+          <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
+            <Switch
+              checked={showPast}
+              onCheckedChange={(v: boolean) =>
+                pushParams({ showPast: v ? "1" : null })
+              }
+            />
+            <span className="select-none text-muted-foreground">
+              {t("showPast")}
+            </span>
+          </label>
+        </div>
       </div>
 
       <div className="flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto">

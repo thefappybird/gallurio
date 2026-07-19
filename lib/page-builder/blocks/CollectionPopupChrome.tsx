@@ -22,11 +22,12 @@ function radiusToCss(r?: string): string | undefined {
  * var(--pf-color-X) with no literal fallback resolves to nothing — an invalid
  * declared value — and the shell renders fully transparent. The literal
  * fallback (2nd var() arg) makes it resilient regardless of portal scope.
- * Default token is "primary" (not "background") per product requirement.
+ * Default token is the theme background, matching the editor's effective
+ * background swatch when no explicit popup color has been selected.
  */
 export function resolvePopupBackground(token: PortfolioCollectionsPopupConfig["backgroundColor"]): string {
   const resolved = token ? colorTokenToVar(token) : undefined;
-  return resolved ?? "var(--pf-color-primary, #111111)";
+  return resolved ?? "var(--pf-color-bg, #ffffff)";
 }
 
 export function CollectionPopupChrome({
@@ -61,10 +62,10 @@ export function CollectionPopupChrome({
   const closeBorderW = config.closeButtonBorderWidth ?? 1;
   const closeBorderColor = config.closeButtonBorderColorToken
     ? colorTokenToVar(config.closeButtonBorderColorToken)
-    : "var(--pf-color-foreground, rgba(0,0,0,0.2))";
+    : "var(--pf-color-fg, rgba(0,0,0,0.2))";
   const closeBg = config.closeButtonBgColorToken
     ? colorTokenToVar(config.closeButtonBgColorToken)
-    : "var(--pf-color-surface, #fff)";
+    : "var(--pf-color-bg, #fff)";
 
   const commonShell: React.CSSProperties = {
     backgroundColor: bg,
@@ -119,7 +120,7 @@ export function CollectionPopupChrome({
           borderStyle: "solid",
           borderColor: closeBorderColor,
           background: closeBg,
-          color: "var(--pf-color-foreground, #111)",
+          color: "var(--pf-color-fg, #111)",
           opacity: (config.closeButtonOpacity ?? 100) / 100,
           cursor: "pointer",
         }}

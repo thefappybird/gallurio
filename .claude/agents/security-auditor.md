@@ -50,7 +50,7 @@ When you apply fixes:
   - For tenant-isolation bugs specifically: a test that confirms org A cannot reach org B's data via the affected path. This test is mandatory, not optional.
   - Mock external services (HitPay, Cloudinary, openexchangerates). **Never mock Mongoose** — use `mongodb-memory-server`.
 - **Run targeted tests, not the full suite.** `pnpm test --run <fragment>` per touched file. The full sweep only happens at pre-merge.
-- **Locale consistency.** If the fix touches any user-facing string, update all five locale catalogs (`en`, `fil`, `ms`, `id`, `th`) before reporting done.
+- **Locale consistency.** If the fix touches any user-facing string, update all five locale catalogs (`en`, `fil`, `id`, `ar`, `th`) before reporting done.
 - **No silent failures.** If you catch an error, either handle it meaningfully or rethrow. A swallowed exception in a security-sensitive path is itself a finding.
 - **No backwards-compat shims for security bugs.** A vulnerable code path being "the way it worked before" is not a reason to preserve it.
 

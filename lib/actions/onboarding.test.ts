@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi, type MockedFunction } from "vitest";
 import mongoose from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { User, Workspace } from "@/lib/db/models";
+import { User, Workspace, BetaProgram } from "@/lib/db/models";
 import { Team } from "@/lib/db/models/team";
 
 // ---------------------------------------------------------------------------
@@ -399,6 +399,47 @@ describe("activateBetaTesterAction", () => {
     const user = await User.findOne({ workosUserId: "wos_user_001" }).lean();
     expect(user!.onboardingStep).toBe("done");
   });
+
+  it("refuses with beta_program_closed when the global beta window is closed", async () => {
+    process.env.BETA_TESTER_ENABLED = "true";
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+    await BetaProgram.create({ closedAt: new Date(), closedByUserId: "wos_operator" });
+
+    const result = await activateBetaTesterAction();
+    expect(result.error).toBe("beta_program_closed");
+    expect(result.ok).toBeUndefined();
+  });
+
+  it("stamps User.betaParticipation.recordedAt/source on first activation", async () => {
+    process.env.BETA_TESTER_ENABLED = "true";
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+
+    await activateBetaTesterAction();
+
+    const user = await User.findOne({ workosUserId: "wos_user_001" }).lean();
+    expect(user!.betaParticipation?.recordedAt).not.toBeNull();
+    expect(user!.betaParticipation?.source).toBe("onboarding");
+  });
+
+  it("does not re-stamp betaParticipation.recordedAt on a repeat activation", async () => {
+    process.env.BETA_TESTER_ENABLED = "true";
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+    await businessStepAction(validBusinessInput);
+
+    await activateBetaTesterAction();
+    const firstStamp = (
+      await User.findOne({ workosUserId: "wos_user_001" }).lean()
+    )!.betaParticipation!.recordedAt;
+
+    await activateBetaTesterAction();
+    const secondStamp = (
+      await User.findOne({ workosUserId: "wos_user_001" }).lean()
+    )!.betaParticipation!.recordedAt;
+
+    expect(secondStamp?.getTime()).toBe(firstStamp?.getTime());
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -408,7 +449,7 @@ describe("activateBetaTesterAction", () => {
 describe("completeOnboardingAction", () => {
   it("rejects unauthenticated requests", async () => {
     mockGetAuthUser.mockResolvedValue(null);
-    const result = await completeOnboardingAction({ seedSampleData: false });
+    const result = await completeOnboardingAction();
     expect(result.error).toBe("not_authenticated");
   });
 
@@ -419,7 +460,7 @@ describe("completeOnboardingAction", () => {
     mockGetAuthUser.mockResolvedValue(makeAuthUser());
     await businessStepAction(validBusinessInput);
 
-    await completeOnboardingAction({ seedSampleData: false });
+    await completeOnboardingAction();
 
     const workspace = await Workspace.findOne({ ownerUserId: "wos_user_001" }).lean();
     expect(workspace!.onboardingCompletedAt).not.toBeNull();
@@ -431,16 +472,6 @@ describe("completeOnboardingAction", () => {
     expect(mockRedirect).toHaveBeenCalledWith("/dashboard");
   });
 
-  it("skips sample data when seedSampleData is false", async () => {
-    mockGetAuthUser.mockResolvedValue(makeAuthUser());
-    await businessStepAction(validBusinessInput);
-    await completeOnboardingAction({ seedSampleData: false });
-
-    const { Client } = await import("@/lib/db/models");
-    const clientCount = await Client.countDocuments();
-    expect(clientCount).toBe(0);
-  });
-
   it("seeds sample clients when seedSampleData is true in development", async () => {
     mockGetAuthUser.mockResolvedValue(makeAuthUser());
     await businessStepAction(validBusinessInput);
@@ -449,7 +480,7 @@ describe("completeOnboardingAction", () => {
     // @ts-expect-error — NODE_ENV is read-only in the types but writable at runtime
     process.env.NODE_ENV = "development";
     try {
-      await completeOnboardingAction({ seedSampleData: true });
+      await completeOnboardingAction();
     } finally {
       // @ts-expect-error — restore
       process.env.NODE_ENV = prev;
@@ -457,14 +488,14 @@ describe("completeOnboardingAction", () => {
 
     const { Client } = await import("@/lib/db/models");
     const clientCount = await Client.countDocuments();
-    expect(clientCount).toBeGreaterThan(0);
+    expect(clientCount).toBe(0);
   });
 
   it("ignores seedSampleData outside development (defense in depth against a crafted request)", async () => {
     mockGetAuthUser.mockResolvedValue(makeAuthUser());
     await businessStepAction(validBusinessInput);
     // Test env's NODE_ENV is "test", not "development" — the gate should block seeding.
-    await completeOnboardingAction({ seedSampleData: true });
+    await completeOnboardingAction();
 
     const { Client } = await import("@/lib/db/models");
     const clientCount = await Client.countDocuments();
@@ -552,5 +583,38 @@ describe("reconcileLemonSqueezySubscription", () => {
     // This safety-net path is a promotion path too — must mark everSubscribed
     // just like the webhook's own upsert does, or a later lapse won't gate.
     expect(afterC!.everSubscribed).toBe(true);
+  });
+
+  it("refuses to promote when the workspace exceeds the resolved tier's team cap (shared snapshot helper's team-cap guard)", async () => {
+    const wsD = await Workspace.create({
+      ownerUserId: "wos_user_004",
+      name: "Workspace D",
+      slug: "workspace-d",
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    const { TEAM_COLOR_PALETTE } = await import("@/lib/db/models/team");
+    for (let i = 0; i < 20; i++) {
+      await Team.create({
+        workspaceId: wsD._id,
+        name: `Team ${i + 1}`,
+        color: TEAM_COLOR_PALETTE[i % TEAM_COLOR_PALETTE.length],
+        isDefault: i === 0,
+        memberCount: 0,
+        createdByWorkosUserId: "wos_user_004",
+      });
+    }
+
+    mockGetAuthUser.mockResolvedValue(makeAuthUser("wos_user_004"));
+    mockListActiveSubscriptionsForEmail.mockResolvedValue([makeSub("sub_over_cap_for_d")]);
+
+    await reconcileLemonSqueezySubscription(wsD._id.toString());
+
+    const afterD = await Workspace.findById(wsD._id).lean();
+    expect(afterD!.plan).toBe("free");
+    expect(afterD!.everSubscribed).toBe(false);
   });
 });

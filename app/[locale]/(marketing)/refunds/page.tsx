@@ -32,11 +32,13 @@ export default async function RefundsPage({ params }: Props) {
       <LegalSection title={t("betaPeriod.title")}>
         <p>{t("betaPeriod.body1")}</p>
         <p>{t("betaPeriod.body2")}</p>
+        <p>{t("betaPeriod.body3")}</p>
       </LegalSection>
 
       <LegalSection title={t("subscriptions.title")}>
         <p>{t("subscriptions.body1")}</p>
         <p>{t("subscriptions.body2")}</p>
+        <p>{t("subscriptions.body3")}</p>
       </LegalSection>
 
       <LegalSection title={t("refundRequests.title")}>

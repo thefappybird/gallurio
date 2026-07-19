@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { SocialLinks } from "../_components/social-links";
 
 const SUPPORT_EMAIL = "support@gallurio.com";
 
@@ -18,6 +19,7 @@ export default async function ContactPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("marketing.contact");
+  const socialLinks = await SocialLinks();
 
   const supportTopics = [
     t("supportTopics.item1"),
@@ -72,8 +74,7 @@ export default async function ContactPage({ params }: Props) {
         </h2>
         <div className="mt-3 space-y-1 text-base leading-7 text-muted-foreground">
           <p>Gallurio</p>
-          <p>{t("businessInfo.legalNamePlaceholder")}</p>
-          <p>{t("businessInfo.addressPlaceholder")}</p>
+          <p>{t("businessInfo.body")}</p>
           <p>
             {t("businessInfo.emailLabel")}{" "}
             <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand hover:underline">
@@ -81,6 +82,13 @@ export default async function ContactPage({ params }: Props) {
             </a>
           </p>
         </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-heading text-xl font-semibold tracking-tight">
+          {t("social.title")}
+        </h2>
+        <div className="mt-3">{socialLinks}</div>
       </section>
     </article>
   );

@@ -6,10 +6,12 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Invitation } from "@/lib/db/models/Invitation";
 import { User } from "@/lib/db/models/User";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
+import { Team } from "@/lib/db/models/team";
 import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { signOAuthState } from "@/lib/auth/oauthState";
 import { authCookieSecure } from "@/lib/auth/cookies";
+import { sendNotification } from "@/lib/notifications/send";
 import mongoose from "mongoose";
 
 // Runtime must be Node — uses crypto + Mongoose transactions.
@@ -20,7 +22,19 @@ function sha256Hex(raw: string): string {
 }
 
 function localizedUrl(req: NextRequest, path: string): string {
-  const origin = req.nextUrl.origin;
+  // The request may arrive through a tunnel or reverse proxy whose upstream
+  // host is localhost. Invite flows must always redirect to the externally
+  // reachable app origin, not that internal hop.
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  let origin = req.nextUrl.origin;
+  if (configuredAppUrl) {
+    try {
+      origin = new URL(configuredAppUrl).origin;
+    } catch {
+      // Environment validation catches malformed production values; keep the
+      // request origin as a safe development fallback.
+    }
+  }
   // Default locale for error/redirect flows — the invite email link carries no
   // locale segment, so we land on the root invite path and default to "en".
   return `${origin}/en${path}`;
@@ -53,6 +67,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       role: 1,
       teamIds: 1,
       leadOnTeamIds: 1,
+      invitedByWorkosUserId: 1,
       status: 1,
       expiresAt: 1,
     })
@@ -67,7 +82,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (invitation.status !== "pending") {
     const errorParam =
-      invitation.status === "accepted" ? "already_accepted" : "invalid";
+      invitation.status === "accepted"
+        ? "already_accepted"
+        : invitation.status === "revoked"
+          ? "revoked"
+          : invitation.status === "expired"
+            ? "expired"
+            : "invalid";
     return NextResponse.redirect(
       new URL(localizedUrl(req, `/invite/accept?error=${errorParam}`)),
     );
@@ -128,6 +149,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Transactional accept — idempotent on duplicate membership (11000).
   const session = await mongoose.startSession();
+  let acceptedNow = false;
   try {
     await session.withTransaction(async () => {
       // Mark invitation accepted.
@@ -141,6 +163,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
       // If another concurrent accept already consumed this token, abort.
       if (!updated) throw new Error("ALREADY_ACCEPTED");
+      acceptedNow = true;
 
       // Ensure the User doc exists (JIT-provision handles first sign-up).
       const user = await User.findOneAndUpdate(
@@ -177,9 +200,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
       // Create TeamMembership rows — skip any that already exist.
       for (const teamId of teamIds) {
-        const isLead = leadOnTeamIds.some(
+        const requestedLead = leadOnTeamIds.some(
           (lid) => String(lid) === String(teamId),
         );
+        // A pending invite can reserve a lead slot, but an owner may have
+        // assigned somebody else before acceptance. Fall back safely to a
+        // member instead of creating a second lead.
+        const existingLead = requestedLead
+          ? await TeamMembership.exists({ workspaceId, teamId, role: "lead" }).session(session)
+          : null;
+        const isLead = requestedLead && !existingLead;
         try {
           await TeamMembership.create(
             [
@@ -218,6 +248,41 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
   } finally {
     await session.endSession();
+  }
+
+  // Notify the person who sent this invitation only after the transaction has
+  // committed. One notification represents one accepted invite, even when it
+  // grants membership to multiple teams.
+  if (acceptedNow && invitation.invitedByWorkosUserId && teamIds[0]) {
+    const [inviter, team] = await Promise.all([
+      User.findOne({ workosUserId: invitation.invitedByWorkosUserId })
+        .select({ workosUserId: 1, email: 1, name: 1 })
+        .lean(),
+      Team.findOne({ _id: teamIds[0], workspaceId }).select({ name: 1 }).lean(),
+    ]);
+    if (inviter) {
+      await sendNotification({
+        workspaceId: String(workspaceId),
+        recipients: [{
+          workosUserId: inviter.workosUserId,
+          email: inviter.email,
+          name: inviter.name || undefined,
+        }],
+        type: "team.invite_accepted",
+        entityId: String(teamIds[0]),
+        entityType: "team",
+        triggeredByWorkosUserId: authUser.workosUserId,
+        locale: "en",
+        vars: {
+          memberName: authUser.name || authUser.email,
+          memberEmail: authUser.email,
+          role: invitation.role ?? "staff",
+          teamName: team?.name ?? "your team",
+        },
+      }).catch((err) => {
+        console.error("[invite/accept] sendNotification (team.invite_accepted) failed:", err);
+      });
+    }
   }
 
   // Set active workspace and redirect to dashboard.

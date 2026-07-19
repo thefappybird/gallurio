@@ -182,6 +182,15 @@ describe("ClientsPageClient", () => {
     expect(within(modal).getByText("John Dela Cruz")).toBeInTheDocument();
   });
 
+  it("adds the selected client to the URL when opening its detail modal", async () => {
+    renderWithProviders(<ClientsPageClient {...build()} />);
+
+    const viewItems = await screen.findAllByText("View");
+    fireEvent.click(viewItems[0]);
+
+    expect(routerPush).toHaveBeenCalledWith("/clients?client=c-inactive");
+  });
+
   it("reactivation calls server action and refreshes the list on success", async () => {
     reactivateMock.mockResolvedValue({ ok: true });
     renderWithProviders(<ClientsPageClient {...build()} />);

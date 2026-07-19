@@ -79,13 +79,14 @@
       "title": "Harga sederhana",
       "subtitle": "1 bulan Pro, gratis. Lalu satu paket, bulanan atau tahunan.",
       "viewFullPricing": "Lihat harga lengkap",
-      "disclaimer": "Harga ditagih oleh Lemon Squeezy dan ditampilkan dalam mata uang lokal Anda saat checkout.",
+      "disclaimer": "Paket berbayar belum tersedia. Harga dan ketentuan penagihan akan ditampilkan dengan jelas sebelum checkout setelah diluncurkan.",
       "cadence": {
         "monthly": "Bulanan",
         "yearly": "Tahunan — hemat 2 bulan"
       },
       "pro": {
         "badge": "1 bulan gratis",
+        "comingSoon": "Segera hadir",
         "name": "Pro",
         "priceSuffixMonthly": "/bln",
         "priceSuffixYearly": "/thn",
@@ -108,6 +109,7 @@
       },
       "pro": {
         "badge": "Direkomendasikan",
+        "comingSoon": "Segera hadir",
         "name": "Pro",
         "freeMonth": "Mulai dengan 1 bulan gratis, tanpa kartu diperlukan.",
         "description": "Semua yang Anda butuhkan untuk menjalankan booking, klien, galeri, dan halaman publik Anda.",
@@ -123,7 +125,7 @@
         "cta": "Mulai bulan gratis saya"
       },
       "billingNotice": {
-        "body1": "Pembayaran diproses secara aman oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy menangani pemrosesan pembayaran, perhitungan pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body1": "Langganan Pro berbayar belum tersedia. Ketika diluncurkan, harga, ketentuan penagihan, dan detail pembayaran akan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian apa pun.",
         "body2": "Tidak ada biaya yang dikumpulkan selama bulan gratis pertama Anda."
       },
       "pricingTransparency": {
@@ -137,7 +139,7 @@
         "description": "Baca ketentuan yang mengatur akses ke dan penggunaan Gallurio."
       },
       "title": "Ketentuan Layanan",
-      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
       "intro1": "Ketentuan Layanan ini mengatur akses Anda ke dan penggunaan Gallurio, termasuk situs web, aplikasi, alat portfolio, fitur permintaan booking, dan layanan terkait kami.",
       "intro2": "Dengan menggunakan Gallurio, Anda menyetujui Ketentuan ini. Jika Anda tidak setuju, Anda tidak boleh menggunakan layanan ini.",
       "about": {
@@ -184,7 +186,7 @@
       "subscriptions": {
         "title": "8. Langganan dan Pembayaran",
         "body1": "Gallurio mencakup langganan Pro berbayar, ditagih bulanan atau tahunan. Workspace baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu diperlukan.",
-        "body2": "Setelah bulan gratis berakhir, melanjutkan penggunaan Gallurio memerlukan langganan Pro yang aktif. Penagihan diproses oleh Lemon Squeezy, Merchant of Record kami. Lemon Squeezy dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan alur kerja pengembalian dana yang berlaku.",
+        "body2": "Setelah bulan gratis berakhir, melanjutkan penggunaan Gallurio memerlukan langganan Pro yang aktif. Langganan berbayar belum tersedia; ketentuan penagihan dan detail pembayaran akan ditampilkan dengan jelas sebelum ada biaya apa pun setelah diluncurkan.",
         "body3": "Pengguna akan diperlihatkan harga dan ketentuan penagihan yang berlaku sebelum menyelesaikan pembelian.",
         "body4": "Jika langganan tidak diperpanjang atau pembayaran gagal, akses ke workspace dibatasi hingga langganan dipulihkan. Data akun tetap disimpan; halaman publik yang dipublikasikan dapat dinonaktifkan setelah periode panjang tanpa pembayaran, dan semuanya dipulihkan setelah berlangganan kembali."
       },
@@ -227,7 +229,7 @@
         "description": "Pelajari bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi."
       },
       "title": "Kebijakan Privasi",
-      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
       "intro": "Kebijakan Privasi ini menjelaskan bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi ketika pengguna mengakses situs web, aplikasi, dan layanan terkait.",
       "collect": {
         "title": "1. Informasi yang Kami Kumpulkan",
@@ -249,7 +251,7 @@
         },
         "payment": {
           "title": "Informasi Pembayaran",
-          "body": "Pembayaran untuk langganan Gallurio Pro diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran. Lemon Squeezy dapat mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice sesuai dengan ketentuan dan praktik privasinya sendiri."
+          "body": "Langganan Pro berbayar belum tersedia. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran; setelah pembayaran diluncurkan, bagian ini akan mencantumkan nama pemroses pembayaran dan menjelaskan bagaimana pihaknya mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice."
         }
       },
       "useOfInfo": {
@@ -312,19 +314,21 @@
     "refunds": {
       "metadata": {
         "title": "Kebijakan Pengembalian Dana — Gallurio",
-        "description": "Pelajari bagaimana Gallurio menangani pembatalan, pengembalian dana, dan pemrosesan pembayaran Lemon Squeezy."
+        "description": "Pelajari bagaimana Gallurio menangani pembatalan dan pengembalian dana."
       },
       "title": "Kebijakan Pengembalian Dana",
-      "effectiveDate": "Tanggal Berlaku: [Bulan Tanggal, Tahun]",
+      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
       "betaPeriod": {
         "title": "1. Uji Coba Gratis",
         "body1": "Workspace Gallurio baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu diperlukan. Tidak ada pembayaran nyata yang dikumpulkan selama uji coba ini, sehingga tidak ada pengembalian dana yang berlaku untuknya.",
-        "body2": "Jika Anda melanjutkan dengan langganan Pro berbayar setelah uji coba, harga dan ketentuan penagihan yang ditampilkan saat checkout berlaku, dan Kebijakan Pengembalian Dana ini mengatur setiap pembayaran yang dilakukan."
+        "body2": "Jika Anda melanjutkan dengan langganan Pro berbayar setelah uji coba, harga dan ketentuan penagihan yang ditampilkan saat checkout berlaku, dan Kebijakan Pengembalian Dana ini mengatur setiap pembayaran yang dilakukan.",
+        "body3": "Peserta beta terverifikasi juga dapat menerima hibah promo Pro dua bulan yang terpisah. Promo ini dapat ditukarkan satu kali per peserta beta terverifikasi dan berakhir dua bulan setelah penukaran; seperti uji coba gratis, ini adalah hibah promosi, bukan pembayaran, sehingga tidak ada pengembalian dana yang berlaku untuknya."
       },
       "subscriptions": {
         "title": "2. Langganan",
         "body1": "Langganan Gallurio Pro ditagih bulanan, tahunan, atau sesuai periode penagihan yang ditampilkan saat checkout.",
-        "body2": "Pengguna dapat membatalkan langganan mereka untuk mencegah biaya perpanjangan di masa depan. Setelah pembatalan, akses dapat berlanjut hingga akhir periode penagihan saat ini kecuali dinyatakan lain."
+        "body2": "Pengguna dapat membatalkan langganan mereka untuk mencegah biaya perpanjangan di masa depan. Setelah pembatalan, akses dapat berlanjut hingga akhir periode penagihan saat ini kecuali dinyatakan lain.",
+        "body3": "Ketika langganan berakhir karena kegagalan pembayaran atau non-pembayaran terminal, Gallurio segera mengirim pemberitahuan kedaluwarsa, pengingat data tersimpan setelah 30 hari, dan peringatan akhir halaman publik setelah 51 hari, lalu membatalkan publikasi halaman publik setelah 58 hari. Data workspace, CRM, dan draf tetap disimpan sehingga semuanya dapat dipulihkan saat berlangganan kembali."
       },
       "refundRequests": {
         "title": "3. Permintaan Pengembalian Dana",
@@ -337,13 +341,13 @@
         "item5": "Masalah teknis",
         "item6": "Biaya ganda",
         "item7": "Hukum perlindungan konsumen yang berlaku",
-        "item8": "Proses pembayaran dan pengembalian dana Lemon Squeezy",
+        "item8": "Proses pengembalian dana dari pemroses pembayaran",
         "outro": "Mengirimkan permintaan pengembalian dana tidak menjamin bahwa pengembalian dana akan disetujui."
       },
       "merchantOfRecord": {
-        "title": "4. Lemon Squeezy sebagai Merchant of Record",
-        "body1": "Pembayaran untuk Gallurio dapat diproses oleh Lemon Squeezy, Merchant of Record Gallurio. Lemon Squeezy dapat menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
-        "body2": "Jika pengguna membeli langganan Gallurio melalui Lemon Squeezy, laporan penagihan mereka mungkin menampilkan Lemon Squeezy atau deskriptor penagihan Lemon Squeezy terkait."
+        "title": "4. Pemrosesan Pembayaran",
+        "body1": "Langganan berbayar belum tersedia. Setelah diluncurkan, Gallurio akan mencantumkan nama pemroses pembayarannya di sini dan menjelaskan bagaimana pihaknya menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
+        "body2": "Setelah pembayaran diluncurkan, laporan penagihan pengguna mungkin menampilkan nama pemroses pembayaran yang dipilih atau deskriptor penagihan terkait."
       },
       "nonRefundable": {
         "title": "5. Situasi yang Tidak Dapat Dikembalikan Dananya",
@@ -400,9 +404,15 @@
       },
       "businessInfo": {
         "title": "Informasi Bisnis",
-        "legalNamePlaceholder": "[Nama Resmi Bisnis, jika berlaku]",
-        "addressPlaceholder": "[Alamat Bisnis atau Negara Terdaftar, jika berlaku]",
+        "body": "Gallurio adalah startup kecil dan independen. Kami belum memiliki nama badan hukum atau alamat bisnis terdaftar untuk dicantumkan — untuk saat ini, cara terbaik menghubungi kami adalah melalui email.",
         "emailLabel": "Email:"
+      },
+      "social": {
+        "title": "Ikuti Kami",
+        "instagram": "Ikuti kami di Instagram",
+        "facebook": "Ikuti kami di Facebook",
+        "reddit": "Gabung dengan kami di Reddit",
+        "linkedin": "Ikuti kami di LinkedIn"
       }
     }
   },
@@ -481,6 +491,7 @@
       "codeLabel": "Kode verifikasi",
       "submit": "Verifikasi email",
       "resend": "Kirim ulang kode",
+      "expiresIn": "Kode akan kedaluwarsa dalam {time}.",
       "resendSent": "Kode dikirim ulang — periksa kotak masuk Anda."
     },
     "fields": {
@@ -507,6 +518,11 @@
     }
   },
   "app": {
+    "betaEndingBanner": {
+      "title": "Akses beta akan segera berakhir",
+      "message": "Terima kasih telah menjadi bagian dari Gallurio Beta. Akses beta Anda berakhir dalam minggu depan, setelah itu ruang kerja Anda akan kembali ke paket Free. Untuk terus menikmati fitur Pro, gunakan kode <promoCode>{code}</promoCode> untuk mengklaim dua bulan akses Pro gratis.",
+      "dismiss": "Tutup untuk sesi ini"
+    },
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Selamat datang kembali, {name}",
@@ -518,7 +534,7 @@
       "dateFilter": {
         "label": "Rentang tanggal",
         "filter": "Filter",
-        "day": "Harian",
+        "week": "Mingguan",
         "month": "Bulanan",
         "year": "Tahunan",
         "custom": "Kustom",
@@ -537,8 +553,8 @@
         "status": "{page} dari {total}"
       },
       "kpi": {
-        "revenueThisMonth": "Pendapatan bulan ini",
-        "activeBookings": "Pemesanan aktif bulan ini",
+        "revenueThisMonth": "Pendapatan terkumpul",
+        "activeBookings": "Pemesanan terjadwal",
         "newInquiries": "Pertanyaan baru",
         "outstandingBalance": "Saldo tertunggak"
       },
@@ -552,7 +568,8 @@
         "eventTypes": "Rincian jenis acara",
         "topClients": "Klien teratas berdasarkan pengeluaran",
         "teamPerformance": "Kinerja tim",
-        "bookingsPerTeam": "Pemesanan per tim"
+        "bookingsPerTeam": "Pemesanan per tim",
+        "operations": "Operasi"
       },
       "quickAdd": {
         "title": "Tambah cepat",
@@ -561,6 +578,7 @@
         "inquiry": "Lihat pertanyaan"
       },
       "empty": "Belum ada apa-apa di sini.",
+      "filteredEmpty": "Tidak ada data yang cocok dengan rentang tanggal yang dipilih.",
       "viewAll": "Lihat semua",
       "portfolio": {
         "analyticsSoon": "Analitik portofolio segera hadir.",
@@ -585,7 +603,36 @@
         "inquiryInsights": "Wawasan pertanyaan",
         "inquiryToBooking": "Pertanyaan → pemesanan",
         "bookedFromInquiries": "Dipesan dari pertanyaan",
-        "newClientsFromForm": "Klien baru dari formulir"
+        "newClientsFromForm": "Klien baru dari formulir",
+        "visitorDays": "Hari-pengunjung",
+        "submissionRate": "Tingkat pengiriman",
+        "bookedLeads": "Prospek dipesan",
+        "visitorsInquiriesTitle": "Pengunjung & pertanyaan dari waktu ke waktu",
+        "funnel": {
+          "title": "Corong konversi",
+          "visitorDays": "Hari-pengunjung",
+          "contactOpened": "Kontak dibuka",
+          "inquirySubmitted": "Pertanyaan dikirim",
+          "ofVisitors": "dari pengunjung",
+          "ofOpened": "dari yang dibuka",
+          "ofTotal": "dari total",
+          "collectingData": "Mengumpulkan data"
+        },
+        "pipeline": {
+          "title": "Alur pertanyaan",
+          "new": "Baru",
+          "booked": "Dipesan",
+          "archived": "Diarsipkan",
+          "total": "Total pertanyaan"
+        },
+        "demand": {
+          "title": "Profil permintaan",
+          "eventTypeMix": "Jenis acara (berdasarkan pertanyaan)",
+          "requestedMonth": "Bulan acara yang diminta",
+          "medianLeadTime": "Median waktu tenggang",
+          "days": "hari",
+          "basedOn": "berdasarkan"
+        }
       },
       "team": {
         "bookingsCount": "{count, plural, one {# pemesanan} other {# pemesanan}}"
@@ -593,6 +640,16 @@
       "showMore": "Tampilkan lebih",
       "showLess": "Tampilkan lebih sedikit",
       "hints": {
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "Total untuk bulan ini. Panah membandingkan dengan bulan lalu.",
         "calendar": "Pemesanan per hari. Filter berdasarkan tim; ketuk satu hari untuk membuka kalender di sana.",
         "eventTypes": "Bagian pemesanan menurut jenis acara.",
@@ -628,6 +685,60 @@
         "client_changed": "klien diubah",
         "payment_added": "pembayaran ditambahkan",
         "payment_updated": "pembayaran diperbarui"
+      },
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Ulang tahun",
+        "social": "Sosial",
+        "other": "Lainnya"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "Nilai dipesan vs pendapatan terkumpul",
+          "bookedValue": "Nilai dipesan",
+          "collectedRevenue": "Pendapatan terkumpul"
+        },
+        "coverage": {
+          "title": "Cakupan penagihan",
+          "asOf": "per",
+          "confirmedValue": "Nilai terkonfirmasi",
+          "confirmedHint": "Total nilai pemesanan yang terkonfirmasi",
+          "paid": "Dibayar (terkumpul)",
+          "paidHint": "Pembayaran diterima hingga saat ini",
+          "remaining": "Sisa saldo",
+          "remainingHint": "Belum tertagih",
+          "coverageText": "Cakupan: {pct}% dari nilai terkonfirmasi telah tertagih"
+        },
+        "heatmap": {
+          "previous": "Tanggal heatmap sebelumnya",
+          "today": "Hari ini",
+          "next": "Tanggal heatmap berikutnya",
+          "title": "Peta panas jam dipesan",
+          "weekOf": "Minggu",
+          "bookedHours": "Jam dipesan",
+          "weekdays": [
+            "Sen",
+            "Sel",
+            "Rab",
+            "Kam",
+            "Jum",
+            "Sab",
+            "Min"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "Campuran acara dari waktu ke waktu"
+        }
       }
     },
     "calendar": {
@@ -762,6 +873,7 @@
       },
       "table": {
         "empty": "Tidak ada pemesanan yang sesuai dengan filter Anda.",
+        "listEmpty": "Belum ada pemesanan.",
         "past": "Lalu",
         "showPast": "Tampilkan yang lalu",
         "hidePast": "Sembunyikan yang lalu",
@@ -1011,6 +1123,10 @@
         "title": "Judul",
         "price": "Harga",
         "status": "Status",
+        "method": "Metode",
+        "cash": "Tunai",
+        "card": "Kartu",
+        "remit": "Transfer",
         "paid": "Dibayar",
         "unpaid": "Belum dibayar",
         "paidOn": "Dibayar pada {date}",
@@ -1242,6 +1358,7 @@
           "paused": "Dijeda",
           "trialing": "Masa percobaan"
         },
+        "notYetAvailable": "Langganan berbayar belum tersedia. Periksa kembali nanti, atau gunakan kode promo di bawah jika Anda memilikinya.",
         "manageSection": "Kelola langganan",
         "manageDescription": "Perbarui metode pembayaran, lihat faktur, atau batalkan langganan Anda langsung melalui Lemon Squeezy.",
         "manageButton": "Kelola langganan",
@@ -1280,12 +1397,12 @@
         "logoHint": "Ditampilkan pada faktur yang Anda hasilkan.",
         "logoLabel": "Unggah logo",
         "logoUploading": "Mengunggah…",
-        "logoRequirements": "PNG, JPEG, WebP atau SVG · maks 2 MB · hingga 2000 × 2000 px",
+        "logoRequirements": "PNG, JPEG, WebP atau SVG - maks 250 KB - persegi hingga 256 x 256 px",
         "logoRemove": "Hapus",
         "logoErrors": {
           "type": "Hanya file PNG, JPEG, WebP atau SVG yang diterima.",
-          "size": "Ukuran file harus 2 MB atau lebih kecil.",
-          "dimensions": "Gambar harus 2000 × 2000 px atau lebih kecil.",
+          "size": "Ukuran file harus 250 KB atau lebih kecil.",
+          "dimensions": "Logo harus persegi dan 256 x 256 px atau lebih kecil.",
           "image": "Tidak dapat membaca gambar. Coba file lain.",
           "upload": "Unggah gagal. Silakan coba lagi."
         }
@@ -1298,9 +1415,9 @@
         "languages": {
           "en": "English",
           "fil": "Filipino",
-          "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
-          "ar": "العربية"
+          "ar": "العربية",
+          "th": "ภาษาไทย"
         },
         "timeFormatSection": "Format Waktu",
         "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
@@ -1394,6 +1511,7 @@
           "color": "Warna",
           "name": "Tim",
           "members": "Anggota",
+          "monthlyAverage": "Rata-rata Bulanan",
           "actions": "Tindakan"
         },
         "details": "Detail",
@@ -1436,6 +1554,7 @@
       },
       "team": {
         "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}",
+        "monthlyBookings": "{count, plural, one {# booking/bln} other {# booking/bln}}",
         "defaultBadge": "Default",
         "rename": "Ganti nama",
         "changeColor": "Ubah warna",
@@ -1460,7 +1579,20 @@
         "leadOnlyOnePerTeam": "Setiap tim hanya boleh memiliki satu lead.",
         "removeFromTeam": "Hapus",
         "teamFull": "Tim ini sudah penuh.",
-        "close": "Tutup"
+        "close": "Tutup",
+        "removeMemberFlow": {
+          "confirmTitle": "Hapus {name} dari {team}?",
+          "confirmDescription": "Mereka akan kehilangan akses ke kalender dan pemesanan tim ini.",
+          "confirmButton": "Hapus dari tim",
+          "removeFromTeamAndWorkspace": "Hapus dari tim + ruang kerja",
+          "otherTeamsBlocked": "Anggota ini juga berada di tim lain. Hapus dari tim tersebut terlebih dahulu.",
+          "removing": "Menghapus…",
+          "workspacePromptTitle": "Hapus juga {name} dari ruang kerja?",
+          "workspacePromptDescription": "Mereka akan kehilangan akses ke semua tim dan ruang kerja sepenuhnya. Tindakan ini tidak dapat dibatalkan.",
+          "dontAskAgain": "Jangan tanya lagi",
+          "removeFromWorkspaceButton": "Hapus dari ruang kerja",
+          "keepInWorkspaceButton": "Pertahankan di ruang kerja"
+        }
       },
       "upsell": {
         "atCapTitle": "Anda telah mencapai batas tim Anda",
@@ -1497,7 +1629,8 @@
           "leadLabel": "Lead",
           "teamFull": "Penuh",
           "submit": "Kirim undangan",
-          "sending": "Mengirim…"
+          "sending": "Mengirim…",
+          "emailAlreadyRegistered": "Email ini sudah memiliki akun Gallurio. Pengiriman dinonaktifkan sampai Anda menggunakan alamat lain."
         },
         "errors": {
           "emailRequired": "Masukkan alamat email yang valid.",
@@ -1523,18 +1656,43 @@
         "empty": "Belum ada rekan kerja. Undang seseorang untuk memulai.",
         "ownerBadge": "Pemilik",
         "leadBadge": "Lead",
+        "memberBadge": "Anggota",
         "pendingBadge": "Menunggu",
         "manageTeams": "Kelola tim",
         "removeFromWorkspace": "Hapus dari ruang kerja",
         "revokeInvite": "Cabut undangan",
         "rowActionsLabel": "Tindakan untuk {name}",
+        "viewButton": "Lihat anggota",
+        "inviteCountsLabel": "Jumlah undangan",
+        "newlyAcceptedCount": "Baru {count}",
+        "pendingCount": "Tertunda {count}",
+        "description": "Semua orang yang memiliki akses ke ruang kerja ini, di semua tim.",
+        "modeLabel": "Daftar anggota",
+        "active": "Aktif",
+        "pending": "Menunggu",
+        "searchPlaceholder": "Cari nama atau email",
+        "noActiveMatches": "Tidak ada anggota yang cocok dengan pencarian Anda.",
+        "noPendingMatches": "Tidak ada undangan tertunda yang cocok dengan pencarian Anda.",
+        "noPending": "Tidak ada undangan tertunda.",
+        "moreTeams": "+{count} tim lainnya",
+        "ownerAllTeams": "Dapat mengawasi semua tim",
+        "noTeams": "Tidak berada di tim mana pun",
+        "removeFromWorkspaceLabel": "Hapus {name} dari ruang kerja",
         "removeDialog": {
           "title": "Hapus anggota?",
           "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. Pemesanan mereka tetap ada; kursi tim dibebaskan. Tindakan ini tidak dapat dibatalkan.",
           "confirm": "Hapus anggota"
         },
+        "details": {
+          "tabsLabel": "Detail anggota", "tabs": { "details": "Detail", "history": "Riwayat" },
+          "teams": "Tim", "noTeams": "Tidak ada tim", "completed": "Selesai", "workingNow": "Sedang berjalan", "future": "Mendatang",
+          "fromDate": "Dari tanggal", "toDate": "Sampai tanggal", "action": "Tindakan", "allActions": "Semua tindakan",
+          "actions": { "created": "Dibuat", "updated": "Diperbarui", "deleted": "Dihapus", "statusChanged": "Status diubah", "paymentAdded": "Pembayaran ditambahkan" },
+          "loadingHistory": "Memuat riwayat aktivitas", "loading": "Memuat…", "loadMore": "Muat lebih banyak", "noActivity": "Tidak ada aktivitas ditemukan."
+        },
         "errors": {
-          "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus."
+          "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",
+          "isTeamLead": "{name} adalah lead tim untuk setidaknya satu tim. Hapus status lead tim mereka terlebih dahulu sebelum menghapusnya."
         },
         "toasts": {
           "removed": "Anggota dihapus."
@@ -1555,7 +1713,9 @@
           "added": "Ditambahkan ke tim.",
           "removed": "Dihapus dari tim.",
           "promoted": "Dipromosikan menjadi lead.",
-          "demoted": "Diturunkan menjadi anggota."
+          "demoted": "Diturunkan menjadi anggota.",
+          "promoting": "Memindahkan lead…",
+          "demoting": "Menghapus lead…"
         }
       },
       "downgradeBlock": {
@@ -1625,6 +1785,7 @@
         "notes": "Catatan",
         "notesPlaceholder": "Catatan apa pun tentang klien ini…",
         "save": "Simpan",
+        "view": "Lihat",
         "saving": "Menyimpan…",
         "cancel": "Batal",
         "createSuccess": "Klien dibuat.",
@@ -1719,6 +1880,7 @@
       },
       "table": {
         "empty": "Belum ada pertanyaan.",
+        "filteredEmpty": "Tidak ada pertanyaan yang cocok dengan filter Anda.",
         "emptyHint": "Ketika seseorang mengisi formulir kontak portofolio Anda, permintaan mereka akan muncul di sini.",
         "viewPublicPage": "Lihat halaman publik Anda",
         "open": "Buka pertanyaan dari {name}",
@@ -1936,6 +2098,7 @@
           "slugLabel": "URL portofolio",
           "slugSuffix": ".gallurio.com",
           "slugSave": "Simpan URL",
+          "slugEdit": "Edit URL portofolio",
           "slugSaving": "Menyimpan...",
           "slugSaved": "Disimpan",
           "slugError": "Tidak dapat memperbarui URL, silakan coba lagi",
@@ -2120,6 +2283,7 @@
         },
         "controls": {
           "editorControls": "Kontrol editor",
+          "workspaceActions": "Tindakan portofolio",
           "toggleBlocks": "Alihkan panel blok",
           "toggleProperties": "Alihkan panel properti",
           "previewDevice": "Pratinjau perangkat",
@@ -2395,7 +2559,7 @@
             },
             "dragBlock": {
               "title": "Seret blok ke halaman Anda",
-              "body": "Panel mencantumkan setiap blok yang tersedia. Seret blok apa pun dari sini ke kanvas untuk menambahkannya ke halaman Anda."
+              "body": "Pilih blok Preset dari panel, lalu seret ke kanvas. Preset menyertakan kontrol pengeditan yang digunakan pada langkah berikutnya."
             },
             "blockProps": {
               "title": "Properti blok ada di sini",
@@ -2461,6 +2625,18 @@
               "title": "Pratinjau situs Anda di ukuran layar apa pun",
               "body": "Beralih ke mode pratinjau dan gunakan tombol perangkat untuk memeriksa tata letak Anda di perangkat mobile, tablet, dan desktop."
             },
+            "canvasControls": {
+              "title": "Sesuaikan kanvas pengeditan Anda",
+              "body": "Gunakan kontrol ini untuk mengganti panel, membatalkan atau mengulangi, memilih lebar kanvas, dan memperbesar. Di layar yang lebih kecil, buka tombol slider untuk menemukannya."
+            },
+            "guide": {
+              "title": "Kembali ke panduan ini kapan saja",
+              "body": "Buka Panduan kapan saja untuk mengulang walkthrough ini."
+            },
+            "save": {
+              "title": "Simpan perubahan Anda",
+              "body": "Simpan perubahan agar draf saat ini siap dibuka kembali nanti."
+            },
             "publish": {
               "title": "Terbitkan untuk tayang",
               "body": "Saat Anda puas dengan perubahan Anda, klik Terbitkan untuk mendorongnya ke halaman publik Anda."
@@ -2497,9 +2673,9 @@
             "logoUpload": "Unggah logo",
             "logoUploading": "Mengunggah…",
             "logoRemove": "Hapus logo",
-            "logoRequirements": "PNG, JPEG, atau WEBP · maks 250 KB · hingga 512×256",
+            "logoRequirements": "PNG, JPG atau JPEG, atau WEBP · maks 250 KB · hingga 512×256",
             "logoErrors": {
-              "type": "Logo harus berupa gambar PNG, JPEG, atau WEBP.",
+              "type": "Logo harus berupa gambar PNG, JPG atau JPEG, atau WEBP.",
               "size": "Logo harus berukuran 250 KB atau lebih kecil.",
               "dimensions": "Logo harus berukuran 512 x 256 px atau lebih kecil.",
               "image": "Gambar logo ini tidak dapat dibaca.",
@@ -2509,14 +2685,28 @@
             "iconUpload": "Pilih gambar",
             "iconUploading": "Mengunggah…",
             "iconRemove": "Hapus",
-            "iconRequirements": "PNG, JPEG, WebP, atau AVIF · maks 1 MB · hingga 512 × 512 px",
+            "iconRequirements": "PNG, JPG atau JPEG, WebP, atau AVIF · maks 1 MB · hingga 512 × 512 px",
             "iconErrors": {
-              "type": "Hanya file PNG, JPEG, WebP, atau AVIF yang diterima.",
+              "type": "Hanya file PNG, JPG atau JPEG, WebP, atau AVIF yang diterima.",
               "size": "Ikon harus berukuran 1 MB atau lebih kecil.",
               "dimensions": "Ikon harus berukuran 512 x 512 px atau lebih kecil.",
               "image": "Gambar ikon ini tidak dapat dibaca.",
               "upload": "Unggah ikon gagal. Silakan coba lagi."
-            }
+            },
+            "shareImageLabel": "Gambar bagikan",
+            "shareImageUpload": "Unggah gambar bagikan",
+            "shareImageUploading": "Mengunggah...",
+            "shareImageRemove": "Hapus gambar bagikan",
+            "shareImageRequirements": "JPG atau JPEG, PNG, WebP, atau AVIF · maks 10 MB · 1200 × 630 px direkomendasikan",
+            "shareImageErrors": {
+              "type": "Gunakan gambar JPG atau JPEG, PNG, WebP, atau AVIF.",
+              "size": "Gambar bagikan harus 10 MB atau lebih kecil.",
+              "dimensions": "Gambar bagikan harus setidaknya 1200 × 630 px.",
+              "upload": "Unggah gambar bagikan gagal. Silakan coba lagi."
+            },
+            "inquiryRecipientLabel": "Email penerima inquiry",
+            "inquiryRecipientPlaceholder": "anda@contoh.com",
+            "inquiryRecipientHint": "Notifikasi inquiry baru akan dikirim ke sini."
           },
           "done": {
             "title": "Halaman Anda siap untuk bersinar",
@@ -2631,6 +2821,10 @@
             "title": "Anda diundang ke tim",
             "body": "{inviterName} mengundang Anda untuk bergabung dengan {teamName}."
           },
+          "invite_accepted": {
+            "title": "{memberName} menerima undangan Anda",
+            "body": "Mereka telah bergabung dengan {teamName}."
+          },
           "removed": {
             "title": "Dihapus dari tim",
             "body": "Anda telah dihapus dari {teamName}."
@@ -2654,10 +2848,15 @@
       "invalid_data": "Data tidak valid. Periksa input Anda dan coba lagi.",
       "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
       "onboarding_required": "Selesaikan orientasi untuk melanjutkan.",
+      "onboarding_plan_locked": "Paket Anda sudah aktif. Selesaikan onboarding untuk mengelolanya dari pengaturan tagihan.",
       "subscription_required": "Akses Pro Anda telah berakhir. Berlangganan untuk melanjutkan.",
       "promo_code_not_found": "Kode itu tidak valid. Periksa kembali dan coba lagi.",
       "promo_code_expired": "Kode itu sudah kedaluwarsa.",
       "promo_code_already_redeemed": "Anda sudah menukarkan kode ini.",
+      "promo_code_revoked": "Kode itu telah dinonaktifkan.",
+      "not_eligible_beta_participant": "Kode ini hanya untuk peserta beta yang tercatat.",
+      "beta_promo_already_redeemed": "Anda sudah menukarkan promo beta satu kali Anda.",
+      "beta_program_closed": "Program beta ditutup untuk peserta baru.",
       "invalid_input": "Periksa formulir dan coba lagi.",
       "rate_limited": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
       "user_not_found": "Pengguna tidak ditemukan.",
@@ -2698,6 +2897,7 @@
       "export_too_large": "Terlalu banyak pemesanan untuk diekspor. Persempit filter dan coba lagi.",
       "free_plan_no_checkout": "Paket gratis tidak memerlukan pembayaran.",
       "lemonsqueezy_variant_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
+      "billing_unavailable": "Langganan berbayar belum tersedia. Silakan periksa kembali nanti.",
       "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
       "checkout_init_failed": "Gagal memulai pembayaran. Silakan coba lagi.",
       "no_subscription": "Anda tidak memiliki langganan aktif untuk dikelola.",
@@ -2736,10 +2936,12 @@
     "loading": "Memuat…",
     "promoCode": {
       "disclosureLabel": "Punya kode promo?",
+      "close": "Tutup kode promo",
       "placeholder": "Masukkan kode",
       "submit": "Terapkan",
       "applying": "Menerapkan…",
-      "success": "Kode berhasil diterapkan — paket Anda telah diperbarui."
+      "success": "Kode berhasil diterapkan — akses Pro Anda kini aktif.",
+      "successQueued": "Kode berhasil diterapkan — akses Pro dua bulan Anda akan otomatis dimulai setelah paket Anda saat ini berakhir."
     }
   },
   "onboarding": {
@@ -2800,6 +3002,7 @@
       "title": "Pilih paket yang sesuai",
       "description": "Anda dapat mengubah paket atau membatalkan kapan saja dari pengaturan ruang kerja Anda.",
       "popular": "Populer",
+      "comingSoon": "Segera hadir",
       "cadence": {
         "forever": "bulan pertama gratis",
         "monthly": "/ bulan",
@@ -2817,19 +3020,25 @@
       "opening": "Membuka pembayaran…",
       "checkoutFailed": "Pembayaran gagal. Silakan coba lagi.",
       "checkoutNotReady": "Sistem pembayaran belum siap. Silakan refresh dan coba lagi.",
+      "activatedNotice": "Paket Gallurio Anda sekarang aktif. Selesaikan onboarding untuk mengubah paket langganan Anda.",
+      "activePill": "Aktif",
+      "finishOnboarding": "Selesaikan onboarding",
+      "acceptedPromoCode": "Kode promo {code}",
       "betaTester": {
         "label": "Beta Tester",
+        "headline": "Dapatkan akses beta gratis sekarang",
         "activate": "Aktifkan akses beta"
       }
     },
     "done": {
       "title": "Anda sudah siap, {workspaceName}.",
-      "description": "Paket {planLabel} Anda aktif. Satu hal terakhir sebelum kami bawa Anda ke dasbor.",
+      "description": "Paket {planLabel} Anda aktif. Selamat datang di Gallurio — ruang kerja Anda siap digunakan.",
       "seedToggle": {
         "label": "Mulai dengan data contoh",
         "description": "Kami akan menambah 5 klien demo, 3 pemesanan demo, dan 1 pertanyaan demo agar Anda dapat menjelajahi aplikasi. Semuanya ditandai sample agar dapat dihapus dengan satu klik."
       },
       "settingUp": "Menyiapkan dasbor Anda…",
+      "settingUpCompact": "Menyiapkan…",
       "goToDashboard": "Pergi ke dasbor Anda",
       "footer": {
         "everything": "Semuanya di satu tempat",
@@ -2996,6 +3205,10 @@
       "already_accepted": {
         "title": "Sudah menjadi anggota",
         "description": "Anda telah menerima undangan ini dan telah bergabung dengan workspace."
+      },
+      "revoked": {
+        "title": "Undangan dicabut",
+        "description": "Undangan ini telah dicabut oleh pemilik workspace. Minta mereka mengirim undangan baru jika Anda masih memerlukan akses."
       },
       "already_member": {
         "title": "Email sudah digunakan",

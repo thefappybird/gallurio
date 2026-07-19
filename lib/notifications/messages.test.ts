@@ -96,3 +96,27 @@ describe('buildNotificationContent passes vars to title (line-26 coverage)', () 
     expect(result.body).toBe('body:Alex')
   })
 })
+
+describe('team.invite_accepted notification', () => {
+  it('describes the accepted role and deep-links to the matching active member', async () => {
+    ;(getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT())
+
+    const result = await buildNotificationContent(
+      'team.invite_accepted',
+      'en',
+      'team-id',
+      'team',
+      {
+        memberName: 'Alex',
+        memberEmail: 'alex@example.com',
+        role: 'staff',
+        teamName: 'Wedding crew',
+      },
+    )
+
+    expect(result.title).toBe('Alex accepted your invitation')
+    expect(result.body).toContain('staff member')
+    expect(result.body).toContain('Wedding crew')
+    expect(result.href).toBe('/en/teams?members=active&member=alex%40example.com')
+  })
+})

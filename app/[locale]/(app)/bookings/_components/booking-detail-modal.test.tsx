@@ -2328,7 +2328,7 @@ describe("Payments section — title field", () => {
         ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
       );
       expect(body.payments).toEqual([
-        { price: 500, status: "unpaid", title: "Deposit installment" },
+        { price: 500, status: "unpaid", title: "Deposit installment", method: "cash" },
       ]);
     });
   });
@@ -2369,7 +2369,7 @@ describe("Payments section — title field", () => {
         ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
       );
       expect(body.payments).toEqual([
-        { price: 1000, status: "unpaid", title: "Final balance" },
+        { price: 1000, status: "unpaid", title: "Final balance", method: "cash" },
       ]);
     });
   });
@@ -2536,7 +2536,7 @@ describe("Payments section", () => {
       const body = JSON.parse(
         ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
       );
-      expect(body.payments).toEqual([{ price: 500, status: "unpaid", title: "" }]);
+      expect(body.payments).toEqual([{ price: 500, status: "unpaid", title: "", method: "cash" }]);
     });
   });
 
@@ -2611,7 +2611,7 @@ describe("Payments section", () => {
       const body = JSON.parse(
         ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
       );
-      expect(body.payments).toEqual([{ price: 2000, status: "unpaid" }]);
+      expect(body.payments).toEqual([{ price: 2000, status: "unpaid", method: "cash" }]);
     });
   });
 
@@ -2654,7 +2654,7 @@ describe("Payments section", () => {
       const body = JSON.parse(
         ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
       );
-      expect(body.payments).toEqual([{ price: 1000, status: "paid" }]);
+      expect(body.payments).toEqual([{ price: 1000, status: "paid", method: "cash" }]);
     });
   });
 
@@ -2708,7 +2708,7 @@ describe("Payments section", () => {
       );
       expect(body.payments).toEqual([
         PAYMENT_0,
-        { price: 3000, status: "paid" },
+        { price: 3000, status: "paid", method: "cash" },
       ]);
     });
   });

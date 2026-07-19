@@ -18,7 +18,7 @@ vi.mock("@/lib/actions/billing", () => ({
 }));
 
 vi.mock("@/lib/actions/promoCode", () => ({
-  redeemPromoCodeAction: vi.fn().mockResolvedValue({ ok: true }),
+  redeemPromoCodeAction: vi.fn().mockResolvedValue({ ok: true, startsImmediately: true }),
 }));
 
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
@@ -71,6 +71,7 @@ const defaultProps: BillingPanelProps = {
   workspaceId: "ws_test_123",
   customerEmail: "owner@example.com",
   proPricing: { currency: "PHP", monthly: 250, yearly: 2500 },
+  billingAvailable: true,
 };
 
 function renderPanel(overrides: Partial<BillingPanelProps> = {}) {
@@ -152,9 +153,9 @@ describe("BillingPanel — promo code redemption", () => {
     expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
   });
 
-  it("hides the promo code disclosure for beta workspaces", () => {
+  it("still shows the promo code disclosure for beta workspaces (queued redemption)", () => {
     renderPanel({ currentPlan: "beta" });
-    expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
   });
 
   it("expands the promo code form when clicked", async () => {
@@ -360,6 +361,54 @@ describe("BillingPanel — manage subscription", () => {
       expect(mockGetManageUrl).toHaveBeenCalled();
     });
     expect(openSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("BillingPanel — beta-only mode (billingAvailable=false)", () => {
+  it("does not render upgrade cards and shows the not-yet-available message for a free plan", () => {
+    renderPanel({ currentPlan: "free", billingAvailable: false });
+    expect(
+      screen.queryByRole("button", { name: /upgrade to the pro plan/i })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /yearly/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/paid subscriptions aren't available yet/i)
+    ).toBeInTheDocument();
+  });
+
+  it("does not render the manage subscription button for an active subscriber", () => {
+    renderPanel({
+      currentPlan: "pro",
+      lsSubscriptionStatus: "active",
+      billingAvailable: false,
+    });
+    expect(
+      screen.queryByRole("button", { name: /manage subscription/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/paid subscriptions aren't available yet/i)
+    ).toBeInTheDocument();
+  });
+
+  it("still renders and allows expanding the promo code disclosure", async () => {
+    renderPanel({ currentPlan: "free", billingAvailable: false });
+    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/enter code/i)).toBeInTheDocument();
+    });
+  });
+
+  it("never injects the lemon.js script tag", async () => {
+    renderPanel({ currentPlan: "free", billingAvailable: false });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(createLemonSqueezyMock).not.toHaveBeenCalled();
+    expect(
+      Array.from(document.querySelectorAll("script")).some((s) => s.src.includes("lemon.js"))
+    ).toBe(false);
   });
 });
 

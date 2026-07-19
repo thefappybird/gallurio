@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { useContext } from "react";
 import { act, screen } from "@testing-library/react";
+import { io } from "socket.io-client";
 import { renderWithProviders } from "@/test-utils/render";
 import {
   NotificationContext,
@@ -36,6 +37,22 @@ function LiveArrivalProbe() {
 }
 
 describe("NotificationProvider liveArrivalTick", () => {
+  it("uses a polling-first handshake with WebSocket fallback for tunnel compatibility", () => {
+    renderWithProviders(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+        <LiveArrivalProbe />
+      </NotificationProvider>,
+    );
+
+    expect(vi.mocked(io)).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        transports: ["polling", "websocket"],
+        tryAllTransports: true,
+        timeout: 5_000,
+      }),
+    );
+  });
+
   it("increments liveArrivalTick when a live notification:new socket event arrives", () => {
     renderWithProviders(
       <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>

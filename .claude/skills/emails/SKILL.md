@@ -39,9 +39,11 @@ Every email is either **platform** or **partner**:
   owner/platform mail (inquiry owner notification, booking-owner mail, password
   reset, email verification).
 - `resolveWorkspaceBrand(ws)` → partner. Workspace `name`, optional `logoUrl`
-  (`publicPage.header.logoUrl`), accent from `publicPage.brandKit.accentColor`
-  (validated by `HEX6 = /^#[0-9a-fA-F]{6}$/`, falls back to teal), `replyTo` from
-  `contact.email`, **"Powered by Gallurio"** footer. Used for client-facing mail.
+  (top-level `Workspace.logoUrl` - the Business Details logo, NOT
+  `publicPage.header.logoUrl` which is the portfolio nav logo), accent from
+  `publicPage.brandKit.accentColor` (validated by `HEX6 = /^#[0-9a-fA-F]{6}$/`,
+  falls back to teal), `replyTo` from `contact.email`, **"Powered by
+  Gallurio"** footer. Used for client-facing mail.
 - `ctaTextColor(hex)` picks `#ffffff` or `#1a1a1a` by relative luminance so the
   CTA label stays readable on any accent. Never hardcode CTA text color.
 
@@ -84,11 +86,11 @@ replyTo?; poweredByGallurio }`.
 - Subject: `bilingualSubject(enSubject, localizedSubject, locale)` →
   `"<en> · <localized>"` (middot), or just `en` when locale is `en`.
 
-`LANGUAGE_NAME`: `en→English, fil→Filipino, ms→Bahasa Melayu, id→Bahasa Indonesia`.
+`LANGUAGE_NAME`: `en→English, fil→Filipino, id→Bahasa Indonesia, th→ภาษาไทย`.
 
 ## Locales (`lib/email/messages.ts`)
 
-- Locales: `en`, `fil`, `ms`, `id`. **Never `th`.**
+- Locales: `en`, `fil`, `id`, `th`. **Never `ms`.**
 - `emailLocale = localeForCountry` maps workspace country → locale (the
   `secondaryLocale` for client mail).
 - `EMAIL_COPY[emailType][locale]` holds all copy as **plain text** (functions for

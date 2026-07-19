@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/navigation";
 import { Loader2Icon, MailPlusIcon, MailXIcon, UserPlusIcon } from "lucide-react";
@@ -25,10 +25,10 @@ import {
 } from "@/components/ui/select";
 import {
   assignMemberToTeamAction,
-  removeMemberFromTeamAction,
   setLeadFlagAction,
 } from "../_member-action";
 import { revokeInviteAction } from "../_invite-action";
+import { RemoveMemberDialog, type RemoveMemberTarget } from "./remove-member-dialog";
 import type { MemberSummary, PendingInviteRow, TeamRow } from "../_types";
 
 type Props = {
@@ -39,6 +39,8 @@ type Props = {
   pendingInvites: PendingInviteRow[];
   maxMembersPerTeam: number;
   ownerWorkosUserId: string;
+  workspaceId: string;
+  canManage: boolean;
   onInvite: (team: TeamRow) => void;
 };
 
@@ -54,14 +56,26 @@ export function TeamDetailDrawer({
   pendingInvites,
   maxMembersPerTeam,
   ownerWorkosUserId,
+  canManage,
   onInvite,
 }: Props) {
   const t = useTranslations("app.teams");
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addValue, setAddValue] = useState("");
-  const [leadWarnFor, setLeadWarnFor] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<RemoveMemberTarget | null>(null);
+  const [roleOverrides, setRoleOverrides] = useState<Map<string, "member" | "lead">>(new Map());
   const [, startTransition] = useTransition();
+  const previousMembers = useRef(members);
+
+  // Keep successful optimistic roles visible until a refresh delivers new
+  // members props. Clearing them before that creates a visible snap-back.
+  useEffect(() => {
+    if (members !== previousMembers.current) {
+      previousMembers.current = members;
+      setRoleOverrides((previous) => (previous.size ? new Map() : previous));
+    }
+  }, [members]);
 
   if (!team) {
     return (
@@ -84,12 +98,10 @@ export function TeamDetailDrawer({
   const atCap = team.memberCount >= maxMembersPerTeam;
 
   function roleOf(m: MemberSummary): "member" | "lead" {
-    return m.teams.find((tm) => tm.teamId === teamId)?.role ?? "member";
+    return roleOverrides.get(m.workosUserId)
+      ?? m.teams.find((tm) => tm.teamId === teamId)?.role
+      ?? "member";
   }
-
-  // A team may have at most one lead. Once one exists, every other member's lead
-  // toggle is disabled; clicking it surfaces a validation popover instead.
-  const teamHasLead = teamMembers.some((m) => roleOf(m) === "lead");
 
   function handleAdd(workosUserId: string) {
     if (!workosUserId) return;
@@ -113,33 +125,37 @@ export function TeamDetailDrawer({
     });
   }
 
-  function handleRemove(workosUserId: string) {
-    setBusyId(workosUserId);
-    startTransition(async () => {
-      const result = await removeMemberFromTeamAction({ workosUserId, teamId });
-      setBusyId(null);
-      if (result.error) {
-        toast.error(t("errors.generic"));
-        return;
-      }
-      toast.success(t("assignment.toasts.removed"));
-      router.refresh();
-    });
-  }
-
   function handleSetLead(workosUserId: string, isLead: boolean) {
+    if (busyId !== null) return;
+    const previousRoles = new Map(roleOverrides);
+    setRoleOverrides(() => {
+      const next = new Map(roleOverrides);
+      if (isLead) {
+        for (const member of teamMembers) {
+          if (roleOf(member) === "lead") next.set(member.workosUserId, "member");
+        }
+      }
+      next.set(workosUserId, isLead ? "lead" : "member");
+      return next;
+    });
     setBusyId(workosUserId);
     startTransition(async () => {
-      const result = await setLeadFlagAction({ workosUserId, teamId, isLead });
-      setBusyId(null);
-      if (result.error) {
-        toast.error(t("errors.generic"));
-        return;
+      const request = setLeadFlagAction({ workosUserId, teamId, isLead }).then((result) => {
+        if (result.error) throw new Error(result.error);
+      });
+      toast.promise(request, {
+        loading: isLead ? t("assignment.toasts.promoting") : t("assignment.toasts.demoting"),
+        success: isLead ? t("assignment.toasts.promoted") : t("assignment.toasts.demoted"),
+        error: () => t("errors.generic"),
+      });
+      try {
+        await request;
+        router.refresh();
+      } catch {
+        setRoleOverrides(previousRoles);
+      } finally {
+        setBusyId(null);
       }
-      toast.success(
-        isLead ? t("assignment.toasts.promoted") : t("assignment.toasts.demoted"),
-      );
-      router.refresh();
     });
   }
 
@@ -192,8 +208,7 @@ export function TeamDetailDrawer({
                 {teamMembers.map((m) => {
                   const isOwner = m.workosUserId === ownerWorkosUserId;
                   const isLead = roleOf(m) === "lead";
-                  const blocked = teamHasLead && !isLead;
-                  const busy = busyId === m.workosUserId;
+                  const busy = busyId !== null;
                   return (
                     <li
                       key={m.workosUserId}
@@ -211,86 +226,43 @@ export function TeamDetailDrawer({
                         <span className="truncate text-xs text-muted-foreground">
                           {m.email}
                         </span>
+                        {!isOwner && (
+                          <Badge variant="outline" className="mt-1 w-fit text-xs">
+                            {isLead ? t("drawer.leadToggleLabel") : t("members.memberBadge")}
+                          </Badge>
+                        )}
                       </div>
-                      {!isOwner && (
+                      {!isOwner && canManage && (
                         <div className="flex shrink-0 items-center gap-3">
                           <Label
                             htmlFor={`lead-${m.workosUserId}`}
                             className="flex items-center gap-1.5 text-xs text-muted-foreground"
                           >
                             {t("drawer.leadToggleLabel")}
-                            {blocked ? (
-                              // Lead already taken: render a disabled-looking
-                              // switch that surfaces a validation popup just above
-                              // it on hover, keyboard focus, or tap (kept off
-                              // hover-only so touch + keyboard users see it too). A
-                              // real button with aria-disabled keeps it
-                              // keyboard-focusable and announces the disabled state
-                              // (color is not the only signal). It mirrors the
-                              // Switch's off-state styles.
-                              <span className="relative inline-flex">
-                                <button
-                                  type="button"
-                                  id={`lead-${m.workosUserId}`}
-                                  role="switch"
-                                  aria-checked={false}
-                                  aria-disabled
-                                  aria-label={t("drawer.leadToggleLabel")}
-                                  aria-describedby={
-                                    leadWarnFor === m.workosUserId
-                                      ? `lead-warn-${m.workosUserId}`
-                                      : undefined
-                                  }
-                                  onMouseEnter={() => setLeadWarnFor(m.workosUserId)}
-                                  onMouseLeave={() => setLeadWarnFor(null)}
-                                  onFocus={() => setLeadWarnFor(m.workosUserId)}
-                                  onBlur={() => setLeadWarnFor(null)}
-                                  onClick={() => setLeadWarnFor(m.workosUserId)}
-                                  className="inline-flex h-5 w-9 shrink-0 cursor-not-allowed items-center border border-input bg-input opacity-50 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                                >
-                                  <span className="pointer-events-none block size-4 translate-x-0 bg-background" />
-                                </button>
-                                {leadWarnFor === m.workosUserId && (
-                                  <span
-                                    id={`lead-warn-${m.workosUserId}`}
-                                    role="alert"
-                                    className="absolute bottom-full end-0 z-50 mb-2 w-48 border border-destructive bg-popover p-2 text-xs leading-snug text-destructive shadow-md"
-                                  >
-                                    {t("drawer.leadOnlyOnePerTeam")}
-                                  </span>
-                                )}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5">
-                                <Switch
-                                  id={`lead-${m.workosUserId}`}
-                                  checked={isLead}
-                                  disabled={busy}
-                                  aria-busy={busy}
-                                  onCheckedChange={(v) =>
-                                    handleSetLead(m.workosUserId, v)
-                                  }
-                                />
-                                {busy && (
-                                  <Loader2Icon
-                                    className="size-3 shrink-0 animate-spin text-muted-foreground"
-                                    aria-hidden="true"
-                                  />
-                                )}
-                              </span>
-                            )}
+                            <span className="inline-flex items-center gap-1.5">
+                              <Switch
+                                id={`lead-${m.workosUserId}`}
+                                checked={isLead}
+                                disabled={busy}
+                                aria-busy={busy}
+                                onCheckedChange={(value) => handleSetLead(m.workosUserId, value)}
+                              />
+                              {busy && <Loader2Icon className="size-3 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />}
+                            </span>
                           </Label>
                           <Button
                             size="sm"
                             variant="outline"
-                            disabled={busy}
-                            onClick={() => handleRemove(m.workosUserId)}
+                            onClick={() =>
+                              setRemoveTarget({
+                                workosUserId: m.workosUserId,
+                                name: m.name,
+                                email: m.email,
+                                teams: m.teams,
+                              })
+                            }
                           >
-                            {busy ? (
-                              <Loader2Icon className="size-4 animate-spin" />
-                            ) : (
-                              t("drawer.removeFromTeam")
-                            )}
+                            {t("drawer.removeFromTeam")}
                           </Button>
                         </div>
                       )}
@@ -302,6 +274,7 @@ export function TeamDetailDrawer({
           </section>
 
           {/* Add an existing workspace member */}
+          {canManage && (
           <section className="flex flex-col gap-2">
             <Label htmlFor="add-member-select">{t("drawer.addMemberLabel")}</Label>
             {assignable.length === 0 ? (
@@ -350,6 +323,7 @@ export function TeamDetailDrawer({
               <p className="text-xs text-destructive">{t("drawer.teamFull")}</p>
             )}
           </section>
+          )}
 
           {/* Pending invites for this team */}
           <section className="flex flex-col gap-2">
@@ -375,25 +349,28 @@ export function TeamDetailDrawer({
                           {t("members.pendingBadge")}
                         </Badge>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="shrink-0"
-                        disabled={busy}
-                        aria-label={t("members.revokeInvite")}
-                        onClick={() => handleRevoke(p.invitationId)}
-                      >
-                        {busy ? (
-                          <Loader2Icon className="size-4 animate-spin" />
-                        ) : (
-                          <MailXIcon className="size-4" />
-                        )}
-                      </Button>
+                      {canManage && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="shrink-0"
+                          disabled={busy}
+                          aria-label={t("members.revokeInvite")}
+                          onClick={() => handleRevoke(p.invitationId)}
+                        >
+                          {busy ? (
+                            <Loader2Icon className="size-4 animate-spin" />
+                          ) : (
+                            <MailXIcon className="size-4" />
+                          )}
+                        </Button>
+                      )}
                     </li>
                   );
                 })}
               </ul>
             )}
+            {canManage && (
             <Button
               variant="outline"
               className="self-start"
@@ -402,9 +379,19 @@ export function TeamDetailDrawer({
               <MailPlusIcon className="me-2 size-4" />
               {t("drawer.inviteToTeam")}
             </Button>
+            )}
           </section>
         </div>
       </SheetContent>
+
+      <RemoveMemberDialog
+        mode="team"
+        member={removeTarget}
+        teamId={teamId}
+        teamName={team.name}
+        open={Boolean(removeTarget)}
+        onOpenChange={(next) => !next && setRemoveTarget(null)}
+      />
     </Sheet>
   );
 }

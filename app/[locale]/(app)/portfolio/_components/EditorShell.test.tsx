@@ -49,7 +49,6 @@ vi.mock("@measured/puck", () => ({
   Puck: ({
     headerTitle,
     overrides,
-    onPublish,
     onChange,
     data,
   }: {
@@ -198,6 +197,8 @@ const baseProps = {
   storyPromptCompleted: true,
   initialSeoDescription: "",
   initialSeoKeywords: [],
+  initialInquiryRecipientEmail: "",
+  hasBeenPublished: true,
   workspaceBusinessType: "",
   initialSavedThemes: [],
   // Provide an active draft so the editor starts in a clean (non-dirty) state.
@@ -337,6 +338,7 @@ describe("EditorShell", () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByRole("button", { name: "Toggle blocks panel" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Toggle properties panel" })).toBeInTheDocument();
+    expect(screen.getByTestId("canvas-controls-trigger")).toHaveAttribute("aria-label", "Editor controls");
     // The edit-canvas breakpoint + zoom controls now live in this same header
     // cluster (CanvasViewportControls); their rendering + behaviour are
     // unit-tested in CanvasViewportControls.test.tsx.
@@ -671,12 +673,15 @@ describe("EditorShell", () => {
     expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
   });
 
-  it("Publish button in editor header has the same size (h-7) as Save changes", async () => {
+  it("Publish button in editor header is icon-only and has the same size (h-7) as Save changes", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const saveBtn = screen.getByRole("button", { name: "Save changes" });
     const publishBtn = screen.getByRole("button", { name: "Publish" });
     expect(saveBtn.className).toContain("h-7");
     expect(publishBtn.className).toContain("h-7");
+    expect(publishBtn).toHaveAttribute("title", "Publish");
+    expect(publishBtn).not.toHaveTextContent("Publish");
+    expect(publishBtn.querySelector("svg")).not.toBeNull();
   });
 
   it("styles Save changes with the brand variant and Preview with the secondary variant", async () => {
@@ -685,23 +690,44 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: /Preview/ }).className).toContain("bg-secondary");
   });
 
-  it("toolbar scrolls as one region while Save changes and Publish stay fixed", async () => {
+  it("uses a compact responsive toolbar while Save changes and Publish stay visible", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const sectionGroup = screen.getByRole("group", { name: /sections/i });
     const scrollRegion = screen.getByTestId("portfolio-toolbar-scroll");
     const toolbarGrid = screen.getByTestId("portfolio-toolbar-grid");
     const fixedActions = screen.getByTestId("portfolio-toolbar-fixed-actions");
+    const actionGroup = screen.getByTestId("portfolio-toolbar-actions");
+    const canvasControls = screen.getByTestId("portfolio-toolbar-canvas-controls");
     expect(sectionGroup.className).toContain("flex-nowrap");
     expect(sectionGroup.className).not.toContain("overflow-x-auto");
     expect(sectionGroup.className).not.toContain("flex-wrap");
     expect(scrollRegion.className).toContain("overflow-x-auto");
-    expect(scrollRegion.parentElement?.className).toContain("pe-44");
-    expect(fixedActions.parentElement?.className).toContain("absolute");
-    expect(fixedActions.parentElement?.className).toContain("end-0");
+    expect(scrollRegion.className).toContain("flex-1");
+    expect(scrollRegion.parentElement?.className).toContain("min-w-0");
+    expect(actionGroup.className).toContain("shrink-0");
+    expect(canvasControls.className).toContain("shrink-0");
+    expect(scrollRegion).not.toContainElement(canvasControls);
+    expect(actionGroup.className).not.toContain("absolute");
     expect(fixedActions.className).toContain("w-max");
-    expect(toolbarGrid.className).toContain("grid-cols-[minmax(max-content,1fr)_max-content_minmax(max-content,1fr)]");
+    expect(toolbarGrid.className).toContain("grid-cols-[max-content]");
+    expect(toolbarGrid.className).not.toContain("min-w-full");
+    expect(actionGroup).toContainElement(screen.getByRole("button", { name: "Photos" }));
+    expect(actionGroup).toContainElement(screen.getByRole("button", { name: "Theme" }));
+    expect(actionGroup).toContainElement(screen.getByRole("button", { name: "Guide" }));
+    expect(actionGroup).toContainElement(screen.getByRole("button", { name: "Drafts" }));
     expect(fixedActions).toContainElement(screen.getByRole("button", { name: "Save changes" }));
     expect(fixedActions).toContainElement(screen.getByRole("button", { name: "Publish" }));
+  });
+
+  it("renders icon-only portfolio actions with accessible labels", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    for (const name of ["Photos", "Theme", "Guide", "Drafts", "Save changes"]) {
+      const action = screen.getByRole("button", { name });
+      expect(action.querySelector("svg")).not.toBeNull();
+      expect(action).toHaveAttribute("title", name);
+      expect(action).not.toHaveTextContent(name);
+    }
+    expect(screen.getByRole("button", { name: "Guide" })).toHaveAttribute("data-tour-id", "guide");
   });
 
   it("renders the Preview button as a sibling of the section tabs inside the nav cluster", async () => {
@@ -712,17 +738,17 @@ describe("EditorShell", () => {
     expect(preview.parentElement).toBe(sectionGroup);
   });
 
-  it("renders the draft title inside the scrollable toolbar before fixed Save changes", async () => {
+  it("keeps the draft title and save controls together in the portfolio action group", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const draftsButton = screen.getByRole("button", { name: "Drafts" });
     const title = screen.getByTitle("Test Draft");
     const saveButton = screen.getByRole("button", { name: "Save changes" });
     const slot = title.closest('[data-testid="draft-title-slot"]');
-    const scrollRegion = screen.getByTestId("portfolio-toolbar-scroll");
+    const actionGroup = screen.getByTestId("portfolio-toolbar-actions");
     expect(slot).not.toBeNull();
     expect(slot!.className).toContain("min-w-0");
     expect(slot!.className).toContain("shrink-0");
-    expect(scrollRegion).toContainElement(slot as HTMLElement);
+    expect(actionGroup).toContainElement(slot as HTMLElement);
     expect(
       draftsButton.compareDocumentPosition(slot!) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
@@ -1288,23 +1314,6 @@ describe("EditorShell", () => {
     // Back returns to the welcome step.
     fireEvent.click(within(dragCard).getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("dialog", { name: "Welcome to your portfolio editor" })).toBeInTheDocument();
-  });
-
-  it("renders BlockActionsToolbar toolbar when a block is selected", async () => {
-    // Temporarily set a selected item + itemSelector so BlockActionsToolbar renders.
-    const origSelected = mockPuckApi.selectedItem;
-    const origUi = mockPuckApi.appState.ui;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPuckApi as any).selectedItem = { type: "Hero", props: { id: "hero-test" } };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPuckApi.appState.ui as any).itemSelector = { index: 0 };
-    await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    expect(document.querySelector("[role='toolbar']")).not.toBeNull();
-    // Restore.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPuckApi as any).selectedItem = origSelected;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mockPuckApi.appState as any).ui = origUi;
   });
 
   it("editor is not dirty immediately after applying a template (Fix #4)", async () => {

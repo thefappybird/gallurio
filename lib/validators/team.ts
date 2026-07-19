@@ -75,6 +75,14 @@ export const removeMemberFromTeamSchema = z.object({
 });
 export type RemoveMemberFromTeamInput = z.infer<typeof removeMemberFromTeamSchema>;
 
+export const removeMemberFromTeamAndWorkspaceSchema = z.object({
+  workosUserId: z.string().min(1),
+  teamId: z.string().min(1),
+});
+export type RemoveMemberFromTeamAndWorkspaceInput = z.infer<
+  typeof removeMemberFromTeamAndWorkspaceSchema
+>;
+
 export const setLeadFlagSchema = z.object({
   workosUserId: z.string().min(1),
   teamId: z.string().min(1),
@@ -91,3 +99,8 @@ export const revokeInviteSchema = z.object({
   invitationId: z.string().min(1, "Invitation ID is required"),
 });
 export type RevokeInviteInput = z.infer<typeof revokeInviteSchema>;
+
+export const checkInviteEligibilitySchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+});
+export type CheckInviteEligibilityInput = z.infer<typeof checkInviteEligibilitySchema>;

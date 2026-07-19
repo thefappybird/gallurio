@@ -55,6 +55,7 @@ export async function submitInquiry(
     .select({
       _id: 1,
       name: 1,
+      logoUrl: 1,
       ownerUserId: 1,
       currency: 1,
       timezone: 1,
@@ -246,6 +247,7 @@ export async function submitInquiry(
       ownerEmail: recipient,
       brand: resolveWorkspaceBrand({
         name: workspace.name,
+        logoUrl: workspace.logoUrl,
         publicPage: workspace.publicPage
           ? {
               header: { logoUrl: workspace.publicPage.header?.logoUrl },

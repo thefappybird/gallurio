@@ -1,6 +1,7 @@
 "use server";
 
 import mongoose from "mongoose";
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
@@ -13,15 +14,18 @@ import {
 import { Team } from "@/lib/db/models/team";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { User } from "@/lib/db/models/User";
+import { ActivityLog } from "@/lib/db/models/ActivityLog";
 import { connectDB } from "@/lib/db/mongoose";
 import { sendNotification } from "@/lib/notifications/send";
 import {
   assignMemberToTeamSchema,
   removeMemberFromTeamSchema,
+  removeMemberFromTeamAndWorkspaceSchema,
   setLeadFlagSchema,
   removeMemberFromWorkspaceSchema,
   type AssignMemberToTeamInput,
   type RemoveMemberFromTeamInput,
+  type RemoveMemberFromTeamAndWorkspaceInput,
   type SetLeadFlagInput,
   type RemoveMemberFromWorkspaceInput,
 } from "@/lib/validators/team";
@@ -32,6 +36,51 @@ function toObjectId(id: string): mongoose.Types.ObjectId | null {
   } catch {
     return null;
   }
+}
+
+const memberActivitySchema = z.object({
+  workosUserId: z.string().min(1),
+  cursor: z.string().datetime().optional(),
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+  action: z.enum(["created", "updated", "deleted", "status_changed", "client_changed", "payment_added", "payment_updated"]).optional(),
+});
+
+export async function getMemberActivityAction(input: unknown) {
+  const ctx = await ownerContext();
+  if ("error" in ctx) return { error: ctx.error };
+  const parsed = memberActivitySchema.safeParse(input);
+  if (!parsed.success) return { error: "INVALID_INPUT" };
+
+  const { workosUserId, cursor, from, to, action } = parsed.data;
+  const member = await User.exists({
+    workosUserId,
+    "memberships.workspaceId": ctx.workspace._id,
+  });
+  if (!member) return { error: "USER_NOT_IN_WORKSPACE" };
+
+  const createdAt: { $gte?: Date; $lte?: Date; $lt?: Date } = {};
+  if (from) createdAt.$gte = new Date(from);
+  if (to) createdAt.$lte = new Date(to);
+  if (cursor) createdAt.$lt = new Date(cursor);
+  const logs = await ActivityLog.find({
+    workspaceId: ctx.workspace._id,
+    actorUserId: workosUserId,
+    ...(action ? { action } : {}),
+    ...(Object.keys(createdAt).length > 0 ? { createdAt } : {}),
+  })
+    .sort({ createdAt: -1 })
+    .limit(21)
+    .select({ entity: 1, action: 1, createdAt: 1 })
+    .lean();
+  const hasMore = logs.length > 20;
+  const items = logs.slice(0, 20).map((log) => ({
+    id: String(log._id),
+    entity: log.entity,
+    action: log.action,
+    createdAt: log.createdAt.toISOString(),
+  }));
+  return { items, nextCursor: hasMore ? items.at(-1)?.createdAt ?? null : null };
 }
 
 export async function assignMemberToTeamAction(
@@ -132,6 +181,16 @@ export async function removeMemberFromTeamAction(
   ).lean();
   if (!team) return { error: "TEAM_NOT_FOUND" };
 
+  const membership = await TeamMembership.findOne({
+    workspaceId: ctx.workspace._id,
+    teamId: teamObjectId,
+    workosUserId,
+  })
+    .select({ role: 1 })
+    .lean();
+  if (!membership) return { error: "MEMBERSHIP_NOT_FOUND" };
+  if (membership.role === "lead") return { error: "IS_TEAM_LEAD" };
+
   const result = await TeamMembership.deleteOne({
     workspaceId: ctx.workspace._id,
     teamId: teamObjectId,
@@ -171,6 +230,62 @@ export async function removeMemberFromTeamAction(
   return { ok: true };
 }
 
+// Removes a member from their only team and the workspace as one tenant-scoped
+// transaction. The UI disables this action when other team memberships exist;
+// this server-side guard keeps that invariant true for direct action calls too.
+export async function removeMemberFromTeamAndWorkspaceAction(
+  input: RemoveMemberFromTeamAndWorkspaceInput,
+): Promise<RemoveMemberFromWorkspaceResult> {
+  const ctx = await ownerContext();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const parsed = removeMemberFromTeamAndWorkspaceSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+  const { workosUserId, teamId } = parsed.data;
+  const teamObjectId = toObjectId(teamId);
+  if (!teamObjectId) return { error: "Invalid team id" };
+  if (workosUserId === ctx.workspace.ownerUserId) return { error: "CANNOT_REMOVE_OWNER" };
+
+  const memberships = await TeamMembership.find({
+    workspaceId: ctx.workspace._id,
+    workosUserId,
+  }).select({ teamId: 1, role: 1 }).lean();
+  const current = memberships.find((membership) => String(membership.teamId) === String(teamObjectId));
+  if (!current) return { error: "MEMBERSHIP_NOT_FOUND" };
+  if (current.role === "lead") {
+    const team = await Team.findOne({ _id: teamObjectId, workspaceId: ctx.workspace._id })
+      .select({ name: 1 }).lean();
+    return { error: "IS_TEAM_LEAD", teamName: team?.name };
+  }
+  if (memberships.length !== 1) return { error: "MEMBER_ON_OTHER_TEAMS" };
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await User.updateOne(
+        { workosUserId },
+        { $pull: { memberships: { workspaceId: ctx.workspace._id } } },
+        { session },
+      );
+      const deleted = await TeamMembership.deleteOne(
+        { workspaceId: ctx.workspace._id, teamId: teamObjectId, workosUserId, role: "member" },
+        { session },
+      );
+      if (deleted.deletedCount !== 1) throw new Error("MEMBERSHIP_NOT_FOUND");
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "MEMBERSHIP_NOT_FOUND") {
+      return { error: "MEMBERSHIP_NOT_FOUND" };
+    }
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+  await releaseTeamSeat(teamObjectId, ctx.workspace._id);
+  revalidatePath("/[locale]/teams", "page");
+  return { ok: true };
+}
+
 export async function setLeadFlagAction(
   input: SetLeadFlagInput,
 ): Promise<ActionResult> {
@@ -185,19 +300,34 @@ export async function setLeadFlagAction(
   const teamObjectId = toObjectId(teamId);
   if (!teamObjectId) return { error: "Invalid team id" };
 
-  // A team can have at most one lead. Reject promotion when another member is
-  // already the lead (mirrors the invite-flow enforcement). Demotion is always
-  // allowed, and re-promoting the same member is a no-op that stays valid.
+  // Promote by atomically transferring the sole lead role. The selected member
+  // becomes lead and any prior lead is demoted in the same transaction.
   if (isLead) {
-    const existingLead = await TeamMembership.findOne({
-      workspaceId: ctx.workspace._id,
-      teamId: teamObjectId,
-      role: "lead",
-      workosUserId: { $ne: workosUserId },
-    })
-      .select({ _id: 1 })
-      .lean();
-    if (existingLead) return { error: "TEAM_ALREADY_HAS_LEAD" };
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await TeamMembership.updateMany(
+          { workspaceId: ctx.workspace._id, teamId: teamObjectId, role: "lead", workosUserId: { $ne: workosUserId } },
+          { $set: { role: "member" } },
+          { session },
+        );
+        const promoted = await TeamMembership.findOneAndUpdate(
+          { workspaceId: ctx.workspace._id, teamId: teamObjectId, workosUserId },
+          { $set: { role: "lead" } },
+          { new: true, session },
+        ).select({ _id: 1 }).lean();
+        if (!promoted) throw new Error("MEMBERSHIP_NOT_FOUND");
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "MEMBERSHIP_NOT_FOUND") {
+        return { error: "MEMBERSHIP_NOT_FOUND" };
+      }
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+    revalidatePath("/[locale]/teams", "page");
+    return { ok: true };
   }
 
   const updated = await TeamMembership.findOneAndUpdate(
@@ -213,11 +343,15 @@ export async function setLeadFlagAction(
   return { ok: true };
 }
 
+export type RemoveMemberFromWorkspaceResult = ActionResult & {
+  teamName?: string;
+};
+
 // Workspace-level member removal. Removes workspace membership, all team
 // memberships, and releases the occupied team seats — in a single transaction.
 export async function removeMemberFromWorkspaceAction(
   input: RemoveMemberFromWorkspaceInput,
-): Promise<ActionResult> {
+): Promise<RemoveMemberFromWorkspaceResult> {
   const ctx = await ownerContext();
   if ("error" in ctx) return { error: ctx.error };
 
@@ -229,6 +363,20 @@ export async function removeMemberFromWorkspaceAction(
 
   if (workosUserId === ctx.workspace.ownerUserId) {
     return { error: "CANNOT_REMOVE_OWNER" };
+  }
+
+  const leadMembership = await TeamMembership.findOne({
+    workspaceId: ctx.workspace._id,
+    workosUserId,
+    role: "lead",
+  })
+    .select({ teamId: 1 })
+    .lean();
+  if (leadMembership) {
+    const team = await Team.findOne({ _id: leadMembership.teamId })
+      .select({ name: 1 })
+      .lean();
+    return { error: "IS_TEAM_LEAD", teamName: team?.name };
   }
 
   const memberships = await TeamMembership.find({

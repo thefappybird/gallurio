@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { NotificationPopover } from "@/components/notifications/NotificationPopover";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { useNotificationBurstToast } from "@/lib/hooks/useNotificationBurstToast";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import NextImage from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
@@ -102,7 +103,7 @@ export function AppSidebar({
     prevTickRef.current = liveArrivalTick;
     setBellNudge(true);
   }, [liveArrivalTick]);
-  // Toast text bundles arrivals into one message across a 5s window.
+  // Toast text appears with the bell nudge and bundles arrivals while visible.
   const { showToast: showBellToast, count: bundledCount } = useNotificationBurstToast(liveArrivalTick);
   const closeOnNav = () => {
     if (isMobile) {
@@ -111,7 +112,6 @@ export function AppSidebar({
   };
   const isOwner = role === "owner";
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
-  const bellToastSideClass = isRtl ? "end-full me-2" : "start-full ms-2";
 
   const initial = workspaceName[0]?.toUpperCase() ?? "W";
   const accountInitials = getInitials(userName, userEmail);
@@ -165,34 +165,41 @@ export function AppSidebar({
                       : tNotif("bell")
                   }
                 >
-                  <span className="relative inline-flex shrink-0 group-data-[collapsible=icon]:inline-flex!">
-                    <BellIcon
-                      className={cn("size-5! shrink-0", bellNudge && "animate-bell-nudge")}
-                      onAnimationEnd={() => setBellNudge(false)}
-                    />
-                    {unreadCount > 0 && (
-                      <span
-                        aria-hidden="true"
-                        className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center bg-destructive px-1 text-[10px] leading-none font-medium text-white"
-                      >
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </span>
-                    )}
-                  </span>
+                  {/* Own Tooltip instance (independent of the hover tooltip above) — its
+                      Portal renders outside SidebarContent's overflow-auto box, so the
+                      arrival cue isn't clipped like a plain absolutely-positioned span
+                      would be. `side="inline-end"` auto-mirrors for RTL. */}
+                  <Tooltip open={showBellToast}>
+                    <TooltipTrigger
+                      render={
+                        <span className="relative inline-flex shrink-0 group-data-[collapsible=icon]:inline-flex!" />
+                      }
+                    >
+                      <BellIcon
+                        className={cn("size-5! shrink-0", bellNudge && "animate-bell-nudge")}
+                        onAnimationEnd={() => setBellNudge(false)}
+                      />
+                      {unreadCount > 0 && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center bg-destructive px-1 text-[10px] leading-none font-medium text-white"
+                        >
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="inline-end"
+                      align="center"
+                      role="status"
+                      aria-live="polite"
+                      className="pointer-events-none"
+                    >
+                      {tNotif("newNotifications", { count: bundledCount })}
+                    </TooltipContent>
+                  </Tooltip>
                   <span>{tNotif("bell")}</span>
                 </SidebarMenuButton>
-                {showBellToast ? (
-                  <span
-                    role="status"
-                    aria-live="polite"
-                    className={cn(
-                      "pointer-events-none absolute top-1/2 z-20 inline-flex -translate-y-1/2 whitespace-nowrap border border-border bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground",
-                      bellToastSideClass
-                    )}
-                  >
-                    {tNotif("newNotifications", { count: bundledCount })}
-                  </span>
-                ) : null}
               </SidebarMenuItem>
               {nav.map(({ href, labelKey, icon: Icon }) => {
                 const label = t(labelKey);

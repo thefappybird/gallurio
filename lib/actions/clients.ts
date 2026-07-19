@@ -8,8 +8,10 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
 import {
   getClientBookings,
+  getClientPayments,
   getClientById,
   type ClientBookingRow,
+  type ClientPaymentRow,
 } from "@/app/[locale]/(app)/clients/_data/clients-queries";
 import type { ClientRow } from "@/app/[locale]/(app)/clients/_components/clients-table";
 
@@ -34,6 +36,22 @@ export async function createClientAction(input: ClientFormInput): Promise<Mutati
     return { ok: true };
   } catch {
     return { error: "client_create_failed" };
+  }
+}
+
+export async function getClientPaymentsAction(
+  clientId: string,
+  page = 1
+): Promise<{ items: ClientPaymentRow[]; hasMore: boolean } | { error: string }> {
+  try {
+    if (!Types.ObjectId.isValid(clientId) || !Number.isInteger(page) || page < 1) {
+      return { error: "invalid_input" };
+    }
+    const ctx = await requireOrg();
+    await connectDB();
+    return await getClientPayments(ctx.workspace._id, new Types.ObjectId(clientId), page);
+  } catch {
+    return { error: "payments_load_failed" };
   }
 }
 

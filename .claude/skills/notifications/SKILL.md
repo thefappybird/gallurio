@@ -104,9 +104,9 @@ is full-screen on mobile.
 ## Locales
 
 Copy is ICU in the i18n catalog under `app.notifications.types.<entity>.<type>.{title,body}`
-(`messages/{en,fil,ms,id}.json`), resolved via
+(`messages/{en,fil,id,th}.json`), resolved via
 `buildNotificationContent` → `getTranslations`. Update all four locales together;
-never `th`.
+never `ms`.
 
 Known convention: `booking.status_changed` is dispatched with `locale: "en"`
 hardcoded at its call sites even though all four locales exist — matches the

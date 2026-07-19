@@ -99,7 +99,13 @@ export function CollectionsManagerDialog({
               </button>
             </div>
           ) : collections.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("empty")}</p>
+            <div
+              data-testid="collections-empty-state"
+              className="flex min-h-52 flex-col items-center justify-center gap-3 border border-dashed border-border p-6 text-center"
+            >
+              <ImagePlusIcon className="size-7 text-muted-foreground" aria-hidden />
+              <p className="text-sm text-muted-foreground">{t("empty")}</p>
+            </div>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {collections.map((col) => (

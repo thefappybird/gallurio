@@ -131,31 +131,17 @@ describe("SettingsUserProfile", () => {
     });
   });
 
-  describe("tab-nav pending affordance", () => {
-    it("marks the clicked (non-active) tab as busy until activeSlug catches up", () => {
-      const { rerender } = renderSettings("owner", "account");
-      for (const link of screen.getAllByRole("link", { name: /customize/i })) {
-        fireEvent.click(link);
-      }
-      for (const link of screen.getAllByRole("link", { name: /customize/i })) {
-        expect(link).toHaveAttribute("aria-busy", "true");
-      }
-      // The currently-active tab never gets the busy treatment.
-      for (const link of screen.getAllByRole("link", { name: /account/i })) {
-        expect(link).not.toHaveAttribute("aria-busy");
-      }
+  describe("client-side tab state", () => {
+    it("switches panels without unmounting the inactive settings form", () => {
+      renderSettings("owner", "account");
 
-      rerender(
-        <SettingsUserProfile
-          role="owner"
-          pages={allPages}
-          activeSlug="customize"
-          workspaceName="Solo Workspace"
-        />,
-      );
-      for (const link of screen.getAllByRole("link", { name: /customize/i })) {
-        expect(link).not.toHaveAttribute("aria-busy");
-      }
+      fireEvent.click(screen.getByRole("link", { name: /customize/i }));
+
+      expect(screen.getByRole("link", { name: /customize/i }).className).toContain("border-brand");
+      expect(screen.getByTestId("body-account")).toBeInTheDocument();
+      expect(screen.getByTestId("body-customize")).toBeInTheDocument();
+      expect(screen.getByTestId("body-account").parentElement).toHaveAttribute("hidden");
+      expect(screen.getByTestId("body-customize").parentElement).not.toHaveAttribute("hidden");
     });
   });
 });

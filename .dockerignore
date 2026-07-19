@@ -1,0 +1,16 @@
+.git
+.claude
+.agents
+.codebase-memory
+.next
+node_modules
+.env
+.env.*
+!.env.example
+coverage
+playwright-report
+test-results
+*.log
+docs
+designs
+**/*.md

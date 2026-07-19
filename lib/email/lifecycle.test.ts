@@ -59,6 +59,15 @@ describe("sendLifecycleEmail", () => {
     expect(arg.subject).toBe("Last week to keep your portfolio online");
   });
 
+  it("uses Arabic copy and RTL markup for a Gulf workspace country", async () => {
+    await sendLifecycleEmail("preExpiry", "owner@example.com", "AE");
+
+    const arg = mockSendEmail.mock.calls[0]![0]!;
+    expect(arg.subject).toBe("وصولك إلى Gallurio Pro ينتهي خلال أسبوع");
+    expect(arg.html).toContain('dir="rtl"');
+    expect(arg.html).toContain('lang="ar"');
+  });
+
   it("logs a redacted failure and propagates it when sendEmail fails", async () => {
     mockSendEmail.mockResolvedValue({ ok: false, error: "resend_500" });
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});

@@ -1,7 +1,7 @@
 import "server-only";
 import { renderBrandedEmail } from "./layout";
 import { gallurioBrand } from "./brand";
-import { EMAIL_COPY, emailLocale } from "./messages";
+import { EMAIL_COPY, lifecycleEmailLocale } from "./messages";
 import { sendEmail, logEmailFailure, type SendEmailResult } from "./send";
 
 export type LifecycleEmailStage = "preExpiry" | "expired" | "remind1" | "remind2";
@@ -16,22 +16,23 @@ const COPY_KEY = {
 /**
  * Sends one lapse-lifecycle email (pre-expiry warning, expired, remind-1,
  * remind-2). Platform-branded (Gallurio), localized by the workspace country
- * via emailLocale() - same convention as sendPasswordResetEmail. CTA always
- * links to the absolute /subscribe page. Best-effort - never throws (see
- * lib/email/send.ts).
+ * via lifecycleEmailLocale() - same convention as sendPasswordResetEmail,
+ * plus Arabic for Gulf countries (lifecycle-email-only; dashboard/portfolio
+ * RTL is still deferred). CTA always links to the absolute /subscribe page.
+ * Best-effort - never throws (see lib/email/send.ts).
  */
 export async function sendLifecycleEmail(
   stage: LifecycleEmailStage,
   to: string,
   country: string | null | undefined,
 ): Promise<SendEmailResult> {
-  const locale = emailLocale(country);
+  const locale = lifecycleEmailLocale(country);
   const copy = EMAIL_COPY[COPY_KEY[stage]][locale];
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://gallurio.app").replace(/\/$/, "");
   const subscribeUrl = `${appUrl}/subscribe`;
 
-  const { html, text } = renderBrandedEmail({
+  const { html, text, attachments } = renderBrandedEmail({
     brand: gallurioBrand(),
     locale,
     preheader: copy.body,
@@ -45,6 +46,7 @@ export async function sendLifecycleEmail(
     subject: copy.subject,
     html,
     text,
+    attachments,
   });
   if (!result.ok) logEmailFailure(`lifecycle_${stage}`, to, result);
   return result;

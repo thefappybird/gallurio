@@ -2,6 +2,7 @@ import "server-only";
 import { Types } from "mongoose";
 import { PageviewRollup, Inquiry, Client } from "@/lib/db/models";
 import { BOOKED_INQUIRY_STATUS, CONVERTED_INQUIRY_STATUS } from "@/lib/inquiries/status";
+import { addDaysStr, weekStartMonday } from "@/lib/utils/iso-week";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -144,6 +145,170 @@ export async function getInquiryInsights(
     bookedCount,
     inquiryToBookingRate: bookedCount / Math.max(totalInquiries, 1),
     newClientsFromForm,
+  };
+}
+
+export type VisitorInquiryPoint = { date: string; visitors: number; inquiries: number };
+
+function localDayKey(d: Date, timezone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+export async function getVisitorInquirySeries(
+  workspaceId: WorkspaceId,
+  range: DateRange,
+  timezone: string
+): Promise<VisitorInquiryPoint[]> {
+  const rows = await PageviewRollup.find(siteMatch(workspaceId, range))
+    .select({ date: 1, visitors: 1, inquiries: 1 })
+    .lean<{ date: Date; visitors: number; inquiries: number }[]>();
+
+  const byWeek = new Map<string, { visitors: number; inquiries: number }>();
+  for (const r of rows) {
+    const week = weekStartMonday(localDayKey(r.date, timezone));
+    const cur = byWeek.get(week) ?? { visitors: 0, inquiries: 0 };
+    cur.visitors += r.visitors ?? 0;
+    cur.inquiries += r.inquiries ?? 0;
+    byWeek.set(week, cur);
+  }
+
+  let startWeek: string;
+  let endWeek: string;
+  if (range.from && range.to) {
+    startWeek = weekStartMonday(localDayKey(range.from, timezone));
+    endWeek = weekStartMonday(localDayKey(range.to, timezone));
+  } else {
+    const weeks = [...byWeek.keys()].sort();
+    if (!weeks.length) return [];
+    startWeek = weeks[0];
+    endWeek = weeks[weeks.length - 1];
+  }
+
+  const out: VisitorInquiryPoint[] = [];
+  let week = startWeek;
+  while (week <= endWeek) {
+    const v = byWeek.get(week);
+    out.push({ date: week, visitors: v?.visitors ?? 0, inquiries: v?.inquiries ?? 0 });
+    week = addDaysStr(week, 7);
+  }
+  return out;
+}
+
+export type InquiryPipeline = { total: number; newCount: number; booked: number; archived: number };
+
+export async function getInquiryPipeline(
+  workspaceId: WorkspaceId,
+  range: DateRange
+): Promise<InquiryPipeline> {
+  const created = dateClause(range);
+  const match: Record<string, unknown> = { workspaceId };
+  if (created) match.createdAt = created;
+
+  const [total, newCount, booked, archived] = await Promise.all([
+    Inquiry.countDocuments(match),
+    Inquiry.countDocuments({ ...match, status: "inquiry" }),
+    Inquiry.countDocuments({
+      ...match,
+      status: { $in: [BOOKED_INQUIRY_STATUS, CONVERTED_INQUIRY_STATUS] },
+    }),
+    Inquiry.countDocuments({ ...match, status: "archived" }),
+  ]);
+
+  return { total, newCount, booked, archived };
+}
+
+export type ContactFunnel = {
+  visitorDays: number;
+  contactVisitorDays: number;
+  inquiries: number;
+  contactTracked: boolean;
+};
+
+export async function getContactFunnel(
+  workspaceId: WorkspaceId,
+  range: DateRange
+): Promise<ContactFunnel> {
+  const date = dateClause(range);
+  const contactMatch: Record<string, unknown> = { workspaceId, page: "contact" };
+  if (date) contactMatch.date = date;
+
+  const [siteAgg, contactAgg] = await Promise.all([
+    PageviewRollup.aggregate<{ visitors: number; inquiries: number }>([
+      { $match: siteMatch(workspaceId, range) },
+      { $group: { _id: null, visitors: { $sum: "$visitors" }, inquiries: { $sum: "$inquiries" } } },
+    ]),
+    PageviewRollup.aggregate<{ visitors: number; count: number }>([
+      { $match: contactMatch },
+      { $group: { _id: null, visitors: { $sum: "$visitors" }, count: { $sum: 1 } } },
+    ]),
+  ]);
+
+  const site = siteAgg[0];
+  const contact = contactAgg[0];
+  return {
+    visitorDays: site?.visitors ?? 0,
+    contactVisitorDays: contact?.visitors ?? 0,
+    inquiries: site?.inquiries ?? 0,
+    contactTracked: (contact?.count ?? 0) > 0,
+  };
+}
+
+export type DemandProfile = {
+  eventTypeMix: { eventType: string; count: number }[];
+  requestedMonths: { month: string; count: number }[];
+  medianLeadTimeDays: number | null;
+};
+
+export async function getDemandProfile(
+  workspaceId: WorkspaceId,
+  range: DateRange,
+  timezone: string
+): Promise<DemandProfile> {
+  const created = dateClause(range);
+  const match: Record<string, unknown> = { workspaceId };
+  if (created) match.createdAt = created;
+
+  const [eventTypeRows, monthRows, leadRows] = await Promise.all([
+    Inquiry.aggregate<{ _id: string; count: number }>([
+      { $match: match },
+      { $group: { _id: "$eventType", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]),
+    Inquiry.aggregate<{ _id: string; count: number }>([
+      { $match: match },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$eventDate", timezone } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
+    Inquiry.find(match)
+      .select({ eventDate: 1, createdAt: 1 })
+      .lean<{ eventDate: Date; createdAt: Date }[]>(),
+  ]);
+
+  // ponytail: median in JS, fine at CRM inquiry volume
+  const leadTimes = leadRows
+    .map((r) => Math.round((r.eventDate.getTime() - r.createdAt.getTime()) / 86_400_000))
+    .sort((a, b) => a - b);
+  let medianLeadTimeDays: number | null = null;
+  if (leadTimes.length) {
+    const mid = Math.floor(leadTimes.length / 2);
+    medianLeadTimeDays =
+      leadTimes.length % 2 === 0 ? (leadTimes[mid - 1] + leadTimes[mid]) / 2 : leadTimes[mid];
+  }
+
+  return {
+    eventTypeMix: eventTypeRows.map((r) => ({ eventType: r._id, count: r.count })),
+    requestedMonths: monthRows.map((r) => ({ month: r._id, count: r.count })),
+    medianLeadTimeDays,
   };
 }
 

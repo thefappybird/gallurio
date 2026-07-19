@@ -36,13 +36,19 @@ vi.mock("./_components/EditorShell", () => ({
   EditorShell: ({
     initialSeoDescription,
     initialSeoKeywords,
+    initialInquiryRecipientEmail,
+    hasBeenPublished,
   }: {
     initialSeoDescription: string;
     initialSeoKeywords: string[];
+    initialInquiryRecipientEmail: string;
+    hasBeenPublished: boolean;
   }) => (
     <div>
       <div data-testid="seo-description">{initialSeoDescription}</div>
       <div data-testid="seo-keywords">{JSON.stringify(initialSeoKeywords)}</div>
+      <div data-testid="inquiry-recipient">{initialInquiryRecipientEmail}</div>
+      <div data-testid="has-been-published">{String(hasBeenPublished)}</div>
     </div>
   ),
 }));

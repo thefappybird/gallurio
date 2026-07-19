@@ -10,6 +10,7 @@ type Props = {
   today: string;
   currentMonth: string;
   currentYear: number;
+  currentWeek: string;
   tab: DashboardTab;
   children: ReactNode;
 };
@@ -25,6 +26,7 @@ export function DashboardPendingShell({
   today,
   currentMonth,
   currentYear,
+  currentWeek,
   tab,
   children,
 }: Props) {
@@ -41,6 +43,7 @@ export function DashboardPendingShell({
             today={today}
             currentMonth={currentMonth}
             currentYear={currentYear}
+            currentWeek={currentWeek}
             onPendingChange={setDatePending}
           />
           <DashboardTabs tab={tab} onPendingChange={setTabPending} />

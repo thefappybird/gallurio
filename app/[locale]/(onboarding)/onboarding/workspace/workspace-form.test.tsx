@@ -72,7 +72,7 @@ describe("WorkspaceStepForm", () => {
     expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
   });
 
-  it("skips saving and continues when a completed step is unchanged", async () => {
+  it("checks and saves the generated slug before continuing from a completed step", async () => {
     const { workspaceStepAction } = await import("@/lib/actions/onboarding");
     renderForm({}, "plan");
 
@@ -81,6 +81,11 @@ describe("WorkspaceStepForm", () => {
     await vi.waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/onboarding/plan");
     });
-    expect(workspaceStepAction).not.toHaveBeenCalled();
+    expect(workspaceStepAction).toHaveBeenCalledWith(defaults);
+  });
+
+  it("checks the auto-generated slug when the step opens", () => {
+    renderForm();
+    expect(mockUseSlugAvailability).toHaveBeenCalledWith(defaults.slug);
   });
 });

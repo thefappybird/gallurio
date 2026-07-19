@@ -102,6 +102,22 @@ describe("verifyAndParseLemonSqueezyEvent — missing secret", () => {
     process.env.LEMONSQUEEZY_WEBHOOK_SECRET = origSecret;
     vi.resetModules();
   });
+
+  it("returns null instead of throwing when the unsigned dev body is malformed JSON", async () => {
+    const origSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+    process.env.LEMONSQUEEZY_WEBHOOK_SECRET = "";
+
+    vi.resetModules();
+    const mod = await import("./webhook");
+
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = await mod.verifyAndParseLemonSqueezyEvent("{not valid json", "any-sig");
+    expect(result).toBeNull();
+
+    consoleSpy.mockRestore();
+    process.env.LEMONSQUEEZY_WEBHOOK_SECRET = origSecret;
+    vi.resetModules();
+  });
 });
 
 describe("computeWebhookEventKey", () => {
@@ -159,8 +175,46 @@ describe("redactWebhookEventForStorage", () => {
   });
 });
 
+describe("lemonSqueezyEventEnvelopeSchema", () => {
+  it("accepts a well-formed verified envelope", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created", custom_data: { workspaceId: "ws_1" } },
+      data: { id: "sub_1", attributes: { status: "active" } },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a payload missing meta.event_name", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: {},
+      data: { id: "sub_1", attributes: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload missing data.id", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created" },
+      data: { attributes: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload missing data.attributes", async () => {
+    const { lemonSqueezyEventEnvelopeSchema } = await import("./webhook");
+    const result = lemonSqueezyEventEnvelopeSchema.safeParse({
+      meta: { event_name: "subscription_created" },
+      data: { id: "sub_1" },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("HANDLED_LEMONSQUEEZY_EVENTS", () => {
-  it("contains the ten expected event names", async () => {
+  it("contains the twelve expected event names", async () => {
     const { HANDLED_LEMONSQUEEZY_EVENTS } = await import("./webhook");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_created");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_updated");
@@ -172,6 +226,8 @@ describe("HANDLED_LEMONSQUEEZY_EVENTS", () => {
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_success");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_failed");
     expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_refunded");
-    expect(HANDLED_LEMONSQUEEZY_EVENTS).toHaveLength(10);
+    expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_payment_recovered");
+    expect(HANDLED_LEMONSQUEEZY_EVENTS).toContain("subscription_plan_changed");
+    expect(HANDLED_LEMONSQUEEZY_EVENTS).toHaveLength(12);
   });
 });

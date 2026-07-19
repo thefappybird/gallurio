@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { formatMoney } from "@/lib/utils/format-currency";
 import type { KpiSnapshot, KpiTrend, KpiTrends } from "../_data/dashboard-metrics";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 type Props = {
   snapshot: KpiSnapshot;
@@ -66,6 +67,7 @@ function KpiCard({
         <div className="flex min-w-0 flex-col">
           <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             <span className="truncate">{label}</span>
+            <DashboardInfoHint hint="kpi" />
             <TrendBadge trend={trend} />
           </span>
           <span className="text-xl font-semibold tracking-tight">{value}</span>

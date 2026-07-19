@@ -37,6 +37,7 @@ import {
   saveThemeAction,
   updateThemeAction,
   updatePortfolioSlugAction,
+  updateFormLocaleAction,
 } from "./_actions";
 
 let workspaceId: Types.ObjectId;
@@ -301,6 +302,24 @@ describe("completeStoryPromptAction", () => {
     const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
     expect(draft!.seoDescription).toBe("Bali wedding studio capturing candid moments.");
     expect(draft!.seo!.keywords).toEqual(["wedding", "bali", "candid"]);
+  });
+
+  it("persists the first-visit share image and inquiry recipient", async () => {
+    const res = await completeStoryPromptAction({
+      description: "Studio",
+      keywords: ["wedding"],
+      ogImageUrl: "https://imagedelivery.net/h/share/public",
+      ogImageAssetId: "share-1",
+      inquiryRecipientEmail: "inquiries@studio.test",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(verifyImageOwnership).toHaveBeenCalledWith("share-1", String(workspaceId));
+    const ws = await Workspace.findById(workspaceId).lean();
+    const draft = await PortfolioDraft.findOne({ workspaceId }).lean();
+    expect(ws!.publicPage!.inquiryRecipientEmail).toBe("inquiries@studio.test");
+    expect(draft!.seo!.ogImageUrl).toBe("https://imagedelivery.net/h/share/public");
+    expect(draft!.seo!.ogImageAssetId).toBe("share-1");
   });
 
   it("rejects a description over 300 chars", async () => {
@@ -690,5 +709,27 @@ describe("updatePortfolioSlugAction", () => {
     await updatePortfolioSlugAction("new-slug");
     const other = await Workspace.findById(otherWs._id).lean();
     expect(other?.slug).toBe("other-studio");
+  });
+});
+
+describe("updateFormLocaleAction", () => {
+  it("accepts every routing locale, including ar", async () => {
+    const result = await updateFormLocaleAction("ar");
+    expect(result).toEqual({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws?.publicPage?.formLocale).toBe("ar");
+  });
+
+  it("rejects a removed locale (ms) as invalid_locale", async () => {
+    const result = await updateFormLocaleAction("ms");
+    expect(result).toEqual({ error: "invalid_locale" });
+  });
+
+  it("staff role — returns owner_only, formLocale unchanged", async () => {
+    mockCtx.role = "staff";
+    const result = await updateFormLocaleAction("th");
+    expect(result).toEqual({ error: "owner_only" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws?.publicPage?.formLocale).toBe("");
   });
 });

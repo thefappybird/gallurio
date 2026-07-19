@@ -1,5 +1,5 @@
 import "server-only";
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { Workspace, type PlanTier } from "@/lib/db/models";
 
 // Provider-agnostic plan grant: sets plan + planGrantExpiresAt and CLEARS
@@ -16,7 +16,7 @@ import { Workspace, type PlanTier } from "@/lib/db/models";
 // still apply once/if this grant expires back to free.
 export async function grantPlan(
   workspaceId: string | Types.ObjectId,
-  opts: { plan: PlanTier; expiresAt: Date | null }
+  opts: { plan: PlanTier; expiresAt: Date | null; session?: ClientSession }
 ): Promise<void> {
   await Workspace.updateOne(
     { _id: workspaceId },
@@ -29,6 +29,7 @@ export async function grantPlan(
         lsCustomerId: null,
         lsCurrentPeriodEnd: null,
       },
-    }
+    },
+    opts.session ? { session: opts.session } : undefined
   );
 }

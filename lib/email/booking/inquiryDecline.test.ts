@@ -82,10 +82,10 @@ describe("sendInquiryDeclineClient", () => {
     ).resolves.not.toThrow();
   });
 
-  it("uses ms locale copy when country is MY", async () => {
+  it("uses th locale copy when country is TH", async () => {
     await sendInquiryDeclineClient({
       brand: partnerBrand,
-      locale: "MY",
+      locale: "TH",
       clientName: "Ali Hassan",
       clientEmail: "ali@example.com",
       businessName: "Studio Lumen",
@@ -94,15 +94,15 @@ describe("sendInquiryDeclineClient", () => {
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
-    // MY country resolves to ms locale — assert ms-specific copy
-    expect(arg.html).toContain("tidak dapat memenuhi");
-    expect(arg.subject).toContain("Kemaskini mengenai pertanyaan anda");
+    // TH country resolves to th locale — assert th-specific copy
+    expect(arg.html).toContain("ไม่สามารถรองรับคำขอของคุณได้ในขณะนี้");
+    expect(arg.subject).toContain("อัปเดตเกี่ยวกับคำถามของคุณ");
   });
 
   it("renders bilingual content (English + workspace locale) when locale resolves to non-en", async () => {
     await sendInquiryDeclineClient({
       brand: partnerBrand,
-      locale: "MY",
+      locale: "TH",
       clientName: "Ali Hassan",
       clientEmail: "ali@example.com",
       businessName: "Studio Lumen",
@@ -113,13 +113,13 @@ describe("sendInquiryDeclineClient", () => {
     const arg = sendEmail.mock.calls[0][0];
     // English section
     expect(arg.html).toContain("Thank you for reaching out");
-    // Localized (ms) section
-    expect(arg.html).toContain("tidak dapat memenuhi");
+    // Localized (th) section
+    expect(arg.html).toContain("ไม่สามารถรองรับคำขอของคุณได้ในขณะนี้");
     // Divider
     expect(arg.html).toContain("email-divider");
     // Bilingual subject
     expect(arg.subject).toContain("·");
     expect(arg.subject).toContain("An update on your inquiry");
-    expect(arg.subject).toContain("Kemaskini mengenai pertanyaan anda");
+    expect(arg.subject).toContain("อัปเดตเกี่ยวกับคำถามของคุณ");
   });
 });

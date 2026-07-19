@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { VerifyEmailForm } from "./_verify-email-form";
+import { getEmailVerificationExpiresAt } from "../_actions";
 
 export async function generateMetadata({
   params,
@@ -20,5 +21,6 @@ export default async function VerifyEmailPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <VerifyEmailForm />;
+  const expiresAt = await getEmailVerificationExpiresAt();
+  return <VerifyEmailForm locale={locale} expiresAt={expiresAt} />;
 }

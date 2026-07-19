@@ -40,7 +40,7 @@ export function TeamPicker({
         render={
           <Button
             variant="outline"
-            className="w-full justify-between font-normal sm:w-48"
+            className="w-full shrink-0 justify-between font-normal min-[360px]:w-40 sm:w-48"
             aria-label={t("label")}
           >
             <span className="truncate">{label}</span>

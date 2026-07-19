@@ -18,11 +18,11 @@ export default async function SignInPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams: Promise<{ returnTo?: string; notice?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const { returnTo } = await searchParams;
+  const { returnTo, notice } = await searchParams;
 
-  return <SignInForm returnTo={returnTo} />;
+  return <SignInForm returnTo={returnTo} sessionExpired={notice === "session_expired"} />;
 }

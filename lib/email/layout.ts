@@ -1,5 +1,12 @@
 import { escapeHtml } from "./escapeHtml";
 import { Brand, ctaTextColor } from "./brand";
+import type { EmailAttachment } from "./send";
+import {
+  GALLURIO_LOGO_CID,
+  WORKSPACE_LOGO_CID,
+  gallurioLogoInlineAttachment,
+  workspaceLogoInlineAttachment,
+} from "./inlineImages";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,7 +21,7 @@ export type EmailBlock =
 
 export type RenderEmailOpts = {
   brand: Brand;
-  locale: "en" | "fil" | "ms" | "id";
+  locale: "en" | "fil" | "id" | "ar" | "th";
   preheader: string;
   title: string;
   subtitle?: string;
@@ -33,17 +40,17 @@ export type LocaleContent = {
   supportLine?: string;
 };
 
-export const LANGUAGE_NAME: Record<"en" | "fil" | "ms" | "id", string> = {
+export const LANGUAGE_NAME: Record<"en" | "fil" | "id" | "th", string> = {
   en: "English",
   fil: "Filipino",
-  ms: "Bahasa Melayu",
   id: "Bahasa Indonesia",
+  th: "ภาษาไทย",
 };
 
 export function bilingualSubject(
   en: string,
   localized: string,
-  locale: "en" | "fil" | "ms" | "id",
+  locale: "en" | "fil" | "id" | "th",
 ): string {
   return locale === "en" || en === localized ? en : `${en} · ${localized}`;
 }
@@ -139,7 +146,7 @@ function blockText(block: EmailBlock): string {
 // Main render
 // ---------------------------------------------------------------------------
 
-export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text: string } {
+export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text: string; attachments: EmailAttachment[] } {
   const { brand, locale, preheader, title, subtitle, blocks, cta, secondaryCta, supportLine } = opts;
   const isPlatform = brand.kind === "platform";
   const accentHex = brand.accentHex;
@@ -149,24 +156,43 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
   const headerBg = isPlatform ? accentHex : WHITE;
   const headerTextColor = isPlatform ? ctaTextColor(accentHex) : LIGHT_TEXT;
   const headerBorderBottom = isPlatform ? "" : `border-bottom:3px solid ${accentHex};`;
-  const brandDisplay = brand.logoUrl
-    ? `<img src="${e(brand.logoUrl)}" height="28" alt="${e(brand.name)}" style="display:block;border:0;" />`
-    : `<span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:${headerTextColor};">${e(brand.name)}</span>`;
+  const nameSpan = `<span style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;color:${headerTextColor};">${e(brand.name)}</span>`;
+  const gallurioAttachment = gallurioLogoInlineAttachment();
+  const workspaceAttachment = !isPlatform && brand.logoUrl
+    ? workspaceLogoInlineAttachment(brand.logoUrl)
+    : null;
+  const logoCid = isPlatform
+    ? (gallurioAttachment ? GALLURIO_LOGO_CID : null)
+    : (workspaceAttachment ? WORKSPACE_LOGO_CID : null);
+  const logoImg = logoCid
+    ? `<img src="cid:${logoCid}" height="28" alt="${e(brand.name)}" style="display:block;border:0;" />`
+    : null;
+  const isRtl = locale === "ar";
+  const brandDisplay = logoImg
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${
+        isRtl
+          ? `<td style="padding-right:8px;">${nameSpan}</td><td>${logoImg}</td>`
+          : `<td>${logoImg}</td><td style="padding-left:8px;">${nameSpan}</td>`
+      }</tr></table>`
+    : nameSpan;
 
   // Footer
   let footerHtml: string;
   let footerText: string;
+  const footerMark = gallurioAttachment
+    ? `<img src="cid:${GALLURIO_LOGO_CID}" height="16" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:6px;" />`
+    : "";
   if (isPlatform) {
     footerHtml = [
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">Your event business, beautifully managed.</p>`,
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;"><a href="mailto:support@gallurio.com" style="color:#aaaaaa;">support@gallurio.com</a></p>`,
-      `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">&copy; ${year} Gallurio. All rights reserved.</p>`,
+      `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">${footerMark}&copy; ${year} Gallurio. All rights reserved.</p>`,
     ].join("\n");
     footerText = `Your event business, beautifully managed.\nsupport@gallurio.com\n© ${year} Gallurio. All rights reserved.`;
   } else {
     footerHtml = [
       `<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">${e(brand.name)}</p>`,
-      `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;"><a href="https://gallurio.com" style="color:#aaaaaa;">Powered by Gallurio</a></p>`,
+      `<p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#aaaaaa;">${footerMark}<a href="https://gallurio.com" style="color:#aaaaaa;">Powered by Gallurio</a></p>`,
     ].join("\n");
     footerText = `${brand.name}\nPowered by Gallurio`;
   }
@@ -205,7 +231,7 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
 
   const html = [
     "<!DOCTYPE html>",
-    `<html lang="${locale}">`,
+    locale === "ar" ? `<html lang="ar" dir="rtl">` : `<html lang="${locale}">`,
     "<head>",
     '<meta charset="UTF-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0" />',
@@ -276,7 +302,13 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
   if (supportLine) textParts.push("", supportLine);
   textParts.push("", footerText);
 
-  return { html, text: textParts.join("\n") };
+  return {
+    html,
+    text: textParts.join("\n"),
+    attachments: [gallurioAttachment, workspaceAttachment].filter(
+      (attachment): attachment is EmailAttachment => attachment !== null
+    ),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -286,9 +318,9 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
 export function renderBilingualEmail(opts: {
   brand: Brand;
   preheader: string;
-  secondaryLocale: "en" | "fil" | "ms" | "id";
-  build: (locale: "en" | "fil" | "ms" | "id") => LocaleContent;
-}): { html: string; text: string } {
+  secondaryLocale: "en" | "fil" | "id" | "th";
+  build: (locale: "en" | "fil" | "id" | "th") => LocaleContent;
+}): { html: string; text: string; attachments: EmailAttachment[] } {
   const { brand, preheader, secondaryLocale, build } = opts;
   const primary = build("en");
 

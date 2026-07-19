@@ -64,4 +64,18 @@ describe("TeamPerformanceCards bar chart RTL axes", () => {
     expect(captured.yAxis?.orientation).toBe("right");
     expect(captured.xAxis?.reversed).toBe(true);
   });
+
+  it("scales the booking axis to the highest booking count", () => {
+    renderWithProviders(
+      <TeamPerformanceCards
+        revenueByTeam={revenueByTeam}
+        bookingsByTeam={bookingsByTeam}
+        currency="PHP"
+        locale="en"
+      />,
+      { locale: "en" }
+    );
+
+    expect(captured.xAxis?.domain).toEqual([0, "dataMax"]);
+  });
 });

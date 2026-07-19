@@ -1,9 +1,9 @@
 # Lemon Squeezy Billing — Setup & Architecture
 
-Gallurio bills tenants (workspace owners) via **Lemon Squeezy**, a Merchant of
+Gallurio currently bills tenants (workspace owners) in code via **Lemon Squeezy**, a Merchant of
 Record (MoR) — it collects payments worldwide, remits VAT/GST/sales tax in
 every jurisdiction it supports, and pays out net proceeds to Gallurio.
-Lemon Squeezy is the current provider because Gallurio does not yet have a registered PH business entity and needed a provider that can onboard an individual/sole-proprietor seller. This was a hard cutover with no live subscribers, so there was no data migration.
+This document describes the current Lemon Squeezy implementation. For live launch, Lemon Squeezy, Creem, and a possible Paddle sole-proprietor application are candidates. Use this setup only if Lemon Squeezy is explicitly selected after live eligibility and approval verification; Creem and Paddle are not integrated today. This was a hard cutover with no live subscribers, so there was no data migration.
 
 **Currently running in test/sandbox mode** (`LEMONSQUEEZY_TEST_MODE=true`) —
 pre-launch, no real subscribers.
@@ -53,7 +53,8 @@ per-store scoping.
    `subscription_cancelled`, `subscription_resumed`, `subscription_unpaused`,
    `subscription_paused`, `subscription_expired`,
    `subscription_payment_success`, `subscription_payment_failed`,
-   `subscription_payment_refunded`.
+   `subscription_payment_refunded`, `subscription_payment_recovered`,
+   `subscription_plan_changed`.
 4. Copy the **signing secret** → `LEMONSQUEEZY_WEBHOOK_SECRET`.
 
 ### 5. Enable test mode
@@ -95,40 +96,35 @@ the app errs toward sandbox).
 
 ## Part B — Architecture
 
-### Checkout flow (checkout-URL + durable-workflow-hook)
+### Checkout flow (synchronous — no durable workflow)
 
 1. Client (settings billing panel or onboarding plan step) `POST`s
    `/api/billing/checkout` with `{ plan, cadence, onboarding? }`.
-2. The route (`app/api/billing/checkout/route.ts`):
-   - Resolves the target `variantId` from `lib/lemonsqueezy/plans.ts`
-     (`PLAN_CATALOG`).
-   - Cancels any in-flight checkout workflow run for this workspace (looked
-     up by the deterministic hook token `ls-checkout-<workspaceId>`) so an
-     abandoned checkout can't block a retry.
-   - Starts `subscriptionCheckoutWorkflow(workspaceId, plan)` — a durable
-     Vercel Workflow run (`lib/workflows/subscriptionCheckout.ts`) that
-     creates a hook on that same `ls-checkout-<workspaceId>` token and
-     suspends, surviving cold starts/deploys.
-   - Calls `createSubscriptionCheckout()` (`lib/lemonsqueezy/client.ts`),
-     which hits the Lemon Squeezy SDK's `createCheckout(storeId, variantId, …)`
-     with `checkoutData: { email, name, custom: { workspaceId } }` and
-     `testMode`. Lemon Squeezy resolves/creates the customer from the checkout
-     email itself — there is no customer pre-create step.
-   - Returns `{ checkoutUrl, workspaceId }`. The client opens `checkoutUrl` in
-     the Lemon Squeezy overlay (`lemon.js`) — no client-side API key needed.
+2. The route (`app/api/billing/checkout/route.ts`) authenticates, rate-limits
+   by workspace, resolves the target `variantId` from `lib/lemonsqueezy/plans.ts`
+   (`PLAN_CATALOG`), calls `createSubscriptionCheckout()`
+   (`lib/lemonsqueezy/client.ts` — hits the Lemon Squeezy SDK's
+   `createCheckout(storeId, variantId, …)` with
+   `checkoutData: { email, name, custom: { workspaceId } }` and `testMode`;
+   Lemon Squeezy resolves/creates the customer from the checkout email itself,
+   no pre-create step), and returns `{ checkoutUrl, workspaceId }` directly —
+   no workflow start/suspend/hook step. The client opens `checkoutUrl` in the
+   Lemon Squeezy overlay (`lemon.js`) — no client-side API key needed.
 3. The user pays in the overlay. Lemon Squeezy fires `subscription_created` to
    the registered webhook, echoing `meta.custom_data.workspaceId` back.
-4. The webhook handler (`app/api/webhooks/lemonsqueezy/route.ts`) upserts the
-   workspace's subscription fields, applies the team-cap downgrade guard
-   before promoting `plan`, and calls `resumeHook("ls-checkout-<workspaceId>", …)`
-   to wake the suspended workflow, which persists subscription bookkeeping
-   fields via `lib/workflows/steps/billing.ts` and clears
-   `lsCheckoutWorkflowRunId`.
+4. The webhook handler (`app/api/webhooks/lemonsqueezy/route.ts`) atomically
+   claims the event in the `WebhookEvent` ledger (unique
+   `{provider, eventKey}`, 2-minute processing lease), dispatches to
+   `LEMONSQUEEZY_WEBHOOK_HANDLERS[event.meta.event_name]`
+   (`lib/lemonsqueezy/webhookHandlers.ts`), and marks the ledger row
+   `processed` only after the handler succeeds — a handler failure marks it
+   `failed` and returns 500 so Lemon Squeezy redelivers.
 5. `/onboarding/done` also calls `reconcileLemonSqueezySubscription()` as a
    best-effort safety net for the race between checkout completing and the
    webhook arriving — it looks up the subscription by the owner's email via
    `listActiveSubscriptionsForEmail()` (no stored customerId to key off, since
-   none is pre-created).
+   none is pre-created), then applies the same `applySubscriptionSnapshot()`
+   helper the webhook uses, so the two paths can never drift.
 
 ### Webhook event handling — the cancelled-vs-expired distinction
 
@@ -143,7 +139,8 @@ This is the main lifecycle distinction to keep in mind, and the handler is not a
   ended. This is the one that downgrades `plan` to `"free"`, bypassing the
   team-cap guard entirely (an expired subscription must never leave an
   over-cap team on paid entitlements — that's a billing leak, not a UX
-  nicety).
+  nicety). It also consumes any pending promo grant, or otherwise sets a
+  15-day post-expiry free-plan grace grant.
 - **`subscription_payment_refunded`** is handled the same way as
   `subscription_expired` — a refund means the customer got their money back,
   so access is revoked immediately rather than waiting for a separate
@@ -151,24 +148,34 @@ This is the main lifecycle distinction to keep in mind, and the handler is not a
   not a subscription: `event.data.id` is the invoice's own id, and the real
   subscription id is in `attributes.subscription_id` instead (the shared
   workspace-resolution helper checks that field first for this reason).
-- `subscription_created` / `subscription_updated` run the same upsert path:
-  route by `meta.custom_data.workspaceId` with a defence-in-depth check
-  against a different existing subscription id on that workspace, resolve the
-  plan tier from `variant_id`, apply the team-cap guard before promoting
-  `plan`, and `resumeHook()` on creation.
-- `subscription_paused` / `subscription_unpaused` / `subscription_resumed` /
-  `subscription_payment_failed` are status-only updates.
-- `subscription_payment_success` best-effort bumps status to `active`; it only
-  touches `lsCurrentPeriodEnd` when the payload actually carries a usable
+- `subscription_created` / `subscription_updated` / `subscription_plan_changed`
+  all run the same upsert path (`applySubscriptionSnapshot()`): route by
+  `meta.custom_data.workspaceId` with a defence-in-depth check against a
+  different existing subscription id on that workspace, resolve the plan tier
+  from `variant_id`, and apply the team-cap guard before promoting `plan`.
+  `subscription_updated` is treated as the catch-all snapshot — it fires on
+  ANY attribute change, so it must converge cancellation/expiry/pause/
+  dunning/activation/plan-change state even if a granular companion event is
+  delayed.
+- `subscription_paused` / `subscription_payment_failed` are status-only
+  updates that keep Pro access. `subscription_unpaused` / `subscription_resumed`
+  are status-only updates that also clear the lapse-lifecycle timestamps.
+- `subscription_payment_success` / `subscription_payment_recovered` both
+  best-effort bump status to `active` and clear lapse-lifecycle timestamps; they
+  only touch `lsCurrentPeriodEnd` when the payload actually carries a usable
   `renews_at` — `subscription_updated` is the authoritative period-end source
   since Lemon Squeezy also fires it on renewal.
+- Every timestamped update is applied through `applyOrderedWorkspaceUpdate()`
+  (`lib/billing/webhookOrdering.ts`), which compares the event's
+  `attributes.updated_at` (falling back to `created_at`) against
+  `Workspace.lsLastEventAt` so an older/out-of-order event can never overwrite
+  a newer subscription state. A missing timestamp is still processed
+  (degraded fallback) for compatibility.
 
 ### Status mapping
 
 Raw Lemon Squeezy status → Gallurio's internal `LemonSqueezySubscriptionStatus`
-enum (`lib/lemonsqueezy/status.ts`, duplicated inline in
-`lib/workflows/steps/billing.ts` — see that file's header comment for why the
-`@workflow/vitest` bundler forces the duplication):
+enum (`lib/lemonsqueezy/status.ts`):
 
 | Lemon Squeezy | Internal |
 |---|---|
@@ -188,10 +195,36 @@ digest compared to the `X-Signature` header via `crypto.timingSafeEqual`. Raw
 body is read before parsing (Node runtime, `dynamic = "force-dynamic"`). Dev
 convenience: if `LEMONSQUEEZY_WEBHOOK_SECRET` is unset and `NODE_ENV` isn't
 `production`, the route accepts an unsigned body with a console warning — this
-throws in production. The route always acks `200` after a successful
-signature check, even if the handler itself throws, except for a genuinely
-invalid signature (`401`) or an unhandled handler exception (`500`, so Lemon
-Squeezy retries) — unmodelled event names are acked `200` and ignored.
+throws in production. Response codes: `401` on an invalid signature, `400` on
+a verified-but-malformed envelope, `200` for an unmodelled event name (acked
+and ignored, no mutation), `200` for a duplicate/in-flight event (see below),
+`500` on a handler exception (so Lemon Squeezy redelivers), `200` only after
+the handler succeeds and the ledger row is marked `processed`.
+
+A production-only guard rejects `meta.test_mode === true` events (acked `200`,
+ignored) so a misconfigured test-mode checkout can never grant a real
+customer paid access.
+
+### Idempotency — the claim-lease ledger
+
+Lemon Squeezy delivers **at-least-once** (redelivers on any non-2xx response
+or timeout) — the guarantee here is idempotent, effectively-once
+*application*, not exactly-once execution. Every verified event is claimed in
+`WebhookEvent` (`lib/db/models/WebhookEvent.ts`) keyed by a unique
+`{provider, eventKey}` before any handler runs:
+
+- A genuinely-new `eventKey`, a `failed` row, or a `processing` row whose
+  2-minute `leaseExpiresAt` has passed can be claimed (atomic
+  `findOneAndUpdate` with `upsert`).
+- A `processed` row or a `processing` row with a live lease matches nothing,
+  so the claim attempt collides on the unique index (`E11000`) — that
+  delivery acks `200` with `deduped: true` or `processing: true` and performs
+  no handler call.
+- Completion/failure writes are filtered on `{_id, claimToken}` together, so a
+  worker whose lease already expired can never overwrite a newer claimant's
+  outcome.
+- `scripts/replay-lemonsqueezy-event.ts` lets an operator manually replay a
+  specific `failed` ledger row (also useful alongside a dashboard "resend").
 
 ### Env vars
 

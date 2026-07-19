@@ -70,27 +70,30 @@ export function TableSkeleton({
         aria-busy="true"
         aria-label="Loading table data"
       >
-        <div className="flex gap-4 border-b border-border bg-muted/30 px-3 py-2">
-          {Array.from({ length: columns }).map((_, i) => (
-            <Skeleton key={i} className="h-3 w-16 shrink-0" />
-          ))}
-        </div>
-        {Array.from({ length: rows }).map((_, rowIdx) => (
-          <div
-            key={rowIdx}
-            className="flex items-center gap-4 border-b border-border px-3 py-2.5 last:border-b-0"
-          >
-            {Array.from({ length: columns }).map((_, colIdx) => (
-              <Skeleton
-                key={colIdx}
-                className={cn(
-                  "h-5 shrink-0",
-                  COL_WIDTHS[colIdx % COL_WIDTHS.length]
-                )}
-              />
+        <table className="w-full table-fixed text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/30">
+              {Array.from({ length: columns }).map((_, i) => (
+                <th key={i} className="px-3 py-2 text-start">
+                  <Skeleton className="h-3 w-16" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }).map((_, rowIdx) => (
+              <tr key={rowIdx} className="border-b border-border last:border-b-0">
+                {Array.from({ length: columns }).map((_, colIdx) => (
+                  <td key={colIdx} className="px-3 py-2.5 align-middle">
+                    <Skeleton
+                      className={cn("h-5 w-full", COL_WIDTHS[colIdx % COL_WIDTHS.length])}
+                    />
+                  </td>
+                ))}
+              </tr>
             ))}
-          </div>
-        ))}
+          </tbody>
+        </table>
       </div>
     </>
   );

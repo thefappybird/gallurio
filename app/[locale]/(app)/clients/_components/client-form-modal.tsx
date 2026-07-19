@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { XIcon } from "lucide-react";
+import { tagBorderClass } from "@/components/app/tag-pill";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,11 +35,13 @@ type Props = {
   initialData?: ClientFormData;
   onSuccess: () => void;
   onDirtyChange?: (dirty: boolean) => void;
+  /** Edit mode only: discard any draft and return to the read-only client view. */
+  onView?: () => void;
 };
 
 const SOURCES = ["form", "manual", "referral", "import"] as const;
 
-export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, onDirtyChange }: Props) {
+export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, onDirtyChange, onView }: Props) {
   const t = useTranslations("app.clients");
   const errMsg = useActionError();
   const isEdit = !!initialData?.id;
@@ -56,6 +59,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
   });
 
   const [unsavedOpen, setUnsavedOpen] = useState(false);
+  const [viewAfterDiscard, setViewAfterDiscard] = useState(false);
   const [tagInput, setTagInput] = useState("");
 
   // Reset form (and the in-progress tag draft) when modal opens/closes or
@@ -88,6 +92,21 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
     form.reset();
     setTagInput("");
     onOpenChange(false);
+    if (viewAfterDiscard) {
+      setViewAfterDiscard(false);
+      onView?.();
+    }
+  }
+
+  function handleView() {
+    if (!onView) return;
+    if (isDirty) {
+      setViewAfterDiscard(true);
+      setUnsavedOpen(true);
+      return;
+    }
+    onOpenChange(false);
+    onView();
   }
 
   function addTag(raw: string) {
@@ -242,7 +261,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
                     {tags.map((tag) => (
                       <span
                         key={tag}
-                        className="inline-flex items-center gap-1 border border-border bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
+                        className={`inline-flex items-center gap-1 border bg-muted px-1.5 py-0.5 text-xs text-muted-foreground ${tagBorderClass(tag)}`}
                       >
                         {tag}
                         <button
@@ -278,7 +297,19 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-border px-4 py-3 sm:flex-row sm:justify-end">
+            <div className="flex shrink-0 flex-row flex-wrap justify-end gap-2 border-t border-border px-4 py-3">
+              {isEdit && onView ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleView}
+                  disabled={isSubmitting}
+                  className="min-h-11 sm:mr-auto sm:min-h-0"
+                >
+                  {t("form.view")}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"

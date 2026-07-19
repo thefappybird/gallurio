@@ -82,7 +82,7 @@ function AlertDialogFooter({
   return (
     <div
       className={cn(
-        "flex flex-col-reverse gap-2 px-4 py-3 sm:flex-row sm:justify-end",
+        "flex flex-row flex-nowrap justify-end gap-2 px-4 py-3 [&>button]:min-w-0 [&>button]:flex-1",
         className
       )}
       {...props}

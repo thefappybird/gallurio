@@ -4,6 +4,7 @@ const sendEmail = vi.fn();
 vi.mock("./send", () => ({ sendEmail: (...args: unknown[]) => sendEmail(...args) }));
 
 import { sendInquiryClientConfirmation } from "./inquiryClientConfirmation";
+import { WORKSPACE_LOGO_CID } from "./inlineImages";
 
 beforeEach(() => {
   sendEmail.mockReset();
@@ -25,7 +26,7 @@ describe("sendInquiryClientConfirmation", () => {
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
-    expect(arg.subject).toContain("Studio Aurora");
+    expect(arg.subject).toBe("Your inquiry is with Studio Aurora");
     expect(arg.html).toContain("Studio Aurora");
     expect(arg.replyTo).toBe("owner@studio.test");
     // No raw <strong> tags — the template escapes all caller strings
@@ -34,19 +35,19 @@ describe("sendInquiryClientConfirmation", () => {
     expect(arg.html).toContain("Powered by Gallurio");
   });
 
-  it("uses ms locale copy when country is MY", async () => {
+  it("uses th locale copy when country is TH", async () => {
     await sendInquiryClientConfirmation({
       workspaceName: "Studio Aurora",
       clientEmail: "emma@example.com",
       clientName: "Emma Carter",
       ownerEmail: "owner@studio.test",
-      country: "MY",
+      country: "TH",
     });
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
-    // ms locale: "Kami telah menerima pertanyaan anda"
-    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    // The localized title remains part of the bilingual email body.
+    expect(arg.html).toContain("คำถามของคุณถึง Studio Aurora แล้ว");
     expect(arg.html).toContain("Studio Aurora");
     expect(arg.html).toContain("Powered by Gallurio");
   });
@@ -55,6 +56,7 @@ describe("sendInquiryClientConfirmation", () => {
     const brand = {
       kind: "partner" as const,
       name: "Aurora Events",
+      logoUrl: "https://images.example.test/aurora-logo.png",
       accentHex: "#ff5500",
       poweredByGallurio: true,
     };
@@ -65,14 +67,22 @@ describe("sendInquiryClientConfirmation", () => {
       clientName: "Emma Carter",
       ownerEmail: "owner@studio.test",
       brand,
-      country: "MY",
+      country: "TH",
     });
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
     // Brand name takes precedence
     expect(arg.html).toContain("Aurora Events");
-    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    // Logo is embedded via a CID attachment rather than a raw URL
+    expect(arg.html).toContain(`src="cid:${WORKSPACE_LOGO_CID}"`);
+    expect(arg.attachments).toContainEqual(
+      expect.objectContaining({
+        contentId: WORKSPACE_LOGO_CID,
+        path: "https://images.example.test/aurora-logo.png",
+      }),
+    );
+    expect(arg.html).toContain("คำถามของคุณถึง Aurora Events แล้ว");
     expect(arg.html).toContain("Powered by Gallurio");
   });
 
@@ -82,21 +92,19 @@ describe("sendInquiryClientConfirmation", () => {
       clientEmail: "emma@example.com",
       clientName: "Emma Carter",
       ownerEmail: "owner@studio.test",
-      country: "MY",
+      country: "TH",
     });
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
     // English section
-    expect(arg.html).toContain("Thanks for reaching out");
-    // Localized (ms) section
-    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    expect(arg.html).toContain("Thank you for getting in touch");
+    // Localized (th) section
+    expect(arg.html).toContain("คำถามของคุณถึง Studio Aurora แล้ว");
     // Divider
     expect(arg.html).toContain("email-divider");
-    // Bilingual subject
-    expect(arg.subject).toContain("·");
-    expect(arg.subject).toContain("We received your inquiry");
-    expect(arg.subject).toContain("Kami telah menerima pertanyaan anda");
+    // Inbox subjects are English-only, while the body remains bilingual.
+    expect(arg.subject).toBe("Your inquiry is with Studio Aurora");
   });
 
   it("is best-effort: returns error result without throwing when render fails", async () => {

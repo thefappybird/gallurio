@@ -27,9 +27,9 @@ describe("PortfolioLanguageControl", () => {
     // All 5 locale labels must be visible
     expect(screen.getByText("English")).toBeInTheDocument();
     expect(screen.getByText("Filipino")).toBeInTheDocument();
-    expect(screen.getByText("Bahasa Melayu")).toBeInTheDocument();
     expect(screen.getByText("Bahasa Indonesia")).toBeInTheDocument();
     expect(screen.getByText("العربية")).toBeInTheDocument();
+    expect(screen.getByText("ภาษาไทย")).toBeInTheDocument();
 
     // Clicking a locale calls onChange
     fireEvent.click(screen.getByText("Filipino"));

@@ -3,6 +3,7 @@ export type NotificationType =
   | 'booking.team_assigned'
   | 'booking.status_changed'
   | 'team.invitation'
+  | 'team.invite_accepted'
   | 'team.removed'
   | 'team.deleted'
 
@@ -12,6 +13,9 @@ export interface NotificationVars {
   clientName?: string
   assignerName?: string
   inviterName?: string
+  memberName?: string
+  memberEmail?: string
+  role?: string
   teamName?: string
   actorName?: string
   newStatus?: string

@@ -15,15 +15,16 @@ describe("SPOTLIGHT_STEPS", () => {
     expect(designIdx).toBeLessThan(layoutIdx);
   });
 
-  it("step 2 (drag-block) is gated (requires drag) with passthrough and anchors to blocks-panel", () => {
+  it("step 2 (drag-block) requires a preset drop, with passthrough and a blocks-panel anchor", () => {
     const step = SPOTLIGHT_STEPS.find((s) => s.id === "drag-block");
     expect(step).toBeDefined();
-    // Gated: user must drag a block to canvas before Next appears
+    // Gated: the guide accepts a preset drop before it advances.
     expect(step?.gated).toBe(true);
     // passthrough: pointer events reach the real editor so the drag works
     expect(step?.passthrough).toBe(true);
     // Anchors to the full left blocks/components panel
     expect(step?.anchorId).toBe("blocks-panel");
+    expect(step?.body).toContain("Preset block");
   });
 
   it("step 2 (drag-block) secondary anchor is the precise canvas viewport, not the full Puck wrapper", () => {
@@ -70,6 +71,28 @@ describe("SPOTLIGHT_STEPS", () => {
     expect(step?.anchorId).toBe("properties-panel-full");
     // Tooltip should be placed to the left of the right panel
     expect(step?.placement).toBe("left");
+  });
+
+  it("teaches Preview before canvas controls and uses a dedicated language anchor", () => {
+    const controlsIdx = SPOTLIGHT_STEPS.findIndex((s) => s.id === "canvas-controls");
+    const previewIdx = SPOTLIGHT_STEPS.findIndex((s) => s.id === "preview-device");
+    const controls = SPOTLIGHT_STEPS[controlsIdx];
+    const translate = SPOTLIGHT_STEPS.find((s) => s.id === "translate");
+
+    expect(controlsIdx).toBeGreaterThan(-1);
+    expect(previewIdx).toBeLessThan(controlsIdx);
+    expect(controls.anchorId).toBe("canvas-controls");
+    expect(controls.body).toContain("smaller screens");
+    expect(translate?.anchorId).toBe("language-control");
+  });
+
+  it("gives Guide, Drafts, Save, and Publish their own final action steps", () => {
+    const actionIds = SPOTLIGHT_STEPS.slice(-4).map((step) => step.id);
+    expect(actionIds).toEqual(["guide", "drafts", "save", "publish"]);
+    expect(SPOTLIGHT_STEPS.find((step) => step.id === "drafts")?.anchorId).toBe("drafts");
+    expect(SPOTLIGHT_STEPS.find((step) => step.id === "guide")?.anchorId).toBe("guide");
+    expect(SPOTLIGHT_STEPS.find((step) => step.id === "save")?.anchorId).toBe("save-changes");
+    expect(SPOTLIGHT_STEPS.find((step) => step.id === "publish")?.anchorId).toBe("publish");
   });
 });
 

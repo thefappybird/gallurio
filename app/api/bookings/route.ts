@@ -6,7 +6,7 @@ import { canWriteBookingForTeam } from "@/lib/auth/canEditBooking";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
 import { bookingCreateSchema } from "@/lib/validators/booking";
-import { recordBookingForClient } from "@/lib/db/clientTransactions";
+import { recordBookingForClient, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { normalizePayments, isCompletionEligible } from "@/lib/bookings/payment-rules";
 
@@ -125,7 +125,9 @@ export async function POST(req: Request) {
               name: client.name,
               email: client.email ?? null,
               phone: client.phone ?? null,
-              source: "manual",
+              source: client.source,
+              tags: client.tags,
+              notes: client.notes,
             },
           ],
           { session }
@@ -189,6 +191,17 @@ export async function POST(req: Request) {
           teamId: booking.teamId,
         },
         source: "manual",
+        session,
+      });
+      await syncBookingPaymentsForClient({
+        workspaceId: ctx.workspace._id,
+        clientId,
+        booking: {
+          _id: booking._id,
+          teamId: booking.teamId,
+          amount: { currency: booking.amount!.currency },
+          payments: booking.payments ?? [],
+        },
         session,
       });
     });

@@ -75,18 +75,18 @@ describe("sendPasswordResetEmail", () => {
     expect(arg.html).toContain("Gallurio");
   });
 
-  it("uses localized subject for ms locale", async () => {
-    await sendPasswordResetEmail("user@example.com", "tok_ms", "ms");
-
-    const arg = mockSendEmail.mock.calls[0]![0]!;
-    expect(arg.subject).toBe("Tetapkan semula kata laluan Gallurio anda");
-  });
-
   it("uses localized subject for id locale", async () => {
     await sendPasswordResetEmail("user@example.com", "tok_id", "id");
 
     const arg = mockSendEmail.mock.calls[0]![0]!;
     expect(arg.subject).toBe("Reset kata sandi Gallurio Anda");
+  });
+
+  it("uses localized subject for th locale", async () => {
+    await sendPasswordResetEmail("user@example.com", "tok_th", "th");
+
+    const arg = mockSendEmail.mock.calls[0]![0]!;
+    expect(arg.subject).toBe("รีเซ็ตรหัสผ่าน Gallurio ของคุณ");
   });
 
   it("includes expiry/ignore line in plain text", async () => {

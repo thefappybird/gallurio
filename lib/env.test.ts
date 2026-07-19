@@ -28,8 +28,6 @@ const VALID_PROD_ENV: Record<string, string> = {
   RESEND_API_KEY: "re_abc",
   EMAIL_FROM: "Gallurio <hello@gallurio.com>",
   CRON_SECRET: "cron_secret_value",
-  WORKFLOW_TARGET_WORLD: "@workflow/world-postgres",
-  WORKFLOW_POSTGRES_URL: "postgres://REDACTED_USER:REDACTED_PW@db.example.com:5432/db",
 };
 
 function setEnv(vars: Record<string, string | undefined>) {
@@ -142,12 +140,29 @@ describe("lib/env", () => {
     expect(() => validateEnv()).toThrow(/SUB_EXPIRED_WORKOS_PASSWORD/);
   });
 
-  it("rejects the Local World as WORKFLOW_TARGET_WORLD in production", () => {
+  it("passes validation in beta-only production mode with no Lemon Squeezy configuration", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
-    process.env.WORKFLOW_TARGET_WORLD = "@workflow/world-local";
+    setEnv({
+      BETA_TESTER_ENABLED: "true",
+      LEMONSQUEEZY_API_KEY: undefined,
+      LEMONSQUEEZY_STORE_ID: undefined,
+      LEMONSQUEEZY_WEBHOOK_SECRET: undefined,
+      LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: undefined,
+      LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: undefined,
+      LEMONSQUEEZY_TEST_MODE: undefined,
+    });
 
-    expect(() => validateEnv()).toThrow(/WORKFLOW_TARGET_WORLD/);
+    expect(() => validateEnv()).not.toThrow();
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("still requires valid live Lemon Squeezy configuration in production when beta-only mode is off", () => {
+    resetEnv();
+    setEnv(VALID_PROD_ENV);
+    setEnv({ LEMONSQUEEZY_API_KEY: undefined });
+
+    expect(() => validateEnv()).toThrow(/LEMONSQUEEZY_API_KEY/);
   });
 
   it("never includes secret values in the thrown error message", () => {

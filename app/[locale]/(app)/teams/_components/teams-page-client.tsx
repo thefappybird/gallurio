@@ -12,13 +12,15 @@ import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useLiveRefresh } from "@/hooks/use-live-refresh";
-import { PlusIcon, SearchIcon, MailPlusIcon } from "lucide-react";
+import { PlusIcon, SearchIcon, MailPlusIcon, UsersRoundIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { TeamsTable } from "./teams-table";
 import { TeamDetailDrawer } from "./team-detail-drawer";
+import { ViewMembersSidebar } from "./view-members-sidebar";
 import { InviteForm } from "./invite-form";
 import { DowngradeBlockModal } from "./downgrade-block-modal";
 import {
@@ -43,6 +45,8 @@ type Props = {
   members: MemberSummary[];
   pendingInvites: PendingInviteRow[];
   ownerWorkosUserId: string;
+  workspaceId: string;
+  canManage: boolean;
 };
 
 type OptimisticAction =
@@ -75,6 +79,8 @@ export function TeamsPageClient({
   members,
   pendingInvites,
   ownerWorkosUserId,
+  workspaceId,
+  canManage,
 }: Props) {
   const t = useTranslations("app.teams");
   // Covers team.invitation/removed/deleted; member-add and lead-toggle aren't
@@ -174,6 +180,21 @@ export function TeamsPageClient({
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteTeamIds, setInviteTeamIds] = useState<string[]>([]);
+  const memberEmailFromNotification = searchParams.get("member") ?? "";
+  const opensMembersFromNotification = searchParams.get("members") === "active";
+  const [viewMembersManuallyOpen, setViewMembersManuallyOpen] = useState(false);
+  const viewMembersOpen = viewMembersManuallyOpen || opensMembersFromNotification;
+
+  function handleViewMembersOpenChange(open: boolean) {
+    setViewMembersManuallyOpen(open);
+    if (!open && opensMembersFromNotification) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("members");
+      params.delete("member");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
+    }
+  }
 
   const atCap = optimisticTeams.filter((t) => t.isActive).length >= maxTeams;
 
@@ -228,18 +249,40 @@ export function TeamsPageClient({
             </Label>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => openInvite([])}>
-            <MailPlusIcon className="size-4" />
-            {t("invite.button")}
-          </Button>
-          <Button
-            className="bg-brand text-brand-foreground hover:bg-brand/90"
-            onClick={handleCreateClick}
-          >
-            <PlusIcon className="size-4" />
-            {t("createButton")}
-          </Button>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="basis-full min-[580px]:basis-auto">
+            <Button
+              variant="outline"
+              onClick={() => setViewMembersManuallyOpen(true)}
+              title={t("members.pendingCount", { count: pendingInvites.length })}
+              aria-label={`${t("members.viewButton")}. ${t("members.pendingCount", { count: pendingInvites.length })}`}
+            >
+              <UsersRoundIcon className="size-4" />
+              {t("members.viewButton")}
+              <span className="ms-1 flex items-center gap-1" aria-hidden="true">
+                <Badge variant="secondary" className="px-1.5 py-0 text-[10px] leading-4">
+                  {pendingInvites.length}
+                </Badge>
+              </span>
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {canManage && (
+              <Button variant="outline" onClick={() => openInvite([])}>
+                <MailPlusIcon className="size-4" />
+                {t("invite.button")}
+              </Button>
+            )}
+            {canManage && (
+              <Button
+                className="bg-brand text-brand-foreground hover:bg-brand/90"
+                onClick={handleCreateClick}
+              >
+                <PlusIcon className="size-4" />
+                {t("createButton")}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -264,6 +307,7 @@ export function TeamsPageClient({
           onInvite={(team) => openInvite([team.id])}
           onDeactivate={setDeactivateTeam}
           onReactivate={setReactivateTeam}
+          canManage={canManage}
         />
       </div>
 
@@ -276,10 +320,28 @@ export function TeamsPageClient({
         pendingInvites={pendingInvites}
         maxMembersPerTeam={maxMembersPerTeam}
         ownerWorkosUserId={ownerWorkosUserId}
+        workspaceId={workspaceId}
+        canManage={canManage}
         onInvite={(team) => {
           setDrawerOpen(false);
           openInvite([team.id]);
         }}
+      />
+
+      {/* Workspace-wide member list (view-only unless canManage) */}
+      <ViewMembersSidebar
+        key={`${opensMembersFromNotification}:${memberEmailFromNotification}`}
+        members={members}
+        pendingInvites={pendingInvites}
+        teams={optimisticTeams}
+        ownerWorkosUserId={ownerWorkosUserId}
+        workspaceId={workspaceId}
+        canManage={canManage}
+        onInvite={() => openInvite([])}
+        initialMode="active"
+        initialActiveQuery={memberEmailFromNotification}
+        open={viewMembersOpen}
+        onOpenChange={handleViewMembersOpenChange}
       />
 
       {/* Invite dialog (shared by toolbar, table menu, and drawer) */}

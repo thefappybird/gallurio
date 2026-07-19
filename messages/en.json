@@ -14,7 +14,7 @@
       "contact": "Contact"
     },
     "metadata": {
-      "title": "Gallurio — Portfolio and Booking Tools for Creative Businesses",
+      "title": "Gallurio | Portfolio and Booking Tools for Creative Businesses",
       "description": "Create a polished portfolio page, showcase your work, and collect booking inquiries with Gallurio."
     },
     "hero": {
@@ -79,13 +79,14 @@
       "title": "Simple pricing",
       "subtitle": "1 month of Pro, free. Then one plan, monthly or yearly.",
       "viewFullPricing": "View full pricing",
-      "disclaimer": "Prices are billed by Lemon Squeezy and shown in your local currency at checkout.",
+      "disclaimer": "Paid plans aren't available yet. Pricing and billing terms will be shown clearly before checkout once they launch.",
       "cadence": {
         "monthly": "Monthly",
         "yearly": "Yearly — save 2 months"
       },
       "pro": {
         "badge": "1 month free",
+        "comingSoon": "Coming soon",
         "name": "Pro",
         "priceSuffixMonthly": "/mo",
         "priceSuffixYearly": "/yr",
@@ -108,6 +109,7 @@
       },
       "pro": {
         "badge": "Recommended",
+        "comingSoon": "Coming soon",
         "name": "Pro",
         "freeMonth": "Start with 1 month free, no card required.",
         "description": "Everything you need to run bookings, clients, galleries, and your public page.",
@@ -123,7 +125,7 @@
         "cta": "Start my free month"
       },
       "billingNotice": {
-        "body1": "Payments are processed securely by Lemon Squeezy, our Merchant of Record. Lemon Squeezy handles payment processing, tax calculation, invoices, billing support, and eligible refund processing.",
+        "body1": "Paid Pro subscriptions are not yet available. When they launch, pricing, billing terms, and payment details will be shown clearly before you complete any purchase.",
         "body2": "No charge is collected during your first free month."
       },
       "pricingTransparency": {
@@ -137,7 +139,7 @@
         "description": "Read the terms that govern access to and use of Gallurio."
       },
       "title": "Terms of Service",
-      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "effectiveDate": "Effective Date: July 18, 2026",
       "intro1": "These Terms of Service govern your access to and use of Gallurio, including our website, application, portfolio tools, booking inquiry features, and related services.",
       "intro2": "By using Gallurio, you agree to these Terms. If you do not agree, you should not use the service.",
       "about": {
@@ -184,7 +186,7 @@
       "subscriptions": {
         "title": "8. Subscriptions and Payments",
         "body1": "Gallurio includes a paid Pro subscription, billed monthly or yearly. New workspaces receive one month of full Pro access at no charge, with no card required.",
-        "body2": "After the free month, continuing to use Gallurio requires an active Pro subscription. Billing is processed by Lemon Squeezy, our Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and applicable refund workflows.",
+        "body2": "After the free month, continuing to use Gallurio requires an active Pro subscription. Paid subscriptions are not yet available; billing terms and payment details will be shown clearly before any charge once they launch.",
         "body3": "Users will be shown applicable pricing and billing terms before completing a purchase.",
         "body4": "If a subscription is not renewed or a payment fails, access to the workspace is limited until the subscription is restored. Account data is retained; a published public page may be taken offline after an extended period without payment, and everything is restored upon resubscribing."
       },
@@ -227,7 +229,7 @@
         "description": "Learn how Gallurio collects, uses, stores, and protects information."
       },
       "title": "Privacy Policy",
-      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "effectiveDate": "Effective Date: July 18, 2026",
       "intro": "This Privacy Policy explains how Gallurio collects, uses, stores, and protects information when users access the website, application, and related services.",
       "collect": {
         "title": "1. Information We Collect",
@@ -249,7 +251,7 @@
         },
         "payment": {
           "title": "Payment Information",
-          "body": "Payments for the Gallurio Pro subscription are processed by Lemon Squeezy, Gallurio's Merchant of Record. Gallurio does not directly store full payment card details. Lemon Squeezy may collect and process billing details, payment information, tax information, and invoices according to its own terms and privacy practices."
+          "body": "Paid Pro subscriptions are not yet available. Gallurio does not directly store full payment card details; once payments launch, this section will name the payment processor and describe how it collects and processes billing details, payment information, tax information, and invoices."
         }
       },
       "useOfInfo": {
@@ -312,19 +314,21 @@
     "refunds": {
       "metadata": {
         "title": "Refund Policy — Gallurio",
-        "description": "Learn how Gallurio handles cancellations, refunds, and Lemon Squeezy payment processing."
+        "description": "Learn how Gallurio handles cancellations and refunds."
       },
       "title": "Refund Policy",
-      "effectiveDate": "Effective Date: [Month Day, Year]",
+      "effectiveDate": "Effective Date: July 18, 2026",
       "betaPeriod": {
         "title": "1. Free Trial",
         "body1": "New Gallurio workspaces receive one month of full Pro access at no charge, with no card required. No payment is collected during this trial, so no refund applies to it.",
-        "body2": "If you continue with a paid Pro subscription after the trial, the pricing and billing terms shown at checkout apply, and this Refund Policy governs any payment made."
+        "body2": "If you continue with a paid Pro subscription after the trial, the pricing and billing terms shown at checkout apply, and this Refund Policy governs any payment made.",
+        "body3": "Verified beta participants may also receive a separate two-month Pro promo grant. It may be redeemed once per verified beta participant and expires two months after redemption; like the free trial, it is a promotional grant rather than a payment, so no refund applies to it."
       },
       "subscriptions": {
         "title": "2. Subscriptions",
         "body1": "Gallurio Pro subscriptions are billed monthly, annually, or according to the billing period shown at checkout.",
-        "body2": "Users may cancel their subscription to prevent future renewal charges. After cancellation, access may continue until the end of the current billing period unless otherwise stated."
+        "body2": "Users may cancel their subscription to prevent future renewal charges. After cancellation, access may continue until the end of the current billing period unless otherwise stated.",
+        "body3": "When a subscription lapses due to a failed or terminal non-payment, Gallurio sends an expiry notice immediately, a saved-data reminder after 30 days, and a final public-page warning after 51 days, then unpublishes the public page after 58 days. Workspace, CRM, and draft data remain retained so everything can be restored upon resubscribing."
       },
       "refundRequests": {
         "title": "3. Refund Requests",
@@ -337,13 +341,13 @@
         "item5": "Technical issues",
         "item6": "Duplicate charges",
         "item7": "Applicable consumer protection laws",
-        "item8": "Lemon Squeezy's payment and refund process",
+        "item8": "The payment processor's refund process",
         "outro": "Submitting a refund request does not guarantee that a refund will be approved."
       },
       "merchantOfRecord": {
-        "title": "4. Lemon Squeezy as Merchant of Record",
-        "body1": "Payments for Gallurio may be processed by Lemon Squeezy, Gallurio's Merchant of Record. Lemon Squeezy may handle payment processing, taxes, invoices, billing support, and eligible refund processing.",
-        "body2": "If a user purchases a Gallurio subscription through Lemon Squeezy, their billing statement may show Lemon Squeezy or a related Lemon Squeezy billing descriptor."
+        "title": "4. Payment Processing",
+        "body1": "Paid subscriptions are not yet available. Once they launch, Gallurio will name its payment processor here and describe how it handles payment processing, taxes, invoices, billing support, and eligible refund processing.",
+        "body2": "Once payments launch, a user's billing statement may show the selected payment processor's name or a related billing descriptor."
       },
       "nonRefundable": {
         "title": "5. Non-Refundable Situations",
@@ -400,9 +404,15 @@
       },
       "businessInfo": {
         "title": "Business Information",
-        "legalNamePlaceholder": "[Business Legal Name, if applicable]",
-        "addressPlaceholder": "[Business Address or Registered Country, if applicable]",
+        "body": "Gallurio is a small, independent startup. We don't have a registered legal name or business address to list yet — for now, the best way to reach us is by email.",
         "emailLabel": "Email:"
+      },
+      "social": {
+        "title": "Follow Us",
+        "instagram": "Follow us on Instagram",
+        "facebook": "Follow us on Facebook",
+        "reddit": "Join us on Reddit",
+        "linkedin": "Follow us on LinkedIn"
       }
     }
   },
@@ -481,6 +491,7 @@
       "codeLabel": "Verification code",
       "submit": "Verify email",
       "resend": "Resend code",
+      "expiresIn": "Code expires in {time}.",
       "resendSent": "Code resent — check your inbox."
     },
     "fields": {
@@ -507,6 +518,11 @@
     }
   },
   "app": {
+    "betaEndingBanner": {
+      "title": "Beta access is ending soon",
+      "message": "Thank you for being part of the Gallurio Beta. Your beta access ends within the next week, after which your workspace will return to the Free plan. To continue enjoying Pro features, use code <promoCode>{code}</promoCode> to claim two free months of Pro access.",
+      "dismiss": "Dismiss for this session"
+    },
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Welcome back, {name}",
@@ -518,7 +534,7 @@
       "dateFilter": {
         "label": "Date range",
         "filter": "Filter",
-        "day": "Daily",
+        "week": "Weekly",
         "month": "Monthly",
         "year": "Yearly",
         "custom": "Custom",
@@ -537,8 +553,8 @@
         "status": "{page} of {total}"
       },
       "kpi": {
-        "revenueThisMonth": "Revenue this month",
-        "activeBookings": "Active bookings this month",
+        "revenueThisMonth": "Collected revenue",
+        "activeBookings": "Scheduled bookings",
         "newInquiries": "New inquiries",
         "outstandingBalance": "Outstanding balance"
       },
@@ -552,7 +568,8 @@
         "eventTypes": "Event type breakdown",
         "topClients": "Top clients by spend",
         "teamPerformance": "Team performance",
-        "bookingsPerTeam": "Bookings by team"
+        "bookingsPerTeam": "Bookings by team",
+        "operations": "Operations"
       },
       "quickAdd": {
         "title": "Quick add",
@@ -561,6 +578,7 @@
         "inquiry": "View inquiries"
       },
       "empty": "Nothing here yet.",
+      "filteredEmpty": "No data matches the selected date range.",
       "viewAll": "View all",
       "portfolio": {
         "analyticsSoon": "Portfolio analytics are coming soon.",
@@ -585,7 +603,36 @@
         "inquiryInsights": "Inquiry insights",
         "inquiryToBooking": "Inquiry → booking",
         "bookedFromInquiries": "Booked from inquiries",
-        "newClientsFromForm": "New clients from form"
+        "newClientsFromForm": "New clients from form",
+        "visitorDays": "Visitor-days",
+        "submissionRate": "Submission rate",
+        "bookedLeads": "Booked leads",
+        "visitorsInquiriesTitle": "Visitors & inquiries over time",
+        "funnel": {
+          "title": "Conversion funnel",
+          "visitorDays": "Visitor-days",
+          "contactOpened": "Contact opened",
+          "inquirySubmitted": "Inquiry submitted",
+          "ofVisitors": "of visitors",
+          "ofOpened": "of opened",
+          "ofTotal": "of total",
+          "collectingData": "Collecting data"
+        },
+        "pipeline": {
+          "title": "Inquiry pipeline",
+          "new": "New",
+          "booked": "Booked",
+          "archived": "Archived",
+          "total": "Total inquiries"
+        },
+        "demand": {
+          "title": "Demand profile",
+          "eventTypeMix": "Event type (by inquiries)",
+          "requestedMonth": "Requested event month",
+          "medianLeadTime": "Median lead time",
+          "days": "days",
+          "basedOn": "based on"
+        }
       },
       "team": {
         "bookingsCount": "{count, plural, one {# booking} other {# bookings}}"
@@ -593,7 +640,17 @@
       "showMore": "Show more",
       "showLess": "Show less",
       "hints": {
-        "kpi": "Totals for this month. Arrows compare to last month.",
+        "kpi": "Range-based dashboard totals. Arrows compare with the prior matching period; outstanding balance is a current snapshot.",
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period. Visitor-days are daily totals, not unique visitors across the whole period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries. Contact opens show Collecting data until tracking is available.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "What visitors are asking for: event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when its published page was last updated.",
         "calendar": "Bookings per day. Filter by team; tap a day to open the calendar there.",
         "eventTypes": "Share of bookings by event type.",
         "teamPerformance": "How each team is performing by revenue and booking volume.",
@@ -628,6 +685,60 @@
         "client_changed": "client changed",
         "payment_added": "payment added",
         "payment_updated": "payment updated"
+      },
+      "eventTypes": {
+        "wedding": "Weddings",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "social": "Social",
+        "other": "Other"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "Booked value vs collected revenue",
+          "bookedValue": "Booked value",
+          "collectedRevenue": "Collected revenue"
+        },
+        "coverage": {
+          "title": "Collection coverage",
+          "asOf": "as of",
+          "confirmedValue": "Confirmed value",
+          "confirmedHint": "Total value of confirmed bookings",
+          "paid": "Paid (collected)",
+          "paidHint": "Payments received to date",
+          "remaining": "Remaining balance",
+          "remainingHint": "Yet to be collected",
+          "coverageText": "Coverage: {pct}% of confirmed value collected"
+        },
+        "heatmap": {
+          "previous": "Previous heatmap dates",
+          "today": "Today",
+          "next": "Next heatmap dates",
+          "title": "Booked hours heatmap",
+          "weekOf": "Week of",
+          "bookedHours": "Booked hours",
+          "weekdays": [
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+            "Sun"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "Event mix over time"
+        }
       }
     },
     "calendar": {
@@ -762,6 +873,7 @@
       },
       "table": {
         "empty": "No bookings match your filters.",
+        "listEmpty": "No bookings yet.",
         "past": "Past",
         "showPast": "Show past",
         "hidePast": "Hide past",
@@ -1011,6 +1123,10 @@
         "title": "Title",
         "price": "Price",
         "status": "Status",
+        "method": "Method",
+        "cash": "Cash",
+        "card": "Card",
+        "remit": "Remit",
         "paid": "Paid",
         "unpaid": "Unpaid",
         "paidOn": "Paid on {date}",
@@ -1242,6 +1358,7 @@
           "paused": "Paused",
           "trialing": "Trialing"
         },
+        "notYetAvailable": "Paid subscriptions aren't available yet. Check back soon, or use a promo code below if you have one.",
         "manageSection": "Manage subscription",
         "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
         "manageButton": "Manage subscription",
@@ -1280,12 +1397,12 @@
         "logoHint": "Shown on your generated invoices.",
         "logoLabel": "Upload logo",
         "logoUploading": "Uploading…",
-        "logoRequirements": "PNG, JPEG, WebP or SVG · max 2 MB · up to 2000 × 2000 px",
+        "logoRequirements": "PNG, JPEG, WebP or SVG - max 250 KB - square, up to 256 x 256 px",
         "logoRemove": "Remove",
         "logoErrors": {
           "type": "Only PNG, JPEG, WebP or SVG files are accepted.",
-          "size": "File must be 2 MB or smaller.",
-          "dimensions": "Image must be 2000 × 2000 px or smaller.",
+          "size": "File must be 250 KB or smaller.",
+          "dimensions": "Logo must be square and 256 x 256 px or smaller.",
           "image": "Could not read the image. Please try another file.",
           "upload": "Upload failed. Please try again."
         }
@@ -1298,9 +1415,9 @@
         "languages": {
           "en": "English",
           "fil": "Filipino",
-          "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
-          "ar": "العربية"
+          "ar": "العربية",
+          "th": "ภาษาไทย"
         },
         "timeFormatSection": "Time Format",
         "timeFormatHint": "Choose how times are displayed across the app.",
@@ -1394,6 +1511,7 @@
           "color": "Color",
           "name": "Team",
           "members": "Members",
+          "monthlyAverage": "Monthly Average",
           "actions": "Actions"
         },
         "details": "Details",
@@ -1436,6 +1554,7 @@
       },
       "team": {
         "memberCount": "{count, plural, =0 {No members yet} =1 {1 member} other {# members}}",
+        "monthlyBookings": "{count, plural, one {# booking/mo} other {# bookings/mo}}",
         "defaultBadge": "Default",
         "edit": "Edit",
         "rename": "Rename",
@@ -1465,7 +1584,20 @@
         "leadOnlyOnePerTeam": "A team can only have one lead.",
         "removeFromTeam": "Remove",
         "teamFull": "This team is full.",
-        "close": "Close"
+        "close": "Close",
+        "removeMemberFlow": {
+          "confirmTitle": "Remove {name} from {team}?",
+          "confirmDescription": "They'll lose access to this team's calendar and bookings.",
+          "confirmButton": "Remove from team",
+          "removeFromTeamAndWorkspace": "Remove from team + workspace",
+          "otherTeamsBlocked": "This member belongs to other teams. Remove them from those teams first.",
+          "removing": "Removing…",
+          "workspacePromptTitle": "Also remove {name} from the workspace?",
+          "workspacePromptDescription": "They'll lose access to every team and to the workspace entirely. This can't be undone.",
+          "dontAskAgain": "Don't ask me again",
+          "removeFromWorkspaceButton": "Remove from workspace",
+          "keepInWorkspaceButton": "Keep in workspace"
+        }
       },
       "upsell": {
         "atCapTitle": "You've reached your team limit",
@@ -1502,7 +1634,8 @@
           "leadLabel": "Lead",
           "teamFull": "Full",
           "submit": "Send invite",
-          "sending": "Sending…"
+          "sending": "Sending…",
+          "emailAlreadyRegistered": "This email already belongs to a Gallurio account. Sending is disabled until you use a different address."
         },
         "errors": {
           "emailRequired": "Enter a valid email address.",
@@ -1528,18 +1661,44 @@
         "empty": "No teammates yet. Invite someone to get started.",
         "ownerBadge": "Owner",
         "leadBadge": "Lead",
+        "memberBadge": "Member",
         "pendingBadge": "Pending",
         "manageTeams": "Manage teams",
         "removeFromWorkspace": "Remove from workspace",
         "revokeInvite": "Revoke invite",
         "rowActionsLabel": "Actions for {name}",
+        "viewButton": "View members",
+        "inviteCountsLabel": "Invitation counts",
+        "newlyAcceptedCount": "New {count}",
+        "pendingCount": "Pending {count}",
+        "description": "Everyone with access to this workspace, across every team.",
+        "modeLabel": "Member list",
+        "active": "Active",
+        "pending": "Pending",
+        "searchPlaceholder": "Search name or email",
+        "noActiveMatches": "No members match your search.",
+        "noPendingMatches": "No pending invites match your search.",
+        "noPending": "No pending invites.",
+        "moreTeams": "+{count} more teams",
+        "ownerAllTeams": "Can oversee all teams",
+        "noTeams": "Not on any team",
+        "removeFromWorkspaceLabel": "Remove {name} from workspace.",
         "removeDialog": {
           "title": "Remove member?",
           "description": "{name} will lose access to this workspace immediately. Their bookings stay; team seats are released. This cannot be undone.",
           "confirm": "Remove member"
         },
+        "details": {
+          "tabsLabel": "Member details",
+          "tabs": { "details": "Details", "history": "History" },
+          "teams": "Teams", "noTeams": "No teams", "completed": "Completed", "workingNow": "Working now", "future": "Future",
+          "fromDate": "From date", "toDate": "To date", "action": "Action", "allActions": "All actions",
+          "actions": { "created": "Created", "updated": "Updated", "deleted": "Deleted", "statusChanged": "Status changed", "paymentAdded": "Payment added" },
+          "loadingHistory": "Loading activity history", "loading": "Loading…", "loadMore": "Load more", "noActivity": "No activity found."
+        },
         "errors": {
-          "cannotRemoveOwner": "The workspace owner can't be removed."
+          "cannotRemoveOwner": "The workspace owner can't be removed.",
+          "isTeamLead": "{name} is a team lead for at least one team. Remove their team lead status first in order to delete them."
         },
         "toasts": {
           "removed": "Member removed."
@@ -1560,7 +1719,9 @@
           "added": "Added to team.",
           "removed": "Removed from team.",
           "promoted": "Promoted to lead.",
-          "demoted": "Demoted to member."
+          "demoted": "Demoted to member.",
+          "promoting": "Transferring lead…",
+          "demoting": "Removing lead…"
         }
       },
       "downgradeBlock": {
@@ -1599,7 +1760,7 @@
           "totalSpent": "Total Spent",
           "actions": "Actions"
         },
-        "bookings": "{count} bookings",
+        "bookings": "{count} booking(s)",
         "lastBooking": "Last: {date}",
         "noBookings": "No bookings yet",
         "openMenu": "Open client actions",
@@ -1625,6 +1786,7 @@
         "notes": "Notes",
         "notesPlaceholder": "Any notes about this client…",
         "save": "Save",
+        "view": "View",
         "saving": "Saving…",
         "cancel": "Cancel",
         "createSuccess": "Client created.",
@@ -1719,6 +1881,7 @@
       },
       "table": {
         "empty": "No inquiries yet.",
+        "filteredEmpty": "No inquiries match your filters.",
         "emptyHint": "When someone submits your portfolio contact form, their request lands here.",
         "viewPublicPage": "View your public page",
         "open": "Open inquiry from {name}",
@@ -1936,6 +2099,7 @@
           "slugLabel": "Portfolio URL",
           "slugSuffix": ".gallurio.com",
           "slugSave": "Save URL",
+          "slugEdit": "Edit portfolio URL",
           "slugSaving": "Saving...",
           "slugSaved": "Saved",
           "slugError": "Could not update URL, please try again",
@@ -2120,6 +2284,7 @@
         },
         "controls": {
           "editorControls": "Editor controls",
+          "workspaceActions": "Portfolio actions",
           "toggleBlocks": "Toggle blocks panel",
           "toggleProperties": "Toggle properties panel",
           "previewDevice": "Preview device",
@@ -2383,7 +2548,7 @@
             },
             "dragBlock": {
               "title": "Drag a block onto your page",
-              "body": "The panel lists every available block. Drag any block from here onto the canvas to add it to your page."
+              "body": "Choose a Preset block from the panel, then drag it onto the canvas. Presets include the editing controls used in the next steps."
             },
             "blockProps": {
               "title": "Block properties live here",
@@ -2449,6 +2614,18 @@
               "title": "Preview your site at any screen size",
               "body": "Switch to preview mode and use the device toggle to check your layout on mobile, tablet, and desktop."
             },
+            "canvasControls": {
+              "title": "Adjust your editing canvas",
+              "body": "Use these controls to toggle panels, undo or redo, choose a canvas width, and zoom. On smaller screens, open the sliders button to find them."
+            },
+            "guide": {
+              "title": "Return to this guide anytime",
+              "body": "Open Guide whenever you want to replay this walkthrough."
+            },
+            "save": {
+              "title": "Save your changes",
+              "body": "Save changes to keep the current draft ready to return to later."
+            },
             "publish": {
               "title": "Publish to go live",
               "body": "When you're happy with your changes, click Publish to push them to your public page."
@@ -2497,9 +2674,9 @@
             "logoUpload": "Upload logo",
             "logoUploading": "Uploading…",
             "logoRemove": "Remove logo",
-            "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · up to 512×256",
+            "logoRequirements": "PNG, JPG or JPEG, or WEBP · max 250 KB · up to 512×256",
             "logoErrors": {
-              "type": "Logo must be a PNG, JPEG, or WEBP image.",
+              "type": "Logo must be a PNG, JPG or JPEG, or WEBP image.",
               "size": "Logo must be 250 KB or smaller.",
               "dimensions": "Logo must be 512 x 256 px or smaller.",
               "image": "This logo image could not be read.",
@@ -2509,14 +2686,28 @@
             "iconUpload": "Choose image",
             "iconUploading": "Uploading…",
             "iconRemove": "Remove",
-            "iconRequirements": "PNG, JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
+            "iconRequirements": "PNG, JPG or JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
             "iconErrors": {
-              "type": "Only PNG, JPEG, WebP or AVIF files are accepted.",
+              "type": "Only PNG, JPG or JPEG, WebP or AVIF files are accepted.",
               "size": "Icon must be 1 MB or smaller.",
               "dimensions": "Icon must be 512 x 512 px or smaller.",
               "image": "This icon image could not be read.",
               "upload": "Icon upload failed. Please try again."
-            }
+            },
+            "shareImageLabel": "Share image",
+            "shareImageUpload": "Upload share image",
+            "shareImageUploading": "Uploading...",
+            "shareImageRemove": "Remove share image",
+            "shareImageRequirements": "JPG or JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+            "shareImageErrors": {
+              "type": "Use a JPG or JPEG, PNG, WebP, or AVIF image.",
+              "size": "Share image must be 10 MB or smaller.",
+              "dimensions": "Share image must be at least 1200 × 630 px.",
+              "upload": "Share image upload failed. Please try again."
+            },
+            "inquiryRecipientLabel": "Inquiry recipient email",
+            "inquiryRecipientPlaceholder": "you@example.com",
+            "inquiryRecipientHint": "New inquiry notifications will be sent here."
           },
           "done": {
             "title": "Your page is ready to shine",
@@ -2631,6 +2822,10 @@
             "title": "You've been invited to a team",
             "body": "{inviterName} invited you to join {teamName}."
           },
+          "invite_accepted": {
+            "title": "{memberName} accepted your invitation",
+            "body": "{memberName} has accepted your invite as a {role, select, owner {workspace owner} staff {staff member} other {member}} in {teamName}. Click to view."
+          },
           "removed": {
             "title": "Removed from team",
             "body": "You have been removed from {teamName}."
@@ -2654,10 +2849,15 @@
       "invalid_data": "Invalid data. Please check your input and try again.",
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
       "onboarding_required": "Finish onboarding to continue.",
+      "onboarding_plan_locked": "Your plan is already activated. Finish onboarding to manage it from billing settings.",
       "subscription_required": "Your Pro access has ended. Subscribe to continue.",
       "promo_code_not_found": "That code isn't valid. Double-check and try again.",
       "promo_code_expired": "That code has expired.",
       "promo_code_already_redeemed": "You've already redeemed this code.",
+      "promo_code_revoked": "That code has been disabled.",
+      "not_eligible_beta_participant": "This code is only for recorded beta participants.",
+      "beta_promo_already_redeemed": "You've already redeemed your one-time beta promo.",
+      "beta_program_closed": "The beta program is closed to new participants.",
       "invalid_input": "Please check the form and try again.",
       "rate_limited": "Too many attempts. Try again in {seconds} seconds.",
       "user_not_found": "User not found.",
@@ -2698,6 +2898,7 @@
       "export_too_large": "Too many bookings to export. Narrow your filters and try again.",
       "free_plan_no_checkout": "The free plan doesn't require checkout.",
       "lemonsqueezy_variant_not_configured": "This plan isn't available right now. Please contact support.",
+      "billing_unavailable": "Paid subscriptions aren't available yet. Please check back soon.",
       "no_verified_email": "Add and verify an email before subscribing.",
       "checkout_init_failed": "Couldn't start checkout. Please try again.",
       "no_subscription": "You don't have an active subscription to manage.",
@@ -2736,10 +2937,12 @@
     "loading": "Loading…",
     "promoCode": {
       "disclosureLabel": "Have a promo code?",
+      "close": "Close promo code",
       "placeholder": "Enter code",
       "submit": "Apply",
       "applying": "Applying…",
-      "success": "Code applied — your plan has been updated."
+      "success": "Code applied — your Pro access is active now.",
+      "successQueued": "Code applied — your two-month Pro access will start automatically once your current plan ends."
     }
   },
   "onboarding": {
@@ -2800,6 +3003,7 @@
       "title": "Pick the plan that fits",
       "description": "You can change plans or cancel anytime from your workspace settings.",
       "popular": "Popular",
+      "comingSoon": "Coming soon",
       "cadence": {
         "forever": "first month free",
         "monthly": "/ month",
@@ -2817,19 +3021,25 @@
       "opening": "Opening checkout…",
       "checkoutFailed": "Checkout failed. Please try again.",
       "checkoutNotReady": "Payment system not ready. Please refresh and try again.",
+      "activatedNotice": "Your Gallurio Plan is now activated. Finish onboarding to change your subscription plan.",
+      "activePill": "Active",
+      "finishOnboarding": "Finish onboarding",
+      "acceptedPromoCode": "Promo code {code}",
       "betaTester": {
         "label": "Beta tester",
+        "headline": "Get free beta access now",
         "activate": "Activate beta access"
       }
     },
     "done": {
       "title": "You're all set, {workspaceName}.",
-      "description": "Your {planLabel} plan is active. One last thing before we drop you into the dashboard.",
+      "description": "Your {planLabel} plan is active. Welcome to Gallurio — your workspace is ready to go.",
       "seedToggle": {
         "label": "Start with sample data",
         "description": "We'll add 5 demo clients, 3 demo bookings, and 1 demo inquiry so you can explore the app. Everything is tagged sample so you can delete it in one click."
       },
       "settingUp": "Setting up your dashboard…",
+      "settingUpCompact": "Preparing…",
       "goToDashboard": "Go to your dashboard",
       "footer": {
         "everything": "Everything in one place",
@@ -2996,6 +3206,10 @@
       "already_accepted": {
         "title": "Already a member",
         "description": "You have already accepted this invitation and joined the workspace."
+      },
+      "revoked": {
+        "title": "Invitation revoked",
+        "description": "This invitation has been revoked by the workspace owner. Ask them to send a new one if you still need access."
       },
       "already_member": {
         "title": "Email already in use",

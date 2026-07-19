@@ -161,6 +161,8 @@ export default async function PageBuilderEntry({
         storyPromptCompleted={storyPromptCompleted}
         initialSeoDescription={initialSeoDescription}
         initialSeoKeywords={initialSeoKeywords}
+        initialInquiryRecipientEmail={pp?.inquiryRecipientEmail ?? ""}
+        hasBeenPublished={Boolean(pp?.publishedAt)}
         workspaceBusinessType={workspaceBusinessType}
         initialDrafts={initialDrafts}
         initialActiveDraftId={initialActiveDraftId}

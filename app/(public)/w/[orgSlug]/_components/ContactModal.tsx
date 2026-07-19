@@ -67,7 +67,20 @@ export function ContactModal({
   const openModal = useCallback(() => {
     setSubmitted(false);
     setOpen(true);
-  }, []);
+    // Fire-and-forget: contact is a modal, not a route, so its "view" is
+    // reported here instead of PageViewBeacon. Failures never affect the
+    // visitor's experience.
+    fetch("/api/public/pageviews", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        orgSlug: workspaceSlug,
+        page: "contact",
+        referrer: document.referrer || undefined,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  }, [workspaceSlug]);
   useGlobalContactTrigger(openModal);
 
   const title = contact?.title?.trim() || labels.title;
@@ -163,7 +176,10 @@ export function ContactModal({
             </DialogPrimitive.Close>
           </div>
 
-          <div className="pf-contact-popup-body" style={{ padding: "0 1.25rem 1.25rem", overflowY: "auto" }}>
+          <div
+            className="pf-contact-popup-body"
+            style={{ flex: 1, minHeight: 0, padding: "0 1.25rem 1.25rem", overflowY: "auto" }}
+          >
             {submitted ? (
               <ContactConfirmation
                 title={labels.confirmTitle}

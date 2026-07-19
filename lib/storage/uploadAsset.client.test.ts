@@ -17,7 +17,7 @@ class MockImage {
 }
 
 const BASE_CONSTRAINTS: AssetValidationConstraints = {
-  acceptedTypes: ["image/png", "image/jpeg", "image/webp", "image/avif"],
+  acceptedTypes: ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/avif"],
   maxBytes: 512 * 1024,
   maxWidth: 512,
   maxHeight: 512,
@@ -34,6 +34,18 @@ beforeEach(() => {
 });
 
 describe("uploadAsset", () => {
+  it("accepts the image/jpg MIME alias", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ imageId: "img123", uploadURL: "https://upload.example.com" }) })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await uploadAsset(makeFile("image/jpg"), BASE_CONSTRAINTS);
+
+    expect(result).toHaveProperty("asset");
+  });
+
   it("rejects file with wrong MIME type", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -64,6 +76,23 @@ describe("uploadAsset", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await uploadAsset(makeFile("image/png"), BASE_CONSTRAINTS);
+
+    expect(result).toEqual({ error: "dimensions_too_large" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a rectangular image when square dimensions are required", async () => {
+    vi.stubGlobal("Image", class RectangularImage extends MockImage {
+      naturalWidth = 200;
+      naturalHeight = 160;
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await uploadAsset(makeFile("image/png"), {
+      ...BASE_CONSTRAINTS,
+      requireSquare: true,
+    });
 
     expect(result).toEqual({ error: "dimensions_too_large" });
     expect(fetchMock).not.toHaveBeenCalled();

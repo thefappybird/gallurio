@@ -37,7 +37,7 @@ deletes — with guard rails against losing unsaved work.
 - **Name uniqueness:** enforced on **create and rename**, against the workspace's
   *other* drafts (a draft excludes itself, so you can save an edit without changing
   the name). Collision with another draft's name is rejected.
-- **Locales:** `en`, `fil`, `ms`, `id` (th removed).
+- **Locales:** `en`, `fil`, `id`, `th` (ms removed).
 
 ## Data model
 
@@ -261,5 +261,4 @@ Gate before done: affected tests, `pnpm typecheck`, `pnpm lint`. Check mobile at
 
 - Draft version history / per-draft undo beyond the existing `previousData`.
 - Sharing/duplicating drafts across workspaces.
-- Quote negotiation or any inquiry-flow changes.
 ```

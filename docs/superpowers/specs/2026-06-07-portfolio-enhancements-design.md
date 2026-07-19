@@ -35,8 +35,6 @@ Implement:
 
 Do not implement:
 
-- Quote negotiation
-- Client portal flow
 - Localized client confirmation emails
 - Interactive location picker inside editor preview
 - New public-page collections
@@ -397,7 +395,7 @@ Maintain app/editor/public copy parity for:
 
 - `en`
 - `fil`
-- `ms`
+- `th`
 - `id`
 
 Client confirmation email is English-only.

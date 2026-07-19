@@ -41,3 +41,18 @@ describe("User.freeTrialConsumedAt", () => {
     expect(u.freeTrialConsumedAt).toBeNull();
   });
 });
+
+describe("User.betaParticipation", () => {
+  it("defaults recordedAt and source to null", async () => {
+    const u = await User.create({ workosUserId: "user_bp1", email: "bp1@example.com" });
+    expect(u.betaParticipation?.recordedAt).toBeNull();
+    expect(u.betaParticipation?.source).toBeNull();
+  });
+});
+
+describe("User.betaPromoRedeemedAt", () => {
+  it("defaults to null", async () => {
+    const u = await User.create({ workosUserId: "user_bpr1", email: "bpr1@example.com" });
+    expect(u.betaPromoRedeemedAt).toBeNull();
+  });
+});

@@ -145,6 +145,75 @@ describe("GET /api/invites/accept — missing token", () => {
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("error=invalid");
   });
+
+  it("uses the configured public app URL instead of an internal proxy origin", async () => {
+    const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "https://tunnel.example.test/";
+    try {
+      const { GET } = await loadRoute();
+      const res = await GET(makeReq("http://localhost:3000/api/invites/accept"));
+      expect(res.headers.get("location")).toBe(
+        "https://tunnel.example.test/en/invite/accept?error=invalid",
+      );
+    } finally {
+      if (originalAppUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+      else process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
+    }
+  });
+});
+
+describe("GET /api/invites/accept — non-pending invitation status", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("redirects to error=revoked when the invitation status is revoked", async () => {
+    const { GET } = await loadRoute();
+    mockInvitationFindOne.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn(async () => ({
+        _id: "inv_revoked",
+        workspaceId: "ws_1",
+        email: "revoked@example.com",
+        role: "staff",
+        teamIds: [],
+        leadOnTeamIds: [],
+        status: "revoked",
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      })),
+    } as never);
+
+    const res = await GET(
+      makeReq("http://localhost/api/invites/accept?token=tok_revoked"),
+    );
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("error=revoked");
+  });
+
+  it("redirects to error=expired when the invitation status is already expired (pre-flipped by the sweep)", async () => {
+    const { GET } = await loadRoute();
+    mockInvitationFindOne.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn(async () => ({
+        _id: "inv_expired",
+        workspaceId: "ws_1",
+        email: "expired@example.com",
+        role: "staff",
+        teamIds: [],
+        leadOnTeamIds: [],
+        status: "expired",
+        expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      })),
+    } as never);
+
+    const res = await GET(
+      makeReq("http://localhost/api/invites/accept?token=tok_expired"),
+    );
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("error=expired");
+  });
 });
 
 describe("GET /api/invites/accept — unauthenticated branch (cookie hardening)", () => {

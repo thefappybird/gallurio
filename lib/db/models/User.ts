@@ -9,9 +9,7 @@ const membershipSchema = new Schema(
   { _id: false }
 );
 
-// "payments" step removed when marketplace was dropped from MVP — tenants no
-// longer onboard a payment sub-account during signup. "template" step removed
-// and moved to Page Builder / workspace settings. Keep in sync with
+// "template" step was moved to Page Builder / workspace settings. Keep in sync with
 // STEP_META in app/[locale]/(onboarding)/onboarding/_components/step-shell.tsx.
 export const ONBOARDING_STEPS = [
   "business",
@@ -37,6 +35,22 @@ const userSchema = new Schema(
     // one-month free-Pro grant on workspace creation. Guards "one free month
     // per user (email)" — see lib/actions/onboarding.ts.
     freeTrialConsumedAt: { type: Date, default: null },
+    // Set once, permanently, the first time this user's account gets a
+    // plan:"beta" grant. Durable identity-level evidence of beta
+    // participation, independent of the workspace's current plan (which
+    // reverts to "free" when the global beta program closes) — see
+    // lib/actions/onboarding.ts activateBetaTesterAction and the backfill
+    // migration for workspaces that were already on plan:"beta" before this
+    // field existed.
+    betaParticipation: {
+      recordedAt: { type: Date, default: null },
+      source: { type: String, enum: ["onboarding", "backfill", null], default: null },
+    },
+    // Set once, permanently, when this identity redeems the two-month
+    // post-beta Pro promo. Identity-scoped (not workspace-scoped) — guards
+    // "one redemption per eligible user identity" even if they own multiple
+    // workspaces. See lib/actions/promoCode.ts (later wave).
+    betaPromoRedeemedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

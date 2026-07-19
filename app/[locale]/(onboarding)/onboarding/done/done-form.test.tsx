@@ -31,6 +31,12 @@ describe("DoneStepForm — celebration", () => {
     expect(screen.getByText(/built to grow with you/i)).toBeInTheDocument();
     expect(screen.getByText(/support when you need it/i)).toBeInTheDocument();
   });
+
+  it("uses the welcome copy without implying another onboarding task", () => {
+    renderForm();
+    expect(screen.getByText(/welcome to gallurio/i)).toBeInTheDocument();
+    expect(screen.queryByText(/one last thing/i)).not.toBeInTheDocument();
+  });
 });
 
 describe("DoneStepForm — sample data toggle", () => {
@@ -45,6 +51,6 @@ describe("DoneStepForm — sample data toggle", () => {
     // @ts-expect-error — NODE_ENV is read-only in the types but writable at runtime
     process.env.NODE_ENV = "development";
     renderForm();
-    expect(screen.getByText(/start with sample data/i)).toBeInTheDocument();
+    expect(screen.queryByText(/start with sample data/i)).not.toBeInTheDocument();
   });
 });

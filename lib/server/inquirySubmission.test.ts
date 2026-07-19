@@ -261,6 +261,19 @@ describe("submitInquiry", () => {
     expect(sendInquiryClientConfirmation.mock.calls[0][0].workspaceName).toBe("Studio Aurora");
   });
 
+  it("passes the uploaded business logo into the client confirmation brand", async () => {
+    await Workspace.create(
+      makeWorkspace({ logoUrl: "https://images.example.test/studio-logo.png" })
+    );
+
+    await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+
+    expect(sendInquiryClientConfirmation).toHaveBeenCalledOnce();
+    expect(sendInquiryClientConfirmation.mock.calls[0][0].brand).toMatchObject({
+      logoUrl: "https://images.example.test/studio-logo.png",
+    });
+  });
+
   it("marks the owner notification as gated when the workspace has lapsed to gated free", async () => {
     await Workspace.create(
       makeWorkspace({ plan: "free", everSubscribed: true, planGrantExpiresAt: null })

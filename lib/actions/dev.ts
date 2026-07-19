@@ -7,6 +7,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { getActiveWorkspaceId, clearActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { planEntitlements } from "@/lib/plans/entitlements";
 import { grantPlan } from "@/lib/billing/grantPlan";
+import { isBetaProgramClosed } from "@/lib/billing/betaProgram";
 
 export type DevPlanActionResult = {
   error?: string;
@@ -80,6 +81,9 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
   }
 
   if (plan === "beta") {
+    // Dev-only, but still respects a closed global beta window so devs can't
+    // test against a state that's impossible in production.
+    if (await isBetaProgramClosed()) return { error: "beta_program_closed" };
     // Beta has no subscription at all, real or simulated — never fake ls*
     // fields for it. Shares the same provider-agnostic grant path Phase 4's
     // promo-code redemption will use.

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 
 // ---------------------------------------------------------------------------
 // Module mocks
@@ -92,6 +92,17 @@ describe("useSlugAvailability", () => {
     act(() => { vi.advanceTimersByTime(400); });
     expect(mockCheck).not.toHaveBeenCalled();
     expect(result.current.status).toBe("idle");
+  });
+
+  it("checks the current slug when a first publish needs verification", async () => {
+    resolveWith({ available: true });
+    const { result } = renderHook(() =>
+      useSlugAvailability("my-slug", "my-slug", true),
+    );
+
+    await act(async () => { vi.advanceTimersByTime(400); });
+    expect(mockCheck).toHaveBeenCalledWith("my-slug");
+    expect(result.current.status).toBe("available");
   });
 
   it("ignores stale response — updates only from the most recent call", async () => {

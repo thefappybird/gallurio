@@ -73,12 +73,24 @@ export function NotificationProvider({
         fetch('/api/socket-token')
           .then((r) => (r.ok ? r.json() : Promise.reject(new Error('token fetch failed'))))
           .then(({ token }: { token: string }) => cb({ token }))
-          .catch((err: unknown) => {
-            console.error('[notifications] token fetch error', err)
+          .catch(() => {
+            // Realtime is an enhancement: notifications remain persisted and
+            // available on the next render even if the tunnel is unavailable.
             cb({ token: '' })
           })
       },
-      transports: ['websocket', 'polling'],
+      // Start with the normal HTTP polling handshake so reverse proxies and
+      // tunnels can establish the session, then upgrade to WebSocket when it
+      // is available. Starting WebSocket-first leaves Socket.IO unable to
+      // fall back on some tunnel configurations.
+      transports: ['polling', 'websocket'],
+      tryAllTransports: true,
+      timeout: 5_000,
+      // Notifications persist to Mongo, so a temporary socket outage should
+      // not cause an endless background reconnect loop or console spam.
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1_000,
+      reconnectionDelayMax: 5_000,
     })
     socketRef.current = socket
 
@@ -88,9 +100,10 @@ export function NotificationProvider({
     socket.on('disconnect', (reason: string) => {
       console.log('[notifications] disconnected', reason)
     })
-    socket.on('connect_error', (err: Error) => {
-      console.error('[notifications] connect_error', err.message)
-    })
+    // Do not surface a transport outage as an application error. Socket.IO
+    // performs the bounded reconnect attempts above; persisted notifications
+    // remain the fallback if it cannot reconnect.
+    socket.on('connect_error', () => undefined)
 
     socket.on('notification:new', (notification: SerializedNotification) => {
       setNotifications((prev) => [notification, ...prev])

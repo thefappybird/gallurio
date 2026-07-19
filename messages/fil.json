@@ -79,13 +79,14 @@
       "title": "Simpleng presyo",
       "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",
       "viewFullPricing": "Tingnan ang buong presyo",
-      "disclaimer": "Ang mga presyo ay sinisingil ng Lemon Squeezy at ipinapakita sa iyong lokal na currency sa checkout.",
+      "disclaimer": "Hindi pa available ang mga paid plan. Malinaw na ipapakita ang presyo at mga tuntunin sa pagsingil bago ang checkout kapag inilunsad na ang mga ito.",
       "cadence": {
         "monthly": "Buwanan",
         "yearly": "Taunan — makatipid ng 2 buwan"
       },
       "pro": {
         "badge": "1 buwang libre",
+        "comingSoon": "Malapit na",
         "name": "Pro",
         "priceSuffixMonthly": "/buwan",
         "priceSuffixYearly": "/taon",
@@ -108,6 +109,7 @@
       },
       "pro": {
         "badge": "Rekomendado",
+        "comingSoon": "Malapit na",
         "name": "Pro",
         "freeMonth": "Simulan nang may 1 buwang libre, walang kailangang card.",
         "description": "Lahat ng kailangan mo para patakbuhin ang mga booking, client, gallery, at ang pampublikong page mo.",
@@ -123,7 +125,7 @@
         "cta": "Simulan ang libreng buwan ko"
       },
       "billingNotice": {
-        "body1": "Ligtas na iproproseso ang mga bayad ng Lemon Squeezy, ang aming Merchant of Record. Pinangangasiwaan ng Lemon Squeezy ang payment processing, pagkalkula ng buwis, invoice, billing support, at eligible na refund processing.",
+        "body1": "Hindi pa available ang mga paid na Pro subscription. Kapag inilunsad na ang mga ito, malinaw na ipapakita ang presyo, mga tuntunin sa pagsingil, at detalye ng bayad bago mo makumpleto ang anumang pagbili.",
         "body2": "Walang bayad na kinokolekta sa iyong unang libreng buwan."
       },
       "pricingTransparency": {
@@ -137,7 +139,7 @@
         "description": "Basahin ang mga tuntuning namamahala sa access at paggamit ng Gallurio."
       },
       "title": "Mga Tuntunin ng Serbisyo",
-      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
       "intro1": "Ang mga Tuntunin ng Serbisyong ito ay namamahala sa iyong access at paggamit ng Gallurio, kasama ang aming website, application, portfolio tools, booking inquiry features, at kaugnay na mga serbisyo.",
       "intro2": "Sa paggamit ng Gallurio, sumasang-ayon ka sa mga Tuntuning ito. Kung hindi ka sumasang-ayon, hindi mo dapat gamitin ang serbisyo.",
       "about": {
@@ -184,7 +186,7 @@
       "subscriptions": {
         "title": "8. Subscriptions at Bayad",
         "body1": "Kasama sa Gallurio ang isang paid na Pro subscription, na sinisingil buwan-buwan o taun-taon. Ang mga bagong workspace ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang card.",
-        "body2": "Pagkatapos ng libreng buwan, kailangan ng aktibong Pro subscription para magpatuloy sa paggamit ng Gallurio. Ang billing ay iproproseso ng Lemon Squeezy, ang aming Merchant of Record. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, buwis, invoice, billing support, at naaangkop na refund workflows.",
+        "body2": "Pagkatapos ng libreng buwan, kailangan ng aktibong Pro subscription para magpatuloy sa paggamit ng Gallurio. Hindi pa available ang mga paid subscription; malinaw na ipapakita ang mga tuntunin sa pagsingil at detalye ng bayad bago ang anumang singil kapag inilunsad na ang mga ito.",
         "body3": "Ipapakita sa mga user ang naaangkop na presyo at billing terms bago kumpletuhin ang isang pagbili.",
         "body4": "Kung hindi na-renew ang subscription o nabigo ang bayad, limitado ang access sa workspace hanggang maibalik ang subscription. Napapanatili ang data ng account; maaaring itanggal offline ang na-publish na pampublikong page pagkatapos ng mahabang panahon na walang bayad, at maibabalik ang lahat pagkatapos mag-resubscribe."
       },
@@ -227,7 +229,7 @@
         "description": "Alamin kung paano kinokolekta, ginagamit, ini-imbak, at pinoprotektahan ng Gallurio ang impormasyon."
       },
       "title": "Patakaran sa Privacy",
-      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
       "intro": "Ipinapaliwanag ng Patakaran sa Privacy na ito kung paano kinokolekta, ginagamit, ini-imbak, at pinoprotektahan ng Gallurio ang impormasyon kapag ina-access ng mga user ang website, application, at kaugnay na mga serbisyo.",
       "collect": {
         "title": "1. Impormasyong Kinokolekta Namin",
@@ -249,7 +251,7 @@
         },
         "payment": {
           "title": "Impormasyon sa Bayad",
-          "body": "Ang mga bayad para sa Gallurio Pro subscription ay iproproseso ng Lemon Squeezy, ang Merchant of Record ng Gallurio. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card. Maaaring kolektahin at iproseso ng Lemon Squeezy ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice ayon sa sarili nitong mga tuntunin at privacy practices."
+          "body": "Hindi pa available ang mga paid na Pro subscription. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card; kapag nailunsad na ang mga bayad, papangalanan sa bahaging ito ang payment processor at ilalarawan kung paano nito kinokolekta at pinoproseso ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice."
         }
       },
       "useOfInfo": {
@@ -312,19 +314,21 @@
     "refunds": {
       "metadata": {
         "title": "Patakaran sa Refund — Gallurio",
-        "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation, refund, at payment processing ng Lemon Squeezy."
+        "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation at refund."
       },
       "title": "Patakaran sa Refund",
-      "effectiveDate": "Petsa ng Bisa: [Buwan Araw, Taon]",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
       "betaPeriod": {
         "title": "1. Libreng Trial",
         "body1": "Ang mga bagong workspace ng Gallurio ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang card. Walang totoong bayad na kinokolekta habang ang trial na ito, kaya walang kinakailangang refund dito.",
-        "body2": "Kung magpapatuloy ka sa isang paid na Pro subscription pagkatapos ng trial, ang presyo at billing terms na ipinapakita sa checkout ang mag-aapply, at ang Patakaran sa Refund na ito ang mamahala sa anumang bayad na nagawa."
+        "body2": "Kung magpapatuloy ka sa isang paid na Pro subscription pagkatapos ng trial, ang presyo at billing terms na ipinapakita sa checkout ang mag-aapply, at ang Patakaran sa Refund na ito ang mamahala sa anumang bayad na nagawa.",
+        "body3": "Maaari ding makatanggap ang mga verified na beta participant ng hiwalay na dalawang-buwang Pro promo grant. Maaari itong i-redeem nang isang beses lamang bawat verified na beta participant at mag-e-expire dalawang buwan pagkatapos i-redeem; tulad ng libreng trial, isa itong promotional grant sa halip na bayad, kaya walang refund na naaangkop dito."
       },
       "subscriptions": {
         "title": "2. Mga Subscription",
         "body1": "Ang mga subscription ng Gallurio Pro ay sinisingil buwan-buwan, taun-taon, o ayon sa billing period na ipinapakita sa checkout.",
-        "body2": "Maaaring i-cancel ng mga user ang kanilang subscription para pigilan ang mga susunod na renewal charge. Pagkatapos ng cancellation, maaaring magpatuloy ang access hanggang sa katapusan ng kasalukuyang billing period maliban kung nakasaad."
+        "body2": "Maaaring i-cancel ng mga user ang kanilang subscription para pigilan ang mga susunod na renewal charge. Pagkatapos ng cancellation, maaaring magpatuloy ang access hanggang sa katapusan ng kasalukuyang billing period maliban kung nakasaad.",
+        "body3": "Kapag na-lapse ang isang subscription dahil sa nabigong o terminal na hindi pagbabayad, magpapadala ang Gallurio ng expiry notice kaagad, isang saved-data reminder pagkatapos ng 30 araw, at isang huling public-page warning pagkatapos ng 51 araw, pagkatapos ay ia-unpublish ang public page pagkatapos ng 58 araw. Nananatiling naka-retain ang workspace, CRM, at draft data para maibalik ang lahat kapag nag-resubscribe."
       },
       "refundRequests": {
         "title": "3. Mga Kahilingan sa Refund",
@@ -337,13 +341,13 @@
         "item5": "Mga isyu sa technical",
         "item6": "Duplicate na singil",
         "item7": "Naaangkop na mga batas sa proteksyon ng consumer",
-        "item8": "Proseso ng bayad at refund ng Lemon Squeezy",
+        "item8": "Proseso ng refund ng payment processor",
         "outro": "Ang pagsusumite ng kahilingan sa refund ay hindi ginagarantiya na maaaprubahan ang refund."
       },
       "merchantOfRecord": {
-        "title": "4. Lemon Squeezy bilang Merchant of Record",
-        "body1": "Ang mga bayad para sa Gallurio ay maaaring iproseso ng Lemon Squeezy, ang Merchant of Record ng Gallurio. Maaaring pangasiwaan ng Lemon Squeezy ang payment processing, buwis, invoice, billing support, at eligible na refund processing.",
-        "body2": "Kung bumili ang isang user ng subscription ng Gallurio sa pamamagitan ng Lemon Squeezy, maaaring ipakita sa kanilang billing statement ang Lemon Squeezy o isang kaugnay na Lemon Squeezy billing descriptor."
+        "title": "4. Pagproseso ng Bayad",
+        "body1": "Hindi pa available ang mga paid subscription. Kapag nailunsad na ang mga ito, papangalanan dito ng Gallurio ang kanyang payment processor at ilalarawan kung paano nito pinangangasiwaan ang payment processing, buwis, invoice, billing support, at eligible na refund processing.",
+        "body2": "Kapag nailunsad na ang mga bayad, maaaring ipakita sa billing statement ng user ang pangalan ng napiling payment processor o isang kaugnay na billing descriptor."
       },
       "nonRefundable": {
         "title": "5. Mga Sitwasyong Hindi Maaaring i-Refund",
@@ -400,9 +404,15 @@
       },
       "businessInfo": {
         "title": "Impormasyon ng Negosyo",
-        "legalNamePlaceholder": "[Legal na Pangalan ng Negosyo, kung naaangkop]",
-        "addressPlaceholder": "[Address ng Negosyo o Rehistradong Bansa, kung naaangkop]",
+        "body": "Ang Gallurio ay maliit at independiyenteng startup. Wala pa kaming nakarehistrong legal na pangalan o business address na ilalagay — sa ngayon, ang pinakamainam na paraan para makontak kami ay sa pamamagitan ng email.",
         "emailLabel": "Email:"
+      },
+      "social": {
+        "title": "Sundan Kami",
+        "instagram": "Sundan kami sa Instagram",
+        "facebook": "Sundan kami sa Facebook",
+        "reddit": "Sumali sa amin sa Reddit",
+        "linkedin": "Sundan kami sa LinkedIn"
       }
     }
   },
@@ -481,6 +491,7 @@
       "codeLabel": "Verification code",
       "submit": "I-verify ang email",
       "resend": "Muling ipadala ang code",
+      "expiresIn": "Mag-e-expire ang code sa {time}.",
       "resendSent": "Naipadala na ang code — tingnan ang iyong inbox."
     },
     "fields": {
@@ -507,6 +518,11 @@
     }
   },
   "app": {
+    "betaEndingBanner": {
+      "title": "Malapit nang matapos ang beta access",
+      "message": "Salamat sa pagiging bahagi ng Gallurio Beta. Matatapos ang iyong beta access sa loob ng susunod na linggo, at babalik ang iyong workspace sa Free plan. Para magpatuloy sa mga Pro feature, gamitin ang code na <promoCode>{code}</promoCode> para makuha ang dalawang libreng buwan ng Pro access.",
+      "dismiss": "Isara para sa session na ito"
+    },
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Maligayang pagbabalik, {name}",
@@ -518,7 +534,7 @@
       "dateFilter": {
         "label": "Saklaw ng petsa",
         "filter": "Salain",
-        "day": "Araw-araw",
+        "week": "Lingguhan",
         "month": "Buwanan",
         "year": "Taunan",
         "custom": "Pasadya",
@@ -537,8 +553,8 @@
         "status": "{page} ng {total}"
       },
       "kpi": {
-        "revenueThisMonth": "Kita ngayong buwan",
-        "activeBookings": "Aktibong mga booking ngayong buwan",
+        "revenueThisMonth": "Nakolektang kita",
+        "activeBookings": "Nakaiskedyul na booking",
         "newInquiries": "Mga bagong inquiry",
         "outstandingBalance": "Natitirang balanse"
       },
@@ -552,7 +568,8 @@
         "eventTypes": "Breakdown ng uri ng event",
         "topClients": "Mga nangungunang kliyente ayon sa gastos",
         "teamPerformance": "Performance ng team",
-        "bookingsPerTeam": "Mga booking kada team"
+        "bookingsPerTeam": "Mga booking kada team",
+        "operations": "Mga operasyon"
       },
       "quickAdd": {
         "title": "Mabilis na dagdag",
@@ -561,6 +578,7 @@
         "inquiry": "Tingnan ang mga inquiry"
       },
       "empty": "Wala pa rito.",
+      "filteredEmpty": "Walang data na tumutugma sa napiling saklaw ng petsa.",
       "viewAll": "Tingnan lahat",
       "portfolio": {
         "analyticsSoon": "Malapit nang dumating ang portfolio analytics.",
@@ -585,7 +603,36 @@
         "inquiryInsights": "Mga insight sa inquiry",
         "inquiryToBooking": "Inquiry → booking",
         "bookedFromInquiries": "Na-book mula sa inquiry",
-        "newClientsFromForm": "Bagong kliyente mula sa form"
+        "newClientsFromForm": "Bagong kliyente mula sa form",
+        "visitorDays": "Bisita-araw",
+        "submissionRate": "Rate ng pagsusumite",
+        "bookedLeads": "Na-book na lead",
+        "visitorsInquiriesTitle": "Mga bisita at inquiry sa paglipas ng panahon",
+        "funnel": {
+          "title": "Funnel ng conversion",
+          "visitorDays": "Bisita-araw",
+          "contactOpened": "Binuksan ang contact",
+          "inquirySubmitted": "Naisumite ang inquiry",
+          "ofVisitors": "ng mga bisita",
+          "ofOpened": "ng binuksan",
+          "ofTotal": "ng kabuuan",
+          "collectingData": "Nangongolekta ng datos"
+        },
+        "pipeline": {
+          "title": "Pipeline ng inquiry",
+          "new": "Bago",
+          "booked": "Na-book",
+          "archived": "Naka-archive",
+          "total": "Kabuuang inquiry"
+        },
+        "demand": {
+          "title": "Profile ng demand",
+          "eventTypeMix": "Uri ng event (ayon sa inquiry)",
+          "requestedMonth": "Hiniling na buwan ng event",
+          "medianLeadTime": "Median na lead time",
+          "days": "araw",
+          "basedOn": "batay sa"
+        }
       },
       "team": {
         "bookingsCount": "{count, plural, one {# booking} other {# na booking}}"
@@ -593,6 +640,16 @@
       "showMore": "Magpakita pa",
       "showLess": "Bawasan",
       "hints": {
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "Mga kabuuan para sa buwang ito. Inihahambing ng mga arrow sa nakaraang buwan.",
         "calendar": "Mga booking kada araw. Mag-filter ayon sa team; i-tap ang isang araw para buksan ang kalendaryo doon.",
         "eventTypes": "Bahagi ng mga booking ayon sa uri ng event.",
@@ -628,6 +685,60 @@
         "client_changed": "binago ang kliyente",
         "payment_added": "nagdagdag ng bayad",
         "payment_updated": "na-update ang bayad"
+      },
+      "eventTypes": {
+        "wedding": "Kasal",
+        "corporate": "Korporado",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anibersaryo",
+        "social": "Panlipunan",
+        "other": "Iba pa"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "Na-book na halaga vs nakolektang kita",
+          "bookedValue": "Na-book na halaga",
+          "collectedRevenue": "Nakolektang kita"
+        },
+        "coverage": {
+          "title": "Saklaw ng koleksyon",
+          "asOf": "sa",
+          "confirmedValue": "Nakumpirmang halaga",
+          "confirmedHint": "Kabuuang halaga ng mga nakumpirmang booking",
+          "paid": "Bayad (nakolekta)",
+          "paidHint": "Mga natanggap na bayad hanggang ngayon",
+          "remaining": "Natitirang balanse",
+          "remainingHint": "Hindi pa nakokolekta",
+          "coverageText": "Saklaw: {pct}% ng nakumpirmang halaga ang nakolekta"
+        },
+        "heatmap": {
+          "previous": "Nakaraang mga petsa sa heatmap",
+          "today": "Ngayon",
+          "next": "Susunod na mga petsa sa heatmap",
+          "title": "Heatmap ng na-book na oras",
+          "weekOf": "Linggo ng",
+          "bookedHours": "Na-book na oras",
+          "weekdays": [
+            "Lun",
+            "Mar",
+            "Miy",
+            "Huw",
+            "Biy",
+            "Sab",
+            "Lin"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "Halo ng event sa paglipas ng panahon"
+        }
       }
     },
     "calendar": {
@@ -762,6 +873,7 @@
       },
       "table": {
         "empty": "Walang booking na tumutugma sa iyong mga filter.",
+        "listEmpty": "Wala pang booking.",
         "past": "Lipas na",
         "showPast": "Ipakita ang nakaraan",
         "hidePast": "Itago ang nakaraan",
@@ -1011,6 +1123,10 @@
         "title": "Pamagat",
         "price": "Presyo",
         "status": "Katayuan",
+        "method": "Paraan",
+        "cash": "Cash",
+        "card": "Card",
+        "remit": "Remit",
         "paid": "Nabayaran",
         "unpaid": "Hindi pa bayad",
         "paidOn": "Binayaran noong {date}",
@@ -1242,6 +1358,7 @@
           "paused": "Naka-pause",
           "trialing": "Trial"
         },
+        "notYetAvailable": "Hindi pa available ang mga paid subscription. Bumalik ulit sa lalong madaling panahon, o gumamit ng promo code sa ibaba kung mayroon ka.",
         "manageSection": "Pamahalaan ang subscription",
         "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
         "manageButton": "Pamahalaan ang subscription",
@@ -1280,12 +1397,12 @@
         "logoHint": "Makikita ito sa mga invoice na iyong nabubuo.",
         "logoLabel": "Mag-upload ng logo",
         "logoUploading": "Ina-upload…",
-        "logoRequirements": "PNG, JPEG, WebP o SVG · max 2 MB · hanggang 2000 × 2000 px",
+        "logoRequirements": "PNG, JPEG, WebP o SVG - max 250 KB - parisukat hanggang 256 x 256 px",
         "logoRemove": "Alisin",
         "logoErrors": {
           "type": "Tanging PNG, JPEG, WebP o SVG na file lang ang tinatanggap.",
-          "size": "Ang file ay dapat 2 MB o mas maliit.",
-          "dimensions": "Ang larawan ay dapat 2000 × 2000 px o mas maliit.",
+          "size": "Ang file ay dapat 250 KB o mas maliit.",
+          "dimensions": "Dapat parisukat ang logo at 256 x 256 px o mas maliit.",
           "image": "Hindi mabasa ang larawan. Pakisubukan ang ibang file.",
           "upload": "Nabigo ang pag-upload. Pakisubukan muli."
         }
@@ -1298,9 +1415,9 @@
         "languages": {
           "en": "English",
           "fil": "Filipino",
-          "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
-          "ar": "العربية"
+          "ar": "العربية",
+          "th": "ภาษาไทย"
         },
         "timeFormatSection": "Format ng Oras",
         "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
@@ -1394,6 +1511,7 @@
           "color": "Kulay",
           "name": "Koponan",
           "members": "Mga Miyembro",
+          "monthlyAverage": "Buwanang Average",
           "actions": "Mga Aksyon"
         },
         "details": "Mga Detalye",
@@ -1436,6 +1554,7 @@
       },
       "team": {
         "memberCount": "{count, plural, =0 {Walang miyembro pa} =1 {1 miyembro} other {# mga miyembro}}",
+        "monthlyBookings": "{count, plural, one {# booking/buwan} other {# booking/buwan}}",
         "defaultBadge": "Default",
         "rename": "Palitan ang pangalan",
         "changeColor": "Baguhin ang kulay",
@@ -1460,7 +1579,20 @@
         "leadOnlyOnePerTeam": "Isang lead lang ang maaari sa bawat koponan.",
         "removeFromTeam": "Alisin",
         "teamFull": "Puno na ang koponang ito.",
-        "close": "Isara"
+        "close": "Isara",
+        "removeMemberFlow": {
+          "confirmTitle": "Alisin si {name} mula sa {team}?",
+          "confirmDescription": "Mawawalan sila ng access sa kalendaryo at mga booking ng koponang ito.",
+          "confirmButton": "Alisin sa koponan",
+          "removeFromTeamAndWorkspace": "Alisin sa koponan + workspace",
+          "otherTeamsBlocked": "Kasapi pa ang miyembrong ito sa ibang mga koponan. Alisin muna sila roon.",
+          "removing": "Inaalis…",
+          "workspacePromptTitle": "Alisin din si {name} sa workspace?",
+          "workspacePromptDescription": "Mawawalan sila ng access sa lahat ng koponan at sa buong workspace. Hindi ito maaaring ibalik.",
+          "dontAskAgain": "Huwag nang itanong ulit",
+          "removeFromWorkspaceButton": "Alisin sa workspace",
+          "keepInWorkspaceButton": "Panatilihin sa workspace"
+        }
       },
       "upsell": {
         "atCapTitle": "Naabot mo na ang iyong limitasyon sa koponan",
@@ -1497,7 +1629,8 @@
           "leadLabel": "Lead",
           "teamFull": "Puno na",
           "submit": "Magpadala ng imbitasyon",
-          "sending": "Nagpapadala…"
+          "sending": "Nagpapadala…",
+          "emailAlreadyRegistered": "May Gallurio account na ang email na ito. Naka-disable ang pagpapadala hangga't hindi mo pinapalitan ang address."
         },
         "errors": {
           "emailRequired": "Maglagay ng wastong email address.",
@@ -1523,18 +1656,43 @@
         "empty": "Wala pang katrabaho. Mag-imbita ng isa para makapagsimula.",
         "ownerBadge": "May-ari",
         "leadBadge": "Lead",
+        "memberBadge": "Miyembro",
         "pendingBadge": "Nakabinbin",
         "manageTeams": "Pamahalaan ang mga koponan",
         "removeFromWorkspace": "Alisin sa workspace",
         "revokeInvite": "Bawiin ang imbitasyon",
         "rowActionsLabel": "Mga aksyon para kay {name}",
+        "viewButton": "Tingnan ang mga miyembro",
+        "inviteCountsLabel": "Bilang ng mga imbitasyon",
+        "newlyAcceptedCount": "Bago {count}",
+        "pendingCount": "Nakabinbin {count}",
+        "description": "Lahat ng may access sa workspace na ito, sa lahat ng koponan.",
+        "modeLabel": "Listahan ng miyembro",
+        "active": "Aktibo",
+        "pending": "Nakabinbin",
+        "searchPlaceholder": "Maghanap ng pangalan o email",
+        "noActiveMatches": "Walang miyembrong tumutugma sa iyong paghahanap.",
+        "noPendingMatches": "Walang nakabinbing imbitasyong tumutugma sa iyong paghahanap.",
+        "noPending": "Walang nakabinbing imbitasyon.",
+        "moreTeams": "+{count} pang koponan",
+        "ownerAllTeams": "Maaaring mangasiwa sa lahat ng koponan",
+        "noTeams": "Wala sa anumang koponan",
+        "removeFromWorkspaceLabel": "Alisin sa workspace si {name}",
         "removeDialog": {
           "title": "Alisin ang miyembro?",
           "description": "Mawawalan agad ng access si {name} sa workspace na ito. Nananatili ang kanilang mga booking; palalabasin ang mga puwesto sa koponan. Hindi ito maaaring ibalik.",
           "confirm": "Alisin ang miyembro"
         },
+        "details": {
+          "tabsLabel": "Mga detalye ng miyembro", "tabs": { "details": "Mga detalye", "history": "Kasaysayan" },
+          "teams": "Mga koponan", "noTeams": "Walang koponan", "completed": "Natapos", "workingNow": "Kasalukuyang ginagawa", "future": "Hinaharap",
+          "fromDate": "Mula petsa", "toDate": "Hanggang petsa", "action": "Aksyon", "allActions": "Lahat ng aksyon",
+          "actions": { "created": "Ginawa", "updated": "Na-update", "deleted": "Tinanggal", "statusChanged": "Binago ang status", "paymentAdded": "Idinagdag ang bayad" },
+          "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad", "loading": "Naglo-load…", "loadMore": "Mag-load pa", "noActivity": "Walang nakitang aktibidad."
+        },
         "errors": {
-          "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace."
+          "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace.",
+          "isTeamLead": "Si {name} ay lead ng hindi bababa sa isang koponan. Alisin muna ang status nila bilang lead ng koponan bago sila tanggalin."
         },
         "toasts": {
           "removed": "Naalis ang miyembro."
@@ -1555,7 +1713,9 @@
           "added": "Naidagdag sa koponan.",
           "removed": "Naalis sa koponan.",
           "promoted": "Na-promote bilang lead.",
-          "demoted": "Nababa sa miyembro."
+          "demoted": "Nababa sa miyembro.",
+          "promoting": "Inililipat ang lead…",
+          "demoting": "Inaalis ang lead…"
         }
       },
       "downgradeBlock": {
@@ -1625,6 +1785,7 @@
         "notes": "Mga Tala",
         "notesPlaceholder": "Anumang tala tungkol sa kliyenteng ito…",
         "save": "I-save",
+        "view": "Tingnan",
         "saving": "Sine-save…",
         "cancel": "Kanselahin",
         "createSuccess": "Nailikha ang kliyente.",
@@ -1719,6 +1880,7 @@
       },
       "table": {
         "empty": "Wala pang mga katanungan.",
+        "filteredEmpty": "Walang katanungang tumutugma sa iyong mga filter.",
         "emptyHint": "Kapag may nag-submit ng iyong portfolio contact form, lalabas dito ang kanilang kahilingan.",
         "viewPublicPage": "Tingnan ang iyong pampublikong pahina",
         "open": "Buksan ang katanungan mula kay {name}",
@@ -1936,6 +2098,7 @@
           "slugLabel": "URL ng portfolio",
           "slugSuffix": ".gallurio.com",
           "slugSave": "I-save ang URL",
+          "slugEdit": "I-edit ang URL ng portfolio",
           "slugSaving": "Sine-save...",
           "slugSaved": "Na-save",
           "slugError": "Hindi na-update ang URL, pakisubukan muli",
@@ -2120,6 +2283,7 @@
         },
         "controls": {
           "editorControls": "Mga kontrol ng editor",
+          "workspaceActions": "Mga action ng portfolio",
           "toggleBlocks": "I-toggle ang panel ng mga block",
           "toggleProperties": "I-toggle ang panel ng mga properties",
           "previewDevice": "Device para sa preview",
@@ -2395,7 +2559,7 @@
             },
             "dragBlock": {
               "title": "Mag-drag ng block sa iyong pahina",
-              "body": "Naglilista ang panel ng bawat available na block. Mag-drag ng anumang block mula dito papunta sa canvas para idagdag ito sa iyong pahina."
+              "body": "Pumili ng Preset block mula sa panel, pagkatapos ay i-drag ito papunta sa canvas. May kasama ang mga preset na editing controls na gagamitin sa mga susunod na hakbang."
             },
             "blockProps": {
               "title": "Nandito ang mga properties ng block",
@@ -2461,6 +2625,18 @@
               "title": "I-preview ang iyong site sa anumang laki ng screen",
               "body": "Lumipat sa preview mode at gamitin ang device toggle para suriin ang iyong layout sa mobile, tablet, at desktop."
             },
+            "canvasControls": {
+              "title": "Ayusin ang iyong editing canvas",
+              "body": "Gamitin ang mga control na ito para mag-toggle ng mga panel, mag-undo o mag-redo, pumili ng lapad ng canvas, at mag-zoom. Sa mas maliliit na screen, buksan ang sliders button para makita ang mga ito."
+            },
+            "guide": {
+              "title": "Bumalik sa gabay na ito anumang oras",
+              "body": "Buksan ang Gabay anumang oras para ulitin ang walkthrough na ito."
+            },
+            "save": {
+              "title": "I-save ang iyong mga pagbabago",
+              "body": "I-save ang mga pagbabago para manatiling handa ang kasalukuyang draft na balikan sa ibang pagkakataon."
+            },
             "publish": {
               "title": "Mag-publish para maging live",
               "body": "Kapag nasisiyahan ka na sa iyong mga pagbabago, i-click ang I-publish para ipadala ang mga ito sa iyong pampublikong pahina."
@@ -2497,9 +2673,9 @@
             "logoUpload": "Mag-upload ng logo",
             "logoUploading": "Ina-upload…",
             "logoRemove": "Alisin ang logo",
-            "logoRequirements": "PNG, JPEG, o WEBP · max 250 KB · hanggang 512×256",
+            "logoRequirements": "PNG, JPG o JPEG, o WEBP · max 250 KB · hanggang 512×256",
             "logoErrors": {
-              "type": "Ang logo ay dapat na larawang PNG, JPEG, o WEBP.",
+              "type": "Ang logo ay dapat na larawang PNG, JPG o JPEG, o WEBP.",
               "size": "Ang logo ay dapat na 250 KB o mas maliit.",
               "dimensions": "Ang logo ay dapat na 512 x 256 px o mas maliit.",
               "image": "Hindi mabasa ang larawang ito ng logo.",
@@ -2509,14 +2685,28 @@
             "iconUpload": "Pumili ng larawan",
             "iconUploading": "Ina-upload…",
             "iconRemove": "Alisin",
-            "iconRequirements": "PNG, JPEG, WebP, o AVIF · max 1 MB · hanggang 512 × 512 px",
+            "iconRequirements": "PNG, JPG o JPEG, WebP, o AVIF · max 1 MB · hanggang 512 × 512 px",
             "iconErrors": {
-              "type": "Mga PNG, JPEG, WebP, o AVIF na file lang ang tinatanggap.",
+              "type": "Mga PNG, JPG o JPEG, WebP, o AVIF na file lang ang tinatanggap.",
               "size": "Ang icon ay dapat na 1 MB o mas maliit.",
               "dimensions": "Ang icon ay dapat na 512 x 512 px o mas maliit.",
               "image": "Hindi mabasa ang larawang ito ng icon.",
               "upload": "Nabigo ang pag-upload ng icon. Pakisubukan muli."
-            }
+            },
+            "shareImageLabel": "Larawan sa pagbabahagi",
+            "shareImageUpload": "Mag-upload ng larawan sa pagbabahagi",
+            "shareImageUploading": "Ina-upload...",
+            "shareImageRemove": "Alisin ang larawan sa pagbabahagi",
+            "shareImageRequirements": "JPG o JPEG, PNG, WebP o AVIF · max 10 MB · 1200 × 630 px ang inirerekomenda",
+            "shareImageErrors": {
+              "type": "Gumamit ng JPG o JPEG, PNG, WebP, o AVIF na larawan.",
+              "size": "Dapat 10 MB o mas maliit ang larawan sa pagbabahagi.",
+              "dimensions": "Dapat hindi bababa sa 1200 × 630 px ang larawan sa pagbabahagi.",
+              "upload": "Nabigo ang pag-upload ng larawan sa pagbabahagi. Pakisubukan muli."
+            },
+            "inquiryRecipientLabel": "Email ng tatanggap ng inquiry",
+            "inquiryRecipientPlaceholder": "ikaw@halimbawa.com",
+            "inquiryRecipientHint": "Dito ipapadala ang mga bagong notification ng inquiry."
           },
           "done": {
             "title": "Handa nang magningning ang iyong pahina",
@@ -2631,6 +2821,10 @@
             "title": "Inimbitahan ka sa isang koponan",
             "body": "Inimbitahan ka ni {inviterName} na sumali sa {teamName}."
           },
+          "invite_accepted": {
+            "title": "Tinanggap ni {memberName} ang imbitasyon mo",
+            "body": "Sumali na sila sa {teamName}."
+          },
           "removed": {
             "title": "Tinanggal sa koponan",
             "body": "Natanggal ka sa {teamName}."
@@ -2654,10 +2848,15 @@
       "invalid_data": "Hindi wastong datos. Pakisuri ang iyong input at subukan muli.",
       "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
       "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
+      "onboarding_plan_locked": "Aktibo na ang iyong plano. Tapusin ang onboarding upang pamahalaan ito sa mga billing setting.",
       "subscription_required": "Natapos na ang iyong Pro access. Mag-subscribe para magpatuloy.",
       "promo_code_not_found": "Hindi valid ang code na iyon. I-check ulit at subukan muli.",
       "promo_code_expired": "Nag-expire na ang code na iyon.",
       "promo_code_already_redeemed": "Na-redeem mo na ang code na ito.",
+      "promo_code_revoked": "Na-disable na ang code na iyon.",
+      "not_eligible_beta_participant": "Para lang sa mga naitalang beta participant ang code na ito.",
+      "beta_promo_already_redeemed": "Na-redeem mo na ang one-time beta promo mo.",
+      "beta_program_closed": "Sarado na ang beta program sa mga bagong kalahok.",
       "invalid_input": "Pakitingnan ang form at subukan muli.",
       "rate_limited": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",
       "user_not_found": "Hindi natagpuan ang user.",
@@ -2698,6 +2897,7 @@
       "export_too_large": "Masyadong maraming booking para i-export. I-paliitin ang iyong mga filter at subukan muli.",
       "free_plan_no_checkout": "Hindi kailangan ng checkout ang libreng plano.",
       "lemonsqueezy_variant_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
+      "billing_unavailable": "Hindi pa available ang mga paid subscription. Bumalik ulit sa lalong madaling panahon.",
       "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
       "checkout_init_failed": "Hindi masimulaan ang checkout. Pakisubukan muli.",
       "no_subscription": "Wala kang aktibong subscription na mapapamahalaan.",
@@ -2736,10 +2936,12 @@
     "loading": "Naglo-load…",
     "promoCode": {
       "disclosureLabel": "May promo code ka ba?",
+      "close": "Isara ang promo code",
       "placeholder": "Ilagay ang code",
       "submit": "I-apply",
       "applying": "Ina-apply…",
-      "success": "Na-apply ang code — na-update na ang iyong plan."
+      "success": "Na-apply ang code — aktibo na ang Pro access mo.",
+      "successQueued": "Na-apply ang code — awtomatikong magsisimula ang dalawang buwang Pro access mo pagkatapos matapos ang kasalukuyan mong plan."
     }
   },
   "onboarding": {
@@ -2800,6 +3002,7 @@
       "title": "Pumili ng planong angkop",
       "description": "Maaari kang magpalit ng plano o magkansela anumang oras mula sa mga setting ng iyong workspace.",
       "popular": "Popular",
+      "comingSoon": "Malapit na",
       "cadence": {
         "forever": "unang buwan libre",
         "monthly": "/ buwan",
@@ -2817,19 +3020,25 @@
       "opening": "Binubuksan ang checkout…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
       "checkoutNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
+      "activatedNotice": "Aktibo na ang iyong Gallurio Plan. Tapusin ang onboarding para baguhin ang iyong subscription plan.",
+      "activePill": "Aktibo",
+      "finishOnboarding": "Tapusin ang onboarding",
+      "acceptedPromoCode": "Promo code {code}",
       "betaTester": {
         "label": "Beta Tester",
+        "headline": "Kumuha ng libreng beta access ngayon",
         "activate": "I-activate ang beta access"
       }
     },
     "done": {
       "title": "Handa ka na, {workspaceName}.",
-      "description": "Aktibo na ang iyong planong {planLabel}. Isang huling bagay bago ka pumunta sa dashboard.",
+      "description": "Aktibo na ang iyong planong {planLabel}. Maligayang pagdating sa Gallurio — handa nang gamitin ang iyong workspace.",
       "seedToggle": {
         "label": "Magsimula gamit ang sample data",
         "description": "Magdadagdag kami ng 5 demo client, 3 demo booking, at 1 demo inquiry para makapaglibot ka sa app. Lahat ay may tag na sample para mabura mo sa isang click."
       },
       "settingUp": "Sine-set up ang iyong dashboard…",
+      "settingUpCompact": "Inihahanda…",
       "goToDashboard": "Pumunta sa iyong dashboard",
       "footer": {
         "everything": "Lahat nasa iisang lugar",
@@ -2996,6 +3205,10 @@
       "already_accepted": {
         "title": "Miyembro na",
         "description": "Tinanggap mo na ang imbitasyong ito at sumali ka na sa workspace."
+      },
+      "revoked": {
+        "title": "Binawi ang imbitasyon",
+        "description": "Binawi ng may-ari ng workspace ang imbitasyong ito. Hilingin sa kanya na magpadala ng bago kung kailangan mo pa rin ng access."
       },
       "already_member": {
         "title": "Ginagamit na ang email",

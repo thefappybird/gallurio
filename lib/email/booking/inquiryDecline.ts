@@ -26,7 +26,7 @@ export async function sendInquiryDeclineClient(
   try {
     const locale = emailLocale(params.locale ?? null);
 
-    const { html, text } = renderBilingualEmail({
+    const { html, text, attachments } = renderBilingualEmail({
       brand: params.brand,
       preheader: EMAIL_COPY.inquiryDecline.en.body1(params.businessName),
       secondaryLocale: locale,
@@ -55,6 +55,7 @@ export async function sendInquiryDeclineClient(
       subject,
       html,
       text,
+      attachments,
     });
   } catch (err) {
     console.error("[email] sendInquiryDeclineClient failed:", err);

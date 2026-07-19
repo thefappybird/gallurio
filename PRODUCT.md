@@ -36,4 +36,4 @@ Polished, premium, refined. The app should feel like a serious, well-made tool w
 
 ## Accessibility & Inclusion
 
-WCAG AA target: 4.5:1 body text contrast, full keyboard support, semantic HTML, color never the sole signal. Five locales (`en`, `fil`, `ms`, `id`, `ar`) — Arabic is RTL and uses logical CSS/Tailwind properties, not physical ones.
+WCAG AA target: 4.5:1 body text contrast, full keyboard support, semantic HTML, color never the sole signal. Five locales (`en`, `fil`, `id`, `ar`, `th`) — Arabic is RTL and uses logical CSS/Tailwind properties, not physical ones.

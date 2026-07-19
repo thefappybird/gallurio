@@ -1,10 +1,12 @@
 export type PaymentStatus = "unpaid" | "paid";
+export type PaymentMethod = "cash" | "card" | "remit";
 export type PaymentInput = {
   price: number;
   status: PaymentStatus;
   createdAt?: Date;
   paidAt?: Date | null;
   title?: string;
+  method?: PaymentMethod;
 };
 export type PaymentRecord = {
   price: number;
@@ -12,6 +14,7 @@ export type PaymentRecord = {
   createdAt: Date;
   paidAt: Date | null;
   title: string;
+  method: PaymentMethod;
 };
 
 export function normalizePayments(raw: PaymentInput[], now = new Date()): PaymentRecord[] {
@@ -21,6 +24,7 @@ export function normalizePayments(raw: PaymentInput[], now = new Date()): Paymen
     createdAt: p.createdAt ?? now,
     paidAt: p.status === "paid" ? (p.paidAt ?? now) : null,
     title: p.title ?? "",
+    method: p.method ?? "cash",
   }));
 }
 

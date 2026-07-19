@@ -16,6 +16,7 @@ vi.mock("@/lib/actions/clients", () => ({
       currency: "PHP",
     },
   ]),
+  getClientPaymentsAction: vi.fn().mockResolvedValue({ items: [], hasMore: false }),
 }));
 
 const sampleClient: ClientRow = {
@@ -82,10 +83,10 @@ describe("ClientDetailModal", () => {
     await waitFor(() => expect(screen.getByText("Carter Wedding")).toBeInTheDocument());
   });
 
-  it("Payments tab shows empty state", () => {
+  it("Payments tab shows empty state", async () => {
     renderWithProviders(<ClientDetailModal {...defaultProps} />);
     fireEvent.click(screen.getByRole("tab", { name: /payments/i }));
-    expect(screen.getByText(/no payment records/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no payment records/i)).toBeInTheDocument();
   });
 
   it("calls onEdit when Edit button is clicked", () => {

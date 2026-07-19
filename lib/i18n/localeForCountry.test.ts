@@ -7,19 +7,14 @@ describe("localeForCountry", () => {
     expect(localeForCountry("ph")).toBe("fil");
   });
 
-  it("returns ms for MY", () => {
-    expect(localeForCountry("MY")).toBe("ms");
-    expect(localeForCountry("my")).toBe("ms");
-  });
-
   it("returns id for ID", () => {
     expect(localeForCountry("ID")).toBe("id");
     expect(localeForCountry("id")).toBe("id");
   });
 
-  it("returns en for TH (Thai locale removed)", () => {
-    expect(localeForCountry("TH")).toBe("en");
-    expect(localeForCountry("th")).toBe("en");
+  it("returns th for TH", () => {
+    expect(localeForCountry("TH")).toBe("th");
+    expect(localeForCountry("th")).toBe("th");
   });
 
   it("returns en for SG", () => {

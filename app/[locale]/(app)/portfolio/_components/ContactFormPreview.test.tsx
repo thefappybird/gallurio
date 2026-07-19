@@ -200,7 +200,7 @@ describe("ContactFormPreview", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Event" }));
 
-    const addSession = screen.getByRole("button", { name: /\+ Add session/i });
+    const addSession = screen.getByRole("button", { name: /add session/i });
     expect(addSession.style.color).toBe("#335577");
     expect(addSession.getAttribute("style")).toContain("border: 2px solid #335577");
     expect(addSession.getAttribute("style")).toContain("border-radius: 0.5rem");
@@ -267,7 +267,7 @@ describe("ContactFormPreview", () => {
     expect(styleAttr).toContain("border-bottom");
   });
 
-  it("shows validation states in preview without submitting the inquiry", async () => {
+  it("uses filled, disabled sample fields and advances without validating in preview", async () => {
     renderWithProviders(
       <ContactFormPreview
         contact={contact}
@@ -280,11 +280,15 @@ describe("ContactFormPreview", () => {
       />
     );
 
+    const name = screen.getByLabelText("Name") as HTMLInputElement;
+    expect(name).toBeDisabled();
+    expect(name.value).toBe("Alex Morgan");
+    expect(screen.getByLabelText("Email")).toBeDisabled();
+    expect(await screen.findByText("Required")).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    expect(
-      await screen.findByText(/please enter your name/i)
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Event title")).toBeInTheDocument();
     expect(global.fetch).not.toHaveBeenCalled();
   });
 });

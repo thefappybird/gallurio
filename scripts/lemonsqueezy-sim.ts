@@ -7,11 +7,18 @@
  * sandbox dashboard.
  *
  * Usage:
- *   pnpm lemonsqueezy:sim subscription-created <workspaceId> [variantId]
- *   pnpm lemonsqueezy:sim subscription-updated <workspaceId> [variantId]
- *   pnpm lemonsqueezy:sim subscription-cancelled <workspaceId>
- *   pnpm lemonsqueezy:sim subscription-expired <workspaceId>
- *   pnpm lemonsqueezy:sim subscription-payment-success <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-created          <workspaceId> [variantId]
+ *   pnpm lemonsqueezy:sim subscription-updated          <workspaceId> [variantId]
+ *   pnpm lemonsqueezy:sim subscription-plan-changed      <workspaceId> [variantId]
+ *   pnpm lemonsqueezy:sim subscription-cancelled         <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-expired           <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-paused            <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-unpaused          <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-resumed           <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-payment-success   <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-payment-failed    <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-payment-recovered <workspaceId>
+ *   pnpm lemonsqueezy:sim subscription-payment-refunded  <workspaceId>
  *
  * Targets http://localhost:3000/api/webhooks/lemonsqueezy by default —
  * override with LEMONSQUEEZY_SIM_URL.
@@ -33,11 +40,18 @@ const SECRET = process.env.LEMONSQUEEZY_WEBHOOK_SECRET ?? "";
 
 const USAGE = `
 Usage:
-  pnpm lemonsqueezy:sim subscription-created         <workspaceId> [variantId]
-  pnpm lemonsqueezy:sim subscription-updated         <workspaceId> [variantId]
-  pnpm lemonsqueezy:sim subscription-cancelled       <workspaceId>
-  pnpm lemonsqueezy:sim subscription-expired         <workspaceId>
-  pnpm lemonsqueezy:sim subscription-payment-success <workspaceId>
+  pnpm lemonsqueezy:sim subscription-created          <workspaceId> [variantId]
+  pnpm lemonsqueezy:sim subscription-updated          <workspaceId> [variantId]
+  pnpm lemonsqueezy:sim subscription-plan-changed      <workspaceId> [variantId]
+  pnpm lemonsqueezy:sim subscription-cancelled         <workspaceId>
+  pnpm lemonsqueezy:sim subscription-expired           <workspaceId>
+  pnpm lemonsqueezy:sim subscription-paused            <workspaceId>
+  pnpm lemonsqueezy:sim subscription-unpaused          <workspaceId>
+  pnpm lemonsqueezy:sim subscription-resumed           <workspaceId>
+  pnpm lemonsqueezy:sim subscription-payment-success   <workspaceId>
+  pnpm lemonsqueezy:sim subscription-payment-failed    <workspaceId>
+  pnpm lemonsqueezy:sim subscription-payment-recovered <workspaceId>
+  pnpm lemonsqueezy:sim subscription-payment-refunded  <workspaceId>
 `.trim();
 
 type LemonSqueezyEvent = {
@@ -92,6 +106,17 @@ function buildEvent(args: string[]): LemonSqueezyEvent {
     };
   }
 
+  if (kind === "subscription-plan-changed") {
+    return {
+      meta: {
+        event_name: "subscription_plan_changed",
+        custom_data: { workspaceId },
+        test_mode: true,
+      },
+      data: { id: simId("sub"), attributes: baseAttributes },
+    };
+  }
+
   if (kind === "subscription-cancelled") {
     return {
       meta: {
@@ -124,6 +149,45 @@ function buildEvent(args: string[]): LemonSqueezyEvent {
     };
   }
 
+  if (kind === "subscription-paused") {
+    return {
+      meta: {
+        event_name: "subscription_paused",
+        custom_data: { workspaceId },
+        test_mode: true,
+      },
+      data: {
+        id: simId("sub"),
+        attributes: { status: "paused", customer_id: 555 },
+      },
+    };
+  }
+
+  if (kind === "subscription-unpaused") {
+    return {
+      meta: {
+        event_name: "subscription_unpaused",
+        custom_data: { workspaceId },
+        test_mode: true,
+      },
+      data: {
+        id: simId("sub"),
+        attributes: { status: "active", customer_id: 555 },
+      },
+    };
+  }
+
+  if (kind === "subscription-resumed") {
+    return {
+      meta: {
+        event_name: "subscription_resumed",
+        custom_data: { workspaceId },
+        test_mode: true,
+      },
+      data: { id: simId("sub"), attributes: baseAttributes },
+    };
+  }
+
   if (kind === "subscription-payment-success") {
     return {
       meta: {
@@ -134,6 +198,48 @@ function buildEvent(args: string[]): LemonSqueezyEvent {
       data: {
         id: simId("sub"),
         attributes: { renews_at: renewsAt },
+      },
+    };
+  }
+
+  if (kind === "subscription-payment-failed") {
+    return {
+      meta: {
+        event_name: "subscription_payment_failed",
+        custom_data: { workspaceId },
+        test_mode: true,
+      },
+      data: {
+        id: simId("inv"),
+        attributes: { status: "past_due", customer_id: 555 },
+      },
+    };
+  }
+
+  if (kind === "subscription-payment-recovered") {
+    return {
+      meta: {
+        event_name: "subscription_payment_recovered",
+        custom_data: { workspaceId },
+        test_mode: true,
+      },
+      data: {
+        id: simId("inv"),
+        attributes: { renews_at: renewsAt },
+      },
+    };
+  }
+
+  if (kind === "subscription-payment-refunded") {
+    return {
+      meta: {
+        event_name: "subscription_payment_refunded",
+        custom_data: { workspaceId },
+        test_mode: true,
+      },
+      data: {
+        id: simId("inv"),
+        attributes: { customer_id: 555 },
       },
     };
   }

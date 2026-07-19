@@ -168,9 +168,11 @@ describe("reactivateTeamAction", () => {
   });
 
   it("refuses reactivation that would exceed the active-team plan cap", async () => {
-    // Mocked workspace plan is "free" → cap 1. Fill the 1 active slot, then
-    // try to reactivate a 2nd (currently inactive) team.
-    await makeTeam({ name: "A" });
+    // Mocked workspace plan is "free" → cap 10. Fill the 10 active slots, then
+    // try to reactivate an 11th (currently inactive) team.
+    for (let i = 0; i < 10; i++) {
+      await makeTeam({ name: `A${i}` });
+    }
     const dead = await makeTeam({ name: "D", isActive: false, deactivatedAt: new Date() });
 
     const { reactivateTeamAction } = await import("./_actions");

@@ -78,6 +78,10 @@ function renderForm(
     currentPlan?: string;
     furthestStep?: "business" | "workspace" | "plan" | "done";
     betaTesterEnabled?: boolean;
+    planChoiceLocked?: boolean;
+    activation?: "free" | "pro" | "beta" | "promo" | null;
+    acceptedPromoCode?: string | null;
+    billingAvailable?: boolean;
   } = {}
 ) {
   return renderWithProviders(
@@ -86,6 +90,10 @@ function renderForm(
       furthestStep={props.furthestStep ?? "plan"}
       proPricing={{ currency: "PHP", monthly: 250, yearly: 2500 }}
       betaTesterEnabled={props.betaTesterEnabled}
+      planChoiceLocked={props.planChoiceLocked}
+      activation={props.activation}
+      acceptedPromoCode={props.acceptedPromoCode}
+      billingAvailable={props.billingAvailable ?? true}
     />
   );
 }
@@ -127,19 +135,74 @@ describe("PlanStepForm — renders", () => {
 });
 
 describe("PlanStepForm — plan card selection", () => {
-  it("switching to Pro changes the CTA to paid text", async () => {
+  it("Pro card is enabled with no Coming soon badge when billing is available (paid mode)", () => {
     renderForm({ currentPlan: "free" });
 
-    // Find the Pro plan card specifically by its heading
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button");
+    expect(proCard).not.toBeNull();
+    expect(proCard).not.toBeDisabled();
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+  });
+
+  it("Pro card is disabled and shows a Coming soon badge in beta-only mode (billingAvailable=false)", () => {
+    renderForm({ currentPlan: "free", billingAvailable: false });
+
     const proHeading = screen.getByRole("heading", { name: "Pro" });
-    // The heading is inside the card button — click the closest button ancestor
     const proCard = proHeading.closest("button");
     expect(proCard).not.toBeNull();
-    fireEvent.click(proCard!);
+    expect(proCard).toBeDisabled();
+    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^popular$/i)).not.toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /subscribe.*₱/i })).toBeInTheDocument();
-    });
+  it("clicking the disabled Pro card does not change the CTA from free text in beta-only mode", async () => {
+    renderForm({ currentPlan: "free", billingAvailable: false });
+
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
+    fireEvent.click(proCard);
+
+    await act(async () => {});
+    expect(screen.getByRole("button", { name: /free month/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
+  });
+
+  it("locks alternatives after a paid, promo, or beta plan activation", () => {
+    renderForm({ currentPlan: "beta", planChoiceLocked: true, betaTesterEnabled: true, activation: "beta" });
+
+    expect(screen.getByRole("status")).toHaveTextContent(/plan is now activated/i);
+    expect(screen.getByText(/^active$/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /finish onboarding/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Free" }).closest("button")).toBeDisabled();
+    expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /activate beta access/i })).toBeDisabled();
+    expect(screen.getByRole("tab", { name: /monthly/i })).toBeDisabled();
+  });
+
+  it("keeps plan options available after choosing the free path", () => {
+    renderForm({ currentPlan: "free", planChoiceLocked: false, activation: "free" });
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    const freeCard = screen.getByRole("heading", { name: "Free" }).closest("button")!;
+    expect(freeCard).not.toBeDisabled();
+    expect(within(freeCard).getByText(/^active$/i)).toBeInTheDocument();
+  });
+
+  it("shows an accepted promo code instead of another redemption prompt", () => {
+    renderForm({ planChoiceLocked: true, activation: "promo", acceptedPromoCode: "WELCOME25" });
+
+    expect(screen.getByText(/WELCOME25/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^active$/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
+  });
+});
+
+describe("PlanStepForm — beta-only mode never loads Lemon Squeezy", () => {
+  it("never injects the lemon.js script when billingAvailable is false", () => {
+    renderForm({ currentPlan: "free", billingAvailable: false });
+    expect(document.querySelector('script[src*="lemon.js"]')).toBeNull();
+    expect(createLemonSqueezyMock).not.toHaveBeenCalled();
   });
 });
 
@@ -321,7 +384,23 @@ describe("PlanStepForm — promo code redemption", () => {
     fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
 
     await waitFor(() => {
+      expect(screen.getByPlaceholderText(/enter code/i)).toHaveFocus();
+    });
+  });
+
+  it("returns to the promo code toggle when closed", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    await waitFor(() => {
       expect(screen.getByPlaceholderText(/enter code/i)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /close promo code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText(/enter code/i)).not.toBeInTheDocument();
     });
   });
 
@@ -336,7 +415,7 @@ describe("PlanStepForm — promo code redemption", () => {
     fireEvent.click(screen.getByRole("button", { name: /apply/i }));
 
     await waitFor(() => {
-      expect(redeemPromoCodeAction).toHaveBeenCalledWith("SAVE20");
+      expect(redeemPromoCodeAction).toHaveBeenCalledWith("SAVE20", { onboarding: true });
     });
   });
 

@@ -42,13 +42,18 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
     const teamId = booking.teamId ?? null;
 
     // --- Decrement old client ---
-    // Remove the matching transaction doc from the old client (only exists when deposit > 0).
-    if (deposit > 0) {
-      await Transaction.deleteOne(
-        { workspaceId, bookingId: booking._id, clientId: fromClientId },
-        { session }
-      );
-    }
+    // A booking can now have a deposit plus several paid payment rows. Remove
+    // the whole booking footprint, not just the first matching transaction.
+    const oldTransactions = await Transaction.find(
+      { workspaceId, bookingId: booking._id, clientId: fromClientId, type: { $in: ["deposit", "balance"] } },
+      { amount: 1 },
+      { session }
+    ).lean();
+    const oldPaidTotal = oldTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    await Transaction.deleteMany(
+      { workspaceId, bookingId: booking._id, clientId: fromClientId },
+      { session }
+    );
 
     // Single-stage aggregation pipeline update for the old client.
     // We use $let to define the filtered transaction array once, then derive all
@@ -60,9 +65,7 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
       [
         {
           $set: {
-            totalSpent: deposit > 0
-              ? { $max: [{ $subtract: [{ $ifNull: ["$totalSpent", 0] }, deposit] }, 0] }
-              : { $ifNull: ["$totalSpent", 0] },
+            totalSpent: { $max: [{ $subtract: [{ $ifNull: ["$totalSpent", 0] }, oldPaidTotal] }, 0] },
             bookingsCount: { $max: [{ $subtract: [{ $ifNull: ["$bookingsCount", 0] }, 1] }, 0] },
             // Recompute all three summary fields using $let so the filtered array
             // is evaluated once and referenced safely by the derived expressions.
@@ -303,6 +306,97 @@ type RecordBookingOpts = {
   source: "manual" | "import" | "webhook" | "seed";
   session?: mongoose.ClientSession;
 };
+
+type SyncBookingPaymentsOpts = {
+  workspaceId: mongoose.Types.ObjectId | string;
+  clientId: mongoose.Types.ObjectId | string;
+  booking: {
+    _id: mongoose.Types.ObjectId;
+    teamId?: mongoose.Types.ObjectId | string | null;
+    amount: { currency: string };
+    payments: Array<{
+      price: number;
+      status: "unpaid" | "paid";
+      title?: string;
+      method?: "cash" | "card" | "remit";
+      paidAt?: Date | null;
+    }>;
+  };
+  session?: mongoose.ClientSession;
+};
+
+/**
+ * Makes the transaction ledger the faithful projection of a booking's paid
+ * payment rows. Booking payments have no stable id, so replacing the derived
+ * balance entries is safer than attempting positional diffs. Client spending
+ * is then recomputed from the ledger, which also fixes older clients whose
+ * summary pre-dates payment rows.
+ */
+export async function syncBookingPaymentsForClient(opts: SyncBookingPaymentsOpts): Promise<void> {
+  const { workspaceId, clientId, booking } = opts;
+  const run = async (session: mongoose.ClientSession) => {
+    await Transaction.deleteMany(
+      { workspaceId, clientId, bookingId: booking._id, type: "balance" },
+      { session }
+    );
+
+    const paid = booking.payments.filter((payment) => payment.status === "paid" && payment.price > 0);
+    if (paid.length > 0) {
+      await Transaction.create(
+        paid.map((payment) => ({
+          workspaceId,
+          bookingId: booking._id,
+          teamId: booking.teamId ?? null,
+          clientId,
+          amount: payment.price,
+          currency: booking.amount.currency,
+          type: "balance" as const,
+          method: payment.method ?? "cash",
+          notes: payment.title ?? "",
+          paidAt: payment.paidAt ?? new Date(),
+        })),
+        { session }
+      );
+    }
+
+    const [summary] = await Transaction.aggregate<{
+      total: number;
+      lastPaymentDate: Date | null;
+      lastPaymentAmount: number | null;
+    }>([
+      { $match: { workspaceId, clientId, type: { $in: ["deposit", "balance"] } } },
+      { $sort: { paidAt: -1, _id: -1 } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$amount" },
+          lastPaymentDate: { $first: "$paidAt" },
+          lastPaymentAmount: { $first: "$amount" },
+        },
+      },
+    ]).session(session);
+
+    await Client.updateOne(
+      { _id: clientId, workspaceId },
+      {
+        $set: {
+          totalSpent: summary?.total ?? 0,
+          lastPaymentDate: summary?.lastPaymentDate ?? null,
+          lastPaymentAmount: summary?.lastPaymentAmount ?? 0,
+        },
+      },
+      { session }
+    );
+  };
+
+  if (opts.session) return run(opts.session);
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(() => run(session));
+  } finally {
+    await session.endSession();
+  }
+}
 
 export async function recordBookingForClient(opts: RecordBookingOpts): Promise<void> {
   const { workspaceId, clientId, booking, source } = opts;

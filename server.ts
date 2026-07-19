@@ -1,17 +1,26 @@
 import { createServer } from 'http'
 import { parse } from 'url'
+import path from 'path'
 import next from 'next'
 import mongoose from 'mongoose'
+import dotenv from 'dotenv'
 import { Server as SocketIOServer } from 'socket.io'
 import { setIO } from './lib/sockets/io'
 import { verifySocketToken } from './lib/sockets/auth'
-import { stopWorld } from './lib/workflows/world'
 import { gracefulShutdown } from './lib/server/gracefulShutdown'
+
+// `tsx server.ts` is a bare Node process — unlike `next dev`/`next start`,
+// nothing loads .env.local into process.env automatically. Next.js does its
+// own env loading once app.prepare() runs, but validateEnv() below must run
+// first (see its comment), so load explicitly here. Same file + convention
+// as .claude/skills/run-gallurio/driver.mjs. Never overrides real shell-
+// exported env vars (dotenv's default).
+dotenv.config({ path: path.join(__dirname, '.env.local') })
 
 // Ensure NODE_ENV is set so that downstream code (e.g. Turnstile dev bypass,
 // Next.js internals) can distinguish dev from prod. The pnpm scripts set
-// NODE_ENV explicitly via cross-env ("dev" => "development", "start" =>
-// "production"). This fallback only fires for a bare `tsx server.ts`
+// NODE_ENV explicitly via cross-env ("dev"/"start" => "development",
+// "start:prod" => "production"). This fallback only fires for a bare `tsx server.ts`
 // invocation (e.g. a CI script that forgot to export NODE_ENV). It MUST
 // default to "production" so the Turnstile bypass can never accidentally
 // enable. NODE_ENV is typed read-only in @types/node; we set it early via the
@@ -29,6 +38,7 @@ validateEnv()
 
 const dev = process.env.NODE_ENV !== 'production'
 const port = parseInt(process.env.PORT ?? '3000', 10)
+const publicAppOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
 const app = next({ dev })
 const handle = app.getRequestHandler()
 
@@ -40,7 +50,10 @@ app.prepare().then(() => {
 
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.NEXT_PUBLIC_APP_URL,
+      // Local tunnels have a distinct, temporary browser origin. Permit them
+      // only while developing; production remains restricted to the configured
+      // public app URL.
+      origin: dev ? true : publicAppOrigin,
       credentials: true,
     },
     transports: ['websocket', 'polling'],
@@ -69,13 +82,11 @@ app.prepare().then(() => {
   })
 
   // Graceful shutdown on SIGTERM (PM2 restart/reboot) and SIGINT (Ctrl+C):
-  // stop accepting new connections, close Socket.IO, stop the Workflow
-  // World, close the Mongo connection, then exit — bounded by a timeout so a
-  // hung close still exits.
+  // stop accepting new connections, close Socket.IO, close the Mongo
+  // connection, then exit — bounded by a timeout so a hung close still exits.
   const shutdown = gracefulShutdown({
     httpServer,
     io,
-    stopWorld,
     closeMongoConnection: () => mongoose.connection.close(),
     exit: (code) => process.exit(code),
   })

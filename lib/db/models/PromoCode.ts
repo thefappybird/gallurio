@@ -1,6 +1,6 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
-export const PROMO_CODE_TYPES = ["lifetime", "yearly", "monthly", "beta"] as const;
+export const PROMO_CODE_TYPES = ["lifetime", "yearly", "monthly", "beta", "beta2mo"] as const;
 export type PromoCodeType = (typeof PROMO_CODE_TYPES)[number];
 
 const promoCodeSchema = new Schema(
@@ -11,6 +11,8 @@ const promoCodeSchema = new Schema(
     // Client.email/Invitation.email (no Mongo collation anywhere here).
     code: { type: String, required: true, unique: true, lowercase: true, trim: true },
     expiresAt: { type: Date, default: null },
+    // Emergency revocation for abuse/compromise — see lib/billing/promoRevocation.ts.
+    revokedAt: { type: Date, default: null },
     type: { type: String, enum: PROMO_CODE_TYPES, required: true },
   },
   { timestamps: true },

@@ -62,7 +62,7 @@ No `Client` or `Booking` schema changes. No new indexes (lookup is on `{_id, wor
 
 ### i18n
 
-Add keys to all four active catalogs (`en`, `fil`, `ms`, `id`) under `app.bookings.detail`:
+Add keys to all four active catalogs (`en`, `fil`, `id`, `th`) under `app.bookings.detail`:
 - `fields.email`, `fields.phone`, `fields.openClient`, `fields.changeClient`, `fields.changeClientSearch`, `fields.noEmail`, `fields.noPhone`
 - `history.actions.{created,updated,status_changed,client_changed,deleted}`, `history.changeArrow` (or ICU), `history.by`, `history.groupToday`, `history.groupYesterday`
 - Reuse existing `eventTypes.*`, `statusValues.*`.

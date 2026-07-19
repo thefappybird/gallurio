@@ -6,7 +6,7 @@
 
 export const PHOTO_SPEC = {
   /** Accepted MIME types (used in <input accept> and client pre-validation). */
-  acceptedTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"] as const,
+  acceptedTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif"] as const,
   /** Accepted format strings (used in server-side format validation). */
   acceptedFormats: ["jpg", "jpeg", "png", "webp", "avif"] as const,
   /** Maximum file size in bytes (10 MB). */

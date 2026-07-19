@@ -5,11 +5,11 @@ import { parseDashboardRange } from "./date-range";
 const TZ = "Asia/Manila";
 
 describe("parseDashboardRange", () => {
-  it("resolves day mode to a single local day", () => {
-    const day = parseDashboardRange({ df: "day", d: "2026-06-15" }, TZ);
-    expect(day.mode).toBe("day");
-    expect(day.from?.toISOString()).toBe("2026-06-14T16:00:00.000Z");
-    expect(day.to?.toISOString()).toBe("2026-06-15T15:59:59.999Z");
+  it("resolves week mode to the Mon-Sun local week", () => {
+    const week = parseDashboardRange({ df: "week", w: "2026-W25" }, TZ);
+    expect(week.mode).toBe("week");
+    expect(week.from?.toISOString()).toBe("2026-06-14T16:00:00.000Z");
+    expect(week.to?.toISOString()).toBe("2026-06-21T15:59:59.999Z");
   });
 
   it("resolves month mode to the full local month", () => {

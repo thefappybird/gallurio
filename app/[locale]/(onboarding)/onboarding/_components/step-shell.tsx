@@ -9,8 +9,7 @@ import { ArrowLeft, Building2, Globe, CreditCard, Flag, CheckCircle2 } from "luc
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// Onboarding step order. The payments step was removed when marketplace was
-// dropped from MVP; the template step was moved to Page Builder / workspace
+// Onboarding step order. The template step was moved to Page Builder / workspace
 // settings. Keep this list in sync with ONBOARDING_STEPS in
 // lib/db/models/User.ts.
 export const STEP_META = [
@@ -71,12 +70,10 @@ export function StepShell({
           <div className="absolute inset-0 translate-x-1 translate-y-1 border border-border/80 bg-card rtl:-translate-x-1" />
         </div>
 
-        {/* min-height matches the old fixed modal height so short steps keep
-            the same deck-like proportions; max-height + overflow-y-auto let
-            long steps (e.g. plan + promo drawer) grow into the free space
-            instead of spilling past the border, with the scrollbar staying
-            inside the card itself rather than on the wide outer wrapper. */}
-        <div className="scrollbar-subtle relative z-10 flex min-h-[min(640px,calc(100dvh-8rem))] max-h-[calc(100dvh-6rem)] w-full flex-col gap-4 overflow-y-auto border border-border bg-background p-4 sm:p-5 md:p-6">
+        {/* The card owns the fixed chrome and action footer. Only the step
+            body scrolls, so Previous / Continue / payment never move out of
+            reach when a drawer or a small viewport makes the content tall. */}
+        <div className="relative z-10 flex min-h-[min(640px,calc(100dvh-8rem))] max-h-[calc(100dvh-6rem)] w-full flex-col gap-4 overflow-hidden border border-border bg-background p-4 sm:p-5 md:p-6">
           <Link href="/" className="flex shrink-0 scale-150 items-center self-center">
             <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
             <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
@@ -92,11 +89,11 @@ export function StepShell({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -16 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className={cn("flex min-h-0 flex-1 flex-col gap-4", centerContent && "relative")}
+            className="flex min-h-0 flex-1 flex-col"
           >
             <div
               className={cn(
-                "flex min-h-0 flex-col gap-4",
+                "scrollbar-subtle flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pe-1",
                 centerContent ? "flex-1 justify-center" : "flex-1"
               )}
             >
@@ -115,7 +112,7 @@ export function StepShell({
               </div>
             </div>
             {footer && (
-              <div className={cn("shrink-0", centerContent && "absolute inset-x-0 bottom-0")}>
+              <div className="shrink-0 border-t border-border pt-3">
                 {footer}
               </div>
             )}

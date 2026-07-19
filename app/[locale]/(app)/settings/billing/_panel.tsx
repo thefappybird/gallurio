@@ -25,6 +25,7 @@ export type BillingPanelProps = {
   workspaceId: string;
   customerEmail: string;
   proPricing: ProPricing;
+  billingAvailable: boolean;
 };
 
 function formatDate(d: Date | null): string {
@@ -39,6 +40,7 @@ export function BillingPanel({
   lsSubscriptionStatus,
   lsCurrentPeriodEnd,
   proPricing,
+  billingAvailable,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
@@ -58,7 +60,7 @@ export function BillingPanel({
     toast.success(t("upgradeSuccess"));
     // Reload page to reflect new plan from server.
     window.location.reload();
-  });
+  }, billingAvailable);
 
   async function openUpgradeCheckout(plan: PlanTier) {
     if (plan === "free" || plan === currentPlan) return;
@@ -111,7 +113,7 @@ export function BillingPanel({
       toast.error(msg);
       return;
     }
-    toast.success(tPromo("success"));
+    toast.success(tPromo(result.startsImmediately ? "success" : "successQueued"));
     window.location.reload();
   }
 
@@ -200,6 +202,8 @@ export function BillingPanel({
       {/* Beta tester — full access, nothing to upgrade or manage */}
       {isBeta ? (
         <p className="text-sm text-muted-foreground">{t("betaAccessNote")}</p>
+      ) : !billingAvailable ? (
+        <p className="text-sm text-muted-foreground">{t("notYetAvailable")}</p>
       ) : !isActiveSubscriber ? (
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -296,41 +300,39 @@ export function BillingPanel({
         </div>
       )}
 
-      {!isBeta && (
-        <CollapsibleDrawer title={tPromo("disclosureLabel")} defaultOpen={false}>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                placeholder={tPromo("placeholder")}
-                className="max-w-56"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={submitPromoCode}
-                disabled={promoLoading || !promoCode}
-              >
-                {promoLoading ? (
-                  <>
-                    <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
-                    {tPromo("applying")}
-                  </>
-                ) : (
-                  tPromo("submit")
-                )}
-              </Button>
-            </div>
-            {promoError && (
-              <p role="alert" className="text-xs text-destructive">
-                {promoError}
-              </p>
-            )}
+      <CollapsibleDrawer title={tPromo("disclosureLabel")} defaultOpen={false}>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Input
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              placeholder={tPromo("placeholder")}
+              className="max-w-56"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={submitPromoCode}
+              disabled={promoLoading || !promoCode}
+            >
+              {promoLoading ? (
+                <>
+                  <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
+                  {tPromo("applying")}
+                </>
+              ) : (
+                tPromo("submit")
+              )}
+            </Button>
           </div>
-        </CollapsibleDrawer>
-      )}
+          {promoError && (
+            <p role="alert" className="text-xs text-destructive">
+              {promoError}
+            </p>
+          )}
+        </div>
+      </CollapsibleDrawer>
     </div>
   );
 }

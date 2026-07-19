@@ -14,6 +14,8 @@ import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 
 export const PLAN_TIERS = ["free", "pro", "beta"] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
+export const ONBOARDING_PLAN_SELECTIONS = ["free", "pro", "beta", "promo"] as const;
+export type OnboardingPlanSelection = (typeof ONBOARDING_PLAN_SELECTIONS)[number];
 
 // The portfolio template the workspace was seeded from. Canonical ids live in
 // the template registry so adding a template there makes it persistable here.
@@ -150,7 +152,7 @@ const workspaceSchema = new Schema(
       // Per-page language for the Gallurio chrome (inquiry form, nav, footer,
       // gallery labels) on the public portfolio — isolated from the owner's own
       // app locale. "" → fall back to the locale derived from workspace.country.
-      formLocale: { type: String, enum: ["en", "fil", "ms", "id", "ar", ""], default: "" },
+      formLocale: { type: String, enum: ["en", "fil", "id", "ar", "th", ""], default: "" },
       // Owner-override for the public page writing direction. "" → inferred from formLocale.
       formDir: { type: String, enum: ["ltr", "rtl", ""], default: "" },
       // Customizable chrome for the prebuilt contact modal. The form fields are
@@ -265,6 +267,14 @@ const workspaceSchema = new Schema(
       accent: { type: String, default: "#FFFFFF" },
     },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
+    // Records the route the owner chose during onboarding independently from
+    // the entitlement tier. For example, a complimentary Pro month must not
+    // be mistaken for a paid-Pro selection.
+    onboardingPlanSelection: {
+      type: String,
+      enum: [...ONBOARDING_PLAN_SELECTIONS, null],
+      default: null,
+    },
 
     // Lemon Squeezy subscription — Gallurio billing the tenant (Merchant of Record).
     lsSubscriptionId: { type: String, default: null, index: true, sparse: true },
@@ -275,8 +285,14 @@ const workspaceSchema = new Schema(
       default: null,
     },
     lsCurrentPeriodEnd: { type: Date, default: null },
-    // In-flight durable checkout workflow run id; cleared on activation.
-    lsCheckoutWorkflowRunId: { type: String, default: null },
+    // Provider timestamp (attributes.updated_at, falling back to created_at)
+    // of the last webhook/reconciliation write that was actually applied —
+    // never the delivery/receipt time. Gates every timestamped billing update
+    // so an older, out-of-order event can never overwrite newer subscription
+    // state; null means no timestamped event has landed yet (degraded
+    // fallback — the next update applies unconditionally). See
+    // lib/billing/webhookOrdering.ts.
+    lsLastEventAt: { type: Date, default: null },
 
     // Set once, permanently, the first time this workspace's plan is promoted
     // to a paid tier by the webhook below. Never cleared — including by the
@@ -292,6 +308,19 @@ const workspaceSchema = new Schema(
 
     // Promo codes already applied to this workspace — guards re-redemption.
     codesRedeemed: { type: [Schema.Types.ObjectId], ref: "PromoCode", default: [] },
+
+    // A promo grant queued to apply once the workspace's active paid Lemon
+    // Squeezy subscription ends, instead of applying immediately (which
+    // would wipe the live ls* fields via grantPlan — see
+    // lib/billing/grantPlan.ts). Consumed by the webhook's
+    // handleSubscriptionExpired and the lifecycle sweep's canceled-past-
+    // period-end branch (later wave) — both must check this BEFORE marking
+    // the workspace expired, so an active promo grant never reads as a
+    // false "expired" gap. null/null = no grant queued.
+    pendingPromoGrant: {
+      grantMonths: { type: Number, default: null },
+      queuedAt: { type: Date, default: null },
+    },
 
     onboardingCompletedAt: { type: Date, default: null },
 

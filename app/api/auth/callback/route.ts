@@ -40,6 +40,19 @@ function localizedSignIn(locale: string): string {
   return locale === routing.defaultLocale ? "/sign-in" : `/${locale}/sign-in`;
 }
 
+function publicOrigin(request: NextRequest): string {
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (configuredAppUrl) {
+    try {
+      return new URL(configuredAppUrl).origin;
+    } catch {
+      // Fall through to the request origin in development when configuration
+      // is intentionally incomplete.
+    }
+  }
+  return request.nextUrl.origin;
+}
+
 /**
  * Persists the sealed WorkOS session DIRECTLY on the response.
  *
@@ -83,7 +96,8 @@ function nonceMatches(a: string | undefined, b: string | undefined): boolean {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const { searchParams, origin } = request.nextUrl;
+  const { searchParams } = request.nextUrl;
+  const origin = publicOrigin(request);
   const code = searchParams.get("code");
   const rawState = searchParams.get("state") ?? "";
 

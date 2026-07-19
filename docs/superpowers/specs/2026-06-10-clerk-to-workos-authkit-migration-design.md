@@ -184,7 +184,7 @@ behavior (return shapes, redirects) so call sites barely change. Internals swap:
 
 All screens are our own components under `app/[locale]/(auth)/...`, mobile-first at 375px, with
 idle/hover/focus/active/disabled states, loading/error states, and **all 5 locales** (`en`, `fil`,
-`ms`, `id`, `th`). Sharp corners, Merriweather, semantic tokens only.
+`id`, `ar`, `th`). Sharp corners, Merriweather, semantic tokens only.
 
 ### 7.1 Screens & backing actions
 
@@ -431,7 +431,7 @@ Resend). Use in-memory Mongo; never mock Mongoose.
   active-workspace cookie; mutations by `_id` still filter `workspaceId`.
 - **Security:** rate-limit lockout triggers; no user-enumeration in responses; webhook signature
   rejection on tampered body.
-- **Locales:** all auth + invite copy present in `en`, `fil`, `ms`, `id`, `th`.
+- **Locales:** all auth + invite copy present in `en`, `fil`, `id`, `ar`, `th`.
 
 Gate before done: affected tests, `pnpm typecheck`, `pnpm lint`, `pnpm build`, 375px check on every
 new screen.

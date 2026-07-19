@@ -7,12 +7,15 @@ import { useTranslations, useLocale } from "next-intl";
 import { CalendarIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { DateFilterMode } from "@/lib/dashboard/date-range";
+import { isoWeekStartDate } from "@/lib/utils/iso-week";
 
 type Props = {
   /** Workspace-local current day / month / year — picker defaults + future cap. */
   today: string; // YYYY-MM-DD
   currentMonth: string; // YYYY-MM
   currentYear: number;
+  /** Workspace-local current ISO week, e.g. "2026-W29" — picker default + future cap. */
+  currentWeek: string;
   /** Notifies the parent when a filter-change navigation is pending, so it can
    *  reflect the wait (e.g. dim the widget area below). */
   onPendingChange?: (pending: boolean) => void;
@@ -20,9 +23,9 @@ type Props = {
 
 type Mode = DateFilterMode;
 
-const MODE_KEYS: Mode[] = ["day", "month", "year", "custom", "all"];
+const MODE_KEYS: Mode[] = ["week", "month", "year", "custom", "all"];
 
-export function DashboardDateFilter({ today, currentMonth, currentYear, onPendingChange }: Props) {
+export function DashboardDateFilter({ today, currentMonth, currentYear, currentWeek, onPendingChange }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -41,7 +44,7 @@ export function DashboardDateFilter({ today, currentMonth, currentYear, onPendin
 
   // Draft state seeded from the URL or the current period.
   const [mode, setMode] = useState<Mode>(activeMode);
-  const [day, setDay] = useState(sp.get("d") || today);
+  const [week, setWeek] = useState(sp.get("w") || currentWeek);
   const [month, setMonth] = useState(sp.get("m") || currentMonth);
   const [year, setYear] = useState(Number(sp.get("y")) || currentYear);
   const [from, setFrom] = useState(sp.get("from") || "");
@@ -51,10 +54,10 @@ export function DashboardDateFilter({ today, currentMonth, currentYear, onPendin
 
   function apply() {
     const params = new URLSearchParams(sp.toString());
-    for (const k of ["df", "d", "m", "y", "from", "to"]) params.delete(k);
-    if (mode === "day") {
-      params.set("df", "day");
-      params.set("d", day);
+    for (const k of ["df", "w", "m", "y", "from", "to"]) params.delete(k);
+    if (mode === "week") {
+      params.set("df", "week");
+      params.set("w", week);
     } else if (mode === "month") {
       params.set("df", "month");
       params.set("m", month);
@@ -78,7 +81,7 @@ export function DashboardDateFilter({ today, currentMonth, currentYear, onPendin
   function clear() {
     // Back to the default view (current month) by dropping all filter params.
     const params = new URLSearchParams(sp.toString());
-    for (const k of ["df", "d", "m", "y", "from", "to"]) params.delete(k);
+    for (const k of ["df", "w", "m", "y", "from", "to"]) params.delete(k);
     const qs = params.toString();
     startTransition(() => {
       router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -125,13 +128,13 @@ export function DashboardDateFilter({ today, currentMonth, currentYear, onPendin
           </div>
 
           {/* Per-mode picker */}
-          {mode === "day" && (
+          {mode === "week" && (
             <input
-              type="date"
-              aria-label={t("day")}
-              value={day}
-              max={today}
-              onChange={(e) => setDay(e.target.value)}
+              type="week"
+              aria-label={t("week")}
+              value={week}
+              max={currentWeek}
+              onChange={(e) => setWeek(e.target.value)}
               className={inputClass}
             />
           )}
@@ -236,7 +239,17 @@ function formatActiveLabel(
     });
 
   if (df === "all") return t("all");
-  if (df === "day") return dayFmt(sp.get("d") || "");
+  if (df === "week") {
+    const w = sp.get("w") || "";
+    const m = /^(\d{4})-W(\d{2})$/.exec(w);
+    if (!m) return t("week");
+    const monday = isoWeekStartDate(Number(m[1]), Number(m[2]));
+    const sunday = new Date(`${monday}T00:00:00Z`);
+    sunday.setUTCDate(sunday.getUTCDate() + 6);
+    const mondayLabel = dayFmt(monday);
+    const sundayLabel = sunday.toISOString().slice(0, 10);
+    return `${mondayLabel} – ${dayFmt(sundayLabel)}`;
+  }
   if (df === "year") return sp.get("y") || "";
   if (df === "custom") {
     const from = sp.get("from");

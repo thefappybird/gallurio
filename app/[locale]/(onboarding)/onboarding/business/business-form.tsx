@@ -82,8 +82,25 @@ export function BusinessStepForm({
       furthestStep={furthestStep}
       title={t("title")}
       description={t("description")}
+      footer={
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <StepBackButton from="business" />
+          </div>
+          <Button form="business-step-form" type="submit" variant="brand" disabled={isSubmitting} className="min-w-40">
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {tShell("saving")}
+              </>
+            ) : (
+              tShell("continue")
+            )}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col gap-5">
+      <form id="business-step-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="firstName">{t("firstName")}</Label>
@@ -146,21 +163,6 @@ export function BusinessStepForm({
           )}
         </div>
 
-        <div className="mt-auto flex items-center justify-between pt-2">
-          <div>
-            <StepBackButton from="business" />
-          </div>
-          <Button type="submit" variant="brand" disabled={isSubmitting} className="min-w-40">
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {tShell("saving")}
-              </>
-            ) : (
-              tShell("continue")
-            )}
-          </Button>
-        </div>
       </form>
     </StepShell>
   );

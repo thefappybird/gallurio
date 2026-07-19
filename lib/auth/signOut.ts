@@ -10,6 +10,14 @@ import { clearActiveWorkspace } from "./activeWorkspace";
  * Falls back to the configured redirect URI's origin.
  */
 async function requestOrigin(): Promise<string | null> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) {
+    try {
+      return new URL(appUrl).origin;
+    } catch {
+      // Fall through to the request-derived origin.
+    }
+  }
   try {
     const h = await headers();
     const host = h.get("host");

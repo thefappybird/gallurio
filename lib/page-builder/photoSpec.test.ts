@@ -19,6 +19,10 @@ describe("validatePhotoFile", () => {
     expect(validatePhotoFile(makeFile("image/jpeg", 1024))).toEqual({ ok: true });
   });
 
+  it("accepts the image/jpg MIME alias", () => {
+    expect(validatePhotoFile(makeFile("image/jpg", 1024))).toEqual({ ok: true });
+  });
+
   it("accepts png", () => {
     expect(validatePhotoFile(makeFile("image/png", 1024))).toEqual({ ok: true });
   });

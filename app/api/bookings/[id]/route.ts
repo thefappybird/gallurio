@@ -9,7 +9,7 @@ import { Booking, ActivityLog, Client, Team, User } from "@/lib/db/models";
 import { sendNotification } from "@/lib/notifications/send";
 import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/notifications/recipients";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
-import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
+import { reassignBookingBetweenClients, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { normalizePayments, isCompletionEligible, remainingBalance, type PaymentInput } from "@/lib/bookings/payment-rules";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
@@ -111,6 +111,13 @@ export async function PATCH(req: Request, { params }: Params) {
   const existing = await Booking.findOne(existingFilter);
   if (!existing) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
+  // A completed booking is a financial record. Do not permit any subsequent
+  // mutation through this endpoint, even from owners, so the UI's read-only
+  // state cannot be bypassed by a crafted request.
+  if (existing.status === "completed") {
+    return NextResponse.json({ error: "completed_booking_read_only" }, { status: 409 });
   }
 
   // Edit authorization. Owners may edit any booking (incl. one whose team was
@@ -376,6 +383,21 @@ export async function PATCH(req: Request, { params }: Params) {
           session: mongoSession,
         });
 
+        // The reassignment helper moves the deposit transaction. Re-project
+        // paid payment rows too so the new client's spending/history stays
+        // complete when a booking changes hands.
+        await syncBookingPaymentsForClient({
+          workspaceId: ctx.workspace._id,
+          clientId: newClientId!,
+          booking: {
+            _id: existing._id,
+            teamId: teamReassignment ? teamReassignment.to : existing.teamId,
+            amount: { currency: mergedCurrency },
+            payments: ("payments" in setOp ? setOp.payments : existing.payments ?? []) as PaymentInput[],
+          },
+          session: mongoSession,
+        });
+
         // Write activity log with client_changed action and meta.
         await ActivityLog.create(
           [
@@ -434,7 +456,7 @@ export async function PATCH(req: Request, { params }: Params) {
     // and the new payments now satisfy the completion rule, flip status in
     // the same request instead of requiring a second PATCH.
     if ("payments" in setOp && !("status" in setOp) &&
-        existing.status !== "completed" && existing.status !== "cancelled") {
+        existing.status !== "cancelled") {
       const effectiveAmount = {
         total: (setOp["amount.total"] as number | undefined) ?? existing.amount?.total ?? 0,
         deposit: (setOp["amount.deposit"] as number | undefined) ?? existing.amount?.deposit ?? 0,
@@ -449,6 +471,21 @@ export async function PATCH(req: Request, { params }: Params) {
       { _id: id, workspaceId: ctx.workspace._id },
       { $set: setOp }
     );
+
+    if ("payments" in setOp) {
+      await syncBookingPaymentsForClient({
+        workspaceId: ctx.workspace._id,
+        clientId: existing.clientId,
+        booking: {
+          _id: existing._id,
+          teamId: teamReassignment?.to ?? existing.teamId,
+          amount: {
+            currency: (setOp["amount.currency"] as string | undefined) ?? existing.amount?.currency ?? "PHP",
+          },
+          payments: setOp.payments as PaymentInput[],
+        },
+      });
+    }
 
     // Skip the activity entry when the only change was a silent coordinate
     // nudge (diff is empty but setOp persisted lat/lng).
@@ -557,7 +594,7 @@ export async function PATCH(req: Request, { params }: Params) {
   // Cancellation emails: fire when a previously-active booking is cancelled.
   if (
     newStatus === "cancelled" &&
-    (existing.status === "booked" || existing.status === "completed")
+    existing.status === "booked"
   ) {
     const cancelClient = await Client.findOne({
       _id: updated?.clientId ?? existing.clientId,
@@ -570,6 +607,7 @@ export async function PATCH(req: Request, { params }: Params) {
     const ownerEmail = ctx.workspace.contact?.email;
     const brand = resolveWorkspaceBrand({
       name: ctx.workspace.name,
+      logoUrl: ctx.workspace.logoUrl,
       publicPage: ctx.workspace.publicPage
         ? {
             header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },

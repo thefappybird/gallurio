@@ -14,9 +14,9 @@ import {
 const LOCALES = [
   { value: "en", label: "English" },
   { value: "fil", label: "Filipino" },
-  { value: "ms", label: "Bahasa Melayu" },
   { value: "id", label: "Bahasa Indonesia" },
   { value: "ar", label: "العربية" },
+  { value: "th", label: "ภาษาไทย" },
 ] as const;
 
 type FormLocale = (typeof LOCALES)[number]["value"] | "";

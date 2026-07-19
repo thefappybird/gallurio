@@ -79,13 +79,14 @@
       "title": "أسعار بسيطة",
       "subtitle": "شهر واحد من Pro، مجانًا. ثم باقة واحدة، شهرية أو سنوية.",
       "viewFullPricing": "عرض الأسعار الكاملة",
-      "disclaimer": "تتم فوترة الأسعار بواسطة Lemon Squeezy وتُعرض بعملتك المحلية عند الدفع.",
+      "disclaimer": "الخطط المدفوعة غير متاحة بعد. سيتم عرض الأسعار وشروط الفوترة بوضوح قبل الدفع بمجرد إطلاقها.",
       "cadence": {
         "monthly": "شهري",
         "yearly": "سنوي — وفّر شهرين"
       },
       "pro": {
         "badge": "شهر مجاني",
+        "comingSoon": "قريبًا",
         "name": "احترافي",
         "priceSuffixMonthly": "/شهريًا",
         "priceSuffixYearly": "/سنويًا",
@@ -108,6 +109,7 @@
       },
       "pro": {
         "badge": "موصى به",
+        "comingSoon": "قريبًا",
         "name": "احترافي",
         "freeMonth": "ابدأ بشهر مجاني واحد، دون الحاجة لبطاقة.",
         "description": "كل ما تحتاجه لإدارة الحجوزات والعملاء والمعارض وصفحتك العامة.",
@@ -123,7 +125,7 @@
         "cta": "ابدأ شهري المجاني"
       },
       "billingNotice": {
-        "body1": "تتم معالجة المدفوعات بأمان بواسطة Lemon Squeezy، وهو Merchant of Record الخاص بنا. يتولى Lemon Squeezy معالجة المدفوعات وحساب الضرائب والفواتير ودعم الفوترة ومعالجة المبالغ المستردة المؤهلة.",
+        "body1": "اشتراكات Pro المدفوعة غير متاحة بعد. عند إطلاقها، سيتم عرض الأسعار وشروط الفوترة وتفاصيل الدفع بوضوح قبل إتمام أي عملية شراء.",
         "body2": "لا يتم تحصيل أي رسوم خلال شهرك المجاني الأول."
       },
       "pricingTransparency": {
@@ -137,7 +139,7 @@
         "description": "اقرأ الشروط التي تحكم الوصول إلى Gallurio واستخدامه."
       },
       "title": "شروط الخدمة",
-      "effectiveDate": "تاريخ السريان: [الشهر اليوم، السنة]",
+      "effectiveDate": "تاريخ السريان: 18 يوليو 2026",
       "intro1": "تحكم شروط الخدمة هذه وصولك إلى Gallurio واستخدامك له، بما في ذلك موقعنا الإلكتروني وتطبيقنا وأدوات المعرض وميزات طلب الحجز والخدمات ذات الصلة.",
       "intro2": "باستخدامك لـ Gallurio، فإنك توافق على هذه الشروط. إذا كنت لا توافق، فلا يجب أن تستخدم الخدمة.",
       "about": {
@@ -184,7 +186,7 @@
       "subscriptions": {
         "title": "8. الاشتراكات والمدفوعات",
         "body1": "يشمل Gallurio اشتراك Pro مدفوعًا، يُحصَّل شهريًا أو سنويًا. تحصل مساحات العمل الجديدة على شهر واحد من الوصول الكامل لـ Pro دون أي رسوم، ودون الحاجة لبطاقة.",
-        "body2": "بعد انتهاء الشهر المجاني، يتطلب الاستمرار في استخدام Gallurio اشتراك Pro نشطًا. تتم معالجة الفوترة بواسطة Lemon Squeezy، وهو Merchant of Record الخاص بنا. قد يتولى Lemon Squeezy معالجة المدفوعات والضرائب والفواتير ودعم الفوترة وإجراءات الاسترداد المعمول بها.",
+        "body2": "بعد انتهاء الشهر المجاني، يتطلب الاستمرار في استخدام Gallurio اشتراك Pro نشطًا. الاشتراكات المدفوعة غير متاحة بعد؛ سيتم عرض شروط الفوترة وتفاصيل الدفع بوضوح قبل أي رسوم بمجرد إطلاقها.",
         "body3": "سيتم عرض الأسعار وشروط الفوترة المعمول بها على المستخدمين قبل إتمام عملية الشراء.",
         "body4": "إذا لم يتم تجديد الاشتراك أو فشلت عملية الدفع، يُقيَّد الوصول إلى مساحة العمل حتى تتم استعادة الاشتراك. تُحفَظ بيانات الحساب؛ وقد تتم إزالة الصفحة العامة المنشورة بعد فترة طويلة دون دفع، ويُستعاد كل شيء عند إعادة الاشتراك."
       },
@@ -227,7 +229,7 @@
         "description": "تعرّف على كيفية جمع Gallurio للمعلومات واستخدامها وتخزينها وحمايتها."
       },
       "title": "سياسة الخصوصية",
-      "effectiveDate": "تاريخ السريان: [الشهر اليوم، السنة]",
+      "effectiveDate": "تاريخ السريان: 18 يوليو 2026",
       "intro": "توضّح سياسة الخصوصية هذه كيفية جمع Gallurio للمعلومات واستخدامها وتخزينها وحمايتها عند وصول المستخدمين إلى الموقع الإلكتروني والتطبيق والخدمات ذات الصلة.",
       "collect": {
         "title": "1. المعلومات التي نجمعها",
@@ -249,7 +251,7 @@
         },
         "payment": {
           "title": "معلومات الدفع",
-          "body": "تتم معالجة مدفوعات اشتراك Gallurio Pro بواسطة Lemon Squeezy، وهو Merchant of Record الخاص بـ Gallurio. لا يخزّن Gallurio بشكل مباشر تفاصيل بطاقة الدفع الكاملة. قد يجمع Lemon Squeezy ويعالج تفاصيل الفوترة ومعلومات الدفع ومعلومات الضرائب والفواتير وفقًا لشروطه وممارسات الخصوصية الخاصة به."
+          "body": "اشتراكات Pro المدفوعة غير متاحة بعد. لا يخزّن Gallurio بشكل مباشر تفاصيل بطاقة الدفع الكاملة؛ وبمجرد إطلاق المدفوعات، سيحدد هذا القسم اسم معالج الدفع ويصف كيفية جمعه ومعالجته لتفاصيل الفوترة ومعلومات الدفع ومعلومات الضرائب والفواتير."
         }
       },
       "useOfInfo": {
@@ -312,19 +314,21 @@
     "refunds": {
       "metadata": {
         "title": "سياسة الاسترداد — Gallurio",
-        "description": "تعرّف على كيفية تعامل Gallurio مع الإلغاءات والمبالغ المستردة ومعالجة مدفوعات Lemon Squeezy."
+        "description": "تعرّف على كيفية تعامل Gallurio مع الإلغاءات والمبالغ المستردة."
       },
       "title": "سياسة الاسترداد",
-      "effectiveDate": "تاريخ السريان: [الشهر اليوم، السنة]",
+      "effectiveDate": "تاريخ السريان: 18 يوليو 2026",
       "betaPeriod": {
         "title": "1. الفترة التجريبية المجانية",
         "body1": "تحصل مساحات العمل الجديدة في Gallurio على شهر واحد من الوصول الكامل لـ Pro دون أي رسوم، ودون الحاجة لبطاقة. لا يتم تحصيل أي دفعة حقيقية خلال هذه الفترة التجريبية، لذا لا ينطبق أي استرداد عليها.",
-        "body2": "إذا تابعت مع اشتراك Pro مدفوع بعد الفترة التجريبية، فإن السعر وشروط الفوترة المعروضة عند الدفع تنطبق، وتحكم سياسة الاسترداد هذه أي دفعة تتم."
+        "body2": "إذا تابعت مع اشتراك Pro مدفوع بعد الفترة التجريبية، فإن السعر وشروط الفوترة المعروضة عند الدفع تنطبق، وتحكم سياسة الاسترداد هذه أي دفعة تتم.",
+        "body3": "قد يحصل المشاركون المعتمَدون في البيتا أيضًا على منحة ترويجية منفصلة مدتها شهران من Pro. يمكن استبدال هذه المنحة مرة واحدة لكل مشارك بيتا معتمَد، وتنتهي صلاحيتها بعد شهرين من الاستبدال؛ وكما هو الحال مع الفترة التجريبية المجانية، فهي منحة ترويجية وليست دفعة، لذا لا ينطبق عليها أي استرداد."
       },
       "subscriptions": {
         "title": "2. الاشتراكات",
         "body1": "تُفوتر اشتراكات Gallurio Pro شهريًا أو سنويًا أو وفقًا لفترة الفوترة المعروضة عند الدفع.",
-        "body2": "يجوز للمستخدمين إلغاء اشتراكهم لمنع رسوم التجديد المستقبلية. بعد الإلغاء، قد يستمر الوصول حتى نهاية فترة الفوترة الحالية ما لم يُذكر خلاف ذلك."
+        "body2": "يجوز للمستخدمين إلغاء اشتراكهم لمنع رسوم التجديد المستقبلية. بعد الإلغاء، قد يستمر الوصول حتى نهاية فترة الفوترة الحالية ما لم يُذكر خلاف ذلك.",
+        "body3": "عند انتهاء الاشتراك بسبب فشل الدفع أو عدم سداد نهائي، يرسل Gallurio إشعار انتهاء الصلاحية فورًا، وتذكيرًا بالبيانات المحفوظة بعد 30 يومًا، وتحذيرًا نهائيًا بشأن الصفحة العامة بعد 51 يومًا، ثم يلغي نشر الصفحة العامة بعد 58 يومًا. تظل بيانات مساحة العمل وإدارة العملاء والمسودات محفوظة بحيث يمكن استعادة كل شيء عند إعادة الاشتراك."
       },
       "refundRequests": {
         "title": "3. طلبات الاسترداد",
@@ -337,13 +341,13 @@
         "item5": "المشكلات التقنية",
         "item6": "الرسوم المكررة",
         "item7": "قوانين حماية المستهلك المعمول بها",
-        "item8": "عملية الدفع والاسترداد الخاصة بـ Lemon Squeezy",
+        "item8": "عملية الاسترداد الخاصة بمعالج الدفع",
         "outro": "لا يضمن تقديم طلب الاسترداد الموافقة عليه."
       },
       "merchantOfRecord": {
-        "title": "4. Lemon Squeezy بصفته Merchant of Record",
-        "body1": "قد تتم معالجة مدفوعات Gallurio بواسطة Lemon Squeezy، وهو Merchant of Record الخاص بـ Gallurio. قد يتولى Lemon Squeezy معالجة المدفوعات والضرائب والفواتير ودعم الفوترة ومعالجة المبالغ المستردة المؤهلة.",
-        "body2": "إذا اشترى مستخدم اشتراكًا في Gallurio عبر Lemon Squeezy، فقد يظهر في كشف حسابه اسم Lemon Squeezy أو وصف فوترة مرتبط بـ Lemon Squeezy."
+        "title": "4. معالجة المدفوعات",
+        "body1": "الاشتراكات المدفوعة غير متاحة بعد. وبمجرد إطلاقها، سيحدد Gallurio هنا اسم معالج الدفع الخاص به ويصف كيفية تعامله مع معالجة المدفوعات والضرائب والفواتير ودعم الفوترة ومعالجة المبالغ المستردة المؤهلة.",
+        "body2": "بمجرد إطلاق المدفوعات، قد يظهر في كشف حساب المستخدم اسم معالج الدفع المختار أو وصف فوترة مرتبط به."
       },
       "nonRefundable": {
         "title": "5. الحالات غير القابلة للاسترداد",
@@ -400,9 +404,15 @@
       },
       "businessInfo": {
         "title": "معلومات العمل",
-        "legalNamePlaceholder": "[الاسم القانوني للعمل، إن وجد]",
-        "addressPlaceholder": "[عنوان العمل أو بلد التسجيل، إن وجد]",
+        "body": "غاليوريو شركة ناشئة صغيرة ومستقلة. ليس لدينا حتى الآن اسم قانوني مسجل أو عنوان عمل لعرضه — في الوقت الحالي، أفضل طريقة للتواصل معنا هي عبر البريد الإلكتروني.",
         "emailLabel": "البريد الإلكتروني:"
+      },
+      "social": {
+        "title": "تابعنا",
+        "instagram": "تابعنا على إنستغرام",
+        "facebook": "تابعنا على فيسبوك",
+        "reddit": "انضم إلينا على ريديت",
+        "linkedin": "تابعنا على لينكدإن"
       }
     }
   },
@@ -481,6 +491,7 @@
       "codeLabel": "رمز التحقّق",
       "submit": "تأكيد البريد الإلكتروني",
       "resend": "إعادة إرسال الرمز",
+      "expiresIn": "تنتهي صلاحية الرمز خلال {time}.",
       "resendSent": "تمت إعادة إرسال الرمز — تحقّق من صندوق الوارد."
     },
     "fields": {
@@ -507,6 +518,11 @@
     }
   },
   "app": {
+    "betaEndingBanner": {
+      "title": "سينتهي الوصول التجريبي قريباً",
+      "message": "شكرًا لمشاركتك في تجربة Gallurio Beta. سينتهي وصولك التجريبي خلال الأسبوع القادم، وبعدها ستعود مساحة العمل إلى الخطة المجانية. لمواصلة الاستمتاع بميزات Pro، استخدم الرمز <promoCode>{code}</promoCode> للحصول على شهرين مجانيين من الوصول إلى Pro.",
+      "dismiss": "إغلاق لهذه الجلسة"
+    },
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "مرحبًا بعودتك، {name}",
@@ -518,7 +534,7 @@
       "dateFilter": {
         "label": "النطاق الزمني",
         "filter": "تصفية",
-        "day": "يومي",
+        "week": "أسبوعي",
         "month": "شهري",
         "year": "سنوي",
         "custom": "مخصص",
@@ -537,8 +553,8 @@
         "status": "{page} من {total}"
       },
       "kpi": {
-        "revenueThisMonth": "إيرادات هذا الشهر",
-        "activeBookings": "الحجوزات النشطة هذا الشهر",
+        "revenueThisMonth": "الإيرادات المُحصّلة",
+        "activeBookings": "الحجوزات المجدولة",
         "newInquiries": "استفسارات جديدة",
         "outstandingBalance": "الرصيد المستحق"
       },
@@ -552,7 +568,8 @@
         "eventTypes": "توزيع أنواع المناسبات",
         "topClients": "أكثر العملاء إنفاقًا",
         "teamPerformance": "أداء الفريق",
-        "bookingsPerTeam": "الحجوزات حسب الفريق"
+        "bookingsPerTeam": "الحجوزات حسب الفريق",
+        "operations": "العمليات"
       },
       "quickAdd": {
         "title": "إضافة سريعة",
@@ -561,6 +578,7 @@
         "inquiry": "عرض الاستفسارات"
       },
       "empty": "لا يوجد شيء هنا بعد.",
+      "filteredEmpty": "لا توجد بيانات تطابق النطاق الزمني المحدد.",
       "viewAll": "عرض الكل",
       "portfolio": {
         "analyticsSoon": "تحليلات معرض الأعمال قادمة قريبًا.",
@@ -585,7 +603,36 @@
         "inquiryInsights": "رؤى الاستفسارات",
         "inquiryToBooking": "من استفسار إلى حجز",
         "bookedFromInquiries": "محجوز من الاستفسارات",
-        "newClientsFromForm": "عملاء جدد من النموذج"
+        "newClientsFromForm": "عملاء جدد من النموذج",
+        "visitorDays": "أيام-الزوار",
+        "submissionRate": "معدل الإرسال",
+        "bookedLeads": "العملاء المحجوزون",
+        "visitorsInquiriesTitle": "الزوار والاستفسارات عبر الزمن",
+        "funnel": {
+          "title": "مسار التحويل",
+          "visitorDays": "أيام-الزوار",
+          "contactOpened": "فتح التواصل",
+          "inquirySubmitted": "تم إرسال الاستفسار",
+          "ofVisitors": "من الزوار",
+          "ofOpened": "مما فُتح",
+          "ofTotal": "من الإجمالي",
+          "collectingData": "جارٍ جمع البيانات"
+        },
+        "pipeline": {
+          "title": "مسار الاستفسارات",
+          "new": "جديد",
+          "booked": "محجوز",
+          "archived": "مؤرشف",
+          "total": "إجمالي الاستفسارات"
+        },
+        "demand": {
+          "title": "ملف الطلب",
+          "eventTypeMix": "نوع المناسبة (حسب الاستفسارات)",
+          "requestedMonth": "شهر المناسبة المطلوب",
+          "medianLeadTime": "الوسيط لمهلة الحجز",
+          "days": "يوم",
+          "basedOn": "بناءً على"
+        }
       },
       "team": {
         "bookingsCount": "{count, plural, one {# حجز} other {# حجوزات}}"
@@ -593,6 +640,16 @@
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
       "hints": {
+        "portfolioKpi": "Portfolio totals for the selected period. Visitor-days are daily totals, and booked leads use each inquiry's current status.",
+        "bookedHoursHeatmap": "Booked session hours by workspace-local day. The most recent week is on the right; use the controls to browse earlier weeks.",
+        "valueCollection": "Confirmed booking value and payments collected for the selected booking cohort, grouped by week.",
+        "collectionCoverage": "How much value from confirmed bookings has been collected to date, with the remaining balance still due.",
+        "eventTypeTrend": "Confirmed booking value by event type over time for the selected booking cohort.",
+        "portfolioVisitorsInquiries": "Portfolio visitor-days and inquiry submissions over the selected period.",
+        "portfolioFunnel": "Visitor-days, contact-form opens, and submitted inquiries.",
+        "portfolioPipeline": "Inquiries created in the selected period, grouped by their current pipeline status.",
+        "portfolioDemand": "Event types, requested months, and median lead time from inquiry to event date.",
+        "portfolioPublishStatus": "Whether the current portfolio is public and when it was last updated.",
         "kpi": "إجماليات هذا الشهر. الأسهم تقارن بالشهر الماضي.",
         "calendar": "الحجوزات لكل يوم. صفِّ حسب الفريق؛ اضغط على يوم لفتح التقويم عنده.",
         "eventTypes": "حصة الحجوزات حسب نوع المناسبة.",
@@ -628,6 +685,60 @@
         "client_changed": "تغيّر العميل",
         "payment_added": "أُضيفت دفعة",
         "payment_updated": "حُدِّثت دفعة"
+      },
+      "eventTypes": {
+        "wedding": "أعراس",
+        "corporate": "شركات",
+        "portrait": "بورتريه",
+        "engagement": "خطوبة",
+        "anniversary": "ذكرى سنوية",
+        "social": "اجتماعي",
+        "other": "أخرى"
+      },
+      "booking": {
+        "valueCollection": {
+          "title": "القيمة المحجوزة مقابل الإيرادات المُحصّلة",
+          "bookedValue": "القيمة المحجوزة",
+          "collectedRevenue": "الإيرادات المُحصّلة"
+        },
+        "coverage": {
+          "title": "تغطية التحصيل",
+          "asOf": "حتى",
+          "confirmedValue": "القيمة المؤكدة",
+          "confirmedHint": "إجمالي قيمة الحجوزات المؤكدة",
+          "paid": "المدفوع (المُحصّل)",
+          "paidHint": "المدفوعات المستلمة حتى الآن",
+          "remaining": "الرصيد المتبقي",
+          "remainingHint": "لم يُحصّل بعد",
+          "coverageText": "التغطية: {pct}% من القيمة المؤكدة تم تحصيلها"
+        },
+        "heatmap": {
+          "previous": "تواريخ الخريطة السابقة",
+          "today": "اليوم",
+          "next": "تواريخ الخريطة التالية",
+          "title": "خريطة حرارية للساعات المحجوزة",
+          "weekOf": "أسبوع",
+          "bookedHours": "الساعات المحجوزة",
+          "weekdays": [
+            "الإثنين",
+            "الثلاثاء",
+            "الأربعاء",
+            "الخميس",
+            "الجمعة",
+            "السبت",
+            "الأحد"
+          ],
+          "legend": [
+            "0",
+            "1–4",
+            "5–9",
+            "10–14",
+            "15+"
+          ]
+        },
+        "trend": {
+          "title": "مزيج المناسبات عبر الزمن"
+        }
       }
     },
     "calendar": {
@@ -762,6 +873,7 @@
       },
       "table": {
         "empty": "لا توجد حجوزات تطابق عوامل التصفية.",
+        "listEmpty": "لا توجد حجوزات بعد.",
         "past": "سابق",
         "showPast": "إظهار السابقة",
         "hidePast": "إخفاء السابقة",
@@ -1013,6 +1125,10 @@
         "status": "الحالة",
         "paid": "مدفوع",
         "unpaid": "غير مدفوع",
+        "method": "Method",
+        "cash": "Cash",
+        "card": "Card",
+        "remit": "Remit",
         "paidOn": "دُفع في {date}",
         "empty": "لا توجد مدفوعات مجدولة بعد لهذا الحجز",
         "exceedsBalance": "يتجاوز الرصيد المتبقي",
@@ -1242,6 +1358,7 @@
           "paused": "موقوف مؤقتًا",
           "trialing": "فترة تجريبية"
         },
+        "notYetAvailable": "الاشتراكات المدفوعة غير متاحة بعد. تحقّق مرة أخرى قريبًا، أو استخدم رمز العرض أدناه إذا كان لديك واحد.",
         "manageSection": "إدارة الاشتراك",
         "manageDescription": "حدِّث طريقة الدفع أو اطّلع على الفواتير أو ألغِ اشتراكك مباشرةً عبر Lemon Squeezy.",
         "manageButton": "إدارة الاشتراك",
@@ -1298,9 +1415,9 @@
         "languages": {
           "en": "English",
           "fil": "Filipino",
-          "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
-          "ar": "العربية"
+          "ar": "العربية",
+          "th": "ภาษาไทย"
         },
         "timeFormatSection": "تنسيق الوقت",
         "timeFormatHint": "اختر كيفية عرض الأوقات في التطبيق.",
@@ -1394,6 +1511,7 @@
           "color": "اللون",
           "name": "الفريق",
           "members": "الأعضاء",
+          "monthlyAverage": "المتوسط الشهري",
           "actions": "إجراءات"
         },
         "details": "التفاصيل",
@@ -1436,6 +1554,7 @@
       },
       "team": {
         "memberCount": "{count, plural, =0 {لا أعضاء بعد} =1 {عضو واحد} zero {لا أعضاء} two {عضوان} few {# أعضاء} many {# عضوًا} other {# عضو}}",
+        "monthlyBookings": "{count, number} حجز/شهر",
         "defaultBadge": "افتراضي",
         "edit": "تعديل",
         "rename": "إعادة تسمية",
@@ -1465,7 +1584,20 @@
         "leadOnlyOnePerTeam": "يمكن أن يكون للفريق قائد واحد فقط.",
         "removeFromTeam": "إزالة",
         "teamFull": "هذا الفريق ممتلئ.",
-        "close": "إغلاق"
+        "close": "إغلاق",
+        "removeMemberFlow": {
+          "confirmTitle": "إزالة {name} من {team}؟",
+          "confirmDescription": "سيفقد الوصول إلى تقويم هذا الفريق وحجوزاته.",
+          "confirmButton": "إزالة من الفريق",
+          "removeFromTeamAndWorkspace": "إزالة من الفريق + مساحة العمل",
+          "otherTeamsBlocked": "هذا العضو ينتمي إلى فرق أخرى. أزله من تلك الفرق أولاً.",
+          "removing": "جارٍ الإزالة…",
+          "workspacePromptTitle": "هل تريد أيضًا إزالة {name} من مساحة العمل؟",
+          "workspacePromptDescription": "سيفقد الوصول إلى جميع الفِرق وإلى مساحة العمل بأكملها. لا يمكن التراجع عن هذا.",
+          "dontAskAgain": "لا تسألني مرة أخرى",
+          "removeFromWorkspaceButton": "إزالة من مساحة العمل",
+          "keepInWorkspaceButton": "الإبقاء في مساحة العمل"
+        }
       },
       "upsell": {
         "atCapTitle": "لقد وصلت إلى حد الفِرق",
@@ -1502,7 +1634,8 @@
           "leadLabel": "قائد",
           "teamFull": "ممتلئ",
           "submit": "إرسال الدعوة",
-          "sending": "جارٍ الإرسال…"
+          "sending": "جارٍ الإرسال…",
+          "emailAlreadyRegistered": "هذا البريد الإلكتروني مرتبط بالفعل بحساب Gallurio. تم تعطيل الإرسال حتى تستخدم عنوانًا مختلفًا."
         },
         "errors": {
           "emailRequired": "أدخِل عنوان بريد إلكتروني صالحًا.",
@@ -1528,18 +1661,43 @@
         "empty": "لا يوجد زملاء بعد. ادعُ شخصًا للبدء.",
         "ownerBadge": "المالك",
         "leadBadge": "قائد",
+        "memberBadge": "عضو",
         "pendingBadge": "معلّق",
         "manageTeams": "إدارة الفِرق",
         "removeFromWorkspace": "إزالة من مساحة العمل",
         "revokeInvite": "إلغاء الدعوة",
         "rowActionsLabel": "إجراءات لـ {name}",
+        "viewButton": "عرض الأعضاء",
+        "inviteCountsLabel": "أعداد الدعوات",
+        "newlyAcceptedCount": "جديد {count}",
+        "pendingCount": "قيد الانتظار {count}",
+        "description": "كل من لديه صلاحية الوصول إلى مساحة العمل هذه، عبر جميع الفِرق.",
+        "modeLabel": "قائمة الأعضاء",
+        "active": "نشط",
+        "pending": "معلّق",
+        "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني",
+        "noActiveMatches": "لا يوجد أعضاء يطابقون بحثك.",
+        "noPendingMatches": "لا توجد دعوات معلّقة تطابق بحثك.",
+        "noPending": "لا توجد دعوات معلّقة.",
+        "moreTeams": "+{count} فِرق أخرى",
+        "ownerAllTeams": "يمكنه الإشراف على جميع الفِرق",
+        "noTeams": "ليس ضمن أي فريق",
+        "removeFromWorkspaceLabel": "إزالة {name} من مساحة العمل",
         "removeDialog": {
           "title": "إزالة العضو؟",
           "description": "سيفقد {name} الوصول إلى مساحة العمل هذه فورًا. تبقى حجوزاته؛ وتُحرَّر مقاعد الفريق. لا يمكن التراجع عن هذا.",
           "confirm": "إزالة العضو"
         },
+        "details": {
+          "tabsLabel": "تفاصيل العضو", "tabs": { "details": "التفاصيل", "history": "السجل" },
+          "teams": "الفِرق", "noTeams": "لا توجد فِرق", "completed": "مكتمل", "workingNow": "قيد التنفيذ", "future": "مستقبلية",
+          "fromDate": "من تاريخ", "toDate": "إلى تاريخ", "action": "الإجراء", "allActions": "كل الإجراءات",
+          "actions": { "created": "تم الإنشاء", "updated": "تم التحديث", "deleted": "تم الحذف", "statusChanged": "تم تغيير الحالة", "paymentAdded": "تمت إضافة دفعة" },
+          "loadingHistory": "جارٍ تحميل سجل النشاط", "loading": "جارٍ التحميل…", "loadMore": "تحميل المزيد", "noActivity": "لم يتم العثور على نشاط."
+        },
         "errors": {
-          "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل."
+          "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل.",
+          "isTeamLead": "{name} قائد فريق واحد على الأقل. أزل عنه صفة قائد الفريق أولًا قبل حذفه."
         },
         "toasts": {
           "removed": "تمت إزالة العضو."
@@ -1560,7 +1718,9 @@
           "added": "تمت الإضافة إلى الفريق.",
           "removed": "تمت الإزالة من الفريق.",
           "promoted": "تمت الترقية إلى قائد.",
-          "demoted": "تم التخفيض إلى عضو."
+          "demoted": "تم التخفيض إلى عضو.",
+          "promoting": "جارٍ نقل القائد…",
+          "demoting": "جارٍ إزالة دور القائد…"
         }
       },
       "downgradeBlock": {
@@ -1625,6 +1785,7 @@
         "notes": "ملاحظات",
         "notesPlaceholder": "أي ملاحظات عن هذا العميل…",
         "save": "حفظ",
+        "view": "عرض",
         "saving": "جارٍ الحفظ…",
         "cancel": "إلغاء",
         "createSuccess": "تم إنشاء العميل.",
@@ -1719,6 +1880,7 @@
       },
       "table": {
         "empty": "لا توجد استفسارات بعد.",
+        "filteredEmpty": "لا توجد استفسارات تطابق عوامل التصفية.",
         "emptyHint": "عندما يرسل شخص ما نموذج التواصل في معرض أعمالك، يصل طلبه إلى هنا.",
         "viewPublicPage": "عرض صفحتك العامة",
         "open": "فتح استفسار من {name}",
@@ -1936,6 +2098,7 @@
           "slugLabel": "رابط معرض الأعمال",
           "slugSuffix": ".gallurio.com",
           "slugSave": "حفظ الرابط",
+          "slugEdit": "تعديل رابط معرض الأعمال",
           "slugSaving": "جارٍ الحفظ...",
           "slugSaved": "تم الحفظ",
           "slugError": "تعذّر تحديث الرابط، يرجى المحاولة مرة أخرى",
@@ -2120,6 +2283,7 @@
         },
         "controls": {
           "editorControls": "أدوات المحرّر",
+          "workspaceActions": "إجراءات معرض الأعمال",
           "toggleBlocks": "إظهار/إخفاء لوحة الأقسام",
           "toggleProperties": "إظهار/إخفاء لوحة الخصائص",
           "previewDevice": "معاينة الجهاز",
@@ -2395,7 +2559,7 @@
             },
             "dragBlock": {
               "title": "اسحب قسمًا إلى صفحتك",
-              "body": "تسرد اللوحة جميع الأقسام المتاحة. اسحب أي قسم منها إلى اللوحة لإضافته إلى صفحتك."
+              "body": "اختر قالباً جاهزاً من اللوحة، ثم اسحبه إلى مساحة العمل. تتضمن القوالب عناصر التحرير المستخدمة في الخطوات التالية."
             },
             "blockProps": {
               "title": "خصائص القسم هنا",
@@ -2461,6 +2625,18 @@
               "title": "معاينة موقعك بأي حجم شاشة",
               "body": "انتقل إلى وضع المعاينة واستخدم مبدِّل الجهاز للتحقّق من تخطيطك على الجوّال واللوحي وسطح المكتب."
             },
+            "canvasControls": {
+              "title": "اضبط لوحة التحرير",
+              "body": "استخدم هذه العناصر لإظهار اللوحات أو إخفائها، والتراجع أو الإعادة، واختيار عرض اللوحة، والتكبير. على الشاشات الأصغر، افتح زر أشرطة التمرير للعثور عليها."
+            },
+            "guide": {
+              "title": "ارجع إلى هذا الدليل في أي وقت",
+              "body": "افتح الدليل متى أردت إعادة هذه الجولة."
+            },
+            "save": {
+              "title": "احفظ تغييراتك",
+              "body": "احفظ التغييرات لتبقى المسودة الحالية جاهزة للعودة إليها لاحقاً."
+            },
             "publish": {
               "title": "انشر للبدء المباشر",
               "body": "عندما تكون راضيًا عن تغييراتك، انقر على نشر لدفعها إلى صفحتك العامة."
@@ -2516,7 +2692,21 @@
               "dimensions": "يجب ألا تتجاوز أبعاد الأيقونة 512 × 512 بكسل.",
               "image": "تعذّرت قراءة صورة الأيقونة هذه.",
               "upload": "فشل رفع الأيقونة. يرجى المحاولة مرة أخرى."
-            }
+            },
+            "shareImageLabel": "Share image",
+            "shareImageUpload": "Upload share image",
+            "shareImageUploading": "Uploading...",
+            "shareImageRemove": "Remove share image",
+            "shareImageRequirements": "JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+            "shareImageErrors": {
+              "type": "Use a JPEG, PNG, WebP, or AVIF image.",
+              "size": "Share image must be 10 MB or smaller.",
+              "dimensions": "Share image must be at least 1200 × 630 px.",
+              "upload": "Share image upload failed. Please try again."
+            },
+            "inquiryRecipientLabel": "Inquiry recipient email",
+            "inquiryRecipientPlaceholder": "you@example.com",
+            "inquiryRecipientHint": "New inquiry notifications will be sent here."
           },
           "done": {
             "title": "صفحتك جاهزة لتتألق",
@@ -2631,6 +2821,10 @@
             "title": "تمت دعوتك إلى فريق",
             "body": "دعاك {inviterName} للانضمام إلى {teamName}."
           },
+          "invite_accepted": {
+            "title": "قبل {memberName} دعوتك",
+            "body": "لقد انضم إلى {teamName}."
+          },
           "removed": {
             "title": "تمت إزالتك من الفريق",
             "body": "تمت إزالتك من {teamName}."
@@ -2654,10 +2848,15 @@
       "invalid_data": "بيانات غير صالحة. يرجى مراجعة المدخلات والمحاولة مرة أخرى.",
       "completion_requires_full_payment": "ضع علامة على جميع الدفعات كمدفوعة وطابق الإجمالي قبل إكمال هذا الحجز.",
       "onboarding_required": "أكمل الإعداد الأولي للمتابعة.",
+      "onboarding_plan_locked": "خطتك مفعلة بالفعل. أكمل الإعداد الأولي لإدارتها من إعدادات الفوترة.",
       "subscription_required": "انتهى وصولك إلى Pro. اشترك للمتابعة.",
       "promo_code_not_found": "هذا الرمز غير صالح. تحقّق منه وحاول مرة أخرى.",
       "promo_code_expired": "انتهت صلاحية هذا الرمز.",
       "promo_code_already_redeemed": "لقد استخدمت هذا الرمز من قبل.",
+      "promo_code_revoked": "تم إلغاء تفعيل هذا الرمز.",
+      "not_eligible_beta_participant": "هذا الرمز مخصص فقط للمشاركين المسجّلين في برنامج التجربة.",
+      "beta_promo_already_redeemed": "لقد استخدمت بالفعل عرض التجربة الخاص بك لمرة واحدة.",
+      "beta_program_closed": "برنامج التجربة مغلق أمام المشاركين الجدد.",
       "invalid_input": "يرجى مراجعة النموذج والمحاولة مرة أخرى.",
       "rate_limited": "محاولات كثيرة. حاول مجددًا بعد {seconds} ثانية.",
       "user_not_found": "المستخدم غير موجود.",
@@ -2698,6 +2897,7 @@
       "export_too_large": "عدد الحجوزات كبير جدًا للتصدير. قلّص نطاق الفلترة وحاول مجددًا.",
       "free_plan_no_checkout": "الباقة المجانية لا تتطلب عملية دفع.",
       "lemonsqueezy_variant_not_configured": "هذه الباقة غير متاحة حاليًا. يرجى التواصل مع الدعم.",
+      "billing_unavailable": "الاشتراكات المدفوعة غير متاحة بعد. يرجى المحاولة مرة أخرى قريبًا.",
       "no_verified_email": "أضف بريدًا إلكترونيًا موثّقًا قبل الاشتراك.",
       "checkout_init_failed": "تعذّر بدء الدفع. يرجى المحاولة مرة أخرى.",
       "no_subscription": "ليس لديك اشتراك نشط لإدارته.",
@@ -2736,10 +2936,12 @@
     "loading": "جارٍ التحميل…",
     "promoCode": {
       "disclosureLabel": "هل لديك رمز ترويجي؟",
+      "close": "إغلاق الرمز الترويجي",
       "placeholder": "أدخل الرمز",
       "submit": "تطبيق",
       "applying": "جارٍ التطبيق…",
-      "success": "تم تطبيق الرمز — تم تحديث خطتك."
+      "success": "تم تطبيق الرمز — وصولك إلى Pro مفعّل الآن.",
+      "successQueued": "تم تطبيق الرمز — سيبدأ وصولك إلى Pro لمدة شهرين تلقائيًا بمجرد انتهاء خطتك الحالية."
     }
   },
   "onboarding": {
@@ -2800,6 +3002,7 @@
       "title": "اختر الخطة المناسبة",
       "description": "يمكنك تغيير الخطط أو الإلغاء في أي وقت من إعدادات مساحة عملك.",
       "popular": "الأكثر رواجًا",
+      "comingSoon": "قريبًا",
       "cadence": {
         "forever": "الشهر الأول مجانًا",
         "monthly": "/ شهر",
@@ -2817,19 +3020,25 @@
       "opening": "جارٍ فتح الدفع…",
       "checkoutFailed": "فشل الدفع. يرجى المحاولة مرة أخرى.",
       "checkoutNotReady": "نظام الدفع غير جاهز. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+      "activatedNotice": "خطة Gallurio الخاصة بك مفعلة الآن. أكمل الإعداد الأولي لتغيير خطة اشتراكك.",
+      "activePill": "نشط",
+      "finishOnboarding": "إكمال الإعداد الأولي",
+      "acceptedPromoCode": "رمز العرض {code}",
       "betaTester": {
         "label": "مختبِر تجريبي",
+        "headline": "احصل على وصول تجريبي مجاني الآن",
         "activate": "تفعيل الوصول التجريبي"
       }
     },
     "done": {
       "title": "كل شيء جاهز، {workspaceName}.",
-      "description": "خطتك {planLabel} نشطة. أمر أخير قبل أن ننقلك إلى لوحة التحكّم.",
+      "description": "خطتك {planLabel} نشطة. أهلاً بك في Gallurio — مساحة عملك جاهزة للانطلاق.",
       "seedToggle": {
         "label": "ابدأ ببيانات تجريبية",
         "description": "سنضيف 5 عملاء تجريبيين و3 حجوزات تجريبية واستفسارًا تجريبيًا واحدًا لتتمكّن من استكشاف التطبيق. كل شيء موسوم كتجريبي لتتمكّن من حذفه بنقرة واحدة."
       },
       "settingUp": "جارٍ إعداد لوحة التحكّم…",
+      "settingUpCompact": "جارٍ التحضير…",
       "goToDashboard": "الانتقال إلى لوحة التحكّم",
       "footer": {
         "everything": "كل شيء في مكان واحد",
@@ -2996,6 +3205,10 @@
       "already_accepted": {
         "title": "عضو بالفعل",
         "description": "لقد قبلت هذه الدعوة بالفعل وانضممت إلى مساحة العمل."
+      },
+      "revoked": {
+        "title": "تم إلغاء الدعوة",
+        "description": "تم إلغاء هذه الدعوة من قِبل مالك مساحة العمل. اطلب منه إرسال دعوة جديدة إذا كنت لا تزال بحاجة إلى الوصول."
       },
       "already_member": {
         "title": "البريد الإلكتروني مستخدم بالفعل",

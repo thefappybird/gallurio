@@ -1,6 +1,6 @@
 import "server-only";
 import { sendEmail, type SendEmailResult } from "./send";
-import { renderBilingualEmail, bilingualSubject } from "./layout";
+import { renderBilingualEmail } from "./layout";
 import { resolveWorkspaceBrand, type Brand } from "./brand";
 import { EMAIL_COPY, emailLocale } from "./messages";
 
@@ -20,7 +20,7 @@ export async function sendInquiryClientConfirmation(
     const locale = emailLocale(data.country ?? null);
     const brand = data.brand ?? resolveWorkspaceBrand({ name: data.workspaceName });
 
-    const { html, text } = renderBilingualEmail({
+    const { html, text, attachments } = renderBilingualEmail({
       brand,
       preheader: EMAIL_COPY.inquiryConfirmation.en.body1(brand.name),
       secondaryLocale: locale,
@@ -31,18 +31,16 @@ export async function sendInquiryClientConfirmation(
           blocks: [
             { type: "p", text: copy.greeting(data.clientName) },
             { type: "p", text: copy.body1(brand.name) },
-            { type: "p", text: copy.body2(brand.name) },
-            { type: "p", text: copy.body3(brand.name) },
+            { type: "p", text: copy.body2() },
+            { type: "p", text: copy.body3() },
           ],
         };
       },
     });
 
-    const subject = bilingualSubject(
-      EMAIL_COPY.inquiryConfirmation.en.subject(brand.name),
-      EMAIL_COPY.inquiryConfirmation[locale].subject(brand.name),
-      locale,
-    );
+    // Keep the inbox subject consistent and easy to scan. The message itself
+    // remains bilingual for workspaces whose country locale is not English.
+    const subject = EMAIL_COPY.inquiryConfirmation.en.subject(brand.name);
 
     return await sendEmail({
       to: data.clientEmail,
@@ -50,6 +48,7 @@ export async function sendInquiryClientConfirmation(
       subject,
       html,
       text,
+      attachments,
     });
   } catch (err) {
     console.error("[email] sendInquiryClientConfirmation failed:", err);

@@ -32,7 +32,9 @@ function parseSeoKeywords(raw: string): string[] {
   const seen = new Set<string>();
   const keywords: string[] = [];
 
-  for (const part of raw.split(",")) {
+  // A comma can still delimit a multi-word tag, while whitespace makes normal
+  // typing such as "wedding editorial" create two tags without a comma.
+  for (const part of raw.split(/,|\s+/)) {
     const trimmed = part.trim();
     if (!trimmed) continue;
     const key = trimmed.toLowerCase();

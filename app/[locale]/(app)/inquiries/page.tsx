@@ -102,6 +102,7 @@ export default async function InquiriesPage({
 
   const from = parseDate(sp.from);
   const to = parseDate(sp.to, true);
+  const hasFilters = Boolean((sp.status && sp.status !== "all") || from || to);
 
   // Resolve team scope once — used for both calendar booking fetch and ?detail validation.
   const needsTeamScope = view === "calendar" || Boolean(sp.detail);
@@ -357,8 +358,8 @@ export default async function InquiriesPage({
         counts={counts}
         from={DATE_RE.test(sp.from ?? "") ? sp.from! : ""}
         to={DATE_RE.test(sp.to ?? "") ? sp.to! : ""}
-        empty={t("table.empty")}
-        emptyHint={t("table.emptyHint")}
+        empty={hasFilters ? t("table.filteredEmpty") : t("table.empty")}
+        emptyHint={hasFilters ? "" : t("table.emptyHint")}
         initialDetail={initialDetail}
         view={view}
         events={events}

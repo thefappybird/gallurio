@@ -71,7 +71,7 @@ open the right modal after sign-in:
 - Best-effort, post-transaction: email/notification failure never rolls back a DB
   write.
 - Tenant isolation everywhere; client-supplied `workspaceId` never trusted.
-- Locales `en` / `fil` / `ms` / `id` (never `th`); workspace country → locale.
+- Locales `en` / `fil` / `id` / `th` (never `ms`); workspace country → locale.
 
 ## Env
 - `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO` (optional), `NEXT_PUBLIC_APP_URL`

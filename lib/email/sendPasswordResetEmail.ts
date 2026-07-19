@@ -4,7 +4,7 @@ import { gallurioBrand } from "@/lib/email/brand";
 import { EMAIL_COPY } from "@/lib/email/messages";
 import { sendEmail, logEmailFailure, type SendEmailResult } from "@/lib/email/send";
 
-type Locale = "en" | "fil" | "ms" | "id";
+type Locale = "en" | "fil" | "id" | "th";
 
 /**
  * Sends a password reset / set-password link to `email` using the shared
@@ -24,7 +24,7 @@ export async function sendPasswordResetEmail(
 
   const copy = EMAIL_COPY.passwordReset[locale];
 
-  const { html, text } = renderBrandedEmail({
+  const { html, text, attachments } = renderBrandedEmail({
     brand: gallurioBrand(),
     locale,
     preheader: copy.intro,
@@ -39,6 +39,7 @@ export async function sendPasswordResetEmail(
     subject: copy.subject,
     html,
     text,
+    attachments,
   });
   if (!result.ok) logEmailFailure("password_reset", email, result);
   return result;

@@ -131,7 +131,7 @@ describe("assignMemberToTeamAction — workspace-member guard", () => {
 });
 
 describe("setLeadFlagAction — one lead per team", () => {
-  it("rejects promotion when the team already has a different lead", async () => {
+  it("atomically transfers lead from the existing lead to the selected member", async () => {
     const team = await makeTeam();
     await seedMemberUser("user_existing_lead");
     await seedMemberUser("user_candidate");
@@ -155,12 +155,17 @@ describe("setLeadFlagAction — one lead per team", () => {
       isLead: true,
     });
 
-    expect(result.error).toBe("TEAM_ALREADY_HAS_LEAD");
+    expect(result.ok).toBe(true);
+    const previousLead = await TeamMembership.findOne({
+      teamId: team._id,
+      workosUserId: "user_existing_lead",
+    }).lean();
     const candidate = await TeamMembership.findOne({
       teamId: team._id,
       workosUserId: "user_candidate",
     }).lean();
-    expect(candidate?.role).toBe("member");
+    expect(previousLead?.role).toBe("member");
+    expect(candidate?.role).toBe("lead");
   });
 });
 
@@ -204,5 +209,33 @@ describe("removeMemberFromWorkspaceAction — transaction + seat release", () =>
       workosUserId: OWNER_USER_ID,
     });
     expect(result.error).toBe("CANNOT_REMOVE_OWNER");
+  });
+
+  it("refuses to remove a team lead and does not touch any membership", async () => {
+    const team = await makeTeam();
+    await seedMemberUser("user_lead");
+    await TeamMembership.create({
+      workspaceId: WORKSPACE_ID,
+      teamId: team._id,
+      workosUserId: "user_lead",
+      role: "lead",
+    });
+
+    const { removeMemberFromWorkspaceAction } = await import("./_member-action");
+    const result = await removeMemberFromWorkspaceAction({
+      workosUserId: "user_lead",
+    });
+
+    expect(result).toEqual({ error: "IS_TEAM_LEAD", teamName: "Crew" });
+
+    const row = await TeamMembership.findOne({
+      teamId: team._id,
+      workosUserId: "user_lead",
+    }).lean();
+    expect(row).toBeTruthy();
+    expect(row?.role).toBe("lead");
+
+    const userAfter = await User.findOne({ workosUserId: "user_lead" }).lean();
+    expect(userAfter?.memberships).toHaveLength(1);
   });
 });

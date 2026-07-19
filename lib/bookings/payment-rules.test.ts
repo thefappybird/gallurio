@@ -6,7 +6,7 @@ describe("normalizePayments", () => {
     const now = new Date("2026-07-05T00:00:00Z");
     const result = normalizePayments([{ price: 100, status: "paid" }], now);
     expect(result).toEqual([
-      { price: 100, status: "paid", createdAt: now, paidAt: now, title: "" },
+      { price: 100, status: "paid", createdAt: now, paidAt: now, title: "", method: "cash" },
     ]);
   });
 
@@ -18,7 +18,7 @@ describe("normalizePayments", () => {
       now
     );
     expect(result).toEqual([
-      { price: 50, status: "unpaid", createdAt: past, paidAt: null, title: "" },
+      { price: 50, status: "unpaid", createdAt: past, paidAt: null, title: "", method: "cash" },
     ]);
   });
 
@@ -30,6 +30,11 @@ describe("normalizePayments", () => {
     );
     expect(result[0].title).toBe("Deposit");
     expect(result[1].title).toBe("");
+  });
+
+  it("defaults a missing payment method to cash and preserves a selected method", () => {
+    const result = normalizePayments([{ price: 100, status: "paid", method: "card" }, { price: 50, status: "paid" }]);
+    expect(result.map((payment) => payment.method)).toEqual(["card", "cash"]);
   });
 });
 

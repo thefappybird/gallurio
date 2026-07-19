@@ -9,11 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
 import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getClientBookingsAction } from "@/lib/actions/clients";
-import type { ClientBookingRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
+import { getClientBookingsAction, getClientPaymentsAction } from "@/lib/actions/clients";
+import type { ClientBookingRow, ClientPaymentRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { ClientRow } from "./clients-table";
 import { SourceBadge } from "./source-badge";
+import { TagPill } from "@/components/app/tag-pill";
 
 type Props = {
   client: ClientRow | null;
@@ -70,6 +71,11 @@ function ClientDetailModalInner({
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [bookings, setBookings] = useState<ClientBookingRow[] | null>(null);
   const [bookingsError, setBookingsError] = useState<string | null>(null);
+  const [payments, setPayments] = useState<ClientPaymentRow[] | null>(null);
+  const [paymentsError, setPaymentsError] = useState<string | null>(null);
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [paymentsHasMore, setPaymentsHasMore] = useState(false);
+  const [paymentsLoadingMore, setPaymentsLoadingMore] = useState(false);
 
   // Lazy-load bookings on first activation of the bookings tab. The outer
   // component re-keys this inner component on client.id and open, so all
@@ -91,6 +97,27 @@ function ClientDetailModalInner({
       cancelled = true;
     };
   }, [open, activeTab, client.id, bookings, bookingsError]);
+
+  useEffect(() => {
+    if (!open || activeTab !== "payments" || payments !== null || paymentsError) return;
+    let cancelled = false;
+    getClientPaymentsAction(client.id).then((result) => {
+      if (cancelled) return;
+      if ("error" in result) setPaymentsError(result.error);
+      else { setPayments(result.items); setPaymentsHasMore(result.hasMore); }
+    });
+    return () => { cancelled = true; };
+  }, [open, activeTab, client.id, payments, paymentsError]);
+
+  async function loadMorePayments() {
+    if (paymentsLoadingMore) return;
+    setPaymentsLoadingMore(true);
+    const nextPage = paymentsPage + 1;
+    const result = await getClientPaymentsAction(client.id, nextPage);
+    if ("error" in result) setPaymentsError(result.error);
+    else { setPayments((current) => [...(current ?? []), ...result.items]); setPaymentsPage(nextPage); setPaymentsHasMore(result.hasMore); }
+    setPaymentsLoadingMore(false);
+  }
 
   // Loading is derived: the bookings tab is loading whenever we're on it for
   // this client and we haven't resolved into either bookings or an error yet.
@@ -182,12 +209,7 @@ function ClientDetailModalInner({
               {client.tags.length > 0 ? (
                 <div className="flex flex-wrap gap-1">
                   {client.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="max-w-full wrap-break-word border border-border bg-muted px-1.5 py-0.5 text-xs"
-                    >
-                      {tag}
-                    </span>
+                    <TagPill key={tag} tag={tag} />
                   ))}
                 </div>
               ) : (
@@ -256,7 +278,27 @@ function ClientDetailModalInner({
 
           {/* Payments Tab */}
           <TabsPanel value="payments" className="overflow-y-auto px-4 py-4">
-            <p className="text-sm text-muted-foreground">{t("detail.payments.empty")}</p>
+            {payments === null && !paymentsError ? <Skeleton className="h-16 w-full" /> : null}
+            {paymentsError ? <p className="text-sm text-destructive">{t("form.error")}</p> : null}
+            {payments?.length === 0 ? <p className="text-sm text-muted-foreground">{t("detail.payments.empty")}</p> : null}
+            {payments && payments.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {payments.map((payment) => (
+                  <div key={payment.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border border-border px-3 py-2">
+                    <span className="truncate text-sm font-medium">{payment.bookingTitle}</span>
+                    <span className="tabular-nums text-sm font-medium text-brand">{new Intl.NumberFormat(locale, { style: "currency", currency: payment.currency, minimumFractionDigits: 0 }).format(payment.amount)}</span>
+                    <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="truncate">{payment.paymentTitle}</span>
+                      {payment.method !== "other" ? (
+                        <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px] capitalize">{payment.method}</Badge>
+                      ) : null}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                  </div>
+                ))}
+                {paymentsHasMore ? <Button type="button" variant="outline" size="sm" onClick={loadMorePayments} loading={paymentsLoadingMore}>{t("table.pagination.next")}</Button> : null}
+              </div>
+            ) : null}
           </TabsPanel>
         </Tabs>
 

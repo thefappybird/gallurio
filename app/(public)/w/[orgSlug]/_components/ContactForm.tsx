@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useForm, useFieldArray, useWatch, Controller, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, PlusIcon, Trash2Icon } from "lucide-react";
 import {
   inquirySubmissionSchema,
   PREFERRED_CONTACT_METHODS,
@@ -123,6 +123,25 @@ const DEFAULT_ADD_SESSION_APPEARANCE: ButtonAppearance = {
   border: "1px dashed color-mix(in srgb, var(--pf-color-fg) 40%, transparent)",
 };
 
+const PREVIEW_VALUES: InquirySubmissionInput = {
+  name: "Alex Morgan",
+  email: "alex@example.com",
+  phone: "+12125550142",
+  preferredContact: "email",
+  eventTitle: "Summer garden reception",
+  sessions: [{ startDate: "2030-06-14", startTime: "14:00", endTime: "13:30" }],
+  eventType: "wedding",
+  location: {
+    label: "The Garden House, Dubai",
+    address: "The Garden House, Dubai",
+    placeId: null,
+    lat: 25.2048,
+    lng: 55.2708,
+  },
+  description: "We are planning a relaxed outdoor celebration for about 80 guests.",
+  company_name: "",
+};
+
 const TAB_FONT_SIZE_MAP: Record<string, string> = {
   sm: "0.8125rem",
   md: "0.9375rem",
@@ -202,7 +221,7 @@ export function ContactForm({
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
-    defaultValues: {
+    defaultValues: preview ? PREVIEW_VALUES : {
       name: "",
       email: "",
       phone: "",
@@ -239,6 +258,23 @@ export function ContactForm({
   const [activeTab, setActiveTab] = useState<"client" | "event" | "location">("client");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileWidgetHandle>(null);
+  const stepFooterStyle: CSSProperties = {
+    position: "sticky",
+    bottom: 0,
+    zIndex: 2,
+    backgroundColor: "inherit",
+    padding: "0.75rem 0 0.25rem",
+    marginTop: "1rem",
+  };
+
+  useEffect(() => {
+    if (!preview) return;
+    // The canvas is illustrative, not interactive: keep representative inline
+    // errors visible so styling can be reviewed without submitting a real inquiry.
+    setError("email", { type: "preview", message: labels.requiredHint });
+    setError("sessions.0.endTime", { type: "preview", message: labels.requiredHint });
+    setError("location.address", { type: "preview", message: labels.locationRequired });
+  }, [labels.locationRequired, labels.requiredHint, preview, setError]);
 
   function onInvalid(errs: FieldErrors<InquirySubmissionInput>) {
     if (errs.name || errs.email || errs.phone || errs.preferredContact) {
@@ -262,11 +298,19 @@ export function ContactForm({
   }, [form]);
 
   async function handleContinue() {
+    if (preview) {
+      setActiveTab("event");
+      return;
+    }
     const ok = await trigger(["name", "email", "phone", "preferredContact"]);
     if (ok) setActiveTab("event");
   }
 
   async function handleEventContinue() {
+    if (preview) {
+      setActiveTab("location");
+      return;
+    }
     const ok = await trigger(["eventTitle", "sessions", "eventType"]);
     if (ok) setActiveTab("location");
   }
@@ -297,7 +341,13 @@ export function ContactForm({
 
   return (
     <form
-      onSubmit={(e) => { void handleSubmit(onSubmit, onInvalid)(e); }}
+      onSubmit={(e) => {
+        if (preview) {
+          e.preventDefault();
+          return;
+        }
+        void handleSubmit(onSubmit, onInvalid)(e);
+      }}
       noValidate
       className="pf-contact-form"
       style={{
@@ -389,13 +439,13 @@ export function ContactForm({
         <TabsPanel value="client">
           <div>
             <label htmlFor="cf-name" style={labelStyle}>{labels.name}</label>
-            <input id="cf-name" style={fieldStyle} aria-invalid={errors.name ? "true" : undefined} {...register("name")} />
+            <input id="cf-name" disabled={preview} style={fieldStyle} aria-invalid={errors.name ? "true" : undefined} {...register("name")} />
             {errors.name && <p style={errorStyle} role="alert">{errors.name.message}</p>}
           </div>
 
           <div>
             <label htmlFor="cf-email" style={labelStyle}>{labels.email}</label>
-            <input id="cf-email" type="email" style={fieldStyle} aria-invalid={errors.email ? "true" : undefined} {...register("email")} />
+            <input id="cf-email" type="email" disabled={preview} style={fieldStyle} aria-invalid={errors.email ? "true" : undefined} {...register("email")} />
             {errors.email && <p style={errorStyle} role="alert">{errors.email.message}</p>}
           </div>
 
@@ -408,6 +458,7 @@ export function ContactForm({
                 <PhoneInput
                   id="cf-phone"
                   className="pf-contact-phone"
+                  disabled={preview}
                   value={field.value || undefined}
                   onChange={(value) => field.onChange(value ?? "")}
                 />
@@ -417,21 +468,23 @@ export function ContactForm({
 
           <div>
             <label htmlFor="cf-preferred" style={labelStyle}>{labels.preferredContact}</label>
-            <select id="cf-preferred" style={fieldStyle} {...register("preferredContact")}>
+            <select id="cf-preferred" disabled={preview} style={fieldStyle} {...register("preferredContact")}>
               {PREFERRED_CONTACT_METHODS.map((m) => (
                 <option key={m} value={m}>{labels.preferred[m]}</option>
               ))}
             </select>
           </div>
 
-          <button
-            type="button"
-            className="pf-cf-btn"
-            onClick={() => void handleContinue()}
-            style={buildButtonStyle(submitAppearance, false, { marginTop: "1rem" })}
-          >
-            {labels.continue}
-          </button>
+          <div data-testid="contact-step-footer" style={stepFooterStyle}>
+            <button
+              type="button"
+              className="pf-cf-btn"
+              onClick={() => void handleContinue()}
+              style={buildButtonStyle(submitAppearance, false)}
+            >
+              {labels.continue}
+            </button>
+          </div>
         </TabsPanel>
 
         <TabsPanel value="event">
@@ -460,42 +513,34 @@ export function ContactForm({
                       )
                       : null
                   }
+                  actions={
+                    fields.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => remove(index)}
+                        disabled={preview}
+                        aria-label={`${labels.removeSession} ${index + 1}`}
+                        title={labels.removeSession}
+                        className="inline-flex size-8 items-center justify-center border border-[color:color-mix(in_srgb,currentColor_24%,transparent)] bg-transparent text-inherit transition-colors hover:bg-[color:color-mix(in_srgb,currentColor_10%,transparent)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current disabled:pointer-events-none disabled:opacity-50"
+                      >
+                        <Trash2Icon className="size-4" aria-hidden />
+                      </button>
+                    ) : null
+                  }
                   defaultOpen={index === fields.length - 1}
                   // CollapsibleDrawer's base classes (bg-card text-card-foreground) are CRM
                   // app-shell tokens — override with transparent/inherit so the session card
                   // picks up the portfolio's --pf-* brand colors from its ancestor instead.
-                  className="rounded-[var(--pf-radius)] border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)] bg-transparent text-inherit"
-                  bodyClassName="flex max-h-80 flex-col gap-2 overflow-y-auto"
+                  className="border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)] bg-transparent text-inherit"
+                  bodyClassName="flex max-h-80 flex-col gap-3 overflow-y-auto"
                 >
-                  {fields.length > 1 && (
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <button
-                        type="button"
-                        className="pf-cf-btn"
-                        onClick={() => remove(index)}
-                        aria-label={`${labels.removeSession} ${index + 1}`}
-                        style={{
-                          minHeight: "44px",
-                          padding: "0 0.75rem",
-                          background: "transparent",
-                          color: "var(--pf-color-fg)",
-                          border: "1px solid color-mix(in srgb, var(--pf-color-fg) 24%, transparent)",
-                          borderRadius: "var(--pf-radius)",
-                          cursor: "pointer",
-                          fontSize: "0.75rem",
-                        }}
-                      >
-                        {labels.removeSession}
-                      </button>
-                    </div>
-                  )}
-
                   <div>
                     <label htmlFor={`cf-start-${index}`} style={labelStyle}>{labels.startDate}</label>
                     <input
                       id={`cf-start-${index}`}
                       type="date"
                       min={minDate}
+                      disabled={preview}
                       style={fieldStyle}
                       aria-invalid={errors.sessions?.[index]?.startDate ? "true" : undefined}
                       {...register(`sessions.${index}.startDate` as const)}
@@ -506,13 +551,14 @@ export function ContactForm({
                   <div className="pf-cf-times" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <div>
                       <label htmlFor={`cf-stime-${index}`} style={labelStyle}>{labels.startTime}</label>
-                      <input id={`cf-stime-${index}`} type="time" lang={TIME_INPUT_LANG[timeMode]} style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
+                      <input id={`cf-stime-${index}`} type="time" disabled={preview} lang={TIME_INPUT_LANG[timeMode]} style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
                     </div>
                     <div>
                       <label htmlFor={`cf-etime-${index}`} style={labelStyle}>{labels.endTime}</label>
                       <input
                         id={`cf-etime-${index}`}
                         type="time"
+                        disabled={preview}
                         lang={TIME_INPUT_LANG[timeMode]}
                         style={fieldStyle}
                         aria-invalid={errors.sessions?.[index]?.endTime ? "true" : undefined}
@@ -529,34 +575,42 @@ export function ContactForm({
               type="button"
               className="pf-cf-btn"
               onClick={() => append({ startDate: "", startTime: "10:00", endTime: "17:00" })}
+              disabled={preview}
               style={buildButtonStyle(addSessionAppearance, false, {
                 marginTop: "0.5rem",
                 minHeight: "44px",
                 padding: "0 0.75rem",
                 fontSize: "0.875rem",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
               })}
             >
-              + {labels.addSession}
+              <PlusIcon className="size-4" aria-hidden />
+              {labels.addSession}
             </button>
           </fieldset>
 
           <div>
             <label htmlFor="cf-eventType" style={labelStyle}>{labels.eventType}</label>
-            <select id="cf-eventType" style={fieldStyle} {...register("eventType")}>
+            <select id="cf-eventType" disabled={preview} style={fieldStyle} {...register("eventType")}>
               {EVENT_TYPES.map((t) => (
                 <option key={t} value={t}>{labels.eventTypes[t]}</option>
               ))}
             </select>
           </div>
 
-          <button
-            type="button"
-            className="pf-cf-btn"
-            onClick={() => void handleEventContinue()}
-            style={buildButtonStyle(submitAppearance, false, { marginTop: "1rem" })}
-          >
-            {labels.continue}
-          </button>
+          <div data-testid="contact-step-footer" style={stepFooterStyle}>
+            <button
+              type="button"
+              className="pf-cf-btn"
+              onClick={() => void handleEventContinue()}
+              style={buildButtonStyle(submitAppearance, false)}
+            >
+              {labels.continue}
+            </button>
+          </div>
         </TabsPanel>
 
         <TabsPanel value="location">
@@ -568,7 +622,8 @@ export function ContactForm({
               render={({ field }) => (
                 <LocationPicker
                   id="cf-location"
-                  editable
+                  editable={!preview}
+                  disabled={preview}
                   className="pf-contact-location"
                   labels={labels.locationPicker}
                   searchEnabled={!preview}
@@ -604,6 +659,7 @@ export function ContactForm({
             <textarea
               id="cf-description"
               rows={4}
+              disabled={preview}
               placeholder={labels.messagePlaceholder}
               style={{ ...fieldStyle, minHeight: "96px", padding: "0.5rem 0.75rem", resize: "vertical" }}
               aria-invalid={errors.description ? "true" : undefined}
@@ -633,26 +689,28 @@ export function ContactForm({
 
       {activeTab === "location" ? (
         <div style={{ marginTop: "0.75rem" }} className="flex justify-center">
-          <TurnstileWidget ref={turnstileRef} onToken={setTurnstileToken} onExpire={() => setTurnstileToken(null)} onError={() => setTurnstileToken(null)} />
+          {!preview ? <TurnstileWidget ref={turnstileRef} onToken={setTurnstileToken} onExpire={() => setTurnstileToken(null)} onError={() => setTurnstileToken(null)} /> : null}
         </div>
       ) : null}
 
       {activeTab === "location" ? (
-        <button
-          type="submit"
-          className="pf-cf-btn"
-          disabled={isSubmitting || !turnstileToken}
-          style={buildButtonStyle(submitAppearance, isSubmitting, { marginTop: "1rem" })}
-        >
-          {isSubmitting ? (
-            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              {labels.submitting}
-            </span>
-          ) : (
-            labels.submit
-          )}
-        </button>
+        <div data-testid="contact-step-footer" style={stepFooterStyle}>
+          <button
+            type="submit"
+            className="pf-cf-btn"
+            disabled={!preview && (isSubmitting || !turnstileToken)}
+            style={buildButtonStyle(submitAppearance, isSubmitting)}
+          >
+            {isSubmitting ? (
+              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                {labels.submitting}
+              </span>
+            ) : (
+              labels.submit
+            )}
+          </button>
+        </div>
       ) : null}
     </form>
   );

@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 describe("useNotificationBurstToast", () => {
-  it("bundles a burst of arrivals within the 5s window into one toast with the total count, without resetting the timer", () => {
+  it("shows immediately on arrival and keeps a running count while visible", () => {
     const { result, rerender } = renderHook(
       ({ tick }) => useNotificationBurstToast(tick),
       { initialProps: { tick: 0 } },
@@ -19,23 +19,21 @@ describe("useNotificationBurstToast", () => {
 
     expect(result.current.showToast).toBe(false);
 
-    // First arrival arms the 5s timer.
+    // First arrival shows the cue alongside the bell nudge.
     rerender({ tick: 1 });
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    expect(result.current.showToast).toBe(true);
+    expect(result.current.count).toBe(1);
 
     // Two more arrivals land within the window — must NOT reset/extend the timer.
     rerender({ tick: 2 });
     rerender({ tick: 3 });
 
-    expect(result.current.showToast).toBe(false);
-
-    act(() => {
-      vi.advanceTimersByTime(3000); // total elapsed since first arrival: 5000ms
-    });
-
     expect(result.current.showToast).toBe(true);
     expect(result.current.count).toBe(3);
+
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(result.current.showToast).toBe(false);
   });
 });

@@ -9,7 +9,7 @@
  *   - Brands:  platform (gallurioBrand) and partner (resolveWorkspaceBrand with
  *              a warm accent #c05621 + logo URL to stress contrast checks).
  *   - CTA variants: with NEXT_PUBLIC_APP_URL set and unset (for emails that branch).
- *   - Locales:  en, fil, ms, id (partner-branded emails only; platform emails are
+ *   - Locales:  en, fil, id, th (partner-branded emails only; platform emails are
  *              English-only by convention).
  *   - Templates: all 9 distinct templates covered (see RENDERED_LOG below).
  *
@@ -45,6 +45,7 @@ import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { renderBrandedEmail } from "@/lib/email/layout";
 import { gallurioBrand, resolveWorkspaceBrand } from "@/lib/email/brand";
 import { EMAIL_COPY } from "@/lib/email/messages";
+import { WORKSPACE_LOGO_CID } from "@/lib/email/inlineImages";
 
 // ---------------------------------------------------------------------------
 // Artifact directory
@@ -83,6 +84,13 @@ function capturedHtml(): string {
   return (calls[calls.length - 1][0] as { html: string }).html;
 }
 
+/** Capture the attachments from the last sendEmail call. */
+function capturedAttachments(): Array<{ filename: string; path?: string; contentId?: string }> {
+  const calls = sendEmail.mock.calls;
+  if (!calls.length) throw new Error("sendEmail was not called");
+  return (calls[calls.length - 1][0] as { attachments?: Array<{ filename: string; path?: string; contentId?: string }> }).attachments ?? [];
+}
+
 // ---------------------------------------------------------------------------
 // Fixture workspace brand — warm orange accent to stress contrast.
 // logoUrl is a small public SVG so the img tag renders without 404.
@@ -92,8 +100,8 @@ const PARTNER_LOGO_URL = "https://placehold.co/120x32/c05621/ffffff?text=Studio+
 
 const partnerBrand = resolveWorkspaceBrand({
   name: "Studio Aurora",
+  logoUrl: PARTNER_LOGO_URL,
   publicPage: {
-    header: { logoUrl: PARTNER_LOGO_URL },
     brandKit: { accentColor: PARTNER_ACCENT },
   },
   contact: { email: "hello@studio-aurora.test" },
@@ -317,7 +325,7 @@ describe("platform emails", () => {
 // ===========================================================================
 
 describe("partner emails — all locales", () => {
-  const locales = ["en", "fil", "ms", "id"] as const;
+  const locales = ["en", "fil", "id", "th"] as const;
 
   // -------------------------------------------------------------------------
   // 2a. Team invite (partner brand)
@@ -336,9 +344,12 @@ describe("partner emails — all locales", () => {
       const html = capturedHtml();
       expect(html).toContain("<!DOCTYPE html>");
       expect(html).toContain(PARTNER_ACCENT);
-      // Logo img tag present
+      // Logo img tag present, embedded via a CID attachment rather than a raw URL
       expect(html).toContain("<img");
-      expect(html).toContain(PARTNER_LOGO_URL);
+      expect(html).toContain(`cid:${WORKSPACE_LOGO_CID}`);
+      expect(capturedAttachments()).toContainEqual(
+        expect.objectContaining({ contentId: WORKSPACE_LOGO_CID, path: PARTNER_LOGO_URL }),
+      );
       // CTA present (team invite always has one)
       expect(html).toContain("min-height:44px");
       expect(html).toContain("@media (prefers-color-scheme: dark)");
@@ -359,8 +370,8 @@ describe("partner emails — all locales", () => {
     const countryByLocale: Record<typeof locale, string> = {
       en: "SG",
       fil: "PH",
-      ms: "MY",
       id: "ID",
+      th: "TH",
     };
     it(`inquiry client confirmation — ${locale}`, async () => {
       await sendInquiryClientConfirmation({
@@ -391,7 +402,7 @@ describe("partner emails — all locales", () => {
     it(`booking confirmed client — ${locale}`, async () => {
       await sendBookingConfirmedClient({
         brand: partnerBrand,
-        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "ms" ? "MY" : "ID",
+        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "id" ? "ID" : "TH",
         clientName: "Maria Santos",
         clientEmail: "client@test.com",
         businessName: "Studio Aurora",
@@ -419,7 +430,7 @@ describe("partner emails — all locales", () => {
     it(`booking cancelled client — ${locale}`, async () => {
       await sendBookingCancelledClient({
         brand: partnerBrand,
-        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "ms" ? "MY" : "ID",
+        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "id" ? "ID" : "TH",
         clientName: "Maria Santos",
         clientEmail: "client@test.com",
         businessName: "Studio Aurora",
@@ -446,7 +457,7 @@ describe("partner emails — all locales", () => {
     it(`inquiry decline client — ${locale}`, async () => {
       await sendInquiryDeclineClient({
         brand: partnerBrand,
-        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "ms" ? "MY" : "ID",
+        locale: locale === "en" ? "SG" : locale === "fil" ? "PH" : locale === "id" ? "ID" : "TH",
         clientName: "Maria Santos",
         clientEmail: "client@test.com",
         businessName: "Studio Aurora",

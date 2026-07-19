@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
-import { worldReady } from "@/lib/workflows/world";
 
 // Health/readiness endpoint for an external monitor + Caddy/Cloudflare.
 // Never cached — always evaluates the current process/dependency state.
@@ -41,14 +40,14 @@ export async function GET(req: Request): Promise<Response> {
     return NextResponse.json({ status: "ok" }, { status: 200 });
   }
 
-  const [dbHealthy, world] = await Promise.all([checkDb(), worldReady()]);
-  const healthy = dbHealthy && world.healthy;
+  const dbHealthy = await checkDb();
+  const healthy = dbHealthy;
 
   // Non-sensitive body only: booleans, no connection strings/hostnames/errors.
   return NextResponse.json(
     {
       status: healthy ? "healthy" : "unhealthy",
-      checks: { db: dbHealthy, world: world.healthy },
+      checks: { db: dbHealthy },
     },
     { status: healthy ? 200 : 503 },
   );

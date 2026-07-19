@@ -30,6 +30,24 @@ describe("ClientFormModal", () => {
     expect(screen.getByDisplayValue("Maria Santos")).toBeInTheDocument();
   });
 
+  it("returns to the read-only view from edit mode", () => {
+    const onView = vi.fn();
+    const onOpenChange = vi.fn();
+    renderWithProviders(
+      <ClientFormModal
+        {...defaultProps}
+        initialData={{ id: "c1", name: "Maria Santos" }}
+        onOpenChange={onOpenChange}
+        onView={onView}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onView).toHaveBeenCalledOnce();
+  });
+
   it("calls onSuccess on successful submit", async () => {
     const onSuccess = vi.fn();
     const onOpenChange = vi.fn();

@@ -1,7 +1,12 @@
 import { getTranslations } from 'next-intl/server'
 import type { NotificationType, NotificationEntityType, NotificationVars } from './types'
 
-function buildHref(locale: string, type: NotificationType, entityId: string): string {
+function buildHref(
+  locale: string,
+  type: NotificationType,
+  entityId: string,
+  vars: NotificationVars,
+): string {
   switch (type) {
     case 'inquiry.created':
       return `/${locale}/inquiries?inquiryId=${entityId}`
@@ -12,6 +17,11 @@ function buildHref(locale: string, type: NotificationType, entityId: string): st
     case 'team.removed':
     case 'team.deleted':
       return `/${locale}/teams`
+    case 'team.invite_accepted': {
+      const params = new URLSearchParams({ members: 'active' })
+      if (vars.memberEmail) params.set('member', vars.memberEmail)
+      return `/${locale}/teams?${params.toString()}`
+    }
   }
 }
 
@@ -25,6 +35,6 @@ export async function buildNotificationContent(
   const t = await getTranslations({ locale, namespace: 'app.notifications' })
   const title = t(`types.${type}.title`, vars as Record<string, string>)
   const body = t(`types.${type}.body`, vars as Record<string, string>)
-  const href = buildHref(locale, type, entityId)
+  const href = buildHref(locale, type, entityId, vars)
   return { title, body, href }
 }

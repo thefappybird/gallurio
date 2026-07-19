@@ -64,6 +64,7 @@ type Props = {
   onInvite: (team: TeamRow) => void;
   onDeactivate: (team: TeamRow) => void;
   onReactivate: (team: TeamRow) => void;
+  canManage: boolean;
 };
 
 export function TeamsTable({
@@ -75,6 +76,7 @@ export function TeamsTable({
   onInvite,
   onDeactivate,
   onReactivate,
+  canManage,
 }: Props) {
   const t = useTranslations("app.teams");
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
@@ -182,16 +184,27 @@ export function TeamsTable({
         ),
       },
       {
+        accessorKey: "monthlyAverage",
+        header: () => t("table.col.monthlyAverage"),
+        cell: (info) => (
+          <span className="tabular-nums text-muted-foreground">
+            {t("team.monthlyBookings", { count: info.getValue<number>() ?? 0 })}
+          </span>
+        ),
+      },
+      {
         id: "actions",
         header: () => <span className="sr-only">{t("table.col.actions")}</span>,
         cell: (info) => (
-          <div className="flex justify-end">{renderActionsMenu(info.row.original)}</div>
+          <div className="flex justify-end">
+            {canManage && renderActionsMenu(info.row.original)}
+          </div>
         ),
         enableSorting: false,
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- renderActionsMenu closes over these same deps every render
-    [t, onDetails, onEdit, onInvite, onDeactivate, onReactivate],
+    [t, onDetails, onEdit, onInvite, onDeactivate, onReactivate, canManage],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns non-memoizable functions; React Compiler skips this component intentionally
@@ -256,15 +269,22 @@ export function TeamsTable({
                   </span>
                 </div>
 
-                <div onClick={(event) => event.stopPropagation()}>
-                  {renderActionsMenu(team)}
-                </div>
+                {canManage && (
+                  <div onClick={(event) => event.stopPropagation()}>
+                    {renderActionsMenu(team)}
+                  </div>
+                )}
               </div>
 
               <dl className="mt-4 grid gap-3 border-t border-border pt-4">
                 <CardField
                   label={t("table.col.members")}
                   value={t("team.memberCount", { count: team.memberCount })}
+                  valueClassName="tabular-nums text-muted-foreground"
+                />
+                <CardField
+                  label={t("table.col.monthlyAverage")}
+                  value={t("team.monthlyBookings", { count: team.monthlyAverage ?? 0 })}
                   valueClassName="tabular-nums text-muted-foreground"
                 />
               </dl>

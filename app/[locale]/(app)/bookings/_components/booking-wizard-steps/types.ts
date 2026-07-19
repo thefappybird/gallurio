@@ -12,7 +12,15 @@ export type ShiftHit = {
 
 export type WizardClient =
   | { mode: "existing"; clientId: string; clientName: string }
-  | { mode: "new"; name: string; email?: string | null; phone?: string | null };
+  | {
+      mode: "new";
+      name: string;
+      email?: string | null;
+      phone?: string | null;
+      source?: "form" | "manual" | "referral" | "import";
+      tags?: string[];
+      notes?: string;
+    };
 
 export type WizardSession = {
   /** YYYY-MM-DD (date input format). Combined with startTime at submit. */
@@ -26,7 +34,12 @@ export type WizardSession = {
 };
 
 export type WizardPaymentStatus = "unpaid" | "paid";
-export type WizardPayment = { price: number; status: WizardPaymentStatus; title: string };
+export type WizardPayment = {
+  price: number;
+  status: WizardPaymentStatus;
+  title: string;
+  method?: "cash" | "card" | "remit";
+};
 
 export type WizardValues = {
   client: WizardClient;

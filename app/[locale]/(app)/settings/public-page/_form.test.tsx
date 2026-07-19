@@ -57,7 +57,7 @@ vi.mock("@/lib/storage/cloudflareImages", () => ({
 }));
 
 vi.mock("@/lib/i18n/routing", () => ({
-  routing: { defaultLocale: "en", locales: ["en", "fil", "ms", "id"] },
+  routing: { defaultLocale: "en", locales: ["en", "fil", "id", "th"] },
 }));
 
 vi.mock("next-intl/server", () => ({
@@ -445,7 +445,7 @@ describe("PublicPageSettingsForm — SEO keywords pending recompute after Save",
     expect(updatePublicPageSettingsAction).toHaveBeenCalledWith(
       expect.objectContaining({
         seo: expect.objectContaining({
-          keywords: ["wedding photographer", "editorial"],
+          keywords: ["wedding", "photographer", "editorial"],
         }),
       })
     );
