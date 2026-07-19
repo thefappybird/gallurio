@@ -119,6 +119,16 @@ describe("proxy", () => {
     expect(intlRequest.headers.get("x-url")).toBe("http://localhost/");
   });
 
+  it("bypasses AuthKit and intl for /opengraph-image (root metadata route, not locale-prefixed)", async () => {
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/opengraph-image");
+
+    await proxy(req);
+
+    expect(authMiddlewareMock).not.toHaveBeenCalled();
+    expect(intlMiddlewareMock).not.toHaveBeenCalled();
+  });
+
   it("does not run AuthKit on public localized pages", async () => {
     const { proxy } = await import("./proxy");
     const req = new NextRequest("http://localhost/en/sign-in");

@@ -214,6 +214,13 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
     return NextResponse.next();
   }
 
+  // Platform Open Graph image (root metadata route, not locale-prefixed).
+  // Falling through to intlMiddleware would rewrite it under /[locale] and
+  // 404 — scrapers hitting the bare path need it served as-is.
+  if (pathname === "/opengraph-image") {
+    return NextResponse.next();
+  }
+
   // -------------------------------------------------------------------------
   // 3. Public routes — skip auth check, run intl for locale routing.
   //
