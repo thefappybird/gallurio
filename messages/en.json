@@ -3074,6 +3074,12 @@
         "teamManagement": "Team management",
         "removeBranding": "Remove Gallurio branding"
       }
+    },
+    "beta": {
+      "name": "Beta"
+    },
+    "promo": {
+      "name": "Promo"
     }
   },
   "subscribe": {

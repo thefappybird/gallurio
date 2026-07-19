@@ -3073,6 +3073,12 @@
         "teamManagement": "การจัดการทีม",
         "removeBranding": "ลบแบรนด์ Gallurio ออก"
       }
+    },
+    "beta": {
+      "name": "เบต้า"
+    },
+    "promo": {
+      "name": "โปรโม"
     }
   },
   "subscribe": {

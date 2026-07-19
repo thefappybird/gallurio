@@ -3073,6 +3073,12 @@
         "teamManagement": "إدارة الفِرق",
         "removeBranding": "إزالة علامة Gallurio التجارية"
       }
+    },
+    "beta": {
+      "name": "بيتا"
+    },
+    "promo": {
+      "name": "برومو"
     }
   },
   "subscribe": {

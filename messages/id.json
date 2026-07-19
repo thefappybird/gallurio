@@ -3073,6 +3073,12 @@
         "teamManagement": "Manajemen tim",
         "removeBranding": "Hilangkan branding Gallurio"
       }
+    },
+    "beta": {
+      "name": "Beta"
+    },
+    "promo": {
+      "name": "Promo"
     }
   },
   "subscribe": {

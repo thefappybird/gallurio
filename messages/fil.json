@@ -3073,6 +3073,12 @@
         "teamManagement": "Pamamahala ng teams",
         "removeBranding": "Alisin ang branding ng Gallurio"
       }
+    },
+    "beta": {
+      "name": "Beta"
+    },
+    "promo": {
+      "name": "Promo"
     }
   },
   "subscribe": {
