@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { BrandKitPicker } from "@/lib/page-builder/brandKitPicker/BrandKitPicker";
-import { useThemeEditor } from "@/lib/page-builder/brandKitPicker/useThemeEditor";
+import { useThemeEditor, type ThemeNameError } from "@/lib/page-builder/brandKitPicker/useThemeEditor";
 import { ConfirmDialog } from "@/lib/page-builder/brandKitPicker/ConfirmDialog";
+import { brandKitsEqualForSelection } from "@/lib/page-builder/brandKitPicker/themeTiles";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import {
   type PortfolioBrandKit,
@@ -25,6 +26,13 @@ import {
   deleteThemeAction,
   updateThemeAction,
 } from "../_actions";
+
+const THEME_NAME_ERROR_KEYS: Record<ThemeNameError, string> = {
+  required: "enterThemeName",
+  tooLong: "nameTooLong",
+  duplicate: "themeNameExists",
+  saveFailed: "saveThemeError",
+};
 
 type Props = {
   open: boolean;
@@ -54,7 +62,45 @@ export function ThemePanelDialog({
   const tk = useTranslations("app.pageBuilder.brandKit");
   const errMsg = useActionError();
   const [closeGuardOpen, setCloseGuardOpen] = useState(false);
+  const [kitGuardOpen, setKitGuardOpen] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [panelError, setPanelError] = useState<string | null>(null);
+
+  // Snapshot of the brand kit as it was when the dialog opened, so any
+  // unapplied edit (including just picking a different theme tile, which
+  // doesn't set editDiff/hasUnsavedCurrent) can be detected and guarded on
+  // close, and reverted on demand. Re-captured every time `open` flips true
+  // (render-time state adjust, not an effect — the component stays mounted
+  // across opens).
+  const [openSnapshot, setOpenSnapshot] = useState<PortfolioBrandKit>(brandKit);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setOpenSnapshot(brandKit);
+      setPanelError(null);
+    }
+  }
+  const brandKitDirty = !brandKitsEqualForSelection(brandKit, openSnapshot);
+
+  function themeNameErrMsg(code: ThemeNameError | null): string | null {
+    return code ? tk(THEME_NAME_ERROR_KEYS[code]) : null;
+  }
+
+  /** Reverts whatever draft/edit/plain-selection state is active back to a
+   *  settled kit — used by both the close guard and the footer's "Discard
+   *  changes" button. */
+  function discardWorkingChanges() {
+    if (controller.editDiff) {
+      controller.discardEdit();
+      return;
+    }
+    if (controller.hasUnsavedCurrent) {
+      controller.discardCurrentTheme();
+      return;
+    }
+    onBrandKitChange(openSnapshot);
+  }
 
   const onSaveTheme = async (name: string) => {
     const res = await saveThemeAction(name, brandKit);
@@ -83,11 +129,17 @@ export function ThemePanelDialog({
     return true;
   }
 
+  async function saveCurrentThemeGuarded(): Promise<boolean> {
+    const ok = await controller.saveCurrentTheme();
+    setPanelError(ok ? null : themeNameErrMsg(controller.currentThemeNameError));
+    return ok;
+  }
+
   async function apply() {
     setApplying(true);
     try {
       if (controller.hasUnsavedCurrent) {
-        const ok = await controller.saveCurrentTheme();
+        const ok = await saveCurrentThemeGuarded();
         if (!ok) return;
       }
       persistPage();
@@ -99,10 +151,13 @@ export function ThemePanelDialog({
   async function handleDeleteTheme(id: string) {
     const previous = savedThemes;
     onSavedThemesChange(previous.filter((s) => s.id !== id));
+    setPanelError(null);
     const res = await deleteThemeAction(id);
     if ("error" in res) {
       onSavedThemesChange(previous);
-      toast.error(errMsg("theme_delete_failed"));
+      const msg = errMsg("theme_delete_failed");
+      toast.error(msg);
+      setPanelError(msg);
     }
   }
 
@@ -110,12 +165,17 @@ export function ThemePanelDialog({
     if (controller.editDiff) {
       controller.requestExit(() => {
         if (controller.hasUnsavedCurrent) setCloseGuardOpen(true);
+        else if (brandKitDirty) setKitGuardOpen(true);
         else onCancel();
       });
       return;
     }
     if (controller.hasUnsavedCurrent) {
       setCloseGuardOpen(true);
+      return;
+    }
+    if (brandKitDirty) {
+      setKitGuardOpen(true);
       return;
     }
     onCancel();
@@ -140,13 +200,38 @@ export function ThemePanelDialog({
               onAddNew={() => controller.requestAddNew()}
             />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={attemptClose} disabled={applying}>
-              {t("publishDialog.cancel")}
-            </Button>
-            <Button type="button" loading={applying} onClick={() => void apply()}>
-              {tk("applyAction")}
-            </Button>
+          {panelError && (
+            <p role="alert" className="px-1 text-xs text-destructive">
+              {panelError}
+            </p>
+          )}
+          <DialogFooter className="sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {controller.hasUnsavedCurrent && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-label="Save theme (current draft)"
+                  onClick={() => void saveCurrentThemeGuarded()}
+                  disabled={applying}
+                >
+                  {tk("saveThemeName")}
+                </Button>
+              )}
+              {(controller.hasUnsavedCurrent || controller.editDiff || brandKitDirty) && (
+                <Button type="button" variant="outline" onClick={discardWorkingChanges} disabled={applying}>
+                  {tk("discardAction")}
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={attemptClose} disabled={applying}>
+                {t("publishDialog.cancel")}
+              </Button>
+              <Button type="button" loading={applying} onClick={() => void apply()}>
+                {tk("applyAction")}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -159,10 +244,23 @@ export function ThemePanelDialog({
         cancelLabel={tk("discardAction")}
         onConfirm={async () => {
           setCloseGuardOpen(false);
-          const ok = await controller.saveCurrentTheme();
+          const ok = await saveCurrentThemeGuarded();
           if (ok) persistPage();
         }}
         onCancel={() => { setCloseGuardOpen(false); onCancel(); }}
+      />
+
+      {/* Guards closing when the working brand kit diverged from the snapshot
+          taken on open (e.g. a theme tile was picked) without editDiff/
+          hasUnsavedCurrent already covering it — avoids double-prompting. */}
+      <ConfirmDialog
+        open={kitGuardOpen}
+        title={tk("unsavedChangesTitle")}
+        body={tk("unsavedChangesBody")}
+        confirmLabel={tk("applyAction")}
+        cancelLabel={tk("discardAction")}
+        onConfirm={() => { setKitGuardOpen(false); persistPage(); }}
+        onCancel={() => { setKitGuardOpen(false); discardWorkingChanges(); onCancel(); }}
       />
 
       <UnsavedChangesDialog
