@@ -238,6 +238,17 @@ describe("TextBlock", () => {
 // ---------------------------------------------------------------------------
 
 describe("ImageBlock — no image", () => {
+  beforeEach(() => {
+    // CI sets NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH globally for the whole job
+    // (build/typecheck steps need it); stub it unset here so this describe's
+    // "no cloud name configured" behavior is deterministic regardless of the
+    // ambient environment.
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("renders the 'Pick an image' placeholder when no background image is set", () => {
     render(<ImageBlock alt="" />);
     expect(screen.getByText(/Pick an image/i)).toBeTruthy();
@@ -249,7 +260,7 @@ describe("ImageBlock — no image", () => {
   });
 
   it("falls back to the placeholder when bgImagePublicId is set but cloud name is unset (test env)", () => {
-    // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is not set in test env → bgImageUrl returns null,
+    // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is unset → bgImageUrl returns null,
     // so resolveBlockStyle never sets backgroundImage and hasImage stays false.
     render(<ImageBlock alt="" _style={{ bgImagePublicId: "gallurio/ws/img.jpg" }} />);
     expect(screen.getByText(/Pick an image/i)).toBeTruthy();
