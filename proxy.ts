@@ -1,6 +1,6 @@
 import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
-import type { NextRequest, NextMiddleware } from "next/server";
-import { NextResponse } from "next/server";
+import type { NextMiddleware } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 // NextMiddlewareResult is the resolved return type of a NextMiddleware function.
 type NextMiddlewareResult = Awaited<ReturnType<NextMiddleware>>;
@@ -117,6 +117,36 @@ function publicOrigin(req: NextRequest): string {
     }
   }
   return req.nextUrl.origin;
+}
+
+/**
+ * Reconstruct the request that AuthKit passes downstream via Next's internal
+ * middleware-header protocol. Passing this enriched request to next-intl is
+ * essential: next-intl creates a new `NextResponse.next({ request })`, and
+ * doing that from the original request drops AuthKit's `x-workos-middleware`
+ * marker. `withAuth()` then rejects the rendered page even though AuthKit did
+ * run in this proxy.
+ */
+function requestWithAuthkitHeaders(
+  req: NextRequest,
+  authResponse: Response | NextMiddlewareResult,
+): NextRequest {
+  const headers = new Headers(req.headers);
+  const overridden = (authResponse as Response).headers.get(
+    "x-middleware-override-headers",
+  );
+
+  if (overridden) {
+    for (const name of overridden.split(",").map((value) => value.trim()).filter(Boolean)) {
+      const value = (authResponse as Response).headers.get(
+        `x-middleware-request-${name}`,
+      );
+      if (value === null) headers.delete(name);
+      else headers.set(name, value);
+    }
+  }
+
+  return new NextRequest(req, { headers });
 }
 
 // ---------------------------------------------------------------------------
@@ -259,8 +289,12 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
     return authResponse as NextMiddlewareResult;
   }
 
-  // Authenticated — run intl middleware for locale routing.
-  const intlResponse = intlMiddleware(req);
+  // Run next-intl with AuthKit's enriched request. Calling it with `req`
+  // would rebuild the internal request-header manifest without AuthKit's
+  // context, causing getAuthUser()/withAuth() to fail in the rendered page.
+  const intlResponse = intlMiddleware(
+    authResponse ? requestWithAuthkitHeaders(req, authResponse) : req,
+  );
 
   // Merge any session-refresh headers from authkit into the intl response.
   //
