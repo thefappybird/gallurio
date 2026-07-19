@@ -321,6 +321,45 @@ describe("proxy", () => {
         expect(response.headers.get("location")).toBe("https://banaag.gallurio.com/");
       }));
 
+    it("still 301-redirects a valid multi-part slug like banaag-studio", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/w/banaag-studio", {
+          headers: { host: "gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.status).toBe(301);
+        expect(response.headers.get("location")).toBe("https://banaag-studio.gallurio.com/");
+      }));
+
+    it("does not 301-redirect an adversarial /w/ path segment that could hijack the redirect host (open redirect)", () =>
+      withBaseDomain(async () => {
+        const adversarial = [
+          "/w/evil.com:1/foo",
+          "/w/evil.com:80/foo",
+          "/w/..",
+          "/w/%2e%2e",
+          "/w/a%2fb",
+        ];
+        for (const path of adversarial) {
+          const { proxy } = await import("./proxy");
+          const req = new NextRequest(`http://localhost${path}`, {
+            headers: { host: "gallurio.com" },
+          });
+
+          const response = (await proxy(req)) as Response;
+
+          expect(response.status, `path ${path}`).not.toBe(301);
+          const location = response.headers.get("location");
+          if (location) {
+            const host = new URL(location).host;
+            expect(host.endsWith(".gallurio.com"), `path ${path} location host ${host}`).toBe(true);
+          }
+        }
+      }));
+
     it("does not loop: a tenant subdomain requesting a literal /w/ path falls to the existing /w/ bypass", () =>
       withBaseDomain(async () => {
         const { proxy } = await import("./proxy");

@@ -9,6 +9,7 @@ import { routing } from "@/lib/i18n/routing";
 import { LOCALE_PREFIX_RE, stripLocale } from "@/lib/auth/memberAccess";
 import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
+import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
 
 // ---------------------------------------------------------------------------
 // NOTE: Role-based redirects (non-owner to /bookings, root to role landing)
@@ -228,7 +229,16 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
         // the subdomain. Never fires on a subdomain host (see else-branch),
         // so it cannot loop with the rewrite below.
         const canonicalMatch = pathname.match(/^\/w\/([^/]+)(\/.*)?$/);
-        if (canonicalMatch && !isReservedSlug(canonicalMatch[1])) {
+        // The captured segment becomes the redirect target's host label below.
+        // It must be validated against the workspace slug grammar first —
+        // otherwise an attacker-controlled value containing ":" (e.g.
+        // "evil.com:1") makes the host-setter drop the ".{base}" suffix,
+        // turning this into an open redirect off the trusted apex.
+        if (
+          canonicalMatch &&
+          WORKSPACE_SLUG_RE.test(canonicalMatch[1]) &&
+          !isReservedSlug(canonicalMatch[1])
+        ) {
           const redirectUrl = req.nextUrl.clone();
           redirectUrl.protocol = "https:";
           redirectUrl.host = `${canonicalMatch[1]}.${base}`;

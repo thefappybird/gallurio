@@ -1,12 +1,19 @@
 import { z } from "zod";
 import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
 
+// Single source of truth for the workspace-slug grammar. Reused by proxy.ts to
+// validate the `/w/{slug}` path segment before treating it as a redirect
+// target host label (see the canonical-host redirect open-redirect guard).
+export const WORKSPACE_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 export const slugSchema = z
   .string()
   .min(3, "At least 3 characters")
   .max(50, "At most 50 characters")
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Lowercase letters, numbers, and hyphens only")
-  .refine((s) => !isReservedSlug(s), { message: "reserved" });
+  .regex(WORKSPACE_SLUG_RE, "Lowercase letters, numbers, and hyphens only")
+  .refine((s) => !isReservedSlug(s), {
+    message: "That address is reserved. Choose another.",
+  });
 
 export const BUSINESS_TYPE_VALUES = [
   "photographer",
