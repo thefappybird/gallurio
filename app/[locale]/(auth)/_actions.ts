@@ -249,6 +249,7 @@ export async function signInAction(
     };
   }
 
+  let user: { memberships: { role: "owner" | "staff" }[]; onboardingCompletedAt?: Date | null };
   try {
     const response = await workos.userManagement.authenticateWithPassword({
       clientId: getClientId(),
@@ -267,7 +268,7 @@ export async function signInAction(
     });
 
     // JIT provision the user
-    const user = await ensureUser({
+    user = await ensureUser({
       workosUserId: response.user.id,
       email: response.user.email,
       name: [response.user.firstName, response.user.lastName]
@@ -275,7 +276,6 @@ export async function signInAction(
         .join(" "),
       avatarUrl: response.user.profilePictureUrl ?? null,
     });
-    return postAuthRedirect(locale, user, returnTo);
   } catch (err) {
     if (err instanceof AuthenticationException) {
       if (
@@ -330,7 +330,9 @@ export async function signInAction(
     return { error: t("errors.generic") };
   }
 
-  return { error: t("errors.generic") };
+  // redirect() throws a NEXT_REDIRECT control-flow signal. Keep it outside the
+  // authentication catch so a successful sign-in is never reported as a 500.
+  return postAuthRedirect(locale, user, returnTo);
 }
 
 // ---------------------------------------------------------------------------
@@ -388,6 +390,7 @@ export async function signUpAction(
     };
   }
 
+  let user: { memberships: { role: "owner" | "staff" }[]; onboardingCompletedAt?: Date | null };
   try {
     await workos.userManagement.createUser({
       email,
@@ -413,7 +416,7 @@ export async function signUpAction(
       maxAge: 34_560_000,
     });
 
-    const user = await ensureUser({
+    user = await ensureUser({
       workosUserId: response.user.id,
       email: response.user.email,
       name: [response.user.firstName, response.user.lastName]
@@ -421,7 +424,6 @@ export async function signUpAction(
         .join(" "),
       avatarUrl: response.user.profilePictureUrl ?? null,
     });
-    return postAuthRedirect(locale, user);
   } catch (err) {
     if (err instanceof AuthenticationException) {
       if (err.code === "email_verification_required") {
@@ -440,7 +442,9 @@ export async function signUpAction(
     return { error: t("errors.generic") };
   }
 
-  return { error: t("errors.generic") };
+  // See signInAction: Next redirects must not be caught as authentication
+  // failures after WorkOS has already created the account and session.
+  return postAuthRedirect(locale, user);
 }
 
 // ---------------------------------------------------------------------------
@@ -580,6 +584,7 @@ export async function verifyEmailAction(
   }
   const jar = await cookies();
 
+  let user: { memberships: { role: "owner" | "staff" }[]; onboardingCompletedAt?: Date | null };
   try {
     const response =
       await workos.userManagement.authenticateWithEmailVerification({
@@ -599,7 +604,7 @@ export async function verifyEmailAction(
 
     jar.delete(EMAIL_VERIFICATION_PENDING_COOKIE);
 
-    const user = await ensureUser({
+    user = await ensureUser({
       workosUserId: response.user.id,
       email: response.user.email,
       name: [response.user.firstName, response.user.lastName]
@@ -607,13 +612,12 @@ export async function verifyEmailAction(
         .join(" "),
       avatarUrl: response.user.profilePictureUrl ?? null,
     });
-    return postAuthRedirect(locale, user);
   } catch (err) {
     console.error("[verifyEmailAction]", err);
     return { error: t("errors.invalidCode") };
   }
 
-  return { error: t("errors.invalidCode") };
+  return postAuthRedirect(locale, user);
 }
 
 export async function resendVerificationEmailAction(
@@ -710,6 +714,7 @@ export async function mfaChallengeAction(
     return { error: t("errors.sessionExpired") };
   }
 
+  let user: { memberships: { role: "owner" | "staff" }[]; onboardingCompletedAt?: Date | null };
   try {
     const response = await workos.userManagement.authenticateWithTotp({
       clientId: getClientId(),
@@ -729,7 +734,7 @@ export async function mfaChallengeAction(
 
     jar.delete(MFA_PENDING_COOKIE);
 
-    const user = await ensureUser({
+    user = await ensureUser({
       workosUserId: response.user.id,
       email: response.user.email,
       name: [response.user.firstName, response.user.lastName]
@@ -737,13 +742,12 @@ export async function mfaChallengeAction(
         .join(" "),
       avatarUrl: response.user.profilePictureUrl ?? null,
     });
-    return postAuthRedirect(locale, user);
   } catch (err) {
     console.error("[mfaChallengeAction]", err);
     return { error: t("errors.invalidCode") };
   }
 
-  return { error: t("errors.invalidCode") };
+  return postAuthRedirect(locale, user);
 }
 
 // ---------------------------------------------------------------------------
