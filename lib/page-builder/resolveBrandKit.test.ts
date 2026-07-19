@@ -22,11 +22,12 @@ function kit(overrides: Partial<PortfolioBrandKit> = {}): PortfolioBrandKit {
 // ---------------------------------------------------------------------------
 
 describe("resolveBrandKit — CSS variable keys", () => {
-  it("all returned keys are --pf-* prefixed", () => {
+  it("all returned keys are --pf-* prefixed (except the colorScheme hint)", () => {
     const { cssVars } = resolveBrandKit(DEFAULT_BRAND_KIT);
     const keys = Object.keys(cssVars);
     expect(keys.length).toBeGreaterThan(0);
     for (const key of keys) {
+      if (key === "colorScheme") continue;
       expect(key).toMatch(/^--pf-/);
     }
   });
@@ -262,4 +263,30 @@ describe("resolveBrandKit — permutation table", () => {
       expect(className).toBe(expectedClassName);
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// color-scheme derived from background luminance
+// ---------------------------------------------------------------------------
+
+describe("resolveBrandKit — color-scheme", () => {
+  it("dark background → color-scheme dark", () => {
+    const { cssVars } = resolveBrandKit(kit({ backgroundColor: "#0d0d0d" }));
+    expect(cssVars.colorScheme).toBe("dark");
+  });
+
+  it("light background → color-scheme light", () => {
+    const { cssVars } = resolveBrandKit(kit({ backgroundColor: "#fefefe" }));
+    expect(cssVars.colorScheme).toBe("light");
+  });
+
+  it("malformed background → falls back to light", () => {
+    const { cssVars } = resolveBrandKit(kit({ backgroundColor: "not-a-hex" }));
+    expect(cssVars.colorScheme).toBe("light");
+  });
+
+  it("colorScheme key is always present", () => {
+    const { cssVars } = resolveBrandKit(DEFAULT_BRAND_KIT);
+    expect(cssVars).toHaveProperty("colorScheme");
+  });
 });
