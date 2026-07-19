@@ -57,6 +57,43 @@ describe("businessStepSchema", () => {
     expect(businessStepSchema.safeParse(validBusiness).success).toBe(true);
   });
 
+  it("accepts businessType artists", () => {
+    expect(
+      businessStepSchema.safeParse({ ...validBusiness, businessType: "artists" }).success
+    ).toBe(true);
+  });
+
+  it("accepts businessType other with a valid businessTypeOther", () => {
+    const parsed = businessStepSchema.safeParse({
+      ...validBusiness,
+      businessType: "other",
+      businessTypeOther: "tattoo studio",
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.businessTypeOther).toBe("tattoo studio");
+  });
+
+  it("rejects businessType other with an empty businessTypeOther", () => {
+    const parsed = businessStepSchema.safeParse({
+      ...validBusiness,
+      businessType: "other",
+      businessTypeOther: "",
+    });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues[0]?.path).toEqual(["businessTypeOther"]);
+    }
+  });
+
+  it("accepts a non-other businessType with an empty businessTypeOther", () => {
+    const parsed = businessStepSchema.safeParse({
+      ...validBusiness,
+      businessType: "photographer",
+      businessTypeOther: "",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
   it("trims firstName and name", () => {
     const parsed = businessStepSchema.safeParse({
       ...validBusiness,
@@ -183,6 +220,45 @@ describe("updateWorkspaceBusinessSchema", () => {
     const { currency: _omit, ...rest } = validUpdateBusiness;
     void _omit;
     expect(updateWorkspaceBusinessSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("rejects businessType other with an empty businessTypeOther", () => {
+    const bad = updateWorkspaceBusinessSchema.safeParse({
+      ...validUpdateBusiness,
+      businessType: "other",
+      businessTypeOther: "",
+    });
+    expect(bad.success).toBe(false);
+    if (!bad.success) {
+      expect(bad.error.issues[0]?.path).toEqual(["businessTypeOther"]);
+    }
+  });
+
+  it("accepts businessType artists", () => {
+    expect(
+      updateWorkspaceBusinessSchema.safeParse({ ...validUpdateBusiness, businessType: "artists" })
+        .success
+    ).toBe(true);
+  });
+
+  it("accepts businessType other with a valid businessTypeOther", () => {
+    const ok = updateWorkspaceBusinessSchema.safeParse({
+      ...validUpdateBusiness,
+      businessType: "other",
+      businessTypeOther: "tattoo studio",
+    });
+    expect(ok.success).toBe(true);
+    if (ok.success) expect(ok.data.businessTypeOther).toBe("tattoo studio");
+  });
+
+  it("accepts a non-other businessType with an empty businessTypeOther", () => {
+    expect(
+      updateWorkspaceBusinessSchema.safeParse({
+        ...validUpdateBusiness,
+        businessType: "photographer",
+        businessTypeOther: "",
+      }).success
+    ).toBe(true);
   });
 
   it("rejects an unsupported country", () => {
