@@ -4,13 +4,33 @@
  */
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
-import { renderWithProviders } from "@/test-utils/render";
+import { renderWithProviders, enMessages } from "@/test-utils/render";
 import { BusinessStepForm } from "./business-form";
 import type { BusinessStepInput } from "@/lib/validators/workspace";
 
-const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
+// businessTypes.artists / businessTypeOtherLabel / businessTypeOtherPlaceholder
+// are new locale keys not yet landed in messages/*.json (frontend agents don't
+// edit locale files) — overlay them here so the component's real t() calls
+// resolve during the test. See PR report for the exact keys to add.
+const messagesWithArtists = {
+  ...enMessages,
+  onboarding: {
+    ...enMessages.onboarding,
+    business: {
+      ...enMessages.onboarding.business,
+      businessTypes: {
+        ...enMessages.onboarding.business.businessTypes,
+        artists: "Artists",
+      },
+      businessTypeOtherLabel: "What kind of business?",
+      businessTypeOtherPlaceholder: "e.g. Tattoo studio, DJ, florist",
+    },
+  },
+};
+
+const { mockPush, mockRefresh } = vi.hoisted(() => ({ mockPush: vi.fn(), mockRefresh: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
 }));
 
 vi.mock("@/lib/actions/onboarding", () => ({
@@ -22,6 +42,7 @@ const defaults: BusinessStepInput = {
   lastName: "Bell",
   name: "Sarah Bell Photography",
   businessType: "photographer",
+  businessTypeOther: "",
 };
 
 beforeEach(() => {
@@ -33,7 +54,8 @@ function renderForm(
   furthestStep: "business" | "workspace" | "plan" | "done" = "business"
 ) {
   return renderWithProviders(
-    <BusinessStepForm defaults={{ ...defaults, ...overrides }} furthestStep={furthestStep} />
+    <BusinessStepForm defaults={{ ...defaults, ...overrides }} furthestStep={furthestStep} />,
+    { messages: messagesWithArtists }
   );
 }
 
@@ -70,6 +92,32 @@ describe("BusinessStepForm — business type icon grid", () => {
   });
 });
 
+describe("BusinessStepForm — artists type + other free text", () => {
+  it("renders an Artists tile that selects businessType 'artists' on click", () => {
+    renderForm();
+
+    const artistsCard = screen.getByRole("button", { name: /artists/i });
+    fireEvent.click(artistsCard);
+
+    expect(artistsCard).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("shows the free-text 'other' input only when 'other' is selected, and surfaces the required error", async () => {
+    renderForm();
+
+    expect(screen.queryByLabelText(/what kind of business/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^other$/i }));
+
+    const otherInput = screen.getByLabelText(/what kind of business/i);
+    expect(otherInput).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(await screen.findByText(/tell us your business type/i)).toBeInTheDocument();
+  });
+});
+
 describe("BusinessStepForm — submit navigation", () => {
   it("navigates to /onboarding/workspace after a successful submit", async () => {
     const { businessStepAction } = await import("@/lib/actions/onboarding");
@@ -93,5 +141,16 @@ describe("BusinessStepForm — submit navigation", () => {
       expect(mockPush).toHaveBeenCalledWith("/onboarding/workspace");
     });
     expect(businessStepAction).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the router cache before navigating on a successful submit, so Back shows saved input", async () => {
+    renderForm();
+
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    await vi.waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/onboarding/workspace");
+    });
+    expect(mockRefresh).toHaveBeenCalled();
   });
 });

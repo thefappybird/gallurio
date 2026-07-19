@@ -91,6 +91,7 @@ export function WorkspaceBusinessForm({
   const slugValue = useWatch({ control, name: "slug" });
   const { status: slugStatus } = useSlugAvailability(slugValue, defaults.slug);
   const logoUrl = watch("logoUrl");
+  const businessTypeValue = watch("businessType");
 
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoDragActive, setLogoDragActive] = useState(false);
@@ -209,12 +210,27 @@ export function WorkspaceBusinessForm({
               <option value="stylist">{tOnb("businessTypes.stylist")}</option>
               <option value="catering">{tOnb("businessTypes.catering")}</option>
               <option value="entertainer">{tOnb("businessTypes.entertainer")}</option>
+              <option value="artists">{tOnb("businessTypes.artists")}</option>
               <option value="other">{tOnb("businessTypes.other")}</option>
             </select>
             {errors.businessType && (
               <p className="text-sm text-destructive">{errors.businessType.message}</p>
             )}
           </div>
+
+          {businessTypeValue === "other" && (
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <Label htmlFor="businessTypeOther">{tOnb("businessTypeOtherLabel")}</Label>
+              <Input
+                id="businessTypeOther"
+                placeholder={tOnb("businessTypeOtherPlaceholder")}
+                {...register("businessTypeOther")}
+              />
+              {errors.businessTypeOther && (
+                <p className="text-sm text-destructive">{errors.businessTypeOther.message}</p>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="country">{tOnb("country")}</Label>

@@ -13,6 +13,7 @@ import {
   Scissors,
   UtensilsCrossed,
   Music,
+  Palette,
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -63,6 +64,7 @@ export function BusinessStepForm({
       toast.error(errMsg(result.error));
       return;
     }
+    router.refresh();
     startTransition(() => router.push("/onboarding/workspace"));
   }
 
@@ -73,6 +75,7 @@ export function BusinessStepForm({
     { value: "stylist", label: t("businessTypes.stylist"), icon: Scissors },
     { value: "catering", label: t("businessTypes.catering"), icon: UtensilsCrossed },
     { value: "entertainer", label: t("businessTypes.entertainer"), icon: Music },
+    { value: "artists", label: t("businessTypes.artists"), icon: Palette },
     { value: "other", label: t("businessTypes.other"), icon: Sparkles },
   ] as const;
 
@@ -162,6 +165,20 @@ export function BusinessStepForm({
             <p className="text-sm text-destructive">{errors.businessType.message}</p>
           )}
         </div>
+
+        {businessTypeValue === "other" && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="businessTypeOther">{t("businessTypeOtherLabel")}</Label>
+            <Input
+              id="businessTypeOther"
+              placeholder={t("businessTypeOtherPlaceholder")}
+              {...register("businessTypeOther")}
+            />
+            {errors.businessTypeOther && (
+              <p className="text-sm text-destructive">{errors.businessTypeOther.message}</p>
+            )}
+          </div>
+        )}
 
       </form>
     </StepShell>

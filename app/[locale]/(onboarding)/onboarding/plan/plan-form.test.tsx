@@ -14,12 +14,13 @@ import { screen, fireEvent, waitFor, act, within } from "@testing-library/react"
 import { renderWithProviders } from "@/test-utils/render";
 import { PlanStepForm } from "./plan-form";
 
-const { mockRouterPush } = vi.hoisted(() => ({
+const { mockRouterPush, mockRouterRefresh } = vi.hoisted(() => ({
   mockRouterPush: vi.fn(),
+  mockRouterRefresh: vi.fn(),
 }));
 
 vi.mock("@/lib/i18n/navigation", () => ({
-  useRouter: () => ({ push: mockRouterPush }),
+  useRouter: () => ({ push: mockRouterPush, refresh: mockRouterRefresh }),
 }));
 
 // ── Server action mocks ────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ beforeEach(() => {
   urlOpenMock.mockReset();
   createLemonSqueezyMock.mockReset();
   mockRouterPush.mockReset();
+  mockRouterRefresh.mockReset();
 
   window.createLemonSqueezy = createLemonSqueezyMock.mockImplementation(() => {
     window.LemonSqueezy = {
@@ -222,6 +224,18 @@ describe("PlanStepForm — free plan submission", () => {
     });
   });
 
+  it("refreshes the router cache before navigating on a successful free-plan submit", async () => {
+    renderForm({ currentPlan: "free" });
+
+    const cta = screen.getByRole("button", { name: /free month/i });
+    fireEvent.click(cta);
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
+    });
+    expect(mockRouterRefresh).toHaveBeenCalled();
+  });
+
   it("skips saving and continues when a completed plan step is unchanged", async () => {
     const { selectFreePlanAction } = await import("@/lib/actions/onboarding");
 
@@ -234,6 +248,41 @@ describe("PlanStepForm — free plan submission", () => {
       expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
     });
     expect(selectFreePlanAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("PlanStepForm — Lemon Squeezy checkout success", () => {
+  it("refreshes the router cache before navigating on a Checkout.Success event", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        checkoutUrl: "https://gallurio.lemonsqueezy.com/checkout/custom/abc123",
+        workspaceId: "ws_abc",
+      }),
+    });
+
+    renderForm({ currentPlan: "pro" });
+
+    await waitFor(() => {
+      expect(createLemonSqueezyMock).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /subscribe/i }));
+
+    await waitFor(() => {
+      expect(window.LemonSqueezy?.Setup).toHaveBeenCalled();
+    });
+    const setupMock = window.LemonSqueezy!.Setup as ReturnType<typeof vi.fn>;
+    const eventHandler = setupMock.mock.calls[0][0].eventHandler;
+
+    act(() => {
+      eventHandler({ event: "Checkout.Success" });
+    });
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
+    });
+    expect(mockRouterRefresh).toHaveBeenCalled();
   });
 });
 
@@ -372,6 +421,18 @@ describe("PlanStepForm — beta tester activation", () => {
       expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
     });
   });
+
+  it("refreshes the router cache before navigating on a successful beta activation", async () => {
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
+
+    const betaBtn = screen.getByRole("button", { name: /activate beta access/i });
+    fireEvent.click(betaBtn);
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
+    });
+    expect(mockRouterRefresh).toHaveBeenCalled();
+  });
 });
 
 describe("PlanStepForm — promo code redemption", () => {
@@ -432,6 +493,20 @@ describe("PlanStepForm — promo code redemption", () => {
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
     });
+  });
+
+  it("refreshes the router cache before navigating on a successful promo redemption", async () => {
+    renderForm();
+    fireEvent.click(screen.getAllByRole("button", { name: /have a promo code/i })[0]);
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "SAVE20" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith("/onboarding/done");
+    });
+    expect(mockRouterRefresh).toHaveBeenCalled();
   });
 
   it("shows the translated error message and does not redirect when the code is invalid", async () => {

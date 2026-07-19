@@ -84,6 +84,7 @@ export default async function SettingsCatchallPage({
     slug: workspace.slug,
     businessType:
       workspace.businessType as UpdateWorkspaceBusinessInput["businessType"],
+    businessTypeOther: workspace.businessTypeOther ?? "",
     country: (workspace.country ?? "PH") as SupportedCountry,
     currency: workspace.currency as SupportedCurrency,
     timezone: workspace.timezone ?? "Asia/Manila",

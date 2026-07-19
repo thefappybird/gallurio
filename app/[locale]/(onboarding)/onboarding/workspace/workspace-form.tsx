@@ -88,6 +88,7 @@ export function WorkspaceStepForm({
       toast.error(errMsg(result.error));
       return;
     }
+    router.refresh();
     startTransition(() => router.push("/onboarding/plan"));
   }
 

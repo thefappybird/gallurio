@@ -8,9 +8,9 @@ import { renderWithProviders } from "@/test-utils/render";
 import { WorkspaceStepForm } from "./workspace-form";
 import type { WorkspaceSetupInput } from "@/lib/validators/workspace";
 
-const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
+const { mockPush, mockRefresh } = vi.hoisted(() => ({ mockPush: vi.fn(), mockRefresh: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
 }));
 
 vi.mock("@/lib/actions/onboarding", () => ({
@@ -87,5 +87,16 @@ describe("WorkspaceStepForm", () => {
   it("checks the auto-generated slug when the step opens", () => {
     renderForm();
     expect(mockUseSlugAvailability).toHaveBeenCalledWith(defaults.slug);
+  });
+
+  it("refreshes the router cache before navigating on a successful submit, so Back shows saved input", async () => {
+    renderForm();
+
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    await vi.waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/onboarding/plan");
+    });
+    expect(mockRefresh).toHaveBeenCalled();
   });
 });
