@@ -24,6 +24,8 @@ const intlMiddleware = createIntlMiddleware(routing);
 const UNAUTHENTICATED_PATHS = [
   // Marketing / public
   "/",
+  // Platform social card. Scrapers do not have an AuthKit session.
+  "/opengraph-image",
   // Locale-prefixed roots ("/en", "/ar", "/fil", ...). The root is routed
   // through authkit (so the landing page can read the session and redirect
   // signed-in visitors), so authkit must see these as public — otherwise it
