@@ -316,10 +316,20 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   // never overwrite live published config with null.
   if (doc.brandKit) set["publicPage.brandKit"] = doc.brandKit;
   if (doc.contact) set["publicPage.contact"] = doc.contact;
-  if (doc.header) {
-    const settingsDraftLogo = workspace?.publicPage?.settingsDraft?.logo;
-    set["publicPage.header"] = settingsDraftLogo?.assetId
-      ? { ...doc.header, logoUrl: settingsDraftLogo.url ?? "", logoAssetId: settingsDraftLogo.assetId }
+  // The staged settings-page logo (if any) is the source of truth for the
+  // published header logo, independent of whether the draft snapshot itself
+  // carries a header object — a null/migrated draft.header must not cause
+  // publish to skip promoting a staged logo (or clearing a removed one), and
+  // must not leave the leak-safe delete below computing against a value that
+  // was never actually written.
+  const settingsDraftLogo = workspace?.publicPage?.settingsDraft?.logo;
+  if (doc.header || settingsDraftLogo) {
+    set["publicPage.header"] = settingsDraftLogo
+      ? {
+          ...(doc.header ?? {}),
+          logoUrl: settingsDraftLogo.assetId ? settingsDraftLogo.url ?? "" : "",
+          logoAssetId: settingsDraftLogo.assetId ?? "",
+        }
       : doc.header;
   }
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
