@@ -61,30 +61,14 @@ export const bookingSessionSchema = z
   .refine((s) => s.endAt.getTime() >= s.startAt.getTime(), {
     message: "Session end must be on or after session start",
     path: ["endAt"],
-  })
-  .refine(
-    (s) => {
-      // Best-effort UTC-day check: a cheap sanity guard for callers that do not
-      // have workspace timezone context (e.g. unit tests, CSV import pre-check).
-      // This catches the obvious "next-calendar-day in UTC" cases early.
-      //
-      // NOTE: this check is NOT the authoritative single-day enforcer.
-      // Route handlers that know the workspace timezone MUST also call
-      // `sessionsAreSameDayInTz` from `lib/bookings/session-validation.ts`,
-      // which is the authoritative tz-aware check.  Without it, a Philippines
-      // (UTC+8) booking of 21:00→02:00 wall-time passes this UTC check because
-      // it maps to 13:00→18:00 UTC same day.
-      return (
-        s.startAt.getUTCFullYear() === s.endAt.getUTCFullYear() &&
-        s.startAt.getUTCMonth() === s.endAt.getUTCMonth() &&
-        s.startAt.getUTCDate() === s.endAt.getUTCDate()
-      );
-    },
-    {
-      message: "Session cannot span midnight",
-      path: ["endAt"],
-    }
-  );
+  });
+// NOTE: no UTC-day / same-day refine here. A cheap UTC-day check false-rejects
+// legitimate same-workspace-day sessions that cross UTC midnight in
+// positive-offset zones (e.g. Asia/Manila, UTC+8: 2026-07-19T22:00Z ->
+// 2026-07-20T02:00Z is 06:00-10:00 PHT, one workspace day). Same-day
+// enforcement is the job of the tz-aware `sessionsAreSameDayInTz` in
+// lib/bookings/session-validation.ts, which every real caller (POST/PATCH
+// /api/bookings, CSV import) already calls after this schema parses.
 export type BookingSessionInput = z.infer<typeof bookingSessionSchema>;
 
 export const bookingCreateSchema = z.object({
