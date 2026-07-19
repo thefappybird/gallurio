@@ -1462,6 +1462,20 @@
           "image": "Hindi mabasa ang larawan. Subukan ang ibang file.",
           "upload": "Nabigo ang pag-upload. Subukan muli."
         },
+        "logoSection": "Logo",
+        "logoHint": "Ipinapakita sa header ng iyong pampublikong pahina.",
+        "logoRequirements": "PNG, JPEG, o WebP. Hanggang 512x256px, max 250KB.",
+        "logoLabel": "Mag-upload ng logo",
+        "logoReplace": "Palitan",
+        "logoRemove": "Alisin",
+        "logoUploading": "Ina-upload...",
+        "logoErrors": {
+          "type": "Gumamit ng PNG, JPEG, o WebP na larawan.",
+          "size": "Panatilihin ang file sa ibaba ng 250KB.",
+          "dimensions": "Panatilihin ang logo sa loob ng 512x256px.",
+          "image": "Hindi wastong larawan ang file na iyon.",
+          "upload": "Nabigo ang pag-upload. Subukan muli."
+        },
         "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
         "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
         "seoKeywords": "Mga tag ng SEO",
@@ -2987,7 +3001,9 @@
       "slugChecking": "Tinitingnan…",
       "slugAvailable": "Available",
       "slugTaken": "Hindi available",
-      "slugInvalid": "Hindi tamang format"
+      "slugInvalid": "Hindi tamang format",
+      "timezoneSearchPlaceholder": "Maghanap ayon sa lungsod o UTC offset",
+      "timezoneNoMatches": "Walang tugmang timezone"
     },
     "workspace": {
       "title": "I-set up ang iyong workspace",

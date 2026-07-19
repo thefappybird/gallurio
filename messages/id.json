@@ -1462,6 +1462,20 @@
           "image": "Tidak dapat membaca gambar. Coba file lain.",
           "upload": "Pengunggahan gagal. Coba lagi."
         },
+        "logoSection": "Logo",
+        "logoHint": "Ditampilkan di header halaman publik Anda.",
+        "logoRequirements": "PNG, JPEG, atau WebP. Hingga 512x256px, maks 250KB.",
+        "logoLabel": "Unggah logo",
+        "logoReplace": "Ganti",
+        "logoRemove": "Hapus",
+        "logoUploading": "Mengunggah...",
+        "logoErrors": {
+          "type": "Gunakan gambar PNG, JPEG, atau WebP.",
+          "size": "Jaga ukuran file di bawah 250KB.",
+          "dimensions": "Jaga logo dalam 512x256px.",
+          "image": "File itu bukan gambar yang valid.",
+          "upload": "Pengunggahan gagal. Coba lagi."
+        },
         "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
         "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
         "seoKeywords": "Tag SEO",
@@ -2987,7 +3001,9 @@
       "slugChecking": "Memeriksa…",
       "slugAvailable": "Tersedia",
       "slugTaken": "Sudah digunakan",
-      "slugInvalid": "Format tidak valid"
+      "slugInvalid": "Format tidak valid",
+      "timezoneSearchPlaceholder": "Cari berdasarkan kota atau offset UTC",
+      "timezoneNoMatches": "Tidak ada zona waktu yang cocok"
     },
     "workspace": {
       "title": "Siapkan ruang kerja Anda",

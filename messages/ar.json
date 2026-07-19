@@ -1462,6 +1462,20 @@
           "image": "تعذّر قراءة الصورة. يرجى تجربة ملف آخر.",
           "upload": "فشل الرفع. يرجى المحاولة مرة أخرى."
         },
+        "logoSection": "الشعار",
+        "logoHint": "يظهر في ترويسة صفحتك العامة.",
+        "logoRequirements": "PNG أو JPEG أو WebP. حتى 512x256px، بحد أقصى 250KB.",
+        "logoLabel": "رفع الشعار",
+        "logoReplace": "استبدال",
+        "logoRemove": "إزالة",
+        "logoUploading": "جارٍ الرفع...",
+        "logoErrors": {
+          "type": "استخدم صورة PNG أو JPEG أو WebP.",
+          "size": "أبقِ حجم الملف أقل من 250KB.",
+          "dimensions": "أبقِ الشعار ضمن 512x256px.",
+          "image": "هذا الملف ليس صورة صالحة.",
+          "upload": "فشل الرفع. يرجى المحاولة مرة أخرى."
+        },
         "seoTitleHint": "العنوان القابل للنقر في Google وتبويب المتصفّح. استهدف ~60 حرفًا. اسم الاستوديو + ما تصوّره.",
         "seoDescriptionHint": "المقتطف الرمادي تحت عنوانك في نتائج البحث. استهدف ~155 حرفًا. روّج لصفحتك الرئيسية.",
         "seoKeywords": "وسوم SEO",
@@ -2987,7 +3001,9 @@
       "slugChecking": "جارٍ التحقّق…",
       "slugAvailable": "متاح",
       "slugTaken": "محجوز بالفعل",
-      "slugInvalid": "تنسيق غير صالح"
+      "slugInvalid": "تنسيق غير صالح",
+      "timezoneSearchPlaceholder": "ابحث حسب المدينة أو فارق UTC",
+      "timezoneNoMatches": "لا توجد مناطق زمنية مطابقة"
     },
     "workspace": {
       "title": "أعِدّ مساحة عملك",

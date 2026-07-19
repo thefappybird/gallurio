@@ -1462,6 +1462,20 @@
           "image": "Could not read the image. Please try another file.",
           "upload": "Upload failed. Please try again."
         },
+        "logoSection": "Logo",
+        "logoHint": "Shown in your public page header.",
+        "logoRequirements": "PNG, JPEG, or WebP. Up to 512x256px, max 250KB.",
+        "logoLabel": "Upload logo",
+        "logoReplace": "Replace",
+        "logoRemove": "Remove",
+        "logoUploading": "Uploading...",
+        "logoErrors": {
+          "type": "Use a PNG, JPEG, or WebP image.",
+          "size": "Keep the file under 250KB.",
+          "dimensions": "Keep the logo within 512x256px.",
+          "image": "That file isn't a valid image.",
+          "upload": "Upload failed. Please try again."
+        },
         "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
         "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
         "seoKeywords": "SEO tags",
@@ -2988,7 +3002,9 @@
       "slugChecking": "Checking…",
       "slugAvailable": "Available",
       "slugTaken": "Already taken",
-      "slugInvalid": "Invalid format"
+      "slugInvalid": "Invalid format",
+      "timezoneSearchPlaceholder": "Search by city or UTC offset",
+      "timezoneNoMatches": "No matching timezones"
     },
     "workspace": {
       "title": "Set up your workspace",
