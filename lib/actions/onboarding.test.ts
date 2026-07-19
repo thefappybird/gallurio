@@ -152,6 +152,33 @@ describe("businessStepAction", () => {
     expect(membership!.role).toBe("owner");
   });
 
+  it("persists businessTypeOther when businessType is other", async () => {
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+
+    await businessStepAction({
+      ...validBusinessInput,
+      businessType: "other",
+      businessTypeOther: "tattoo studio",
+    });
+
+    const workspace = await Workspace.findOne({ slug: "alice-photography" }).lean();
+    expect(workspace!.businessTypeOther).toBe("tattoo studio");
+  });
+
+  it("clears businessTypeOther when re-run switches away from 'other'", async () => {
+    mockGetAuthUser.mockResolvedValue(makeAuthUser());
+
+    await businessStepAction({
+      ...validBusinessInput,
+      businessType: "other",
+      businessTypeOther: "tattoo studio",
+    });
+    await businessStepAction({ ...validBusinessInput, businessType: "photographer" });
+
+    const workspace = await Workspace.findOne({ slug: "alice-photography" }).lean();
+    expect(workspace!.businessTypeOther).toBe("");
+  });
+
   it("sets the active-workspace cookie after success", async () => {
     mockGetAuthUser.mockResolvedValue(makeAuthUser());
 
