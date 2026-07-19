@@ -366,6 +366,82 @@ describe("AppSidebar bell button", () => {
   });
 });
 
+describe("AppSidebar bell arrival popup placement (A21)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUnreadCount.value = 0;
+    mockLiveArrivalTick.value = 0;
+    mockIsRtl.value = false;
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  async function spySidebarState(state: "expanded" | "collapsed") {
+    const sidebarModule = await import("@/components/ui/sidebar");
+    return vi.spyOn(sidebarModule, "useSidebar").mockReturnValue({
+      state,
+      open: state === "expanded",
+      setOpen: vi.fn(),
+      openMobile: false,
+      setOpenMobile: vi.fn(),
+      isMobile: false,
+      toggleSidebar: vi.fn(),
+    });
+  }
+
+  it("anchors the arrival popup beside the bell (inline-end) when the sidebar is collapsed", async () => {
+    await spySidebarState("collapsed");
+    const { rerender } = renderSidebar("owner");
+
+    mockLiveArrivalTick.value = 1;
+    act(() => {
+      rerender(
+        <Wrapper>
+          <AppSidebar
+            role="owner"
+            workspaceName="Test Workspace"
+            workspaceLogoUrl={null}
+            userName="Test User"
+            userEmail="test@example.com"
+            userAvatarUrl={null}
+          />
+        </Wrapper>
+      );
+    });
+
+    const popup = document.querySelector('[data-slot="tooltip-content"]');
+    expect(popup?.getAttribute("data-side")).toBe("inline-end");
+  });
+
+  it("anchors the arrival popup below the full row (not beside the icon) when the sidebar is expanded", async () => {
+    await spySidebarState("expanded");
+    const { rerender } = renderSidebar("owner");
+
+    mockLiveArrivalTick.value = 1;
+    act(() => {
+      rerender(
+        <Wrapper>
+          <AppSidebar
+            role="owner"
+            workspaceName="Test Workspace"
+            workspaceLogoUrl={null}
+            userName="Test User"
+            userEmail="test@example.com"
+            userAvatarUrl={null}
+          />
+        </Wrapper>
+      );
+    });
+
+    const popup = document.querySelector('[data-slot="tooltip-content"]');
+    expect(popup?.getAttribute("data-side")).toBe("bottom");
+  });
+});
+
 describe("AppSidebar mobile close on nav", () => {
   const setOpenMobileSpy = vi.fn();
 
