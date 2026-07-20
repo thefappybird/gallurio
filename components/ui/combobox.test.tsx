@@ -116,4 +116,14 @@ describe("Combobox", () => {
     expect(screen.getByRole("option", { name: "Banana" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("option", { name: "Apple" })).toHaveAttribute("aria-selected", "false");
   });
+
+  it("stops propagation for the keys it handles so a page-level hotkey listener never sees them", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: "Pick item" }));
+    const search = screen.getByRole("combobox");
+    let bubbled = false;
+    document.addEventListener("keydown", () => { bubbled = true; });
+    fireEvent.keyDown(search, { key: "Escape", bubbles: true });
+    expect(bubbled).toBe(false);
+  });
 });

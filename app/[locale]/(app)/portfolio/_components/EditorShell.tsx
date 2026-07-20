@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Puck, type Config, type Data } from "@measured/puck";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
-import { isEditableTarget } from "@/lib/page-builder/editableTarget";
+import { isEditableTarget, isSelfManagedComboboxTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -1431,14 +1431,17 @@ export function EditorShell({
   //     stopImmediatePropagation() is used so no subsequent same-phase handler
   //     on document can see the event either.
   //     We do NOT preventDefault — normal typing must reach the input.
+  // role="combobox" targets (e.g. components/ui/combobox.tsx) own their
+  // Arrow/Enter/Escape keys and need the event to actually reach them; they're
+  // exempt from the blanket Puck-hotkey suppression below.
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (isEditableTarget(e.target)) e.stopPropagation();
+    if (isEditableTarget(e.target) && !isSelfManagedComboboxTarget(e.target)) e.stopPropagation();
   }, []);
 
   useEffect(() => {
     function interceptPuckHotkeys(e: KeyboardEvent) {
       const target = e.target ?? document.activeElement;
-      if (isEditableTarget(target)) {
+      if (isEditableTarget(target) && !isSelfManagedComboboxTarget(target)) {
         // stopImmediatePropagation prevents all other listeners — same phase
         // (capture) and all subsequent phases — from seeing this event.
         // Do NOT preventDefault: typing characters must still reach the input.

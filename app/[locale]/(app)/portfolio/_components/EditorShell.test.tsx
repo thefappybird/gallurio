@@ -383,6 +383,24 @@ describe("EditorShell", () => {
     expect(puckHotkeyFired).toBe(false);
   });
 
+  it("does NOT stop propagation for a role=combobox target, so its own Arrow/Enter/Escape nav still works", async () => {
+    const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;
+    const input = document.createElement("input");
+    input.setAttribute("role", "combobox");
+    editorRoot.appendChild(input);
+
+    let propagated = false;
+    const outerHandler = () => { propagated = true; };
+    document.addEventListener("keydown", outerHandler);
+
+    const event = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true });
+    input.dispatchEvent(event);
+
+    document.removeEventListener("keydown", outerHandler);
+    expect(propagated).toBe(true);
+  });
+
   it("opens the publish dialog when the Publish button in the editor header is clicked", async () => {
     await renderAndDismissEntry(<EditorShell {...basePro} />);
     expect(screen.queryByText("Publish your portfolio?")).not.toBeInTheDocument();
