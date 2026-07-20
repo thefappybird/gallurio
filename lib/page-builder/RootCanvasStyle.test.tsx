@@ -182,4 +182,18 @@ describe("buildCanvasCss", () => {
     const css = buildCanvasCss({ bgColorToken: "primary" });
     expect(css).toContain("background-color: var(--pf-color-primary)");
   });
+
+  // Root cause: Puck's own CSS module hardcodes `._PuckCanvas-root_ { background:
+  // white }` on the absolutely-positioned wrapper around [data-puck-preview] (the
+  // same element CANVAS_PUCK_CANVAS_ROOT_CSS already retargets for position/height).
+  // When the preview surface's own auto-height box doesn't fully cover that
+  // ancestor (e.g. its :has() growth override losing a cascade/layout race on tall
+  // pages), the wrapper's hardcoded white shows through below the first block. The
+  // fix must paint that same wrapper, not just [data-puck-preview] itself.
+  it("also paints the Puck canvas-root wrapper so its hardcoded white background never shows through below the first block", () => {
+    const css = buildCanvasCss({ bgColorToken: "primary" });
+    expect(css).toMatch(
+      /:has\(> \[data-puck-preview\]\), :has\(> \[data-tour-id="canvas-viewport"\] > \[data-puck-preview\]\)[^{]*\{[^}]*background-color: var\(--pf-color-primary\)/
+    );
+  });
 });

@@ -151,8 +151,14 @@ export function buildCanvasCss(
   viewport?: { deviceWidth: number | null; zoom: number },
 ): string {
   const decls = rootCanvasCssText(style);
+  // Also paint CANVAS_ROOT_SELECTOR (Puck's `_PuckCanvas-root_` wrapper around
+  // [data-puck-preview] — the same element CANVAS_PUCK_CANVAS_ROOT_CSS above
+  // retargets for position/height). Puck's own CSS module hardcodes
+  // `background: white` on that wrapper; when the preview surface's own box
+  // doesn't fully cover it, the hardcoded white shows through below the first
+  // block instead of the page's explicit background color.
   const rootRule = decls
-    ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
+    ? `[data-puck-preview], .Puck-root, .PuckLayout-content, ${CANVAS_ROOT_SELECTOR} { ${decls} }`
     : "";
   // Emitted last so it layers over the base width rules in the cascade.
   const viewportRule = viewport ? buildCanvasViewportCss(viewport.deviceWidth, viewport.zoom) : "";
