@@ -1,6 +1,6 @@
 ---
 name: senior-frontend-engineer
-description: Senior frontend Next.js engineer for Gallurio. Use for any React/UI implementation — App Router client/server components, Tailwind v4 with semantic tokens, Puck portfolio blocks, editor UX, accessibility, mobile-first responsive work, and Playwright verification. Owns the visual/interaction layer end to end: builds all four async states (loading/empty/error/populated) and all control states (idle/hover/focus-visible/active/disabled), keeps all 5 locales in sync (en/fil/ms/id/ar, ar is RTL), and verifies in a real browser before claiming done.
+description: Senior frontend Next.js engineer for Gallurio. Use for any React/UI implementation — App Router client/server components, Tailwind v4 with semantic tokens, Puck portfolio blocks, editor UX, accessibility, mobile-first responsive work, and Playwright verification. Owns the visual/interaction layer end to end — builds all four async states (loading/empty/error/populated) and all control states (idle/hover/focus-visible/active/disabled), keeps all 5 locales in sync (en/fil/id/ar/th, ar is RTL), and verifies in a real browser before claiming done.
 model: sonnet
 tools:
   - Read

@@ -13,6 +13,7 @@ import {
   Scissors,
   UtensilsCrossed,
   Music,
+  Palette,
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useActionError } from "@/lib/i18n/actionError";
 import { cn } from "@/lib/utils";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 
 export function BusinessStepForm({
   defaults,
@@ -63,6 +65,7 @@ export function BusinessStepForm({
       toast.error(errMsg(result.error));
       return;
     }
+    router.refresh();
     startTransition(() => router.push("/onboarding/workspace"));
   }
 
@@ -73,6 +76,7 @@ export function BusinessStepForm({
     { value: "stylist", label: t("businessTypes.stylist"), icon: Scissors },
     { value: "catering", label: t("businessTypes.catering"), icon: UtensilsCrossed },
     { value: "entertainer", label: t("businessTypes.entertainer"), icon: Music },
+    { value: "artists", label: t("businessTypes.artists"), icon: Palette },
     { value: "other", label: t("businessTypes.other"), icon: Sparkles },
   ] as const;
 
@@ -106,7 +110,7 @@ export function BusinessStepForm({
             <Label htmlFor="firstName">{t("firstName")}</Label>
             <Input id="firstName" placeholder={t("firstNamePlaceholder")} {...register("firstName")} />
             {errors.firstName && (
-              <p className="text-sm text-destructive">{errors.firstName.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.firstName)}</p>
             )}
           </div>
           <div className="flex flex-col gap-1.5">
@@ -116,7 +120,7 @@ export function BusinessStepForm({
             </Label>
             <Input id="lastName" placeholder={t("lastNamePlaceholder")} {...register("lastName")} />
             {errors.lastName && (
-              <p className="text-sm text-destructive">{errors.lastName.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.lastName)}</p>
             )}
           </div>
         </div>
@@ -124,7 +128,7 @@ export function BusinessStepForm({
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="name">{t("businessName")}</Label>
           <Input id="name" placeholder={t("businessNamePlaceholder")} {...register("name")} />
-          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+          {errors.name && <p className="text-sm text-destructive">{fieldMessage(errors.name)}</p>}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -159,9 +163,23 @@ export function BusinessStepForm({
             })}
           </div>
           {errors.businessType && (
-            <p className="text-sm text-destructive">{errors.businessType.message}</p>
+            <p className="text-sm text-destructive">{fieldMessage(errors.businessType)}</p>
           )}
         </div>
+
+        {businessTypeValue === "other" && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="businessTypeOther">{t("businessTypeOtherLabel")}</Label>
+            <Input
+              id="businessTypeOther"
+              placeholder={t("businessTypeOtherPlaceholder")}
+              {...register("businessTypeOther")}
+            />
+            {errors.businessTypeOther && (
+              <p className="text-sm text-destructive">{fieldMessage(errors.businessTypeOther)}</p>
+            )}
+          </div>
+        )}
 
       </form>
     </StepShell>

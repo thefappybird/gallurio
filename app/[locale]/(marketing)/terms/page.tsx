@@ -31,8 +31,12 @@ export default async function TermsPage({ params }: Props) {
       <LegalHeader title={t("title")} effectiveDate={t("effectiveDate")} />
       <LegalIntro>
         <p>{t("intro1")}</p>
-        <p>{t("intro2")}</p>
       </LegalIntro>
+
+      <LegalSection title={t("contractingParty.title")}>
+        <p>{t("contractingParty.body1")}</p>
+        <p>{t("contractingParty.body2")}</p>
+      </LegalSection>
 
       <LegalSection title={t("about.title")}>
         <p>{t("about.body1")}</p>
@@ -40,12 +44,8 @@ export default async function TermsPage({ params }: Props) {
       </LegalSection>
 
       <LegalSection title={t("eligibility.title")}>
-        <p>{t("eligibility.body")}</p>
-      </LegalSection>
-
-      <LegalSection title={t("accounts.title")}>
-        <p>{t("accounts.body1")}</p>
-        <p>{t("accounts.body2")}</p>
+        <p>{t("eligibility.body1")}</p>
+        <p>{t("eligibility.body2")}</p>
       </LegalSection>
 
       <LegalSection title={t("betaAccess.title")}>
@@ -53,10 +53,23 @@ export default async function TermsPage({ params }: Props) {
         <p>{t("betaAccess.body2")}</p>
       </LegalSection>
 
+      <LegalSection title={t("subscriptions.title")}>
+        <p>{t("subscriptions.body1")}</p>
+        <p>{t("subscriptions.body2")}</p>
+        <p>{t("subscriptions.body3")}</p>
+        <p>{t("subscriptions.body4")}</p>
+        <p>{t("subscriptions.body5")}</p>
+      </LegalSection>
+
       <LegalSection title={t("userContent.title")}>
         <p>{t("userContent.body1")}</p>
         <p>{t("userContent.body2")}</p>
         <p>{t("userContent.body3")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("bookings.title")}>
+        <p>{t("bookings.body1")}</p>
+        <p>{t("bookings.body2")}</p>
       </LegalSection>
 
       <LegalSection title={t("prohibited.title")}>
@@ -69,36 +82,24 @@ export default async function TermsPage({ params }: Props) {
             t("prohibited.item4"),
             t("prohibited.item5"),
             t("prohibited.item6"),
+            t("prohibited.item7"),
+            t("prohibited.item8"),
+            t("prohibited.item9"),
           ]}
         />
         <p>{t("prohibited.outro")}</p>
       </LegalSection>
 
-      <LegalSection title={t("bookings.title")}>
-        <p>{t("bookings.body1")}</p>
-        <p>{t("bookings.body2")}</p>
+      <LegalSection title={t("ip.title")}>
+        <p>{t("ip.body")}</p>
       </LegalSection>
 
-      <LegalSection title={t("subscriptions.title")}>
-        <p>{t("subscriptions.body1")}</p>
-        <p>{t("subscriptions.body2")}</p>
-        <p>{t("subscriptions.body3")}</p>
-        <p>{t("subscriptions.body4")}</p>
-      </LegalSection>
-
-      <LegalSection title={t("cancellations.title")}>
-        <p>{t("cancellations.body1")}</p>
-        <p>{t("cancellations.body2")}</p>
+      <LegalSection title={t("copyright.title")}>
+        <p>{t("copyright.body")}</p>
       </LegalSection>
 
       <LegalSection title={t("serviceChanges.title")}>
-        <p>{t("serviceChanges.body1")}</p>
-        <p>{t("serviceChanges.body2")}</p>
-      </LegalSection>
-
-      <LegalSection title={t("ip.title")}>
-        <p>{t("ip.body1")}</p>
-        <p>{t("ip.body2")}</p>
+        <p>{t("serviceChanges.body")}</p>
       </LegalSection>
 
       <LegalSection title={t("disclaimer.title")}>
@@ -106,12 +107,25 @@ export default async function TermsPage({ params }: Props) {
       </LegalSection>
 
       <LegalSection title={t("liability.title")}>
-        <p>{t("liability.body")}</p>
+        <p>{t("liability.body1")}</p>
+        <p>{t("liability.body2")}</p>
       </LegalSection>
 
       <LegalSection title={t("termination.title")}>
         <p>{t("termination.body1")}</p>
         <p>{t("termination.body2")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("privacyRef.title")}>
+        <p>{t("privacyRef.body")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("governingLaw.title")}>
+        <p>{t("governingLaw.body")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("changes.title")}>
+        <p>{t("changes.body")}</p>
       </LegalSection>
 
       <LegalSection title={t("contact.title")}>

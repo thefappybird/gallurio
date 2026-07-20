@@ -93,7 +93,13 @@ export function AppSidebar({
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [bellNudge, setBellNudge] = useState(false);
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, state: sidebarState } = useSidebar();
+  // Collapsed rail: the trigger IS the whole item, so anchoring beside it
+  // (inline-end) reads as "pointing at the bell". Expanded: the same offset
+  // would land the popup over the "Bell" label instead of outside the panel,
+  // so anchor below the full row instead — it then adapts to the wider item.
+  const bellToastSide = sidebarState === "collapsed" ? "inline-end" : "bottom";
+  const bellToastAlign = sidebarState === "collapsed" ? "center" : "start";
   const { unreadCount, liveArrivalTick } = useNotifications();
   const prevTickRef = useRef(liveArrivalTick);
   // Bell nudge must fire ONLY for live socket arrivals, never for the initial
@@ -189,8 +195,8 @@ export function AppSidebar({
                       )}
                     </TooltipTrigger>
                     <TooltipContent
-                      side="inline-end"
-                      align="center"
+                      side={bellToastSide}
+                      align={bellToastAlign}
                       role="status"
                       aria-live="polite"
                       className="pointer-events-none"

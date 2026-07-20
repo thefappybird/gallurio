@@ -184,7 +184,7 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 
   // Authoritative timezone-aware midnight check for session patches.
-  // The Zod UTC-day check is a cheap baseline; this is the definitive guard.
+  // sessionsAreSameDayInTz is the sole same-day guard (the Zod UTC-day refine was removed).
   if (parsed.data.sessions) {
     const tzCheck = sessionsAreSameDayInTz(
       parsed.data.sessions,

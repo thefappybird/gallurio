@@ -111,6 +111,12 @@ pending list current when release work changes it.
 - Before handoff, run affected tests, `pnpm typecheck`, and `pnpm lint`; use
   targeted checks when known unrelated repository failures make broad output
   misleading, and report any pre-existing blockers clearly.
+- Multi-agent orchestration: the tdd-guard's last-test-run state is shared per
+  worktree, so run guarded **implementer** agents one at a time (queue them),
+  never concurrently in a shared worktree; keep the guard on (do not disable or
+  bypass it). Only the orchestrator runs the full typecheck, build, and
+  Playwright, queued serially after an agent reports green. Subagents run only
+  scoped tests + eslint on their own files. Read-only agents may parallelize.
 - Verify production behavior separately from development: the current Lemon
   Squeezy build requires HTTPS origins, live Lemon Squeezy mode, matching
   Cloudflare account hashes, strong cookie secrets, and no seed/debug flags.

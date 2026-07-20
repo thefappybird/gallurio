@@ -883,7 +883,6 @@ export function BookingWizardModal({
             {submitError ? (
               <p className="basis-full text-xs text-destructive">{submitError}</p>
             ) : null}
-            <div className="flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
@@ -894,7 +893,7 @@ export function BookingWizardModal({
                 >
                   {t("cancel")}
                 </Button>
-                {mode === "edit" ? (
+                {mode === "edit" && !isLast ? (
                   <Button
                     type="button"
                     variant="brand"
@@ -965,7 +964,6 @@ export function BookingWizardModal({
                   </Button>
                 )}
               </div>
-            </div>
           </div>
         </form>
       </DialogContent>

@@ -1,18 +1,19 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState, useTransition } from "react";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePathname, useRouter } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { DashboardInfoHint } from "./dashboard-info-hint";
 
-export type BookedHoursCell = { weekStart: string; weekday: number; hours: number };
+export type BookedHoursCell = { weekStart: string; weekday: number; hours: number; bookings: number };
 
 type Labels = {
   title: string;
-  weekOf: string;
   bookedHours: string;
   weekdays: string[];
   legend: string[];
@@ -20,6 +21,8 @@ type Labels = {
   previous: string;
   today: string;
   next: string;
+  skipPrevious: string;
+  skipNext: string;
 };
 
 type Props = {
@@ -67,6 +70,7 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const t = useTranslations("app.dashboard");
   const [isPending, startTransition] = useTransition();
   const allWeekStarts = Array.from(new Set(cells.map((c) => c.weekStart))).sort();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -103,7 +107,7 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   );
   const hasPrevious = Boolean(weekStarts[0] && weekStarts[0] > earliestWeek);
   const hasNext = Boolean(lastVisibleWeek && lastVisibleWeek < latestWeek);
-  const byKey = new Map(cells.map((cell) => [`${cell.weekStart}|${cell.weekday}`, cell.hours]));
+  const cellByKey = new Map(cells.map((cell) => [`${cell.weekStart}|${cell.weekday}`, cell]));
 
   function goTo(endWeek?: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -125,6 +129,8 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
           onGo={goTo}
           firstWeek={weekStarts[0]}
           lastWeek={lastVisibleWeek}
+          earliestWeek={earliestWeek}
+          latestWeek={latestWeek}
         />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -153,23 +159,35 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
                 <Fragment key={weekday}>
                   <div className="justify-self-start flex items-center pe-2 text-xs text-muted-foreground">{wd}</div>
                   {weekStarts.map((ws) => {
-                    const hours = byKey.get(`${ws}|${weekday}`) ?? 0;
-                    const title = `${labels.weekOf} ${formatCol(ws, locale)}, ${wd}: ${hours}h`;
+                    const cell = cellByKey.get(`${ws}|${weekday}`);
+                    const hours = cell?.hours ?? 0;
+                    const bookings = cell?.bookings ?? 0;
+                    const bookingsLabel = t("booking.heatmap.bookingsCount", { count: bookings });
+                    const cellDate = new Date(`${ws}T00:00:00Z`);
+                    cellDate.setUTCDate(cellDate.getUTCDate() + weekday);
+                    const dateLabel = cellDate.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+                    const cellLabel = `${dateLabel} — ${bookingsLabel} · ${hours}h`;
                     const isToday = ws === todayWeek && weekday === todayWeekday;
                     return (
-                      <div
-                        key={`${ws}-${weekday}`}
-                        title={title}
-                        aria-label={title}
-                        className={`rounded-[2px] ${
-                          isToday ? "ring-1 ring-brand/80 ring-offset-1 ring-offset-card" : ""
-                        }`}
-                        style={{
-                          width: cellSize,
-                          height: cellSize,
-                          backgroundColor: `color-mix(in srgb, var(--chart-1) ${BUCKET_PCT[bucketIndex(hours)]}%, transparent)`,
-                        }}
-                      />
+                      <Tooltip key={`${ws}-${weekday}`}>
+                        <TooltipTrigger
+                          render={
+                            <div
+                              tabIndex={0}
+                              aria-label={cellLabel}
+                              className={`rounded-[2px] outline-none transition-transform duration-150 hover:scale-110 hover:ring-1 hover:ring-brand/50 focus-visible:scale-110 focus-visible:ring-1 focus-visible:ring-brand/50 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100 ${
+                                isToday ? "ring-1 ring-brand/80 ring-offset-1 ring-offset-card" : ""
+                              }`}
+                              style={{
+                                width: cellSize,
+                                height: cellSize,
+                                backgroundColor: `color-mix(in srgb, var(--chart-1) ${BUCKET_PCT[bucketIndex(hours)]}%, transparent)`,
+                              }}
+                            />
+                          }
+                        />
+                        <TooltipContent side="top">{cellLabel}</TooltipContent>
+                      </Tooltip>
                     );
                   })}
                 </Fragment>
@@ -194,17 +212,31 @@ export function BookedHoursHeatmap({ cells, earliestWeek, latestWeek, todayWeek,
   );
 }
 
-function HeatmapControls({ labels, disabled, previous, next, onGo, firstWeek, lastWeek }: {
-  labels: Pick<Labels, "previous" | "today" | "next">;
+function HeatmapControls({ labels, disabled, previous, next, onGo, firstWeek, lastWeek, earliestWeek, latestWeek }: {
+  labels: Pick<Labels, "previous" | "today" | "next" | "skipPrevious" | "skipNext">;
   disabled: boolean;
   previous: boolean;
   next: boolean;
   onGo: (endWeek?: string) => void;
   firstWeek?: string;
   lastWeek?: string;
+  earliestWeek: string;
+  latestWeek: string;
 }) {
+  const pageSize = visiblePageSize(firstWeek, lastWeek);
+  const remainingBack = firstWeek ? weeksBetween(earliestWeek, firstWeek) : 0;
+  const remainingForward = lastWeek ? weeksBetween(lastWeek, latestWeek) : 0;
+  const showSkipBack = previous && remainingBack > 5 * pageSize;
+  const showSkipForward = next && remainingForward > 5 * pageSize;
+  const skipBackTarget = firstWeek ? maxDate(earliestWeek, shiftWeek(firstWeek, -(4 * pageSize) - 1)) : undefined;
+  const skipForwardTarget = lastWeek ? minDate(latestWeek, shiftWeek(lastWeek, 5 * pageSize)) : undefined;
   return (
     <div className="flex items-center gap-0.5">
+      {showSkipBack && (
+        <Button type="button" variant="ghost" size="icon-xs" disabled={disabled} onClick={() => skipBackTarget && onGo(skipBackTarget)} aria-label={labels.skipPrevious}>
+          <ChevronsLeftIcon className="size-3.5" />
+        </Button>
+      )}
       <Button type="button" variant="ghost" size="icon-xs" disabled={disabled || !previous} onClick={() => firstWeek && onGo(shiftWeek(firstWeek, -1))} aria-label={labels.previous}>
         <ChevronLeftIcon className="size-3.5" />
       </Button>
@@ -214,6 +246,11 @@ function HeatmapControls({ labels, disabled, previous, next, onGo, firstWeek, la
       <Button type="button" variant="ghost" size="icon-xs" disabled={disabled || !next} onClick={() => lastWeek && onGo(shiftWeek(lastWeek, visiblePageSize(firstWeek, lastWeek)))} aria-label={labels.next}>
         <ChevronRightIcon className="size-3.5" />
       </Button>
+      {showSkipForward && (
+        <Button type="button" variant="ghost" size="icon-xs" disabled={disabled} onClick={() => skipForwardTarget && onGo(skipForwardTarget)} aria-label={labels.skipNext}>
+          <ChevronsRightIcon className="size-3.5" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -223,4 +260,18 @@ function visiblePageSize(firstWeek?: string, lastWeek?: string) {
   const start = new Date(`${firstWeek}T00:00:00Z`).getTime();
   const end = new Date(`${lastWeek}T00:00:00Z`).getTime();
   return Math.round((end - start) / 604_800_000) + 1;
+}
+
+function weeksBetween(from: string, to: string) {
+  const start = new Date(`${from}T00:00:00Z`).getTime();
+  const end = new Date(`${to}T00:00:00Z`).getTime();
+  return Math.round((end - start) / 604_800_000);
+}
+
+function maxDate(a: string, b: string) {
+  return a > b ? a : b;
+}
+
+function minDate(a: string, b: string) {
+  return a < b ? a : b;
 }

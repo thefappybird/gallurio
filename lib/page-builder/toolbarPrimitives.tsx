@@ -292,11 +292,11 @@ export function FontFamilyRow({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className={cn("shrink-0 text-xs", isEffective ? "text-muted-foreground/60" : "text-muted-foreground")}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className={cn("min-w-0 text-xs break-words", isEffective ? "text-muted-foreground/60" : "text-muted-foreground")}>
           {label}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-1">
           <input
             type="text"
             list={listId}
@@ -434,9 +434,9 @@ export function DimensionInput({
   const isEffective = value === undefined && effectiveValue !== undefined;
 
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className={cn("shrink-0 text-xs", isEffective ? "text-muted-foreground/60" : "text-muted-foreground")}>{label}</span>
-      <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span className={cn("min-w-0 break-words text-xs", isEffective ? "text-muted-foreground/60" : "text-muted-foreground")}>{label}</span>
+      <div className="flex min-w-0 flex-wrap items-center gap-1">
         <span className="flex">
           <input
             type="number"
@@ -501,9 +501,9 @@ export function NumberInputRow({
   effectiveValue?: number;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="shrink-0 text-xs text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span className="min-w-0 break-words text-xs text-muted-foreground">{label}</span>
+      <div className="flex min-w-0 flex-wrap items-center gap-1">
         <span className="relative block">
           <input
             type="number"
@@ -570,9 +570,9 @@ export function IconRow<T extends string>({
   onReset?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span className="min-w-0 break-words text-xs text-muted-foreground">{label}</span>
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
         {options.map(({ value: v, label: l, Icon }) => (
           <ToolbarToggle
             key={v}

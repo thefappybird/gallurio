@@ -7,6 +7,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
+const SUPPORT_EMAIL = "support@gallurio.com";
+
 type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -97,13 +99,23 @@ export default async function PricingPage({ params }: Props) {
           <div>
             <p>{t("billingNotice.body1")}</p>
             <p className="mt-3">{t("billingNotice.body2")}</p>
+            <p className="mt-3">{t("billingNotice.body3")}</p>
+            <p className="mt-3">{t("billingNotice.body4")}</p>
           </div>
           <div>
             <h2 className="font-heading text-base font-semibold text-foreground">
               {t("pricingTransparency.title")}
             </h2>
-            <p className="mt-2">{t("pricingTransparency.body")}</p>
+            <p className="mt-2">{t("pricingTransparency.body1")}</p>
+            <p className="mt-2">{t("pricingTransparency.body2")}</p>
           </div>
+          <p>
+            {t("contactNote.body")}{" "}
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-brand hover:underline">
+              {SUPPORT_EMAIL}
+            </a>
+            .
+          </p>
         </div>
       </section>
     </>

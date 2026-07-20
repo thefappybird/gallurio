@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isEditableTarget } from "./editableTarget";
+import { isEditableTarget, isSelfManagedComboboxTarget } from "./editableTarget";
 
 describe("isEditableTarget", () => {
   it("returns true for an input element", () => {
@@ -35,5 +35,18 @@ describe("isEditableTarget", () => {
 
   it("returns false for null", () => {
     expect(isEditableTarget(null)).toBe(false);
+  });
+});
+
+describe("isSelfManagedComboboxTarget", () => {
+  it("returns true for an input with role=combobox", () => {
+    const el = document.createElement("input");
+    el.setAttribute("role", "combobox");
+    expect(isSelfManagedComboboxTarget(el)).toBe(true);
+  });
+
+  it("returns false for a plain input without role=combobox", () => {
+    const el = document.createElement("input");
+    expect(isSelfManagedComboboxTarget(el)).toBe(false);
   });
 });

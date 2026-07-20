@@ -28,6 +28,23 @@ beforeEach(async () => {
   await clearCollections();
 });
 
+describe("Workspace.businessType / businessTypeOther", () => {
+  it("accepts businessType 'artists' and defaults businessTypeOther to ''", async () => {
+    const ws = await Workspace.create({
+      slug: "artist-studio",
+      name: "Artist Studio",
+      ownerUserId: "user_test_artists",
+      businessType: "artists",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+    });
+
+    expect(ws.businessType).toBe("artists");
+    expect(ws.businessTypeOther).toBe("");
+  });
+});
+
 describe("Workspace.publicPage.siteIcon defaults", () => {
   it("new workspace has siteIcon defaulting to { url: '', assetId: '' }", async () => {
     const ws = await Workspace.create({

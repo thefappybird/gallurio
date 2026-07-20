@@ -45,7 +45,7 @@
       "businessWorkspace": {
         "title": "Business workspace",
         "panelHeadline": "One dashboard for everything between shoots.",
-        "description": "Manage public profile content, business details, and booking-related setup from one dashboard."
+        "description": "Manage public profile content, business details, invoices, and booking-related setup from one dashboard."
       },
       "bookingInquiryForms": {
         "title": "Booking inquiry forms",
@@ -111,7 +111,7 @@
         "badge": "Recommended",
         "comingSoon": "Coming soon",
         "name": "Pro",
-        "freeMonth": "Start with 1 month free, no card required.",
+        "freeMonth": "Start with one month free. No payment card is required.",
         "description": "Everything you need to run bookings, clients, galleries, and your public page.",
         "priceSuffixMonthly": "/ month",
         "priceSuffixYearly": "/ year",
@@ -125,12 +125,18 @@
         "cta": "Start my free month"
       },
       "billingNotice": {
-        "body1": "Paid Pro subscriptions are not yet available. When they launch, pricing, billing terms, and payment details will be shown clearly before you complete any purchase.",
-        "body2": "No charge is collected during your first free month."
+        "body1": "Paid Pro subscriptions are not yet available. When subscriptions launch, the price, billing period, renewal terms, applicable taxes, payment details, and cancellation process will be shown clearly before you complete a purchase.",
+        "body2": "Lemon Squeezy will process paid subscriptions as Gallurio's merchant of record. The applicable checkout, invoice, refund, and payment terms will also be shown through the billing flow.",
+        "body3": "You may cancel a paid subscription at any time through the billing management flow. Cancellation normally prevents future renewal charges; access generally continues until the end of the current billing period.",
+        "body4": "No charge is collected during your first free month."
       },
       "pricingTransparency": {
         "title": "Pricing Transparency",
-        "body": "The price, billing period, and subscription terms are shown before you complete any payment, and you can cancel anytime from your billing portal."
+        "body1": "Gallurio will not charge you during the free month. No payment card is required to start the trial. Any paid subscription requires a separate purchase or activation step after the free period, with the applicable terms displayed before payment.",
+        "body2": "Prices and features may change before paid subscriptions launch. Material changes will be reflected on this page and in the checkout flow."
+      },
+      "contactNote": {
+        "body": "For billing questions, contact"
       }
     },
     "terms": {
@@ -139,241 +145,284 @@
         "description": "Read the terms that govern access to and use of Gallurio."
       },
       "title": "Terms of Service",
-      "effectiveDate": "Effective Date: July 18, 2026",
-      "intro1": "These Terms of Service govern your access to and use of Gallurio, including our website, application, portfolio tools, booking inquiry features, and related services.",
-      "intro2": "By using Gallurio, you agree to these Terms. If you do not agree, you should not use the service.",
+      "effectiveDate": "Effective Date: July 20, 2026",
+      "intro1": "These Terms govern your access to and use of Gallurio, including its website, application, portfolio tools, public pages, booking inquiry features, and related services.",
+      "contractingParty": {
+        "title": "1. Contracting Party and Acceptance",
+        "body1": "Gallurio is operated in the Philippines as a sole proprietorship by Alexander III Banaag, with an address at J Labra St. Guadalupe, Cebu City, Cebu, Philippines.",
+        "body2": "By creating an account, accessing a paid feature, or using Gallurio, you agree to these Terms. If you do not agree, do not use the service."
+      },
       "about": {
-        "title": "1. About Gallurio",
-        "body1": "Gallurio is a software platform that helps creative professionals and businesses create portfolio pages, present their services, and receive booking inquiries.",
-        "body2": "Gallurio does not directly provide photography, videography, event planning, or other creative services to end clients. Users of Gallurio are responsible for the services they offer through their own pages."
+        "title": "2. The Service",
+        "body1": "Gallurio provides software tools for creative professionals and businesses to create portfolio pages, present services, and receive booking inquiries.",
+        "body2": "Gallurio does not provide photography, videography, event planning, catering, beauty, music, or other services advertised by users. Users are solely responsible for their services, pricing, representations, contracts, communications, and relationships with their clients."
       },
       "eligibility": {
-        "title": "2. Eligibility",
-        "body": "You may use Gallurio only if you are able to enter into a legally binding agreement. If you use Gallurio on behalf of a business, organization, or studio, you confirm that you are authorized to accept these Terms on its behalf."
-      },
-      "accounts": {
-        "title": "3. Accounts",
-        "body1": "You may need to create an account to use certain Gallurio features. You are responsible for keeping your login credentials secure and for all activity under your account.",
-        "body2": "You agree to provide accurate information and to update it when necessary."
+        "title": "3. Eligibility and Accounts",
+        "body1": "You must be legally capable of entering into a binding agreement. If you use Gallurio for a business or organization, you confirm that you are authorized to bind it.",
+        "body2": "You must provide accurate information, protect your login credentials, and accept responsibility for activity under your account. You must promptly notify Gallurio of unauthorized access."
       },
       "betaAccess": {
-        "title": "4. Beta Access",
-        "body1": "Gallurio may offer beta access before public launch. During beta, features may be incomplete, changed, limited, suspended, or removed at any time.",
-        "body2": "Beta access does not guarantee continued free access, future feature availability, or permanent account availability."
-      },
-      "userContent": {
-        "title": "5. User Content",
-        "body1": "Users may upload, publish, or submit content such as images, text, business information, service descriptions, portfolio materials, and booking form content.",
-        "body2": "Users retain ownership of their content. By using Gallurio, users grant Gallurio permission to host, store, display, process, and transmit their content as needed to operate and improve the service.",
-        "body3": "Users are responsible for ensuring that they have the rights, licenses, and permissions needed for any content uploaded or published."
-      },
-      "prohibited": {
-        "title": "6. Prohibited Content and Use",
-        "intro": "Users agree not to use Gallurio to upload, publish, distribute, or promote content that is unlawful, harmful, abusive, misleading, infringing, or otherwise inappropriate.",
-        "item1": "Violating applicable laws or regulations",
-        "item2": "Infringing the intellectual property rights of others",
-        "item3": "Uploading malicious code or attempting to disrupt the service",
-        "item4": "Misrepresenting identity, business, or services",
-        "item5": "Using the service for fraud, spam, or deceptive activity",
-        "item6": "Attempting to access accounts, systems, or data without permission",
-        "outro": "Gallurio may remove content or suspend accounts that violate these Terms."
-      },
-      "bookings": {
-        "title": "7. Bookings and Client Inquiries",
-        "body1": "Gallurio may allow visitors to submit booking inquiries through user-created pages. These inquiries do not guarantee a confirmed booking unless separately agreed between the Gallurio user and their client.",
-        "body2": "Gallurio is not responsible for disputes, payments, cancellations, service quality, schedules, or agreements between Gallurio users and their clients unless explicitly stated otherwise."
+        "title": "4. Beta and Free Access",
+        "body1": "Gallurio may offer beta or promotional access. Beta features may be incomplete, changed, suspended, or removed. Beta or free access does not guarantee permanent availability or future features.",
+        "body2": "Unless Gallurio states otherwise, promotional access does not require a payment card. If paid billing is introduced, the applicable plan, price, renewal terms, and billing date will be shown before purchase."
       },
       "subscriptions": {
-        "title": "8. Subscriptions and Payments",
-        "body1": "Gallurio includes a paid Pro subscription, billed monthly or yearly. New workspaces receive one month of full Pro access at no charge, with no card required.",
-        "body2": "After the free month, continuing to use Gallurio requires an active Pro subscription. Paid subscriptions are not yet available; billing terms and payment details will be shown clearly before any charge once they launch.",
-        "body3": "Users will be shown applicable pricing and billing terms before completing a purchase.",
-        "body4": "If a subscription is not renewed or a payment fails, access to the workspace is limited until the subscription is restored. Account data is retained; a published public page may be taken offline after an extended period without payment, and everything is restored upon resubscribing."
+        "title": "5. Subscriptions and Lemon Squeezy",
+        "body1": "Paid Pro subscriptions, when available, will be presented with their price, billing interval, renewal terms, and applicable taxes before purchase.",
+        "body2": "Lemon Squeezy acts as the merchant of record for Gallurio subscriptions. Lemon Squeezy may process checkout, payment, billing, tax, invoices, refunds, chargebacks, and related customer-service matters under its own terms and policies.",
+        "body3": "Subscriptions renew according to the billing terms shown at checkout until cancelled. A cancellation generally prevents future renewal charges but does not automatically create a refund.",
+        "body4": "If a payment fails or a subscription ends, Gallurio may restrict Pro features or take a public page offline after reasonable notice. Account data may be retained, and access may be restored if the subscription is renewed, subject to the applicable plan and product state.",
+        "body5": "Refunds are handled under Gallurio's published refund process and Lemon Squeezy's applicable rules. Nothing in these Terms limits mandatory consumer rights."
       },
-      "cancellations": {
-        "title": "9. Cancellations",
-        "body1": "Users may cancel subscriptions according to the cancellation process available in their account or through the billing flow provided.",
-        "body2": "Cancellation generally prevents future renewal charges, but it may not automatically result in a refund unless required by law or approved under the applicable refund process."
+      "userContent": {
+        "title": "6. User Content",
+        "body1": "You retain ownership of content you upload, publish, or submit, including images, text, logos, descriptions, galleries, and business information.",
+        "body2": "You grant Gallurio a non-exclusive, worldwide, royalty-free license to host, store, reproduce, format, transmit, display, and otherwise process your content solely as necessary to provide, secure, maintain, and improve Gallurio and its features. This license ends when the content is deleted, except where continued retention is required for legal, security, backup, or dispute-resolution purposes.",
+        "body3": "You represent that you have all rights, licenses, permissions, and consents needed for your content and its publication. You are responsible for obtaining any required consent from people whose personal information appears in your content."
       },
-      "serviceChanges": {
-        "title": "10. Service Changes",
-        "body1": "Gallurio may update, modify, suspend, or discontinue parts of the service at any time. Gallurio may also change features, plans, pricing, or usage limits as the product evolves.",
-        "body2": "Where appropriate, Gallurio will make reasonable efforts to notify users of material changes."
+      "bookings": {
+        "title": "7. Booking Inquiries",
+        "body1": "Booking inquiries are requests only and do not create a confirmed booking, contract, payment obligation, or agency relationship unless separately agreed between the user and the inquirer.",
+        "body2": "Users are responsible for responding to inquiries, safeguarding inquiry information, complying with applicable privacy laws, and handling their own prices, contracts, cancellations, refunds, schedules, and service quality. Gallurio is not a party to those arrangements."
+      },
+      "prohibited": {
+        "title": "8. Acceptable Use",
+        "intro": "You must not use Gallurio to:",
+        "item1": "violate any law or regulation",
+        "item2": "upload or publish content that is unlawful, fraudulent, deceptive, abusive, hateful, sexually exploitative, or defamatory",
+        "item3": "infringe intellectual-property, privacy, publicity, or other rights",
+        "item4": "collect sensitive personal information unnecessarily",
+        "item5": "send spam or deceptive booking requests",
+        "item6": "impersonate a person or business",
+        "item7": "upload malware or interfere with the service",
+        "item8": "access accounts, systems, or data without authorization",
+        "item9": "use Gallurio to provide services that you are not legally permitted to provide",
+        "outro": "We may remove content, limit features, suspend, or terminate accounts where reasonably necessary to protect Gallurio, users, visitors, or third parties."
       },
       "ip": {
-        "title": "11. Intellectual Property",
-        "body1": "Gallurio, including its software, design, branding, interface, features, and related materials, is owned by Gallurio or its licensors.",
-        "body2": "Users may not copy, modify, reverse engineer, resell, or exploit any part of Gallurio except as permitted by these Terms or applicable law."
+        "title": "9. Gallurio Intellectual Property",
+        "body": "Gallurio's software, branding, interface, design, documentation, features, and other materials are owned by Gallurio or its licensors. Except as expressly permitted, you may not copy, modify, reverse engineer, resell, distribute, or exploit them."
+      },
+      "copyright": {
+        "title": "10. Copyright Complaints",
+        "body": "If you believe content on a Gallurio page infringes your rights, contact support@gallurio.com with the relevant page, identification of the protected work, explanation of the infringement, and your contact details. Gallurio may remove or restrict access to content while reviewing a complaint."
+      },
+      "serviceChanges": {
+        "title": "11. Service Changes and Availability",
+        "body": "Gallurio may update, modify, suspend, or discontinue features, plans, limits, or parts of the service. We will make reasonable efforts to provide notice of material changes where appropriate. Gallurio is provided on an \"as available\" basis and may contain interruptions, errors, or limitations."
       },
       "disclaimer": {
-        "title": "12. Disclaimer",
-        "body": "Gallurio is provided on an \"as is\" and \"as available\" basis. Gallurio does not guarantee that the service will be uninterrupted, error-free, secure, or suitable for every business need."
+        "title": "12. Disclaimers",
+        "body": "To the maximum extent permitted by law, Gallurio makes no warranties that the service will be uninterrupted, error-free, secure, or suitable for every business purpose. Gallurio does not guarantee bookings, leads, revenue, search visibility, client responses, or business results."
       },
       "liability": {
         "title": "13. Limitation of Liability",
-        "body": "To the maximum extent permitted by law, Gallurio will not be liable for indirect, incidental, special, consequential, or punitive damages, including lost profits, lost data, business interruption, or reputational harm."
+        "body1": "To the maximum extent permitted by law, Gallurio will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, lost revenue, lost data, business interruption, or reputational harm arising from your use of the service.",
+        "body2": "Nothing in these Terms excludes liability that cannot lawfully be excluded or limited."
       },
       "termination": {
-        "title": "14. Termination",
-        "body1": "Gallurio may suspend or terminate access if a user violates these Terms, misuses the service, creates risk for other users, or uses the service in a way that may harm Gallurio or third parties.",
-        "body2": "Users may stop using Gallurio at any time."
+        "title": "14. Suspension and Termination",
+        "body1": "You may stop using Gallurio at any time. Gallurio may suspend or terminate access if you breach these Terms, fail to pay applicable charges, create security or legal risk, misuse the service, or harm other users or third parties.",
+        "body2": "After termination, public pages may be disabled and content may be deleted according to Gallurio's retention practices. Provisions concerning ownership, payment obligations, disclaimers, liability, privacy, and dispute resolution survive termination where applicable."
+      },
+      "privacyRef": {
+        "title": "15. Privacy",
+        "body": "Gallurio's processing of personal information is described in the Gallurio Privacy Policy. If you submit personal information through a Gallurio booking form, you acknowledge that it will be processed to deliver and manage your inquiry and related service communications."
+      },
+      "governingLaw": {
+        "title": "16. Governing Law",
+        "body": "These Terms are governed by the laws of the Philippines, without regard to conflict-of-law principles. Subject to any mandatory consumer-protection rights, disputes shall be brought before the courts with proper jurisdiction in the Philippines."
+      },
+      "changes": {
+        "title": "17. Changes to These Terms",
+        "body": "We may update these Terms as the service or law changes. We will update the effective date and provide notice of material changes where appropriate. Continued use after the effective date means you accept the updated Terms."
       },
       "contact": {
-        "title": "15. Contact",
+        "title": "18. Contact",
         "body": "For questions about these Terms, contact us at:"
       }
     },
     "privacy": {
       "metadata": {
         "title": "Privacy Policy — Gallurio",
-        "description": "Learn how Gallurio collects, uses, stores, and protects information."
+        "description": "Learn how Gallurio collects, uses, stores, discloses, and protects personal information."
       },
       "title": "Privacy Policy",
-      "effectiveDate": "Effective Date: July 18, 2026",
-      "intro": "This Privacy Policy explains how Gallurio collects, uses, stores, and protects information when users access the website, application, and related services.",
+      "effectiveDate": "Effective Date: July 20, 2026",
+      "intro": "This Privacy Policy explains how Gallurio collects, uses, stores, discloses, and protects personal information when you use Gallurio, visit a Gallurio public page, or submit a booking inquiry through one.",
+      "controller": {
+        "title": "1. Who Is Responsible for Your Information",
+        "body": "Gallurio is operated in the Philippines as a sole proprietorship by Alexander III Banaag. For purposes of the Philippine Data Privacy Act of 2012 and, where applicable, the EU General Data Protection Regulation (GDPR), Alexander III Banaag is the Personal Information Controller and data controller.",
+        "addressLabel": "Address:",
+        "address": "J Labra St. Guadalupe, Cebu City, Cebu, Philippines",
+        "contactLabel": "Privacy contact:"
+      },
       "collect": {
-        "title": "1. Information We Collect",
+        "title": "2. Information We Collect",
+        "intro": "Depending on how you use Gallurio, we may collect:",
         "account": {
-          "title": "Account Information",
-          "body": "This may include name, email address, login details, business name, workspace information, and account preferences."
+          "title": "Account and Identity Information",
+          "body": "Name, email address, Google account identifier, profile image where provided, authentication records, workspace details, and preferences."
         },
         "business": {
-          "title": "Business and Portfolio Information",
-          "body": "This may include public profile details, service descriptions, images, galleries, branding settings, portfolio content, and other materials users choose to upload or publish."
+          "title": "Portfolio and Business Information",
+          "body": "Business name, public profile details, service descriptions, images, galleries, branding, page settings, and other content you upload or publish."
         },
         "bookingInquiry": {
           "title": "Booking Inquiry Information",
-          "body": "When visitors submit inquiries through a Gallurio page, Gallurio may collect information such as names, email addresses, event dates, project details, messages, and other form responses."
+          "body": "Name, email address, event or project details, dates, messages, and other responses submitted through a user-created booking form."
         },
         "usage": {
-          "title": "Usage Information",
-          "body": "Gallurio may collect technical and usage data such as device information, browser type, IP address, pages viewed, actions taken, timestamps, and diagnostic logs."
+          "title": "Technical and Security Information",
+          "body": "IP address, user-agent information, browser and device information, timestamps, logs, and security events."
         },
         "payment": {
-          "title": "Payment Information",
-          "body": "Paid Pro subscriptions are not yet available. Gallurio does not directly store full payment card details; once payments launch, this section will name the payment processor and describe how it collects and processes billing details, payment information, tax information, and invoices."
-        }
+          "title": "Subscription Information",
+          "body": "Plan, subscription status, billing identifiers, invoices, payment status, and transaction-related information. Gallurio does not receive or store full payment-card details when payments are handled by Lemon Squeezy."
+        },
+        "emailDelivery": {
+          "title": "Email-Delivery Information",
+          "body": "Email address, delivery status, bounce information, and limited message metadata for transactional emails."
+        },
+        "outro": "Please do not upload sensitive personal information unless it is necessary and lawful for your use of the service."
       },
       "useOfInfo": {
-        "title": "2. How We Use Information",
-        "item1": "Provide and operate Gallurio",
-        "item2": "Create and manage user accounts",
-        "item3": "Publish and display portfolio pages",
-        "item4": "Process booking inquiries",
-        "item5": "Improve product features and user experience",
-        "item6": "Provide support and respond to requests",
-        "item7": "Maintain security and prevent abuse",
-        "item8": "Analyze usage and performance",
-        "item9": "Comply with legal and billing obligations"
+        "title": "3. How We Use Information and Our Legal Bases",
+        "intro": "We process information to:",
+        "item1": "Create and operate accounts and workspaces — legal basis: performance of a contract",
+        "item2": "Publish and maintain portfolio pages — legal basis: performance of a contract and legitimate interests",
+        "item3": "Receive and deliver booking inquiries — legal basis: performance of a contract and legitimate interests",
+        "item4": "Send verification, security, booking, billing, and service notices — legal basis: performance of a contract and legitimate interests",
+        "item5": "Provide support and respond to requests — legal basis: performance of a contract, legitimate interests, or consent",
+        "item6": "Protect the service, prevent abuse, and enforce our Terms — legal basis: legitimate interests and legal obligations",
+        "item7": "Maintain billing, accounting, and tax records — legal basis: legal obligations and performance of a contract",
+        "item8": "Understand usage and improve the service — legal basis: legitimate interests, or consent where required",
+        "item9": "Use optional non-essential cookies or tracking — legal basis: consent",
+        "outro": "Gallurio does not currently send marketing emails or use personal information for advertising or behavioral advertising."
       },
       "userContentPublic": {
-        "title": "3. User Content and Public Pages",
-        "body1": "Content published on a Gallurio portfolio page may be visible to the public. This may include business names, images, services, descriptions, contact options, and other information users choose to make public.",
-        "body2": "Users are responsible for ensuring that published content does not include private or sensitive information that they do not want publicly available."
+        "title": "4. Public Pages and Booking Inquiries",
+        "body1": "Content that a workspace owner chooses to publish may be publicly accessible, including business names, images, services, descriptions, contact options, and booking forms.",
+        "body2": "When a visitor submits a booking inquiry, Gallurio processes the submitted information to deliver the inquiry to the relevant workspace owner and to provide related notifications. The workspace owner is responsible for using the inquiry information lawfully and for responding to requests relating to information they receive through their page. Gallurio may also process that information as a service provider on behalf of the workspace owner."
       },
-      "sharing": {
-        "title": "4. Sharing of Information",
-        "body1": "Gallurio may share information with trusted service providers that help operate the platform, such as hosting providers, authentication providers, analytics tools, email services, file storage providers, and payment processors.",
-        "body2": "Gallurio may also share information when required by law, to protect rights, to prevent fraud or abuse, or as part of a business transfer such as a merger, acquisition, or sale of assets.",
-        "body3": "Gallurio does not sell personal information."
+      "analytics": {
+        "title": "5. Public-Page Analytics",
+        "body1": "Gallurio provides analytics for user-created public pages. The page-view beacon does not set or read cookies.",
+        "body2": "For rate-limiting, abuse prevention, and once-per-day deduplication, Gallurio receives the visitor's IP address and user-agent information server-side. The raw IP address and raw user-agent are not persisted. Instead, Gallurio creates a salted HMAC-SHA-256 hash using the IP address, user-agent, and the current day. The salt rotates daily at UTC midnight, so the resulting value is not intended to be a durable cross-day identifier.",
+        "body3": "Analytics may include page views, page or workspace identifier, approximate technical information, and timestamps. Workspace owners do not receive the raw IP address through Gallurio analytics."
       },
-      "security": {
-        "title": "5. Data Storage and Security",
-        "body1": "Gallurio uses reasonable technical and organizational measures to protect information. However, no system can be guaranteed to be completely secure.",
-        "body2": "Users are responsible for keeping account credentials safe and notifying Gallurio if they believe their account has been compromised."
-      },
-      "retention": {
-        "title": "6. Data Retention",
-        "body1": "Gallurio retains information for as long as needed to provide the service, comply with legal obligations, resolve disputes, enforce agreements, and maintain legitimate business records.",
-        "body2": "Users may request account deletion or data removal by contacting Gallurio, subject to legal, technical, or operational limitations."
-      },
-      "cookies": {
-        "title": "7. Cookies and Similar Technologies",
-        "body1": "Gallurio may use cookies and similar technologies to keep users signed in, remember preferences, analyze usage, improve performance, and support security.",
-        "body2": "Users can control cookies through browser settings, but disabling some cookies may affect how the service works."
+      "serviceProviders": {
+        "title": "6. Service Providers",
+        "intro": "Gallurio uses service providers to operate the platform:",
+        "item1": "WorkOS for authentication and identity management",
+        "item2": "Google, when a user chooses Google sign-in",
+        "item3": "MongoDB Atlas Flex for database hosting",
+        "item4": "Cloudflare Images for image storage and delivery, Cloudflare Turnstile for abuse prevention, and Cloudflare DNS and security services",
+        "item5": "Hetzner for application hosting",
+        "item6": "Resend for transactional email delivery",
+        "item7": "Lemon Squeezy for subscription checkout, payment processing, merchant-of-record services, billing, tax handling, refunds, chargebacks, and related transaction administration",
+        "outro1": "Providers may process information on Gallurio's behalf or process some information under their own privacy policies. Gallurio remains responsible for selecting appropriate providers and using reasonable contractual, technical, and organizational safeguards.",
+        "outro2": "Gallurio may also share information when required by law, to protect rights, to prevent fraud or abuse, or as part of a business transfer such as a merger, acquisition, or sale of assets. Gallurio does not sell personal information."
       },
       "international": {
-        "title": "8. International Use",
-        "body1": "Gallurio may be accessed from different countries. Information may be processed in countries where Gallurio or its service providers operate.",
-        "body2": "By using Gallurio, users understand that information may be transferred and processed outside their country of residence, subject to applicable law."
+        "title": "7. International Transfers",
+        "body1": "Gallurio and its service providers may process information in countries outside the Philippines and outside your country of residence.",
+        "body2": "Where GDPR applies, Gallurio will use an appropriate transfer mechanism and safeguards required by applicable law, such as an adequacy decision, Standard Contractual Clauses, or another legally recognized safeguard."
+      },
+      "cookies": {
+        "title": "8. Cookies and Similar Technologies",
+        "body1": "Gallurio uses essential cookies or similar technologies where needed for authentication, security, session management, and core functionality. Public-page analytics described in Section 5 do not use cookies.",
+        "body2": "If Gallurio later introduces non-essential analytics, advertising, or similar technologies, they will be documented in a cookie notice and enabled only where the required consent has been obtained. You may change your browser settings or consent choices, although disabling essential technologies may affect the service."
+      },
+      "retention": {
+        "title": "9. Retention",
+        "body1": "We retain information for as long as reasonably necessary to provide Gallurio, maintain public pages and business records, deliver booking functionality, resolve disputes, prevent abuse, enforce agreements, and comply with legal, accounting, and tax obligations.",
+        "body2": "Booking inquiries may remain available to workspace owners for an extended or indefinite period because they may serve as business records. Users and workspace owners may delete information where the service provides a deletion feature or may contact us to request deletion. We may retain limited information where required for legal, security, fraud-prevention, backup, or dispute-resolution purposes."
+      },
+      "rights": {
+        "title": "10. Your Rights",
+        "body1": "Subject to applicable law and valid limitations, you may request access to, correction of, deletion or blocking of, restriction of, or portability of your personal information. You may also object to processing based on legitimate interests and withdraw consent where processing is based on consent.",
+        "body2": "Send requests to support@gallurio.com. We may request information reasonably necessary to verify your identity. We will respond without undue delay and, where GDPR applies, generally within one month, subject to lawful extensions for complex or numerous requests.",
+        "body3": "You may also lodge a complaint with the National Privacy Commission of the Philippines or, where GDPR applies, with the supervisory authority in your country of residence, workplace, or the place of the alleged infringement."
+      },
+      "security": {
+        "title": "11. Security and Breach Response",
+        "body1": "Gallurio uses reasonable and appropriate organizational, physical, and technical measures designed to protect personal information against unauthorized access, loss, alteration, disclosure, or destruction. No service can guarantee absolute security.",
+        "body2": "Gallurio maintains procedures for investigating and responding to security incidents and will provide notifications required by applicable law."
       },
       "children": {
-        "title": "9. Children's Privacy",
-        "body1": "Gallurio is not intended for children. Gallurio does not knowingly collect personal information from children under the age required by applicable law.",
+        "title": "12. Children's Privacy",
+        "body1": "Gallurio is intended for businesses and creative professionals and is not directed to children. We do not knowingly collect personal information from children in violation of applicable law.",
         "body2": "If someone believes a child has provided personal information to Gallurio, they should contact Gallurio so the information can be reviewed and removed if appropriate."
       },
       "changes": {
-        "title": "10. Changes to This Policy",
-        "body": "Gallurio may update this Privacy Policy from time to time. When material changes are made, Gallurio may notify users through the service, by email, or by updating the effective date."
+        "title": "13. Changes",
+        "body": "We may update this Policy as Gallurio, its providers, or applicable law changes. We will update the effective date and provide additional notice for material changes where appropriate."
       },
       "contact": {
-        "title": "11. Contact",
+        "title": "14. Contact",
         "body": "For privacy questions or requests, contact us at:"
       }
     },
     "refunds": {
       "metadata": {
-        "title": "Refund Policy — Gallurio",
+        "title": "Refund and Cancellation Policy — Gallurio",
         "description": "Learn how Gallurio handles cancellations and refunds."
       },
-      "title": "Refund Policy",
-      "effectiveDate": "Effective Date: July 18, 2026",
+      "title": "Refund and Cancellation Policy",
+      "effectiveDate": "Effective Date: July 20, 2026",
       "betaPeriod": {
-        "title": "1. Free Trial",
-        "body1": "New Gallurio workspaces receive one month of full Pro access at no charge, with no card required. No payment is collected during this trial, so no refund applies to it.",
-        "body2": "If you continue with a paid Pro subscription after the trial, the pricing and billing terms shown at checkout apply, and this Refund Policy governs any payment made.",
-        "body3": "Verified beta participants may also receive a separate two-month Pro promo grant. It may be redeemed once per verified beta participant and expires two months after redemption; like the free trial, it is a promotional grant rather than a payment, so no refund applies to it."
+        "title": "1. Free Access",
+        "body1": "New Gallurio workspaces receive one month of full Pro access at no charge, with no payment card required. Because no payment is collected during this period, there is no payment to refund.",
+        "body2": "Verified beta participants may also receive a separate two-month Pro promo grant, redeemable once per verified participant and expiring two months after redemption. Like the free month, it is a promotional grant rather than a payment, so no refund applies to it."
       },
       "subscriptions": {
-        "title": "2. Subscriptions",
-        "body1": "Gallurio Pro subscriptions are billed monthly, annually, or according to the billing period shown at checkout.",
-        "body2": "Users may cancel their subscription to prevent future renewal charges. After cancellation, access may continue until the end of the current billing period unless otherwise stated.",
-        "body3": "When a subscription lapses due to a failed or terminal non-payment, Gallurio sends an expiry notice immediately, a saved-data reminder after 30 days, and a final public-page warning after 51 days, then unpublishes the public page after 58 days. Workspace, CRM, and draft data remain retained so everything can be restored upon resubscribing."
+        "title": "2. Paid Subscriptions",
+        "body1": "Paid Gallurio Pro subscriptions will be billed monthly or yearly, according to the option selected at checkout. The price, billing interval, renewal terms, applicable taxes, and cancellation process will be shown before payment.",
+        "body2": "Lemon Squeezy will act as Gallurio's merchant of record and will process checkout, payment, billing, taxes, invoices, refunds, chargebacks, and related payment administration. The name of Lemon Squeezy or its applicable billing descriptor may appear on a payment statement."
+      },
+      "cancellation": {
+        "title": "3. Cancellation",
+        "body1": "You may cancel through your Gallurio account or the billing-management link supplied through the payment flow. Cancellation normally prevents future renewal charges. Unless otherwise stated, access continues until the end of the paid billing period.",
+        "body2": "Cancellation does not automatically refund an amount already paid."
+      },
+      "failedPayments": {
+        "title": "4. Failed Payments and Page Unpublishing",
+        "body1": "If a renewal payment fails or a subscription ends because of non-payment, Gallurio sends an expiry notice immediately, a saved-data reminder after 30 days, and a final public-page warning after 51 days, then unpublishes the public page after 58 days.",
+        "body2": "Workspace, client-management, and draft data remain retained so everything can be restored upon resubscribing, subject to Gallurio's Privacy Policy and applicable legal or operational limits."
       },
       "refundRequests": {
-        "title": "3. Refund Requests",
-        "intro": "Refund requests are reviewed on a case-by-case basis.",
-        "approvalIntro": "Approval may depend on:",
-        "item1": "The date of purchase",
-        "item2": "The billing period",
-        "item3": "Product usage",
-        "item4": "Account activity",
-        "item5": "Technical issues",
-        "item6": "Duplicate charges",
-        "item7": "Applicable consumer protection laws",
-        "item8": "The payment processor's refund process",
-        "outro": "Submitting a refund request does not guarantee that a refund will be approved."
-      },
-      "merchantOfRecord": {
-        "title": "4. Payment Processing",
-        "body1": "Paid subscriptions are not yet available. Once they launch, Gallurio will name its payment processor here and describe how it handles payment processing, taxes, invoices, billing support, and eligible refund processing.",
-        "body2": "Once payments launch, a user's billing statement may show the selected payment processor's name or a related billing descriptor."
+        "title": "5. Refund Requests",
+        "intro": "Refund requests may be submitted to support@gallurio.com and are reviewed under the applicable Lemon Squeezy process, Gallurio's policies, and applicable consumer-protection law.",
+        "approvalIntro": "A review may consider:",
+        "item1": "date and amount of purchase",
+        "item2": "billing period",
+        "item3": "duplicate or incorrect charges",
+        "item4": "technical problems that materially prevented use",
+        "item5": "account activity and product usage",
+        "item6": "any mandatory refund or consumer rights",
+        "outro": "Submitting a request does not guarantee approval. Lemon Squeezy may issue refunds or otherwise take action to prevent or resolve chargebacks under its own policies."
       },
       "nonRefundable": {
-        "title": "5. Non-Refundable Situations",
-        "intro": "Unless required by law, refunds may not be provided for:",
-        "item1": "Unused time in a billing period after cancellation",
-        "item2": "Failure to cancel before renewal",
-        "item3": "Temporary lack of use",
-        "item4": "Change of mind after substantial use",
-        "item5": "Issues caused by incorrect account setup or user-provided information",
-        "outro": "Gallurio will still review reasonable requests, especially where there are technical or billing issues."
+        "title": "6. Situations Where a Refund May Not Apply",
+        "intro": "To the maximum extent permitted by law, refunds may not be available for unused time after cancellation, failure to cancel before renewal, temporary non-use, change of mind after substantial use, or issues caused by incorrect account setup or information supplied by the user.",
+        "outro": "This section does not limit mandatory rights under applicable consumer-protection law. Reasonable requests involving duplicate charges, unauthorized charges, or material technical failures will still be reviewed."
       },
       "howToRequest": {
-        "title": "6. How to Request a Refund",
-        "body": "To request a refund, contact us at:",
+        "title": "7. How to Request a Refund",
+        "body": "To request a refund, email us at:",
         "includeIntro": "Please include:",
-        "item1": "Account email",
-        "item2": "Business or workspace name",
-        "item3": "Date of payment",
-        "item4": "Reason for the request",
-        "item5": "Relevant screenshots or billing details",
-        "outro": "Gallurio may ask for additional information to verify the payment and review the request."
+        "item1": "account email address",
+        "item2": "business or workspace name",
+        "item3": "payment date and amount",
+        "item4": "reason for the request",
+        "item5": "relevant screenshots, invoice information, or billing details",
+        "outro": "We may request additional information to verify the account and payment. Do not send full card numbers or other unnecessary payment credentials."
       },
-      "cancellations": {
-        "title": "7. Cancellations",
-        "body1": "Users may cancel their subscription through account settings or the billing management flow provided.",
-        "body2": "Cancellation stops future renewals but does not automatically refund previous payments unless a refund is approved or required by law."
+      "changes": {
+        "title": "8. Changes",
+        "body": "We may update this policy when our billing process, payment provider, pricing, or applicable law changes. The latest version will be published on this page."
       }
     },
     "contact": {
@@ -383,7 +432,7 @@
       },
       "header": {
         "headline": "Need help with Gallurio?",
-        "body": "For support, account concerns, billing issues, or general inquiries, contact us at:"
+        "body": "For support, account concerns, billing questions, refund requests, bug reports, feature feedback, partnerships, or general inquiries, email:"
       },
       "supportTopics": {
         "title": "Support Topics",
@@ -397,14 +446,18 @@
         "item8": "Feature feedback",
         "item9": "Partnership or business inquiries"
       },
+      "whatToInclude": {
+        "title": "What to Include",
+        "body": "For account, billing, or technical issues, include your account email address, workspace name, relevant page URL, a short description of the issue, and screenshots where helpful. Do not send passwords, full payment-card numbers, or other unnecessary sensitive information."
+      },
       "responseTime": {
         "title": "Response Time",
-        "body1": "We aim to respond as soon as reasonably possible. Response times may vary as we continue developing and improving Gallurio.",
-        "body2": "For urgent account or billing concerns, please include as much relevant detail as possible so we can review the request efficiently."
+        "body1": "Gallurio aims to respond as soon as reasonably possible. Response times may vary while we continue developing and improving the service.",
+        "body2": "For urgent account or billing concerns, include enough detail for us to verify the account and review the issue efficiently."
       },
       "businessInfo": {
         "title": "Business Information",
-        "body": "Gallurio is a small, independent startup. We don't have a registered legal name or business address to list yet — for now, the best way to reach us is by email.",
+        "body": "Gallurio is operated as an independent Philippine sole proprietorship by Alexander III Banaag, based at J Labra St. Guadalupe, Cebu City, Cebu, Philippines. The legal name and contact address are also listed in Gallurio's Privacy Policy and Terms of Service.",
         "emailLabel": "Email:"
       },
       "social": {
@@ -717,8 +770,10 @@
           "today": "Today",
           "next": "Next heatmap dates",
           "title": "Booked hours heatmap",
-          "weekOf": "Week of",
           "bookedHours": "Booked hours",
+          "bookingsCount": "{count, plural, one {# booking} other {# bookings}}",
+          "skipPrevious": "Skip back 5 pages",
+          "skipNext": "Skip forward 5 pages",
           "weekdays": [
             "Mon",
             "Tue",
@@ -1462,6 +1517,20 @@
           "image": "Could not read the image. Please try another file.",
           "upload": "Upload failed. Please try again."
         },
+        "logoSection": "Logo",
+        "logoHint": "Shown in your public page header.",
+        "logoRequirements": "PNG, JPEG, or WebP. Up to 512x256px, max 250KB.",
+        "logoLabel": "Upload logo",
+        "logoReplace": "Replace",
+        "logoRemove": "Remove",
+        "logoUploading": "Uploading...",
+        "logoErrors": {
+          "type": "Use a PNG, JPEG, or WebP image.",
+          "size": "Keep the file under 250KB.",
+          "dimensions": "Keep the logo within 512x256px.",
+          "image": "That file isn't a valid image.",
+          "upload": "Upload failed. Please try again."
+        },
         "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
         "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
         "seoKeywords": "SEO tags",
@@ -2065,7 +2134,12 @@
         "addNewTheme": "Add new theme",
         "addNewGuardTitle": "Save before starting new?",
         "addNewGuardBody": "You have unsaved changes. Save your current theme first, or discard to start fresh.",
-        "addNewGuardNameLabel": "Theme name"
+        "addNewGuardNameLabel": "Theme name",
+        "fontSearchPlaceholder": "Search fonts",
+        "fontNoMatches": "No matching fonts",
+        "curatedFontsGroup": "Curated fonts",
+        "googleFontsGroup": "Google Fonts",
+        "customGoogleFontOption": "Custom Google Font…"
       },
       "editor": {
         "zone": {
@@ -2983,12 +3057,17 @@
         "stylist": "Stylist",
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
+        "artists": "Artists",
         "other": "Other"
       },
+      "businessTypeOtherLabel": "What kind of business?",
+      "businessTypeOtherPlaceholder": "e.g. Tattoo studio, DJ, florist",
       "slugChecking": "Checking…",
       "slugAvailable": "Available",
       "slugTaken": "Already taken",
-      "slugInvalid": "Invalid format"
+      "slugInvalid": "Invalid format",
+      "timezoneSearchPlaceholder": "Search by city or UTC offset",
+      "timezoneNoMatches": "No matching timezones"
     },
     "workspace": {
       "title": "Set up your workspace",
@@ -3074,6 +3153,12 @@
         "teamManagement": "Team management",
         "removeBranding": "Remove Gallurio branding"
       }
+    },
+    "beta": {
+      "name": "Beta"
+    },
+    "promo": {
+      "name": "Promo"
     }
   },
   "subscribe": {
@@ -3188,7 +3273,8 @@
   "notFound": {
     "title": "Page not found",
     "description": "The page you're looking for doesn't exist or has been moved.",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to dashboard",
+    "backToHome": "Back to home"
   },
   "inviteAccept": {
     "pageTitle": "Accept invitation",

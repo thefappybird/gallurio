@@ -155,13 +155,36 @@ describe("ThemeTile name editing", () => {
     expect(screen.queryByRole("button", { name: "Apply theme: Current Theme" })).toBeNull();
   });
 
-  it("shows an inline error with role=alert", () => {
+  it("marks the input invalid via aria-invalid/aria-describedby instead of an inline text error", () => {
     render(
       <ThemeTile tile={currentTile} selected applyLabel="x" nameEditing
-        saveNameLabel="Save theme" nameError="A theme already exists with this name."
+        saveNameLabel="Save theme" nameInvalid nameErrorId="theme-name-error"
         onApply={() => {}} />
     );
-    expect(screen.getByRole("alert")).toHaveTextContent("A theme already exists with this name.");
+    const input = screen.getByRole("textbox", { name: "Save theme" });
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input).toHaveAttribute("aria-describedby", "theme-name-error");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows a destructive ring + one-shot glow on the card when the name is invalid, not just a color change", () => {
+    render(
+      <ThemeTile tile={currentTile} selected applyLabel="x" nameEditing
+        saveNameLabel="Save theme" nameInvalid nameErrorId="theme-name-error"
+        onApply={() => {}} />
+    );
+    const card = screen.getByRole("textbox", { name: "Save theme" }).closest('[data-slot="theme-tile"]');
+    expect(card).toHaveClass("ring-2", "ring-destructive", "animate-theme-tile-invalid");
+  });
+
+  it("shows a decorative alert icon when invalid, so the signal isn't color-only", () => {
+    render(
+      <ThemeTile tile={currentTile} selected applyLabel="x" nameEditing
+        saveNameLabel="Save theme" nameInvalid nameErrorId="theme-name-error"
+        onApply={() => {}} />
+    );
+    const card = screen.getByRole("textbox", { name: "Save theme" }).closest('[data-slot="theme-tile"]')!;
+    expect(card.querySelector('[data-slot="theme-tile-invalid-icon"]')).not.toBeNull();
   });
 
   it("renders a cancel (✕) button in name-editing row that calls onCancelName", () => {

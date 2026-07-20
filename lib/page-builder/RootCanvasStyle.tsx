@@ -121,15 +121,6 @@ const CANVAS_ROOT_DROPZONE_CSS =
  * (always present, so the canvas reflows with the viewport toggle) with the
  * dynamic per-page root style layered on top.
  */
-/**
- * Materialize the brand background on the canvas surface so it matches
- * preview/publish. PreviewBrandShell sets `backgroundColor: var(--pf-color-bg)`
- * explicitly; the canvas has no such wrapper, so we inject it here.
- * Placed BEFORE rootRule so an explicit bgColorToken in the page style still wins
- * (same selector, last rule wins in CSS cascade).
- */
-const CANVAS_EFFECTIVE_BG_CSS =
-  `${CANVAS_SURFACE_SELECTOR} { background-color: var(--pf-color-bg); }`;
 
 // Device-width clamp + zoom for the edit canvas. Since `[data-puck-preview]` is
 // the `pfpage` container, clamping its width makes the same container-query rules
@@ -160,12 +151,18 @@ export function buildCanvasCss(
   viewport?: { deviceWidth: number | null; zoom: number },
 ): string {
   const decls = rootCanvasCssText(style);
+  // Also paint CANVAS_ROOT_SELECTOR (Puck's `_PuckCanvas-root_` wrapper around
+  // [data-puck-preview] — the same element CANVAS_PUCK_CANVAS_ROOT_CSS above
+  // retargets for position/height). Puck's own CSS module hardcodes
+  // `background: white` on that wrapper; when the preview surface's own box
+  // doesn't fully cover it, the hardcoded white shows through below the first
+  // block instead of the page's explicit background color.
   const rootRule = decls
-    ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
+    ? `[data-puck-preview], .Puck-root, .PuckLayout-content, ${CANVAS_ROOT_SELECTOR} { ${decls} }`
     : "";
   // Emitted last so it layers over the base width rules in the cascade.
   const viewportRule = viewport ? buildCanvasViewportCss(viewport.deviceWidth, viewport.zoom) : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${CANVAS_EFFECTIVE_BG_CSS}\n${rootRule}\n${viewportRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}\n${viewportRule}`;
 }
 
 /**

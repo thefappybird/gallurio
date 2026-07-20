@@ -1,5 +1,6 @@
 import { loadOnboardingContext, requireStep } from "@/lib/auth/onboardingStep";
 import { getAuthUser } from "@/lib/auth/session";
+import type { BusinessStepInput } from "@/lib/validators/workspace";
 import { BusinessStepForm } from "./business-form";
 
 export default async function BusinessStepPage() {
@@ -19,14 +20,10 @@ export default async function BusinessStepPage() {
         firstName,
         lastName,
         name: ctx.workspace?.name ?? "",
-        businessType: (ctx.workspace?.businessType as
-          | "photographer"
-          | "venue"
-          | "planner"
-          | "stylist"
-          | "catering"
-          | "entertainer"
-          | "other") ?? "photographer",
+        businessType:
+          (ctx.workspace?.businessType as BusinessStepInput["businessType"]) ??
+          "photographer",
+        businessTypeOther: ctx.workspace?.businessTypeOther ?? "",
       }}
     />
   );

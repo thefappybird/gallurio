@@ -51,6 +51,33 @@ const RADIUS_MAP: Record<BrandKitRadius, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Background luminance → color-scheme
+// ---------------------------------------------------------------------------
+
+/**
+ * Derives the native `color-scheme` hint from a brand background color so that
+ * native UA control glyphs (e.g. the date/time picker indicators in the public
+ * contact form) match the theme instead of staying stuck in light mode.
+ */
+function colorSchemeForBackground(hex: string): "dark" | "light" {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!match) return "light";
+  const h = match[1];
+
+  const toLinear = (channel: number) => {
+    const c = channel / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+
+  const r = toLinear(parseInt(h.slice(0, 2), 16));
+  const g = toLinear(parseInt(h.slice(2, 4), 16));
+  const b = toLinear(parseInt(h.slice(4, 6), 16));
+
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance < 0.4 ? "dark" : "light";
+}
+
+// ---------------------------------------------------------------------------
 // ResolvedBrandKit type
 // ---------------------------------------------------------------------------
 
@@ -87,6 +114,8 @@ export function resolveBrandKit(brandKit: PortfolioBrandKit): ResolvedBrandKit {
     "--pf-font-heading": fontFamilyValue(headingKey) ?? "",
     "--pf-font-body": fontFamilyValue(bodyKey) ?? "",
   };
+
+  cssVars.colorScheme = colorSchemeForBackground(brandKit.backgroundColor);
 
   const className = `pf-theme-${brandKit.themePreset} pf-button-${brandKit.buttonStyle}`;
 

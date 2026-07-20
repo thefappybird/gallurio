@@ -1999,3 +1999,94 @@ describe("BookingWizardModal — multi-session edit: no client step", () => {
     });
   });
 });
+
+// ── Footer: inline "Save" hidden on the last step (no duplicate submit) ───────
+describe("BookingWizardModal — inline Save visibility across steps (edit mode)", () => {
+  const EDIT_BOOKING_ID = "aabbccddeeff0011223344aa";
+
+  const editInitialValues = {
+    client: { mode: "existing" as const, clientId: "aaa", clientName: "Test Client" },
+    title: "Test Shoot",
+    eventType: "portrait" as const,
+    status: "booked" as const,
+    sessions: [
+      { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
+    ],
+    location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
+    amount: { total: 0, deposit: 0, currency: "PHP" as const },
+    notes: "",
+  };
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+  });
+
+  /** Footer inline Save = a type="button" control whose label contains "save". */
+  function inlineSaveButtons() {
+    return screen
+      .getAllByRole("button")
+      .filter(
+        (b) =>
+          b.getAttribute("type") === "button" &&
+          !!b.textContent?.toLowerCase().includes("save")
+      );
+  }
+
+  it("shows the inline Save on a non-last step", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={EDIT_BOOKING_ID}
+          defaultCurrency="PHP"
+          initialValues={editInitialValues}
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    // Jump to the Event step (not the last step).
+    const eventStepBtn = await screen.findByRole("button", { name: /event/i });
+    await act(async () => {
+      fireEvent.click(eventStepBtn);
+    });
+
+    expect(inlineSaveButtons().length).toBeGreaterThan(0);
+  });
+
+  it("hides the inline Save on the last (review) step", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={EDIT_BOOKING_ID}
+          defaultCurrency="PHP"
+          initialValues={editInitialValues}
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    // Jump to the Review step (the last step).
+    const reviewStepBtn = await screen.findByRole("button", { name: /review/i });
+    await act(async () => {
+      fireEvent.click(reviewStepBtn);
+    });
+
+    // On the last step the only Save is the type="submit" one — no inline Save.
+    await waitFor(() => {
+      expect(inlineSaveButtons()).toHaveLength(0);
+    });
+  });
+});

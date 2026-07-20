@@ -52,6 +52,12 @@ const publicPageSettingsDraftSchema = new Schema(
   {
     seoTitle: { type: String, default: "" },
     seoDescription: { type: String, default: "" },
+    // Portfolio header logo, staged here by the story-prompt wizard / future
+    // settings UI until Publish promotes it into live publicPage.header.
+    logo: {
+      url: { type: String, default: "" },
+      assetId: { type: String, default: "" },
+    },
     siteIcon: {
       url: { type: String, default: "" },
       assetId: { type: String, default: "" },
@@ -74,9 +80,12 @@ const workspaceSchema = new Schema(
     ownerUserId: { type: String, required: true, index: true },
     businessType: {
       type: String,
-      enum: ["photographer", "venue", "planner", "stylist", "catering", "entertainer", "other"],
+      enum: ["photographer", "venue", "planner", "stylist", "catering", "entertainer", "artists", "other"],
       default: "other",
     },
+    // Free-text label captured when businessType is "other" — internal
+    // data-gathering only, never surfaced on the public page.
+    businessTypeOther: { type: String, default: "" },
     // ISO 3166-1 alpha-2. Used for billing/market defaults. NOTE: it no longer
     // drives the public page language — that is owner-chosen via
     // publicPage.formLocale (default English). See resolvePublicChromeLocale.
