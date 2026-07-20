@@ -64,7 +64,10 @@ export function ThemePanelDialog({
   const [closeGuardOpen, setCloseGuardOpen] = useState(false);
   const [kitGuardOpen, setKitGuardOpen] = useState(false);
   const [applying, setApplying] = useState(false);
-  const [panelError, setPanelError] = useState<string | null>(null);
+  // Delete-theme failure only — a separate concern from name-validation
+  // errors below, which are computed at render from the shared controller
+  // (the single source of truth) rather than tracked in local state.
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Snapshot of the brand kit as it was when the dialog opened, so any
   // unapplied edit (including just picking a different theme tile, which
@@ -78,7 +81,7 @@ export function ThemePanelDialog({
     setWasOpen(open);
     if (open) {
       setOpenSnapshot(brandKit);
-      setPanelError(null);
+      setDeleteError(null);
     }
   }
   const brandKitDirty = !brandKitsEqualForSelection(brandKit, openSnapshot);
@@ -122,6 +125,15 @@ export function ThemePanelDialog({
     },
   });
 
+  // Single source of truth for the bottom name-validation message — derived
+  // fresh every render from the controller (never a separate copy that can
+  // desync from an inline Discard/typing/successful save). Current-draft and
+  // saved-theme-edit sessions are mutually exclusive in practice, so at most
+  // one of these is ever non-null.
+  const nameError = controller.hasUnsavedCurrent
+    ? themeNameErrMsg(controller.currentThemeNameError)
+    : themeNameErrMsg(controller.editGuardError);
+
   // Brand-kit changes are kept in local state + the localStorage buffer;
   // the DB write happens only when the owner explicitly saves or publishes.
   function persistPage(): boolean {
@@ -130,9 +142,7 @@ export function ThemePanelDialog({
   }
 
   async function saveCurrentThemeGuarded(): Promise<boolean> {
-    const ok = await controller.saveCurrentTheme();
-    setPanelError(ok ? null : themeNameErrMsg(controller.currentThemeNameError));
-    return ok;
+    return controller.saveCurrentTheme();
   }
 
   async function apply() {
@@ -151,13 +161,13 @@ export function ThemePanelDialog({
   async function handleDeleteTheme(id: string) {
     const previous = savedThemes;
     onSavedThemesChange(previous.filter((s) => s.id !== id));
-    setPanelError(null);
+    setDeleteError(null);
     const res = await deleteThemeAction(id);
     if ("error" in res) {
       onSavedThemesChange(previous);
       const msg = errMsg("theme_delete_failed");
       toast.error(msg);
-      setPanelError(msg);
+      setDeleteError(msg);
     }
   }
 
@@ -200,9 +210,9 @@ export function ThemePanelDialog({
               onAddNew={() => controller.requestAddNew()}
             />
           </div>
-          {panelError && (
-            <p role="alert" className="px-1 text-xs text-destructive">
-              {panelError}
+          {(deleteError ?? nameError) && (
+            <p role="alert" id="theme-name-error" className="px-1 text-xs text-destructive">
+              {deleteError ?? nameError}
             </p>
           )}
           <DialogFooter className="sm:justify-between">

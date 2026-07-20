@@ -301,4 +301,28 @@ describe("ThemePanelDialog footer Save theme / Discard changes (A16)", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete theme: sunset/i }));
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
   });
+
+  it("shows the empty-name validation error exactly once, even after retrying the failed save", async () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save theme (current draft)" }));
+    await waitFor(() => expect(screen.getAllByText("Enter a name for this theme.")).toHaveLength(1));
+    fireEvent.click(screen.getByRole("button", { name: "Save theme (current draft)" }));
+    await waitFor(() => expect(screen.getAllByText("Enter a name for this theme.")).toHaveLength(1));
+  });
+
+  it("the tile's own inline Discard (✕) clears the bottom error and hides Save+Discard together", async () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save theme (current draft)" }));
+    await waitFor(() => expect(screen.getByText("Enter a name for this theme.")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel theme edit" }));
+
+    expect(screen.queryByText("Enter a name for this theme.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save theme (current draft)" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Discard" })).not.toBeInTheDocument();
+  });
 });

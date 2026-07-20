@@ -600,6 +600,26 @@ html[data-radius="rounded"] {
   .animate-bell-nudge { animation: none; }
 }
 
+/* Theme-tile invalid-name glow — a one-shot pulse fired the moment a save
+   attempt fails validation. Plain conditional className (not a key-remount)
+   is enough here: the invalid flag always passes through a clean "false"
+   state first (typing, discard, or a successful save all clear it), so
+   re-adding the class always represents a genuinely new failure, and a
+   continuously-invalid tile doesn't keep re-triggering it since the class
+   is simply present, not re-applied. The static ring/border stays for as
+   long as the tile is invalid; only the glow itself is one-shot. */
+@keyframes theme-tile-invalid-glow {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--destructive) 55%, transparent); }
+  60% { box-shadow: 0 0 0 8px color-mix(in oklab, var(--destructive) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--destructive) 0%, transparent); }
+}
+.animate-theme-tile-invalid {
+  animation: theme-tile-invalid-glow 650ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-theme-tile-invalid { animation: none; }
+}
+
 /* Sonner toast entry animation — subtle scale + slide-in with overshoot. */
 @keyframes toast-in {
   0% {
