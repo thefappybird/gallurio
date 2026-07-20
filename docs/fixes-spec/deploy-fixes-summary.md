@@ -48,6 +48,19 @@ folder are referenced inline.
 - **Theme name error duplication + row desync**: a stale-closure bug meant the footer error banner only appeared on the *second* failed save, and the inline theme-tile Discard never cleared it. Footer error now derives from the shared theme-editor controller (single source of truth); the tile itself shows a non-text invalid signal (ring + icon + one-shot glow, `prefers-reduced-motion`-aware) instead of a second copy of the message. (`lib/page-builder/brandKitPicker/ThemeTile.tsx`, `ThemeGrid.tsx`, `app/[locale]/(app)/portfolio/_components/ThemePanelDialog.tsx`)
 - **`getAuthUser()` crash on public-path 404s**: `withAuth()` throws when AuthKit's middleware didn't cover the request — true for any 404 under `/sign-in`, `/sign-up`, `/pricing`, etc. (`proxy.ts` skips AuthKit on those paths). `getAuthUser()` now checks AuthKit's own coverage header first and returns `null` instead of throwing — reproduced in prod, not just dev. (`lib/auth/session.ts`)
 
+## Playwright verification pass (post-implementation)
+
+Targeted Playwright run across areas touched by this branch surfaced and fixed:
+
+- **Onboarding plan step defaulted every new signup to a paid "Subscribe" CTA**: `Workspace.plan` is set to `"pro"` at creation for the free-trial grant, so the plan step's `currentPlan` prop (sourced from the raw field) pre-selected the Pro card instead of Free. Now derived from the already-correct `activation` signal, which excludes the trial grant. (`app/[locale]/(onboarding)/onboarding/plan/page.tsx`)
+- **Settings loader could show a blank logo despite a live one existing**: `settingsDraft.logo` defaults to `{url:"",assetId:""}` as soon as the `settingsDraft` subdocument exists at all (e.g. after any unrelated SEO save) — the prior per-field `??` on `url`/`assetId` never fell back to the live header logo, since `""` is neither `null` nor `undefined`. Fixed by gating the fallback on `assetId` truthiness. (`app/[locale]/(app)/settings/[[...catchall]]/page.tsx`)
+- **Two pre-existing e2e specs updated to match current UI, not caused by this branch**: `booking-payments.spec.ts` queried `role="row"` on the bookings table, but the row's own `role="button"` (whole-row click target) overrides the implicit row role — switched to querying by button role. `portfolio-responsive.spec.ts`'s mobile test never dismissed the "Welcome back" entry dialog or opened the compact canvas-controls popover (both pre-existing UI, unrelated to this branch) before interacting.
+
+## Review pass (pre-PR)
+
+- `senior-reviewer` + `security-auditor` ran independently over the full `dev...HEAD` diff. Security audit: no findings above Low (open-redirect protection, cookie host-scoping, tenant isolation on `settingsDraft` mutations, upload ownership checks, and the `getAuthUser()` null-return change all verified clean with evidence).
+- Code review found one real Medium-severity bug (the settings-loader logo fallback above, fixed) plus a Low-severity sibling risk in `publishDraftAction` that turned out to conflict with an existing, deliberate test (`settingsDraft.logo` explicitly cleared to empty is meant to override the draft's own header logo on publish) — left as-is; only the uncontested loader fix landed.
+
 ## QA-evidence screenshots
 
 `locale issue.jpeg` (A1), `slug-issue.jpeg` (A2), `public-page-icon-issue.jpeg` (A3), `add-bookings-action-issue.jpeg` / `cors-error-on-add-bookings.jpeg` (bookings).
