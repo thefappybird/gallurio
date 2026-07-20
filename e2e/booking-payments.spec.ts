@@ -157,7 +157,10 @@ test.describe.serial("Booking payments", () => {
     // via the server-side search box first (by the unique RUN_TAG) so the
     // match can't land on a stale row from an earlier debug run.
     await page.goto(`/bookings?q=${encodeURIComponent(RUN_TAG)}`);
-    const newRow = page.getByRole("row", { name: new RegExp(BOOKING_TITLE) });
+    // The row itself carries role="button" (it's a single clickable/keyboard-
+    // activatable control), overriding <tr>'s implicit "row" role — so it's
+    // exposed to the a11y tree as a button, not a row.
+    const newRow = page.getByRole("button", { name: new RegExp(BOOKING_TITLE) });
     await expect(newRow).toBeVisible({ timeout: 15_000 });
     await newRow.click();
     // Wait for the detail modal itself rather than the URL change — on a
@@ -258,8 +261,12 @@ test.describe.serial("Booking payments", () => {
     // navigation before we'd otherwise get a handle to it, so waiting on
     // popup.waitForResponse() after the fact risks missing/timing out on an
     // already-completed response. The context-level "response" event catches
-    // it regardless of which page/tab it belongs to.
-    const popupPromise = page.waitForEvent("popup");
+    // it regardless of which page/tab it belongs to. The route responds with
+    // Content-Disposition: attachment, so Chromium may resolve the opened
+    // target straight into a download without ever exposing it as a
+    // "popup" page — the response is the real assertion; the popup is only
+    // opportunistic cleanup, so it gets a short allowance, not the full wait.
+    const popupPromise = page.waitForEvent("popup", { timeout: 5_000 }).catch(() => null);
     const pdfRespPromise = page.context().waitForEvent("response", (r) =>
       /\/api\/bookings\/.+\/(invoice|receipt)/.test(r.url()),
     );
@@ -275,7 +282,7 @@ test.describe.serial("Booking payments", () => {
 
     const [popup, pdfResp] = await Promise.all([popupPromise, pdfRespPromise]);
     expect(pdfResp.status()).toBeLessThan(400);
-    await popup.close();
+    await popup?.close();
   });
 
   test(

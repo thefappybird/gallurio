@@ -13,6 +13,7 @@ import type { PuckData } from "@/lib/page-builder/types";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { getTemplate } from "@/lib/page-builder/templates";
+import { deleteImage } from "@/lib/storage/cloudflareImages";
 
 export type DraftSummary = {
   id: string;
@@ -282,10 +283,22 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   const [doc, workspace] = await Promise.all([
     PortfolioDraft.findOne({ _id: idParsed.data, workspaceId }).lean(),
     Workspace.findById(workspaceId)
-      .select({ "publicPage.settingsDraft": 1 })
+      .select({
+        "publicPage.settingsDraft": 1,
+        "publicPage.seo.ogImageAssetId": 1,
+        "publicPage.siteIcon.assetId": 1,
+        "publicPage.header.logoAssetId": 1,
+      })
       .lean(),
   ]);
   if (!doc) return { error: "draft_not_found" };
+
+  // Captured before the promote-write below, so we can delete a live
+  // og/icon/logo image that publish is about to supersede — but only if it
+  // was actually live.
+  const liveOgAssetId = workspace?.publicPage?.seo?.ogImageAssetId || undefined;
+  const liveSiteIconAssetId = workspace?.publicPage?.siteIcon?.assetId || undefined;
+  const liveLogoAssetId = workspace?.publicPage?.header?.logoAssetId || undefined;
 
   const wsIdStr = String(workspaceId);
   const home = (doc.data?.home as PuckData | null) ?? null;
@@ -303,7 +316,22 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   // never overwrite live published config with null.
   if (doc.brandKit) set["publicPage.brandKit"] = doc.brandKit;
   if (doc.contact) set["publicPage.contact"] = doc.contact;
-  if (doc.header) set["publicPage.header"] = doc.header;
+  // The staged settings-page logo (if any) is the source of truth for the
+  // published header logo, independent of whether the draft snapshot itself
+  // carries a header object — a null/migrated draft.header must not cause
+  // publish to skip promoting a staged logo (or clearing a removed one), and
+  // must not leave the leak-safe delete below computing against a value that
+  // was never actually written.
+  const settingsDraftLogo = workspace?.publicPage?.settingsDraft?.logo;
+  if (doc.header || settingsDraftLogo) {
+    set["publicPage.header"] = settingsDraftLogo
+      ? {
+          ...(doc.header ?? {}),
+          logoUrl: settingsDraftLogo.assetId ? settingsDraftLogo.url ?? "" : "",
+          logoAssetId: settingsDraftLogo.assetId ?? "",
+        }
+      : doc.header;
+  }
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
   set["publicPage.formLocale"] = doc.formLocale ?? "";
   set["publicPage.formDir"] = doc.formDir ?? "";
@@ -340,6 +368,33 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   set["publicPage.lastPublishedAt"] = now;
 
   await Workspace.updateOne({ _id: workspaceId }, { $set: set });
+
+  const newOgAssetId = (set["publicPage.seo.ogImageAssetId"] as string | undefined) || undefined;
+  if (liveOgAssetId && liveOgAssetId !== newOgAssetId) {
+    try {
+      await deleteImage(liveOgAssetId);
+    } catch (err) {
+      console.warn("[portfolio] failed to delete superseded live OG image asset", err);
+    }
+  }
+  const newSiteIconAssetId =
+    (set["publicPage.siteIcon.assetId"] as string | undefined) || undefined;
+  if (liveSiteIconAssetId && liveSiteIconAssetId !== newSiteIconAssetId) {
+    try {
+      await deleteImage(liveSiteIconAssetId);
+    } catch (err) {
+      console.warn("[portfolio] failed to delete superseded live site icon asset", err);
+    }
+  }
+  const newLogoAssetId =
+    (set["publicPage.header"] as { logoAssetId?: string } | undefined)?.logoAssetId || undefined;
+  if (liveLogoAssetId && liveLogoAssetId !== newLogoAssetId) {
+    try {
+      await deleteImage(liveLogoAssetId);
+    } catch (err) {
+      console.warn("[portfolio] failed to delete superseded live logo asset", err);
+    }
+  }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);

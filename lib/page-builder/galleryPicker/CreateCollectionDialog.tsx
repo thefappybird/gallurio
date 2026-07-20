@@ -177,7 +177,10 @@ export function CreateCollectionDialog({
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span>{L.nameLabel}</span>
+            <span>
+              {L.nameLabel}
+              <span className="ms-0.5 text-destructive">*</span>
+            </span>
             <input
               type="text"
               value={name}

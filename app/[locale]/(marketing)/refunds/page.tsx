@@ -32,13 +32,21 @@ export default async function RefundsPage({ params }: Props) {
       <LegalSection title={t("betaPeriod.title")}>
         <p>{t("betaPeriod.body1")}</p>
         <p>{t("betaPeriod.body2")}</p>
-        <p>{t("betaPeriod.body3")}</p>
       </LegalSection>
 
       <LegalSection title={t("subscriptions.title")}>
         <p>{t("subscriptions.body1")}</p>
         <p>{t("subscriptions.body2")}</p>
-        <p>{t("subscriptions.body3")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("cancellation.title")}>
+        <p>{t("cancellation.body1")}</p>
+        <p>{t("cancellation.body2")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("failedPayments.title")}>
+        <p>{t("failedPayments.body1")}</p>
+        <p>{t("failedPayments.body2")}</p>
       </LegalSection>
 
       <LegalSection title={t("refundRequests.title")}>
@@ -52,29 +60,13 @@ export default async function RefundsPage({ params }: Props) {
             t("refundRequests.item4"),
             t("refundRequests.item5"),
             t("refundRequests.item6"),
-            t("refundRequests.item7"),
-            t("refundRequests.item8"),
           ]}
         />
         <p>{t("refundRequests.outro")}</p>
       </LegalSection>
 
-      <LegalSection title={t("merchantOfRecord.title")}>
-        <p>{t("merchantOfRecord.body1")}</p>
-        <p>{t("merchantOfRecord.body2")}</p>
-      </LegalSection>
-
       <LegalSection title={t("nonRefundable.title")}>
         <p>{t("nonRefundable.intro")}</p>
-        <LegalList
-          items={[
-            t("nonRefundable.item1"),
-            t("nonRefundable.item2"),
-            t("nonRefundable.item3"),
-            t("nonRefundable.item4"),
-            t("nonRefundable.item5"),
-          ]}
-        />
         <p>{t("nonRefundable.outro")}</p>
       </LegalSection>
 
@@ -98,9 +90,8 @@ export default async function RefundsPage({ params }: Props) {
         <p>{t("howToRequest.outro")}</p>
       </LegalSection>
 
-      <LegalSection title={t("cancellations.title")}>
-        <p>{t("cancellations.body1")}</p>
-        <p>{t("cancellations.body2")}</p>
+      <LegalSection title={t("changes.title")}>
+        <p>{t("changes.body")}</p>
       </LegalSection>
     </LegalArticle>
   );

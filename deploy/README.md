@@ -21,8 +21,11 @@ the runtime values in `/etc/gallurio/gallurio.env`. Never put a secret in a
 - `/opt/gallurio/.env`: root-controlled Compose-only file containing the
   immutable `GALLURIO_IMAGE=ghcr.io/<owner>/gallurio@sha256:<digest>` value.
 - `/etc/caddy/Caddyfile`: copied from `deploy/Caddyfile`. Its systemd
-  environment supplies `CADDY_EMAIL`, `GALLURIO_CANONICAL_HOST`, and
-  `GALLURIO_REDIRECT_HOST`; none are application secrets.
+  environment supplies `CADDY_EMAIL`, `GALLURIO_CANONICAL_HOST`,
+  `GALLURIO_REDIRECT_HOST`, `GALLURIO_WILDCARD_HOST`, and
+  `GALLURIO_ORIGIN_CERT`/`GALLURIO_ORIGIN_KEY` (filesystem paths to a
+  Cloudflare Origin CA cert, not application secrets — see the Caddy section
+  below).
 
 ## GitHub Actions setup
 
@@ -38,6 +41,19 @@ Set these **GitHub Actions variables** (public build-time configuration):
 - `NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH`
 - Optional: `NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN` and the four
   `NEXT_PUBLIC_SOCIAL_*_URL` values.
+
+`NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN=gallurio.com` stays set in production: it
+both drives the public-facing `{slug}.gallurio.com` URL display and gates
+`proxy.ts`'s tenant-subdomain rewrite/redirect (`lib/portfolio/publicUrl.ts`'s
+`portfolioBaseDomain()` — no-op when unset). Do not unset it once tenant
+subdomains are live; doing so silently reverts every published portfolio link
+to path-based `/w/{slug}` routing.
+
+**Never set `WORKOS_COOKIE_DOMAIN` (or any AuthKit cookie-domain option) to
+`.gallurio.com`.** The active-workspace cookie (`gw_active_ws`) and the WorkOS
+session cookie must stay host-only (no `domain` attribute) — a domain-scoped
+cookie would be sent to every `{slug}.gallurio.com` tenant subdomain, leaking
+an authenticated session to a public-facing page outside the app itself.
 
 Set these **GitHub Actions environment secrets**:
 
@@ -102,6 +118,33 @@ sudo systemctl reload caddy
 
 Open only 80/443 according to the selected Cloudflare origin strategy. Keep
 port 3000 private; systemd timers call it through `http://127.0.0.1:3000`.
+
+### Wildcard tenant subdomains (`*.gallurio.com`)
+
+The wildcard site block cannot use Caddy's normal ACME issuance (no DNS-01
+provider configured), so it terminates TLS with a static Cloudflare Origin CA
+certificate instead:
+
+1. In the Cloudflare dashboard: SSL/TLS -> Origin Server -> Create Certificate.
+   Hostnames: `*.gallurio.com` (and `gallurio.com` if reusing it there too).
+   Save the certificate and private key.
+2. Install them on the VPS, root-only:
+   ```sh
+   sudo install -d -m 700 -o root -g caddy /etc/caddy/certs
+   sudo install -m 640 -o root -g caddy /path/to/gallurio-origin.pem /etc/caddy/certs/gallurio-origin.pem
+   sudo install -m 640 -o root -g caddy /path/to/gallurio-origin-key.pem /etc/caddy/certs/gallurio-origin-key.pem
+   ```
+3. Set `GALLURIO_WILDCARD_HOST`, `GALLURIO_ORIGIN_CERT`, and
+   `GALLURIO_ORIGIN_KEY` in `/etc/caddy/gallurio.env` (see
+   `deploy/caddy/gallurio.env.example`), then validate and reload Caddy as
+   above.
+4. In Cloudflare DNS, add a proxied `*` (or explicit per-tenant) CNAME/A record
+   pointing at the same origin as the apex, and set SSL/TLS mode to **Full
+   (strict)** so Cloudflare verifies this origin certificate.
+
+Keep `NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN=gallurio.com` set in the app's runtime
+env — `proxy.ts` uses it to route `{slug}.gallurio.com` requests to the
+matching workspace's public page.
 
 ## Release and rollback
 

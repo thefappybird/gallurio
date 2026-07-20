@@ -8,6 +8,7 @@ import { Types } from "mongoose";
 // ---------------------------------------------------------------------------
 
 const cookieStore = new Map<string, string>();
+let lastSetOptions: Record<string, unknown> | undefined;
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({
@@ -15,7 +16,10 @@ vi.mock("next/headers", () => ({
       const v = cookieStore.get(name);
       return v !== undefined ? { value: v } : undefined;
     },
-    set: (name: string, value: string) => { cookieStore.set(name, value); },
+    set: (name: string, value: string, options?: Record<string, unknown>) => {
+      cookieStore.set(name, value);
+      lastSetOptions = options;
+    },
     delete: (name: string) => { cookieStore.delete(name); },
   }),
 }));
@@ -158,6 +162,22 @@ describe("activeWorkspace — fallback chain", () => {
 // ---------------------------------------------------------------------------
 // clearActiveWorkspace
 // ---------------------------------------------------------------------------
+
+describe("activeWorkspace — cookie scope (subdomain isolation)", () => {
+  it("sets gw_active_ws as host-only (no domain attribute) so tenant subdomains never receive the session", async () => {
+    const wsId = makeWsId();
+    await User.create({
+      workosUserId: "user_hostonly",
+      email: "hostonly@example.com",
+      memberships: [{ workspaceId: wsId, role: "owner" as const }],
+    });
+
+    await setActiveWorkspace("user_hostonly", String(wsId));
+
+    expect(lastSetOptions).toBeDefined();
+    expect(lastSetOptions?.domain).toBeUndefined();
+  });
+});
 
 describe("activeWorkspace — clearActiveWorkspace", () => {
   it("removes the cookie", async () => {

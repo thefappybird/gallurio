@@ -241,11 +241,18 @@ function clickEditSession(n: number) {
   fireEvent.click(btn);
 }
 
-/** Change the session date input to a future date offset by `dayOffset` days. */
+/** Change the session date input to a future date offset by `dayOffset` days.
+ *  Builds the target date the same way `makeFutureSession` does (local time,
+ *  then sliced to a YYYY-MM-DD string) so that a given `dayOffset` always maps
+ *  to a distinct calendar date regardless of the runner's timezone. Computing
+ *  it from `Date.now()` + a UTC `.toISOString()` slice could collide with a
+ *  local-time session date in positive-offset zones during early-morning hours
+ *  (UTC still a day behind), leaving the input unchanged and the edit non-dirty. */
 function changeDateInput(currentDate: string, dayOffset: number) {
-  const newDate = new Date(Date.now() + 86400_000 * dayOffset)
-    .toISOString()
-    .slice(0, 10);
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  d.setHours(10, 0, 0, 0);
+  const newDate = d.toISOString().slice(0, 10);
   const input = screen.getByDisplayValue(currentDate);
   fireEvent.change(input, { target: { value: newDate } });
   return newDate;

@@ -82,7 +82,7 @@ export async function getEventTypeValueTrend(
   return { eventTypes, points };
 }
 
-export type BookedHoursCell = { weekStart: string; weekday: number; hours: number };
+export type BookedHoursCell = { weekStart: string; weekday: number; hours: number; bookings: number };
 
 export type BookedHoursHeatmap = {
   cells: BookedHoursCell[];
@@ -116,17 +116,46 @@ export async function getBookedHoursHeatmap(
   // periods and only lets a custom range redefine the heatmap's endpoint.
   const useRangeBounds = range.mode === "custom" || range.mode === undefined;
   const selectedEndKey = useRangeBounds && range.to ? localDateKey(range.to, timezone) : todayKey;
-  const latestWeek = weekStartMonday(selectedEndKey > todayKey ? todayKey : selectedEndKey);
+  // Default rendered window always ends here (today-centric, or the custom
+  // range's endpoint) -- it never auto-opens on a future booking.
+  const defaultEndWeek = weekStartMonday(selectedEndKey > todayKey ? todayKey : selectedEndKey);
+  const workspaceStartWeek = weekStartMonday(localDateKey(workspaceCreatedAt, timezone));
+
+  const [earliestBookingDoc, latestBookingDoc] = await Promise.all([
+    Booking.findOne({ workspaceId, status: { $in: ACTIVE_STATUSES } }, { firstSessionStart: 1 })
+      .sort({ firstSessionStart: 1 })
+      .lean<{ firstSessionStart: Date } | null>(),
+    Booking.findOne({ workspaceId, status: { $in: ACTIVE_STATUSES } }, { lastSessionEnd: 1 })
+      .sort({ lastSessionEnd: -1 })
+      .lean<{ lastSessionEnd: Date } | null>(),
+  ]);
+  const earliestBookingWeek = earliestBookingDoc
+    ? weekStartMonday(localDateKey(earliestBookingDoc.firstSessionStart, timezone))
+    : null;
+  const latestBookingWeek = latestBookingDoc
+    ? weekStartMonday(localDateKey(latestBookingDoc.lastSessionEnd, timezone))
+    : null;
+
+  // Forward paging bound: extends past today/the default endpoint to reach a
+  // future booking, but never pulls the default (no ?hm=) view into the future.
+  const latestWeek = latestBookingWeek && latestBookingWeek > defaultEndWeek
+    ? latestBookingWeek
+    : defaultEndWeek;
   const requestedWeek = requestedEndWeek && /^\d{4}-\d{2}-\d{2}$/.test(requestedEndWeek)
     ? weekStartMonday(requestedEndWeek)
-    : latestWeek;
+    : defaultEndWeek;
   const toWeek = requestedWeek > latestWeek ? latestWeek : requestedWeek;
-  const workspaceStartWeek = weekStartMonday(localDateKey(workspaceCreatedAt, timezone));
+
+  // Backward paging bound: the register week, extended earlier when an older
+  // (backdated) active booking predates it -- no cap beyond that.
+  const flooredEarliestWeek = earliestBookingWeek && earliestBookingWeek < workspaceStartWeek
+    ? earliestBookingWeek
+    : workspaceStartWeek;
   const customStartWeek =
     useRangeBounds && range.from ? weekStartMonday(localDateKey(range.from, timezone)) : null;
-  const earliestWeek = customStartWeek && customStartWeek > workspaceStartWeek
+  const earliestWeek = customStartWeek && customStartWeek > flooredEarliestWeek
     ? customStartWeek
-    : workspaceStartWeek;
+    : flooredEarliestWeek;
   // Do not move the requested window before the first date the user could
   // have used Gallurio. Before that point, zero cells are visual padding only.
   const fromWeek = addDaysStr(toWeek, -7 * (TRAILING_WEEKS - 1));
@@ -146,22 +175,26 @@ export async function getBookedHoursHeatmap(
 
   const bookings = await Booking.find(match)
     .select({ sessions: 1 })
-    .lean<{ sessions: { startAt: Date; endAt: Date }[] }[]>();
+    .lean<{ _id: Types.ObjectId; sessions: { startAt: Date; endAt: Date }[] }[]>();
 
   const fromKey = fromWeek;
   const toKeyEnd = addDaysStr(toWeek, 6);
 
-  const cellMap = new Map<string, number>(); // `${weekStart}|${weekday}` -> hours
+  const cellHours = new Map<string, number>(); // `${weekStart}|${weekday}` -> hours
+  const cellBookingIds = new Map<string, Set<string>>(); // same key -> distinct booking ids
   const referenceDate = new Date();
 
   for (const b of bookings) {
+    const bookingId = String(b._id);
     for (const session of b.sessions) {
       const { candles } = splitSessionIntoCandles(session, referenceDate, timezone);
       for (const c of candles) {
         if (c.dayKey < fromKey || c.dayKey > toKeyEnd) continue;
         const hours = (c.end.getTime() - c.start.getTime()) / 3_600_000;
         const key = `${weekStartMonday(c.dayKey)}|${weekdayMonday0(c.dayKey)}`;
-        cellMap.set(key, (cellMap.get(key) ?? 0) + hours);
+        cellHours.set(key, (cellHours.get(key) ?? 0) + hours);
+        if (!cellBookingIds.has(key)) cellBookingIds.set(key, new Set());
+        cellBookingIds.get(key)!.add(bookingId);
       }
     }
   }
@@ -171,7 +204,13 @@ export async function getBookedHoursHeatmap(
   let week = fromWeek;
   while (week <= toWeek) {
     for (let weekday = 0; weekday < 7; weekday++) {
-      cells.push({ weekStart: week, weekday, hours: cellMap.get(`${week}|${weekday}`) ?? 0 });
+      const key = `${week}|${weekday}`;
+      cells.push({
+        weekStart: week,
+        weekday,
+        hours: cellHours.get(key) ?? 0,
+        bookings: cellBookingIds.get(key)?.size ?? 0,
+      });
     }
     week = addDaysStr(week, 7);
   }

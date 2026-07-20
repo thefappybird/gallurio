@@ -45,7 +45,7 @@
       "businessWorkspace": {
         "title": "Business workspace",
         "panelHeadline": "Iisang dashboard para sa lahat ng nasa pagitan ng mga shoot.",
-        "description": "Pamahalaan ang public profile content, detalye ng negosyo, at booking-related setup mula sa iisang dashboard."
+        "description": "Pamahalaan ang public profile content, detalye ng negosyo, invoices, at booking-related setup mula sa iisang dashboard."
       },
       "bookingInquiryForms": {
         "title": "Booking inquiry form",
@@ -125,12 +125,18 @@
         "cta": "Simulan ang libreng buwan ko"
       },
       "billingNotice": {
-        "body1": "Hindi pa available ang mga paid na Pro subscription. Kapag inilunsad na ang mga ito, malinaw na ipapakita ang presyo, mga tuntunin sa pagsingil, at detalye ng bayad bago mo makumpleto ang anumang pagbili.",
-        "body2": "Walang bayad na kinokolekta sa iyong unang libreng buwan."
+        "body1": "Hindi pa available ang mga paid na Pro subscription. Kapag inilunsad na ang mga subscription, malinaw na ipapakita ang presyo, billing period, mga tuntunin sa renewal, naaangkop na buwis, detalye ng bayad, at proseso ng cancellation bago mo makumpleto ang isang pagbili.",
+        "body2": "Ang Lemon Squeezy ang magpoproseso ng mga paid subscription bilang merchant of record ng Gallurio. Ipapakita rin ang naaangkop na tuntunin sa checkout, invoice, refund, at bayad sa buong billing flow.",
+        "body3": "Maaari mong i-cancel ang isang paid subscription anumang oras sa pamamagitan ng billing management flow. Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge; magpapatuloy ang access hanggang sa katapusan ng kasalukuyang billing period.",
+        "body4": "Walang bayad na kinokolekta sa iyong unang libreng buwan."
       },
       "pricingTransparency": {
         "title": "Transparency sa Presyo",
-        "body": "Ipinapakita ang presyo, billing period, at subscription terms bago ka kumpletuhin ang anumang bayad, at maaari kang mag-cancel anumang oras mula sa iyong billing portal."
+        "body1": "Hindi ka sisingilin ng Gallurio habang ang libreng buwan. Walang kailangang payment card para simulan ang trial. Ang anumang paid subscription ay nangangailangan ng hiwalay na pagbili o activation step pagkatapos ng libreng panahon, kasama ang naaangkop na tuntunin na ipapakita bago ang bayad.",
+        "body2": "Maaaring magbago ang presyo at mga feature bago ilunsad ang mga paid subscription. Ipapakita ang mahahalagang pagbabago sa page na ito at sa checkout flow."
+      },
+      "contactNote": {
+        "body": "Para sa mga tanong sa billing, makipag-ugnayan sa"
       }
     },
     "terms": {
@@ -139,175 +145,223 @@
         "description": "Basahin ang mga tuntuning namamahala sa access at paggamit ng Gallurio."
       },
       "title": "Mga Tuntunin ng Serbisyo",
-      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
-      "intro1": "Ang mga Tuntunin ng Serbisyong ito ay namamahala sa iyong access at paggamit ng Gallurio, kasama ang aming website, application, portfolio tools, booking inquiry features, at kaugnay na mga serbisyo.",
-      "intro2": "Sa paggamit ng Gallurio, sumasang-ayon ka sa mga Tuntuning ito. Kung hindi ka sumasang-ayon, hindi mo dapat gamitin ang serbisyo.",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 20, 2026",
+      "intro1": "Ang mga Tuntuning ito ay namamahala sa iyong access at paggamit ng Gallurio, kasama ang website, application, portfolio tools, public pages, booking inquiry features, at kaugnay na serbisyo nito.",
+      "contractingParty": {
+        "title": "1. Contracting Party at Acceptance",
+        "body1": "Pinapatakbo ang Gallurio sa Pilipinas bilang isang sole proprietorship ni Alexander III Banaag, na may address sa J Labra St. Guadalupe, Cebu City, Cebu, Philippines.",
+        "body2": "Sa paggawa ng account, pag-access sa isang paid feature, o paggamit ng Gallurio, sumasang-ayon ka sa mga Tuntuning ito. Kung hindi ka sumasang-ayon, huwag gamitin ang serbisyo."
+      },
       "about": {
-        "title": "1. Tungkol sa Gallurio",
-        "body1": "Ang Gallurio ay isang software platform na tumutulong sa mga creative professional at negosyo na gumawa ng portfolio page, ipakita ang kanilang mga serbisyo, at tumanggap ng booking inquiries.",
-        "body2": "Hindi direktang nagbibigay ang Gallurio ng photography, videography, event planning, o iba pang creative services sa end clients. Ang mga user ng Gallurio ang may responsibilidad sa mga serbisyong inaalok nila sa pamamagitan ng kanilang sariling page."
+        "title": "2. Ang Serbisyo",
+        "body1": "Nagbibigay ang Gallurio ng software tools para sa mga creative professional at negosyo na gumawa ng portfolio page, ipakita ang mga serbisyo, at tumanggap ng booking inquiries.",
+        "body2": "Hindi nagbibigay ang Gallurio ng photography, videography, event planning, catering, beauty, music, o iba pang serbisyong ina-advertise ng mga user. Ang mga user ang buong responsable sa kanilang mga serbisyo, presyo, representasyon, kontrata, komunikasyon, at relasyon sa kanilang mga kliyente."
       },
       "eligibility": {
-        "title": "2. Karapatang Gumamit",
-        "body": "Maaari mo lamang gamitin ang Gallurio kung ikaw ay may kakayahang pumasok sa isang legally binding agreement. Kung ginagamit mo ang Gallurio para sa isang negosyo, organisasyon, o studio, kinukumpirma mo na awtorisado kang tumanggap ng mga Tuntuning ito sa ngalan nito."
-      },
-      "accounts": {
-        "title": "3. Mga Account",
-        "body1": "Maaaring kailanganin mong gumawa ng account para magamit ang ilang feature ng Gallurio. Responsibilidad mong panatilihing secure ang iyong login credentials at ang lahat ng aktibidad sa ilalim ng iyong account.",
-        "body2": "Sumasang-ayon kang magbigay ng tumpak na impormasyon at i-update ito kung kinakailangan."
+        "title": "3. Eligibility at Mga Account",
+        "body1": "Dapat kang legally capable na pumasok sa isang binding agreement. Kung ginagamit mo ang Gallurio para sa isang negosyo o organisasyon, kinukumpirma mong awtorisado kang tumanggap ng mga Tuntuning ito sa ngalan nito.",
+        "body2": "Dapat kang magbigay ng tumpak na impormasyon, protektahan ang login credentials mo, at tanggapin ang responsibilidad para sa aktibidad sa ilalim ng account mo. Dapat mong ipaalam agad sa Gallurio ang anumang unauthorized access."
       },
       "betaAccess": {
-        "title": "4. Beta Access",
-        "body1": "Maaaring mag-alok ang Gallurio ng beta access bago ang public launch. Habang beta, maaaring hindi kumpleto, magbago, magkaroon ng limitasyon, ma-suspend, o matanggal ang mga feature anumang oras.",
-        "body2": "Hindi ginagarantiya ng beta access ang tuloy-tuloy na libreng access, availability ng mga susunod na feature, o permanenteng availability ng account."
-      },
-      "userContent": {
-        "title": "5. Content ng User",
-        "body1": "Maaaring mag-upload, mag-publish, o magsumite ang mga user ng content tulad ng mga larawan, teksto, impormasyon ng negosyo, paglalarawan ng serbisyo, materyales sa portfolio, at content ng booking form.",
-        "body2": "Pinapanatili ng mga user ang pagmamay-ari ng kanilang content. Sa paggamit ng Gallurio, binibigyan ng mga user ang Gallurio ng pahintulot na i-host, i-store, ipakita, iproseso, at i-transmit ang kanilang content kung kinakailangan para paandarin at pagbutihin ang serbisyo.",
-        "body3": "Responsibilidad ng mga user na tiyakin na mayroon silang mga karapatan, lisensya, at pahintulot na kailangan para sa anumang na-upload o na-publish na content."
-      },
-      "prohibited": {
-        "title": "6. Bawal na Content at Paggamit",
-        "intro": "Sumasang-ayon ang mga user na hindi gagamitin ang Gallurio para mag-upload, mag-publish, mamahagi, o mag-promote ng content na labag sa batas, nakakasama, mapang-abuso, mapanlinlang, lumalabag sa karapatan, o hindi angkop.",
-        "item1": "Paglabag sa mga naaangkop na batas o regulasyon",
-        "item2": "Paglabag sa intellectual property rights ng iba",
-        "item3": "Pag-upload ng malicious code o pagsubok na guluhin ang serbisyo",
-        "item4": "Pagmimintis ng pagkakakilanlan, negosyo, o mga serbisyo",
-        "item5": "Paggamit ng serbisyo para sa panloloko, spam, o mapanlinlang na aktibidad",
-        "item6": "Pagtatangkang ma-access ang mga account, sistema, o data nang walang pahintulot",
-        "outro": "Maaaring alisin ng Gallurio ang content o i-suspend ang mga account na lumalabag sa mga Tuntuning ito."
-      },
-      "bookings": {
-        "title": "7. Mga Booking at Client Inquiries",
-        "body1": "Maaaring payagan ng Gallurio ang mga bisita na magsumite ng booking inquiries sa pamamagitan ng mga page na ginawa ng user. Ang mga inquiries na ito ay hindi ginagarantiya ang isang kumpirmadong booking maliban kung sinang-ayunan nang hiwalay sa pagitan ng user ng Gallurio at ng kanilang kliyente.",
-        "body2": "Hindi mananagot ang Gallurio sa mga hindi pagkakaunawaan, bayad, cancellation, kalidad ng serbisyo, iskedyul, o kasunduan sa pagitan ng mga user ng Gallurio at ng kanilang mga kliyente maliban kung malinaw na nakasaad."
+        "title": "4. Beta at Libreng Access",
+        "body1": "Maaaring mag-alok ang Gallurio ng beta o promotional access. Maaaring hindi kumpleto, magbago, ma-suspend, o matanggal ang mga beta feature. Hindi ginagarantiya ng beta o libreng access ang permanenteng availability o mga susunod na feature.",
+        "body2": "Maliban kung sinabi ng Gallurio, hindi kailangan ng payment card ang promotional access. Kapag inilunsad ang paid billing, ipapakita ang naaangkop na plano, presyo, tuntunin sa renewal, at petsa ng billing bago ang pagbili."
       },
       "subscriptions": {
-        "title": "8. Subscriptions at Bayad",
-        "body1": "Kasama sa Gallurio ang isang paid na Pro subscription, na sinisingil buwan-buwan o taun-taon. Ang mga bagong workspace ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang card.",
-        "body2": "Pagkatapos ng libreng buwan, kailangan ng aktibong Pro subscription para magpatuloy sa paggamit ng Gallurio. Hindi pa available ang mga paid subscription; malinaw na ipapakita ang mga tuntunin sa pagsingil at detalye ng bayad bago ang anumang singil kapag inilunsad na ang mga ito.",
-        "body3": "Ipapakita sa mga user ang naaangkop na presyo at billing terms bago kumpletuhin ang isang pagbili.",
-        "body4": "Kung hindi na-renew ang subscription o nabigo ang bayad, limitado ang access sa workspace hanggang maibalik ang subscription. Napapanatili ang data ng account; maaaring itanggal offline ang na-publish na pampublikong page pagkatapos ng mahabang panahon na walang bayad, at maibabalik ang lahat pagkatapos mag-resubscribe."
+        "title": "5. Subscriptions at Lemon Squeezy",
+        "body1": "Kapag available na, ipapakita ang mga paid Pro subscription kasama ang presyo, billing interval, tuntunin sa renewal, at naaangkop na buwis bago ang pagbili.",
+        "body2": "Ang Lemon Squeezy ang kumikilos bilang merchant of record para sa mga subscription ng Gallurio. Maaaring iproseso ng Lemon Squeezy ang checkout, bayad, billing, buwis, invoice, refund, chargebacks, at kaugnay na customer-service matters sa ilalim ng sarili nitong mga tuntunin at patakaran.",
+        "body3": "Nag-re-renew ang mga subscription alinsunod sa tuntunin sa billing na ipinapakita sa checkout hanggang i-cancel. Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge ngunit hindi ito awtomatikong gumagawa ng refund.",
+        "body4": "Kung nabigo ang isang bayad o natapos ang isang subscription, maaaring limitahan ng Gallurio ang mga Pro feature o i-offline ang isang public page pagkatapos ng makatwirang abiso. Maaaring manatiling naka-retain ang data ng account, at maibabalik ang access kung na-renew ang subscription, alinsunod sa naaangkop na plano at product state.",
+        "body5": "Hinahawakan ang mga refund sa ilalim ng nai-publish na refund process ng Gallurio at ng naaangkop na mga tuntunin ng Lemon Squeezy. Walang bahagi ng mga Tuntuning ito ang naglilimita sa mandatory na karapatan ng consumer."
       },
-      "cancellations": {
-        "title": "9. Mga Cancellation",
-        "body1": "Maaaring i-cancel ng mga user ang kanilang subscription ayon sa proseso ng cancellation na available sa kanilang account o sa billing flow na ibinigay.",
-        "body2": "Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge, ngunit maaaring hindi ito awtomatikong magresulta sa refund maliban kung hinihiling ng batas o naaprubahan sa ilalim ng naaangkop na refund process."
+      "userContent": {
+        "title": "6. Content ng User",
+        "body1": "Pinapanatili mo ang pagmamay-ari ng content na ini-upload, ipina-publish, o isinumite mo, kabilang ang mga larawan, teksto, logo, paglalarawan, gallery, at impormasyon ng negosyo.",
+        "body2": "Binibigyan mo ang Gallurio ng non-exclusive, worldwide, royalty-free license na i-host, i-store, i-reproduce, i-format, i-transmit, ipakita, at iba pang iproseso ang content mo sa lawak lamang na kinakailangan para ibigay, i-secure, panatilihin, at pagbutihin ang Gallurio at ang mga feature nito. Nagwawakas ang lisensyang ito kapag na-delete ang content, maliban kung kinakailangan ang patuloy na pag-retain para sa legal, security, backup, o dispute-resolution purposes.",
+        "body3": "Kinukumpirma mo na mayroon kang lahat ng karapatan, lisensya, permiso, at consent na kailangan para sa content mo at ang publication nito. Responsibilidad mong kumuha ng anumang kinakailangang consent mula sa mga taong lumalabas ang personal na impormasyon nila sa content mo."
       },
-      "serviceChanges": {
-        "title": "10. Mga Pagbabago sa Serbisyo",
-        "body1": "Maaaring i-update, baguhin, i-suspend, o itigil ng Gallurio ang mga bahagi ng serbisyo anumang oras. Maaari ring baguhin ng Gallurio ang mga feature, plano, presyo, o usage limits habang umuunlad ang produkto.",
-        "body2": "Kung naaangkop, gagawa ng makatwirang pagsisikap ang Gallurio na abisuhan ang mga user ng mahahalagang pagbabago."
+      "bookings": {
+        "title": "7. Booking Inquiries",
+        "body1": "Mga request lamang ang booking inquiries at hindi gumagawa ng isang kumpirmadong booking, kontrata, obligasyon sa bayad, o agency relationship maliban kung hiwalay na napagkasunduan ng user at ng inquirer.",
+        "body2": "Responsibilidad ng mga user na tumugon sa mga inquiry, protektahan ang impormasyon ng inquiry, sumunod sa naaangkop na privacy laws, at pangasiwaan ang sarili nilang presyo, kontrata, cancellation, refund, iskedyul, at kalidad ng serbisyo. Hindi partido ang Gallurio sa mga kasunduang iyon."
+      },
+      "prohibited": {
+        "title": "8. Acceptable Use",
+        "intro": "Hindi mo dapat gamitin ang Gallurio para:",
+        "item1": "labagin ang anumang batas o regulasyon",
+        "item2": "mag-upload o mag-publish ng content na labag sa batas, mapanlinlang, mapang-abuso, nakakasuklam, sexually exploitative, o mapanira sa reputasyon",
+        "item3": "labagin ang intellectual-property, privacy, publicity, o iba pang karapatan",
+        "item4": "koleksyunin ang sensitibong personal na impormasyon nang hindi kinakailangan",
+        "item5": "magpadala ng spam o mapanlinlang na booking requests",
+        "item6": "magpanggap bilang isang tao o negosyo",
+        "item7": "mag-upload ng malware o makagambala sa serbisyo",
+        "item8": "i-access ang mga account, sistema, o data nang walang pahintulot",
+        "item9": "gamitin ang Gallurio para magbigay ng mga serbisyong hindi ka legal na pinapayagang ibigay",
+        "outro": "Maaari kaming mag-alis ng content, limitahan ang mga feature, i-suspend, o wakasan ang mga account kung makatwirang kinakailangan para protektahan ang Gallurio, mga user, bisita, o third parties."
       },
       "ip": {
-        "title": "11. Intellectual Property",
-        "body1": "Ang Gallurio, kasama ang software, disenyo, branding, interface, feature, at kaugnay na materyales nito, ay pagmamay-ari ng Gallurio o ng mga licensor nito.",
-        "body2": "Hindi maaaring kopyahin, baguhin, i-reverse engineer, ibenta muli, o pagsamantalahan ng mga user ang anumang bahagi ng Gallurio maliban kung pinapayagan ng mga Tuntuning ito o ng naaangkop na batas."
+        "title": "9. Intellectual Property ng Gallurio",
+        "body": "Ang software, branding, interface, disenyo, dokumentasyon, feature, at iba pang materyales ng Gallurio ay pagmamay-ari ng Gallurio o ng mga licensor nito. Maliban sa malinaw na pinahihintulutan, hindi mo maaaring kopyahin, baguhin, i-reverse engineer, ibenta muli, i-distribute, o pagsamantalahan ang mga ito."
+      },
+      "copyright": {
+        "title": "10. Mga Reklamo sa Copyright",
+        "body": "Kung naniniwala kang may lumalabag sa karapatan mo ang content sa isang page ng Gallurio, makipag-ugnayan sa support@gallurio.com kasama ang kaugnay na page, identification ng protektadong gawa, paliwanag ng paglabag, at detalye mo sa pakikipag-ugnayan. Maaaring alisin o limitahan ng Gallurio ang access sa content habang sinusuri ang isang reklamo."
+      },
+      "serviceChanges": {
+        "title": "11. Mga Pagbabago at Availability ng Serbisyo",
+        "body": "Maaaring i-update, baguhin, i-suspend, o itigil ng Gallurio ang mga feature, plano, limitasyon, o bahagi ng serbisyo. Gagawa kami ng makatwirang pagsisikap na magbigay ng abiso para sa mahahalagang pagbabago kung angkop. Ibinibigay ang Gallurio nang \"as available\" at maaaring magkaroon ng mga pagkaantala, error, o limitasyon."
       },
       "disclaimer": {
-        "title": "12. Disclaimer",
-        "body": "Ang Gallurio ay ibinibigay sa batayang \"as is\" at \"as available\". Hindi ginagarantiya ng Gallurio na ang serbisyo ay magiging tuloy-tuloy, walang error, secure, o angkop para sa bawat pangangailangan ng negosyo."
+        "title": "12. Disclaimers",
+        "body": "Sa pinakamataas na sakop na pinapayagan ng batas, walang ginagarantiya ang Gallurio na ang serbisyo ay magiging tuloy-tuloy, walang error, secure, o angkop para sa bawat layunin ng negosyo. Hindi ginagarantiya ng Gallurio ang mga booking, leads, kita, search visibility, tugon ng kliyente, o resulta ng negosyo."
       },
       "liability": {
         "title": "13. Limitasyon ng Pananagutan",
-        "body": "Sa pinakamataas na sakop na pinapayagan ng batas, hindi mananagot ang Gallurio para sa hindi direkta, incidental, espesyal, consequential, o punitive damages, kabilang ang nawalang kita, nawalang data, pagkaantala ng negosyo, o pinsala sa reputasyon."
+        "body1": "Sa pinakamataas na sakop na pinapayagan ng batas, hindi mananagot ang Gallurio para sa hindi direkta, incidental, espesyal, consequential, exemplary, o punitive damages, o para sa nawalang kita, nawalang revenue, nawalang data, pagkaantala ng negosyo, o pinsala sa reputasyon na nagmumula sa paggamit mo ng serbisyo.",
+        "body2": "Walang bahagi ng mga Tuntuning ito ang nagbubukod ng pananagutan na hindi legal na maaaring ibukod o limitahan."
       },
       "termination": {
-        "title": "14. Pagwawakas",
-        "body1": "Maaaring i-suspend o wakasan ng Gallurio ang access kung nilabag ng user ang mga Tuntuning ito, inabuso ang serbisyo, lumikha ng panganib para sa ibang user, o gumamit ng serbisyo sa paraang maaaring makapinsala sa Gallurio o sa mga third party.",
-        "body2": "Maaaring itigil ng mga user ang paggamit ng Gallurio anumang oras."
+        "title": "14. Suspension at Termination",
+        "body1": "Maaari mong itigil ang paggamit ng Gallurio anumang oras. Maaaring i-suspend o wakasan ng Gallurio ang access kung nilabag mo ang mga Tuntuning ito, hindi nagbayad ng naaangkop na singil, lumikha ng security o legal risk, inabuso ang serbisyo, o nakapinsala sa ibang user o third parties.",
+        "body2": "Pagkatapos ng termination, maaaring i-disable ang mga public page at matanggal ang content alinsunod sa retention practices ng Gallurio. Nananatiling may bisa ang mga probisyon tungkol sa pagmamay-ari, obligasyon sa bayad, disclaimers, liability, privacy, at dispute resolution pagkatapos ng termination kung angkop."
+      },
+      "privacyRef": {
+        "title": "15. Privacy",
+        "body": "Inilalarawan sa Privacy Policy ng Gallurio ang pagproseso nito ng personal na impormasyon. Kung magsusumite ka ng personal na impormasyon sa pamamagitan ng isang booking form ng Gallurio, kinikilala mong ito ay ipoproseso para ihatid at pamahalaan ang inquiry mo at ang mga kaugnay na komunikasyon ng serbisyo."
+      },
+      "governingLaw": {
+        "title": "16. Governing Law",
+        "body": "Pinamamahalaan ang mga Tuntuning ito ng batas ng Pilipinas, nang walang pagsasaalang-alang sa conflict-of-law principles. Alinsunod sa anumang mandatory na karapatan ng consumer-protection, dapat iharap ang mga hindi pagkakaunawaan sa mga korte na may angkop na jurisdiction sa Pilipinas."
+      },
+      "changes": {
+        "title": "17. Mga Pagbabago sa mga Tuntuning Ito",
+        "body": "Maaari naming i-update ang mga Tuntuning ito habang nagbabago ang serbisyo o batas. I-a-update namin ang effective date at magbibigay ng abiso para sa mahahalagang pagbabago kung angkop. Ang patuloy na paggamit pagkatapos ng effective date ay nangangahulugang tinatanggap mo ang na-update na mga Tuntunin."
       },
       "contact": {
-        "title": "15. Makipag-ugnayan",
+        "title": "18. Makipag-ugnayan",
         "body": "Para sa mga tanong tungkol sa mga Tuntuning ito, makipag-ugnayan sa amin sa:"
       }
     },
     "privacy": {
       "metadata": {
         "title": "Patakaran sa Privacy — Gallurio",
-        "description": "Alamin kung paano kinokolekta, ginagamit, ini-imbak, at pinoprotektahan ng Gallurio ang impormasyon."
+        "description": "Alamin kung paano kinokolekta, ginagamit, ini-imbak, ibinubunyag, at pinoprotektahan ng Gallurio ang personal na impormasyon."
       },
       "title": "Patakaran sa Privacy",
-      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
-      "intro": "Ipinapaliwanag ng Patakaran sa Privacy na ito kung paano kinokolekta, ginagamit, ini-imbak, at pinoprotektahan ng Gallurio ang impormasyon kapag ina-access ng mga user ang website, application, at kaugnay na mga serbisyo.",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 20, 2026",
+      "intro": "Ipinapaliwanag ng Patakaran sa Privacy na ito kung paano kinokolekta, ginagamit, ini-imbak, ibinubunyag, at pinoprotektahan ng Gallurio ang personal na impormasyon kapag ginagamit mo ang Gallurio, bumibisita sa isang public page ng Gallurio, o nagsusumite ng booking inquiry sa pamamagitan nito.",
+      "controller": {
+        "title": "1. Sino ang Responsable sa Iyong Impormasyon",
+        "body": "Pinapatakbo ang Gallurio sa Pilipinas bilang isang sole proprietorship ni Alexander III Banaag. Para sa layunin ng Philippine Data Privacy Act of 2012 at, kung naaangkop, ang EU General Data Protection Regulation (GDPR), si Alexander III Banaag ang Personal Information Controller at data controller.",
+        "addressLabel": "Address:",
+        "address": "J Labra St. Guadalupe, Cebu City, Cebu, Philippines",
+        "contactLabel": "Privacy contact:"
+      },
       "collect": {
-        "title": "1. Impormasyong Kinokolekta Namin",
+        "title": "2. Impormasyong Kinokolekta Namin",
+        "intro": "Depende sa paggamit mo ng Gallurio, maaari naming kolektahin ang:",
         "account": {
-          "title": "Impormasyon ng Account",
-          "body": "Maaaring kabilang dito ang pangalan, email address, detalye ng login, pangalan ng negosyo, impormasyon ng workspace, at mga kagustuhan sa account."
+          "title": "Impormasyon ng Account at Identity",
+          "body": "Pangalan, email address, Google account identifier, profile image kung ibinigay, mga rekord ng authentication, detalye ng workspace, at mga kagustuhan."
         },
         "business": {
-          "title": "Impormasyon ng Negosyo at Portfolio",
-          "body": "Maaaring kabilang dito ang mga detalye ng public profile, paglalarawan ng serbisyo, larawan, gallery, mga setting ng branding, content ng portfolio, at iba pang materyales na pinipili ng user na i-upload o i-publish."
+          "title": "Impormasyon ng Portfolio at Negosyo",
+          "body": "Pangalan ng negosyo, detalye ng public profile, paglalarawan ng serbisyo, larawan, gallery, branding, mga setting ng page, at iba pang content na ini-upload o ipina-publish mo."
         },
         "bookingInquiry": {
           "title": "Impormasyon ng Booking Inquiry",
-          "body": "Kapag nagsumite ang mga bisita ng inquiries sa pamamagitan ng isang page ng Gallurio, maaaring kolektahin ng Gallurio ang impormasyon tulad ng mga pangalan, email address, petsa ng event, detalye ng proyekto, mensahe, at iba pang sagot sa form."
+          "body": "Pangalan, email address, detalye ng event o proyekto, petsa, mensahe, at iba pang sagot na isinumite sa pamamagitan ng isang booking form na ginawa ng user."
         },
         "usage": {
-          "title": "Impormasyon sa Paggamit",
-          "body": "Maaaring kolektahin ng Gallurio ang technical at usage data tulad ng impormasyon ng device, browser type, IP address, mga pahinang binisita, mga aksyong ginawa, timestamp, at diagnostic logs."
+          "title": "Technical at Security Information",
+          "body": "IP address, impormasyon ng user-agent, impormasyon ng browser at device, timestamp, logs, at security events."
         },
         "payment": {
-          "title": "Impormasyon sa Bayad",
-          "body": "Hindi pa available ang mga paid na Pro subscription. Hindi direktang ini-imbak ng Gallurio ang buong detalye ng payment card; kapag nailunsad na ang mga bayad, papangalanan sa bahaging ito ang payment processor at ilalarawan kung paano nito kinokolekta at pinoproseso ang billing details, impormasyon sa bayad, impormasyon sa buwis, at invoice."
-        }
+          "title": "Impormasyon ng Subscription",
+          "body": "Plano, status ng subscription, billing identifiers, invoice, status ng bayad, at impormasyong may kaugnayan sa transaksyon. Hindi tumatanggap o nag-iimbak ang Gallurio ng buong detalye ng payment card kapag pinangangasiwaan ng Lemon Squeezy ang mga bayad."
+        },
+        "emailDelivery": {
+          "title": "Impormasyon sa Email Delivery",
+          "body": "Email address, status ng delivery, impormasyon sa bounce, at limitadong metadata ng mensahe para sa mga transactional email."
+        },
+        "outro": "Mangyaring huwag mag-upload ng sensitibong personal na impormasyon maliban kung kinakailangan at legal ito para sa paggamit mo sa serbisyo."
       },
       "useOfInfo": {
-        "title": "2. Paano Namin Ginagamit ang Impormasyon",
-        "item1": "Ibigay at paandarin ang Gallurio",
-        "item2": "Gumawa at pamahalaan ang mga account ng user",
-        "item3": "I-publish at ipakita ang mga portfolio page",
-        "item4": "Iproseso ang mga booking inquiries",
-        "item5": "Pagbutihin ang mga feature ng produkto at karanasan ng user",
-        "item6": "Magbigay ng suporta at tumugon sa mga kahilingan",
-        "item7": "Panatilihin ang seguridad at pigilan ang pang-aabuso",
-        "item8": "Suriin ang paggamit at performance",
-        "item9": "Sumunod sa mga legal at billing obligasyon"
+        "title": "3. Paano Namin Ginagamit ang Impormasyon at ang Aming Legal Bases",
+        "intro": "Pinoproseso namin ang impormasyon para:",
+        "item1": "Gumawa at paandarin ang mga account at workspace — legal basis: performance of a contract",
+        "item2": "I-publish at panatilihin ang mga portfolio page — legal basis: performance of a contract at legitimate interests",
+        "item3": "Tumanggap at maghatid ng mga booking inquiry — legal basis: performance of a contract at legitimate interests",
+        "item4": "Magpadala ng verification, security, booking, billing, at service notices — legal basis: performance of a contract at legitimate interests",
+        "item5": "Magbigay ng suporta at tumugon sa mga kahilingan — legal basis: performance of a contract, legitimate interests, o consent",
+        "item6": "Protektahan ang serbisyo, pigilan ang pang-aabuso, at ipatupad ang aming Terms — legal basis: legitimate interests at legal obligations",
+        "item7": "Panatilihin ang billing, accounting, at tax records — legal basis: legal obligations at performance of a contract",
+        "item8": "Unawain ang paggamit at pagbutihin ang serbisyo — legal basis: legitimate interests, o consent kung kinakailangan",
+        "item9": "Gumamit ng optional na non-essential cookies o tracking — legal basis: consent",
+        "outro": "Sa ngayon, hindi nagpapadala ang Gallurio ng marketing email o gumagamit ng personal na impormasyon para sa advertising o behavioral advertising."
       },
       "userContentPublic": {
-        "title": "3. Content ng User at Mga Pampublikong Page",
-        "body1": "Ang content na na-publish sa isang portfolio page ng Gallurio ay maaaring makita ng publiko. Maaaring kabilang dito ang mga pangalan ng negosyo, larawan, serbisyo, paglalarawan, opsyon sa contact, at iba pang impormasyong pinipili ng user na gawing pampubliko.",
-        "body2": "Responsibilidad ng mga user na tiyakin na ang na-publish na content ay hindi kasama ang private o sensitibong impormasyon na ayaw nilang maging available sa publiko."
+        "title": "4. Mga Pampublikong Page at Booking Inquiries",
+        "body1": "Ang content na pinipili ng isang workspace owner na i-publish ay maaaring ma-access ng publiko, kabilang ang mga pangalan ng negosyo, larawan, serbisyo, paglalarawan, opsyon sa contact, at booking forms.",
+        "body2": "Kapag nagsumite ang isang bisita ng booking inquiry, pinoproseso ng Gallurio ang na-submit na impormasyon para ihatid ang inquiry sa kaugnay na workspace owner at magbigay ng mga kaugnay na notification. Responsibilidad ng workspace owner na gamitin nang legal ang impormasyon ng inquiry at tumugon sa mga kahilingang may kaugnayan sa impormasyong natatanggap nila sa pamamagitan ng kanilang page. Maaari ring iproseso ng Gallurio ang impormasyong iyon bilang isang service provider sa ngalan ng workspace owner."
       },
-      "sharing": {
-        "title": "4. Pagbabahagi ng Impormasyon",
-        "body1": "Maaaring ibahagi ng Gallurio ang impormasyon sa mga pinagkakatiwalaang service provider na tumutulong paandarin ang platform, tulad ng mga hosting provider, authentication provider, analytics tools, email services, file storage providers, at payment processors.",
-        "body2": "Maaari ring ibahagi ng Gallurio ang impormasyon kapag hinihiling ng batas, upang protektahan ang mga karapatan, pigilan ang panloloko o pang-aabuso, o bilang bahagi ng business transfer tulad ng merger, acquisition, o pagbenta ng assets.",
-        "body3": "Hindi ibinebenta ng Gallurio ang personal na impormasyon."
+      "analytics": {
+        "title": "5. Analytics ng Public-Page",
+        "body1": "Nagbibigay ang Gallurio ng analytics para sa mga public page na ginawa ng user. Hindi nagta-set o nagbabasa ng cookies ang page-view beacon.",
+        "body2": "Para sa rate-limiting, pagpigil sa pang-aabuso, at once-per-day deduplication, tinatanggap ng Gallurio ang IP address at impormasyon ng user-agent ng bisita sa server-side. Hindi na-i-persist ang raw IP address at raw user-agent. Sa halip, gumagawa ang Gallurio ng salted HMAC-SHA-256 hash gamit ang IP address, user-agent, at kasalukuyang araw. Nagpapalit ang salt araw-araw sa UTC midnight, kaya hindi inilaan ang resulta bilang isang durable cross-day identifier.",
+        "body3": "Maaaring kabilang sa analytics ang page views, page o workspace identifier, tinatayang technical information, at timestamps. Hindi natatanggap ng mga workspace owner ang raw IP address sa pamamagitan ng analytics ng Gallurio."
       },
-      "security": {
-        "title": "5. Pag-iimbak ng Data at Seguridad",
-        "body1": "Gumagamit ang Gallurio ng makatwirang technical at organizational measures para protektahan ang impormasyon. Gayunpaman, walang sistema na magagarantiyang ganap na secure.",
-        "body2": "Responsibilidad ng mga user na panatilihing secure ang account credentials at ipaalam sa Gallurio kung naniniwala silang na-compromise ang kanilang account."
-      },
-      "retention": {
-        "title": "6. Pagpapanatili ng Data",
-        "body1": "Pinapanatili ng Gallurio ang impormasyon hangga't kinakailangan para ibigay ang serbisyo, sumunod sa mga legal obligasyon, lutasin ang mga hindi pagkakaunawaan, ipatupad ang mga kasunduan, at panatilihin ang lehitimong mga rekord ng negosyo.",
-        "body2": "Maaaring humiling ang mga user ng pagtanggal ng account o data sa pamamagitan ng pakikipag-ugnayan sa Gallurio, batay sa legal, technical, o operational na limitasyon."
-      },
-      "cookies": {
-        "title": "7. Cookies at Katulad na Teknolohiya",
-        "body1": "Maaaring gumamit ang Gallurio ng cookies at katulad na teknolohiya para panatilihing naka-sign in ang mga user, tandaan ang mga kagustuhan, suriin ang paggamit, pagbutihin ang performance, at suportahan ang seguridad.",
-        "body2": "Maaaring kontrolin ng mga user ang cookies sa pamamagitan ng browser settings, ngunit ang pag-disable ng ilang cookies ay maaaring makaapekto sa paggana ng serbisyo."
+      "serviceProviders": {
+        "title": "6. Mga Service Provider",
+        "intro": "Gumagamit ang Gallurio ng mga service provider para paandarin ang platform:",
+        "item1": "WorkOS para sa authentication at identity management",
+        "item2": "Google, kapag pinili ng user ang Google sign-in",
+        "item3": "MongoDB Atlas Flex para sa database hosting",
+        "item4": "Cloudflare Images para sa image storage at delivery, Cloudflare Turnstile para sa pagpigil sa pang-aabuso, at Cloudflare DNS at security services",
+        "item5": "Hetzner para sa application hosting",
+        "item6": "Resend para sa transactional email delivery",
+        "item7": "Lemon Squeezy para sa subscription checkout, payment processing, merchant-of-record services, billing, tax handling, refunds, chargebacks, at kaugnay na transaction administration",
+        "outro1": "Maaaring iproseso ng mga provider ang impormasyon sa ngalan ng Gallurio o iproseso ang ilang impormasyon sa ilalim ng kanilang sariling privacy policy. Mananatiling responsable ang Gallurio sa pagpili ng angkop na mga provider at paggamit ng makatwirang contractual, technical, at organizational safeguards.",
+        "outro2": "Maaari ring ibahagi ng Gallurio ang impormasyon kapag hinihiling ng batas, upang protektahan ang mga karapatan, pigilan ang panloloko o pang-aabuso, o bilang bahagi ng isang business transfer tulad ng merger, acquisition, o pagbenta ng assets. Hindi ibinebenta ng Gallurio ang personal na impormasyon."
       },
       "international": {
-        "title": "8. Paggamit sa Ibang Bansa",
-        "body1": "Maaaring ma-access ang Gallurio mula sa iba't ibang bansa. Maaaring iproseso ang impormasyon sa mga bansang pinapatakbo ng Gallurio o ng mga service provider nito.",
-        "body2": "Sa paggamit ng Gallurio, nauunawaan ng mga user na maaaring i-transfer at iproseso ang impormasyon sa labas ng kanilang bansang tinitirahan, batay sa naaangkop na batas."
+        "title": "7. International Transfers",
+        "body1": "Maaaring iproseso ng Gallurio at ng mga service provider nito ang impormasyon sa mga bansang labas sa Pilipinas at sa labas ng bansang tinitirahan mo.",
+        "body2": "Kung naaangkop ang GDPR, gagamit ang Gallurio ng angkop na transfer mechanism at safeguards na hinihiling ng naaangkop na batas, tulad ng isang adequacy decision, Standard Contractual Clauses, o iba pang legal na kinikilalang safeguard."
+      },
+      "cookies": {
+        "title": "8. Cookies at Katulad na Teknolohiya",
+        "body1": "Gumagamit ang Gallurio ng essential cookies o katulad na teknolohiya kung kinakailangan para sa authentication, security, session management, at core functionality. Hindi gumagamit ng cookies ang public-page analytics na inilarawan sa Section 5.",
+        "body2": "Kung ilalabas ng Gallurio sa hinaharap ang non-essential analytics, advertising, o katulad na teknolohiya, idodokumento ang mga ito sa isang cookie notice at pagagana lamang kung nakuha na ang kinakailangang consent. Maaari mong baguhin ang mga setting ng browser mo o mga pinili sa consent, bagama't ang pag-disable ng mga essential technologies ay maaaring makaapekto sa serbisyo."
+      },
+      "retention": {
+        "title": "9. Retention",
+        "body1": "Pinapanatili namin ang impormasyon hangga't makatwirang kinakailangan para ibigay ang Gallurio, panatilihin ang mga public page at business records, ihatid ang booking functionality, lutasin ang mga hindi pagkakaunawaan, pigilan ang pang-aabuso, ipatupad ang mga kasunduan, at sumunod sa legal, accounting, at tax obligations.",
+        "body2": "Maaaring manatiling available ang mga booking inquiry sa mga workspace owner nang mahaba o walang hangganang panahon dahil maaari itong magsilbing business records. Maaaring tanggalin ng mga user at workspace owner ang impormasyon kung may deletion feature ang serbisyo, o maaari silang makipag-ugnayan sa amin para humiling ng deletion. Maaari kaming magpanatili ng limitadong impormasyon kung kinakailangan para sa legal, security, fraud-prevention, backup, o dispute-resolution purposes."
+      },
+      "rights": {
+        "title": "10. Ang Iyong mga Karapatan",
+        "body1": "Alinsunod sa naaangkop na batas at valid na limitasyon, maaari kang humiling ng access sa, pagwawasto ng, pagtanggal o pag-block ng, restriction ng, o portability ng iyong personal na impormasyon. Maaari ka ring tumutol sa pagproseso batay sa legitimate interests at bawiin ang consent kung ang pagproseso ay batay sa consent.",
+        "body2": "Ipadala ang mga kahilingan sa support@gallurio.com. Maaari kaming humiling ng impormasyon na makatwirang kinakailangan para i-verify ang identity mo. Tutugon kami nang walang hindi kinakailangang pagkaantala at, kung naaangkop ang GDPR, karaniwan sa loob ng isang buwan, alinsunod sa legal na extension para sa complex o maraming kahilingan.",
+        "body3": "Maaari ka ring maghain ng reklamo sa National Privacy Commission ng Pilipinas o, kung naaangkop ang GDPR, sa supervisory authority sa bansang tinitirahan mo, pinagtatrabahuhan mo, o sa lugar ng umano'y paglabag."
+      },
+      "security": {
+        "title": "11. Security at Breach Response",
+        "body1": "Gumagamit ang Gallurio ng makatwiran at angkop na organizational, physical, at technical measures na idinisenyo para protektahan ang personal na impormasyon laban sa unauthorized access, pagkawala, pagbabago, pagbubunyag, o pagkasira. Walang serbisyo na makakapagbigay ng ganap na garantiya sa security.",
+        "body2": "Nagpapanatili ang Gallurio ng mga proseso para sa pag-imbestiga at pagtugon sa mga security incident at magbibigay ng mga notification na hinihiling ng naaangkop na batas."
       },
       "children": {
-        "title": "9. Privacy ng mga Bata",
-        "body1": "Hindi inilaan ang Gallurio para sa mga bata. Hindi sinasadyang kinokolekta ng Gallurio ang personal na impormasyon mula sa mga batang wala pa sa edad na kinakailangan ng naaangkop na batas.",
+        "title": "12. Privacy ng mga Bata",
+        "body1": "Inilaan ang Gallurio para sa mga negosyo at creative professionals at hindi ito nakadirekta sa mga bata. Hindi namin sinasadyang kinokolekta ang personal na impormasyon mula sa mga bata na lumalabag sa naaangkop na batas.",
         "body2": "Kung may naniniwalang nagbigay ang isang bata ng personal na impormasyon sa Gallurio, dapat silang makipag-ugnayan sa Gallurio para masuri at matanggal ang impormasyon kung angkop."
       },
       "changes": {
-        "title": "10. Mga Pagbabago sa Patakarang Ito",
-        "body": "Maaaring i-update ng Gallurio ang Patakaran sa Privacy na ito paminsan-minsan. Kapag may mahahalagang pagbabago, maaaring abisuhan ng Gallurio ang mga user sa pamamagitan ng serbisyo, email, o pag-update ng effective date."
+        "title": "13. Mga Pagbabago",
+        "body": "Maaari naming i-update ang Patakarang ito habang nagbabago ang Gallurio, ang mga provider nito, o ang naaangkop na batas. I-a-update namin ang effective date at magbibigay ng karagdagang abiso para sa mahahalagang pagbabago kung angkop."
       },
       "contact": {
-        "title": "11. Makipag-ugnayan",
+        "title": "14. Makipag-ugnayan",
         "body": "Para sa mga tanong o kahilingan tungkol sa privacy, makipag-ugnayan sa amin sa:"
       }
     },
@@ -317,63 +371,58 @@
         "description": "Alamin kung paano hinahawakan ng Gallurio ang mga cancellation at refund."
       },
       "title": "Patakaran sa Refund",
-      "effectiveDate": "Petsa ng Bisa: Hulyo 18, 2026",
+      "effectiveDate": "Petsa ng Bisa: Hulyo 20, 2026",
       "betaPeriod": {
-        "title": "1. Libreng Trial",
-        "body1": "Ang mga bagong workspace ng Gallurio ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang card. Walang totoong bayad na kinokolekta habang ang trial na ito, kaya walang kinakailangang refund dito.",
-        "body2": "Kung magpapatuloy ka sa isang paid na Pro subscription pagkatapos ng trial, ang presyo at billing terms na ipinapakita sa checkout ang mag-aapply, at ang Patakaran sa Refund na ito ang mamahala sa anumang bayad na nagawa.",
-        "body3": "Maaari ding makatanggap ang mga verified na beta participant ng hiwalay na dalawang-buwang Pro promo grant. Maaari itong i-redeem nang isang beses lamang bawat verified na beta participant at mag-e-expire dalawang buwan pagkatapos i-redeem; tulad ng libreng trial, isa itong promotional grant sa halip na bayad, kaya walang refund na naaangkop dito."
+        "title": "1. Libreng Access",
+        "body1": "Ang mga bagong workspace ng Gallurio ay tumatanggap ng isang buwan ng buong access sa Pro nang walang bayad, walang kailangang payment card. Dahil walang bayad na kinokolekta sa panahong ito, walang bayad na dapat i-refund.",
+        "body2": "Maaari ding makatanggap ang mga verified na beta participant ng hiwalay na dalawang-buwang Pro promo grant, na maaaring i-redeem nang isang beses lamang bawat verified na participant at mag-e-expire dalawang buwan pagkatapos ma-redeem. Tulad ng libreng buwan, isa itong promotional grant sa halip na bayad, kaya walang refund na naaangkop dito."
       },
       "subscriptions": {
-        "title": "2. Mga Subscription",
-        "body1": "Ang mga subscription ng Gallurio Pro ay sinisingil buwan-buwan, taun-taon, o ayon sa billing period na ipinapakita sa checkout.",
-        "body2": "Maaaring i-cancel ng mga user ang kanilang subscription para pigilan ang mga susunod na renewal charge. Pagkatapos ng cancellation, maaaring magpatuloy ang access hanggang sa katapusan ng kasalukuyang billing period maliban kung nakasaad.",
-        "body3": "Kapag na-lapse ang isang subscription dahil sa nabigong o terminal na hindi pagbabayad, magpapadala ang Gallurio ng expiry notice kaagad, isang saved-data reminder pagkatapos ng 30 araw, at isang huling public-page warning pagkatapos ng 51 araw, pagkatapos ay ia-unpublish ang public page pagkatapos ng 58 araw. Nananatiling naka-retain ang workspace, CRM, at draft data para maibalik ang lahat kapag nag-resubscribe."
+        "title": "2. Mga Paid Subscription",
+        "body1": "Ang mga paid Gallurio Pro subscription ay sisingilin buwanan o taunan, ayon sa opsyong pinili sa checkout. Ipapakita ang presyo, billing interval, tuntunin sa renewal, naaangkop na buwis, at proseso ng cancellation bago ang bayad.",
+        "body2": "Ang Lemon Squeezy ang kikilos bilang merchant of record ng Gallurio at magpoproseso ng checkout, bayad, billing, buwis, invoice, refund, chargebacks, at kaugnay na payment administration. Maaaring lumabas ang pangalan ng Lemon Squeezy o ang naaangkop na billing descriptor nito sa isang payment statement."
+      },
+      "cancellation": {
+        "title": "3. Cancellation",
+        "body1": "Maaari kang mag-cancel sa pamamagitan ng account mo sa Gallurio o ng billing-management link na ibinigay sa payment flow. Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge. Maliban kung nakasaad, magpapatuloy ang access hanggang sa katapusan ng paid billing period.",
+        "body2": "Hindi awtomatikong nire-refund ng cancellation ang halagang naibayad na."
+      },
+      "failedPayments": {
+        "title": "4. Mga Nabigong Bayad at Pag-unpublish ng Page",
+        "body1": "Kung nabigo ang isang renewal payment o natapos ang isang subscription dahil sa hindi pagbabayad, agad na magpapadala ang Gallurio ng expiry notice, isang saved-data reminder pagkatapos ng 30 araw, at isang huling public-page warning pagkatapos ng 51 araw, pagkatapos ay ia-unpublish ang public page pagkatapos ng 58 araw.",
+        "body2": "Nananatiling naka-retain ang workspace, client-management, at draft data para maibalik ang lahat kapag nag-resubscribe, alinsunod sa Privacy Policy ng Gallurio at naaangkop na legal o operational na limitasyon."
       },
       "refundRequests": {
-        "title": "3. Mga Kahilingan sa Refund",
-        "intro": "Sinusuri ang mga kahilingan sa refund nang case-by-case.",
-        "approvalIntro": "Maaaring depende ang approval sa:",
-        "item1": "Petsa ng pagbili",
-        "item2": "Billing period",
-        "item3": "Paggamit ng produkto",
-        "item4": "Aktibidad ng account",
-        "item5": "Mga isyu sa technical",
-        "item6": "Duplicate na singil",
-        "item7": "Naaangkop na mga batas sa proteksyon ng consumer",
-        "item8": "Proseso ng refund ng payment processor",
-        "outro": "Ang pagsusumite ng kahilingan sa refund ay hindi ginagarantiya na maaaprubahan ang refund."
-      },
-      "merchantOfRecord": {
-        "title": "4. Pagproseso ng Bayad",
-        "body1": "Hindi pa available ang mga paid subscription. Kapag nailunsad na ang mga ito, papangalanan dito ng Gallurio ang kanyang payment processor at ilalarawan kung paano nito pinangangasiwaan ang payment processing, buwis, invoice, billing support, at eligible na refund processing.",
-        "body2": "Kapag nailunsad na ang mga bayad, maaaring ipakita sa billing statement ng user ang pangalan ng napiling payment processor o isang kaugnay na billing descriptor."
+        "title": "5. Mga Kahilingan sa Refund",
+        "intro": "Maaaring isumite ang mga kahilingan sa refund sa support@gallurio.com at susuriin ito sa ilalim ng naaangkop na proseso ng Lemon Squeezy, mga patakaran ng Gallurio, at naaangkop na batas sa consumer-protection.",
+        "approvalIntro": "Maaaring isaalang-alang ng isang review ang:",
+        "item1": "petsa at halaga ng pagbili",
+        "item2": "billing period",
+        "item3": "duplicate o maling singil",
+        "item4": "mga technical na problemang malaking nakaapekto sa paggamit",
+        "item5": "aktibidad ng account at paggamit ng produkto",
+        "item6": "anumang mandatory na refund o karapatan ng consumer",
+        "outro": "Ang pagsusumite ng kahilingan ay hindi ginagarantiya na maaaprubahan ito. Maaaring mag-isyu ng refund ang Lemon Squeezy o gumawa ng ibang aksyon para pigilan o lutasin ang chargebacks sa ilalim ng sarili nitong mga patakaran."
       },
       "nonRefundable": {
-        "title": "5. Mga Sitwasyong Hindi Maaaring i-Refund",
-        "intro": "Maliban kung hinihiling ng batas, maaaring hindi maibigay ang refund para sa:",
-        "item1": "Hindi nagamit na oras sa isang billing period pagkatapos ng cancellation",
-        "item2": "Hindi pag-cancel bago ang renewal",
-        "item3": "Pansamantalang hindi paggamit",
-        "item4": "Pagbabago ng isip pagkatapos ng malaking paggamit",
-        "item5": "Mga isyung dulot ng maling pagkaset-up ng account o impormasyong ibinigay ng user",
-        "outro": "Susuriin pa rin ng Gallurio ang mga makatwirang kahilingan, lalo na kung may mga isyu sa technical o billing."
+        "title": "6. Mga Sitwasyong Maaaring Hindi Ma-refund",
+        "intro": "Sa pinakamataas na sakop na pinapayagan ng batas, maaaring hindi available ang refund para sa hindi nagamit na oras pagkatapos ng cancellation, hindi pag-cancel bago ang renewal, pansamantalang hindi paggamit, pagbabago ng isip pagkatapos ng malaking paggamit, o mga isyung dulot ng maling pagkaset-up ng account o impormasyong ibinigay ng user.",
+        "outro": "Hindi nililimitahan ng seksyong ito ang mandatory na karapatan sa ilalim ng naaangkop na batas sa consumer-protection. Susuriin pa rin ang mga makatwirang kahilingang may kinalaman sa duplicate charges, unauthorized charges, o material na technical failures."
       },
       "howToRequest": {
-        "title": "6. Paano Humiling ng Refund",
-        "body": "Para humiling ng refund, makipag-ugnayan sa amin sa:",
+        "title": "7. Paano Humiling ng Refund",
+        "body": "Para humiling ng refund, mag-email sa amin sa:",
         "includeIntro": "Isama ang sumusunod:",
-        "item1": "Email ng account",
-        "item2": "Pangalan ng negosyo o workspace",
-        "item3": "Petsa ng bayad",
-        "item4": "Dahilan ng kahilingan",
-        "item5": "Kaugnay na screenshot o detalye ng billing",
-        "outro": "Maaaring humingi ang Gallurio ng karagdagang impormasyon para i-verify ang bayad at suriin ang kahilingan."
+        "item1": "email address ng account",
+        "item2": "pangalan ng negosyo o workspace",
+        "item3": "petsa at halaga ng bayad",
+        "item4": "dahilan ng kahilingan",
+        "item5": "kaugnay na screenshot, impormasyon ng invoice, o detalye ng billing",
+        "outro": "Maaari kaming humiling ng karagdagang impormasyon para i-verify ang account at bayad. Huwag magpadala ng buong numero ng card o iba pang hindi kailangang payment credentials."
       },
-      "cancellations": {
-        "title": "7. Mga Cancellation",
-        "body1": "Maaaring i-cancel ng mga user ang kanilang subscription sa pamamagitan ng account settings o ng billing management flow na ibinigay.",
-        "body2": "Pinipigilan ng cancellation ang mga susunod na renewal ngunit hindi awtomatikong nirerefund ang mga nakaraang bayad maliban kung naaprubahan ang refund o hinihiling ng batas."
+      "changes": {
+        "title": "8. Mga Pagbabago",
+        "body": "Maaari naming i-update ang patakarang ito kapag nagbago ang aming billing process, payment provider, presyo, o naaangkop na batas. Ipapalabas ang pinakabagong bersyon sa page na ito."
       }
     },
     "contact": {
@@ -383,7 +432,7 @@
       },
       "header": {
         "headline": "Kailangan mo ba ng tulong sa Gallurio?",
-        "body": "Para sa suporta, alalahanin sa account, isyu sa billing, o pangkalahatang katanungan, makipag-ugnayan sa amin sa:"
+        "body": "Para sa suporta, alalahanin sa account, tanong sa billing, kahilingan sa refund, bug report, feedback sa feature, partnership, o pangkalahatang katanungan, mag-email sa:"
       },
       "supportTopics": {
         "title": "Mga Paksa ng Suporta",
@@ -397,6 +446,10 @@
         "item8": "Feedback sa feature",
         "item9": "Partnership o pangnegosyong katanungan"
       },
+      "whatToInclude": {
+        "title": "Ano ang Isasama",
+        "body": "Para sa mga isyu sa account, billing, o technical, isama ang email address ng account mo, pangalan ng workspace, kaugnay na page URL, maikling paglalarawan ng isyu, at mga screenshot kung makakatulong. Huwag magpadala ng mga password, buong numero ng payment card, o iba pang hindi kailangang sensitibong impormasyon."
+      },
       "responseTime": {
         "title": "Oras ng Pagtugon",
         "body1": "Layunin naming tumugon sa lalong madaling panahon na makatwiran. Maaaring mag-iba ang oras ng pagtugon habang patuloy naming pinapabuti ang Gallurio.",
@@ -404,7 +457,7 @@
       },
       "businessInfo": {
         "title": "Impormasyon ng Negosyo",
-        "body": "Ang Gallurio ay maliit at independiyenteng startup. Wala pa kaming nakarehistrong legal na pangalan o business address na ilalagay — sa ngayon, ang pinakamainam na paraan para makontak kami ay sa pamamagitan ng email.",
+        "body": "Ang Gallurio ay pinapatakbo bilang isang independiyenteng Philippine sole proprietorship ni Alexander III Banaag, na nasa J Labra St. Guadalupe, Cebu City, Cebu, Philippines. Nakalista rin ang legal na pangalan at contact address sa Privacy Policy at Terms of Service ng Gallurio.",
         "emailLabel": "Email:"
       },
       "social": {
@@ -717,8 +770,10 @@
           "today": "Ngayon",
           "next": "Susunod na mga petsa sa heatmap",
           "title": "Heatmap ng na-book na oras",
-          "weekOf": "Linggo ng",
           "bookedHours": "Na-book na oras",
+          "bookingsCount": "{count, plural, one {# booking} other {# na booking}}",
+          "skipPrevious": "Bumalik ng 5 pahina",
+          "skipNext": "Sumulong ng 5 pahina",
           "weekdays": [
             "Lun",
             "Mar",
@@ -1462,6 +1517,20 @@
           "image": "Hindi mabasa ang larawan. Subukan ang ibang file.",
           "upload": "Nabigo ang pag-upload. Subukan muli."
         },
+        "logoSection": "Logo",
+        "logoHint": "Ipinapakita sa header ng iyong pampublikong pahina.",
+        "logoRequirements": "PNG, JPEG, o WebP. Hanggang 512x256px, max 250KB.",
+        "logoLabel": "Mag-upload ng logo",
+        "logoReplace": "Palitan",
+        "logoRemove": "Alisin",
+        "logoUploading": "Ina-upload...",
+        "logoErrors": {
+          "type": "Gumamit ng PNG, JPEG, o WebP na larawan.",
+          "size": "Panatilihin ang file sa ibaba ng 250KB.",
+          "dimensions": "Panatilihin ang logo sa loob ng 512x256px.",
+          "image": "Hindi wastong larawan ang file na iyon.",
+          "upload": "Nabigo ang pag-upload. Subukan muli."
+        },
         "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
         "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
         "seoKeywords": "Mga tag ng SEO",
@@ -2064,7 +2133,12 @@
         "addNewTheme": "Magdagdag ng bagong tema",
         "addNewGuardTitle": "I-save bago magsimula ng bago?",
         "addNewGuardBody": "May mga hindi naka-save na pagbabago. I-save muna ang kasalukuyang tema, o itapon para magsimula ng panibago.",
-        "addNewGuardNameLabel": "Pangalan ng tema"
+        "addNewGuardNameLabel": "Pangalan ng tema",
+        "fontSearchPlaceholder": "Maghanap ng font",
+        "fontNoMatches": "Walang tugmang font",
+        "curatedFontsGroup": "Mga piling font",
+        "googleFontsGroup": "Google Fonts",
+        "customGoogleFontOption": "Custom na Google Font…"
       },
       "editor": {
         "zone": {
@@ -2982,12 +3056,17 @@
         "stylist": "Stylist",
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
+        "artists": "Mga artist",
         "other": "Iba pa"
       },
+      "businessTypeOtherLabel": "Anong uri ng negosyo?",
+      "businessTypeOtherPlaceholder": "hal. Tattoo studio, DJ, florist",
       "slugChecking": "Tinitingnan…",
       "slugAvailable": "Available",
       "slugTaken": "Hindi available",
-      "slugInvalid": "Hindi tamang format"
+      "slugInvalid": "Hindi tamang format",
+      "timezoneSearchPlaceholder": "Maghanap ayon sa lungsod o UTC offset",
+      "timezoneNoMatches": "Walang tugmang timezone"
     },
     "workspace": {
       "title": "I-set up ang iyong workspace",
@@ -3073,6 +3152,12 @@
         "teamManagement": "Pamamahala ng teams",
         "removeBranding": "Alisin ang branding ng Gallurio"
       }
+    },
+    "beta": {
+      "name": "Beta"
+    },
+    "promo": {
+      "name": "Promo"
     }
   },
   "subscribe": {
@@ -3187,7 +3272,8 @@
   "notFound": {
     "title": "Hindi nahanap ang pahina",
     "description": "Ang pahinang hinahanap mo ay hindi umiiral o inilipat na.",
-    "backToDashboard": "Bumalik sa dashboard"
+    "backToDashboard": "Bumalik sa dashboard",
+    "backToHome": "Bumalik sa home"
   },
   "inviteAccept": {
     "pageTitle": "Tanggapin ang imbitasyon",

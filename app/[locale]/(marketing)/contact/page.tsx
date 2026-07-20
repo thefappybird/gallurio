@@ -60,6 +60,13 @@ export default async function ContactPage({ params }: Props) {
 
       <section className="mt-10">
         <h2 className="font-heading text-xl font-semibold tracking-tight">
+          {t("whatToInclude.title")}
+        </h2>
+        <p className="mt-3 text-base leading-7 text-muted-foreground">{t("whatToInclude.body")}</p>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-heading text-xl font-semibold tracking-tight">
           {t("responseTime.title")}
         </h2>
         <div className="mt-3 space-y-4 text-base leading-7 text-muted-foreground">

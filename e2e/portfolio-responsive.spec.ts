@@ -49,7 +49,27 @@ test("editor mobile viewport clamps the full canvas frame and remains horizontal
   await page.goto("/portfolio?seoSetup=preview");
   await page.locator("[data-testid='portfolio-editor-shell']").waitFor({ timeout: 90_000 });
 
-  await page.locator('button[aria-label="Mobile"]').first().click({ force: true });
+  // Every /portfolio visit for an account with existing drafts fires the
+  // "Welcome back" entry dialog, which blocks all other interaction.
+  const continueEditing = page.getByRole("button", { name: "Continue where you left off" });
+  if (await continueEditing.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await continueEditing.click();
+  }
+
+  // The first-visit spotlight guide may also be active and its overlay
+  // intercepts clicks elsewhere until dismissed.
+  const skipGuide = page.getByRole("button", { name: "Skip Guide" });
+  if (await skipGuide.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await skipGuide.click();
+    await page.getByRole("button", { name: "Skip Guide" }).click();
+  }
+
+  // At 375px the inline canvas controls are hidden and only the compact
+  // popover (SlidersHorizontal trigger) renders them — open it first.
+  await page.locator('[data-testid="canvas-controls-trigger"]').click();
+  // The same controls also render (hidden) in the inline row, so scope to
+  // the one actually visible — the just-opened popover's copy.
+  await page.locator('button[aria-label="Mobile"]:visible').click();
   await page.waitForFunction(() =>
     document.getElementById("pf-root-canvas-style")?.textContent?.includes("width: 390px !important"),
   );

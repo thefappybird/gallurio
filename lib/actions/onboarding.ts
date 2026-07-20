@@ -82,7 +82,10 @@ export async function businessStepAction(
   const parsed = businessStepSchema.safeParse(input);
   if (!parsed.success) return { error: "invalid_input" };
 
-  const { firstName, lastName, name, businessType } = parsed.data;
+  const { firstName, lastName, name, businessType, businessTypeOther } = parsed.data;
+  // Only persist the free-text label when businessType is "other" — clears
+  // stale values if the owner switches away from "other" on a later run.
+  const businessTypeOtherValue = businessType === "other" ? businessTypeOther : "";
 
   await connectDB();
 
@@ -118,7 +121,7 @@ export async function businessStepAction(
       const workspace = await Workspace.findOneAndUpdate(
         { ownerUserId: authUser.workosUserId },
         {
-          $set: { name, businessType },
+          $set: { name, businessType, businessTypeOther: businessTypeOtherValue },
           $setOnInsert: {
             ownerUserId: authUser.workosUserId,
             slug: autoSlug,

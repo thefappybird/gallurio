@@ -67,26 +67,38 @@ describe("uploadAsset", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("rejects image exceeding maxWidth", async () => {
+  it("accepts an image exceeding maxWidth — dimensions are no longer enforced", async () => {
     vi.stubGlobal("Image", class WideImage extends MockImage {
       naturalWidth = 1000;
       naturalHeight = 200;
     });
-    const fetchMock = vi.fn();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ imageId: "img_wide", uploadURL: "https://upload.example.com" }) })
+      .mockResolvedValueOnce({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await uploadAsset(makeFile("image/png"), BASE_CONSTRAINTS);
 
-    expect(result).toEqual({ error: "dimensions_too_large" });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      asset: {
+        assetId: "img_wide",
+        url: expect.stringContaining("img_wide"),
+        width: 1000,
+        height: 200,
+      },
+    });
   });
 
-  it("rejects a rectangular image when square dimensions are required", async () => {
+  it("accepts a rectangular image even when requireSquare is set — dimensions are no longer enforced", async () => {
     vi.stubGlobal("Image", class RectangularImage extends MockImage {
       naturalWidth = 200;
       naturalHeight = 160;
     });
-    const fetchMock = vi.fn();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ imageId: "img_rect", uploadURL: "https://upload.example.com" }) })
+      .mockResolvedValueOnce({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await uploadAsset(makeFile("image/png"), {
@@ -94,8 +106,14 @@ describe("uploadAsset", () => {
       requireSquare: true,
     });
 
-    expect(result).toEqual({ error: "dimensions_too_large" });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      asset: {
+        assetId: "img_rect",
+        url: expect.stringContaining("img_rect"),
+        width: 200,
+        height: 160,
+      },
+    });
   });
 
   it("returns asset on success", async () => {

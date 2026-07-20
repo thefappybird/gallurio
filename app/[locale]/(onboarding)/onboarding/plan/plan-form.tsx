@@ -49,7 +49,10 @@ export function PlanStepForm({
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const lemonSqueezy = useLemonSqueezyCheckout(() => router.push("/onboarding/done"), billingAvailable);
+  const lemonSqueezy = useLemonSqueezyCheckout(() => {
+    router.refresh();
+    router.push("/onboarding/done");
+  }, billingAvailable);
 
   async function submit() {
     if (planChoiceLocked) {
@@ -72,6 +75,7 @@ export function PlanStepForm({
           toast.error(errMsg(result.error));
           return;
         }
+        router.refresh();
         router.push("/onboarding/done");
       });
       return;
@@ -119,6 +123,7 @@ export function PlanStepForm({
         toast.error(errMsg(result.error));
         return;
       }
+      router.refresh();
       router.push("/onboarding/done");
     });
   }
@@ -359,6 +364,7 @@ function PromoCodePanel({
       return;
     }
     toast.success(tPromo(result.startsImmediately ? "success" : "successQueued"));
+    router.refresh();
     router.push("/onboarding/done");
   }
 

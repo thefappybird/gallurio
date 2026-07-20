@@ -51,6 +51,7 @@ const baseDefaults: UpdateWorkspaceBusinessInput = {
   name: "Luna Studio",
   slug: "luna-studio",
   businessType: "photographer",
+  businessTypeOther: "",
   country: "PH",
   currency: "PHP",
   timezone: "Asia/Manila",
@@ -61,6 +62,32 @@ const baseDefaults: UpdateWorkspaceBusinessInput = {
   logoUrl: "",
   logoAssetId: "",
 };
+
+describe("WorkspaceBusinessForm — artists business type + other free text", () => {
+  it("renders an 'artists' option in the business type select", () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    const select = screen.getByLabelText("businessType") as HTMLSelectElement;
+    const optionValues = Array.from(select.options).map((o) => o.value);
+    expect(optionValues).toContain("artists");
+  });
+
+  it("shows the free-text 'other' input only when 'other' is selected, and surfaces the required error", async () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    expect(screen.queryByLabelText("businessTypeOtherLabel")).not.toBeInTheDocument();
+
+    const select = screen.getByLabelText("businessType") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "other" } });
+
+    const otherInput = screen.getByLabelText("businessTypeOtherLabel");
+    expect(otherInput).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    expect(await screen.findByText(/tell us your business type/i)).toBeInTheDocument();
+  });
+});
 
 describe("WorkspaceBusinessForm — contact address LocationPicker", () => {
   it("submits the typed address along with its lat/lng", async () => {

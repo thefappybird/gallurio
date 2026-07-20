@@ -33,7 +33,11 @@ export default async function PlanStepPage() {
   return (
     <PlanStepForm
       furthestStep={ctx.currentStep}
-      currentPlan={ctx.workspace?.plan ?? "free"}
+      // Workspace.plan is "pro" for every fresh signup during the free-Pro
+      // trial grant (businessStepAction), not just for a real subscription —
+      // use `activation` (which already excludes the trial grant) so a
+      // first-time user sees the Free card/CTA, not a paid "Subscribe" one.
+      currentPlan={activation === "pro" ? "pro" : "free"}
       planChoiceLocked={activation !== "free"}
       activation={activation}
       acceptedPromoCode={acceptedPromoCodes[0]?.code ?? null}

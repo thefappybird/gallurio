@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
@@ -189,5 +190,149 @@ describe("ThemePanelDialog Apply button", () => {
 
     resolveSave({ ok: true, theme: { id: "n", name: "My Theme", brandKit: DEFAULT_BRAND_KIT } });
     await waitFor(() => expect(applyButton).not.toBeDisabled());
+  });
+});
+
+describe("ThemePanelDialog brand-kit dirty guard (A13)", () => {
+  // A stateful harness — unlike `setup()`, this actually feeds
+  // `onBrandKitChange` back into the `brandKit` prop, since the dirty guard
+  // compares the live prop against the opening snapshot (picking a theme
+  // tile alone doesn't touch the controller's own hasUnsavedCurrent/editDiff
+  // state, so a static-prop double can't exercise this path).
+  function statefulSetup(over: Partial<Parameters<typeof ThemePanelDialog>[0]> = {}) {
+    const onCancel = vi.fn();
+    const onSaved = vi.fn();
+    function Harness() {
+      const [brandKit, setBrandKit] = useState(DEFAULT_BRAND_KIT);
+      return (
+        <ThemePanelDialog
+          open
+          brandKit={brandKit}
+          onBrandKitChange={setBrandKit}
+          onSaved={onSaved}
+          onCancel={onCancel}
+          savedThemes={[]}
+          onSavedThemesChange={vi.fn()}
+          {...over}
+        />
+      );
+    }
+    renderWithProviders(<Harness />);
+    return { onCancel, onSaved };
+  }
+
+  it("guards close after picking a different theme tile without applying", () => {
+    const { onCancel } = statefulSetup();
+    fireEvent.click(screen.getByRole("button", { name: "Apply theme: Editorial" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it("routes to the existing Current Theme guard instead of double-prompting when a draft already covers the change", () => {
+    const { onCancel } = statefulSetup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    // "Save & close" only appears on the Current Theme guard, not the brand-kit dirty guard.
+    expect(screen.getByRole("button", { name: "Save & close" })).toBeInTheDocument();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it("Discard in the brand-kit dirty guard reverts to the opening snapshot and closes", () => {
+    const { onCancel } = statefulSetup();
+    fireEvent.click(screen.getByRole("button", { name: "Apply theme: Editorial" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+    expect(onCancel).toHaveBeenCalled();
+    expect(screen.getByText(DEFAULT_BRAND_KIT.accentColor)).toBeInTheDocument();
+  });
+
+  it("footer Discard stays hidden after merely picking a different theme tile — no real edit yet", () => {
+    // Picking a tile only sets brandKitDirty, not hasUnsavedCurrent/editDiff (see the
+    // statefulSetup comment above). The footer Discard is for an in-progress edit;
+    // Cancel (which still opens the guard above) is what reverts a picked-but-untouched tile.
+    statefulSetup();
+    fireEvent.click(screen.getByRole("button", { name: "Apply theme: Editorial" }));
+    expect(screen.queryByRole("button", { name: "Discard" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
+});
+
+describe("ThemePanelDialog footer Save theme / Discard changes (A16)", () => {
+  it("hides Save theme / Discard when there is nothing unsaved to act on", () => {
+    setup();
+    expect(screen.queryByRole("button", { name: "Save theme" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Discard" })).not.toBeInTheDocument();
+  });
+
+  it("shows Save theme + Discard alongside Cancel/Apply once there is an unsaved Current Theme", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    // The tile's own inline save-name icon button is also labeled "Save theme" —
+    // the footer button gets a distinguishing (Label-in-Name-compatible) aria-label.
+    expect(screen.getByRole("button", { name: "Save theme (current draft)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Discard" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
+  });
+
+  it("footer 'Save theme' persists the current draft as a named theme without closing the dialog", async () => {
+    const { saveThemeAction } = await import("../_actions");
+    const props = setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    const nameInput = screen.getByRole("textbox", { name: "Theme name" });
+    fireEvent.change(nameInput, { target: { value: "My Theme" } });
+    (saveThemeAction as ReturnType<typeof vi.fn>).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Save theme (current draft)" }));
+    await waitFor(() => expect(saveThemeAction).toHaveBeenCalledWith("My Theme", expect.anything()));
+    expect(props.onSaved).not.toHaveBeenCalled();
+  });
+
+  it("footer 'Discard' reverts an unsaved Current Theme draft", () => {
+    const onBrandKitChange = vi.fn();
+    setup({ onBrandKitChange });
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    onBrandKitChange.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+    expect(onBrandKitChange).toHaveBeenCalledWith(
+      expect.objectContaining({ accentColor: DEFAULT_BRAND_KIT.accentColor })
+    );
+  });
+
+  it("shows an inline error at the bottom of the modal when deleting a saved theme fails (not just a toast)", async () => {
+    const { deleteThemeAction } = await import("../_actions");
+    (deleteThemeAction as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ error: "theme_delete_failed" });
+    const savedThemes = [{ id: "t1", name: "Sunset", brandKit: DEFAULT_BRAND_KIT }];
+    setup({ savedThemes });
+    fireEvent.click(screen.getByRole("button", { name: /delete theme: sunset/i }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+  });
+
+  it("shows the empty-name validation error exactly once, even after retrying the failed save", async () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save theme (current draft)" }));
+    await waitFor(() => expect(screen.getAllByText("Enter a name for this theme.")).toHaveLength(1));
+    fireEvent.click(screen.getByRole("button", { name: "Save theme (current draft)" }));
+    await waitFor(() => expect(screen.getAllByText("Enter a name for this theme.")).toHaveLength(1));
+  });
+
+  it("the tile's own inline Discard (✕) clears the bottom error and hides Save+Discard together", async () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save theme (current draft)" }));
+    await waitFor(() => expect(screen.getByText("Enter a name for this theme.")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel theme edit" }));
+
+    expect(screen.queryByText("Enter a name for this theme.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save theme (current draft)" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Discard" })).not.toBeInTheDocument();
   });
 });

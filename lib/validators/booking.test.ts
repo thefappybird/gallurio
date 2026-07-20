@@ -121,6 +121,18 @@ describe("bookingSessionSchema", () => {
     });
     expect(bad.success).toBe(false);
   });
+
+  it("accepts a session crossing UTC midnight that is same-day in Asia/Manila (UTC+8) — 06:00-10:00 PHT", () => {
+    // 2026-07-19T22:00:00Z = 2026-07-20T06:00 PHT; 2026-07-20T02:00:00Z = 2026-07-20T10:00 PHT.
+    // Same workspace day in Manila despite crossing UTC midnight. The
+    // tz-aware sessionsAreSameDayInTz check (called by every real caller)
+    // remains the authoritative same-day enforcer.
+    const ok = bookingSessionSchema.safeParse({
+      startAt: new Date("2026-07-19T22:00:00Z"),
+      endAt: new Date("2026-07-20T02:00:00Z"),
+    });
+    expect(ok.success).toBe(true);
+  });
 });
 
 describe("bookingCreateSchema", () => {

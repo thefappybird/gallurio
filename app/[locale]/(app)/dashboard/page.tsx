@@ -262,7 +262,6 @@ async function BookingsTab({
             locale={workspace.country ? `${locale}-${workspace.country}` : locale}
             labels={{
               title: t("booking.heatmap.title"),
-              weekOf: t("booking.heatmap.weekOf"),
               bookedHours: t("booking.heatmap.bookedHours"),
               weekdays: weekdayLabels,
               legend: heatmapLegend,
@@ -270,6 +269,8 @@ async function BookingsTab({
               previous: t("booking.heatmap.previous"),
               today: t("booking.heatmap.today"),
               next: t("booking.heatmap.next"),
+              skipPrevious: t("booking.heatmap.skipPrevious"),
+              skipNext: t("booking.heatmap.skipNext"),
             }}
           />
         </div>

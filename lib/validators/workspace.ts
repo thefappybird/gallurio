@@ -1,10 +1,19 @@
 import { z } from "zod";
+import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
+
+// Single source of truth for the workspace-slug grammar. Reused by proxy.ts to
+// validate the `/w/{slug}` path segment before treating it as a redirect
+// target host label (see the canonical-host redirect open-redirect guard).
+export const WORKSPACE_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export const slugSchema = z
   .string()
   .min(3, "At least 3 characters")
   .max(50, "At most 50 characters")
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Lowercase letters, numbers, and hyphens only");
+  .regex(WORKSPACE_SLUG_RE, "Lowercase letters, numbers, and hyphens only")
+  .refine((s) => !isReservedSlug(s), {
+    message: "That address is reserved. Choose another.",
+  });
 
 export const BUSINESS_TYPE_VALUES = [
   "photographer",
@@ -13,6 +22,7 @@ export const BUSINESS_TYPE_VALUES = [
   "stylist",
   "catering",
   "entertainer",
+  "artists",
   "other",
 ] as const;
 
@@ -80,15 +90,40 @@ export const COUNTRY_TO_CURRENCY: Record<SupportedCountry, SupportedCurrency> = 
   BH: "BHD",
 };
 
+// Shared cross-field rule: when businessType is "other", businessTypeOther
+// must carry a trimmed 2-60 char free-text label (captured for later
+// analysis of which types to formalize). Applied via .superRefine on every
+// schema exposing both fields — refinements don't propagate through `.shape`
+// picks, so each downstream object schema re-applies this helper.
+function withBusinessTypeOtherRefine<T extends z.AnyZodObject>(schema: T) {
+  return schema.superRefine((data, ctx) => {
+    const d = data as { businessType?: string; businessTypeOther?: string };
+    if (d.businessType === "other") {
+      const val = (d.businessTypeOther ?? "").trim();
+      if (val.length < 2 || val.length > 60) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Tell us your business type",
+          path: ["businessTypeOther"],
+        });
+      }
+    }
+  });
+}
+
 // Step 1 — business identity only. The workspace URL (slug) and
 // country/timezone/currency live on workspaceSetupSchema (a later onboarding
 // step); this schema is also reused by the post-onboarding settings form below.
-export const businessStepSchema = z.object({
+const businessStepObjectSchema = z.object({
   firstName: z.string().min(1, "Required").max(40, "At most 40 characters").trim(),
   lastName: z.string().max(40, "At most 40 characters").trim().optional().default(""),
   name: z.string().min(2, "At least 2 characters").max(80, "At most 80 characters").trim(),
   businessType: z.enum(BUSINESS_TYPE_VALUES),
+  // Free-text label captured when businessType is "other" — for later
+  // analysis of which types to formalize. Not shown on the public page.
+  businessTypeOther: z.string().trim().max(60).optional().default(""),
 });
+export const businessStepSchema = withBusinessTypeOtherRefine(businessStepObjectSchema);
 export type BusinessStepInput = z.infer<typeof businessStepSchema>;
 
 // Step 2 — workspace setup (URL slug, country, timezone, time-format
@@ -122,29 +157,38 @@ export function coerceBillingCountry(
 }
 
 // Kept for backwards-compat with the old single-page onboarding action signature.
-export const createWorkspaceSchema = z.object({
-  name: businessStepSchema.shape.name,
-  slug: workspaceSetupSchema.shape.slug,
-  businessType: businessStepSchema.shape.businessType,
-});
+export const createWorkspaceSchema = withBusinessTypeOtherRefine(
+  z.object({
+    name: businessStepObjectSchema.shape.name,
+    slug: workspaceSetupSchema.shape.slug,
+    businessType: businessStepObjectSchema.shape.businessType,
+    businessTypeOther: businessStepObjectSchema.shape.businessTypeOther,
+  })
+);
 export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
 
 // ---- Post-onboarding settings ---------------------------------------------
 // Business fields the owner can change from /settings/workspace.
-export const updateWorkspaceBusinessSchema = z.object({
-  name: businessStepSchema.shape.name,
-  slug: workspaceSetupSchema.shape.slug,
-  businessType: businessStepSchema.shape.businessType,
-  country: workspaceSetupSchema.shape.country,
-  currency: currencySchema,
-  timezone: workspaceSetupSchema.shape.timezone,
-  contactEmail: z.union([z.string().email("Enter a valid email"), z.literal("")]).optional().default(""),
-  contactAddress: z.string().max(200).trim().optional().default(""),
-  contactAddressLat: z.number().min(-90).max(90).nullable().optional(),
-  contactAddressLng: z.number().min(-180).max(180).nullable().optional(),
-  logoUrl: z.string().trim().url().or(z.literal("")).optional().default(""),
-  logoAssetId: z.string().trim().optional().default(""),
-});
+export const updateWorkspaceBusinessSchema = withBusinessTypeOtherRefine(
+  z.object({
+    name: businessStepObjectSchema.shape.name,
+    slug: workspaceSetupSchema.shape.slug,
+    businessType: businessStepObjectSchema.shape.businessType,
+    businessTypeOther: businessStepObjectSchema.shape.businessTypeOther,
+    country: workspaceSetupSchema.shape.country,
+    currency: currencySchema,
+    timezone: workspaceSetupSchema.shape.timezone,
+    contactEmail: z
+      .union([z.string().email("Enter a valid email"), z.literal("")])
+      .optional()
+      .default(""),
+    contactAddress: z.string().max(200).trim().optional().default(""),
+    contactAddressLat: z.number().min(-90).max(90).nullable().optional(),
+    contactAddressLng: z.number().min(-180).max(180).nullable().optional(),
+    logoUrl: z.string().trim().url().or(z.literal("")).optional().default(""),
+    logoAssetId: z.string().trim().optional().default(""),
+  })
+);
 export type UpdateWorkspaceBusinessInput = z.infer<typeof updateWorkspaceBusinessSchema>;
 
 // Public-page settings (SEO + inquiry email). Visibility is a separate toggle
@@ -161,6 +205,8 @@ export const publicPageSettingsSchema = z.object({
     .union([z.string().email("Enter a valid email"), z.literal("")])
     .optional()
     .default(""),
+  logoUrl: z.string().max(500).trim().url().or(z.literal("")).optional().default(""),
+  logoAssetId: z.string().max(200).trim().optional().default(""),
   siteIconUrl: z
     .string()
     .trim()

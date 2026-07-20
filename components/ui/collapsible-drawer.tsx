@@ -41,11 +41,27 @@ export function CollapsibleDrawer({
   return (
     <section className={cn("border border-border bg-card text-card-foreground", className)}>
       <div className="flex items-stretch gap-2">
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           aria-expanded={expanded}
           aria-controls={bodyId}
-          onClick={() => setExpanded(!expanded)}
+          onClick={(e) => {
+            const t = e.target as HTMLElement;
+            if (
+              t.closest("input,select,textarea,button,a,[contenteditable=true]") &&
+              t !== e.currentTarget
+            )
+              return;
+            setExpanded(!expanded);
+          }}
+          onKeyDown={(e) => {
+            if (e.target !== e.currentTarget) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setExpanded(!expanded);
+            }
+          }}
           className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-start focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <ChevronDownIcon
@@ -55,7 +71,7 @@ export function CollapsibleDrawer({
             <span className="min-w-0">{title}</span>
             {subtitle ? <span className="min-w-0">{subtitle}</span> : null}
           </span>
-        </button>
+        </div>
         {actions ? <div className="flex items-center gap-1 pe-3">{actions}</div> : null}
       </div>
 

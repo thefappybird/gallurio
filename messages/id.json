@@ -45,7 +45,7 @@
       "businessWorkspace": {
         "title": "Workspace bisnis",
         "panelHeadline": "Satu dashboard untuk semuanya di antara sesi pemotretan.",
-        "description": "Kelola konten profil publik, detail bisnis, dan pengaturan terkait booking dari satu dashboard."
+        "description": "Kelola konten profil publik, detail bisnis, invoice, dan pengaturan terkait booking dari satu dashboard."
       },
       "bookingInquiryForms": {
         "title": "Formulir permintaan booking",
@@ -111,7 +111,7 @@
         "badge": "Direkomendasikan",
         "comingSoon": "Segera hadir",
         "name": "Pro",
-        "freeMonth": "Mulai dengan 1 bulan gratis, tanpa kartu diperlukan.",
+        "freeMonth": "Mulai dengan satu bulan gratis. Tidak perlu kartu pembayaran.",
         "description": "Semua yang Anda butuhkan untuk menjalankan booking, klien, galeri, dan halaman publik Anda.",
         "priceSuffixMonthly": "/ bulan",
         "priceSuffixYearly": "/ tahun",
@@ -125,12 +125,18 @@
         "cta": "Mulai bulan gratis saya"
       },
       "billingNotice": {
-        "body1": "Langganan Pro berbayar belum tersedia. Ketika diluncurkan, harga, ketentuan penagihan, dan detail pembayaran akan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian apa pun.",
-        "body2": "Tidak ada biaya yang dikumpulkan selama bulan gratis pertama Anda."
+        "body1": "Langganan Pro berbayar belum tersedia. Ketika langganan diluncurkan, harga, periode penagihan, ketentuan perpanjangan, pajak yang berlaku, detail pembayaran, dan proses pembatalan akan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian.",
+        "body2": "Lemon Squeezy akan memproses langganan berbayar sebagai merchant of record Gallurio. Ketentuan checkout, invoice, pengembalian dana, dan pembayaran yang berlaku juga akan ditampilkan melalui alur penagihan.",
+        "body3": "Anda dapat membatalkan langganan berbayar kapan saja melalui alur pengelolaan penagihan. Pembatalan umumnya mencegah biaya perpanjangan di masa depan; akses umumnya berlanjut hingga akhir periode penagihan saat ini.",
+        "body4": "Tidak ada biaya yang dikumpulkan selama bulan gratis pertama Anda."
       },
       "pricingTransparency": {
         "title": "Transparansi Harga",
-        "body": "Harga, periode penagihan, dan ketentuan langganan ditampilkan sebelum Anda menyelesaikan pembayaran apa pun, dan Anda dapat membatalkan kapan saja dari portal penagihan Anda."
+        "body1": "Gallurio tidak akan mengenakan biaya kepada Anda selama bulan gratis. Tidak perlu kartu pembayaran untuk memulai uji coba. Langganan berbayar apa pun memerlukan langkah pembelian atau aktivasi terpisah setelah periode gratis berakhir, dengan ketentuan yang berlaku ditampilkan sebelum pembayaran.",
+        "body2": "Harga dan fitur dapat berubah sebelum langganan berbayar diluncurkan. Perubahan material akan tercermin di halaman ini dan dalam alur checkout."
+      },
+      "contactNote": {
+        "body": "Untuk pertanyaan penagihan, hubungi"
       }
     },
     "terms": {
@@ -139,175 +145,223 @@
         "description": "Baca ketentuan yang mengatur akses ke dan penggunaan Gallurio."
       },
       "title": "Ketentuan Layanan",
-      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
-      "intro1": "Ketentuan Layanan ini mengatur akses Anda ke dan penggunaan Gallurio, termasuk situs web, aplikasi, alat portfolio, fitur permintaan booking, dan layanan terkait kami.",
-      "intro2": "Dengan menggunakan Gallurio, Anda menyetujui Ketentuan ini. Jika Anda tidak setuju, Anda tidak boleh menggunakan layanan ini.",
+      "effectiveDate": "Tanggal Berlaku: 20 Juli 2026",
+      "intro1": "Ketentuan ini mengatur akses Anda ke dan penggunaan Gallurio, termasuk situs web, aplikasi, portfolio tools, halaman publik, booking inquiry features, dan layanan terkaitnya.",
+      "contractingParty": {
+        "title": "1. Pihak yang Mengikat Kontrak dan Penerimaan",
+        "body1": "Gallurio dioperasikan di Filipina sebagai sole proprietorship oleh Alexander III Banaag, dengan alamat di J Labra St. Guadalupe, Cebu City, Cebu, Philippines.",
+        "body2": "Dengan membuat akun, mengakses fitur berbayar, atau menggunakan Gallurio, Anda menyetujui Ketentuan ini. Jika Anda tidak setuju, jangan gunakan layanan ini."
+      },
       "about": {
-        "title": "1. Tentang Gallurio",
-        "body1": "Gallurio adalah platform perangkat lunak yang membantu profesional dan bisnis kreatif membuat halaman portfolio, mempresentasikan layanan mereka, dan menerima permintaan booking.",
-        "body2": "Gallurio tidak secara langsung menyediakan layanan fotografi, videografi, perencanaan acara, atau layanan kreatif lainnya kepada klien akhir. Pengguna Gallurio bertanggung jawab atas layanan yang mereka tawarkan melalui halaman mereka sendiri."
+        "title": "2. Layanan",
+        "body1": "Gallurio menyediakan software tools bagi profesional dan bisnis kreatif untuk membuat halaman portfolio, mempresentasikan layanan, dan menerima permintaan booking.",
+        "body2": "Gallurio tidak menyediakan layanan fotografi, videografi, perencanaan acara, katering, kecantikan, musik, atau layanan lain yang diiklankan oleh pengguna. Pengguna sepenuhnya bertanggung jawab atas layanan, harga, pernyataan, kontrak, komunikasi, dan hubungan mereka dengan klien mereka."
       },
       "eligibility": {
-        "title": "2. Kelayakan",
-        "body": "Anda hanya dapat menggunakan Gallurio jika Anda mampu mengikatkan diri dalam perjanjian yang sah secara hukum. Jika Anda menggunakan Gallurio atas nama bisnis, organisasi, atau studio, Anda menegaskan bahwa Anda berwenang menerima Ketentuan ini atas namanya."
-      },
-      "accounts": {
-        "title": "3. Akun",
-        "body1": "Anda mungkin perlu membuat akun untuk menggunakan fitur tertentu Gallurio. Anda bertanggung jawab menjaga kerahasiaan kredensial login Anda dan semua aktivitas di bawah akun Anda.",
-        "body2": "Anda setuju untuk memberikan informasi yang akurat dan memperbaruinya bila diperlukan."
+        "title": "3. Kelayakan dan Akun",
+        "body1": "Anda harus mampu secara hukum mengikatkan diri dalam perjanjian yang mengikat. Jika Anda menggunakan Gallurio untuk bisnis atau organisasi, Anda menegaskan bahwa Anda berwenang mengikat bisnis atau organisasi tersebut.",
+        "body2": "Anda harus memberikan informasi yang akurat, menjaga kredensial login Anda, dan menerima tanggung jawab atas aktivitas di bawah akun Anda. Anda harus segera memberi tahu Gallurio jika ada akses tidak sah."
       },
       "betaAccess": {
-        "title": "4. Akses Beta",
-        "body1": "Gallurio dapat menawarkan akses beta sebelum peluncuran publik. Selama beta, fitur dapat tidak lengkap, berubah, dibatasi, ditangguhkan, atau dihapus kapan saja.",
-        "body2": "Akses beta tidak menjamin akses gratis yang berkelanjutan, ketersediaan fitur di masa mendatang, atau ketersediaan akun secara permanen."
-      },
-      "userContent": {
-        "title": "5. Konten Pengguna",
-        "body1": "Pengguna dapat mengunggah, mempublikasikan, atau mengirimkan konten seperti gambar, teks, informasi bisnis, deskripsi layanan, materi portfolio, dan konten formulir booking.",
-        "body2": "Pengguna tetap memiliki hak atas konten mereka. Dengan menggunakan Gallurio, pengguna memberikan izin kepada Gallurio untuk menghosting, menyimpan, menampilkan, memproses, dan mengirimkan konten mereka sesuai kebutuhan untuk mengoperasikan dan meningkatkan layanan.",
-        "body3": "Pengguna bertanggung jawab memastikan bahwa mereka memiliki hak, lisensi, dan izin yang diperlukan untuk konten apa pun yang diunggah atau dipublikasikan."
-      },
-      "prohibited": {
-        "title": "6. Konten dan Penggunaan yang Dilarang",
-        "intro": "Pengguna setuju untuk tidak menggunakan Gallurio untuk mengunggah, mempublikasikan, mendistribusikan, atau mempromosikan konten yang melanggar hukum, berbahaya, kasar, menyesatkan, melanggar hak, atau tidak pantas.",
-        "item1": "Melanggar hukum atau peraturan yang berlaku",
-        "item2": "Melanggar hak kekayaan intelektual pihak lain",
-        "item3": "Mengunggah kode berbahaya atau mencoba mengganggu layanan",
-        "item4": "Memberikan gambaran yang salah tentang identitas, bisnis, atau layanan",
-        "item5": "Menggunakan layanan untuk penipuan, spam, atau aktivitas menyesatkan",
-        "item6": "Mencoba mengakses akun, sistem, atau data tanpa izin",
-        "outro": "Gallurio dapat menghapus konten atau menangguhkan akun yang melanggar Ketentuan ini."
-      },
-      "bookings": {
-        "title": "7. Booking dan Permintaan Klien",
-        "body1": "Gallurio dapat mengizinkan pengunjung mengirimkan permintaan booking melalui halaman yang dibuat pengguna. Permintaan ini tidak menjamin booking yang terkonfirmasi kecuali disepakati secara terpisah antara pengguna Gallurio dan klien mereka.",
-        "body2": "Gallurio tidak bertanggung jawab atas perselisihan, pembayaran, pembatalan, kualitas layanan, jadwal, atau kesepakatan antara pengguna Gallurio dan klien mereka kecuali dinyatakan secara jelas."
+        "title": "4. Akses Beta dan Gratis",
+        "body1": "Gallurio dapat menawarkan akses beta atau promosi. Fitur beta dapat tidak lengkap, berubah, ditangguhkan, atau dihapus. Akses beta atau gratis tidak menjamin ketersediaan permanen atau fitur di masa mendatang.",
+        "body2": "Kecuali dinyatakan lain oleh Gallurio, akses promosi tidak memerlukan kartu pembayaran. Jika penagihan berbayar diperkenalkan, paket, harga, ketentuan perpanjangan, dan tanggal penagihan yang berlaku akan ditampilkan sebelum pembelian."
       },
       "subscriptions": {
-        "title": "8. Langganan dan Pembayaran",
-        "body1": "Gallurio mencakup langganan Pro berbayar, ditagih bulanan atau tahunan. Workspace baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu diperlukan.",
-        "body2": "Setelah bulan gratis berakhir, melanjutkan penggunaan Gallurio memerlukan langganan Pro yang aktif. Langganan berbayar belum tersedia; ketentuan penagihan dan detail pembayaran akan ditampilkan dengan jelas sebelum ada biaya apa pun setelah diluncurkan.",
-        "body3": "Pengguna akan diperlihatkan harga dan ketentuan penagihan yang berlaku sebelum menyelesaikan pembelian.",
-        "body4": "Jika langganan tidak diperpanjang atau pembayaran gagal, akses ke workspace dibatasi hingga langganan dipulihkan. Data akun tetap disimpan; halaman publik yang dipublikasikan dapat dinonaktifkan setelah periode panjang tanpa pembayaran, dan semuanya dipulihkan setelah berlangganan kembali."
+        "title": "5. Langganan dan Lemon Squeezy",
+        "body1": "Langganan Pro berbayar, jika tersedia, akan ditampilkan dengan harga, interval penagihan, ketentuan perpanjangan, dan pajak yang berlaku sebelum pembelian.",
+        "body2": "Lemon Squeezy bertindak sebagai merchant of record untuk langganan Gallurio. Lemon Squeezy dapat memproses checkout, pembayaran, penagihan, pajak, invoice, pengembalian dana, chargeback, dan hal layanan pelanggan terkait berdasarkan ketentuan dan kebijakannya sendiri.",
+        "body3": "Langganan diperpanjang sesuai ketentuan penagihan yang ditampilkan saat checkout hingga dibatalkan. Pembatalan umumnya mencegah biaya perpanjangan di masa depan tetapi tidak secara otomatis menghasilkan pengembalian dana.",
+        "body4": "Jika pembayaran gagal atau langganan berakhir, Gallurio dapat membatasi fitur Pro atau menonaktifkan halaman publik setelah pemberitahuan yang wajar. Data akun dapat tetap disimpan, dan akses dapat dipulihkan jika langganan diperpanjang, tunduk pada paket dan status produk yang berlaku.",
+        "body5": "Pengembalian dana ditangani berdasarkan proses pengembalian dana Gallurio yang dipublikasikan dan aturan Lemon Squeezy yang berlaku. Tidak ada ketentuan dalam Ketentuan ini yang membatasi hak konsumen yang wajib."
       },
-      "cancellations": {
-        "title": "9. Pembatalan",
-        "body1": "Pengguna dapat membatalkan langganan sesuai proses pembatalan yang tersedia di akun mereka atau melalui alur penagihan yang disediakan.",
-        "body2": "Pembatalan umumnya mencegah biaya perpanjangan di masa depan, tetapi mungkin tidak secara otomatis menghasilkan pengembalian dana kecuali diwajibkan oleh hukum atau disetujui berdasarkan proses pengembalian dana yang berlaku."
+      "userContent": {
+        "title": "6. Konten Pengguna",
+        "body1": "Anda tetap memiliki konten yang Anda unggah, publikasikan, atau kirimkan, termasuk gambar, teks, logo, deskripsi, galeri, dan informasi bisnis.",
+        "body2": "Anda memberikan lisensi non-eksklusif, di seluruh dunia, bebas royalti kepada Gallurio untuk menghosting, menyimpan, mereproduksi, memformat, mengirimkan, menampilkan, dan memproses konten Anda dengan cara lain sebatas diperlukan untuk menyediakan, mengamankan, memelihara, dan meningkatkan Gallurio dan fiturnya. Lisensi ini berakhir ketika konten dihapus, kecuali jika penyimpanan lanjutan diperlukan untuk tujuan hukum, keamanan, backup, atau penyelesaian perselisihan.",
+        "body3": "Anda menyatakan bahwa Anda memiliki semua hak, lisensi, izin, dan persetujuan yang diperlukan untuk konten Anda dan publikasinya. Anda bertanggung jawab memperoleh persetujuan yang diperlukan dari orang-orang yang informasi pribadinya muncul dalam konten Anda."
       },
-      "serviceChanges": {
-        "title": "10. Perubahan Layanan",
-        "body1": "Gallurio dapat memperbarui, mengubah, menangguhkan, atau menghentikan bagian dari layanan kapan saja. Gallurio juga dapat mengubah fitur, paket, harga, atau batas penggunaan seiring perkembangan produk.",
-        "body2": "Jika sesuai, Gallurio akan melakukan upaya yang wajar untuk memberi tahu pengguna tentang perubahan material."
+      "bookings": {
+        "title": "7. Permintaan Booking",
+        "body1": "Permintaan booking hanyalah permintaan dan tidak menciptakan booking yang terkonfirmasi, kontrak, kewajiban pembayaran, atau hubungan keagenan kecuali disepakati secara terpisah antara pengguna dan pihak yang mengajukan permintaan.",
+        "body2": "Pengguna bertanggung jawab menanggapi permintaan, menjaga informasi permintaan, mematuhi hukum privasi yang berlaku, dan menangani harga, kontrak, pembatalan, pengembalian dana, jadwal, dan kualitas layanan mereka sendiri. Gallurio bukan pihak dalam kesepakatan tersebut."
+      },
+      "prohibited": {
+        "title": "8. Penggunaan yang Dapat Diterima",
+        "intro": "Anda tidak boleh menggunakan Gallurio untuk:",
+        "item1": "melanggar hukum atau peraturan apa pun",
+        "item2": "mengunggah atau mempublikasikan konten yang melanggar hukum, curang, menipu, kasar, penuh kebencian, eksploitatif secara seksual, atau mencemarkan nama baik",
+        "item3": "melanggar hak kekayaan intelektual, privasi, publisitas, atau hak lainnya",
+        "item4": "mengumpulkan informasi pribadi sensitif tanpa keperluan",
+        "item5": "mengirim spam atau permintaan booking yang menipu",
+        "item6": "menyamar sebagai orang atau bisnis lain",
+        "item7": "mengunggah malware atau mengganggu layanan",
+        "item8": "mengakses akun, sistem, atau data tanpa izin",
+        "item9": "menggunakan Gallurio untuk menyediakan layanan yang secara hukum tidak diizinkan untuk Anda sediakan",
+        "outro": "Kami dapat menghapus konten, membatasi fitur, menangguhkan, atau menghentikan akun jika secara wajar diperlukan untuk melindungi Gallurio, pengguna, pengunjung, atau pihak ketiga."
       },
       "ip": {
-        "title": "11. Kekayaan Intelektual",
-        "body1": "Gallurio, termasuk perangkat lunak, desain, branding, antarmuka, fitur, dan materi terkaitnya, dimiliki oleh Gallurio atau pemberi lisensinya.",
-        "body2": "Pengguna tidak boleh menyalin, mengubah, melakukan rekayasa balik, menjual kembali, atau mengeksploitasi bagian mana pun dari Gallurio kecuali sebagaimana diizinkan oleh Ketentuan ini atau hukum yang berlaku."
+        "title": "9. Kekayaan Intelektual Gallurio",
+        "body": "Software, branding, antarmuka, desain, dokumentasi, fitur, dan materi lain Gallurio dimiliki oleh Gallurio atau pemberi lisensinya. Kecuali diizinkan secara tegas, Anda tidak boleh menyalin, mengubah, melakukan rekayasa balik, menjual kembali, mendistribusikan, atau mengeksploitasinya."
+      },
+      "copyright": {
+        "title": "10. Keluhan Hak Cipta",
+        "body": "Jika Anda meyakini konten pada halaman Gallurio melanggar hak Anda, hubungi support@gallurio.com dengan menyertakan halaman terkait, identifikasi karya yang dilindungi, penjelasan pelanggaran, dan detail kontak Anda. Gallurio dapat menghapus atau membatasi akses ke konten selama meninjau keluhan tersebut."
+      },
+      "serviceChanges": {
+        "title": "11. Perubahan dan Ketersediaan Layanan",
+        "body": "Gallurio dapat memperbarui, mengubah, menangguhkan, atau menghentikan fitur, paket, batasan, atau bagian dari layanan. Kami akan melakukan upaya yang wajar untuk memberi tahu perubahan material jika sesuai. Gallurio disediakan atas dasar \"sebagaimana tersedia\" dan dapat mengandung gangguan, kesalahan, atau keterbatasan."
       },
       "disclaimer": {
         "title": "12. Penafian",
-        "body": "Gallurio disediakan atas dasar \"sebagaimana adanya\" dan \"sebagaimana tersedia\". Gallurio tidak menjamin bahwa layanan akan berjalan tanpa gangguan, bebas kesalahan, aman, atau sesuai untuk setiap kebutuhan bisnis."
+        "body": "Sejauh diizinkan oleh hukum, Gallurio tidak memberikan jaminan bahwa layanan akan berjalan tanpa gangguan, bebas kesalahan, aman, atau sesuai untuk setiap tujuan bisnis. Gallurio tidak menjamin booking, leads, pendapatan, visibilitas pencarian, respons klien, atau hasil bisnis."
       },
       "liability": {
         "title": "13. Batasan Tanggung Jawab",
-        "body": "Sejauh diizinkan oleh hukum, Gallurio tidak bertanggung jawab atas kerugian tidak langsung, insidental, khusus, konsekuensial, atau punitif, termasuk kehilangan keuntungan, kehilangan data, gangguan bisnis, atau kerusakan reputasi."
+        "body1": "Sejauh diizinkan oleh hukum, Gallurio tidak bertanggung jawab atas kerugian tidak langsung, insidental, khusus, konsekuensial, teladan, atau punitif, atau atas hilangnya keuntungan, hilangnya pendapatan, hilangnya data, gangguan bisnis, atau kerusakan reputasi yang timbul dari penggunaan layanan Anda.",
+        "body2": "Tidak ada ketentuan dalam Ketentuan ini yang mengecualikan tanggung jawab yang secara hukum tidak dapat dikecualikan atau dibatasi."
       },
       "termination": {
-        "title": "14. Penghentian",
-        "body1": "Gallurio dapat menangguhkan atau menghentikan akses jika pengguna melanggar Ketentuan ini, menyalahgunakan layanan, menciptakan risiko bagi pengguna lain, atau menggunakan layanan dengan cara yang dapat merugikan Gallurio atau pihak ketiga.",
-        "body2": "Pengguna dapat berhenti menggunakan Gallurio kapan saja."
+        "title": "14. Penangguhan dan Penghentian",
+        "body1": "Anda dapat berhenti menggunakan Gallurio kapan saja. Gallurio dapat menangguhkan atau menghentikan akses jika Anda melanggar Ketentuan ini, gagal membayar biaya yang berlaku, menimbulkan risiko keamanan atau hukum, menyalahgunakan layanan, atau merugikan pengguna lain atau pihak ketiga.",
+        "body2": "Setelah penghentian, halaman publik dapat dinonaktifkan dan konten dapat dihapus sesuai praktik retensi Gallurio. Ketentuan mengenai kepemilikan, kewajiban pembayaran, penafian, tanggung jawab, privasi, dan penyelesaian perselisihan tetap berlaku setelah penghentian jika sesuai."
+      },
+      "privacyRef": {
+        "title": "15. Privasi",
+        "body": "Pemrosesan informasi pribadi oleh Gallurio dijelaskan dalam Kebijakan Privasi Gallurio. Jika Anda mengirimkan informasi pribadi melalui formulir booking Gallurio, Anda mengakui bahwa informasi tersebut akan diproses untuk menyampaikan dan mengelola permintaan Anda serta komunikasi layanan terkait."
+      },
+      "governingLaw": {
+        "title": "16. Hukum yang Berlaku",
+        "body": "Ketentuan ini diatur oleh hukum Filipina, tanpa memperhatikan prinsip konflik hukum. Tunduk pada hak perlindungan konsumen yang wajib, perselisihan harus diajukan ke pengadilan dengan yurisdiksi yang sesuai di Filipina."
+      },
+      "changes": {
+        "title": "17. Perubahan pada Ketentuan Ini",
+        "body": "Kami dapat memperbarui Ketentuan ini seiring perubahan layanan atau hukum. Kami akan memperbarui tanggal berlaku dan memberikan pemberitahuan perubahan material jika sesuai. Penggunaan berkelanjutan setelah tanggal berlaku berarti Anda menerima Ketentuan yang diperbarui."
       },
       "contact": {
-        "title": "15. Kontak",
+        "title": "18. Kontak",
         "body": "Untuk pertanyaan tentang Ketentuan ini, hubungi kami di:"
       }
     },
     "privacy": {
       "metadata": {
         "title": "Kebijakan Privasi — Gallurio",
-        "description": "Pelajari bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi."
+        "description": "Pelajari bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, mengungkapkan, dan melindungi informasi pribadi."
       },
       "title": "Kebijakan Privasi",
-      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
-      "intro": "Kebijakan Privasi ini menjelaskan bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, dan melindungi informasi ketika pengguna mengakses situs web, aplikasi, dan layanan terkait.",
+      "effectiveDate": "Tanggal Berlaku: 20 Juli 2026",
+      "intro": "Kebijakan Privasi ini menjelaskan bagaimana Gallurio mengumpulkan, menggunakan, menyimpan, mengungkapkan, dan melindungi informasi pribadi saat Anda menggunakan Gallurio, mengunjungi halaman publik Gallurio, atau mengirimkan permintaan booking melalui halaman tersebut.",
+      "controller": {
+        "title": "1. Siapa yang Bertanggung Jawab atas Informasi Anda",
+        "body": "Gallurio dioperasikan di Filipina sebagai sole proprietorship oleh Alexander III Banaag. Untuk tujuan Philippine Data Privacy Act of 2012 dan, jika berlaku, EU General Data Protection Regulation (GDPR), Alexander III Banaag adalah Personal Information Controller dan data controller.",
+        "addressLabel": "Alamat:",
+        "address": "J Labra St. Guadalupe, Cebu City, Cebu, Philippines",
+        "contactLabel": "Kontak privasi:"
+      },
       "collect": {
-        "title": "1. Informasi yang Kami Kumpulkan",
+        "title": "2. Informasi yang Kami Kumpulkan",
+        "intro": "Bergantung pada bagaimana Anda menggunakan Gallurio, kami dapat mengumpulkan:",
         "account": {
-          "title": "Informasi Akun",
-          "body": "Ini dapat mencakup nama, alamat email, detail login, nama bisnis, informasi workspace, dan preferensi akun."
+          "title": "Informasi Akun dan Identitas",
+          "body": "Nama, alamat email, identifier akun Google, gambar profil jika disediakan, catatan autentikasi, detail workspace, dan preferensi."
         },
         "business": {
-          "title": "Informasi Bisnis dan Portfolio",
-          "body": "Ini dapat mencakup detail profil publik, deskripsi layanan, gambar, galeri, pengaturan branding, konten portfolio, dan materi lain yang dipilih pengguna untuk diunggah atau dipublikasikan."
+          "title": "Informasi Portfolio dan Bisnis",
+          "body": "Nama bisnis, detail profil publik, deskripsi layanan, gambar, galeri, branding, pengaturan halaman, dan konten lain yang Anda unggah atau publikasikan."
         },
         "bookingInquiry": {
           "title": "Informasi Permintaan Booking",
-          "body": "Ketika pengunjung mengirimkan permintaan melalui halaman Gallurio, Gallurio dapat mengumpulkan informasi seperti nama, alamat email, tanggal acara, detail proyek, pesan, dan respons formulir lainnya."
+          "body": "Nama, alamat email, detail acara atau proyek, tanggal, pesan, dan respons lain yang dikirimkan melalui formulir booking yang dibuat pengguna."
         },
         "usage": {
-          "title": "Informasi Penggunaan",
-          "body": "Gallurio dapat mengumpulkan data teknis dan penggunaan seperti informasi perangkat, jenis browser, alamat IP, halaman yang dilihat, tindakan yang diambil, stempel waktu, dan log diagnostik."
+          "title": "Informasi Teknis dan Keamanan",
+          "body": "Alamat IP, informasi user-agent, informasi browser dan perangkat, stempel waktu, log, dan peristiwa keamanan."
         },
         "payment": {
-          "title": "Informasi Pembayaran",
-          "body": "Langganan Pro berbayar belum tersedia. Gallurio tidak menyimpan secara langsung detail lengkap kartu pembayaran; setelah pembayaran diluncurkan, bagian ini akan mencantumkan nama pemroses pembayaran dan menjelaskan bagaimana pihaknya mengumpulkan dan memproses detail penagihan, informasi pembayaran, informasi pajak, dan invoice."
-        }
+          "title": "Informasi Langganan",
+          "body": "Paket, status langganan, identifier penagihan, invoice, status pembayaran, dan informasi terkait transaksi. Gallurio tidak menerima atau menyimpan detail kartu pembayaran lengkap saat pembayaran ditangani oleh Lemon Squeezy."
+        },
+        "emailDelivery": {
+          "title": "Informasi Pengiriman Email",
+          "body": "Alamat email, status pengiriman, informasi bounce, dan metadata pesan terbatas untuk email transaksional."
+        },
+        "outro": "Mohon jangan mengunggah informasi pribadi sensitif kecuali diperlukan dan sah untuk penggunaan layanan Anda."
       },
       "useOfInfo": {
-        "title": "2. Bagaimana Kami Menggunakan Informasi",
-        "item1": "Menyediakan dan mengoperasikan Gallurio",
-        "item2": "Membuat dan mengelola akun pengguna",
-        "item3": "Mempublikasikan dan menampilkan halaman portfolio",
-        "item4": "Memproses permintaan booking",
-        "item5": "Meningkatkan fitur produk dan pengalaman pengguna",
-        "item6": "Memberikan dukungan dan menanggapi permintaan",
-        "item7": "Menjaga keamanan dan mencegah penyalahgunaan",
-        "item8": "Menganalisis penggunaan dan kinerja",
-        "item9": "Mematuhi kewajiban hukum dan penagihan"
+        "title": "3. Bagaimana Kami Menggunakan Informasi dan Dasar Hukum Kami",
+        "intro": "Kami memproses informasi untuk:",
+        "item1": "Membuat dan mengoperasikan akun dan workspace — dasar hukum: pelaksanaan kontrak",
+        "item2": "Mempublikasikan dan memelihara halaman portfolio — dasar hukum: pelaksanaan kontrak dan kepentingan sah",
+        "item3": "Menerima dan mengirimkan permintaan booking — dasar hukum: pelaksanaan kontrak dan kepentingan sah",
+        "item4": "Mengirim pemberitahuan verifikasi, keamanan, booking, penagihan, dan layanan — dasar hukum: pelaksanaan kontrak dan kepentingan sah",
+        "item5": "Memberikan dukungan dan menanggapi permintaan — dasar hukum: pelaksanaan kontrak, kepentingan sah, atau persetujuan",
+        "item6": "Melindungi layanan, mencegah penyalahgunaan, dan menegakkan Ketentuan kami — dasar hukum: kepentingan sah dan kewajiban hukum",
+        "item7": "Menjaga catatan penagihan, akuntansi, dan pajak — dasar hukum: kewajiban hukum dan pelaksanaan kontrak",
+        "item8": "Memahami penggunaan dan meningkatkan layanan — dasar hukum: kepentingan sah, atau persetujuan jika diperlukan",
+        "item9": "Menggunakan cookie atau pelacakan opsional yang tidak esensial — dasar hukum: persetujuan",
+        "outro": "Gallurio saat ini tidak mengirim email pemasaran atau menggunakan informasi pribadi untuk iklan atau iklan berbasis perilaku."
       },
       "userContentPublic": {
-        "title": "3. Konten Pengguna dan Halaman Publik",
-        "body1": "Konten yang dipublikasikan pada halaman portfolio Gallurio dapat terlihat oleh publik. Ini dapat mencakup nama bisnis, gambar, layanan, deskripsi, opsi kontak, dan informasi lain yang dipilih pengguna untuk dijadikan publik.",
-        "body2": "Pengguna bertanggung jawab memastikan konten yang dipublikasikan tidak menyertakan informasi pribadi atau sensitif yang tidak ingin mereka jadikan tersedia untuk publik."
+        "title": "4. Halaman Publik dan Permintaan Booking",
+        "body1": "Konten yang dipilih pemilik workspace untuk dipublikasikan dapat diakses publik, termasuk nama bisnis, gambar, layanan, deskripsi, opsi kontak, dan formulir booking.",
+        "body2": "Ketika pengunjung mengirimkan permintaan booking, Gallurio memproses informasi yang dikirimkan untuk menyampaikan permintaan tersebut ke pemilik workspace terkait dan memberikan pemberitahuan terkait. Pemilik workspace bertanggung jawab menggunakan informasi permintaan secara sah dan menanggapi permintaan terkait informasi yang mereka terima melalui halaman mereka. Gallurio juga dapat memproses informasi tersebut sebagai penyedia layanan atas nama pemilik workspace."
       },
-      "sharing": {
-        "title": "4. Berbagi Informasi",
-        "body1": "Gallurio dapat membagikan informasi dengan penyedia layanan tepercaya yang membantu mengoperasikan platform, seperti penyedia hosting, penyedia autentikasi, alat analitik, layanan email, penyedia penyimpanan file, dan pemroses pembayaran.",
-        "body2": "Gallurio juga dapat membagikan informasi ketika diwajibkan oleh hukum, untuk melindungi hak, mencegah penipuan atau penyalahgunaan, atau sebagai bagian dari transfer bisnis seperti merger, akuisisi, atau penjualan aset.",
-        "body3": "Gallurio tidak menjual informasi pribadi."
+      "analytics": {
+        "title": "5. Analitik Halaman Publik",
+        "body1": "Gallurio menyediakan analitik untuk halaman publik yang dibuat pengguna. Beacon page-view tidak mengatur atau membaca cookie.",
+        "body2": "Untuk rate-limiting, pencegahan penyalahgunaan, dan deduplikasi sekali per hari, Gallurio menerima alamat IP dan informasi user-agent pengunjung di sisi server. Alamat IP mentah dan user-agent mentah tidak disimpan secara permanen. Sebagai gantinya, Gallurio membuat hash HMAC-SHA-256 bergaram (salted) menggunakan alamat IP, user-agent, dan hari saat ini. Garam (salt) berputar setiap hari pada tengah malam UTC, sehingga nilai yang dihasilkan tidak dimaksudkan menjadi identifier lintas-hari yang tahan lama.",
+        "body3": "Analitik dapat mencakup jumlah page view, identifier halaman atau workspace, informasi teknis perkiraan, dan stempel waktu. Pemilik workspace tidak menerima alamat IP mentah melalui analitik Gallurio."
       },
-      "security": {
-        "title": "5. Penyimpanan Data dan Keamanan",
-        "body1": "Gallurio menggunakan langkah teknis dan organisasi yang wajar untuk melindungi informasi. Namun, tidak ada sistem yang dapat dijamin sepenuhnya aman.",
-        "body2": "Pengguna bertanggung jawab menjaga kerahasiaan kredensial akun dan memberi tahu Gallurio jika mereka yakin akun mereka telah disusupi."
-      },
-      "retention": {
-        "title": "6. Retensi Data",
-        "body1": "Gallurio menyimpan informasi selama diperlukan untuk menyediakan layanan, mematuhi kewajiban hukum, menyelesaikan perselisihan, menegakkan perjanjian, dan menjaga catatan bisnis yang sah.",
-        "body2": "Pengguna dapat meminta penghapusan akun atau data dengan menghubungi Gallurio, tunduk pada batasan hukum, teknis, atau operasional."
-      },
-      "cookies": {
-        "title": "7. Cookie dan Teknologi Serupa",
-        "body1": "Gallurio dapat menggunakan cookie dan teknologi serupa untuk menjaga pengguna tetap masuk, mengingat preferensi, menganalisis penggunaan, meningkatkan kinerja, dan mendukung keamanan.",
-        "body2": "Pengguna dapat mengontrol cookie melalui pengaturan browser, tetapi menonaktifkan beberapa cookie dapat memengaruhi cara kerja layanan."
+      "serviceProviders": {
+        "title": "6. Penyedia Layanan",
+        "intro": "Gallurio menggunakan penyedia layanan untuk mengoperasikan platform:",
+        "item1": "WorkOS untuk autentikasi dan manajemen identitas",
+        "item2": "Google, ketika pengguna memilih sign-in Google",
+        "item3": "MongoDB Atlas Flex untuk hosting database",
+        "item4": "Cloudflare Images untuk penyimpanan dan pengiriman gambar, Cloudflare Turnstile untuk pencegahan penyalahgunaan, dan layanan Cloudflare DNS serta keamanan",
+        "item5": "Hetzner untuk hosting aplikasi",
+        "item6": "Resend untuk pengiriman email transaksional",
+        "item7": "Lemon Squeezy untuk checkout langganan, pemrosesan pembayaran, layanan merchant of record, penagihan, penanganan pajak, pengembalian dana, chargeback, dan administrasi transaksi terkait",
+        "outro1": "Penyedia dapat memproses informasi atas nama Gallurio atau memproses sebagian informasi berdasarkan kebijakan privasi mereka sendiri. Gallurio tetap bertanggung jawab untuk memilih penyedia yang sesuai dan menggunakan perlindungan kontraktual, teknis, dan organisasi yang wajar.",
+        "outro2": "Gallurio juga dapat membagikan informasi ketika diwajibkan oleh hukum, untuk melindungi hak, mencegah penipuan atau penyalahgunaan, atau sebagai bagian dari transfer bisnis seperti merger, akuisisi, atau penjualan aset. Gallurio tidak menjual informasi pribadi."
       },
       "international": {
-        "title": "8. Penggunaan Internasional",
-        "body1": "Gallurio dapat diakses dari berbagai negara. Informasi dapat diproses di negara tempat Gallurio atau penyedia layanannya beroperasi.",
-        "body2": "Dengan menggunakan Gallurio, pengguna memahami bahwa informasi dapat ditransfer dan diproses di luar negara tempat tinggal mereka, tunduk pada hukum yang berlaku."
+        "title": "7. Transfer Internasional",
+        "body1": "Gallurio dan penyedia layanannya dapat memproses informasi di negara di luar Filipina dan di luar negara tempat tinggal Anda.",
+        "body2": "Jika GDPR berlaku, Gallurio akan menggunakan mekanisme transfer dan perlindungan yang sesuai sebagaimana diwajibkan oleh hukum yang berlaku, seperti keputusan kecukupan (adequacy decision), Standard Contractual Clauses, atau perlindungan lain yang diakui secara hukum."
+      },
+      "cookies": {
+        "title": "8. Cookie dan Teknologi Serupa",
+        "body1": "Gallurio menggunakan cookie esensial atau teknologi serupa jika diperlukan untuk autentikasi, keamanan, manajemen sesi, dan fungsi inti. Analitik halaman publik yang dijelaskan pada Bagian 5 tidak menggunakan cookie.",
+        "body2": "Jika Gallurio nantinya memperkenalkan analitik non-esensial, iklan, atau teknologi serupa, hal itu akan didokumentasikan dalam pemberitahuan cookie dan hanya diaktifkan jika persetujuan yang diperlukan telah diperoleh. Anda dapat mengubah pengaturan browser atau pilihan persetujuan Anda, meskipun menonaktifkan teknologi esensial dapat memengaruhi layanan."
+      },
+      "retention": {
+        "title": "9. Retensi",
+        "body1": "Kami menyimpan informasi selama diperlukan secara wajar untuk menyediakan Gallurio, memelihara halaman publik dan catatan bisnis, menyediakan fungsi booking, menyelesaikan perselisihan, mencegah penyalahgunaan, menegakkan perjanjian, dan mematuhi kewajiban hukum, akuntansi, dan pajak.",
+        "body2": "Permintaan booking dapat tetap tersedia bagi pemilik workspace untuk jangka waktu yang panjang atau tidak terbatas karena dapat berfungsi sebagai catatan bisnis. Pengguna dan pemilik workspace dapat menghapus informasi jika layanan menyediakan fitur penghapusan, atau dapat menghubungi kami untuk meminta penghapusan. Kami dapat menyimpan informasi terbatas jika diperlukan untuk tujuan hukum, keamanan, pencegahan penipuan, backup, atau penyelesaian perselisihan."
+      },
+      "rights": {
+        "title": "10. Hak Anda",
+        "body1": "Tunduk pada hukum yang berlaku dan batasan yang sah, Anda dapat meminta akses ke, koreksi atas, penghapusan atau pemblokiran, pembatasan, atau portabilitas informasi pribadi Anda. Anda juga dapat menolak pemrosesan yang berdasarkan kepentingan sah dan menarik persetujuan jika pemrosesan didasarkan pada persetujuan.",
+        "body2": "Kirim permintaan ke support@gallurio.com. Kami dapat meminta informasi yang wajar diperlukan untuk memverifikasi identitas Anda. Kami akan menanggapi tanpa penundaan yang tidak semestinya dan, jika GDPR berlaku, umumnya dalam satu bulan, tunduk pada perpanjangan yang sah untuk permintaan yang kompleks atau banyak.",
+        "body3": "Anda juga dapat mengajukan keluhan kepada National Privacy Commission Filipina atau, jika GDPR berlaku, kepada otoritas pengawas di negara tempat tinggal, tempat kerja, atau tempat dugaan pelanggaran terjadi."
+      },
+      "security": {
+        "title": "11. Keamanan dan Respons Pelanggaran",
+        "body1": "Gallurio menggunakan langkah organisasi, fisik, dan teknis yang wajar dan sesuai untuk melindungi informasi pribadi dari akses tidak sah, kehilangan, perubahan, pengungkapan, atau perusakan. Tidak ada layanan yang dapat menjamin keamanan mutlak.",
+        "body2": "Gallurio memiliki prosedur untuk menyelidiki dan menanggapi insiden keamanan dan akan memberikan pemberitahuan yang diwajibkan oleh hukum yang berlaku."
       },
       "children": {
-        "title": "9. Privasi Anak",
-        "body1": "Gallurio tidak ditujukan untuk anak-anak. Gallurio tidak dengan sengaja mengumpulkan informasi pribadi dari anak-anak di bawah usia yang disyaratkan oleh hukum yang berlaku.",
+        "title": "12. Privasi Anak",
+        "body1": "Gallurio ditujukan untuk bisnis dan profesional kreatif dan tidak ditujukan untuk anak-anak. Kami tidak dengan sengaja mengumpulkan informasi pribadi dari anak-anak yang melanggar hukum yang berlaku.",
         "body2": "Jika seseorang meyakini bahwa seorang anak telah memberikan informasi pribadi kepada Gallurio, mereka harus menghubungi Gallurio agar informasi tersebut dapat ditinjau dan dihapus jika diperlukan."
       },
       "changes": {
-        "title": "10. Perubahan pada Kebijakan Ini",
-        "body": "Gallurio dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Ketika perubahan material dilakukan, Gallurio dapat memberi tahu pengguna melalui layanan, email, atau dengan memperbarui tanggal berlaku."
+        "title": "13. Perubahan",
+        "body": "Kami dapat memperbarui Kebijakan ini seiring perubahan Gallurio, penyedianya, atau hukum yang berlaku. Kami akan memperbarui tanggal berlaku dan memberikan pemberitahuan tambahan untuk perubahan material jika sesuai."
       },
       "contact": {
-        "title": "11. Kontak",
+        "title": "14. Kontak",
         "body": "Untuk pertanyaan atau permintaan privasi, hubungi kami di:"
       }
     },
@@ -317,63 +371,58 @@
         "description": "Pelajari bagaimana Gallurio menangani pembatalan dan pengembalian dana."
       },
       "title": "Kebijakan Pengembalian Dana",
-      "effectiveDate": "Tanggal Berlaku: 18 Juli 2026",
+      "effectiveDate": "Tanggal Berlaku: 20 Juli 2026",
       "betaPeriod": {
-        "title": "1. Uji Coba Gratis",
-        "body1": "Workspace Gallurio baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu diperlukan. Tidak ada pembayaran nyata yang dikumpulkan selama uji coba ini, sehingga tidak ada pengembalian dana yang berlaku untuknya.",
-        "body2": "Jika Anda melanjutkan dengan langganan Pro berbayar setelah uji coba, harga dan ketentuan penagihan yang ditampilkan saat checkout berlaku, dan Kebijakan Pengembalian Dana ini mengatur setiap pembayaran yang dilakukan.",
-        "body3": "Peserta beta terverifikasi juga dapat menerima hibah promo Pro dua bulan yang terpisah. Promo ini dapat ditukarkan satu kali per peserta beta terverifikasi dan berakhir dua bulan setelah penukaran; seperti uji coba gratis, ini adalah hibah promosi, bukan pembayaran, sehingga tidak ada pengembalian dana yang berlaku untuknya."
+        "title": "1. Akses Gratis",
+        "body1": "Workspace Gallurio baru menerima satu bulan akses Pro penuh tanpa biaya, tanpa kartu pembayaran diperlukan. Karena tidak ada pembayaran yang dikumpulkan selama periode ini, tidak ada pembayaran yang dapat dikembalikan.",
+        "body2": "Peserta beta terverifikasi juga dapat menerima hibah promo Pro dua bulan yang terpisah, dapat ditukarkan satu kali per peserta beta terverifikasi dan berakhir dua bulan setelah penukaran. Seperti bulan gratis, ini adalah hibah promosi, bukan pembayaran, sehingga tidak ada pengembalian dana yang berlaku untuknya."
       },
       "subscriptions": {
-        "title": "2. Langganan",
-        "body1": "Langganan Gallurio Pro ditagih bulanan, tahunan, atau sesuai periode penagihan yang ditampilkan saat checkout.",
-        "body2": "Pengguna dapat membatalkan langganan mereka untuk mencegah biaya perpanjangan di masa depan. Setelah pembatalan, akses dapat berlanjut hingga akhir periode penagihan saat ini kecuali dinyatakan lain.",
-        "body3": "Ketika langganan berakhir karena kegagalan pembayaran atau non-pembayaran terminal, Gallurio segera mengirim pemberitahuan kedaluwarsa, pengingat data tersimpan setelah 30 hari, dan peringatan akhir halaman publik setelah 51 hari, lalu membatalkan publikasi halaman publik setelah 58 hari. Data workspace, CRM, dan draf tetap disimpan sehingga semuanya dapat dipulihkan saat berlangganan kembali."
+        "title": "2. Langganan Berbayar",
+        "body1": "Langganan Gallurio Pro berbayar akan ditagih bulanan atau tahunan, sesuai opsi yang dipilih saat checkout. Harga, interval penagihan, ketentuan perpanjangan, pajak yang berlaku, dan proses pembatalan akan ditampilkan sebelum pembayaran.",
+        "body2": "Lemon Squeezy akan bertindak sebagai merchant of record Gallurio dan akan memproses checkout, pembayaran, penagihan, pajak, invoice, pengembalian dana, chargeback, dan administrasi pembayaran terkait. Nama Lemon Squeezy atau deskriptor penagihannya yang berlaku dapat muncul pada laporan pembayaran."
+      },
+      "cancellation": {
+        "title": "3. Pembatalan",
+        "body1": "Anda dapat membatalkan melalui akun Gallurio Anda atau tautan pengelolaan penagihan yang disediakan melalui alur pembayaran. Pembatalan umumnya mencegah biaya perpanjangan di masa depan. Kecuali dinyatakan lain, akses berlanjut hingga akhir periode penagihan berbayar.",
+        "body2": "Pembatalan tidak secara otomatis mengembalikan jumlah yang telah dibayarkan."
+      },
+      "failedPayments": {
+        "title": "4. Pembayaran Gagal dan Pencabutan Publikasi Halaman",
+        "body1": "Jika pembayaran perpanjangan gagal atau langganan berakhir karena tidak dibayar, Gallurio segera mengirim pemberitahuan kedaluwarsa, pengingat data tersimpan setelah 30 hari, dan peringatan akhir halaman publik setelah 51 hari, lalu mencabut publikasi halaman publik setelah 58 hari.",
+        "body2": "Data workspace, manajemen klien, dan draf tetap disimpan sehingga semuanya dapat dipulihkan saat berlangganan kembali, tunduk pada Kebijakan Privasi Gallurio dan batasan hukum atau operasional yang berlaku."
       },
       "refundRequests": {
-        "title": "3. Permintaan Pengembalian Dana",
-        "intro": "Permintaan pengembalian dana ditinjau berdasarkan kasus per kasus.",
-        "approvalIntro": "Persetujuan dapat bergantung pada:",
-        "item1": "Tanggal pembelian",
-        "item2": "Periode penagihan",
-        "item3": "Penggunaan produk",
-        "item4": "Aktivitas akun",
-        "item5": "Masalah teknis",
-        "item6": "Biaya ganda",
-        "item7": "Hukum perlindungan konsumen yang berlaku",
-        "item8": "Proses pengembalian dana dari pemroses pembayaran",
-        "outro": "Mengirimkan permintaan pengembalian dana tidak menjamin bahwa pengembalian dana akan disetujui."
-      },
-      "merchantOfRecord": {
-        "title": "4. Pemrosesan Pembayaran",
-        "body1": "Langganan berbayar belum tersedia. Setelah diluncurkan, Gallurio akan mencantumkan nama pemroses pembayarannya di sini dan menjelaskan bagaimana pihaknya menangani pemrosesan pembayaran, pajak, invoice, dukungan penagihan, dan pemrosesan pengembalian dana yang memenuhi syarat.",
-        "body2": "Setelah pembayaran diluncurkan, laporan penagihan pengguna mungkin menampilkan nama pemroses pembayaran yang dipilih atau deskriptor penagihan terkait."
+        "title": "5. Permintaan Pengembalian Dana",
+        "intro": "Permintaan pengembalian dana dapat diajukan ke support@gallurio.com dan ditinjau berdasarkan proses Lemon Squeezy yang berlaku, kebijakan Gallurio, dan hukum perlindungan konsumen yang berlaku.",
+        "approvalIntro": "Peninjauan dapat mempertimbangkan:",
+        "item1": "tanggal dan jumlah pembelian",
+        "item2": "periode penagihan",
+        "item3": "biaya ganda atau tidak sesuai",
+        "item4": "masalah teknis yang secara material menghalangi penggunaan",
+        "item5": "aktivitas akun dan penggunaan produk",
+        "item6": "hak pengembalian dana atau konsumen yang wajib",
+        "outro": "Mengirimkan permintaan tidak menjamin persetujuan. Lemon Squeezy dapat menerbitkan pengembalian dana atau mengambil tindakan lain untuk mencegah atau menyelesaikan chargeback berdasarkan kebijakannya sendiri."
       },
       "nonRefundable": {
-        "title": "5. Situasi yang Tidak Dapat Dikembalikan Dananya",
-        "intro": "Kecuali diwajibkan oleh hukum, pengembalian dana mungkin tidak diberikan untuk:",
-        "item1": "Waktu yang tidak digunakan dalam periode penagihan setelah pembatalan",
-        "item2": "Kegagalan membatalkan sebelum perpanjangan",
-        "item3": "Kurangnya penggunaan sementara",
-        "item4": "Perubahan pikiran setelah penggunaan yang substansial",
-        "item5": "Masalah yang disebabkan oleh pengaturan akun yang salah atau informasi yang diberikan pengguna",
-        "outro": "Gallurio akan tetap meninjau permintaan yang wajar, terutama jika ada masalah teknis atau penagihan."
+        "title": "6. Situasi yang Mungkin Tidak Dapat Dikembalikan Dananya",
+        "intro": "Sejauh diizinkan oleh hukum, pengembalian dana mungkin tidak tersedia untuk waktu yang tidak digunakan setelah pembatalan, kegagalan membatalkan sebelum perpanjangan, tidak digunakan sementara, perubahan pikiran setelah penggunaan yang substansial, atau masalah yang disebabkan oleh pengaturan akun yang salah atau informasi yang diberikan pengguna.",
+        "outro": "Bagian ini tidak membatasi hak yang wajib berdasarkan hukum perlindungan konsumen yang berlaku. Permintaan yang wajar terkait biaya ganda, biaya tidak sah, atau kegagalan teknis material akan tetap ditinjau."
       },
       "howToRequest": {
-        "title": "6. Cara Mengajukan Pengembalian Dana",
-        "body": "Untuk mengajukan pengembalian dana, hubungi kami di:",
+        "title": "7. Cara Mengajukan Pengembalian Dana",
+        "body": "Untuk mengajukan pengembalian dana, email kami di:",
         "includeIntro": "Mohon sertakan:",
-        "item1": "Email akun",
-        "item2": "Nama bisnis atau workspace",
-        "item3": "Tanggal pembayaran",
-        "item4": "Alasan permintaan",
-        "item5": "Tangkapan layar atau detail penagihan terkait",
-        "outro": "Gallurio mungkin meminta informasi tambahan untuk memverifikasi pembayaran dan meninjau permintaan."
+        "item1": "alamat email akun",
+        "item2": "nama bisnis atau workspace",
+        "item3": "tanggal dan jumlah pembayaran",
+        "item4": "alasan permintaan",
+        "item5": "tangkapan layar, informasi invoice, atau detail penagihan yang relevan",
+        "outro": "Kami dapat meminta informasi tambahan untuk memverifikasi akun dan pembayaran. Jangan kirim nomor kartu lengkap atau kredensial pembayaran lain yang tidak diperlukan."
       },
-      "cancellations": {
-        "title": "7. Pembatalan",
-        "body1": "Pengguna dapat membatalkan langganan mereka melalui pengaturan akun atau alur pengelolaan penagihan yang disediakan.",
-        "body2": "Pembatalan menghentikan perpanjangan di masa depan tetapi tidak secara otomatis mengembalikan dana pembayaran sebelumnya kecuali pengembalian dana disetujui atau diwajibkan oleh hukum."
+      "changes": {
+        "title": "8. Perubahan",
+        "body": "Kami dapat memperbarui kebijakan ini ketika proses penagihan, penyedia pembayaran, harga, atau hukum yang berlaku kami berubah. Versi terbaru akan dipublikasikan di halaman ini."
       }
     },
     "contact": {
@@ -383,7 +432,7 @@
       },
       "header": {
         "headline": "Butuh bantuan dengan Gallurio?",
-        "body": "Untuk dukungan, kekhawatiran akun, masalah penagihan, atau pertanyaan umum, hubungi kami di:"
+        "body": "Untuk dukungan, kekhawatiran akun, pertanyaan penagihan, permintaan pengembalian dana, laporan bug, masukan fitur, kemitraan, atau pertanyaan umum, email kami di:"
       },
       "supportTopics": {
         "title": "Topik Dukungan",
@@ -397,14 +446,18 @@
         "item8": "Masukan fitur",
         "item9": "Pertanyaan kemitraan atau bisnis"
       },
+      "whatToInclude": {
+        "title": "Apa yang Perlu Disertakan",
+        "body": "Untuk masalah akun, penagihan, atau teknis, sertakan alamat email akun Anda, nama workspace, URL halaman terkait, deskripsi singkat masalahnya, dan tangkapan layar jika membantu. Jangan kirim password, nomor kartu pembayaran lengkap, atau informasi sensitif lain yang tidak diperlukan."
+      },
       "responseTime": {
         "title": "Waktu Respons",
-        "body1": "Kami berusaha merespons secepat yang wajar. Waktu respons dapat bervariasi seiring kami terus mengembangkan dan meningkatkan Gallurio.",
-        "body2": "Untuk kekhawatiran akun atau penagihan yang mendesak, mohon sertakan detail relevan sebanyak mungkin agar kami dapat meninjau permintaan secara efisien."
+        "body1": "Gallurio berusaha merespons secepat yang wajar. Waktu respons dapat bervariasi seiring kami terus mengembangkan dan meningkatkan layanan.",
+        "body2": "Untuk kekhawatiran akun atau penagihan yang mendesak, sertakan detail yang cukup agar kami dapat memverifikasi akun dan meninjau masalah secara efisien."
       },
       "businessInfo": {
         "title": "Informasi Bisnis",
-        "body": "Gallurio adalah startup kecil dan independen. Kami belum memiliki nama badan hukum atau alamat bisnis terdaftar untuk dicantumkan — untuk saat ini, cara terbaik menghubungi kami adalah melalui email.",
+        "body": "Gallurio dioperasikan sebagai sole proprietorship independen di Filipina oleh Alexander III Banaag, berbasis di J Labra St. Guadalupe, Cebu City, Cebu, Philippines. Nama hukum dan alamat kontak ini juga tercantum dalam Kebijakan Privasi dan Ketentuan Layanan Gallurio.",
         "emailLabel": "Email:"
       },
       "social": {
@@ -717,8 +770,10 @@
           "today": "Hari ini",
           "next": "Tanggal heatmap berikutnya",
           "title": "Peta panas jam dipesan",
-          "weekOf": "Minggu",
           "bookedHours": "Jam dipesan",
+          "bookingsCount": "{count, plural, one {# pemesanan} other {# pemesanan}}",
+          "skipPrevious": "Mundur 5 halaman",
+          "skipNext": "Maju 5 halaman",
           "weekdays": [
             "Sen",
             "Sel",
@@ -1462,6 +1517,20 @@
           "image": "Tidak dapat membaca gambar. Coba file lain.",
           "upload": "Pengunggahan gagal. Coba lagi."
         },
+        "logoSection": "Logo",
+        "logoHint": "Ditampilkan di header halaman publik Anda.",
+        "logoRequirements": "PNG, JPEG, atau WebP. Hingga 512x256px, maks 250KB.",
+        "logoLabel": "Unggah logo",
+        "logoReplace": "Ganti",
+        "logoRemove": "Hapus",
+        "logoUploading": "Mengunggah...",
+        "logoErrors": {
+          "type": "Gunakan gambar PNG, JPEG, atau WebP.",
+          "size": "Jaga ukuran file di bawah 250KB.",
+          "dimensions": "Jaga logo dalam 512x256px.",
+          "image": "File itu bukan gambar yang valid.",
+          "upload": "Pengunggahan gagal. Coba lagi."
+        },
         "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
         "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
         "seoKeywords": "Tag SEO",
@@ -2064,7 +2133,12 @@
         "addNewTheme": "Tambah tema baru",
         "addNewGuardTitle": "Simpan sebelum memulai yang baru?",
         "addNewGuardBody": "Anda memiliki perubahan yang belum disimpan. Simpan tema saat ini dulu, atau buang untuk memulai dari awal.",
-        "addNewGuardNameLabel": "Nama tema"
+        "addNewGuardNameLabel": "Nama tema",
+        "fontSearchPlaceholder": "Cari font",
+        "fontNoMatches": "Tidak ada font yang cocok",
+        "curatedFontsGroup": "Font pilihan",
+        "googleFontsGroup": "Google Fonts",
+        "customGoogleFontOption": "Font Google khusus…"
       },
       "editor": {
         "zone": {
@@ -2982,12 +3056,17 @@
         "stylist": "Stylist",
         "catering": "Katering",
         "entertainer": "Penghibur / DJ / Band",
+        "artists": "Seniman",
         "other": "Lainnya"
       },
+      "businessTypeOtherLabel": "Jenis bisnis apa?",
+      "businessTypeOtherPlaceholder": "mis. Studio tato, DJ, toko bunga",
       "slugChecking": "Memeriksa…",
       "slugAvailable": "Tersedia",
       "slugTaken": "Sudah digunakan",
-      "slugInvalid": "Format tidak valid"
+      "slugInvalid": "Format tidak valid",
+      "timezoneSearchPlaceholder": "Cari berdasarkan kota atau offset UTC",
+      "timezoneNoMatches": "Tidak ada zona waktu yang cocok"
     },
     "workspace": {
       "title": "Siapkan ruang kerja Anda",
@@ -3073,6 +3152,12 @@
         "teamManagement": "Manajemen tim",
         "removeBranding": "Hilangkan branding Gallurio"
       }
+    },
+    "beta": {
+      "name": "Beta"
+    },
+    "promo": {
+      "name": "Promo"
     }
   },
   "subscribe": {
@@ -3187,7 +3272,8 @@
   "notFound": {
     "title": "Halaman tidak ditemukan",
     "description": "Halaman yang Anda cari tidak ada atau telah dipindahkan.",
-    "backToDashboard": "Kembali ke dasbor"
+    "backToDashboard": "Kembali ke dasbor",
+    "backToHome": "Kembali ke beranda"
   },
   "inviteAccept": {
     "pageTitle": "Terima undangan",

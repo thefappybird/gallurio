@@ -64,7 +64,7 @@ export async function POST(req: Request) {
   }
 
   // Authoritative timezone-aware midnight check.
-  // The Zod UTC-day check above is a cheap baseline; this is the definitive guard.
+  // sessionsAreSameDayInTz is the sole same-day guard (the Zod UTC-day refine was removed).
   const tzCheck = sessionsAreSameDayInTz(
     sessions,
     ctx.workspace.timezone ?? FALLBACK_TZ

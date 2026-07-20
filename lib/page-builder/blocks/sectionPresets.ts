@@ -77,6 +77,12 @@ export const SERVICES_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   alignX: "center",
   alignY: "top",
+  // Unlike Hero/CTA/GalleryLanding (explicit "accent" feature bands), this is a
+  // plain section — but its unstyled children still default to the theme
+  // foreground color, which is the LIGHT pole of the palette on dark themes
+  // (e.g. Luxury). Pin the section's own background to the page's "background"
+  // token so that default text stays legible regardless of theme.
+  _style: { bgColorToken: "background" },
   content: slot([
     child("Heading", { level: "h2", text: "Services" }),
     child("Columns", {
@@ -157,6 +163,9 @@ export const FEATURED_WORK_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   alignX: "left",
   alignY: "top",
+  // Same reasoning as SERVICES_PRESET above — pin to the theme's own background
+  // so unstyled (default-foreground) text stays legible on dark themes.
+  _style: { bgColorToken: "background" },
   content: slot([
     child("Heading", { level: "h2", text: "Featured work" }),
     child("Text", { text: "Spotlight a few signature images." }),

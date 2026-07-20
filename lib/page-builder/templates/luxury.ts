@@ -264,6 +264,10 @@ export const luxuryTemplate: PortfolioTemplate = {
             alignY: "top",
             bgAnimation: "crossfade",
             bgSpeed: "medium",
+            // Plain section (not a feature band) — its unstyled children default
+            // to the theme foreground, which is light on this dark palette. Pin
+            // the section to the page's own "background" token to stay legible.
+            _style: { bgColorToken: "background" },
           },
         },
       ]
@@ -414,6 +418,8 @@ export const luxuryTemplate: PortfolioTemplate = {
             alignY: "top",
             bgAnimation: "crossfade",
             bgSpeed: "medium",
+            // Same reasoning as the home zone's ServicesPreset above.
+            _style: { bgColorToken: "background" },
           },
         },
       ]
