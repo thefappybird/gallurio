@@ -48,9 +48,11 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
 /**
  * Validates and uploads an asset (logo, icon, etc.) directly to Cloudflare Images.
  *
- * Unlike uploadImage, this helper does NOT enforce photoSpec constraints (no
- * 600px minimum). The caller passes explicit constraints appropriate for the
- * asset type (e.g. max 512x512 for a site icon, max 512x256 for a header logo).
+ * Only type and size are enforced here — dimension/square checks are not
+ * (Cloudflare's delivery-time `fit` handles sizing). `maxWidth`/`maxHeight`/
+ * `requireSquare` on AssetValidationConstraints are accepted but unused;
+ * kept so existing call sites don't need updating for what's a
+ * documentation-only distinction.
  *
  * Returns { error: AssetValidationError } if validation fails (caller handles UI feedback),
  * or { asset: UploadedAsset } on success.
