@@ -687,6 +687,12 @@ export function EditorShell({
   const headerHasSaved = useRef(false);
   const collectionsPopupSnapshot = useRef<PortfolioCollectionsPopupConfig | null>(null);
   const collectionsPopupHasSaved = useRef(false);
+  // Logo captured by the onboarding story prompt, held here instead of applied to
+  // headerConfig immediately — setting headerConfig this early would get written into
+  // the localStorage draft buffer by the persistLocalDraft effect below, making a
+  // brand-new visitor look like they already have a recoverable draft. Applied once,
+  // into the new draft, when a template is actually picked (applyTemplate).
+  const pendingOnboardingLogoRef = useRef<{ logoUrl: string; logoAssetId: string } | null>(null);
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
   // event handler, from the ref) and initialized from props — never read the ref
@@ -954,6 +960,9 @@ export function EditorShell({
   }
 
   async function applyDraftInner(id: string) {
+    // A real draft already has its own header — never let a still-pending onboarding
+    // logo (not yet applied to any draft) leak into it or a later template switch.
+    pendingOnboardingLogoRef.current = null;
     const res = await getDraftAction(id);
     if ("error" in res) {
       toast.error(errMsg("draft_load_failed"));
@@ -1275,11 +1284,17 @@ export function EditorShell({
     // are all in the same shape — consistent with the applyDraft path (B3).
     const homeData = prepareForEditor((seed.data.home as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
     const galleryData = prepareForEditor((seed.data.gallery as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
+    const seedHeader = (seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG;
+    const pendingLogo = pendingOnboardingLogoRef.current;
+    const resolvedHeader = pendingLogo
+      ? { ...seedHeader, logoUrl: pendingLogo.logoUrl, logoAssetId: pendingLogo.logoAssetId }
+      : seedHeader;
+    pendingOnboardingLogoRef.current = null;
     zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setBrandKit(seed.brandKit as PortfolioBrandKit);
     setContact(seed.contact as PortfolioContactConfig);
-    setHeaderConfig((seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG);
+    setHeaderConfig(resolvedHeader);
     setCollectionsPopup((seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {});
     setTemplateId(seed.templateId);
     // Snapshot the seed data so the template picker can show the "Current" badge
@@ -1298,7 +1313,7 @@ export function EditorShell({
       data: zoneDataRef.current,
       brandKit: seed.brandKit as PortfolioBrandKit,
       contact: seed.contact as PortfolioContactConfig,
-      header: (seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG,
+      header: resolvedHeader,
       collectionsPopup: (seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {},
       formLocale,
       formDir,
@@ -2013,20 +2028,19 @@ export function EditorShell({
           persistOnExit
           onBrandingSaved={({ logoUrl, logoAssetId }) => {
             if (!logoUrl || !logoAssetId) return;
-            setHeaderConfig((current) => ({ ...current, logoUrl, logoAssetId }));
-            setPreviewNonce((n) => n + 1);
+            // Deferred — see pendingOnboardingLogoRef. Applied in applyTemplate once
+            // the user actually picks a template (including "start from scratch").
+            pendingOnboardingLogoRef.current = { logoUrl, logoAssetId };
           }}
           onContinueWithGuide={() => {
             setStoryPromptOpen(false);
           }}
-          onExploreSelf={async () => {
+          onExploreSelf={() => {
             setStoryPromptOpen(false);
-            try {
-              await dismissPortfolioGuideAction();
-            } catch (err) {
-              console.warn("[portfolio] failed to dismiss guide on explore-self exit", err);
-            }
             setGuideOpen(false);
+            dismissPortfolioGuideAction().catch((err) => {
+              console.warn("[portfolio] failed to dismiss guide on explore-self exit", err);
+            });
             openEntryAfterGuide();
           }}
         />
@@ -2079,7 +2093,12 @@ export function EditorShell({
         // save/publish, so it must NOT be the sole gate.
         canContinue={hasRecoverableBuffer || initialActiveDraftId !== null}
         hasDrafts={drafts.length > 0}
-        onContinue={() => setEntryOpen(false)}
+        onContinue={() => {
+          // Resuming the existing buffer as-is — never inject a still-pending
+          // onboarding logo into it or a later template switch.
+          pendingOnboardingLogoRef.current = null;
+          setEntryOpen(false);
+        }}
         onLoadExisting={() => { setEntryOpen(false); setDraftsOpen(true); }}
         onStartScratch={() => { setEntryOpen(false); setTemplatesOpen(true); }}
       />

@@ -228,7 +228,7 @@ export function ThemePanelDialog({
                   {tk("saveThemeName")}
                 </Button>
               )}
-              {(controller.hasUnsavedCurrent || controller.editDiff || brandKitDirty) && (
+              {(controller.hasUnsavedCurrent || controller.editDiff) && (
                 <Button type="button" variant="outline" onClick={discardWorkingChanges} disabled={applying}>
                   {tk("discardAction")}
                 </Button>

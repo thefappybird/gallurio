@@ -151,6 +151,11 @@ vi.mock("../_draftActions", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+const uploadAsset = vi.fn();
+vi.mock("@/lib/storage/uploadAsset.client", () => ({
+  uploadAsset: (...a: unknown[]) => uploadAsset(...a),
+}));
+
 // useSlugAvailability (inside PublishDialog) calls checkSlugAvailabilityAction
 // which transitively imports authkit-nextjs. Mock the action to prevent that.
 vi.mock("@/lib/actions/slug", () => ({
@@ -1171,6 +1176,77 @@ describe("EditorShell", () => {
     await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
     expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
     expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+  });
+
+  it("onboarding logo is deferred until a template is picked, not written to the draft buffer beforehand", async () => {
+    uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-1", url: "https://cdn/logo.png" } });
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        storyPromptCompleted={false}
+        guideDismissed={false}
+        initialDrafts={[]}
+        initialActiveDraftId={null}
+        initialActiveDraftName={undefined}
+        initialData={{ home: { content: [], root: {} }, gallery: { content: [], root: {} } }}
+        currentTemplateId="scratch"
+      />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Let's go" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your vibe" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Add your branding" });
+
+    const fileInput = document.querySelector(
+      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+    ) as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["logo"], "logo.png", { type: "image/png" })] } });
+    await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo.png"]')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your page is ready to shine" });
+    fireEvent.click(screen.getByRole("button", { name: "I'll explore myself" }));
+
+    await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
+    expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
+
+    // Not applied to any draft yet — the local buffer must not carry the onboarding
+    // logo, or a brand-new visitor would look like they already have a recoverable
+    // draft on their next visit (and skip straight past the template picker).
+    const bufferBeforeTemplate = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
+    if (bufferBeforeTemplate) {
+      expect(JSON.parse(bufferBeforeTemplate).headerConfig?.logoUrl).toBeUndefined();
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "Start from scratch" }));
+    await waitFor(() => expect(seedTemplateAction).toHaveBeenCalledWith("scratch"));
+    await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
+
+    // Applied once a template — including "start from scratch" — is actually picked.
+    await waitFor(() => {
+      const buffered = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
+      expect(buffered).toBeTruthy();
+      expect(JSON.parse(buffered!).headerConfig?.logoUrl).toBe("https://cdn/logo.png");
+    });
+  });
+
+  it("explore-self exit closes the guide synchronously — no flicker before the dismiss call settles", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip for now" }));
+    // Guide must already be gone in the same synchronous update as the click —
+    // not on a later render once dismissPortfolioGuideAction's promise settles
+    // (that gap is what caused the guide to flash on-screen before the canvas).
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+
+    await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
+    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
   });
 
   it("explore-self exit logs a warning but still proceeds when dismissPortfolioGuideAction rejects", async () => {

@@ -247,6 +247,16 @@ describe("ThemePanelDialog brand-kit dirty guard (A13)", () => {
     expect(onCancel).toHaveBeenCalled();
     expect(screen.getByText(DEFAULT_BRAND_KIT.accentColor)).toBeInTheDocument();
   });
+
+  it("footer Discard stays hidden after merely picking a different theme tile — no real edit yet", () => {
+    // Picking a tile only sets brandKitDirty, not hasUnsavedCurrent/editDiff (see the
+    // statefulSetup comment above). The footer Discard is for an in-progress edit;
+    // Cancel (which still opens the guard above) is what reverts a picked-but-untouched tile.
+    statefulSetup();
+    fireEvent.click(screen.getByRole("button", { name: "Apply theme: Editorial" }));
+    expect(screen.queryByRole("button", { name: "Discard" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
 });
 
 describe("ThemePanelDialog footer Save theme / Discard changes (A16)", () => {
