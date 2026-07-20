@@ -2082,7 +2082,10 @@
         "addNewGuardBody": "May mga hindi naka-save na pagbabago. I-save muna ang kasalukuyang tema, o itapon para magsimula ng panibago.",
         "addNewGuardNameLabel": "Pangalan ng tema",
         "fontSearchPlaceholder": "Maghanap ng font",
-        "fontNoMatches": "Walang tugmang font"
+        "fontNoMatches": "Walang tugmang font",
+        "curatedFontsGroup": "Mga piling font",
+        "googleFontsGroup": "Google Fonts",
+        "customGoogleFontOption": "Custom na Google Font…"
       },
       "editor": {
         "zone": {

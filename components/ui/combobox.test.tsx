@@ -126,4 +126,13 @@ describe("Combobox", () => {
     fireEvent.keyDown(search, { key: "Escape", bubbles: true });
     expect(bubbled).toBe(false);
   });
+
+  it("keeps options as direct listbox children (no nested <ul> per group) so screen readers navigate correctly", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: "Pick item" }));
+    const listbox = screen.getByRole("listbox");
+    expect(listbox.querySelector("ul")).toBeNull();
+    const options = within(listbox).getAllByRole("option");
+    options.forEach((opt) => expect(opt.parentElement).toBe(listbox));
+  });
 });

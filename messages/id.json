@@ -2082,7 +2082,10 @@
         "addNewGuardBody": "Anda memiliki perubahan yang belum disimpan. Simpan tema saat ini dulu, atau buang untuk memulai dari awal.",
         "addNewGuardNameLabel": "Nama tema",
         "fontSearchPlaceholder": "Cari font",
-        "fontNoMatches": "Tidak ada font yang cocok"
+        "fontNoMatches": "Tidak ada font yang cocok",
+        "curatedFontsGroup": "Font pilihan",
+        "googleFontsGroup": "Google Fonts",
+        "customGoogleFontOption": "Font Google khusus…"
       },
       "editor": {
         "zone": {

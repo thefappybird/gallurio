@@ -85,26 +85,28 @@ function isCustomGoogleSelection(value: PortfolioFontSelection): boolean {
  *  lib/page-builder/fonts.ts). */
 type FontOption = { value: string; label: string; style: React.CSSProperties };
 
-const FONT_GROUPS: ComboboxGroup<FontOption>[] = [
-  {
-    heading: "Curated fonts",
-    items: PORTFOLIO_FONT_KEYS.map((key) => ({
-      value: key,
-      label: PORTFOLIO_FONTS[key].label,
-      style: { fontFamily: PORTFOLIO_FONTS[key].family },
-    })),
-  },
-  {
-    heading: "Google Fonts",
-    items: GOOGLE_FONT_SHORTLIST.map((entry) => ({
-      value: toGoogleFontSelection(entry.name),
-      label: entry.name,
-      style: { fontFamily: `"${entry.name}", ${entry.category === "serif" ? "serif" : "sans-serif"}` },
-    })),
-  },
-];
+function buildFontGroups(curatedHeading: string, googleHeading: string): ComboboxGroup<FontOption>[] {
+  return [
+    {
+      heading: curatedHeading,
+      items: PORTFOLIO_FONT_KEYS.map((key) => ({
+        value: key,
+        label: PORTFOLIO_FONTS[key].label,
+        style: { fontFamily: PORTFOLIO_FONTS[key].family },
+      })),
+    },
+    {
+      heading: googleHeading,
+      items: GOOGLE_FONT_SHORTLIST.map((entry) => ({
+        value: toGoogleFontSelection(entry.name),
+        label: entry.name,
+        style: { fontFamily: `"${entry.name}", ${entry.category === "serif" ? "serif" : "sans-serif"}` },
+      })),
+    },
+  ];
+}
 
-const FONT_OPTIONS_FLAT = FONT_GROUPS.flatMap((g) => g.items);
+const FONT_OPTIONS_FLAT: FontOption[] = buildFontGroups("", "").flatMap((g) => g.items);
 
 function FontSelector({
   label,
@@ -142,9 +144,11 @@ function FontSelector({
     setCustomMode(isCustomGoogleSelection(selectedKey));
   }
 
+  const customOptionLabel = t("customGoogleFontOption");
   const selectedLabel = customMode
-    ? "Custom Google Font…"
+    ? customOptionLabel
     : (FONT_OPTIONS_FLAT.find((o) => o.value === selectedKey)?.label ?? selectedKey);
+  const fontGroups = buildFontGroups(t("curatedFontsGroup"), t("googleFontsGroup"));
 
   return (
     <fieldset className="flex flex-col gap-1.5">
@@ -152,7 +156,7 @@ function FontSelector({
       <Combobox<FontOption>
         id={selectId}
         ariaLabel={label}
-        groups={FONT_GROUPS}
+        groups={fontGroups}
         getValue={(o) => o.value}
         getLabel={(o) => o.label}
         getItemStyle={(o) => o.style}
@@ -164,7 +168,7 @@ function FontSelector({
         selectedLabel={selectedLabel}
         searchPlaceholder={t("fontSearchPlaceholder")}
         noMatchesLabel={t("fontNoMatches")}
-        trailingAction={{ label: "Custom Google Font…", onSelect: () => setCustomMode(true) }}
+        trailingAction={{ label: customOptionLabel, onSelect: () => setCustomMode(true) }}
       />
       {customMode && (
         <input

@@ -183,48 +183,50 @@ export function Combobox<T>({
             <li className="px-3 py-2 text-sm text-muted-foreground">{noMatchesLabel}</li>
           )}
           {(() => {
-            return groups.map((group) => {
+            const nodes: React.ReactNode[] = [];
+            for (const group of groups) {
               const items = group.items.filter((item) => !q || test(item, q));
-              if (items.length === 0) return null;
-              return (
-                <li key={group.heading}>
-                  <span className="block px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground">
-                    {group.heading}
-                  </span>
-                  <ul>
-                    {items.map((item) => {
-                      const optIndex = filteredFlat.indexOf(item);
-                      const isSelected = getValue(item) === value;
-                      const isActive = optIndex === activeIndex;
-                      return (
-                        <li
-                          key={getValue(item)}
-                          id={optionId(optIndex)}
-                          role="option"
-                          aria-label={getLabel(item)}
-                          aria-selected={isSelected}
-                          style={getItemStyle?.(item)}
-                          onMouseEnter={() => setActiveIndex(optIndex)}
-                          // onMouseDown (not onClick) so selection fires before the
-                          // input blur tears the popover down.
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            select(item);
-                          }}
-                          className={cn(
-                            "flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm transition-colors",
-                            isActive && "bg-accent text-accent-foreground"
-                          )}
-                        >
-                          <span className="truncate">{getLabel(item)}</span>
-                          {isSelected ? <CheckIcon className="size-4 shrink-0" aria-hidden /> : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
+              if (items.length === 0) continue;
+              nodes.push(
+                <li
+                  key={`group-${group.heading}`}
+                  role="presentation"
+                  className="px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground"
+                >
+                  {group.heading}
                 </li>
               );
-            });
+              for (const item of items) {
+                const optIndex = filteredFlat.indexOf(item);
+                const isSelected = getValue(item) === value;
+                const isActive = optIndex === activeIndex;
+                nodes.push(
+                  <li
+                    key={getValue(item)}
+                    id={optionId(optIndex)}
+                    role="option"
+                    aria-label={getLabel(item)}
+                    aria-selected={isSelected}
+                    style={getItemStyle?.(item)}
+                    onMouseEnter={() => setActiveIndex(optIndex)}
+                    // onMouseDown (not onClick) so selection fires before the
+                    // input blur tears the popover down.
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      select(item);
+                    }}
+                    className={cn(
+                      "flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm transition-colors",
+                      isActive && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <span className="truncate">{getLabel(item)}</span>
+                    {isSelected ? <CheckIcon className="size-4 shrink-0" aria-hidden /> : null}
+                  </li>
+                );
+              }
+            }
+            return nodes;
           })()}
           {trailingAction && (
             <li

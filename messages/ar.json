@@ -2082,7 +2082,10 @@
         "addNewGuardBody": "لديك تغييرات غير محفوظة. احفظ سمتك الحالية أولًا، أو تجاهلها للبدء من جديد.",
         "addNewGuardNameLabel": "اسم السمة",
         "fontSearchPlaceholder": "ابحث عن الخطوط",
-        "fontNoMatches": "لا توجد خطوط مطابقة"
+        "fontNoMatches": "لا توجد خطوط مطابقة",
+        "curatedFontsGroup": "خطوط مختارة",
+        "googleFontsGroup": "خطوط Google",
+        "customGoogleFontOption": "خط Google مخصص…"
       },
       "editor": {
         "zone": {

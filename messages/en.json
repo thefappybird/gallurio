@@ -2083,7 +2083,10 @@
         "addNewGuardBody": "You have unsaved changes. Save your current theme first, or discard to start fresh.",
         "addNewGuardNameLabel": "Theme name",
         "fontSearchPlaceholder": "Search fonts",
-        "fontNoMatches": "No matching fonts"
+        "fontNoMatches": "No matching fonts",
+        "curatedFontsGroup": "Curated fonts",
+        "googleFontsGroup": "Google Fonts",
+        "customGoogleFontOption": "Custom Google Font…"
       },
       "editor": {
         "zone": {
