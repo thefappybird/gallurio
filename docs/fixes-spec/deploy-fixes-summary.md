@@ -41,6 +41,13 @@ folder are referenced inline.
 - **Notifications**: bell arrival-popup placement adapts to collapsed/expanded sidebar.
 - **Heatmap**: per-cell tooltip, per-cell booking detail, extended paging bounds to booking dates + skip-5-pages nav.
 
+## Follow-up fixes (portfolio editor + auth)
+
+- **Canvas background parity**: the editor canvas didn't paint an explicit page `bgColorToken` past the first block — Puck's own `_PuckCanvas-root_` wrapper hardcodes a white background that our injected canvas stylesheet wasn't targeting. Extended the rule to that wrapper too; unset-background case still doesn't auto-paint (unchanged). (`lib/page-builder/RootCanvasStyle.tsx`)
+- **Theme font dropdown overflow**: the Heading/Body font picker was a native `<select>` whose popup escaped the viewport. Replaced with a generic searchable combobox (`components/ui/combobox.tsx`, catalogued in `REUSABLE_CODE.md`); also fixed a hotkey interceptor in the editor shell that was swallowing the new control's arrow/enter/escape keys. (`lib/page-builder/brandKitPicker/BrandKitPicker.tsx`, `app/[locale]/(app)/portfolio/_components/EditorShell.tsx`)
+- **Theme name error duplication + row desync**: a stale-closure bug meant the footer error banner only appeared on the *second* failed save, and the inline theme-tile Discard never cleared it. Footer error now derives from the shared theme-editor controller (single source of truth); the tile itself shows a non-text invalid signal (ring + icon + one-shot glow, `prefers-reduced-motion`-aware) instead of a second copy of the message. (`lib/page-builder/brandKitPicker/ThemeTile.tsx`, `ThemeGrid.tsx`, `app/[locale]/(app)/portfolio/_components/ThemePanelDialog.tsx`)
+- **`getAuthUser()` crash on public-path 404s**: `withAuth()` throws when AuthKit's middleware didn't cover the request — true for any 404 under `/sign-in`, `/sign-up`, `/pricing`, etc. (`proxy.ts` skips AuthKit on those paths). `getAuthUser()` now checks AuthKit's own coverage header first and returns `null` instead of throwing — reproduced in prod, not just dev. (`lib/auth/session.ts`)
+
 ## QA-evidence screenshots
 
 `locale issue.jpeg` (A1), `slug-issue.jpeg` (A2), `public-page-icon-issue.jpeg` (A3), `add-bookings-action-issue.jpeg` / `cors-error-on-add-bookings.jpeg` (bookings).
