@@ -19,7 +19,6 @@ import {
 import { ThemeTile } from "./ThemeTile";
 import { ConfirmDialog } from "./ConfirmDialog";
 import type { ThemeEditorController } from "./useThemeEditor";
-import type { ThemeNameError } from "./useThemeEditor";
 
 type Props = {
   value: PortfolioBrandKit;
@@ -73,9 +72,6 @@ export function ThemeGrid({ value, savedThemes, controller, onDeleteTheme, onAdd
     }
   }
 
-  const nameErrMsg = (c: ThemeNameError | null): string | null =>
-    c ? t(({ required: "enterThemeName", tooLong: "nameTooLong", duplicate: "themeNameExists", saveFailed: "saveThemeError" } as Record<ThemeNameError, string>)[c]) : null;
-
   return (
     <section aria-label={t("themes")} className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -114,7 +110,8 @@ export function ThemeGrid({ value, savedThemes, controller, onDeleteTheme, onAdd
                   onCancelName={controller.discardCurrentTheme}
                   namePlaceholder={t("themeNamePlaceholder")}
                   savingName={controller.savingCurrentTheme}
-                  nameError={nameErrMsg(controller.currentThemeNameError)}
+                  nameInvalid={controller.currentThemeNameError !== null}
+                  nameErrorId="theme-name-error"
                   onApply={() => applyWithGuard(tile)}
                 />
               );
@@ -135,7 +132,8 @@ export function ThemeGrid({ value, savedThemes, controller, onDeleteTheme, onAdd
                   saveNameLabel={t("saveThemeName")}
                   namePlaceholder={t("themeNamePlaceholder")}
                   savingName={controller.editSaving}
-                  nameError={nameErrMsg(controller.editGuardError)}
+                  nameInvalid={controller.editGuardError !== null}
+                  nameErrorId="theme-name-error"
                   onApply={() => applyWithGuard(tile)}
                 />
               );

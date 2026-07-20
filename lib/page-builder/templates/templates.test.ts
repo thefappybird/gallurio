@@ -180,6 +180,18 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.editorial.brandKit);
   });
 
+  it("luxury's plain (non-feature-band) preset sections pin their own background", () => {
+    // ServicesPreset/FeaturedWorkPreset have no explicit text color on their
+    // children, so they default to the theme foreground — the light pole of the
+    // Luxury palette. Without an explicit bgColorToken here they render on an
+    // unstyled (white) surface and their default-foreground text is illegible.
+    const data = getTemplate("luxury")!.seedData(mockCtx);
+    const services = data.home?.content?.find((b) => b.type === "ServicesPreset");
+    const featuredWork = data.gallery?.content?.find((b) => b.type === "FeaturedWorkPreset");
+    expect((services?.props as { _style?: { bgColorToken?: string } })?._style?.bgColorToken).toBe("background");
+    expect((featuredWork?.props as { _style?: { bgColorToken?: string } })?._style?.bgColorToken).toBe("background");
+  });
+
   it("gallery collectionId is absent from all non-scratch templates", () => {
     for (const template of PORTFOLIO_TEMPLATES) {
       if (template.id === "scratch") continue;

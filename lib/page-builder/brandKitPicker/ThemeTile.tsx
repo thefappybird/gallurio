@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Trash2Icon, Loader2Icon, PencilIcon, SaveIcon, XIcon } from "lucide-react";
+import { Trash2Icon, Loader2Icon, PencilIcon, SaveIcon, XIcon, CircleAlertIcon } from "lucide-react";
 import type { ThemeTileModel } from "./themeTiles";
 
 type Props = {
@@ -29,8 +29,12 @@ type Props = {
   /** Placeholder and aria-label for the inline name input. Falls back to saveNameLabel. */
   namePlaceholder?: string;
   savingName?: boolean;
-  /** Inline error message (already localized) shown under the input. */
-  nameError?: string | null;
+  /** True when the current name draft failed validation — the message itself
+   *  renders once, at the caller's chosen location; this only drives the
+   *  tile's own invalid affordance (ring/glow + aria wiring). */
+  nameInvalid?: boolean;
+  /** id of the (single, externally-rendered) error message, for aria-describedby. */
+  nameErrorId?: string;
   /** Localized label for the ✕ cancel button in name-editing row; presence renders the button. */
   cancelNameLabel?: string;
   /** Called when the ✕ cancel button is clicked. */
@@ -60,7 +64,8 @@ export function ThemeTile({
   saveNameLabel,
   namePlaceholder,
   savingName = false,
-  nameError,
+  nameInvalid = false,
+  nameErrorId,
   cancelNameLabel,
   onCancelName,
 }: Props) {
@@ -68,11 +73,13 @@ export function ThemeTile({
   const containerClass = cn(
     "relative flex flex-col border transition-colors",
     isCurrent && "border-dashed",
-    editing
-      ? "border-foreground ring-1 ring-ring"
-      : selected
-        ? "border-foreground"
-        : "border-border"
+    nameInvalid
+      ? "border-destructive ring-2 ring-destructive animate-theme-tile-invalid shadow-[0_0_0_3px_color-mix(in_oklab,var(--destructive)_20%,transparent)]"
+      : editing
+        ? "border-foreground ring-1 ring-ring"
+        : selected
+          ? "border-foreground"
+          : "border-border"
   );
   const swatch = (
     <span className="flex size-7 shrink-0 overflow-hidden border border-border" aria-hidden>
@@ -83,7 +90,7 @@ export function ThemeTile({
 
   if (nameEditing) {
     return (
-      <div data-editing={editing || undefined} className={containerClass}>
+      <div data-editing={editing || undefined} data-slot="theme-tile" className={containerClass}>
         <div className="flex items-center gap-2 p-2">
           {swatch}
           <input
@@ -99,8 +106,17 @@ export function ThemeTile({
             }}
             placeholder={namePlaceholder ?? saveNameLabel}
             aria-label={namePlaceholder ?? saveNameLabel}
+            aria-invalid={nameInvalid || undefined}
+            aria-describedby={nameInvalid ? nameErrorId : undefined}
             className="h-7 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
+          {nameInvalid && (
+            <CircleAlertIcon
+              data-slot="theme-tile-invalid-icon"
+              className="size-4 shrink-0 text-destructive"
+              aria-hidden
+            />
+          )}
           {cancelNameLabel && onCancelName && (
             <button
               type="button"
@@ -126,18 +142,13 @@ export function ThemeTile({
             )}
           </button>
         </div>
-        {nameError && (
-          <p role="alert" className="px-2 pb-2 text-xs text-destructive">
-            {nameError}
-          </p>
-        )}
       </div>
     );
   }
 
   const hasControls = Boolean((editLabel && onEdit) || (deleteLabel && onDelete));
   return (
-    <div data-editing={editing || undefined} className={containerClass}>
+    <div data-editing={editing || undefined} data-slot="theme-tile" className={containerClass}>
       <div className="relative flex items-stretch">
         <button
           type="button"

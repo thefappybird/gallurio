@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace, PortfolioDraft } from "@/lib/db/models";
+import { Workspace } from "@/lib/db/models";
 import {
   puckDataSchema,
   brandKitSchema,
@@ -12,7 +12,6 @@ import {
   portfolioCollectionsPopupConfigSchema,
 } from "@/lib/validators/publicPage";
 import { slugSchema } from "@/lib/validators/workspace";
-import { resolveActiveDraftId } from "@/lib/page-builder/activeDraft";
 import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { SAVED_THEMES_MAX, type PortfolioSavedTheme } from "@/lib/page-builder/types";
@@ -260,10 +259,14 @@ const completeStoryPromptSchema = z.object({
  * style tags, and optionally a logo/site-icon upload from the wizard's
  * branding step), captured before the editor's Guide tour opens. Owner-only.
  * Idempotent — re-submitting just rewrites the fields and the timestamp.
- * seoDescription/keywords/header logo/site icon land on the active
- * PortfolioDraft (published only via the draft's Publish action); only the
- * one-time completion flag lands live on Workspace.publicPage, since it just
- * gates whether the wizard auto-opens and drives no public-facing render.
+ * seoDescription/keywords/logo/site icon/OG image land on
+ * Workspace.publicPage.settingsDraft — the same workspace-level buffer the
+ * /settings/public-page form writes to — so this data is independent of
+ * whichever PortfolioDraft happens to be active, and is promoted live only
+ * by the explicit Publish action. Only the one-time completion flag +
+ * inquiry recipient land live on Workspace.publicPage, since they gate the
+ * wizard/drive the live inquiry routing directly and have no draft/publish
+ * lifecycle of their own.
  */
 export async function completeStoryPromptAction(input: unknown): Promise<EditorActionResult> {
   const ctx = await requireOrg();
@@ -274,7 +277,6 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
 
   await connectDB();
   const workspaceId = String(ctx.workspace._id);
-  const draftId = await resolveActiveDraftId(ctx.workspace._id);
   const newLogoAssetId = parsed.data.logoAssetId || undefined;
   const newSiteIconAssetId = parsed.data.siteIconAssetId || undefined;
   const newOgImageAssetId = parsed.data.ogImageAssetId || undefined;
@@ -294,74 +296,85 @@ export async function completeStoryPromptAction(input: unknown): Promise<EditorA
     if (!owned) return { error: "invalid_og_image" };
   }
 
-  // Fetch the draft's current header/siteIcon so we can delete replaced
-  // assets and — since `header` is a Mixed field that may be null — merge the
-  // new logo fields into the whole object rather than $set a dot-path (a
-  // dot-path $set on a null Mixed value throws "cannot use the part (header)
-  // to traverse the element").
-  let currentHeader: Record<string, unknown> | null = null;
+  // Old asset ids come from two places: the draft buffer (what this write is
+  // about to replace) and the live published page. A replaced draft-only
+  // asset is safe to delete; an asset still referenced by the live public
+  // page must never be deleted out from under it, even if the draft buffer
+  // is moving on to something else (leak-safe rule).
   let oldLogoAssetId: string | undefined;
+  let liveLogoAssetId: string | undefined;
   let oldSiteIconAssetId: string | undefined;
+  let liveSiteIconAssetId: string | undefined;
   let oldOgImageAssetId: string | undefined;
+  let liveOgImageAssetId: string | undefined;
   if (newLogoAssetId || newSiteIconAssetId || newOgImageAssetId) {
-    const current = await PortfolioDraft.findOne(
-      { _id: draftId },
-      { header: 1, "siteIcon.assetId": 1, "seo.ogImageAssetId": 1 }
-    ).lean();
-    currentHeader = (current?.header as Record<string, unknown> | null | undefined) ?? null;
-    oldLogoAssetId = (currentHeader?.logoAssetId as string | undefined) || undefined;
-    oldSiteIconAssetId = current?.siteIcon?.assetId || undefined;
-    oldOgImageAssetId = current?.seo?.ogImageAssetId || undefined;
+    const current = await Workspace.findById(ctx.workspace._id, {
+      "publicPage.settingsDraft.logo.assetId": 1,
+      "publicPage.settingsDraft.siteIcon.assetId": 1,
+      "publicPage.settingsDraft.seo.ogImageAssetId": 1,
+      "publicPage.header.logoAssetId": 1,
+      "publicPage.siteIcon.assetId": 1,
+      "publicPage.seo.ogImageAssetId": 1,
+    }).lean();
+    oldLogoAssetId = current?.publicPage?.settingsDraft?.logo?.assetId || undefined;
+    liveLogoAssetId = current?.publicPage?.header?.logoAssetId || undefined;
+    oldSiteIconAssetId = current?.publicPage?.settingsDraft?.siteIcon?.assetId || undefined;
+    liveSiteIconAssetId = current?.publicPage?.siteIcon?.assetId || undefined;
+    oldOgImageAssetId = current?.publicPage?.settingsDraft?.seo?.ogImageAssetId || undefined;
+    liveOgImageAssetId = current?.publicPage?.seo?.ogImageAssetId || undefined;
   }
 
-  const draftSet: Record<string, unknown> = {
-    seoDescription: parsed.data.description,
-    "seo.keywords": parsed.data.keywords,
+  const set: Record<string, unknown> = {
+    "publicPage.storyPromptCompletedAt": new Date(),
+    "publicPage.inquiryRecipientEmail": parsed.data.inquiryRecipientEmail,
+    "publicPage.settingsDraft.seoDescription": parsed.data.description,
+    "publicPage.settingsDraft.seo.keywords": parsed.data.keywords,
   };
   if (newLogoAssetId) {
-    draftSet["header"] = {
-      ...(currentHeader ?? {}),
-      logoUrl: parsed.data.logoUrl ?? "",
-      logoAssetId: newLogoAssetId,
-    };
+    set["publicPage.settingsDraft.logo.url"] = parsed.data.logoUrl ?? "";
+    set["publicPage.settingsDraft.logo.assetId"] = newLogoAssetId;
   }
   if (newSiteIconAssetId) {
-    draftSet["siteIcon.url"] = parsed.data.siteIconUrl ?? "";
-    draftSet["siteIcon.assetId"] = newSiteIconAssetId;
+    set["publicPage.settingsDraft.siteIcon.url"] = parsed.data.siteIconUrl ?? "";
+    set["publicPage.settingsDraft.siteIcon.assetId"] = newSiteIconAssetId;
   }
   if (newOgImageAssetId) {
-    draftSet["seo.ogImageUrl"] = parsed.data.ogImageUrl ?? "";
-    draftSet["seo.ogImageAssetId"] = newOgImageAssetId;
+    set["publicPage.settingsDraft.seo.ogImageUrl"] = parsed.data.ogImageUrl ?? "";
+    set["publicPage.settingsDraft.seo.ogImageAssetId"] = newOgImageAssetId;
   }
 
-  await Promise.all([
-    Workspace.updateOne(
-      { _id: ctx.workspace._id },
-      {
-        $set: {
-          "publicPage.storyPromptCompletedAt": new Date(),
-          "publicPage.inquiryRecipientEmail": parsed.data.inquiryRecipientEmail,
-        },
-      }
-    ),
-    PortfolioDraft.updateOne({ _id: draftId, workspaceId: ctx.workspace._id }, { $set: draftSet }),
-  ]);
+  await Workspace.updateOne({ _id: ctx.workspace._id }, { $set: set });
 
-  if (newLogoAssetId && oldLogoAssetId && oldLogoAssetId !== newLogoAssetId) {
+  if (
+    newLogoAssetId &&
+    oldLogoAssetId &&
+    oldLogoAssetId !== newLogoAssetId &&
+    oldLogoAssetId !== liveLogoAssetId
+  ) {
     try {
       await deleteImage(oldLogoAssetId);
     } catch (err) {
       console.warn("[portfolio] failed to delete old story-prompt logo asset", err);
     }
   }
-  if (newSiteIconAssetId && oldSiteIconAssetId && oldSiteIconAssetId !== newSiteIconAssetId) {
+  if (
+    newSiteIconAssetId &&
+    oldSiteIconAssetId &&
+    oldSiteIconAssetId !== newSiteIconAssetId &&
+    oldSiteIconAssetId !== liveSiteIconAssetId
+  ) {
     try {
       await deleteImage(oldSiteIconAssetId);
     } catch (err) {
       console.warn("[portfolio] failed to delete old story-prompt site icon asset", err);
     }
   }
-  if (newOgImageAssetId && oldOgImageAssetId && oldOgImageAssetId !== newOgImageAssetId) {
+  if (
+    newOgImageAssetId &&
+    oldOgImageAssetId &&
+    oldOgImageAssetId !== newOgImageAssetId &&
+    oldOgImageAssetId !== liveOgImageAssetId
+  ) {
     try {
       await deleteImage(oldOgImageAssetId);
     } catch (err) {

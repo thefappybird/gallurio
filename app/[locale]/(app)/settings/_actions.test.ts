@@ -233,6 +233,22 @@ describe("updateWorkspaceBusinessAction", () => {
     expect(updated?.timezone).toBe("Asia/Kolkata");
   });
 
+  it("persists businessTypeOther when businessType is other, clears it otherwise", async () => {
+    await seedWorkspaceA();
+
+    await updateWorkspaceBusinessAction({
+      ...validInput,
+      businessType: "other",
+      businessTypeOther: "tattoo studio",
+    });
+    let updated = await Workspace.findById(WS_A_ID).lean();
+    expect(updated?.businessTypeOther).toBe("tattoo studio");
+
+    await updateWorkspaceBusinessAction({ ...validInput, businessType: "photographer" });
+    updated = await Workspace.findById(WS_A_ID).lean();
+    expect(updated?.businessTypeOther).toBe("");
+  });
+
   it("slug collision — rejects with error and does NOT update", async () => {
     await seedWorkspaceA();
     await seedWorkspaceB();
@@ -561,6 +577,31 @@ describe("updatePublicPageSettingsAction — seo fields", () => {
     const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.publicPage?.settingsDraft?.seo?.ogImageAssetId).toBe("new_og_id");
   });
+
+  it("does not delete the draft-buffer OG image when it is still the live published one", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      {
+        $set: {
+          "publicPage.seo.ogImageAssetId": "live_og_id",
+          "publicPage.settingsDraft.seo.ogImageAssetId": "live_og_id",
+        },
+      }
+    );
+
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
+
+    const result = await updatePublicPageSettingsAction({
+      seo: {
+        ogImageUrl: "https://cdn.example.com/new-og.jpg",
+        ogImageAssetId: "new_og_id",
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(deleteImage)).not.toHaveBeenCalledWith("live_og_id");
+  });
 });
 
 describe("updatePublicPageSettingsAction", () => {
@@ -650,6 +691,71 @@ describe("updatePublicPageSettingsAction", () => {
     });
 
     expect(result.error).toBeTruthy();
+  });
+
+  it("persists logoUrl and logoAssetId to the workspace settings draft", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({
+      logoUrl: "https://cdn.example.com/logo.png",
+      logoAssetId: "logo_abc",
+    });
+
+    expect(result.ok).toBe(true);
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.publicPage?.settingsDraft?.logo?.url).toBe("https://cdn.example.com/logo.png");
+    expect(ws?.publicPage?.settingsDraft?.logo?.assetId).toBe("logo_abc");
+  });
+
+  it("rejects logoAssetId when ownership verification fails", async () => {
+    await seedWorkspaceA();
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+
+    const result = await updatePublicPageSettingsAction({
+      logoUrl: "https://cdn.example.com/logo.png",
+      logoAssetId: "not_mine",
+    });
+
+    expect(result.error).toBe("invalid_logo");
+  });
+
+  it("deletes old logo when replacing with a new one (old asset id read from the settings draft)", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { "publicPage.settingsDraft.logo.assetId": "old_logo_id" } }
+    );
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
+
+    const result = await updatePublicPageSettingsAction({
+      logoUrl: "https://cdn.example.com/new-logo.png",
+      logoAssetId: "new_logo_id",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("old_logo_id");
+  });
+
+  it("does not delete the draft-buffer logo when it is still the live published one", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      {
+        $set: {
+          "publicPage.header.logoAssetId": "live_logo_id",
+          "publicPage.settingsDraft.logo.assetId": "live_logo_id",
+        },
+      }
+    );
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
+
+    const result = await updatePublicPageSettingsAction({
+      logoUrl: "https://cdn.example.com/new-logo.png",
+      logoAssetId: "new_logo_id",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(deleteImage)).not.toHaveBeenCalledWith("live_logo_id");
   });
 });
 

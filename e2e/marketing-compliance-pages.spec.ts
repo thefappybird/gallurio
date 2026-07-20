@@ -9,7 +9,7 @@ const COMPLIANCE_PAGES = [
   { path: "/pricing", heading: "Simple plans for creative professionals and studios." },
   { path: "/terms", heading: "Terms of Service" },
   { path: "/privacy", heading: "Privacy Policy" },
-  { path: "/refunds", heading: "Refund Policy" },
+  { path: "/refunds", heading: "Refund and Cancellation Policy" },
   { path: "/contact", heading: "Need help with Gallurio?" },
 ];
 
@@ -64,7 +64,9 @@ test("pricing page shows a single Pro plan with the 1-month-free story", async (
 
   await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
   await expect(page.getByText("Recommended")).toBeVisible();
-  await expect(page.getByText("Start with 1 month free, no card required.")).toBeVisible();
+  await expect(
+    page.getByText("Start with one month free. No payment card is required."),
+  ).toBeVisible();
   await expect(page.getByText("Beta Plan")).not.toBeVisible();
   await expect(page.getByText("Studio", { exact: true })).not.toBeVisible();
   await expect(page.getByText("Business", { exact: true })).not.toBeVisible();

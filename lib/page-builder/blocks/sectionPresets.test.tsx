@@ -62,6 +62,19 @@ describe("section preset background shape", () => {
   });
 });
 
+describe("plain (non-feature-band) presets pin their own background", () => {
+  // Unlike Hero/CTA/GalleryLanding, these presets' children have no explicit text
+  // color — they default to the theme foreground, which is the light pole of the
+  // palette on dark themes. Without an explicit background here they'd render on
+  // an unstyled (white) surface and be illegible on e.g. the Luxury theme.
+  it.each([
+    ["SERVICES_PRESET", SERVICES_PRESET],
+    ["FEATURED_WORK_PRESET", FEATURED_WORK_PRESET],
+  ] as const)("%s pins _style.bgColorToken to 'background'", (_label, preset) => {
+    expect(preset._style?.bgColorToken).toBe("background");
+  });
+});
+
 describe("GalleryLandingPreset in puckConfig", () => {
   it("GalleryLandingPreset is registered in puckConfig and renders its heading", () => {
     render(

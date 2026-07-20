@@ -189,9 +189,9 @@ describe("getBookedHoursHeatmap", () => {
     expect(cells[0].weekStart).toBe("2025-06-23");
     expect(cells[cells.length - 1].weekStart).toBe("2026-06-15");
     expect(cells.filter((c) => c.hours > 0)).toEqual([
-      { weekStart: "2026-06-01", weekday: 0, hours: 8 }, // Monday
-      { weekStart: "2026-06-01", weekday: 2, hours: 8 }, // Wednesday
-      { weekStart: "2026-06-01", weekday: 3, hours: 8 }, // Thursday
+      { weekStart: "2026-06-01", weekday: 0, hours: 8, bookings: 1 }, // Monday
+      { weekStart: "2026-06-01", weekday: 2, hours: 8, bookings: 1 }, // Wednesday
+      { weekStart: "2026-06-01", weekday: 3, hours: 8, bookings: 1 }, // Thursday
     ]);
   });
 
@@ -208,7 +208,7 @@ describe("getBookedHoursHeatmap", () => {
     expect(cells[0].weekStart).toBe("2025-06-23");
     expect(cells[cells.length - 1].weekStart).toBe("2026-06-15");
     expect(cells.filter((c) => c.hours > 0)).toEqual([
-      { weekStart: "2026-06-01", weekday: 0, hours: 8 },
+      { weekStart: "2026-06-01", weekday: 0, hours: 8, bookings: 1 },
     ]);
   });
 
@@ -268,6 +268,81 @@ describe("getBookedHoursHeatmap", () => {
     expect(heatmap.cells.at(-1)?.weekStart).toBe("2026-06-15");
     expect(heatmap.earliestWeek).toBe("2026-06-08");
     expect(heatmap.latestWeek).toBe("2026-06-15");
+  });
+
+  it("earliestWeek extends to a backdated booking older than register, and defaults to register when none", async () => {
+    // mode "all" (a named period, not custom) so range.from doesn't act as its
+    // own floor-raiser -- isolates the earliest-booking extension being tested.
+    const range = { from: null, to: null, mode: "all" as const };
+    const backdated = {
+      startAt: new Date("2026-01-05T01:00:00.000Z"), // Manila 2026-01-05 09:00, Monday
+      endAt: new Date("2026-01-05T03:00:00.000Z"),
+    };
+    await seedBooking({ sessions: [backdated] });
+
+    const withBooking = await getBookedHoursHeatmap(wid, range, tz, {
+      workspaceCreatedAt: new Date("2026-06-10T00:00:00.000Z"),
+    });
+    expect(withBooking.earliestWeek).toBe("2026-01-05");
+
+    const noBookings = await getBookedHoursHeatmap(other, range, tz, {
+      workspaceCreatedAt: new Date("2026-06-10T00:00:00.000Z"),
+    });
+    expect(noBookings.earliestWeek).toBe("2026-06-08");
+  });
+
+  it("latestWeek extends to a future booking, but the default (no ?hm=) window still ends at today", async () => {
+    const range = { from: null, to: null, mode: "all" as const };
+    const future = {
+      startAt: new Date("2027-03-01T01:00:00.000Z"), // Manila 2027-03-01 09:00, Monday
+      endAt: new Date("2027-03-01T03:00:00.000Z"),
+    };
+    await seedBooking({ sessions: [future] });
+
+    const heatmap = await getBookedHoursHeatmap(wid, range, tz, {
+      workspaceCreatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    expect(heatmap.latestWeek).toBe("2027-03-01");
+    // No requestedEndWeek -> default window's rightmost column is still today's week.
+    expect(heatmap.cells.at(-1)?.weekStart).toBe(heatmap.todayWeek);
+  });
+
+  it("counts distinct bookings per day cell: same-day candles from one booking count once, a 2-day booking counts on each day", async () => {
+    const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-15T00:00:00.000Z") };
+
+    // Booking 1: two same-day sessions on Mon 2026-06-01 -> 2 candles, same
+    // booking, must count once for that day.
+    await seedBooking({
+      sessions: [
+        { startAt: new Date("2026-06-01T01:00:00.000Z"), endAt: new Date("2026-06-01T03:00:00.000Z") },
+        { startAt: new Date("2026-06-01T05:00:00.000Z"), endAt: new Date("2026-06-01T07:00:00.000Z") },
+      ],
+    });
+    // Booking 2: also on Mon 2026-06-01 -> day cell should now report 2 distinct bookings.
+    await seedBooking({
+      sessions: [{ startAt: new Date("2026-06-01T09:00:00.000Z"), endAt: new Date("2026-06-01T11:00:00.000Z") }],
+    });
+    // Booking 3: overnight session spanning Wed 2026-06-03 -> Thu 2026-06-04
+    // (candle-split), counts once on each of those two days.
+    await seedBooking({
+      sessions: [{ startAt: new Date("2026-06-03T14:00:00.000Z"), endAt: new Date("2026-06-04T22:00:00.000Z") }],
+    });
+
+    const { cells } = await getBookedHoursHeatmap(wid, range, tz, {
+      workspaceCreatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const mon = cells.find((c) => c.weekStart === "2026-06-01" && c.weekday === 0);
+    const wed = cells.find((c) => c.weekStart === "2026-06-01" && c.weekday === 2);
+    const thu = cells.find((c) => c.weekStart === "2026-06-01" && c.weekday === 3);
+    expect(mon?.bookings).toBe(2);
+    expect(wed?.bookings).toBe(1);
+    expect(thu?.bookings).toBe(1);
+
+    // Zero-filled like hours.
+    const untouched = cells.find((c) => c.weekStart === "2026-06-08" && c.weekday === 0);
+    expect(untouched?.bookings).toBe(0);
   });
 });
 

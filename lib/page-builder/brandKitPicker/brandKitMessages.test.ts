@@ -34,6 +34,9 @@ const REQUIRED_KEYS = [
   "themeNameExists",
   "applyAction",
   "saveThemeName",
+  "curatedFontsGroup",
+  "googleFontsGroup",
+  "customGoogleFontOption",
 ] as const;
 
 const locales = { en, fil, th, id } as const;

@@ -74,16 +74,21 @@ describe("uploadImage", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("rejects images below minimum dimension before uploading", async () => {
+  it("accepts an image below the old minimum dimension — pixel size is no longer enforced", async () => {
     vi.stubGlobal("Image", class SmallImage extends MockImage {
       naturalWidth = 400;
       naturalHeight = 300;
     });
-    const fetchMock = vi.fn();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => directUploadBody })
+      .mockResolvedValueOnce({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(uploadImage(makeFile())).rejects.toThrow("dimension_too_small");
-    expect(fetchMock).not.toHaveBeenCalled();
+    const result = await uploadImage(makeFile());
+
+    expect(result.width).toBe(400);
+    expect(result.height).toBe(300);
   });
 
   it("throws when the direct-upload request fails", async () => {

@@ -173,6 +173,50 @@ describe("SettingsCatchallPage — public-page defaults read from workspace sett
     expect(props.publishedDefaults.seoTitle).toBe("Stale live title");
   });
 
+  it("falls back to the live header logo when settingsDraft.logo is untouched (empty default), not just when settingsDraft itself is absent", async () => {
+    const ws = await seedWorkspace({
+      header: { logoUrl: "https://cdn.example.com/live-logo.png", logoAssetId: "live_logo_1" },
+      // settingsDraft exists (e.g. from an earlier unrelated SEO save) but its
+      // logo sub-field is still at the schema default — must not be confused
+      // with "the settings page explicitly cleared the logo".
+      settingsDraft: {
+        seoTitle: "Fresh settings title",
+        logo: { url: "", assetId: "" },
+      },
+    });
+    await seedOwnerUser(ws._id);
+
+    requireOrgMock.mockResolvedValue({
+      role: "owner",
+      userId: "owner_1",
+      workspace: {
+        _id: ws._id,
+        slug: ws.slug,
+        name: ws.name,
+        businessType: "photographer",
+        country: "PH",
+        currency: "PHP",
+        timezone: "Asia/Manila",
+        plan: "free",
+        publicPage: ws.toObject().publicPage,
+      },
+    });
+    getAuthUserMock.mockResolvedValue({
+      name: "Owner",
+      email: "owner@test.com",
+      avatarUrl: null,
+    });
+
+    const page = await SettingsCatchallPage({
+      params: Promise.resolve({ locale: "en", catchall: ["public-page"] }),
+    });
+    render(page);
+
+    const props = getPublicPageProps();
+    expect(props.defaults.logoUrl).toBe("https://cdn.example.com/live-logo.png");
+    expect(props.defaults.logoAssetId).toBe("live_logo_1");
+  });
+
   it("reports no pending changes when draft and published SEO fields are equal", async () => {
     const ws = await seedWorkspace({
       seoTitle: "Same title",

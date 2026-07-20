@@ -17,13 +17,14 @@ import {
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
 import { updateWorkspaceBusinessAction } from "../_actions";
-import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocationPicker } from "@/components/ui/location-picker";
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"] as const;
 const LOGO_MAX_BYTES = 250 * 1024;
@@ -91,6 +92,7 @@ export function WorkspaceBusinessForm({
   const slugValue = useWatch({ control, name: "slug" });
   const { status: slugStatus } = useSlugAvailability(slugValue, defaults.slug);
   const logoUrl = watch("logoUrl");
+  const businessTypeValue = watch("businessType");
 
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoDragActive, setLogoDragActive] = useState(false);
@@ -171,7 +173,7 @@ export function WorkspaceBusinessForm({
           <div className="flex flex-col gap-1.5 w-full">
             <Label htmlFor="name">{tOnb("businessName")}</Label>
             <Input id="name" {...register("name")} />
-            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+            {errors.name && <p className="text-sm text-destructive">{fieldMessage(errors.name)}</p>}
           </div>
           <div className="flex flex-col gap-1.5 w-full">
             <Label htmlFor="slug">
@@ -189,7 +191,7 @@ export function WorkspaceBusinessForm({
               />
             </div>
             <SlugStatusIndicator status={slugStatus} t={tOnb} />
-            {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
+            {errors.slug && <p className="text-sm text-destructive">{fieldMessage(errors.slug)}</p>}
           </div>
         </div>
 
@@ -209,12 +211,27 @@ export function WorkspaceBusinessForm({
               <option value="stylist">{tOnb("businessTypes.stylist")}</option>
               <option value="catering">{tOnb("businessTypes.catering")}</option>
               <option value="entertainer">{tOnb("businessTypes.entertainer")}</option>
+              <option value="artists">{tOnb("businessTypes.artists")}</option>
               <option value="other">{tOnb("businessTypes.other")}</option>
             </select>
             {errors.businessType && (
-              <p className="text-sm text-destructive">{errors.businessType.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.businessType)}</p>
             )}
           </div>
+
+          {businessTypeValue === "other" && (
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <Label htmlFor="businessTypeOther">{tOnb("businessTypeOtherLabel")}</Label>
+              <Input
+                id="businessTypeOther"
+                placeholder={tOnb("businessTypeOtherPlaceholder")}
+                {...register("businessTypeOther")}
+              />
+              {errors.businessTypeOther && (
+                <p className="text-sm text-destructive">{fieldMessage(errors.businessTypeOther)}</p>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="country">{tOnb("country")}</Label>
@@ -238,7 +255,7 @@ export function WorkspaceBusinessForm({
               ))}
             </select>
             {errors.country && (
-              <p className="text-sm text-destructive">{errors.country.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.country)}</p>
             )}
           </div>
         </div>
@@ -259,29 +276,29 @@ export function WorkspaceBusinessForm({
             </select>
             <p className="text-xs text-muted-foreground">{t("currencyWarning")}</p>
             {errors.currency && (
-              <p className="text-sm text-destructive">{errors.currency.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.currency)}</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="timezone">{tOnb("timezone")}</Label>
-            <select
-              id="timezone"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("timezone")}
-            >
-              {Object.entries(TIMEZONE_GROUPS).map(([region, zones]) => (
-                <optgroup key={region} label={region}>
-                  {zones.map((tz) => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="timezone"
+              render={({ field }) => (
+                <TimezoneCombobox
+                  id="timezone"
+                  name={field.name}
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={field.disabled}
+                  searchPlaceholder={tOnb("timezoneSearchPlaceholder")}
+                  noMatchesLabel={tOnb("timezoneNoMatches")}
+                />
+              )}
+            />
             {errors.timezone && (
-              <p className="text-sm text-destructive">{errors.timezone.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.timezone)}</p>
             )}
           </div>
         </div>
@@ -296,7 +313,7 @@ export function WorkspaceBusinessForm({
               {...register("contactEmail")}
             />
             {errors.contactEmail && (
-              <p className="text-sm text-destructive">{errors.contactEmail.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.contactEmail)}</p>
             )}
           </div>
 
@@ -323,7 +340,7 @@ export function WorkspaceBusinessForm({
               )}
             />
             {errors.contactAddress && (
-              <p className="text-sm text-destructive">{errors.contactAddress.message}</p>
+              <p className="text-sm text-destructive">{fieldMessage(errors.contactAddress)}</p>
             )}
           </div>
         </div>

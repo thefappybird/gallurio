@@ -1,6 +1,6 @@
 "use client";
 
-import { validatePhotoFile, validatePhotoDimensions } from "@/lib/page-builder/photoSpec";
+import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 
 export type UploadedImage = {
@@ -41,11 +41,8 @@ export async function uploadImage(
   if (!fileCheck.ok) throw new Error(fileCheck.reason);
 
   // Capture dimensions from the file before upload — CF does not return them.
+  // Any dimensions are accepted; CF Images' delivery-time fit resizes on read.
   const dims = await getFileDimensions(file);
-  if (opts.validateDimensions ?? true) {
-    const dimCheck = validatePhotoDimensions(dims.width, dims.height);
-    if (!dimCheck.ok) throw new Error(dimCheck.reason);
-  }
 
   const directRes = await fetch("/api/images/direct-upload", {
     method: "POST",
