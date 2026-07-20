@@ -2080,7 +2080,9 @@
         "addNewTheme": "Magdagdag ng bagong tema",
         "addNewGuardTitle": "I-save bago magsimula ng bago?",
         "addNewGuardBody": "May mga hindi naka-save na pagbabago. I-save muna ang kasalukuyang tema, o itapon para magsimula ng panibago.",
-        "addNewGuardNameLabel": "Pangalan ng tema"
+        "addNewGuardNameLabel": "Pangalan ng tema",
+        "fontSearchPlaceholder": "Maghanap ng font",
+        "fontNoMatches": "Walang tugmang font"
       },
       "editor": {
         "zone": {

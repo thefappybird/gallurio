@@ -2081,7 +2081,9 @@
         "addNewTheme": "Add new theme",
         "addNewGuardTitle": "Save before starting new?",
         "addNewGuardBody": "You have unsaved changes. Save your current theme first, or discard to start fresh.",
-        "addNewGuardNameLabel": "Theme name"
+        "addNewGuardNameLabel": "Theme name",
+        "fontSearchPlaceholder": "Search fonts",
+        "fontNoMatches": "No matching fonts"
       },
       "editor": {
         "zone": {

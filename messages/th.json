@@ -2080,7 +2080,9 @@
         "addNewTheme": "เพิ่มธีมใหม่",
         "addNewGuardTitle": "บันทึกก่อนเริ่มใหม่หรือไม่?",
         "addNewGuardBody": "คุณมีการเปลี่ยนแปลงที่ยังไม่บันทึก บันทึกธีมปัจจุบันก่อน หรือยกเลิกเพื่อเริ่มใหม่",
-        "addNewGuardNameLabel": "ชื่อธีม"
+        "addNewGuardNameLabel": "ชื่อธีม",
+        "fontSearchPlaceholder": "ค้นหาฟอนต์",
+        "fontNoMatches": "ไม่มีฟอนต์ที่ตรงกัน"
       },
       "editor": {
         "zone": {

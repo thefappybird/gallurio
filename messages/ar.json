@@ -2080,7 +2080,9 @@
         "addNewTheme": "إضافة سمة جديدة",
         "addNewGuardTitle": "الحفظ قبل البدء من جديد؟",
         "addNewGuardBody": "لديك تغييرات غير محفوظة. احفظ سمتك الحالية أولًا، أو تجاهلها للبدء من جديد.",
-        "addNewGuardNameLabel": "اسم السمة"
+        "addNewGuardNameLabel": "اسم السمة",
+        "fontSearchPlaceholder": "ابحث عن الخطوط",
+        "fontNoMatches": "لا توجد خطوط مطابقة"
       },
       "editor": {
         "zone": {

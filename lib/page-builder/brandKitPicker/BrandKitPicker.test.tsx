@@ -31,8 +31,8 @@ describe("BrandKitPicker", () => {
 
   it("selecting a heading font emits headingFont without touching bodyFont", () => {
     const { onChange } = setup();
-    const headingSelect = screen.getByRole("combobox", { name: /heading font/i });
-    fireEvent.change(headingSelect, { target: { value: "playfair" } });
+    fireEvent.click(screen.getByRole("button", { name: /heading font/i }));
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Playfair Display" }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ headingFont: "playfair" })
     );
@@ -44,8 +44,8 @@ describe("BrandKitPicker", () => {
 
   it("selecting a Google Font shortlist entry for heading emits a google: selection", () => {
     const { onChange } = setup();
-    const headingSelect = screen.getByRole("combobox", { name: /heading font/i });
-    fireEvent.change(headingSelect, { target: { value: "google:Poppins" } });
+    fireEvent.click(screen.getByRole("button", { name: /heading font/i }));
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Poppins" }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ headingFont: "google:Poppins" })
     );
@@ -53,8 +53,8 @@ describe("BrandKitPicker", () => {
 
   it("typing a custom Google Font name does not call onChange per keystroke, only on blur", () => {
     const { onChange } = setup();
-    const headingSelect = screen.getByRole("combobox", { name: /heading font/i });
-    fireEvent.change(headingSelect, { target: { value: "__custom__" } });
+    fireEvent.click(screen.getByRole("button", { name: /heading font/i }));
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Custom Google Font…" }));
     const input = screen.getByRole("textbox", { name: /heading font.*custom google font name/i });
     fireEvent.change(input, { target: { value: "B" } });
     fireEvent.change(input, { target: { value: "Be" } });
@@ -69,8 +69,8 @@ describe("BrandKitPicker", () => {
 
   it("selecting a body font emits bodyFont without touching headingFont", () => {
     const { onChange } = setup();
-    const bodySelect = screen.getByRole("combobox", { name: /body font/i });
-    fireEvent.change(bodySelect, { target: { value: "inter" } });
+    fireEvent.click(screen.getByRole("button", { name: /body font/i }));
+    fireEvent.mouseDown(screen.getByRole("option", { name: "Inter" }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ bodyFont: "inter", headingFont: DEFAULT_BRAND_KIT.headingFont })
     );
@@ -83,10 +83,8 @@ describe("BrandKitPicker", () => {
     legacy.fontPair = "playfair-inter";
     const onChange = vi.fn();
     renderWithProviders(<BrandKitPicker value={legacy} onChange={onChange} />);
-    const headingSelect = screen.getByRole("combobox", { name: /heading font/i });
-    expect(headingSelect).toHaveValue("playfair");
-    const bodySelect = screen.getByRole("combobox", { name: /body font/i });
-    expect(bodySelect).toHaveValue("inter");
+    expect(screen.getByRole("button", { name: /heading font/i })).toHaveTextContent("Playfair Display");
+    expect(screen.getByRole("button", { name: /body font/i })).toHaveTextContent("Inter");
   });
 
   it("propagates a color picked from the accent spectrum popover", () => {

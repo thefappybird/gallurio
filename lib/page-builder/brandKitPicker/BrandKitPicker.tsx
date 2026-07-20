@@ -17,6 +17,7 @@ import {
 } from "@/lib/page-builder/fonts";
 import type { PortfolioSavedTheme } from "@/lib/page-builder/types";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { Combobox, type ComboboxGroup } from "@/components/ui/combobox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ThemeGrid } from "./ThemeGrid";
 import { useThemeEditor, type ThemeEditorController, type ThemeNameError } from "./useThemeEditor";
@@ -71,8 +72,6 @@ type Props = {
   onAddNew?: () => void;
 };
 
-const CUSTOM_FONT_SENTINEL = "__custom__";
-
 /** True for a `google:<name>` selection that ISN'T one of the curated shortlist entries. */
 function isCustomGoogleSelection(value: PortfolioFontSelection): boolean {
   if (!isGoogleFontSelection(value)) return false;
@@ -84,6 +83,29 @@ function isCustomGoogleSelection(value: PortfolioFontSelection): boolean {
  *  "Custom…" reveals free-text entry of any other Google Fonts family name.
  *  Both resolve through the same PortfolioFontSelection value (see
  *  lib/page-builder/fonts.ts). */
+type FontOption = { value: string; label: string; style: React.CSSProperties };
+
+const FONT_GROUPS: ComboboxGroup<FontOption>[] = [
+  {
+    heading: "Curated fonts",
+    items: PORTFOLIO_FONT_KEYS.map((key) => ({
+      value: key,
+      label: PORTFOLIO_FONTS[key].label,
+      style: { fontFamily: PORTFOLIO_FONTS[key].family },
+    })),
+  },
+  {
+    heading: "Google Fonts",
+    items: GOOGLE_FONT_SHORTLIST.map((entry) => ({
+      value: toGoogleFontSelection(entry.name),
+      label: entry.name,
+      style: { fontFamily: `"${entry.name}", ${entry.category === "serif" ? "serif" : "sans-serif"}` },
+    })),
+  },
+];
+
+const FONT_OPTIONS_FLAT = FONT_GROUPS.flatMap((g) => g.items);
+
 function FontSelector({
   label,
   value: selectedKey,
@@ -93,6 +115,7 @@ function FontSelector({
   value: PortfolioFontSelection;
   onChange: (key: PortfolioFontSelection) => void;
 }) {
+  const t = useTranslations("app.pageBuilder.brandKit");
   const selectId = useId();
   const committedCustomName = googleFontFamilyName(selectedKey) ?? "";
   // Local draft state so the input reflects every keystroke, but onChange only
@@ -119,45 +142,30 @@ function FontSelector({
     setCustomMode(isCustomGoogleSelection(selectedKey));
   }
 
-  const selectValue = customMode ? CUSTOM_FONT_SENTINEL : selectedKey;
+  const selectedLabel = customMode
+    ? "Custom Google Font…"
+    : (FONT_OPTIONS_FLAT.find((o) => o.value === selectedKey)?.label ?? selectedKey);
 
   return (
     <fieldset className="flex flex-col gap-1.5">
       <legend className="text-xs font-medium text-muted-foreground">{label}</legend>
-      <select
+      <Combobox<FontOption>
         id={selectId}
-        aria-label={label}
-        value={selectValue}
-        onChange={(e) => {
-          const next = e.target.value;
-          if (next === CUSTOM_FONT_SENTINEL) {
-            setCustomMode(true);
-            return;
-          }
+        ariaLabel={label}
+        groups={FONT_GROUPS}
+        getValue={(o) => o.value}
+        getLabel={(o) => o.label}
+        getItemStyle={(o) => o.style}
+        value={selectedKey}
+        onChange={(next) => {
           setCustomMode(false);
           onChange(next as PortfolioFontSelection);
         }}
-        className="h-9 w-full cursor-pointer border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        <optgroup label="Curated fonts">
-          {PORTFOLIO_FONT_KEYS.map((key) => (
-            <option key={key} value={key} style={{ fontFamily: PORTFOLIO_FONTS[key].family }}>
-              {PORTFOLIO_FONTS[key].label}
-            </option>
-          ))}
-        </optgroup>
-        <optgroup label="Google Fonts">
-          {GOOGLE_FONT_SHORTLIST.map((entry) => {
-            const previewFamily = `"${entry.name}", ${entry.category === "serif" ? "serif" : "sans-serif"}`;
-            return (
-              <option key={entry.name} value={toGoogleFontSelection(entry.name)} style={{ fontFamily: previewFamily }}>
-                {entry.name}
-              </option>
-            );
-          })}
-        </optgroup>
-        <option value={CUSTOM_FONT_SENTINEL}>Custom Google Font…</option>
-      </select>
+        selectedLabel={selectedLabel}
+        searchPlaceholder={t("fontSearchPlaceholder")}
+        noMatchesLabel={t("fontNoMatches")}
+        trailingAction={{ label: "Custom Google Font…", onSelect: () => setCustomMode(true) }}
+      />
       {customMode && (
         <input
           type="text"

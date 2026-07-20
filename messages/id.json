@@ -2080,7 +2080,9 @@
         "addNewTheme": "Tambah tema baru",
         "addNewGuardTitle": "Simpan sebelum memulai yang baru?",
         "addNewGuardBody": "Anda memiliki perubahan yang belum disimpan. Simpan tema saat ini dulu, atau buang untuk memulai dari awal.",
-        "addNewGuardNameLabel": "Nama tema"
+        "addNewGuardNameLabel": "Nama tema",
+        "fontSearchPlaceholder": "Cari font",
+        "fontNoMatches": "Tidak ada font yang cocok"
       },
       "editor": {
         "zone": {
