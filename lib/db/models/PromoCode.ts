@@ -1,6 +1,6 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
-export const PROMO_CODE_TYPES = ["lifetime", "yearly", "monthly", "beta", "beta2mo"] as const;
+export const PROMO_CODE_TYPES = ["lifetime", "yearly", "monthly", "beta", "beta2mo", "demo1mo"] as const;
 export type PromoCodeType = (typeof PROMO_CODE_TYPES)[number];
 
 const promoCodeSchema = new Schema(
