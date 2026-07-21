@@ -14,65 +14,112 @@
       "contact": "Makipag-ugnayan"
     },
     "metadata": {
-      "title": "Gallurio — Mga Tool sa Portfolio at Booking para sa Creative Business",
-      "description": "Gumawa ng pulidong portfolio page, ipakita ang iyong trabaho, at mangalap ng booking inquiries gamit ang Gallurio."
+      "title": "Gallurio — Mga Tool sa Portfolio, Booking, at Client para sa Creative Business",
+      "description": "Gumawa ng propesyonal na portfolio, mangalap ng booking inquiries, at pamahalaan ang mga kliyente, booking, gallery, at invoice sa iisang workspace gamit ang Gallurio."
     },
     "hero": {
-      "headline": "Ang handa-sa-booking na portfolio, pinapatakbo tulad ng isang ledger.",
-      "body": "Ginagamit ng mga photographer, videographer, at event creative ang Gallurio para mag-publish ng page na karapat-dapat pagkatiwalaan ng booking — at pamahalaan ang mga booking, kliyente, at inquiry sa iisang workspace.",
-      "ctaStart": "Simulan ang libreng buwan ko"
+      "eyebrow": "Isang workspace, dalawang trabaho",
+      "headlineShow": "Ipakita ang iyong trabaho.",
+      "headlineRun": "Patakbuhin ang iyong negosyo.",
+      "body": "Hinahati ng Gallurio nang pantay: isang portfolio na ginawa para mag-book sa iyo, at ang workspace na nagpapatuloy sa lahat pagkatapos ng inquiry.",
+      "ctaStart": "Simulan ang libreng buwan ko",
+      "ctaMicrocopy": "Libre habang beta. Walang kailangang card."
+    },
+    "trust": {
+      "item1": "Libre habang beta",
+      "item2": "Walang kailangang card",
+      "item3": "Puwedeng i-cancel anumang oras",
+      "item4": "Secure na checkout sa pamamagitan ng Lemon Squeezy"
+    },
+    "split": {
+      "showVerb": "Ipakita",
+      "showTag": "ang iyong public page",
+      "showImageAlt": "Ang public na Gallurio portfolio page ng isang creative professional, may editorial na gallery layout.",
+      "manageVerb": "Pamahalaan",
+      "manageTag": "ang iyong workspace",
+      "manageImageAlt": "Gallurio workspace dashboard na nagpapakita ng mga booking at inquiry activity.",
+      "bridgeLead": "Iisang login.",
+      "bridgeEmphasis": "Dalawang magkaibang trabaho, ginawa nang tama."
     },
     "whatIs": {
       "title": "Ano ang Gallurio?",
-      "body": "Ang Gallurio ay isang portfolio at booking platform para sa mga creative professional. Nagbibigay ito ng mga tool para gumawa ng public-facing page, ipakita ang kanilang trabaho, tumanggap ng mga booking request, at ayusin ang mga client-facing na detalye ng negosyo."
+      "body": "Ang Gallurio ay isang portfolio at booking platform para sa mga creative professional. Mag-publish ng public page na nagpapakita ng iyong trabaho, pagkatapos ay pamahalaan ang mga booking, kliyente, at detalyeng kasunod ng bawat inquiry — lahat mula sa iisang workspace."
     },
     "builtFor": {
-      "title": "Ginawa Para sa mga Creative Business",
       "item1": "Mga Photographer",
       "item2": "Mga Videographer",
-      "item3": "Mga Event Planner",
+      "item3": "Mga Wedding at Event Planner",
       "item4": "Mga Makeup Artist",
       "item5": "Mga Stylist",
-      "item6": "Mga Creative Studio",
-      "item7": "Mga Independent Service Provider"
+      "item6": "Mga Caterer",
+      "item7": "Mga Entertainer at DJ",
+      "item8": "Mga Creative Studio"
     },
     "features": {
       "portfolioBuilder": {
         "title": "Portfolio builder",
-        "panelHeadline": "Bawat gallery, serbisyo, at section — eksakto kung paano mo ito ilalatag.",
-        "description": "Gumawa ng malinis at propesyonal na portfolio page gamit ang flexible na mga section, gallery block, detalye ng serbisyo, at visual layout na ginawa para sa creative work."
+        "panelHeadline": "Gawin ang unang impresyon na parang ikaw talaga.",
+        "description": "Gumawa ng portfolio page nang hindi nagsisimula sa blangkong screen. Ayusin ang mga gallery, serbisyo, at section sa paraang gusto mo talagang makita ang iyong trabaho — pagkatapos gawin itong tunay na sa iyo.",
+        "feature1": "Flexible na mga page section",
+        "feature2": "Mga image gallery at collection",
+        "feature3": "Custom na kulay, font, at branding",
+        "feature4": "Ginawa para gawing inquiry ang mga bisita"
+      },
+      "bookingInquiryForms": {
+        "title": "Booking inquiries",
+        "panelHeadline": "Bigyan ang bawat lead ng malinaw na susunod na hakbang.",
+        "description": "Direktang nagpapadala ang mga bisita ng structured inquiries mula sa iyong page — ang petsa ng event, lokasyon, at detalye ng proyekto na kailangan mo para makatugon nang may kumpiyansa.",
+        "feature1": "Custom na inquiry form",
+        "feature2": "Mga petsa ng event at multi-day session",
+        "feature3": "Contact at detalye ng proyekto sa iisang view",
+        "feature4": "May notification sa sandaling may dumating"
       },
       "businessWorkspace": {
         "title": "Business workspace",
-        "panelHeadline": "Iisang dashboard para sa lahat ng nasa pagitan ng mga shoot.",
-        "description": "Pamahalaan ang public profile content, detalye ng negosyo, invoices, at booking-related setup mula sa iisang dashboard."
-      },
-      "bookingInquiryForms": {
-        "title": "Booking inquiry form",
-        "panelHeadline": "Dumarating ang mga request sa iyong calendar, hindi sa iyong DM.",
-        "description": "Hayaan ang mga bisita na direktang magpadala ng booking request sa iyong page, kasama ang petsa ng event, contact details, service preferences, at project notes."
+        "panelHeadline": "Lahat ng nangyayari pagkatapos ng inquiry.",
+        "description": "Mga kliyente, booking, invoice, at gallery — nakaayos sa iisang dashboard, para mas kaunting oras ang mapunta sa pagsasama-sama ng mga tool at mas marami sa mismong trabaho.",
+        "feature1": "Client management",
+        "feature2": "Status ng booking at scheduling",
+        "feature3": "Invoice PDF",
+        "feature4": "Pag-aayos ng gallery at workspace"
       },
       "teams": {
         "title": "Team collaboration",
-        "panelHeadline": "Anyayahan ang team, magtakda ng roles, at magtrabaho gamit ang iisang shared calendar.",
-        "description": "Magdagdag ng staff at collaborators gamit ang role-based access sa mga booking, kliyente, at calendar — para malinaw sa bawat isa ang kanilang trabaho, nang walang gulo."
+        "panelHeadline": "Anyayahan ang team, magtakda ng roles, gamitin ang iisang calendar.",
+        "description": "Magdagdag ng staff at collaborator gamit ang role-based access sa mga booking, kliyente, at calendar — para malinaw sa bawat isa ang trabaho nila nang walang gulo.",
+        "feature1": "Role-based na permissions",
+        "feature2": "Iisang shared calendar",
+        "feature3": "Per-team na pagtatalaga"
+      }
+    },
+    "transparency": {
+      "title": "Diretsahan. Kahit mabilis.",
+      "subtitle": "Walang paghula sa sinasalihan mo, magkano ito, o sino ang humahawak ng bayad.",
+      "item1": {
+        "title": "Isang buwan ng Pro, libre.",
+        "body": "Walang kailangang payment card para magsimula."
       },
-      "customBranding": {
-        "title": "Custom branding",
-        "description": "I-adjust ang mga kulay, typography, imahe, at istilo ng page para bumagay ang portfolio sa creative identity ng user."
+      "item2": {
+        "title": "Mga bayad na plano: malapit na.",
+        "body": "Ipapakita nang malinaw ang presyo at terms bago mag-checkout."
       },
-      "clientReadyPages": {
-        "title": "Client-ready na mga page",
-        "description": "Mag-publish ng page na idinisenyo para maging kapani-paniwala, simple, at madaling maintindihan ng mga potensyal na kliyente."
+      "item3": {
+        "title": "Ang Lemon Squeezy ang humahawak ng checkout",
+        "body": "bilang aming merchant of record, kapag naka-live na ang billing."
+      },
+      "item4": {
+        "title": "Software, hindi serbisyo.",
+        "body": "Ang Gallurio ay hindi isang photography o event agency — ito ang tool na ginagamit ng negosyo."
       }
     },
     "finalCta": {
-      "title": "Simulan ang pagbuo ng iyong creative workspace gamit ang Gallurio.",
-      "subtitle": "Magsimula nang may isang buwan ng Pro nang libre — walang kailangang card.",
-      "button": "Simulan ang libreng buwan ko"
+      "title": "Gumawa ng portfolio na handa na para sa susunod na booking.",
+      "body": "Gawin ang iyong Gallurio workspace at simulan ang paghubog kung paano ka madidiskubre at makakatrabaho ng mga kliyente.",
+      "button": "Simulan ang libreng buwan ko",
+      "microcopy": "Full Pro access sa loob ng isang buwan. Walang kailangang card."
     },
     "manifesto": {
-      "quote": "Bawat booking ay naitatala. Bawat kliyente ay mapagkakatiwalaan. Walang naiiwang malabo.",
+      "quote": "Bawat portfolio na mapagkakatiwalaan. Bawat booking ay naitatala. Walang naiiwang malabo.",
       "attribution": "— ang ideya sa likod ng Gallurio"
     },
     "pricingTeaser": {
@@ -473,30 +520,8 @@
     "signInTitle": "Mag-sign in",
     "signUpTitle": "Gumawa ng account",
     "brandPane": {
-      "signIn": {
-        "headline": "Balik sa iyong ledger.",
-        "body": "Lahat ng booking, kliyente, at inquiry — nasa dati nilang lugar."
-      },
-      "signUp": {
-        "headline": "Buksan ang iyong ledger.",
-        "body": "Isang workspace para sa mga booking, kliyente, at ang public portfolio na makikita ng iyong mga kliyente."
-      },
-      "mfa": {
-        "headline": "Isa na lang.",
-        "body": "Mabilis na beripikasyon para protektado ang iyong ledger — at ang detalye ng iyong mga kliyente."
-      },
-      "forgotPassword": {
-        "headline": "Bumalik sa iyong ledger.",
-        "body": "Ipapadala namin ang link para maituloy mo ang iyong ledger."
-      },
-      "resetPassword": {
-        "headline": "Gumawa ng bagong susi.",
-        "body": "Pumili ng password na madali mong maaalala. Mananatiling buo ang iyong ledger."
-      },
-      "verifyEmail": {
-        "headline": "Halos tapos na.",
-        "body": "I-confirm ang iyong email para makumpleto ang iyong ledger."
-      }
+      "eyebrow": "Isang workspace, dalawang trabaho",
+      "headline": "Ipakita ang iyong trabaho. Patakbuhin ang iyong negosyo."
     },
     "signIn": {
       "title": "Mag-sign in",

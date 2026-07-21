@@ -25,7 +25,7 @@ export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
       : `${formatMoney(proPricing.yearly, proPricing.currency, locale)}${t("pro.priceSuffixYearly")}`;
 
   return (
-    <section id="pricing" data-anim="slide-up" className="border-t border-border px-4 py-16 sm:px-6 sm:py-24">
+    <section id="pricing" className="border-t border-border px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
           <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">{t("title")}</h2>
