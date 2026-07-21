@@ -14,65 +14,112 @@
       "contact": "Contact"
     },
     "metadata": {
-      "title": "Gallurio | Portfolio and Booking Tools for Creative Businesses",
-      "description": "Create a polished portfolio page, showcase your work, and collect booking inquiries with Gallurio."
+      "title": "Gallurio | Portfolio, Booking, and Client Tools for Creative Businesses",
+      "description": "Create a professional portfolio, collect booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace with Gallurio."
     },
     "hero": {
-      "headline": "The booking-ready portfolio, run like a ledger.",
-      "body": "Photographers, videographers, and event creatives use Gallurio to publish a page worth trusting a booking to — and manage bookings, clients, and inquiries in one workspace.",
-      "ctaStart": "Start your free month"
+      "eyebrow": "One workspace, two jobs",
+      "headlineShow": "Show your work.",
+      "headlineRun": "Run your business.",
+      "body": "Gallurio splits clean down the middle: a portfolio built to book you, and the workspace that keeps everything after the inquiry moving.",
+      "ctaStart": "Start your free month",
+      "ctaMicrocopy": "Free during beta. No card required."
+    },
+    "trust": {
+      "item1": "Free during beta",
+      "item2": "No card required",
+      "item3": "Cancel anytime",
+      "item4": "Secure checkout by Lemon Squeezy"
+    },
+    "split": {
+      "showVerb": "Show",
+      "showTag": "your public page",
+      "showImageAlt": "A creative professional's public Gallurio portfolio page with an editorial gallery layout.",
+      "manageVerb": "Manage",
+      "manageTag": "your workspace",
+      "manageImageAlt": "Gallurio workspace dashboard showing bookings and inquiry activity.",
+      "bridgeLead": "Same login.",
+      "bridgeEmphasis": "Two very different jobs, done right."
     },
     "whatIs": {
       "title": "What is Gallurio?",
-      "body": "Gallurio is a portfolio and booking platform for creative professionals. It gives users tools to create a public-facing page, showcase their work, receive booking requests, and organize client-facing business details."
+      "body": "Gallurio is a portfolio and booking platform for creative professionals. Publish a public page that shows your work, then manage the bookings, clients, and details that follow every inquiry — all from the same workspace."
     },
     "builtFor": {
-      "title": "Built for Creative Businesses",
       "item1": "Photographers",
       "item2": "Videographers",
-      "item3": "Event planners",
+      "item3": "Wedding and event planners",
       "item4": "Makeup artists",
       "item5": "Stylists",
-      "item6": "Creative studios",
-      "item7": "Independent service providers"
+      "item6": "Caterers",
+      "item7": "Entertainers and DJs",
+      "item8": "Creative studios"
     },
     "features": {
       "portfolioBuilder": {
         "title": "Portfolio builder",
-        "panelHeadline": "Every gallery, service, and section — exactly as you'd lay it out yourself.",
-        "description": "Create a clean, professional portfolio page using flexible sections, gallery blocks, service details, and visual layouts made for creative work."
+        "panelHeadline": "Make your first impression feel like you.",
+        "description": "Build a portfolio page without starting from a blank screen. Arrange galleries, services, and sections the way you actually want your work seen — then make it unmistakably yours.",
+        "feature1": "Flexible page sections",
+        "feature2": "Image galleries and collections",
+        "feature3": "Custom colors, fonts, and branding",
+        "feature4": "Built to turn visitors into inquiries"
+      },
+      "bookingInquiryForms": {
+        "title": "Booking inquiries",
+        "panelHeadline": "Give every lead a clear next step.",
+        "description": "Visitors send structured inquiries straight from your page — the event date, location, and project details you need to respond with confidence.",
+        "feature1": "Custom inquiry forms",
+        "feature2": "Event dates and multi-day sessions",
+        "feature3": "Contact and project details in one view",
+        "feature4": "Notified the moment one arrives"
       },
       "businessWorkspace": {
         "title": "Business workspace",
-        "panelHeadline": "One dashboard for everything between shoots.",
-        "description": "Manage public profile content, business details, invoices, and booking-related setup from one dashboard."
-      },
-      "bookingInquiryForms": {
-        "title": "Booking inquiry forms",
-        "panelHeadline": "Requests land in your calendar, not your DMs.",
-        "description": "Let visitors send booking requests directly through a user page, including event dates, contact details, service preferences, and project notes."
+        "panelHeadline": "Everything that happens after the inquiry.",
+        "description": "Clients, bookings, invoices, and galleries — organized in one dashboard, so less time goes to piecing tools together and more goes to the work itself.",
+        "feature1": "Client management",
+        "feature2": "Booking status and scheduling",
+        "feature3": "Invoice PDFs",
+        "feature4": "Gallery and workspace organization"
       },
       "teams": {
         "title": "Team collaboration",
-        "panelHeadline": "Invite the team, assign roles, and work off one shared calendar.",
-        "description": "Bring on staff and collaborators with role-based access to bookings, clients, and the calendar — so everyone knows what's theirs to handle without stepping on each other."
+        "panelHeadline": "Invite the team, assign roles, share one calendar.",
+        "description": "Bring on staff and collaborators with role-based access to bookings, clients, and the calendar — so everyone knows what's theirs without stepping on each other.",
+        "feature1": "Role-based permissions",
+        "feature2": "One shared calendar",
+        "feature3": "Per-team assignment"
+      }
+    },
+    "transparency": {
+      "title": "Straightforward. Even at speed.",
+      "subtitle": "No guessing about what you're signing up for, what it costs, or who's handling payment.",
+      "item1": {
+        "title": "One month of Pro, free.",
+        "body": "No payment card required to start."
       },
-      "customBranding": {
-        "title": "Custom branding",
-        "description": "Adjust colors, typography, imagery, and page style so the portfolio feels aligned with the user's creative identity."
+      "item2": {
+        "title": "Paid plans: coming soon.",
+        "body": "Price and terms shown clearly before checkout."
       },
-      "clientReadyPages": {
-        "title": "Client-ready pages",
-        "description": "Publish a page designed to look credible, simple, and easy for potential clients to understand."
+      "item3": {
+        "title": "Lemon Squeezy handles checkout",
+        "body": "as our merchant of record, once billing goes live."
+      },
+      "item4": {
+        "title": "Software, not services.",
+        "body": "Gallurio isn't a photography or event agency — it's the tool the business runs on."
       }
     },
     "finalCta": {
-      "title": "Start building your creative workspace with Gallurio.",
-      "subtitle": "Start with one month of Pro free — no card required.",
-      "button": "Start your free month"
+      "title": "Build a portfolio that's ready for the next booking.",
+      "body": "Create your Gallurio workspace and start shaping the way clients discover and work with you.",
+      "button": "Start your free month",
+      "microcopy": "Full Pro access for one month. No card required."
     },
     "manifesto": {
-      "quote": "Every booking accounted for. Every client trusted. Nothing left ambiguous.",
+      "quote": "Every portfolio worth trusting. Every booking accounted for. Nothing left ambiguous.",
       "attribution": "— the idea behind Gallurio"
     },
     "pricingTeaser": {
@@ -473,30 +520,8 @@
     "signInTitle": "Sign in",
     "signUpTitle": "Create account",
     "brandPane": {
-      "signIn": {
-        "headline": "Welcome back to the ledger.",
-        "body": "Every booking, client, and inquiry — exactly where you left them."
-      },
-      "signUp": {
-        "headline": "Open your ledger.",
-        "body": "One workspace for bookings, clients, and the public portfolio your clients see."
-      },
-      "mfa": {
-        "headline": "One more entry.",
-        "body": "A quick verification keeps your ledger — and your clients' details — secure."
-      },
-      "forgotPassword": {
-        "headline": "Lost your place?",
-        "body": "We'll send a link so you can pick your ledger back up."
-      },
-      "resetPassword": {
-        "headline": "Set a new key.",
-        "body": "Choose a password you'll remember. Your ledger stays exactly as you left it."
-      },
-      "verifyEmail": {
-        "headline": "Almost booked in.",
-        "body": "Confirm your email to finish setting up your ledger."
-      }
+      "eyebrow": "One workspace, two jobs",
+      "headline": "Show your work. Run your business."
     },
     "signIn": {
       "title": "Sign in",

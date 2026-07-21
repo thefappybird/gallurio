@@ -3,11 +3,12 @@ import Link from "next/link";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { AuthBrandPane } from "./_components/auth-brand-pane";
 
-// "Studio Split" auth shell: a brand pane (short ledger-themed message, start
-// side in ltr / end side in rtl -- flex-row already follows inline direction,
-// no extra rtl classes needed) and a form pane, divided by a hairline border
-// (never a shadow). On mobile the brand pane collapses to a slim top band
-// (logo only; the headline/body are md+ only) instead of disappearing.
+// "Studio Split" auth shell: a brand pane (tagline + trust strip matching the
+// landing page, start side in ltr / end side in rtl -- flex-row already
+// follows inline direction, no extra rtl classes needed) and a form pane,
+// divided by a hairline border (never a shadow). On mobile the brand pane
+// collapses to a slim top band (logo only; the tagline/trust list are md+
+// only) instead of disappearing.
 //
 // Height-match fix: the outer split is a flex container with NO items-center
 // (default align-items is `stretch`), so both panes always match height to
@@ -24,11 +25,10 @@ export default function AuthLayout({
     <div className="relative flex min-h-dvh flex-col bg-onboarding-bg md:flex-row">
       <AmbientBackground />
 
-      {/* Brand pane. Solid bg-primary occludes AmbientBackground -- --primary
-          auto-inverts per theme (near-black in light, near-white in dark),
-          so it's always an opposing color to the page bg without a
-          theme-conditional class. */}
-      <div className="relative flex shrink-0 flex-col gap-6 overflow-hidden border-b border-border bg-primary px-4 py-4 text-primary-foreground md:w-[42%] md:min-w-[22rem] md:border-b-0 md:border-e md:px-12 md:py-14">
+      {/* Brand pane has no background of its own -- the shared
+          AmbientBackground above shows straight through it (the "white"
+          pane with the flowing line art), matching the landing hero. */}
+      <div className="relative flex shrink-0 flex-col gap-6 overflow-hidden border-b border-border px-4 py-4 text-foreground md:w-[42%] md:min-w-[22rem] md:border-b-0 md:border-e md:px-12 md:py-14">
         <Link href="/" className="flex shrink-0 items-center gap-2">
           <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
           <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
