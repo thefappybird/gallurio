@@ -3,7 +3,7 @@
     "nav": {
       "pricing": "Harga",
       "portfolioMaker": "Portfolio Maker",
-      "bookDemo": "Book a Demo",
+      "bookDemo": "Jadwalkan Demo",
       "contact": "Kontak",
       "signIn": "Masuk",
       "getStarted": "Mulai sekarang"
@@ -11,7 +11,7 @@
     "footer": {
       "pricing": "Harga",
       "portfolioMaker": "Portfolio Maker",
-      "bookDemo": "Book a Demo",
+      "bookDemo": "Jadwalkan Demo",
       "terms": "Ketentuan",
       "privacy": "Privasi",
       "refunds": "Pengembalian Dana",
@@ -522,43 +522,43 @@
     "portfolioMaker": {
       "metadata": {
         "title": "Portfolio Maker — Gallurio",
-        "description": "Build a professional portfolio page for your creative business with Gallurio's drag-and-drop Portfolio Maker. Try the free demo, no account needed."
+        "description": "Buat halaman portfolio profesional untuk bisnis kreatif Anda dengan Portfolio Maker drag-and-drop dari Gallurio. Coba demo gratisnya, tanpa perlu akun."
       },
       "header": {
-        "headline": "Build a portfolio your clients actually book from",
-        "body": "Drag-and-drop blocks, your own brand colors, a gallery, and a booking-ready contact form — all in one page builder made for creative businesses."
+        "headline": "Buat portfolio yang benar-benar mendatangkan booking dari klien Anda",
+        "body": "Blok drag-and-drop, warna brand Anda sendiri, galeri, dan formulir kontak yang siap menerima booking — semuanya dalam satu page builder yang dirancang untuk bisnis kreatif."
       },
       "demo": {
-        "title": "Try it free, no account needed",
-        "body": "Everything you build in the demo lives only in your browser — nothing is saved to a database or shared with anyone. Sign up when you're ready to publish.",
-        "cta": "Try the demo"
+        "title": "Coba gratis, tanpa perlu akun",
+        "body": "Semua yang Anda buat di demo hanya tersimpan di browser Anda — tidak ada yang disimpan ke database atau dibagikan ke siapa pun. Daftar saat Anda siap untuk publish.",
+        "cta": "Coba demonya"
       }
     },
     "bookDemo": {
       "metadata": {
-        "title": "Book a Demo — Gallurio",
-        "description": "Request a personal walkthrough of Gallurio for your creative business."
+        "title": "Jadwalkan Demo — Gallurio",
+        "description": "Minta demo pribadi Gallurio untuk bisnis kreatif Anda."
       },
       "header": {
-        "headline": "Book a demo",
-        "body": "Tell us about your business and what you'd like to see, and we'll follow up by email."
+        "headline": "Jadwalkan demo",
+        "body": "Ceritakan tentang bisnis Anda dan apa yang ingin Anda lihat, dan kami akan menindaklanjuti lewat email."
       },
       "form": {
-        "name": "Your name",
+        "name": "Nama Anda",
         "email": "Email",
-        "businessName": "Business / studio name",
-        "message": "What would you like to see?",
-        "messagePlaceholder": "Tell us about your business and what you're hoping to see in a demo.",
-        "submit": "Request a demo",
-        "submitting": "Sending…"
+        "businessName": "Nama bisnis / studio",
+        "message": "Apa yang ingin Anda lihat?",
+        "messagePlaceholder": "Ceritakan tentang bisnis Anda dan apa yang Anda harapkan dari demo ini.",
+        "submit": "Minta demo",
+        "submitting": "Mengirim…"
       },
       "success": {
-        "title": "Request received",
-        "body": "Check your email — we'll be in touch soon."
+        "title": "Permintaan diterima",
+        "body": "Cek email Anda — kami akan segera menghubungi Anda."
       },
       "errors": {
-        "rateLimited": "Too many requests. Please wait a few minutes and try again.",
-        "generic": "Something went wrong. Please try again."
+        "rateLimited": "Terlalu banyak permintaan. Tunggu beberapa menit dan coba lagi.",
+        "generic": "Terjadi kesalahan. Silakan coba lagi."
       }
     }
   },
@@ -2936,64 +2936,64 @@
     },
     "portfolioMakerDemo": {
       "disclaimerBanner": {
-        "message": "Demo mode — nothing you do here is saved to a database or shared with anyone. It only lives in this browser."
+        "message": "Mode demo — tidak ada yang Anda lakukan di sini disimpan ke database atau dibagikan ke siapa pun. Semuanya hanya tersimpan di browser ini."
       },
       "entry": {
-        "title": "Try the portfolio editor",
-        "description": "Nothing you build here is saved to a database — it only lives in this browser.",
-        "startScratchTitle": "Start from scratch",
-        "startScratchHint": "Begin with a blank canvas.",
-        "continueTitle": "Continue where you left off",
-        "continueHint": "Resume your last saved progress in this browser."
+        "title": "Coba editor portfolio",
+        "description": "Yang Anda buat di sini tidak disimpan ke database — hanya tersimpan di browser ini.",
+        "startScratchTitle": "Mulai dari awal",
+        "startScratchHint": "Mulai dengan canvas kosong.",
+        "continueTitle": "Lanjutkan dari terakhir kali",
+        "continueHint": "Lanjutkan progres terakhir yang tersimpan di browser ini."
       },
       "createNewDesign": {
-        "button": "Create new design",
-        "confirmTitle": "Start a new design?",
-        "confirmBody": "This will overwrite your current design. This can't be undone."
+        "button": "Buat desain baru",
+        "confirmTitle": "Mulai desain baru?",
+        "confirmBody": "Ini akan menimpa desain Anda saat ini. Tindakan ini tidak bisa dibatalkan."
       },
       "gates": {
-        "title": "You've hit a demo limit",
-        "imageCap": "You've used all 10 demo images! Sign up free to add unlimited photos to your gallery.",
-        "blockCap": "This page is full for the demo (20/20 blocks). Sign up free to keep building.",
-        "publish": "Ready to go live? Publishing is a Gallurio Pro feature. Sign up for a free month and put your site on the internet today.",
-        "theme": "Want to fully customize your colors and fonts? That's a Pro feature. Sign up for a free month to unlock full theme editing.",
-        "cta": "Sign up to build without restrictions",
-        "dismiss": "Keep exploring",
-        "promoReveal": "Nice work exploring the editor! Here's a bonus code for an extra free month, stacked on top of your signup free month: {code}"
+        "title": "Anda telah mencapai batas demo",
+        "imageCap": "Anda telah menggunakan semua 10 gambar demo! Daftar gratis untuk menambahkan foto tanpa batas ke galeri Anda.",
+        "blockCap": "Halaman ini sudah penuh untuk demo (20/20 blok). Daftar gratis untuk terus membangun.",
+        "publish": "Siap untuk go live? Publishing adalah fitur Gallurio Pro. Daftar untuk satu bulan gratis dan tayangkan situs Anda hari ini.",
+        "theme": "Ingin menyesuaikan sepenuhnya warna dan font Anda? Itu fitur Pro. Daftar untuk satu bulan gratis guna membuka edit tema penuh.",
+        "cta": "Daftar untuk membangun tanpa batasan",
+        "dismiss": "Terus jelajahi",
+        "promoReveal": "Kerja bagus menjelajahi editor! Ini kode bonus untuk tambahan satu bulan gratis, ditumpuk dengan bulan gratis pendaftaran Anda: {code}"
       },
       "guideOverrides": {
         "theme": {
-          "body": "Full customization is a Free/Pro feature."
+          "body": "Kustomisasi penuh adalah fitur Free/Pro."
         },
         "drafts": {
-          "title": "Try another template",
-          "body": "Use Create new design to try another template. Saved, named drafts are a Free/Pro feature."
+          "title": "Coba template lain",
+          "body": "Gunakan Buat desain baru untuk mencoba template lain. Draft tersimpan dan bernama adalah fitur Free/Pro."
         },
         "publish": {
-          "body": "Publishing live is a Free/Pro feature."
+          "body": "Publish langsung adalah fitur Free/Pro."
         }
       },
       "counters": {
-        "images": "{count}/10 images",
-        "blocks": "{count}/20 blocks"
+        "images": "{count}/10 gambar",
+        "blocks": "{count}/20 blok"
       },
       "imagePicker": {
-        "titleSingle": "Choose a photo",
-        "titleMulti": "Choose photos",
-        "triggerChoose": "Choose photo",
-        "triggerChooseMulti": "Choose photos",
-        "triggerChange": "Change photo",
-        "none": "No photo selected",
-        "selected": "Photo selected",
-        "countSelected": "{count, plural, =0 {No photos selected} one {# photo selected} other {# photos selected}}",
-        "clear": "Clear",
-        "uploadButton": "Upload photo",
-        "uploading": "Uploading…",
-        "empty": "No photos yet — upload one to get started.",
-        "done": "Done",
-        "errorInvalidFile": "That file isn't supported. Use JPG, PNG, WEBP, or AVIF under 15 MB.",
-        "errorRateLimited": "Too many uploads — wait a moment and try again.",
-        "errorGeneric": "Upload failed. Please try again."
+        "titleSingle": "Pilih foto",
+        "titleMulti": "Pilih foto",
+        "triggerChoose": "Pilih foto",
+        "triggerChooseMulti": "Pilih foto",
+        "triggerChange": "Ganti foto",
+        "none": "Tidak ada foto dipilih",
+        "selected": "Foto dipilih",
+        "countSelected": "{count, plural, =0 {Tidak ada foto dipilih} one {# foto dipilih} other {# foto dipilih}}",
+        "clear": "Hapus",
+        "uploadButton": "Unggah foto",
+        "uploading": "Mengunggah…",
+        "empty": "Belum ada foto — unggah satu untuk memulai.",
+        "done": "Selesai",
+        "errorInvalidFile": "File itu tidak didukung. Gunakan JPG, PNG, WEBP, atau AVIF di bawah 15 MB.",
+        "errorRateLimited": "Terlalu banyak unggahan — tunggu sebentar dan coba lagi.",
+        "errorGeneric": "Unggah gagal. Silakan coba lagi."
       }
     },
     "notifications": {

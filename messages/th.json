@@ -3,7 +3,7 @@
     "nav": {
       "pricing": "ราคา",
       "portfolioMaker": "Portfolio Maker",
-      "bookDemo": "Book a Demo",
+      "bookDemo": "จองการสาธิต",
       "contact": "ติดต่อ",
       "signIn": "เข้าสู่ระบบ",
       "getStarted": "เริ่มต้นใช้งาน"
@@ -11,7 +11,7 @@
     "footer": {
       "pricing": "ราคา",
       "portfolioMaker": "Portfolio Maker",
-      "bookDemo": "Book a Demo",
+      "bookDemo": "จองการสาธิต",
       "terms": "ข้อกำหนด",
       "privacy": "ความเป็นส่วนตัว",
       "refunds": "การคืนเงิน",
@@ -522,43 +522,43 @@
     "portfolioMaker": {
       "metadata": {
         "title": "Portfolio Maker — Gallurio",
-        "description": "Build a professional portfolio page for your creative business with Gallurio's drag-and-drop Portfolio Maker. Try the free demo, no account needed."
+        "description": "สร้างหน้าพอร์ตโฟลิโอที่ดูเป็นมืออาชีพสำหรับธุรกิจสายสร้างสรรค์ของคุณด้วย Portfolio Maker แบบลากวางของ Gallurio ทดลองใช้ฟรี ไม่ต้องมีบัญชี"
       },
       "header": {
-        "headline": "Build a portfolio your clients actually book from",
-        "body": "Drag-and-drop blocks, your own brand colors, a gallery, and a booking-ready contact form — all in one page builder made for creative businesses."
+        "headline": "สร้างพอร์ตโฟลิโอที่ลูกค้าจองจริงจากมัน",
+        "body": "บล็อกแบบลากวาง สีแบรนด์ของคุณเอง แกลเลอรี และฟอร์มติดต่อที่พร้อมรับการจอง — ทั้งหมดในตัวสร้างหน้าเว็บเดียวที่ออกแบบมาสำหรับธุรกิจสายสร้างสรรค์"
       },
       "demo": {
-        "title": "Try it free, no account needed",
-        "body": "Everything you build in the demo lives only in your browser — nothing is saved to a database or shared with anyone. Sign up when you're ready to publish.",
-        "cta": "Try the demo"
+        "title": "ทดลองใช้ฟรี ไม่ต้องมีบัญชี",
+        "body": "ทุกอย่างที่คุณสร้างในเวอร์ชันทดลองจะอยู่ในเบราว์เซอร์ของคุณเท่านั้น — ไม่มีการบันทึกลงฐานข้อมูลหรือแชร์กับใคร สมัครสมาชิกเมื่อคุณพร้อมเผยแพร่",
+        "cta": "ทดลองใช้"
       }
     },
     "bookDemo": {
       "metadata": {
-        "title": "Book a Demo — Gallurio",
-        "description": "Request a personal walkthrough of Gallurio for your creative business."
+        "title": "จองการสาธิต — Gallurio",
+        "description": "ขอชมการสาธิตแบบส่วนตัวของ Gallurio สำหรับธุรกิจสายสร้างสรรค์ของคุณ"
       },
       "header": {
-        "headline": "Book a demo",
-        "body": "Tell us about your business and what you'd like to see, and we'll follow up by email."
+        "headline": "จองการสาธิต",
+        "body": "บอกเราเกี่ยวกับธุรกิจของคุณและสิ่งที่คุณอยากเห็น แล้วเราจะติดต่อกลับทางอีเมล"
       },
       "form": {
-        "name": "Your name",
-        "email": "Email",
-        "businessName": "Business / studio name",
-        "message": "What would you like to see?",
-        "messagePlaceholder": "Tell us about your business and what you're hoping to see in a demo.",
-        "submit": "Request a demo",
-        "submitting": "Sending…"
+        "name": "ชื่อของคุณ",
+        "email": "อีเมล",
+        "businessName": "ชื่อธุรกิจ / สตูดิโอ",
+        "message": "คุณอยากเห็นอะไรบ้าง?",
+        "messagePlaceholder": "บอกเราเกี่ยวกับธุรกิจของคุณและสิ่งที่คุณหวังจะเห็นในการสาธิต",
+        "submit": "ขอชมการสาธิต",
+        "submitting": "กำลังส่ง…"
       },
       "success": {
-        "title": "Request received",
-        "body": "Check your email — we'll be in touch soon."
+        "title": "ได้รับคำขอแล้ว",
+        "body": "ตรวจสอบอีเมลของคุณ — เราจะติดต่อกลับเร็ว ๆ นี้"
       },
       "errors": {
-        "rateLimited": "Too many requests. Please wait a few minutes and try again.",
-        "generic": "Something went wrong. Please try again."
+        "rateLimited": "มีคำขอมากเกินไป โปรดรอสักครู่แล้วลองอีกครั้ง",
+        "generic": "เกิดข้อผิดพลาดบางอย่าง โปรดลองอีกครั้ง"
       }
     }
   },
@@ -2936,64 +2936,64 @@
     },
     "portfolioMakerDemo": {
       "disclaimerBanner": {
-        "message": "Demo mode — nothing you do here is saved to a database or shared with anyone. It only lives in this browser."
+        "message": "โหมดทดลอง — สิ่งที่คุณทำที่นี่จะไม่ถูกบันทึกลงฐานข้อมูลหรือแชร์กับใคร อยู่ในเบราว์เซอร์นี้เท่านั้น"
       },
       "entry": {
-        "title": "Try the portfolio editor",
-        "description": "Nothing you build here is saved to a database — it only lives in this browser.",
-        "startScratchTitle": "Start from scratch",
-        "startScratchHint": "Begin with a blank canvas.",
-        "continueTitle": "Continue where you left off",
-        "continueHint": "Resume your last saved progress in this browser."
+        "title": "ทดลองใช้ตัวแก้ไขพอร์ตโฟลิโอ",
+        "description": "สิ่งที่คุณสร้างที่นี่จะไม่ถูกบันทึกลงฐานข้อมูล — อยู่ในเบราว์เซอร์นี้เท่านั้น",
+        "startScratchTitle": "เริ่มจากศูนย์",
+        "startScratchHint": "เริ่มด้วยแคนวาสเปล่า",
+        "continueTitle": "ทำต่อจากที่ค้างไว้",
+        "continueHint": "ทำความคืบหน้าล่าสุดที่บันทึกไว้ในเบราว์เซอร์นี้ต่อ"
       },
       "createNewDesign": {
-        "button": "Create new design",
-        "confirmTitle": "Start a new design?",
-        "confirmBody": "This will overwrite your current design. This can't be undone."
+        "button": "สร้างดีไซน์ใหม่",
+        "confirmTitle": "เริ่มดีไซน์ใหม่ใช่ไหม?",
+        "confirmBody": "การทำเช่นนี้จะเขียนทับดีไซน์ปัจจุบันของคุณ ไม่สามารถย้อนกลับได้"
       },
       "gates": {
-        "title": "You've hit a demo limit",
-        "imageCap": "You've used all 10 demo images! Sign up free to add unlimited photos to your gallery.",
-        "blockCap": "This page is full for the demo (20/20 blocks). Sign up free to keep building.",
-        "publish": "Ready to go live? Publishing is a Gallurio Pro feature. Sign up for a free month and put your site on the internet today.",
-        "theme": "Want to fully customize your colors and fonts? That's a Pro feature. Sign up for a free month to unlock full theme editing.",
-        "cta": "Sign up to build without restrictions",
-        "dismiss": "Keep exploring",
-        "promoReveal": "Nice work exploring the editor! Here's a bonus code for an extra free month, stacked on top of your signup free month: {code}"
+        "title": "คุณถึงขีดจำกัดของเวอร์ชันทดลองแล้ว",
+        "imageCap": "คุณใช้ครบ 10 รูปภาพในเวอร์ชันทดลองแล้ว! สมัครสมาชิกฟรีเพื่อเพิ่มรูปภาพได้ไม่จำกัดในแกลเลอรีของคุณ",
+        "blockCap": "หน้านี้เต็มสำหรับเวอร์ชันทดลองแล้ว (20/20 บล็อก) สมัครสมาชิกฟรีเพื่อสร้างต่อ",
+        "publish": "พร้อมเผยแพร่จริงหรือยัง? การเผยแพร่เป็นฟีเจอร์ของ Gallurio Pro สมัครสมาชิกรับหนึ่งเดือนฟรีแล้วนำเว็บไซต์ของคุณขึ้นออนไลน์วันนี้",
+        "theme": "อยากปรับแต่งสีและฟอนต์ได้เต็มที่ไหม? นั่นเป็นฟีเจอร์ Pro สมัครสมาชิกรับหนึ่งเดือนฟรีเพื่อปลดล็อกการแก้ไขธีมแบบเต็มรูปแบบ",
+        "cta": "สมัครสมาชิกเพื่อสร้างได้โดยไม่มีข้อจำกัด",
+        "dismiss": "สำรวจต่อ",
+        "promoReveal": "ทำได้ดีมากที่สำรวจตัวแก้ไข! นี่คือโค้ดโบนัสสำหรับเดือนฟรีเพิ่มเติม ซ้อนทับกับเดือนฟรีจากการสมัครของคุณ: {code}"
       },
       "guideOverrides": {
         "theme": {
-          "body": "Full customization is a Free/Pro feature."
+          "body": "การปรับแต่งแบบเต็มรูปแบบเป็นฟีเจอร์ของแผน Free/Pro"
         },
         "drafts": {
-          "title": "Try another template",
-          "body": "Use Create new design to try another template. Saved, named drafts are a Free/Pro feature."
+          "title": "ลองเทมเพลตอื่น",
+          "body": "ใช้ปุ่มสร้างดีไซน์ใหม่เพื่อลองเทมเพลตอื่น ฉบับร่างที่บันทึกและตั้งชื่อไว้เป็นฟีเจอร์ของแผน Free/Pro"
         },
         "publish": {
-          "body": "Publishing live is a Free/Pro feature."
+          "body": "การเผยแพร่แบบสดเป็นฟีเจอร์ของแผน Free/Pro"
         }
       },
       "counters": {
-        "images": "{count}/10 images",
-        "blocks": "{count}/20 blocks"
+        "images": "{count}/10 รูปภาพ",
+        "blocks": "{count}/20 บล็อก"
       },
       "imagePicker": {
-        "titleSingle": "Choose a photo",
-        "titleMulti": "Choose photos",
-        "triggerChoose": "Choose photo",
-        "triggerChooseMulti": "Choose photos",
-        "triggerChange": "Change photo",
-        "none": "No photo selected",
-        "selected": "Photo selected",
-        "countSelected": "{count, plural, =0 {No photos selected} one {# photo selected} other {# photos selected}}",
-        "clear": "Clear",
-        "uploadButton": "Upload photo",
-        "uploading": "Uploading…",
-        "empty": "No photos yet — upload one to get started.",
-        "done": "Done",
-        "errorInvalidFile": "That file isn't supported. Use JPG, PNG, WEBP, or AVIF under 15 MB.",
-        "errorRateLimited": "Too many uploads — wait a moment and try again.",
-        "errorGeneric": "Upload failed. Please try again."
+        "titleSingle": "เลือกรูปภาพ",
+        "titleMulti": "เลือกรูปภาพ",
+        "triggerChoose": "เลือกรูปภาพ",
+        "triggerChooseMulti": "เลือกรูปภาพ",
+        "triggerChange": "เปลี่ยนรูปภาพ",
+        "none": "ยังไม่ได้เลือกรูปภาพ",
+        "selected": "เลือกรูปภาพแล้ว",
+        "countSelected": "{count, plural, =0 {ยังไม่ได้เลือกรูปภาพ} one {เลือกรูปภาพแล้ว # รูป} other {เลือกรูปภาพแล้ว # รูป}}",
+        "clear": "ล้าง",
+        "uploadButton": "อัปโหลดรูปภาพ",
+        "uploading": "กำลังอัปโหลด…",
+        "empty": "ยังไม่มีรูปภาพ — อัปโหลดรูปแรกเพื่อเริ่มต้น",
+        "done": "เสร็จสิ้น",
+        "errorInvalidFile": "ไฟล์นี้ไม่รองรับ ใช้ JPG, PNG, WEBP หรือ AVIF ขนาดต่ำกว่า 15 MB",
+        "errorRateLimited": "อัปโหลดมากเกินไป — รอสักครู่แล้วลองอีกครั้ง",
+        "errorGeneric": "อัปโหลดล้มเหลว โปรดลองอีกครั้ง"
       }
     },
     "notifications": {
