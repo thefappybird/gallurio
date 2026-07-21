@@ -287,7 +287,12 @@ export default async function Home({ params }: Props) {
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}
       <section className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">
-        <AmbientBackground />
+        {/* Same 180deg flip as the hero's art layer, for the same reason:
+            keeps the denser cluster off in the corners instead of behind
+            the heading/CTA. */}
+        <div className="absolute inset-0 rotate-180">
+          <AmbientBackground />
+        </div>
         <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6">
           <h2 className="text-balance font-heading text-3xl font-extrabold tracking-tight sm:text-5xl">
             {t("finalCta.title")}
