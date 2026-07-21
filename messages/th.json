@@ -2,12 +2,16 @@
   "marketing": {
     "nav": {
       "pricing": "ราคา",
+      "portfolioMaker": "Portfolio Maker",
+      "bookDemo": "Book a Demo",
       "contact": "ติดต่อ",
       "signIn": "เข้าสู่ระบบ",
       "getStarted": "เริ่มต้นใช้งาน"
     },
     "footer": {
       "pricing": "ราคา",
+      "portfolioMaker": "Portfolio Maker",
+      "bookDemo": "Book a Demo",
       "terms": "ข้อกำหนด",
       "privacy": "ความเป็นส่วนตัว",
       "refunds": "การคืนเงิน",
@@ -513,6 +517,48 @@
         "facebook": "ติดตามเราบน Facebook",
         "reddit": "เข้าร่วมกับเราบน Reddit",
         "linkedin": "ติดตามเราบน LinkedIn"
+      }
+    },
+    "portfolioMaker": {
+      "metadata": {
+        "title": "Portfolio Maker — Gallurio",
+        "description": "Build a professional portfolio page for your creative business with Gallurio's drag-and-drop Portfolio Maker. Try the free demo, no account needed."
+      },
+      "header": {
+        "headline": "Build a portfolio your clients actually book from",
+        "body": "Drag-and-drop blocks, your own brand colors, a gallery, and a booking-ready contact form — all in one page builder made for creative businesses."
+      },
+      "demo": {
+        "title": "Try it free, no account needed",
+        "body": "Everything you build in the demo lives only in your browser — nothing is saved to a database or shared with anyone. Sign up when you're ready to publish.",
+        "cta": "Try the demo"
+      }
+    },
+    "bookDemo": {
+      "metadata": {
+        "title": "Book a Demo — Gallurio",
+        "description": "Request a personal walkthrough of Gallurio for your creative business."
+      },
+      "header": {
+        "headline": "Book a demo",
+        "body": "Tell us about your business and what you'd like to see, and we'll follow up by email."
+      },
+      "form": {
+        "name": "Your name",
+        "email": "Email",
+        "businessName": "Business / studio name",
+        "message": "What would you like to see?",
+        "messagePlaceholder": "Tell us about your business and what you're hoping to see in a demo.",
+        "submit": "Request a demo",
+        "submitting": "Sending…"
+      },
+      "success": {
+        "title": "Request received",
+        "body": "Check your email — we'll be in touch soon."
+      },
+      "errors": {
+        "rateLimited": "Too many requests. Please wait a few minutes and try again.",
+        "generic": "Something went wrong. Please try again."
       }
     }
   },
@@ -2889,6 +2935,9 @@
       }
     },
     "portfolioMakerDemo": {
+      "disclaimerBanner": {
+        "message": "Demo mode — nothing you do here is saved to a database or shared with anyone. It only lives in this browser."
+      },
       "entry": {
         "title": "Try the portfolio editor",
         "description": "Nothing you build here is saved to a database — it only lives in this browser.",

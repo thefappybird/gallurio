@@ -39,6 +39,18 @@ export function MarketingHeader() {
               {tNav("pricing")}
             </Link>
             <Link
+              href="/portfolio-maker"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {tNav("portfolioMaker")}
+            </Link>
+            <Link
+              href="/book-demo"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {tNav("bookDemo")}
+            </Link>
+            <Link
               href="/contact"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -84,6 +96,12 @@ export function MarketingHeader() {
                 <nav aria-label="Marketing" className="flex flex-col gap-1">
                   <Link href="/pricing" className="px-3 py-2 text-sm font-medium text-foreground">
                     {tNav("pricing")}
+                  </Link>
+                  <Link href="/portfolio-maker" className="px-3 py-2 text-sm font-medium text-foreground">
+                    {tNav("portfolioMaker")}
+                  </Link>
+                  <Link href="/book-demo" className="px-3 py-2 text-sm font-medium text-foreground">
+                    {tNav("bookDemo")}
                   </Link>
                   <Link href="/contact" className="px-3 py-2 text-sm font-medium text-foreground">
                     {tNav("contact")}
