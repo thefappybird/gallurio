@@ -27,6 +27,7 @@
       "headlineRun": "Patakbuhin ang iyong negosyo.",
       "body": "Hinahati ng Gallurio nang pantay: isang portfolio na ginawa para mag-book sa iyo, at ang workspace na nagpapatuloy sa lahat pagkatapos ng inquiry.",
       "ctaStart": "Simulan ang libreng buwan ko",
+      "ctaSecondary": "Mag-book ng demo",
       "ctaMicrocopy": "Libre habang beta. Walang kailangang card."
     },
     "trust": {
@@ -67,7 +68,8 @@
         "feature1": "Flexible na mga page section",
         "feature2": "Mga image gallery at collection",
         "feature3": "Custom na kulay, font, at branding",
-        "feature4": "Ginawa para gawing inquiry ang mga bisita"
+        "feature4": "Ginawa para gawing inquiry ang mga bisita",
+        "cta": "Subukan ang demo"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",
@@ -120,6 +122,7 @@
       "title": "Gumawa ng portfolio na handa na para sa susunod na booking.",
       "body": "Gawin ang iyong Gallurio workspace at simulan ang paghubog kung paano ka madidiskubre at makakatrabaho ng mga kliyente.",
       "button": "Simulan ang libreng buwan ko",
+      "ctaSecondary": "Mag-book ng demo",
       "microcopy": "Full Pro access sa loob ng isang buwan. Walang kailangang card."
     },
     "manifesto": {

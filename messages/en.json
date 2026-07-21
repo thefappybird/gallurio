@@ -27,6 +27,7 @@
       "headlineRun": "Run your business.",
       "body": "Gallurio splits clean down the middle: a portfolio built to book you, and the workspace that keeps everything after the inquiry moving.",
       "ctaStart": "Start your free month",
+      "ctaSecondary": "Book a demo",
       "ctaMicrocopy": "Free during beta. No card required."
     },
     "trust": {
@@ -67,7 +68,8 @@
         "feature1": "Flexible page sections",
         "feature2": "Image galleries and collections",
         "feature3": "Custom colors, fonts, and branding",
-        "feature4": "Built to turn visitors into inquiries"
+        "feature4": "Built to turn visitors into inquiries",
+        "cta": "Try the demo"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",
@@ -120,6 +122,7 @@
       "title": "Build a portfolio that's ready for the next booking.",
       "body": "Create your Gallurio workspace and start shaping the way clients discover and work with you.",
       "button": "Start your free month",
+      "ctaSecondary": "Book a demo",
       "microcopy": "Full Pro access for one month. No card required."
     },
     "manifesto": {

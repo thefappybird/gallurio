@@ -27,6 +27,7 @@
       "headlineRun": "Jalankan bisnis Anda.",
       "body": "Gallurio terbagi rapi jadi dua: portfolio yang dirancang untuk mendatangkan booking, dan workspace yang menjaga semuanya tetap berjalan setelah permintaan masuk.",
       "ctaStart": "Mulai bulan gratis saya",
+      "ctaSecondary": "Jadwalkan demo",
       "ctaMicrocopy": "Gratis selama beta. Tanpa kartu diperlukan."
     },
     "trust": {
@@ -67,7 +68,8 @@
         "feature1": "Bagian halaman yang fleksibel",
         "feature2": "Galeri gambar dan koleksi",
         "feature3": "Warna, font, dan branding kustom",
-        "feature4": "Dirancang untuk mengubah pengunjung jadi permintaan"
+        "feature4": "Dirancang untuk mengubah pengunjung jadi permintaan",
+        "cta": "Coba demonya"
       },
       "bookingInquiryForms": {
         "title": "Permintaan booking",
@@ -120,6 +122,7 @@
       "title": "Buat portfolio yang siap untuk booking berikutnya.",
       "body": "Buat workspace Gallurio Anda dan mulai membentuk cara klien menemukan dan bekerja dengan Anda.",
       "button": "Mulai bulan gratis saya",
+      "ctaSecondary": "Jadwalkan demo",
       "microcopy": "Akses Pro penuh selama satu bulan. Tanpa kartu diperlukan."
     },
     "manifesto": {
