@@ -38,3 +38,38 @@ export function markDemoPromoClaimed(): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(DEMO_PROMO_CLAIMED_KEY, "1");
 }
+
+/** An image uploaded this demo session, shown in the demo image picker's grid. */
+export type DemoLibraryImage = {
+  id: string;
+  publicId: string;
+  url: string;
+  width?: number;
+  height?: number;
+};
+
+/** Uploaded-image-library localStorage key for a demo session — sibling to
+ *  `demoDraftKey`, keyed by demoSessionId so it's shared by every image
+ *  picker instance (banner image, gallery photos, etc.) within one session. */
+export function demoImageLibraryKey(sessionId: string): string {
+  return `${DEMO_IMAGE_COUNT_KEY_PREFIX}${sessionId}`;
+}
+
+/** Reads this session's uploaded-image library (empty array if none/unparsable). */
+export function readDemoImageLibrary(sessionId: string): DemoLibraryImage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(demoImageLibraryKey(sessionId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as DemoLibraryImage[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Persists this session's uploaded-image library. */
+export function writeDemoImageLibrary(sessionId: string, images: DemoLibraryImage[]): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(demoImageLibraryKey(sessionId), JSON.stringify(images));
+}

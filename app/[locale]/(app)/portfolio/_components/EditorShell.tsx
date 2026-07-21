@@ -111,6 +111,7 @@ import { BlockActionsToolbar } from "./BlockActionsToolbar";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { DemoGateModal, type DemoGateType } from "./DemoGateModal";
 import { getOrCreateDemoSessionId, demoDraftKey } from "@/lib/page-builder/demoSession";
+import { DemoPickerContext } from "@/lib/page-builder/demoPickerContext";
 import { getTemplate } from "@/lib/page-builder/templates";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
@@ -570,20 +571,36 @@ export function EditorShell({
   const errMsg = useActionError();
   const editorConfig = useMemo(() => {
     const config = createEditorConfig(t);
-    if (!guideMode) return config;
-    const categories = config.categories ?? {};
+    if (!guideMode && !demoMode) return config;
+    let categories = config.categories ?? {};
+
+    // Demo mode has no equivalent of the real (auth-gated) collections picker
+    // that FeaturedWork's Content tab needs (MultiCollectionControl) — hide the
+    // block from both drawers so a demo visitor can never insert a new one.
+    // (Pre-existing FeaturedWork blocks from a seeded template still render;
+    // StyleToolkitField shows a disabled explanatory message instead of the
+    // real collections picker for those.)
+    if (demoMode) {
+      categories = {
+        ...categories,
+        manual: categories.manual
+          ? { ...categories.manual, components: categories.manual.components?.filter((k) => k !== "FeaturedWork") }
+          : categories.manual,
+        presets: categories.presets
+          ? { ...categories.presets, components: categories.presets.components?.filter((k) => k !== "FeaturedWorkPreset") }
+          : categories.presets,
+      };
+    }
 
     // The guide's first task must create a block with the Style Toolkit tabs
     // used by steps 4â€“6. Keep manual blocks (including bare Video) out of the
     // sandbox drawer so only composed preset sections can be dropped.
-    return {
-      ...config,
-      categories: {
-        ...categories,
-        manual: { ...categories.manual, visible: false },
-      },
-    };
-  }, [guideMode, t]);
+    if (guideMode) {
+      categories = { ...categories, manual: { ...categories.manual, visible: false } };
+    }
+
+    return { ...config, categories };
+  }, [demoMode, guideMode, t]);
 
   // Demo-mode guide steps: SPOTLIGHT_STEPS with exactly 3 steps' copy
   // overridden (by id) to explain demo limits. slug is cleared on the
@@ -1984,6 +2001,9 @@ export function EditorShell({
       <MobileBanner publicUrl={portfolioPublicUrl(currentSlug)} />
 
       <BrandColorsContext.Provider value={brandColors}>
+      <DemoPickerContext.Provider
+        value={demoMode ? { demoSessionId, onImageCapHit: () => setActiveDemoGate("imageCap") } : null}
+      >
       <div
         className={cn("gallurio-editor relative min-h-svh overflow-x-auto", className)}
         data-testid="portfolio-editor-shell"
@@ -2181,6 +2201,7 @@ export function EditorShell({
           </div>
         )}
       </div>
+      </DemoPickerContext.Provider>
       </BrandColorsContext.Provider>
 
       <PublishDialog

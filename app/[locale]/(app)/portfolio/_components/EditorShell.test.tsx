@@ -20,6 +20,10 @@ let __puckMountCount = 0;
 // data directly (the "Simulate Puck change" button only emits a fixed
 // 1-block payload, not enough to exercise the demo block cap).
 let __capturedPuckOnChange: ((data: unknown) => void) | undefined;
+// Captures the `config` prop passed to Puck so tests can assert on the
+// demo-mode category filtering (FeaturedWork/FeaturedWorkPreset hidden from
+// the drawer) without needing to render Puck's real sidebar.
+let __capturedPuckConfig: { categories?: Record<string, { components?: readonly string[] }> } | undefined;
 
 // Mock PuckApi shape used by createUsePuck selectors in EditCanvasControls.
 const mockPuckApi = {
@@ -55,6 +59,7 @@ vi.mock("@measured/puck", () => ({
     overrides,
     onChange,
     data,
+    config,
   }: {
     headerTitle?: string;
     overrides?: {
@@ -64,12 +69,14 @@ vi.mock("@measured/puck", () => ({
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
     data?: unknown;
+    config?: typeof __capturedPuckConfig;
   }) => {
     // Simulate uncontrolled: capture data only on mount (via useState initializer).
     // Subsequent `data` prop changes are ignored — same as real Puck after mount.
     // Only a key change (remount) will re-initialize this seed.
     const [seed] = useState(() => data);
     __capturedPuckOnChange = onChange as ((data: unknown) => void) | undefined;
+    __capturedPuckConfig = config;
 
     // Count mounts — a new key forces a remount, incrementing this counter.
     useEffect(() => { __puckMountCount++; }, []);
@@ -264,6 +271,7 @@ beforeEach(() => {
   window.localStorage.clear();
   __puckMountCount = 0;
   __capturedPuckOnChange = undefined;
+  __capturedPuckConfig = undefined;
   listDraftsAction.mockResolvedValue([]);
   seedTemplateAction.mockImplementation((templateId = "minimal") =>
     Promise.resolve({
@@ -1541,5 +1549,24 @@ describe("EditorShell demoMode", () => {
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     expect(await screen.findByText(/Publishing is a Gallurio Pro feature/)).toBeInTheDocument();
     expect(screen.queryByText(/bonus code/)).not.toBeInTheDocument();
+  });
+
+  it("hides FeaturedWork/FeaturedWorkPreset from the block drawer (no demo collections picker exists)", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    expect(__capturedPuckConfig?.categories?.manual?.components).not.toContain("FeaturedWork");
+    expect(__capturedPuckConfig?.categories?.presets?.components).not.toContain("FeaturedWorkPreset");
+  });
+});
+
+describe("EditorShell real (non-demo) editor — unaffected by the demo picker swap", () => {
+  it("keeps FeaturedWork/FeaturedWorkPreset in the block drawer", async () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    await screen.findByTestId("puck");
+
+    expect(__capturedPuckConfig?.categories?.manual?.components).toContain("FeaturedWork");
+    expect(__capturedPuckConfig?.categories?.presets?.components).toContain("FeaturedWorkPreset");
   });
 });

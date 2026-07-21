@@ -2928,6 +2928,24 @@
       "counters": {
         "images": "{count}/10 images",
         "blocks": "{count}/20 blocks"
+      },
+      "imagePicker": {
+        "titleSingle": "Choose a photo",
+        "titleMulti": "Choose photos",
+        "triggerChoose": "Choose photo",
+        "triggerChooseMulti": "Choose photos",
+        "triggerChange": "Change photo",
+        "none": "No photo selected",
+        "selected": "Photo selected",
+        "countSelected": "{count, plural, =0 {No photos selected} one {# photo selected} other {# photos selected}}",
+        "clear": "Clear",
+        "uploadButton": "Upload photo",
+        "uploading": "Uploading…",
+        "empty": "No photos yet — upload one to get started.",
+        "done": "Done",
+        "errorInvalidFile": "That file isn't supported. Use JPG, PNG, WEBP, or AVIF under 15 MB.",
+        "errorRateLimited": "Too many uploads — wait a moment and try again.",
+        "errorGeneric": "Upload failed. Please try again."
       }
     },
     "notifications": {
