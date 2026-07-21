@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { CheckIcon } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
@@ -12,6 +11,7 @@ import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { buttonVariants } from "@/components/ui/button";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { PricingTeaser } from "./_components/pricing-teaser";
+import { ThemedShot } from "./_components/themed-shot";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -68,7 +68,7 @@ export default async function Home({ params }: Props) {
         t("features.portfolioBuilder.feature3"),
         t("features.portfolioBuilder.feature4"),
       ],
-      image: "/marketing/screenshots/portfolio-builder-canvas.png",
+      image: "/marketing/screenshots/portfolio-builder-canvas",
       tone: "card" as const,
     },
     {
@@ -81,7 +81,7 @@ export default async function Home({ params }: Props) {
         t("features.bookingInquiryForms.feature3"),
         t("features.bookingInquiryForms.feature4"),
       ],
-      image: "/marketing/screenshots/bookings-calendar.png",
+      image: "/marketing/screenshots/bookings-calendar",
       tone: "muted" as const,
     },
     {
@@ -94,7 +94,7 @@ export default async function Home({ params }: Props) {
         t("features.businessWorkspace.feature3"),
         t("features.businessWorkspace.feature4"),
       ],
-      image: "/marketing/screenshots/dashboard-overview.png",
+      image: "/marketing/screenshots/dashboard-overview",
       tone: "brand" as const,
     },
     {
@@ -102,7 +102,7 @@ export default async function Home({ params }: Props) {
       headline: t("features.teams.panelHeadline"),
       description: t("features.teams.description"),
       features: [t("features.teams.feature1"), t("features.teams.feature2"), t("features.teams.feature3")],
-      image: "/marketing/screenshots/teams-collaboration.png",
+      image: "/marketing/screenshots/teams-collaboration",
       tone: "card" as const,
     },
   ];
@@ -121,10 +121,25 @@ export default async function Home({ params }: Props) {
           headline+trust area so it doesn't compete with the split imagery
           or marquee below. Follows the visitor's site theme, no forced
           override. */}
-      <section className="relative bg-background pt-20 pb-16 text-center text-foreground sm:pt-28">
+      <section className="relative bg-background pb-16 text-center text-foreground">
         <div className="relative">
-          <AmbientBackground />
-          <div className="relative mx-auto max-w-2xl px-4 sm:px-6">
+          <div
+            className="absolute inset-0"
+            style={{
+              WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 92%)",
+              maskImage: "linear-gradient(to bottom, black 55%, transparent 92%)",
+            }}
+          >
+            {/* Rotated 180deg so the art's denser cluster lands opposite
+                the split-hero cards below instead of crowding the header
+                and "Manage" card. The rotation is on this inner layer only
+                -- the mask above stays unrotated so its top-to-bottom fade
+                still reads correctly in screen space. */}
+            <div className="absolute inset-0 rotate-180">
+              <AmbientBackground />
+            </div>
+          </div>
+          <div className="relative mx-auto max-w-2xl px-4 pt-14 pb-6 sm:px-6 sm:pt-20">
             <span className="mb-6 inline-flex items-center rounded-[var(--radius-sm)] bg-brand px-3.5 py-1.5 text-xs font-bold tracking-wider text-brand-foreground uppercase">
               {t("hero.eyebrow")}
             </span>
@@ -143,15 +158,20 @@ export default async function Home({ params }: Props) {
               <span className="text-sm font-medium text-muted-foreground">{t("hero.ctaMicrocopy")}</span>
             </div>
           </div>
+        </div>
 
-          <div className="relative z-10 mx-auto mt-11 flex max-w-2xl flex-wrap justify-center gap-x-8 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:px-6">
-            {trustItems.map((item) => (
-              <span key={item} className="inline-flex items-center gap-2 whitespace-nowrap">
-                <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
-                {item}
-              </span>
-            ))}
-          </div>
+        {/* Sits below the ambient-art wrapper (which fades out via mask
+            before reaching here), so the checklist is always read against
+            the plain background — never fighting the line art for
+            contrast. flex-nowrap + a wide max-width keeps it one row from
+            sm+ up; only true mobile widths wrap it. */}
+        <div className="relative z-10 mx-auto mt-2 flex max-w-3xl flex-wrap justify-center gap-x-7 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:flex-nowrap sm:px-6">
+          {trustItems.map((item) => (
+            <span key={item} className="inline-flex items-center gap-2 whitespace-nowrap">
+              <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
+              {item}
+            </span>
+          ))}
         </div>
 
         <div className="relative z-10 mx-auto mt-16 grid max-w-5xl gap-8 px-4 sm:px-6 md:grid-cols-2 md:gap-0">
@@ -163,12 +183,11 @@ export default async function Home({ params }: Props) {
               </span>
             </div>
             <div className="relative aspect-[16/11] -rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-300 group-hover:translate-y-[-4px] group-hover:rotate-0 rtl:rotate-[1.2deg] rtl:group-hover:rotate-0">
-              <Image
-                src="/marketing/screenshots/portfolio-builder-canvas.png"
+              <ThemedShot
+                base="/marketing/screenshots/portfolio-builder-canvas"
                 alt={t("split.showImageAlt")}
-                fill
                 sizes="(min-width: 768px) 50vw, 100vw"
-                className="object-cover object-top"
+                className="object-top"
               />
             </div>
           </div>
@@ -180,12 +199,10 @@ export default async function Home({ params }: Props) {
               </span>
             </div>
             <div className="relative aspect-[16/11] rotate-[1.2deg] overflow-hidden rounded-[var(--radius)] ring-1 ring-foreground/10 transition-transform duration-300 group-hover:translate-y-[-4px] group-hover:rotate-0 rtl:-rotate-[1.2deg] rtl:group-hover:rotate-0">
-              <Image
-                src="/marketing/screenshots/dashboard-overview.png"
+              <ThemedShot
+                base="/marketing/screenshots/dashboard-overview"
                 alt={t("split.manageImageAlt")}
-                fill
                 sizes="(min-width: 768px) 50vw, 100vw"
-                className="object-cover"
               />
             </div>
           </div>
@@ -365,13 +382,7 @@ function ImageBlock({ panel }: { panel: { kicker: string; image: string } }) {
         data-hover="brighten"
         className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-surface)] ring-1 ring-foreground/10"
       >
-        <Image
-          src={panel.image}
-          alt={panel.kicker}
-          fill
-          sizes="(min-width: 768px) 50vw, 100vw"
-          className="object-cover"
-        />
+        <ThemedShot base={panel.image} alt={panel.kicker} sizes="(min-width: 768px) 50vw, 100vw" />
       </div>
     </div>
   );
