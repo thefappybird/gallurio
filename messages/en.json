@@ -2889,6 +2889,47 @@
         }
       }
     },
+    "portfolioMakerDemo": {
+      "entry": {
+        "title": "Try the portfolio editor",
+        "description": "Nothing you build here is saved to a database — it only lives in this browser.",
+        "startScratchTitle": "Start from scratch",
+        "startScratchHint": "Begin with a blank canvas.",
+        "continueTitle": "Continue where you left off",
+        "continueHint": "Resume your last saved progress in this browser."
+      },
+      "createNewDesign": {
+        "button": "Create new design",
+        "confirmTitle": "Start a new design?",
+        "confirmBody": "This will overwrite your current design. This can't be undone."
+      },
+      "gates": {
+        "title": "You've hit a demo limit",
+        "imageCap": "You've used all 10 demo images! Sign up free to add unlimited photos to your gallery.",
+        "blockCap": "This page is full for the demo (20/20 blocks). Sign up free to keep building.",
+        "publish": "Ready to go live? Publishing is a Gallurio Pro feature. Sign up for a free month and put your site on the internet today.",
+        "theme": "Want to fully customize your colors and fonts? That's a Pro feature. Sign up for a free month to unlock full theme editing.",
+        "cta": "Sign up to build without restrictions",
+        "dismiss": "Keep exploring",
+        "promoReveal": "Nice work exploring the editor! Here's a bonus code for an extra free month, stacked on top of your signup free month: {code}"
+      },
+      "guideOverrides": {
+        "theme": {
+          "body": "Full customization is a Free/Pro feature."
+        },
+        "drafts": {
+          "title": "Try another template",
+          "body": "Use Create new design to try another template. Saved, named drafts are a Free/Pro feature."
+        },
+        "publish": {
+          "body": "Publishing live is a Free/Pro feature."
+        }
+      },
+      "counters": {
+        "images": "{count}/10 images",
+        "blocks": "{count}/20 blocks"
+      }
+    },
     "notifications": {
       "bell": "Notifications",
       "popoverTitle": "Recent Notifications",

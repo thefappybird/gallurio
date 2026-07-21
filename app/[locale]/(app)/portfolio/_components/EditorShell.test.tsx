@@ -16,6 +16,10 @@ import { toast } from "sonner";
 // Module-level mount counter — incremented once per Puck remount (useEffect[]).
 // Reset in beforeEach. Used by the re-seeds test to assert a remount occurred.
 let __puckMountCount = 0;
+// Captures the live onChange prop so tests can fire arbitrary-length Puck
+// data directly (the "Simulate Puck change" button only emits a fixed
+// 1-block payload, not enough to exercise the demo block cap).
+let __capturedPuckOnChange: ((data: unknown) => void) | undefined;
 
 // Mock PuckApi shape used by createUsePuck selectors in EditCanvasControls.
 const mockPuckApi = {
@@ -65,6 +69,7 @@ vi.mock("@measured/puck", () => ({
     // Subsequent `data` prop changes are ignored — same as real Puck after mount.
     // Only a key change (remount) will re-initialize this seed.
     const [seed] = useState(() => data);
+    __capturedPuckOnChange = onChange as ((data: unknown) => void) | undefined;
 
     // Count mounts — a new key forces a remount, incrementing this counter.
     useEffect(() => { __puckMountCount++; }, []);
@@ -258,6 +263,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   __puckMountCount = 0;
+  __capturedPuckOnChange = undefined;
   listDraftsAction.mockResolvedValue([]);
   seedTemplateAction.mockImplementation((templateId = "minimal") =>
     Promise.resolve({
@@ -1439,5 +1445,101 @@ describe("EditorShell", () => {
       window.dispatchEvent(event);
       expect(spy).not.toHaveBeenCalled();
     });
+  });
+});
+
+const demoProps = {
+  ...baseProps,
+  demoMode: true,
+  initialActiveDraftId: null,
+  initialActiveDraftName: undefined,
+  initialDrafts: [],
+  guideDismissed: true,
+};
+
+describe("EditorShell demoMode", () => {
+  it("renders the 2-option entry screen, not the real onboarding dialogs", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+
+    expect(await screen.findByRole("button", { name: /Start from scratch/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue where you left off/ })).toBeInTheDocument();
+    expect(screen.queryByText("Load an existing draft")).not.toBeInTheDocument();
+  });
+
+  it("Save Changes persists to the demo-namespaced localStorage key, no server action called", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+
+    await screen.findByTestId("puck");
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      const keys = Object.keys(window.localStorage);
+      const demoKey = keys.find((k) => k.startsWith("gallurio:portfolio-maker-demo:draft:"));
+      expect(demoKey).toBeTruthy();
+    });
+    expect(createDraftAction).not.toHaveBeenCalled();
+    expect(updateDraftAction).not.toHaveBeenCalled();
+  });
+
+  it("Publish click opens the gate modal; publish server action never called", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+
+    expect(await screen.findByText(/Publishing is a Gallurio Pro feature/)).toBeInTheDocument();
+    expect(publishDraftAction).not.toHaveBeenCalled();
+  });
+
+  it("Create new design applies a template client-side, never calling seedTemplateAction", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create new design" }));
+    await screen.findByText("Pick a template to start");
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+
+    // Canvas already has content (from "Start from scratch" above) — the
+    // demo's overwrite-confirm dialog gates the swap.
+    fireEvent.click(await screen.findByRole("button", { name: "Discard" }));
+
+    await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
+    expect(seedTemplateAction).not.toHaveBeenCalled();
+  });
+
+  it("hitting the block cap (21st block) opens the block-cap gate modal and blocks the add", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    const overCap = {
+      content: Array.from({ length: 21 }, (_, i) => ({ type: "Hero", props: { id: `h${i}` } })),
+      root: {},
+    };
+    __capturedPuckOnChange?.(overCap);
+
+    expect(await screen.findByText(/This page is full for the demo/)).toBeInTheDocument();
+    expect(screen.getByTestId("demo-block-counter")).toHaveTextContent("0/20 blocks");
+  });
+
+  it("reveals the promo code on the first gate hit only, not on a second gate hit in the same session", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    // First gate hit (Publish) — promo reveal line appended.
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(await screen.findByText(/bonus code/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Keep exploring" }));
+
+    // Second gate hit (Theme, via the toolbar's Theme button + a control tweak)
+    // — no repeat of the reveal line, just the gate's own message.
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(await screen.findByText(/Publishing is a Gallurio Pro feature/)).toBeInTheDocument();
+    expect(screen.queryByText(/bonus code/)).not.toBeInTheDocument();
   });
 });

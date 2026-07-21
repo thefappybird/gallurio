@@ -30,6 +30,7 @@ import {
 import { CanvasViewportControls } from "./CanvasViewportControls";
 import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/lib/page-builder/hasFeaturedWork";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
@@ -108,6 +109,9 @@ import { resolveDiscardTarget } from "./draftDiscard";
 import { SuppressedActionBar } from "./SuppressedActionBar";
 import { BlockActionsToolbar } from "./BlockActionsToolbar";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { DemoGateModal, type DemoGateType } from "./DemoGateModal";
+import { getOrCreateDemoSessionId, demoDraftKey } from "@/lib/page-builder/demoSession";
+import { getTemplate } from "@/lib/page-builder/templates";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
@@ -197,10 +201,24 @@ type Props = {
    * element here to constrain the lookup to the guide's own subtree.
    */
   guideQueryRoot?: Element | null;
+  /**
+   * Runs the shell as the public, unauthenticated Portfolio Maker demo: no
+   * server calls anywhere (drafts/publish/template-seed are all
+   * requireOrg()-gated and would break for an anonymous visitor). Persists to
+   * localStorage keyed by a per-browser demo session id instead of the
+   * workspace slug, shows a simplified 2-option entry screen, replaces the
+   * Drafts button with "Create new design", and enforces image/block caps via
+   * a shared gate modal. Mutually exclusive with guideMode — unlike sandbox
+   * mode, the demo DOES persist to localStorage and DOES run the real
+   * SpotlightGuide (with 3 step overrides).
+   */
+  demoMode?: boolean;
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
 const SCRATCH_TEMPLATE_ID = "scratch";
+// Demo caps — locked copy references "10" and "20" directly; keep in sync.
+const DEMO_BLOCK_CAP = 20;
 const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectionsPopup", "header", "contact"] as const;
 // formDir was added as an optional field; absence defaults to LTR at hydration,
 // so v2 buffers stay forward-compatible and must not be invalidated by a bump.
@@ -252,6 +270,58 @@ function RightPanelTourMarker() {
     };
   }, []);
   return <div ref={ref} style={{ display: "none" }} aria-hidden />;
+}
+
+/**
+ * Portfolio Maker demo's simplified entry screen — exactly 2 options (no
+ * "load existing draft", the demo has no named-drafts concept), replacing
+ * PortfolioEntryDialog/the welcome-template modal/StoryPromptDialog entirely.
+ * Non-dismissible, mirroring PortfolioEntryDialog's own pattern.
+ */
+function DemoEntryScreen({
+  open,
+  canContinue,
+  onContinue,
+  onStartScratch,
+  t,
+}: {
+  open: boolean;
+  canContinue: boolean;
+  onContinue: () => void;
+  onStartScratch: () => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <Dialog open={open} disablePointerDismissal onOpenChange={() => {}}>
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>{t("entry.title")}</DialogTitle>
+          <DialogDescription>{t("entry.description")}</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!canContinue}
+            onClick={onContinue}
+            className="flex h-auto w-full flex-col items-start gap-1 p-4 text-start"
+          >
+            <span className="font-semibold">{t("entry.continueTitle")}</span>
+            <span className="text-xs font-normal text-muted-foreground">{t("entry.continueHint")}</span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onStartScratch}
+            className="flex h-auto w-full flex-col items-start gap-1 p-4 text-start"
+          >
+            <span className="font-semibold">{t("entry.startScratchTitle")}</span>
+            <span className="text-xs font-normal text-muted-foreground">{t("entry.startScratchHint")}</span>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
@@ -491,8 +561,10 @@ export function EditorShell({
   onGuideFinish,
   onGuideSkipClose,
   guideQueryRoot,
+  demoMode = false,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
+  const tDemo = useTranslations("app.portfolioMakerDemo");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
   const tLocationPicker = useTranslations("app.bookings.locationPicker");
   const errMsg = useActionError();
@@ -512,6 +584,31 @@ export function EditorShell({
       },
     };
   }, [guideMode, t]);
+
+  // Demo-mode guide steps: SPOTLIGHT_STEPS with exactly 3 steps' copy
+  // overridden (by id) to explain demo limits. slug is cleared on the
+  // overridden steps so SpotlightGuide's TooltipCard falls back to the
+  // literal title/body instead of the shared (non-demo) i18n slug key.
+  const demoSpotlightSteps = useMemo(() => {
+    if (!demoMode) return SPOTLIGHT_STEPS;
+    return SPOTLIGHT_STEPS.map((step) => {
+      if (step.id === "theme") {
+        return { ...step, slug: undefined, body: `${step.body} ${tDemo("guideOverrides.theme.body")}` };
+      }
+      if (step.id === "drafts") {
+        return {
+          ...step,
+          slug: undefined,
+          title: tDemo("guideOverrides.drafts.title"),
+          body: tDemo("guideOverrides.drafts.body"),
+        };
+      }
+      if (step.id === "publish") {
+        return { ...step, slug: undefined, body: `${step.body} ${tDemo("guideOverrides.publish.body")}` };
+      }
+      return step;
+    });
+  }, [demoMode, tDemo]);
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [previewMode, setPreviewMode] = useState(false);
@@ -555,7 +652,7 @@ export function EditorShell({
   // via the old (pre-story-prompt) path never sees it retroactively, and on
   // !guideMode since the sandbox tour-preview shell has no real story to capture.
   const [storyPromptOpen, setStoryPromptOpen] = useState(
-    !storyPromptCompleted && !guideDismissed && !guideMode
+    !storyPromptCompleted && !guideDismissed && !guideMode && !demoMode
   );
   // The guide auto-opens on first run (until the owner persisted a dismissal),
   // and can be reopened on demand via the Guide button for the session.
@@ -632,6 +729,21 @@ export function EditorShell({
     return !hasDrafts && !hasBuffer;
   });
   const [pendingAction, setPendingAction] = useState<{ run: () => void; reseeds: boolean } | null>(null);
+  // ---- Demo-mode-only state (app/[locale]/portfolio-maker-demo) ----
+  const [demoSessionId] = useState<string>(() => (demoMode ? getOrCreateDemoSessionId() : ""));
+  // Simplified 2-option entry screen, shown instead of PortfolioEntryDialog /
+  // the welcome-template modal / StoryPromptDialog. Opens immediately when the
+  // guide is already dismissed (returning demo visitor); otherwise the guide
+  // runs first and opens it on finish/skip (openEntryAfterGuide).
+  const [demoEntryOpen, setDemoEntryOpen] = useState(() => demoMode && guideDismissed);
+  // "Create new design" — same TemplatePickerDialog(welcome) the real editor's
+  // brand-new-user welcome flow uses, but opened on demand and never
+  // auto-applies scratch on close (this is an explicit user action, not a
+  // mandatory first-run flow).
+  const [demoTemplatesOpen, setDemoTemplatesOpen] = useState(false);
+  // Which upsell gate the visitor just hit (image cap / block cap / publish /
+  // theme customization); null = no gate modal open.
+  const [activeDemoGate, setActiveDemoGate] = useState<DemoGateType>(null);
   const [discarding, setDiscarding] = useState(false);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
   const [applyingDraftId, setApplyingDraftId] = useState<string | null>(null);
@@ -703,7 +815,9 @@ export function EditorShell({
     prepareForEditor(initialData.home ?? EMPTY_ZONE)
   );
   const [seedNonce, setSeedNonce] = useState(0);
-  const draftKey = `gallurio:portfolio-draft:${slug}`;
+  // Demo sessions use a distinct namespace (keyed by demoSessionId, not slug)
+  // so a demo session can never collide with or leak into a real workspace's draft.
+  const draftKey = demoMode ? demoDraftKey(demoSessionId) : `gallurio:portfolio-draft:${slug}`;
 
   // ---- Snapshot helpers ----
   function buildDraftSnapshot() {
@@ -770,7 +884,7 @@ export function EditorShell({
   const [hasRecoverableBuffer] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
-      const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+      const raw = window.localStorage.getItem(draftKey);
       if (!raw) return false;
       const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
       return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
@@ -843,6 +957,21 @@ export function EditorShell({
   const handleChange = useCallback(
     (data: Data) => {
       const next = data as unknown as PuckData;
+      if (demoMode) {
+        const prevLen = zoneDataRef.current[activeZone].content.length;
+        const nextLen = next.content.length;
+        // Only a genuine block ADD past the cap is blocked (reorders/edits
+        // never grow content.length). Puck is uncontrolled after mount, so the
+        // only way to revert the visual canvas is the same remount technique
+        // used elsewhere in this file (bump seedNonce with the pre-add data).
+        if (nextLen > DEMO_BLOCK_CAP && nextLen > prevLen) {
+          setActiveDemoGate("blockCap");
+          ignoreNextChange.current = true;
+          setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone]));
+          setSeedNonce((n) => n + 1);
+          return;
+        }
+      }
       zoneDataRef.current[activeZone] = next;
       setRenderDraftData((current) => ({ ...current, [activeZone]: next }));
       if (ignoreNextChange.current) {
@@ -852,7 +981,7 @@ export function EditorShell({
       debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
     },
-    [activeZone, debouncedPersistLocalDraft]
+    [activeZone, debouncedPersistLocalDraft, demoMode]
   );
 
   // ---- Draft name validation ----
@@ -872,6 +1001,16 @@ export function EditorShell({
     // Flush any in-progress rename so the name used for validation/save is current.
     const flushed = nameEditorRef.current?.commit();
     const nameToSave = flushed ?? draftName;
+    if (demoMode) {
+      // Local-only: no createDraftAction/updateDraftAction — those are
+      // requireOrg()-gated and would break for an anonymous demo visitor.
+      if (nameToSave !== draftName) setDraftName(nameToSave);
+      const payload = { name: nameToSave, ...buildDraftSnapshot() };
+      persistLocalDraft();
+      setSavedSnapshot(JSON.stringify(payload));
+      toast.success(t("savedToast"));
+      return true;
+    }
     const shouldToastValidationError = templatesOpen;
     const validationError = validateDraftName(nameToSave);
     if (validationError) {
@@ -1166,6 +1305,14 @@ export function EditorShell({
   // ---- Publish from draft ----
   async function doPublish() {
     if (guideMode) return;
+    if (demoMode) {
+      // No real publish for an anonymous demo visitor — handlePublish already
+      // routes Publish clicks straight to the gate modal, this is defense in
+      // depth in case doPublish is ever reached directly (e.g. PublishDialog).
+      setPublishOpen(false);
+      setActiveDemoGate("publish");
+      return;
+    }
     if (!activeDraftId) return;
     setSavingChanges(true);
     try {
@@ -1184,6 +1331,10 @@ export function EditorShell({
   }
 
   function handlePublish() {
+    if (demoMode) {
+      setActiveDemoGate("publish");
+      return;
+    }
     if (activeDraftId === null || isDirty) {
       // Must save first — route through the unsaved-changes guard so the user
       // saves before we publish.
@@ -1271,6 +1422,7 @@ export function EditorShell({
   // ---- Apply template as a new unsaved draft ----
   async function applyTemplate(nextTemplateId: string) {
     if (guideMode) return false;
+    if (demoMode) return false; // demo uses applyDemoTemplate (client-side seedData, no seedTemplateAction)
     setSwitching(true);
     setSwitchError(null);
     const res = await seedTemplateAction(nextTemplateId);
@@ -1333,6 +1485,56 @@ export function EditorShell({
     if (applied) setWelcomeTemplatesOpen(false);
   }
 
+  // ---- Demo mode: apply a template client-side (no seedTemplateAction) ----
+  // Mirrors applyTemplate's post-seed state exactly, using the template's own
+  // pure-data seedData()/defaultBrandKit/defaultContact/defaultHeader/
+  // defaultCollectionsPopup instead of a server response.
+  async function applyDemoTemplate(nextTemplateId: string): Promise<boolean> {
+    setSwitching(true);
+    setSwitchError(null);
+    const template = getTemplate(nextTemplateId);
+    if (!template) {
+      setSwitching(false);
+      setSwitchError(t("errorToast"));
+      return false;
+    }
+    const seedData = template.seedData({ workspace: { name: workspaceName || "Your Studio" } });
+    const homeData = prepareForEditor(seedData.home ?? EMPTY_ZONE) as unknown as PuckData;
+    const galleryData = prepareForEditor(seedData.gallery ?? EMPTY_ZONE) as unknown as PuckData;
+    const seedHeader = template.defaultHeader ?? DEFAULT_HEADER_CONFIG;
+    const seedCollectionsPopup = template.defaultCollectionsPopup ?? {};
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
+    setRenderDraftData(zoneDataRef.current);
+    setBrandKit(template.defaultBrandKit);
+    setContact(template.defaultContact);
+    setHeaderConfig(seedHeader);
+    setCollectionsPopup(seedCollectionsPopup);
+    setTemplateId(template.id);
+    setTemplateSeedSnapshot(JSON.stringify(zoneDataRef.current));
+    setActiveDraftId(null);
+    setIsNewUnsavedDraft(true);
+    setDraftName(DEFAULT_DRAFT_NAME);
+    setNameError(null);
+    setSavedSnapshot(JSON.stringify({
+      name: DEFAULT_DRAFT_NAME,
+      templateId: template.id,
+      data: zoneDataRef.current,
+      brandKit: template.defaultBrandKit,
+      contact: template.defaultContact,
+      header: seedHeader,
+      collectionsPopup: seedCollectionsPopup,
+      formLocale,
+      formDir,
+    }));
+    ignoreNextChange.current = true;
+    setPuckSeed(homeData as unknown as Data);
+    setSeedNonce((n) => n + 1);
+    setSwitching(false);
+    setDemoTemplatesOpen(false);
+    if (!showPuck) setPreviewNonce((n) => n + 1);
+    return true;
+  }
+
   // ---- Add New Draft ----
   function handleAddNewDraft() {
     setDraftsOpen(false);
@@ -1343,6 +1545,10 @@ export function EditorShell({
 
   /** Open the correct entry flow after the guide finishes or is skipped. */
   function openEntryAfterGuide() {
+    if (demoMode) {
+      setDemoEntryOpen(true);
+      return;
+    }
     // Brand-new = no recoverable local buffer AND no saved drafts.
     const isNewUser = !hasRecoverableBuffer && drafts.length === 0;
     if (isNewUser) {
@@ -1358,7 +1564,10 @@ export function EditorShell({
       onGuideSkipClose?.(dontShowAgain);
       return;
     }
-    if (dontShowAgain) {
+    // dismissPortfolioGuideAction is requireOrg()-gated — never call it for an
+    // anonymous demo visitor. Persisting a demo "don't show again" flag is a
+    // page-level (localStorage) concern outside this component.
+    if (dontShowAgain && !demoMode) {
       dismissPortfolioGuideAction().catch((err) => {
         console.warn("[portfolio] failed to dismiss guide on skip", err);
       });
@@ -1373,7 +1582,7 @@ export function EditorShell({
       onGuideFinish?.(dontShowAgain);
       return;
     }
-    if (dontShowAgain) {
+    if (dontShowAgain && !demoMode) {
       dismissPortfolioGuideAction().catch((err) => {
         console.warn("[portfolio] failed to dismiss guide on finish", err);
       });
@@ -1675,13 +1884,18 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="shrink-0 px-2"
-          aria-label={t("drafts")}
-          title={t("drafts")}
+          aria-label={demoMode ? tDemo("createNewDesign.button") : t("drafts")}
+          title={demoMode ? tDemo("createNewDesign.button") : t("drafts")}
           data-tour-id="drafts"
-          onClick={() => setDraftsOpen(true)}
+          onClick={() => (demoMode ? setDemoTemplatesOpen(true) : setDraftsOpen(true))}
         >
           <Files className="size-3.5" aria-hidden />
         </Button>
+        {demoMode && (
+          <span className="shrink-0 text-xs text-muted-foreground" data-testid="demo-block-counter">
+            {tDemo("counters.blocks", { count: renderDraftData[activeZone].content.length })}
+          </span>
+        )}
         <div data-testid="draft-title-slot" className="min-w-0 shrink-0">
           <DraftNameEditor
             ref={nameEditorRef}
@@ -1987,6 +2201,7 @@ export function EditorShell({
         onCancel={() => closeTheme(false)}
         savedThemes={savedThemes}
         onSavedThemesChange={setSavedThemes}
+        onCustomizeGate={demoMode ? () => setActiveDemoGate("theme") : undefined}
       />
       <CollectionsManagerDialog open={photosOpen} onOpenChange={setPhotosOpen} />
       <TemplatePickerDialog
@@ -2002,22 +2217,40 @@ export function EditorShell({
         error={switchError}
         onConfirm={(id) => guardThenRun(() => void applyTemplate(id), true)}
       />
-      {/* Welcome template modal — shown to brand-new users (no drafts, no buffer) instead of PortfolioEntryDialog. */}
-      <TemplatePickerDialog
-        open={welcomeTemplatesOpen}
-        onOpenChange={(next) => {
-          if (!next) void applyWelcomeTemplate();
-        }}
-        templates={templates}
-        currentTemplateId={templateId}
-        isCanvasMatchingSeed={isCanvasMatchingSeed}
-        switching={switching}
-        error={switchError}
-        onConfirm={(id) => { void applyWelcomeTemplate(id); }}
-        welcome
-        onStartScratch={() => { void applyWelcomeTemplate(); }}
-      />
-      {!guideMode && (
+      {/* Welcome template modal — shown to brand-new users (no drafts, no buffer) instead of PortfolioEntryDialog. Never used in demoMode (its own 2-option entry screen replaces this branching entirely). */}
+      {!demoMode && (
+        <TemplatePickerDialog
+          open={welcomeTemplatesOpen}
+          onOpenChange={(next) => {
+            if (!next) void applyWelcomeTemplate();
+          }}
+          templates={templates}
+          currentTemplateId={templateId}
+          isCanvasMatchingSeed={isCanvasMatchingSeed}
+          switching={switching}
+          error={switchError}
+          onConfirm={(id) => { void applyWelcomeTemplate(id); }}
+          welcome
+          onStartScratch={() => { void applyWelcomeTemplate(); }}
+        />
+      )}
+      {/* "Create new design" — demoMode's on-demand equivalent, opened by the
+          toolbar button (not auto-shown), and never auto-applies scratch on close. */}
+      {demoMode && (
+        <TemplatePickerDialog
+          open={demoTemplatesOpen}
+          onOpenChange={setDemoTemplatesOpen}
+          templates={templates}
+          currentTemplateId={templateId}
+          isCanvasMatchingSeed={isCanvasMatchingSeed}
+          switching={switching}
+          error={switchError}
+          onConfirm={(id) => guardThenRun(() => void applyDemoTemplate(id), true)}
+          welcome
+          onStartScratch={() => guardThenRun(() => void applyDemoTemplate(SCRATCH_TEMPLATE_ID), true)}
+        />
+      )}
+      {!guideMode && !demoMode && (
         <StoryPromptDialog
           open={storyPromptOpen}
           workspaceName={workspaceName}
@@ -2060,6 +2293,18 @@ export function EditorShell({
             onFinish={handleGuideFinish}
             queryRoot={guideQueryRoot}
           />
+        ) : demoMode ? (
+          // Demo runs the real guide directly in this shell (unlike guideMode's
+          // sandbox), with 3 steps' copy overridden to explain the demo limits.
+          <SpotlightGuide
+            open={guideOpen}
+            steps={demoSpotlightSteps}
+            stepIndex={spotlightStepIndex}
+            onStepChange={handleGuideStepChange}
+            gateSatisfied={gateSatisfied}
+            onSkip={handleGuideSkip}
+            onFinish={handleGuideFinish}
+          />
         ) : (
           guideOpen && (
             <SandboxEditorGuide
@@ -2084,32 +2329,45 @@ export function EditorShell({
         applyingId={applyingDraftId}
         unsavedDraftName={isNewUnsavedDraft && activeDraftId === null ? draftName : null}
       />
-      <PortfolioEntryDialog
-        open={entryOpen}
-        // "Continue where you left off" resumes the most recent state: the
-        // unsaved-edit buffer if present, otherwise the active draft. It is only
-        // disabled on a true first visit — no active draft now (initialActiveDraftId)
-        // nor a recoverable buffer from last time. Note the buffer is cleared on
-        // save/publish, so it must NOT be the sole gate.
-        canContinue={hasRecoverableBuffer || initialActiveDraftId !== null}
-        hasDrafts={drafts.length > 0}
-        onContinue={() => {
-          // Resuming the existing buffer as-is — never inject a still-pending
-          // onboarding logo into it or a later template switch.
-          pendingOnboardingLogoRef.current = null;
-          setEntryOpen(false);
-        }}
-        onLoadExisting={() => { setEntryOpen(false); setDraftsOpen(true); }}
-        onStartScratch={() => { setEntryOpen(false); setTemplatesOpen(true); }}
-      />
+      {!demoMode && (
+        <PortfolioEntryDialog
+          open={entryOpen}
+          // "Continue where you left off" resumes the most recent state: the
+          // unsaved-edit buffer if present, otherwise the active draft. It is only
+          // disabled on a true first visit — no active draft now (initialActiveDraftId)
+          // nor a recoverable buffer from last time. Note the buffer is cleared on
+          // save/publish, so it must NOT be the sole gate.
+          canContinue={hasRecoverableBuffer || initialActiveDraftId !== null}
+          hasDrafts={drafts.length > 0}
+          onContinue={() => {
+            // Resuming the existing buffer as-is — never inject a still-pending
+            // onboarding logo into it or a later template switch.
+            pendingOnboardingLogoRef.current = null;
+            setEntryOpen(false);
+          }}
+          onLoadExisting={() => { setEntryOpen(false); setDraftsOpen(true); }}
+          onStartScratch={() => { setEntryOpen(false); setTemplatesOpen(true); }}
+        />
+      )}
+      {demoMode && (
+        <DemoEntryScreen
+          open={demoEntryOpen}
+          canContinue={hasRecoverableBuffer}
+          onContinue={() => setDemoEntryOpen(false)}
+          onStartScratch={() => { setDemoEntryOpen(false); void applyDemoTemplate(SCRATCH_TEMPLATE_ID); }}
+          t={tDemo}
+        />
+      )}
       <UnsavedChangesDialog
         open={pendingAction !== null}
         saving={savingChanges}
         discarding={discarding}
-        name={draftName}
-        onNameChange={(next) => { setDraftName(next); setNameError(validateDraftName(next)); }}
+        name={demoMode ? undefined : draftName}
+        onNameChange={demoMode ? undefined : (next) => { setDraftName(next); setNameError(validateDraftName(next)); }}
         nameLabel={t("draftNameLabel")}
         nameError={nameError}
+        title={demoMode ? tDemo("createNewDesign.confirmTitle") : undefined}
+        body={demoMode ? tDemo("createNewDesign.confirmBody") : undefined}
         onSave={async () => {
           const ok = await handleSaveChanges();
           if (ok) {
@@ -2121,6 +2379,7 @@ export function EditorShell({
         onDiscard={() => void handleDiscardChanges()}
         onCancel={() => setPendingAction(null)}
       />
+      <DemoGateModal gate={activeDemoGate} onClose={() => setActiveDemoGate(null)} />
 
       {/* Task 7 — warn when no FeaturedWork block exists */}
       <AlertDialog
