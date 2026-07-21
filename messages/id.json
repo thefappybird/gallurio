@@ -14,62 +14,105 @@
       "contact": "Kontak"
     },
     "metadata": {
-      "title": "Gallurio — Alat Portfolio dan Pemesanan untuk Bisnis Kreatif",
-      "description": "Buat halaman portfolio yang rapi, tampilkan karya Anda, dan kumpulkan permintaan booking dengan Gallurio."
+      "title": "Gallurio — Alat Portfolio, Pemesanan, dan Klien untuk Bisnis Kreatif",
+      "description": "Buat portfolio profesional, kumpulkan permintaan booking, dan kelola klien, booking, galeri, serta invoice dalam satu workspace bersama Gallurio."
     },
     "hero": {
-      "headline": "Portfolio siap-booking, dijalankan seperti buku besar.",
-      "body": "Fotografer, videografer, dan event creative memakai Gallurio untuk menerbitkan halaman yang layak dipercaya untuk booking — sekaligus mengelola booking, klien, dan permintaan dalam satu workspace.",
-      "ctaStart": "Mulai bulan gratis saya"
+      "eyebrow": "Satu workspace, dua tugas",
+      "headlineShow": "Tampilkan karya Anda.",
+      "headlineRun": "Jalankan bisnis Anda.",
+      "body": "Gallurio terbagi rapi jadi dua: portfolio yang dirancang untuk mendatangkan booking, dan workspace yang menjaga semuanya tetap berjalan setelah permintaan masuk.",
+      "ctaStart": "Mulai bulan gratis saya",
+      "ctaMicrocopy": "Gratis selama beta. Tanpa kartu diperlukan."
     },
-    "whatIs": {
-      "title": "Apa itu Gallurio?",
-      "body": "Gallurio adalah platform portfolio dan pemesanan untuk para profesional kreatif. Platform ini memberi pengguna alat untuk membuat halaman publik, menampilkan karya mereka, menerima permintaan booking, dan mengatur detail bisnis yang berhadapan dengan klien."
+    "trust": {
+      "item1": "Gratis selama beta",
+      "item2": "Tanpa kartu diperlukan",
+      "item3": "Batalkan kapan saja",
+      "item4": "Checkout aman oleh Lemon Squeezy"
+    },
+    "split": {
+      "showVerb": "Tampilkan",
+      "showTag": "halaman publik Anda",
+      "showImageAlt": "Halaman portfolio publik Gallurio milik seorang profesional kreatif, dengan tata letak galeri editorial.",
+      "manageVerb": "Kelola",
+      "manageTag": "workspace Anda",
+      "manageImageAlt": "Dashboard workspace Gallurio yang menampilkan booking dan aktivitas permintaan.",
+      "bridgeLead": "Satu login yang sama.",
+      "bridgeEmphasis": "Dua tugas yang sangat berbeda, dikerjakan dengan benar."
     },
     "builtFor": {
-      "title": "Dibuat untuk Bisnis Kreatif",
       "item1": "Fotografer",
       "item2": "Videografer",
-      "item3": "Perencana Acara",
+      "item3": "Perencana Pernikahan dan Acara",
       "item4": "Makeup Artist",
       "item5": "Penata Gaya",
-      "item6": "Studio Kreatif",
-      "item7": "Penyedia Layanan Independen"
+      "item6": "Katering",
+      "item7": "Entertainer dan DJ",
+      "item8": "Studio Kreatif"
     },
     "features": {
       "portfolioBuilder": {
         "title": "Pembuat portfolio",
-        "panelHeadline": "Setiap galeri, layanan, dan bagian — persis seperti yang ingin Anda susun sendiri.",
-        "description": "Buat halaman portfolio yang bersih dan profesional menggunakan bagian yang fleksibel, blok galeri, detail layanan, dan tata letak visual yang dirancang untuk karya kreatif."
+        "panelHeadline": "Buat kesan pertama terasa seperti diri Anda.",
+        "description": "Buat halaman portfolio tanpa mulai dari layar kosong. Susun galeri, layanan, dan bagian sesuai cara Anda ingin karya Anda dilihat — lalu jadikan benar-benar milik Anda.",
+        "feature1": "Bagian halaman yang fleksibel",
+        "feature2": "Galeri gambar dan koleksi",
+        "feature3": "Warna, font, dan branding kustom",
+        "feature4": "Dirancang untuk mengubah pengunjung jadi permintaan"
+      },
+      "bookingInquiryForms": {
+        "title": "Permintaan booking",
+        "panelHeadline": "Beri setiap prospek langkah selanjutnya yang jelas.",
+        "description": "Pengunjung mengirim permintaan terstruktur langsung dari halaman Anda — tanggal acara, lokasi, dan detail proyek yang Anda perlukan untuk merespons dengan percaya diri.",
+        "feature1": "Formulir permintaan kustom",
+        "feature2": "Tanggal acara dan sesi multi-hari",
+        "feature3": "Kontak dan detail proyek dalam satu tampilan",
+        "feature4": "Diberi tahu saat permintaan masuk"
       },
       "businessWorkspace": {
         "title": "Workspace bisnis",
-        "panelHeadline": "Satu dashboard untuk semuanya di antara sesi pemotretan.",
-        "description": "Kelola konten profil publik, detail bisnis, invoice, dan pengaturan terkait booking dari satu dashboard."
-      },
-      "bookingInquiryForms": {
-        "title": "Formulir permintaan booking",
-        "panelHeadline": "Permintaan masuk ke kalender Anda, bukan ke DM Anda.",
-        "description": "Biarkan pengunjung mengirim permintaan booking langsung melalui halaman Anda, termasuk tanggal acara, detail kontak, preferensi layanan, dan catatan proyek."
+        "panelHeadline": "Semua yang terjadi setelah permintaan masuk.",
+        "description": "Klien, booking, invoice, dan galeri — terorganisir dalam satu dashboard, sehingga lebih sedikit waktu untuk menyatukan alat dan lebih banyak untuk pekerjaan itu sendiri.",
+        "feature1": "Manajemen klien",
+        "feature2": "Status booking dan penjadwalan",
+        "feature3": "Invoice PDF",
+        "feature4": "Pengaturan galeri dan workspace"
       },
       "teams": {
         "title": "Kolaborasi tim",
-        "panelHeadline": "Undang tim, tetapkan peran, dan bekerja dengan satu kalender bersama.",
-        "description": "Tambahkan staf dan kolaborator dengan akses berbasis peran ke booking, klien, dan kalender — sehingga semua orang tahu tanggung jawabnya tanpa tumpang tindih."
+        "panelHeadline": "Undang tim, tetapkan peran, gunakan satu kalender.",
+        "description": "Tambahkan staf dan kolaborator dengan akses berbasis peran ke booking, klien, dan kalender — sehingga semua orang tahu tanggung jawabnya tanpa tumpang tindih.",
+        "feature1": "Izin berbasis peran",
+        "feature2": "Satu kalender bersama",
+        "feature3": "Penugasan per tim"
+      }
+    },
+    "transparency": {
+      "title": "Jelas sejak awal. Bahkan saat cepat.",
+      "subtitle": "Tidak ada tebak-tebakan soal apa yang Anda ikuti, berapa biayanya, atau siapa yang menangani pembayaran.",
+      "item1": {
+        "title": "Satu bulan Pro, gratis.",
+        "body": "Tanpa kartu pembayaran untuk memulai."
       },
-      "customBranding": {
-        "title": "Branding kustom",
-        "description": "Sesuaikan warna, tipografi, gambar, dan gaya halaman agar portfolio selaras dengan identitas kreatif pengguna."
+      "item2": {
+        "title": "Paket berbayar: segera hadir.",
+        "body": "Harga dan ketentuan ditampilkan jelas sebelum checkout."
       },
-      "clientReadyPages": {
-        "title": "Halaman siap klien",
-        "description": "Publikasikan halaman yang dirancang agar terlihat kredibel, sederhana, dan mudah dipahami oleh calon klien."
+      "item3": {
+        "title": "Lemon Squeezy menangani checkout",
+        "body": "sebagai merchant of record kami, begitu penagihan aktif."
+      },
+      "item4": {
+        "title": "Perangkat lunak, bukan jasa.",
+        "body": "Gallurio bukan agensi fotografi atau acara — ini adalah alat tempat bisnis tersebut berjalan."
       }
     },
     "finalCta": {
-      "title": "Mulai bangun workspace kreatif Anda bersama Gallurio.",
-      "subtitle": "Mulai dengan satu bulan Pro gratis — tanpa kartu diperlukan.",
-      "button": "Mulai bulan gratis saya"
+      "title": "Buat portfolio yang siap untuk booking berikutnya.",
+      "body": "Buat workspace Gallurio Anda dan mulai membentuk cara klien menemukan dan bekerja dengan Anda.",
+      "button": "Mulai bulan gratis saya",
+      "microcopy": "Akses Pro penuh selama satu bulan. Tanpa kartu diperlukan."
     },
     "manifesto": {
       "quote": "Setiap booking tercatat. Setiap klien terpercaya. Tidak ada yang samar.",
@@ -473,30 +516,8 @@
     "signInTitle": "Masuk",
     "signUpTitle": "Buat akun",
     "brandPane": {
-      "signIn": {
-        "headline": "Selamat kembali ke buku besar Anda.",
-        "body": "Semua booking, klien, dan permintaan — tetap di tempatnya."
-      },
-      "signUp": {
-        "headline": "Buka buku besar Anda.",
-        "body": "Satu workspace untuk booking, klien, dan portofolio publik yang dilihat klien Anda."
-      },
-      "mfa": {
-        "headline": "Satu langkah lagi.",
-        "body": "Verifikasi singkat untuk menjaga keamanan buku besar Anda — dan data klien Anda."
-      },
-      "forgotPassword": {
-        "headline": "Lupa tempat terakhir?",
-        "body": "Kami akan mengirim link agar Anda bisa melanjutkan buku besar Anda."
-      },
-      "resetPassword": {
-        "headline": "Atur kunci baru.",
-        "body": "Pilih kata sandi yang mudah diingat. Buku besar Anda tetap seperti semula."
-      },
-      "verifyEmail": {
-        "headline": "Hampir selesai.",
-        "body": "Konfirmasi email Anda untuk menyelesaikan buku besar Anda."
-      }
+      "eyebrow": "Satu workspace, dua tugas",
+      "headline": "Tampilkan karya Anda. Jalankan bisnis Anda."
     },
     "signIn": {
       "title": "Masuk",
