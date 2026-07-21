@@ -126,15 +126,17 @@ export default async function Home({ params }: Props) {
           <div
             className="absolute inset-0"
             style={{
-              WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 92%)",
-              maskImage: "linear-gradient(to bottom, black 55%, transparent 92%)",
+              WebkitMaskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 22%, black 48%)",
+              maskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 22%, black 48%)",
             }}
           >
             {/* Rotated 180deg so the art's denser cluster lands opposite
                 the split-hero cards below instead of crowding the header
                 and "Manage" card. The rotation is on this inner layer only
-                -- the mask above stays unrotated so its top-to-bottom fade
-                still reads correctly in screen space. */}
+                -- the mask above stays unrotated so its center-out fade
+                still reads correctly in screen space. Same technique as
+                the final CTA's art layer, sized tighter here since the
+                eyebrow/headline/body/CTA stack is narrower and taller. */}
             <div className="absolute inset-0 rotate-180">
               <AmbientBackground />
             </div>
@@ -297,8 +299,8 @@ export default async function Home({ params }: Props) {
         <div
           className="absolute inset-0"
           style={{
-            WebkitMaskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 42%, black 78%)",
-            maskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 42%, black 78%)",
+            WebkitMaskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 24%, black 52%)",
+            maskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 24%, black 52%)",
           }}
         >
           <div className="absolute inset-0 rotate-180">
