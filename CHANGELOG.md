@@ -3,6 +3,22 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [1.1.1] - 2026-07-21
+
+### Added
+- Redesigned marketing landing page: split hero contrasting the public portfolio ("Show") against the business workspace ("Manage"), a trust strip, an audience marquee, a "What is Gallurio?" section, and a surfaced transparency/compliance block ahead of pricing.
+- Theme-paired (light/dark) product screenshots via a new `ThemedShot` component, swapping with the visitor's theme the same way the ambient SVG background already does.
+
+### Changed
+- Auth pages (sign-in, sign-up, MFA, forgot/reset password, verify email) now show the same tagline and trust checklist as the landing page instead of per-route copy; the brand pane no longer has an opaque fill, so the shared ambient line art shows through.
+- Reworded the manifesto quote, which read as booking/management-only, to also cover the portfolio/showcase side of the product.
+- Feature panels reordered and given bullet-point highlights; custom-branding messaging folded into the Portfolio Builder panel instead of a separate buried section.
+- Marketing copy updated across all 5 locales (en, fil, id, ar, th).
+
+### Fixed
+- The marketing page's scroll-gated reveal animation (`data-anim`) left all content below the fold invisible to full-page or headless renders (no `MotionObserver` to trigger it); removed the reveal-on-scroll gating from the marketing page and its pricing teaser.
+- Ambient background art crossing through hero and final-CTA text, fighting it for contrast in both themes; corrected with a center-out fade mask and a 180-degree rotation of the art layer.
+
 ## [1.1.0] - 2026-07-20
 
 ### Added
