@@ -34,7 +34,8 @@ describe("Marketing Home page", () => {
     const page = await Home({ params: Promise.resolve({ locale: "en" }) });
     render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
 
-    expect(screen.getByText("marketing:hero.headline")).toBeInTheDocument();
+    expect(screen.getByText("marketing:hero.headlineShow")).toBeInTheDocument();
+    expect(screen.getByText("marketing:hero.headlineRun")).toBeInTheDocument();
     expect(getAuthUserMock).toHaveBeenCalled();
   });
 

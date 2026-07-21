@@ -1,68 +1,40 @@
 "use client";
 
+import { CheckIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { usePathname } from "@/lib/i18n/navigation";
-
-type BrandPaneKey =
-  | "signIn"
-  | "signUp"
-  | "mfa"
-  | "forgotPassword"
-  | "resetPassword"
-  | "verifyEmail";
-
-// Locale-agnostic pathname (usePathname from lib/i18n/navigation strips the
-// /[locale] segment), so plain route-name matching works for every locale.
-function resolveBrandPaneKey(pathname: string): BrandPaneKey {
-  if (pathname.startsWith("/sign-in/mfa")) return "mfa";
-  if (pathname.startsWith("/sign-in")) return "signIn";
-  if (pathname.startsWith("/sign-up")) return "signUp";
-  if (pathname.startsWith("/forgot-password")) return "forgotPassword";
-  if (pathname.startsWith("/reset-password")) return "resetPassword";
-  if (pathname.startsWith("/verify-email")) return "verifyEmail";
-  return "signIn";
-}
 
 /**
- * Ledger-themed brand pane copy, keyed off the active auth route. Lives in a
- * client component (not the Server Component layout) because picking the
- * right copy needs the pathname, which the shared (auth) layout never sees
- * as a param -- sign-in/sign-up/mfa/etc. are static segments, not [slug]s.
+ * Brand pane shown alongside every auth form. Static across routes (matches
+ * the landing page's tagline + trust strip, not a per-page ledger message) so
+ * sign-in/sign-up/mfa/etc. all read as one consistent brand moment. The
+ * shared `<AmbientBackground />` rendered by the parent layout shows through
+ * (this pane has no opaque background of its own), so the flowing line-art
+ * lives directly behind the text.
  */
 export function AuthBrandPane() {
-  const pathname = usePathname();
-  const key = resolveBrandPaneKey(pathname);
   const t = useTranslations("auth.brandPane");
+  const tTrust = useTranslations("marketing.trust");
+
+  const trustItems = [tTrust("item1"), tTrust("item2"), tTrust("item3"), tTrust("item4")];
 
   return (
-    <div className="relative hidden flex-1 flex-col justify-end gap-3 md:flex">
-      <BookedRingMotif className="pointer-events-none absolute -bottom-16 -end-16 size-64 text-primary-foreground/15" />
-      <h2 className="relative max-w-xs text-balance font-heading text-2xl font-semibold tracking-tight text-primary-foreground">
-        {t(`${key}.headline`)}
-      </h2>
-      <p className="relative max-w-xs text-pretty text-sm leading-6 text-primary-foreground/70">
-        {t(`${key}.body`)}
-      </p>
+    <div className="relative flex flex-1 flex-col justify-end gap-6 md:flex">
+      <div className="hidden md:block">
+        <span className="mb-4 inline-flex items-center rounded-[var(--radius-sm)] bg-brand px-3 py-1 text-[0.68rem] font-bold tracking-wider text-brand-foreground uppercase">
+          {t("eyebrow")}
+        </span>
+        <h2 className="max-w-xs text-balance font-heading text-2xl font-bold tracking-tight text-foreground">
+          {t("headline")}
+        </h2>
+      </div>
+      <ul className="flex flex-col gap-2">
+        {trustItems.map((item) => (
+          <li key={item} className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
-  );
-}
-
-// Subtle decorative motif -- concentric "booked" rings with tick-marks around
-// the rim, evoking a calendar/clock face rather than a stock photo. Purely
-// decorative (aria-hidden); color/opacity are controlled by the caller via
-// currentColor + a text-* className.
-function BookedRingMotif({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 200 200" className={className} aria-hidden="true" focusable="false">
-      <circle cx="100" cy="100" r="90" fill="none" stroke="currentColor" strokeWidth="1" />
-      <circle cx="100" cy="100" r="62" fill="none" stroke="currentColor" strokeWidth="1" />
-      <circle cx="100" cy="100" r="34" fill="none" stroke="currentColor" strokeWidth="1" />
-      <circle cx="100" cy="18" r="3" fill="currentColor" />
-      <circle cx="165" cy="60" r="3" fill="currentColor" />
-      <circle cx="165" cy="140" r="3" fill="currentColor" />
-      <circle cx="100" cy="182" r="3" fill="currentColor" />
-      <circle cx="35" cy="140" r="3" fill="currentColor" />
-      <circle cx="35" cy="60" r="3" fill="currentColor" />
-    </svg>
   );
 }

@@ -1,29 +1,23 @@
 import { screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { renderWithProviders } from "@/test-utils/render";
 import { AuthBrandPane } from "./auth-brand-pane";
-import { usePathname } from "@/lib/i18n/navigation";
-
-vi.mock("@/lib/i18n/navigation", () => ({
-  usePathname: vi.fn(() => "/sign-in"),
-}));
 
 describe("AuthBrandPane", () => {
-  it("renders the sign-in headline for the /sign-in route", () => {
-    vi.mocked(usePathname).mockReturnValue("/sign-in");
+  it("renders the landing tagline, regardless of the active auth route", () => {
     renderWithProviders(<AuthBrandPane />);
 
     expect(
-      screen.getByRole("heading", { name: "Welcome back to the ledger." }),
+      screen.getByRole("heading", { name: "Show your work. Run your business." }),
     ).toBeInTheDocument();
   });
 
-  it("renders the mfa headline for the /sign-in/mfa route", () => {
-    vi.mocked(usePathname).mockReturnValue("/sign-in/mfa");
+  it("renders the trust checklist matching the landing page", () => {
     renderWithProviders(<AuthBrandPane />);
 
-    expect(
-      screen.getByRole("heading", { name: "One more entry." }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Free during beta")).toBeInTheDocument();
+    expect(screen.getByText("No card required")).toBeInTheDocument();
+    expect(screen.getByText("Cancel anytime")).toBeInTheDocument();
+    expect(screen.getByText("Secure checkout by Lemon Squeezy")).toBeInTheDocument();
   });
 });
