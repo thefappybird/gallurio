@@ -289,9 +289,21 @@ export default async function Home({ params }: Props) {
       <section className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">
         {/* Same 180deg flip as the hero's art layer, for the same reason:
             keeps the denser cluster off in the corners instead of behind
-            the heading/CTA. */}
-        <div className="absolute inset-0 rotate-180">
-          <AmbientBackground />
+            the heading/CTA. This section has no trust-strip to separate
+            from (unlike the hero), so instead of a top-to-bottom fade it
+            gets a center-out fade -- art stays strong at the edges and
+            clears out behind the centered text column, regardless of how
+            wide the body copy happens to run. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            WebkitMaskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 42%, black 78%)",
+            maskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 42%, black 78%)",
+          }}
+        >
+          <div className="absolute inset-0 rotate-180">
+            <AmbientBackground />
+          </div>
         </div>
         <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6">
           <h2 className="text-balance font-heading text-3xl font-extrabold tracking-tight sm:text-5xl">
