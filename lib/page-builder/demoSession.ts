@@ -8,6 +8,9 @@ export const DEMO_SESSION_KEY = "gallurio:portfolio-maker-demo:session";
 // independently of that seed.
 export const DEMO_PROMO_CODE = "DEMOPRO2026";
 export const DEMO_PROMO_CLAIMED_KEY = "gallurio:portfolio-maker-demo:promo-claimed";
+// Native `storage` events don't fire in the same tab that wrote the value —
+// dispatch this so same-tab listeners (e.g. the disclaimer banner) can react.
+export const DEMO_PROMO_CLAIMED_EVENT = "gallurio:demo-promo-claimed";
 export const DEMO_IMAGE_COUNT_KEY_PREFIX = "gallurio:portfolio-maker-demo:images:";
 
 /** Reads (or generates + persists) this browser's demo session id. */
@@ -37,6 +40,7 @@ export function isDemoPromoClaimed(): boolean {
 export function markDemoPromoClaimed(): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(DEMO_PROMO_CLAIMED_KEY, "1");
+  window.dispatchEvent(new Event(DEMO_PROMO_CLAIMED_EVENT));
 }
 
 /** An image uploaded this demo session, shown in the demo image picker's grid. */

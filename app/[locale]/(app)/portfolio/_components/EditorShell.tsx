@@ -1838,7 +1838,8 @@ export function EditorShell({
           aria-pressed={previewMode}
           data-tour-id="preview-toggle"
           loading={previewLoading}
-          disabled={previewLoading}
+          disabled={demoMode || previewLoading}
+          title={demoMode ? tDemo("previewUnavailable") : undefined}
           className="shrink-0"
           onClick={() => void togglePreview()}
         >
@@ -1846,9 +1847,13 @@ export function EditorShell({
         </Button>
         <button
           type="button"
-          title={t("preview.openInTab")}
+          title={demoMode ? tDemo("previewUnavailable") : t("preview.openInTab")}
           aria-label={t("preview.openInTab")}
-          onClick={() => window.open(`${previewBasePath}?zone=${previewZone}`, "_blank", "noopener,noreferrer")}
+          disabled={demoMode}
+          onClick={() => {
+            if (demoMode) return;
+            window.open(`${previewBasePath}?zone=${previewZone}`, "_blank", "noopener,noreferrer");
+          }}
           className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
           <ExternalLinkIcon className="size-4" aria-hidden />

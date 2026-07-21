@@ -2936,8 +2936,10 @@
       }
     },
     "portfolioMakerDemo": {
+      "previewUnavailable": "Preview isn't available in the demo — sign up to see your live page.",
       "disclaimerBanner": {
-        "message": "Demo mode — nothing you do here is saved to a database or shared with anyone. It only lives in this browser."
+        "message": "Demo mode — nothing you do here is saved to a database or shared with anyone. It only lives in this browser.",
+        "bonusCode": "Your bonus code: {code} (claimed)"
       },
       "entry": {
         "title": "Try the portfolio editor",

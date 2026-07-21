@@ -2935,8 +2935,10 @@
       }
     },
     "portfolioMakerDemo": {
+      "previewUnavailable": "Preview tidak tersedia di demo — daftar untuk melihat halaman live Anda.",
       "disclaimerBanner": {
-        "message": "Mode demo — tidak ada yang Anda lakukan di sini disimpan ke database atau dibagikan ke siapa pun. Semuanya hanya tersimpan di browser ini."
+        "message": "Mode demo — tidak ada yang Anda lakukan di sini disimpan ke database atau dibagikan ke siapa pun. Semuanya hanya tersimpan di browser ini.",
+        "bonusCode": "Kode bonus Anda: {code} (sudah diklaim)"
       },
       "entry": {
         "title": "Coba editor portfolio",

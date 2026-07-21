@@ -1559,6 +1559,29 @@ describe("EditorShell demoMode", () => {
     expect(__capturedPuckConfig?.categories?.manual?.components).not.toContain("FeaturedWork");
     expect(__capturedPuckConfig?.categories?.presets?.components).not.toContain("FeaturedWorkPreset");
   });
+
+  it("disables the Preview toggle (no real preview route exists for demo data)", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    const previewToggle = screen.getByRole("button", { name: "Preview" });
+    expect(previewToggle).toBeDisabled();
+  });
+
+  it("disables the open-in-tab preview control and never calls window.open", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    const openInTab = screen.getByRole("button", { name: "Open in new tab" });
+    expect(openInTab).toBeDisabled();
+
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    fireEvent.click(openInTab);
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
 });
 
 describe("EditorShell real (non-demo) editor — unaffected by the demo picker swap", () => {
@@ -1568,5 +1591,15 @@ describe("EditorShell real (non-demo) editor — unaffected by the demo picker s
 
     expect(__capturedPuckConfig?.categories?.manual?.components).toContain("FeaturedWork");
     expect(__capturedPuckConfig?.categories?.presets?.components).toContain("FeaturedWorkPreset");
+  });
+
+  it("keeps the Preview toggle enabled and functional (regression guard for the demo-only disable)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    const previewToggle = screen.getByRole("button", { name: "Preview" });
+    expect(previewToggle).not.toBeDisabled();
+
+    const openInTab = screen.getByRole("button", { name: "Open in new tab" });
+    expect(openInTab).not.toBeDisabled();
   });
 });

@@ -2935,8 +2935,10 @@
       }
     },
     "portfolioMakerDemo": {
+      "previewUnavailable": "Hindi available ang preview sa demo — mag-sign up para makita ang live page mo.",
       "disclaimerBanner": {
-        "message": "Demo mode — walang naise-save sa database o ibinabahagi kaninuman dito. Nasa browser na ito lang."
+        "message": "Demo mode — walang naise-save sa database o ibinabahagi kaninuman dito. Nasa browser na ito lang.",
+        "bonusCode": "Ang bonus code mo: {code} (na-claim na)"
       },
       "entry": {
         "title": "Subukan ang portfolio editor",
