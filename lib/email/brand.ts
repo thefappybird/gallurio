@@ -5,6 +5,8 @@ const HEX6 = /^#[0-9a-fA-F]{6}$/;
 // runtime app URL (which can be absent in a worker or point at localhost).
 export const GALLURIO_LOGO_URL = "https://gallurio.com/brand/gallurio-sq-white.png";
 
+export const SUPPORT_EMAIL = "support@gallurio.com";
+
 export type Brand = {
   kind: "platform" | "partner";
   name: string;
