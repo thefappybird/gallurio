@@ -126,8 +126,8 @@ export default async function Home({ params }: Props) {
           <div
             className="absolute inset-0"
             style={{
-              WebkitMaskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 22%, black 48%)",
-              maskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 22%, black 48%)",
+              WebkitMaskImage: "radial-gradient(ellipse 30% 80% at center, transparent 65%, black 100%)",
+              maskImage: "radial-gradient(ellipse 30% 80% at center, transparent 65%, black 100%)",
             }}
           >
             {/* Rotated 180deg so the art's denser cluster lands opposite
@@ -135,8 +135,12 @@ export default async function Home({ params }: Props) {
                 and "Manage" card. The rotation is on this inner layer only
                 -- the mask above stays unrotated so its center-out fade
                 still reads correctly in screen space. Same technique as
-                the final CTA's art layer, sized tighter here since the
-                eyebrow/headline/body/CTA stack is narrower and taller. */}
+                the final CTA's art layer. The ellipse's two size values
+                are independent (rx% of width, ry% of height) rather than
+                a box-matched default -- the eyebrow-to-microcopy stack is
+                much taller relative to its own width than the section box
+                is, so rx/ry need different percentages, not one shared
+                one, to clear the full stack without widening past it. */}
             <div className="absolute inset-0 rotate-180">
               <AmbientBackground />
             </div>
@@ -213,7 +217,12 @@ export default async function Home({ params }: Props) {
           {t("split.bridgeLead")} <strong className="font-extrabold text-foreground">{t("split.bridgeEmphasis")}</strong>
         </p>
 
-        <div className="relative z-10 mt-14 overflow-hidden border-y border-border py-4">
+        <div className="relative z-10 mx-auto mt-14 max-w-2xl px-4 text-center sm:px-6">
+          <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">{t("whatIs.title")}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-muted-foreground">{t("whatIs.body")}</p>
+        </div>
+
+        <div className="relative z-10 mt-10 overflow-hidden border-y border-border py-4">
           <div className="flex w-max animate-marquee-scroll gap-10" aria-hidden="true">
             {[...builtForItems, ...builtForItems].map((item, i) => (
               <span
@@ -295,12 +304,15 @@ export default async function Home({ params }: Props) {
             from (unlike the hero), so instead of a top-to-bottom fade it
             gets a center-out fade -- art stays strong at the edges and
             clears out behind the centered text column, regardless of how
-            wide the body copy happens to run. */}
+            wide the body copy happens to run. Independent rx/ry (not a
+            box-matched ellipse) so the safe zone can be tall enough to
+            clear the heading-to-microcopy stack without also widening
+            past the column's own width. */}
         <div
           className="absolute inset-0"
           style={{
-            WebkitMaskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 24%, black 52%)",
-            maskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 24%, black 52%)",
+            WebkitMaskImage: "radial-gradient(ellipse 32% 78% at center, transparent 62%, black 100%)",
+            maskImage: "radial-gradient(ellipse 32% 78% at center, transparent 62%, black 100%)",
           }}
         >
           <div className="absolute inset-0 rotate-180">

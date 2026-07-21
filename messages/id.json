@@ -41,6 +41,10 @@
       "bridgeLead": "Satu login yang sama.",
       "bridgeEmphasis": "Dua tugas yang sangat berbeda, dikerjakan dengan benar."
     },
+    "whatIs": {
+      "title": "Apa itu Gallurio?",
+      "body": "Gallurio adalah platform portfolio dan pemesanan untuk para profesional kreatif. Terbitkan halaman publik yang menampilkan karya Anda, lalu kelola booking, klien, dan detail yang menyusul setiap permintaan — semuanya dari workspace yang sama."
+    },
     "builtFor": {
       "item1": "Fotografer",
       "item2": "Videografer",
@@ -115,7 +119,7 @@
       "microcopy": "Akses Pro penuh selama satu bulan. Tanpa kartu diperlukan."
     },
     "manifesto": {
-      "quote": "Setiap booking tercatat. Setiap klien terpercaya. Tidak ada yang samar.",
+      "quote": "Setiap portofolio yang layak dipercaya. Setiap booking tercatat. Tidak ada yang samar.",
       "attribution": "— gagasan di balik Gallurio"
     },
     "pricingTeaser": {

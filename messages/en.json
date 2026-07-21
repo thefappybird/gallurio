@@ -41,6 +41,10 @@
       "bridgeLead": "Same login.",
       "bridgeEmphasis": "Two very different jobs, done right."
     },
+    "whatIs": {
+      "title": "What is Gallurio?",
+      "body": "Gallurio is a portfolio and booking platform for creative professionals. Publish a public page that shows your work, then manage the bookings, clients, and details that follow every inquiry — all from the same workspace."
+    },
     "builtFor": {
       "item1": "Photographers",
       "item2": "Videographers",
@@ -115,7 +119,7 @@
       "microcopy": "Full Pro access for one month. No card required."
     },
     "manifesto": {
-      "quote": "Every booking accounted for. Every client trusted. Nothing left ambiguous.",
+      "quote": "Every portfolio worth trusting. Every booking accounted for. Nothing left ambiguous.",
       "attribution": "— the idea behind Gallurio"
     },
     "pricingTeaser": {

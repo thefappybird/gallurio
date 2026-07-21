@@ -41,6 +41,10 @@
       "bridgeLead": "Iisang login.",
       "bridgeEmphasis": "Dalawang magkaibang trabaho, ginawa nang tama."
     },
+    "whatIs": {
+      "title": "Ano ang Gallurio?",
+      "body": "Ang Gallurio ay isang portfolio at booking platform para sa mga creative professional. Mag-publish ng public page na nagpapakita ng iyong trabaho, pagkatapos ay pamahalaan ang mga booking, kliyente, at detalyeng kasunod ng bawat inquiry — lahat mula sa iisang workspace."
+    },
     "builtFor": {
       "item1": "Mga Photographer",
       "item2": "Mga Videographer",
@@ -115,7 +119,7 @@
       "microcopy": "Full Pro access sa loob ng isang buwan. Walang kailangang card."
     },
     "manifesto": {
-      "quote": "Bawat booking ay naitatala. Bawat kliyente ay mapagkakatiwalaan. Walang naiiwang malabo.",
+      "quote": "Bawat portfolio na mapagkakatiwalaan. Bawat booking ay naitatala. Walang naiiwang malabo.",
       "attribution": "— ang ideya sa likod ng Gallurio"
     },
     "pricingTeaser": {
