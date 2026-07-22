@@ -23,6 +23,11 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: (...args: unknown[]) => requireOrgMock(...args),
 }));
 
+const userFindOneMock = vi.fn();
+vi.mock("@/lib/db/models", () => ({
+  User: { findOne: (...args: unknown[]) => userFindOneMock(...args) },
+}));
+
 vi.mock("./_panel", () => ({
   SubscribePanel: (props: { returnTo?: string }) => (
     <div data-testid="subscribe-panel" data-return-to={props.returnTo ?? ""} />
@@ -57,6 +62,7 @@ function makeSearchParams(returnTo?: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  userFindOneMock.mockReturnValue({ lean: vi.fn().mockResolvedValue({ betaParticipation: { recordedAt: null } }) });
 });
 
 describe("SubscribePage — owner", () => {

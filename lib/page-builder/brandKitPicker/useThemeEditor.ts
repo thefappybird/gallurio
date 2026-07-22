@@ -22,6 +22,14 @@ type Options = {
   savedThemes: PortfolioSavedTheme[];
   onSaveTheme?: (name: string) => Promise<SaveResult>;
   onUpdateTheme?: (id: string, name: string, brandKit: PortfolioBrandKit) => Promise<SaveResult>;
+  /**
+   * When set, called instead of committing the very first control tweak after
+   * a preset is picked (i.e. the moment currentTheme would become non-null).
+   * Merely picking a preset (applyTile) is unaffected — this only gates a
+   * control edit on top of a preset. Used by the Portfolio Maker demo to gate
+   * full theme customization behind signup.
+   */
+  onCustomizeGate?: () => void;
 };
 
 function validateName(
@@ -36,7 +44,7 @@ function validateName(
   return null;
 }
 
-export function useThemeEditor({ value, onChange, savedThemes, onSaveTheme, onUpdateTheme }: Options) {
+export function useThemeEditor({ value, onChange, savedThemes, onSaveTheme, onUpdateTheme, onCustomizeGate }: Options) {
   const [currentTheme, setCurrentTheme] = useState<PortfolioBrandKit | null>(null);
   const [selection, setSelection] = useState<ThemeSelection>({ kind: "none" });
   const [editing, setEditing] = useState<EditSession | null>(null);
@@ -78,10 +86,14 @@ export function useThemeEditor({ value, onChange, savedThemes, onSaveTheme, onUp
       setPendingOverride({ nextKit, activeKit: lastTileKit.current });
       return;
     }
+    if (onCustomizeGate && currentTheme === null) {
+      onCustomizeGate();
+      return;
+    }
     onChange(nextKit);
     setCurrentTheme(nextKit);
     setSelection({ kind: "current" });
-  }, [editing, selection, currentTheme, onChange]);
+  }, [editing, selection, currentTheme, onChange, onCustomizeGate]);
 
   const confirmOverride = useCallback(() => {
     if (!pendingOverride) return;

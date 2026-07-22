@@ -70,6 +70,7 @@ export default async function Home({ params }: Props) {
       ],
       image: "/marketing/screenshots/portfolio-builder-canvas",
       tone: "card" as const,
+      cta: { label: t("features.portfolioBuilder.cta"), href: "/portfolio-maker-demo" as const },
     },
     {
       kicker: t("features.bookingInquiryForms.title"),
@@ -155,12 +156,20 @@ export default async function Home({ params }: Props) {
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-muted-foreground">{t("hero.body")}</p>
             <div className="mt-9 flex flex-col items-center gap-3">
-              <Link
-                href="/sign-up"
-                className={buttonVariants({ variant: "brand", size: "lg", className: "h-12 px-8 text-base" })}
-              >
-                {t("hero.ctaStart")}
-              </Link>
+              <div className="flex flex-col items-center gap-3 sm:flex-row">
+                <Link
+                  href="/sign-up"
+                  className={buttonVariants({ variant: "brand", size: "lg", className: "h-12 px-8 text-base" })}
+                >
+                  {t("hero.ctaStart")}
+                </Link>
+                <Link
+                  href="/book-demo"
+                  className={buttonVariants({ variant: "outline", size: "lg", className: "h-12 px-8 text-base" })}
+                >
+                  {t("hero.ctaSecondary")}
+                </Link>
+              </div>
               <span className="text-sm font-medium text-muted-foreground">{t("hero.ctaMicrocopy")}</span>
             </div>
           </div>
@@ -325,9 +334,14 @@ export default async function Home({ params }: Props) {
           </h2>
           <p className="max-w-xl text-base leading-7 text-muted-foreground">{t("finalCta.body")}</p>
           <div className="flex flex-col items-center gap-3">
-            <Link href="/sign-up" className={buttonVariants({ variant: "brand", size: "lg", className: "h-12 px-8 text-base" })}>
-              {t("finalCta.button")}
-            </Link>
+            <div className="flex flex-col items-center gap-3 sm:flex-row">
+              <Link href="/sign-up" className={buttonVariants({ variant: "brand", size: "lg", className: "h-12 px-8 text-base" })}>
+                {t("finalCta.button")}
+              </Link>
+              <Link href="/book-demo" className={buttonVariants({ variant: "outline", size: "lg", className: "h-12 px-8 text-base" })}>
+                {t("finalCta.ctaSecondary")}
+              </Link>
+            </div>
             <span className="text-sm font-medium text-muted-foreground">{t("finalCta.microcopy")}</span>
           </div>
         </div>
@@ -353,6 +367,7 @@ function PanelSection({
     features: string[];
     image: string;
     tone: "card" | "muted" | "brand";
+    cta?: { label: string; href: string };
   };
   index: number;
 }) {
@@ -385,7 +400,13 @@ function PanelSection({
 function TextBlock({
   panel,
 }: {
-  panel: { kicker: string; headline: string; description: string; features: string[] };
+  panel: {
+    kicker: string;
+    headline: string;
+    description: string;
+    features: string[];
+    cta?: { label: string; href: string };
+  };
 }) {
   return (
     <div className="flex-1 text-start">
@@ -402,6 +423,11 @@ function TextBlock({
           </li>
         ))}
       </ul>
+      {panel.cta ? (
+        <Link href={panel.cta.href} className={buttonVariants({ variant: "outline", className: "mt-6" })}>
+          {panel.cta.label}
+        </Link>
+      ) : null}
     </div>
   );
 }

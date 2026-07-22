@@ -43,6 +43,14 @@ type InquiryConfirmationCopy = {
   body3: (ws: string) => string;
 };
 
+type DemoBookingConfirmationCopy = {
+  subject: (ws: string) => string;
+  greeting: (name: string) => string;
+  body1: (ws: string) => string;
+  body2: () => string;
+  body3: () => string;
+};
+
 type PasswordResetCopy = {
   subject: string;
   intro: string;
@@ -94,6 +102,7 @@ type LifecycleCopy = {
 type EmailCopyMap = {
   teamInvite: Record<Locale, TeamInviteCopy>;
   inquiryConfirmation: Record<Locale, InquiryConfirmationCopy>;
+  demoBookingConfirmation: Record<Locale, DemoBookingConfirmationCopy>;
   passwordReset: Record<Locale, PasswordResetCopy>;
   bookingConfirmedClient: Record<Locale, BookingConfirmedClientCopy>;
   bookingCancelledClient: Record<Locale, BookingCancelledClientCopy>;
@@ -181,6 +190,36 @@ export const EMAIL_COPY = {
       body1: (ws: string) => `Terima kasih telah menghubungi ${ws}. Kami sangat senang Anda menghubungi kami.`,
       body2: () => `Pertanyaan Anda sudah diterima dengan baik oleh tim, dan seseorang akan segera menghubungi Anda.`,
       body3: () => `Kami menghargai Anda telah mempertimbangkan kami untuk acara Anda.`,
+    },
+  },
+  demoBookingConfirmation: {
+    en: {
+      subject: (_ws: string) => `Your Gallurio demo request`,
+      greeting: (name: string) => `Hi ${name},`,
+      body1: (_ws: string) => `Thanks for requesting a demo of Gallurio! We've received your request.`,
+      body2: () => `Keep an eye on your inbox — someone from our team will follow up soon.`,
+      body3: () => `We're excited to show you around.`,
+    },
+    fil: {
+      subject: (_ws: string) => `Ang iyong kahilingan para sa demo ng Gallurio`,
+      greeting: (name: string) => `Kumusta ${name},`,
+      body1: (_ws: string) => `Salamat sa paghiling ng demo ng Gallurio! Natanggap na namin ang iyong kahilingan.`,
+      body2: () => `Bantayan ang iyong inbox — may makikipag-ugnayan sa iyo mula sa aming team sa lalong madaling panahon.`,
+      body3: () => `Excited kaming ipakita sa iyo ang Gallurio.`,
+    },
+    th: {
+      subject: (_ws: string) => `คำขอทดลองใช้งาน Gallurio ของคุณ`,
+      greeting: (name: string) => `สวัสดีคุณ ${name},`,
+      body1: (_ws: string) => `ขอบคุณที่ขอชมการสาธิต Gallurio เราได้รับคำขอของคุณแล้ว`,
+      body2: () => `โปรดติดตามกล่องข้อความของคุณ ทีมงานของเราจะติดต่อกลับไปในเร็ว ๆ นี้`,
+      body3: () => `เรารู้สึกตื่นเต้นที่จะได้พาคุณชมรอบ ๆ`,
+    },
+    id: {
+      subject: (_ws: string) => `Permintaan demo Gallurio Anda`,
+      greeting: (name: string) => `Halo ${name},`,
+      body1: (_ws: string) => `Terima kasih telah meminta demo Gallurio! Kami telah menerima permintaan Anda.`,
+      body2: () => `Pantau terus kotak masuk Anda — tim kami akan segera menghubungi Anda.`,
+      body3: () => `Kami sangat senang untuk menunjukkan Gallurio kepada Anda.`,
     },
   },
   passwordReset: {

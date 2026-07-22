@@ -8,14 +8,14 @@ describe("seedBasePromos", () => {
   afterAll(async () => stopInMemoryMongo());
   afterEach(async () => clearCollections());
 
-  it("creates exactly the four standard promos, including the post-beta offer, and is idempotent", async () => {
-    await expect(seedBasePromos()).resolves.toEqual({ created: 4, existing: 0 });
-    await expect(seedBasePromos()).resolves.toEqual({ created: 0, existing: 4 });
-    expect(await PromoCode.countDocuments()).toBe(4);
+  it("creates exactly the five standard promos, including the post-beta and demo offers, and is idempotent", async () => {
+    await expect(seedBasePromos()).resolves.toEqual({ created: 5, existing: 0 });
+    await expect(seedBasePromos()).resolves.toEqual({ created: 0, existing: 5 });
+    expect(await PromoCode.countDocuments()).toBe(5);
   });
 
   it("does not write in dry-run mode", async () => {
-    await expect(seedBasePromos({ dryRun: true })).resolves.toEqual({ created: 4, existing: 0 });
+    await expect(seedBasePromos({ dryRun: true })).resolves.toEqual({ created: 5, existing: 0 });
     expect(await PromoCode.countDocuments()).toBe(0);
   });
 });

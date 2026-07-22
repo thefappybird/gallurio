@@ -47,6 +47,9 @@ type Props = {
   savedThemes: PortfolioSavedTheme[];
   /** Optimistic updater: called after a theme is saved/updated/deleted. */
   onSavedThemesChange: (next: PortfolioSavedTheme[]) => void;
+  /** Portfolio Maker demo only: gate the first control tweak after a preset
+   *  behind signup instead of committing it. See useThemeEditor's onCustomizeGate. */
+  onCustomizeGate?: () => void;
 };
 
 export function ThemePanelDialog({
@@ -57,6 +60,7 @@ export function ThemePanelDialog({
   onCancel,
   savedThemes,
   onSavedThemesChange,
+  onCustomizeGate,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const tk = useTranslations("app.pageBuilder.brandKit");
@@ -123,6 +127,7 @@ export function ThemePanelDialog({
       }
       return res;
     },
+    onCustomizeGate,
   });
 
   // Single source of truth for the bottom name-validation message — derived

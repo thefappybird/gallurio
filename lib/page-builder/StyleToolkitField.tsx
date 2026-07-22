@@ -47,6 +47,8 @@ import { usePuckStore } from "./puckHooks";
 import { SingleImageControl, MultiImageControl, MultiCollectionControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import type { CollectionRef } from "./galleryPicker/MediaField";
+import { useDemoPicker } from "./demoPickerContext";
+import { DemoSingleImageControl, DemoMultiImageControl } from "@/app/[locale]/(app)/portfolio/_components/DemoImagePicker";
 import {
   ToolbarToggle,
   ColorSwatchRow,
@@ -292,11 +294,16 @@ export function ContainerBackgroundControls({
   onSpeedChange: (v: string) => void;
 }) {
   const showAnimation = images.length >= 2;
+  const demo = useDemoPicker();
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <span className="text-xs text-muted-foreground">Background images</span>
-        <MultiImageControl value={images} onChange={onImagesChange} max={12} />
+        {demo ? (
+          <DemoMultiImageControl value={images} onChange={onImagesChange} max={12} />
+        ) : (
+          <MultiImageControl value={images} onChange={onImagesChange} max={12} />
+        )}
       </div>
       {showAnimation && (
         <>
@@ -353,6 +360,7 @@ export function BannerSection({
   /** When true, suppresses all background-image pickers (gallery blocks: color only). */
   hideBgImage?: boolean;
 }) {
+  const demo = useDemoPicker();
   return (
     <div className="flex flex-col gap-3">
       <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -360,17 +368,24 @@ export function BannerSection({
       </span>
       <div className="flex flex-col gap-1.5">
         <span className="text-xs text-muted-foreground">Color</span>
-        <ColorSwatchRow value={s.bgColorToken} onChange={(t) => set({ bgColorToken: t })} />
+        <ColorSwatchRow value={s.bgColorToken} onChange={(tok) => set({ bgColorToken: tok })} />
       </div>
       {!hideBgImage && (container ? (
         <ContainerBackgroundControls {...container} />
       ) : (
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-muted-foreground">Image</span>
-          <SingleImageControl
-            value={s.bgImagePublicId ?? ""}
-            onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
-          />
+          {demo ? (
+            <DemoSingleImageControl
+              value={s.bgImagePublicId ?? ""}
+              onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
+            />
+          ) : (
+            <SingleImageControl
+              value={s.bgImagePublicId ?? ""}
+              onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
+            />
+          )}
         </div>
       ))}
     </div>
@@ -386,6 +401,7 @@ export function ContentInputs({
   props: Record<string, unknown>;
   setProp: (key: string, val: unknown) => void;
 }) {
+  const demo = useDemoPicker();
   if (type === "Heading") {
     return (
       <div className="flex flex-col gap-3">
@@ -463,11 +479,19 @@ export function ContentInputs({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-muted-foreground">Photos</span>
-          <MultiImageControl
-            value={(props.images as MediaPickerSelection[]) ?? []}
-            onChange={(v) => setProp("images", v)}
-            max={60}
-          />
+          {demo ? (
+            <DemoMultiImageControl
+              value={(props.images as MediaPickerSelection[]) ?? []}
+              onChange={(v) => setProp("images", v)}
+              max={60}
+            />
+          ) : (
+            <MultiImageControl
+              value={(props.images as MediaPickerSelection[]) ?? []}
+              onChange={(v) => setProp("images", v)}
+              max={60}
+            />
+          )}
         </div>
       </div>
     );
@@ -477,10 +501,16 @@ export function ContentInputs({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-muted-foreground">Collections</span>
-          <MultiCollectionControl
-            value={(props.collections as CollectionRef[]) ?? []}
-            onChange={(v) => setProp("collections", v)}
-          />
+          {demo ? (
+            <p className="text-xs text-muted-foreground">
+              Collections aren&apos;t available in this demo. Sign up free to organize photos into collections.
+            </p>
+          ) : (
+            <MultiCollectionControl
+              value={(props.collections as CollectionRef[]) ?? []}
+              onChange={(v) => setProp("collections", v)}
+            />
+          )}
         </div>
       </div>
     );

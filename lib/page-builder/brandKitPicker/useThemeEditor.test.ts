@@ -9,12 +9,12 @@ const editorialTile = { key: "preset:editorial", name: "Editorial", brandKit: ed
 
 const savedTheme = (id: string, name: string, kit: PortfolioBrandKit = DEFAULT_BRAND_KIT): PortfolioSavedTheme => ({ id, name, brandKit: kit });
 
-function harness(initial: PortfolioBrandKit = DEFAULT_BRAND_KIT, saved: PortfolioSavedTheme[] = []) {
+function harness(initial: PortfolioBrandKit = DEFAULT_BRAND_KIT, saved: PortfolioSavedTheme[] = [], onCustomizeGate?: () => void) {
   const onChange = vi.fn();
   const onSaveTheme = vi.fn().mockResolvedValue({ ok: true as const, theme: { id: "n1", name: "New", brandKit: initial } });
   const onUpdateTheme = vi.fn().mockResolvedValue({ ok: true as const, theme: { id: "s1", name: "x", brandKit: initial } });
   const { result } = renderHook(() =>
-    useThemeEditor({ value: initial, onChange, savedThemes: saved, onSaveTheme, onUpdateTheme }));
+    useThemeEditor({ value: initial, onChange, savedThemes: saved, onSaveTheme, onUpdateTheme, onCustomizeGate }));
   return { result, onChange, onSaveTheme, onUpdateTheme };
 }
 
@@ -26,6 +26,15 @@ describe("useThemeEditor", () => {
     expect(h.result.current.hasUnsavedCurrent).toBe(true);
     expect(h.result.current.overrideOpen).toBe(false);
     expect(h.result.current.selection).toEqual({ kind: "current" });
+  });
+
+  it("calls onCustomizeGate instead of committing on the first control tweak after a preset, when set", () => {
+    const onCustomizeGate = vi.fn();
+    const h = harness(DEFAULT_BRAND_KIT, [], onCustomizeGate);
+    act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+    expect(onCustomizeGate).toHaveBeenCalledTimes(1);
+    expect(h.onChange).not.toHaveBeenCalled();
+    expect(h.result.current.hasUnsavedCurrent).toBe(false);
   });
 
   it("preserves the Current Theme when a different tile is loaded", () => {

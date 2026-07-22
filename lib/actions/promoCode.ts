@@ -8,6 +8,7 @@ import { isEntitled } from "@/lib/billing/access";
 import { hasActivatedOnboardingPlan } from "@/lib/onboarding/planActivation";
 
 const BETA2MO_GRANT_MONTHS = 2;
+const DEMO1MO_GRANT_MONTHS = 1;
 
 export type RedeemPromoCodeResult =
   | { ok: true; startsImmediately: boolean }
@@ -112,6 +113,50 @@ export async function redeemPromoCodeAction(
     }
 
     return result;
+  }
+
+  if (promoCode.type === "demo1mo") {
+    // Single shared marketing code, no per-identity eligibility gate (unlike
+    // beta2mo — any authenticated owner can redeem). Only one write
+    // (codesRedeemed) needs atomicity against a double-redeem race, so a
+    // transaction isn't needed here the way it is for beta2mo's two chained
+    // writes (codesRedeemed + betaPromoRedeemedAt).
+    const now = new Date();
+    const redeemResult = await Workspace.updateOne(
+      { _id: ctx.workspace._id, codesRedeemed: { $ne: promoCode._id } },
+      { $addToSet: { codesRedeemed: promoCode._id } }
+    );
+    if (redeemResult.modifiedCount === 0) {
+      return { error: "promo_code_already_redeemed" };
+    }
+
+    if (isEntitled(ctx.workspace)) {
+      // Already entitled (e.g. still in a free month) — queue instead of
+      // overwriting, same as beta2mo. Consumed by pendingGrantUpdate() at the
+      // workspace's next terminal-expiry transition.
+      await Workspace.updateOne(
+        { _id: ctx.workspace._id },
+        {
+          $set: {
+            "pendingPromoGrant.grantMonths": DEMO1MO_GRANT_MONTHS,
+            "pendingPromoGrant.queuedAt": now,
+            ...(options.onboarding ? { onboardingPlanSelection: "promo" } : {}),
+          },
+        }
+      );
+      return { ok: true, startsImmediately: false };
+    }
+
+    const expiresAt = new Date(now);
+    expiresAt.setMonth(expiresAt.getMonth() + DEMO1MO_GRANT_MONTHS);
+    await grantPlan(ctx.workspace._id, { plan: "pro", expiresAt });
+    if (options.onboarding) {
+      await Workspace.updateOne(
+        { _id: ctx.workspace._id },
+        { $set: { onboardingPlanSelection: "promo" } }
+      );
+    }
+    return { ok: true, startsImmediately: true };
   }
 
   // $addToSet is naturally idempotent (adding the same id twice is a no-op),
