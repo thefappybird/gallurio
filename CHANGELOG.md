@@ -6,12 +6,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 ## [1.1.2] - 2026-07-22
 
 ### Added
+- Public Portfolio Builder demo: visitors can explore the editor without an account using local-only drafts, starter templates, a guided tour, temporary demo-image uploads, and clear upgrade gates.
+- A one-month Pro promotional reward for Portfolio Builder demo participants, redeemable during onboarding or from the subscription gate.
+- Public Book a Demo form with validated, rate-limited submissions plus branded confirmation and internal-notification emails.
 - Lapsed workspace owners can now rejoin an active beta program once from the subscription gate. The recovery grant is transactionally guarded at the identity level and remains subject to the existing beta-program safeguards.
 
 ### Changed
-- Reworked the public Book a Demo page into the auth-shell split layout, reversed: a compact demo form card now sits over the theme-aware ambient SVG pane, while the narrower, theme-opposed pane presents the localized Gallurio manifesto.
+- Updated marketing, header, footer, and auth-page calls to action to feature the no-code, drag-and-drop Portfolio Builder and Book a Demo experiences.
+- Reworked the public Book a Demo page into the auth-shell split layout: a compact demo form card sits over the theme-aware ambient SVG pane, while the narrower, theme-opposed pane presents the localized Gallurio manifesto.
 - Redesigned the owner subscription gate and onboarding plan selector with consistent Pro, beta-recovery, and promo-code controls; promo validation errors now remain visible and associated with their input across responsive layouts.
-- Updated subscription-recovery and onboarding-plan copy across all 5 launch locales (en, fil, id, ar, th).
+- Updated the new demo, booking, subscription-recovery, and onboarding-plan copy across all 5 launch locales (en, fil, id, ar, th).
+
+### Fixed
+- Public marketing and demo routes no longer redirect anonymous visitors to sign-in.
+- Portfolio Builder demo behavior now keeps preview unavailable, makes the guide optional, and avoids overflow in the demo editor.
 
 ## [1.1.1] - 2026-07-21
 
