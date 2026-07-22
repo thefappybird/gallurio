@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { SocialLinks } from "../_components/social-links";
-
-const SUPPORT_EMAIL = "support@gallurio.com";
+import { SUPPORT_EMAIL } from "@/lib/email/brand";
 
 type Props = { params: Promise<{ locale: string }> };
 

@@ -2,12 +2,16 @@
   "marketing": {
     "nav": {
       "pricing": "Presyo",
+      "portfolioMaker": "Portfolio Builder",
+      "bookDemo": "Mag-book ng Demo",
       "contact": "Makipag-ugnayan",
       "signIn": "Mag-sign in",
       "getStarted": "Magsimula"
     },
     "footer": {
       "pricing": "Presyo",
+      "portfolioMaker": "Portfolio Builder",
+      "bookDemo": "Mag-book ng Demo",
       "terms": "Mga Tuntunin",
       "privacy": "Privacy",
       "refunds": "Refund",
@@ -15,14 +19,15 @@
     },
     "metadata": {
       "title": "Gallurio — Mga Tool sa Portfolio, Booking, at Client para sa Creative Business",
-      "description": "Gumawa ng propesyonal na portfolio, mangalap ng booking inquiries, at pamahalaan ang mga kliyente, booking, gallery, at invoice sa iisang workspace gamit ang Gallurio."
+      "description": "Gumawa ng propesyonal na portfolio gamit ang drag-and-drop, walang-code na website builder, mangalap ng booking inquiries, at pamahalaan ang mga kliyente, booking, gallery, at invoice sa iisang workspace gamit ang Gallurio."
     },
     "hero": {
       "eyebrow": "Isang workspace, dalawang trabaho",
-      "headlineShow": "Ipakita ang iyong trabaho.",
-      "headlineRun": "Patakbuhin ang iyong negosyo.",
+      "headlineShow": "Gallurio: software para sa portfolio at booking",
+      "headlineRun": "para sa mga event creative.",
       "body": "Hinahati ng Gallurio nang pantay: isang portfolio na ginawa para mag-book sa iyo, at ang workspace na nagpapatuloy sa lahat pagkatapos ng inquiry.",
       "ctaStart": "Simulan ang libreng buwan ko",
+      "ctaSecondary": "Mag-book ng demo",
       "ctaMicrocopy": "Libre habang beta. Walang kailangang card."
     },
     "trust": {
@@ -32,8 +37,8 @@
       "item4": "Secure na checkout sa pamamagitan ng Lemon Squeezy"
     },
     "split": {
-      "showVerb": "Ipakita",
-      "showTag": "ang iyong public page",
+      "showVerb": "Gumawa",
+      "showTag": "ng iyong portfolio",
       "showImageAlt": "Ang public na Gallurio portfolio page ng isang creative professional, may editorial na gallery layout.",
       "manageVerb": "Pamahalaan",
       "manageTag": "ang iyong workspace",
@@ -43,7 +48,7 @@
     },
     "whatIs": {
       "title": "Ano ang Gallurio?",
-      "body": "Ang Gallurio ay isang portfolio at booking platform para sa mga creative professional. Mag-publish ng public page na nagpapakita ng iyong trabaho, pagkatapos ay pamahalaan ang mga booking, kliyente, at detalyeng kasunod ng bawat inquiry — lahat mula sa iisang workspace."
+      "body": "Ang Gallurio ay isang portfolio at booking platform para sa mga creative professional. Gumawa ng public page gamit ang drag-and-drop, walang-code na website builder, pagkatapos ay pamahalaan ang mga booking, kliyente, at detalyeng kasunod ng bawat inquiry — lahat mula sa iisang workspace."
     },
     "builtFor": {
       "item1": "Mga Photographer",
@@ -57,13 +62,14 @@
     },
     "features": {
       "portfolioBuilder": {
-        "title": "Portfolio builder",
+        "title": "Drag-and-drop na portfolio builder",
         "panelHeadline": "Gawin ang unang impresyon na parang ikaw talaga.",
-        "description": "Gumawa ng portfolio page nang hindi nagsisimula sa blangkong screen. Ayusin ang mga gallery, serbisyo, at section sa paraang gusto mo talagang makita ang iyong trabaho — pagkatapos gawin itong tunay na sa iyo.",
-        "feature1": "Flexible na mga page section",
+        "description": "Isang drag-and-drop, walang-code na website builder — walang blangkong screen, walang kailangang developer. Ayusin ang mga gallery, serbisyo, at section sa paraang gusto mo talagang makita ang iyong trabaho — pagkatapos gawin itong tunay na sa iyo.",
+        "feature1": "Drag-and-drop na page section — walang code na kailangan",
         "feature2": "Mga image gallery at collection",
-        "feature3": "Custom na kulay, font, at branding",
-        "feature4": "Ginawa para gawing inquiry ang mga bisita"
+        "feature3": "Custom na kulay, font, at branding — walang kailangang developer",
+        "feature4": "Ginawa para gawing inquiry ang mga bisita",
+        "cta": "Subukan ang portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",
@@ -116,6 +122,7 @@
       "title": "Gumawa ng portfolio na handa na para sa susunod na booking.",
       "body": "Gawin ang iyong Gallurio workspace at simulan ang paghubog kung paano ka madidiskubre at makakatrabaho ng mga kliyente.",
       "button": "Simulan ang libreng buwan ko",
+      "ctaSecondary": "Mag-book ng demo",
       "microcopy": "Full Pro access sa loob ng isang buwan. Walang kailangang card."
     },
     "manifesto": {
@@ -513,6 +520,33 @@
         "facebook": "Sundan kami sa Facebook",
         "reddit": "Sumali sa amin sa Reddit",
         "linkedin": "Sundan kami sa LinkedIn"
+      }
+    },
+    "bookDemo": {
+      "metadata": {
+        "title": "Mag-book ng Demo — Gallurio",
+        "description": "Humiling ng personal na walkthrough ng Gallurio para sa iyong creative business."
+      },
+      "header": {
+        "headline": "Mag-book ng demo",
+        "body": "Sabihin sa amin ang tungkol sa negosyo mo at kung ano ang gusto mong makita, at susundan namin ito sa pamamagitan ng email."
+      },
+      "form": {
+        "name": "Pangalan mo",
+        "email": "Email",
+        "businessName": "Pangalan ng negosyo / studio",
+        "message": "Ano ang gusto mong makita?",
+        "messagePlaceholder": "Sabihin sa amin ang tungkol sa negosyo mo at kung ano ang inaasahan mong makita sa demo.",
+        "submit": "Humiling ng demo",
+        "submitting": "Ipinapadala…"
+      },
+      "success": {
+        "title": "Natanggap ang request",
+        "body": "Tingnan ang email mo — makikipag-ugnayan kami sa lalong madaling panahon."
+      },
+      "errors": {
+        "rateLimited": "Masyadong maraming request. Maghintay ng ilang minuto at subukang muli.",
+        "generic": "May nangyaring mali. Pakisubukan muli."
       }
     }
   },
@@ -2886,6 +2920,76 @@
           "saved": "Handa na ang iyong portfolio!",
           "error": "May nangyaring mali. Pakisubukan muli."
         }
+      }
+    },
+    "portfolioMakerDemo": {
+      "previewUnavailable": "Hindi available ang preview sa demo — mag-sign up para makita ang live page mo.",
+      "disclaimerBanner": {
+        "message": "Demo mode — walang naise-save sa database o ibinabahagi kaninuman dito. Nasa browser na ito lang.",
+        "bonusCode": "Ang bonus code mo: {code} (na-claim na)"
+      },
+      "intro": {
+        "title": "Maligayang pagdating sa demo ng portfolio",
+        "body": "Subukan ang tunay na page builder canvas — walang naise-save sa database o ibinabahagi kaninuman ang gagawin mo rito.",
+        "showGuideCta": "Ipakita mo sa akin",
+        "exploreSelfCta": "Ako na ang mag-eeksplora"
+      },
+      "entry": {
+        "title": "Subukan ang portfolio editor",
+        "description": "Walang naise-save sa database ang gagawin mo dito — nasa browser na ito lang.",
+        "startScratchTitle": "Magsimula mula sa simula",
+        "startScratchHint": "Magsimula sa blangkong canvas.",
+        "continueTitle": "Ituloy kung saan ka huminto",
+        "continueHint": "Ituloy ang huling na-save mong progress sa browser na ito."
+      },
+      "createNewDesign": {
+        "button": "Gumawa ng bagong design",
+        "confirmTitle": "Magsimula ng bagong design?",
+        "confirmBody": "Papalitan nito ang kasalukuyan mong design. Hindi na ito puwedeng bawiin."
+      },
+      "gates": {
+        "title": "Naabot mo na ang limitasyon ng demo",
+        "imageCap": "Nagamit mo na ang lahat ng 10 demo image! Mag-sign up nang libre para magdagdag ng unlimited na larawan sa gallery mo.",
+        "blockCap": "Puno na ang pahinang ito para sa demo (20/20 block). Mag-sign up nang libre para magpatuloy sa paggawa.",
+        "publish": "Handa nang mag-live? Isang Gallurio Pro feature ang pag-publish. Mag-sign up para sa isang libreng buwan at ilagay ang site mo sa internet ngayon.",
+        "theme": "Gusto mong lubusang i-customize ang mga kulay at font mo? Pro feature iyon. Mag-sign up para sa isang libreng buwan para ma-unlock ang buong theme editing.",
+        "cta": "Mag-sign up para makapag-build nang walang restriction",
+        "dismiss": "Magpatuloy sa pag-explore",
+        "promoReveal": "Ang galing mong mag-explore sa editor! Narito ang bonus code para sa dagdag na libreng buwan, idinagdag sa libreng buwan mula sa sign up mo: {code}"
+      },
+      "guideOverrides": {
+        "theme": {
+          "body": "Free/Pro feature ang buong customization."
+        },
+        "drafts": {
+          "title": "Subukan ang ibang template",
+          "body": "Gamitin ang Gumawa ng bagong design para subukan ang ibang template. Free/Pro feature ang naka-save, may-pangalang drafts."
+        },
+        "publish": {
+          "body": "Free/Pro feature ang pag-publish nang live."
+        }
+      },
+      "counters": {
+        "images": "{count}/10 na larawan",
+        "blocks": "{count}/20 na block"
+      },
+      "imagePicker": {
+        "titleSingle": "Pumili ng larawan",
+        "titleMulti": "Pumili ng mga larawan",
+        "triggerChoose": "Pumili ng larawan",
+        "triggerChooseMulti": "Pumili ng mga larawan",
+        "triggerChange": "Palitan ang larawan",
+        "none": "Walang napiling larawan",
+        "selected": "May napiling larawan",
+        "countSelected": "{count, plural, =0 {Walang napiling larawan} one {# larawan ang napili} other {# na larawan ang napili}}",
+        "clear": "I-clear",
+        "uploadButton": "I-upload ang larawan",
+        "uploading": "Ina-upload…",
+        "empty": "Wala pang larawan — mag-upload para magsimula.",
+        "done": "Tapos",
+        "errorInvalidFile": "Hindi suportado ang file na iyon. Gumamit ng JPG, PNG, WEBP, o AVIF na mas mababa sa 15 MB.",
+        "errorRateLimited": "Masyadong maraming upload — maghintay saglit at subukang muli.",
+        "errorGeneric": "Nabigo ang pag-upload. Pakisubukan muli."
       }
     },
     "notifications": {

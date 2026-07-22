@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
+import filMessages from "@/messages/fil.json";
+import idMessages from "@/messages/id.json";
+import arMessages from "@/messages/ar.json";
+import thMessages from "@/messages/th.json";
 
 vi.mock("next/navigation", () => ({
   redirect: vi.fn(() => {
@@ -44,5 +48,11 @@ describe("Marketing Home page", () => {
     render(<NextIntlClientProvider locale="en" messages={enMessages}>{page}</NextIntlClientProvider>);
 
     expect(screen.getByText("marketing:features.teams.title")).toBeInTheDocument();
+  });
+
+  it("identifies Gallurio in the hero across every launch locale", () => {
+    for (const messages of [enMessages, filMessages, idMessages, arMessages, thMessages]) {
+      expect(messages.marketing.hero.headlineShow).toMatch(/^Gallurio:\s+\S/);
+    }
   });
 });

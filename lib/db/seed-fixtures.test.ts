@@ -65,9 +65,19 @@ describe("seed-fixtures", () => {
 
   it("has the three general Pro promo codes", () => {
     const types = PROMO_CODE_SEEDS
-      .filter((c) => c.type !== "beta2mo")
+      .filter((c) => c.type !== "beta2mo" && c.type !== "demo1mo")
       .map((c) => c.type)
       .sort();
     expect(types).toEqual(["lifetime", "monthly", "yearly"]);
+  });
+
+  it("has the demo1mo promo code", () => {
+    const demo = PROMO_CODE_SEEDS.find((c) => c.type === "demo1mo");
+    expect(demo).toEqual({
+      title: "Portfolio Maker demo: 1 month Pro",
+      code: "DEMOPRO2026",
+      type: "demo1mo",
+      expiresAt: null,
+    });
   });
 });

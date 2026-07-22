@@ -272,6 +272,78 @@ describe("redeemPromoCodeAction — beta2mo", () => {
   });
 });
 
+describe("redeemPromoCodeAction — demo1mo", () => {
+  it("grants pro immediately with ~1mo expiry when the workspace is not yet entitled", async () => {
+    const ws = await seedOwner();
+    const promo = await PromoCode.create({
+      title: "demo1mo code",
+      code: "demo1mocode1",
+      type: "demo1mo",
+    });
+
+    const before = Date.now();
+    const result = await redeemPromoCodeAction("demo1mocode1");
+    expect(result).toEqual({ ok: true, startsImmediately: true });
+
+    const updatedWs = await Workspace.findById(ws._id).lean();
+    expect(updatedWs?.plan).toBe("pro");
+    expect(updatedWs?.codesRedeemed?.map(String)).toContain(String(promo._id));
+    const expiresAt = updatedWs?.planGrantExpiresAt as Date;
+    const daysUntilExpiry = (expiresAt.getTime() - before) / (24 * 60 * 60 * 1000);
+    expect(daysUntilExpiry).toBeGreaterThan(25);
+    expect(daysUntilExpiry).toBeLessThan(35);
+  });
+
+  it("queues the grant instead of applying it when the workspace is already entitled (free month)", async () => {
+    const ws = await seedOwner({ plan: "free", planGrantExpiresAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000) });
+    await PromoCode.create({
+      title: "demo1mo code entitled",
+      code: "demo1moentitled1",
+      type: "demo1mo",
+    });
+
+    const result = await redeemPromoCodeAction("demo1moentitled1");
+    expect(result).toEqual({ ok: true, startsImmediately: false });
+
+    const updatedWs = await Workspace.findById(ws._id).lean();
+    expect(updatedWs?.plan).toBe("free");
+    expect(updatedWs?.pendingPromoGrant?.grantMonths).toBe(1);
+    expect(updatedWs?.pendingPromoGrant?.queuedAt).toBeInstanceOf(Date);
+  });
+
+  it("returns promo_code_already_redeemed on a second redemption attempt", async () => {
+    await seedOwner();
+    await PromoCode.create({
+      title: "demo1mo code twice",
+      code: "demo1motwice1",
+      type: "demo1mo",
+    });
+
+    const first = await redeemPromoCodeAction("demo1motwice1");
+    expect(first).toEqual({ ok: true, startsImmediately: true });
+
+    const second = await redeemPromoCodeAction("demo1motwice1");
+    expect(second).toEqual({ error: "promo_code_already_redeemed" });
+  });
+
+  it("succeeds for a plain owner with no betaParticipation recorded (no beta-eligibility gate)", async () => {
+    const ws = await seedOwner();
+    await PromoCode.create({
+      title: "demo1mo code no beta",
+      code: "demo1monobeta1",
+      type: "demo1mo",
+    });
+
+    const result = await redeemPromoCodeAction("demo1monobeta1");
+    expect(result).toEqual({ ok: true, startsImmediately: true });
+
+    const updatedUser = await User.findOne({ workosUserId: WOS_ID }).lean();
+    expect(updatedUser?.betaParticipation?.recordedAt).toBeFalsy();
+    const updatedWs = await Workspace.findById(ws._id).lean();
+    expect(updatedWs?.plan).toBe("pro");
+  });
+});
+
 describe("redeemPromoCodeAction — invalid codes", () => {
   it("returns promo_code_not_found and does not mutate the workspace", async () => {
     const ws = await seedOwner();

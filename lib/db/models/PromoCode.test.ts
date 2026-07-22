@@ -46,6 +46,13 @@ describe("PromoCode model — beta2mo type", () => {
   });
 });
 
+describe("PromoCode model — demo1mo type", () => {
+  it("accepts demo1mo as a valid type", async () => {
+    const promo = await PromoCode.create(makeCode({ code: "demo1mocode", type: "demo1mo" }));
+    expect(promo.type).toBe("demo1mo");
+  });
+});
+
 describe("PromoCode model — code uniqueness", () => {
   it("rejects a duplicate code across different casing", async () => {
     await PromoCode.create(makeCode({ code: "dupecode" }));

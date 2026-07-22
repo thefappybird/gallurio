@@ -7,7 +7,7 @@ export type SeedIdentity = {
 export type PromoCodeSeed = {
   title: string;
   code: string;
-  type: "lifetime" | "yearly" | "monthly" | "beta" | "beta2mo";
+  type: "lifetime" | "yearly" | "monthly" | "beta" | "beta2mo" | "demo1mo";
   expiresAt: null;
 };
 
@@ -16,6 +16,7 @@ export const PROMO_CODE_SEEDS: PromoCodeSeed[] = [
   { title: "1 Year Pro", code: "YEARPRO2026", type: "yearly", expiresAt: null },
   { title: "1 Month Pro", code: "MONTHPRO2026", type: "monthly", expiresAt: null },
   { title: "Beta thank-you: 2 months Pro", code: "BETA2PRO", type: "beta2mo", expiresAt: null },
+  { title: "Portfolio Maker demo: 1 month Pro", code: "DEMOPRO2026", type: "demo1mo", expiresAt: null },
 ];
 
 export type SeedPageviewFixture = {
