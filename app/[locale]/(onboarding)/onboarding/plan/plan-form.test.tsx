@@ -523,8 +523,12 @@ describe("PlanStepForm — promo code redemption", () => {
     fireEvent.click(screen.getByRole("button", { name: /apply/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/valid/i);
+      expect(screen.getAllByTestId("promo-error")[0]).toHaveTextContent(/valid/i);
     });
+    for (const error of screen.getAllByTestId("promo-error")) {
+      expect(error).toHaveTextContent(/valid/i);
+      expect(error.closest("[data-testid='promo-code-container']")).toBeNull();
+    }
     expect(mockRouterPush).not.toHaveBeenCalledWith("/onboarding/done");
   });
 });

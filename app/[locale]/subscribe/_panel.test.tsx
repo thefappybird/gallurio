@@ -13,9 +13,19 @@ import { SubscribePanel, type SubscribePanelProps } from "./_panel";
 
 const openMock = vi.fn();
 const useLemonSqueezyCheckoutMock = vi.fn();
+const activateBetaRecoveryActionMock = vi.fn();
+const redeemPromoCodeActionMock = vi.fn();
 
 vi.mock("@/hooks/use-lemon-squeezy-checkout", () => ({
   useLemonSqueezyCheckout: (...args: unknown[]) => useLemonSqueezyCheckoutMock(...args),
+}));
+
+vi.mock("@/lib/actions/subscriptionRecovery", () => ({
+  activateBetaRecoveryAction: (...args: unknown[]) => activateBetaRecoveryActionMock(...args),
+}));
+
+vi.mock("@/lib/actions/promoCode", () => ({
+  redeemPromoCodeAction: (...args: unknown[]) => redeemPromoCodeActionMock(...args),
 }));
 
 const fetchMock = vi.fn();
@@ -27,6 +37,8 @@ beforeEach(() => {
   openMock.mockReturnValue(true);
   useLemonSqueezyCheckoutMock.mockReset();
   useLemonSqueezyCheckoutMock.mockReturnValue({ ready: true, open: openMock });
+  activateBetaRecoveryActionMock.mockReset();
+  redeemPromoCodeActionMock.mockReset();
 });
 
 afterEach(() => {
@@ -62,13 +74,19 @@ describe("SubscribePanel — renders", () => {
     renderPanel();
     fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
     expect(screen.getByText(/\/ year/i)).toBeInTheDocument();
-    expect(screen.getByText(/2,500/)).toBeInTheDocument();
+    expect(screen.getAllByText(/2,500/)).not.toHaveLength(0);
     expect(screen.queryByText(/\/ month/i)).not.toBeInTheDocument();
   });
 
   it("shows a subscribe button", () => {
     renderPanel();
     expect(screen.getByRole("button", { name: /subscribe/i })).toBeInTheDocument();
+    expect(screen.queryByText(/^free$/i)).not.toBeInTheDocument();
+  });
+
+  it("shows beta activation only when the owner is eligible", () => {
+    renderPanel({ betaAvailable: true });
+    expect(screen.getByRole("button", { name: /activate beta access/i })).toBeInTheDocument();
   });
 });
 
