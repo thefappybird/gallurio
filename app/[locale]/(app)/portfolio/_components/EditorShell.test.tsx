@@ -339,6 +339,22 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: "Featured Popup" }).getAttribute("aria-pressed")).toBe("true");
   });
 
+  it.each([
+    { tab: "Contact Form", panel: "Contact form" },
+    { tab: "Navigation", panel: "Navigation" },
+  ])("keeps $tab open while the Featured Popup warning is shown", async ({ tab, panel }) => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: tab }));
+    expect(await screen.findByLabelText(panel)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+
+    expect(await screen.findByRole("button", { name: "Open anyway" })).toBeInTheDocument();
+    expect(screen.getByLabelText(panel)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: tab, hidden: true })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Featured Popup", hidden: true })).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));

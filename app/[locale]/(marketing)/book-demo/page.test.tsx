@@ -13,6 +13,10 @@ vi.mock("./_components/BookDemoForm", () => ({
   BookDemoForm: () => <div data-testid="book-demo-form" />,
 }));
 
+vi.mock("@/components/app/ambient-background", () => ({
+  AmbientBackground: () => <div data-testid="ambient-background" />,
+}));
+
 import BookDemoPage from "./page";
 
 describe("Book a Demo marketing page", () => {
@@ -26,5 +30,10 @@ describe("Book a Demo marketing page", () => {
 
     expect(screen.getByText("marketing.bookDemo:header.headline")).toBeInTheDocument();
     expect(screen.getByTestId("book-demo-form")).toBeInTheDocument();
+    expect(screen.getByTestId("book-demo-form-pane")).toContainElement(screen.getByTestId("ambient-background"));
+    expect(screen.getByTestId("book-demo-form-card")).toHaveClass("max-w-sm", "border", "bg-card");
+    expect(screen.getByTestId("book-demo-accent")).toHaveClass("bg-primary", "text-primary-foreground");
+    expect(screen.getByText("marketing.manifesto:quote")).toBeInTheDocument();
+    expect(screen.getByTestId("ambient-background")).toBeInTheDocument();
   });
 });

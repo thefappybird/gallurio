@@ -58,7 +58,6 @@ export function DoneStepForm({
               transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
             />
           </svg>
-          <Sparkles className="absolute -top-1 -right-1 h-3.5 w-3.5 text-brand" aria-hidden="true" />
         </div>
       }
       footer={

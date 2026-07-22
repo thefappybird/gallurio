@@ -6,8 +6,8 @@ import {
   type PuckData,
 } from "@/lib/page-builder/types";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
-import { DemoDisclaimerBanner } from "@/components/app/demo-disclaimer-banner";
 import { EditorShell, type EditorTemplateSummary } from "../(app)/portfolio/_components/EditorShell";
+import { DemoGuideChrome } from "./demo-guide-chrome";
 
 // A demo canvas is never indexed — mirrors app/[locale]/portfolio-preview/page.tsx.
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -26,8 +26,9 @@ function toPlain<T>(value: unknown, fallback: T): T {
 /**
  * Public, unauthenticated Portfolio Maker demo. Lives directly under `[locale]`
  * (not `(app)` or `(marketing)`) so it inherits providers + brand fonts but
- * neither the app sidebar nor the marketing header/footer — same nesting
- * rationale as portfolio-preview/page.tsx, minus the auth gate.
+ * neither the app sidebar nor the marketing footer. The public header is
+ * composed directly so visitors can navigate away without adding a footer
+ * below the fixed-height editor.
  *
  * No workspace exists for an anonymous visitor: EditorShell's `demoMode`
  * persists entirely to localStorage (keyed by a per-browser demo session id —
@@ -52,31 +53,23 @@ export default async function PortfolioMakerDemoPage({
   }));
   const publicOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
 
-  // Full-bleed editor, same wrapper pattern as the real editor page, except
-  // the banner is a flex sibling ABOVE EditorShell (not just visually stacked)
-  // so the pair is clipped to exactly `h-svh` instead of the banner's height
-  // pushing the total past the viewport — that overflow used to leak into a
-  // page-level vertical scroll (nothing here declared overflow-y), hiding the
-  // nav tabs/banner above the fold and breaking scroll inside the guide/canvas.
-  // EditorShell fills the remaining flex space (`demoMode` swaps its own root
-  // to `h-full` instead of `min-h-svh` so it doesn't re-introduce the same
-  // overflow one level down).
+  // The frame keeps the public header and demo banner available during normal
+  // exploration. It hides both while the guide is active, because its spotlight
+  // intentionally permits interaction with highlighted editor controls only.
   return (
-    <div className="-m-6 flex h-svh flex-col overflow-hidden">
-      <DemoDisclaimerBanner />
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <EditorShell
-          demoMode
-          slug=""
-          workspaceName="Your Studio"
-          initialData={{ home: EMPTY_ZONE, gallery: EMPTY_ZONE }}
-          initialBrandKit={DEFAULT_BRAND_KIT}
-          initialContact={{}}
-          initialFormLocale=""
-          initialFormDir=""
-          initialHeaderConfig={DEFAULT_HEADER_CONFIG}
-          initialCollectionsPopup={{}}
-          publicOrigin={publicOrigin}
+    <DemoGuideChrome>
+      <EditorShell
+        demoMode
+        slug=""
+        workspaceName="Your Studio"
+        initialData={{ home: EMPTY_ZONE, gallery: EMPTY_ZONE }}
+        initialBrandKit={DEFAULT_BRAND_KIT}
+        initialContact={{}}
+        initialFormLocale=""
+        initialFormDir=""
+        initialHeaderConfig={DEFAULT_HEADER_CONFIG}
+        initialCollectionsPopup={{}}
+        publicOrigin={publicOrigin}
           // The demo never previews/publishes against a real public page — no
           // anonymous-visitor route exists to preview against. Both actions are
           // already demoMode-gated behind the upsell modal in EditorShell
@@ -103,8 +96,7 @@ export default async function PortfolioMakerDemoPage({
           initialDrafts={[]}
           initialActiveDraftId={null}
           initialActiveDraftName=""
-        />
-      </div>
-    </div>
+      />
+    </DemoGuideChrome>
   );
 }

@@ -113,6 +113,7 @@ import { DemoGateModal, type DemoGateType } from "./DemoGateModal";
 import { getOrCreateDemoSessionId, demoDraftKey } from "@/lib/page-builder/demoSession";
 import { DemoPickerContext } from "@/lib/page-builder/demoPickerContext";
 import { getTemplate } from "@/lib/page-builder/templates";
+import { useDemoGuideChrome } from "@/lib/page-builder/demoGuideChrome";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
@@ -602,6 +603,7 @@ export function EditorShell({
   guideQueryRoot,
   demoMode = false,
 }: Props) {
+  const setDemoGuideChromeOpen = useDemoGuideChrome();
   const t = useTranslations("app.pageBuilder.editor");
   const tDemo = useTranslations("app.portfolioMakerDemo");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
@@ -720,6 +722,11 @@ export function EditorShell({
   // straight to the entry screen instead of re-showing the intro.
   const [demoIntroOpen, setDemoIntroOpen] = useState(demoMode && !guideDismissed);
   const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
+  function openGuide() {
+    setSpotlightStepIndex(0);
+    setGuideOpen(true);
+    if (demoMode) setDemoGuideChromeOpen?.(true);
+  }
   function handleFormLocaleChange(next: string) {
     setFormLocale(next);
     if (next === "ar") setFormDir("rtl");
@@ -1043,7 +1050,7 @@ export function EditorShell({
       debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
     },
-    [activeZone, debouncedPersistLocalDraft, demoMode]
+    [activeZone, debouncedPersistLocalDraft, demoMode, setActiveDemoGate]
   );
 
   // ---- Draft name validation ----
@@ -1457,16 +1464,20 @@ export function EditorShell({
     headerHasSaved.current = true;
   }
 
-  async function openCollectionsPopup() {
+  async function activateCollectionsPopup() {
     if (contactOpen) setContactOpen(false);
     if (headerOpen) setHeaderOpen(false);
     if (!previewMode) await flushPendingSave(activeZone);
     collectionsPopupSnapshot.current = collectionsPopup;
     collectionsPopupHasSaved.current = false;
+    setCollectionsPopupOpen(true);
+  }
+
+  function openCollectionsPopup() {
     applyCollectionsPopupBranch(computeCollectionsPopupAction(zoneDataRef.current), {
-      open: () => setCollectionsPopupOpen(true),
+      open: () => { void activateCollectionsPopup(); },
       warn: () => {
-        pendingOpenCollectionsPopup.current = () => setCollectionsPopupOpen(true);
+        pendingOpenCollectionsPopup.current = () => { void activateCollectionsPopup(); };
         setFeaturedWorkWarningOpen(true);
       },
     });
@@ -1622,6 +1633,7 @@ export function EditorShell({
 
   function handleGuideSkip(dontShowAgain: boolean) {
     setGuideOpen(false);
+    if (demoMode) setDemoGuideChromeOpen?.(false);
     if (guideMode) {
       onGuideSkipClose?.(dontShowAgain);
       return;
@@ -1640,6 +1652,7 @@ export function EditorShell({
 
   function handleGuideFinish(dontShowAgain: boolean) {
     setGuideOpen(false);
+    if (demoMode) setDemoGuideChromeOpen?.(false);
     if (guideMode) {
       onGuideFinish?.(dontShowAgain);
       return;
@@ -1942,7 +1955,7 @@ export function EditorShell({
           aria-label={t("guide")}
           title={t("guide")}
           data-tour-id="guide"
-          onClick={() => { setSpotlightStepIndex(0); setGuideOpen(true); }}
+          onClick={openGuide}
         >
           <CircleHelp className="size-3.5" aria-hidden />
         </Button>
@@ -2436,7 +2449,7 @@ export function EditorShell({
       {demoMode && (
         <DemoIntroDialog
           open={demoIntroOpen}
-          onShowGuide={() => { setDemoIntroOpen(false); setGuideOpen(true); }}
+          onShowGuide={() => { setDemoIntroOpen(false); openGuide(); }}
           // Skips the tour but still lands on the same Continue/Start-scratch
           // entry decision the guide's own skip/finish leads to — a returning
           // visitor with a recoverable local buffer must not lose the chance

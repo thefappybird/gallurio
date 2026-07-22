@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl/server", () => ({
@@ -15,6 +16,12 @@ vi.mock("@/components/app/demo-disclaimer-banner", () => ({
   DemoDisclaimerBanner: () => <div data-testid="demo-disclaimer-banner" />,
 }));
 
+vi.mock("./demo-guide-chrome", () => ({
+  DemoGuideChrome: ({ children }: { children: ReactNode }) => (
+    <div data-testid="demo-guide-chrome">{children}</div>
+  ),
+}));
+
 import PortfolioMakerDemoPage from "./page";
 
 describe("PortfolioMakerDemoPage", () => {
@@ -24,9 +31,12 @@ describe("PortfolioMakerDemoPage", () => {
     });
     render(page);
 
-    expect(screen.getByTestId("demo-disclaimer-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("demo-guide-chrome")).toBeInTheDocument();
     const shell = screen.getByTestId("editor-shell");
     expect(shell).toBeInTheDocument();
     expect(shell).toHaveAttribute("data-demo-mode", "true");
+
+    expect(shell.parentElement).toHaveAttribute("data-testid", "demo-guide-chrome");
+    expect(shell.parentElement).not.toHaveClass("-m-6");
   });
 });

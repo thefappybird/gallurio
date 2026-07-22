@@ -9,7 +9,11 @@ test.use({ storageState: { cookies: [], origins: [] } });
 // The sticky disclaimer banner has role="status", but so do dnd-kit's hidden
 // screen-reader announcement divs elsewhere on the page — scope to the text.
 function disclaimerBanner(page: Page) {
-  return page.getByRole("status").filter({ hasText: "Demo mode" });
+  return page.locator('[role="status"]').filter({ hasText: "Demo mode" });
+}
+
+function publicHeader(page: Page) {
+  return page.locator('header:has(a[href="/"])');
 }
 
 // A fresh visit opens the opt-in intro dialog first — the guide never
@@ -23,10 +27,12 @@ async function skipGuideAndReachEntry(page: Page) {
   await expect(page.getByRole("heading", { name: "Try the portfolio editor" })).toBeVisible();
 }
 
-test("demo editor shows the disclaimer banner and an opt-in intro dialog, never auto-launching the guide", async ({
+test("demo editor shows the public header, disclaimer banner, and opt-in intro dialog", async ({
   page,
 }) => {
   await page.goto("/portfolio-maker-demo");
+
+  await expect(publicHeader(page)).toBeVisible();
 
   await expect(disclaimerBanner(page)).toContainText(
     "Demo mode — nothing you do here is saved to a database or shared with anyone.",
@@ -46,6 +52,11 @@ test("choosing 'Show me around' starts the spotlight tour, and skipping it reach
     name: "Show me around",
   }).click();
   await expect(page.getByRole("dialog", { name: "Welcome to your portfolio editor" })).toBeVisible();
+  // The guide's overlay deliberately lets its highlighted editor controls be
+  // clicked. Remove unrelated public chrome instead of leaving it clickable
+  // behind that overlay.
+  await expect(disclaimerBanner(page)).toBeHidden();
+  await expect(publicHeader(page)).toBeHidden();
 
   await page.getByRole("button", { name: "Skip Guide" }).click();
   // "Skip Guide" opens a confirm dialog ("Skip the guide?") before actually
@@ -56,6 +67,8 @@ test("choosing 'Show me around' starts the spotlight tour, and skipping it reach
     .click();
   await expect(page.getByRole("heading", { name: "Try the portfolio editor" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start from scratch" })).toBeVisible();
+  await expect(disclaimerBanner(page)).toBeVisible();
+  await expect(publicHeader(page)).toBeVisible();
 });
 
 test("starting from scratch lands on the canvas with Publish visible", async ({ page }) => {
@@ -152,4 +165,16 @@ test("demo editor route is not indexed by search engines", async ({ page }) => {
   await page.goto("/portfolio-maker-demo");
   const robotsMeta = await page.locator('meta[name="robots"]').getAttribute("content");
   expect(robotsMeta ?? "").toMatch(/noindex/i);
+});
+
+test("demo editor does not create page-level horizontal overflow on desktop", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/portfolio-maker-demo");
+
+  const pageWidth = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+
+  expect(pageWidth.scrollWidth).toBeLessThanOrEqual(pageWidth.clientWidth);
 });
