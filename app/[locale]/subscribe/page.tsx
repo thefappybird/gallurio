@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LogOutIcon } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { isPaidBillingAvailable } from "@/lib/billing/availability";
+import { User } from "@/lib/db/models";
 import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
 import { SignOutLink } from "@/components/app/sign-out-link";
@@ -34,13 +35,19 @@ export default async function SubscribePage({
   // component, which uses it for a client-side redirect after checkout.
   const returnTo = sanitizeLocalReturnTo(rawReturnTo);
 
-  const { role } = await requireOrg({
+  const { role, userId } = await requireOrg({
     allowDuringOnboarding: true,
     allowWhenGated: true,
   });
 
   if (role === "owner") {
-    const proPricing = await getProPricing();
+    const [proPricing, user] = await Promise.all([
+      getProPricing(),
+      User.findOne(
+        { workosUserId: userId },
+        { "betaParticipation.recordedAt": 1 },
+      ).lean(),
+    ]);
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-muted/40 px-4 py-12">
         <div className="w-full max-w-md border border-border bg-background p-8">
@@ -54,6 +61,10 @@ export default async function SubscribePage({
             proPricing={proPricing}
             returnTo={returnTo}
             billingAvailable={isPaidBillingAvailable()}
+            betaAvailable={
+              process.env.BETA_TESTER_ENABLED === "true" &&
+              !user?.betaParticipation?.recordedAt
+            }
           />
         </div>
         <SignOutLink>
