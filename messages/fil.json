@@ -2,7 +2,7 @@
   "marketing": {
     "nav": {
       "pricing": "Presyo",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Mag-book ng Demo",
       "contact": "Makipag-ugnayan",
       "signIn": "Mag-sign in",
@@ -10,7 +10,7 @@
     },
     "footer": {
       "pricing": "Presyo",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Mag-book ng Demo",
       "terms": "Mga Tuntunin",
       "privacy": "Privacy",
@@ -69,7 +69,7 @@
         "feature2": "Mga image gallery at collection",
         "feature3": "Custom na kulay, font, at branding",
         "feature4": "Ginawa para gawing inquiry ang mga bisita",
-        "cta": "Subukan ang demo"
+        "cta": "Subukan ang portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",
@@ -524,8 +524,8 @@
     },
     "portfolioMaker": {
       "metadata": {
-        "title": "Portfolio Maker — Gallurio",
-        "description": "Gumawa ng propesyonal na portfolio page para sa iyong creative business gamit ang drag-and-drop na Portfolio Maker ng Gallurio. Subukan ang libreng demo — hindi kailangan ng account."
+        "title": "Portfolio Builder — Gallurio",
+        "description": "Gumawa ng propesyonal na portfolio page para sa iyong creative business gamit ang drag-and-drop na Portfolio Builder ng Gallurio. Subukan ang libreng demo — hindi kailangan ng account."
       },
       "header": {
         "headline": "Gumawa ng portfolio na talagang pinagmumulan ng booking ng mga kliyente mo",
@@ -534,7 +534,7 @@
       "demo": {
         "title": "Subukan nang libre, hindi kailangan ng account",
         "body": "Ang lahat ng gagawin mo sa demo ay nasa browser mo lang — walang naise-save sa database o ibinabahagi kaninuman. Mag-sign up kapag handa ka nang mag-publish.",
-        "cta": "Subukan ang demo"
+        "cta": "Subukan ang portfolio builder"
       }
     },
     "bookDemo": {

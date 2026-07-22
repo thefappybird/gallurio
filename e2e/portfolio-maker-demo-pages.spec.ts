@@ -31,7 +31,7 @@ for (const width of [1280, 768, 375] as const) {
 test("marketing nav links to Portfolio Maker and Book a Demo", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Marketing" }).getByRole("link", { name: "Portfolio Maker" }).click();
+  await page.getByRole("navigation", { name: "Marketing" }).getByRole("link", { name: "Portfolio Builder" }).click();
   await expect(page).toHaveURL(/\/portfolio-maker$/);
 
   await page.goto("/");
@@ -41,7 +41,7 @@ test("marketing nav links to Portfolio Maker and Book a Demo", async ({ page }) 
 
 test("Portfolio Maker page CTA links to the live demo", async ({ page }) => {
   await page.goto("/portfolio-maker");
-  const cta = page.getByRole("link", { name: "Try the demo" });
+  const cta = page.getByRole("link", { name: "Try the portfolio builder" });
   await expect(cta).toBeVisible();
   await expect(cta).toHaveAttribute("href", /\/portfolio-maker-demo/);
 });

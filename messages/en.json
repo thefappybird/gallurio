@@ -2,7 +2,7 @@
   "marketing": {
     "nav": {
       "pricing": "Pricing",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
       "contact": "Contact",
       "signIn": "Sign in",
@@ -10,7 +10,7 @@
     },
     "footer": {
       "pricing": "Pricing",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
       "terms": "Terms",
       "privacy": "Privacy",
@@ -69,7 +69,7 @@
         "feature2": "Image galleries and collections",
         "feature3": "Custom colors, fonts, and branding",
         "feature4": "Built to turn visitors into inquiries",
-        "cta": "Try the demo"
+        "cta": "Try the portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",
@@ -524,8 +524,8 @@
     },
     "portfolioMaker": {
       "metadata": {
-        "title": "Portfolio Maker — Gallurio",
-        "description": "Build a professional portfolio page for your creative business with Gallurio's drag-and-drop Portfolio Maker. Try the free demo, no account needed."
+        "title": "Portfolio Builder — Gallurio",
+        "description": "Build a professional portfolio page for your creative business with Gallurio's drag-and-drop Portfolio Builder. Try the free demo, no account needed."
       },
       "header": {
         "headline": "Build a portfolio your clients actually book from",
@@ -534,7 +534,7 @@
       "demo": {
         "title": "Try it free, no account needed",
         "body": "Everything you build in the demo lives only in your browser — nothing is saved to a database or shared with anyone. Sign up when you're ready to publish.",
-        "cta": "Try the demo"
+        "cta": "Try the portfolio builder"
       }
     },
     "bookDemo": {

@@ -2,7 +2,7 @@
   "marketing": {
     "nav": {
       "pricing": "الأسعار",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "احجز عرضًا توضيحيًا",
       "contact": "تواصل معنا",
       "signIn": "تسجيل الدخول",
@@ -10,7 +10,7 @@
     },
     "footer": {
       "pricing": "الأسعار",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "احجز عرضًا توضيحيًا",
       "terms": "الشروط",
       "privacy": "الخصوصية",
@@ -69,7 +69,7 @@
         "feature2": "معارض صور ومجموعات",
         "feature3": "ألوان وخطوط وهوية تجارية مخصصة",
         "feature4": "مصممة لتحويل الزوار إلى استفسارات",
-        "cta": "جرّب النسخة التجريبية"
+        "cta": "جرّب أداة بناء المعرض"
       },
       "bookingInquiryForms": {
         "title": "طلبات الحجز",
@@ -524,8 +524,8 @@
     },
     "portfolioMaker": {
       "metadata": {
-        "title": "Portfolio Maker — Gallurio",
-        "description": "أنشئ صفحة معرض أعمال احترافية لعملك الإبداعي باستخدام Portfolio Maker من Gallurio بنظام السحب والإفلات. جرّب النسخة التجريبية المجانية، دون الحاجة لحساب."
+        "title": "Portfolio Builder — Gallurio",
+        "description": "أنشئ صفحة معرض أعمال احترافية لعملك الإبداعي باستخدام Portfolio Builder من Gallurio بنظام السحب والإفلات. جرّب النسخة التجريبية المجانية، دون الحاجة لحساب."
       },
       "header": {
         "headline": "أنشئ معرض أعمال يجلب لك الحجوزات فعلًا من عملائك",
@@ -534,7 +534,7 @@
       "demo": {
         "title": "جرّبه مجانًا، دون الحاجة لحساب",
         "body": "كل ما تنشئه في النسخة التجريبية يبقى فقط في متصفحك — لا شيء يُحفظ في قاعدة بيانات أو يُشارَك مع أي أحد. سجّل عندما تكون مستعدًا للنشر.",
-        "cta": "جرّب النسخة التجريبية"
+        "cta": "جرّب أداة بناء المعرض"
       }
     },
     "bookDemo": {

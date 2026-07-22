@@ -2,7 +2,7 @@
   "marketing": {
     "nav": {
       "pricing": "ราคา",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "จองการสาธิต",
       "contact": "ติดต่อ",
       "signIn": "เข้าสู่ระบบ",
@@ -10,7 +10,7 @@
     },
     "footer": {
       "pricing": "ราคา",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "จองการสาธิต",
       "terms": "ข้อกำหนด",
       "privacy": "ความเป็นส่วนตัว",
@@ -69,7 +69,7 @@
         "feature2": "แกลเลอรีภาพและคอลเลกชัน",
         "feature3": "สี ฟอนต์ และแบรนด์ที่ปรับแต่งเอง",
         "feature4": "ออกแบบมาเพื่อเปลี่ยนผู้เข้าชมให้เป็นคำขอจอง",
-        "cta": "ทดลองใช้"
+        "cta": "ทดลองใช้ตัวสร้างพอร์ตโฟลิโอ"
       },
       "bookingInquiryForms": {
         "title": "คำขอจอง",
@@ -524,8 +524,8 @@
     },
     "portfolioMaker": {
       "metadata": {
-        "title": "Portfolio Maker — Gallurio",
-        "description": "สร้างหน้าพอร์ตโฟลิโอที่ดูเป็นมืออาชีพสำหรับธุรกิจสายสร้างสรรค์ของคุณด้วย Portfolio Maker แบบลากวางของ Gallurio ทดลองใช้ฟรี ไม่ต้องมีบัญชี"
+        "title": "Portfolio Builder — Gallurio",
+        "description": "สร้างหน้าพอร์ตโฟลิโอที่ดูเป็นมืออาชีพสำหรับธุรกิจสายสร้างสรรค์ของคุณด้วย Portfolio Builder แบบลากวางของ Gallurio ทดลองใช้ฟรี ไม่ต้องมีบัญชี"
       },
       "header": {
         "headline": "สร้างพอร์ตโฟลิโอที่ลูกค้าจองจริงจากมัน",
@@ -534,7 +534,7 @@
       "demo": {
         "title": "ทดลองใช้ฟรี ไม่ต้องมีบัญชี",
         "body": "ทุกอย่างที่คุณสร้างในเวอร์ชันทดลองจะอยู่ในเบราว์เซอร์ของคุณเท่านั้น — ไม่มีการบันทึกลงฐานข้อมูลหรือแชร์กับใคร สมัครสมาชิกเมื่อคุณพร้อมเผยแพร่",
-        "cta": "ทดลองใช้"
+        "cta": "ทดลองใช้ตัวสร้างพอร์ตโฟลิโอ"
       }
     },
     "bookDemo": {

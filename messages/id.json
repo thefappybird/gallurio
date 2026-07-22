@@ -2,7 +2,7 @@
   "marketing": {
     "nav": {
       "pricing": "Harga",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Jadwalkan Demo",
       "contact": "Kontak",
       "signIn": "Masuk",
@@ -10,7 +10,7 @@
     },
     "footer": {
       "pricing": "Harga",
-      "portfolioMaker": "Portfolio Maker",
+      "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Jadwalkan Demo",
       "terms": "Ketentuan",
       "privacy": "Privasi",
@@ -69,7 +69,7 @@
         "feature2": "Galeri gambar dan koleksi",
         "feature3": "Warna, font, dan branding kustom",
         "feature4": "Dirancang untuk mengubah pengunjung jadi permintaan",
-        "cta": "Coba demonya"
+        "cta": "Coba portfolio builder-nya"
       },
       "bookingInquiryForms": {
         "title": "Permintaan booking",
@@ -524,8 +524,8 @@
     },
     "portfolioMaker": {
       "metadata": {
-        "title": "Portfolio Maker — Gallurio",
-        "description": "Buat halaman portfolio profesional untuk bisnis kreatif Anda dengan Portfolio Maker drag-and-drop dari Gallurio. Coba demo gratisnya, tanpa perlu akun."
+        "title": "Portfolio Builder — Gallurio",
+        "description": "Buat halaman portfolio profesional untuk bisnis kreatif Anda dengan Portfolio Builder drag-and-drop dari Gallurio. Coba demo gratisnya, tanpa perlu akun."
       },
       "header": {
         "headline": "Buat portfolio yang benar-benar mendatangkan booking dari klien Anda",
@@ -534,7 +534,7 @@
       "demo": {
         "title": "Coba gratis, tanpa perlu akun",
         "body": "Semua yang Anda buat di demo hanya tersimpan di browser Anda — tidak ada yang disimpan ke database atau dibagikan ke siapa pun. Daftar saat Anda siap untuk publish.",
-        "cta": "Coba demonya"
+        "cta": "Coba portfolio builder-nya"
       }
     },
     "bookDemo": {
