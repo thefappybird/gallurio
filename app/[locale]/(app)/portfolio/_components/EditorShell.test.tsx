@@ -16,6 +16,14 @@ import { toast } from "sonner";
 // Module-level mount counter — incremented once per Puck remount (useEffect[]).
 // Reset in beforeEach. Used by the re-seeds test to assert a remount occurred.
 let __puckMountCount = 0;
+// Captures the live onChange prop so tests can fire arbitrary-length Puck
+// data directly (the "Simulate Puck change" button only emits a fixed
+// 1-block payload, not enough to exercise the demo block cap).
+let __capturedPuckOnChange: ((data: unknown) => void) | undefined;
+// Captures the `config` prop passed to Puck so tests can assert on the
+// demo-mode category filtering (FeaturedWork/FeaturedWorkPreset hidden from
+// the drawer) without needing to render Puck's real sidebar.
+let __capturedPuckConfig: { categories?: Record<string, { components?: readonly string[] }> } | undefined;
 
 // Mock PuckApi shape used by createUsePuck selectors in EditCanvasControls.
 const mockPuckApi = {
@@ -51,6 +59,7 @@ vi.mock("@measured/puck", () => ({
     overrides,
     onChange,
     data,
+    config,
   }: {
     headerTitle?: string;
     overrides?: {
@@ -60,11 +69,14 @@ vi.mock("@measured/puck", () => ({
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
     data?: unknown;
+    config?: typeof __capturedPuckConfig;
   }) => {
     // Simulate uncontrolled: capture data only on mount (via useState initializer).
     // Subsequent `data` prop changes are ignored — same as real Puck after mount.
     // Only a key change (remount) will re-initialize this seed.
     const [seed] = useState(() => data);
+    __capturedPuckOnChange = onChange as ((data: unknown) => void) | undefined;
+    __capturedPuckConfig = config;
 
     // Count mounts — a new key forces a remount, incrementing this counter.
     useEffect(() => { __puckMountCount++; }, []);
@@ -258,6 +270,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   __puckMountCount = 0;
+  __capturedPuckOnChange = undefined;
+  __capturedPuckConfig = undefined;
   listDraftsAction.mockResolvedValue([]);
   seedTemplateAction.mockImplementation((templateId = "minimal") =>
     Promise.resolve({
@@ -323,6 +337,22 @@ describe("EditorShell", () => {
     expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Featured Popup" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it.each([
+    { tab: "Contact Form", panel: "Contact form" },
+    { tab: "Navigation", panel: "Navigation" },
+  ])("keeps $tab open while the Featured Popup warning is shown", async ({ tab, panel }) => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: tab }));
+    expect(await screen.findByLabelText(panel)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+
+    expect(await screen.findByRole("button", { name: "Open anyway" })).toBeInTheDocument();
+    expect(screen.getByLabelText(panel)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: tab, hidden: true })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Featured Popup", hidden: true })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
@@ -1439,5 +1469,200 @@ describe("EditorShell", () => {
       window.dispatchEvent(event);
       expect(spy).not.toHaveBeenCalled();
     });
+  });
+});
+
+const demoProps = {
+  ...baseProps,
+  demoMode: true,
+  initialActiveDraftId: null,
+  initialActiveDraftName: undefined,
+  initialDrafts: [],
+  guideDismissed: true,
+};
+
+describe("EditorShell demoMode", () => {
+  it("renders the 2-option entry screen, not the real onboarding dialogs", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+
+    expect(await screen.findByRole("button", { name: /Start from scratch/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continue where you left off/ })).toBeInTheDocument();
+    expect(screen.queryByText("Load an existing draft")).not.toBeInTheDocument();
+  });
+
+  it("Save Changes persists to the demo-namespaced localStorage key, no server action called", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+
+    await screen.findByTestId("puck");
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      const keys = Object.keys(window.localStorage);
+      const demoKey = keys.find((k) => k.startsWith("gallurio:portfolio-maker-demo:draft:"));
+      expect(demoKey).toBeTruthy();
+    });
+    expect(createDraftAction).not.toHaveBeenCalled();
+    expect(updateDraftAction).not.toHaveBeenCalled();
+  });
+
+  it("Publish click opens the gate modal; publish server action never called", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+
+    expect(await screen.findByText(/Publishing is a Gallurio Pro feature/)).toBeInTheDocument();
+    expect(publishDraftAction).not.toHaveBeenCalled();
+  });
+
+  it("Create new design applies a template client-side, never calling seedTemplateAction", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create new design" }));
+    await screen.findByText("Pick a template to start");
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+
+    // Canvas already has content (from "Start from scratch" above) — the
+    // demo's overwrite-confirm dialog gates the swap.
+    fireEvent.click(await screen.findByRole("button", { name: "Discard" }));
+
+    await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
+    expect(seedTemplateAction).not.toHaveBeenCalled();
+  });
+
+  it("hitting the block cap (21st block) opens the block-cap gate modal and blocks the add", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    const overCap = {
+      content: Array.from({ length: 21 }, (_, i) => ({ type: "Hero", props: { id: `h${i}` } })),
+      root: {},
+    };
+    __capturedPuckOnChange?.(overCap);
+
+    expect(await screen.findByText(/This page is full for the demo/)).toBeInTheDocument();
+    expect(screen.getByTestId("demo-block-counter")).toHaveTextContent("0/20 blocks");
+  });
+
+  it("reveals the promo code on the first gate hit only, not on a second gate hit in the same session", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    // First gate hit (Publish) — promo reveal line appended.
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(await screen.findByText(/bonus code/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Keep exploring" }));
+
+    // Second gate hit (Theme, via the toolbar's Theme button + a control tweak)
+    // — no repeat of the reveal line, just the gate's own message.
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(await screen.findByText(/Publishing is a Gallurio Pro feature/)).toBeInTheDocument();
+    expect(screen.queryByText(/bonus code/)).not.toBeInTheDocument();
+  });
+
+  it("hides FeaturedWork/FeaturedWorkPreset from the block drawer (no demo collections picker exists)", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    expect(__capturedPuckConfig?.categories?.manual?.components).not.toContain("FeaturedWork");
+    expect(__capturedPuckConfig?.categories?.presets?.components).not.toContain("FeaturedWorkPreset");
+  });
+
+  it("disables the Preview toggle (no real preview route exists for demo data)", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    const previewToggle = screen.getByRole("button", { name: "Preview" });
+    expect(previewToggle).toBeDisabled();
+  });
+
+  it("disables the open-in-tab preview control and never calls window.open", async () => {
+    renderWithProviders(<EditorShell {...demoProps} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
+    await screen.findByTestId("puck");
+
+    const openInTab = screen.getByRole("button", { name: "Open in new tab" });
+    expect(openInTab).toBeDisabled();
+
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    fireEvent.click(openInTab);
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+});
+
+describe("EditorShell demoMode — opt-in intro gates the guide", () => {
+  const freshDemoProps = { ...demoProps, guideDismissed: false };
+
+  it("shows the intro dialog on load instead of auto-launching the guide", async () => {
+    renderWithProviders(<EditorShell {...freshDemoProps} />);
+
+    expect(
+      await screen.findByRole("dialog", { name: "Welcome to the portfolio demo" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show me around" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "I'll explore myself" })).toBeInTheDocument();
+    // The tour itself must not be running underneath the intro.
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+  });
+
+  it("'I'll explore myself' dismisses the intro straight into the entry screen, no guide", async () => {
+    renderWithProviders(<EditorShell {...freshDemoProps} />);
+    await screen.findByRole("dialog", { name: "Welcome to the portfolio demo" });
+
+    fireEvent.click(screen.getByRole("button", { name: "I'll explore myself" }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Welcome to the portfolio demo" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+    // Same Continue/Start-scratch decision the guide's own skip leads to — opting
+    // out of the tour must not cost a returning visitor their recoverable buffer.
+    expect(await screen.findByRole("button", { name: /Start from scratch/ })).toBeInTheDocument();
+  });
+
+  it("'Show me around' dismisses the intro and starts the spotlight tour", async () => {
+    renderWithProviders(<EditorShell {...freshDemoProps} />);
+    await screen.findByRole("dialog", { name: "Welcome to the portfolio demo" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Show me around" }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Welcome to the portfolio demo" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+  });
+});
+
+describe("EditorShell real (non-demo) editor — unaffected by the demo picker swap", () => {
+  it("keeps FeaturedWork/FeaturedWorkPreset in the block drawer", async () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    await screen.findByTestId("puck");
+
+    expect(__capturedPuckConfig?.categories?.manual?.components).toContain("FeaturedWork");
+    expect(__capturedPuckConfig?.categories?.presets?.components).toContain("FeaturedWorkPreset");
+  });
+
+  it("keeps the Preview toggle enabled and functional (regression guard for the demo-only disable)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    const previewToggle = screen.getByRole("button", { name: "Preview" });
+    expect(previewToggle).not.toBeDisabled();
+
+    const openInTab = screen.getByRole("button", { name: "Open in new tab" });
+    expect(openInTab).not.toBeDisabled();
   });
 });

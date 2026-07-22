@@ -44,7 +44,7 @@ const userSchema = new Schema(
     // field existed.
     betaParticipation: {
       recordedAt: { type: Date, default: null },
-      source: { type: String, enum: ["onboarding", "backfill", null], default: null },
+      source: { type: String, enum: ["onboarding", "recovery", "backfill", null], default: null },
     },
     // Set once, permanently, when this identity redeems the two-month
     // post-beta Pro promo. Identity-scoped (not workspace-scoped) — guards
