@@ -4,13 +4,10 @@ import { test, expect } from "@playwright/test";
 // marketing-compliance-pages.spec.ts.
 test.use({ storageState: { cookies: [], origins: [] } });
 
-const MARKETING_PAGES = [
-  { path: "/portfolio-maker", heading: "Build a portfolio your clients actually book from" },
-  { path: "/book-demo", heading: "Book a demo" },
-];
+const MARKETING_PAGES = [{ path: "/book-demo", heading: "Book a demo" }];
 
 for (const width of [1280, 768, 375] as const) {
-  test(`Portfolio Maker + Book a Demo pages render with no horizontal overflow at ${width}px`, async ({
+  test(`Book a Demo page renders with no horizontal overflow at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -28,25 +25,21 @@ for (const width of [1280, 768, 375] as const) {
   });
 }
 
-test("marketing nav links to Portfolio Maker and Book a Demo", async ({ page }) => {
+// "Portfolio Builder" now links straight to the live demo canvas — the old
+// intermediate /portfolio-maker marketing page was removed in favor of an
+// opt-in intro dialog on the demo canvas itself (see portfolio-maker-demo-editor.spec.ts).
+test("marketing nav links to the Portfolio Builder demo and Book a Demo", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
   await page.getByRole("navigation", { name: "Marketing" }).getByRole("link", { name: "Portfolio Builder" }).click();
-  await expect(page).toHaveURL(/\/portfolio-maker$/);
+  await expect(page).toHaveURL(/\/portfolio-maker-demo$/);
 
   await page.goto("/");
   await page.getByRole("navigation", { name: "Marketing" }).getByRole("link", { name: "Book a Demo" }).click();
   await expect(page).toHaveURL(/\/book-demo$/);
 });
 
-test("Portfolio Maker page CTA links to the live demo", async ({ page }) => {
-  await page.goto("/portfolio-maker");
-  const cta = page.getByRole("link", { name: "Try the portfolio builder" });
-  await expect(cta).toBeVisible();
-  await expect(cta).toHaveAttribute("href", /\/portfolio-maker-demo/);
-});
-
-test("ar locale renders Portfolio Maker + Book a Demo pages right-to-left", async ({ page }) => {
+test("ar locale renders the Book a Demo page right-to-left", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   for (const { path } of MARKETING_PAGES) {
     await page.goto(`/ar${path}`);

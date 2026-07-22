@@ -522,21 +522,6 @@
         "linkedin": "Ikuti kami di LinkedIn"
       }
     },
-    "portfolioMaker": {
-      "metadata": {
-        "title": "Portfolio Builder — Gallurio",
-        "description": "Buat halaman portfolio profesional untuk bisnis kreatif Anda dengan Portfolio Builder drag-and-drop dari Gallurio. Coba demo gratisnya, tanpa perlu akun."
-      },
-      "header": {
-        "headline": "Buat portfolio yang benar-benar mendatangkan booking dari klien Anda",
-        "body": "Blok drag-and-drop, warna brand Anda sendiri, galeri, dan formulir kontak yang siap menerima booking — semuanya dalam satu page builder yang dirancang untuk bisnis kreatif."
-      },
-      "demo": {
-        "title": "Coba gratis, tanpa perlu akun",
-        "body": "Semua yang Anda buat di demo hanya tersimpan di browser Anda — tidak ada yang disimpan ke database atau dibagikan ke siapa pun. Daftar saat Anda siap untuk publish.",
-        "cta": "Coba portfolio builder-nya"
-      }
-    },
     "bookDemo": {
       "metadata": {
         "title": "Jadwalkan Demo — Gallurio",
@@ -2942,6 +2927,12 @@
       "disclaimerBanner": {
         "message": "Mode demo — tidak ada yang Anda lakukan di sini disimpan ke database atau dibagikan ke siapa pun. Semuanya hanya tersimpan di browser ini.",
         "bonusCode": "Kode bonus Anda: {code} (sudah diklaim)"
+      },
+      "intro": {
+        "title": "Selamat datang di demo portfolio",
+        "body": "Coba canvas page builder yang sesungguhnya — yang Anda buat di sini tidak disimpan ke database atau dibagikan ke siapa pun.",
+        "showGuideCta": "Tunjukkan caranya",
+        "exploreSelfCta": "Saya coba sendiri"
       },
       "entry": {
         "title": "Coba editor portfolio",

@@ -39,7 +39,7 @@ export function MarketingHeader() {
               {tNav("pricing")}
             </Link>
             <Link
-              href="/portfolio-maker"
+              href="/portfolio-maker-demo"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {tNav("portfolioMaker")}
@@ -97,7 +97,7 @@ export function MarketingHeader() {
                   <Link href="/pricing" className="px-3 py-2 text-sm font-medium text-foreground">
                     {tNav("pricing")}
                   </Link>
-                  <Link href="/portfolio-maker" className="px-3 py-2 text-sm font-medium text-foreground">
+                  <Link href="/portfolio-maker-demo" className="px-3 py-2 text-sm font-medium text-foreground">
                     {tNav("portfolioMaker")}
                   </Link>
                   <Link href="/book-demo" className="px-3 py-2 text-sm font-medium text-foreground">

@@ -325,6 +325,44 @@ function DemoEntryScreen({
   );
 }
 
+/**
+ * First thing a demo visitor sees: a plain welcome modal (mirrors the real
+ * editor's onboarding-style dialogs) explaining what the page is, over the
+ * already-mounted (empty) canvas. Opt-in tour: unlike the real editor's
+ * first-run guide, the spotlight tour never auto-launches here — the visitor
+ * picks it or dismisses straight into free exploration.
+ */
+function DemoIntroDialog({
+  open,
+  onShowGuide,
+  onExploreSelf,
+  t,
+}: {
+  open: boolean;
+  onShowGuide: () => void;
+  onExploreSelf: () => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <Dialog open={open} disablePointerDismissal onOpenChange={() => {}}>
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>{t("intro.title")}</DialogTitle>
+          <DialogDescription>{t("intro.body")}</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-2 sm:flex-row-reverse">
+          <Button type="button" onClick={onShowGuide} className="flex-1">
+            {t("intro.showGuideCta")}
+          </Button>
+          <Button type="button" variant="outline" onClick={onExploreSelf} className="flex-1">
+            {t("intro.exploreSelfCta")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
 // standalone iframe preview. Mirrors the <Puck viewports> prop.
 type PreviewDevice = "mobile" | "tablet" | "desktop";
@@ -672,8 +710,15 @@ export function EditorShell({
     !storyPromptCompleted && !guideDismissed && !guideMode && !demoMode
   );
   // The guide auto-opens on first run (until the owner persisted a dismissal),
-  // and can be reopened on demand via the Guide button for the session.
-  const [guideOpen, setGuideOpen] = useState(!guideDismissed);
+  // and can be reopened on demand via the Guide button for the session. In
+  // demoMode it never auto-opens — DemoIntroDialog below gates it behind an
+  // explicit "Show me around" choice instead of forcing the tour on load.
+  const [guideOpen, setGuideOpen] = useState(!guideDismissed && !demoMode);
+  // Demo-only: the opt-in welcome modal shown before anything else. Gated on
+  // !guideDismissed for the same reason guideOpen is elsewhere — tests (and,
+  // in principle, a returning visitor) that start past that point skip
+  // straight to the entry screen instead of re-showing the intro.
+  const [demoIntroOpen, setDemoIntroOpen] = useState(demoMode && !guideDismissed);
   const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
   function handleFormLocaleChange(next: string) {
     setFormLocale(next);
@@ -2010,7 +2055,11 @@ export function EditorShell({
         value={demoMode ? { demoSessionId, onImageCapHit: () => setActiveDemoGate("imageCap") } : null}
       >
       <div
-        className={cn("gallurio-editor relative min-h-svh overflow-x-auto", className)}
+        className={cn(
+          "gallurio-editor relative overflow-x-auto",
+          demoMode ? "h-full min-h-0" : "min-h-svh",
+          className,
+        )}
         data-testid="portfolio-editor-shell"
         style={cssVars as React.CSSProperties}
         onKeyDown={handleEditorKeyDown}
@@ -2381,6 +2430,18 @@ export function EditorShell({
           canContinue={hasRecoverableBuffer}
           onContinue={() => setDemoEntryOpen(false)}
           onStartScratch={() => { setDemoEntryOpen(false); void applyDemoTemplate(SCRATCH_TEMPLATE_ID); }}
+          t={tDemo}
+        />
+      )}
+      {demoMode && (
+        <DemoIntroDialog
+          open={demoIntroOpen}
+          onShowGuide={() => { setDemoIntroOpen(false); setGuideOpen(true); }}
+          // Skips the tour but still lands on the same Continue/Start-scratch
+          // entry decision the guide's own skip/finish leads to — a returning
+          // visitor with a recoverable local buffer must not lose the chance
+          // to resume it just because they opted out of the tour.
+          onExploreSelf={() => { setDemoIntroOpen(false); setDemoEntryOpen(true); }}
           t={tDemo}
         />
       )}

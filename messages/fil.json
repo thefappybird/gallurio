@@ -522,21 +522,6 @@
         "linkedin": "Sundan kami sa LinkedIn"
       }
     },
-    "portfolioMaker": {
-      "metadata": {
-        "title": "Portfolio Builder — Gallurio",
-        "description": "Gumawa ng propesyonal na portfolio page para sa iyong creative business gamit ang drag-and-drop na Portfolio Builder ng Gallurio. Subukan ang libreng demo — hindi kailangan ng account."
-      },
-      "header": {
-        "headline": "Gumawa ng portfolio na talagang pinagmumulan ng booking ng mga kliyente mo",
-        "body": "Mga drag-and-drop block, sarili mong brand colors, gallery, at contact form na handa nang tumanggap ng booking — lahat sa iisang page builder na ginawa para sa creative business."
-      },
-      "demo": {
-        "title": "Subukan nang libre, hindi kailangan ng account",
-        "body": "Ang lahat ng gagawin mo sa demo ay nasa browser mo lang — walang naise-save sa database o ibinabahagi kaninuman. Mag-sign up kapag handa ka nang mag-publish.",
-        "cta": "Subukan ang portfolio builder"
-      }
-    },
     "bookDemo": {
       "metadata": {
         "title": "Mag-book ng Demo — Gallurio",
@@ -2942,6 +2927,12 @@
       "disclaimerBanner": {
         "message": "Demo mode — walang naise-save sa database o ibinabahagi kaninuman dito. Nasa browser na ito lang.",
         "bonusCode": "Ang bonus code mo: {code} (na-claim na)"
+      },
+      "intro": {
+        "title": "Maligayang pagdating sa demo ng portfolio",
+        "body": "Subukan ang tunay na page builder canvas — walang naise-save sa database o ibinabahagi kaninuman ang gagawin mo rito.",
+        "showGuideCta": "Ipakita mo sa akin",
+        "exploreSelfCta": "Ako na ang mag-eeksplora"
       },
       "entry": {
         "title": "Subukan ang portfolio editor",

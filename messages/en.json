@@ -522,21 +522,6 @@
         "linkedin": "Follow us on LinkedIn"
       }
     },
-    "portfolioMaker": {
-      "metadata": {
-        "title": "Portfolio Builder — Gallurio",
-        "description": "Build a professional portfolio page for your creative business with Gallurio's drag-and-drop Portfolio Builder. Try the free demo, no account needed."
-      },
-      "header": {
-        "headline": "Build a portfolio your clients actually book from",
-        "body": "Drag-and-drop blocks, your own brand colors, a gallery, and a booking-ready contact form — all in one page builder made for creative businesses."
-      },
-      "demo": {
-        "title": "Try it free, no account needed",
-        "body": "Everything you build in the demo lives only in your browser — nothing is saved to a database or shared with anyone. Sign up when you're ready to publish.",
-        "cta": "Try the portfolio builder"
-      }
-    },
     "bookDemo": {
       "metadata": {
         "title": "Book a Demo — Gallurio",
@@ -2943,6 +2928,12 @@
       "disclaimerBanner": {
         "message": "Demo mode — nothing you do here is saved to a database or shared with anyone. It only lives in this browser.",
         "bonusCode": "Your bonus code: {code} (claimed)"
+      },
+      "intro": {
+        "title": "Welcome to the portfolio demo",
+        "body": "Play with a real page builder canvas — nothing you build here is saved to a database or shared with anyone.",
+        "showGuideCta": "Show me around",
+        "exploreSelfCta": "I'll explore myself"
       },
       "entry": {
         "title": "Try the portfolio editor",

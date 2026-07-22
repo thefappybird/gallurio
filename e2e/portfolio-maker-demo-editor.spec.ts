@@ -12,22 +12,18 @@ function disclaimerBanner(page: Page) {
   return page.getByRole("status").filter({ hasText: "Demo mode" });
 }
 
-// A fresh visit opens SpotlightGuide first (overlaying an already-live
-// canvas), same sequencing as the real editor for a brand-new workspace —
-// the 2-option entry screen only appears once the guide is dismissed.
+// A fresh visit opens the opt-in intro dialog first — the guide never
+// auto-launches. "I'll explore myself" is the fast path straight to the same
+// 2-option entry screen the guide's own skip/finish also leads to.
 async function skipGuideAndReachEntry(page: Page) {
   await page.goto("/portfolio-maker-demo");
-  await page.getByRole("button", { name: "Skip Guide" }).click();
-  // "Skip Guide" opens a confirm dialog ("Skip the guide?") before actually
-  // dismissing the tour — confirm it.
-  await page
-    .getByRole("dialog", { name: "Skip the guide?" })
-    .getByRole("button", { name: "Skip Guide" })
-    .click();
+  await page.getByRole("dialog", { name: "Welcome to the portfolio demo" }).getByRole("button", {
+    name: "I'll explore myself",
+  }).click();
   await expect(page.getByRole("heading", { name: "Try the portfolio editor" })).toBeVisible();
 }
 
-test("demo editor shows the disclaimer banner immediately, and the 2-option entry screen after the guide is skipped", async ({
+test("demo editor shows the disclaimer banner and an opt-in intro dialog, never auto-launching the guide", async ({
   page,
 }) => {
   await page.goto("/portfolio-maker-demo");
@@ -35,9 +31,25 @@ test("demo editor shows the disclaimer banner immediately, and the 2-option entr
   await expect(disclaimerBanner(page)).toContainText(
     "Demo mode — nothing you do here is saved to a database or shared with anyone.",
   );
+  const intro = page.getByRole("dialog", { name: "Welcome to the portfolio demo" });
+  await expect(intro).toBeVisible();
+  await expect(intro.getByRole("button", { name: "Show me around" })).toBeVisible();
+  await expect(intro.getByRole("button", { name: "I'll explore myself" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Welcome to your portfolio editor" })).not.toBeVisible();
+});
+
+test("choosing 'Show me around' starts the spotlight tour, and skipping it reaches the entry screen", async ({
+  page,
+}) => {
+  await page.goto("/portfolio-maker-demo");
+  await page.getByRole("dialog", { name: "Welcome to the portfolio demo" }).getByRole("button", {
+    name: "Show me around",
+  }).click();
   await expect(page.getByRole("dialog", { name: "Welcome to your portfolio editor" })).toBeVisible();
 
   await page.getByRole("button", { name: "Skip Guide" }).click();
+  // "Skip Guide" opens a confirm dialog ("Skip the guide?") before actually
+  // dismissing the tour — confirm it.
   await page
     .getByRole("dialog", { name: "Skip the guide?" })
     .getByRole("button", { name: "Skip Guide" })
@@ -110,6 +122,29 @@ for (const width of [1280, 768, 375] as const) {
     await skipGuideAndReachEntry(page);
     await expect(page.getByRole("button", { name: "Start from scratch" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Continue where you left off" })).toBeVisible();
+  });
+
+  // Regression guard: the disclaimer banner used to sit on top of a
+  // `min-h-svh` EditorShell instead of sharing a clipped `h-svh` flex column
+  // with it, so the pair's combined height leaked past the viewport into a
+  // page-level vertical scroll — hiding the nav tabs/banner above the fold
+  // and, per the report, leaving no way to scroll back up to reach them.
+  test(`demo editor page never grows a page-level vertical scrollbar at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/portfolio-maker-demo");
+    await page.getByRole("dialog", { name: "Welcome to the portfolio demo" }).waitFor();
+
+    const scrollHeightWithIntro = await page.evaluate(() => document.documentElement.scrollHeight);
+    expect(scrollHeightWithIntro, "page scrolls vertically while the intro dialog is open").toBeLessThanOrEqual(900);
+
+    await page.getByRole("dialog", { name: "Welcome to the portfolio demo" }).getByRole("button", {
+      name: "I'll explore myself",
+    }).click();
+    await page.getByRole("button", { name: "Start from scratch" }).click();
+    await expect(page.getByRole("button", { name: "Publish" })).toBeVisible({ timeout: 15_000 });
+
+    const scrollHeightOnCanvas = await page.evaluate(() => document.documentElement.scrollHeight);
+    expect(scrollHeightOnCanvas, "page scrolls vertically once on the editor canvas").toBeLessThanOrEqual(900);
   });
 }
 

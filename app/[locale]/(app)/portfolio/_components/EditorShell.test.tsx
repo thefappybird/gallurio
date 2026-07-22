@@ -1584,6 +1584,53 @@ describe("EditorShell demoMode", () => {
   });
 });
 
+describe("EditorShell demoMode — opt-in intro gates the guide", () => {
+  const freshDemoProps = { ...demoProps, guideDismissed: false };
+
+  it("shows the intro dialog on load instead of auto-launching the guide", async () => {
+    renderWithProviders(<EditorShell {...freshDemoProps} />);
+
+    expect(
+      await screen.findByRole("dialog", { name: "Welcome to the portfolio demo" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show me around" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "I'll explore myself" })).toBeInTheDocument();
+    // The tour itself must not be running underneath the intro.
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+  });
+
+  it("'I'll explore myself' dismisses the intro straight into the entry screen, no guide", async () => {
+    renderWithProviders(<EditorShell {...freshDemoProps} />);
+    await screen.findByRole("dialog", { name: "Welcome to the portfolio demo" });
+
+    fireEvent.click(screen.getByRole("button", { name: "I'll explore myself" }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Welcome to the portfolio demo" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+    // Same Continue/Start-scratch decision the guide's own skip leads to — opting
+    // out of the tour must not cost a returning visitor their recoverable buffer.
+    expect(await screen.findByRole("button", { name: /Start from scratch/ })).toBeInTheDocument();
+  });
+
+  it("'Show me around' dismisses the intro and starts the spotlight tour", async () => {
+    renderWithProviders(<EditorShell {...freshDemoProps} />);
+    await screen.findByRole("dialog", { name: "Welcome to the portfolio demo" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Show me around" }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Welcome to the portfolio demo" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+  });
+});
+
 describe("EditorShell real (non-demo) editor — unaffected by the demo picker swap", () => {
   it("keeps FeaturedWork/FeaturedWorkPreset in the block drawer", async () => {
     renderWithProviders(<EditorShell {...baseProps} />);
