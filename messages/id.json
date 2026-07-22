@@ -19,7 +19,7 @@
     },
     "metadata": {
       "title": "Gallurio — Alat Portfolio, Pemesanan, dan Klien untuk Bisnis Kreatif",
-      "description": "Buat portfolio profesional, kumpulkan permintaan booking, dan kelola klien, booking, galeri, serta invoice dalam satu workspace bersama Gallurio."
+      "description": "Buat portfolio profesional dengan website builder drag-and-drop tanpa kode, kumpulkan permintaan booking, dan kelola klien, booking, galeri, serta invoice dalam satu workspace bersama Gallurio."
     },
     "hero": {
       "eyebrow": "Satu workspace, dua tugas",
@@ -37,8 +37,8 @@
       "item4": "Checkout aman oleh Lemon Squeezy"
     },
     "split": {
-      "showVerb": "Tampilkan",
-      "showTag": "halaman publik Anda",
+      "showVerb": "Buat",
+      "showTag": "portfolio Anda",
       "showImageAlt": "Halaman portfolio publik Gallurio milik seorang profesional kreatif, dengan tata letak galeri editorial.",
       "manageVerb": "Kelola",
       "manageTag": "workspace Anda",
@@ -48,7 +48,7 @@
     },
     "whatIs": {
       "title": "Apa itu Gallurio?",
-      "body": "Gallurio adalah platform portfolio dan pemesanan untuk para profesional kreatif. Terbitkan halaman publik yang menampilkan karya Anda, lalu kelola booking, klien, dan detail yang menyusul setiap permintaan — semuanya dari workspace yang sama."
+      "body": "Gallurio adalah platform portfolio dan pemesanan untuk para profesional kreatif. Buat halaman publik dengan website builder drag-and-drop tanpa kode, lalu kelola booking, klien, dan detail yang menyusul setiap permintaan — semuanya dari workspace yang sama."
     },
     "builtFor": {
       "item1": "Fotografer",
@@ -62,12 +62,12 @@
     },
     "features": {
       "portfolioBuilder": {
-        "title": "Pembuat portfolio",
+        "title": "Pembuat portfolio drag-and-drop",
         "panelHeadline": "Buat kesan pertama terasa seperti diri Anda.",
-        "description": "Buat halaman portfolio tanpa mulai dari layar kosong. Susun galeri, layanan, dan bagian sesuai cara Anda ingin karya Anda dilihat — lalu jadikan benar-benar milik Anda.",
-        "feature1": "Bagian halaman yang fleksibel",
+        "description": "Website builder drag-and-drop tanpa kode — tanpa layar kosong, tanpa developer. Susun galeri, layanan, dan bagian sesuai cara Anda ingin karya Anda dilihat — lalu jadikan benar-benar milik Anda.",
+        "feature1": "Bagian halaman drag-and-drop — tanpa kode",
         "feature2": "Galeri gambar dan koleksi",
-        "feature3": "Warna, font, dan branding kustom",
+        "feature3": "Warna, font, dan branding kustom — tanpa perlu developer",
         "feature4": "Dirancang untuk mengubah pengunjung jadi permintaan",
         "cta": "Coba portfolio builder-nya"
       },

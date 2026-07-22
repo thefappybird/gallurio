@@ -19,7 +19,7 @@
     },
     "metadata": {
       "title": "Gallurio — Mga Tool sa Portfolio, Booking, at Client para sa Creative Business",
-      "description": "Gumawa ng propesyonal na portfolio, mangalap ng booking inquiries, at pamahalaan ang mga kliyente, booking, gallery, at invoice sa iisang workspace gamit ang Gallurio."
+      "description": "Gumawa ng propesyonal na portfolio gamit ang drag-and-drop, walang-code na website builder, mangalap ng booking inquiries, at pamahalaan ang mga kliyente, booking, gallery, at invoice sa iisang workspace gamit ang Gallurio."
     },
     "hero": {
       "eyebrow": "Isang workspace, dalawang trabaho",
@@ -37,8 +37,8 @@
       "item4": "Secure na checkout sa pamamagitan ng Lemon Squeezy"
     },
     "split": {
-      "showVerb": "Ipakita",
-      "showTag": "ang iyong public page",
+      "showVerb": "Gumawa",
+      "showTag": "ng iyong portfolio",
       "showImageAlt": "Ang public na Gallurio portfolio page ng isang creative professional, may editorial na gallery layout.",
       "manageVerb": "Pamahalaan",
       "manageTag": "ang iyong workspace",
@@ -48,7 +48,7 @@
     },
     "whatIs": {
       "title": "Ano ang Gallurio?",
-      "body": "Ang Gallurio ay isang portfolio at booking platform para sa mga creative professional. Mag-publish ng public page na nagpapakita ng iyong trabaho, pagkatapos ay pamahalaan ang mga booking, kliyente, at detalyeng kasunod ng bawat inquiry — lahat mula sa iisang workspace."
+      "body": "Ang Gallurio ay isang portfolio at booking platform para sa mga creative professional. Gumawa ng public page gamit ang drag-and-drop, walang-code na website builder, pagkatapos ay pamahalaan ang mga booking, kliyente, at detalyeng kasunod ng bawat inquiry — lahat mula sa iisang workspace."
     },
     "builtFor": {
       "item1": "Mga Photographer",
@@ -62,12 +62,12 @@
     },
     "features": {
       "portfolioBuilder": {
-        "title": "Portfolio builder",
+        "title": "Drag-and-drop na portfolio builder",
         "panelHeadline": "Gawin ang unang impresyon na parang ikaw talaga.",
-        "description": "Gumawa ng portfolio page nang hindi nagsisimula sa blangkong screen. Ayusin ang mga gallery, serbisyo, at section sa paraang gusto mo talagang makita ang iyong trabaho — pagkatapos gawin itong tunay na sa iyo.",
-        "feature1": "Flexible na mga page section",
+        "description": "Isang drag-and-drop, walang-code na website builder — walang blangkong screen, walang kailangang developer. Ayusin ang mga gallery, serbisyo, at section sa paraang gusto mo talagang makita ang iyong trabaho — pagkatapos gawin itong tunay na sa iyo.",
+        "feature1": "Drag-and-drop na page section — walang code na kailangan",
         "feature2": "Mga image gallery at collection",
-        "feature3": "Custom na kulay, font, at branding",
+        "feature3": "Custom na kulay, font, at branding — walang kailangang developer",
         "feature4": "Ginawa para gawing inquiry ang mga bisita",
         "cta": "Subukan ang portfolio builder"
       },

@@ -19,7 +19,7 @@
     },
     "metadata": {
       "title": "Gallurio | Portfolio, Booking, and Client Tools for Creative Businesses",
-      "description": "Create a professional portfolio, collect booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace with Gallurio."
+      "description": "Build a professional portfolio with a drag-and-drop, no-code website builder, collect booking inquiries, and manage clients, bookings, galleries, and invoices in one workspace with Gallurio."
     },
     "hero": {
       "eyebrow": "One workspace, two jobs",
@@ -37,8 +37,8 @@
       "item4": "Secure checkout by Lemon Squeezy"
     },
     "split": {
-      "showVerb": "Show",
-      "showTag": "your public page",
+      "showVerb": "Build",
+      "showTag": "your portfolio",
       "showImageAlt": "A creative professional's public Gallurio portfolio page with an editorial gallery layout.",
       "manageVerb": "Manage",
       "manageTag": "your workspace",
@@ -48,7 +48,7 @@
     },
     "whatIs": {
       "title": "What is Gallurio?",
-      "body": "Gallurio is a portfolio and booking platform for creative professionals. Publish a public page that shows your work, then manage the bookings, clients, and details that follow every inquiry — all from the same workspace."
+      "body": "Gallurio is a portfolio and booking platform for creative professionals. Build a public page with a drag-and-drop, no-code website builder, then manage the bookings, clients, and details that follow every inquiry — all from the same workspace."
     },
     "builtFor": {
       "item1": "Photographers",
@@ -62,12 +62,12 @@
     },
     "features": {
       "portfolioBuilder": {
-        "title": "Portfolio builder",
+        "title": "Drag-and-drop portfolio builder",
         "panelHeadline": "Make your first impression feel like you.",
-        "description": "Build a portfolio page without starting from a blank screen. Arrange galleries, services, and sections the way you actually want your work seen — then make it unmistakably yours.",
-        "feature1": "Flexible page sections",
+        "description": "A drag-and-drop, no-code website builder — no blank screen, no developer needed. Arrange galleries, services, and sections the way you actually want your work seen, then make it unmistakably yours.",
+        "feature1": "Drag-and-drop page sections — no code needed",
         "feature2": "Image galleries and collections",
-        "feature3": "Custom colors, fonts, and branding",
+        "feature3": "Custom colors, fonts, and branding — no developer required",
         "feature4": "Built to turn visitors into inquiries",
         "cta": "Try the portfolio builder"
       },

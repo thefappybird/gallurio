@@ -6,23 +6,22 @@ import { test, expect } from "@playwright/test";
 // this page (see the landing page's auth-redirect check).
 test.use({ storageState: { cookies: [], origins: [] } });
 
-const HEADLINE = "The booking-ready portfolio, run like a ledger.";
+const HEADLINE = "Show your work. Run your business.";
 
 async function expectCoreSectionsVisible(page: import("@playwright/test").Page) {
   await expect(page.getByRole("heading", { name: HEADLINE })).toBeVisible();
   await expect(page.getByRole("heading", { name: "What is Gallurio?" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Built for Creative Businesses" })).toBeVisible();
-  await expect(page.getByText("Portfolio builder", { exact: true })).toBeVisible();
+  await expect(page.getByText("Drag-and-drop portfolio builder", { exact: true })).toBeVisible();
   await expect(page.getByText("Business workspace", { exact: true })).toBeVisible();
-  await expect(page.getByText("Booking inquiry forms", { exact: true })).toBeVisible();
+  await expect(page.getByText("Booking inquiries", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("Every booking accounted for. Every client trusted. Nothing left ambiguous.", {
+    page.getByText("Every portfolio worth trusting. Every booking accounted for. Nothing left ambiguous.", {
       exact: false,
     })
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Simple pricing" })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Start building your creative workspace with Gallurio." })
+    page.getByRole("heading", { name: "Build a portfolio that's ready for the next booking." })
   ).toBeVisible();
 }
 
@@ -36,9 +35,12 @@ test("landing page renders all sections with no horizontal overflow at 1280px", 
   await expect(page.getByRole("link", { name: "Contact" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Get started" }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Terms" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Privacy" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Refunds" })).toBeVisible();
+  // Terms/Privacy/Refunds each appear twice — once in the in-page Transparency
+  // section, once in the footer — same duplication Pricing/Contact/Get started
+  // above already account for with .first().
+  await expect(page.getByRole("link", { name: "Terms" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Refunds" }).first()).toBeVisible();
 
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(
@@ -70,17 +72,22 @@ test("landing page renders all sections with no horizontal overflow at 375px", a
   await expectCoreSectionsVisible(page);
   await expect(page.getByRole("link", { name: "Pricing" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Contact" }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Get started" }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Terms" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Privacy" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Refunds" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Terms" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Refunds" }).first()).toBeVisible();
 
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(
     scrollWidth,
     `documentElement.scrollWidth (${scrollWidth}) exceeds viewport (375)`
   ).toBeLessThanOrEqual(380);
+
+  // Below the sm: breakpoint, "Sign in" lives inside the collapsed hamburger
+  // menu (only "Get started" stays directly visible) — open it to reach it.
+  // Checked after the overflow measurement so the open sheet doesn't skew it.
+  await page.getByRole("button", { name: "Open menu" }).click();
+  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
 });
 
 test("cadence toggle switches the Pro price between monthly and yearly", async ({ page }) => {
@@ -122,7 +129,7 @@ test("ar locale renders right-to-left with translated header/footer", async ({ p
   await expect(page.getByRole("heading", { name: "ما هو Gallurio؟" })).toBeVisible();
   await expect(
     page.getByRole("heading", {
-      name: "معرض الأعمال الجاهز للحجز، يُدار كسجل محاسبي دقيق.",
+      name: "اعرض أعمالك. أدر أعمالك.",
     })
   ).toBeVisible();
 });
