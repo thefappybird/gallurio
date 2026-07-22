@@ -3,6 +3,11 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Reworked the public Book a Demo page into the auth-shell split layout, reversed: a compact demo form card now sits over the theme-aware ambient SVG pane, while the narrower, theme-opposed pane presents the localized Gallurio manifesto.
+
 ## [1.1.1] - 2026-07-21
 
 ### Added
