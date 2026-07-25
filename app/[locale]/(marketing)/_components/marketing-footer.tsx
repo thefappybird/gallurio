@@ -6,6 +6,9 @@ import { Link } from "@/lib/i18n/navigation";
 
 export function MarketingFooter() {
   const tFooter = useTranslations("marketing.footer");
+  const tAppInfo = useTranslations("marketing.appInfo");
+  const tTerms = useTranslations("marketing.terms");
+  const tPrivacy = useTranslations("marketing.privacy");
 
   return (
     <footer className="border-t border-border">
@@ -24,23 +27,26 @@ export function MarketingFooter() {
           aria-label="Footer"
           className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
         >
-          <Link href="/pricing" className="hover:text-foreground">
-            {tFooter("pricing")}
-          </Link>
           <Link href="/portfolio-maker-demo" className="hover:text-foreground">
             {tFooter("portfolioMaker")}
+          </Link>
+          <Link href="/about" className="hover:text-foreground">
+            {tAppInfo("navigationLabel")}
+          </Link>
+          <Link href="/pricing" className="hover:text-foreground">
+            {tFooter("pricing")}
           </Link>
           <Link href="/book-demo" className="hover:text-foreground">
             {tFooter("bookDemo")}
           </Link>
           <Link href="/terms" className="hover:text-foreground">
-            {tFooter("terms")}
+            {tTerms("title")}
           </Link>
           <Link href="/privacy" className="hover:text-foreground">
-            {tFooter("privacy")}
+            {tPrivacy("title")}
           </Link>
           <Link href="/refunds" className="hover:text-foreground">
-            {tFooter("refunds")}
+            {tFooter("refundPolicy")}
           </Link>
           <Link href="/contact" className="hover:text-foreground">
             {tFooter("contact")}

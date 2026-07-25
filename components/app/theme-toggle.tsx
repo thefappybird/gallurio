@@ -38,6 +38,7 @@ export function ThemeToggle({
         THEMES.find((opt) => opt.id === resolveScheme(resolvedTheme))?.icon ??
         SunIcon);
   const TriggerIcon = triggerIcon;
+  const menuPosition = variant === "standalone" ? { side: "bottom" as const, align: "end" as const } : { side: "inline-end" as const, align: "start" as const };
 
   const trigger =
     variant === "standalone" ? (
@@ -57,7 +58,7 @@ export function ThemeToggle({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={trigger} />
-      <DropdownMenuContent side="inline-end" align="start">
+      <DropdownMenuContent {...menuPosition}>
         {THEMES.map((opt) => {
           const Icon = opt.icon;
           return (

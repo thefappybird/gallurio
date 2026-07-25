@@ -3,6 +3,22 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [1.1.3] - 2026-07-25
+
+### Added
+- Public About page that plainly describes Gallurio's portfolio, booking, and client-workspace functionality, plus the optional Google Sign-In identity data use and links to the legal policies.
+- Regression coverage for the marketing navigation, legal footer labels, root favicon metadata, and standalone-versus-sidebar utility-menu positioning.
+
+### Changed
+- Made the landing page's explicit functionality description visible directly beneath the Gallurio hero heading; the application remains publicly accessible at the root homepage for OAuth review.
+- Reordered marketing navigation to Portfolio Builder, About, Pricing, Book a Demo, Sign in, and Get started; the footer follows the same public-product order before its legal links.
+- Expanded legal-link labels to their full policy names, including Privacy Policy and Refund Policy.
+- Updated the Portfolio Builder call to action to use the Gallurio brand button style.
+- Published the stable square Gallurio PNG as the root app and public-portfolio favicon, including icon, shortcut, and Apple metadata.
+
+### Fixed
+- Theme and language menus on standalone header controls now open below their trigger with logical-end alignment; sidebar controls retain their original inline-side behavior.
+
 ## [1.1.2] - 2026-07-22
 
 ### Added

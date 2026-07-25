@@ -9,6 +9,7 @@
       "getStarted": "Get started"
     },
     "footer": {
+      "refundPolicy": "Refund Policy",
       "pricing": "Pricing",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
@@ -520,6 +521,29 @@
         "facebook": "Follow us on Facebook",
         "reddit": "Join us on Reddit",
         "linkedin": "Follow us on LinkedIn"
+      }
+    },
+    "appInfo": {
+      "navigationLabel": "About",
+      "metadata": {
+        "title": "About Gallurio",
+        "description": "Gallurio is portfolio and booking software for event creatives and creative businesses."
+      },
+      "eyebrow": "About Gallurio",
+      "headline": "Gallurio: portfolio and booking software for event creatives.",
+      "intro": "Gallurio is a software platform for independent event creatives and creative businesses. It brings a public portfolio, booking inquiries, clients, bookings, galleries, and workspace collaboration into one place.",
+      "purpose": {
+        "title": "What Gallurio does",
+        "body": "Gallurio helps creative businesses publish a professional public portfolio, collect booking inquiries, and manage the clients, bookings, and work that follow each inquiry."
+      },
+      "googleSignIn": {
+        "title": "How Google Sign-In is used",
+        "body": "Google Sign-In is optional. When you choose it, Gallurio uses the basic identity information Google provides—your name, email address, profile image, and Google account identifier—to create or sign you in to your Gallurio account. Gallurio does not access Gmail, Google Drive, Google Calendar, or other Google services."
+      },
+      "legal": {
+        "intro": "Read our Privacy Policy for details about how Gallurio handles personal information and our Terms of Service for the rules that apply to the platform.",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service"
       }
     },
     "bookDemo": {

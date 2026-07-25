@@ -33,6 +33,7 @@ export function LocaleSwitcher({
   const names = useTranslations("app.settings.customize.languages");
   const qs = searchParams.toString();
   const href = qs ? `${pathname}?${qs}` : pathname;
+  const menuPosition = variant === "standalone" ? { side: "bottom" as const, align: "end" as const } : { side: "inline-end" as const, align: "start" as const };
 
   const trigger =
     variant === "standalone" ? (
@@ -52,7 +53,7 @@ export function LocaleSwitcher({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={trigger} />
-      <DropdownMenuContent side="inline-end" align="start">
+      <DropdownMenuContent {...menuPosition}>
         {routing.locales.map((locale: Locale) => (
           <DropdownMenuItem
             key={locale}
