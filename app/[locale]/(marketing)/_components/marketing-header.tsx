@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 
 export function MarketingHeader() {
   const tNav = useTranslations("marketing.nav");
+  const tAppInfo = useTranslations("marketing.appInfo");
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
@@ -33,28 +34,28 @@ export function MarketingHeader() {
         <div className="hidden flex-1 items-center justify-end gap-x-4 gap-y-2 sm:flex">
           <nav aria-label="Marketing" className="flex items-center gap-4 text-sm font-medium">
             <Link
-              href="/pricing"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {tNav("pricing")}
-            </Link>
-            <Link
               href="/portfolio-maker-demo"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {tNav("portfolioMaker")}
             </Link>
             <Link
+              href="/about"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {tAppInfo("navigationLabel")}
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {tNav("pricing")}
+            </Link>
+            <Link
               href="/book-demo"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {tNav("bookDemo")}
-            </Link>
-            <Link
-              href="/contact"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {tNav("contact")}
             </Link>
           </nav>
 
@@ -94,17 +95,17 @@ export function MarketingHeader() {
               </SheetHeader>
               <div className="flex flex-col gap-2 p-4">
                 <nav aria-label="Marketing" className="flex flex-col gap-1">
-                  <Link href="/pricing" className="px-3 py-2 text-sm font-medium text-foreground">
-                    {tNav("pricing")}
-                  </Link>
                   <Link href="/portfolio-maker-demo" className="px-3 py-2 text-sm font-medium text-foreground">
                     {tNav("portfolioMaker")}
                   </Link>
+                  <Link href="/about" className="px-3 py-2 text-sm font-medium text-foreground">
+                    {tAppInfo("navigationLabel")}
+                  </Link>
+                  <Link href="/pricing" className="px-3 py-2 text-sm font-medium text-foreground">
+                    {tNav("pricing")}
+                  </Link>
                   <Link href="/book-demo" className="px-3 py-2 text-sm font-medium text-foreground">
                     {tNav("bookDemo")}
-                  </Link>
-                  <Link href="/contact" className="px-3 py-2 text-sm font-medium text-foreground">
-                    {tNav("contact")}
                   </Link>
                   <Link href="/sign-in" className="px-3 py-2 text-sm font-medium text-foreground">
                     {tNav("signIn")}

@@ -9,6 +9,7 @@
       "getStarted": "Magsimula"
     },
     "footer": {
+      "refundPolicy": "Patakaran sa Refund",
       "pricing": "Presyo",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Mag-book ng Demo",
@@ -520,6 +521,29 @@
         "facebook": "Sundan kami sa Facebook",
         "reddit": "Sumali sa amin sa Reddit",
         "linkedin": "Sundan kami sa LinkedIn"
+      }
+    },
+    "appInfo": {
+      "navigationLabel": "Tungkol",
+      "metadata": {
+        "title": "Tungkol sa Gallurio",
+        "description": "Ang Gallurio ay portfolio at booking software para sa event creatives at creative businesses."
+      },
+      "eyebrow": "Tungkol sa Gallurio",
+      "headline": "Gallurio: portfolio at booking software para sa event creatives.",
+      "intro": "Ang Gallurio ay software platform para sa mga independent event creative at creative business. Pinagsasama nito ang public portfolio, booking inquiry, client, booking, gallery, at workspace collaboration sa isang lugar.",
+      "purpose": {
+        "title": "Ano ang ginagawa ng Gallurio",
+        "body": "Tinutulungan ng Gallurio ang mga creative business na maglathala ng propesyonal na public portfolio, tumanggap ng booking inquiry, at pamahalaan ang mga client, booking, at trabahong kasunod ng bawat inquiry."
+      },
+      "googleSignIn": {
+        "title": "Paano ginagamit ang Google Sign-In",
+        "body": "Opsyonal ang Google Sign-In. Kapag pinili mo ito, ginagamit ng Gallurio ang basic identity information na ibinibigay ng Google—ang pangalan, email address, profile image, at Google account identifier mo—para gawin o i-sign in ang Gallurio account mo. Hindi ina-access ng Gallurio ang Gmail, Google Drive, Google Calendar, o iba pang Google service."
+      },
+      "legal": {
+        "intro": "Basahin ang aming Privacy Policy para sa detalye kung paano pinoproseso ng Gallurio ang personal na impormasyon at ang aming Terms of Service para sa mga tuntuning naaangkop sa platform.",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service"
       }
     },
     "bookDemo": {

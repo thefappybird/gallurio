@@ -20,7 +20,14 @@ export const metadata: Metadata = {
   },
   description:
     "The CRM for event businesses — bookings, clients, galleries, and inquiries in one workspace.",
-  icons: { icon: "/brand/gallurio-sq.svg" },
+  // Search crawlers receive a conventional raster icon with a stable URL.
+  // The PNG is square and has an opaque light background, so the mark remains
+  // recognizable on both light and dark search surfaces.
+  icons: {
+    icon: "/brand/gallurio-sq-white.png",
+    shortcut: "/brand/gallurio-sq-white.png",
+    apple: "/brand/gallurio-sq-white.png",
+  },
   openGraph: {
     images: [{ alt: "Gallurio — Your event business, beautifully managed.", url: "/opengraph-image" }],
   },
