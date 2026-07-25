@@ -42,6 +42,8 @@ export default async function Home({ params }: Props) {
   }
 
   const t = await getTranslations("marketing");
+  const tTerms = await getTranslations("marketing.terms");
+  const tPrivacy = await getTranslations("marketing.privacy");
   const proPricing = await getProPricing();
 
   const trustItems = [t("trust.item1"), t("trust.item2"), t("trust.item3"), t("trust.item4")];
@@ -154,7 +156,7 @@ export default async function Home({ params }: Props) {
               <span className="block">{t("hero.headlineShow")}</span>
               <span className="block text-brand">{t("hero.headlineRun")}</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-muted-foreground">{t("hero.body")}</p>
+            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-muted-foreground">{t("whatIs.body")}</p>
             <div className="mt-9 flex flex-col items-center gap-3">
               <div className="flex flex-col items-center gap-3 sm:flex-row">
                 <Link
@@ -170,7 +172,14 @@ export default async function Home({ params }: Props) {
                   {t("hero.ctaSecondary")}
                 </Link>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">{t("hero.ctaMicrocopy")}</span>
+              <div className="relative z-10 mt-2 flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:flex-nowrap sm:px-6">
+                {trustItems.map((item) => (
+                  <span key={item} className="inline-flex items-center gap-2 whitespace-nowrap">
+                    <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
+                    {item}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -180,14 +189,7 @@ export default async function Home({ params }: Props) {
             the plain background — never fighting the line art for
             contrast. flex-nowrap + a wide max-width keeps it one row from
             sm+ up; only true mobile widths wrap it. */}
-        <div className="relative z-10 mx-auto mt-2 flex max-w-3xl flex-wrap justify-center gap-x-7 gap-y-2 px-4 text-sm font-semibold text-muted-foreground sm:flex-nowrap sm:px-6">
-          {trustItems.map((item) => (
-            <span key={item} className="inline-flex items-center gap-2 whitespace-nowrap">
-              <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />
-              {item}
-            </span>
-          ))}
-        </div>
+
 
         <div className="relative z-10 mx-auto mt-16 grid max-w-5xl gap-8 px-4 sm:px-6 md:grid-cols-2 md:gap-0">
           <div className="group relative md:pe-8">
@@ -225,11 +227,6 @@ export default async function Home({ params }: Props) {
         <p className="relative z-10 mx-auto mt-7 max-w-md px-4 text-center text-sm font-semibold text-muted-foreground sm:px-6">
           {t("split.bridgeLead")} <strong className="font-extrabold text-foreground">{t("split.bridgeEmphasis")}</strong>
         </p>
-
-        <div className="relative z-10 mx-auto mt-14 max-w-2xl px-4 text-center sm:px-6">
-          <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">{t("whatIs.title")}</h2>
-          <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-muted-foreground">{t("whatIs.body")}</p>
-        </div>
 
         <div className="relative z-10 mt-10 overflow-hidden border-y border-border py-4">
           <div className="flex w-max animate-marquee-scroll gap-10" aria-hidden="true">
@@ -278,13 +275,13 @@ export default async function Home({ params }: Props) {
           </div>
           <div className="mt-10 flex flex-wrap gap-x-7 gap-y-3 border-t border-background/15 pt-8 text-sm font-semibold">
             <Link href="/terms" className="hover:text-brand">
-              {t("footer.terms")}
+              {tTerms("title")}
             </Link>
             <Link href="/privacy" className="hover:text-brand">
-              {t("footer.privacy")}
+              {tPrivacy("title")}
             </Link>
             <Link href="/refunds" className="hover:text-brand">
-              {t("footer.refunds")}
+              {t("footer.refundPolicy")}
             </Link>
             <Link href="/contact" className="hover:text-brand">
               {t("footer.contact")}
@@ -424,7 +421,7 @@ function TextBlock({
         ))}
       </ul>
       {panel.cta ? (
-        <Link href={panel.cta.href} className={buttonVariants({ variant: "outline", className: "mt-6" })}>
+        <Link href={panel.cta.href} className={buttonVariants({ variant: "brand", className: "mt-6" })}>
           {panel.cta.label}
         </Link>
       ) : null}

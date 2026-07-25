@@ -34,6 +34,7 @@ describe("ThemeToggle", () => {
     expect(screen.getByText("Light")).toBeInTheDocument();
     expect(screen.getByText("Dark")).toBeInTheDocument();
     expect(screen.getByText("System")).toBeInTheDocument();
+    expect(screen.getByText("Light").closest('[data-slot="dropdown-menu-content"]')).toHaveAttribute("data-side", "inline-end");
   });
 
   it("renders a plain icon-button trigger (no sidebar context) when variant is standalone", () => {
@@ -43,6 +44,17 @@ describe("ThemeToggle", () => {
       </NextThemesProvider>
     );
     expect(screen.getByRole("button", { name: "Theme" })).toBeInTheDocument();
+  });
+
+  it("opens below the trigger when used in the standalone header variant", () => {
+    renderWithProviders(
+      <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeToggle variant="standalone" />
+      </NextThemesProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Theme" }));
+    expect(screen.getByText("Light").closest('[data-slot="dropdown-menu-content"]')).toHaveAttribute("data-side", "bottom");
   });
 
   it("selected theme item has data-active=true; others have data-active=false", () => {
