@@ -40,6 +40,11 @@ describe("Marketing Home page", () => {
 
     expect(screen.getByText("marketing:hero.headlineShow")).toBeInTheDocument();
     expect(screen.getByText("marketing:hero.headlineRun")).toBeInTheDocument();
+    expect(screen.getByText("marketing:whatIs.body")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "marketing.terms:title" })).toHaveAttribute("href", "/terms");
+    expect(screen.getByRole("link", { name: "marketing.privacy:title" })).toHaveAttribute("href", "/privacy");
+    expect(screen.getByRole("link", { name: "marketing:footer.refundPolicy" })).toHaveAttribute("href", "/refunds");
+    expect(screen.getByRole("link", { name: "marketing:features.portfolioBuilder.cta" })).toHaveClass("bg-brand");
     expect(getAuthUserMock).toHaveBeenCalled();
   });
 

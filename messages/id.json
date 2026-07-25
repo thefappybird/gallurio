@@ -9,6 +9,7 @@
       "getStarted": "Mulai sekarang"
     },
     "footer": {
+      "refundPolicy": "Kebijakan Pengembalian Dana",
       "pricing": "Harga",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Jadwalkan Demo",
@@ -520,6 +521,29 @@
         "facebook": "Ikuti kami di Facebook",
         "reddit": "Gabung dengan kami di Reddit",
         "linkedin": "Ikuti kami di LinkedIn"
+      }
+    },
+    "appInfo": {
+      "navigationLabel": "Tentang",
+      "metadata": {
+        "title": "Tentang Gallurio",
+        "description": "Gallurio adalah perangkat lunak portofolio dan pemesanan untuk kreator acara dan bisnis kreatif."
+      },
+      "eyebrow": "Tentang Gallurio",
+      "headline": "Gallurio: perangkat lunak portofolio dan pemesanan untuk kreator acara.",
+      "intro": "Gallurio adalah platform perangkat lunak untuk kreator acara independen dan bisnis kreatif. Gallurio menyatukan portofolio publik, pertanyaan pemesanan, klien, pemesanan, galeri, dan kolaborasi ruang kerja di satu tempat.",
+      "purpose": {
+        "title": "Apa yang dilakukan Gallurio",
+        "body": "Gallurio membantu bisnis kreatif menerbitkan portofolio publik yang profesional, menerima pertanyaan pemesanan, serta mengelola klien, pemesanan, dan pekerjaan setelah setiap pertanyaan."
+      },
+      "googleSignIn": {
+        "title": "Cara Google Sign-In digunakan",
+        "body": "Google Sign-In bersifat opsional. Saat Anda memilihnya, Gallurio menggunakan informasi identitas dasar yang diberikan Google—nama, alamat email, gambar profil, dan pengenal akun Google Anda—untuk membuat atau memasukkan Anda ke akun Gallurio. Gallurio tidak mengakses Gmail, Google Drive, Google Kalender, atau layanan Google lainnya."
+      },
+      "legal": {
+        "intro": "Baca Kebijakan Privasi kami untuk mengetahui cara Gallurio menangani informasi pribadi dan Ketentuan Layanan kami untuk aturan yang berlaku pada platform.",
+        "privacy": "Kebijakan Privasi",
+        "terms": "Ketentuan Layanan"
       }
     },
     "bookDemo": {

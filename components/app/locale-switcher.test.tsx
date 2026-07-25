@@ -53,9 +53,23 @@ describe("LocaleSwitcher", () => {
     expect(screen.getByRole("button", { name: /english/i })).toBeInTheDocument();
   });
 
+  it("opens below the trigger when used in the standalone header variant", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <LocaleSwitcher variant="standalone" />
+      </NextIntlClientProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /english/i }));
+    const [firstLocaleOption] = await screen.findAllByRole("menuitem");
+    expect(firstLocaleOption.closest('[data-slot="dropdown-menu-content"]')).toHaveAttribute("data-side", "bottom");
+  });
+
   it("switches locale on the current path when an option is selected", async () => {
     renderAt("en");
     fireEvent.click(screen.getByRole("button", { name: /english/i }));
+    const [firstLocaleOption] = await screen.findAllByRole("menuitem");
+    expect(firstLocaleOption.closest('[data-slot="dropdown-menu-content"]')).toHaveAttribute("data-side", "inline-end");
     fireEvent.click(await screen.findByRole("menuitem", { name: "العربية" }));
     expect(replace).toHaveBeenCalledWith("/clients", { locale: "ar" });
   });
