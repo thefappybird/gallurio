@@ -5,13 +5,30 @@ export function portfolioBaseDomain(): string | null {
   return process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN?.trim() || null;
 }
 
+export function portfolioHomePath(slug: string): string {
+  return portfolioBaseDomain() ? "/home" : `/w/${slug}`;
+}
+
+export function portfolioGalleryPath(slug: string): string {
+  return portfolioBaseDomain() ? "/gallery" : `/w/${slug}/gallery`;
+}
+
 export function portfolioPublicUrl(slug: string): string {
   const baseDomain = portfolioBaseDomain();
   if (baseDomain) {
-    return `https://${slug}.${baseDomain}`;
+    return `https://${slug}.${baseDomain}/home`;
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   return `${appUrl}/w/${slug}`;
+}
+
+export function portfolioGalleryUrl(slug: string): string {
+  const baseDomain = portfolioBaseDomain();
+  if (baseDomain) {
+    return `https://${slug}.${baseDomain}/gallery`;
+  }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return `${appUrl}/w/${slug}/gallery`;
 }
 
 export type PortfolioUrlParts = {
@@ -32,8 +49,8 @@ export function portfolioUrlParts(slug: string): PortfolioUrlParts {
       mode: "subdomain",
       prefix: "",
       slug,
-      suffix: `.${baseDomain}`,
-      full: `https://${slug}.${baseDomain}`,
+      suffix: `.${baseDomain}/home`,
+      full: `https://${slug}.${baseDomain}/home`,
     };
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

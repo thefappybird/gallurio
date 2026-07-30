@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listPublishedWorkspaceSlugs } from "@/lib/db/queries/publicPage";
-import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { portfolioGalleryUrl, portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 
 // Node runtime: connects to MongoDB (Edge runtime cannot use Mongoose).
 export const runtime = "nodejs";
@@ -12,7 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return workspaces.flatMap(({ slug, lastPublishedAt }) => {
     const homeUrl = portfolioPublicUrl(slug);
-    const galleryUrl = `${homeUrl}/gallery`;
+    const galleryUrl = portfolioGalleryUrl(slug);
     // Omit lastModified entirely when the timestamp is absent rather than
     // emitting `undefined`, which some serialisers coerce to null.
     const lastModified = lastPublishedAt ?? undefined;

@@ -5,8 +5,18 @@ import { getTemplate, PORTFOLIO_TEMPLATES } from "./index";
 describe("scratchTemplate", () => {
   it("seeds empty home and gallery zones", () => {
     const data = scratchTemplate.seedData({ workspace: { name: "X" } });
-    expect(data.home).toEqual({ content: [], root: {} });
-    expect(data.gallery).toEqual({ content: [], root: {} });
+    const emptyThemedZone = {
+      content: [],
+      root: {
+        props: {
+          _rootStyle: {
+            bgColorToken: "background",
+          },
+        },
+      },
+    };
+    expect(data.home).toEqual(emptyThemedZone);
+    expect(data.gallery).toEqual(emptyThemedZone);
   });
 
   it("is registered and resolvable by id, in the reserved last slot", () => {

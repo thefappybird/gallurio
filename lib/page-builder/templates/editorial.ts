@@ -71,7 +71,6 @@ export const editorialTemplate: PortfolioTemplate = {
                   alignX: "left",
                   alignY: "top",
                   _style: {
-                    textColorToken: "accent",
                     bgColorToken: "accent",
                     rowSpan: 1,
                     colSpan: 1,
@@ -261,7 +260,6 @@ export const editorialTemplate: PortfolioTemplate = {
                   _style: {
                     bgColorToken: "secondary",
                     colSpan: 6,
-                    textColorToken: "secondary",
                   },
                 },
               },
@@ -790,7 +788,6 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                     bgColorToken: "primary",
                     align: "center",
                     alignItems: "center",
-                    textColorToken: "primary",
                   },
                 },
               },

@@ -188,7 +188,7 @@ export default async function Home({ params }: Props) {
             before reaching here), so the checklist is always read against
             the plain background — never fighting the line art for
             contrast. flex-nowrap + a wide max-width keeps it one row from
-            sm+ up; only true mobile widths wrap it. */}
+            sm+ up; only true mobile widths wrap it. */}                                                              
 
 
         <div className="relative z-10 mx-auto mt-16 grid max-w-5xl gap-8 px-4 sm:px-6 md:grid-cols-2 md:gap-0">

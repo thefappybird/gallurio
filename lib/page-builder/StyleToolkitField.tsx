@@ -76,7 +76,11 @@ import {
 } from "./styleToolkit";
 import { CountControl } from "./CountControl";
 import { useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
-import { CONTAINER_EFFECTIVE_PAD, COLUMNS_EFFECTIVE_PAD } from "./blocks/manualBlocks";
+import {
+  BUTTON_SIZE_FONT_PX,
+  CONTAINER_EFFECTIVE_PAD,
+  COLUMNS_EFFECTIVE_PAD,
+} from "./blocks/manualBlocks";
 
 // Block types that are containers (no text/video inputs in Content tab)
 export const CONTAINER_TYPES = new Set([
@@ -353,12 +357,15 @@ export function BannerSection({
   set,
   container,
   hideBgImage = false,
+  effectiveColorToken,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
   container?: ContainerBgControls | null;
   /** When true, suppresses all background-image pickers (gallery blocks: color only). */
   hideBgImage?: boolean;
+  /** Render fallback shown without materializing a token into the block. */
+  effectiveColorToken?: "background" | "foreground";
 }) {
   const demo = useDemoPicker();
   return (
@@ -368,7 +375,11 @@ export function BannerSection({
       </span>
       <div className="flex flex-col gap-1.5">
         <span className="text-xs text-muted-foreground">Color</span>
-        <ColorSwatchRow value={s.bgColorToken} onChange={(tok) => set({ bgColorToken: tok })} />
+        <ColorSwatchRow
+          value={s.bgColorToken}
+          effectiveValue={effectiveColorToken}
+          onChange={(tok) => set({ bgColorToken: tok })}
+        />
       </div>
       {!hideBgImage && (container ? (
         <ContainerBackgroundControls {...container} />
@@ -642,9 +653,26 @@ function ContentTabBody({
   // Gallery blocks (GalleryGrid/GalleryMasonry/FeaturedWork) show the banner Color swatch
   // but NOT the background-images picker — the images are the block content, not a backdrop.
   const hideBgImage = GALLERY_CONTAINER_BLOCKS.has(type);
+  const hasBackgroundImages =
+    Array.isArray(p?.backgroundImages) && (p.backgroundImages as unknown[]).length > 0;
+  const effectiveBannerColor = GALLERY_CONTAINER_BLOCKS.has(type)
+    ? hasBackgroundImages
+      ? "foreground"
+      : "background"
+    : isContainer && hasBackgroundImages
+      ? "foreground"
+      : undefined;
   return (
     <div className="flex flex-col gap-4 p-3">
-      {showBanner && <BannerSection s={s} set={set} container={container} hideBgImage={hideBgImage} />}
+      {showBanner && (
+        <BannerSection
+          s={s}
+          set={set}
+          container={container}
+          hideBgImage={hideBgImage}
+          effectiveColorToken={effectiveBannerColor}
+        />
+      )}
       {showContentInputs && p && <ContentInputs type={type} props={p} setProp={setProp} />}
     </div>
   );
@@ -893,10 +921,12 @@ export function DesignTab({
   s,
   set,
   blockType = "",
+  p,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
   blockType?: string;
+  p?: Record<string, unknown>;
 }) {
   const isButton = blockType === "Button";
   const isContactDetails = blockType === "ContactDetails";
@@ -1051,10 +1081,15 @@ export function DesignTab({
               value={s.fontSize}
               min={STYLE_LIMITS.fontSize.min}
               max={STYLE_LIMITS.fontSize.max}
-              // ponytail: fontSize renders as CSS `inherit` (manualBlocks ~L173), resolving to
-              // the page's cascaded font-size. 16px is the browser default base and the most
-              // likely effective value, so we use it as the placeholder for unset fontSize.
-              effectiveValue={16}
+              // Text/container typography inherits the 16px page base. Buttons
+              // use the concrete 13/15/18px size selected by their block prop.
+              effectiveValue={
+                isButton
+                  ? BUTTON_SIZE_FONT_PX[
+                      ((p?.size as "sm" | "md" | "lg" | undefined) ?? "md")
+                    ]
+                  : 16
+              }
               onChange={(v) => set({ fontSize: v })}
             />
           )}
@@ -1104,6 +1139,7 @@ export function DesignTab({
             </div>
             <ColorSwatchRow
               value={s.buttonColorToken}
+              effectiveValue={s.buttonStyle ? "primary" : "foreground"}
               onChange={(t) => set({ buttonColorToken: t })}
             />
           </div>
@@ -1135,20 +1171,25 @@ export function DesignTab({
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
             <div className="flex items-center gap-1.5">
-              {(["solid", "outline", "soft"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  aria-pressed={s.buttonStyle === v}
-                  onClick={() => set({ buttonStyle: s.buttonStyle === v ? undefined : v })}
-                  className={cn(
-                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    s.buttonStyle === v && "bg-foreground text-background hover:bg-foreground"
-                  )}
-                >
-                  {v.charAt(0).toUpperCase() + v.slice(1)}
-                </button>
-              ))}
+              {(["solid", "outline", "soft"] as const).map((v) => {
+                const isExplicit = s.buttonStyle === v;
+                const isEffective = s.buttonStyle === undefined && v === "outline";
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={isExplicit || isEffective}
+                    onClick={() => set({ buttonStyle: isExplicit ? undefined : v })}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      isExplicit && "bg-foreground text-background hover:bg-foreground",
+                      isEffective && "border-foreground opacity-70",
+                    )}
+                  >
+                    {v.charAt(0).toUpperCase() + v.slice(1)}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </EditorDrawerSection>
@@ -1416,17 +1457,29 @@ export function LayoutTabBody({
   // (padding) + gap controls as Container.
   const isColumns = blockType === "Columns";
 
-  // Effective padding for the plain Container and Columns blocks only.
-  // Preset blocks have explicit curated padding already baked in -- no effectivePad.
+  // Every preset renders through ContainerBlock, so it has the same 1.5rem
+  // fallback as a plain Container. Keep Columns on its own asymmetric fallback.
   const effectivePad: EffectivePad | undefined =
-    blockType === "Container" ? CONTAINER_EFFECTIVE_PAD :
+    isFlexContainer ? CONTAINER_EFFECTIVE_PAD :
     blockType === "Columns" ? COLUMNS_EFFECTIVE_PAD :
     undefined;
+  const effectiveAlign =
+    isFlexContainer && p?.alignX
+      ? ({ left: "start", center: "center", right: "end" } as const)[
+          p.alignX as "left" | "center" | "right"
+        ]
+      : "stretch";
+  const effectiveJustify =
+    isFlexContainer
+      ? ({ top: "start", center: "center", bottom: "end" } as const)[
+          (p?.alignY as "top" | "center" | "bottom" | undefined) ?? "top"
+        ]
+      : "start";
 
   if (isGalleryLayout) {
     if (isGalleryContainer) {
-      // Gallery container blocks: gallery-specific controls (columns/gap via _style) +
-      // container layout drawers (Spacing with padding, Layout with gap/min-height/align).
+      // Gallery container blocks: gallery-specific controls plus the section
+      // controls their render actually consumes (padding, min-height, grid span).
       return (
         <EditorDrawerGroup>
           <EditorDrawerSection title="Gallery">
@@ -1436,15 +1489,6 @@ export function LayoutTabBody({
             <PaddingControls s={s} set={set} />
           </EditorDrawerSection>
           <EditorDrawerSection title="Layout">
-            <NumberInputRow
-              label="Gap"
-              value={s.gap}
-              min={0}
-              max={96}
-              suffix="px"
-              effectiveValue={16}
-              onChange={(v) => set({ gap: v })}
-            />
             {p !== undefined && setProp !== undefined && (
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
@@ -1492,16 +1536,7 @@ export function LayoutTabBody({
                   onReset={() => set({ alignItems: undefined })}
                 />
               </>
-            ) : (
-              <IconRow
-                label="Align"
-                value={s.alignItems}
-                options={ALIGN_OPTIONS}
-                effectiveValue="stretch"
-                onChange={(v) => set({ alignItems: v })}
-                onReset={() => set({ alignItems: undefined })}
-              />
-            )}
+            ) : null}
           </EditorDrawerSection>
         </EditorDrawerGroup>
       );
@@ -1707,7 +1742,7 @@ export function LayoutTabBody({
               label="Align"
               value={s.alignItems}
               options={ALIGN_OPTIONS}
-              effectiveValue="stretch"
+              effectiveValue={effectiveAlign}
               onChange={(v) => set({ alignItems: v })}
               onReset={() => set({ alignItems: undefined })}
             />
@@ -1715,7 +1750,7 @@ export function LayoutTabBody({
               label="Justify"
               value={s.justifyContent}
               options={JUSTIFY_OPTIONS}
-              effectiveValue="start"
+              effectiveValue={effectiveJustify}
               onChange={(v) => set({ justifyContent: v })}
               onReset={() => set({ justifyContent: undefined })}
             />
@@ -1726,7 +1761,7 @@ export function LayoutTabBody({
               label="Align"
               value={s.alignItems}
               options={ALIGN_OPTIONS}
-              effectiveValue="stretch"
+              effectiveValue={effectiveAlign}
               onChange={(v) => set({ alignItems: v })}
               onReset={() => set({ alignItems: undefined })}
             />
@@ -1735,7 +1770,7 @@ export function LayoutTabBody({
                 label="Justify"
                 value={s.justifyContent}
                 options={JUSTIFY_OPTIONS}
-                effectiveValue="start"
+                effectiveValue={effectiveJustify}
                 onChange={(v) => set({ justifyContent: v })}
                 onReset={() => set({ justifyContent: undefined })}
               />
@@ -1900,7 +1935,7 @@ function BlockAwarePanel({
             isContainer={isContainer || isGalleryContainer}
           />
         )}
-        {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} />}
+        {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} p={p} />}
         {activeTab === "layout" && (
           <LayoutTabBody
             s={s}

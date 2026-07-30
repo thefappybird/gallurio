@@ -41,6 +41,7 @@ vi.mock("@/lib/db/queries/publicPage", () => ({
 
 vi.mock("@/lib/portfolio/publicUrl", () => ({
   portfolioPublicUrl: (slug: string) => `http://localhost:3000/w/${slug}`,
+  portfolioGalleryUrl: (slug: string) => `http://localhost:3000/w/${slug}/gallery`,
 }));
 
 vi.mock("@/lib/page-builder/seo/jsonLd", () => ({

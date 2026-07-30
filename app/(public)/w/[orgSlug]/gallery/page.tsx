@@ -12,7 +12,7 @@ import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
-import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { portfolioGalleryUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
-  const galleryUrl = `${portfolioPublicUrl(workspace.slug)}/gallery`;
+  const galleryUrl = portfolioGalleryUrl(workspace.slug);
   const locale = resolvePublicChromeLocale(workspace);
 
   const result: Metadata = {

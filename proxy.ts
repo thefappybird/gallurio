@@ -247,7 +247,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           const redirectUrl = req.nextUrl.clone();
           redirectUrl.protocol = "https:";
           redirectUrl.host = `${canonicalMatch[1]}.${base}`;
-          redirectUrl.pathname = canonicalMatch[2] ?? "/";
+          redirectUrl.pathname = canonicalMatch[2] ?? "/home";
           return NextResponse.redirect(redirectUrl, 301);
         }
       } else {
@@ -263,7 +263,10 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           !isReservedSlug(tenantMatch[1])
         ) {
           const rewriteUrl = req.nextUrl.clone();
-          rewriteUrl.pathname = `/w/${tenantMatch[1]}${pathname}`;
+          rewriteUrl.pathname =
+            pathname === "/home"
+              ? `/w/${tenantMatch[1]}`
+              : `/w/${tenantMatch[1]}${pathname}`;
           return NextResponse.rewrite(rewriteUrl);
         }
       }

@@ -33,7 +33,7 @@ function resolvePopupStyle(contact: PortfolioContactConfig, brandKit: PortfolioB
       : "var(--pf-radius)",
     border: contact.popupBorderWidth
       ? `${contact.popupBorderWidth}px solid ${resolveContactColor(contact.popupBorderColor, "var(--pf-color-fg, #111111)")}`
-      : "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
+      : "none",
   };
 }
 

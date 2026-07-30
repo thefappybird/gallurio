@@ -189,7 +189,7 @@ export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | u
   }
   // Effective default ON: underline shows unless explicitly disabled (=== false).
   if (config?.activeTabUnderline !== false) {
-    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-fg)")}`;
+    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-accent)")}`;
   }
   return style;
 }

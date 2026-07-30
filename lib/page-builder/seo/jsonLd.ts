@@ -1,4 +1,4 @@
-import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { portfolioGalleryUrl, portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 
 // ---------------------------------------------------------------------------
 // businessType → schema.org @type mapping  (audit §4.1)
@@ -63,7 +63,7 @@ export function buildHomeJsonLd(input: JsonLdInput): [Record<string, unknown>, R
 
 export function buildGalleryJsonLd(input: JsonLdInput): [Record<string, unknown>, Record<string, unknown>] {
   const homeUrl = portfolioPublicUrl(input.slug);
-  const galleryUrl = `${homeUrl}/gallery`;
+  const galleryUrl = portfolioGalleryUrl(input.slug);
   const type = resolveSchemaType(input.businessType);
   const imageGallery: Record<string, unknown> = {
     "@context": "https://schema.org",

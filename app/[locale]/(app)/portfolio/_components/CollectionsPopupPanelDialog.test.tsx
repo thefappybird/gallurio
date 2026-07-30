@@ -201,7 +201,7 @@ describe("CollectionsPopupPanelDialog effective-default: field (a) explicit wins
 });
 
 describe("CollectionsPopupPanelDialog effective-default: field (b) title font size", () => {
-  it("titleFontSize spinner shows placeholder 16 when size is unset (effective default)", () => {
+  it("titleFontSize spinner shows placeholder 18 when size is unset (effective default)", () => {
     renderWithProviders(
       <CollectionsPopupPanelDialog
         config={baseConfig}
@@ -211,8 +211,39 @@ describe("CollectionsPopupPanelDialog effective-default: field (b) title font si
     );
     fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
     const spinners = screen.getAllByRole("spinbutton") as HTMLInputElement[];
-    const fontSizeInput = spinners.find((el) => el.placeholder === "16");
+    const fontSizeInput = spinners.find((el) => el.placeholder === "18");
     expect(fontSizeInput).toBeDefined();
+  });
+});
+
+describe("CollectionsPopupPanelDialog popup and close-button rendered defaults", () => {
+  it("floats the rendered 1px popup border", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^popup$/i }));
+    expect(screen.getByRole("spinbutton")).toHaveAttribute("placeholder", "1");
+  });
+
+  it("floats the rendered theme background and 1px border for the close button", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /button styles/i }));
+    const spinners = screen.getAllByRole("spinbutton");
+    expect(spinners.some((input) => input.getAttribute("placeholder") === "1")).toBe(true);
+    expect(screen.getByRole("button", { name: "Background" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });
 

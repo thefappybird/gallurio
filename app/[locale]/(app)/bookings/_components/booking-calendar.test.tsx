@@ -22,9 +22,17 @@ vi.mock("react-big-calendar", () => ({
 // the onEventDrop/onEventResize/onDropFromOutside wiring directly, without
 // needing real react-big-calendar grid rendering (unavailable in JSDOM).
 let capturedDnDProps: Record<string, unknown> | null = null;
+let renderedDnDEvent: CalendarEvent | null = null;
 vi.mock("react-big-calendar/lib/addons/dragAndDrop", () => ({
   default: () => (props: Record<string, unknown>) => {
     capturedDnDProps = props;
+    const components = props.components as
+      | { month?: { event?: React.ComponentType<{ event: CalendarEvent }> } }
+      | undefined;
+    const EventComponent = components?.month?.event;
+    if (renderedDnDEvent && EventComponent) {
+      return <EventComponent event={renderedDnDEvent} />;
+    }
     return null;
   },
 }));
@@ -292,6 +300,47 @@ describe("MonthBookingEvent status-mute logic", () => {
     );
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).toContain("line-through");
+  });
+});
+
+describe("MonthBookingEvent past-title spacing", () => {
+  it("reserves inline-end space for the Past pill before truncating the title", () => {
+    const pastEvent = makeEvent({
+      end: new Date("2020-01-01T13:00:00"),
+      sessionEndAt: new Date("2020-01-01T13:00:00"),
+    });
+    renderedDnDEvent = pastEvent;
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={[pastEvent]} messages={calendarMessages} showPast />
+      </NextIntlClientProvider>
+    );
+
+    const title = screen.getByText("Carter Wedding");
+    expect(title).toHaveClass("min-w-0", "flex-1", "truncate");
+    expect(title.parentElement).toHaveClass("flex", "min-w-0");
+    expect(screen.getByLabelText("Past")).toBe(title.nextElementSibling);
+    renderedDnDEvent = null;
+  });
+
+  it("keeps the current title width when no Past pill is shown", () => {
+    const futureEvent = makeEvent({
+      start: new Date("2090-01-01T10:00:00"),
+      end: new Date("2090-01-01T13:00:00"),
+      sessionStartAt: new Date("2090-01-01T10:00:00"),
+      sessionEndAt: new Date("2090-01-01T13:00:00"),
+    });
+    renderedDnDEvent = futureEvent;
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingCalendar events={[futureEvent]} messages={calendarMessages} showPast />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByText("Carter Wedding")).not.toHaveClass("flex-1");
+    renderedDnDEvent = null;
   });
 });
 
