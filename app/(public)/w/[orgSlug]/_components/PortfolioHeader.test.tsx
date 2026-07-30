@@ -1,6 +1,11 @@
 ﻿import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import { PortfolioHeader, type PortfolioHeaderLabels } from "./PortfolioHeader";
+import {
+  PortfolioHeader,
+  resolveHeaderBorderBottom,
+  type PortfolioHeaderLabels,
+} from "./PortfolioHeader";
+import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/w/luna-studio",
@@ -160,6 +165,42 @@ describe("PortfolioHeader", () => {
     expect(homeLink).toHaveAttribute("href", "/en/portfolio-preview");
   });
 
+  it("uses the floated foreground at 8% for an unset active-link highlight", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ activeLinkHighlight: true }}
+      />,
+    );
+    const home = screen.getByRole("link", { name: "Home" });
+    expect(home.getAttribute("style")).toContain(
+      "--pf-active-link-highlight-fill: var(--pf-color-fg)",
+    );
+    expect(home.getAttribute("style")).toContain(
+      "--pf-active-link-highlight-opacity: 8%",
+    );
+  });
+
+  it("uses clean tenant paths and marks /home active when public href overrides are provided", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        homeHref="/home"
+        galleryHref="/gallery"
+        activePath="/home"
+      />,
+    );
+    const nav = screen.getByRole("navigation", { name: labels.navLandmark });
+    const home = within(nav).getByRole("link", { name: "Home" });
+    const gallery = within(nav).getByRole("link", { name: "Gallery" });
+    expect(home).toHaveAttribute("href", "/home");
+    expect(gallery).toHaveAttribute("href", "/gallery");
+    expect(home.style.borderBottomColor).not.toBe("transparent");
+    expect(gallery.style.borderBottomColor).toBe("transparent");
+  });
+
   it("brand link has minWidth:0 and overflow:hidden to prevent hamburger push-off at narrow viewports", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     const brandLink = screen.getByRole("link", { name: "Luna Studio" });
@@ -244,4 +285,77 @@ describe("PortfolioHeader", () => {
     // Gallery is inactive so it uses linkColor, not activeLinkColor
     expect(screen.getByRole("link", { name: "Gallery" }).style.color).toBe("var(--pf-color-accent)");
   });
+});
+
+describe("PortfolioHeader template render contract", () => {
+  const tokenVar = (token: string | undefined, fallback: string) =>
+    token ? `var(--pf-color-${token === "background" ? "bg" : token === "foreground" ? "fg" : token})` : fallback;
+
+  it.each(PORTFOLIO_TEMPLATES)(
+    "$id renders every seeded header value and effective fallback",
+    (template) => {
+      const config = template.defaultHeader;
+      render(
+        <PortfolioHeader
+          slug="luna-studio"
+          labels={labels}
+          config={config}
+          activePath="/w/luna-studio"
+        />,
+      );
+
+      const header = document.querySelector("header") as HTMLElement;
+      const home = screen.getByRole("link", { name: "Home" });
+      const contact = screen.getByRole("button", { name: "Contact" });
+
+      expect(header.style.backgroundColor).toBe(
+        tokenVar(config.backgroundColor, "var(--pf-color-bg)"),
+      );
+      expect(resolveHeaderBorderBottom(config)).toContain(
+        `${config.borderBottomWidth ?? 1}px solid`,
+      );
+      expect(home.style.fontSize).toBe(
+        config.fontSize === "sm"
+          ? "0.8125rem"
+          : config.fontSize === "lg"
+            ? "1.0625rem"
+            : "0.9375rem",
+      );
+      expect(home.style.color).toBe(
+        tokenVar(config.activeLinkColor, "var(--pf-color-fg)"),
+      );
+      expect(home.style.transform).toBe(
+        config.activeLinkScale ? "scale(1.08)" : "",
+      );
+      expect(home.style.borderBottomColor === "transparent").toBe(
+        config.activeLinkUnderline === false,
+      );
+      expect(
+        (home.getAttribute("style") ?? "").includes(
+          "--pf-active-link-highlight-fill",
+        ),
+      ).toBe(Boolean(config.activeLinkHighlight));
+      expect(contact.style.backgroundColor).toBe(
+        tokenVar(config.contactButtonColor, "var(--pf-color-primary)"),
+      );
+      expect(contact.style.color).toBe(
+        tokenVar(config.contactButtonTextColor, "var(--pf-color-bg)"),
+      );
+      expect(contact.style.borderRadius).toBe(
+        config.contactButtonRadius === "sharp"
+          ? "0px"
+          : config.contactButtonRadius === "subtle"
+            ? "0.25rem"
+            : config.contactButtonRadius === "rounded"
+              ? "0.5rem"
+              : "var(--pf-radius)",
+      );
+
+      if (config.activeLinkHighlight) {
+        expect(home.getAttribute("style")).toContain(
+          `--pf-active-link-highlight-opacity: ${config.highlightOpacity ?? 8}%`,
+        );
+      }
+    },
+  );
 });

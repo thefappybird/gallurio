@@ -27,6 +27,7 @@ import { PortfolioConversionFunnelCard } from "./portfolio-conversion-funnel-car
 import { PortfolioLeadPipelineCard } from "./portfolio-lead-pipeline-card";
 import { PortfolioDemandProfileCard } from "./portfolio-demand-profile-card";
 import { DashboardInfoHint } from "./dashboard-info-hint";
+import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 
 type Props = {
   workspace: WorkspaceDoc;
@@ -206,7 +207,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
             )}
             <div className="mt-1 flex flex-col gap-1">
               <a
-                href={`/w/${workspace.slug}`}
+                href={portfolioPublicUrl(workspace.slug)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-2 rounded-[var(--radius)] border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"

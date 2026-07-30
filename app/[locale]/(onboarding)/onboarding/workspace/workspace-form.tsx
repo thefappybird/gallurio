@@ -203,7 +203,7 @@ export function WorkspaceStepForm({
                 { key: "12h", label: t("time12h") },
                 { key: "24h", label: t("time24h") },
               ]}
-              className="sm:flex sm:h-9 sm:min-h-0 sm:w-full"
+              className="sm:flex sm:w-full"
             />
           </div>
         </div>

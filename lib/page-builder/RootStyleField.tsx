@@ -53,7 +53,6 @@ export function RootStyleField({
             <ColorSwatchRow
               value={s.bgColorToken}
               onChange={(t) => set({ bgColorToken: t })}
-              effectiveValue="background"
             />
           </div>
           <NumberInputRow

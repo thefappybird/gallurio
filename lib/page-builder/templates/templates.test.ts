@@ -108,6 +108,48 @@ describe("portfolio template registry", () => {
         expect(typeof template.defaultCollectionsPopup).toBe("object");
       });
 
+      it("explicitly paints both page roots with the theme background token", () => {
+        for (const zoneData of [data.home, data.gallery]) {
+          expect(
+            (zoneData?.root?.props as { _rootStyle?: { bgColorToken?: string } } | undefined)
+              ?._rootStyle?.bgColorToken,
+          ).toBe("background");
+        }
+      });
+
+      it("does not seed a container text token identical to its background", () => {
+        const containerTypes = new Set([
+          "Container",
+          "HeroPreset",
+          "AboutPreset",
+          "ServicesPreset",
+          "CtaPreset",
+          "ContactPreset",
+          "GalleryGridPreset",
+          "GalleryMasonryPreset",
+          "FeaturedWorkPreset",
+          "GalleryLandingPreset",
+          "VideoPreset",
+        ]);
+        function walk(blocks: { type: string; props?: Record<string, unknown> }[]) {
+          for (const block of blocks) {
+            const style = block.props?._style as
+              | { bgColorToken?: string; textColorToken?: string }
+              | undefined;
+            if (containerTypes.has(block.type) && style?.textColorToken) {
+              expect(
+                style.textColorToken,
+                `${template.id} ${block.props?.id}: container text must remain legible`,
+              ).not.toBe(style.bgColorToken);
+            }
+            if (Array.isArray(block.props?.content)) {
+              walk(block.props.content as typeof blocks);
+            }
+          }
+        }
+        walk([...(data.home?.content ?? []), ...(data.gallery?.content ?? [])]);
+      });
+
       it("starts the home zone with a HeroPreset or Columns block", () => {
         // scratch is an intentionally empty canvas — exempt from this check.
         if (template.id === "scratch") return;

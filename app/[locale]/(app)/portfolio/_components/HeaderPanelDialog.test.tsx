@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { HeaderPanelDialog } from "./HeaderPanelDialog";
 import { DEFAULT_BRAND_KIT, type PortfolioHeaderConfig } from "@/lib/page-builder/types";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 
 const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
@@ -186,6 +187,42 @@ describe("HeaderPanelDialog", () => {
     expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("floats the rendered 1px banner border default", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Banner" }));
+    expect(
+      screen.getAllByRole("spinbutton").some(
+        (input) => input.getAttribute("placeholder") === "1",
+      ),
+    ).toBe(true);
+  });
+
+  it("floats the rendered accent underline color default", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+    fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
+    const row = screen.getByText("Underline color").parentElement!;
+    expect(within(row).getByRole("button", { name: "Accent" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("floats the rendered 8% default active-link highlight opacity", () => {
+    renderWithProviders(
+      <HeaderPanelDialog
+        {...baseProps}
+        header={{ activeLinkHighlight: true }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+    fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
+    expect(screen.getByRole("spinbutton")).toHaveAttribute("placeholder", "8");
+  });
+
   it("shows percent suffixes for opacity controls", () => {
     renderWithProviders(
       <HeaderPanelDialog
@@ -320,4 +357,54 @@ describe("HeaderPanelDialog", () => {
     expect(scaleBtn).toHaveClass("bg-foreground");
     expect(scaleBtn).toHaveClass("text-background");
   });
+});
+
+describe("HeaderPanelDialog template active-link parity", () => {
+  it.each(PORTFOLIO_TEMPLATES)(
+    "$id floats the same active-link toggles and colors that the public header renders",
+    (template) => {
+      const header = template.defaultHeader;
+      renderWithProviders(
+        <HeaderPanelDialog {...baseProps} header={header} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Design" }));
+      fireEvent.click(screen.getByRole("button", { name: "Links" }));
+      fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
+
+      expect(screen.getByRole("button", { name: "Scale" })).toHaveAttribute(
+        "aria-pressed",
+        String(Boolean(header.activeLinkScale)),
+      );
+      expect(screen.getByRole("button", { name: "Highlight" })).toHaveAttribute(
+        "aria-pressed",
+        String(Boolean(header.activeLinkHighlight)),
+      );
+      expect(screen.getByRole("button", { name: "Underline" })).toHaveAttribute(
+        "aria-pressed",
+        String(header.activeLinkUnderline !== false),
+      );
+
+      const activeColorRow = screen.getByText("Active link text color").parentElement!;
+      expect(
+        within(activeColorRow).getByRole("button", { name: "Text" }),
+      ).toHaveAttribute("aria-pressed", "true");
+
+      if (header.activeLinkUnderline !== false) {
+        const underlineRow = screen.getByText("Underline color").parentElement!;
+        expect(
+          within(underlineRow).getByRole("button", { name: "Accent" }),
+        ).toHaveAttribute("aria-pressed", "true");
+      }
+
+      if (header.activeLinkHighlight) {
+        expect(
+          screen.getAllByRole("spinbutton").some(
+            (input) =>
+              input.getAttribute("value") === String(header.highlightOpacity) ||
+              input.getAttribute("placeholder") === String(header.highlightOpacity ?? 8),
+          ),
+        ).toBe(true);
+      }
+    },
+  );
 });

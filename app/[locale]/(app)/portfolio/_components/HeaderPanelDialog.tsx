@@ -87,7 +87,7 @@ function BorderRow({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <NumberInputRow label={widthLabel} value={width} min={0} max={8} onChange={onWidthChange} effectiveValue={0} />
+      <NumberInputRow label={widthLabel} value={width} min={0} max={8} onChange={onWidthChange} effectiveValue={1} />
       {!!width && (
         // borderBottomColor fallback is "color-mix(in srgb, var(--pf-color-fg) 14%, transparent)" —
         // no clean single token; leave effectiveValue unset
@@ -540,7 +540,7 @@ export function HeaderPanelDialog({
                   />
                 )}
                 {header.activeLinkHighlight && (
-                  // highlightOpacity: PortfolioHeader fallback = 100
+                  // highlightOpacity: PortfolioHeader fallback = 8
                   <NumberInputRow
                     label={t("highlightOpacityLabel")}
                     value={header.highlightOpacity}
@@ -548,7 +548,7 @@ export function HeaderPanelDialog({
                     max={100}
                     suffix="%"
                     onChange={(v) => set("highlightOpacity", v)}
-                    effectiveValue={100}
+                    effectiveValue={8}
                   />
                 )}
                 {header.activeLinkHighlight && (
@@ -568,7 +568,7 @@ export function HeaderPanelDialog({
                     label={t("underlineColorLabel")}
                     value={header.underlineColor}
                     onChange={(c) => set("underlineColor", c)}
-                    effectiveValue="foreground"
+                    effectiveValue="accent"
                   />
                 )}
               </EditorDrawerSection>

@@ -234,6 +234,22 @@ describe("proxy", () => {
         expect(rewriteUrl.searchParams.get("tab")).toBe("1");
       }));
 
+    it("rewrites the visible tenant /home route to the internal portfolio home route", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/home?ref=nav", {
+          headers: { host: "acme.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        const rewriteTarget = response.headers.get("x-middleware-rewrite");
+        expect(rewriteTarget).not.toBeNull();
+        const rewriteUrl = new URL(rewriteTarget!);
+        expect(rewriteUrl.pathname).toBe("/w/acme");
+        expect(rewriteUrl.searchParams.get("ref")).toBe("nav");
+      }));
+
     it("does not rewrite on the canonical apex or www host (normal public-route flow continues)", () =>
       withBaseDomain(async () => {
         for (const host of ["gallurio.com", "www.gallurio.com"]) {
@@ -268,6 +284,21 @@ describe("proxy", () => {
           expect(authMiddlewareMock, `host ${host}`).not.toHaveBeenCalled();
           expect(intlMiddlewareMock, `host ${host}`).not.toHaveBeenCalled();
         }
+      }));
+
+    it("301-redirects the canonical /w home route to the tenant /home route", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/w/acme?ref=nav", {
+          headers: { host: "gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.status).toBe(301);
+        expect(response.headers.get("location")).toBe(
+          "https://acme.gallurio.com/home?ref=nav",
+        );
       }));
 
     it("does not rewrite a reserved infra subdomain (e.g. dev.gallurio.com) to /w/{label}", () =>
@@ -318,7 +349,7 @@ describe("proxy", () => {
         const response = (await proxy(req)) as Response;
 
         expect(response.status).toBe(301);
-        expect(response.headers.get("location")).toBe("https://banaag.gallurio.com/");
+        expect(response.headers.get("location")).toBe("https://banaag.gallurio.com/home");
       }));
 
     it("still 301-redirects a valid multi-part slug like banaag-studio", () =>
@@ -331,7 +362,7 @@ describe("proxy", () => {
         const response = (await proxy(req)) as Response;
 
         expect(response.status).toBe(301);
-        expect(response.headers.get("location")).toBe("https://banaag-studio.gallurio.com/");
+        expect(response.headers.get("location")).toBe("https://banaag-studio.gallurio.com/home");
       }));
 
     it("does not 301-redirect an adversarial /w/ path segment that could hijack the redirect host (open redirect)", () =>

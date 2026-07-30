@@ -424,6 +424,25 @@ describe("ButtonBlock", () => {
     expect(a.getAttribute("href")).toBe("/w/my-studio/gallery");
   });
 
+  it("uses the clean /gallery href when tenant subdomains are enabled", () => {
+    const previous = process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
+    process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = "gallurio.com";
+    try {
+      const mockPuck = {
+        metadata: { workspace: { slug: "my-studio" } },
+      } as Parameters<typeof ButtonBlock>[0]["puck"];
+      render(
+        <ButtonBlock label="Gallery" action="go-to-gallery" align="center" puck={mockPuck} />,
+      );
+      expect((document.querySelector("a") as HTMLAnchorElement).getAttribute("href")).toBe(
+        "/gallery",
+      );
+    } finally {
+      if (previous === undefined) delete process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
+      else process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = previous;
+    }
+  });
+
   it("wrapper has width fit-content so it shrinks to the button size", () => {
     const { container } = render(
       <ButtonBlock label="Left" action="open-contact" align="left" />
@@ -790,16 +809,14 @@ describe("ButtonBlock", () => {
 // ---------------------------------------------------------------------------
 
 describe("TextBlock and HeadingBlock color parity", () => {
-  it("TextBlock with no _style has outer div color: var(--pf-color-fg)", () => {
-    const { container } = render(<TextBlock text="Hello" />);
-    const div = container.firstChild as HTMLElement;
-    expect(div.style.color).toBe("var(--pf-color-fg)");
+  it("TextBlock with no _style follows a parent block color before theme foreground", () => {
+    const html = renderToStaticMarkup(<TextBlock text="Hello" />);
+    expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
   });
 
-  it("HeadingBlock with no _style has outer div color: var(--pf-color-fg)", () => {
-    const { container } = render(<HeadingBlock text="Hi" level="h2" />);
-    const div = container.firstChild as HTMLElement;
-    expect(div.style.color).toBe("var(--pf-color-fg)");
+  it("HeadingBlock with no _style follows a parent block color before theme foreground", () => {
+    const html = renderToStaticMarkup(<HeadingBlock text="Hi" level="h2" />);
+    expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
   });
 
   it("TextBlock with explicit textColorToken:'primary' has outer div color: var(--pf-color-primary)", () => {

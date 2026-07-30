@@ -295,9 +295,13 @@ function bgImageUrl(assetId: string): string | null {
  * choice cascades to both headings and body inside the block.
  */
 export function resolveBlockStyle(style?: BlockStyle | null): React.CSSProperties {
-  if (!style) return {};
   // Use a loose record so we can set CSS custom properties, then cast once.
-  const css: Record<string, string | number> = {};
+  // Framed blocks advertise the brand radius as their effective unset value, so
+  // ground that value here instead of inheriting the browser's 0px default.
+  const css: Record<string, string | number> = {
+    borderRadius: "var(--pf-radius)",
+  };
+  if (!style) return css as React.CSSProperties;
 
   // Border
   if (style.borderWidth && style.borderWidth > 0) {
@@ -437,7 +441,12 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
     css.fontSize = `${clamp(style.fontSize, STYLE_LIMITS.fontSize.min, STYLE_LIMITS.fontSize.max)}px`;
   }
   if (style.textColorToken) {
-    css.color = colorTokenToVar(style.textColorToken) ?? "";
+    const color = colorTokenToVar(style.textColorToken) ?? "";
+    css.color = color;
+    // A section-level text choice must reach nested Heading/Text blocks. Those
+    // blocks read this inherited token while retaining theme foreground as the
+    // fallback when no parent override exists.
+    css["--pf-block-text-color"] = color;
   }
   if (style.bold) css.fontWeight = 700;
   if (style.italic) css.fontStyle = "italic";

@@ -56,6 +56,7 @@ function BorderRow({
   color,
   onWidthChange,
   onColorChange,
+  effectiveWidth = 1,
 }: {
   widthLabel: string;
   colorLabel: string;
@@ -63,6 +64,7 @@ function BorderRow({
   color: string | undefined;
   onWidthChange: (v: number | undefined) => void;
   onColorChange: (v: string | undefined) => void;
+  effectiveWidth?: number;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -72,7 +74,7 @@ function BorderRow({
         min={0}
         max={12}
         onChange={onWidthChange}
-        effectiveValue={0}
+        effectiveValue={effectiveWidth}
       />
       {!!width && (
         // borderColor fallback: var(--pf-color-border, rgba(0,0,0,0.12)) — no clean single token
@@ -310,7 +312,7 @@ export function CollectionsPopupPanelDialog({
               max={120}
               suffix="px"
               onChange={(v) => set("titleFontSize", v)}
-              effectiveValue={16}
+              effectiveValue={18}
             />
 
             {/* titleColorToken: fallback = var(--pf-color-foreground, #111) → "foreground" */}
@@ -350,6 +352,7 @@ export function CollectionsPopupPanelDialog({
               color={config.closeButtonBorderColorToken}
               onWidthChange={(v) => set("closeButtonBorderWidth", v)}
               onColorChange={(v) => set("closeButtonBorderColorToken", v)}
+              effectiveWidth={1}
             />
 
             {/* closeButtonOpacity: fallback = 100 */}
@@ -368,6 +371,7 @@ export function CollectionsPopupPanelDialog({
               label={t("collectionsDialog.background")}
               value={config.closeButtonBgColorToken}
               onChange={(c) => set("closeButtonBgColorToken", c)}
+              effectiveValue="background"
             />
           </EditorDrawerSection>
         </EditorDrawerGroup>

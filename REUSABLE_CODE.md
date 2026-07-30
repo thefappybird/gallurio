@@ -66,7 +66,7 @@ Composed, app-specific shared components.
 | `components/app/theme-toggle.tsx` | `ThemeToggle` | Theme switcher dropdown | hydration-safe |
 | `components/app/ambient-background.tsx` | `AmbientBackground` | Full-bleed, theme-aware, slowly-drifting SVG background (swaps light/dark SVG via `dark:` classes); fills its nearest `relative` ancestor | none — position/size via a `relative overflow-hidden` wrapper |
 | `components/app/locale-switcher.tsx` | `LocaleSwitcher` | Locale switcher dropdown (sidebar footer); reuses catalog native names, swaps locale via next-intl navigation keeping the path | none |
-| `components/app/table-skeleton.tsx` | `TableSkeleton` | Table loading skeleton w/ realistic column widths | `columns`, `rows?` (8) |
+| `components/app/table-skeleton.tsx` | `TableSkeleton` | Viewport-filling table loading skeleton with realistic column widths; measures remaining page height, reserves following pagination, and renders only whole rows that fit (responsive card fallback below `lg`) | `columns`, `rows?` (SSR fallback: 8), `cardRows?`, `className?` |
 | `components/app/page-size-select.tsx` | `PageSizeSelect` | Rows-per-page dropdown; syncs URL param, resets page | `value`, `paramName` ("limit"), `options` |
 | `components/app/clear-filters-button.tsx` | `ClearFiltersButton` | Clears filter params from URL; hidden when none active | `paramKeys`, `defaultValues?` |
 | `components/app/sign-out-confirm.tsx` | `SignOutConfirmDialog` | Controlled logout confirm dialog | `open`, `onOpenChange` |

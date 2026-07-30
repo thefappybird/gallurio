@@ -75,12 +75,10 @@ describe("RootStyleField", () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ paddingTop: "10px" }));
   });
 
-  it("floats background effective default: background swatch shows aria-pressed when value is unset", () => {
+  it("does not claim a background color is active when the page root leaves it unset", () => {
     render(<RootStyleField value={{}} onChange={() => {}} />);
-    // When bgColorToken is unset the background swatch should show as the
-    // effective default (aria-pressed=true) via effectiveValue="background".
     const backgroundSwatch = screen.getByRole("button", { name: /^background$/i });
-    expect(backgroundSwatch).toHaveAttribute("aria-pressed", "true");
+    expect(backgroundSwatch).toHaveAttribute("aria-pressed", "false");
   });
 
   it("floats opacity effective default: opacity spinbutton shows placeholder 100 when value is unset", () => {
@@ -97,7 +95,7 @@ describe("RootStyleField", () => {
     expect(spinbuttons[0]).toHaveAttribute("placeholder", "0");
   });
 
-  it("explicit value wins over effective default: primary swatch pressed, opacity input value 50 not placeholder", () => {
+  it("shows an explicit primary background and explicit 50 percent opacity", () => {
     render(
       <RootStyleField
         value={{ bgColorToken: "primary", bgOpacity: 50 }}

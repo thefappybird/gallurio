@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ContactPanelDialog } from "./ContactPanelDialog";
 import { DEFAULT_BRAND_KIT, type PortfolioContactConfig } from "@/lib/page-builder/types";
+import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
+import { BrandColorsContext } from "@/lib/page-builder/brandColors";
 
 const updateContactConfigAction = vi.fn().mockResolvedValue({ ok: true });
 const updateFormLocaleAction = vi.fn().mockResolvedValue({ ok: true });
@@ -151,4 +153,89 @@ describe("ContactPanelDialog", () => {
     expect(lgBtn).toHaveClass("bg-foreground");
     expect(lgBtn).toHaveClass("text-background");
   });
+
+  it("floats the brand radius when active-tab highlight radius is unset", () => {
+    renderWithProviders(
+      <BrandColorsContext.Provider
+        value={{
+          primary: "#111111",
+          secondary: "#eeeeee",
+          accent: "#007bff",
+          background: "#ffffff",
+          foreground: "#111111",
+          brandRadius: "sharp",
+        }}
+      >
+        <ContactPanelDialog
+          {...baseProps}
+          contact={{ activeTabHighlight: true }}
+        />
+      </BrandColorsContext.Provider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
+    fireEvent.click(screen.getByRole("button", { name: "Active tab" }));
+    expect(screen.getByRole("button", { name: "Sharp" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+});
+
+describe("ContactPanelDialog template style parity", () => {
+  const swatchName = (token: string | undefined, fallback: string) => {
+    const effective = token ?? fallback;
+    return effective === "background"
+      ? "Background"
+      : effective === "foreground"
+        ? "Text"
+        : effective.charAt(0).toUpperCase() + effective.slice(1);
+  };
+
+  it.each(PORTFOLIO_TEMPLATES)(
+    "$id floats its submit-button and active-tab appearance",
+    (template) => {
+      const contact = template.defaultContact;
+      renderWithProviders(
+        <ContactPanelDialog {...baseProps} contact={contact} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Design" }));
+
+      fireEvent.click(screen.getByRole("button", { name: "Button" }));
+      fireEvent.click(screen.getByRole("button", { name: "Submit button" }));
+      const style = contact.buttonStyle ?? "solid";
+      expect(
+        screen.getByRole("button", {
+          name: style.charAt(0).toUpperCase() + style.slice(1),
+        }),
+      ).toHaveAttribute("aria-pressed", "true");
+      const buttonColorRow = screen.getByText("Button color").parentElement!;
+      expect(
+        within(buttonColorRow).getByRole("button", {
+          name: swatchName(contact.buttonColor, "primary"),
+        }),
+      ).toHaveAttribute("aria-pressed", "true");
+
+      fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
+      fireEvent.click(screen.getByRole("button", { name: "Active tab" }));
+      expect(screen.getByRole("button", { name: "Scale" })).toHaveAttribute(
+        "aria-pressed",
+        String(Boolean(contact.activeTabScale)),
+      );
+      expect(screen.getByRole("button", { name: "Highlight" })).toHaveAttribute(
+        "aria-pressed",
+        String(Boolean(contact.activeTabHighlight)),
+      );
+      expect(screen.getByRole("button", { name: "Underline" })).toHaveAttribute(
+        "aria-pressed",
+        String(contact.activeTabUnderline !== false),
+      );
+      const activeColorRow = screen.getByText("Active tab text color").parentElement!;
+      expect(
+        within(activeColorRow).getByRole("button", {
+          name: swatchName(contact.activeTabColor, "foreground"),
+        }),
+      ).toHaveAttribute("aria-pressed", "true");
+    },
+  );
 });
