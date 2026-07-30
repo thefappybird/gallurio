@@ -49,6 +49,15 @@ type Props = {
   applyButtonStyle?: React.CSSProperties;
   /** Optional id(s) for aria-describedby on the inner search input, e.g. to associate a required-field error message. */
   ariaDescribedby?: string;
+  /**
+   * Validation message. Rendered directly under the search input (ABOVE the
+   * map) so it sits next to the field it describes, and wired into the input's
+   * aria-describedby + aria-invalid. Callers should not render their own error
+   * node — that is what put the message below the map in the first place.
+   */
+  error?: string;
+  /** Optional style for the error text, for callers that theme with inline styles rather than Tailwind tokens. */
+  errorStyle?: React.CSSProperties;
   labels?: {
     searchPlaceholder: string;
     searching: string;
@@ -99,6 +108,8 @@ function BaseLocationPicker({
   startInDisplayMode,
   applyButtonStyle,
   ariaDescribedby,
+  error,
+  errorStyle,
 }: Props) {
   const resolvedLabels = labels ?? {
     searchPlaceholder: "Search venue or address",
@@ -121,6 +132,10 @@ function BaseLocationPicker({
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const listboxId = `${inputId}-results`;
+  const errorId = `${inputId}-error`;
+  // Own error id first, then any caller-supplied ids, so the message the user
+  // must act on is announced before supplementary hints.
+  const describedBy = [error ? errorId : null, ariaDescribedby].filter(Boolean).join(" ") || undefined;
 
   // ── editable mode state machine ──────────────────────────────────────────
   // Determine initial mode.  When editable=true we default to "display" if
@@ -332,6 +347,21 @@ function BaseLocationPicker({
   // The map always reads from the correct source depending on mode
   const mapValue = editable ? draft : value;
 
+  // Rendered by BOTH modes, always directly under the address field and above
+  // the map — a validation message below the map is too far from the input to
+  // be noticed, which is the bug this component previously had.
+  const errorNode = error ? (
+    <p
+      id={errorId}
+      role="alert"
+      aria-live="polite"
+      style={errorStyle}
+      className={cn(!errorStyle && "text-xs text-destructive")}
+    >
+      {error}
+    </p>
+  ) : null;
+
   // ── display mode rendering ───────────────────────────────────────────────
   if (editable && mode === "display") {
     return (
@@ -342,6 +372,7 @@ function BaseLocationPicker({
           </p>
         ) : null}
         <LocationDisplay value={displayValue} />
+        {errorNode}
         {displayValue.lat != null && displayValue.lng != null ? (
           <div className="overflow-hidden border border-border">
             <LocationMap
@@ -393,7 +424,8 @@ function BaseLocationPicker({
               role="combobox"
               aria-expanded={open}
               aria-controls={listboxId}
-              aria-describedby={ariaDescribedby}
+              aria-describedby={describedBy}
+              aria-invalid={error ? true : undefined}
               placeholder={resolvedLabels.searchPlaceholder}
               className="pl-8 pr-8"
               onChange={(e) => setQuery(e.target.value)}
@@ -464,6 +496,10 @@ function BaseLocationPicker({
                 className={cn(
                   "inline-flex size-8 shrink-0 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:opacity-80 disabled:pointer-events-none disabled:opacity-50",
                   !applyButtonStyle && "bg-primary text-primary-foreground hover:bg-primary/90",
+                  // Colour is never the only signal: the shake and the message
+                  // below carry the same meaning. animate-shake is a no-op
+                  // under prefers-reduced-motion (see globals.css).
+                  error && "ring-2 ring-destructive ring-offset-2 ring-offset-background animate-shake",
                 )}
               >
                 <CheckIcon className="size-4" aria-hidden />
@@ -472,6 +508,8 @@ function BaseLocationPicker({
           ) : null}
         </div>
       </div>
+
+      {errorNode}
 
       <div className="overflow-hidden border border-border">
         <LocationMap

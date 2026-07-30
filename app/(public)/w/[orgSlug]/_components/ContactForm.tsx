@@ -252,6 +252,13 @@ export function ContactForm({
   const fieldStyle = createFieldStyle();
   const labelStyle = createLabelStyle();
 
+  // Resolved here rather than inside the location Controller's render callback:
+  // that callback is scoped to its own field state and doesn't re-run when only
+  // `errors` changes, so the message would never appear on a blocked submit.
+  const locationError = errors.location?.address
+    ? (errors.location.address.message ?? labels.locationRequired)
+    : undefined;
+
   const { fields, append, remove } = useFieldArray({ control, name: "sessions" });
   const watchedSessions = useWatch({ control, name: "sessions" });
   const minDate = todayIso();
@@ -634,7 +641,8 @@ export function ContactForm({
                   }}
                   compact={compactLocationPicker}
                   applyButtonStyle={buildButtonVisualStyle(submitAppearance, false)}
-                  ariaDescribedby={errors.location?.address ? "cf-location-error" : undefined}
+                  error={locationError}
+                  errorStyle={errorStyle}
                   onChange={(value) =>
                     field.onChange({
                       label: value.address || null,
@@ -647,11 +655,6 @@ export function ContactForm({
                 />
               )}
             />
-            {errors.location?.address && (
-              <p id="cf-location-error" style={errorStyle} role="alert">
-                {errors.location.address.message ?? labels.locationRequired}
-              </p>
-            )}
           </div>
 
           <div>

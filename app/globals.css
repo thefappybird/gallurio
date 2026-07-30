@@ -239,6 +239,9 @@ html[data-radius="rounded"] {
 .animate-shake {
   animation: shake 380ms ease-in-out;
 }
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake { animation: none; }
+}
 
 /* react-colorful — the picker injects its own stylesheet at runtime (fixed
    200px width, 8px rounded corners) which lands after globals in the cascade,

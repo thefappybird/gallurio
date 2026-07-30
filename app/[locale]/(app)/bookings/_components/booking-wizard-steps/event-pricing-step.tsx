@@ -170,20 +170,10 @@ export function EventPricingStep({
                 lng: field.value?.lng ?? null,
               }}
               onChange={(v) => { setLocationTouched(true); field.onChange(v); }}
-              ariaDescribedby={showLocationError ? "wiz-location-required" : undefined}
+              error={showLocationError ? t("locationRequired") : undefined}
             />
           )}
         />
-        {showLocationError ? (
-          <p
-            id="wiz-location-required"
-            className="text-xs text-destructive"
-            role="alert"
-            aria-live="polite"
-          >
-            {t("locationRequired")}
-          </p>
-        ) : null}
       </div>
     </div>
   );

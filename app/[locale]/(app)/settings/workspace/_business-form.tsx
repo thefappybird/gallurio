@@ -336,12 +336,10 @@ export function WorkspaceBusinessForm({
                     setValue("contactAddressLat", v.lat);
                     setValue("contactAddressLng", v.lng);
                   }}
+                  error={fieldMessage(errors.contactAddress)}
                 />
               )}
             />
-            {errors.contactAddress && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.contactAddress)}</p>
-            )}
           </div>
         </div>
 
