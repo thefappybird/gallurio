@@ -22,6 +22,7 @@ import { InvoiceThemeDialog } from "./invoice-theme-dialog";
 import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
+import { parseBookingsToggleFilters } from "../_data/booking-filters";
 import type { InvoiceThemePresetId } from "@/lib/invoices/theme";
 
 const ALL = "__all__";
@@ -93,8 +94,10 @@ export function BookingsToolbar({
   }, [searchParams]);
 
   const status = searchParams.get("status") ?? ALL;
-  const includeCancelled = searchParams.get("includeCancelled") === "1";
-  const showPast = searchParams.get("showPast") === "1";
+  const { includeCancelled, includePast: showPast } = parseBookingsToggleFilters({
+    includeCancelled: searchParams.get("includeCancelled") ?? undefined,
+    showPast: searchParams.get("showPast") ?? undefined,
+  });
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
@@ -102,12 +105,15 @@ export function BookingsToolbar({
     const p = new URLSearchParams();
     if (status && status !== ALL) p.set("status", status);
     if (q) p.set("q", q);
-    if (includeCancelled) p.set("includeCancelled", "1");
+    // Opt-out params: only sent when the filter is OFF, so the exported rows
+    // match the table for both toggles.
+    if (!includeCancelled) p.set("includeCancelled", "0");
+    if (!showPast) p.set("showPast", "0");
     if (from) p.set("from", from);
     if (to) p.set("to", to);
     const qs = p.toString();
     return `/api/bookings/export${qs ? `?${qs}` : ""}`;
-  }, [status, q, includeCancelled, from, to]);
+  }, [status, q, includeCancelled, showPast, from, to]);
 
   // pushParams reads searchParams via a ref so its identity only changes when
   // router or pathname changes — never on every searchParams object replacement.
@@ -207,7 +213,7 @@ export function BookingsToolbar({
             <Switch
               checked={includeCancelled}
               onCheckedChange={(v: boolean) =>
-                pushParams({ includeCancelled: v ? "1" : null })
+                pushParams({ includeCancelled: v ? null : "0" })
               }
             />
             <span className="select-none text-muted-foreground">
@@ -218,7 +224,7 @@ export function BookingsToolbar({
             <Switch
               checked={showPast}
               onCheckedChange={(v: boolean) =>
-                pushParams({ showPast: v ? "1" : null })
+                pushParams({ showPast: v ? null : "0" })
               }
             />
             <span className="select-none text-muted-foreground">

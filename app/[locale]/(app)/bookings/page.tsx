@@ -7,6 +7,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { listBookings, getBookingById } from "./_data/bookings-queries";
+import { parseBookingsToggleFilters } from "./_data/booking-filters";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { type BookingsView } from "./_components/view-toggle";
 import { BookingsPendingShell } from "./_components/bookings-pending-shell";
@@ -136,13 +137,15 @@ export default async function BookingsPage({
   const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
   const tableLimit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
 
-  const showPastParam = sp.showPast === "1";
+  // Cancelled + past filters are opt-OUT (absent -> ON); see parseBookingsToggleFilters.
+  const toggleFlags = parseBookingsToggleFilters(sp);
+  const showPastParam = toggleFlags.includePast;
   const filters = {
     status: sp.status ?? null,
     q: sp.q ?? null,
     from: sp.from ? new Date(sp.from) : null,
     to: sp.to ? new Date(sp.to) : null,
-    includeCancelled: sp.includeCancelled === "1",
+    includeCancelled: toggleFlags.includeCancelled,
     includePast: showPastParam,
     workspaceTimezone: (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ,
     // A team selection narrows within the caller's visibility scope; an empty
@@ -154,8 +157,8 @@ export default async function BookingsPage({
     (sp.status && sp.status !== "all") ||
     sp.from ||
     sp.to ||
-    sp.includeCancelled === "1" ||
-    sp.showPast === "1" ||
+    !toggleFlags.includeCancelled ||
+    !toggleFlags.includePast ||
     selectedTeamIds.length > 0,
   );
 

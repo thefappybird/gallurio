@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client } from "@/lib/db/models";
 import { serializeCsv } from "@/lib/utils/csv-serialize";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
+import { FALLBACK_TZ, localDayStart } from "@/lib/utils/timezone";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,9 @@ export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
   const status = params.get("status");
   const q = params.get("q");
-  const includeCancelled = params.get("includeCancelled") === "1";
+  // Opt-out convention: absent (or anything but "0") means the filter is ON.
+  const includeCancelled = params.get("includeCancelled") !== "0";
+  const showPast = params.get("showPast") !== "0";
   const from = params.get("from");
   const to = params.get("to");
 
@@ -43,7 +46,7 @@ export async function GET(req: Request) {
   if (status) {
     filter.status = status;
   } else {
-    // Always exclude drafts (unapproved inquiries); exclude cancelled by default.
+    // Always exclude drafts (unapproved inquiries); exclude cancelled unless requested.
     filter.status = includeCancelled ? { $ne: "draft" } : { $nin: ["draft", "cancelled"] };
   }
 
@@ -58,6 +61,13 @@ export async function GET(req: Request) {
     if (from) range.$gte = new Date(from);
     if (to) range.$lte = new Date(to);
     filter.firstSessionStart = range;
+  }
+
+  // Mirrors the table's past filter (see listBookings) so the export matches
+  // what's on screen: "past" is lastSessionEnd < midnight today in workspace tz.
+  if (!showPast) {
+    const tz = (ctx.workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ;
+    filter.lastSessionEnd = { $gte: localDayStart(tz, new Date()) };
   }
 
   const EXPORT_ROW_LIMIT = 10_000;

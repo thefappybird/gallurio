@@ -283,6 +283,19 @@ describe("listBookings", () => {
       expect(rows).toHaveLength(1);
       expect(rows[0].title).toBe("Mine future");
     });
+
+    it("default-on caller filters (includeCancelled: true, includePast: true) return cancelled + past rows with no lastSessionEnd bound", async () => {
+      // Mirrors the page/export callers' derivation from an absent URL param.
+      await seedBooking(workspaceId, { status: "cancelled", startAt: days(-5), title: "Past Cancelled" });
+      await seedBooking(workspaceId, { status: "booked", startAt: days(3), title: "Future Booked" });
+
+      const { rows, total } = await listBookings(workspaceId, {
+        includeCancelled: true,
+        includePast: true,
+      });
+      expect(total).toBe(2);
+      expect(rows.map((r) => r.title).sort()).toEqual(["Future Booked", "Past Cancelled"]);
+    });
   });
 
   describe("team scoping (member visibility)", () => {

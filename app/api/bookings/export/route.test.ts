@@ -214,7 +214,7 @@ describe("GET /api/bookings/export", () => {
     expect(body).not.toContain("bob@b.com");
   });
 
-  it("excludes cancelled bookings by default", async () => {
+  it("includes cancelled bookings by default (opt-out convention)", async () => {
     await seedBooking(WS_A, { title: "Active", status: "booked" });
     await seedBooking(WS_A, {
       title: "Cancelled",
@@ -229,11 +229,11 @@ describe("GET /api/bookings/export", () => {
     const body = await res.text();
     const lines = body.split("\r\n").filter(Boolean);
 
-    expect(lines).toHaveLength(2); // header + 1 active row
-    expect(body).not.toContain("Cancelled");
+    expect(lines).toHaveLength(3); // header + 2 rows
+    expect(body).toContain("Cancelled");
   });
 
-  it("includes cancelled bookings when includeCancelled=1", async () => {
+  it("excludes cancelled bookings when includeCancelled=0", async () => {
     await seedBooking(WS_A, { title: "Active", status: "booked" });
     await seedBooking(WS_A, {
       title: "Cancelled",
@@ -244,12 +244,44 @@ describe("GET /api/bookings/export", () => {
       endAt: "2026-09-01T18:00:00Z",
     });
 
-    const res = await callExport("includeCancelled=1");
+    const res = await callExport("includeCancelled=0");
+    const body = await res.text();
+    const lines = body.split("\r\n").filter(Boolean);
+
+    expect(lines).toHaveLength(2); // header + 1 active row
+    expect(body).not.toContain("Cancelled");
+  });
+
+  it("includes past bookings by default (opt-out convention)", async () => {
+    await seedBooking(WS_A, {
+      title: "Past Event",
+      startAt: "2020-01-01T09:00:00Z",
+      endAt: "2020-01-01T18:00:00Z",
+    });
+    await seedBooking(WS_A, { title: "Future Event" });
+
+    const res = await callExport();
     const body = await res.text();
     const lines = body.split("\r\n").filter(Boolean);
 
     expect(lines).toHaveLength(3); // header + 2 rows
-    expect(body).toContain("Cancelled");
+    expect(body).toContain("Past Event");
+  });
+
+  it("excludes past bookings when showPast=0", async () => {
+    await seedBooking(WS_A, {
+      title: "Past Event",
+      startAt: "2020-01-01T09:00:00Z",
+      endAt: "2020-01-01T18:00:00Z",
+    });
+    await seedBooking(WS_A, { title: "Future Event" });
+
+    const res = await callExport("showPast=0");
+    const body = await res.text();
+    const lines = body.split("\r\n").filter(Boolean);
+
+    expect(lines).toHaveLength(2); // header + 1 future row
+    expect(body).not.toContain("Past Event");
   });
 
   it("happy path: 3 single-session bookings → header row + 3 data rows", async () => {
