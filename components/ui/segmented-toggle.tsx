@@ -36,7 +36,7 @@ type SegmentedToggleProps<K extends string = string> = {
  * - ARIA: `role="tablist"` / `role="tab"` / `aria-selected`.
  *
  * Mobile: full-width with min-h-11 touch target.
- * sm+: inline auto-width, h-9.
+ * sm+: inline auto-width, min-h-9.
  */
 export function SegmentedToggle<K extends string = string>({
   value,
@@ -53,8 +53,9 @@ export function SegmentedToggle<K extends string = string>({
       className={cn(
         // Pill shell: outer rounded corners + single shared border + overflow clip
         "flex w-full min-h-11 items-stretch rounded-lg border border-border bg-background overflow-hidden divide-x divide-border",
-        // Compact inline at sm breakpoint
-        "sm:inline-flex sm:w-auto sm:h-9 sm:min-h-0",
+        // Compact inline at sm — min-h, not h: scripts with taller line boxes
+        // (Arabic, Thai) must grow the pill instead of being clipped by it.
+        "sm:inline-flex sm:w-auto sm:min-h-9",
         className
       )}
     >
@@ -77,8 +78,10 @@ export function SegmentedToggle<K extends string = string>({
               : "bg-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground"
           )}
         >
-          {Icon && <Icon className="size-4" />}
-          <span aria-hidden={ariaLabel ? true : undefined}>{label}</span>
+          {Icon && <Icon className="size-4 shrink-0" />}
+          <span className="whitespace-nowrap" aria-hidden={ariaLabel ? true : undefined}>
+            {label}
+          </span>
         </button>
       ))}
     </div>
