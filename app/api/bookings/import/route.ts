@@ -12,8 +12,13 @@ import {
   MAX_SESSIONS_PER_BOOKING,
 } from "@/lib/bookings/import-grouping";
 import { rateLimit } from "@/lib/server/rateLimit";
+import { parseCsv } from "@/lib/utils/csv-parse";
+import { parseXlsxToRows, looksLikeXlsx } from "@/lib/utils/xlsx";
 
 export const runtime = "nodejs";
+
+/** Hard byte cap applied BEFORE parsing — exceljs decompresses in memory. */
+const MAX_UPLOAD_BYTES = 2_000_000;
 
 export type ImportErrorEntry = {
   index: number;
@@ -53,6 +58,39 @@ export async function POST(req: Request) {
     }).ok
   ) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
+  // Two shapes on one route:
+  //   multipart/form-data -> PREVIEW. Parse + validate, write NOTHING.
+  //   application/json     -> COMMIT. Everything re-validated below.
+  // XLSX is binary, so parsing lives server-side rather than shipping a
+  // spreadsheet library to the browser for an owner-only, occasional action.
+  const contentType = req.headers.get("content-type") ?? "";
+
+  if (contentType.includes("multipart/form-data")) {
+    const form = await req.formData();
+    const file = form.get("file") as Blob;
+    // Bites BEFORE the parse: exceljs decompresses in memory, so the byte cap
+    // is the real defense against a zip bomb, not a post-parse row count.
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "import_too_large" }, { status: 413 });
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    // Sniff rather than trust the extension: .xlsx is a zip container.
+    let parsed;
+    try {
+      parsed = looksLikeXlsx(bytes)
+        ? await parseXlsxToRows(Buffer.from(bytes))
+        : parseCsv(new TextDecoder().decode(bytes));
+    } catch {
+      // A crafted or truncated upload is the caller's problem, not a 500.
+      return NextResponse.json({ error: "unreadable_file" }, { status: 400 });
+    }
+    return NextResponse.json({ preview: true, headers: parsed.headers, rows: parsed.rows });
+  }
+
+  if (!contentType.includes("application/json")) {
+    return NextResponse.json({ error: "unsupported_media_type" }, { status: 415 });
   }
 
   const json = await req.json().catch(() => ({}));

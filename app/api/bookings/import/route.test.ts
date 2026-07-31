@@ -78,6 +78,61 @@ const VALID_ROW = {
   currency: "PHP",
 };
 
+describe("POST /api/bookings/import — file preview", () => {
+  async function callPreview(file: Blob, filename: string) {
+    const { POST } = await import("./route");
+    const form = new FormData();
+    form.append("file", file, filename);
+    return POST(
+      new Request("http://localhost/api/bookings/import", { method: "POST", body: form })
+    );
+  }
+
+  it("accepts a multipart upload instead of rejecting it as bad JSON", async () => {
+    const { rowsToXlsxBuffer } = await import("@/lib/utils/xlsx");
+    const buffer = await rowsToXlsxBuffer(
+      ["title", "clientName", "clientEmail", "startAt"],
+      [["Garden Wedding", "Ana Cruz", "ana@example.com", "2026-06-15T01:00:00.000Z"]]
+    );
+    const res = await callPreview(new Blob([new Uint8Array(buffer)]), "bookings.xlsx");
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects an oversized upload before parsing it", async () => {
+    // exceljs decompresses in memory, so the byte cap has to bite BEFORE the
+    // parse — that is the actual defense against a zip bomb.
+    const huge = new Blob([new Uint8Array(2_000_001)]);
+    const res = await callPreview(huge, "bookings.xlsx");
+    expect(res.status).toBe(413);
+    expect((await res.json()).error).toBe("import_too_large");
+  });
+
+  it("answers 400 rather than 500 on a truncated zip", async () => {
+    const res = await callPreview(
+      new Blob([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00])]),
+      "x.xlsx"
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("unreadable_file");
+  });
+
+  it("parses the uploaded XLSX into rows and writes nothing", async () => {
+    // The preview is a dry run, so a malformed file can never half-write.
+    const { rowsToXlsxBuffer } = await import("@/lib/utils/xlsx");
+    const buffer = await rowsToXlsxBuffer(
+      ["title", "clientName", "clientEmail", "startAt"],
+      [["Garden Wedding", "Ana Cruz", "ana@example.com", "2026-06-15T01:00:00.000Z"]]
+    );
+
+    const res = await callPreview(new Blob([new Uint8Array(buffer)]), "bookings.xlsx");
+    const body = await res.json();
+
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0].title).toBe("Garden Wedding");
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+});
+
 describe("POST /api/bookings/import — booking_id round-trip", () => {
   it("regroups rows sharing a booking_id into one updated multi-session booking", async () => {
     // This is the round-trip contract: an exported two-session booking comes
