@@ -183,6 +183,15 @@ export const bookingPatchSchema = z
   });
 export type BookingPatchInput = z.infer<typeof bookingPatchSchema>;
 
+/**
+ * A spreadsheet has no concept of an absent cell: every column in every row
+ * arrives as a string, blank ones as "". `.optional()` only admits `undefined`,
+ * so without this an empty optional cell is validated as if the user had typed
+ * something — and every no-email or no-event-type row is rejected.
+ */
+const blankToUndefined = (v: unknown) =>
+  typeof v === "string" && v.trim() === "" ? undefined : v;
+
 // CSV import row — headers normalized lower-case at parse time.
 // clientEmail is optional: when provided, we try to match an existing client
 // by email; when absent we create a new client by name.
@@ -190,18 +199,21 @@ export const bookingImportRowSchema = z
   .object({
     title: z.string().min(1, "title is required").max(160).trim(),
     clientName: z.string().min(1, "clientName is required").max(120).trim(),
-    clientEmail: z
-      .string()
-      .email("Invalid email")
-      .toLowerCase()
-      .trim()
-      .optional()
-      .nullable()
-      .transform((v) => v || null),
+    clientEmail: z.preprocess(
+      blankToUndefined,
+      z
+        .string()
+        .email("Invalid email")
+        .toLowerCase()
+        .trim()
+        .optional()
+        .nullable()
+        .transform((v) => v || null)
+    ),
     startAt: isoDate,
-    endAt: isoDate.nullable().optional(),
-    eventType: z.enum(EVENT_TYPES).optional(),
-    status: z.enum(BOOKING_STATUSES).optional(),
+    endAt: z.preprocess(blankToUndefined, isoDate.nullable().optional()),
+    eventType: z.preprocess(blankToUndefined, z.enum(EVENT_TYPES).optional()),
+    status: z.preprocess(blankToUndefined, z.enum(BOOKING_STATUSES).optional()),
     locationAddress: z.string().max(240).trim().optional(),
     amountTotal: z.preprocess(
       (v) => (v === "" || v == null ? undefined : Number(v)),
@@ -211,7 +223,7 @@ export const bookingImportRowSchema = z
       (v) => (v === "" || v == null ? undefined : Number(v)),
       nonNegMoney.optional()
     ),
-    currency: z.enum(SUPPORTED_CURRENCIES).optional(),
+    currency: z.preprocess(blankToUndefined, z.enum(SUPPORTED_CURRENCIES).optional()),
     notes: z.string().max(2000).trim().optional(),
     // Round-trip identity columns emitted by the exporter. A bookingId turns
     // the row into an update, but it is only a hint — ownership is re-checked

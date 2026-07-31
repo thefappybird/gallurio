@@ -318,6 +318,16 @@ describe("POST /api/bookings/import", () => {
     expect(client?.source).toBe("import");
   });
 
+  it("strips the exporter's formula guard so a round-trip is lossless", async () => {
+    // The exporter writes "'=SUM(1)" so a spreadsheet cannot execute it. Import
+    // must remove that apostrophe, or every export/import cycle corrupts the
+    // value the user actually typed.
+    await callImport([{ ...VALID_ROW, title: "'=SUM(1) Wedding" }]);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.title).toBe("=SUM(1) Wedding");
+  });
+
   it("reuses an existing client when email matches", async () => {
     const existing = await Client.create({
       workspaceId: WS_ID,

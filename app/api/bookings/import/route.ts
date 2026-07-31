@@ -12,7 +12,7 @@ import {
   MAX_SESSIONS_PER_BOOKING,
 } from "@/lib/bookings/import-grouping";
 import { rateLimit } from "@/lib/server/rateLimit";
-import { parseCsv } from "@/lib/utils/csv-parse";
+import { parseCsv, stripFormulaGuard } from "@/lib/utils/csv-parse";
 import { parseXlsxToRows, looksLikeXlsx } from "@/lib/utils/xlsx";
 
 export const runtime = "nodejs";
@@ -112,6 +112,20 @@ export async function POST(req: Request) {
 
   const created: number[] = [];
   const updated: number[] = [];
+  /**
+   * Undo the exporter's anti-formula apostrophe. Applied here rather than at
+   * parse time so a row POSTed directly — not just one that came back from the
+   * preview — is cleaned too. Only strings are touched; stripFormulaGuard
+   * removes at most one leading "'" and only when a trigger follows it.
+   */
+  const unguardRow = (row: unknown): Record<string, unknown> =>
+    Object.fromEntries(
+      Object.entries(row as Record<string, unknown>).map(([k, v]) => [
+        k,
+        typeof v === "string" ? stripFormulaGuard(v) : v,
+      ])
+    );
+
   const errors: ImportErrorEntry[] = [];
   /**
    * Source rows left unwritten. A failing multi-session group is one error but
@@ -157,7 +171,7 @@ export async function POST(req: Request) {
     let rowError: ImportErrorEntry | null = null;
 
     for (let r = 0; r < group.rows.length; r++) {
-      const parsed = bookingImportRowSchema.safeParse({ ...group.rows[r] });
+      const parsed = bookingImportRowSchema.safeParse(unguardRow(group.rows[r]));
       if (!parsed.success) {
         const allMessages = parsed.error.errors
           .map((e) => `${e.path.join(".") || "row"}: ${e.message}`)

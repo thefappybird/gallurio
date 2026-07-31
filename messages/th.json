@@ -2091,8 +2091,7 @@
         "clientMatch": {
           "warning": "คำขอนี้อาจเป็นของลูกค้าที่มีอยู่แล้ว",
           "resolveButton": "จัดการลูกค้า",
-          "resolvedToast": "อัปเดตลูกค้าแล้ว",
-          "linkButton": "เชื่อมโยงกับลูกค้ารายนี้"
+          "resolvedToast": "อัปเดตลูกค้าแล้ว"
         },
         "eventRequest": {
           "title": "คำขอสำหรับงาน",

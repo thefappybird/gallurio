@@ -2092,8 +2092,7 @@
         "clientMatch": {
           "warning": "This inquiry may belong to an existing client",
           "resolveButton": "Resolve client",
-          "resolvedToast": "Client updated.",
-          "linkButton": "Link to this client"
+          "resolvedToast": "Client updated."
         },
         "eventRequest": {
           "title": "Event request",

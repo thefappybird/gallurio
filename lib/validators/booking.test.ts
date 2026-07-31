@@ -405,6 +405,44 @@ describe("bookingImportRowSchema", () => {
     expect(ok.success).toBe(true);
   });
 
+  it("treats a blank clientEmail cell as no email", () => {
+    // A CSV never omits a column — a blank cell arrives as "", not undefined.
+    // .optional() does not cover that, so every no-email row was rejected.
+    const ok = bookingImportRowSchema.safeParse({
+      title: "Wedding",
+      clientName: "Emma",
+      startAt: "2026-08-15T10:00:00Z",
+      clientEmail: "",
+    });
+    expect(ok.success).toBe(true);
+  });
+
+  it("treats blank enum cells as unset", () => {
+    // Same "" vs undefined trap as clientEmail: an export of a booking with no
+    // event type writes an empty cell, which must not fail re-import.
+    const ok = bookingImportRowSchema.safeParse({
+      title: "Wedding",
+      clientName: "Emma",
+      startAt: "2026-08-15T10:00:00Z",
+      eventType: "",
+      status: "",
+      currency: "",
+    });
+    expect(ok.success).toBe(true);
+  });
+
+  it("treats a blank endAt cell as no end time", () => {
+    // new Date("") is Invalid Date, so a blank end column failed the row even
+    // though endAt is nullable and optional.
+    const ok = bookingImportRowSchema.safeParse({
+      title: "Wedding",
+      clientName: "Emma",
+      startAt: "2026-08-15T10:00:00Z",
+      endAt: "",
+    });
+    expect(ok.success).toBe(true);
+  });
+
   it("carries the round-trip identity and location columns through", () => {
     // The exporter emits these; without them on the schema they are stripped
     // and an exported file can never come back as an update.

@@ -2091,8 +2091,7 @@
         "clientMatch": {
           "warning": "Maaaring kabilang ang inquiry na ito sa isang umiiral nang kliyente",
           "resolveButton": "Ayusin ang kliyente",
-          "resolvedToast": "Na-update ang kliyente.",
-          "linkButton": "I-link sa kliyenteng ito"
+          "resolvedToast": "Na-update ang kliyente."
         },
         "eventRequest": {
           "title": "Kahilingang kaganapan",
