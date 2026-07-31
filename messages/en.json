@@ -3095,6 +3095,7 @@
       "no_active_workspace": "No active workspace. Pick a workspace and try again.",
       "workspace_not_found": "Workspace not found.",
       "owner_only": "Only the workspace owner can do this.",
+      "needs_client_resolution": "This inquiry may belong to an existing client. Open it and resolve the client before converting.",
       "invalid_data": "Invalid data. Please check your input and try again.",
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
       "onboarding_required": "Finish onboarding to continue.",

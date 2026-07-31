@@ -3094,6 +3094,7 @@
       "no_active_workspace": "Tidak ada ruang kerja aktif. Pilih ruang kerja dan coba lagi.",
       "workspace_not_found": "Ruang kerja tidak ditemukan.",
       "owner_only": "Hanya pemilik ruang kerja yang dapat melakukan ini.",
+      "needs_client_resolution": "Pertanyaan ini mungkin milik klien yang sudah ada. Buka dan selesaikan kliennya sebelum mengonversi.",
       "invalid_data": "Data tidak valid. Periksa input Anda dan coba lagi.",
       "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
       "onboarding_required": "Selesaikan orientasi untuk melanjutkan.",
