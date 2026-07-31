@@ -329,6 +329,8 @@ export function WorkspaceBusinessForm({
                   value={field.value}
                   onChange={field.onChange}
                   disabled={field.disabled}
+                  invalid={!!timezoneError}
+                  ariaDescribedby={timezoneError ? "timezone-error" : undefined}
                   searchPlaceholder={tOnb("timezoneSearchPlaceholder")}
                   noMatchesLabel={tOnb("timezoneNoMatches")}
                 />

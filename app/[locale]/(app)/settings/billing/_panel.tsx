@@ -307,6 +307,8 @@ export function BillingPanel({
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value)}
               placeholder={tPromo("placeholder")}
+              aria-invalid={promoError ? true : undefined}
+              aria-describedby={promoError ? "billing-promo-error" : undefined}
               className="max-w-56"
             />
             <Button
@@ -327,7 +329,7 @@ export function BillingPanel({
             </Button>
           </div>
           {promoError && (
-            <p role="alert" className="text-xs text-destructive">
+            <p id="billing-promo-error" role="alert" className="text-xs text-destructive">
               {promoError}
             </p>
           )}
