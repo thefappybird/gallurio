@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { useActionError } from "@/lib/i18n/actionError";
 import { cn } from "@/lib/utils";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
+import { FormField } from "@/components/ui/form-field";
 
 export function BusinessStepForm({
   defaults,
@@ -53,6 +54,13 @@ export function BusinessStepForm({
   });
 
   const businessTypeValue = useWatch({ control, name: "businessType" });
+
+  const firstNameError = fieldMessage(errors.firstName);
+  const lastNameError = fieldMessage(errors.lastName);
+  const nameError = fieldMessage(errors.name);
+  const businessTypeError = fieldMessage(errors.businessType);
+  const businessTypeOtherError = fieldMessage(errors.businessTypeOther);
+  const businessTypeErrorId = "business-type-error";
 
   async function onSubmit(data: BusinessStepInput) {
     if (isStepCompleted("business", furthestStep) && !isDirty) {
@@ -106,36 +114,57 @@ export function BusinessStepForm({
     >
       <form id="business-step-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="firstName">{t("firstName")}</Label>
-            <Input id="firstName" placeholder={t("firstNamePlaceholder")} {...register("firstName")} />
-            {errors.firstName && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.firstName)}</p>
+          <FormField id="firstName" label={t("firstName")} error={firstNameError}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                placeholder={t("firstNamePlaceholder")}
+                {...register("firstName")}
+              />
             )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="lastName">
-              {t("lastName")}{" "}
-              <span className="font-normal text-muted-foreground">({t("optional")})</span>
-            </Label>
-            <Input id="lastName" placeholder={t("lastNamePlaceholder")} {...register("lastName")} />
-            {errors.lastName && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.lastName)}</p>
+          </FormField>
+          <FormField
+            id="lastName"
+            label={
+              <>
+                {t("lastName")}{" "}
+                <span className="font-normal text-muted-foreground">({t("optional")})</span>
+              </>
+            }
+            error={lastNameError}
+          >
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                placeholder={t("lastNamePlaceholder")}
+                {...register("lastName")}
+              />
             )}
-          </div>
+          </FormField>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="name">{t("businessName")}</Label>
-          <Input id="name" placeholder={t("businessNamePlaceholder")} {...register("name")} />
-          {errors.name && <p className="text-sm text-destructive">{fieldMessage(errors.name)}</p>}
-        </div>
+        <FormField id="name" label={t("businessName")} error={nameError}>
+          {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+            <Input
+              id={id}
+              aria-invalid={ariaInvalid}
+              aria-describedby={ariaDescribedby}
+              placeholder={t("businessNamePlaceholder")}
+              {...register("name")}
+            />
+          )}
+        </FormField>
 
         <div className="flex flex-col gap-1.5">
           <Label id="business-type-label">{t("businessType")}</Label>
           <div
             role="group"
             aria-labelledby="business-type-label"
+            aria-describedby={businessTypeError ? businessTypeErrorId : undefined}
             className="grid grid-cols-3 gap-2 sm:grid-cols-4"
           >
             {businessTypes.map((bt) => {
@@ -162,23 +191,29 @@ export function BusinessStepForm({
               );
             })}
           </div>
-          {errors.businessType && (
-            <p className="text-sm text-destructive">{fieldMessage(errors.businessType)}</p>
+          {businessTypeError && (
+            <p id={businessTypeErrorId} role="alert" className="text-sm text-destructive">
+              {businessTypeError}
+            </p>
           )}
         </div>
 
         {businessTypeValue === "other" && (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="businessTypeOther">{t("businessTypeOtherLabel")}</Label>
-            <Input
-              id="businessTypeOther"
-              placeholder={t("businessTypeOtherPlaceholder")}
-              {...register("businessTypeOther")}
-            />
-            {errors.businessTypeOther && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.businessTypeOther)}</p>
+          <FormField
+            id="businessTypeOther"
+            label={t("businessTypeOtherLabel")}
+            error={businessTypeOtherError}
+          >
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                placeholder={t("businessTypeOtherPlaceholder")}
+                {...register("businessTypeOther")}
+              />
             )}
-          </div>
+          </FormField>
         )}
 
       </form>

@@ -51,9 +51,14 @@ export function BookDemoForm() {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="bd-name">{t("name")}</Label>
-        <Input id="bd-name" aria-invalid={errors.name ? "true" : undefined} {...register("name")} />
+        <Input
+          id="bd-name"
+          aria-invalid={errors.name ? "true" : undefined}
+          aria-describedby={errors.name ? "bd-name-error" : undefined}
+          {...register("name")}
+        />
         {errors.name && (
-          <p className="text-sm text-destructive" role="alert">
+          <p id="bd-name-error" className="text-sm text-destructive" role="alert">
             {fieldMessage(errors.name)}
           </p>
         )}
@@ -65,10 +70,11 @@ export function BookDemoForm() {
           id="bd-email"
           type="email"
           aria-invalid={errors.email ? "true" : undefined}
+          aria-describedby={errors.email ? "bd-email-error" : undefined}
           {...register("email")}
         />
         {errors.email && (
-          <p className="text-sm text-destructive" role="alert">
+          <p id="bd-email-error" className="text-sm text-destructive" role="alert">
             {fieldMessage(errors.email)}
           </p>
         )}
@@ -79,10 +85,11 @@ export function BookDemoForm() {
         <Input
           id="bd-business"
           aria-invalid={errors.businessName ? "true" : undefined}
+          aria-describedby={errors.businessName ? "bd-business-error" : undefined}
           {...register("businessName")}
         />
         {errors.businessName && (
-          <p className="text-sm text-destructive" role="alert">
+          <p id="bd-business-error" className="text-sm text-destructive" role="alert">
             {fieldMessage(errors.businessName)}
           </p>
         )}
@@ -95,10 +102,11 @@ export function BookDemoForm() {
           rows={4}
           placeholder={t("messagePlaceholder")}
           aria-invalid={errors.message ? "true" : undefined}
+          aria-describedby={errors.message ? "bd-message-error" : undefined}
           {...register("message")}
         />
         {errors.message && (
-          <p className="text-sm text-destructive" role="alert">
+          <p id="bd-message-error" className="text-sm text-destructive" role="alert">
             {fieldMessage(errors.message)}
           </p>
         )}
