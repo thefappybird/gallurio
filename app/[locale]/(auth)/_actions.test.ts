@@ -226,6 +226,18 @@ describe("signInAction", () => {
     expect(mockWorkos.userManagement.authenticateWithPassword).not.toHaveBeenCalled();
   });
 
+  it("returns fieldErrors.email for a malformed email — top-level error unchanged", async () => {
+    const result = await signInAction(null, fd({
+      email: "not-an-email",
+      password: "Password1!",
+      "cf-turnstile-response": "valid-token",
+    }));
+    expect(result).toMatchObject({
+      error: "Please check your input and try again.",
+      fieldErrors: { email: "errors.fields.emailInvalid" },
+    });
+  });
+
   it("rejects on rate-limit breach (email)", async () => {
     mockWorkos.userManagement.authenticateWithPassword.mockResolvedValue(
       sealedResponse(),
@@ -262,6 +274,22 @@ describe("signInAction", () => {
     expect(result).toMatchObject({ error: "Invalid email or password." });
   });
 
+  it("never emits fieldErrors on a wrong-password credential failure — no enumeration hint", async () => {
+    const ex = Object.assign(new Error("auth failed"), {
+      code: "invalid_credentials",
+    });
+    Object.setPrototypeOf(ex, AuthenticationException.prototype);
+    (ex as { rawData?: unknown }).rawData = {};
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(ex);
+
+    const result = await signInAction(null, fd({
+      email: "test@example.com",
+      password: "WrongPassword1!",
+      "cf-turnstile-response": "valid-token",
+    }));
+    expect(result).not.toHaveProperty("fieldErrors");
+  });
+
   it("returns same generic error for nonexistent email — no enumeration", async () => {
     const ex = Object.assign(new Error("auth failed"), {
       code: "invalid_credentials",
@@ -276,6 +304,15 @@ describe("signInAction", () => {
       "cf-turnstile-response": "valid-token",
     }));
     expect(result).toMatchObject({ error: "Invalid email or password." });
+  });
+
+  it("never emits fieldErrors.turnstileToken when only the bot-check token is missing", async () => {
+    const result = await signInAction(null, fd({
+      email: "test@example.com",
+      password: "Password1!",
+      "cf-turnstile-response": "",
+    }));
+    expect(result).not.toHaveProperty("fieldErrors");
   });
 
   it("sets sealed session cookie on success", async () => {
@@ -387,6 +424,20 @@ describe("signUpAction", () => {
     expect(result).toMatchObject({ error: expect.stringContaining("Bot check") });
   });
 
+  it("returns fieldErrors.password for a too-short password", async () => {
+    const result = await signUpAction(null, fd({
+      firstName: "Test",
+      email: "new@example.com",
+      password: "short1",
+      confirmPassword: "short1",
+      "cf-turnstile-response": "valid-token",
+    }));
+    expect(result).toMatchObject({
+      error: "Please check your input and try again.",
+      fieldErrors: { password: "errors.fields.passwordLength" },
+    });
+  });
+
   it("rejects when passwords do not match", async () => {
     const result = await signUpAction(null, fd({
       firstName: "Test",
@@ -395,7 +446,10 @@ describe("signUpAction", () => {
       confirmPassword: "Different1!",
       "cf-turnstile-response": "valid-token",
     }));
-    expect(result).toMatchObject({ error: "Passwords do not match." });
+    expect(result).toMatchObject({
+      error: "Passwords do not match.",
+      fieldErrors: { confirmPassword: "Passwords do not match." },
+    });
     expect(mockWorkos.userManagement.createUser).not.toHaveBeenCalled();
   });
 
@@ -456,6 +510,17 @@ describe("forgotPasswordAction", () => {
     expect(result).toMatchObject({ ok: true });
   });
 
+  it("returns fieldErrors.email for a malformed email", async () => {
+    const result = await forgotPasswordAction(null, fd({
+      email: "not-an-email",
+      "cf-turnstile-response": "valid-token",
+    }));
+    expect(result).toMatchObject({
+      error: "Please check your input and try again.",
+      fieldErrors: { email: "errors.fields.emailInvalid" },
+    });
+  });
+
   it("returns ok for known email", async () => {
     mockWorkos.userManagement.createPasswordReset.mockResolvedValue({
       passwordResetToken: "tok",
@@ -508,7 +573,22 @@ describe("resetPasswordAction", () => {
       password: "NewPass1!",
       confirmPassword: "Different1!",
     }));
-    expect(result).toMatchObject({ error: "Passwords do not match." });
+    expect(result).toMatchObject({
+      error: "Passwords do not match.",
+      fieldErrors: { confirmPassword: "Passwords do not match." },
+    });
+  });
+
+  it("returns fieldErrors.password for a too-short password", async () => {
+    const result = await resetPasswordAction(null, fd({
+      token: "valid-token",
+      password: "short1",
+      confirmPassword: "short1",
+    }));
+    expect(result).toMatchObject({
+      error: "Please check your input and try again.",
+      fieldErrors: { password: "errors.fields.passwordLength" },
+    });
   });
 
   it("returns error when WorkOS rejects the token", async () => {
@@ -559,6 +639,14 @@ describe("verifyEmailAction", () => {
       .rejects.toThrow("REDIRECT:/en/sign-in?notice=session_expired");
   });
 
+  it("returns fieldErrors.code for a 5-character code", async () => {
+    const result = await verifyEmailAction(null, fd({ code: "12345" }));
+    expect(result).toMatchObject({
+      error: "Invalid or expired code. Please try again.",
+      fieldErrors: { code: "errors.fields.codeInvalid" },
+    });
+  });
+
   it("verifies and sets session cookie when cookie exists", async () => {
     mockCookieJar["wos-email-verify-pending"] = "pending-email-token";
     mockWorkos.userManagement.authenticateWithEmailVerification.mockResolvedValue(
@@ -598,6 +686,14 @@ describe("mfaChallengeAction", () => {
   it("returns sessionExpired when no MFA pending cookie", async () => {
     const result = await mfaChallengeAction(null, fd({ code: "123456" }));
     expect(result).toMatchObject({ error: "Your session has expired. Please sign in again." });
+  });
+
+  it("returns fieldErrors.code for a malformed TOTP code", async () => {
+    const result = await mfaChallengeAction(null, fd({ code: "12345" }));
+    expect(result).toMatchObject({
+      error: "Invalid or expired code. Please try again.",
+      fieldErrors: { code: "errors.fields.codeInvalid" },
+    });
   });
 
   it("verifies TOTP and sets session cookie", async () => {

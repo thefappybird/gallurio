@@ -201,7 +201,30 @@ async function redirectExpiredVerificationToSignIn(locale: string): Promise<neve
 // Shared result shape
 // ---------------------------------------------------------------------------
 
-export type ActionResult = { error: string } | { ok: true };
+export type ActionResult =
+  | { error: string; fieldErrors?: Record<string, string> }
+  | { ok: true };
+
+type Translator = Awaited<ReturnType<typeof getTranslations>>;
+
+/**
+ * Maps Zod field-level failures to localized messages via `keyMap`. Fields
+ * not present in `keyMap` (turnstileToken, token, returnTo — not
+ * user-visible inputs) are silently dropped, never surfaced.
+ */
+function localizeFieldErrors(
+  rawFieldErrors: Record<string, string[] | undefined>,
+  keyMap: Record<string, string>,
+  t: Translator,
+): Record<string, string> | undefined {
+  const mapped: Record<string, string> = {};
+  for (const [field, messageKey] of Object.entries(keyMap)) {
+    if (rawFieldErrors[field]?.length) {
+      mapped[field] = t(messageKey);
+    }
+  }
+  return Object.keys(mapped).length > 0 ? mapped : undefined;
+}
 
 // ---------------------------------------------------------------------------
 // Sign-in
@@ -230,7 +253,15 @@ export async function signInAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidInput") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error.flatten().fieldErrors,
+      {
+        email: "errors.fields.emailInvalid",
+        password: "errors.fields.passwordRequired",
+      },
+      t,
+    );
+    return { error: t("errors.invalidInput"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const { email, password, turnstileToken, returnTo } = parsed.data;
@@ -366,14 +397,28 @@ export async function signUpAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidInput") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error.flatten().fieldErrors,
+      {
+        firstName: "errors.fields.firstNameRequired",
+        lastName: "errors.fields.lastNameTooLong",
+        email: "errors.fields.emailInvalid",
+        password: "errors.fields.passwordLength",
+        confirmPassword: "errors.fields.confirmPasswordRequired",
+      },
+      t,
+    );
+    return { error: t("errors.invalidInput"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const { firstName, lastName, email, password, confirmPassword, turnstileToken } =
     parsed.data;
 
   if (password !== confirmPassword) {
-    return { error: t("errors.passwordMismatch") };
+    return {
+      error: t("errors.passwordMismatch"),
+      fieldErrors: { confirmPassword: t("errors.passwordMismatch") },
+    };
   }
 
   // Bot check
@@ -469,7 +514,12 @@ export async function forgotPasswordAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidInput") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error.flatten().fieldErrors,
+      { email: "errors.fields.emailInvalid" },
+      t,
+    );
+    return { error: t("errors.invalidInput"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const { email, turnstileToken } = parsed.data;
@@ -528,13 +578,24 @@ export async function resetPasswordAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidInput") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error.flatten().fieldErrors,
+      {
+        password: "errors.fields.passwordLength",
+        confirmPassword: "errors.fields.confirmPasswordRequired",
+      },
+      t,
+    );
+    return { error: t("errors.invalidInput"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const { token, password, confirmPassword } = parsed.data;
 
   if (password !== confirmPassword) {
-    return { error: t("errors.passwordMismatch") };
+    return {
+      error: t("errors.passwordMismatch"),
+      fieldErrors: { confirmPassword: t("errors.passwordMismatch") },
+    };
   }
 
   try {
@@ -573,7 +634,12 @@ export async function verifyEmailAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidCode") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error.flatten().fieldErrors,
+      { code: "errors.fields.codeInvalid" },
+      t,
+    );
+    return { error: t("errors.invalidCode"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const pending = await getEmailVerificationPending();
@@ -682,7 +748,12 @@ export async function mfaChallengeAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidCode") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error.flatten().fieldErrors,
+      { code: "errors.fields.codeInvalid" },
+      t,
+    );
+    return { error: t("errors.invalidCode"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   // Rate limit — MFA brute-force prevention

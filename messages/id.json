@@ -650,7 +650,16 @@
       "invalidCode": "Kode tidak valid atau telah kedaluwarsa. Silakan coba lagi.",
       "sessionExpired": "Sesi Anda telah kedaluwarsa. Silakan masuk kembali.",
       "resetTokenInvalid": "Tautan ini tidak valid atau telah kedaluwarsa. Silakan minta yang baru.",
-      "passwordReused": "Silakan pilih kata sandi yang berbeda dari kata sandi Anda saat ini."
+      "passwordReused": "Silakan pilih kata sandi yang berbeda dari kata sandi Anda saat ini.",
+      "fields": {
+        "emailInvalid": "Masukkan alamat email yang valid.",
+        "passwordRequired": "Masukkan kata sandi Anda.",
+        "passwordLength": "Kata sandi harus terdiri dari 8 hingga 128 karakter.",
+        "confirmPasswordRequired": "Konfirmasi kata sandi Anda.",
+        "firstNameRequired": "Masukkan nama depan Anda.",
+        "lastNameTooLong": "Nama belakang harus 80 karakter atau kurang.",
+        "codeInvalid": "Masukkan kode 6 digit."
+      }
     }
   },
   "app": {
