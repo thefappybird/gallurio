@@ -119,6 +119,15 @@ const EXPECTED_HEADERS = [
   "notes",
   "booking_id",
   "session_index",
+  // Appended after the legacy block so existing column positions never move.
+  "clientId",
+  "clientPhone",
+  "locationLat",
+  "locationLng",
+  "teamName",
+  "invoiceNumber",
+  "payments",
+  "createdAt",
 ];
 
 describe("GET /api/bookings/export", () => {
@@ -131,6 +140,39 @@ describe("GET /api/bookings/export", () => {
     expect(res.headers.get("Content-Disposition")).toMatch(
       /^attachment; filename="bookings-\d{4}-\d{2}-\d{2}\.csv"$/
     );
+  });
+
+  it("neutralizes a formula-leading title but leaves a negative amount numeric", async () => {
+    // Titles are user-authored and would execute on open in Excel/Sheets.
+    // amountTotal must NOT be prefixed or the number stops being a number.
+    await seedBooking(WS_A, { title: "=SUM(1+1)", amountTotal: -500 });
+
+    const res = await callExport();
+    const body = await res.text();
+    const { rows } = parseCsv(body);
+
+    expect(rows[0][EXPECTED_HEADERS.indexOf("title")]).toBe("'=SUM(1+1)");
+    expect(rows[0][EXPECTED_HEADERS.indexOf("amountTotal")]).toBe("-500");
+  });
+
+  it("format=xlsx returns a spreadsheet that parses back to the same rows", async () => {
+    await seedBooking(WS_A, { title: "Garden Wedding" });
+    const { parseXlsxToRows } = await import("@/lib/utils/xlsx");
+
+    const res = await callExport("format=xlsx");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toContain("spreadsheetml.sheet");
+    expect(res.headers.get("Content-Disposition")).toMatch(/\.xlsx"$/);
+
+    const parsed = await parseXlsxToRows(Buffer.from(await res.arrayBuffer()));
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0].title).toBe("Garden Wedding");
+  });
+
+  it("rejects an unknown format instead of silently falling back to CSV", async () => {
+    const res = await callExport("format=pdf");
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("invalid_format");
   });
 
   it("CSV header includes booking_id and session_index as the last two columns", async () => {
