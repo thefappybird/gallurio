@@ -34,6 +34,7 @@ import type {
   WizardValues,
 } from "./booking-wizard-steps/types";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
+import { bookingClientSchema } from "@/lib/validators/booking";
 import { cn } from "@/lib/utils";
 import { StatusPill } from "./status-pill";
 import {
@@ -456,11 +457,22 @@ export function BookingWizardModal({
     if (step.id === "client") {
       // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is non-memoizable; React Compiler skips this component intentionally
       const client = watch("client");
-      if (
-        (client.mode === "existing" && !client.clientId) ||
-        (client.mode === "new" && !client.name.trim())
-      ) {
-        return false;
+      if (client.mode === "existing") {
+        if (!client.clientId) return false;
+      } else {
+        if (!client.name.trim()) return false;
+        const parsed = bookingClientSchema.safeParse(client);
+        if (!parsed.success) {
+          const emailIssue = parsed.error.issues.find((i) => i.path[0] === "email");
+          if (emailIssue) {
+            setError("client.email", { type: "manual", message: emailIssue.message });
+          }
+          const phoneIssue = parsed.error.issues.find((i) => i.path[0] === "phone");
+          if (phoneIssue) {
+            setError("client.phone", { type: "manual", message: phoneIssue.message });
+          }
+          return false;
+        }
       }
     }
     if (step.id === "eventPricing") {
