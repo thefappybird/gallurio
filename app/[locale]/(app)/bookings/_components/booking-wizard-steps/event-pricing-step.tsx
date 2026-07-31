@@ -22,6 +22,8 @@ import {
 import { EVENT_TYPES, type EventType } from "@/lib/validators/booking";
 import { cn } from "@/lib/utils";
 import { LocationPicker } from "@/components/ui/location-picker";
+import { useFieldError } from "@/components/ui/form-field";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 import type { WizardValues } from "./types";
 
 type Props = {
@@ -65,6 +67,9 @@ export function EventPricingStep({
   const [locationTouched, setLocationTouched] = useState(false);
   const showLocationError = (locationTouched || locationSubmitted) && !locationValue?.address?.trim();
 
+  const titleError = errors.title ? (fieldMessage(errors.title) || t("titleRequired")) : undefined;
+  const titleA11y = useFieldError(titleError, { id: "wiz-title" });
+
   // A team picker only appears when the caller can choose among >1 writable
   // teams; a single team is auto-applied (seeded into teamId), so no field is
   // needed. When it's present, title · event type · team share one row; when
@@ -81,14 +86,15 @@ export function EventPricingStep({
             <Asterisk />
           </Label>
           <Input
-            id="wiz-title"
+            id={titleA11y.id}
             {...register("title", { required: true })}
             placeholder={t("titlePlaceholder")}
-            aria-invalid={errors.title ? "true" : undefined}
+            aria-invalid={titleA11y["aria-invalid"]}
+            aria-describedby={titleA11y["aria-describedby"]}
           />
-          {errors.title ? (
-            <p className="text-xs text-destructive">
-              {errors.title.message ?? t("titleRequired")}
+          {titleError ? (
+            <p id={titleA11y.errorId} role="alert" className="text-xs text-destructive">
+              {titleError}
             </p>
           ) : null}
         </div>

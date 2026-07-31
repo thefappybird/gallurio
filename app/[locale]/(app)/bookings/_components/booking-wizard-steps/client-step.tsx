@@ -10,7 +10,7 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/app/empty-state";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FormField } from "@/components/ui/form-field";
+import { FormField, useFieldError } from "@/components/ui/form-field";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
 import { cn } from "@/lib/utils";
 import type { WizardValues } from "./types";
@@ -141,6 +141,12 @@ function ClientPicker({
   const emailError = fieldMessage(clientErrors.email);
   const phoneError = fieldMessage(clientErrors.phone);
 
+  const existingClientError =
+    showExistingError && value.mode === "existing" && !value.clientId
+      ? t("selectRequired")
+      : undefined;
+  const searchFieldA11y = useFieldError(existingClientError, { id: "client-search" });
+
   return (
     <div className="flex flex-col gap-3">
       <div className="inline-flex w-fit border border-border bg-background text-xs">
@@ -189,6 +195,9 @@ function ClientPicker({
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              id={searchFieldA11y.id}
+              aria-invalid={searchFieldA11y["aria-invalid"]}
+              aria-describedby={searchFieldA11y["aria-describedby"]}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("searchPlaceholder")}
@@ -235,8 +244,10 @@ function ClientPicker({
               </ul>
             )}
           </div>
-          {showExistingError && value.mode === "existing" && !value.clientId ? (
-            <p className="text-xs text-destructive">{t("selectRequired")}</p>
+          {existingClientError ? (
+            <p id={searchFieldA11y.errorId} role="alert" className="text-xs text-destructive">
+              {existingClientError}
+            </p>
           ) : null}
             </>
           )}

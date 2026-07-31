@@ -152,6 +152,65 @@ describe("ClientFormModal", () => {
     await waitFor(() => expect(screen.getByText(/required/i)).toBeInTheDocument());
   });
 
+  it("marks the name input invalid and associates it with the alert message on empty submit", async () => {
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    const input = await screen.findByLabelText(/^name/i);
+    await waitFor(() => expect(input).toHaveAttribute("aria-invalid", "true"));
+
+    const describedBy = input.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const message = document.getElementById(describedBy!);
+    expect(message).toHaveAttribute("role", "alert");
+    expect(message).toHaveTextContent(/required/i);
+  });
+
+  it("marks the email input invalid and associates it with the alert message on an invalid email", async () => {
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
+    fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: "not-an-email" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    const input = screen.getByLabelText(/^email/i);
+    await waitFor(() => expect(input).toHaveAttribute("aria-invalid", "true"));
+
+    const describedBy = input.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const message = document.getElementById(describedBy!);
+    expect(message).toHaveAttribute("role", "alert");
+  });
+
+  it("renders no alert message and no aria-invalid on the email input when valid", () => {
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    const input = screen.getByLabelText(/^email/i);
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("marks the phone input invalid and associates it with the alert message on an invalid phone", async () => {
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
+    fireEvent.change(screen.getByPlaceholderText(/\+63/), { target: { value: "12345" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    const input = screen.getByPlaceholderText(/\+63/);
+    await waitFor(() => expect(input).toHaveAttribute("aria-invalid", "true"));
+
+    const describedBy = input.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const message = document.getElementById(describedBy!);
+    expect(message).toHaveAttribute("role", "alert");
+    expect(message).toHaveTextContent(/invalid phone number/i);
+  });
+
+  it("renders no alert message and no aria-invalid on the phone input when valid", () => {
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    const input = screen.getByPlaceholderText(/\+63/);
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("opens UnsavedChangesDialog when dirty form is closed", async () => {
     renderWithProviders(<ClientFormModal {...defaultProps} />);
     fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test" } });
