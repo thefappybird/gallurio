@@ -1,4 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 // Browser verification for the validation-ux branch: bookings filter defaults,
 // location-picker error placement, and the client-match dialog.
@@ -109,6 +111,90 @@ test.describe("Task 3 — location error renders above the map", () => {
       await page.screenshot({ path: `e2e/__screenshots__/loc-error-${bp.name}.png` });
     });
   }
+});
+
+test.describe("Task 2 — CSV/XLSX import preview", () => {
+  // Preview only. The dialog is two-step — file, then an explicit
+  // "Import N booking(s)" — so everything up to that button is a dry run and
+  // the shared seeded DB is never written to. Files are built in memory.
+  const HEADERS =
+    "clientName,clientEmail,startAt,endAt,title,eventType,status,amountTotal,amountDeposit,currency,locationAddress,notes";
+
+  async function openImport(page: Page) {
+    await gotoBookings(page);
+    await page.getByRole("button", { name: /^import$/i }).first().click();
+    return page.getByRole("dialog");
+  }
+
+  test("a valid CSV previews its rows and offers to import them", async ({ page }) => {
+    const csv = [
+      HEADERS,
+      "Marisol Reyes,marisol@example.com,2026-09-12T09:00,2026-09-12T17:00,Reyes Wedding,wedding,booked,185000,55000,PHP,Tagaytay,Golden hour",
+    ].join("\n");
+
+    const dialog = await openImport(page);
+    await dialog
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "rows.csv", mimeType: "text/csv", buffer: Buffer.from("﻿" + csv) });
+
+    await expect(dialog.getByText(/1 row\(s\) found/i)).toBeVisible({ timeout: 20_000 });
+    await expect(dialog.getByText(/1 valid/i)).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /import 1 booking/i })).toBeEnabled();
+
+    // Leave without importing.
+    await dialog.getByRole("button", { name: /^cancel$/i }).click();
+  });
+
+  test("an XLSX previews identically, via the server", async ({ page }) => {
+    // XLSX is the path that actually leaves the browser: it is uploaded as
+    // multipart and parsed server-side, then rendered by the same code as CSV.
+    const xlsx = readFileSync(path.resolve(__dirname, "fixtures/bookings-valid.xlsx"));
+
+    const dialog = await openImport(page);
+    await dialog.locator('input[type="file"]').setInputFiles({
+      name: "bookings-valid.xlsx",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: xlsx,
+    });
+
+    await expect(dialog.getByText(/6 row\(s\) found/i)).toBeVisible({ timeout: 30_000 });
+    await expect(dialog.getByText(/6 valid/i)).toBeVisible();
+    await dialog.getByRole("button", { name: /^cancel$/i }).click();
+  });
+
+  test("a row with blank optional cells counts as valid", async ({ page }) => {
+    // The bug the sample files exposed: "" is not undefined, so a blank email
+    // or event type used to fail the row. Both rows below are legal.
+    const csv = [
+      HEADERS,
+      ",,bad-date,,,,,,,,,",
+      "Valid Person,,2026-09-12T09:00,,Good Row,,,,,,,",
+    ].join("\n");
+
+    const dialog = await openImport(page);
+    await dialog
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "mixed.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+
+    await expect(dialog.getByText(/2 row\(s\) found/i)).toBeVisible({ timeout: 20_000 });
+    await expect(dialog.getByText(/1 valid/i)).toBeVisible();
+    await expect(dialog.getByText(/1 with errors/i)).toBeVisible();
+    await dialog.getByRole("button", { name: /^cancel$/i }).click();
+  });
+
+  test("the formula guard is stripped before the user sees the row", async ({ page }) => {
+    const csv = [HEADERS, "Kenji Watanabe,,2026-12-05T01:00,,'=SUM(1+1) Retreat,,,,,,,"].join("\n");
+
+    const dialog = await openImport(page);
+    await dialog
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "guard.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+
+    // Previewing "'=SUM(1+1)" while storing "=SUM(1+1)" shows the user a value
+    // they never get.
+    await expect(dialog.getByText("=SUM(1+1) Retreat")).toBeVisible({ timeout: 20_000 });
+    await dialog.getByRole("button", { name: /^cancel$/i }).click();
+  });
 });
 
 test.describe("Task 5 — client match dialog", () => {

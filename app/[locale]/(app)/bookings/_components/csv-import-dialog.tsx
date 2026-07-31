@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { parseCsv } from "@/lib/utils/csv-parse";
+import { parseCsv, stripFormulaGuard } from "@/lib/utils/csv-parse";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { ImportResult } from "@/app/api/bookings/import/route";
 import { ImportResultsDialog } from "./import-results-dialog";
@@ -153,7 +153,13 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
   // Validate + shape parsed rows for the preview table. Shared by both paths so
   // a CSV and an XLSX produce an identical preview.
   const buildRows = useCallback((csvRows: Record<string, string>[]): ParsedRow[] => {
-    return csvRows.map((raw, i) => {
+    return csvRows.map((rawIn, i) => {
+      // Undo the exporter's anti-formula apostrophe before anything is shown or
+      // sent, so the preview matches what the route will store. Stripping twice
+      // is a no-op, so the route keeping its own guard costs nothing.
+      const raw = Object.fromEntries(
+        Object.entries(rawIn).map(([k, v]) => [k, typeof v === "string" ? stripFormulaGuard(v) : v])
+      ) as Record<string, string>;
       const result = bookingImportRowSchema.safeParse({
         ...raw,
         amountTotal: raw.amountTotal || undefined,

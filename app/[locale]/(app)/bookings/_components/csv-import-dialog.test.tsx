@@ -168,6 +168,27 @@ describe("CsvImportDialog", () => {
     }
   });
 
+  it("previews the formula-guarded title the way it will be stored", async () => {
+    // The exporter writes "'=SUM(1)"; the route strips that apostrophe on
+    // commit. Without the same strip here the user previews one value and
+    // gets another.
+    const guarded = VALID_CSV.replace("Smith Wedding", "'=SUM(1) Wedding");
+    const restore = mockFileReader(guarded);
+    try {
+      renderDialog();
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [new File([guarded], "rows.csv", { type: "text/csv" })] } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("=SUM(1) Wedding")).toBeInTheDocument();
+      });
+    } finally {
+      restore();
+    }
+  });
+
   it("shows valid row count after uploading a valid CSV", async () => {
     const restore = mockFileReader(VALID_CSV);
     try {
