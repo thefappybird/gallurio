@@ -7,11 +7,11 @@ import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { BookingImportRowInput } from "@/lib/validators/booking";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
-
-// Keys added by the CSV exporter for human reference. They carry no import
-// semantics and must be stripped before schema validation so that a round-trip
-// "export → re-import" works without manual CSV editing.
-const EXPORT_ONLY_KEYS = ["booking_id", "session_index"] as const;
+import {
+  groupImportRows,
+  MAX_SESSIONS_PER_BOOKING,
+} from "@/lib/bookings/import-grouping";
+import { rateLimit } from "@/lib/server/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -25,6 +25,13 @@ export type ImportErrorEntry = {
 
 export type ImportResult = {
   created: number;
+  /** Bookings matched by booking_id and updated in place rather than duplicated. */
+  updated: number;
+  /**
+   * Source ROWS that were not written. Once rows are grouped into bookings a
+   * single failure can skip several rows, so this is no longer equal to
+   * errors.length.
+   */
   skipped: number;
   validationErrors: number;
   serverErrors: number;
@@ -36,6 +43,16 @@ export async function POST(req: Request) {
 
   if (ctx.role !== "owner") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Bulk writes across a whole workspace: cheap to fire, expensive to absorb.
+  if (
+    !rateLimit(`bookings:import:${ctx.workspace._id.toString()}`, {
+      limit: 10,
+      windowMs: 300_000,
+    }).ok
+  ) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
   const json = await req.json().catch(() => ({}));
@@ -56,7 +73,13 @@ export async function POST(req: Request) {
   }
 
   const created: number[] = [];
+  const updated: number[] = [];
   const errors: ImportErrorEntry[] = [];
+  /**
+   * Source rows left unwritten. A failing multi-session group is one error but
+   * several skipped rows, so this is deliberately not errors.length.
+   */
+  let skippedRows = 0;
 
   // Cache clients found/created within this import so duplicate email rows
   // reuse the same client rather than creating duplicates. Stores both the
@@ -65,40 +88,101 @@ export async function POST(req: Request) {
   const clientIdByEmail = new Map<string, { id: string; name: string }>();
   const defaultCurrency = ctx.workspace.currency ?? "PHP";
 
-  for (let i = 0; i < json.rows.length; i++) {
-    const raw: Record<string, unknown> = json.rows[i];
+  // Rows sharing a booking_id are ONE multi-session booking. Grouping is what
+  // makes the exporter's one-row-per-session output round-trip instead of
+  // fanning out into N separate bookings. Rows without a booking_id keep the
+  // original one-row-one-booking behaviour.
+  const groups = groupImportRows(json.rows as Record<string, unknown>[]);
 
-    // Strip export-only columns before validation so a re-imported CSV succeeds
-    // even when it still carries booking_id and session_index columns.
-    const rowForParsing: Record<string, unknown> = { ...raw };
-    for (const key of EXPORT_ONLY_KEYS) {
-      delete rowForParsing[key];
-    }
+  for (const group of groups) {
+    // Errors are reported against the group's first source row.
+    const i = group.rowNumbers[0] - 1;
+    const raw: Record<string, unknown> = group.rows[0] as Record<string, unknown>;
 
-    const parsed = bookingImportRowSchema.safeParse(rowForParsing);
-    if (!parsed.success) {
-      const allMessages = parsed.error.errors
-        .map((e) => `${e.path.join(".") || "row"}: ${e.message}`)
-        .join("; ");
-      const firstField = parsed.error.errors[0]?.path?.[0]?.toString();
+    if (group.error === "too_many_sessions") {
       errors.push({
         index: i,
         row: raw,
-        field: firstField,
+        field: "sessionIndex",
         kind: "validation",
-        message: allMessages,
+        message: `A booking cannot have more than ${MAX_SESSIONS_PER_BOOKING} sessions.`,
       });
+      skippedRows += group.rows.length;
       continue;
     }
 
-    const row: BookingImportRowInput = parsed.data;
+    // Export-only columns (payments, invoiceNumber, teamName, createdAt) ride
+    // along harmlessly: the row schema is non-strict, so unknown keys are
+    // dropped. booking_id / client_id / session_index are now real fields —
+    // normalizeCsvHeader maps them, and the schema reads them.
+    const parsedRows: BookingImportRowInput[] = [];
+    let rowError: ImportErrorEntry | null = null;
+
+    for (let r = 0; r < group.rows.length; r++) {
+      const parsed = bookingImportRowSchema.safeParse({ ...group.rows[r] });
+      if (!parsed.success) {
+        const allMessages = parsed.error.errors
+          .map((e) => `${e.path.join(".") || "row"}: ${e.message}`)
+          .join("; ");
+        rowError = {
+          index: group.rowNumbers[r] - 1,
+          row: group.rows[r] as Record<string, unknown>,
+          field: parsed.error.errors[0]?.path?.[0]?.toString(),
+          kind: "validation",
+          message: allMessages,
+        };
+        break;
+      }
+      parsedRows.push(parsed.data);
+    }
+    if (rowError) {
+      errors.push(rowError);
+      skippedRows += group.rows.length;
+      continue;
+    }
+
+    // Booking-level fields come from the group's first row; later rows in a
+    // group contribute only their session.
+    const row: BookingImportRowInput = parsedRows[0];
+
+    // A booking_id in the file is a hint, never authority. Re-read it scoped to
+    // the caller's workspace so a foreign (or bogus) id can never be written
+    // to. Both cases answer the same way, so this is not an existence oracle.
+    let existingBooking:
+      | { _id: mongoose.Types.ObjectId; clientId: mongoose.Types.ObjectId }
+      | null = null;
+    if (group.bookingId) {
+      existingBooking = mongoose.isValidObjectId(group.bookingId)
+        ? await Booking.findOne({
+            _id: group.bookingId,
+            workspaceId: ctx.workspace._id,
+          })
+            .select({ _id: 1, clientId: 1 })
+            .lean()
+        : null;
+
+      if (!existingBooking) {
+        errors.push({
+          index: i,
+          row: raw,
+          field: "bookingId",
+          kind: "lookup",
+          message: "booking_not_found_in_workspace",
+        });
+        skippedRows += group.rows.length;
+        continue;
+      }
+    }
 
     // Authoritative tz-aware single-day check. The Zod schema performs a cheap
     // UTC-day guard; this catches wall-time midnight crossings in the workspace
     // timezone (e.g. Philippines UTC+8: 21:00→02:00 wall-time is same UTC day).
-    const sessionEnd = row.endAt ?? row.startAt;
+    const sessions = parsedRows.map((r) => ({
+      startAt: r.startAt,
+      endAt: r.endAt ?? r.startAt,
+    }));
     const tzCheck = sessionsAreSameDayInTz(
-      [{ startAt: row.startAt, endAt: sessionEnd }],
+      sessions,
       ctx.workspace.timezone ?? FALLBACK_TZ
     );
     if (!tzCheck.ok) {
@@ -109,6 +193,60 @@ export async function POST(req: Request) {
         kind: "validation",
         message: "Session must start and end on the same day in the workspace timezone.",
       });
+      skippedRows += group.rows.length;
+      continue;
+    }
+
+    const firstSessionStart = new Date(
+      Math.min(...sessions.map((s) => s.startAt.getTime()))
+    );
+    const lastSessionEnd = new Date(
+      Math.max(...sessions.map((s) => s.endAt.getTime()))
+    );
+
+    // ── update path ────────────────────────────────────────────────────────
+    // clientId/clientName are deliberately NOT reassigned here: moving a
+    // booking between clients rewrites the transaction ledger, which stays a
+    // drawer operation. Amounts are likewise left alone — they are ledger-
+    // linked, so a spreadsheet must not be able to desynchronise them.
+    if (existingBooking) {
+      try {
+        await Booking.updateOne(
+          { _id: existingBooking._id, workspaceId: ctx.workspace._id },
+          {
+            $set: {
+              title: row.title,
+              eventType: row.eventType ?? "other",
+              status: row.status ?? "booked",
+              sessions,
+              firstSessionStart,
+              lastSessionEnd,
+              "location.address": row.locationAddress ?? "",
+              "location.lat": row.locationLat ?? null,
+              "location.lng": row.locationLng ?? null,
+              notes: row.notes ?? "",
+            },
+          }
+        );
+        await ActivityLog.create({
+          workspaceId: ctx.workspace._id,
+          actorUserId: ctx.userId,
+          entity: "booking",
+          entityId: existingBooking._id,
+          action: "updated",
+          meta: { via: "import" },
+        });
+        updated.push(i);
+      } catch (err) {
+        console.error("[bookings.import] group update failed", { index: i, err });
+        errors.push({
+          index: i,
+          row: raw,
+          kind: "server",
+          message: err instanceof Error ? err.message.slice(0, 200) : "Unknown server error",
+        });
+        skippedRows += group.rows.length;
+      }
       continue;
     }
 
@@ -129,7 +267,29 @@ export async function POST(req: Request) {
         let clientId: string;
         let clientName: string;
 
-        if (row.clientEmail) {
+        // Resolution ladder. clientId wins because it is exact; email is the
+        // legacy path; otherwise a new client is created. Deliberately NOT
+        // matched by name: a workspace may legitimately hold several clients
+        // sharing a name, so silently merging them here would destroy data.
+        const explicitClient = row.clientId
+          ? mongoose.isValidObjectId(row.clientId)
+            ? await Client.findOne({
+                _id: row.clientId,
+                workspaceId: ctx.workspace._id,
+              })
+                .session(session)
+                .lean()
+            : null
+          : undefined;
+
+        if (row.clientId && !explicitClient) {
+          throw new Error("client_not_found_in_workspace");
+        }
+
+        if (explicitClient) {
+          clientId = explicitClient._id.toString();
+          clientName = explicitClient.name;
+        } else if (row.clientEmail) {
           if (cachedEntry) {
             // Already committed by a previous row in this import batch.
             clientId = cachedEntry.id;
@@ -175,9 +335,6 @@ export async function POST(req: Request) {
           // No email — cannot be cached for deduplication; no-op.
         }
 
-        const sessionStart = row.startAt;
-        const sessionEnd = row.endAt ?? row.startAt;
-
         const [booking] = await Booking.create(
           [
             {
@@ -188,10 +345,14 @@ export async function POST(req: Request) {
               title: row.title,
               eventType: row.eventType ?? "other",
               status: row.status ?? "booked",
-              sessions: [{ startAt: sessionStart, endAt: sessionEnd }],
-              firstSessionStart: sessionStart,
-              lastSessionEnd: sessionEnd,
-              location: { address: row.locationAddress ?? "" },
+              sessions,
+              firstSessionStart,
+              lastSessionEnd,
+              location: {
+                address: row.locationAddress ?? "",
+                lat: row.locationLat ?? null,
+                lng: row.locationLng ?? null,
+              },
               amount: {
                 total: row.amountTotal ?? 0,
                 deposit: row.amountDeposit ?? 0,
@@ -243,20 +404,30 @@ export async function POST(req: Request) {
       errors.push({
         index: i,
         row: raw,
-        kind: "server",
+        kind: err instanceof Error && err.message === "client_not_found_in_workspace"
+          ? "lookup"
+          : "server",
         message: err instanceof Error ? err.message.slice(0, 200) : "Unknown server error",
       });
+      skippedRows += group.rows.length;
     } finally {
       await session.endSession();
     }
   }
 
-  const skipped = errors.length;
+  const skipped = skippedRows;
   const validationErrors = errors.filter((e) => e.kind === "validation").length;
   const serverErrors = errors.filter((e) => e.kind === "server").length;
 
   return NextResponse.json(
-    { created: created.length, skipped, validationErrors, serverErrors, errors } satisfies ImportResult,
+    {
+      created: created.length,
+      updated: updated.length,
+      skipped,
+      validationErrors,
+      serverErrors,
+      errors,
+    } satisfies ImportResult,
     { status: errors.length === json.rows.length ? 422 : 200 }
   );
 }

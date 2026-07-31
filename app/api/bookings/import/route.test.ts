@@ -40,6 +40,10 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  // The limiter is a module-level Map shared by every case in this file, so
+  // without this the suite exhausts its own window part-way through.
+  const { __resetRateLimitForTests } = await import("@/lib/server/rateLimit");
+  __resetRateLimitForTests();
   // Default: WS_ID context (mirrors the original static mock for all existing tests).
   mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
   // Seed default teams for all test workspaces so the route's
@@ -73,6 +77,172 @@ const VALID_ROW = {
   amountDeposit: 10000,
   currency: "PHP",
 };
+
+describe("POST /api/bookings/import — booking_id round-trip", () => {
+  it("regroups rows sharing a booking_id into one updated multi-session booking", async () => {
+    // This is the round-trip contract: an exported two-session booking comes
+    // back as ONE updated booking, not two new single-session duplicates.
+    const client = await Client.create({
+      workspaceId: WS_ID,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      source: "manual",
+    });
+    const existing = await Booking.create({
+      workspaceId: WS_ID,
+      clientId: client._id,
+      clientName: "Jane Smith",
+      title: "Old Title",
+      status: "booked",
+      sessions: [
+        {
+          startAt: new Date("2026-06-15T09:00:00.000Z"),
+          endAt: new Date("2026-06-15T17:00:00.000Z"),
+        },
+      ],
+      firstSessionStart: new Date("2026-06-15T09:00:00.000Z"),
+      lastSessionEnd: new Date("2026-06-15T17:00:00.000Z"),
+    });
+
+    const id = existing._id.toString();
+    const res = await callImport([
+      {
+        ...VALID_ROW,
+        title: "New Title",
+        bookingId: id,
+        sessionIndex: "1",
+        // 01:00–09:00Z is 09:00–17:00 in Asia/Manila, so each session stays
+        // within one workspace-local day (the route's same-day rule).
+        startAt: "2026-06-16T01:00:00.000Z",
+        endAt: "2026-06-16T09:00:00.000Z",
+      },
+      {
+        ...VALID_ROW,
+        title: "New Title",
+        bookingId: id,
+        sessionIndex: "0",
+        startAt: "2026-06-15T01:00:00.000Z",
+        endAt: "2026-06-15T09:00:00.000Z",
+      },
+    ]);
+
+    const body = await res.json();
+    expect(body.created).toBe(0);
+    expect(body.updated).toBe(1);
+
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    const after = await Booking.findById(existing._id).lean();
+    expect(after?.title).toBe("New Title");
+    expect(after?.sessions).toHaveLength(2);
+    // Ordered by session_index, so the derived bounds span both days.
+    expect(after?.firstSessionStart.toISOString()).toBe("2026-06-15T01:00:00.000Z");
+    expect(after?.lastSessionEnd.toISOString()).toBe("2026-06-16T09:00:00.000Z");
+  });
+
+
+  it("resolves the client by clientId when the row has no email, without duplicating", async () => {
+    // Email is optional on Client, so an exported row may carry no email at
+    // all. Without clientId the importer would mint a fresh client on every
+    // run, which is what made repeat imports pile up duplicates.
+    const client = await Client.create({
+      workspaceId: WS_ID,
+      name: "No Email Client",
+      source: "manual",
+    });
+
+    const noEmail: Record<string, unknown> = { ...VALID_ROW };
+    delete noEmail.clientEmail;
+    const res = await callImport([
+      { ...noEmail, clientName: "No Email Client", clientId: client._id.toString() },
+    ]);
+
+    const body = await res.json();
+    expect(body.created).toBe(1);
+    expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.clientId.toString()).toBe(client._id.toString());
+  });
+
+  it("is idempotent: importing the same rows twice never duplicates", async () => {
+    // Retry safety. The first run creates; the second sees the booking_id it
+    // was given back and updates in place.
+    const first = await callImport([VALID_ROW]);
+    expect((await first.json()).created).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    const exportedRow = { ...VALID_ROW, bookingId: booking!._id.toString(), sessionIndex: "0" };
+
+    const second = await callImport([exportedRow]);
+    const body = await second.json();
+    expect(body.created).toBe(0);
+    expect(body.updated).toBe(1);
+
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("counts skipped ROWS while errors counts problems", async () => {
+    // A 2-row group that fails is one error but two unwritten rows; reporting
+    // skipped=1 would under-report what the user has to fix.
+    const res = await callImport([
+      { ...VALID_ROW, bookingId: "not-an-object-id", sessionIndex: "0" },
+      { ...VALID_ROW, bookingId: "not-an-object-id", sessionIndex: "1" },
+    ]);
+    const body = await res.json();
+    expect(body.errors).toHaveLength(1);
+    expect(body.skipped).toBe(2);
+  });
+
+  it("rate-limits repeated imports per workspace", async () => {
+    const { rateLimit } = await import("@/lib/server/rateLimit");
+    // Exhaust the window the route uses, then confirm the next call is refused.
+    for (let n = 0; n < 10; n++) {
+      rateLimit(`bookings:import:${WS_ID.toString()}`, { limit: 10, windowMs: 300_000 });
+    }
+    const res = await callImport([VALID_ROW]);
+    expect(res.status).toBe(429);
+    expect((await res.json()).error).toBe("rate_limited");
+  });
+
+  it("refuses a booking_id owned by another workspace and writes nothing", async () => {
+    // A booking_id arrives from a user-supplied file. Updating on it without
+    // re-checking ownership would be a cross-tenant write.
+    const foreignClient = await Client.create({
+      workspaceId: WS_B,
+      name: "Other Co Client",
+      source: "manual",
+    });
+    const foreign = await Booking.create({
+      workspaceId: WS_B,
+      clientId: foreignClient._id,
+      clientName: "Other Co Client",
+      title: "Untouchable",
+      status: "booked",
+      sessions: [
+        {
+          startAt: new Date("2026-06-15T09:00:00.000Z"),
+          endAt: new Date("2026-06-15T17:00:00.000Z"),
+        },
+      ],
+      firstSessionStart: new Date("2026-06-15T09:00:00.000Z"),
+      lastSessionEnd: new Date("2026-06-15T17:00:00.000Z"),
+    });
+
+    // Caller is WS_ID (see beforeEach), targeting WS_B's booking.
+    const res = await callImport([{ ...VALID_ROW, bookingId: foreign._id.toString() }]);
+    const body = await res.json();
+
+    expect(body.created).toBe(0);
+    expect(body.updated).toBe(0);
+    expect(body.errors[0].message).toContain("booking_not_found_in_workspace");
+
+    // The foreign booking is untouched and nothing leaked into the caller's workspace.
+    const after = await Booking.findById(foreign._id).lean();
+    expect(after?.title).toBe("Untouchable");
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+});
 
 describe("POST /api/bookings/import", () => {
   it("creates a booking and client for a valid row", async () => {

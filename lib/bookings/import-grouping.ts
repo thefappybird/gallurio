@@ -1,4 +1,8 @@
-import type { CsvRow } from "@/lib/utils/csv-parse";
+/**
+ * Rows reach this either from the CSV/XLSX parsers (all strings) or from the
+ * JSON commit payload (already coerced by the client), so values are unknown.
+ */
+export type ImportRowLike = Record<string, unknown>;
 
 /**
  * Groups flat import rows into bookings.
@@ -16,25 +20,29 @@ export const MAX_SESSIONS_PER_BOOKING = 100;
 export type ImportGroup = {
   /** Present only when the file supplied one — drives update-vs-create. */
   bookingId: string | null;
-  rows: CsvRow[];
+  rows: ImportRowLike[];
   /** 1-based source row numbers, parallel to `rows`, for error reporting. */
   rowNumbers: number[];
   /** Set when the group exceeds MAX_SESSIONS_PER_BOOKING. */
   error?: "too_many_sessions";
 };
 
-function sessionOrder(row: CsvRow): number {
-  const parsed = Number.parseInt(row.sessionIndex ?? "", 10);
+function text(value: unknown): string {
+  return value == null ? "" : String(value).trim();
+}
+
+function sessionOrder(row: ImportRowLike): number {
+  const parsed = Number.parseInt(text(row.sessionIndex), 10);
   return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
 }
 
-export function groupImportRows(rows: readonly CsvRow[]): ImportGroup[] {
+export function groupImportRows(rows: readonly ImportRowLike[]): ImportGroup[] {
   const groups: ImportGroup[] = [];
   const byBookingId = new Map<string, ImportGroup>();
 
   rows.forEach((row, index) => {
     const rowNumber = index + 1;
-    const bookingId = row.bookingId?.trim() || null;
+    const bookingId = text(row.bookingId) || null;
 
     if (!bookingId) {
       groups.push({ bookingId: null, rows: [row], rowNumbers: [rowNumber] });
