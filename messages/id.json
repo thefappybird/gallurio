@@ -911,8 +911,10 @@
         "statusAll": "Semua status",
         "showCancelled": "Tampilkan yang dibatalkan",
         "showPast": "Tampilkan yang lalu",
-        "import": "Impor CSV",
+        "import": "Impor",
         "export": "Ekspor CSV",
+        "exportCsv": "CSV",
+        "exportXlsx": "Excel",
         "add": "Pemesanan baru",
         "invoiceTheme": "Tema faktur"
       },
@@ -952,7 +954,7 @@
           "kindServer": "Server",
           "line": "Baris {csvLine}",
           "rawRow": "Baris mentah",
-          "summary": "Diimpor {created} · Dilewati {skipped}",
+          "summary": "Diimpor {created} · Diperbarui {updated} · Dilewati {skipped}",
           "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya."
         },
         "dialog": {

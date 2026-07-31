@@ -16,6 +16,8 @@ type Props = {
   onClose: () => void;
   errors: ImportErrorEntry[];
   created: number;
+  /** Bookings matched by booking_id and updated in place rather than duplicated. */
+  updated?: number;
   skipped: number;
 };
 
@@ -79,7 +81,7 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
   );
 }
 
-export function ImportResultsDialog({ open, onClose, errors, created, skipped }: Props) {
+export function ImportResultsDialog({ open, onClose, errors, created, updated = 0, skipped }: Props) {
   const t = useTranslations("app.bookings.import.results");
 
   return (
@@ -99,7 +101,7 @@ export function ImportResultsDialog({ open, onClose, errors, created, skipped }:
         </div>
 
         <div className="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
-          <span>{t("summary", { created, skipped })}</span>
+          <span>{t("summary", { created, updated, skipped })}</span>
           <span>{t("hint")}</span>
         </div>
       </DialogContent>

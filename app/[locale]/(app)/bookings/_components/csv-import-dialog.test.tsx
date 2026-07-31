@@ -105,6 +105,48 @@ describe("CsvImportDialog", () => {
   });
 
   // ── 3. File upload triggers preview state ─────────────────────────────────
+  it("uploading an XLSX sends it to the server and previews the returned rows", async () => {
+    // XLSX is binary, so it goes to the server-side preview endpoint rather
+    // than being parsed in the browser.
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          preview: true,
+          headers: ["title", "clientName", "startAt"],
+          rows: [
+            {
+              title: "Garden Wedding",
+              clientName: "Ana Cruz",
+              startAt: "2026-06-15T01:00:00.000Z",
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+    try {
+      renderDialog();
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File([new Uint8Array([0x50, 0x4b])], "rows.xlsx", {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [file] } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/row\(s\) found/i)).toBeInTheDocument();
+      });
+      expect(screen.getByText("Garden Wedding")).toBeInTheDocument();
+
+      const [, init] = fetchSpy.mock.calls[0];
+      expect((init as RequestInit).body).toBeInstanceOf(FormData);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
   it("uploading a valid CSV file shows the preview table", async () => {
     const restore = mockFileReader(VALID_CSV);
     try {

@@ -911,8 +911,10 @@
         "statusAll": "All statuses",
         "showCancelled": "Show cancelled",
         "showPast": "Show past",
-        "import": "Import CSV",
+        "import": "Import",
         "export": "Export CSV",
+        "exportCsv": "CSV",
+        "exportXlsx": "Excel",
         "add": "New booking",
         "invoiceTheme": "Invoice theme"
       },
@@ -952,7 +954,7 @@
           "kindServer": "Server",
           "line": "Line {csvLine}",
           "rawRow": "Raw row",
-          "summary": "Imported {created} · Skipped {skipped}",
+          "summary": "Imported {created} · Updated {updated} · Skipped {skipped}",
           "hint": "Fix the rows above and re-upload to import them."
         },
         "dialog": {

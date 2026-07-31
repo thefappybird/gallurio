@@ -101,6 +101,20 @@ describe("BookingsToolbar — New Booking button", () => {
   });
 });
 
+describe("BookingsToolbar — export formats", () => {
+  it("offers both a CSV and an XLSX download link", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+    // Queried by href rather than role: the shared Button renders the anchor
+    // with role="button", so getAllByRole("link") finds nothing here.
+    const links = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('a[href*="/api/bookings/export"]')
+    ).map((a) => a.getAttribute("href") ?? "");
+
+    expect(links.some((h) => !h.includes("format="))).toBe(true);
+    expect(links.some((h) => h.includes("format=xlsx"))).toBe(true);
+  });
+});
+
 describe("BookingsToolbar — Show past toggle", () => {
   it("renders a 'Show past' label", () => {
     render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });

@@ -911,8 +911,10 @@
         "statusAll": "ทุกสถานะ",
         "showCancelled": "แสดงที่ยกเลิก",
         "showPast": "แสดงที่ผ่านมา",
-        "import": "นำเข้า CSV",
+        "import": "นำเข้า",
         "export": "ส่งออก CSV",
+        "exportCsv": "CSV",
+        "exportXlsx": "Excel",
         "add": "การจองใหม่",
         "invoiceTheme": "ธีมใบแจ้งหนี้"
       },
@@ -952,7 +954,7 @@
           "kindServer": "เซิร์ฟเวอร์",
           "line": "บรรทัด {csvLine}",
           "rawRow": "แถวข้อมูลดิบ",
-          "summary": "นำเข้าแล้ว {created} · ข้ามไป {skipped}",
+          "summary": "นำเข้าแล้ว {created} · อัปเดตแล้ว {updated} · ข้ามไป {skipped}",
           "hint": "แก้ไขแถวด้านบนแล้วอัปโหลดใหม่เพื่อนำเข้า"
         },
         "dialog": {

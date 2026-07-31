@@ -98,7 +98,10 @@ Composed, app-specific shared components.
 | `lib/utils/format-currency.ts` | `formatMoney` | `(amount, currency, locale) => string` | Localized currency via Intl.NumberFormat |
 | `lib/utils/csv-parse.ts` | `parseCsv` | `(text) => { headers, rows }` | RFC-4180 CSV parser (quotes, CRLF/LF) |
 | `lib/utils/csv-parse.ts` | `normalizeCsvHeader` | `(raw) => string` | Map raw header → camelCase |
+| `lib/utils/csv-parse.ts` | `stripFormulaGuard` | `(value) => string` | Reverse the export-side apostrophe guard; leaves a genuinely apostrophe-led value alone |
 | `lib/utils/csv-serialize.ts` | `serializeCsv`, `serializeRow`, `quoteField` | rows/headers → CSV | RFC-4180 serialize (CRLF) |
+| `lib/utils/csv-serialize.ts` | `escapeSpreadsheetText` | `(value) => string` | Prefix `'` before a leading `=+-@`/tab so exported text can't execute as a formula. **Text columns only** — prefixing a numeric column corrupts a negative amount |
+| `lib/utils/xlsx.ts` | `parseXlsxToRows`, `rowsToXlsxBuffer`, `looksLikeXlsx` | `(buffer) => {headers, rows}`; `(headers, rows) => Buffer`; `(bytes) => boolean` | XLSX both directions via exceljs; every cell coerced to string so XLSX and CSV share one validator. **`server-only`** — never import from a client component |
 | `lib/utils/handleActionResult.ts` | `toastActionResult` | `(result, successMessage) => result is {ok:true}` | Toast error/success + type-guard for server-action results |
 | `lib/utils/fieldMessage.ts` | `fieldMessage` | `(error: {message?:unknown}\|undefined) => string\|undefined` | Narrow RHF `errors.<field>` to a plain string for `<p>{...}</p>` render — needed when the resolver schema is a ZodEffects (`.superRefine`) whose generic wrapper collapses input/output typing to `any` |
 | `lib/utils/timezone.ts` | `wallTimeInTzToUtc` | `(date, time, tz) => ISO` | Wall-clock in IANA tz → UTC ISO |

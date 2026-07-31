@@ -911,8 +911,10 @@
         "statusAll": "Lahat ng status",
         "showCancelled": "Ipakita ang mga nakansela",
         "showPast": "Ipakita ang nakaraan",
-        "import": "Mag-import ng CSV",
+        "import": "Mag-import",
         "export": "Mag-export ng CSV",
+        "exportCsv": "CSV",
+        "exportXlsx": "Excel",
         "add": "Bagong booking",
         "invoiceTheme": "Tema ng invoice"
       },
@@ -952,7 +954,7 @@
           "kindServer": "Server",
           "line": "Linya {csvLine}",
           "rawRow": "Raw na row",
-          "summary": "Na-import ang {created} · Nilaktawan ang {skipped}",
+          "summary": "Na-import ang {created} · Na-update ang {updated} · Nilaktawan ang {skipped}",
           "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito."
         },
         "dialog": {

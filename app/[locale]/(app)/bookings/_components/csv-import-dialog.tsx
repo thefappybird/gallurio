@@ -150,9 +150,33 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
     }
   );
 
+  // Validate + shape parsed rows for the preview table. Shared by both paths so
+  // a CSV and an XLSX produce an identical preview.
+  const buildRows = useCallback((csvRows: Record<string, string>[]): ParsedRow[] => {
+    return csvRows.map((raw, i) => {
+      const result = bookingImportRowSchema.safeParse({
+        ...raw,
+        amountTotal: raw.amountTotal || undefined,
+        amountDeposit: raw.amountDeposit || undefined,
+        clientEmail: raw.clientEmail || null,
+      });
+      return {
+        index: i,
+        raw,
+        valid: result.success,
+        error: result.success ? null : (result.error.errors[0]?.message ?? "Invalid row"),
+        title: raw.title ?? "",
+        clientName: raw.clientName ?? "",
+        startAt: raw.startAt ?? "",
+      };
+    });
+  }, []);
+
   const processFile = useCallback(
     (file: File) => {
-      if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
+      const isXlsx = file.name.toLowerCase().endsWith(".xlsx");
+      const isCsv = file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
+      if (!isXlsx && !isCsv) {
         setParseError(t("parseError"));
         return;
       }
@@ -161,47 +185,37 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
       setImportResult(null);
       setParseError(null);
 
+      // XLSX is binary, so it is parsed server-side rather than shipping a
+      // spreadsheet library to the browser. CSV is text and stays local, which
+      // keeps the common case a zero-round-trip preview.
+      if (isXlsx) {
+        const body = new FormData();
+        body.append("file", file);
+        void fetch("/api/bookings/import", { method: "POST", body })
+          .then(async (res) => {
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.rows) {
+              setParseError(t("parseError"));
+              return;
+            }
+            setRows(buildRows(data.rows as Record<string, string>[]));
+          })
+          .catch(() => setParseError(t("parseError")));
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
         try {
-          const { rows: csvRows } = parseCsv(text);
-          const parsed: ParsedRow[] = csvRows.map((raw, i) => {
-            const result = bookingImportRowSchema.safeParse({
-              ...raw,
-              amountTotal: raw.amountTotal || undefined,
-              amountDeposit: raw.amountDeposit || undefined,
-              clientEmail: raw.clientEmail || null,
-            });
-            if (result.success) {
-              return {
-                index: i,
-                raw,
-                valid: true,
-                error: null,
-                title: raw.title ?? "",
-                clientName: raw.clientName ?? "",
-                startAt: raw.startAt ?? "",
-              };
-            }
-            return {
-              index: i,
-              raw,
-              valid: false,
-              error: result.error.errors[0]?.message ?? "Invalid row",
-              title: raw.title ?? "",
-              clientName: raw.clientName ?? "",
-              startAt: raw.startAt ?? "",
-            };
-          });
-          setRows(parsed);
+          setRows(buildRows(parseCsv(text).rows));
         } catch {
           setParseError(t("parseError"));
         }
       };
       reader.readAsText(file);
     },
-    [t]
+    [t, buildRows]
   );
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,7 +316,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,text/csv"
+                  accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   className="sr-only"
                   onChange={onInputChange}
                 />
@@ -443,6 +457,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
           onClose={() => setShowResultsDialog(false)}
           errors={importResult.errors}
           created={importResult.created}
+          updated={importResult.updated}
           skipped={importResult.skipped}
         />
       ) : null}

@@ -259,6 +259,9 @@ export function BookingsToolbar({
             {t("import")}
           </Button>
         ) : null}
+        {/* Two plain links rather than a dropdown: both stay in the DOM, so
+            they are keyboard-reachable and screen-reader-visible without
+            opening a portalled menu for a two-item choice. */}
         <Button
           variant="outline"
           size="sm"
@@ -268,7 +271,23 @@ export function BookingsToolbar({
           render={<a href={exportHref} download />}
         >
           <DownloadIcon className="size-4" />
-          {t("export")}
+          {t("exportCsv")}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+          title={tBookings("export.tooltip")}
+          nativeButton={false}
+          render={
+            <a
+              href={`${exportHref}${exportHref.includes("?") ? "&" : "?"}format=xlsx`}
+              download
+            />
+          }
+        >
+          <DownloadIcon className="size-4" />
+          {t("exportXlsx")}
         </Button>
         <CsvImportDialog
           open={importOpen}

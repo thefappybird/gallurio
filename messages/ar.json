@@ -911,8 +911,10 @@
         "statusAll": "كل الحالات",
         "showCancelled": "إظهار الملغاة",
         "showPast": "إظهار السابقة",
-        "import": "استيراد CSV",
+        "import": "استيراد",
         "export": "تصدير CSV",
+        "exportCsv": "CSV",
+        "exportXlsx": "Excel",
         "add": "حجز جديد",
         "invoiceTheme": "نمط الفاتورة"
       },
@@ -952,7 +954,7 @@
           "kindServer": "خادم",
           "line": "السطر {csvLine}",
           "rawRow": "الصف الخام",
-          "summary": "تم الاستيراد {created} · تم التخطّي {skipped}",
+          "summary": "تم الاستيراد {created} · تم التحديث {updated} · تم التخطّي {skipped}",
           "hint": "صحِّح الصفوف أعلاه وأعد الرفع لاستيرادها."
         },
         "dialog": {
