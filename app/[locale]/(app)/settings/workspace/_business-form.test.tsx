@@ -89,6 +89,68 @@ describe("WorkspaceBusinessForm — artists business type + other free text", ()
   });
 });
 
+describe("WorkspaceBusinessForm — native email validation must not swallow submit", () => {
+  it("surfaces the zod email error instead of letting the browser silently block submit", async () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    fireEvent.change(screen.getByLabelText("contactEmail"), {
+      target: { value: "not-an-email" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    expect(await screen.findByText(/enter a valid email/i)).toBeInTheDocument();
+  });
+});
+
+describe("WorkspaceBusinessForm — field error a11y wiring", () => {
+  it("wires aria-invalid + aria-describedby to a role=alert message for invalid name/slug/contactEmail, and keeps the slug status indicator", async () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    fireEvent.change(screen.getByLabelText("businessName"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText(/workspaceUrl/), { target: { value: "ab" } });
+    fireEvent.change(screen.getByLabelText("contactEmail"), { target: { value: "not-an-email" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    const nameInput = await screen.findByLabelText("businessName");
+    await waitFor(() => expect(nameInput).toHaveAttribute("aria-invalid", "true"));
+    const nameErrorId = nameInput.getAttribute("aria-describedby");
+    expect(nameErrorId).toBeTruthy();
+    const nameError = document.getElementById(nameErrorId!);
+    expect(nameError).toHaveAttribute("role", "alert");
+    expect(nameError).toHaveTextContent(/at least/i);
+
+    const slugInput = screen.getByLabelText(/workspaceUrl/);
+    expect(slugInput).toHaveAttribute("aria-invalid", "true");
+    const slugDescribedBy = slugInput.getAttribute("aria-describedby");
+    expect(slugDescribedBy).toBeTruthy();
+    const slugError = document.getElementById(slugDescribedBy!.split(" ")[0]!);
+    expect(slugError).toHaveAttribute("role", "alert");
+    expect(slugError).toHaveTextContent(/at least 3 characters/i);
+
+    // SlugStatusIndicator (aria-live region) still renders alongside the field.
+    expect(document.querySelector('[aria-live="polite"]')).toBeInTheDocument();
+
+    const emailInput = screen.getByLabelText("contactEmail");
+    expect(emailInput).toHaveAttribute("aria-invalid", "true");
+    const emailDescribedBy = emailInput.getAttribute("aria-describedby");
+    expect(emailDescribedBy).toBeTruthy();
+    const emailError = document.getElementById(emailDescribedBy!);
+    expect(emailError).toHaveAttribute("role", "alert");
+    expect(emailError).toHaveTextContent(/enter a valid email/i);
+  });
+});
+
+describe("WorkspaceBusinessForm — valid state", () => {
+  it("renders no alert and no aria-invalid on the name field when the form is untouched", () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    expect(screen.getByLabelText("businessName")).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
 describe("WorkspaceBusinessForm — contact address LocationPicker", () => {
   it("submits the typed address along with its lat/lng", async () => {
     render(<WorkspaceBusinessForm defaults={baseDefaults} />);

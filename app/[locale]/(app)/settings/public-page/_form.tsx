@@ -23,6 +23,8 @@ import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { useImageRetry } from "@/hooks/useImageRetry";
+import { FormField, useFieldError } from "@/components/ui/form-field";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 
 const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
@@ -129,6 +131,16 @@ export function PublicPageSettingsForm({
   const ogImageUrl = watch("seo.ogImageUrl");
   const seoKeywords = watch("seo.keywords") ?? [];
   const siteIcon = useImageRetry(siteIconUrl);
+
+  const seoTitleError = fieldMessage(errors.seoTitle);
+  const seoKeywordsError = fieldMessage(errors.seo?.keywords);
+  const seoDescriptionError = fieldMessage(errors.seoDescription);
+  const galleryDescriptionError = fieldMessage(errors.seo?.galleryDescription);
+  const inquiryRecipientEmailError = fieldMessage(errors.inquiryRecipientEmail);
+
+  const logoA11y = useFieldError(logoError ?? undefined, { id: "logoFile" });
+  const ogA11y = useFieldError(ogError ?? undefined, { id: "ogImageFile" });
+  const iconA11y = useFieldError(iconError ?? undefined, { id: "siteIconFile" });
 
   const publicUrl = portfolioPublicUrl(slug);
 
@@ -434,7 +446,7 @@ export function PublicPageSettingsForm({
       </section>
 
       {/* SEO + Logo + Site icon + Inquiry (shared form) */}
-      <form id={formId} onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
+      <form id={formId} onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-8">
         {/* Header logo section */}
         <section className="flex flex-col gap-4 border-t border-border pt-8">
           <div>
@@ -509,17 +521,18 @@ export function PublicPageSettingsForm({
 
           <input
             ref={logoFileInputRef}
-            id="logoFile"
+            id={logoA11y.id}
             type="file"
             accept="image/png,image/jpeg,image/webp"
             className="sr-only"
             aria-label={t("logoLabel")}
+            aria-describedby={logoA11y["aria-describedby"]}
             disabled={logoUploading}
             onChange={handleLogoInputChange}
           />
 
           {logoError && (
-            <p className="text-sm text-destructive" role="alert">
+            <p id={logoA11y.errorId} className="text-sm text-destructive" role="alert">
               {logoError}
             </p>
           )}
@@ -544,12 +557,22 @@ export function PublicPageSettingsForm({
               <Input
                 id="seoTitle"
                 placeholder={t("seoTitlePlaceholder")}
+                aria-invalid={seoTitleError ? true : undefined}
+                aria-describedby={
+                  [seoTitleError ? "seoTitle-error" : null, "seoTitleHint"]
+                    .filter(Boolean)
+                    .join(" ") || undefined
+                }
                 {...register("seoTitle")}
               />
-              {errors.seoTitle && (
-                <p className="text-sm text-destructive">{errors.seoTitle.message}</p>
+              {seoTitleError && (
+                <p id="seoTitle-error" role="alert" className="text-sm text-destructive">
+                  {seoTitleError}
+                </p>
               )}
-              <p className="text-xs text-muted-foreground">{t("seoTitleHint")}</p>
+              <p id="seoTitleHint" className="text-xs text-muted-foreground">
+                {t("seoTitleHint")}
+              </p>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -562,16 +585,26 @@ export function PublicPageSettingsForm({
                     id="seoKeywords"
                     placeholder={t("seoKeywordsPlaceholder")}
                     value={seoKeywords.join(", ")}
+                    aria-invalid={seoKeywordsError ? true : undefined}
+                    aria-describedby={
+                      [seoKeywordsError ? "seoKeywords-error" : null, "seoKeywordsHint"]
+                        .filter(Boolean)
+                        .join(" ") || undefined
+                    }
                     onChange={(e) => {
                       field.onChange(parseSeoKeywords(e.target.value));
                     }}
                   />
                 )}
               />
-              {errors.seo?.keywords?.message && (
-                <p className="text-sm text-destructive">{errors.seo.keywords.message}</p>
+              {seoKeywordsError && (
+                <p id="seoKeywords-error" role="alert" className="text-sm text-destructive">
+                  {seoKeywordsError}
+                </p>
               )}
-              <p className="text-xs text-muted-foreground">{t("seoKeywordsHint")}</p>
+              <p id="seoKeywordsHint" className="text-xs text-muted-foreground">
+                {t("seoKeywordsHint")}
+              </p>
             </div>
 
             <div className="flex flex-col gap-1.5 xl:col-span-2">
@@ -581,11 +614,18 @@ export function PublicPageSettingsForm({
                 rows={3}
                 className="flex w-full border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder={t("seoDescriptionPlaceholder")}
-                aria-describedby="seoDescriptionHint"
+                aria-invalid={seoDescriptionError ? true : undefined}
+                aria-describedby={
+                  [seoDescriptionError ? "seoDescription-error" : null, "seoDescriptionHint"]
+                    .filter(Boolean)
+                    .join(" ") || undefined
+                }
                 {...register("seoDescription")}
               />
-              {errors.seoDescription && (
-                <p className="text-sm text-destructive">{errors.seoDescription.message}</p>
+              {seoDescriptionError && (
+                <p id="seoDescription-error" role="alert" className="text-sm text-destructive">
+                  {seoDescriptionError}
+                </p>
               )}
               <p id="seoDescriptionHint" className="text-xs text-muted-foreground">
                 {t("seoDescriptionHint")}
@@ -599,14 +639,22 @@ export function PublicPageSettingsForm({
                 rows={3}
                 className="flex w-full border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder={t("galleryDescriptionPlaceholder")}
+                aria-invalid={galleryDescriptionError ? true : undefined}
+                aria-describedby={
+                  [galleryDescriptionError ? "galleryDescription-error" : null, "galleryDescriptionHint"]
+                    .filter(Boolean)
+                    .join(" ") || undefined
+                }
                 {...register("seo.galleryDescription")}
               />
-              {errors.seo?.galleryDescription && (
-                <p className="text-sm text-destructive">
-                  {errors.seo.galleryDescription.message}
+              {galleryDescriptionError && (
+                <p id="galleryDescription-error" role="alert" className="text-sm text-destructive">
+                  {galleryDescriptionError}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">{t("galleryDescriptionHint")}</p>
+              <p id="galleryDescriptionHint" className="text-xs text-muted-foreground">
+                {t("galleryDescriptionHint")}
+              </p>
             </div>
           </div>
         </section>
@@ -691,11 +739,12 @@ export function PublicPageSettingsForm({
 
               <input
                 ref={ogFileInputRef}
-                id="ogImageFile"
+                id={ogA11y.id}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/avif"
                 className="sr-only"
                 aria-label={t("ogImageLabel")}
+                aria-describedby={ogA11y["aria-describedby"]}
                 disabled={ogUploading}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -704,7 +753,7 @@ export function PublicPageSettingsForm({
               />
 
               {ogError && (
-                <p className="text-sm text-destructive" role="alert">
+                <p id={ogA11y.errorId} className="text-sm text-destructive" role="alert">
                   {ogError}
                 </p>
               )}
@@ -804,17 +853,18 @@ export function PublicPageSettingsForm({
 
               <input
                 ref={iconFileInputRef}
-                id="siteIconFile"
+                id={iconA11y.id}
                 type="file"
                 accept={SITE_ICON_TYPES.join(",")}
                 className="sr-only"
                 aria-label={t("siteIconLabel")}
+                aria-describedby={iconA11y["aria-describedby"]}
                 disabled={iconUploading}
                 onChange={handleIconInputChange}
               />
 
               {iconError && (
-                <p className="text-sm text-destructive" role="alert">
+                <p id={iconA11y.errorId} className="text-sm text-destructive" role="alert">
                   {iconError}
                 </p>
               )}
@@ -851,20 +901,23 @@ export function PublicPageSettingsForm({
               <p className="text-sm text-muted-foreground">{t("inquirySectionHint")}</p>
             </div>
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-              <div className="flex flex-col gap-1.5 xl:max-w-xl">
-                <Label htmlFor="inquiryRecipientEmail">{t("inquiryRecipientEmail")}</Label>
-                <Input
-                  id="inquiryRecipientEmail"
-                  type="email"
-                  placeholder={t("inquiryRecipientEmailPlaceholder")}
-                  {...register("inquiryRecipientEmail")}
-                />
-                {errors.inquiryRecipientEmail && (
-                  <p className="text-sm text-destructive">
-                    {errors.inquiryRecipientEmail.message}
-                  </p>
+              <FormField
+                id="inquiryRecipientEmail"
+                className="xl:max-w-xl"
+                label={t("inquiryRecipientEmail")}
+                error={inquiryRecipientEmailError}
+              >
+                {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                  <Input
+                    id={id}
+                    type="email"
+                    aria-invalid={ariaInvalid}
+                    aria-describedby={ariaDescribedby}
+                    placeholder={t("inquiryRecipientEmailPlaceholder")}
+                    {...register("inquiryRecipientEmail")}
+                  />
                 )}
-              </div>
+              </FormField>
             </div>
           </section>
         </div>
