@@ -657,6 +657,7 @@
         "passwordLength": "Kata sandi harus terdiri dari 8 hingga 128 karakter.",
         "confirmPasswordRequired": "Konfirmasi kata sandi Anda.",
         "firstNameRequired": "Masukkan nama depan Anda.",
+        "firstNameTooLong": "Nama depan harus 80 karakter atau kurang.",
         "lastNameTooLong": "Nama belakang harus 80 karakter atau kurang.",
         "codeInvalid": "Masukkan kode 6 digit."
       }

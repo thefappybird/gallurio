@@ -319,6 +319,8 @@ export function EditableField({
                   <Input
                     type="time"
                     lang={TIME_INPUT_LANG[timeMode]}
+                    aria-invalid={a11y["aria-invalid"]}
+                    aria-describedby={a11y["aria-describedby"]}
                     className="w-32"
                     value={datetimeParts(draft).time}
                     onChange={(e) =>

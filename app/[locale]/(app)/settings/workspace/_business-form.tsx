@@ -103,14 +103,14 @@ export function WorkspaceBusinessForm({
   const nameError = fieldMessage(errors.name);
   const slugError = fieldMessage(errors.slug);
   const slugInvalid = slugStatus === "taken" || slugStatus === "invalid";
-  const slugA11y = useFieldError(slugError, { id: "slug" });
+  const slugA11y = useFieldError(slugError, { id: "slug", describedBy: "slug-status" });
   const businessTypeError = fieldMessage(errors.businessType);
   const businessTypeOtherError = fieldMessage(errors.businessTypeOther);
   const countryError = fieldMessage(errors.country);
   const currencyError = fieldMessage(errors.currency);
   const timezoneError = fieldMessage(errors.timezone);
   const contactEmailError = fieldMessage(errors.contactEmail);
-  const logoA11y = useFieldError(logoError ?? undefined, { id: "logoFile" });
+  const logoA11y = useFieldError(logoError ?? undefined, { id: "workspace-logoFile" });
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
@@ -214,7 +214,9 @@ export function WorkspaceBusinessForm({
                 {...register("slug")}
               />
             </div>
-            <SlugStatusIndicator status={slugStatus} t={tOnb} />
+            <div id="slug-status">
+              <SlugStatusIndicator status={slugStatus} t={tOnb} />
+            </div>
             {slugError && (
               <p id={slugA11y.errorId} role="alert" className="text-sm text-destructive">
                 {slugError}
@@ -413,7 +415,7 @@ export function WorkspaceBusinessForm({
               </div>
             ) : (
               <label
-                htmlFor="logoFile"
+                htmlFor="workspace-logoFile"
                 className={[
                   "flex min-h-56 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
                   logoDragActive

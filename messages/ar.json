@@ -657,6 +657,7 @@
         "passwordLength": "يجب أن تتراوح كلمة المرور بين 8 و128 حرفًا.",
         "confirmPasswordRequired": "يرجى تأكيد كلمة المرور.",
         "firstNameRequired": "يرجى إدخال اسمك الأول.",
+        "firstNameTooLong": "يجب ألا يتجاوز الاسم الأول 80 حرفًا.",
         "lastNameTooLong": "يجب ألا يتجاوز اسم العائلة 80 حرفًا.",
         "codeInvalid": "يرجى إدخال الرمز المكوّن من 6 أرقام."
       }
