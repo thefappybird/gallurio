@@ -2090,3 +2090,111 @@ describe("BookingWizardModal — inline Save visibility across steps (edit mode)
     });
   });
 });
+
+// ── Client step contact validation ────────────────────────────────────────────
+//
+// The "create new" block shares clientFormSchema (name/email/phone) with the
+// Clients "Add client" form. Malformed contact info must block the client step
+// and surface a message on the offending field, not silently advance.
+describe("BookingWizardModal — client step contact validation", () => {
+  beforeEach(() => {
+    mockFetchWithConflict();
+  });
+
+  it("blocks Next and shows an error on a malformed email in new-client mode", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Test Client" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/emma@example.com/i), {
+      target: { value: "not-an-email" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Still on the client step — Event & Pricing must not appear.
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/invalid email/i)).toBeInTheDocument();
+  });
+
+  it("blocks Next and shows an error on a malformed phone in new-client mode", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Test Client" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/\+63 917/i), {
+      target: { value: "123" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/invalid phone number/i)).toBeInTheDocument();
+  });
+
+  it("still blocks Next on a blank name in new-client mode", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+  });
+
+  it("advances past the client step with a valid new client", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Test Client" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/emma@example.com/i), {
+      target: { value: "test@example.com" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+  });
+
+  it("clears the email error after correcting it to a valid value", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Test Client" },
+    });
+    const emailInput = screen.getByPlaceholderText(/emma@example.com/i);
+    fireEvent.change(emailInput, { target: { value: "not-an-email" } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+    expect(screen.getByText(/invalid email/i)).toBeInTheDocument();
+
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/invalid email/i)).not.toBeInTheDocument();
+    });
+    expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+  });
+});
