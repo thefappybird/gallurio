@@ -438,6 +438,32 @@ describe("signUpAction", () => {
     });
   });
 
+  it("returns fieldErrors.firstName with the too-long key for a 90-character first name, not the required key", async () => {
+    const result = await signUpAction(null, fd({
+      firstName: "a".repeat(90),
+      email: "new@example.com",
+      password: "Password1!",
+      confirmPassword: "Password1!",
+      "cf-turnstile-response": "valid-token",
+    }));
+    expect(result).toMatchObject({
+      fieldErrors: { firstName: "errors.fields.firstNameTooLong" },
+    });
+  });
+
+  it("returns fieldErrors.firstName with the required key for a blank first name", async () => {
+    const result = await signUpAction(null, fd({
+      firstName: "",
+      email: "new@example.com",
+      password: "Password1!",
+      confirmPassword: "Password1!",
+      "cf-turnstile-response": "valid-token",
+    }));
+    expect(result).toMatchObject({
+      fieldErrors: { firstName: "errors.fields.firstNameRequired" },
+    });
+  });
+
   it("rejects when passwords do not match", async () => {
     const result = await signUpAction(null, fd({
       firstName: "Test",
@@ -451,6 +477,17 @@ describe("signUpAction", () => {
       fieldErrors: { confirmPassword: "Passwords do not match." },
     });
     expect(mockWorkos.userManagement.createUser).not.toHaveBeenCalled();
+  });
+
+  it("never emits fieldErrors.turnstileToken when only the bot-check token is missing", async () => {
+    const result = await signUpAction(null, fd({
+      firstName: "Test",
+      email: "new@example.com",
+      password: "Password1!",
+      confirmPassword: "Password1!",
+      "cf-turnstile-response": "",
+    }));
+    expect(result).not.toHaveProperty("fieldErrors");
   });
 
   it("calls createUser and authenticateWithPassword on valid signup", async () => {

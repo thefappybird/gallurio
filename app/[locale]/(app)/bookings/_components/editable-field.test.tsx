@@ -67,4 +67,40 @@ describe("EditableField validation a11y", () => {
     expect(trigger).toHaveAttribute("aria-invalid", "true");
     expect(trigger.getAttribute("aria-describedby")).toBe(error.id);
   });
+
+  it("marks both the datetime date AND time inputs invalid and links them to the error message when validate fails", () => {
+    // Same drive-error-via-text-branch-then-rerender technique as the select
+    // test above: canCommit requires !validationError, so a real user can
+    // never Enter-commit through an invalid datetime value directly.
+    const { rerender } = render(
+      <EditableField
+        label="Session start"
+        value="2026-01-01T00:00:00.000Z"
+        type="text"
+        validate={(v) => (v === "bad" ? "Not allowed" : null)}
+        onCommit={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit Session start" }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "bad" } });
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+    expect(screen.getByRole("alert")).toHaveTextContent("Not allowed");
+
+    rerender(
+      <EditableField
+        label="Session start"
+        value="2026-01-01T00:00:00.000Z"
+        type="datetime"
+        validate={(v) => (v === "bad" ? "Not allowed" : null)}
+        onCommit={vi.fn()}
+      />
+    );
+
+    const error = screen.getByRole("alert");
+    expect(error).toHaveTextContent("Not allowed");
+
+    const timeInput = document.querySelector('input[type="time"]') as HTMLInputElement;
+    expect(timeInput).toHaveAttribute("aria-invalid", "true");
+    expect(timeInput.getAttribute("aria-describedby")).toBe(error.id);
+  });
 });

@@ -331,6 +331,19 @@ describe("PublicPageSettingsForm — header logo section", () => {
     expect(screen.getByText("logoLabel")).toBeInTheDocument();
   });
 
+  it("does not use the bare 'logoFile' id (collides with the workspace panel mounted alongside it)", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+    expect(document.getElementById("logoFile")).not.toBeInTheDocument();
+    expect(document.getElementById("public-page-logoFile")).toBeInTheDocument();
+  });
+
   it("shows logo preview when logoUrl is set in defaults", () => {
     render(
       <PublicPageSettingsForm
@@ -362,7 +375,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -411,7 +424,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const clickSpy = vi.spyOn(fileInput, "click");
 
     const replaceBtn = screen.getByRole("button", { name: "logoReplace" });
@@ -436,7 +449,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -463,7 +476,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -491,7 +504,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -521,7 +534,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [file] } });

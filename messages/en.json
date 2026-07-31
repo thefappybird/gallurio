@@ -657,6 +657,7 @@
         "passwordLength": "Password must be between 8 and 128 characters.",
         "confirmPasswordRequired": "Confirm your password.",
         "firstNameRequired": "Enter your first name.",
+        "firstNameTooLong": "First name must be 80 characters or fewer.",
         "lastNameTooLong": "Last name must be 80 characters or fewer.",
         "codeInvalid": "Enter the 6-digit code."
       }

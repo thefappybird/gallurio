@@ -151,6 +151,9 @@ export function BookingWizardModal({
    *  Next without passing validation. Drives the shake animation. */
   const [shakeKey, setShakeKey] = useState(0);
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
+  /** New-client schema issue with no dedicated field slot (source/tags/notes),
+   *  surfaced as a generic message so it's never a silent dead end. */
+  const [clientFormError, setClientFormError] = useState<string | undefined>(undefined);
   /** Raw shifts keyed by YYYY-MM-DD date string. Treated as a cache — entries
    *  are added on demand and never evicted (harmless small footprint). */
   const [rawShiftsByDate, setRawShiftsByDate] = useState<Record<string, ShiftHit[]>>({});
@@ -463,16 +466,28 @@ export function BookingWizardModal({
         if (!client.name.trim()) return false;
         const parsed = bookingClientSchema.safeParse(client);
         if (!parsed.success) {
-          const emailIssue = parsed.error.issues.find((i) => i.path[0] === "email");
-          if (emailIssue) {
-            setError("client.email", { type: "manual", message: emailIssue.message });
+          // Every rendered new-client field (name/email/phone) gets its issue
+          // routed to its own error slot. Any issue on a field with no
+          // rendered slot (source/tags/notes) still can't be a silent dead
+          // end — it's surfaced via the step's generic message instead.
+          const RENDERED_FIELD_PATHS = {
+            name: "client.name",
+            email: "client.email",
+            phone: "client.phone",
+          } as const;
+          let unmappedMessage: string | undefined;
+          for (const issue of parsed.error.issues) {
+            const key = issue.path[0];
+            if (key === "name" || key === "email" || key === "phone") {
+              setError(RENDERED_FIELD_PATHS[key], { type: "manual", message: issue.message });
+            } else if (!unmappedMessage) {
+              unmappedMessage = issue.message;
+            }
           }
-          const phoneIssue = parsed.error.issues.find((i) => i.path[0] === "phone");
-          if (phoneIssue) {
-            setError("client.phone", { type: "manual", message: phoneIssue.message });
-          }
+          setClientFormError(unmappedMessage);
           return false;
         }
+        setClientFormError(undefined);
       }
     }
     if (step.id === "eventPricing") {
@@ -849,6 +864,7 @@ export function BookingWizardModal({
                     readOnly={isReadOnlyClient}
                     readOnlyClientName={editClientName}
                     clients={clients}
+                    newClientFormError={clientFormError}
                   />
                 ) : null}
                 {current.id === "eventPricing" ? (

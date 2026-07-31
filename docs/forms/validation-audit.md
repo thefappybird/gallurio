@@ -71,8 +71,29 @@ values and hint ids are **joined**, never clobbered — error id first.
    `_business-form.tsx`, `public-page/_form.tsx`). For their `type="email"`
    inputs the browser's native constraint validation swallowed the submit event
    before react-hook-form ran, so the schema's message never appeared and the
-   user saw the browser's own bubble instead. Every other RHF surface here
-   already set it. Each fix is covered by a test that fails without it.
+   user saw the browser's own bubble instead. Each fix is covered by a test that
+   fails without it.
+
+   The two onboarding steps also lack `noValidate`, but harmlessly — neither
+   renders a native constraint attribute (`type="email"`, `required`,
+   `pattern`), so there is nothing for the browser to intercept. They were left
+   alone rather than changed speculatively.
+
+### Caught in code review
+
+The wizard fix above initially only set an error for `email` and `phone`, so any
+*other* schema failure returned `false` with no message — the step chip shook and
+the user was stuck with nothing to fix. That was **worse than before this branch**,
+where the step advanced and the server reported the reason. Reachable via an
+over-long name or note, since neither input was bounded.
+
+Fixed by setting an error for every issue whose path maps to a rendered field,
+bounding the name and notes inputs to the schema's limits, and surfacing any
+remaining unmapped issue as a form-level message so nothing can be swallowed.
+
+Also from review: the auth field mapping was one message per *field* rather than
+per *issue code*, so an over-long first name rendered "Enter your first name." on
+a field the user had clearly filled in.
 
 ### Surfaces migrated
 
@@ -131,7 +152,7 @@ top-level copy is suppressed so the same text is not shown twice.
 
 ## Verification
 
-- `tsc --noEmit` clean; full unit sweep **5221 passed / 0 failed**.
+- `tsc --noEmit` clean; full unit sweep **5247 passed / 0 failed** (503 files).
 - Playwright (`e2e/validation-errors.spec.ts`), at 375/768/1280 where the surface
   warrants it: the wizard's new-client email, the client modal's email (the
   `noValidate` regression guard), that `aria-invalid` actually paints an outline

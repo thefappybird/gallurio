@@ -182,6 +182,26 @@ describe("WorkspaceBusinessForm — timezone a11y wiring", () => {
   });
 });
 
+describe("WorkspaceBusinessForm — slug status region is reachable via aria-describedby", () => {
+  it("includes the slug status indicator's id in the slug input's aria-describedby, matching the onboarding workspace-form pattern", () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    const slugInput = screen.getByLabelText(/workspaceUrl/);
+    const describedBy = (slugInput.getAttribute("aria-describedby") ?? "").split(" ");
+    expect(describedBy).toContain("slug-status");
+    expect(document.getElementById("slug-status")).toBeInTheDocument();
+  });
+});
+
+describe("WorkspaceBusinessForm — logo input id is panel-scoped", () => {
+  it("does not use the bare 'logoFile' id (collides with the public-page panel mounted alongside it)", () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    expect(document.getElementById("logoFile")).not.toBeInTheDocument();
+    expect(document.getElementById("workspace-logoFile")).toBeInTheDocument();
+  });
+});
+
 describe("WorkspaceBusinessForm — valid state", () => {
   it("renders no alert and no aria-invalid on the name field when the form is untouched", () => {
     render(<WorkspaceBusinessForm defaults={baseDefaults} />);

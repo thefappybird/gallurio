@@ -208,20 +208,35 @@ export type ActionResult =
 type Translator = Awaited<ReturnType<typeof getTranslations>>;
 
 /**
- * Maps Zod field-level failures to localized messages via `keyMap`. Fields
- * not present in `keyMap` (turnstileToken, token, returnTo — not
- * user-visible inputs) are silently dropped, never surfaced.
+ * A field's keyMap entry is either one message key (single failure mode) or
+ * `{ tooBig, default }` when the field's two failure modes need different
+ * copy (e.g. "required" vs "too long").
+ */
+type FieldMessageKey = string | { tooBig: string; default: string };
+
+/**
+ * Maps Zod field-level failures to localized messages via `keyMap`, branching
+ * on the issue code where a field has more than one message. Fields not
+ * present in `keyMap` (turnstileToken, token, returnTo — not user-visible
+ * inputs) are silently dropped, never surfaced — the loop walks `keyMap`,
+ * never the raw issues, so an unmapped field can never leak through.
  */
 function localizeFieldErrors(
-  rawFieldErrors: Record<string, string[] | undefined>,
-  keyMap: Record<string, string>,
+  error: z.ZodError,
+  keyMap: Record<string, FieldMessageKey>,
   t: Translator,
 ): Record<string, string> | undefined {
   const mapped: Record<string, string> = {};
-  for (const [field, messageKey] of Object.entries(keyMap)) {
-    if (rawFieldErrors[field]?.length) {
-      mapped[field] = t(messageKey);
-    }
+  for (const [field, entry] of Object.entries(keyMap)) {
+    const issue = error.issues.find((i) => i.path[0] === field);
+    if (!issue) continue;
+    const messageKey =
+      typeof entry === "string"
+        ? entry
+        : issue.code === "too_big"
+          ? entry.tooBig
+          : entry.default;
+    mapped[field] = t(messageKey);
   }
   return Object.keys(mapped).length > 0 ? mapped : undefined;
 }
@@ -254,7 +269,7 @@ export async function signInAction(
 
   if (!parsed.success) {
     const fieldErrors = localizeFieldErrors(
-      parsed.error.flatten().fieldErrors,
+      parsed.error,
       {
         email: "errors.fields.emailInvalid",
         password: "errors.fields.passwordRequired",
@@ -398,9 +413,12 @@ export async function signUpAction(
 
   if (!parsed.success) {
     const fieldErrors = localizeFieldErrors(
-      parsed.error.flatten().fieldErrors,
+      parsed.error,
       {
-        firstName: "errors.fields.firstNameRequired",
+        firstName: {
+          tooBig: "errors.fields.firstNameTooLong",
+          default: "errors.fields.firstNameRequired",
+        },
         lastName: "errors.fields.lastNameTooLong",
         email: "errors.fields.emailInvalid",
         password: "errors.fields.passwordLength",
@@ -515,7 +533,7 @@ export async function forgotPasswordAction(
 
   if (!parsed.success) {
     const fieldErrors = localizeFieldErrors(
-      parsed.error.flatten().fieldErrors,
+      parsed.error,
       { email: "errors.fields.emailInvalid" },
       t,
     );
@@ -579,7 +597,7 @@ export async function resetPasswordAction(
 
   if (!parsed.success) {
     const fieldErrors = localizeFieldErrors(
-      parsed.error.flatten().fieldErrors,
+      parsed.error,
       {
         password: "errors.fields.passwordLength",
         confirmPassword: "errors.fields.confirmPasswordRequired",
@@ -635,7 +653,7 @@ export async function verifyEmailAction(
 
   if (!parsed.success) {
     const fieldErrors = localizeFieldErrors(
-      parsed.error.flatten().fieldErrors,
+      parsed.error,
       { code: "errors.fields.codeInvalid" },
       t,
     );
@@ -749,7 +767,7 @@ export async function mfaChallengeAction(
 
   if (!parsed.success) {
     const fieldErrors = localizeFieldErrors(
-      parsed.error.flatten().fieldErrors,
+      parsed.error,
       { code: "errors.fields.codeInvalid" },
       t,
     );

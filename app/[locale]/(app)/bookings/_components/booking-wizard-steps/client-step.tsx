@@ -41,6 +41,9 @@ type Props = {
   clients?: ClientHit[];
   /** True only after the user has tried to advance from this step. */
   showExistingError?: boolean;
+  /** New-client schema issue with no dedicated field slot (e.g. source/tags/
+   *  notes) — rendered as a generic message so it's never a silent dead end. */
+  newClientFormError?: string;
 };
 
 export function ClientStep({
@@ -50,6 +53,7 @@ export function ClientStep({
   readOnlyClientName,
   clients = [],
   showExistingError = false,
+  newClientFormError,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.client");
 
@@ -76,6 +80,7 @@ export function ClientStep({
           errors={errors}
           clients={clients}
           showExistingError={showExistingError}
+          newClientFormError={newClientFormError}
         />
       )}
     />
@@ -88,12 +93,14 @@ function ClientPicker({
   errors,
   clients,
   showExistingError,
+  newClientFormError,
 }: {
   value: WizardValues["client"];
   onChange: (next: WizardValues["client"]) => void;
   errors: FieldErrors<WizardValues>;
   clients: ClientHit[];
   showExistingError: boolean;
+  newClientFormError?: string;
 }) {
   const t = useTranslations("app.bookings.wizard.client");
   const tClients = useTranslations("app.clients");
@@ -254,6 +261,11 @@ function ClientPicker({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+          {newClientFormError ? (
+            <p role="alert" className="text-xs text-destructive">
+              {newClientFormError}
+            </p>
+          ) : null}
           <FormField id="client-new-name" label={t("name")} error={nameError}>
             {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
               <Input
@@ -263,6 +275,7 @@ function ClientPicker({
                 value={newClient?.name ?? ""}
                 onChange={(e) => setNewClient({ name: e.target.value })}
                 placeholder={t("namePlaceholder")}
+                maxLength={120}
               />
             )}
           </FormField>
@@ -313,7 +326,7 @@ function ClientPicker({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="client-new-notes">{tClients("form.notes")}</Label>
-            <textarea id="client-new-notes" rows={3} value={newClient?.notes ?? ""} onChange={(e) => setNewClient({ notes: e.target.value })} placeholder={tClients("form.notesPlaceholder")} className="w-full resize-none border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+            <textarea id="client-new-notes" rows={3} maxLength={2000} value={newClient?.notes ?? ""} onChange={(e) => setNewClient({ notes: e.target.value })} placeholder={tClients("form.notesPlaceholder")} className="w-full resize-none border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
           </div>
         </div>
       )}

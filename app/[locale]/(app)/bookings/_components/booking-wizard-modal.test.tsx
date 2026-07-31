@@ -130,6 +130,67 @@ async function advanceToSessionsStep() {
   });
 }
 
+// ── Finding 1 regression: new-client schema issues beyond email/phone must
+// never be a silent dead end. A name over the 120-char schema cap previously
+// fell through validateStep's client branch with no setError call at all —
+// the step blocked but nothing was ever shown to the user.
+describe("BookingWizardModal — client step: name-length validation is not a silent dead end", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+  });
+
+  it("blocks the client step and renders a visible message when the new-client name exceeds 120 characters", async () => {
+    renderWizard();
+
+    const createNewTab = screen.getByRole("button", { name: /create new/i });
+    fireEvent.click(createNewTab);
+
+    const longName = "A".repeat(130);
+    const nameInput = screen.getByPlaceholderText(/emma carter/i);
+    fireEvent.change(nameInput, { target: { value: longName } });
+
+    const nextBtn = screen.getByRole("button", { name: /next/i });
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    // Still on the client step — Event & Pricing's title field must not appear.
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+
+    // A visible, reachable error message must be rendered — not a silent dead end.
+    const alert = await screen.findByRole("alert");
+    expect(alert).toBeInTheDocument();
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("still advances past the client step with a valid new-client name", async () => {
+    renderWizard();
+
+    const createNewTab = screen.getByRole("button", { name: /create new/i });
+    fireEvent.click(createNewTab);
+
+    const nameInput = screen.getByPlaceholderText(/emma carter/i);
+    fireEvent.change(nameInput, { target: { value: "Test Client" } });
+
+    const nextBtn = screen.getByRole("button", { name: /next/i });
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+  });
+});
+
 describe("BookingWizardModal — conflict detection", () => {
   beforeEach(() => {
     mockFetchWithConflict();

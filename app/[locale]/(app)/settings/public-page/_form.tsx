@@ -138,7 +138,7 @@ export function PublicPageSettingsForm({
   const galleryDescriptionError = fieldMessage(errors.seo?.galleryDescription);
   const inquiryRecipientEmailError = fieldMessage(errors.inquiryRecipientEmail);
 
-  const logoA11y = useFieldError(logoError ?? undefined, { id: "logoFile" });
+  const logoA11y = useFieldError(logoError ?? undefined, { id: "public-page-logoFile" });
   const ogA11y = useFieldError(ogError ?? undefined, { id: "ogImageFile" });
   const iconA11y = useFieldError(iconError ?? undefined, { id: "siteIconFile" });
 
@@ -489,7 +489,7 @@ export function PublicPageSettingsForm({
             </div>
           ) : (
             <label
-              htmlFor="logoFile"
+              htmlFor="public-page-logoFile"
               className={[
                 "flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
                 logoUploading

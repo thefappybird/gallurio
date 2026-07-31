@@ -657,6 +657,7 @@
         "passwordLength": "Ang password ay dapat may 8 hanggang 128 na character.",
         "confirmPasswordRequired": "Kumpirmahin ang iyong password.",
         "firstNameRequired": "Ilagay ang iyong pangalan.",
+        "firstNameTooLong": "Ang pangalan ay dapat 80 character o mas kaunti.",
         "lastNameTooLong": "Ang apelyido ay dapat 80 character o mas kaunti.",
         "codeInvalid": "Ilagay ang 6-digit na code."
       }
