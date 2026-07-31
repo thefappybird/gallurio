@@ -405,6 +405,29 @@ describe("bookingImportRowSchema", () => {
     expect(ok.success).toBe(true);
   });
 
+  it("carries the round-trip identity and location columns through", () => {
+    // The exporter emits these; without them on the schema they are stripped
+    // and an exported file can never come back as an update.
+    const ok = bookingImportRowSchema.safeParse({
+      title: "Wedding",
+      clientName: "Emma",
+      startAt: "2026-08-15T10:00:00Z",
+      bookingId: "65b7f2c1a4d3e2b1c0f9a8d7",
+      clientId: "65b7f2c1a4d3e2b1c0f9a8d8",
+      sessionIndex: "1",
+      clientPhone: "+639171234567",
+      locationLat: "14.5995",
+      locationLng: "120.9842",
+    });
+    expect(ok.success).toBe(true);
+    if (!ok.success) return;
+    expect(ok.data.bookingId).toBe("65b7f2c1a4d3e2b1c0f9a8d7");
+    expect(ok.data.clientId).toBe("65b7f2c1a4d3e2b1c0f9a8d8");
+    expect(ok.data.clientPhone).toBe("+639171234567");
+    expect(ok.data.locationLat).toBe(14.5995);
+    expect(ok.data.locationLng).toBe(120.9842);
+  });
+
   it("rejects amountDeposit > amountTotal", () => {
     const bad = bookingImportRowSchema.safeParse({
       title: "Wedding",

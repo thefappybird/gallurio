@@ -213,6 +213,21 @@ export const bookingImportRowSchema = z
     ),
     currency: z.enum(SUPPORTED_CURRENCIES).optional(),
     notes: z.string().max(2000).trim().optional(),
+    // Round-trip identity columns emitted by the exporter. A bookingId turns
+    // the row into an update, but it is only a hint — ownership is re-checked
+    // against workspaceId server-side before anything is written.
+    bookingId: z.string().trim().optional().transform((v) => v || undefined),
+    clientId: z.string().trim().optional().transform((v) => v || undefined),
+    sessionIndex: z.string().trim().optional(),
+    clientPhone: z.string().trim().max(30).optional().transform((v) => v || undefined),
+    locationLat: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : Number(v)),
+      z.number().min(-90).max(90).optional()
+    ),
+    locationLng: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : Number(v)),
+      z.number().min(-180).max(180).optional()
+    ),
   })
   .refine(
     (v) => v.amountDeposit == null || v.amountDeposit === 0 || (v.amountTotal ?? 0) > 0,
