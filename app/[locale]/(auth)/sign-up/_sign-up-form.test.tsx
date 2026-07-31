@@ -86,3 +86,49 @@ describe("SignUpForm — bot check reset", () => {
     });
   });
 });
+
+describe("SignUpForm — field-level errors", () => {
+  it("shows a short-password error on the password field, not only the form header", async () => {
+    const { signUpAction } = await import("../_actions");
+    vi.mocked(signUpAction).mockResolvedValue({
+      error: "Please check your input and try again.",
+      fieldErrors: { password: "Password must be between 8 and 128 characters." },
+    });
+
+    renderWithProviders(<SignUpForm />);
+
+    const submitButton = screen.getByRole("button", { name: "Create account" });
+    fireEvent.submit(submitButton.closest("form")!);
+
+    const passwordInput = await screen.findByLabelText("Password");
+    await waitFor(() => {
+      expect(passwordInput).toHaveAttribute("aria-invalid", "true");
+    });
+
+    const describedBy = passwordInput.getAttribute("aria-describedby")!;
+    const messageId = describedBy.split(" ").find((id) => id.endsWith("-error"));
+    const message = document.getElementById(messageId!);
+    expect(message).toHaveAttribute("role", "alert");
+    expect(message).toHaveTextContent("Password must be between 8 and 128 characters.");
+  });
+
+  it("shows a password mismatch on confirmPassword and does not duplicate the sentence up top", async () => {
+    const { signUpAction } = await import("../_actions");
+    vi.mocked(signUpAction).mockResolvedValue({
+      error: "Passwords do not match.",
+      fieldErrors: { confirmPassword: "Passwords do not match." },
+    });
+
+    renderWithProviders(<SignUpForm />);
+
+    const submitButton = screen.getByRole("button", { name: "Create account" });
+    fireEvent.submit(submitButton.closest("form")!);
+
+    const confirmInput = await screen.findByLabelText("Confirm password");
+    await waitFor(() => {
+      expect(confirmInput).toHaveAttribute("aria-invalid", "true");
+    });
+
+    expect(screen.getAllByText("Passwords do not match.")).toHaveLength(1);
+  });
+});
