@@ -248,6 +248,7 @@ the same. (Sourced from the 2026-06-17 audit; verify current state before acting
 | C-8 | Import-results display | `bookings/_components/import-results-dialog.tsx` (inside `csv-import-dialog.tsx` flow) | Expandable error-row results table is generic though importer is domain-specific | `components/app/import-results-dialog.tsx` | med |
 | C-9 | Activity timeline | `bookings/_components/activity-timeline.tsx` (+ `activity-types.ts`), wrapped by `booking-history-dialog.tsx` | Timeline (action styling, date grouping) is generic; dialog is just a paginated wrapper | `components/app/activity-timeline.tsx` | med-low |
 | C-10 | Team multi-select | `bookings/_components/team-picker.tsx` (wraps `team-legend.tsx` in popover) | Shared multi-select logic; legend could stand alone | `components/app/team-multi-select.tsx` | med-low |
+| C-12 | Promo code panel | `app/[locale]/(onboarding)/onboarding/plan/plan-form.tsx` (`PromoCodePanel`), `app/[locale]/subscribe/_panel.tsx` (`PromoCodePanel`) | Two independent local implementations of the same collapsible promo-code disclosure + redeem flow (toggle button, input, submit/close, inline `role="alert"` error) | `components/app/promo-code-panel.tsx` | med-high |
 
 ### Logic / helpers
 

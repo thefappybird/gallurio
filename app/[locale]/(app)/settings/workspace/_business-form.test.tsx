@@ -28,6 +28,32 @@ vi.mock("../_actions", () => ({
     updateWorkspaceBusinessAction(...args),
 }));
 
+vi.mock("@/components/ui/timezone-combobox", () => ({
+  TimezoneCombobox: ({
+    id,
+    value,
+    onChange,
+    invalid,
+    ariaDescribedby,
+  }: {
+    id?: string;
+    value: string;
+    onChange: (v: string) => void;
+    invalid?: boolean;
+    ariaDescribedby?: string;
+  }) => (
+    <button
+      type="button"
+      id={id}
+      aria-invalid={invalid || undefined}
+      aria-describedby={ariaDescribedby}
+      onClick={() => onChange("")}
+    >
+      {value}
+    </button>
+  ),
+}));
+
 vi.mock("@/components/ui/location-picker", () => ({
   LocationPicker: ({
     value,
@@ -139,6 +165,20 @@ describe("WorkspaceBusinessForm — field error a11y wiring", () => {
     const emailError = document.getElementById(emailDescribedBy!);
     expect(emailError).toHaveAttribute("role", "alert");
     expect(emailError).toHaveTextContent(/enter a valid email/i);
+  });
+});
+
+describe("WorkspaceBusinessForm — timezone a11y wiring", () => {
+  it("marks the TimezoneCombobox trigger invalid and links it to #timezone-error when timezone is empty", async () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    const trigger = screen.getByLabelText("timezone");
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-invalid", "true"));
+    expect(trigger.getAttribute("aria-describedby")).toBe("timezone-error");
+    expect(document.getElementById("timezone-error")).toHaveAttribute("role", "alert");
   });
 });
 
