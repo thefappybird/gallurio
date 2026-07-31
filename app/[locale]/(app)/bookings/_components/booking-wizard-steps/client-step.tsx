@@ -10,8 +10,20 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/app/empty-state";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 import { cn } from "@/lib/utils";
 import type { WizardValues } from "./types";
+
+// `errors.client` is a discriminated-union error object (existing vs. new
+// client) — narrow it to the "new" block's contact fields once here instead
+// of repeating an inline cast at every field.
+type NewClientErrors = Partial<
+  Record<"name" | "email" | "phone", { message?: unknown } | undefined>
+>;
+function newClientErrors(errors: FieldErrors<WizardValues>): NewClientErrors {
+  return (errors.client as NewClientErrors | undefined) ?? {};
+}
 
 export type ClientHit = {
   id: string;
@@ -124,6 +136,11 @@ function ClientPicker({
   const switchToNew = () =>
     onChange({ mode: "new", name: "", email: "", phone: "", source: "manual", tags: [], notes: "" });
 
+  const clientErrors = newClientErrors(errors);
+  const nameError = fieldMessage(clientErrors.name);
+  const emailError = fieldMessage(clientErrors.email);
+  const phoneError = fieldMessage(clientErrors.phone);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="inline-flex w-fit border border-border bg-background text-xs">
@@ -226,35 +243,44 @@ function ClientPicker({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="client-new-name">{t("name")}</Label>
-            <Input
-              id="client-new-name"
-              value={newClient?.name ?? ""}
-              onChange={(e) => setNewClient({ name: e.target.value })}
-              placeholder={t("namePlaceholder")}
-            />
-            {errors.client && "name" in (errors.client as object) ? (
-              <p className="text-xs text-destructive">
-                {(errors.client as { name?: { message?: string } }).name?.message}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="client-new-email">{t("email")}</Label>
-            <Input
-              id="client-new-email"
-              type="email"
-              value={newClient?.email ?? ""}
-              onChange={(e) => setNewClient({ email: e.target.value })}
-              placeholder={t("emailPlaceholder")}
-            />
-          </div>
+          <FormField id="client-new-name" label={t("name")} error={nameError}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                value={newClient?.name ?? ""}
+                onChange={(e) => setNewClient({ name: e.target.value })}
+                placeholder={t("namePlaceholder")}
+              />
+            )}
+          </FormField>
+          <FormField id="client-new-email" label={t("email")} error={emailError}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                type="email"
+                value={newClient?.email ?? ""}
+                onChange={(e) => setNewClient({ email: e.target.value })}
+                placeholder={t("emailPlaceholder")}
+              />
+            )}
+          </FormField>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="client-new-phone">{t("phone")}</Label>
-              <PhoneInput id="client-new-phone" value={newClient?.phone ?? ""} onChange={(phone) => setNewClient({ phone: phone ?? "" })} placeholder={t("phonePlaceholder")} />
-            </div>
+            <FormField id="client-new-phone" label={t("phone")} error={phoneError}>
+              {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                <PhoneInput
+                  id={id}
+                  aria-invalid={ariaInvalid}
+                  aria-describedby={ariaDescribedby}
+                  value={newClient?.phone ?? ""}
+                  onChange={(phone) => setNewClient({ phone: phone ?? "" })}
+                  placeholder={t("phonePlaceholder")}
+                />
+              )}
+            </FormField>
             <div className="flex flex-col gap-1.5">
               <Label>{tClients("form.source")}</Label>
               <Select value={newClient?.source ?? "manual"} onValueChange={(source) => source && setNewClient({ source: source as "form" | "manual" | "referral" | "import" })}>
