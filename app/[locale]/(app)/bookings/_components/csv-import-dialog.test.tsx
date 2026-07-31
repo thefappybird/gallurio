@@ -168,6 +168,64 @@ describe("CsvImportDialog", () => {
     }
   });
 
+  it("never sends part of a multi-session group", async () => {
+    // The route rebuilds `sessions` from the rows it receives and $sets the
+    // whole array. Sending 2 of a booking's 3 sessions deletes the third from
+    // an existing booking, silently, and reports success.
+    const partial = [
+      "clientName,clientEmail,startAt,endAt,title,eventType,status,amountTotal,amountDeposit,currency,locationAddress,notes,booking_id,session_index",
+      "Ana,a@example.com,2026-06-15T09:00,2026-06-15T12:00,Trip,wedding,booked,1,0,PHP,X,,65b7f2c1a4d3e2b1c0f9a8d7,0",
+      "Ana,a@example.com,NOT-A-DATE,,Trip,wedding,booked,1,0,PHP,X,,65b7f2c1a4d3e2b1c0f9a8d7,1",
+    ].join("\n");
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ created: 0, updated: 0, skipped: 0, errors: [] }),
+    });
+    const restore = mockFileReader(partial);
+    try {
+      renderDialog();
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [new File([partial], "g.csv", { type: "text/csv" })] } });
+      });
+      await waitFor(() => expect(screen.getByText(/2 row\(s\) found/i)).toBeInTheDocument());
+
+      // The whole group is unimportable, so there is nothing to import.
+      expect(screen.queryByRole("button", { name: /import \d+ booking/i })).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("surfaces a rate-limit response instead of crashing the dialog", async () => {
+    // The route rate-limits at 10 imports / 5 min. That body is {error} with no
+    // `errors` array, so reading data.errors.length blows up the render.
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: "rate_limited" }),
+    });
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [new File([VALID_CSV], "rows.csv", { type: "text/csv" })] } });
+      });
+      await waitFor(() => expect(screen.getByText(/1 row\(s\) found/i)).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      });
+
+      // The dialog must still be on screen — a thrown render is the bug.
+      expect(screen.getByText(/1 row\(s\) found/i)).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
   it("previews the formula-guarded title the way it will be stored", async () => {
     // The exporter writes "'=SUM(1)"; the route strips that apostrophe on
     // commit. Without the same strip here the user previews one value and

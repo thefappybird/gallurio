@@ -19,6 +19,8 @@ export const runtime = "nodejs";
 
 /** Hard byte cap applied BEFORE parsing — exceljs decompresses in memory. */
 const MAX_UPLOAD_BYTES = 2_000_000;
+/** Rows are what the user sees, so the cap is on rows, not bookings. */
+const MAX_ROWS = 500;
 
 export type ImportErrorEntry = {
   index: number;
@@ -68,8 +70,13 @@ export async function POST(req: Request) {
   const contentType = req.headers.get("content-type") ?? "";
 
   if (contentType.includes("multipart/form-data")) {
-    const form = await req.formData();
-    const file = form.get("file") as Blob;
+    const form = await req.formData().catch(() => null);
+    const file = form?.get("file");
+    // A missing part, or a text field where a file was expected, is a bad
+    // request — not an unhandled read of `.size` on null.
+    if (!(file instanceof Blob)) {
+      return NextResponse.json({ error: "invalid_format" }, { status: 400 });
+    }
     // Bites BEFORE the parse: exceljs decompresses in memory, so the byte cap
     // is the real defense against a zip bomb, not a post-parse row count.
     if (file.size > MAX_UPLOAD_BYTES) {
@@ -86,6 +93,11 @@ export async function POST(req: Request) {
       // A crafted or truncated upload is the caller's problem, not a 500.
       return NextResponse.json({ error: "unreadable_file" }, { status: 400 });
     }
+    // Same cap the commit enforces: a preview that cannot be imported is not
+    // worth serializing back to the browser and validating row by row.
+    if (parsed.rows.length > MAX_ROWS) {
+      return NextResponse.json({ error: "too_many_rows" }, { status: 400 });
+    }
     return NextResponse.json({ preview: true, headers: parsed.headers, rows: parsed.rows });
   }
 
@@ -97,7 +109,7 @@ export async function POST(req: Request) {
   if (!Array.isArray(json.rows) || json.rows.length === 0) {
     return NextResponse.json({ error: "rows must be a non-empty array" }, { status: 400 });
   }
-  if (json.rows.length > 500) {
+  if (json.rows.length > MAX_ROWS) {
     return NextResponse.json({ error: "Maximum 500 rows per import" }, { status: 400 });
   }
 
@@ -360,6 +372,7 @@ export async function POST(req: Request) {
                     workspaceId: ctx.workspace._id,
                     name: row.clientName,
                     email: row.clientEmail,
+                    phone: row.clientPhone ?? null,
                     source: "import",
                   },
                 ],
@@ -377,6 +390,7 @@ export async function POST(req: Request) {
               {
                 workspaceId: ctx.workspace._id,
                 name: row.clientName,
+                phone: row.clientPhone ?? null,
                 source: "import",
               },
             ],

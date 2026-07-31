@@ -289,4 +289,16 @@ describe("findClientMatchesAction", () => {
     // Serializable across the Server Action boundary.
     expect(typeof result.matches[0].id).toBe("string");
   });
+
+  it("carries source so linking cannot relabel the client's provenance", async () => {
+    // The add form defaults source to "manual" and updateClientAction $sets the
+    // whole document, so an unprojected source silently rewrites it.
+    mockOrg(workspaceId);
+    await Client.create({ workspaceId, name: "Ana Cruz", source: "referral" });
+
+    const result = await findClientMatchesAction({ name: "Ana Cruz", email: null, phone: null });
+
+    if (!("matches" in result)) throw new Error("expected matches");
+    expect(result.matches[0].source).toBe("referral");
+  });
 });

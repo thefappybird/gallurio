@@ -17,6 +17,7 @@ import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client"
 import { createClientAction, updateClientAction, findClientMatchesAction } from "@/lib/actions/clients";
 import { useActionError } from "@/lib/i18n/actionError";
 import { ClientMatchDialog, type ClientMatchCard, type ClientMatchResolution } from "@/components/app/client-match-dialog";
+import { reconcileClient } from "@/lib/clients/reconcile";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 
 // ClientRow shape needed for pre-fill (edit mode)
@@ -182,13 +183,26 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
       return;
     }
     const card = matchState!.matches.find((m) => m.id === result.clientId)!;
+    // updateClientAction $sets the whole document, so the merge must START from
+    // the stored client. A field the form left blank is not a conflict and so
+    // never appears in `picks` — building from `data` would silently erase it.
+    const reconciled = reconcileClient(
+      { email: card.email, phone: card.phone, notes: card.notes, tags: card.tags },
+      data
+    );
     const merged: ClientFormInput = {
-      ...data,
-      email: result.picks.email === "existing" ? card.email : data.email,
-      phone: result.picks.phone === "existing" ? card.phone : data.phone,
-      notes: result.picks.notes === "existing" ? (card.notes ?? "") : data.notes,
-      tags: [...new Set([...(card.tags ?? []), ...(data.tags ?? [])])],
+      name: card.name,
+      email: card.email,
+      phone: card.phone,
+      notes: card.notes ?? "",
+      source: card.source,
+      tags: reconciled.tags ?? [],
     };
+    // Fill blanks from what was typed, then apply the explicit picks.
+    for (const change of reconciled.additive) merged[change.field] = change.value;
+    for (const conflict of reconciled.conflicts) {
+      if (result.picks[conflict.field] === "typed") merged[conflict.field] = conflict.typedValue;
+    }
     void finishLink(result.clientId, merged);
   }
 

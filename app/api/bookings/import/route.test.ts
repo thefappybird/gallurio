@@ -98,6 +98,27 @@ describe("POST /api/bookings/import — file preview", () => {
     expect(res.status).toBe(200);
   });
 
+  it("answers 400 when the multipart body carries no file part", async () => {
+    // form.get("file") is null, and reading .size off it is a 500.
+    const { POST } = await import("./route");
+    const body = new FormData();
+    body.append("notafile", "hello");
+    const res = await POST(
+      new Request("http://localhost/api/bookings/import", { method: "POST", body })
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("caps the preview at the same row limit the commit enforces", async () => {
+    // Otherwise a 2MB file of minimal rows returns ~40k rows to the browser,
+    // which then validates and renders every one of them.
+    const header = "title,clientName,startAt\n";
+    const row = "T,C,2026-06-15T01:00:00.000Z\n";
+    const csv = header + row.repeat(600);
+    const res = await callPreview(new Blob([csv]), "big.csv");
+    expect(res.status).toBe(400);
+  });
+
   it("rejects an oversized upload before parsing it", async () => {
     // exceljs decompresses in memory, so the byte cap has to bite BEFORE the
     // parse — that is the actual defense against a zip bomb.
@@ -328,6 +349,15 @@ describe("POST /api/bookings/import", () => {
     expect(booking?.title).toBe("=SUM(1) Wedding");
   });
 
+  it("writes clientPhone onto a client it creates", async () => {
+    // The column is exported, aliased, schema-parsed and tested — but the route
+    // never read it, so exporting and re-importing dropped every phone number.
+    await callImport([{ ...VALID_ROW, clientPhone: "+63 917 555 0142" }]);
+
+    const client = await Client.findOne({ workspaceId: WS_ID }).lean();
+    expect(client?.phone).toBe("+63 917 555 0142");
+  });
+
   it("reuses an existing client when email matches", async () => {
     const existing = await Client.create({
       workspaceId: WS_ID,
@@ -530,14 +560,21 @@ describe("POST /api/bookings/import", () => {
     expect(txs).toHaveLength(0);
   });
 
-  // --- Issue 3: round-trip compatibility (export fields stripped before validation) ---
+  // --- Export-only columns ride along without being interpreted ---
+  //
+  // These deliberately post RAW snake_case. The real client never does — the
+  // parser maps booking_id -> bookingId before the row is sent — so an
+  // unmapped key here must be ignored, not treated as an identity column.
+  // The genuine round-trip (camelCase bookingId -> update) is covered by the
+  // idempotence test above.
 
-  it("round-trip: row with booking_id and session_index columns imports successfully", async () => {
-    // Simulates a CSV row produced by the exporter being re-imported.
+  it("ignores export-only columns it does not recognise", async () => {
     const exportRow = {
       ...VALID_ROW,
-      booking_id: new Types.ObjectId().toHexString(),
-      session_index: "0",
+      payments: '[{"amount":100}]',
+      invoiceNumber: "INV-001",
+      teamName: "Main",
+      createdAt: "2026-01-01T00:00:00.000Z",
     };
     const res = await callImport([exportRow]);
     expect(res.status).toBe(200);
@@ -546,17 +583,18 @@ describe("POST /api/bookings/import", () => {
     expect(body.errors).toHaveLength(0);
   });
 
-  it("round-trip: booking_id and session_index do not appear as booking fields", async () => {
+  it("does not persist export-only columns onto the booking document", async () => {
     const exportRow = {
       ...VALID_ROW,
-      booking_id: new Types.ObjectId().toHexString(),
-      session_index: "0",
+      payments: '[{"amount":100}]',
+      invoiceNumber: "INV-001",
     };
     await callImport([exportRow]);
     const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
-    // The Mongoose doc should not carry these export-only artefacts.
-    expect((booking as Record<string, unknown>)?.booking_id).toBeUndefined();
-    expect((booking as Record<string, unknown>)?.session_index).toBeUndefined();
+    // payments is a real Booking field, so it must stay empty rather than
+    // taking the exported JSON string; invoiceNumber is assigned elsewhere.
+    expect(booking?.payments ?? []).toHaveLength(0);
+    expect(booking?.invoiceNumber ?? null).toBeNull();
   });
 
   // --- Issue 4: timezone-aware session validation ---

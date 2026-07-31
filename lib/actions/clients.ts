@@ -65,7 +65,7 @@ export async function findClientMatchesAction(input: {
     // case-insensitive anchored regex wouldn't use {workspaceId, name} anyway.
     const candidates = await Client.find(
       { workspaceId: ctx.workspace._id, isActive: true },
-      "_id name email phone notes tags bookingsCount lastBookingAt"
+      "_id name email phone notes tags source bookingsCount lastBookingAt"
     )
       .limit(5000)
       .lean();
@@ -79,6 +79,7 @@ export async function findClientMatchesAction(input: {
         phone: c.phone ?? null,
         notes: c.notes ?? null,
         tags: c.tags ?? [],
+        source: c.source ?? "manual",
         bookingsCount: c.bookingsCount ?? 0,
         lastBookingAt: c.lastBookingAt ? new Date(c.lastBookingAt).toISOString() : null,
       }));

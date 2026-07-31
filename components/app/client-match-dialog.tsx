@@ -15,6 +15,8 @@ export type ClientMatchCard = {
   phone: string | null;
   notes: string | null;
   tags: string[];
+  /** Carried so linking cannot reset a stored client's provenance to "manual". */
+  source: "form" | "manual" | "referral" | "import";
   bookingsCount: number;
   lastBookingAt: string | null;
 };

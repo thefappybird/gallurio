@@ -367,6 +367,27 @@ describe("approveInquiryBookingAction", () => {
     expect(freshBooking?.status).toBe("draft");
   });
 
+  it("stops gating once the owner has resolved, even if another same-name client still matches", async () => {
+    // Two legitimately distinct clients share a name — a state this branch
+    // explicitly supports. Recomputing the match on every approve means
+    // resolving to one leaves the other matching, and the inquiry can never
+    // be approved at all.
+    const { inquiry } = await seedDraft(workspaceId); // Emma Carter
+    const chosen = await Client.create({ workspaceId, name: "Emma Carter", source: "manual" });
+    await Client.create({ workspaceId, name: "Emma Carter", source: "manual" });
+
+    expect(await approveInquiryBookingAction(String(inquiry._id))).toEqual({
+      error: "needs_client_resolution",
+    });
+
+    await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(chosen._id),
+      picks: {},
+    });
+
+    expect(await approveInquiryBookingAction(String(inquiry._id))).toMatchObject({ ok: true });
+  });
+
   it("credits the resolved (chosen) client, not the auto-created one, once resolveInquiryClientAction relinks it", async () => {
     const { inquiry, booking } = await seedDraft(workspaceId); // auto-created: Emma Carter
     // A pre-existing CRM client sharing the inquiry's email — the real duplicate

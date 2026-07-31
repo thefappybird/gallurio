@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useRouter } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
 import {
   CheckCircleIcon,
@@ -96,6 +97,7 @@ function quoteField(v: string) {
 export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
   const t = useTranslations("app.bookings.import");
   const tDialog = useTranslations("app.bookings.import.dialog");
+  const errMsg = useActionError();
   const tCols = useTranslations("app.bookings.import.columns");
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -108,8 +110,27 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
   const [parseError, setParseError] = useState<string | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
 
-  const validRows = useMemo(() => rows.filter((r) => r.valid), [rows]);
-  const invalidRows = useMemo(() => rows.filter((r) => !r.valid), [rows]);
+  // Rows sharing a booking_id are ONE booking, and the route rebuilds its
+  // sessions from whatever rows arrive. Importing the good half of a group
+  // would therefore delete the sessions belonging to the bad half, so a group
+  // is all-or-nothing.
+  const blockedGroups = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of rows) {
+      const id = r.raw.bookingId?.trim();
+      if (!r.valid && id) ids.add(id);
+    }
+    return ids;
+  }, [rows]);
+
+  const validRows = useMemo(
+    () => rows.filter((r) => r.valid && !blockedGroups.has(r.raw.bookingId?.trim() ?? "")),
+    [rows, blockedGroups]
+  );
+  const invalidRows = useMemo(
+    () => rows.filter((r) => !r.valid || blockedGroups.has(r.raw.bookingId?.trim() ?? "")),
+    [rows, blockedGroups]
+  );
 
   const { loading: importing, trigger: triggerImport } = useGuardedAction(
     useCallback(async () => {
@@ -129,20 +150,30 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ rows: payload }),
       });
-      const data: ImportResult = await res.json();
+      const body = await res.json().catch(() => null);
+      // A rejected request (429, 403, 400) answers with {error}, not a result.
+      // Committing that to state and reading .errors off it throws during the
+      // next render and takes the page down with it.
+      if (!res.ok || !body || !Array.isArray(body.errors)) {
+        toast.error(errMsg(body?.error));
+        return;
+      }
+
+      const data: ImportResult = body;
       setImportResult(data);
 
-      if (data.created > 0) {
-        toast.success(t("success", { count: data.created }));
+      const written = data.created + data.updated;
+      if (written > 0) {
+        toast.success(t("success", { count: written }));
         startTransition(() => router.refresh());
       }
       if (data.errors.length > 0) {
         setShowResultsDialog(true);
-        if (data.created === 0) {
+        if (written === 0) {
           toast.error(tDialog("failedWithDetails"));
         }
       }
-    }, [validRows, defaultCurrency, t, tDialog, router, startTransition]),
+    }, [validRows, defaultCurrency, t, tDialog, errMsg, router, startTransition]),
     {
       onError: () => {
         toast.error(tDialog("failedRetry"));

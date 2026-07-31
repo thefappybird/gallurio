@@ -32,8 +32,13 @@ const PROMOTED_STATUS = "booked" as const;
 /** True when an active client other than the inquiry's own plausibly matches it. */
 async function inquiryHasUnresolvedClientMatch(
   workspaceId: mongoose.Types.ObjectId,
-  inquiry: Pick<InquiryDoc, "name" | "email" | "phone" | "clientId">
+  inquiry: Pick<InquiryDoc, "name" | "email" | "phone" | "clientId" | "clientResolvedAt">
 ): Promise<boolean> {
+  // The owner has already answered this question. Asking again on every approve
+  // is unanswerable when two same-name clients both match: picking either
+  // leaves the other matching.
+  if (inquiry.clientResolvedAt) return false;
+
   const candidates = await Client.find(
     { workspaceId, isActive: true },
     { name: 1, email: 1, phone: 1 }
@@ -63,6 +68,7 @@ export type InquiryClientMatch = {
   /** Carried so the resolve dialog can surface a notes conflict, not just email/phone. */
   notes: string | null;
   tags: string[];
+  source: "form" | "manual" | "referral" | "import";
   bookingsCount: number;
   totalSpent: number;
   createdAt: string;
@@ -94,7 +100,7 @@ export async function findInquiryClientMatchesAction(
   // active clients and filter in memory.
   const candidates = await Client.find(
     { workspaceId, isActive: true },
-    { name: 1, email: 1, phone: 1, notes: 1, tags: 1, bookingsCount: 1, totalSpent: 1, createdAt: 1 }
+    { name: 1, email: 1, phone: 1, notes: 1, tags: 1, source: 1, bookingsCount: 1, totalSpent: 1, createdAt: 1 }
   )
     .limit(5000)
     .lean();
@@ -114,6 +120,7 @@ export async function findInquiryClientMatchesAction(
       phone: c.phone ?? null,
       notes: c.notes ?? null,
       tags: c.tags ?? [],
+      source: c.source ?? "manual",
       bookingsCount: c.bookingsCount ?? 0,
       totalSpent: c.totalSpent ?? 0,
       createdAt: c.createdAt.toISOString(),
@@ -215,7 +222,7 @@ export async function resolveInquiryClientAction(
 
       await Inquiry.updateOne(
         { _id: inquiry._id, workspaceId },
-        { $set: { clientId: targetClientId } },
+        { $set: { clientId: targetClientId, clientResolvedAt: new Date() } },
         { session }
       );
 
@@ -257,7 +264,14 @@ export async function resolveInquiryClientAction(
         if (guardsPass) {
           const [referencedByOtherInquiry, referencedByOtherBooking] = await Promise.all([
             Inquiry.exists({ workspaceId, clientId: previousClientId, _id: { $ne: inquiry._id } }).session(session),
-            Booking.exists({ workspaceId, clientId: previousClientId, _id: { $ne: inquiry.draftBookingId } }).session(session),
+            // Mongoose drops an undefined value from a filter, so a missing
+            // draftBookingId would silently turn this into "any booking at
+            // all" rather than "any booking except the draft". Spell it out.
+            Booking.exists(
+              inquiry.draftBookingId
+                ? { workspaceId, clientId: previousClientId, _id: { $ne: inquiry.draftBookingId } }
+                : { workspaceId, clientId: previousClientId }
+            ).session(session),
           ]);
 
           if (!referencedByOtherInquiry && !referencedByOtherBooking) {

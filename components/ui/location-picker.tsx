@@ -353,8 +353,9 @@ function BaseLocationPicker({
   const errorNode = error ? (
     <p
       id={errorId}
+      // role="alert" already implies aria-live="assertive"; pairing it with
+      // "polite" is contradictory and screen readers resolve it inconsistently.
       role="alert"
-      aria-live="polite"
       style={errorStyle}
       className={cn(!errorStyle && "text-xs text-destructive")}
     >

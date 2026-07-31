@@ -10,6 +10,7 @@ const noConflictMatch: ClientMatchCard = {
   phone: null,
   notes: null,
   tags: [],
+  source: "manual",
   bookingsCount: 2,
   lastBookingAt: null,
 };
