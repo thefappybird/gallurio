@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import { bookingClientSchema } from "@/lib/validators/booking";
-import { ClientStep } from "./client-step";
+import { ClientStep, type ClientHit } from "./client-step";
 import type { WizardValues } from "./types";
 
 // The real modal validates the whole booking form; here we only need the
@@ -103,5 +103,61 @@ describe("ClientStep new-client validation errors", () => {
       "aria-invalid",
       "true"
     );
+  });
+});
+
+function ExistingHarness({
+  clients,
+  showExistingError,
+}: {
+  clients: ClientHit[];
+  showExistingError: boolean;
+}) {
+  const { control } = useForm<{ client: WizardValues["client"] }>({
+    defaultValues: { client: { mode: "existing", clientId: "", clientName: "" } },
+  });
+
+  return (
+    <ClientStep
+      control={control as unknown as Control<WizardValues>}
+      errors={{} as FieldErrors<WizardValues>}
+      clients={clients}
+      showExistingError={showExistingError}
+    />
+  );
+}
+
+describe("ClientStep existing-client search validation", () => {
+  const clients: ClientHit[] = [
+    { id: "c1", name: "Jane Doe", email: "jane@example.com", phone: null },
+  ];
+
+  it("marks the search input invalid and surfaces an alert message when no existing client is selected", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <ExistingHarness clients={clients} showExistingError />
+      </NextIntlClientProvider>
+    );
+
+    const input = screen.getByPlaceholderText(/search by name or email/i);
+    expect(input).toHaveAttribute("aria-invalid", "true");
+
+    const describedBy = input.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const message = document.getElementById(describedBy!);
+    expect(message).toHaveAttribute("role", "alert");
+    expect(message).toHaveTextContent(/pick a client/i);
+  });
+
+  it("renders no alert message and no aria-invalid when showExistingError is false", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <ExistingHarness clients={clients} showExistingError={false} />
+      </NextIntlClientProvider>
+    );
+
+    const input = screen.getByPlaceholderText(/search by name or email/i);
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
