@@ -6,6 +6,7 @@ import { ClientFormModal } from "./client-form-modal";
 vi.mock("@/lib/actions/clients", () => ({
   createClientAction: vi.fn().mockResolvedValue({ ok: true }),
   updateClientAction: vi.fn().mockResolvedValue({ ok: true }),
+  findClientMatchesAction: vi.fn().mockResolvedValue({ matches: [] }),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn() }));
@@ -99,5 +100,20 @@ describe("ClientFormModal", () => {
     await waitFor(() => expect(screen.getByText("vip")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /remove tag vip/i }));
     await waitFor(() => expect(screen.queryByText("vip")).not.toBeInTheDocument());
+  });
+
+  it("checks for name matches on create, then skips the match dialog and creates directly when none are found", async () => {
+    const { findClientMatchesAction } = await import("@/lib/actions/clients");
+    const onSuccess = vi.fn();
+    renderWithProviders(<ClientFormModal {...defaultProps} onSuccess={onSuccess} />);
+
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() =>
+      expect(findClientMatchesAction).toHaveBeenCalledWith(expect.objectContaining({ name: "Test Client" }))
+    );
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+    expect(screen.queryByText("Is the client one of these?")).not.toBeInTheDocument();
   });
 });

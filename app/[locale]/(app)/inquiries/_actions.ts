@@ -83,7 +83,7 @@ export async function findInquiryClientMatchesAction(
 
   const inquiry = await Inquiry.findOne(
     { _id: inquiryId, workspaceId },
-    { name: 1, email: 1, phone: 1, clientId: 1 }
+    "name email phone clientId"
   ).lean();
   if (!inquiry) return { error: "not_found" };
 

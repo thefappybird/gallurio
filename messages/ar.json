@@ -1943,6 +1943,7 @@
         "saving": "جارٍ الحفظ…",
         "cancel": "إلغاء",
         "createSuccess": "تم إنشاء العميل.",
+        "linkSuccess": "تم الربط بعميل موجود.",
         "updateSuccess": "تم تحديث العميل.",
         "error": "حدث خطأ ما. حاول مرة أخرى."
       },
@@ -1991,6 +1992,19 @@
         "body": "لديك تغييرات غير محفوظة على هذا العميل. ستُفقد إذا أغلقت الآن.",
         "keep": "متابعة التعديل",
         "discard": "تجاهل وإغلاق"
+      },
+      "matchDialog": {
+        "title": "هل هذا العميل أحد هؤلاء؟",
+        "bookingsCount": "{count, plural, one {# حجز} other {# حجوزات}}",
+        "escapeCreate": "لا، هذا عميل جديد",
+        "escapeLink": "الربط بعميل جديد",
+        "cancel": "إلغاء",
+        "submitCreate": "حفظ العميل",
+        "submitLink": "ربط العميل",
+        "reconcileTitle": "{count} حقول مختلفة - اختر ما تريد الاحتفاظ به",
+        "current": "الحالي",
+        "typed": "ما أدخلته",
+        "additiveTitle": "سيُضاف (بلا تعارض)"
       },
       "toasts": {
         "reactivating": "جارٍ إعادة تفعيل العميل…",
@@ -2073,6 +2087,11 @@
           "savePhone": "حفظ",
           "cancelEdit": "إلغاء",
           "savedToast": "تم تحديث الهاتف."
+        },
+        "clientMatch": {
+          "warning": "قد ينتمي هذا الاستفسار إلى عميل موجود مسبقًا",
+          "resolveButton": "تحديد العميل",
+          "linkButton": "الربط بهذا العميل"
         },
         "eventRequest": {
           "title": "طلب المناسبة",

@@ -1943,6 +1943,7 @@
         "saving": "Sine-save…",
         "cancel": "Kanselahin",
         "createSuccess": "Nailikha ang kliyente.",
+        "linkSuccess": "Na-link sa umiiral na kliyente.",
         "updateSuccess": "Na-update ang kliyente.",
         "error": "May nangyaring mali. Subukan muli."
       },
@@ -1991,6 +1992,19 @@
         "body": "May mga hindi pa nai-save na pagbabago ka sa kliyenteng ito. Mawawala ang mga ito kung magsasara ka ngayon.",
         "keep": "Magpatuloy sa pag-edit",
         "discard": "Itapon at isara"
+      },
+      "matchDialog": {
+        "title": "Isa ba ang kliyente sa mga ito?",
+        "bookingsCount": "{count, plural, one {# booking} other {# na booking}}",
+        "escapeCreate": "Hindi, bagong kliyente ito",
+        "escapeLink": "I-link sa bagong kliyente",
+        "cancel": "Kanselahin",
+        "submitCreate": "I-save ang kliyente",
+        "submitLink": "I-link ang kliyente",
+        "reconcileTitle": "{count} field ang naiiba - piliin kung alin ang gagamitin",
+        "current": "Kasalukuyan",
+        "typed": "Iyong inilagay",
+        "additiveTitle": "Idaragdag (walang tunggalian)"
       },
       "toasts": {
         "reactivating": "Binubuhay muli ang kliyente…",
@@ -2073,6 +2087,11 @@
           "savePhone": "I-save",
           "cancelEdit": "Kanselahin",
           "savedToast": "Na-update ang telepono."
+        },
+        "clientMatch": {
+          "warning": "Maaaring kabilang ang inquiry na ito sa isang umiiral nang kliyente",
+          "resolveButton": "Ayusin ang kliyente",
+          "linkButton": "I-link sa kliyenteng ito"
         },
         "eventRequest": {
           "title": "Kahilingang kaganapan",

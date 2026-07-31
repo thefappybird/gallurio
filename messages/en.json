@@ -1944,6 +1944,7 @@
         "saving": "Saving…",
         "cancel": "Cancel",
         "createSuccess": "Client created.",
+        "linkSuccess": "Linked to existing client.",
         "updateSuccess": "Client updated.",
         "error": "Something went wrong. Try again."
       },
@@ -1992,6 +1993,19 @@
         "body": "You have unsaved changes to this client. They'll be lost if you close now.",
         "keep": "Keep editing",
         "discard": "Discard and close"
+      },
+      "matchDialog": {
+        "title": "Is the client one of these?",
+        "bookingsCount": "{count, plural, one {# booking} other {# bookings}}",
+        "escapeCreate": "No, this is a new client",
+        "escapeLink": "Link to new client",
+        "cancel": "Cancel",
+        "submitCreate": "Save client",
+        "submitLink": "Link client",
+        "reconcileTitle": "{count} fields differ - pick which to keep",
+        "current": "Current",
+        "typed": "You entered",
+        "additiveTitle": "Will be added (no conflict)"
       },
       "toasts": {
         "reactivating": "Reactivating client…",
@@ -2074,6 +2088,11 @@
           "savePhone": "Save",
           "cancelEdit": "Cancel",
           "savedToast": "Phone updated."
+        },
+        "clientMatch": {
+          "warning": "This inquiry may belong to an existing client",
+          "resolveButton": "Resolve client",
+          "linkButton": "Link to this client"
         },
         "eventRequest": {
           "title": "Event request",

@@ -14,8 +14,9 @@ import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
-import { createClientAction, updateClientAction } from "@/lib/actions/clients";
+import { createClientAction, updateClientAction, findClientMatchesAction } from "@/lib/actions/clients";
 import { useActionError } from "@/lib/i18n/actionError";
+import { ClientMatchDialog, type ClientMatchCard, type ClientMatchResolution } from "@/components/app/client-match-dialog";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 
 // ClientRow shape needed for pre-fill (edit mode)
@@ -61,6 +62,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [viewAfterDiscard, setViewAfterDiscard] = useState(false);
   const [tagInput, setTagInput] = useState("");
+  const [matchState, setMatchState] = useState<{ matches: ClientMatchCard[]; data: ClientFormInput } | null>(null);
 
   // Reset form (and the in-progress tag draft) when modal opens/closes or
   // initialData changes so a partial tag typed in one session can't survive
@@ -124,19 +126,70 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
     form.setValue("tags", current.filter((t) => t !== tag), { shouldDirty: true });
   }
 
-  async function onSubmit(data: ClientFormInput) {
-    const result = isEdit
-      ? await updateClientAction(initialData!.id!, data)
-      : await createClientAction(data);
-
+  async function finishCreate(data: ClientFormInput) {
+    const result = await createClientAction(data);
     if ("error" in result) {
       form.setError("root", { message: errMsg(result.error) });
       return;
     }
-
-    toast.success(isEdit ? t("form.updateSuccess") : t("form.createSuccess"));
+    toast.success(t("form.createSuccess"));
     onSuccess();
     onOpenChange(false);
+  }
+
+  async function finishLink(clientId: string, data: ClientFormInput) {
+    const result = await updateClientAction(clientId, data);
+    if ("error" in result) {
+      form.setError("root", { message: errMsg(result.error) });
+      return;
+    }
+    // Not "created" — this path attaches to an existing client.
+    toast.success(t("form.linkSuccess"));
+    onSuccess();
+    onOpenChange(false);
+  }
+
+  async function onSubmit(data: ClientFormInput) {
+    if (isEdit) {
+      const result = await updateClientAction(initialData!.id!, data);
+      if ("error" in result) {
+        form.setError("root", { message: errMsg(result.error) });
+        return;
+      }
+      toast.success(t("form.updateSuccess"));
+      onSuccess();
+      onOpenChange(false);
+      return;
+    }
+
+    const matchResult = await findClientMatchesAction({ name: data.name, email: data.email, phone: data.phone });
+    if ("error" in matchResult) {
+      form.setError("root", { message: errMsg(matchResult.error) });
+      return;
+    }
+    if (matchResult.matches.length === 0) {
+      await finishCreate(data);
+      return;
+    }
+    setMatchState({ matches: matchResult.matches, data });
+  }
+
+  function handleMatchResolve(result: ClientMatchResolution) {
+    const data = matchState!.data;
+    setMatchState(null);
+    if ("createNew" in result) {
+      void finishCreate(data);
+      return;
+    }
+    const card = matchState!.matches.find((m) => m.id === result.clientId)!;
+    const merged: ClientFormInput = {
+      ...data,
+      email: result.picks.email === "existing" ? card.email : data.email,
+      phone: result.picks.phone === "existing" ? card.phone : data.phone,
+      notes: result.picks.notes === "existing" ? (card.notes ?? "") : data.notes,
+      tags: [...new Set([...(card.tags ?? []), ...(data.tags ?? [])])],
+    };
+    void finishLink(result.clientId, merged);
   }
 
   const tags = form.watch("tags");
@@ -338,6 +391,23 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
         onKeepEditing={() => setUnsavedOpen(false)}
         onDiscard={handleDiscard}
       />
+
+      {matchState && (
+        <ClientMatchDialog
+          open
+          matches={matchState.matches}
+          typed={{
+            name: matchState.data.name,
+            email: matchState.data.email ?? null,
+            phone: matchState.data.phone ?? null,
+            notes: matchState.data.notes,
+            tags: matchState.data.tags,
+          }}
+          mode="create"
+          onResolve={handleMatchResolve}
+          onCancel={() => setMatchState(null)}
+        />
+      )}
     </>
   );
 }

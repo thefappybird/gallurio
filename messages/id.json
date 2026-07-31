@@ -1943,6 +1943,7 @@
         "saving": "Menyimpan…",
         "cancel": "Batal",
         "createSuccess": "Klien dibuat.",
+        "linkSuccess": "Ditautkan ke klien yang ada.",
         "updateSuccess": "Klien diperbarui.",
         "error": "Ada yang salah. Coba lagi."
       },
@@ -1991,6 +1992,19 @@
         "body": "Anda memiliki perubahan yang belum disimpan untuk klien ini. Perubahan akan hilang jika Anda menutup sekarang.",
         "keep": "Lanjutkan mengubah",
         "discard": "Buang dan tutup"
+      },
+      "matchDialog": {
+        "title": "Apakah klien ini salah satu dari berikut?",
+        "bookingsCount": "{count, plural, one {# booking} other {# booking}}",
+        "escapeCreate": "Tidak, ini klien baru",
+        "escapeLink": "Tautkan ke klien baru",
+        "cancel": "Batal",
+        "submitCreate": "Simpan klien",
+        "submitLink": "Tautkan klien",
+        "reconcileTitle": "{count} kolom berbeda - pilih yang ingin disimpan",
+        "current": "Saat ini",
+        "typed": "Yang Anda masukkan",
+        "additiveTitle": "Akan ditambahkan (tidak ada konflik)"
       },
       "toasts": {
         "reactivating": "Mengaktifkan kembali klien…",
@@ -2073,6 +2087,11 @@
           "savePhone": "Simpan",
           "cancelEdit": "Batal",
           "savedToast": "Telepon diperbarui."
+        },
+        "clientMatch": {
+          "warning": "Pertanyaan ini mungkin milik klien yang sudah ada",
+          "resolveButton": "Selesaikan klien",
+          "linkButton": "Tautkan ke klien ini"
         },
         "eventRequest": {
           "title": "Permintaan acara",

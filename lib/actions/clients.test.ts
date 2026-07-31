@@ -11,6 +11,7 @@ import {
   deactivateClientAction,
   reactivateClientAction,
   getClientBookingsAction,
+  findClientMatchesAction,
 } from "./clients";
 
 vi.mock("@/lib/auth/requireOrg", () => ({ requireOrg: vi.fn(), requireRole: vi.fn() }));
@@ -266,5 +267,26 @@ describe("getClientBookingsAction", () => {
 
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(0);
+  });
+});
+
+describe("findClientMatchesAction", () => {
+  it("returns same-name clients from this workspace only, and never another tenant's", async () => {
+    mockOrg(workspaceId);
+    await Client.create([
+      { workspaceId, name: "Ana Cruz", email: "ana@example.com", source: "manual" },
+      { workspaceId, name: "Bea Santos", email: "bea@example.com", source: "manual" },
+      // Same name, different tenant — must never surface.
+      { workspaceId: otherWorkspaceId, name: "Ana Cruz", source: "manual" },
+    ]);
+
+    const result = await findClientMatchesAction({ name: "cruz, ana", email: null, phone: null });
+
+    expect("matches" in result).toBe(true);
+    if (!("matches" in result)) return;
+    expect(result.matches).toHaveLength(1);
+    expect(result.matches[0].name).toBe("Ana Cruz");
+    // Serializable across the Server Action boundary.
+    expect(typeof result.matches[0].id).toBe("string");
   });
 });

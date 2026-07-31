@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useActionError } from "@/lib/i18n/actionError";
-import { PencilIcon } from "lucide-react";
+import { AlertTriangleIcon, PencilIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { updateInquiryPhoneAction } from "@/app/[locale]/(app)/inquiries/_actions";
+import {
+  updateInquiryPhoneAction,
+  findInquiryClientMatchesAction,
+} from "@/app/[locale]/(app)/inquiries/_actions";
 import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 
 type Props = {
@@ -18,6 +21,11 @@ type Props = {
   status: string;
   readOnly?: boolean;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
+  /**
+   * Opens the client-match dialog. Provided only where resolving is possible;
+   * when absent the indicator is not rendered at all.
+   */
+  onResolveClient?: () => void;
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -29,8 +37,10 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, onInquiryChanged }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, onInquiryChanged, onResolveClient }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
+  const tMatch = useTranslations("app.inquiries.detail.clientMatch");
+  const [hasMatch, setHasMatch] = useState(false);
   const tp = useTranslations("app.inquiries.preferred");
   const errMsg = useActionError();
   const preferredLabel = (() => {
@@ -38,6 +48,22 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
   })();
 
   const locked = readOnly || status === "booked" || status === "converted" || status === "archived";
+
+  // Computed live when this card mounts — i.e. when the inquiry is opened.
+  // Nothing is stored, so there is nothing to invalidate. Deliberately absent
+  // from the inquiries table: that would need a per-row lookup across the list.
+  useEffect(() => {
+    if (locked || !onResolveClient) return;
+    let cancelled = false;
+    void findInquiryClientMatchesAction(inquiryId).then((res) => {
+      // Guard against a resolve landing after the modal closed.
+      if (!cancelled && "ok" in res) setHasMatch(res.matches.length > 0);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [inquiryId, locked, onResolveClient]);
+
   const [editingPhone, setEditingPhone] = useState(false);
   const [draftPhone, setDraftPhone] = useState(phone ?? "");
   const [saving, setSaving] = useState(false);
@@ -64,6 +90,23 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{t("title")}</CardTitle>
+        {onResolveClient && hasMatch ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Icon is never the only signal — the warning text and the
+                button's accessible name carry the same meaning. */}
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <AlertTriangleIcon className="size-3.5 text-destructive" aria-hidden />
+              {tMatch("warning")}
+            </span>
+            <button
+              type="button"
+              onClick={onResolveClient}
+              className="border border-border px-2 py-1 text-xs font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {tMatch("resolveButton")}
+            </button>
+          </div>
+        ) : null}
       </CardHeader>
       <CardContent>
         <dl className="divide-y divide-border">
