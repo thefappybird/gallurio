@@ -228,6 +228,57 @@ test.describe("Task 5 — client match dialog", () => {
     { name: "768", width: 768, height: 1024 },
     { name: "1280", width: 1280, height: 900 },
   ]) {
+    test(`the reconcile step defaults to the stored value @${bp.name}px`, async ({ page }) => {
+      // A conflict needs BOTH sides filled and different: the seeded client has
+      // an email, so typing a different one forces step 2 — the step that
+      // decides whether stored client data survives.
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto("/clients");
+      const row = page.locator("table tbody tr").first();
+      const existingName = (await row.locator("td").first().innerText({ timeout: 60_000 }))
+        .split("\n")[0]
+        .trim();
+      const contact = await row.locator("td").nth(1).innerText();
+      const existingEmail = contact.split("\n")[0].trim();
+      expect(existingEmail, "seeded client needs an email to conflict with").toContain("@");
+
+      await page.setViewportSize({ width: bp.width, height: bp.height });
+      await page.getByRole("button", { name: /new client|add client/i }).first().click();
+      const form = page.getByRole("dialog");
+      await form.getByLabel(/^name/i).first().fill(existingName);
+      await form.getByLabel(/^email/i).first().fill("different.address@example.com");
+      await form.getByRole("button", { name: /^(save|create)/i }).first().click();
+
+      const match = page.getByRole("dialog").filter({ hasText: /is the client one of these/i });
+      await expect(match).toBeVisible({ timeout: 20_000 });
+      await match.getByRole("radio", { name: existingName }).first().click();
+      await match.getByRole("button", { name: /^save client$/i }).click();
+
+      // Step 2. The default must be the STORED value — a default that discards
+      // stored data is worse than one that keeps something stale.
+      const reconcile = page.getByRole("dialog").filter({ hasText: /fields differ/i });
+      await expect(reconcile).toBeVisible({ timeout: 15_000 });
+      await expect(reconcile.getByRole("radio", { name: existingEmail })).toBeChecked();
+      await expect(
+        reconcile.getByRole("radio", { name: "different.address@example.com" })
+      ).not.toBeChecked();
+
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+      );
+      expect(overflow, "page must not scroll horizontally").toBe(false);
+
+      await page.screenshot({ path: `e2e/__screenshots__/reconcile-${bp.name}.png` });
+      // Cancel discards the whole reconciliation — nothing is written.
+      await reconcile.getByRole("button", { name: /^cancel$/i }).click();
+    });
+  }
+
+  for (const bp of [
+    { name: "375", width: 375, height: 812 },
+    { name: "768", width: 768, height: 1024 },
+    { name: "1280", width: 1280, height: 900 },
+  ]) {
     test(`match dialog is readable @${bp.name}px`, async ({ page }) => {
       // The list is a table at desktop width but cards at 375px — read the
       // name while the table exists, then resize to the breakpoint under test.

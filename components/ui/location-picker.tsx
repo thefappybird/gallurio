@@ -393,6 +393,9 @@ function BaseLocationPicker({
           size="sm"
           disabled={disabled}
           onClick={handleEnterEdit}
+          // Display mode has no input, so the error is described by the control
+          // that resolves it — otherwise the id and aria wiring point at nothing.
+          aria-describedby={error ? errorId : undefined}
           className="self-start"
         >
           {resolvedLabels.changeLocation ?? "Change location"}

@@ -213,7 +213,11 @@ export async function POST(req: Request) {
     // the caller's workspace so a foreign (or bogus) id can never be written
     // to. Both cases answer the same way, so this is not an existence oracle.
     let existingBooking:
-      | { _id: mongoose.Types.ObjectId; clientId: mongoose.Types.ObjectId }
+      | {
+          _id: mongoose.Types.ObjectId;
+          clientId: mongoose.Types.ObjectId;
+          amount?: { total?: number; deposit?: number } | null;
+        }
       | null = null;
     if (group.bookingId) {
       existingBooking = mongoose.isValidObjectId(group.bookingId)
@@ -221,7 +225,9 @@ export async function POST(req: Request) {
             _id: group.bookingId,
             workspaceId: ctx.workspace._id,
           })
-            .select({ _id: 1, clientId: 1 })
+            // amount comes along so an edit to it can be refused rather than
+            // silently dropped by the $set below.
+            .select({ _id: 1, clientId: 1, amount: 1 })
             .lean()
         : null;
 
@@ -274,31 +280,62 @@ export async function POST(req: Request) {
     // drawer operation. Amounts are likewise left alone — they are ledger-
     // linked, so a spreadsheet must not be able to desynchronise them.
     if (existingBooking) {
+      // Amounts are ledger-linked: changing one has to reproject transactions
+      // and re-check payment invariants, which import does not do. Refusing is
+      // honest; reporting `updated` while dropping the edit is not.
+      const storedTotal = existingBooking.amount?.total ?? 0;
+      const storedDeposit = existingBooking.amount?.deposit ?? 0;
+      const wantsTotal = row.amountTotal ?? storedTotal;
+      const wantsDeposit = row.amountDeposit ?? storedDeposit;
+      if (wantsTotal !== storedTotal || wantsDeposit !== storedDeposit) {
+        errors.push({
+          index: i,
+          row: raw,
+          field: "amountTotal",
+          kind: "validation",
+          message:
+            "Amounts cannot be changed by import because they are linked to the payment ledger. Edit them on the booking instead.",
+        });
+        skippedRows += group.rows.length;
+        continue;
+      }
+
+      const updateSession = await mongoose.startSession();
       try {
-        await Booking.updateOne(
-          { _id: existingBooking._id, workspaceId: ctx.workspace._id },
-          {
-            $set: {
-              title: row.title,
-              eventType: row.eventType ?? "other",
-              status: row.status ?? "booked",
-              sessions,
-              firstSessionStart,
-              lastSessionEnd,
-              "location.address": row.locationAddress ?? "",
-              "location.lat": row.locationLat ?? null,
-              "location.lng": row.locationLng ?? null,
-              notes: row.notes ?? "",
+        // One transaction per booking group, same as the create path: a booking
+        // must never end up mutated without its audit entry.
+        await updateSession.withTransaction(async () => {
+          await Booking.updateOne(
+            { _id: existingBooking._id, workspaceId: ctx.workspace._id },
+            {
+              $set: {
+                title: row.title,
+                eventType: row.eventType ?? "other",
+                status: row.status ?? "booked",
+                sessions,
+                firstSessionStart,
+                lastSessionEnd,
+                "location.address": row.locationAddress ?? "",
+                "location.lat": row.locationLat ?? null,
+                "location.lng": row.locationLng ?? null,
+                notes: row.notes ?? "",
+              },
             },
-          }
-        );
-        await ActivityLog.create({
-          workspaceId: ctx.workspace._id,
-          actorUserId: ctx.userId,
-          entity: "booking",
-          entityId: existingBooking._id,
-          action: "updated",
-          meta: { via: "import" },
+            { session: updateSession }
+          );
+          await ActivityLog.create(
+            [
+              {
+                workspaceId: ctx.workspace._id,
+                actorUserId: ctx.userId,
+                entity: "booking",
+                entityId: existingBooking._id,
+                action: "updated",
+                meta: { via: "import" },
+              },
+            ],
+            { session: updateSession }
+          );
         });
         updated.push(i);
       } catch (err) {
@@ -310,6 +347,8 @@ export async function POST(req: Request) {
           message: err instanceof Error ? err.message.slice(0, 200) : "Unknown server error",
         });
         skippedRows += group.rows.length;
+      } finally {
+        await updateSession.endSession();
       }
       continue;
     }
@@ -376,6 +415,14 @@ export async function POST(req: Request) {
                     source: "import",
                   },
                 ],
+                { session }
+              );
+            } else if (row.clientPhone && !client.phone) {
+              // Fill a gap, never overwrite: a stale sheet must not clobber a
+              // number the owner maintains in the CRM.
+              await Client.updateOne(
+                { _id: client._id, workspaceId: ctx.workspace._id },
+                { $set: { phone: row.clientPhone } },
                 { session }
               );
             }

@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client, Transaction, Team } from "@/lib/db/models";
+import { Booking, Client, Transaction, Team, ActivityLog } from "@/lib/db/models";
 import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 import * as clientTransactions from "@/lib/db/clientTransactions";
 
@@ -170,6 +170,9 @@ describe("POST /api/bookings/import — booking_id round-trip", () => {
       clientName: "Jane Smith",
       title: "Old Title",
       status: "booked",
+      // Matches VALID_ROW: a real exported row carries the stored amounts back
+      // unchanged, so this exercises session regrouping and nothing else.
+      amount: { total: 50000, deposit: 10000, currency: "PHP" },
       sessions: [
         {
           startAt: new Date("2026-06-15T09:00:00.000Z"),
@@ -256,6 +259,47 @@ describe("POST /api/bookings/import — booking_id round-trip", () => {
 
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
     expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("rolls the booking update back when the audit entry fails", async () => {
+    // Every other write path on this branch is transactional. Here the update
+    // and its ActivityLog were two independent writes, so a failure between
+    // them mutated the booking with no audit trail while reporting an error.
+    await callImport([VALID_ROW]);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+
+    const spy = vi
+      .spyOn(ActivityLog, "create")
+      .mockRejectedValueOnce(new Error("audit write failed") as never);
+    try {
+      await callImport([
+        { ...VALID_ROW, title: "Renamed", bookingId: booking!._id.toString(), sessionIndex: "0" },
+      ]);
+    } finally {
+      spy.mockRestore();
+    }
+
+    const after = await Booking.findById(booking!._id).lean();
+    expect(after?.title).toBe("Smith Wedding");
+  });
+
+  it("refuses an amount edit rather than reporting success and ignoring it", async () => {
+    // The update path deliberately never $sets amounts — they are ledger-linked.
+    // Reporting `updated` while discarding the change tells the user their edit
+    // landed when it did not.
+    await callImport([VALID_ROW]);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+
+    const res = await callImport([
+      { ...VALID_ROW, bookingId: booking!._id.toString(), sessionIndex: "0", amountTotal: 99999 },
+    ]);
+    const body = await res.json();
+
+    expect(body.updated).toBe(0);
+    expect(body.errors[0].message).toMatch(/amount/i);
+
+    const after = await Booking.findById(booking!._id).lean();
+    expect(after?.amount?.total).toBe(50000);
   });
 
   it("counts skipped ROWS while errors counts problems", async () => {
@@ -356,6 +400,25 @@ describe("POST /api/bookings/import", () => {
 
     const client = await Client.findOne({ workspaceId: WS_ID }).lean();
     expect(client?.phone).toBe("+63 917 555 0142");
+  });
+
+  it("fills a matched client's empty phone but never overwrites one", async () => {
+    const existing = await Client.create({
+      workspaceId: WS_ID,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      phone: null,
+      source: "manual",
+    });
+
+    await callImport([{ ...VALID_ROW, clientPhone: "+63 917 555 0142" }]);
+    expect((await Client.findById(existing._id).lean())?.phone).toBe("+63 917 555 0142");
+
+    await callImport([
+      { ...VALID_ROW, title: "Second", clientPhone: "+63 900 000 0000" },
+    ]);
+    // Already set — a stale sheet must not clobber the CRM value.
+    expect((await Client.findById(existing._id).lean())?.phone).toBe("+63 917 555 0142");
   });
 
   it("reuses an existing client when email matches", async () => {
