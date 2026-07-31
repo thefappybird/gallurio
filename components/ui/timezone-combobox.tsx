@@ -58,6 +58,8 @@ export type TimezoneComboboxProps = {
   /** Placeholder shown on the trigger when no value is set. */
   placeholder?: string;
   disabled?: boolean;
+  invalid?: boolean;
+  ariaDescribedby?: string;
 };
 
 export function TimezoneCombobox({
@@ -69,6 +71,8 @@ export function TimezoneCombobox({
   name,
   placeholder,
   disabled,
+  invalid,
+  ariaDescribedby,
 }: TimezoneComboboxProps) {
   const generatedId = useId();
   const triggerId = id ?? generatedId;
@@ -145,7 +149,12 @@ export function TimezoneCombobox({
               type="button"
               id={triggerId}
               disabled={disabled}
-              className="flex h-9 w-full items-center justify-between gap-2 border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              aria-invalid={invalid || undefined}
+              aria-describedby={ariaDescribedby}
+              className={cn(
+                "flex h-9 w-full items-center justify-between gap-2 border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+                "aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+              )}
             >
               <span className={cn("truncate text-start", !value && "text-muted-foreground")}>
                 {value ? selectedLabel : (placeholder ?? searchPlaceholder)}
