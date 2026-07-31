@@ -2091,6 +2091,7 @@
         "clientMatch": {
           "warning": "قد ينتمي هذا الاستفسار إلى عميل موجود مسبقًا",
           "resolveButton": "تحديد العميل",
+          "resolvedToast": "تم تحديث العميل.",
           "linkButton": "الربط بهذا العميل"
         },
         "eventRequest": {

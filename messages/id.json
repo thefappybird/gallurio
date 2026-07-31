@@ -2091,6 +2091,7 @@
         "clientMatch": {
           "warning": "Pertanyaan ini mungkin milik klien yang sudah ada",
           "resolveButton": "Selesaikan klien",
+          "resolvedToast": "Klien diperbarui.",
           "linkButton": "Tautkan ke klien ini"
         },
         "eventRequest": {

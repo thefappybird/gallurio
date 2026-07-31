@@ -13,6 +13,10 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 import { ClientInfoCard } from "./client-info-card";
 
 const baseProps = {
@@ -32,27 +36,23 @@ beforeEach(() => {
 });
 
 describe("ClientInfoCard — duplicate-client indicator", () => {
-  it("shows a labelled resolve action only when a match exists", async () => {
-    // The glyph must never be the only signal, so assert on the accessible
-    // name rather than on an icon.
+  it("opens the match dialog when the resolve action is used", async () => {
+    // The card owns the dialog: neither parent passes a resolve callback, so a
+    // callback prop would leave the indicator unreachable in the real app.
     findInquiryClientMatchesAction.mockResolvedValue({
       ok: true,
-      matches: [{ _id: "c1", name: "Maria Santos" }],
+      matches: [{ _id: "c1", name: "Maria Santos", email: null, phone: null, notes: null, tags: [], bookingsCount: 0, totalSpent: 0, createdAt: "2026-01-01T00:00:00.000Z" }],
     });
-    const onResolveClient = vi.fn();
-    renderWithProviders(
-      <ClientInfoCard {...baseProps} onResolveClient={onResolveClient} />
-    );
+    renderWithProviders(<ClientInfoCard {...baseProps} />);
 
-    const button = await screen.findByRole("button", { name: /resolve client/i });
-    fireEvent.click(button);
-    expect(onResolveClient).toHaveBeenCalledOnce();
+    fireEvent.click(await screen.findByRole("button", { name: /resolve client/i }));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
   });
 
   it("stays hidden when the inquiry has no competing client", async () => {
     // The common case. A false indicator on every inquiry would be noise.
     findInquiryClientMatchesAction.mockResolvedValue({ ok: true, matches: [] });
-    renderWithProviders(<ClientInfoCard {...baseProps} onResolveClient={vi.fn()} />);
+    renderWithProviders(<ClientInfoCard {...baseProps} />);
 
     await waitFor(() => expect(findInquiryClientMatchesAction).toHaveBeenCalledWith("inq-1"));
     expect(screen.queryByRole("button", { name: /resolve client/i })).toBeNull();

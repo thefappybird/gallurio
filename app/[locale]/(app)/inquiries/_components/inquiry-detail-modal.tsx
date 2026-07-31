@@ -118,6 +118,7 @@ export function InquiryDetailModal({
                 preferredContact={detail.preferredContact}
                 status={detail.status}
                 readOnly={readOnly}
+                message={detail.message}
                 onInquiryChanged={readOnly ? undefined : onInquiryChanged}
               />
               <EventRequestCard

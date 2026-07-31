@@ -60,6 +60,9 @@ export type InquiryClientMatch = {
   name: string;
   email: string | null;
   phone: string | null;
+  /** Carried so the resolve dialog can surface a notes conflict, not just email/phone. */
+  notes: string | null;
+  tags: string[];
   bookingsCount: number;
   totalSpent: number;
   createdAt: string;
@@ -91,7 +94,7 @@ export async function findInquiryClientMatchesAction(
   // active clients and filter in memory.
   const candidates = await Client.find(
     { workspaceId, isActive: true },
-    { name: 1, email: 1, phone: 1, bookingsCount: 1, totalSpent: 1, createdAt: 1 }
+    { name: 1, email: 1, phone: 1, notes: 1, tags: 1, bookingsCount: 1, totalSpent: 1, createdAt: 1 }
   )
     .limit(5000)
     .lean();
@@ -109,6 +112,8 @@ export async function findInquiryClientMatchesAction(
       name: c.name,
       email: c.email ?? null,
       phone: c.phone ?? null,
+      notes: c.notes ?? null,
+      tags: c.tags ?? [],
       bookingsCount: c.bookingsCount ?? 0,
       totalSpent: c.totalSpent ?? 0,
       createdAt: c.createdAt.toISOString(),

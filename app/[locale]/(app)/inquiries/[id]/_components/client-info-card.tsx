@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useActionError } from "@/lib/i18n/actionError";
@@ -9,7 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   updateInquiryPhoneAction,
   findInquiryClientMatchesAction,
+  resolveInquiryClientAction,
+  type InquiryClientMatch,
 } from "@/app/[locale]/(app)/inquiries/_actions";
+import {
+  ClientMatchDialog,
+  type ClientMatchResolution,
+} from "@/components/app/client-match-dialog";
 import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 
 type Props = {
@@ -20,12 +27,9 @@ type Props = {
   preferredContact: string;
   status: string;
   readOnly?: boolean;
+  /** The inquiry's message, reconciled against the target client's notes. */
+  message?: string;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
-  /**
-   * Opens the client-match dialog. Provided only where resolving is possible;
-   * when absent the indicator is not rendered at all.
-   */
-  onResolveClient?: () => void;
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -37,10 +41,12 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, onInquiryChanged, onResolveClient }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, message = "", onInquiryChanged }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tMatch = useTranslations("app.inquiries.detail.clientMatch");
-  const [hasMatch, setHasMatch] = useState(false);
+  const router = useRouter();
+  const [matches, setMatches] = useState<InquiryClientMatch[]>([]);
+  const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const tp = useTranslations("app.inquiries.preferred");
   const errMsg = useActionError();
   const preferredLabel = (() => {
@@ -53,16 +59,29 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
   // Nothing is stored, so there is nothing to invalidate. Deliberately absent
   // from the inquiries table: that would need a per-row lookup across the list.
   useEffect(() => {
-    if (locked || !onResolveClient) return;
+    if (locked) return;
     let cancelled = false;
     void findInquiryClientMatchesAction(inquiryId).then((res) => {
-      // Guard against a resolve landing after the modal closed.
-      if (!cancelled && "ok" in res) setHasMatch(res.matches.length > 0);
+      // Guard against a resolve landing after the modal closed. A non-owner
+      // gets an error here, which leaves the indicator hidden — as intended.
+      if (!cancelled && "ok" in res) setMatches(res.matches);
     });
     return () => {
       cancelled = true;
     };
-  }, [inquiryId, locked, onResolveClient]);
+  }, [inquiryId, locked]);
+
+  async function handleMatchResolve(resolution: ClientMatchResolution) {
+    const res = await resolveInquiryClientAction(inquiryId, resolution);
+    setMatchDialogOpen(false);
+    if ("error" in res) {
+      toast.error(errMsg(res.error));
+      return;
+    }
+    toast.success(tMatch("resolvedToast"));
+    setMatches([]);
+    router.refresh();
+  }
 
   const [editingPhone, setEditingPhone] = useState(false);
   const [draftPhone, setDraftPhone] = useState(phone ?? "");
@@ -90,7 +109,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{t("title")}</CardTitle>
-        {onResolveClient && hasMatch ? (
+        {matches.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
             {/* Icon is never the only signal — the warning text and the
                 button's accessible name carry the same meaning. */}
@@ -100,7 +119,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
             </span>
             <button
               type="button"
-              onClick={onResolveClient}
+              onClick={() => setMatchDialogOpen(true)}
               className="border border-border px-2 py-1 text-xs font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               {tMatch("resolveButton")}
@@ -158,6 +177,15 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
           <Row label={t("preferredContact")} value={preferredLabel} />
         </dl>
       </CardContent>
+
+      <ClientMatchDialog
+        open={matchDialogOpen}
+        matches={matches.map((m) => ({ ...m, id: m._id, lastBookingAt: null }))}
+        typed={{ name, email: email || null, phone, notes: message, tags: [] }}
+        mode="link"
+        onResolve={handleMatchResolve}
+        onCancel={() => setMatchDialogOpen(false)}
+      />
     </Card>
   );
 }

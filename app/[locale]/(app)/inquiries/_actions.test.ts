@@ -434,6 +434,23 @@ describe("findInquiryClientMatchesAction", () => {
     expect(ids).not.toContain(String(inquiry.clientId));
     expect(ids).toHaveLength(1);
   });
+
+  it("carries the candidate's notes so a notes-only conflict is visible before resolving", async () => {
+    // Without notes on the card the dialog computes no conflict for it, so the
+    // user is never asked and the stored note silently wins.
+    const { inquiry } = await seedDraft(workspaceId);
+    await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "emma@example.com",
+      notes: "Prefers morning shoots",
+      source: "form",
+    });
+
+    const res = await findInquiryClientMatchesAction(String(inquiry._id));
+    if (!("ok" in res)) throw new Error("expected ok result");
+    expect(res.matches[0].notes).toBe("Prefers morning shoots");
+  });
 });
 
 describe("resolveInquiryClientAction", () => {
