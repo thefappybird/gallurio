@@ -1014,6 +1014,9 @@
             },
             "clientPhone": {
               "note": "Saved on a new client; fills a blank one, never overwrites"
+            },
+            "payments": {
+              "note": "JSON list from an export. Read only when creating; paid entries reach the ledger"
             }
           }
         }

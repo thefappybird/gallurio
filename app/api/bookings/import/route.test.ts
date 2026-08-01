@@ -304,10 +304,12 @@ describe("POST /api/bookings/import — booking_id round-trip", () => {
 
   it("counts skipped ROWS while errors counts problems", async () => {
     // A 2-row group that fails is one error but two unwritten rows; reporting
-    // skipped=1 would under-report what the user has to fix.
+    // skipped=1 would under-report what the user has to fix. Uses a 24-hex id
+    // that does not exist — a non-hex value is now a legal grouping key.
+    const missing = new Types.ObjectId().toHexString();
     const res = await callImport([
-      { ...VALID_ROW, bookingId: "not-an-object-id", sessionIndex: "0" },
-      { ...VALID_ROW, bookingId: "not-an-object-id", sessionIndex: "1" },
+      { ...VALID_ROW, bookingId: missing, sessionIndex: "0" },
+      { ...VALID_ROW, bookingId: missing, sessionIndex: "1" },
     ]);
     const body = await res.json();
     expect(body.errors).toHaveLength(1);
@@ -419,6 +421,43 @@ describe("POST /api/bookings/import", () => {
     ]);
     // Already set — a stale sheet must not clobber the CRM value.
     expect((await Client.findById(existing._id).lean())?.phone).toBe("+63 917 555 0142");
+  });
+
+  it("groups rows under a non-id booking_id into ONE new multi-session booking", async () => {
+    // Hand-authored files have no booking ids, so without this a three-day
+    // wedding imports as three unrelated bookings with no way to say otherwise.
+    const res = await callImport([
+      { ...VALID_ROW, bookingId: "grp-alonzo", sessionIndex: "0", startAt: "2026-06-15T01:00:00.000Z", endAt: "2026-06-15T09:00:00.000Z" },
+      { ...VALID_ROW, bookingId: "grp-alonzo", sessionIndex: "1", startAt: "2026-06-16T01:00:00.000Z", endAt: "2026-06-16T09:00:00.000Z" },
+    ]);
+    const body = await res.json();
+    expect(body.errors).toHaveLength(0);
+    expect(body.created).toBe(1);
+
+    const bookings = await Booking.find({ workspaceId: WS_ID }).lean();
+    expect(bookings).toHaveLength(1);
+    expect(bookings[0].sessions).toHaveLength(2);
+  });
+
+  it("imports the payments column the exporter writes, and projects the paid ones", async () => {
+    // Export emits JSON.stringify(booking.payments). Reading it back is what
+    // lets a re-import carry a booking's real payment lines, not just a deposit.
+    const payments = JSON.stringify([
+      { title: "Balance", price: 40000, status: "paid", method: "remit", paidAt: "2026-06-20T00:00:00.000Z" },
+    ]);
+    const res = await callImport([
+      { ...VALID_ROW, amountTotal: 50000, amountDeposit: 10000, payments },
+    ]);
+    expect((await res.json()).created).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.payments).toHaveLength(1);
+    expect(booking?.payments?.[0].price).toBe(40000);
+
+    // A paid payment must reach the ledger, or totalSpent understates it.
+    const balance = await Transaction.find({ workspaceId: WS_ID, type: "balance" }).lean();
+    expect(balance).toHaveLength(1);
+    expect(balance[0].amount).toBe(40000);
   });
 
   it("refuses to import a completed booking that is not fully paid", async () => {
@@ -646,9 +685,9 @@ describe("POST /api/bookings/import", () => {
   // idempotence test above.
 
   it("ignores export-only columns it does not recognise", async () => {
+    // payments is no longer in this set — it is read now.
     const exportRow = {
       ...VALID_ROW,
-      payments: '[{"amount":100}]',
       invoiceNumber: "INV-001",
       teamName: "Main",
       createdAt: "2026-01-01T00:00:00.000Z",
@@ -661,17 +700,17 @@ describe("POST /api/bookings/import", () => {
   });
 
   it("does not persist export-only columns onto the booking document", async () => {
-    const exportRow = {
-      ...VALID_ROW,
-      payments: '[{"amount":100}]',
-      invoiceNumber: "INV-001",
-    };
-    await callImport([exportRow]);
+    await callImport([{ ...VALID_ROW, invoiceNumber: "INV-001", teamName: "Main" }]);
     const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
-    // payments is a real Booking field, so it must stay empty rather than
-    // taking the exported JSON string; invoiceNumber is assigned elsewhere.
-    expect(booking?.payments ?? []).toHaveLength(0);
+    // invoiceNumber is assigned by the invoice route; a sheet must not set it.
     expect(booking?.invoiceNumber ?? null).toBeNull();
+  });
+
+  it("rejects a malformed payments cell instead of dropping it", async () => {
+    const res = await callImport([{ ...VALID_ROW, payments: '[{"amount":100}]' }]);
+    const body = await res.json();
+    expect(body.created).toBe(0);
+    expect(body.errors[0].message).toMatch(/payments/i);
   });
 
   // --- Issue 4: timezone-aware session validation ---

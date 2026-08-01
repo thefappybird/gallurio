@@ -1014,6 +1014,9 @@
             },
             "clientPhone": {
               "note": "Sine-save sa bagong kliyente; pinupunan ang blangko, hindi pinapalitan"
+            },
+            "payments": {
+              "note": "JSON list mula sa export. Binabasa lang kapag gumagawa; ang bayad ay pumupunta sa ledger"
             }
           }
         }

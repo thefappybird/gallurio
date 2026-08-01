@@ -1014,6 +1014,9 @@
             },
             "clientPhone": {
               "note": "Disimpan pada klien baru; mengisi yang kosong, tidak pernah menimpa"
+            },
+            "payments": {
+              "note": "Daftar JSON dari ekspor. Dibaca hanya saat membuat; entri lunas masuk ke buku besar"
             }
           }
         }

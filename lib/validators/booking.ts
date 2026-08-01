@@ -224,6 +224,19 @@ export const bookingImportRowSchema = z
       nonNegMoney.optional()
     ),
     currency: z.preprocess(blankToUndefined, z.enum(SUPPORTED_CURRENCIES).optional()),
+    /**
+     * The exporter writes `JSON.stringify(booking.payments)` into one cell.
+     * Parsed back so a re-import carries real payment lines rather than only a
+     * deposit. Malformed JSON becomes a non-array and fails the row.
+     */
+    payments: z.preprocess((v) => {
+      if (typeof v !== "string" || !v.trim()) return undefined;
+      try {
+        return JSON.parse(v);
+      } catch {
+        return "invalid";
+      }
+    }, z.array(bookingPaymentSchema).optional()),
     notes: z.string().max(2000).trim().optional(),
     // Round-trip identity columns emitted by the exporter. A bookingId turns
     // the row into an update, but it is only a hint — ownership is re-checked

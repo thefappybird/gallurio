@@ -60,13 +60,14 @@ const HEADER_SPEC_KEYS = [
   { name: "session_index", required: false },
   { name: "clientId", required: false },
   { name: "clientPhone", required: false },
+  { name: "payments", required: false },
 ] as const;
 
 // The downloadable template stays at the columns someone would hand-author: a
 // new booking has no booking_id, and inventing one would look like a required
 // field. The spec table above still explains them.
 const TEMPLATE_HEADERS = HEADER_SPEC_KEYS.filter(
-  (h) => !["booking_id", "session_index", "clientId"].includes(h.name)
+  (h) => !["booking_id", "session_index", "clientId", "payments"].includes(h.name)
 ).map((h) => h.name);
 
 const SAMPLE_ROW = [

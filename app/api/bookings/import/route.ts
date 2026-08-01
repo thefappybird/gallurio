@@ -5,7 +5,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { BookingImportRowInput } from "@/lib/validators/booking";
-import { recordBookingForClient } from "@/lib/db/clientTransactions";
+import { recordBookingForClient, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
 import { isCompletionEligible } from "@/lib/bookings/payment-rules";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import {
@@ -220,17 +220,21 @@ export async function POST(req: Request) {
           amount?: { total?: number; deposit?: number } | null;
         }
       | null = null;
-    if (group.bookingId) {
-      existingBooking = mongoose.isValidObjectId(group.bookingId)
-        ? await Booking.findOne({
-            _id: group.bookingId,
-            workspaceId: ctx.workspace._id,
-          })
-            // amount comes along so an edit to it can be refused rather than
-            // silently dropped by the $set below.
-            .select({ _id: 1, clientId: 1, amount: 1 })
-            .lean()
-        : null;
+    // A 24-hex booking_id addresses an existing booking; anything else is a
+    // grouping key the author invented, which turns its rows into ONE new
+    // multi-session booking. Deliberately stricter than isValidObjectId, which
+    // also accepts any 12-character string — "wedding-2026" would be read as an
+    // id under that test. A mistyped real id is still 24-hex, so it still fails
+    // loudly instead of quietly creating a duplicate.
+    if (group.bookingId && /^[a-f0-9]{24}$/i.test(group.bookingId)) {
+      existingBooking = await Booking.findOne({
+        _id: group.bookingId,
+        workspaceId: ctx.workspace._id,
+      })
+        // amount comes along so an edit to it can be refused rather than
+        // silently dropped by the $set below.
+        .select({ _id: 1, clientId: 1, amount: 1 })
+        .lean();
 
       if (!existingBooking) {
         errors.push({
@@ -275,12 +279,12 @@ export async function POST(req: Request) {
       Math.max(...sessions.map((s) => s.endAt.getTime()))
     );
 
-    // Import writes no payment lines, so a "completed" row is only coherent
-    // when the deposit alone settles the total. Without this the sheet can
-    // create a booking the PATCH route would refuse to put in that state.
+    // Mirrors the PATCH invariant: completing requires the deposit plus every
+    // paid payment to settle the total, so a sheet cannot create a state the
+    // app itself would refuse.
     if (
       row.status === "completed" &&
-      !isCompletionEligible([], {
+      !isCompletionEligible(row.payments ?? [], {
         total: row.amountTotal ?? 0,
         deposit: row.amountDeposit ?? 0,
       })
@@ -291,7 +295,7 @@ export async function POST(req: Request) {
         field: "status",
         kind: "validation",
         message:
-          "A completed booking must be fully paid. Import records no payments, so the deposit has to equal the total.",
+          "A completed booking must be fully paid: the deposit plus all paid payments has to equal the total.",
       });
       skippedRows += group.rows.length;
       continue;
@@ -494,6 +498,12 @@ export async function POST(req: Request) {
                 deposit: row.amountDeposit ?? 0,
                 currency: row.currency ?? defaultCurrency,
               },
+              // createdAt is required by the Booking schema. An exported
+              // payment always carries one; a hand-authored row need not.
+              payments: (row.payments ?? []).map((p) => ({
+                ...p,
+                createdAt: p.createdAt ?? new Date(),
+              })),
               notes: row.notes ?? "",
             },
           ],
@@ -512,6 +522,23 @@ export async function POST(req: Request) {
           ],
           { session }
         );
+
+        // recordBookingForClient projects only the deposit. Paid payment lines
+        // are a separate projection, so without this the booking would show
+        // payments the client's totalSpent does not account for.
+        if (booking.payments?.length) {
+          await syncBookingPaymentsForClient({
+            workspaceId: ctx.workspace._id,
+            clientId: new mongoose.Types.ObjectId(clientId),
+            booking: {
+              _id: booking._id,
+              payments: booking.payments,
+              amount: booking.amount!,
+              teamId: booking.teamId ?? null,
+            },
+            session,
+          });
+        }
 
         await recordBookingForClient({
           workspaceId: ctx.workspace._id,
