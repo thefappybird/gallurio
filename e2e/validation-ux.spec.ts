@@ -138,6 +138,52 @@ test.describe("Task 2 — CSV/XLSX import preview", () => {
     await expect(dialog.getByText(/update that booking instead of creating a copy/i)).toBeVisible();
   });
 
+  test("offers a team picker when the workspace runs more than one team", async ({ page }) => {
+    const dialog = await openImport(page);
+    const picker = dialog.getByLabel(/assign to team/i);
+    await expect(picker).toBeVisible({ timeout: 20_000 });
+    // Default is the workspace's main team, matching the route's fallback.
+    await expect(picker).toHaveValue("");
+  });
+
+  test("warns before re-importing a file, naming the team it already landed on", async ({ page }) => {
+    // Writes once, then re-imports the same file to trigger the warning. The
+    // second attempt is cancelled, so exactly one booking is created.
+    // Unique per run: a leftover booking from a previous run would make the
+    // FIRST upload warn, and the test would be asserting the wrong thing.
+    const title = `${E2E_MARKER} Repeat ${Date.now()}`;
+    const csv = [
+      HEADERS,
+      `${E2E_MARKER} Repeat Client,,2027-05-06T01:00:00.000Z,2027-05-06T09:00:00.000Z,${title},portrait,booked,1000,0,PHP,Studio,,`,
+    ].join("\n");
+    const upload = async () => {
+      const dialog = await openImport(page);
+      await dialog
+        .locator('input[type="file"]')
+        .setInputFiles({ name: "repeat.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+      await expect(dialog.getByText(/1 row\(s\) found/i)).toBeVisible({ timeout: 20_000 });
+      await dialog.getByRole("button", { name: /import 1 booking/i }).click();
+      return dialog;
+    };
+
+    const first = await upload();
+    await expect(first.getByText(/imported 1 booking/i)).toBeVisible({ timeout: 30_000 });
+    // Escape rather than a Close locator: the header X and the footer button
+    // share that accessible name.
+    await page.keyboard.press("Escape");
+    await expect(first).toBeHidden();
+
+    await upload();
+    const warning = page.getByRole("dialog").filter({ hasText: /already imported/i });
+    await expect(warning).toBeVisible({ timeout: 30_000 });
+    await expect(warning.getByText(title)).toBeVisible();
+    await expect(warning.getByText(/on team/i)).toBeVisible();
+    await expect(warning.getByRole("button", { name: /import anyway/i })).toBeVisible();
+
+    await warning.getByRole("button", { name: /^cancel$/i }).click();
+    await expect(warning).toBeHidden();
+  });
+
   test("a valid CSV previews its rows and offers to import them", async ({ page }) => {
     const csv = [
       HEADERS,
@@ -197,7 +243,9 @@ test.describe("Task 2 — CSV/XLSX import preview", () => {
   test("committing an import reports what it wrote and shows it in the table", async ({ page }) => {
     // The only case here that actually WRITES. Everything it creates carries
     // E2E_MARKER so it can be found and removed afterwards.
-    const title = `${E2E_MARKER} Booking`;
+    // Unique per run: a fixed title would hit the already-imported warning on
+    // the second run instead of importing.
+    const title = `${E2E_MARKER} Booking ${Date.now()}`;
     const csv = [
       HEADERS,
       `${E2E_MARKER} Client,,2027-03-04T01:00:00.000Z,2027-03-04T09:00:00.000Z,${title},portrait,booked,12345,0,PHP,Studio,,`,
