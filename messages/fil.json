@@ -914,7 +914,7 @@
         "import": "Mag-import",
         "export": "I-export",
         "add": "Bagong booking",
-        "invoiceTheme": "Tema ng invoice"
+        "invoiceTheme": "Tema ng invoice at resibo"
       },
       "exportDialog": {
         "title": "I-export ang mga booking",

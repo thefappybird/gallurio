@@ -914,7 +914,7 @@
         "import": "นำเข้า",
         "export": "ส่งออก",
         "add": "การจองใหม่",
-        "invoiceTheme": "ธีมใบแจ้งหนี้"
+        "invoiceTheme": "ธีมใบแจ้งหนี้และใบเสร็จ"
       },
       "exportDialog": {
         "title": "ส่งออกการจอง",

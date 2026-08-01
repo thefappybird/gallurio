@@ -4,6 +4,12 @@ import { renderWithProviders } from "@/test-utils/render";
 import { BookingsExportDialog } from "./bookings-export-dialog";
 import type { BookingTeamOption } from "../_data/team-options";
 
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PopoverTrigger: ({ render }: { render: React.ReactNode }) => <>{render}</>,
+  PopoverContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 const TEAMS: BookingTeamOption[] = [
   { id: "6a6c72fb0b6272bc938ef801", name: "Alpha", color: "#0ea5e9", isActive: true, isLead: true },
   { id: "6a6c72fb0b6272bc938ef802", name: "Beta", color: "#f59e0b", isActive: true, isLead: false },
@@ -31,12 +37,13 @@ describe("BookingsExportDialog", () => {
     );
   });
 
-  it("narrows the download to one team when one is picked", () => {
+  it("narrows the download to every selected team", () => {
     renderDialog();
-    fireEvent.change(screen.getByLabelText(/team/i), { target: { value: TEAMS[1].id } });
+    fireEvent.click(screen.getByRole("button", { name: /^alpha$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^beta$/i }));
     expect(screen.getByRole("button", { name: /download/i })).toHaveAttribute(
       "href",
-      `/api/bookings/export?teamId=${TEAMS[1].id}`
+      `/api/bookings/export?teamId=${TEAMS[0].id}&teamId=${TEAMS[1].id}`
     );
   });
 

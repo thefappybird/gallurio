@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { DownloadIcon } from "lucide-react";
+import { ChevronDownIcon, DownloadIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { BookingTeamOption } from "../_data/team-options";
+import { TeamLegend } from "./team-legend";
 
 type Props = {
   open: boolean;
@@ -20,18 +22,24 @@ type Props = {
   teams?: BookingTeamOption[];
 };
 
-const ALL_TEAMS = "";
-
 const FIELD_CLASS =
   "min-h-11 border border-border bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-0";
 
 export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: Props) {
   const t = useTranslations("app.bookings.exportDialog");
-  const [teamId, setTeamId] = useState(ALL_TEAMS);
+  const [teamIds, setTeamIds] = useState<string[]>([]);
   const [ranged, setRanged] = useState(false);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [format, setFormat] = useState<"csv" | "xlsx">("csv");
+
+  const teamLabel =
+    teamIds.length === 0
+      ? t("allTeams")
+      : teamIds
+          .map((teamId) => teams.find((team) => team.id === teamId)?.name)
+          .filter((name): name is string => Boolean(name))
+          .join(", ");
 
   // A range needs both ends, and an inverted one would silently export
   // nothing — better a disabled button than an empty file.
@@ -39,7 +47,8 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
 
   const p = new URLSearchParams(baseParams);
   if (format === "xlsx") p.set("format", "xlsx");
-  if (teamId) p.set("teamId", teamId);
+  p.delete("teamId");
+  teamIds.forEach((teamId) => p.append("teamId", teamId));
   if (ranged && from && to) {
     p.set("from", from);
     p.set("to", to);
@@ -56,24 +65,34 @@ export function BookingsExportDialog({ open, onClose, baseParams, teams = [] }: 
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-4 sm:max-w-md">
         <DialogTitle>{t("title")}</DialogTitle>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="export-team" className="text-xs font-medium text-foreground">
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-xs font-medium text-foreground">
             {t("teamLabel")}
-          </label>
-          <select
-            id="export-team"
-            value={teamId}
-            onChange={(e) => setTeamId(e.target.value)}
-            className={FIELD_CLASS}
-          >
-            <option value={ALL_TEAMS}>{t("allTeams")}</option>
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-        </div>
+          </legend>
+          <Popover>
+            <PopoverTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 w-full justify-between font-normal sm:min-h-0"
+                  aria-label={t("teamLabel")}
+                >
+                  <span className="truncate">{teamLabel}</span>
+                  <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+                </Button>
+              }
+            />
+            <PopoverContent align="start" className="w-64">
+              <TeamLegend
+                teams={teams}
+                selected={teamIds}
+                isOwner
+                onChange={setTeamIds}
+              />
+            </PopoverContent>
+          </Popover>
+        </fieldset>
 
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-xs font-medium text-foreground">

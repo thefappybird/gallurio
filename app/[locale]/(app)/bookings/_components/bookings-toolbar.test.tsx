@@ -52,6 +52,21 @@ vi.mock("./invoice-theme-dialog", () => ({
 
 const DEFAULT_INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
 
+describe("BookingsToolbar action order", () => {
+  it("orders import, export, invoice/receipt theme, then new booking", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+
+    const importButton = screen.getByRole("button", { name: /^import$/i });
+    const exportButton = screen.getByRole("button", { name: /^export$/i });
+    const themeButton = screen.getByRole("button", { name: /invoice.*receipt theme/i });
+    const newBookingButton = screen.getByRole("button", { name: /new booking/i });
+
+    expect(importButton.compareDocumentPosition(exportButton) & 4).toBe(4);
+    expect(exportButton.compareDocumentPosition(themeButton) & 4).toBe(4);
+    expect(themeButton.compareDocumentPosition(newBookingButton) & 4).toBe(4);
+  });
+});
+
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -272,7 +287,7 @@ describe("BookingsToolbar — Invoice theme button", () => {
       />,
       { wrapper }
     );
-    const btn = screen.getByRole("button", { name: /invoice theme/i });
+    const btn = screen.getByRole("button", { name: /invoice.*receipt theme/i });
     fireEvent.click(btn);
     expect(invoiceThemeDialogOpenSpy).toHaveBeenCalledWith(true);
   });
@@ -286,7 +301,7 @@ describe("BookingsToolbar — Invoice theme button", () => {
       />,
       { wrapper }
     );
-    expect(screen.queryByRole("button", { name: /invoice theme/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /invoice.*receipt theme/i })).not.toBeInTheDocument();
   });
 
   // Regression: workspaces created before `invoiceTheme` existed on the schema
@@ -304,6 +319,6 @@ describe("BookingsToolbar — Invoice theme button", () => {
       />,
       { wrapper }
     );
-    expect(screen.getByRole("button", { name: /invoice theme/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /invoice.*receipt theme/i })).toBeInTheDocument();
   });
 });

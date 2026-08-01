@@ -138,8 +138,8 @@ describe("GET /api/bookings/export", () => {
     const res = await callExport();
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toContain("text/csv");
-    expect(res.headers.get("Content-Disposition")).toMatch(
-      /^attachment; filename="bookings-\d{4}-\d{2}-\d{2}\.csv"$/
+    expect(res.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="gallurio-(all teams)-bookings.csv"'
     );
   });
 
@@ -163,7 +163,9 @@ describe("GET /api/bookings/export", () => {
     const res = await callExport("format=xlsx");
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toContain("spreadsheetml.sheet");
-    expect(res.headers.get("Content-Disposition")).toMatch(/\.xlsx"$/);
+    expect(res.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="gallurio-(all teams)-bookings.xlsx"'
+    );
 
     const parsed = await parseXlsxToRows(Buffer.from(await res.arrayBuffer()));
     expect(parsed.rows).toHaveLength(1);
@@ -391,7 +393,7 @@ describe("GET /api/bookings/export", () => {
 });
 
 describe("GET /api/bookings/export — team narrowing", () => {
-  it("exports only the requested team's bookings", async () => {
+  it("exports every requested team and names each one in the download", async () => {
     await Team.create([
       { workspaceId: WS_A, name: "Alpha", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByWorkosUserId: "user_test" },
       { workspaceId: WS_A, name: "Beta", color: TEAM_COLOR_PALETTE[1], isDefault: false, isActive: true, memberCount: 0, createdByWorkosUserId: "user_test" },
@@ -403,11 +405,16 @@ describe("GET /api/bookings/export — team narrowing", () => {
     await seedBooking(WS_A, { title: "Beta Wedding" });
     await Booking.updateOne({ title: "Beta Wedding" }, { $set: { teamId: beta._id } });
 
-    const res = await callExport(`teamId=${alpha._id.toString()}`);
+    const res = await callExport(
+      `teamId=${alpha._id.toString()}&teamId=${beta._id.toString()}`
+    );
     expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="gallurio-(Alpha,Beta)-bookings.csv"'
+    );
     const body = await res.text();
     expect(body).toContain("Alpha Wedding");
-    expect(body).not.toContain("Beta Wedding");
+    expect(body).toContain("Beta Wedding");
   });
 });
 
@@ -424,6 +431,9 @@ describe("GET /api/bookings/export — date range", () => {
 
     const res = await callExport("from=2026-08-15&to=2026-08-15");
     expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="gallurio-(all teams)-bookings-2026-08-15-to-2026-08-15.csv"'
+    );
     expect(await res.text()).toContain("Same Day");
   });
 });

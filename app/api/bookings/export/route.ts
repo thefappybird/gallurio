@@ -61,6 +61,22 @@ function guard(column: string, value: unknown): string | number {
   return TEXT_COLUMNS.has(column) ? escapeSpreadsheetText(text) : text;
 }
 
+function filenameTeamName(value: string): string {
+  const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  return normalized
+    // Content-Disposition's quoted filename must remain ASCII-safe.
+    .replace(/[^\x20-\x7E]+/g, "")
+    .replace(/[\x00-\x1F<>:"/\\|?*,]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim() || "team";
+}
+
+function filenameDate(value: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? value
+    : new Date(value).toISOString().slice(0, 10);
+}
+
 export async function GET(req: Request) {
   const ctx = await requireOrg();
   await connectDB();
@@ -83,21 +99,33 @@ export async function GET(req: Request) {
   const filter: Record<string, unknown> = { workspaceId: ctx.workspace._id };
   if (scope !== undefined) filter.teamId = { $in: scope };
 
-  // Narrowing to one team. A team id from a query string is untrusted twice
+  // Narrowing to one or more teams. A team id from a query string is untrusted twice
   // over: it has to belong to this workspace AND, for a non-owner, sit inside
   // the scope resolved above — otherwise this would read another team's
   // bookings by guessing an id. Both failures answer identically.
-  const teamIdParam = params.get("teamId");
-  if (teamIdParam) {
-    const team = mongoose.isValidObjectId(teamIdParam)
-      ? await Team.findOne({ _id: teamIdParam, workspaceId: ctx.workspace._id })
-          .select({ _id: 1 })
-          .lean()
-      : null;
-    if (!team || (scope !== undefined && !scope.includes(teamIdParam))) {
+  const teamIdParams = Array.from(new Set(params.getAll("teamId")));
+  let exportTeamNames = ["all teams"];
+  if (teamIdParams.length > 0) {
+    if (
+      teamIdParams.some(
+        (teamId) => !teamId || !mongoose.isValidObjectId(teamId) ||
+          (scope !== undefined && !scope.includes(teamId))
+      )
+    ) {
       return NextResponse.json({ error: "invalid_team" }, { status: 400 });
     }
-    filter.teamId = team._id;
+    const teams = await Team.find({
+      _id: { $in: teamIdParams },
+      workspaceId: ctx.workspace._id,
+    })
+      .select({ _id: 1, name: 1 })
+      .lean();
+    const teamsById = new Map(teams.map((team) => [team._id.toString(), team]));
+    if (teamsById.size !== teamIdParams.length) {
+      return NextResponse.json({ error: "invalid_team" }, { status: 400 });
+    }
+    filter.teamId = { $in: teamIdParams };
+    exportTeamNames = teamIdParams.map((teamId) => teamsById.get(teamId)!.name);
   }
 
   if (status) {
@@ -225,7 +253,8 @@ export async function GET(req: Request) {
     });
   }
 
-  const datestamp = new Date().toISOString().slice(0, 10);
+  const dateRange = from && to ? `-${filenameDate(from)}-to-${filenameDate(to)}` : "";
+  const filename = `gallurio-(${exportTeamNames.map(filenameTeamName).join(",")})-bookings${dateRange}`;
 
   if (format === "xlsx") {
     const buffer = await rowsToXlsxBuffer(CSV_HEADERS, rows);
@@ -234,7 +263,7 @@ export async function GET(req: Request) {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="bookings-${datestamp}.xlsx"`,
+        "Content-Disposition": `attachment; filename="${filename}.xlsx"`,
         "Cache-Control": "no-store",
       },
     });
@@ -245,7 +274,7 @@ export async function GET(req: Request) {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="bookings-${datestamp}.csv"`,
+      "Content-Disposition": `attachment; filename="${filename}.csv"`,
       "Cache-Control": "no-store",
     },
   });

@@ -247,16 +247,6 @@ export function BookingsToolbar({
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />
-        {isOwner ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
-            onClick={() => setInvoiceThemeOpen(true)}
-          >
-            {t("invoiceTheme")}
-          </Button>
-        ) : null}
         {canCreate ? (
           <Button
             variant="outline"
@@ -280,6 +270,16 @@ export function BookingsToolbar({
           <DownloadIcon className="size-4" />
           {t("export")}
         </Button>
+        {isOwner ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            onClick={() => setInvoiceThemeOpen(true)}
+          >
+            {t("invoiceTheme")}
+          </Button>
+        ) : null}
         <BookingsExportDialog
           open={exportOpen}
           onClose={() => setExportOpen(false)}

@@ -914,7 +914,7 @@
         "import": "Import",
         "export": "Export",
         "add": "New booking",
-        "invoiceTheme": "Invoice theme"
+        "invoiceTheme": "Invoice & Receipt Theme"
       },
       "exportDialog": {
         "title": "Export bookings",
@@ -1110,7 +1110,7 @@
         "other": "Other"
       },
       "invoiceThemeDialog": {
-        "title": "Invoice & receipt theme",
+        "title": "Invoice & Receipt Theme",
         "invoice": "Invoice",
         "receipt": "Receipt",
         "presets": {
