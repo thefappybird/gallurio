@@ -50,6 +50,35 @@ describe("InvoiceThemeDialog", () => {
     expect(screen.getByText("Custom")).toBeInTheDocument();
   });
 
+  it("shows workspace data in compact A4 invoice and receipt previews", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <InvoiceThemeDialog
+          open
+          onClose={vi.fn()}
+          initialTheme={{ preset: "classic", main: "#1A1A1A", accent: "#FFFFFF" }}
+          business={{
+            name: "North Star Stories",
+            logoUrl: "https://imagedelivery.net/example/logo/public",
+            address: "24 Palm Avenue, Dubai",
+            email: "hello@northstar.test",
+            currency: "AED",
+          }}
+        />
+      </NextIntlClientProvider>
+    );
+
+    const invoicePreview = screen.getByLabelText("Invoice preview");
+    expect(invoicePreview).toHaveClass("aspect-[210/297]", "max-w-[18rem]");
+    expect(screen.getByText("North Star Stories")).toBeInTheDocument();
+    expect(screen.getAllByText("24 Palm Avenue, Dubai")).toHaveLength(2);
+    expect(document.querySelector('img[src="https://imagedelivery.net/example/logo/public"]')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Receipt" }));
+    expect(screen.getByLabelText("Receipt preview")).toBeInTheDocument();
+    expect(screen.getByText("Paid in full for Summer wedding.")).toBeInTheDocument();
+  });
+
   it("selecting Slate and clicking Save and apply calls the action with preset slate, then closes and refreshes", async () => {
     updateInvoiceThemeActionMock.mockResolvedValue({ ok: true });
     const onClose = vi.fn();

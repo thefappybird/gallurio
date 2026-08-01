@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
     root: workspaceRoot,
   },
   outputFileTracingRoot: workspaceRoot,
+  // exceljs is server-only (bookings XLSX import/export in Node runtime route
+  // handlers). Keeping it external stops the bundler from trying to pull its
+  // Node built-in dependencies into a browser bundle.
+  serverExternalPackages: ["exceljs"],
   allowedDevOrigins: ["http://localhost:3000", "dev.gallurio.com"],
   images: {
     remotePatterns: [

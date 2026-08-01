@@ -6,6 +6,13 @@ export const INVOICE_THEME_PRESETS = {
 } as const;
 export type InvoiceThemePresetId = keyof typeof INVOICE_THEME_PRESETS;
 export type InvoiceTheme = { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+export type InvoiceThemePreviewBusiness = {
+  name: string;
+  logoUrl: string;
+  address: string;
+  email: string;
+  currency: string;
+};
 
 export function resolveInvoiceTheme(theme: InvoiceTheme | null | undefined): { main: string; accent: string } {
   if (theme?.preset === "custom") return { main: theme.main, accent: theme.accent };

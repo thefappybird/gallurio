@@ -874,7 +874,7 @@ export function BookingCalendar({
   onDropFromOutside,
   dragFromOutsideItem,
   messages,
-  showPast = false,
+  showPast = true,
   pendingIds,
   colorMode = "status",
   teamColorMap,

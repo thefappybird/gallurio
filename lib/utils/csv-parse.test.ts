@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { parseCsv, normalizeCsvHeader } from "./csv-parse";
+import { parseCsv, normalizeCsvHeader, stripFormulaGuard } from "./csv-parse";
+
+describe("stripFormulaGuard", () => {
+  it("reverses the export-side apostrophe guard, and only that", () => {
+    // Round-trip: escapeSpreadsheetText("=SUM(1)") -> "'=SUM(1)" -> back again.
+    expect(stripFormulaGuard("'=SUM(1)")).toBe("=SUM(1)");
+    expect(stripFormulaGuard("'+63917")).toBe("+63917");
+    // A legitimately apostrophe-led value is not a guard and must survive.
+    expect(stripFormulaGuard("'tis the season")).toBe("'tis the season");
+    expect(stripFormulaGuard("Garden Wedding")).toBe("Garden Wedding");
+  });
+});
 
 describe("normalizeCsvHeader", () => {
   it("maps known aliases to canonical names", () => {
@@ -17,6 +28,16 @@ describe("normalizeCsvHeader", () => {
   it("passes through unknown headers unchanged (lowercased)", () => {
     expect(normalizeCsvHeader("customField")).toBe("customfield");
   });
+
+  it("maps the round-trip identity columns the exporter emits", () => {
+    // Without these the exporter's own headers arrive as "bookingid" /
+    // "sessionindex" and are dropped, so an exported file can never be
+    // re-imported as an update.
+    expect(normalizeCsvHeader("booking_id")).toBe("bookingId");
+    expect(normalizeCsvHeader("Booking ID")).toBe("bookingId");
+    expect(normalizeCsvHeader("session_index")).toBe("sessionIndex");
+    expect(normalizeCsvHeader("client_id")).toBe("clientId");
+  });
 });
 
 describe("parseCsv", () => {
@@ -24,6 +45,15 @@ describe("parseCsv", () => {
     const { headers, rows } = parseCsv("title,clientName\nWedding,Jane");
     expect(headers).toEqual(["title", "clientName"]);
     expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual({ title: "Wedding", clientName: "Jane" });
+  });
+
+  it("strips a UTF-8 BOM so an Excel-saved file's first column still maps", () => {
+    // Excel writes a BOM; without stripping it the first header parses as
+    // "﻿title", the required title column silently goes missing, and every
+    // row fails validation.
+    const { headers, rows } = parseCsv("﻿title,clientName\r\nWedding,Jane\r\n");
+    expect(headers).toEqual(["title", "clientName"]);
     expect(rows[0]).toEqual({ title: "Wedding", clientName: "Jane" });
   });
 

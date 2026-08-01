@@ -1,11 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ClientFormModal } from "./client-form-modal";
+import { updateClientAction, findClientMatchesAction } from "@/lib/actions/clients";
 
 vi.mock("@/lib/actions/clients", () => ({
   createClientAction: vi.fn().mockResolvedValue({ ok: true }),
   updateClientAction: vi.fn().mockResolvedValue({ ok: true }),
+  findClientMatchesAction: vi.fn().mockResolvedValue({ matches: [] }),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn() }));
@@ -15,6 +17,80 @@ const defaultProps = {
   onOpenChange: vi.fn(),
   onSuccess: vi.fn(),
 };
+
+// findClientMatchesAction is overridden per-test; without this the override
+// leaks and every later test opens the match dialog instead of saving.
+beforeEach(() => {
+  vi.mocked(findClientMatchesAction).mockResolvedValue({ matches: [] });
+  vi.mocked(updateClientAction).mockClear();
+});
+
+describe("ClientFormModal — linking to a match", () => {
+  it("never erases a stored field the form left blank", async () => {
+    // updateClientAction $sets the whole document, and a blank typed field is
+    // not a conflict, so it never reaches `picks` — without an explicit merge
+    // the stored email/phone/notes are overwritten with nothing.
+    vi.mocked(findClientMatchesAction).mockResolvedValue({
+      matches: [
+        {
+          id: "c9",
+          name: "Ana Cruz",
+          email: "ana@example.com",
+          phone: "+63 917 123 4567",
+          notes: "prefers golden hour",
+          tags: ["vip"],
+          bookingsCount: 3,
+          lastBookingAt: null,
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Ana Cruz" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    // Pick the match. Everything typed is blank, so there are no conflicts and
+    // the reconcile step is skipped.
+    const radio = await screen.findByRole("radio", { name: "Ana Cruz" });
+    fireEvent.click(radio);
+    fireEvent.click(screen.getByRole("button", { name: "Save client" }));
+
+    await waitFor(() => expect(updateClientAction).toHaveBeenCalled());
+    const [, payload] = vi.mocked(updateClientAction).mock.calls[0];
+    expect(payload.email).toBe("ana@example.com");
+  });
+
+  it("keeps the stored client's provenance instead of resetting it to manual", async () => {
+    // The add form defaults source to "manual"; linking must not relabel a
+    // client that arrived from the public form or a referral.
+    vi.mocked(findClientMatchesAction).mockResolvedValue({
+      matches: [
+        {
+          id: "c9",
+          name: "Ana Cruz",
+          email: "ana@example.com",
+          phone: null,
+          notes: null,
+          tags: [],
+          source: "referral",
+          bookingsCount: 0,
+          lastBookingAt: null,
+        },
+      ],
+    } as never);
+
+    renderWithProviders(<ClientFormModal {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Ana Cruz" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    fireEvent.click(await screen.findByRole("radio", { name: "Ana Cruz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save client" }));
+
+    await waitFor(() => expect(updateClientAction).toHaveBeenCalled());
+    const [, payload] = vi.mocked(updateClientAction).mock.calls[0];
+    expect(payload.source).toBe("referral");
+  });
+});
 
 describe("ClientFormModal", () => {
   it("renders Add Client title in add mode", () => {
@@ -99,5 +175,20 @@ describe("ClientFormModal", () => {
     await waitFor(() => expect(screen.getByText("vip")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /remove tag vip/i }));
     await waitFor(() => expect(screen.queryByText("vip")).not.toBeInTheDocument());
+  });
+
+  it("checks for name matches on create, then skips the match dialog and creates directly when none are found", async () => {
+    const { findClientMatchesAction } = await import("@/lib/actions/clients");
+    const onSuccess = vi.fn();
+    renderWithProviders(<ClientFormModal {...defaultProps} onSuccess={onSuccess} />);
+
+    fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() =>
+      expect(findClientMatchesAction).toHaveBeenCalledWith(expect.objectContaining({ name: "Test Client" }))
+    );
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+    expect(screen.queryByText("Is the client one of these?")).not.toBeInTheDocument();
   });
 });

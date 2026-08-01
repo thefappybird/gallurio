@@ -78,6 +78,7 @@ export default async function InquiryDetailPage({
             phone={inquiry.phone ?? null}
             preferredContact={inquiry.preferredContact ?? "email"}
             status={inquiry.status}
+            message={inquiry.message ?? ""}
           />
           <EventRequestCard
             eventType={inquiry.eventType ?? "other"}

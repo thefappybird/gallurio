@@ -6,7 +6,10 @@ import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Inquiry, Booking, ActivityLog, Team, Client } from "@/lib/db/models";
+import type { InquiryDoc } from "@/lib/db/models/Inquiry";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
+import { isClientMatch } from "@/lib/clients/nameMatch";
+import { reconcileClient, type ReconciledField } from "@/lib/clients/reconcile";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
 import { DEPOSIT_REQUIRES_TOTAL_MESSAGE } from "@/lib/validators/booking";
@@ -26,9 +29,281 @@ import { sendNotification } from "@/lib/notifications/send";
 // only state hidden from the calendar.
 const PROMOTED_STATUS = "booked" as const;
 
+/** True when an active client other than the inquiry's own plausibly matches it. */
+async function inquiryHasUnresolvedClientMatch(
+  workspaceId: mongoose.Types.ObjectId,
+  inquiry: Pick<InquiryDoc, "name" | "email" | "phone" | "clientId" | "clientResolvedAt">
+): Promise<boolean> {
+  // The owner has already answered this question. Asking again on every approve
+  // is unanswerable when two same-name clients both match: picking either
+  // leaves the other matching.
+  if (inquiry.clientResolvedAt) return false;
+
+  const candidates = await Client.find(
+    { workspaceId, isActive: true },
+    { name: 1, email: 1, phone: 1 }
+  )
+    .limit(5000)
+    .lean();
+
+  return candidates.some(
+    (c) =>
+      String(c._id) !== String(inquiry.clientId ?? "") &&
+      isClientMatch(
+        { name: inquiry.name, email: inquiry.email, phone: inquiry.phone },
+        { name: c.name, email: c.email, phone: c.phone }
+      )
+  );
+}
+
 export type InquiryActionResult =
-  | { ok: true; bookingId?: string; idempotent?: boolean }
+  | { ok: true; bookingId?: string; idempotent?: boolean; clientId?: string }
   | { error: string };
+
+export type InquiryClientMatch = {
+  _id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  /** Carried so the resolve dialog can surface a notes conflict, not just email/phone. */
+  notes: string | null;
+  tags: string[];
+  source: "form" | "manual" | "referral" | "import";
+  bookingsCount: number;
+  totalSpent: number;
+  createdAt: string;
+};
+
+/**
+ * Clients that plausibly describe the same person as the inquiry's typed
+ * contact details, excluding whoever the inquiry already points at. Owner-only.
+ * Computed live on demand — no stored flag, nothing to invalidate.
+ */
+export async function findInquiryClientMatchesAction(
+  inquiryId: string
+): Promise<{ ok: true; matches: InquiryClientMatch[] } | { error: string }> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+
+  const inquiry = await Inquiry.findOne(
+    { _id: inquiryId, workspaceId },
+    "name email phone clientId"
+  ).lean();
+  if (!inquiry) return { error: "not_found" };
+
+  // The reversed-name ordering isn't expressible as a Mongo query — fetch
+  // active clients and filter in memory.
+  const candidates = await Client.find(
+    { workspaceId, isActive: true },
+    { name: 1, email: 1, phone: 1, notes: 1, tags: 1, source: 1, bookingsCount: 1, totalSpent: 1, createdAt: 1 }
+  )
+    .limit(5000)
+    .lean();
+
+  const matches: InquiryClientMatch[] = candidates
+    .filter((c) => String(c._id) !== String(inquiry.clientId ?? ""))
+    .filter((c) =>
+      isClientMatch(
+        { name: inquiry.name, email: inquiry.email, phone: inquiry.phone },
+        { name: c.name, email: c.email, phone: c.phone }
+      )
+    )
+    .map((c) => ({
+      _id: String(c._id),
+      name: c.name,
+      email: c.email ?? null,
+      phone: c.phone ?? null,
+      notes: c.notes ?? null,
+      tags: c.tags ?? [],
+      source: c.source ?? "manual",
+      bookingsCount: c.bookingsCount ?? 0,
+      totalSpent: c.totalSpent ?? 0,
+      createdAt: c.createdAt.toISOString(),
+    }));
+
+  return { ok: true, matches };
+}
+
+const clientIdSchema = z.string().refine((v) => mongoose.isValidObjectId(v), {
+  message: "invalid_input",
+});
+
+const clientResolutionPicksSchema = z.object({
+  email: z.enum(["existing", "typed"]).optional(),
+  phone: z.enum(["existing", "typed"]).optional(),
+  notes: z.enum(["existing", "typed"]).optional(),
+});
+
+const inquiryClientResolutionSchema = z.union([
+  z.object({ clientId: clientIdSchema, picks: clientResolutionPicksSchema }),
+  z.object({ createNew: z.literal(true) }),
+]);
+
+export type InquiryClientResolutionInput = z.infer<typeof inquiryClientResolutionSchema>;
+
+/**
+ * Re-link an inquiry (and its draft booking) to a different client — a
+ * re-link, not a plain link, because the draft Booking created at submission
+ * time already points somewhere and Booking.clientId is required. Reconciles
+ * the target client's fields against what the inquiry typed and applies the
+ * caller's picks for genuine conflicts.
+ */
+export async function resolveInquiryClientAction(
+  inquiryId: string,
+  resolution: InquiryClientResolutionInput
+): Promise<InquiryActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
+  const parsed = inquiryClientResolutionSchema.safeParse(resolution);
+  if (!parsed.success) return { error: "invalid_input" };
+
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+
+  const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId });
+  if (!inquiry) return { error: "not_found" };
+
+  let targetClientId: mongoose.Types.ObjectId | undefined;
+  let targetClientName: string | undefined;
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      if ("clientId" in parsed.data) {
+        const { clientId, picks } = parsed.data;
+        // Re-validate against the workspace — a client id from a request body
+        // is untrusted input; a foreign id must fail like a nonexistent one.
+        const target = await Client.findOne({ _id: clientId, workspaceId }, null, { session }).lean();
+        if (!target) throw new Error("target_not_found");
+
+        const reconciled = reconcileClient(target, {
+          email: inquiry.email,
+          phone: inquiry.phone,
+          notes: inquiry.message,
+        });
+
+        const set: Partial<Record<ReconciledField, string>> = {};
+        for (const change of reconciled.additive) set[change.field] = change.value;
+        for (const conflict of reconciled.conflicts) {
+          if (picks[conflict.field] === "typed") set[conflict.field] = conflict.typedValue;
+        }
+        const $set: Record<string, unknown> = { ...set };
+        if (reconciled.tags) $set.tags = reconciled.tags;
+        if (Object.keys($set).length > 0) {
+          await Client.updateOne({ _id: clientId, workspaceId }, { $set }, { session });
+        }
+
+        targetClientId = target._id;
+        targetClientName = target.name;
+      } else {
+        const [created] = await Client.create(
+          [
+            {
+              workspaceId,
+              name: inquiry.name,
+              email: inquiry.email,
+              phone: inquiry.phone,
+              source: "form",
+            },
+          ],
+          { session }
+        );
+        targetClientId = created._id;
+        targetClientName = created.name;
+      }
+
+      await Inquiry.updateOne(
+        { _id: inquiry._id, workspaceId },
+        { $set: { clientId: targetClientId, clientResolvedAt: new Date() } },
+        { session }
+      );
+
+      if (inquiry.draftBookingId) {
+        await Booking.updateOne(
+          { _id: inquiry.draftBookingId, workspaceId },
+          { $set: { clientId: targetClientId, clientName: targetClientName } },
+          { session }
+        );
+      }
+
+      await ActivityLog.create(
+        [
+          {
+            workspaceId,
+            actorUserId: ctx.userId,
+            entity: "inquiry",
+            entityId: inquiry._id,
+            action: "client_changed",
+            meta: {
+              from: inquiry.clientId ? String(inquiry.clientId) : null,
+              to: String(targetClientId),
+            },
+          },
+        ],
+        { session }
+      );
+
+      const previousClientId = inquiry.clientId;
+      if (previousClientId && String(previousClientId) !== String(targetClientId)) {
+        const orphan = await Client.findOne({ _id: previousClientId, workspaceId }, null, { session }).lean();
+        const guardsPass =
+          !!orphan &&
+          orphan.source === "form" &&
+          (orphan.bookingsCount ?? 0) === 0 &&
+          (orphan.totalSpent ?? 0) === 0 &&
+          (orphan.transactions?.length ?? 0) === 0;
+
+        if (guardsPass) {
+          const [referencedByOtherInquiry, referencedByOtherBooking] = await Promise.all([
+            Inquiry.exists({ workspaceId, clientId: previousClientId, _id: { $ne: inquiry._id } }).session(session),
+            // Mongoose drops an undefined value from a filter, so a missing
+            // draftBookingId would silently turn this into "any booking at
+            // all" rather than "any booking except the draft". Spell it out.
+            Booking.exists(
+              inquiry.draftBookingId
+                ? { workspaceId, clientId: previousClientId, _id: { $ne: inquiry.draftBookingId } }
+                : { workspaceId, clientId: previousClientId }
+            ).session(session),
+          ]);
+
+          if (!referencedByOtherInquiry && !referencedByOtherBooking) {
+            // ponytail: delete-on-relink instead of deferring client+draft-booking creation to approval. Deferring is the correct fix but rewrites 8 draftBookingId call sites, inquiry conflict detection, the calendar overlay, and booking-draft-card's edit UX. Tracked in docs/forms/validation-audit.md.
+            await Client.deleteOne({ _id: previousClientId, workspaceId }, { session });
+          } else {
+            console.warn(
+              `[inquiry] resolveClient: client ${previousClientId} still referenced by another inquiry/booking — not deleted`
+            );
+          }
+        } else if (orphan) {
+          console.warn(
+            `[inquiry] resolveClient: client ${previousClientId} accumulated real state — not deleted`
+          );
+        }
+      }
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "target_not_found") {
+      return { error: "not_found" };
+    }
+    console.error("[inquiry] resolveClient transaction failed:", err);
+    return { error: "resolve_failed" };
+  } finally {
+    await session.endSession();
+  }
+
+  if (!targetClientId) return { error: "resolve_failed" };
+
+  revalidateInquiry(inquiryId);
+  return { ok: true, clientId: targetClientId.toString() };
+}
 
 const draftEditsSchema = z
   .object({
@@ -85,6 +360,13 @@ export async function approveInquiryBookingAction(
   if (isBookedInquiryStatus(inquiry.status) && inquiry.convertedBookingId) {
     return { ok: true, bookingId: inquiry.convertedBookingId.toString(), idempotent: true };
   }
+
+  // Gate promotion on client resolution: an unresolved matching client means
+  // this inquiry's auto-created client may be a duplicate of someone already
+  // in the CRM. The owner must resolve it via resolveInquiryClientAction
+  // before the draft can be promoted.
+  const hasUnresolvedClientMatch = await inquiryHasUnresolvedClientMatch(workspaceId, inquiry);
+  if (hasUnresolvedClientMatch) return { error: "needs_client_resolution" };
 
   // Server-side conflict guard: recompute whether any of the inquiry's sessions
   // conflict with real (non-draft, non-cancelled) bookings in a single batched

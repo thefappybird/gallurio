@@ -57,6 +57,11 @@ const inquirySchema = new Schema(
     // when the owner approves the draft in the lead inbox (Phase 7).
     clientId: { type: Schema.Types.ObjectId, ref: "Client", default: null, index: true },
     draftBookingId: { type: Schema.Types.ObjectId, ref: "Booking", default: null },
+    // Set once the owner has answered the duplicate-client question. Without it
+    // the approval gate re-derives the match on every attempt, so a workspace
+    // holding two legitimately same-named clients could never approve at all:
+    // resolving to one leaves the other still matching.
+    clientResolvedAt: { type: Date, default: null },
     convertedClientId: { type: Schema.Types.ObjectId, ref: "Client", default: null },
     convertedBookingId: { type: Schema.Types.ObjectId, ref: "Booking", default: null },
   },

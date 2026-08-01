@@ -73,6 +73,7 @@ Composed, app-specific shared components.
 | `components/app/sign-out-link.tsx` | `SignOutLink` | Sign-out button form wrapper | children |
 | `components/app/slug-status-indicator.tsx` | `SlugStatusIndicator` | Workspace slug availability indicator — single persistent `aria-live="polite"` live region; text + icon (never color-only); statuses: idle/checking/available/taken/invalid | `status: SlugStatus`, `t: ReturnType<typeof useTranslations>` (must expose `slugChecking`, `slugAvailable`, `slugTaken`, `slugInvalid` keys) |
 | `components/app/empty-state.tsx` | `EmptyState` | "No data yet" placeholder for list surfaces — dashed-border card, decorative icon, heading, optional description + action. Used by clients/teams tables, the inquiry table, and the notifications list. | `icon: LucideIcon`, `title`, `description?`, `action?: ReactNode`, `className?` |
+| `components/app/client-match-dialog.tsx` | `ClientMatchDialog`, `ClientMatchCard`, `ClientMatchResolution` | Two-step name-collision dialog: pick an existing client card or "new client" escape, then (only if fields conflict) reconcile differing `email`/`phone`/`notes` via `lib/clients/reconcile.ts`'s `reconcileClient`; skips the reconcile step entirely when there are zero conflicts. `mode` only changes the escape-option and submit-button copy (create vs link) — shared by client creation and (planned) inquiry-to-client linking. | `open`, `matches: ClientMatchCard[]`, `typed: {name,email,phone,notes,tags}`, `mode: "create"\|"link"`, `onResolve: (r: {clientId,picks}\|{createNew:true}) => void`, `onCancel: () => void` |
 
 ## 3. Hooks
 
@@ -98,7 +99,10 @@ Composed, app-specific shared components.
 | `lib/utils/format-currency.ts` | `formatMoney` | `(amount, currency, locale) => string` | Localized currency via Intl.NumberFormat |
 | `lib/utils/csv-parse.ts` | `parseCsv` | `(text) => { headers, rows }` | RFC-4180 CSV parser (quotes, CRLF/LF) |
 | `lib/utils/csv-parse.ts` | `normalizeCsvHeader` | `(raw) => string` | Map raw header → camelCase |
+| `lib/utils/csv-parse.ts` | `stripFormulaGuard` | `(value) => string` | Reverse the export-side apostrophe guard; leaves a genuinely apostrophe-led value alone |
 | `lib/utils/csv-serialize.ts` | `serializeCsv`, `serializeRow`, `quoteField` | rows/headers → CSV | RFC-4180 serialize (CRLF) |
+| `lib/utils/csv-serialize.ts` | `escapeSpreadsheetText` | `(value) => string` | Prefix `'` before a leading `=+-@`/tab so exported text can't execute as a formula. **Text columns only** — prefixing a numeric column corrupts a negative amount |
+| `lib/utils/xlsx.ts` | `parseXlsxToRows`, `rowsToXlsxBuffer`, `looksLikeXlsx` | `(buffer) => {headers, rows}`; `(headers, rows) => Buffer`; `(bytes) => boolean` | XLSX both directions via exceljs; every cell coerced to string so XLSX and CSV share one validator. **`server-only`** — never import from a client component |
 | `lib/utils/handleActionResult.ts` | `toastActionResult` | `(result, successMessage) => result is {ok:true}` | Toast error/success + type-guard for server-action results |
 | `lib/utils/fieldMessage.ts` | `fieldMessage` | `(error: {message?:unknown}\|undefined) => string\|undefined` | Narrow RHF `errors.<field>` to a plain string for `<p>{...}</p>` render — needed when the resolver schema is a ZodEffects (`.superRefine`) whose generic wrapper collapses input/output typing to `any` |
 | `lib/utils/timezone.ts` | `wallTimeInTzToUtc` | `(date, time, tz) => ISO` | Wall-clock in IANA tz → UTC ISO |

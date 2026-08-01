@@ -911,10 +911,26 @@
         "statusAll": "All statuses",
         "showCancelled": "Show cancelled",
         "showPast": "Show past",
-        "import": "Import CSV",
-        "export": "Export CSV",
+        "import": "Import",
+        "export": "Export",
         "add": "New booking",
-        "invoiceTheme": "Invoice theme"
+        "invoiceTheme": "Invoice & Receipt Theme"
+      },
+      "exportDialog": {
+        "title": "Export bookings",
+        "teamLabel": "Team",
+        "allTeams": "All teams",
+        "rangeLabel": "Time range",
+        "allTime": "All time",
+        "dateRange": "Date range",
+        "from": "From",
+        "to": "To",
+        "formatLabel": "Format",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "The list's status and search filters apply to this export too.",
+        "download": "Download",
+        "cancel": "Cancel"
       },
       "teamPicker": {
         "allTeams": "All teams",
@@ -926,9 +942,10 @@
       },
       "import": {
         "title": "Import bookings",
-        "dropzone": "Drop a CSV file here, or click to select",
+        "dropzone": "Drop a CSV or XLSX file here, or click to select",
         "dropzoneActive": "Drop to upload",
-        "template": "Download CSV template",
+        "templateCsv": "Download CSV template",
+        "templateXlsx": "Download XLSX template",
         "preview": "{total} row(s) found",
         "validCount": "{count} valid",
         "invalidCount": "{count} with errors",
@@ -937,7 +954,9 @@
         "noValidRows": "No valid rows to import. Fix the errors above.",
         "success": "Imported {count} booking(s) successfully.",
         "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
-        "parseError": "Could not read this file. Make sure it's a valid CSV.",
+        "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
+        "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",
+        "groupBlocked": "Another row sharing this booking_id has an error, so the whole booking is held back.",
         "columns": {
           "row": "#",
           "title": "Title",
@@ -952,15 +971,25 @@
           "kindServer": "Server",
           "line": "Line {csvLine}",
           "rawRow": "Raw row",
-          "summary": "Imported {created} · Skipped {skipped}",
-          "hint": "Fix the rows above and re-upload to import them."
+          "untitled": "Untitled booking",
+          "summary": "Imported {created} · Updated {updated} · Skipped {skipped}",
+          "hint": "Fix the rows above and re-upload to import them.",
+          "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again."
         },
         "dialog": {
+          "structureTitle": "Table structure",
           "columnHeader": "Column",
           "notesHeader": "Notes",
           "required": "required",
           "optional": "optional",
           "failedWithDetails": "Import failed — see details",
+          "teamLabel": "Assign to team",
+          "teamDefault": "Main team (default)",
+          "duplicateTitle": "Already imported?",
+          "duplicateBody": "{count, plural, one {# booking here matches one you already have. Import it again anyway?} other {# bookings here match ones you already have. Import them again anyway?}}",
+          "duplicateOnTeam": "On team {team}",
+          "duplicateNoTeam": "Team unknown",
+          "duplicateContinue": "Import anyway",
           "failedRetry": "Import failed. Please try again.",
           "close": "Close",
           "cancel": "Cancel",
@@ -1001,6 +1030,27 @@
             },
             "notes": {
               "note": "Internal notes"
+            },
+            "booking_id": {
+              "note": "From an export. Keep it to update that booking instead of creating a copy"
+            },
+            "session_index": {
+              "note": "Orders sessions when rows share one booking_id"
+            },
+            "clientId": {
+              "note": "From an export. Matched before clientEmail"
+            },
+            "clientPhone": {
+              "note": "Saved on a new client; fills a blank one, never overwrites"
+            },
+            "locationLat": {
+              "note": "Map latitude, e.g. 14.5995"
+            },
+            "locationLng": {
+              "note": "Map longitude, e.g. 120.9842"
+            },
+            "payments": {
+              "note": "JSON list from an export. Read only when creating; paid entries reach the ledger"
             }
           }
         }
@@ -1060,7 +1110,9 @@
         "other": "Other"
       },
       "invoiceThemeDialog": {
-        "title": "Invoice theme",
+        "title": "Invoice & Receipt Theme",
+        "invoice": "Invoice",
+        "receipt": "Receipt",
         "presets": {
           "classic": "Classic",
           "slate": "Slate",
@@ -1942,6 +1994,7 @@
         "saving": "Saving…",
         "cancel": "Cancel",
         "createSuccess": "Client created.",
+        "linkSuccess": "Linked to existing client.",
         "updateSuccess": "Client updated.",
         "error": "Something went wrong. Try again."
       },
@@ -1990,6 +2043,19 @@
         "body": "You have unsaved changes to this client. They'll be lost if you close now.",
         "keep": "Keep editing",
         "discard": "Discard and close"
+      },
+      "matchDialog": {
+        "title": "Is the client one of these?",
+        "bookingsCount": "{count, plural, one {# booking} other {# bookings}}",
+        "escapeCreate": "No, this is a new client",
+        "escapeLink": "Link to new client",
+        "cancel": "Cancel",
+        "submitCreate": "Save client",
+        "submitLink": "Link client",
+        "reconcileTitle": "{count, plural, one {# field differs - pick which to keep} other {# fields differ - pick which to keep}}",
+        "current": "Current",
+        "typed": "You entered",
+        "additiveTitle": "Will be added (no conflict)"
       },
       "toasts": {
         "reactivating": "Reactivating client…",
@@ -2072,6 +2138,11 @@
           "savePhone": "Save",
           "cancelEdit": "Cancel",
           "savedToast": "Phone updated."
+        },
+        "clientMatch": {
+          "warning": "This inquiry may belong to an existing client",
+          "resolveButton": "Resolve client",
+          "resolvedToast": "Client updated."
         },
         "eventRequest": {
           "title": "Event request",
@@ -3073,6 +3144,9 @@
       "no_active_workspace": "No active workspace. Pick a workspace and try again.",
       "workspace_not_found": "Workspace not found.",
       "owner_only": "Only the workspace owner can do this.",
+      "resolve_failed": "Could not update the client. Please try again.",
+      "client_match_lookup_failed": "Could not check for existing clients. Please try again.",
+      "needs_client_resolution": "This inquiry may belong to an existing client. Open it and resolve the client before converting.",
       "invalid_data": "Invalid data. Please check your input and try again.",
       "completion_requires_full_payment": "Mark all payments as paid and reconcile the total before completing this booking.",
       "onboarding_required": "Finish onboarding to continue.",

@@ -34,6 +34,7 @@ vi.mock("@/components/ui/location-picker", () => ({
     value,
     onChange,
     id,
+    error,
   }: {
     value: { address: string; lat: number | null; lng: number | null; label?: string | null; placeId?: string | null };
     onChange: (value: {
@@ -44,21 +45,28 @@ vi.mock("@/components/ui/location-picker", () => ({
       placeId?: string | null;
     }) => void;
     id?: string;
+    error?: string;
   }) => (
-    <input
-      id={id}
-      aria-label="Location"
-      value={value.address}
-      onChange={(event) =>
-        onChange({
-          address: event.target.value,
-          label: event.target.value,
-          placeId: null,
-          lat: value.lat,
-          lng: value.lng,
-        })
-      }
-    />
+    <>
+      <input
+        id={id}
+        aria-label="Location"
+        aria-invalid={error ? true : undefined}
+        value={value.address}
+        onChange={(event) =>
+          onChange({
+            address: event.target.value,
+            label: event.target.value,
+            placeId: null,
+            lat: value.lat,
+            lng: value.lng,
+          })
+        }
+      />
+      {/* The real picker owns the error message now (rendered under the input,
+          above the map), so the stub must surface it too. */}
+      {error ? <p role="alert">{error}</p> : null}
+    </>
   ),
 }));
 

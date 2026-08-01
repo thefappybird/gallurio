@@ -911,10 +911,26 @@
         "statusAll": "كل الحالات",
         "showCancelled": "إظهار الملغاة",
         "showPast": "إظهار السابقة",
-        "import": "استيراد CSV",
-        "export": "تصدير CSV",
+        "import": "استيراد",
+        "export": "تصدير",
         "add": "حجز جديد",
-        "invoiceTheme": "نمط الفاتورة"
+        "invoiceTheme": "نمط الفاتورة والإيصال"
+      },
+      "exportDialog": {
+        "title": "تصدير الحجوزات",
+        "teamLabel": "الفريق",
+        "allTeams": "كل الفرق",
+        "rangeLabel": "النطاق الزمني",
+        "allTime": "كل الأوقات",
+        "dateRange": "نطاق التواريخ",
+        "from": "من",
+        "to": "إلى",
+        "formatLabel": "الصيغة",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "تنطبق أيضاً على هذا التصدير مرشّحات الحالة والبحث في القائمة.",
+        "download": "تنزيل",
+        "cancel": "إلغاء"
       },
       "teamPicker": {
         "allTeams": "كل الفِرق",
@@ -926,9 +942,10 @@
       },
       "import": {
         "title": "استيراد الحجوزات",
-        "dropzone": "أفلِت ملف CSV هنا، أو انقر للاختيار",
+        "dropzone": "أفلِت ملف CSV أو XLSX هنا، أو انقر للاختيار",
         "dropzoneActive": "أفلِت للرفع",
-        "template": "تنزيل قالب CSV",
+        "templateCsv": "تنزيل قالب CSV",
+        "templateXlsx": "تنزيل قالب XLSX",
         "preview": "تم العثور على {total} صف",
         "validCount": "{count} صالح",
         "invalidCount": "{count} بها أخطاء",
@@ -937,7 +954,9 @@
         "noValidRows": "لا توجد صفوف صالحة للاستيراد. صحِّح الأخطاء أعلاه.",
         "success": "تم استيراد {count} حجز بنجاح.",
         "partialSuccess": "تم استيراد {count} حجز. تعذّر استيراد {failed} صف.",
-        "parseError": "تعذّر قراءة هذا الملف. تأكّد من أنه ملف CSV صالح.",
+        "parseError": "تعذّر قراءة هذا الملف. تأكّد من أنه ملف CSV أو XLSX صالح.",
+        "crossesMidnight": "يجب أن تقع البداية والنهاية في اليوم نفسه بتوقيت مساحة العمل ({tz}).",
+        "groupBlocked": "صف آخر يحمل booking_id نفسه به خطأ، لذلك أُوقف الحجز بأكمله.",
         "columns": {
           "row": "#",
           "title": "العنوان",
@@ -952,15 +971,25 @@
           "kindServer": "خادم",
           "line": "السطر {csvLine}",
           "rawRow": "الصف الخام",
-          "summary": "تم الاستيراد {created} · تم التخطّي {skipped}",
-          "hint": "صحِّح الصفوف أعلاه وأعد الرفع لاستيرادها."
+          "untitled": "حجز بلا عنوان",
+          "summary": "تم الاستيراد {created} · تم التحديث {updated} · تم التخطّي {skipped}",
+          "hint": "صحِّح الصفوف أعلاه وأعد الرفع لاستيرادها.",
+          "previewHint": "لم يُستورد شيء بعد. صحِّح هذه الصفوف وأعد رفع الملف."
         },
         "dialog": {
+          "structureTitle": "بنية الجدول",
           "columnHeader": "العمود",
           "notesHeader": "ملاحظات",
           "required": "مطلوب",
           "optional": "اختياري",
           "failedWithDetails": "فشل الاستيراد — راجِع التفاصيل",
+          "teamLabel": "إسناد إلى الفريق",
+          "teamDefault": "الفريق الرئيسي (افتراضي)",
+          "duplicateTitle": "مُستورد مسبقاً؟",
+          "duplicateBody": "{count, plural, one {يطابق حجز واحد هنا حجزاً لديك بالفعل. استيراده مجدداً؟} other {تطابق # حجوزات هنا حجوزات لديك بالفعل. استيرادها مجدداً؟}}",
+          "duplicateOnTeam": "في فريق {team}",
+          "duplicateNoTeam": "الفريق غير معروف",
+          "duplicateContinue": "استيراد على أي حال",
           "failedRetry": "فشل الاستيراد. يرجى المحاولة مرة أخرى.",
           "close": "إغلاق",
           "cancel": "إلغاء",
@@ -1001,6 +1030,27 @@
             },
             "notes": {
               "note": "ملاحظات داخلية"
+            },
+            "booking_id": {
+              "note": "من ملف مُصدَّر. احتفظ به لتحديث الحجز بدلاً من إنشاء نسخة"
+            },
+            "session_index": {
+              "note": "يرتّب الجلسات عندما تشترك الصفوف في booking_id واحد"
+            },
+            "clientId": {
+              "note": "من ملف مُصدَّر. يُطابق قبل clientEmail"
+            },
+            "clientPhone": {
+              "note": "يُحفظ للعميل الجديد؛ يملأ الفارغ ولا يستبدل أبداً"
+            },
+            "locationLat": {
+              "note": "خط العرض على الخريطة، مثل 14.5995"
+            },
+            "locationLng": {
+              "note": "خط الطول على الخريطة، مثل 120.9842"
+            },
+            "payments": {
+              "note": "قائمة JSON من ملف مُصدَّر. تُقرأ عند الإنشاء فقط؛ والمدفوع منها يصل إلى الدفتر"
             }
           }
         }
@@ -1060,7 +1110,9 @@
         "other": "أخرى"
       },
       "invoiceThemeDialog": {
-        "title": "نمط الفاتورة",
+        "title": "نمط الفاتورة والإيصال",
+        "invoice": "فاتورة",
+        "receipt": "إيصال",
         "presets": {
           "classic": "كلاسيكي",
           "slate": "أردوازي",
@@ -1941,6 +1993,7 @@
         "saving": "جارٍ الحفظ…",
         "cancel": "إلغاء",
         "createSuccess": "تم إنشاء العميل.",
+        "linkSuccess": "تم الربط بعميل موجود.",
         "updateSuccess": "تم تحديث العميل.",
         "error": "حدث خطأ ما. حاول مرة أخرى."
       },
@@ -1989,6 +2042,19 @@
         "body": "لديك تغييرات غير محفوظة على هذا العميل. ستُفقد إذا أغلقت الآن.",
         "keep": "متابعة التعديل",
         "discard": "تجاهل وإغلاق"
+      },
+      "matchDialog": {
+        "title": "هل هذا العميل أحد هؤلاء؟",
+        "bookingsCount": "{count, plural, one {# حجز} other {# حجوزات}}",
+        "escapeCreate": "لا، هذا عميل جديد",
+        "escapeLink": "الربط بعميل جديد",
+        "cancel": "إلغاء",
+        "submitCreate": "حفظ العميل",
+        "submitLink": "ربط العميل",
+        "reconcileTitle": "{count, plural, one {حقل واحد مختلف - اختر ما تريد الاحتفاظ به} two {حقلان مختلفان - اختر ما تريد الاحتفاظ به} other {# حقول مختلفة - اختر ما تريد الاحتفاظ به}}",
+        "current": "الحالي",
+        "typed": "ما أدخلته",
+        "additiveTitle": "سيُضاف (بلا تعارض)"
       },
       "toasts": {
         "reactivating": "جارٍ إعادة تفعيل العميل…",
@@ -2071,6 +2137,11 @@
           "savePhone": "حفظ",
           "cancelEdit": "إلغاء",
           "savedToast": "تم تحديث الهاتف."
+        },
+        "clientMatch": {
+          "warning": "قد ينتمي هذا الاستفسار إلى عميل موجود مسبقًا",
+          "resolveButton": "تحديد العميل",
+          "resolvedToast": "تم تحديث العميل."
         },
         "eventRequest": {
           "title": "طلب المناسبة",
@@ -3072,6 +3143,9 @@
       "no_active_workspace": "لا توجد مساحة عمل نشطة. اختر مساحة عمل وحاول مجددًا.",
       "workspace_not_found": "مساحة العمل غير موجودة.",
       "owner_only": "هذا الإجراء متاح للمالك فقط.",
+      "resolve_failed": "تعذر تحديث العميل. يرجى المحاولة مرة أخرى.",
+      "client_match_lookup_failed": "تعذر التحقق من العملاء الحاليين. يرجى المحاولة مرة أخرى.",
+      "needs_client_resolution": "قد يعود هذا الاستفسار إلى عميل موجود. افتحه وحدد العميل قبل التحويل.",
       "invalid_data": "بيانات غير صالحة. يرجى مراجعة المدخلات والمحاولة مرة أخرى.",
       "completion_requires_full_payment": "ضع علامة على جميع الدفعات كمدفوعة وطابق الإجمالي قبل إكمال هذا الحجز.",
       "onboarding_required": "أكمل الإعداد الأولي للمتابعة.",

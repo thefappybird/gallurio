@@ -66,6 +66,8 @@ import {
   archiveInquiryAction,
   declineInquiryAction,
   editInquirySessionsAction,
+  findInquiryClientMatchesAction,
+  resolveInquiryClientAction,
 } from "./_actions";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
 import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
@@ -349,6 +351,72 @@ describe("approveInquiryBookingAction", () => {
     expect(arg.recipients[0].workosUserId).toBe("user_owner");
   });
 
+  it("returns needs_client_resolution when an unresolved matching client exists", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId); // Emma Carter, emma@example.com
+    await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "emma@example.com", // same email -> unresolved match
+      source: "form",
+    });
+
+    const res = await approveInquiryBookingAction(String(inquiry._id));
+    expect(res).toEqual({ error: "needs_client_resolution" });
+
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(freshBooking?.status).toBe("draft");
+  });
+
+  it("stops gating once the owner has resolved, even if another same-name client still matches", async () => {
+    // Two legitimately distinct clients share a name — a state this branch
+    // explicitly supports. Recomputing the match on every approve means
+    // resolving to one leaves the other matching, and the inquiry can never
+    // be approved at all.
+    const { inquiry } = await seedDraft(workspaceId); // Emma Carter
+    const chosen = await Client.create({ workspaceId, name: "Emma Carter", source: "manual" });
+    await Client.create({ workspaceId, name: "Emma Carter", source: "manual" });
+
+    expect(await approveInquiryBookingAction(String(inquiry._id))).toEqual({
+      error: "needs_client_resolution",
+    });
+
+    await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(chosen._id),
+      picks: {},
+    });
+
+    expect(await approveInquiryBookingAction(String(inquiry._id))).toMatchObject({ ok: true });
+  });
+
+  it("credits the resolved (chosen) client, not the auto-created one, once resolveInquiryClientAction relinks it", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId); // auto-created: Emma Carter
+    // A pre-existing CRM client sharing the inquiry's email — the real duplicate
+    // the owner picks instead of the inquiry's auto-created client.
+    const chosen = await Client.create({
+      workspaceId,
+      name: "Emma Carter",
+      email: "emma@example.com",
+      source: "manual",
+    });
+
+    // Unresolved -> gated.
+    expect(await approveInquiryBookingAction(String(inquiry._id))).toEqual({
+      error: "needs_client_resolution",
+    });
+
+    await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(chosen._id),
+      picks: {},
+    });
+
+    const res = await approveInquiryBookingAction(String(inquiry._id), { total: 20000, deposit: 5000 });
+    expect(res).toMatchObject({ ok: true, bookingId: String(booking._id) });
+
+    const freshChosen = await Client.findById(chosen._id).lean();
+    expect(freshChosen?.bookingsCount).toBe(1);
+    expect(freshChosen?.totalSpent).toBe(5000);
+  });
+
   it("does not fire email side-effects on idempotent re-approval", async () => {
     const { inquiry } = await seedDraft(workspaceId);
     await approveInquiryBookingAction(String(inquiry._id));
@@ -360,6 +428,243 @@ describe("approveInquiryBookingAction", () => {
     expect(sendBookingConfirmedClientMock).not.toHaveBeenCalled();
     expect(sendBookingConfirmedOwnerMock).not.toHaveBeenCalled();
     expect(sendNotificationMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("findInquiryClientMatchesAction", () => {
+  it("returns clients matching the inquiry's email, excluding the currently linked client", async () => {
+    const { inquiry } = await seedDraft(workspaceId); // linked to Emma Carter / emma@example.com
+    const otherMatch = await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "emma@example.com", // same email as the inquiry -> match
+      source: "form",
+    });
+    await Client.create({
+      workspaceId,
+      name: "Unrelated Person",
+      email: "unrelated@example.com",
+      source: "form",
+    });
+
+    const res = await findInquiryClientMatchesAction(String(inquiry._id));
+    expect(res).toMatchObject({ ok: true });
+    if (!("ok" in res)) throw new Error("expected ok result");
+    const ids = res.matches.map((m) => m._id);
+    expect(ids).toContain(String(otherMatch._id));
+    expect(ids).not.toContain(String(inquiry.clientId));
+    expect(ids).toHaveLength(1);
+  });
+
+  it("carries the candidate's notes so a notes-only conflict is visible before resolving", async () => {
+    // Without notes on the card the dialog computes no conflict for it, so the
+    // user is never asked and the stored note silently wins.
+    const { inquiry } = await seedDraft(workspaceId);
+    await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "emma@example.com",
+      notes: "Prefers morning shoots",
+      source: "form",
+    });
+
+    const res = await findInquiryClientMatchesAction(String(inquiry._id));
+    if (!("ok" in res)) throw new Error("expected ok result");
+    expect(res.matches[0].notes).toBe("Prefers morning shoots");
+  });
+});
+
+describe("resolveInquiryClientAction", () => {
+  it("relinks the inquiry and its draft booking to the target client, applying reconciliation picks", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId); // linked to Emma Carter, emma@example.com
+    const target = await Client.create({
+      workspaceId,
+      name: "Emma C.",
+      email: null,
+      phone: "0999",
+      notes: "",
+      source: "manual",
+    });
+
+    const res = await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(target._id),
+      picks: {},
+    });
+    expect(res).toMatchObject({ ok: true, clientId: String(target._id) });
+
+    const freshInquiry = await Inquiry.findById(inquiry._id).lean();
+    expect(String(freshInquiry?.clientId)).toBe(String(target._id));
+
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(String(freshBooking?.clientId)).toBe(String(target._id));
+    expect(freshBooking?.clientName).toBe("Emma C.");
+
+    // Additive reconciliation: target had no email, inquiry's email fills it in.
+    const freshTarget = await Client.findById(target._id).lean();
+    expect(freshTarget?.email).toBe("emma@example.com");
+  });
+
+  it("applies the caller's pick when a reconciled field genuinely conflicts", async () => {
+    const { inquiry } = await seedDraft(workspaceId); // inquiry.phone is null in this fixture
+    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { phone: "0917 000 1111" } });
+    const target = await Client.create({
+      workspaceId,
+      name: "Emma C.",
+      email: "emma@example.com",
+      phone: "0917 999 8888", // differs from the inquiry's phone -> conflict
+      source: "manual",
+    });
+
+    const res = await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(target._id),
+      picks: { phone: "typed" },
+    });
+    expect(res).toMatchObject({ ok: true });
+
+    const freshTarget = await Client.findById(target._id).lean();
+    expect(freshTarget?.phone).toBe("0917 000 1111");
+  });
+
+  it("rejects a clientId from another workspace and writes nothing", async () => {
+    const { inquiry, booking, client } = await seedDraft(workspaceId);
+    const foreignClient = await Client.create({
+      workspaceId: otherWorkspaceId,
+      name: "Foreign Client",
+      email: "foreign@example.com",
+      source: "manual",
+    });
+
+    const res = await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(foreignClient._id),
+      picks: {},
+    });
+    expect(res).toEqual({ error: "not_found" });
+
+    const freshInquiry = await Inquiry.findById(inquiry._id).lean();
+    expect(String(freshInquiry?.clientId)).toBe(String(client._id));
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(String(freshBooking?.clientId)).toBe(String(client._id));
+  });
+
+  it("creates a fresh client from the inquiry's details when createNew is requested", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+
+    const res = await resolveInquiryClientAction(String(inquiry._id), { createNew: true });
+    expect(res).toMatchObject({ ok: true });
+    if (!("ok" in res) || !res.clientId) throw new Error("expected ok result with clientId");
+
+    const newClient = await Client.findById(res.clientId).lean();
+    expect(newClient?.name).toBe("Emma Carter");
+    expect(newClient?.email).toBe("emma@example.com");
+    expect(newClient?.source).toBe("form");
+
+    const freshInquiry = await Inquiry.findById(inquiry._id).lean();
+    expect(String(freshInquiry?.clientId)).toBe(res.clientId);
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(String(freshBooking?.clientId)).toBe(res.clientId);
+  });
+
+  it("deletes the previously-linked auto-created client once the inquiry is relinked away from it", async () => {
+    const { inquiry, client } = await seedDraft(workspaceId); // Emma Carter, source: "form", untouched
+    const target = await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "someone@example.com",
+      source: "manual",
+    });
+
+    const res = await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(target._id),
+      picks: {},
+    });
+    expect(res).toMatchObject({ ok: true });
+
+    const orphan = await Client.findById(client._id).lean();
+    expect(orphan).toBeNull();
+  });
+
+  it("does NOT delete the previously-linked client when it has accumulated bookings/spend", async () => {
+    const { inquiry, client } = await seedDraft(workspaceId);
+    await Client.updateOne({ _id: client._id }, { $set: { bookingsCount: 1, totalSpent: 5000 } });
+    const target = await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "someone2@example.com",
+      source: "manual",
+    });
+
+    const res = await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(target._id),
+      picks: {},
+    });
+    expect(res).toMatchObject({ ok: true });
+
+    const stillThere = await Client.findById(client._id).lean();
+    expect(stillThere).not.toBeNull();
+  });
+
+  it("does NOT delete the previously-linked client when it has a transaction entry", async () => {
+    const { inquiry, client, booking } = await seedDraft(workspaceId);
+    await Client.updateOne(
+      { _id: client._id },
+      {
+        $set: {
+          transactions: [
+            {
+              bookingId: booking._id,
+              amount: 100,
+              currency: "PHP",
+              type: "other",
+              occurredAt: new Date(),
+              source: "manual",
+            },
+          ],
+        },
+      }
+    );
+    const target = await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "someone3@example.com",
+      source: "manual",
+    });
+
+    const res = await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(target._id),
+      picks: {},
+    });
+    expect(res).toMatchObject({ ok: true });
+
+    const stillThere = await Client.findById(client._id).lean();
+    expect(stillThere).not.toBeNull();
+  });
+
+  it("does NOT delete the previously-linked client when another inquiry still references it", async () => {
+    const { inquiry, client } = await seedDraft(workspaceId);
+    // A second, unrelated inquiry also points at the same auto-created client.
+    await Inquiry.create({
+      workspaceId,
+      name: "Emma Carter",
+      email: "emma@example.com",
+      status: "inquiry",
+      eventDate: new Date("2030-09-01T00:00:00Z"),
+      clientId: client._id,
+    });
+    const target = await Client.create({
+      workspaceId,
+      name: "Someone Else",
+      email: "someone4@example.com",
+      source: "manual",
+    });
+
+    const res = await resolveInquiryClientAction(String(inquiry._id), {
+      clientId: String(target._id),
+      picks: {},
+    });
+    expect(res).toMatchObject({ ok: true });
+
+    const stillThere = await Client.findById(client._id).lean();
+    expect(stillThere).not.toBeNull();
   });
 });
 
