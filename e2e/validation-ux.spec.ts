@@ -119,6 +119,8 @@ test.describe("Task 2 — CSV/XLSX import preview", () => {
   // the shared seeded DB is never written to. Files are built in memory.
   const HEADERS =
     "clientName,clientEmail,startAt,endAt,title,eventType,status,amountTotal,amountDeposit,currency,locationAddress,notes";
+  /** Tags anything this spec writes to the shared dev DB so it can be removed. */
+  const E2E_MARKER = "ZZE2E";
 
   async function openImport(page: Page) {
     await gotoBookings(page);
@@ -182,6 +184,31 @@ test.describe("Task 2 — CSV/XLSX import preview", () => {
     await dialog.getByRole("button", { name: /^cancel$/i }).click();
   });
 
+  test("committing an import reports what it wrote and shows it in the table", async ({ page }) => {
+    // The only case here that actually WRITES. Everything it creates carries
+    // E2E_MARKER so it can be found and removed afterwards.
+    const title = `${E2E_MARKER} Booking`;
+    const csv = [
+      HEADERS,
+      `${E2E_MARKER} Client,,2027-03-04T01:00:00.000Z,2027-03-04T09:00:00.000Z,${title},portrait,booked,12345,0,PHP,Studio,,`,
+    ].join("\n");
+
+    const dialog = await openImport(page);
+    await dialog
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "commit.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+
+    await expect(dialog.getByText(/1 row\(s\) found/i)).toBeVisible({ timeout: 20_000 });
+    await dialog.getByRole("button", { name: /import 1 booking/i }).click();
+
+    // The route answers created:1, and the dialog must say so rather than
+    // "Imported 0" — the bug the review found on the updated-only path.
+    // The count appears in both the dialog footer and a toast, so scope it.
+    await expect(dialog.getByText(/imported 1 booking/i)).toBeVisible({ timeout: 30_000 });
+    // The written row is echoed back in the preview table.
+    await expect(dialog.getByText(title)).toBeVisible();
+  });
+
   test("the formula guard is stripped before the user sees the row", async ({ page }) => {
     const csv = [HEADERS, "Kenji Watanabe,,2026-12-05T01:00,,'=SUM(1+1) Retreat,,,,,,,"].join("\n");
 
@@ -194,6 +221,37 @@ test.describe("Task 2 — CSV/XLSX import preview", () => {
     // they never get.
     await expect(dialog.getByText("=SUM(1+1) Retreat")).toBeVisible({ timeout: 20_000 });
     await dialog.getByRole("button", { name: /^cancel$/i }).click();
+  });
+});
+
+test.describe("Task 5c — inquiry duplicate-client indicator", () => {
+  test("warns on an inquiry whose client collides, and opens the dialog in link mode", async ({
+    page,
+  }) => {
+    // Needs an inquiry whose linked client collides with a DIFFERENT client.
+    // Seeded inquiries each own a unique client, so this only fires once a
+    // colliding client exists in the workspace.
+    // Seed-dependent by nature: the indicator only fires when a colliding
+    // client exists, which the seed never produces on its own. Skips rather
+    // than fails if the fixture is absent.
+    const inquiryId = process.env.E2E_MATCHED_INQUIRY_ID;
+    test.skip(!inquiryId, "E2E_MATCHED_INQUIRY_ID not set — needs a colliding client in the seed");
+
+    await page.goto(`/inquiries/${inquiryId}`);
+
+    const resolve = page.getByRole("button", { name: /resolve client/i });
+    await expect(resolve).toBeVisible({ timeout: 30_000 });
+    // The glyph is never the only signal.
+    await expect(page.getByText(/may belong to an existing client/i)).toBeVisible();
+
+    await resolve.click();
+    const match = page.getByRole("dialog").filter({ hasText: /is the client one of these/i });
+    await expect(match).toBeVisible({ timeout: 20_000 });
+    // Link mode changes only the copy on the two primary actions.
+    await expect(match.getByRole("button", { name: /link client/i })).toBeVisible();
+
+    await match.getByRole("button", { name: /^cancel$/i }).click();
+    await expect(match).toBeHidden();
   });
 });
 
