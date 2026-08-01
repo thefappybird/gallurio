@@ -460,6 +460,26 @@ describe("POST /api/bookings/import", () => {
     expect(balance[0].amount).toBe(40000);
   });
 
+  it("skips a row that would duplicate an existing booking, and says why", async () => {
+    // Re-running a hand-authored file (no booking_id) used to mint a second
+    // copy of every booking, along with a second set of transactions.
+    await callImport([VALID_ROW]);
+    const res = await callImport([VALID_ROW]);
+    const body = await res.json();
+
+    // A file whose rows are ALL duplicates is a benign no-op, not a failed
+    // request — 422 would make the dialog show a generic error and hide the
+    // per-row reasons.
+    expect(res.status).toBe(200);
+    expect(body.created).toBe(0);
+    expect(body.skipped).toBe(1);
+    expect(body.errors[0].kind).toBe("duplicate");
+    expect(body.errors[0].message).toMatch(/already exists/i);
+
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(await Transaction.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
   it("refuses to import a completed booking that is not fully paid", async () => {
     // isCompletionEligible requires deposit + paid payments to equal the total.
     // Import writes no payments, so a completed row with deposit < total lands

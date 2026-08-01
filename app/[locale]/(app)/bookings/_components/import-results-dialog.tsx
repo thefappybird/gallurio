@@ -30,6 +30,7 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
     validation: t("kindValidation"),
     lookup: t("kindLookup"),
     server: t("kindServer"),
+    duplicate: t("kindDuplicate"),
   };
 
   return (

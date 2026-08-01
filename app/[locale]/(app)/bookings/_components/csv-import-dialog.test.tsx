@@ -198,6 +198,41 @@ describe("CsvImportDialog", () => {
     }
   });
 
+  it("does not report failure when every row was already imported", async () => {
+    // Re-running a file is a benign no-op. Treating "nothing written" as a
+    // failure tells the user something broke when nothing did.
+    const { toast } = await import("sonner");
+    vi.mocked(toast.error).mockClear();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        created: 0,
+        updated: 0,
+        skipped: 1,
+        validationErrors: 0,
+        serverErrors: 0,
+        errors: [{ index: 0, row: {}, kind: "duplicate", message: "Skipped: already exists" }],
+      }),
+    });
+    const restore = mockFileReader(VALID_CSV);
+    try {
+      renderDialog();
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [new File([VALID_CSV], "r.csv", { type: "text/csv" })] } });
+      });
+      await waitFor(() => expect(screen.getByText(/1 row\(s\) found/i)).toBeInTheDocument());
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
+      });
+
+      expect(toast.error).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
+  });
+
   it("surfaces a rate-limit response instead of crashing the dialog", async () => {
     // The route rate-limits at 10 imports / 5 min. That body is {error} with no
     // `errors` array, so reading data.errors.length blows up the render.

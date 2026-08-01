@@ -184,8 +184,13 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
       }
       if (data.errors.length > 0) {
         setShowResultsDialog(true);
-        if (written === 0) {
+        // A duplicate was recognised and skipped on purpose. Reporting "failed"
+        // when a re-run wrote nothing describes success as breakage.
+        const onlyDuplicates = data.errors.every((e) => e.kind === "duplicate");
+        if (written === 0 && !onlyDuplicates) {
           toast.error(tDialog("failedWithDetails"));
+        } else if (written === 0) {
+          toast.success(tDialog("allDuplicates", { count: data.errors.length }));
         }
       }
     }, [validRows, defaultCurrency, t, tDialog, errMsg, router, startTransition]),

@@ -27,7 +27,8 @@ export type ImportErrorEntry = {
   index: number;
   row: Record<string, unknown>;
   field?: string;
-  kind: "validation" | "lookup" | "server";
+  /** "duplicate" is not a failure — the row was already imported. */
+  kind: "validation" | "lookup" | "server" | "duplicate";
   message: string;
 };
 
@@ -278,6 +279,33 @@ export async function POST(req: Request) {
     const lastSessionEnd = new Date(
       Math.max(...sessions.map((s) => s.endAt.getTime()))
     );
+
+    // Re-running a file that carries no booking_id used to mint a second copy
+    // of every booking, with a second set of transactions behind it. Same title
+    // starting at the same instant is treated as the same booking. Uses the
+    // existing {workspaceId, firstSessionStart} index.
+    if (!existingBooking) {
+      const duplicate = await Booking.findOne({
+        workspaceId: ctx.workspace._id,
+        firstSessionStart,
+        title: row.title,
+      })
+        .select({ _id: 1 })
+        .lean();
+
+      if (duplicate) {
+        errors.push({
+          index: i,
+          row: raw,
+          field: "title",
+          kind: "duplicate",
+          message:
+            "Skipped: a booking with this title already exists at this start time. Add its booking_id to update it instead.",
+        });
+        skippedRows += group.rows.length;
+        continue;
+      }
+    }
 
     // Mirrors the PATCH invariant: completing requires the deposit plus every
     // paid payment to settle the total, so a sheet cannot create a state the
@@ -591,6 +619,14 @@ export async function POST(req: Request) {
       serverErrors,
       errors,
     } satisfies ImportResult,
-    { status: errors.length === json.rows.length ? 422 : 200 }
+    // 422 means nothing in the file could be processed. A duplicate WAS
+    // processed — it was recognised and deliberately skipped — so a re-imported
+    // file stays a 200 no-op rather than reading as a failed request.
+    {
+      status:
+        errors.length === json.rows.length && errors.some((e) => e.kind !== "duplicate")
+          ? 422
+          : 200,
+    }
   );
 }
