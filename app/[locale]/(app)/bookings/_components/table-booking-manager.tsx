@@ -121,6 +121,7 @@ export function TableBookingManager({
     <>
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
+        workspaceTimezone={workspaceTimezone}
         onAddClick={handleAddClick}
         canCreate={canCreate}
         teams={teams}

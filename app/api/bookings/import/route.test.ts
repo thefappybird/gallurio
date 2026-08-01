@@ -866,3 +866,28 @@ describe("POST /api/bookings/import", () => {
     expect(clientsB[0].workspaceId.toString()).toBe(WS_B.toString());
   });
 });
+
+describe("GET /api/bookings/import — template", () => {
+  async function callTemplate(format?: string) {
+    const { GET } = await import("./route");
+    const url = `http://localhost/api/bookings/import${format ? `?format=${format}` : ""}`;
+    return GET(new Request(url));
+  }
+
+  it("serves a CSV template that the importer itself accepts", async () => {
+    const res = await callTemplate("csv");
+    expect(res.status).toBe(200);
+    const text = await res.text();
+
+    const { parseCsv } = await import("@/lib/utils/csv-parse");
+    const rows = parseCsv(text).rows;
+    const result = await callImport(rows);
+    expect(result.status).toBe(200);
+    // Two rows sharing one booking_id: one booking, two sessions.
+    const body = await result.json();
+    expect(body.errors).toEqual([]);
+    expect(body.created).toBe(1);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.sessions).toHaveLength(2);
+  });
+});

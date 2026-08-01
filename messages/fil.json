@@ -927,9 +927,10 @@
       },
       "import": {
         "title": "Mag-import ng mga booking",
-        "dropzone": "Mag-drop ng CSV file dito, o mag-click para pumili",
+        "dropzone": "Mag-drop ng CSV o XLSX file dito, o mag-click para pumili",
         "dropzoneActive": "I-drop para mag-upload",
-        "template": "I-download ang CSV template",
+        "templateCsv": "I-download ang CSV template",
+        "templateXlsx": "I-download ang XLSX template",
         "preview": "{total} row(s) natagpuan",
         "validCount": "{count} valid",
         "invalidCount": "{count} may mga error",
@@ -938,7 +939,9 @@
         "noValidRows": "Walang valid na row para i-import. Ayusin ang mga error sa itaas.",
         "success": "Matagumpay na na-import ang {count} booking(s).",
         "partialSuccess": "Na-import ang {count} booking(s). Hindi na-import ang {failed} row(s).",
-        "parseError": "Hindi mabasa ang file. Siguraduhing valid CSV ito.",
+        "parseError": "Hindi mabasa ang file. Siguraduhing valid na CSV o XLSX file ito.",
+        "crossesMidnight": "Ang simula at katapusan ay dapat sa iisang araw sa timezone ng workspace ({tz}).",
+        "groupBlocked": "May error ang ibang row na kapareho ng booking_id na ito, kaya hindi muna ipapasok ang buong booking.",
         "columns": {
           "row": "#",
           "title": "Pamagat",
@@ -953,10 +956,13 @@
           "kindServer": "Server",
           "line": "Linya {csvLine}",
           "rawRow": "Raw na row",
+          "untitled": "Walang pamagat na booking",
           "summary": "Na-import ang {created} · Na-update ang {updated} · Nilaktawan ang {skipped}",
-          "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito."
+          "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito.",
+          "previewHint": "Wala pang na-import. Ayusin ang mga row na ito at i-upload ulit ang file."
         },
         "dialog": {
+          "structureTitle": "Istruktura ng talahanayan",
           "columnHeader": "Kolumna",
           "notesHeader": "Mga tala",
           "required": "kailangan",
@@ -1021,6 +1027,12 @@
             },
             "clientPhone": {
               "note": "Sine-save sa bagong kliyente; pinupunan ang blangko, hindi pinapalitan"
+            },
+            "locationLat": {
+              "note": "Latitude sa mapa, hal. 14.5995"
+            },
+            "locationLng": {
+              "note": "Longitude sa mapa, hal. 120.9842"
             },
             "payments": {
               "note": "JSON list mula sa export. Binabasa lang kapag gumagawa; ang bayad ay pumupunta sa ledger"

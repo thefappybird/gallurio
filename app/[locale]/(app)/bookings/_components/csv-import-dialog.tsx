@@ -9,7 +9,9 @@ import type { BookingTeamOption } from "../_data/team-options";
 import { toast } from "sonner";
 import {
   CheckCircleIcon,
+  ChevronRightIcon,
   FileTextIcon,
+  SheetIcon,
   UploadIcon,
   XCircleIcon,
 } from "lucide-react";
@@ -23,7 +25,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { parseCsv, stripFormulaGuard } from "@/lib/utils/csv-parse";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
-import type { ImportResult, DuplicateWarning } from "@/app/api/bookings/import/route";
+import { sessionsAreSameDayInTz } from "@/lib/bookings/session-validation";
+import { IMPORT_COLUMNS } from "@/lib/bookings/import-template";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import type {
+  ImportResult,
+  DuplicateWarning,
+  ImportErrorEntry,
+} from "@/app/api/bookings/import/route";
 import { ImportResultsDialog } from "./import-results-dialog";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +41,7 @@ type ParsedRow = {
   raw: Record<string, string>;
   valid: boolean;
   error: string | null;
+  errorField?: string;
   title: string;
   clientName: string;
   startAt: string;
@@ -42,81 +52,25 @@ type Props = {
   onClose: () => void;
   defaultCurrency: string;
   /**
+   * Workspace IANA timezone. The preview needs it to answer the same
+   * same-day question the route asks at commit — without it a booking that
+   * crosses midnight in wall time previews clean and fails on submit.
+   */
+  workspaceTimezone?: string;
+  /**
    * Teams the caller can write to. A picker only appears when there is an
    * actual choice; with one team the route's default already lands there.
    */
   teams?: BookingTeamOption[];
 };
 
-const HEADER_SPEC_KEYS = [
-  { name: "clientName", required: true },
-  { name: "clientEmail", required: false },
-  { name: "startAt", required: true },
-  { name: "endAt", required: false },
-  { name: "title", required: true },
-  { name: "eventType", required: false },
-  { name: "status", required: false },
-  { name: "amountTotal", required: false },
-  { name: "amountDeposit", required: false },
-  { name: "currency", required: false },
-  { name: "locationAddress", required: false },
-  { name: "notes", required: false },
-  // Emitted by the exporter and read back on import. Undocumented until now,
-  // which left the multi-session and update-in-place behaviour invisible.
-  { name: "booking_id", required: false },
-  { name: "session_index", required: false },
-  { name: "clientId", required: false },
-  { name: "clientPhone", required: false },
-  { name: "payments", required: false },
-] as const;
-
-// The downloadable template stays at the columns someone would hand-author: a
-// new booking has no booking_id, and inventing one would look like a required
-// field. The spec table above still explains them.
-const TEMPLATE_HEADERS = HEADER_SPEC_KEYS.filter(
-  (h) => !["booking_id", "session_index", "clientId", "payments"].includes(h.name)
-).map((h) => h.name);
-
-const SAMPLE_ROW = [
-  "Jane Smith",
-  "jane@example.com",
-  "2026-06-15T09:00",
-  "2026-06-15T18:00",
-  "Smith Wedding",
-  "wedding",
-  "booked",
-  "50000",
-  "10000",
-  "PHP",
-  "Grand Ballroom, Manila",
-  "Ceremony + reception",
-  "+63 917 555 0142",
-];
-
-function downloadTemplate() {
-  const csv = [
-    // title was required all along but went unmentioned here.
-    "# Required: title, clientName, startAt. clientEmail is optional and used to match an existing client.",
-    "# Exporting adds booking_id and session_index. Keep them to update a booking in place instead of",
-    "# creating a copy; rows sharing one booking_id become a single multi-session booking.",
-    TEMPLATE_HEADERS.join(","),
-    SAMPLE_ROW.map(quoteField).join(","),
-  ].join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "bookings-import-template.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function quoteField(v: string) {
-  if (/[,"\n\r]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
-  return v;
-}
-
-export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: Props) {
+export function CsvImportDialog({
+  open,
+  onClose,
+  defaultCurrency,
+  workspaceTimezone,
+  teams = [],
+}: Props) {
   const t = useTranslations("app.bookings.import");
   const tDialog = useTranslations("app.bookings.import.dialog");
   const errMsg = useActionError();
@@ -131,6 +85,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [showPreviewErrors, setShowPreviewErrors] = useState(false);
 
   // Only active teams the caller can write to are real choices.
   const writableTeams = useMemo(
@@ -160,6 +115,28 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
   const invalidRows = useMemo(
     () => rows.filter((r) => !r.valid || blockedGroups.has(r.raw.bookingId?.trim() ?? "")),
     [rows, blockedGroups]
+  );
+
+  const invalidIndexes = useMemo(
+    () => new Set(invalidRows.map((r) => r.index)),
+    [invalidRows]
+  );
+
+  // Preview failures reuse the post-import error dialog rather than a second
+  // one: same rows, same raw-row drill-down, and the table cell is too narrow
+  // to hold a full message.
+  const previewErrors: ImportErrorEntry[] = useMemo(
+    () =>
+      invalidRows.map((r) => ({
+        index: r.index,
+        row: r.raw,
+        field: r.errorField,
+        kind: "validation" as const,
+        // A row can be blocked purely because a sibling in its booking_id group
+        // failed, in which case it has no error of its own to show.
+        message: r.error ?? t("groupBlocked"),
+      })),
+    [invalidRows, t]
   );
 
   const { loading: importing, trigger: triggerImport } = useGuardedAction(
@@ -224,31 +201,63 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
 
   // Validate + shape parsed rows for the preview table. Shared by both paths so
   // a CSV and an XLSX produce an identical preview.
-  const buildRows = useCallback((csvRows: Record<string, string>[]): ParsedRow[] => {
-    return csvRows.map((rawIn, i) => {
-      // Undo the exporter's anti-formula apostrophe before anything is shown or
-      // sent, so the preview matches what the route will store. Stripping twice
-      // is a no-op, so the route keeping its own guard costs nothing.
-      const raw = Object.fromEntries(
-        Object.entries(rawIn).map(([k, v]) => [k, typeof v === "string" ? stripFormulaGuard(v) : v])
-      ) as Record<string, string>;
-      const result = bookingImportRowSchema.safeParse({
-        ...raw,
-        amountTotal: raw.amountTotal || undefined,
-        amountDeposit: raw.amountDeposit || undefined,
-        clientEmail: raw.clientEmail || null,
+  const buildRows = useCallback(
+    (csvRows: Record<string, string>[]): ParsedRow[] => {
+      return csvRows.map((rawIn, i) => {
+        // Undo the exporter's anti-formula apostrophe before anything is shown or
+        // sent, so the preview matches what the route will store. Stripping twice
+        // is a no-op, so the route keeping its own guard costs nothing.
+        const raw = Object.fromEntries(
+          Object.entries(rawIn).map(([k, v]) => [k, typeof v === "string" ? stripFormulaGuard(v) : v])
+        ) as Record<string, string>;
+        const result = bookingImportRowSchema.safeParse({
+          ...raw,
+          amountTotal: raw.amountTotal || undefined,
+          amountDeposit: raw.amountDeposit || undefined,
+          clientEmail: raw.clientEmail || null,
+        });
+
+        const base = {
+          index: i,
+          raw,
+          title: raw.title ?? "",
+          clientName: raw.clientName ?? "",
+          startAt: raw.startAt ?? "",
+        };
+
+        if (!result.success) {
+          const issue = result.error.errors[0];
+          return {
+            ...base,
+            valid: false,
+            error: issue?.message ?? "Invalid row",
+            errorField: issue?.path?.[0]?.toString(),
+          };
+        }
+
+        // The schema only compares UTC days, which is blind to a wall-time
+        // midnight crossing: 09:00Z–17:00Z is one UTC day but 17:00–01:00 in
+        // Manila. The route rejects that at commit, so previewing it as valid
+        // is how a clean-looking file failed on submit.
+        const tz = workspaceTimezone || FALLBACK_TZ;
+        const sameDay = sessionsAreSameDayInTz(
+          [{ startAt: result.data.startAt, endAt: result.data.endAt ?? result.data.startAt }],
+          tz
+        );
+        if (!sameDay.ok) {
+          return {
+            ...base,
+            valid: false,
+            error: t("crossesMidnight", { tz }),
+            errorField: "endAt",
+          };
+        }
+
+        return { ...base, valid: true, error: null };
       });
-      return {
-        index: i,
-        raw,
-        valid: result.success,
-        error: result.success ? null : (result.error.errors[0]?.message ?? "Invalid row"),
-        title: raw.title ?? "",
-        clientName: raw.clientName ?? "",
-        startAt: raw.startAt ?? "",
-      };
-    });
-  }, []);
+    },
+    [workspaceTimezone, t]
+  );
 
   const processFile = useCallback(
     (file: File) => {
@@ -319,6 +328,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
     setParseError(null);
     setImportResult(null);
     setShowResultsDialog(false);
+    setShowPreviewErrors(false);
     onClose();
   }
 
@@ -338,13 +348,22 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
 
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-3">
             {!hasRows ? (
-              <div className="border border-border">
-                <div className="grid grid-cols-[1fr_auto_1fr] border-b border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
+              // <details> rather than a state-driven panel: the browser already
+              // gives this keyboard support, and the table is reference
+              // material, not something to read before every import.
+              <details className="group border border-border">
+                <summary className="cursor-pointer list-none bg-muted px-3 py-2 text-xs font-medium text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center gap-1.5">
+                    <ChevronRightIcon className="size-3.5 shrink-0 transition-transform group-open:rotate-90" />
+                    {tDialog("structureTitle")}
+                  </span>
+                </summary>
+                <div className="grid grid-cols-[1fr_auto_1fr] border-y border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
                   <span>{tDialog("columnHeader")}</span>
                   <span />
                   <span>{tDialog("notesHeader")}</span>
                 </div>
-                {HEADER_SPEC_KEYS.map((h) => (
+                {IMPORT_COLUMNS.map((h) => (
                   <div
                     key={h.name}
                     className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-border px-3 py-1.5 text-xs last:border-0"
@@ -364,7 +383,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
                     <span className="text-muted-foreground">{tDialog(`spec.${h.name}.note`)}</span>
                   </div>
                 ))}
-              </div>
+              </details>
             ) : null}
 
             {writableTeams.length > 1 ? (
@@ -427,14 +446,26 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
               <p className="text-sm text-destructive">{parseError}</p>
             ) : null}
 
-            <button
-              type="button"
-              onClick={downloadTemplate}
-              className="self-start text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            >
-              <FileTextIcon className="me-1 inline size-3" />
-              {t("template")}
-            </button>
+            {/* Served by the route, not built here: the XLSX is a zip, and
+                generating both server-side is what keeps them identical. */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <a
+                href="/api/bookings/import?format=csv"
+                download
+                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                <FileTextIcon className="me-1 inline size-3" />
+                {t("templateCsv")}
+              </a>
+              <a
+                href="/api/bookings/import?format=xlsx"
+                download
+                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                <SheetIcon className="me-1 inline size-3" />
+                {t("templateXlsx")}
+              </a>
+            </div>
 
             {hasRows ? (
               <div className="flex flex-col gap-2">
@@ -448,9 +479,13 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
                     </span>
                   ) : null}
                   {invalidRows.length > 0 ? (
-                    <span className="text-xs text-destructive">
+                    <button
+                      type="button"
+                      onClick={() => setShowPreviewErrors(true)}
+                      className="text-xs text-destructive underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
                       {t("invalidCount", { count: invalidRows.length })}
-                    </span>
+                    </button>
                   ) : null}
                   <span className="ms-auto text-xs text-muted-foreground">{fileName}</span>
                 </div>
@@ -478,30 +513,48 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((row) => (
+                      {rows.map((row) => {
+                        // Group-blocked rows parse fine on their own but are
+                        // still not importable. Showing them with a green tick
+                        // contradicted the counts right above the table.
+                        const bad = invalidIndexes.has(row.index);
+                        return (
                         <tr
                           key={row.index}
                           className={cn(
                             "border-b border-border last:border-0",
-                            row.valid ? "" : "bg-destructive/5"
+                            bad && "bg-destructive/5"
                           )}
                         >
                           <td className="px-2 py-1.5 tabular-nums text-muted-foreground">
                             {row.index + 1}
                           </td>
                           <td className="px-1 py-1.5">
-                            {row.valid ? (
-                              <CheckCircleIcon className="size-3.5 text-foreground" />
-                            ) : (
+                            {bad ? (
                               <XCircleIcon className="size-3.5 text-destructive" />
+                            ) : (
+                              <CheckCircleIcon className="size-3.5 text-foreground" />
                             )}
                           </td>
                           <td className="max-w-32 truncate px-2 py-1.5">{row.title || "—"}</td>
                           <td className="max-w-28 truncate px-2 py-1.5">{row.clientName || "—"}</td>
                           <td className="px-2 py-1.5 tabular-nums">{row.startAt || "—"}</td>
-                          <td className="px-2 py-1.5 text-destructive">{row.error ?? ""}</td>
+                          <td className="px-2 py-1.5 text-destructive">
+                            {bad ? (
+                              // The cell truncates a long message; the dialog
+                              // shows it whole alongside the raw row.
+                              <button
+                                type="button"
+                                onClick={() => setShowPreviewErrors(true)}
+                                className="text-start underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              >
+                                {row.error ?? t("groupBlocked")}
+                              </button>
+                            ) : null}
+                          </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -604,9 +657,19 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
           open={showResultsDialog}
           onClose={() => setShowResultsDialog(false)}
           errors={importResult.errors}
-          created={importResult.created}
-          updated={importResult.updated}
-          skipped={importResult.skipped}
+          summary={{
+            created: importResult.created,
+            updated: importResult.updated,
+            skipped: importResult.skipped,
+          }}
+        />
+      ) : null}
+
+      {previewErrors.length > 0 ? (
+        <ImportResultsDialog
+          open={showPreviewErrors}
+          onClose={() => setShowPreviewErrors(false)}
+          errors={previewErrors}
         />
       ) : null}
     </>

@@ -927,9 +927,10 @@
       },
       "import": {
         "title": "Import bookings",
-        "dropzone": "Drop a CSV file here, or click to select",
+        "dropzone": "Drop a CSV or XLSX file here, or click to select",
         "dropzoneActive": "Drop to upload",
-        "template": "Download CSV template",
+        "templateCsv": "Download CSV template",
+        "templateXlsx": "Download XLSX template",
         "preview": "{total} row(s) found",
         "validCount": "{count} valid",
         "invalidCount": "{count} with errors",
@@ -938,7 +939,9 @@
         "noValidRows": "No valid rows to import. Fix the errors above.",
         "success": "Imported {count} booking(s) successfully.",
         "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
-        "parseError": "Could not read this file. Make sure it's a valid CSV.",
+        "parseError": "Could not read this file. Make sure it's a valid CSV or XLSX file.",
+        "crossesMidnight": "Start and end must fall on the same day in your workspace timezone ({tz}).",
+        "groupBlocked": "Another row sharing this booking_id has an error, so the whole booking is held back.",
         "columns": {
           "row": "#",
           "title": "Title",
@@ -953,10 +956,13 @@
           "kindServer": "Server",
           "line": "Line {csvLine}",
           "rawRow": "Raw row",
+          "untitled": "Untitled booking",
           "summary": "Imported {created} · Updated {updated} · Skipped {skipped}",
-          "hint": "Fix the rows above and re-upload to import them."
+          "hint": "Fix the rows above and re-upload to import them.",
+          "previewHint": "Nothing has been imported yet. Fix these rows and upload the file again."
         },
         "dialog": {
+          "structureTitle": "Table structure",
           "columnHeader": "Column",
           "notesHeader": "Notes",
           "required": "required",
@@ -1021,6 +1027,12 @@
             },
             "clientPhone": {
               "note": "Saved on a new client; fills a blank one, never overwrites"
+            },
+            "locationLat": {
+              "note": "Map latitude, e.g. 14.5995"
+            },
+            "locationLng": {
+              "note": "Map longitude, e.g. 120.9842"
             },
             "payments": {
               "note": "JSON list from an export. Read only when creating; paid entries reach the ledger"

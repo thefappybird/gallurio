@@ -187,7 +187,10 @@ test.describe("Task 2 — CSV/XLSX import preview", () => {
   test("a valid CSV previews its rows and offers to import them", async ({ page }) => {
     const csv = [
       HEADERS,
-      "Marisol Reyes,marisol@example.com,2026-09-12T09:00,2026-09-12T17:00,Reyes Wedding,wedding,booked,185000,55000,PHP,Tagaytay,Golden hour",
+      // Explicit UTC instants: a naive "09:00" is read as browser-local time,
+      // so the same row can be same-day here and midnight-crossing elsewhere.
+      // These are 09:00-18:00 in Asia/Manila.
+      "Marisol Reyes,marisol@example.com,2026-09-12T01:00:00.000Z,2026-09-12T10:00:00.000Z,Reyes Wedding,wedding,booked,185000,55000,PHP,Tagaytay,Golden hour",
     ].join("\n");
 
     const dialog = await openImport(page);

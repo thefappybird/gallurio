@@ -29,6 +29,7 @@ const ALL = "__all__";
 
 export function BookingsToolbar({
   defaultCurrency,
+  workspaceTimezone,
   onAddClick,
   view = "table",
   canCreate = true,
@@ -39,6 +40,9 @@ export function BookingsToolbar({
   onPendingChange,
 }: {
   defaultCurrency: string;
+  /** Passed to the importer so its preview applies the same same-day rule the
+   *  route enforces at commit. */
+  workspaceTimezone?: string;
   /** Notifies the parent when a filter-change navigation is pending, so it can
    *  reflect the wait (e.g. surface the bookings table's loading skeleton). */
   onPendingChange?: (pending: boolean) => void;
@@ -293,6 +297,7 @@ export function BookingsToolbar({
           open={importOpen}
           onClose={() => setImportOpen(false)}
           defaultCurrency={defaultCurrency}
+          workspaceTimezone={workspaceTimezone}
           teams={teams}
         />
         {initialInvoiceTheme ? (

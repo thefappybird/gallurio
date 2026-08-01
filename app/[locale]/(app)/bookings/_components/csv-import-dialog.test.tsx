@@ -52,9 +52,12 @@ function mockFileReader(text: string) {
   };
 }
 
+// Explicit UTC instants, not "2026-06-15T09:00": a naive datetime is read as
+// local time by whoever parses it, so the same row could be same-day here and
+// midnight-crossing on a UTC CI box. These are 09:00–18:00 in Asia/Manila.
 const VALID_CSV = [
   "clientName,clientEmail,startAt,endAt,title,eventType,status,amountTotal,amountDeposit,currency,locationAddress,notes",
-  "Jane Smith,jane@example.com,2026-06-15T09:00,2026-06-15T18:00,Smith Wedding,wedding,booked,50000,10000,PHP,Grand Ballroom,Ceremony",
+  "Jane Smith,jane@example.com,2026-06-15T01:00:00.000Z,2026-06-15T10:00:00.000Z,Smith Wedding,wedding,booked,50000,10000,PHP,Grand Ballroom,Ceremony",
 ].join("\n");
 
 const INVALID_CSV = [
@@ -91,17 +94,16 @@ describe("CsvImportDialog", () => {
   });
 
   // ── 2. Template download ───────────────────────────────────────────────────
-  it("template download button is present", () => {
+  it("offers both templates as downloads from the route", () => {
+    // Built server-side, not from a Blob here: the XLSX is a zip, and serving
+    // both from one place is what stops them disagreeing.
     renderDialog();
-    expect(screen.getByRole("button", { name: /download csv template/i })).toBeInTheDocument();
-  });
-
-  it("clicking template download button invokes URL.createObjectURL", () => {
-    const createSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock");
-    renderDialog();
-    fireEvent.click(screen.getByRole("button", { name: /download csv template/i }));
-    expect(createSpy).toHaveBeenCalledOnce();
-    createSpy.mockRestore();
+    expect(
+      screen.getByRole("link", { name: /download csv template/i })
+    ).toHaveAttribute("href", "/api/bookings/import?format=csv");
+    expect(
+      screen.getByRole("link", { name: /download xlsx template/i })
+    ).toHaveAttribute("href", "/api/bookings/import?format=xlsx");
   });
 
   // ── 3. File upload triggers preview state ─────────────────────────────────
@@ -302,6 +304,33 @@ describe("CsvImportDialog", () => {
 
       await waitFor(() => {
         expect(screen.getByText(/1 valid/i)).toBeInTheDocument();
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("fails a row that crosses midnight in the workspace timezone", async () => {
+    // 09:00Z-17:00Z is one UTC day, which is all the Zod schema compares, but
+    // 17:00-01:00 in Manila. The route rejects it at commit; previewing it as
+    // valid is how a clean-looking file failed on submit.
+    const csv = [
+      "clientName,clientEmail,startAt,endAt,title",
+      "Jane Smith,,2026-09-12T09:00:00.000Z,2026-09-12T17:00:00.000Z,Overnight",
+    ].join("\n");
+    const restore = mockFileReader(csv);
+    try {
+      renderDialog({ workspaceTimezone: "Asia/Manila" });
+
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        fireEvent.change(input, {
+          target: { files: [new File([csv], "rows.csv", { type: "text/csv" })] },
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/same day in your workspace timezone/i)).toBeInTheDocument();
       });
     } finally {
       restore();

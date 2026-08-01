@@ -88,6 +88,7 @@ export function CalendarBookingManager({
     <>
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
+        workspaceTimezone={workspaceTimezone}
         onAddClick={handleAddClick}
         view="calendar"
         canCreate={canCreate}

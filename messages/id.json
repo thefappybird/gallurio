@@ -927,9 +927,10 @@
       },
       "import": {
         "title": "Impor pemesanan",
-        "dropzone": "Letakkan file CSV di sini, atau klik untuk memilih",
+        "dropzone": "Letakkan file CSV atau XLSX di sini, atau klik untuk memilih",
         "dropzoneActive": "Lepaskan untuk mengunggah",
-        "template": "Unduh template CSV",
+        "templateCsv": "Unduh template CSV",
+        "templateXlsx": "Unduh template XLSX",
         "preview": "{total} baris ditemukan",
         "validCount": "{count} valid",
         "invalidCount": "{count} dengan kesalahan",
@@ -938,7 +939,9 @@
         "noValidRows": "Tidak ada baris valid untuk diimpor. Perbaiki kesalahan di atas.",
         "success": "Berhasil mengimpor {count} pemesanan.",
         "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
-        "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah CSV yang valid.",
+        "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
+        "crossesMidnight": "Mulai dan selesai harus pada hari yang sama di zona waktu ruang kerja ({tz}).",
+        "groupBlocked": "Baris lain dengan booking_id yang sama memiliki kesalahan, jadi seluruh pemesanan ditahan.",
         "columns": {
           "row": "#",
           "title": "Judul",
@@ -953,10 +956,13 @@
           "kindServer": "Server",
           "line": "Baris {csvLine}",
           "rawRow": "Baris mentah",
+          "untitled": "Pemesanan tanpa judul",
           "summary": "Diimpor {created} · Diperbarui {updated} · Dilewati {skipped}",
-          "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya."
+          "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya.",
+          "previewHint": "Belum ada yang diimpor. Perbaiki baris ini dan unggah ulang filenya."
         },
         "dialog": {
+          "structureTitle": "Struktur tabel",
           "columnHeader": "Kolom",
           "notesHeader": "Catatan",
           "required": "wajib",
@@ -1021,6 +1027,12 @@
             },
             "clientPhone": {
               "note": "Disimpan pada klien baru; mengisi yang kosong, tidak pernah menimpa"
+            },
+            "locationLat": {
+              "note": "Lintang peta, mis. 14.5995"
+            },
+            "locationLng": {
+              "note": "Bujur peta, mis. 120.9842"
             },
             "payments": {
               "note": "Daftar JSON dari ekspor. Dibaca hanya saat membuat; entri lunas masuk ke buku besar"

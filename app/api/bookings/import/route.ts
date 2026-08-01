@@ -14,7 +14,13 @@ import {
 } from "@/lib/bookings/import-grouping";
 import { rateLimit } from "@/lib/server/rateLimit";
 import { parseCsv, stripFormulaGuard } from "@/lib/utils/csv-parse";
-import { parseXlsxToRows, looksLikeXlsx } from "@/lib/utils/xlsx";
+import { serializeCsv } from "@/lib/utils/csv-serialize";
+import { parseXlsxToRows, looksLikeXlsx, rowsToXlsxBuffer } from "@/lib/utils/xlsx";
+import {
+  IMPORT_TEMPLATE_HEADERS,
+  buildImportTemplateRows,
+} from "@/lib/bookings/import-template";
+import { resolveWorkspaceTimezone } from "@/lib/utils/timezone";
 
 export const runtime = "nodejs";
 
@@ -59,6 +65,53 @@ export type ImportResult = {
   serverErrors: number;
   errors: ImportErrorEntry[];
 };
+
+/**
+ * Downloadable import template, in the same two formats the importer accepts.
+ *
+ * Server-side because XLSX is a zip: generating it in the browser would mean
+ * shipping a spreadsheet library for an owner-only, occasional click. The CSV
+ * comes from here too so both formats can never disagree.
+ */
+export async function GET(req: Request) {
+  const ctx = await requireOrg();
+
+  if (ctx.role !== "owner") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const format = new URL(req.url).searchParams.get("format") ?? "csv";
+  if (format !== "csv" && format !== "xlsx") {
+    return NextResponse.json({ error: "invalid_format" }, { status: 400 });
+  }
+
+  const rows = buildImportTemplateRows(
+    resolveWorkspaceTimezone(ctx.workspace),
+    ctx.workspace.currency ?? "PHP"
+  );
+
+  if (format === "xlsx") {
+    const buffer = await rowsToXlsxBuffer(IMPORT_TEMPLATE_HEADERS, rows);
+    return new NextResponse(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="bookings-import-template.xlsx"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  return new NextResponse(serializeCsv(IMPORT_TEMPLATE_HEADERS, rows), {
+    status: 200,
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="bookings-import-template.csv"`,
+      "Cache-Control": "no-store",
+    },
+  });
+}
 
 export async function POST(req: Request) {
   const ctx = await requireOrg();
