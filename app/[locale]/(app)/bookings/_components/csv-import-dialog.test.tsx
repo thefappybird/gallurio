@@ -212,21 +212,13 @@ describe("CsvImportDialog", () => {
     expect(screen.getByLabelText(/team/i)).toBeInTheDocument();
   });
 
-  it("does not report failure when every row was already imported", async () => {
-    // Re-running a file is a benign no-op. Treating "nothing written" as a
-    // failure tells the user something broke when nothing did.
-    const { toast } = await import("sonner");
-    vi.mocked(toast.error).mockClear();
+  it("asks before re-importing rows that already exist, naming the team", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
-        created: 0,
-        updated: 0,
-        skipped: 1,
-        validationErrors: 0,
-        serverErrors: 0,
-        errors: [{ index: 0, row: {}, kind: "duplicate", message: "Skipped: already exists" }],
+        needsConfirmation: true,
+        duplicates: [{ index: 0, title: "Smith Wedding", teamName: "Main" }],
       }),
     });
     const restore = mockFileReader(VALID_CSV);
@@ -241,7 +233,8 @@ describe("CsvImportDialog", () => {
         fireEvent.click(screen.getByRole("button", { name: /import 1 booking/i }));
       });
 
-      expect(toast.error).not.toHaveBeenCalled();
+      expect(await screen.findByText(/already imported/i)).toBeInTheDocument();
+      expect(screen.getByText(/Main/)).toBeInTheDocument();
     } finally {
       restore();
     }

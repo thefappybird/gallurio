@@ -16,13 +16,14 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { parseCsv, stripFormulaGuard } from "@/lib/utils/csv-parse";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
-import type { ImportResult } from "@/app/api/bookings/import/route";
+import type { ImportResult, DuplicateWarning } from "@/app/api/bookings/import/route";
 import { ImportResultsDialog } from "./import-results-dialog";
 import { cn } from "@/lib/utils";
 
@@ -137,6 +138,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
     [teams]
   );
   const [teamId, setTeamId] = useState<string>("");
+  const [duplicateWarning, setDuplicateWarning] = useState<DuplicateWarning[] | null>(null);
 
   // Rows sharing a booking_id are ONE booking, and the route rebuilds its
   // sessions from whatever rows arrive. Importing the good half of a group
@@ -161,7 +163,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
   );
 
   const { loading: importing, trigger: triggerImport } = useGuardedAction(
-    useCallback(async () => {
+    useCallback(async (confirmDuplicates = false) => {
       if (validRows.length === 0) return;
 
       setImportResult(null);
@@ -176,9 +178,20 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
       const res = await fetch("/api/bookings/import", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(teamId ? { rows: payload, teamId } : { rows: payload }),
+        body: JSON.stringify({
+          rows: payload,
+          ...(teamId ? { teamId } : {}),
+          ...(confirmDuplicates ? { confirmDuplicates: true } : {}),
+        }),
       });
       const body = await res.json().catch(() => null);
+
+      // Looks already imported. Nothing was written; ask before proceeding.
+      if (res.ok && body?.needsConfirmation) {
+        setDuplicateWarning(body.duplicates as DuplicateWarning[]);
+        return;
+      }
+
       // A rejected request (429, 403, 400) answers with {error}, not a result.
       // Committing that to state and reading .errors off it throws during the
       // next render and takes the page down with it.
@@ -197,13 +210,8 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
       }
       if (data.errors.length > 0) {
         setShowResultsDialog(true);
-        // A duplicate was recognised and skipped on purpose. Reporting "failed"
-        // when a re-run wrote nothing describes success as breakage.
-        const onlyDuplicates = data.errors.every((e) => e.kind === "duplicate");
-        if (written === 0 && !onlyDuplicates) {
+        if (written === 0) {
           toast.error(tDialog("failedWithDetails"));
-        } else if (written === 0) {
-          toast.success(tDialog("allDuplicates", { count: data.errors.length }));
         }
       }
     }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, router, startTransition]),
@@ -512,7 +520,10 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
                   type="button"
                   variant="brand"
                   size="sm"
-                  onClick={triggerImport}
+                  // Wrapped: passing the handler directly would hand the click
+                  // event in as confirmDuplicates, which is truthy, so the
+                  // warning would never be shown.
+                  onClick={() => void triggerImport()}
                   loading={importing}
                 >
                   {importing ? t("importing") : t("importButton", { count: validRows.length })}
@@ -542,6 +553,51 @@ export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: 
           </div>
         </DialogContent>
       </Dialog>
+
+      {duplicateWarning ? (
+        <Dialog open onOpenChange={(next) => !next && setDuplicateWarning(null)}>
+          <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-4 sm:max-w-md">
+            <DialogTitle>{tDialog("duplicateTitle")}</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {tDialog("duplicateBody", { count: duplicateWarning.length })}
+            </p>
+            <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto text-sm">
+              {duplicateWarning.map((d) => (
+                <li key={d.index} className="flex flex-col border border-border px-3 py-2">
+                  <span className="font-medium text-foreground">{d.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {d.teamName
+                      ? tDialog("duplicateOnTeam", { team: d.teamName })
+                      : tDialog("duplicateNoTeam")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <DialogFooter className="static mx-0 mb-0 border-t-0 bg-transparent p-0 sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDuplicateWarning(null)}
+                className="min-h-11 sm:min-h-0"
+              >
+                {tDialog("cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setDuplicateWarning(null);
+                  void triggerImport(true);
+                }}
+                className="min-h-11 sm:min-h-0"
+              >
+                {tDialog("duplicateContinue")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
 
       {importResult && importResult.errors.length > 0 ? (
         <ImportResultsDialog

@@ -56,12 +56,17 @@ beforeEach(async () => {
   ]);
 });
 
-async function callImport(rows: unknown[], teamId?: string) {
+async function callImport(rows: unknown[], teamId?: string, confirmDuplicates?: boolean) {
   const { POST } = await import("./route");
+  const body: Record<string, unknown> = { rows };
+  if (teamId !== undefined) body.teamId = teamId;
+  // Default true so the many tests predating the confirm step still commit;
+  // the two that exercise the warning pass it explicitly.
+  body.confirmDuplicates = confirmDuplicates ?? true;
   const req = new Request("http://localhost/api/bookings/import", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(teamId === undefined ? { rows } : { rows, teamId }),
+    body: JSON.stringify(body),
   });
   return POST(req);
 }
@@ -490,24 +495,30 @@ describe("POST /api/bookings/import", () => {
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
   });
 
-  it("skips a row that would duplicate an existing booking, and says why", async () => {
-    // Re-running a hand-authored file (no booking_id) used to mint a second
-    // copy of every booking, along with a second set of transactions.
+  it("returns needsConfirmation and names the team when rows match existing bookings", async () => {
+    // Warn, never decide. Silently skipping drops rows the owner may have meant
+    // to import again; blocking stops a second team covering the same event.
     await callImport([VALID_ROW]);
-    const res = await callImport([VALID_ROW]);
+    const res = await callImport([VALID_ROW], undefined, false);
     const body = await res.json();
 
-    // A file whose rows are ALL duplicates is a benign no-op, not a failed
-    // request — 422 would make the dialog show a generic error and hide the
-    // per-row reasons.
-    expect(res.status).toBe(200);
-    expect(body.created).toBe(0);
-    expect(body.skipped).toBe(1);
-    expect(body.errors[0].kind).toBe("duplicate");
-    expect(body.errors[0].message).toMatch(/already exists/i);
-
+    expect(body.needsConfirmation).toBe(true);
+    expect(body.duplicates[0].title).toBe("Smith Wedding");
+    expect(body.duplicates[0].teamName).toBe("Main");
+    // Nothing written while the question is outstanding.
     expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
-    expect(await Transaction.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("imports anyway once the owner confirms", async () => {
+    // Confirming means "yes, I meant to" — the second copy is written, which is
+    // what makes covering one event with two teams possible.
+    await callImport([VALID_ROW]);
+    const res = await callImport([VALID_ROW], undefined, true);
+    const body = await res.json();
+
+    expect(body.created).toBe(1);
+    expect(body.errors).toHaveLength(0);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(2);
   });
 
   it("refuses to import a completed booking that is not fully paid", async () => {

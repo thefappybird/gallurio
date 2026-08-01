@@ -27,9 +27,22 @@ export type ImportErrorEntry = {
   index: number;
   row: Record<string, unknown>;
   field?: string;
-  /** "duplicate" is not a failure — the row was already imported. */
-  kind: "validation" | "lookup" | "server" | "duplicate";
+  kind: "validation" | "lookup" | "server";
   message: string;
+};
+
+/** One row that matches a booking already in the workspace. */
+export type DuplicateWarning = {
+  index: number;
+  title: string;
+  /** Team the existing booking sits on, so the warning can name it. */
+  teamName: string | null;
+};
+
+/** Returned INSTEAD of a result when the file looks already imported. */
+export type DuplicateCheck = {
+  needsConfirmation: true;
+  duplicates: DuplicateWarning[];
 };
 
 export type ImportResult = {
@@ -178,6 +191,49 @@ export async function POST(req: Request) {
   // original one-row-one-booking behaviour.
   const groups = groupImportRows(json.rows as Record<string, unknown>[]);
 
+  // Pre-flight: does this file look like one already imported? Runs before any
+  // write so the answer can be "ask the owner" rather than a half-applied file.
+  // Deliberately workspace-wide, not scoped to the chosen team: importing the
+  // same event for a second team is legitimate, but the owner should be told it
+  // already exists elsewhere and on which team.
+  if (!json.confirmDuplicates) {
+    const duplicates: DuplicateWarning[] = [];
+
+    for (const group of groups) {
+      const first = group.rows[0] as Record<string, unknown>;
+      const title = typeof first.title === "string" ? first.title.trim() : "";
+      const startRaw = first.startAt;
+      const startAt = typeof startRaw === "string" ? new Date(startRaw) : null;
+      if (!title || !startAt || Number.isNaN(startAt.getTime())) continue;
+      // An explicit booking_id is an update, which is never a duplicate.
+      if (group.bookingId && /^[a-f0-9]{24}$/i.test(group.bookingId)) continue;
+
+      const match = await Booking.findOne({
+        workspaceId: ctx.workspace._id,
+        firstSessionStart: startAt,
+        title,
+      })
+        .select({ _id: 1, teamId: 1 })
+        .lean();
+      if (!match) continue;
+
+      const team = match.teamId
+        ? await Team.findOne({ _id: match.teamId, workspaceId: ctx.workspace._id })
+            .select({ name: 1 })
+            .lean()
+        : null;
+      duplicates.push({
+        index: group.rowNumbers[0] - 1,
+        title,
+        teamName: team?.name ?? null,
+      });
+    }
+
+    if (duplicates.length > 0) {
+      return NextResponse.json({ needsConfirmation: true, duplicates } satisfies DuplicateCheck);
+    }
+  }
+
   for (const group of groups) {
     // Errors are reported against the group's first source row.
     const i = group.rowNumbers[0] - 1;
@@ -298,32 +354,9 @@ export async function POST(req: Request) {
       Math.max(...sessions.map((s) => s.endAt.getTime()))
     );
 
-    // Re-running a file that carries no booking_id used to mint a second copy
-    // of every booking, with a second set of transactions behind it. Same title
-    // starting at the same instant is treated as the same booking. Uses the
-    // existing {workspaceId, firstSessionStart} index.
-    if (!existingBooking) {
-      const duplicate = await Booking.findOne({
-        workspaceId: ctx.workspace._id,
-        firstSessionStart,
-        title: row.title,
-      })
-        .select({ _id: 1 })
-        .lean();
-
-      if (duplicate) {
-        errors.push({
-          index: i,
-          row: raw,
-          field: "title",
-          kind: "duplicate",
-          message:
-            "Skipped: a booking with this title already exists at this start time. Add its booking_id to update it instead.",
-        });
-        skippedRows += group.rows.length;
-        continue;
-      }
-    }
+    // A row that looks already-imported is surfaced for confirmation before
+    // anything is written (see the pre-flight pass above), never skipped here:
+    // the owner may be importing the same event for a second team on purpose.
 
     // Mirrors the PATCH invariant: completing requires the deposit plus every
     // paid payment to settle the total, so a sheet cannot create a state the
@@ -637,14 +670,6 @@ export async function POST(req: Request) {
       serverErrors,
       errors,
     } satisfies ImportResult,
-    // 422 means nothing in the file could be processed. A duplicate WAS
-    // processed — it was recognised and deliberately skipped — so a re-imported
-    // file stays a 200 no-op rather than reading as a failed request.
-    {
-      status:
-        errors.length === json.rows.length && errors.some((e) => e.kind !== "duplicate")
-          ? 422
-          : 200,
-    }
+    { status: errors.length === json.rows.length ? 422 : 200 }
   );
 }
