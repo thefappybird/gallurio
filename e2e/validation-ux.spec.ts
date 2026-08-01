@@ -128,14 +128,81 @@ test.describe("Task 2 — CSV/XLSX import preview", () => {
     return page.getByRole("dialog");
   }
 
-  test("the column guide documents the round-trip columns", async ({ page }) => {
+  test("the column guide collapses, and documents the round-trip columns", async ({ page }) => {
     // booking_id and session_index are what make an export re-importable and
     // multi-session, and the guide listed neither.
     const dialog = await openImport(page);
-    await expect(dialog.getByText("booking_id", { exact: true })).toBeVisible({ timeout: 20_000 });
+    const guide = dialog.getByText(/table structure/i);
+    await expect(guide).toBeVisible({ timeout: 20_000 });
+    // Reference material, folded away by default.
+    await expect(dialog.getByText("booking_id", { exact: true })).toBeHidden();
+
+    await guide.click();
+    await expect(dialog.getByText("booking_id", { exact: true })).toBeVisible();
     await expect(dialog.getByText("session_index", { exact: true })).toBeVisible();
     await expect(dialog.getByText("clientPhone", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("locationLat", { exact: true })).toBeVisible();
     await expect(dialog.getByText(/update that booking instead of creating a copy/i)).toBeVisible();
+  });
+
+  test("offers a CSV and an XLSX template, both served by the route", async ({ page }) => {
+    const dialog = await openImport(page);
+    await expect(
+      dialog.getByRole("link", { name: /download csv template/i })
+    ).toHaveAttribute("href", "/api/bookings/import?format=csv", { timeout: 20_000 });
+    await expect(
+      dialog.getByRole("link", { name: /download xlsx template/i })
+    ).toHaveAttribute("href", "/api/bookings/import?format=xlsx");
+    await page.screenshot({ path: "e2e/__screenshots__/import-dialog-idle.png" });
+  });
+
+  test("the downloaded template imports cleanly through the preview", async ({ page }) => {
+    // A template is only useful if it is itself a valid file. Fetched through
+    // the browser session so it comes from the real route.
+    await gotoBookings(page);
+    const csv = await page.evaluate(async () => {
+      const res = await fetch("/api/bookings/import?format=csv");
+      return res.text();
+    });
+    expect(csv).toContain("payments");
+
+    const dialog = await openImport(page);
+    await dialog
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "template.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+
+    // Two rows sharing one booking_id: one booking, two sessions.
+    await expect(dialog.getByText(/2 row\(s\) found/i)).toBeVisible({ timeout: 20_000 });
+    await expect(dialog.getByText(/2 valid/i)).toBeVisible();
+    await expect(dialog.getByText(/with errors/i)).toBeHidden();
+    await dialog.getByRole("button", { name: /^cancel$/i }).click();
+  });
+
+  test("a wall-time midnight crossing fails in the preview, not on submit", async ({ page }) => {
+    // 09:00Z-17:00Z is one UTC day but 17:00-01:00 in Manila. This used to
+    // preview as valid and only fail once the row had been sent.
+    const csv = [
+      HEADERS,
+      "Marisol Reyes,,2026-09-12T09:00:00.000Z,2026-09-12T17:00:00.000Z,Overnight Wedding,wedding,booked,185000,55000,PHP,Tagaytay,",
+    ].join("\n");
+
+    const dialog = await openImport(page);
+    await dialog
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "midnight.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+
+    await expect(dialog.getByText(/1 with errors/i)).toBeVisible({ timeout: 20_000 });
+    await expect(dialog.getByRole("button", { name: /import 1 booking/i })).toBeHidden();
+
+    // The message is longer than the cell, so the cell opens the full dialog.
+    await dialog.getByRole("button", { name: /same day in your workspace timezone/i }).click();
+    const errors = page.getByRole("dialog").filter({ hasText: /import errors/i });
+    // Headed by the booking it belongs to, not just a line number.
+    await expect(errors.getByText("Overnight Wedding")).toBeVisible();
+    await expect(errors.getByText(/nothing has been imported yet/i)).toBeVisible();
+    await page.screenshot({ path: "e2e/__screenshots__/import-preview-errors.png" });
+
+    await page.keyboard.press("Escape");
   });
 
   test("offers a team picker when the workspace runs more than one team", async ({ page }) => {
