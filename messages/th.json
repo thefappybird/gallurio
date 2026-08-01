@@ -912,10 +912,25 @@
         "showCancelled": "แสดงที่ยกเลิก",
         "showPast": "แสดงที่ผ่านมา",
         "import": "นำเข้า",
-        "exportCsv": "CSV",
-        "exportXlsx": "Excel",
+        "export": "ส่งออก",
         "add": "การจองใหม่",
         "invoiceTheme": "ธีมใบแจ้งหนี้"
+      },
+      "exportDialog": {
+        "title": "ส่งออกการจอง",
+        "teamLabel": "ทีม",
+        "allTeams": "ทุกทีม",
+        "rangeLabel": "ช่วงเวลา",
+        "allTime": "ทั้งหมด",
+        "dateRange": "ช่วงวันที่",
+        "from": "จาก",
+        "to": "ถึง",
+        "formatLabel": "รูปแบบ",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "ตัวกรองสถานะและการค้นหาของรายการมีผลกับการส่งออกนี้ด้วย",
+        "download": "ดาวน์โหลด",
+        "cancel": "ยกเลิก"
       },
       "teamPicker": {
         "allTeams": "ทุกทีม",

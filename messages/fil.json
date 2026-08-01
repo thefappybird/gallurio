@@ -912,10 +912,25 @@
         "showCancelled": "Ipakita ang mga nakansela",
         "showPast": "Ipakita ang nakaraan",
         "import": "Mag-import",
-        "exportCsv": "CSV",
-        "exportXlsx": "Excel",
+        "export": "I-export",
         "add": "Bagong booking",
         "invoiceTheme": "Tema ng invoice"
+      },
+      "exportDialog": {
+        "title": "I-export ang mga booking",
+        "teamLabel": "Team",
+        "allTeams": "Lahat ng team",
+        "rangeLabel": "Saklaw ng panahon",
+        "allTime": "Lahat ng panahon",
+        "dateRange": "Saklaw ng petsa",
+        "from": "Mula",
+        "to": "Hanggang",
+        "formatLabel": "Format",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "Nalalapat din sa export na ito ang status at paghahanap na filter ng listahan.",
+        "download": "I-download",
+        "cancel": "Kanselahin"
       },
       "teamPicker": {
         "allTeams": "Lahat ng koponan",

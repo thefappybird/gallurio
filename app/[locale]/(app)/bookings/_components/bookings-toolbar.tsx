@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import { CsvImportDialog } from "./csv-import-dialog";
+import { BookingsExportDialog } from "./bookings-export-dialog";
 import { InvoiceThemeDialog } from "./invoice-theme-dialog";
 import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
@@ -79,6 +80,7 @@ export function BookingsToolbar({
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [invoiceThemeOpen, setInvoiceThemeOpen] = useState(false);
 
   // Keep a ref to the latest searchParams so pushParams never captures a stale
@@ -105,7 +107,9 @@ export function BookingsToolbar({
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const exportHref = useMemo(() => {
+  // The list's own filters. The export dialog owns team, range and format and
+  // appends them to this, so a download still matches what's on screen.
+  const exportParams = useMemo(() => {
     const p = new URLSearchParams();
     if (status && status !== ALL) p.set("status", status);
     if (q) p.set("q", q);
@@ -115,8 +119,7 @@ export function BookingsToolbar({
     if (!showPast) p.set("showPast", "0");
     if (from) p.set("from", from);
     if (to) p.set("to", to);
-    const qs = p.toString();
-    return `/api/bookings/export${qs ? `?${qs}` : ""}`;
+    return p.toString();
   }, [status, q, includeCancelled, showPast, from, to]);
 
   // pushParams reads searchParams via a ref so its identity only changes when
@@ -263,36 +266,24 @@ export function BookingsToolbar({
             {t("import")}
           </Button>
         ) : null}
-        {/* Two plain links rather than a dropdown: both stay in the DOM, so
-            they are keyboard-reachable and screen-reader-visible without
-            opening a portalled menu for a two-item choice. */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-11 flex-1 border-s-0 sm:flex-none sm:min-h-0 sm:border-s"
-          title={tBookings("export.tooltip")}
-          nativeButton={false}
-          render={<a href={exportHref} download />}
-        >
-          <DownloadIcon className="size-4" />
-          {t("exportCsv")}
-        </Button>
+        {/* One button, because format is no longer the only choice: the dialog
+            also picks a team and a time range. */}
         <Button
           variant="outline"
           size="sm"
           className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
           title={tBookings("export.tooltip")}
-          nativeButton={false}
-          render={
-            <a
-              href={`${exportHref}${exportHref.includes("?") ? "&" : "?"}format=xlsx`}
-              download
-            />
-          }
+          onClick={() => setExportOpen(true)}
         >
           <DownloadIcon className="size-4" />
-          {t("exportXlsx")}
+          {t("export")}
         </Button>
+        <BookingsExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          baseParams={exportParams}
+          teams={teams}
+        />
         <CsvImportDialog
           open={importOpen}
           onClose={() => setImportOpen(false)}

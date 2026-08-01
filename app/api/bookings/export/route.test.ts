@@ -5,7 +5,8 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client } from "@/lib/db/models";
+import { Booking, Client, Team } from "@/lib/db/models";
+import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 
 const WS_A = new Types.ObjectId();
 const WS_B = new Types.ObjectId();
@@ -386,5 +387,43 @@ describe("GET /api/bookings/export", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe("GET /api/bookings/export — team narrowing", () => {
+  it("exports only the requested team's bookings", async () => {
+    await Team.create([
+      { workspaceId: WS_A, name: "Alpha", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByWorkosUserId: "user_test" },
+      { workspaceId: WS_A, name: "Beta", color: TEAM_COLOR_PALETTE[1], isDefault: false, isActive: true, memberCount: 0, createdByWorkosUserId: "user_test" },
+    ]);
+    const [alpha, beta] = await Team.find({ workspaceId: WS_A }).sort({ name: 1 }).lean();
+
+    await seedBooking(WS_A, { title: "Alpha Wedding" });
+    await Booking.updateOne({ title: "Alpha Wedding" }, { $set: { teamId: alpha._id } });
+    await seedBooking(WS_A, { title: "Beta Wedding" });
+    await Booking.updateOne({ title: "Beta Wedding" }, { $set: { teamId: beta._id } });
+
+    const res = await callExport(`teamId=${alpha._id.toString()}`);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("Alpha Wedding");
+    expect(body).not.toContain("Beta Wedding");
+  });
+});
+
+describe("GET /api/bookings/export — date range", () => {
+  it("includes bookings on the to-date itself", async () => {
+    // A bare "2026-08-15" is midnight UTC, so $lte would drop everything that
+    // day. The picker hands over whole days, so both ends cover whole days in
+    // the workspace timezone.
+    await seedBooking(WS_A, {
+      title: "Same Day",
+      startAt: "2026-08-15T09:00:00Z",
+      endAt: "2026-08-15T13:00:00Z",
+    });
+
+    const res = await callExport("from=2026-08-15&to=2026-08-15");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("Same Day");
   });
 });
