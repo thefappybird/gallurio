@@ -101,17 +101,18 @@ describe("BookingsToolbar — New Booking button", () => {
   });
 });
 
-describe("BookingsToolbar — export formats", () => {
-  it("offers both a CSV and an XLSX download link", () => {
+describe("BookingsToolbar — export", () => {
+  it("opens the export dialog rather than downloading straight away", () => {
+    // Format is no longer the only choice — team and time range live in the
+    // dialog too — so one button replaces the two format links.
     render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
-    // Queried by href rather than role: the shared Button renders the anchor
-    // with role="button", so getAllByRole("link") finds nothing here.
-    const links = Array.from(
-      document.querySelectorAll<HTMLAnchorElement>('a[href*="/api/bookings/export"]')
-    ).map((a) => a.getAttribute("href") ?? "");
+    expect(document.querySelector('a[href*="/api/bookings/export"]')).toBeNull();
 
-    expect(links.some((h) => !h.includes("format="))).toBe(true);
-    expect(links.some((h) => h.includes("format=xlsx"))).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: /^export$/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      document.querySelector<HTMLAnchorElement>('a[href*="/api/bookings/export"]')
+    ).not.toBeNull();
   });
 });
 

@@ -912,10 +912,25 @@
         "showCancelled": "Show cancelled",
         "showPast": "Show past",
         "import": "Import",
-        "exportCsv": "CSV",
-        "exportXlsx": "Excel",
+        "export": "Export",
         "add": "New booking",
         "invoiceTheme": "Invoice theme"
+      },
+      "exportDialog": {
+        "title": "Export bookings",
+        "teamLabel": "Team",
+        "allTeams": "All teams",
+        "rangeLabel": "Time range",
+        "allTime": "All time",
+        "dateRange": "Date range",
+        "from": "From",
+        "to": "To",
+        "formatLabel": "Format",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "The list's status and search filters apply to this export too.",
+        "download": "Download",
+        "cancel": "Cancel"
       },
       "teamPicker": {
         "allTeams": "All teams",

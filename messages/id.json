@@ -912,10 +912,25 @@
         "showCancelled": "Tampilkan yang dibatalkan",
         "showPast": "Tampilkan yang lalu",
         "import": "Impor",
-        "exportCsv": "CSV",
-        "exportXlsx": "Excel",
+        "export": "Ekspor",
         "add": "Pemesanan baru",
         "invoiceTheme": "Tema faktur"
+      },
+      "exportDialog": {
+        "title": "Ekspor pemesanan",
+        "teamLabel": "Tim",
+        "allTeams": "Semua tim",
+        "rangeLabel": "Rentang waktu",
+        "allTime": "Sepanjang waktu",
+        "dateRange": "Rentang tanggal",
+        "from": "Dari",
+        "to": "Sampai",
+        "formatLabel": "Format",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "Filter status dan pencarian pada daftar juga berlaku untuk ekspor ini.",
+        "download": "Unduh",
+        "cancel": "Batal"
       },
       "teamPicker": {
         "allTeams": "Semua tim",

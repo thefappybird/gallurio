@@ -912,10 +912,25 @@
         "showCancelled": "إظهار الملغاة",
         "showPast": "إظهار السابقة",
         "import": "استيراد",
-        "exportCsv": "CSV",
-        "exportXlsx": "Excel",
+        "export": "تصدير",
         "add": "حجز جديد",
         "invoiceTheme": "نمط الفاتورة"
+      },
+      "exportDialog": {
+        "title": "تصدير الحجوزات",
+        "teamLabel": "الفريق",
+        "allTeams": "كل الفرق",
+        "rangeLabel": "النطاق الزمني",
+        "allTime": "كل الأوقات",
+        "dateRange": "نطاق التواريخ",
+        "from": "من",
+        "to": "إلى",
+        "formatLabel": "الصيغة",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "تنطبق أيضاً على هذا التصدير مرشّحات الحالة والبحث في القائمة.",
+        "download": "تنزيل",
+        "cancel": "إلغاء"
       },
       "teamPicker": {
         "allTeams": "كل الفِرق",

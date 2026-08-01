@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client } from "@/lib/db/models";
 import { serializeCsv, escapeSpreadsheetText } from "@/lib/utils/csv-serialize";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
-import { FALLBACK_TZ, localDayStart } from "@/lib/utils/timezone";
+import { FALLBACK_TZ, localDayStart, dayBoundInTz } from "@/lib/utils/timezone";
 import { Team } from "@/lib/db/models";
 import { rowsToXlsxBuffer } from "@/lib/utils/xlsx";
 
@@ -82,6 +83,23 @@ export async function GET(req: Request) {
   const filter: Record<string, unknown> = { workspaceId: ctx.workspace._id };
   if (scope !== undefined) filter.teamId = { $in: scope };
 
+  // Narrowing to one team. A team id from a query string is untrusted twice
+  // over: it has to belong to this workspace AND, for a non-owner, sit inside
+  // the scope resolved above — otherwise this would read another team's
+  // bookings by guessing an id. Both failures answer identically.
+  const teamIdParam = params.get("teamId");
+  if (teamIdParam) {
+    const team = mongoose.isValidObjectId(teamIdParam)
+      ? await Team.findOne({ _id: teamIdParam, workspaceId: ctx.workspace._id })
+          .select({ _id: 1 })
+          .lean()
+      : null;
+    if (!team || (scope !== undefined && !scope.includes(teamIdParam))) {
+      return NextResponse.json({ error: "invalid_team" }, { status: 400 });
+    }
+    filter.teamId = team._id;
+  }
+
   if (status) {
     filter.status = status;
   } else {
@@ -96,9 +114,17 @@ export async function GET(req: Request) {
   }
 
   if (from || to) {
+    // A bare YYYY-MM-DD parses as midnight UTC, so a to-date would exclude
+    // everything on the day the user picked. The picker deals in whole days,
+    // so both ends are widened to whole days in the workspace timezone.
+    const tz = (ctx.workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ;
+    const isBareDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
     const range: Record<string, Date> = {};
-    if (from) range.$gte = new Date(from);
-    if (to) range.$lte = new Date(to);
+    if (from) range.$gte = isBareDate(from) ? dayBoundInTz(from, tz, 0, 0, 0, 0) : new Date(from);
+    if (to) range.$lte = isBareDate(to) ? dayBoundInTz(to, tz, 23, 59, 59, 999) : new Date(to);
+    if (Object.values(range).some((d) => Number.isNaN(d.getTime()))) {
+      return NextResponse.json({ error: "invalid_date_range" }, { status: 400 });
+    }
     filter.firstSessionStart = range;
   }
 
