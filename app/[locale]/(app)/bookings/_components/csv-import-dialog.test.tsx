@@ -81,6 +81,62 @@ describe("CsvImportDialog", () => {
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
   });
 
+  it("keeps the dropzone visible while the table structure scrolls independently", () => {
+    renderDialog();
+
+    const structure = screen.getByRole("button", { name: "Table structure" });
+    fireEvent.click(structure);
+
+    expect(structure).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("import-structure-scroll")).toHaveClass("overflow-y-auto");
+    expect(screen.getByRole("button", { name: /drop.*csv.*xlsx/i })).toBeInTheDocument();
+    expect(screen.getByText("Column").parentElement).toHaveClass("z-10", "backdrop-blur-sm");
+    expect(screen.getByText("Import bookings").closest('[role="dialog"]')).toHaveClass(
+      "motion-safe:transition-[height]"
+    );
+  });
+
+  it("uses measured numeric heights to animate the structure in both directions", () => {
+    const rect = {
+      bottom: 320,
+      height: 320,
+      left: 0,
+      right: 0,
+      top: 0,
+      width: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect;
+    const boundsSpy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(rect);
+    let frame: FrameRequestCallback | undefined;
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
+      frame = callback;
+      return 1;
+    }));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+
+    try {
+      renderDialog();
+      const dialog = screen.getByText("Import bookings").closest<HTMLElement>('[role="dialog"]');
+      const structure = screen.getByRole("button", { name: "Table structure" });
+      expect(dialog).toBeTruthy();
+      if (!dialog) throw new Error("Expected the import dialog");
+
+      fireEvent.click(structure);
+      expect(dialog).toHaveStyle({ height: "320px" });
+      act(() => frame?.(0));
+      expect(Number.parseFloat(dialog.style.height)).toBeGreaterThan(320);
+
+      fireEvent.click(structure);
+      act(() => frame?.(0));
+      expect(dialog).toHaveStyle({ height: "320px" });
+    } finally {
+      boundsSpy.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("closes when cancel is clicked", () => {
     const onClose = vi.fn();
     renderDialog({ onClose });

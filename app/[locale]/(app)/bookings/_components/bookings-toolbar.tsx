@@ -23,7 +23,7 @@ import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
 import { parseBookingsToggleFilters } from "../_data/booking-filters";
-import type { InvoiceThemePresetId } from "@/lib/invoices/theme";
+import type { InvoiceThemePresetId, InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
 
 const ALL = "__all__";
 
@@ -37,6 +37,7 @@ export function BookingsToolbar({
   selectedTeams = [],
   isOwner = false,
   initialInvoiceTheme,
+  invoiceThemeBusiness,
   onPendingChange,
 }: {
   defaultCurrency: string;
@@ -65,6 +66,7 @@ export function BookingsToolbar({
   isOwner?: boolean;
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -305,6 +307,7 @@ export function BookingsToolbar({
             open={invoiceThemeOpen}
             onClose={() => setInvoiceThemeOpen(false)}
             initialTheme={initialInvoiceTheme}
+            business={invoiceThemeBusiness}
           />
         ) : null}
         {canCreate ? (

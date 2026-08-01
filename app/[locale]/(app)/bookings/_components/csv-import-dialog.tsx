@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useRouter } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -79,6 +79,9 @@ export function CsvImportDialog({
   const [, startTransition] = useTransition();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogBodyRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const collapsedDialogHeightRef = useRef<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -86,6 +89,15 @@ export function CsvImportDialog({
   const [parseError, setParseError] = useState<string | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showPreviewErrors, setShowPreviewErrors] = useState(false);
+  const [structureOpen, setStructureOpen] = useState(false);
+  const [dialogHeight, setDialogHeight] = useState<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
+    },
+    []
+  );
 
   // Only active teams the caller can write to are real choices.
   const writableTeams = useMemo(
@@ -267,6 +279,8 @@ export function CsvImportDialog({
         setParseError(t("parseError"));
         return;
       }
+      setStructureOpen(false);
+      setDialogHeight(null);
       setFileName(file.name);
       setRows([]);
       setImportResult(null);
@@ -329,7 +343,40 @@ export function CsvImportDialog({
     setImportResult(null);
     setShowResultsDialog(false);
     setShowPreviewErrors(false);
+    setStructureOpen(false);
+    setDialogHeight(null);
     onClose();
+  }
+
+  function toggleStructure() {
+    const currentHeight = dialogBodyRef.current?.getBoundingClientRect().height;
+    if (!currentHeight) {
+      setStructureOpen((open) => !open);
+      return;
+    }
+
+    if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
+
+    if (structureOpen) {
+      // The collapsed height was measured before expansion. Keeping the dialog
+      // at its current height for one frame gives CSS a numeric start and end
+      // value, so closing does not depend on animating to `auto`.
+      setDialogHeight(currentHeight);
+      setStructureOpen(false);
+      animationFrameRef.current = requestAnimationFrame(() => {
+        setDialogHeight(collapsedDialogHeightRef.current ?? currentHeight);
+        animationFrameRef.current = null;
+      });
+      return;
+    }
+
+    collapsedDialogHeightRef.current = currentHeight;
+    setDialogHeight(currentHeight);
+    setStructureOpen(true);
+    animationFrameRef.current = requestAnimationFrame(() => {
+      setDialogHeight(Math.max(currentHeight, window.innerHeight - 48));
+      animationFrameRef.current = null;
+    });
   }
 
   const hasRows = rows.length > 0;
@@ -340,50 +387,68 @@ export function CsvImportDialog({
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent
           showCloseButton
-          className="flex max-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col gap-0 p-0 sm:max-w-2xl"
+          style={dialogHeight === null ? undefined : { height: dialogHeight }}
+          className={cn(
+            "flex max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col gap-0 p-0 motion-safe:transition-[height] motion-safe:duration-200 motion-safe:ease-out sm:max-w-2xl"
+          )}
         >
-          <div className="border-b border-border px-4 py-3">
-            <DialogTitle>{t("title")}</DialogTitle>
-          </div>
+          <div ref={dialogBodyRef} className="flex min-h-0 flex-1 flex-col">
+            <div className="border-b border-border px-4 py-3">
+              <DialogTitle>{t("title")}</DialogTitle>
+            </div>
 
-          <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-3">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3">
             {!hasRows ? (
-              // <details> rather than a state-driven panel: the browser already
-              // gives this keyboard support, and the table is reference
-              // material, not something to read before every import.
-              <details className="group border border-border">
-                <summary className="cursor-pointer list-none bg-muted px-3 py-2 text-xs font-medium text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-center gap-1.5">
-                    <ChevronRightIcon className="size-3.5 shrink-0 transition-transform group-open:rotate-90" />
-                    {tDialog("structureTitle")}
-                  </span>
-                </summary>
-                <div className="grid grid-cols-[1fr_auto_1fr] border-y border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  <span>{tDialog("columnHeader")}</span>
-                  <span />
-                  <span>{tDialog("notesHeader")}</span>
-                </div>
-                {IMPORT_COLUMNS.map((h) => (
+              <div
+                className={cn(
+                  "border border-border",
+                  structureOpen && "flex min-h-0 flex-1 flex-col"
+                )}
+              >
+                <button
+                  type="button"
+                  aria-expanded={structureOpen}
+                  onClick={toggleStructure}
+                  className="flex w-full shrink-0 items-center gap-1.5 bg-muted px-3 py-2 text-start text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <ChevronRightIcon
+                    className={cn("size-3.5 shrink-0 transition-transform", structureOpen && "rotate-90")}
+                  />
+                  {tDialog("structureTitle")}
+                </button>
+                {structureOpen ? (
                   <div
-                    key={h.name}
-                    className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-border px-3 py-1.5 text-xs last:border-0"
+                    data-testid="import-structure-scroll"
+                    className="min-h-0 flex-1 overflow-y-auto"
                   >
-                    <span className="font-mono text-foreground">{h.name}</span>
-                    <span className="px-2">
-                      {h.required ? (
-                        <Badge variant="default" className="text-[10px] leading-none">
-                          {tDialog("required")}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-[10px] leading-none">
-                          {tDialog("optional")}
-                        </Badge>
-                      )}
-                    </span>
-                    <span className="text-muted-foreground">{tDialog(`spec.${h.name}.note`)}</span>
+                    <div className="sticky top-0 z-10 grid grid-cols-[1fr_auto_1fr] border-y border-border bg-muted/90 px-3 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur-sm supports-[backdrop-filter]:bg-muted/75">
+                      <span>{tDialog("columnHeader")}</span>
+                      <span />
+                      <span>{tDialog("notesHeader")}</span>
+                    </div>
+                    {IMPORT_COLUMNS.map((h) => (
+                      <div
+                        key={h.name}
+                        className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-border px-3 py-1.5 text-xs last:border-0"
+                      >
+                        <span className="font-mono text-foreground">{h.name}</span>
+                        <span className="px-2">
+                          {h.required ? (
+                            <Badge variant="default" className="text-[10px] leading-none">
+                              {tDialog("required")}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] leading-none">
+                              {tDialog("optional")}
+                            </Badge>
+                          )}
+                        </span>
+                        <span className="text-muted-foreground">{tDialog(`spec.${h.name}.note`)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </details>
+                ) : null}
+              </div>
             ) : null}
 
             {writableTeams.length > 1 ? (
@@ -560,9 +625,9 @@ export function CsvImportDialog({
                 </div>
               </div>
             ) : null}
-          </div>
+            </div>
 
-          <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-4 py-3">
+            <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-4 py-3">
             <Button type="button" variant="outline" size="sm" onClick={handleClose} disabled={importing}>
               {done ? tDialog("close") : tDialog("cancel")}
             </Button>
@@ -603,6 +668,7 @@ export function CsvImportDialog({
                 </span>
               </div>
             ) : null}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

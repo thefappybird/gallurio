@@ -1,0 +1,5 @@
+# Required: title, clientName, startAt. clientEmail is optional and used to match an existing client.
+# Exporting adds booking_id and session_index. Keep them to update a booking in place instead of
+# creating a copy; rows sharing one booking_id become a single multi-session booking.
+clientName,clientEmail,startAt,endAt,title,eventType,status,amountTotal,amountDeposit,currency,locationAddress,notes,clientPhone
+Jane Smith,jane@example.com,2026-06-15T09:00,2026-06-15T18:00,Smith Wedding,wedding,booked,50000,10000,PHP,"Grand Ballroom, Manila",Ceremony + reception,+63 917 555 0142

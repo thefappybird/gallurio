@@ -261,6 +261,13 @@ export default async function BookingsPage({
     preset: "classic" as const,
     ...INVOICE_THEME_PRESETS.classic,
   };
+  const invoiceThemeBusiness = {
+    name: workspace.name,
+    logoUrl: workspace.logoUrl ?? "",
+    address: workspace.contact?.address ?? "",
+    email: workspace.contact?.email ?? "",
+    currency: workspace.currency,
+  };
 
   // Gates the pre-download completeness warning in the booking detail modal —
   // both fields must be non-empty for invoices/receipts to render complete.
@@ -311,6 +318,7 @@ export default async function BookingsPage({
               writableTeams={writableTeams}
               isOwner={role === "owner"}
               initialInvoiceTheme={invoiceTheme}
+              invoiceThemeBusiness={invoiceThemeBusiness}
             />
           ) : null}
 
@@ -329,6 +337,7 @@ export default async function BookingsPage({
               writableTeams={writableTeams}
               isOwner={role === "owner"}
               initialInvoiceTheme={invoiceTheme}
+              invoiceThemeBusiness={invoiceThemeBusiness}
               colorMode={colorMode}
               teamColorMap={teamColorMap}
               messages={{
