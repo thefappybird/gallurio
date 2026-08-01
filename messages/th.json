@@ -1095,7 +1095,9 @@
         "other": "อื่น ๆ"
       },
       "invoiceThemeDialog": {
-        "title": "ธีมใบแจ้งหนี้",
+        "title": "ธีมใบแจ้งหนี้และใบเสร็จ",
+        "invoice": "ใบแจ้งหนี้",
+        "receipt": "ใบเสร็จ",
         "presets": {
           "classic": "คลาสสิก",
           "slate": "สเลท",

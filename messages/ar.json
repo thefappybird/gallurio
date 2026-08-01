@@ -1095,7 +1095,9 @@
         "other": "أخرى"
       },
       "invoiceThemeDialog": {
-        "title": "نمط الفاتورة",
+        "title": "نمط الفاتورة والإيصال",
+        "invoice": "فاتورة",
+        "receipt": "إيصال",
         "presets": {
           "classic": "كلاسيكي",
           "slate": "أردوازي",

@@ -1095,7 +1095,9 @@
         "other": "Other"
       },
       "invoiceThemeDialog": {
-        "title": "Invoice theme",
+        "title": "Invoice & receipt theme",
+        "invoice": "Invoice",
+        "receipt": "Receipt",
         "presets": {
           "classic": "Classic",
           "slate": "Slate",

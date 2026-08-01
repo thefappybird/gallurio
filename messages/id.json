@@ -1095,7 +1095,9 @@
         "other": "Lainnya"
       },
       "invoiceThemeDialog": {
-        "title": "Tema faktur",
+        "title": "Tema faktur & tanda terima",
+        "invoice": "Faktur",
+        "receipt": "Tanda terima",
         "presets": {
           "classic": "Klasik",
           "slate": "Slate",

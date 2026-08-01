@@ -1095,7 +1095,9 @@
         "other": "Iba pa"
       },
       "invoiceThemeDialog": {
-        "title": "Tema ng invoice",
+        "title": "Tema ng invoice at resibo",
+        "invoice": "Invoice",
+        "receipt": "Resibo",
         "presets": {
           "classic": "Klasiko",
           "slate": "Slate",
