@@ -11,6 +11,13 @@ import { differenceInCalendarDays, addDays, format } from "date-fns";
 import enMessages from "@/messages/en.json";
 import { BookingWizardModal } from "./booking-wizard-modal";
 
+const findClientMatchesAction = vi.fn().mockResolvedValue({ matches: [] });
+const updateClientAction = vi.fn().mockResolvedValue({ ok: true });
+vi.mock("@/lib/actions/clients", () => ({
+  findClientMatchesAction: (...args: unknown[]) => findClientMatchesAction(...args),
+  updateClientAction: (...args: unknown[]) => updateClientAction(...args),
+}));
+
 // ── next/navigation stub (useSearchParams) ───────────────────────────────────
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -71,6 +78,18 @@ function renderWizard() {
     </NextIntlClientProvider>
   );
 }
+
+const CLIENT_MATCH = {
+  id: "client-match-1",
+  name: "Existing Client",
+  email: "existing@example.com",
+  phone: null,
+  notes: null,
+  tags: [],
+  source: "manual" as const,
+  bookingsCount: 2,
+  lastBookingAt: null,
+};
 
 /** Navigate from the client step to the Event & Pricing step. */
 async function advanceToEventStep() {
@@ -2160,6 +2179,35 @@ describe("BookingWizardModal — inline Save visibility across steps (edit mode)
 describe("BookingWizardModal — client step contact validation", () => {
   beforeEach(() => {
     mockFetchWithConflict();
+    findClientMatchesAction.mockReset();
+    findClientMatchesAction.mockResolvedValue({ matches: [] });
+    updateClientAction.mockReset();
+    updateClientAction.mockResolvedValue({ ok: true });
+  });
+
+  it("requires a duplicate new client to be resolved before advancing", async () => {
+    findClientMatchesAction.mockResolvedValue({ matches: [CLIENT_MATCH] });
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Existing Client" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/emma@example.com/i), {
+      target: { value: "existing@example.com" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    await waitFor(() => expect(findClientMatchesAction).toHaveBeenCalledWith({
+      name: "Existing Client",
+      email: "existing@example.com",
+      phone: null,
+    }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
   });
 
   it("blocks Next and shows an error on a malformed email in new-client mode", async () => {

@@ -67,6 +67,7 @@ import {
   declineInquiryAction,
   editInquirySessionsAction,
   findInquiryClientMatchesAction,
+  getInquiryDetailAction,
   resolveInquiryClientAction,
 } from "./_actions";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
@@ -191,6 +192,26 @@ async function seedConflictingBooking(
     amount: { total: 0, deposit: 0, currency: "PHP" },
   });
 }
+
+describe("getInquiryDetailAction", () => {
+  it("returns only the selected workspace inquiry for a client-side detail open", async () => {
+    const { inquiry, booking } = await seedDraftWithSessions(workspaceId, [
+      { startDate: "2030-08-15", startTime: "10:00", endTime: "12:00" },
+    ]);
+
+    const result = await getInquiryDetailAction(String(inquiry._id), "en");
+
+    expect(result).toMatchObject({
+      ok: true,
+      detail: {
+        inquiryId: String(inquiry._id),
+        locale: "en",
+        booking: { id: String(booking._id), teamId: null },
+        hasConflict: false,
+      },
+    });
+  });
+});
 
 describe("approveInquiryBookingAction", () => {
   it("promotes the draft, applies edits, and marks the inquiry booked", async () => {
@@ -859,12 +880,14 @@ describe("editInquirySessionsAction", () => {
     expect(res).toEqual({ error: "locked" });
   });
 
-  it("returns invalid when session date is in the past", async () => {
+  it("allows a past session date so an overdue inquiry can still be corrected", async () => {
     const { inquiry } = await seedInquiryWithDraft(workspaceId);
+    const sessions = [{ startDate: yesterdayStr(), startTime: "09:00", endTime: "17:00" }];
     const res = await editInquirySessionsAction(String(inquiry._id), {
-      sessions: [{ startDate: yesterdayStr(), startTime: "09:00", endTime: "17:00" }],
+      sessions,
     });
-    expect(res).toEqual({ error: "invalid" });
+    expect(res).toEqual({ ok: true });
+    expect((await Inquiry.findById(inquiry._id).lean())?.sessions).toEqual(sessions);
   });
 
   it("returns alter_only when session count changes", async () => {

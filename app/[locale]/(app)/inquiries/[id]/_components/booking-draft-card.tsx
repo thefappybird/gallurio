@@ -51,7 +51,9 @@ type Props = {
   hasConflict?: boolean;
   readOnly?: boolean;
   onConverted?: () => void;
-  onConvertFailed?: () => void;
+  /** The server found a matching existing client. The enclosing detail view
+   * opens its resolver without closing the inquiry. */
+  onClientResolutionRequired?: () => void;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 };
 
@@ -72,7 +74,7 @@ export function BookingDraftCard({
   hasConflict = false,
   readOnly = false,
   onConverted,
-  onConvertFailed,
+  onClientResolutionRequired,
   onInquiryChanged,
 }: Props) {
   const t = useTranslations("app.inquiries.detail.bookingDraft");
@@ -160,10 +162,9 @@ export function BookingDraftCard({
     await checkSessionConflicts(next);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
   const hasSessionConflict = sessionConflicts.some(Boolean);
   const hasInvalidSession = draftSessions.some(
-    (s) => s.startDate < today || !s.startTime || !s.endTime || s.endTime <= s.startTime
+    (s) => !s.startDate || !s.startTime || !s.endTime || s.endTime <= s.startTime
   );
   const canSaveSessions = !hasSessionConflict && !hasInvalidSession && !sessionsSaving;
 
@@ -211,21 +212,21 @@ export function BookingDraftCard({
 
   async function handleApprove() {
     setApproving(true);
-    setApproved(true); // optimistic banner
-    onConverted?.(); // close modal + update table row immediately
     try {
       const res = await approveInquiryBookingAction(inquiryId, currentEdits());
       if ("error" in res) {
-        setApproved(false); // revert banner
-        onConvertFailed?.(); // revert table row
-        toast.error(res.error === "owner_only" ? t("ownerOnly") : t("approveError"));
+        if (res.error === "needs_client_resolution") {
+          onClientResolutionRequired?.();
+        } else {
+          toast.error(res.error === "owner_only" ? t("ownerOnly") : t("approveError"));
+        }
         return;
       }
+      setApproved(true);
+      onConverted?.();
       toast.success(ta("approvedToast"));
       if (!onConverted) router.refresh(); // standalone page only
     } catch {
-      setApproved(false);
-      onConvertFailed?.();
       toast.error(t("approveError"));
     } finally {
       setApproving(false);
