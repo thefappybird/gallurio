@@ -256,8 +256,10 @@ test.describe("Task 5 — client match dialog", () => {
 
       // Step 2. The default must be the STORED value — a default that discards
       // stored data is worse than one that keeps something stale.
-      const reconcile = page.getByRole("dialog").filter({ hasText: /fields differ/i });
+      // Singular when exactly one field conflicts, which is this case.
+      const reconcile = page.getByRole("dialog").filter({ hasText: /field differs/i });
       await expect(reconcile).toBeVisible({ timeout: 15_000 });
+      await expect(reconcile.getByText(/^1 field differs/)).toBeVisible();
       await expect(reconcile.getByRole("radio", { name: existingEmail })).toBeChecked();
       await expect(
         reconcile.getByRole("radio", { name: "different.address@example.com" })

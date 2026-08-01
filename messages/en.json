@@ -2001,7 +2001,7 @@
         "cancel": "Cancel",
         "submitCreate": "Save client",
         "submitLink": "Link client",
-        "reconcileTitle": "{count} fields differ - pick which to keep",
+        "reconcileTitle": "{count, plural, one {# field differs - pick which to keep} other {# fields differ - pick which to keep}}",
         "current": "Current",
         "typed": "You entered",
         "additiveTitle": "Will be added (no conflict)"
