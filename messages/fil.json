@@ -964,6 +964,8 @@
           "optional": "opsyonal",
           "failedWithDetails": "Nabigo ang import — tingnan ang mga detalye",
           "allDuplicates": "{count, plural, other {Naka-import na ang # na row — wala nang gagawin}}",
+          "teamLabel": "Italaga sa team",
+          "teamDefault": "Pangunahing team (default)",
           "failedRetry": "Nabigo ang import. Subukan muli.",
           "close": "Isara",
           "cancel": "Kanselahin",

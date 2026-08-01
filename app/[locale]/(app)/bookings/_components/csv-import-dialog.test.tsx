@@ -198,6 +198,20 @@ describe("CsvImportDialog", () => {
     }
   });
 
+  it("offers a team picker only when there is more than one team to pick", async () => {
+    // A single-team workspace has no choice to make, so the control would be
+    // noise; the route defaults to the only team either way.
+    const one = [{ id: "t1", name: "Main", color: "#000", isActive: true, isLead: true }];
+    const { unmount } = renderDialog({ teams: one });
+    expect(screen.queryByLabelText(/team/i)).toBeNull();
+    unmount();
+
+    renderDialog({
+      teams: [...one, { id: "t2", name: "Second Shooters", color: "#111", isActive: true, isLead: true }],
+    });
+    expect(screen.getByLabelText(/team/i)).toBeInTheDocument();
+  });
+
   it("does not report failure when every row was already imported", async () => {
     // Re-running a file is a benign no-op. Treating "nothing written" as a
     // failure tells the user something broke when nothing did.

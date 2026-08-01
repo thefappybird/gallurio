@@ -5,6 +5,7 @@ import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useRouter } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
+import type { BookingTeamOption } from "../_data/team-options";
 import { toast } from "sonner";
 import {
   CheckCircleIcon,
@@ -39,6 +40,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   defaultCurrency: string;
+  /**
+   * Teams the caller can write to. A picker only appears when there is an
+   * actual choice; with one team the route's default already lands there.
+   */
+  teams?: BookingTeamOption[];
 };
 
 const HEADER_SPEC_KEYS = [
@@ -109,7 +115,7 @@ function quoteField(v: string) {
   return v;
 }
 
-export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
+export function CsvImportDialog({ open, onClose, defaultCurrency, teams = [] }: Props) {
   const t = useTranslations("app.bookings.import");
   const tDialog = useTranslations("app.bookings.import.dialog");
   const errMsg = useActionError();
@@ -124,6 +130,13 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
+
+  // Only active teams the caller can write to are real choices.
+  const writableTeams = useMemo(
+    () => teams.filter((team) => team.isActive && team.isLead),
+    [teams]
+  );
+  const [teamId, setTeamId] = useState<string>("");
 
   // Rows sharing a booking_id are ONE booking, and the route rebuilds its
   // sessions from whatever rows arrive. Importing the good half of a group
@@ -163,7 +176,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
       const res = await fetch("/api/bookings/import", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rows: payload }),
+        body: JSON.stringify(teamId ? { rows: payload, teamId } : { rows: payload }),
       });
       const body = await res.json().catch(() => null);
       // A rejected request (429, 403, 400) answers with {error}, not a result.
@@ -193,7 +206,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
           toast.success(tDialog("allDuplicates", { count: data.errors.length }));
         }
       }
-    }, [validRows, defaultCurrency, t, tDialog, errMsg, router, startTransition]),
+    }, [validRows, defaultCurrency, teamId, t, tDialog, errMsg, router, startTransition]),
     {
       onError: () => {
         toast.error(tDialog("failedRetry"));
@@ -343,6 +356,28 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                     <span className="text-muted-foreground">{tDialog(`spec.${h.name}.note`)}</span>
                   </div>
                 ))}
+              </div>
+            ) : null}
+
+            {writableTeams.length > 1 ? (
+              <div className="flex flex-col gap-1">
+                <label htmlFor="import-team" className="text-xs font-medium text-foreground">
+                  {tDialog("teamLabel")}
+                </label>
+                <select
+                  id="import-team"
+                  value={teamId}
+                  onChange={(e) => setTeamId(e.target.value)}
+                  disabled={importing}
+                  className="border border-border bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                >
+                  <option value="">{tDialog("teamDefault")}</option>
+                  {writableTeams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             ) : null}
 

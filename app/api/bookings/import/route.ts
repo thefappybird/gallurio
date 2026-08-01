@@ -124,6 +124,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No default team for workspace" }, { status: 500 });
   }
 
+  // The caller may direct the whole file at one team. A team id from a request
+  // body is untrusted, so it is re-read scoped to the workspace — a foreign id
+  // must never become a booking's teamId. Absent means the default team, which
+  // is also what a single-team workspace always gets.
+  let targetTeamId = mainTeam._id;
+  if (json.teamId !== undefined && json.teamId !== null) {
+    const team =
+      typeof json.teamId === "string" && mongoose.isValidObjectId(json.teamId)
+        ? await Team.findOne({ _id: json.teamId, workspaceId: ctx.workspace._id })
+            .select({ _id: 1 })
+            .lean()
+        : null;
+    if (!team) {
+      return NextResponse.json({ error: "invalid_team" }, { status: 400 });
+    }
+    targetTeamId = team._id;
+  }
+
   const created: number[] = [];
   const updated: number[] = [];
   /**
@@ -507,7 +525,7 @@ export async function POST(req: Request) {
           [
             {
               workspaceId: ctx.workspace._id,
-              teamId: mainTeam._id,
+              teamId: targetTeamId,
               clientId,
               clientName,
               title: row.title,

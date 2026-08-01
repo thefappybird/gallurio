@@ -964,6 +964,8 @@
           "optional": "opsional",
           "failedWithDetails": "Impor gagal — lihat detailnya",
           "allDuplicates": "{count, plural, other {# baris sudah diimpor — tidak ada yang perlu dilakukan}}",
+          "teamLabel": "Tetapkan ke tim",
+          "teamDefault": "Tim utama (default)",
           "failedRetry": "Impor gagal. Silakan coba lagi.",
           "close": "Tutup",
           "cancel": "Batal",

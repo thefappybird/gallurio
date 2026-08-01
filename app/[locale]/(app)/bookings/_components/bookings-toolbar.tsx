@@ -293,6 +293,7 @@ export function BookingsToolbar({
           open={importOpen}
           onClose={() => setImportOpen(false)}
           defaultCurrency={defaultCurrency}
+          teams={teams}
         />
         {initialInvoiceTheme ? (
           <InvoiceThemeDialog

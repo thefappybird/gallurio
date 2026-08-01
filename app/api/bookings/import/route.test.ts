@@ -56,12 +56,12 @@ beforeEach(async () => {
   ]);
 });
 
-async function callImport(rows: unknown[]) {
+async function callImport(rows: unknown[], teamId?: string) {
   const { POST } = await import("./route");
   const req = new Request("http://localhost/api/bookings/import", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ rows }),
+    body: JSON.stringify(teamId === undefined ? { rows } : { rows, teamId }),
   });
   return POST(req);
 }
@@ -458,6 +458,36 @@ describe("POST /api/bookings/import", () => {
     const balance = await Transaction.find({ workspaceId: WS_ID, type: "balance" }).lean();
     expect(balance).toHaveLength(1);
     expect(balance[0].amount).toBe(40000);
+  });
+
+  it("assigns imported bookings to the chosen team", async () => {
+    const other = await Team.create({
+      workspaceId: WS_ID,
+      name: "Second Shooters",
+      color: TEAM_COLOR_PALETTE[1],
+      isDefault: false,
+      isActive: true,
+      memberCount: 0,
+      createdByWorkosUserId: "user_test",
+    });
+
+    const res = await callImport([VALID_ROW], String(other._id));
+    expect((await res.json()).created).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(String(booking?.teamId)).toBe(String(other._id));
+  });
+
+  it("rejects a team id belonging to another workspace", async () => {
+    // teamId arrives in the request body, so it is untrusted. A foreign team
+    // must fail exactly like a nonexistent one — no cross-tenant write, and no
+    // existence oracle either.
+    const foreign = await Team.findOne({ workspaceId: WS_A, isDefault: true }).lean();
+
+    const res = await callImport([VALID_ROW], String(foreign!._id));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("invalid_team");
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
   });
 
   it("skips a row that would duplicate an existing booking, and says why", async () => {

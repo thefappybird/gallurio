@@ -964,6 +964,8 @@
           "optional": "optional",
           "failedWithDetails": "Import failed — see details",
           "allDuplicates": "{count, plural, one {# row was already imported — nothing to do} other {# rows were already imported — nothing to do}}",
+          "teamLabel": "Assign to team",
+          "teamDefault": "Main team (default)",
           "failedRetry": "Import failed. Please try again.",
           "close": "Close",
           "cancel": "Cancel",

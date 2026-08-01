@@ -964,6 +964,8 @@
           "optional": "ไม่บังคับ",
           "failedWithDetails": "นำเข้าไม่สำเร็จ — ดูรายละเอียด",
           "allDuplicates": "{count, plural, other {นำเข้า # แถวไปแล้ว — ไม่มีสิ่งที่ต้องทำ}}",
+          "teamLabel": "กำหนดให้ทีม",
+          "teamDefault": "ทีมหลัก (ค่าเริ่มต้น)",
           "failedRetry": "นำเข้าไม่สำเร็จ โปรดลองอีกครั้ง",
           "close": "ปิด",
           "cancel": "ยกเลิก",
