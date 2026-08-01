@@ -29,6 +29,8 @@ import {
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
 import { remainingBalance } from "@/lib/bookings/payment-rules";
+import { useFieldError } from "@/components/ui/form-field";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 import type { WizardPaymentStatus, WizardValues } from "./types";
 
 type Props = {
@@ -64,18 +66,24 @@ function PaymentCard({
   const amount = watch("amount");
   const max = remainingBalance(allPayments, amount, index);
 
+  const titleError = fieldMessage(paymentErrors?.title);
+  const titleA11y = useFieldError(titleError, { id: `wiz-payment-title-${index}` });
+  const priceError = fieldMessage(paymentErrors?.price);
+  const priceA11y = useFieldError(priceError, { id: `wiz-payment-price-${index}` });
+
   return (
     <CollapsibleDrawer
       title={
         <div onClick={(e) => e.stopPropagation()}>
           <div className="grid grid-cols-4 gap-2">
           <Input
-            id={`wiz-payment-title-${index}`}
+            id={titleA11y.id}
             {...register(`payments.${index}.title`, {
               required: { value: true, message: tPayments("titleRequired") },
             })}
             placeholder={tPayments("label", { n: index + 1 })}
-            aria-invalid={paymentErrors?.title ? "true" : undefined}
+            aria-invalid={titleA11y["aria-invalid"]}
+            aria-describedby={titleA11y["aria-describedby"]}
             className="col-span-3 h-auto border-none bg-transparent px-3 py-1.5 text-sm font-semibold shadow-none focus-visible:ring-0"
           />
           <Controller control={control} name={`payments.${index}.method`} render={({ field }) => (
@@ -85,8 +93,10 @@ function PaymentCard({
             </Select>
           )} />
           </div>
-          {paymentErrors?.title?.message ? (
-            <p className="text-xs text-destructive">{paymentErrors.title.message}</p>
+          {titleError ? (
+            <p id={titleA11y.errorId} role="alert" className="text-xs text-destructive">
+              {titleError}
+            </p>
           ) : null}
         </div>
       }
@@ -108,7 +118,7 @@ function PaymentCard({
       <div className="flex flex-col gap-1">
         <Label htmlFor={`wiz-payment-price-${index}`}>{tPayments("price")}</Label>
         <Input
-          id={`wiz-payment-price-${index}`}
+          id={priceA11y.id}
           type="number"
           inputMode="decimal"
           min={0}
@@ -120,10 +130,13 @@ function PaymentCard({
             max: { value: max, message: tPayments("exceedsBalance") },
             validate: (v) => v > 0 || tPayments("priceRequired"),
           })}
-          aria-invalid={paymentErrors?.price ? "true" : undefined}
+          aria-invalid={priceA11y["aria-invalid"]}
+          aria-describedby={priceA11y["aria-describedby"]}
         />
-        {paymentErrors?.price?.message ? (
-          <p className="text-xs text-destructive">{paymentErrors.price.message}</p>
+        {priceError ? (
+          <p id={priceA11y.errorId} role="alert" className="text-xs text-destructive">
+            {priceError}
+          </p>
         ) : null}
       </div>
 
@@ -174,36 +187,49 @@ export function PaymentsStep({ control, register, watch, errors }: Props) {
   const amountWatched = watch("amount");
   const canAddPayment = remainingBalance(paymentsWatched, amountWatched) > 0;
 
+  const totalError = fieldMessage(errors.amount?.total);
+  const totalA11y = useFieldError(totalError, { id: "wiz-total" });
+  const depositError = fieldMessage(errors.amount?.deposit);
+  const depositA11y = useFieldError(depositError, { id: "wiz-deposit" });
+
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="flex flex-col gap-1">
           <Label htmlFor="wiz-total">{tPricing("total")}</Label>
           <Input
-            id="wiz-total"
+            id={totalA11y.id}
             type="number"
             inputMode="decimal"
             min={0}
             step="1"
             {...register("amount.total", { valueAsNumber: true })}
+            aria-invalid={totalA11y["aria-invalid"]}
+            aria-describedby={totalA11y["aria-describedby"]}
           />
-          {errors.amount?.total ? (
-            <p className="text-xs text-destructive">{errors.amount.total.message}</p>
+          {totalError ? (
+            <p id={totalA11y.errorId} role="alert" className="text-xs text-destructive">
+              {totalError}
+            </p>
           ) : null}
         </div>
 
         <div className="flex flex-col gap-1">
           <Label htmlFor="wiz-deposit">{tPricing("deposit")}</Label>
           <Input
-            id="wiz-deposit"
+            id={depositA11y.id}
             type="number"
             inputMode="decimal"
             min={0}
             step="1"
             {...register("amount.deposit", { valueAsNumber: true })}
+            aria-invalid={depositA11y["aria-invalid"]}
+            aria-describedby={depositA11y["aria-describedby"]}
           />
-          {errors.amount?.deposit ? (
-            <p className="text-xs text-destructive">{errors.amount.deposit.message}</p>
+          {depositError ? (
+            <p id={depositA11y.errorId} role="alert" className="text-xs text-destructive">
+              {depositError}
+            </p>
           ) : null}
         </div>
 

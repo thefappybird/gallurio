@@ -436,7 +436,7 @@ function PromoCodePanel({
                 transition={{ duration: 0.12, ease: "easeOut" }}
                 className="absolute inset-0 flex items-center gap-2 p-2"
               >
-                <Input ref={promoInputRef} value={promoCode} onChange={(event) => { setPromoCode(event.target.value); onPromoError(null); }} placeholder={tPromo("placeholder")} aria-describedby={promoError ? errorId : undefined} className="min-w-0 flex-1" />
+                <Input ref={promoInputRef} value={promoCode} onChange={(event) => { setPromoCode(event.target.value); onPromoError(null); }} placeholder={tPromo("placeholder")} aria-invalid={promoError ? true : undefined} aria-describedby={promoError ? errorId : undefined} className="min-w-0 flex-1" />
                 <Button type="button" variant="outline" size="sm" onClick={submitPromoCode} disabled={promoLoading || !promoCode || planChoiceLocked}>
                   {promoLoading ? <><Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />{tPromo("applying")}</> : tPromo("submit")}
                 </Button>

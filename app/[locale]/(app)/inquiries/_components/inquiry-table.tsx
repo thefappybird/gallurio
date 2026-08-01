@@ -28,6 +28,9 @@ type Props = {
   locale: string;
   empty: string;
   emptyHint: string;
+  /** Lets the page own URL navigation so opening a row shares the same
+   * transition as filters and pagination. */
+  onOpenInquiry?: (inquiryId: string) => void;
 };
 
 function CardField({
@@ -49,7 +52,7 @@ function CardField({
   );
 }
 
-export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
+export function InquiryTable({ rows, locale, empty, emptyHint, onOpenInquiry }: Props) {
   const t = useTranslations("app.inquiries");
   const router = useRouter();
 
@@ -79,6 +82,10 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
   }
 
   function openInquiry(id: string) {
+    if (onOpenInquiry) {
+      onOpenInquiry(id);
+      return;
+    }
     router.push(buildInquiryModalPath(id));
   }
 

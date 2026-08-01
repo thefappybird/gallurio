@@ -214,11 +214,11 @@ describe("inquirySessionsEditSchema", () => {
     }
   });
 
-  it("rejects a past date in sessions", () => {
+  it("accepts a past date when editing an existing inquiry", () => {
     const result = inquirySessionsEditSchema.safeParse({
       sessions: [{ startDate: isoOffsetDays(-1), startTime: "09:00", endTime: "17:00" }],
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects endTime before startTime", () => {

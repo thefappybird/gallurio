@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
+import { useFieldError } from "@/components/ui/form-field";
 import type { ShiftHit, WizardValues } from "./types";
 
 type Props = {
@@ -161,6 +162,17 @@ function SessionCard({
   // The drawer is forced open (below) while this session has validation errors
   // so they can't be collapsed out of sight; user-controlled otherwise.
 
+  const startDateError = sessionErrors?.startDate ? t("startAtRequired") : undefined;
+  const startDateA11y = useFieldError(startDateError, { id: `wiz-startDate-${index}` });
+  const startTimeError = sessionErrors?.startTime ? t("startTimeRequired") : undefined;
+  const startTimeA11y = useFieldError(startTimeError, { id: `wiz-startTime-${index}` });
+  const endTimeError = sessionErrors?.endTime
+    ? sessionErrors.endTime.message === "endTimeBeforeStart"
+      ? t("endTimeBeforeStart")
+      : t("endTimeRequired")
+    : undefined;
+  const endTimeA11y = useFieldError(endTimeError, { id: `wiz-endTime-${index}` });
+
   return (
     <CollapsibleDrawer
       title={
@@ -197,14 +209,17 @@ function SessionCard({
           <span className="ms-0.5 text-destructive">*</span>
         </Label>
         <Input
-          id={`wiz-startDate-${index}`}
+          id={startDateA11y.id}
           type="date"
           min={startMin}
           {...register(`sessions.${index}.startDate`, { required: true })}
-          aria-invalid={sessionErrors?.startDate ? "true" : undefined}
+          aria-invalid={startDateA11y["aria-invalid"]}
+          aria-describedby={startDateA11y["aria-describedby"]}
         />
-        {sessionErrors?.startDate ? (
-          <p className="text-xs text-destructive">{t("startAtRequired")}</p>
+        {startDateError ? (
+          <p id={startDateA11y.errorId} role="alert" className="text-xs text-destructive">
+            {startDateError}
+          </p>
         ) : null}
       </div>
 
@@ -212,7 +227,7 @@ function SessionCard({
         <div className="flex flex-col gap-1">
           <Label htmlFor={`wiz-startTime-${index}`}>{t("startTime")}</Label>
           <Input
-            id={`wiz-startTime-${index}`}
+            id={startTimeA11y.id}
             type="time"
             lang={TIME_INPUT_LANG[timeMode]}
             min={startTimeMin}
@@ -220,16 +235,19 @@ function SessionCard({
               required: true,
               pattern: /^\d{2}:\d{2}$/,
             })}
-            aria-invalid={sessionErrors?.startTime ? "true" : undefined}
+            aria-invalid={startTimeA11y["aria-invalid"]}
+            aria-describedby={startTimeA11y["aria-describedby"]}
           />
-          {sessionErrors?.startTime ? (
-            <p className="text-xs text-destructive">{t("startTimeRequired")}</p>
+          {startTimeError ? (
+            <p id={startTimeA11y.errorId} role="alert" className="text-xs text-destructive">
+              {startTimeError}
+            </p>
           ) : null}
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor={`wiz-endTime-${index}`}>{t("endTime")}</Label>
           <Input
-            id={`wiz-endTime-${index}`}
+            id={endTimeA11y.id}
             type="time"
             lang={TIME_INPUT_LANG[timeMode]}
             {...register(`sessions.${index}.endTime`, {
@@ -241,13 +259,12 @@ function SessionCard({
                 return v > start || "endTimeBeforeStart";
               },
             })}
-            aria-invalid={sessionErrors?.endTime ? "true" : undefined}
+            aria-invalid={endTimeA11y["aria-invalid"]}
+            aria-describedby={endTimeA11y["aria-describedby"]}
           />
-          {sessionErrors?.endTime ? (
-            <p className="text-xs text-destructive">
-              {sessionErrors.endTime.message === "endTimeBeforeStart"
-                ? t("endTimeBeforeStart")
-                : t("endTimeRequired")}
+          {endTimeError ? (
+            <p id={endTimeA11y.errorId} role="alert" className="text-xs text-destructive">
+              {endTimeError}
             </p>
           ) : null}
         </div>

@@ -1,289 +1,199 @@
-# Validation-error styling audit
+# Validation errors — audit and outcome
 
-**Status:** findings only — no code changes. This document exists to be executed from a
-separate branch.
+**Status:** executed. This began as a findings-only audit; it now records what
+shipped, what was deliberately left alone, and the follow-ups.
 
-**Goal:** every validation error in Gallurio shows a red outline on the offending control
+**Goal:** every validation error shows a red outline on the offending control
 **plus** a message, consistently placed, with colour never the only signal.
 
-**Why it is a document and not a branch:** the work shares form components with the
-optional-client-contact-fields work (item 5), which is landing on
-`fix/import-client-validation` now. Doing both at once would conflict in
-`client-form-modal.tsx`, `client-info-card.tsx` and `location-picker.tsx`. See
-[What item 5 moves underneath you](#what-item-5-moves-underneath-you) before starting.
-
 ---
 
-## The headline finding
-
-**There is no form-field primitive in this codebase.** No `components/ui/form.tsx`, and no
-`FormField` / `FormItem` / `FormMessage` / `FormLabel` / `FormDescription` / `ErrorText` /
-`field-error` anywhere outside `node_modules`. Every error message in the app is a
-hand-rolled `<p className="text-xs text-destructive">`.
-
-The consequence is not mainly visual, it is accessibility. Across the app:
-
-- `role="alert"` appears in ~20 files
-- `aria-describedby` in ~12
-- `aria-invalid` in ~8
-
-and **most error elements have none of the three**.
-
-### The red outline is already built — it is just never switched on
-
-`components/ui/input.tsx:12` already carries the full error treatment:
-
-```
-aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20
-dark:aria-invalid:border-destructive/50
-```
-
-`components/ui/textarea.tsx:10` has the same. Neither component sets `aria-invalid` itself —
-callers must, and almost none do. **So for most surfaces the fix is one attribute, not a
-restyle.** That is what makes this audit cheap to execute.
-
-### Reference implementation already in the repo
-
-`lib/page-builder/brandKitPicker/ThemeTile.tsx:36,109-110` is the only place with complete
-wiring:
-
-```tsx
-aria-invalid={nameInvalid || undefined}
-aria-describedby={nameInvalid ? nameErrorId : undefined}
-```
-
-It is covered by `ThemeTile.test.tsx:158-166`. Copy this shape.
-
-Also relevant: `components/app/slug-status-indicator.tsx` is the house pattern for a single
-persistent `aria-live="polite"` region that is text + icon, never colour-only
-(`REUSABLE_CODE.md:74`).
-
----
-
-## Proposed shared mechanism
-
-**Add `components/ui/form-field.tsx`.** `REUSABLE_CODE.md` has **no** entry for a
-form-field/error primitive — that gap is currently unrecorded, and the new component must be
-registered there in the same change.
-
-Deliberately thin — a wrapper, not a form framework:
-
-- renders label + control slot + error `<p>`
-- generates the error id
-- sets `aria-invalid` and `aria-describedby` on the child control
-- error `<p>` gets `role="alert"` and lives directly under the control
-
-It must NOT own layout, spacing beyond the label/control/error stack, or any RHF coupling —
-several surfaces here are `useActionState` or plain `useState`, and the wrapper has to serve
-all three.
-
-**Reuse, do not reinvent:** `lib/utils/fieldMessage.ts:6-8` (`fieldMessage`) already narrows an
-RHF error to a plain string and is registered at `REUSABLE_CODE.md:103`.
-
----
-
-## Validation strategies in play
-
-Three, and the wrapper has to serve all of them:
-
-| Strategy | Count | Where |
-|---|---|---|
-| RHF + `zodResolver` | 12 `useForm` call sites | clients, bookings wizard, public ContactForm, settings ×4, onboarding ×2, book-demo |
-| Server Action via `useActionState` | 7 | all of `(auth)` |
-| Manual `useState` | long tail | teams dialogs, gallery pickers, brand-kit editor, plan/billing panels, `editable-field.tsx` |
-
----
-
-## Inventory
-
-Conformance key: **C** = red outline + message + aria wiring · **P** = message but no
-outline/aria · **N** = neither, or error not surfaced at all.
-
-### bookings
-
-| Surface | File | Verdict | Notes |
-|---|---|---|---|
-| Booking wizard | `_components/booking-wizard-modal.tsx` | P | per-step error set drives `animate-shake` on the step chip (`:745`, `:937`); fields themselves unwired |
-| Wizard client step | `_components/booking-wizard-steps/client-step.tsx` | **N** | see Known offenders |
-| Wizard event/pricing step | `_components/booking-wizard-steps/event-pricing-step.tsx` | C | fixed by item 5 — location error now under the input |
-| Booking detail modal | `_components/booking-detail-modal.tsx` | P | 152 KB; inline edits via `editable-field` |
-| Inline edit primitive | `_components/editable-field.tsx` | **N** | see Known offenders |
-| CSV import dialog | `_components/csv-import-dialog.tsx` | P | row errors listed in a table, not per-field |
-| Import results | `_components/import-results-dialog.tsx` | n/a | display only |
-| Invoice theme dialog | `_components/invoice-theme-dialog.tsx` | P | |
-| Confirm dialogs ×5 | `cancel-confirm-dialog`, `past-date-confirm-dialog`, `session-edit-confirm-dialog`, `wizard-conflict-confirm-dialog`, `unsaved-changes-dialog` | n/a | no inputs |
-| Toolbar / team filter | `bookings-toolbar.tsx`, `team-filter-control.tsx`, `team-picker.tsx` | n/a | filters, not validated input |
-
-### clients
-
-| Surface | File | Verdict | Notes |
-|---|---|---|---|
-| Client form modal | `_components/client-form-modal.tsx` | P | four hand-rolled `<p>` at `:178-180, :192-194, :213-215, :294-296`; no `aria-invalid` anywhere. **Item 5 changes this file** |
-| Client detail modal | `_components/client-detail-modal.tsx` | P | |
-| Deactivate / unsaved | `_components/deactivate-client-dialog.tsx`, `unsaved-changes-dialog.tsx` | n/a | |
-
-### inquiries
-
-| Surface | File | Verdict |
-|---|---|---|
-| Inquiry detail modal | `_components/inquiry-detail-modal.tsx` | P |
-| Booking draft card | `[id]/_components/booking-draft-card.tsx` | P |
-| Client info card | `[id]/_components/client-info-card.tsx` | P — **item 5 changes this file** |
-| Event request card | `[id]/_components/event-request-card.tsx` | n/a |
-| Inquiry actions | `[id]/_components/inquiry-actions.tsx` | n/a |
-| Calendar manager | `_components/inquiries-calendar-manager.tsx` | n/a |
-
-### settings
-
-| Surface | File | Verdict |
-|---|---|---|
-| Workspace business | `settings/workspace/_business-form.tsx` | P → location field now C (item 5) |
-| Public page | `settings/public-page/_form.tsx` | P |
-| Account panel | `settings/account/_panel.tsx` | P |
-| Password | `settings/account/_password-section.tsx` | P |
-| MFA | `settings/account/_mfa-section.tsx` | P |
-
-### teams
-
-| Surface | File | Verdict |
-|---|---|---|
-| Invite form | `_components/invite-form.tsx` | P |
-| Team dialogs | `_components/team-dialogs.tsx` | **N** — see Known offenders |
-| Member details / remove / downgrade / drawer / sidebar | `member-details-dialog.tsx`, `remove-member-dialog.tsx`, `downgrade-block-modal.tsx`, `team-detail-drawer.tsx`, `view-members-sidebar.tsx` | n/a |
-
-### portfolio + public
-
-| Surface | File | Verdict |
-|---|---|---|
-| Public contact form | `app/(public)/w/[orgSlug]/_components/ContactForm.tsx` | P → location field now C (item 5). Styles via inline `style`, not Tailwind — the wrapper needs a style escape hatch here |
-| Contact modal | `app/(public)/w/[orgSlug]/_components/ContactModal.tsx` | n/a |
-| Preview contact modal | `app/[locale]/portfolio-preview/_components/PreviewContactModal.tsx` | n/a |
-| Editor dialogs ×13 | `portfolio/_components/`: `ContactPanelDialog`, `ContactFormPreview`, `HeaderPanelDialog`, `HeaderFormPreview`, `ThemePanelDialog`, `CollectionsPopupPanelDialog`, `DraftsDialog`, `PublishDialog`, `PortfolioEntryDialog`, `StoryPromptDialog`, `TemplatePickerDialog`, `UnsavedChangesDialog`, `DemoGateModal` | mixed P / n/a |
-
-### gallery / page-builder
-
-| Surface | File | Verdict |
-|---|---|---|
-| Media picker | `lib/page-builder/galleryPicker/MediaPicker.tsx` | P (`:886`) |
-| Collection picker | `.../CollectionPicker.tsx` | P (`:345`) |
-| Collections manager | `.../CollectionsManagerDialog.tsx` | P (`:190`) |
-| Create collection | `.../CreateCollectionDialog.tsx` | P (`:290`) |
-| Edit collection | `.../EditCollectionDialog.tsx` | P (`:278`) |
-| Theme tile | `lib/page-builder/brandKitPicker/ThemeTile.tsx` | **C — reference implementation** |
-| Theme editor | `.../useThemeEditor.ts` | N (`:53,58,66`) |
-| Style toolkit field | `lib/page-builder/StyleToolkitField.tsx` | n/a |
-
-### onboarding · auth · billing · marketing
-
-| Surface | File | Verdict |
-|---|---|---|
-| Workspace / business steps | `(onboarding)/onboarding/workspace/workspace-form.tsx`, `business/business-form.tsx` | P |
-| Plan / done steps | `.../plan/plan-form.tsx`, `.../done/done-form.tsx` | P (ad-hoc `role="alert"` at `plan-form.tsx:206,345,359,439`) |
-| Auth ×6 | `(auth)/sign-in/_sign-in-form.tsx`, `sign-in/mfa/_mfa-form.tsx`, `sign-up/_sign-up-form.tsx`, `verify-email/_verify-email-form.tsx`, `forgot-password/_forgot-password-form.tsx`, `reset-password/_reset-password-form.tsx` | P — form-level only, no per-field |
-| Billing | `settings/billing/_panel.tsx` (`:197,330`), `subscribe/_panel.tsx` (`:151,207`) | P |
-| Book demo | `(marketing)/book-demo/_components/BookDemoForm.tsx` | P |
-
----
-
-## Known offenders — call these out explicitly
-
-1. **`booking-wizard-steps/client-step.tsx:243-257` — new-client email and phone render NO
-   error at all.** Only `errors.client.name` is surfaced (`:237-241`). The Zod rules exist
-   (`optionalEmail` / `optionalPhone` in `lib/validators/client.ts`), so a bad email or phone
-   fails silently in the UI and only surfaces post-submit from the server. This is the worst
-   single case in the app and should be fixed first.
-
-2. **`editable-field.tsx:62-63,122,179,380-381` — the inline-edit primitive has a bespoke
-   validation contract** (`validate?: (v) => string | null`) and its error `<span>` has no
-   `aria-invalid`, no `aria-describedby`, no `role="alert"` and no id. Every inline edit in the
-   booking detail modal inherits this.
-
-3. **`team-dialogs.tsx:89-123`** — hand-written `nameError` with hardcoded length rules and
-   duplicate-name mapping, duplicating logic that belongs in a validator.
-
-4. **`useThemeEditor.ts:53,58,66`** — three separate `*NameError` useState values.
-
-5. **Auth forms carry a single form-level error only.** Per-field errors are never shown, so a
-   user with two bad fields fixes them one round-trip at a time.
-
----
-
-## Work list
-
-Grouped so each chunk lands independently.
-
-### Chunk 1 — the primitive
-- [ ] Add `components/ui/form-field.tsx` (label + control slot + error, generated id,
-      `aria-invalid` + `aria-describedby` on the child, `role="alert"` on the message)
-- [ ] Support a style escape hatch for the inline-styled public surfaces (see
-      `ContactForm.tsx`; `location-picker.tsx` already models this with `errorStyle`)
-- [ ] Register it in `REUSABLE_CODE.md`
-- [ ] Unit tests: id wiring, `aria-invalid` toggling, message placement, no-error case renders
-      nothing
-
-### Chunk 2 — highest-value gaps (do before the bulk migration)
-- [ ] `client-step.tsx` — surface email and phone errors at all
-- [ ] `editable-field.tsx` — add `aria-invalid` / `aria-describedby` / `role="alert"` / error id
-
-### Chunk 3 — migrate the 12 RHF surfaces
-- [ ] clients: `client-form-modal.tsx` *(wait for item 5)*
-- [ ] bookings: `booking-wizard-modal.tsx` + steps
-- [ ] public: `ContactForm.tsx` *(location field already done by item 5 — do not re-migrate it)*
-- [ ] settings: `_business-form.tsx` *(same caveat)*, `public-page/_form.tsx`,
-      `account/_panel.tsx`, `_password-section.tsx`, `_mfa-section.tsx`
-- [ ] onboarding: `workspace-form.tsx`, `business-form.tsx`
-- [ ] marketing: `BookDemoForm.tsx`
-
-### Chunk 4 — manual-validation tail
-- [ ] `team-dialogs.tsx`
-- [ ] `useThemeEditor.ts`
-- [ ] the five `galleryPicker` dialogs
-- [ ] `plan-form.tsx`, billing panels
-
-### Chunk 5 — auth per-field errors
-- [ ] Return per-field errors from the auth Server Actions, then adopt the wrapper in all six
-      forms
-
-### Chunk 6 — enforcement
-- [ ] Lint rule or test that fails when a `text-destructive` message element has no associated
-      `aria-describedby`, so this cannot regress
-
----
-
-## What item 5 moves underneath you
-
-Item 5 (optional client email/phone, name-collision + inquiry-link flows) is landing on
-`fix/import-client-validation`. When you branch, expect:
-
-- **`components/ui/location-picker.tsx`** — gained `error` and `errorStyle` props and now owns
-  its own error slot, rendered under the input and above the map in *both* edit and display
-  mode, with `aria-invalid` on the input and its error id prepended to `aria-describedby`.
-- **The error `<p>` was DELETED** from `event-pricing-step.tsx`, `ContactForm.tsx` and
-  `_business-form.tsx`. **Do not migrate those three location fields to the new wrapper — they
-  are already conformant.**
-- **`app/globals.css`** — `.animate-shake` gained a `prefers-reduced-motion` guard. Reuse the
-  existing utility rather than defining another.
-- **`client-form-modal.tsx`** — `onSubmit` gains a name-collision branch and a new root-level
-  error path.
-- **`client-info-card.tsx`** — gains a `message` prop, a warning-indicator region, and it
-  renders `ClientMatchDialog` itself. An earlier `onResolveClient` callback prop was removed:
-  neither parent ever passed it, so the indicator was unreachable. If you add a form surface
-  that needs a dialog, check a parent actually wires it — tests and `tsc` both pass without.
-- **New file `components/app/client-match-dialog.tsx`** — a brand-new form surface. It should
-  adopt the wrapper from day one rather than being migrated later.
-- **`ContactForm.tsx`** — note the RHF gotcha found while doing item 5: a `Controller`'s render
-  callback does **not** re-run on an errors-only change, so any error message must be resolved
-  in the component body and passed in. Expect the same trap in every `Controller`-wrapped field
-  you migrate.
-
-## Tracked follow-ups (decided, deliberately not built)
-
-1. **Defer client + draft-booking creation to inquiry approval.** `inquirySubmission.ts`
-   currently creates a Client *and* a draft Booking at submission time, because
-   `Booking.clientId` is required. Item 5c works around the resulting orphan by deleting it on
-   re-link. The root-cause fix rewrites 8 `draftBookingId` call sites in
-   `inquiries/_actions.ts`, plus inquiry conflict detection, the calendar overlay and
-   `booking-draft-card`'s edit UX. Branch-sized on its own.
-2. **"Not a duplicate" dismissal** for the 5c match indicator, if users report false-match
-   noise. Deliberately omitted: the indicator only appears inside an already-open inquiry, so a
-   false match is bounded noise rather than persistent clutter.
+## The original finding
+
+There was **no form-field primitive** in this codebase. Every error message was a
+hand-rolled `<p className="text-xs text-destructive">` — 153 occurrences across 62
+files. The real problem was accessibility, not looks: most error elements had no
+`role="alert"`, no `aria-describedby` and no `aria-invalid`, so screen-reader users
+got colour as the only signal and never heard the message.
+
+The fix was cheap because the red outline already existed on `input.tsx` and
+`textarea.tsx` and was simply never switched on — for most surfaces this was one
+attribute, not a restyle.
+
+## What shipped
+
+### The primitive — `components/ui/form-field.tsx`
+
+A thin label + control + error stack. It generates the error id, sets
+`aria-invalid` and `aria-describedby` on the control, and gives the message
+`role="alert"`. Registered in `REUSABLE_CODE.md`.
+
+Two exports, because one shape does not fit every surface:
+
+- `FormField` — for the common label + control + error stack.
+- `useFieldError(error?, { id?, describedBy? })` — for controls whose existing
+  layout the wrapper would disrupt (an input inside a relative wrapper with a
+  show/hide toggle, a grid-embedded field, a search/picker UI).
+
+**Children are a render prop, not a cloned element.** `cloneElement` cannot serve
+`Controller`-wrapped fields, `LocationPicker` (whose prop is `ariaDescribedby`,
+not `aria-describedby`), or a control nested inside a wrapper. A render prop
+handles all of them with one code path and no magic.
+
+It has no react-hook-form import: the same wrapper serves RHF, `useActionState`
+and plain `useState` surfaces identically.
+
+Composition rule, matching `location-picker.tsx`: existing `aria-describedby`
+values and hint ids are **joined**, never clobbered — error id first.
+
+### Three findings the audit missed
+
+1. **`select.tsx` and `combobox.tsx` had no `aria-invalid:` styling at all.**
+   Setting `aria-invalid` on a dropdown produced *no visual change*. Without
+   closing this, the whole exercise would have failed silently on every select.
+   `timezone-combobox.tsx` had neither the styling nor an aria passthrough.
+
+2. **The booking wizard never populated `errors.client`.** `useForm` had **no
+   resolver** and its `Controller`s registered no `rules`, so `trigger()` always
+   resolved true. `validateStep` did its own imperative checks and returned
+   `false` without a message. A malformed email did not even block the step — it
+   advanced silently and failed server-side. The audit assumed those errors
+   existed but went unrendered; in fact they were never produced.
+
+   Fixed by safe-parsing the watched value against the exported
+   `bookingClientSchema` and setting a manual error, matching the
+   `amount.deposit` idiom already in that file. A global `zodResolver` was
+   deliberately *not* added: the wizard's step gating is imperative on purpose,
+   and validating the whole schema would start blocking steps on unrelated
+   fields.
+
+3. **Three forms were missing `noValidate`** (`client-form-modal.tsx`,
+   `_business-form.tsx`, `public-page/_form.tsx`). For their `type="email"`
+   inputs the browser's native constraint validation swallowed the submit event
+   before react-hook-form ran, so the schema's message never appeared and the
+   user saw the browser's own bubble instead. Each fix is covered by a test that
+   fails without it.
+
+   The two onboarding steps also lack `noValidate`, but harmlessly — neither
+   renders a native constraint attribute (`type="email"`, `required`,
+   `pattern`), so there is nothing for the browser to intercept. They were left
+   alone rather than changed speculatively.
+
+### Caught in code review
+
+The wizard fix above initially only set an error for `email` and `phone`, so any
+*other* schema failure returned `false` with no message — the step chip shook and
+the user was stuck with nothing to fix. That was **worse than before this branch**,
+where the step advanced and the server reported the reason. Reachable via an
+over-long name or note, since neither input was bounded.
+
+Fixed by setting an error for every issue whose path maps to a rendered field,
+bounding the name and notes inputs to the schema's limits, and surfacing any
+remaining unmapped issue as a form-level message so nothing can be swallowed.
+
+Also from review: the auth field mapping was one message per *field* rather than
+per *issue code*, so an over-long first name rendered "Enter your first name." on
+a field the user had clearly filled in.
+
+### Surfaces migrated
+
+- **Bookings** — all four wizard steps, plus `editable-field.tsx`, the inline-edit
+  primitive behind every inline edit in the booking detail modal.
+- **Clients** — `client-form-modal.tsx`.
+- **Settings** — workspace business form, public page form, account avatar.
+  The password and MFA sections were already conformant and were left untouched.
+- **Onboarding** — workspace and business steps, preserving the slug step's live
+  status indicator by passing its id through rather than overwriting it.
+- **Teams** — the create and rename dialogs now parse against the exported team
+  schemas instead of re-implementing the name rules (including a duplicated max
+  length that could drift), mapping the issue code back to the existing localized
+  copy so users still see translated text rather than the schema's English.
+- **Billing** — promo-code inputs in the billing panel, subscribe panel and
+  onboarding plan step.
+- **Auth** — see below.
+
+### Auth per-field errors
+
+`ActionResult` gained an optional `fieldErrors` map, populated from the Zod issues
+and the two password-mismatch branches. Field keys map to **localized copy**, not
+Zod's hardcoded English — seven new message keys across all five locales. The
+mapping is an **allowlist**, so `turnstileToken`, `token` and `returnTo` can never
+surface as a field.
+
+> **Account-existence privacy is preserved deliberately.** A failed credential
+> check still returns only the generic form-level error with no `fieldErrors`, and
+> the forms mark no field invalid in that case. Per-field errors in sign-in are
+> limited to format validation. Covered by a unit test on the action and an e2e
+> test on the form.
+
+Where a field message would repeat the form-level sentence verbatim, the
+top-level copy is suppressed so the same text is not shown twice.
+
+## Deliberately not changed
+
+- **`ContactForm.tsx` markup is frozen.** It is inline-styled so the portfolio
+  brand kit (`--pf-*`) themes it, and its `.pf-contact-form` stylesheet targets
+  descendant elements directly. Swapping in the Tailwind wrapper would regress
+  public pages to CRM tokens. It already set `aria-invalid` and `role="alert"`, so
+  it received error ids and `aria-describedby` only. Session error ids are
+  index-scoped so two sessions cannot collide.
+- **The three location fields** in `event-pricing-step.tsx`, `_business-form.tsx`
+  and `ContactForm.tsx` — `LocationPicker` already owns its own error slot with
+  full aria wiring.
+- **Gallery picker dialogs** — every destructive message there is a failed fetch
+  or upload notice, not a field error. They got `role="alert"` where it was
+  missing, and no invented field association.
+- **Conflict warnings, required-marker asterisks, and form-level root errors**
+  are not field errors and were left alone.
+- **The enforcement lint rule** (originally chunk 6) was skipped. A
+  "`text-destructive` without `aria-describedby`" rule has high false-positive
+  risk: the class is also used on buttons, badges, KPI deltas and destructive
+  menu items. Revisit once the pattern has settled.
+
+## Verification
+
+- `tsc --noEmit` clean; full unit sweep **5247 passed / 0 failed** (503 files).
+- Playwright (`e2e/validation-errors.spec.ts`), at 375/768/1280 where the surface
+  warrants it: the wizard's new-client email, the client modal's email (the
+  `noValidate` regression guard), that `aria-invalid` actually paints an outline
+  on a select trigger, the sign-in no-enumeration property, and the sign-up
+  mismatch landing on the confirm field.
+
+Each e2e assertion checks the whole contract — the control is marked invalid
+*and* its message is reachable from it, not merely adjacent to it.
+
+## Follow-ups
+
+1. **Zod validator messages are hardcoded English** across `lib/validators/*`
+   (`"Invalid email"`, `"Name is required"`). The auth actions now map field keys
+   to localized copy, but every other surface still renders the raw schema string
+   to users in all five locales. Fixing this properly is a schema-wide change.
+2. **`aria-invalid` on a `role="button"` trigger** — `combobox.tsx` and
+   `timezone-combobox.tsx` carry an `eslint jsx-a11y/role-supports-aria-props`
+   warning. The visual outline works, but the attribute is not strictly valid
+   ARIA on a button; giving those triggers `role="combobox"` would be correct.
+3. **Two duplicate `PromoCodePanel` implementations** (`plan-form.tsx` and
+   `subscribe/_panel.tsx`) — recorded in `REUSABLE_CODE.md` as an extraction
+   candidate, not unified here.
+4. **`ThemeGrid.tsx`'s `theme-name-error` id** appears to have no matching
+   rendered message element on the current-tile path. Pre-existing; not touched.
+
+## Carried over from the item 5 audit
+
+`client-info-card.tsx` gained a `message` prop, a warning-indicator region, and
+now renders `ClientMatchDialog` itself. An earlier `onResolveClient` callback prop
+was removed because neither parent ever passed it, so the indicator was
+unreachable. **If you add a form surface that needs a dialog, check that a parent
+actually wires it** — tests and `tsc` both pass without.
+
+## Tracked follow-ups from the original audit (still deliberately not built)
+
+1. **Defer client + draft-booking creation to inquiry approval.**
+   `inquirySubmission.ts` creates a Client *and* a draft Booking at submission
+   time because `Booking.clientId` is required. The root-cause fix rewrites 8
+   `draftBookingId` call sites in `inquiries/_actions.ts`, plus inquiry conflict
+   detection, the calendar overlay and `booking-draft-card`'s edit UX.
+   Branch-sized on its own.
+2. **"Not a duplicate" dismissal** for the client-match indicator, if users
+   report false-match noise. Deliberately omitted: the indicator only appears
+   inside an already-open inquiry, so a false match is bounded noise.

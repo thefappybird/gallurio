@@ -200,3 +200,32 @@ describe("SubscribePanel — checkout", () => {
     });
   });
 });
+
+describe("SubscribePanel — promo code redemption", () => {
+  it("marks the promo input aria-invalid and links it to the alert message when redemption fails", async () => {
+    redeemPromoCodeActionMock.mockResolvedValueOnce({ error: "promo_code_not_found" });
+
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "BADCODE" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute("aria-invalid", "true");
+    });
+    const describedBy = input.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy!)).toHaveAttribute("role", "alert");
+  });
+
+  it("does not mark the promo input invalid before any redemption attempt", async () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(input).not.toHaveAttribute("aria-describedby");
+  });
+});

@@ -23,6 +23,8 @@ import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { emailLocale } from "@/lib/email/messages";
 import { resolveTeamRecipients } from "@/lib/notifications/recipients";
 import { sendNotification } from "@/lib/notifications/send";
+import { getInquiryWithDraft } from "@/lib/db/queries/inquiries";
+import type { InquiryDetailModalData } from "./_components/inquiry-detail-modal";
 
 // The status a draft is promoted to on approval. Approval skips the old
 // "inquiry" pipeline state and lands directly on "booked". Drafts are the
@@ -59,6 +61,76 @@ async function inquiryHasUnresolvedClientMatch(
 export type InquiryActionResult =
   | { ok: true; bookingId?: string; idempotent?: boolean; clientId?: string }
   | { error: string };
+
+/**
+ * Loads one inquiry for the table detail modal without navigating the entire
+ * inquiries page (and consequently re-fetching its table).
+ */
+export async function getInquiryDetailAction(
+  inquiryId: string,
+  locale: string
+): Promise<{ ok: true; detail: InquiryDetailModalData } | { error: string }> {
+  const ctx = await requireOrg();
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
+  const result = await getInquiryWithDraft(ctx.workspace._id, inquiryId);
+  if (!result) return { error: "not_found" };
+
+  const { inquiry, booking } = result;
+  const detailId = String(inquiry._id);
+  const timezone = ctx.workspace.timezone ?? FALLBACK_TZ;
+  const hasConflict = isBookedInquiryStatus(inquiry.status)
+    ? false
+    : (
+        await computeInquiryConflicts(
+          ctx.workspace._id,
+          [
+            {
+              _id: detailId,
+              sessions: (inquiry.sessions ?? []).map((session) => ({
+                startDate: (session as { startDate: string }).startDate,
+                startTime: (session as { startTime: string }).startTime,
+                endTime: (session as { endTime: string }).endTime,
+              })),
+            },
+          ],
+          timezone
+        )
+      ).has(detailId);
+
+  return {
+    ok: true,
+    detail: {
+      inquiryId: detailId,
+      locale,
+      name: inquiry.name,
+      email: inquiry.email,
+      phone: inquiry.phone ?? null,
+      preferredContact: inquiry.preferredContact ?? "email",
+      status: inquiry.status,
+      eventType: inquiry.eventType ?? "other",
+      guestCount: inquiry.guestCount ?? null,
+      location: inquiry.location ?? null,
+      message: inquiry.message ?? "",
+      sessions: inquiry.sessions ?? [],
+      submittedAt: inquiry.createdAt.toISOString(),
+      updatedAt: inquiry.updatedAt.toISOString(),
+      bookingMissing: booking === null,
+      booking: booking
+        ? {
+            id: String(booking._id),
+            currency: booking.amount?.currency ?? ctx.workspace.currency ?? "PHP",
+            total: booking.amount?.total ?? 0,
+            deposit: booking.amount?.deposit ?? 0,
+            notes: booking.notes ?? "",
+            teamId: booking.teamId ? String(booking.teamId) : null,
+          }
+        : null,
+      isOwner: ctx.role === "owner",
+      hasConflict,
+    },
+  };
+}
 
 export type InquiryClientMatch = {
   _id: string;
@@ -301,7 +373,6 @@ export async function resolveInquiryClientAction(
 
   if (!targetClientId) return { error: "resolve_failed" };
 
-  revalidateInquiry(inquiryId);
   return { ok: true, clientId: targetClientId.toString() };
 }
 

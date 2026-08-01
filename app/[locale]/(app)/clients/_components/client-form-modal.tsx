@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
 import { createClientAction, updateClientAction, findClientMatchesAction } from "@/lib/actions/clients";
 import { useActionError } from "@/lib/i18n/actionError";
@@ -207,7 +209,10 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
   }
 
   const tags = form.watch("tags");
-  const { isSubmitting, isDirty } = form.formState;
+  const { isSubmitting, isDirty, errors } = form.formState;
+  const nameError = fieldMessage(errors.name);
+  const emailError = fieldMessage(errors.email);
+  const phoneError = fieldMessage(errors.phone);
 
   // Surface dirty state to the parent so it can guard navigation/target swaps.
   useEffect(() => {
@@ -232,55 +237,55 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
             </Button>
           </div>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+          <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
               {/* Row 1: Name */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="cf-name">{t("form.name")} *</Label>
-                <Input
-                  id="cf-name"
-                  placeholder={t("form.namePlaceholder")}
-                  {...form.register("name")}
-                />
-                {form.formState.errors.name && (
-                  <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+              <FormField id="cf-name" label={<>{t("form.name")} *</>} error={nameError}>
+                {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                  <Input
+                    id={id}
+                    aria-invalid={ariaInvalid}
+                    aria-describedby={ariaDescribedby}
+                    placeholder={t("form.namePlaceholder")}
+                    {...form.register("name")}
+                  />
                 )}
-              </div>
+              </FormField>
 
               {/* Row 2: Email */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="cf-email">{t("form.email")}</Label>
-                <Input
-                  id="cf-email"
-                  type="email"
-                  placeholder={t("form.emailPlaceholder")}
-                  {...form.register("email")}
-                />
-                {form.formState.errors.email && (
-                  <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+              <FormField id="cf-email" label={t("form.email")} error={emailError}>
+                {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                  <Input
+                    id={id}
+                    aria-invalid={ariaInvalid}
+                    aria-describedby={ariaDescribedby}
+                    type="email"
+                    placeholder={t("form.emailPlaceholder")}
+                    {...form.register("email")}
+                  />
                 )}
-              </div>
+              </FormField>
 
               {/* Row 3: Phone + Source */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="cf-phone">{t("form.phone")}</Label>
-                  <Controller
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <PhoneInput
-                        id="cf-phone"
-                        value={field.value ?? undefined}
-                        onChange={(value: string | undefined) => field.onChange(value ?? null)}
-                        placeholder={t("form.phonePlaceholder")}
-                      />
-                    )}
-                  />
-                  {form.formState.errors.phone && (
-                    <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>
+                <FormField id="cf-phone" label={t("form.phone")} error={phoneError}>
+                  {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                    <Controller
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <PhoneInput
+                          id={id}
+                          aria-invalid={ariaInvalid}
+                          aria-describedby={ariaDescribedby}
+                          value={field.value ?? undefined}
+                          onChange={(value: string | undefined) => field.onChange(value ?? null)}
+                          placeholder={t("form.phonePlaceholder")}
+                        />
+                      )}
+                    />
                   )}
-                </div>
+                </FormField>
                 <div className="flex flex-col gap-1.5">
                   <Label>{t("form.source")}</Label>
                   <Select

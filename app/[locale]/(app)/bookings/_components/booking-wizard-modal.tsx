@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ClientMatchDialog, type ClientMatchCard, type ClientMatchResolution } from "@/components/app/client-match-dialog";
+import { findClientMatchesAction, updateClientAction } from "@/lib/actions/clients";
+import { reconcileClient } from "@/lib/clients/reconcile";
+import type { ClientFormInput } from "@/lib/validators/client";
 import { ClientStep } from "./booking-wizard-steps/client-step";
 import { EventPricingStep } from "./booking-wizard-steps/event-pricing-step";
 import { PaymentsStep } from "./booking-wizard-steps/payments-step";
@@ -34,6 +38,7 @@ import type {
   WizardValues,
 } from "./booking-wizard-steps/types";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
+import { bookingClientSchema } from "@/lib/validators/booking";
 import { cn } from "@/lib/utils";
 import { StatusPill } from "./status-pill";
 import {
@@ -48,6 +53,16 @@ type ClientHit = {
   email: string | null;
   phone: string | null;
 };
+
+type NewBookingClient = Extract<WizardValues["client"], { mode: "new" }>;
+
+function clientMatchSignature(client: NewBookingClient): string {
+  return JSON.stringify([
+    client.name.trim(),
+    (client.email ?? "").trim(),
+    (client.phone ?? "").trim(),
+  ]);
+}
 
 type Props = {
   mode: WizardMode;
@@ -150,6 +165,16 @@ export function BookingWizardModal({
    *  Next without passing validation. Drives the shake animation. */
   const [shakeKey, setShakeKey] = useState(0);
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
+  /** New-client schema issue with no dedicated field slot (source/tags/notes),
+   *  surfaced as a generic message so it's never a silent dead end. */
+  const [clientFormError, setClientFormError] = useState<string | undefined>(undefined);
+  const [clientMatchState, setClientMatchState] = useState<{
+    matches: ClientMatchCard[];
+    data: NewBookingClient;
+  } | null>(null);
+  /** Contact values that have either produced no matches or been explicitly
+   * resolved in the match dialog. Editing name, email, or phone invalidates it. */
+  const [resolvedClientMatchSignature, setResolvedClientMatchSignature] = useState<string | null>(null);
   /** Raw shifts keyed by YYYY-MM-DD date string. Treated as a cache — entries
    *  are added on demand and never evicted (harmless small footprint). */
   const [rawShiftsByDate, setRawShiftsByDate] = useState<Record<string, ShiftHit[]>>({});
@@ -456,11 +481,51 @@ export function BookingWizardModal({
     if (step.id === "client") {
       // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is non-memoizable; React Compiler skips this component intentionally
       const client = watch("client");
-      if (
-        (client.mode === "existing" && !client.clientId) ||
-        (client.mode === "new" && !client.name.trim())
-      ) {
-        return false;
+      if (client.mode === "existing") {
+        if (!client.clientId) return false;
+      } else {
+        if (!client.name.trim()) return false;
+        const parsed = bookingClientSchema.safeParse(client);
+        if (!parsed.success) {
+          // Every rendered new-client field (name/email/phone) gets its issue
+          // routed to its own error slot. Any issue on a field with no
+          // rendered slot (source/tags/notes) still can't be a silent dead
+          // end — it's surfaced via the step's generic message instead.
+          const RENDERED_FIELD_PATHS = {
+            name: "client.name",
+            email: "client.email",
+            phone: "client.phone",
+          } as const;
+          let unmappedMessage: string | undefined;
+          for (const issue of parsed.error.issues) {
+            const key = issue.path[0];
+            if (key === "name" || key === "email" || key === "phone") {
+              setError(RENDERED_FIELD_PATHS[key], { type: "manual", message: issue.message });
+            } else if (!unmappedMessage) {
+              unmappedMessage = issue.message;
+            }
+          }
+          setClientFormError(unmappedMessage);
+          return false;
+        }
+        setClientFormError(undefined);
+        const signature = clientMatchSignature(client);
+        if (resolvedClientMatchSignature !== signature) {
+          const matchResult = await findClientMatchesAction({
+            name: client.name,
+            email: client.email || null,
+            phone: client.phone || null,
+          });
+          if ("error" in matchResult) {
+            setClientFormError(errMsg(matchResult.error));
+            return false;
+          }
+          if (matchResult.matches.length > 0) {
+            setClientMatchState({ matches: matchResult.matches, data: client });
+            return false;
+          }
+          setResolvedClientMatchSignature(signature);
+        }
       }
     }
     if (step.id === "eventPricing") {
@@ -494,6 +559,48 @@ export function BookingWizardModal({
       if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
     }
     return rhfOk;
+  }
+
+  async function handleClientMatchResolve(result: ClientMatchResolution) {
+    const match = clientMatchState;
+    if (!match) return;
+
+    if ("createNew" in result) {
+      setResolvedClientMatchSignature(clientMatchSignature(match.data));
+      setClientMatchState(null);
+      clearStepInvalid(0);
+      setStepIndex(1);
+      return;
+    }
+
+    const card = match.matches.find((candidate) => candidate.id === result.clientId);
+    if (!card) return;
+    const reconciled = reconcileClient(
+      { email: card.email, phone: card.phone, notes: card.notes, tags: card.tags },
+      match.data
+    );
+    const merged: ClientFormInput = {
+      name: card.name,
+      email: card.email,
+      phone: card.phone,
+      notes: card.notes ?? "",
+      source: card.source,
+      tags: reconciled.tags ?? [],
+    };
+    for (const change of reconciled.additive) merged[change.field] = change.value;
+    for (const conflict of reconciled.conflicts) {
+      if (result.picks[conflict.field] === "typed") merged[conflict.field] = conflict.typedValue;
+    }
+
+    const updateResult = await updateClientAction(card.id, merged);
+    if ("error" in updateResult) {
+      setClientFormError(errMsg(updateResult.error));
+      return;
+    }
+    form.setValue("client", { mode: "existing", clientId: card.id, clientName: card.name }, { shouldDirty: true });
+    setClientMatchState(null);
+    clearStepInvalid(0);
+    setStepIndex(1);
   }
 
   function markStepInvalid(index: number) {
@@ -616,7 +723,7 @@ export function BookingWizardModal({
     } finally {
       setSubmitting(false);
     }
-  }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit, onClose, clearWizardUrlParams, router, tz]);
+  }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit, onClose, clearWizardUrlParams, router, tz, errMsg]);
 
   const eventStepIndex = STEPS.findIndex((s) => s.id === "sessionsLocation");
 
@@ -837,6 +944,7 @@ export function BookingWizardModal({
                     readOnly={isReadOnlyClient}
                     readOnlyClientName={editClientName}
                     clients={clients}
+                    newClientFormError={clientFormError}
                   />
                 ) : null}
                 {current.id === "eventPricing" ? (
@@ -976,6 +1084,23 @@ export function BookingWizardModal({
           close();
         }}
       />
+
+      {clientMatchState ? (
+        <ClientMatchDialog
+          open
+          matches={clientMatchState.matches}
+          typed={{
+            name: clientMatchState.data.name,
+            email: clientMatchState.data.email ?? null,
+            phone: clientMatchState.data.phone ?? null,
+            notes: clientMatchState.data.notes ?? "",
+            tags: clientMatchState.data.tags ?? [],
+          }}
+          mode="create"
+          onResolve={handleClientMatchResolve}
+          onCancel={() => setClientMatchState(null)}
+        />
+      ) : null}
 
     </Dialog>
   );

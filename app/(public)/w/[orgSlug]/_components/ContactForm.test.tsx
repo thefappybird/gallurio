@@ -299,6 +299,43 @@ describe("ContactForm", () => {
     await waitFor(() => expect(screen.getByLabelText("Date")).toBeInTheDocument());
   });
 
+  it("wires the name field's aria-describedby to its role=alert error id", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    const nameInput = screen.getByLabelText("Name");
+    const describedBy = await waitFor(() => {
+      const value = nameInput.getAttribute("aria-describedby");
+      if (!value) throw new Error("not yet described");
+      return value;
+    });
+    const alert = screen.getByText(/please enter your name/i, { selector: "p" });
+    expect(alert.id).toBe(describedBy);
+  });
+
+  it("gives each session's endTime error a distinct, index-scoped id so two sessions don't collide", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    goToEventDetails();
+    fireEvent.click(screen.getByRole("button", { name: /Add another day/i }));
+    const endTimeInputs = screen.getAllByLabelText("End time");
+    fireEvent.change(endTimeInputs[0], { target: { value: "09:00" } });
+    fireEvent.change(endTimeInputs[1], { target: { value: "09:00" } });
+    fireEvent.change(screen.getAllByLabelText("Date")[0], { target: { value: futureDate() } });
+    fireEvent.change(screen.getAllByLabelText("Date")[1], { target: { value: futureDate() } });
+    fireEvent.change(screen.getAllByLabelText("Start time")[0], { target: { value: "10:00" } });
+    fireEvent.change(screen.getAllByLabelText("Start time")[1], { target: { value: "10:00" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(endTimeInputs[0]).toHaveAttribute("aria-describedby"));
+    const id0 = endTimeInputs[0].getAttribute("aria-describedby");
+    const id1 = endTimeInputs[1].getAttribute("aria-describedby");
+    expect(id0).toBeTruthy();
+    expect(id1).toBeTruthy();
+    expect(id0).not.toBe(id1);
+    expect(id0).toBe("cf-etime-0-error");
+    expect(id1).toBe("cf-etime-1-error");
+  });
+
   it("shows a validation error for an invalid email (rendered as a role=alert on the client tab)", async () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada" } });

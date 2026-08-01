@@ -17,6 +17,7 @@ import { InquiryViewToggle, type InquiriesView } from "./inquiry-view-toggle";
 import { InquiriesCalendarManager } from "./inquiries-calendar-manager";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
+import { getInquiryDetailAction } from "../_actions";
 
 const INQUIRY_TABLE_COLUMNS = 6;
 
@@ -68,25 +69,23 @@ export function InquiriesPageClient({
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [detail, setDetail] = useState(initialDetail);
-  const [detailOpen, setDetailOpen] = useState(Boolean(initialDetail));
+  const [syncedInitialDetailId, setSyncedInitialDetailId] = useState(
+    initialDetail?.inquiryId ?? null
+  );
+  const detailOpen = detail !== null;
+  const detailRequest = useRef(0);
   const isCalendar = view === "calendar";
-  // Skip while the detail modal is open: refresh gives `initialDetail` a new
-  // reference, which the deep-link sync effect below would use to re-clobber
-  // `detail` mid-edit.
+  // A direct URL/deep link supplies its detail from the server. Table clicks
+  // load only the selected inquiry via a server action, leaving the table intact.
+  const initialDetailId = initialDetail?.inquiryId ?? null;
+  if (initialDetailId !== syncedInitialDetailId) {
+    setSyncedInitialDetailId(initialDetailId);
+    setDetail(initialDetail);
+  }
   useLiveRefresh(["inquiry", "booking"], detailOpen);
 
   function readCurrentParams() {
     return new URLSearchParams(window.location.search);
-  }
-
-  const [syncedDeepLink, setSyncedDeepLink] = useState(initialDetail);
-  if (initialDetail !== syncedDeepLink) {
-    setSyncedDeepLink(initialDetail);
-    const activeInquiryId = readCurrentParams().get("inquiryId");
-    if (initialDetail && activeInquiryId === initialDetail.inquiryId) {
-      setDetail(initialDetail);
-      setDetailOpen(true);
-    }
   }
 
   // Optimistic patch map: covers all editable fields; only status is rendered in the table.
@@ -151,21 +150,12 @@ export function InquiriesPageClient({
     // Convert closes the modal directly and handles its own refresh path;
     // reset hasChanges so the subsequent onClose handler does not fire a duplicate refresh.
     hasChanges.current = false;
-    setDetailOpen(false);
+    detailRequest.current += 1;
+    setDetail(null);
     // Strip the inquiryId param so that the revalidatePath re-render does not
     // re-supply a truthy initialDetail and re-open the modal via the deep-link
     // sync block.
     stripInquiryParam();
-  }
-
-  function handleConvertFailed() {
-    if (detail) {
-      setOptimisticUpdates((prev) => {
-        const next = { ...prev };
-        delete next[detail.inquiryId];
-        return next;
-      });
-    }
   }
 
   // Date popover
@@ -212,6 +202,26 @@ export function InquiriesPageClient({
       const next = params.toString();
       router.push(next ? `${pathname}?${next}` : pathname);
     });
+  }
+
+  async function openInquiry(inquiryId: string) {
+    if (detail?.inquiryId === inquiryId) return;
+
+    const params = readCurrentParams();
+    params.set("inquiryId", inquiryId);
+    params.delete("detail");
+    const next = params.toString();
+    window.history.pushState(
+      window.history.state,
+      "",
+      next ? `${pathname}?${next}` : pathname
+    );
+
+    const request = detailRequest.current + 1;
+    detailRequest.current = request;
+    const result = await getInquiryDetailAction(inquiryId, locale);
+    if (detailRequest.current !== request) return;
+    if ("ok" in result) setDetail(result.detail);
   }
 
   function selectTab(tab: TabKey) {
@@ -368,7 +378,7 @@ export function InquiriesPageClient({
               cardRows={Math.min(limit, 4)}
             />
           ) : (
-            <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} />
+            <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} onOpenInquiry={openInquiry} />
           )}
 
           {total > 0 && (
@@ -407,7 +417,7 @@ export function InquiriesPageClient({
         open={detailOpen}
         teams={teams}
         onClose={() => {
-          setDetailOpen(false);
+          detailRequest.current += 1;
           setDetail(null);
           if (hasChanges.current) {
             hasChanges.current = false;
@@ -417,7 +427,6 @@ export function InquiriesPageClient({
           }
         }}
         onConverted={handleConverted}
-        onConvertFailed={handleConvertFailed}
         onInquiryChanged={handleInquiryChanged}
       />
     </div>

@@ -33,6 +33,24 @@ describe("BookDemoForm", () => {
     expect(submitBookDemoAction).not.toHaveBeenCalled();
   });
 
+  it("wires the name field's aria-describedby to its role=alert error id on a blocked submit", async () => {
+    renderForm();
+
+    fireEvent.click(screen.getByRole("button", { name: /request a demo/i }));
+
+    const alerts = await screen.findAllByRole("alert");
+    const nameInput = screen.getByLabelText(/your name/i);
+    const describedBy = nameInput.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(alerts.map((a) => a.id)).toContain(describedBy);
+  });
+
+  it("does not set aria-describedby on the name field before any validation runs", () => {
+    renderForm();
+
+    expect(screen.getByLabelText(/your name/i)).not.toHaveAttribute("aria-describedby");
+  });
+
   it("replaces the form with a success message after a successful submit", async () => {
     submitBookDemoAction.mockResolvedValue({ ok: true });
     renderForm();

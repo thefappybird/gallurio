@@ -11,6 +11,13 @@ import { differenceInCalendarDays, addDays, format } from "date-fns";
 import enMessages from "@/messages/en.json";
 import { BookingWizardModal } from "./booking-wizard-modal";
 
+const findClientMatchesAction = vi.fn().mockResolvedValue({ matches: [] });
+const updateClientAction = vi.fn().mockResolvedValue({ ok: true });
+vi.mock("@/lib/actions/clients", () => ({
+  findClientMatchesAction: (...args: unknown[]) => findClientMatchesAction(...args),
+  updateClientAction: (...args: unknown[]) => updateClientAction(...args),
+}));
+
 // ── next/navigation stub (useSearchParams) ───────────────────────────────────
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -72,6 +79,18 @@ function renderWizard() {
   );
 }
 
+const CLIENT_MATCH = {
+  id: "client-match-1",
+  name: "Existing Client",
+  email: "existing@example.com",
+  phone: null,
+  notes: null,
+  tags: [],
+  source: "manual" as const,
+  bookingsCount: 2,
+  lastBookingAt: null,
+};
+
 /** Navigate from the client step to the Event & Pricing step. */
 async function advanceToEventStep() {
   // The wizard opens on the client step. Switch to "Create new" tab.
@@ -129,6 +148,67 @@ async function advanceToSessionsStep() {
     expect(document.getElementById("wiz-startDate-0")).toBeInTheDocument();
   });
 }
+
+// ── Finding 1 regression: new-client schema issues beyond email/phone must
+// never be a silent dead end. A name over the 120-char schema cap previously
+// fell through validateStep's client branch with no setError call at all —
+// the step blocked but nothing was ever shown to the user.
+describe("BookingWizardModal — client step: name-length validation is not a silent dead end", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+  });
+
+  it("blocks the client step and renders a visible message when the new-client name exceeds 120 characters", async () => {
+    renderWizard();
+
+    const createNewTab = screen.getByRole("button", { name: /create new/i });
+    fireEvent.click(createNewTab);
+
+    const longName = "A".repeat(130);
+    const nameInput = screen.getByPlaceholderText(/emma carter/i);
+    fireEvent.change(nameInput, { target: { value: longName } });
+
+    const nextBtn = screen.getByRole("button", { name: /next/i });
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    // Still on the client step — Event & Pricing's title field must not appear.
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+
+    // A visible, reachable error message must be rendered — not a silent dead end.
+    const alert = await screen.findByRole("alert");
+    expect(alert).toBeInTheDocument();
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("still advances past the client step with a valid new-client name", async () => {
+    renderWizard();
+
+    const createNewTab = screen.getByRole("button", { name: /create new/i });
+    fireEvent.click(createNewTab);
+
+    const nameInput = screen.getByPlaceholderText(/emma carter/i);
+    fireEvent.change(nameInput, { target: { value: "Test Client" } });
+
+    const nextBtn = screen.getByRole("button", { name: /next/i });
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+  });
+});
 
 describe("BookingWizardModal — conflict detection", () => {
   beforeEach(() => {
@@ -2088,5 +2168,142 @@ describe("BookingWizardModal — inline Save visibility across steps (edit mode)
     await waitFor(() => {
       expect(inlineSaveButtons()).toHaveLength(0);
     });
+  });
+});
+
+// ── Client step contact validation ────────────────────────────────────────────
+//
+// The "create new" block shares clientFormSchema (name/email/phone) with the
+// Clients "Add client" form. Malformed contact info must block the client step
+// and surface a message on the offending field, not silently advance.
+describe("BookingWizardModal — client step contact validation", () => {
+  beforeEach(() => {
+    mockFetchWithConflict();
+    findClientMatchesAction.mockReset();
+    findClientMatchesAction.mockResolvedValue({ matches: [] });
+    updateClientAction.mockReset();
+    updateClientAction.mockResolvedValue({ ok: true });
+  });
+
+  it("requires a duplicate new client to be resolved before advancing", async () => {
+    findClientMatchesAction.mockResolvedValue({ matches: [CLIENT_MATCH] });
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Existing Client" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/emma@example.com/i), {
+      target: { value: "existing@example.com" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    await waitFor(() => expect(findClientMatchesAction).toHaveBeenCalledWith({
+      name: "Existing Client",
+      email: "existing@example.com",
+      phone: null,
+    }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+  });
+
+  it("blocks Next and shows an error on a malformed email in new-client mode", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Test Client" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/emma@example.com/i), {
+      target: { value: "not-an-email" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Still on the client step — Event & Pricing must not appear.
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/invalid email/i)).toBeInTheDocument();
+  });
+
+  it("blocks Next and shows an error on a malformed phone in new-client mode", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Test Client" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/\+63 917/i), {
+      target: { value: "123" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/invalid phone number/i)).toBeInTheDocument();
+  });
+
+  it("still blocks Next on a blank name in new-client mode", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    expect(screen.queryByPlaceholderText(/carter wedding/i)).not.toBeInTheDocument();
+  });
+
+  it("advances past the client step with a valid new client", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Test Client" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/emma@example.com/i), {
+      target: { value: "test@example.com" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+  });
+
+  it("clears the email error after correcting it to a valid value", async () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new/i }));
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "Test Client" },
+    });
+    const emailInput = screen.getByPlaceholderText(/emma@example.com/i);
+    fireEvent.change(emailInput, { target: { value: "not-an-email" } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+    expect(screen.getByText(/invalid email/i)).toBeInTheDocument();
+
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/invalid email/i)).not.toBeInTheDocument();
+    });
+    expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
   });
 });

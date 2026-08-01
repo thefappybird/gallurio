@@ -75,6 +75,24 @@ describe("BookingDraftCard", () => {
     expect(await screen.findByText("This inquiry has been approved.")).toBeInTheDocument();
   });
 
+  it("keeps the inquiry open and requests client resolution when conversion finds a duplicate", async () => {
+    approveInquiryBookingAction.mockResolvedValue({ error: "needs_client_resolution" });
+    const onConverted = vi.fn();
+    const onClientResolutionRequired = vi.fn();
+    renderWithProviders(
+      <BookingDraftCard
+        {...baseProps}
+        onConverted={onConverted}
+        onClientResolutionRequired={onClientResolutionRequired}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Convert to booking/i }));
+
+    await waitFor(() => expect(onClientResolutionRequired).toHaveBeenCalledOnce());
+    expect(onConverted).not.toHaveBeenCalled();
+  });
+
   it("shows the missing-draft notice", () => {
     renderWithProviders(<BookingDraftCard {...baseProps} bookingMissing />);
     expect(screen.getByText("No linked draft booking for this inquiry.")).toBeInTheDocument();
@@ -144,6 +162,18 @@ describe("BookingDraftCard", () => {
 
     await waitFor(() => expect(editInquirySessionsAction).toHaveBeenCalledOnce());
     expect(toast.success).toHaveBeenCalledWith("Sessions saved.");
+  });
+
+  it("allows an already-past inquiry session to be edited and saved", async () => {
+    const pastSession = { startDate: "2000-01-01", startTime: "10:00", endTime: "12:00" };
+    renderWithProviders(<BookingDraftCard {...baseProps} sessions={[pastSession]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    await waitFor(() => expect(editInquirySessionsAction).toHaveBeenCalledWith("abc", {
+      sessions: [pastSession],
+    }));
   });
 
   it("calls onInquiryChanged with the updated eventDate after a successful sessions save", async () => {

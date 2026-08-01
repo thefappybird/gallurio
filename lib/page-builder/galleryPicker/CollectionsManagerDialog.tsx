@@ -89,7 +89,7 @@ export function CollectionsManagerDialog({
             </div>
           ) : state.status === "error" ? (
             <div className="flex flex-col gap-2">
-              <p className="text-sm text-destructive">{t("error")}</p>
+              <p role="alert" className="text-sm text-destructive">{t("error")}</p>
               <button
                 type="button"
                 onClick={retry}
