@@ -54,9 +54,20 @@ const HEADER_SPEC_KEYS = [
   { name: "currency", required: false },
   { name: "locationAddress", required: false },
   { name: "notes", required: false },
+  // Emitted by the exporter and read back on import. Undocumented until now,
+  // which left the multi-session and update-in-place behaviour invisible.
+  { name: "booking_id", required: false },
+  { name: "session_index", required: false },
+  { name: "clientId", required: false },
+  { name: "clientPhone", required: false },
 ] as const;
 
-const TEMPLATE_HEADERS = HEADER_SPEC_KEYS.map((h) => h.name);
+// The downloadable template stays at the columns someone would hand-author: a
+// new booking has no booking_id, and inventing one would look like a required
+// field. The spec table above still explains them.
+const TEMPLATE_HEADERS = HEADER_SPEC_KEYS.filter(
+  (h) => !["booking_id", "session_index", "clientId"].includes(h.name)
+).map((h) => h.name);
 
 const SAMPLE_ROW = [
   "Jane Smith",
@@ -71,12 +82,15 @@ const SAMPLE_ROW = [
   "PHP",
   "Grand Ballroom, Manila",
   "Ceremony + reception",
+  "+63 917 555 0142",
 ];
 
 function downloadTemplate() {
-  const comment = "# Required: clientName, startAt. clientEmail optional but used to dedupe.";
   const csv = [
-    comment,
+    // title was required all along but went unmentioned here.
+    "# Required: title, clientName, startAt. clientEmail is optional and used to match an existing client.",
+    "# Exporting adds booking_id and session_index. Keep them to update a booking in place instead of",
+    "# creating a copy; rows sharing one booking_id become a single multi-session booking.",
     TEMPLATE_HEADERS.join(","),
     SAMPLE_ROW.map(quoteField).join(","),
   ].join("\n");

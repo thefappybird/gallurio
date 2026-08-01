@@ -6,6 +6,7 @@ import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { BookingImportRowInput } from "@/lib/validators/booking";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
+import { isCompletionEligible } from "@/lib/bookings/payment-rules";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import {
   groupImportRows,
@@ -273,6 +274,28 @@ export async function POST(req: Request) {
     const lastSessionEnd = new Date(
       Math.max(...sessions.map((s) => s.endAt.getTime()))
     );
+
+    // Import writes no payment lines, so a "completed" row is only coherent
+    // when the deposit alone settles the total. Without this the sheet can
+    // create a booking the PATCH route would refuse to put in that state.
+    if (
+      row.status === "completed" &&
+      !isCompletionEligible([], {
+        total: row.amountTotal ?? 0,
+        deposit: row.amountDeposit ?? 0,
+      })
+    ) {
+      errors.push({
+        index: i,
+        row: raw,
+        field: "status",
+        kind: "validation",
+        message:
+          "A completed booking must be fully paid. Import records no payments, so the deposit has to equal the total.",
+      });
+      skippedRows += group.rows.length;
+      continue;
+    }
 
     // ── update path ────────────────────────────────────────────────────────
     // clientId/clientName are deliberately NOT reassigned here: moving a

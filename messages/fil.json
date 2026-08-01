@@ -1002,6 +1002,18 @@
             },
             "notes": {
               "note": "Mga panloob na tala"
+            },
+            "booking_id": {
+              "note": "Mula sa export. Panatilihin ito para i-update ang booking sa halip na gumawa ng kopya"
+            },
+            "session_index": {
+              "note": "Nag-aayos ng mga sesyon kapag may parehong booking_id ang mga row"
+            },
+            "clientId": {
+              "note": "Mula sa export. Tinutugma bago ang clientEmail"
+            },
+            "clientPhone": {
+              "note": "Sine-save sa bagong kliyente; pinupunan ang blangko, hindi pinapalitan"
             }
           }
         }

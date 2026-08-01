@@ -128,6 +128,16 @@ test.describe("Task 2 — CSV/XLSX import preview", () => {
     return page.getByRole("dialog");
   }
 
+  test("the column guide documents the round-trip columns", async ({ page }) => {
+    // booking_id and session_index are what make an export re-importable and
+    // multi-session, and the guide listed neither.
+    const dialog = await openImport(page);
+    await expect(dialog.getByText("booking_id", { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(dialog.getByText("session_index", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("clientPhone", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(/update that booking instead of creating a copy/i)).toBeVisible();
+  });
+
   test("a valid CSV previews its rows and offers to import them", async ({ page }) => {
     const csv = [
       HEADERS,

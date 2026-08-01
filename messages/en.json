@@ -1002,6 +1002,18 @@
             },
             "notes": {
               "note": "Internal notes"
+            },
+            "booking_id": {
+              "note": "From an export. Keep it to update that booking instead of creating a copy"
+            },
+            "session_index": {
+              "note": "Orders sessions when rows share one booking_id"
+            },
+            "clientId": {
+              "note": "From an export. Matched before clientEmail"
+            },
+            "clientPhone": {
+              "note": "Saved on a new client; fills a blank one, never overwrites"
             }
           }
         }

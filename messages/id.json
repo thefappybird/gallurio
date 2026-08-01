@@ -1002,6 +1002,18 @@
             },
             "notes": {
               "note": "Catatan internal"
+            },
+            "booking_id": {
+              "note": "Dari ekspor. Simpan untuk memperbarui booking itu alih-alih membuat salinan"
+            },
+            "session_index": {
+              "note": "Mengurutkan sesi saat beberapa baris berbagi satu booking_id"
+            },
+            "clientId": {
+              "note": "Dari ekspor. Dicocokkan sebelum clientEmail"
+            },
+            "clientPhone": {
+              "note": "Disimpan pada klien baru; mengisi yang kosong, tidak pernah menimpa"
             }
           }
         }

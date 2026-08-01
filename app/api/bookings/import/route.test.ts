@@ -421,6 +421,20 @@ describe("POST /api/bookings/import", () => {
     expect((await Client.findById(existing._id).lean())?.phone).toBe("+63 917 555 0142");
   });
 
+  it("refuses to import a completed booking that is not fully paid", async () => {
+    // isCompletionEligible requires deposit + paid payments to equal the total.
+    // Import writes no payments, so a completed row with deposit < total lands
+    // in a state the PATCH route would reject outright.
+    const res = await callImport([
+      { ...VALID_ROW, status: "completed", amountTotal: 50000, amountDeposit: 20000 },
+    ]);
+    const body = await res.json();
+
+    expect(body.created).toBe(0);
+    expect(body.errors[0].message).toMatch(/paid|payment/i);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+
   it("reuses an existing client when email matches", async () => {
     const existing = await Client.create({
       workspaceId: WS_ID,
