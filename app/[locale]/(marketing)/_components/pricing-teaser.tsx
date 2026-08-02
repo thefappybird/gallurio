@@ -69,7 +69,6 @@ export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
               features={[t("pro.feature1"), t("pro.feature2"), t("pro.feature3")]}
               cta={t("pro.cta")}
               badge={t("pro.badge")}
-              comingSoon={t("pro.comingSoon")}
               featured
             />
           </div>
@@ -94,7 +93,6 @@ function PlanCard({
   features,
   cta,
   badge,
-  comingSoon,
   featured = false,
 }: {
   name: string;
@@ -104,7 +102,6 @@ function PlanCard({
   features: string[];
   cta: string;
   badge?: string;
-  comingSoon?: string;
   featured?: boolean;
 }) {
   return (
@@ -114,19 +111,11 @@ function PlanCard({
         featured && "border-brand ring-1 ring-brand"
       )}
     >
-      {badge || comingSoon ? (
+      {badge ? (
         <div className="flex flex-wrap items-center gap-2">
-          {badge ? (
-            <span className="w-fit rounded-[var(--radius)] bg-brand px-2 py-0.5 text-xs font-bold text-brand-foreground">
-              {badge}
-            </span>
-          ) : null}
-          {/* Coming soon: Lemon Squeezy checkout paused pending MoR verification, see docs/RELEASE-CHECKLIST.md */}
-          {comingSoon ? (
-            <span className="w-fit rounded-[var(--radius)] border border-border px-2 py-0.5 text-xs font-bold text-foreground">
-              {comingSoon}
-            </span>
-          ) : null}
+          <span className="w-fit rounded-[var(--radius)] bg-brand px-2 py-0.5 text-xs font-bold text-brand-foreground">
+            {badge}
+          </span>
         </div>
       ) : null}
       <div>

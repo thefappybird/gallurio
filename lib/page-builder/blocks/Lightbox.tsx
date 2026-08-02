@@ -14,7 +14,7 @@ export type LightboxImage = { id: string; publicId: string; alt: string };
 
 const FOCUS_VISIBLE_STYLES = `
 [data-lightbox-close]:focus-visible {
-  outline: 2px solid var(--pf-color-foreground, #111);
+  outline: 2px solid var(--pf-color-fg, #111);
   outline-offset: 2px;
 }
 `;
@@ -37,23 +37,23 @@ function FloatingCloseButton({ onClick, label = "Close" }: { onClick: () => void
         width: "36px",
         height: "36px",
         borderRadius: "50%",
-        border: "1px solid var(--pf-color-foreground, rgba(0,0,0,0.2))",
-        background: "var(--pf-color-surface, #fff)",
-        color: "var(--pf-color-foreground, #111)",
+        border: "1px solid color-mix(in srgb, var(--pf-color-fg, #111) 20%, transparent)",
+        background: "var(--pf-color-bg, #fff)",
+        color: "var(--pf-color-fg, #111)",
         cursor: "pointer",
         transition: "background 0.15s, color 0.15s",
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.background =
-          "var(--pf-color-foreground, #111)";
+          "var(--pf-color-fg, #111)";
         (e.currentTarget as HTMLButtonElement).style.color =
-          "var(--pf-color-surface, #fff)";
+          "var(--pf-color-bg, #fff)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLButtonElement).style.background =
-          "var(--pf-color-surface, #fff)";
+          "var(--pf-color-bg, #fff)";
         (e.currentTarget as HTMLButtonElement).style.color =
-          "var(--pf-color-foreground, #111)";
+          "var(--pf-color-fg, #111)";
       }}
     >
       <XIcon aria-hidden style={{ width: "16px", height: "16px" }} />

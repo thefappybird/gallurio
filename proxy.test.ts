@@ -209,10 +209,16 @@ describe("proxy", () => {
   describe("*.gallurio.com tenant subdomain routing", () => {
     function withBaseDomain(fn: () => Promise<void>): Promise<void> {
       const previous = process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
+      const previousAppUrl = process.env.NEXT_PUBLIC_APP_URL;
       process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = "gallurio.com";
+      // Mirror the internal app port present behind the production proxy. The
+      // canonical public redirect must always omit it from the browser URL.
+      process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
       return fn().finally(() => {
         if (previous === undefined) delete process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
         else process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = previous;
+        if (previousAppUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+        else process.env.NEXT_PUBLIC_APP_URL = previousAppUrl;
       });
     }
 
@@ -232,6 +238,22 @@ describe("proxy", () => {
         const rewriteUrl = new URL(rewriteTarget!);
         expect(rewriteUrl.pathname).toBe("/w/acme/gallery");
         expect(rewriteUrl.searchParams.get("tab")).toBe("1");
+      }));
+
+    it("rewrites the visible tenant /home route to the internal portfolio home route", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/home?ref=nav", {
+          headers: { host: "acme.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        const rewriteTarget = response.headers.get("x-middleware-rewrite");
+        expect(rewriteTarget).not.toBeNull();
+        const rewriteUrl = new URL(rewriteTarget!);
+        expect(rewriteUrl.pathname).toBe("/w/acme");
+        expect(rewriteUrl.searchParams.get("ref")).toBe("nav");
       }));
 
     it("does not rewrite on the canonical apex or www host (normal public-route flow continues)", () =>
@@ -268,6 +290,21 @@ describe("proxy", () => {
           expect(authMiddlewareMock, `host ${host}`).not.toHaveBeenCalled();
           expect(intlMiddlewareMock, `host ${host}`).not.toHaveBeenCalled();
         }
+      }));
+
+    it("301-redirects the canonical /w home route to the tenant root", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/w/acme?ref=nav", {
+          headers: { host: "gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.status).toBe(301);
+        expect(response.headers.get("location")).toBe(
+          "https://acme.gallurio.com/?ref=nav",
+        );
       }));
 
     it("does not rewrite a reserved infra subdomain (e.g. dev.gallurio.com) to /w/{label}", () =>

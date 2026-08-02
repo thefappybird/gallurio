@@ -107,12 +107,12 @@
         "body": "Walang kailangang payment card para magsimula."
       },
       "item2": {
-        "title": "Mga bayad na plano: malapit na.",
+        "title": "Isang plano. Malinaw na terms.",
         "body": "Ipapakita nang malinaw ang presyo at terms bago mag-checkout."
       },
       "item3": {
         "title": "Ang Lemon Squeezy ang humahawak ng checkout",
-        "body": "bilang aming merchant of record, kapag naka-live na ang billing."
+        "body": "bilang aming merchant of record."
       },
       "item4": {
         "title": "Software, hindi serbisyo.",
@@ -134,14 +134,13 @@
       "title": "Simpleng presyo",
       "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",
       "viewFullPricing": "Tingnan ang buong presyo",
-      "disclaimer": "Hindi pa available ang mga paid plan. Malinaw na ipapakita ang presyo at mga tuntunin sa pagsingil bago ang checkout kapag inilunsad na ang mga ito.",
+      "disclaimer": "Isang buwang libre. Ang paid Pro ay nagre-renew buwanan o taunan hanggang i-cancel.",
       "cadence": {
         "monthly": "Buwanan",
         "yearly": "Taunan — makatipid ng 2 buwan"
       },
       "pro": {
         "badge": "1 buwang libre",
-        "comingSoon": "Malapit na",
         "name": "Pro",
         "priceSuffixMonthly": "/buwan",
         "priceSuffixYearly": "/taon",
@@ -164,7 +163,6 @@
       },
       "pro": {
         "badge": "Rekomendado",
-        "comingSoon": "Malapit na",
         "name": "Pro",
         "freeMonth": "Simulan nang may 1 buwang libre, walang kailangang card.",
         "description": "Lahat ng kailangan mo para patakbuhin ang mga booking, client, gallery, at ang pampublikong page mo.",
@@ -180,15 +178,15 @@
         "cta": "Simulan ang libreng buwan ko"
       },
       "billingNotice": {
-        "body1": "Hindi pa available ang mga paid na Pro subscription. Kapag inilunsad na ang mga subscription, malinaw na ipapakita ang presyo, billing period, mga tuntunin sa renewal, naaangkop na buwis, detalye ng bayad, at proseso ng cancellation bago mo makumpleto ang isang pagbili.",
-        "body2": "Ang Lemon Squeezy ang magpoproseso ng mga paid subscription bilang merchant of record ng Gallurio. Ipapakita rin ang naaangkop na tuntunin sa checkout, invoice, refund, at bayad sa buong billing flow.",
+        "body1": "Available ang paid Pro subscription buwanan o taunan. Malinaw na ipinapakita ang presyo, billing period, mga tuntunin sa renewal, naaangkop na buwis, detalye ng bayad, at proseso ng cancellation bago mo makumpleto ang isang pagbili.",
+        "body2": "Ang Lemon Squeezy ang nagpoproseso ng mga paid subscription bilang merchant of record ng Gallurio. Ipinapakita rin ang naaangkop na tuntunin sa checkout, invoice, refund, at bayad sa buong billing flow.",
         "body3": "Maaari mong i-cancel ang isang paid subscription anumang oras sa pamamagitan ng billing management flow. Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge; magpapatuloy ang access hanggang sa katapusan ng kasalukuyang billing period.",
         "body4": "Walang bayad na kinokolekta sa iyong unang libreng buwan."
       },
       "pricingTransparency": {
         "title": "Transparency sa Presyo",
         "body1": "Hindi ka sisingilin ng Gallurio habang ang libreng buwan. Walang kailangang payment card para simulan ang trial. Ang anumang paid subscription ay nangangailangan ng hiwalay na pagbili o activation step pagkatapos ng libreng panahon, kasama ang naaangkop na tuntunin na ipapakita bago ang bayad.",
-        "body2": "Maaaring magbago ang presyo at mga feature bago ilunsad ang mga paid subscription. Ipapakita ang mahahalagang pagbabago sa page na ito at sa checkout flow."
+        "body2": "Maaaring magbago ang presyo at mga feature. Ipapakita ang mahahalagang pagbabago sa page na ito at sa checkout flow."
       },
       "contactNote": {
         "body": "Para sa mga tanong sa billing, makipag-ugnayan sa"
@@ -650,7 +648,17 @@
       "invalidCode": "Hindi tamang code o nag-expire na. Pakisubukan muli.",
       "sessionExpired": "Nag-expire na ang iyong session. Mangyaring mag-sign in muli.",
       "resetTokenInvalid": "Ang link na ito ay invalid o nag-expire na. Mangyaring humingi ng bago.",
-      "passwordReused": "Pumili ng password na iba sa kasalukuyan mong password."
+      "passwordReused": "Pumili ng password na iba sa kasalukuyan mong password.",
+      "fields": {
+        "emailInvalid": "Maglagay ng wastong email address.",
+        "passwordRequired": "Ilagay ang iyong password.",
+        "passwordLength": "Ang password ay dapat may 8 hanggang 128 na character.",
+        "confirmPasswordRequired": "Kumpirmahin ang iyong password.",
+        "firstNameRequired": "Ilagay ang iyong pangalan.",
+        "firstNameTooLong": "Ang pangalan ay dapat 80 character o mas kaunti.",
+        "lastNameTooLong": "Ang apelyido ay dapat 80 character o mas kaunti.",
+        "codeInvalid": "Ilagay ang 6-digit na code."
+      }
     }
   },
   "app": {
@@ -911,10 +919,26 @@
         "statusAll": "Lahat ng status",
         "showCancelled": "Ipakita ang mga nakansela",
         "showPast": "Ipakita ang nakaraan",
-        "import": "Mag-import ng CSV",
-        "export": "Mag-export ng CSV",
+        "import": "Mag-import",
+        "export": "I-export",
         "add": "Bagong booking",
-        "invoiceTheme": "Tema ng invoice"
+        "invoiceTheme": "Tema ng invoice at resibo"
+      },
+      "exportDialog": {
+        "title": "I-export ang mga booking",
+        "teamLabel": "Team",
+        "allTeams": "Lahat ng team",
+        "rangeLabel": "Saklaw ng panahon",
+        "allTime": "Lahat ng panahon",
+        "dateRange": "Saklaw ng petsa",
+        "from": "Mula",
+        "to": "Hanggang",
+        "formatLabel": "Format",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "Nalalapat din sa export na ito ang status at paghahanap na filter ng listahan.",
+        "download": "I-download",
+        "cancel": "Kanselahin"
       },
       "teamPicker": {
         "allTeams": "Lahat ng koponan",
@@ -926,9 +950,10 @@
       },
       "import": {
         "title": "Mag-import ng mga booking",
-        "dropzone": "Mag-drop ng CSV file dito, o mag-click para pumili",
+        "dropzone": "Mag-drop ng CSV o XLSX file dito, o mag-click para pumili",
         "dropzoneActive": "I-drop para mag-upload",
-        "template": "I-download ang CSV template",
+        "templateCsv": "I-download ang CSV template",
+        "templateXlsx": "I-download ang XLSX template",
         "preview": "{total} row(s) natagpuan",
         "validCount": "{count} valid",
         "invalidCount": "{count} may mga error",
@@ -937,7 +962,9 @@
         "noValidRows": "Walang valid na row para i-import. Ayusin ang mga error sa itaas.",
         "success": "Matagumpay na na-import ang {count} booking(s).",
         "partialSuccess": "Na-import ang {count} booking(s). Hindi na-import ang {failed} row(s).",
-        "parseError": "Hindi mabasa ang file. Siguraduhing valid CSV ito.",
+        "parseError": "Hindi mabasa ang file. Siguraduhing valid na CSV o XLSX file ito.",
+        "crossesMidnight": "Ang simula at katapusan ay dapat sa iisang araw sa timezone ng workspace ({tz}).",
+        "groupBlocked": "May error ang ibang row na kapareho ng booking_id na ito, kaya hindi muna ipapasok ang buong booking.",
         "columns": {
           "row": "#",
           "title": "Pamagat",
@@ -952,15 +979,25 @@
           "kindServer": "Server",
           "line": "Linya {csvLine}",
           "rawRow": "Raw na row",
-          "summary": "Na-import ang {created} · Nilaktawan ang {skipped}",
-          "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito."
+          "untitled": "Walang pamagat na booking",
+          "summary": "Na-import ang {created} · Na-update ang {updated} · Nilaktawan ang {skipped}",
+          "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito.",
+          "previewHint": "Wala pang na-import. Ayusin ang mga row na ito at i-upload ulit ang file."
         },
         "dialog": {
+          "structureTitle": "Istruktura ng talahanayan",
           "columnHeader": "Kolumna",
           "notesHeader": "Mga tala",
           "required": "kailangan",
           "optional": "opsyonal",
           "failedWithDetails": "Nabigo ang import — tingnan ang mga detalye",
+          "teamLabel": "Italaga sa team",
+          "teamDefault": "Pangunahing team (default)",
+          "duplicateTitle": "Na-import na?",
+          "duplicateBody": "{count, plural, other {May # booking dito na tugma sa mayroon ka na. I-import pa rin?}}",
+          "duplicateOnTeam": "Nasa team na {team}",
+          "duplicateNoTeam": "Hindi alam ang team",
+          "duplicateContinue": "I-import pa rin",
           "failedRetry": "Nabigo ang import. Subukan muli.",
           "close": "Isara",
           "cancel": "Kanselahin",
@@ -1001,6 +1038,27 @@
             },
             "notes": {
               "note": "Mga panloob na tala"
+            },
+            "booking_id": {
+              "note": "Mula sa export. Panatilihin ito para i-update ang booking sa halip na gumawa ng kopya"
+            },
+            "session_index": {
+              "note": "Nag-aayos ng mga sesyon kapag may parehong booking_id ang mga row"
+            },
+            "clientId": {
+              "note": "Mula sa export. Tinutugma bago ang clientEmail"
+            },
+            "clientPhone": {
+              "note": "Sine-save sa bagong kliyente; pinupunan ang blangko, hindi pinapalitan"
+            },
+            "locationLat": {
+              "note": "Latitude sa mapa, hal. 14.5995"
+            },
+            "locationLng": {
+              "note": "Longitude sa mapa, hal. 120.9842"
+            },
+            "payments": {
+              "note": "JSON list mula sa export. Binabasa lang kapag gumagawa; ang bayad ay pumupunta sa ledger"
             }
           }
         }
@@ -1060,7 +1118,9 @@
         "other": "Iba pa"
       },
       "invoiceThemeDialog": {
-        "title": "Tema ng invoice",
+        "title": "Tema ng invoice at resibo",
+        "invoice": "Invoice",
+        "receipt": "Resibo",
         "presets": {
           "classic": "Klasiko",
           "slate": "Slate",
@@ -1941,6 +2001,7 @@
         "saving": "Sine-save…",
         "cancel": "Kanselahin",
         "createSuccess": "Nailikha ang kliyente.",
+        "linkSuccess": "Na-link sa umiiral na kliyente.",
         "updateSuccess": "Na-update ang kliyente.",
         "error": "May nangyaring mali. Subukan muli."
       },
@@ -1989,6 +2050,19 @@
         "body": "May mga hindi pa nai-save na pagbabago ka sa kliyenteng ito. Mawawala ang mga ito kung magsasara ka ngayon.",
         "keep": "Magpatuloy sa pag-edit",
         "discard": "Itapon at isara"
+      },
+      "matchDialog": {
+        "title": "Isa ba ang kliyente sa mga ito?",
+        "bookingsCount": "{count, plural, one {# booking} other {# na booking}}",
+        "escapeCreate": "Hindi, bagong kliyente ito",
+        "escapeLink": "I-link sa bagong kliyente",
+        "cancel": "Kanselahin",
+        "submitCreate": "I-save ang kliyente",
+        "submitLink": "I-link ang kliyente",
+        "reconcileTitle": "{count} field ang naiiba - piliin kung alin ang gagamitin",
+        "current": "Kasalukuyan",
+        "typed": "Iyong inilagay",
+        "additiveTitle": "Idaragdag (walang tunggalian)"
       },
       "toasts": {
         "reactivating": "Binubuhay muli ang kliyente…",
@@ -2071,6 +2145,11 @@
           "savePhone": "I-save",
           "cancelEdit": "Kanselahin",
           "savedToast": "Na-update ang telepono."
+        },
+        "clientMatch": {
+          "warning": "Maaaring kabilang ang inquiry na ito sa isang umiiral nang kliyente",
+          "resolveButton": "Ayusin ang kliyente",
+          "resolvedToast": "Na-update ang kliyente."
         },
         "eventRequest": {
           "title": "Kahilingang kaganapan",
@@ -3072,6 +3151,9 @@
       "no_active_workspace": "Walang aktibong workspace. Pumili ng workspace at subukan muli.",
       "workspace_not_found": "Hindi natagpuan ang workspace.",
       "owner_only": "Ang may-ari lang ng workspace ang makakagawa nito.",
+      "resolve_failed": "Hindi na-update ang kliyente. Pakisubukan muli.",
+      "client_match_lookup_failed": "Hindi matingnan ang mga umiiral na kliyente. Pakisubukan muli.",
+      "needs_client_resolution": "Maaaring kabilang ang pagtatanong na ito sa isang umiiral na kliyente. Buksan ito at ayusin ang kliyente bago mag-convert.",
       "invalid_data": "Hindi wastong datos. Pakisuri ang iyong input at subukan muli.",
       "completion_requires_full_payment": "Markahan muna ang lahat ng bayad bilang nabayaran at itugma ang kabuuan bago tapusin ang booking na ito.",
       "onboarding_required": "Tapusin muna ang onboarding para magpatuloy.",
@@ -3319,6 +3401,13 @@
   "subscribe": {
     "pageTitle": "Mag-subscribe",
     "logout": "Mag-log out",
+    "verification": {
+      "title": "Vine-verify ang iyong payment",
+      "description": "Ina-activate namin ang iyong Pro access. Karaniwan itong tumatagal ng ilang segundo.",
+      "pendingTitle": "Kinukumpirma pa namin ang iyong subscription",
+      "pendingDescription": "Kumpleto na ang payment mo. Subukan muli maya-maya, o makipag-ugnayan sa support kung magpapatuloy ito.",
+      "retry": "Subukan muli"
+    },
     "owner": {
       "title": "Natapos na ang iyong Pro access",
       "description": "Mag-subscribe muli sa Gallurio Pro para bumalik sa iyong dashboard.",

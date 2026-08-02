@@ -13,9 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
-import { createClientAction, updateClientAction } from "@/lib/actions/clients";
+import { createClientAction, updateClientAction, findClientMatchesAction } from "@/lib/actions/clients";
 import { useActionError } from "@/lib/i18n/actionError";
+import { ClientMatchDialog, type ClientMatchCard, type ClientMatchResolution } from "@/components/app/client-match-dialog";
+import { reconcileClient } from "@/lib/clients/reconcile";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 
 // ClientRow shape needed for pre-fill (edit mode)
@@ -61,6 +65,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [viewAfterDiscard, setViewAfterDiscard] = useState(false);
   const [tagInput, setTagInput] = useState("");
+  const [matchState, setMatchState] = useState<{ matches: ClientMatchCard[]; data: ClientFormInput } | null>(null);
 
   // Reset form (and the in-progress tag draft) when modal opens/closes or
   // initialData changes so a partial tag typed in one session can't survive
@@ -124,23 +129,90 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
     form.setValue("tags", current.filter((t) => t !== tag), { shouldDirty: true });
   }
 
-  async function onSubmit(data: ClientFormInput) {
-    const result = isEdit
-      ? await updateClientAction(initialData!.id!, data)
-      : await createClientAction(data);
-
+  async function finishCreate(data: ClientFormInput) {
+    const result = await createClientAction(data);
     if ("error" in result) {
       form.setError("root", { message: errMsg(result.error) });
       return;
     }
-
-    toast.success(isEdit ? t("form.updateSuccess") : t("form.createSuccess"));
+    toast.success(t("form.createSuccess"));
     onSuccess();
     onOpenChange(false);
   }
 
+  async function finishLink(clientId: string, data: ClientFormInput) {
+    const result = await updateClientAction(clientId, data);
+    if ("error" in result) {
+      form.setError("root", { message: errMsg(result.error) });
+      return;
+    }
+    // Not "created" — this path attaches to an existing client.
+    toast.success(t("form.linkSuccess"));
+    onSuccess();
+    onOpenChange(false);
+  }
+
+  async function onSubmit(data: ClientFormInput) {
+    if (isEdit) {
+      const result = await updateClientAction(initialData!.id!, data);
+      if ("error" in result) {
+        form.setError("root", { message: errMsg(result.error) });
+        return;
+      }
+      toast.success(t("form.updateSuccess"));
+      onSuccess();
+      onOpenChange(false);
+      return;
+    }
+
+    const matchResult = await findClientMatchesAction({ name: data.name, email: data.email, phone: data.phone });
+    if ("error" in matchResult) {
+      form.setError("root", { message: errMsg(matchResult.error) });
+      return;
+    }
+    if (matchResult.matches.length === 0) {
+      await finishCreate(data);
+      return;
+    }
+    setMatchState({ matches: matchResult.matches, data });
+  }
+
+  function handleMatchResolve(result: ClientMatchResolution) {
+    const data = matchState!.data;
+    setMatchState(null);
+    if ("createNew" in result) {
+      void finishCreate(data);
+      return;
+    }
+    const card = matchState!.matches.find((m) => m.id === result.clientId)!;
+    // updateClientAction $sets the whole document, so the merge must START from
+    // the stored client. A field the form left blank is not a conflict and so
+    // never appears in `picks` — building from `data` would silently erase it.
+    const reconciled = reconcileClient(
+      { email: card.email, phone: card.phone, notes: card.notes, tags: card.tags },
+      data
+    );
+    const merged: ClientFormInput = {
+      name: card.name,
+      email: card.email,
+      phone: card.phone,
+      notes: card.notes ?? "",
+      source: card.source,
+      tags: reconciled.tags ?? [],
+    };
+    // Fill blanks from what was typed, then apply the explicit picks.
+    for (const change of reconciled.additive) merged[change.field] = change.value;
+    for (const conflict of reconciled.conflicts) {
+      if (result.picks[conflict.field] === "typed") merged[conflict.field] = conflict.typedValue;
+    }
+    void finishLink(result.clientId, merged);
+  }
+
   const tags = form.watch("tags");
-  const { isSubmitting, isDirty } = form.formState;
+  const { isSubmitting, isDirty, errors } = form.formState;
+  const nameError = fieldMessage(errors.name);
+  const emailError = fieldMessage(errors.email);
+  const phoneError = fieldMessage(errors.phone);
 
   // Surface dirty state to the parent so it can guard navigation/target swaps.
   useEffect(() => {
@@ -165,55 +237,55 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
             </Button>
           </div>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+          <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
               {/* Row 1: Name */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="cf-name">{t("form.name")} *</Label>
-                <Input
-                  id="cf-name"
-                  placeholder={t("form.namePlaceholder")}
-                  {...form.register("name")}
-                />
-                {form.formState.errors.name && (
-                  <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+              <FormField id="cf-name" label={<>{t("form.name")} *</>} error={nameError}>
+                {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                  <Input
+                    id={id}
+                    aria-invalid={ariaInvalid}
+                    aria-describedby={ariaDescribedby}
+                    placeholder={t("form.namePlaceholder")}
+                    {...form.register("name")}
+                  />
                 )}
-              </div>
+              </FormField>
 
               {/* Row 2: Email */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="cf-email">{t("form.email")}</Label>
-                <Input
-                  id="cf-email"
-                  type="email"
-                  placeholder={t("form.emailPlaceholder")}
-                  {...form.register("email")}
-                />
-                {form.formState.errors.email && (
-                  <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+              <FormField id="cf-email" label={t("form.email")} error={emailError}>
+                {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                  <Input
+                    id={id}
+                    aria-invalid={ariaInvalid}
+                    aria-describedby={ariaDescribedby}
+                    type="email"
+                    placeholder={t("form.emailPlaceholder")}
+                    {...form.register("email")}
+                  />
                 )}
-              </div>
+              </FormField>
 
               {/* Row 3: Phone + Source */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="cf-phone">{t("form.phone")}</Label>
-                  <Controller
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <PhoneInput
-                        id="cf-phone"
-                        value={field.value ?? undefined}
-                        onChange={(value: string | undefined) => field.onChange(value ?? null)}
-                        placeholder={t("form.phonePlaceholder")}
-                      />
-                    )}
-                  />
-                  {form.formState.errors.phone && (
-                    <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>
+                <FormField id="cf-phone" label={t("form.phone")} error={phoneError}>
+                  {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                    <Controller
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <PhoneInput
+                          id={id}
+                          aria-invalid={ariaInvalid}
+                          aria-describedby={ariaDescribedby}
+                          value={field.value ?? undefined}
+                          onChange={(value: string | undefined) => field.onChange(value ?? null)}
+                          placeholder={t("form.phonePlaceholder")}
+                        />
+                      )}
+                    />
                   )}
-                </div>
+                </FormField>
                 <div className="flex flex-col gap-1.5">
                   <Label>{t("form.source")}</Label>
                   <Select
@@ -338,6 +410,23 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
         onKeepEditing={() => setUnsavedOpen(false)}
         onDiscard={handleDiscard}
       />
+
+      {matchState && (
+        <ClientMatchDialog
+          open
+          matches={matchState.matches}
+          typed={{
+            name: matchState.data.name,
+            email: matchState.data.email ?? null,
+            phone: matchState.data.phone ?? null,
+            notes: matchState.data.notes,
+            tags: matchState.data.tags,
+          }}
+          mode="create"
+          onResolve={handleMatchResolve}
+          onCancel={() => setMatchState(null)}
+        />
+      )}
     </>
   );
 }

@@ -11,6 +11,7 @@ import { ensureLegacyDraftMigrated } from "@/lib/page-builder/migrateDraft";
 import { listDraftsAction } from "./_draftActions";
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { portfolioHeaderLogoUrl } from "@/lib/storage/portfolioAssetUrls";
+import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import { PortfolioDraft } from "@/lib/db/models";
 
 export async function generateMetadata({
@@ -131,6 +132,7 @@ export default async function PageBuilderEntry({
     defaultBrandKit: toPlain(tpl.defaultBrandKit, DEFAULT_BRAND_KIT),
   }));
   const publicOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
+  const portfolioDomain = portfolioBaseDomain();
   // Locale-aware path to the chrome-less preview route (loaded in an iframe).
   // English has no prefix under localePrefix: "as-needed".
   const previewBasePath =
@@ -153,6 +155,7 @@ export default async function PageBuilderEntry({
         initialHeaderConfig={initialHeaderConfig}
         initialCollectionsPopup={initialCollectionsPopup}
         publicOrigin={publicOrigin}
+        portfolioDomain={portfolioDomain}
         previewBasePath={previewBasePath}
         templates={templates}
         currentTemplateId={templateId}

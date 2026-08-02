@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { InquiryStatusBadge } from "./inquiry-status-badge";
 import { ClientInfoCard } from "../[id]/_components/client-info-card";
@@ -55,7 +56,6 @@ export function InquiryDetailModal({
   onClose,
   teams = [],
   onConverted,
-  onConvertFailed,
   onInquiryChanged,
 }: {
   detail: InquiryDetailModalData | null;
@@ -63,10 +63,15 @@ export function InquiryDetailModal({
   onClose: () => void;
   teams?: BookingTeamOption[];
   onConverted?: () => void;
-  onConvertFailed?: () => void;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 }) {
   const t = useTranslations("app.inquiries.detail");
+  const [detailId, setDetailId] = useState(detail?.inquiryId);
+  const [clientResolutionRequest, setClientResolutionRequest] = useState(0);
+  if (detail?.inquiryId !== detailId) {
+    setDetailId(detail?.inquiryId);
+    setClientResolutionRequest(0);
+  }
 
   if (!detail) return null;
 
@@ -81,7 +86,6 @@ export function InquiryDetailModal({
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
-        showCloseButton={false}
         className="flex w-full max-h-[calc(100dvh-2rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
@@ -118,6 +122,8 @@ export function InquiryDetailModal({
                 preferredContact={detail.preferredContact}
                 status={detail.status}
                 readOnly={readOnly}
+                message={detail.message}
+                clientResolutionRequest={clientResolutionRequest}
                 onInquiryChanged={readOnly ? undefined : onInquiryChanged}
               />
               <EventRequestCard
@@ -146,7 +152,7 @@ export function InquiryDetailModal({
                 hasConflict={detail.hasConflict}
                 readOnly={readOnly}
                 onConverted={readOnly ? undefined : onConverted}
-                onConvertFailed={readOnly ? undefined : onConvertFailed}
+                onClientResolutionRequired={() => setClientResolutionRequest((request) => request + 1)}
                 onInquiryChanged={readOnly ? undefined : onInquiryChanged}
               />
 

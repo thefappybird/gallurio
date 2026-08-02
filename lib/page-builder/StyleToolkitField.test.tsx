@@ -410,6 +410,30 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
     expect(screen.getByRole("button", { name: "Outline" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Soft" })).toBeTruthy();
   });
+
+  it("floats the legacy outline style and foreground button color when style is unset", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    const colorRow = screen.getByText("Button color").parentElement!.parentElement!;
+    expect(within(colorRow).getByRole("button", { name: "Text" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("floats primary as the rendered color for an explicit named button style", () => {
+    render(<DesignTab s={{ buttonStyle: "solid" }} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    const colorRow = screen.getByText("Button color").parentElement!.parentElement!;
+    expect(within(colorRow).getByRole("button", { name: "Primary" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
 });
 
 describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMasonry/FeaturedWork)", () => {
@@ -423,6 +447,32 @@ describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMas
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
     // Content tab is shown by default
     expect(screen.getByText("Banner")).toBeTruthy();
+  });
+
+  it("GalleryGrid shows the theme background as its effective banner color", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    const colorLabel = screen.getByText("Color");
+    const colorSection = colorLabel.closest("div")!;
+    expect(within(colorSection).getByRole("button", { name: "Background" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("does not show a generic section Gap control that the gallery render ignores", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={vi.fn()}
+        isGridChild={false}
+        showJustify={false}
+        blockType="GalleryGrid"
+        p={{}}
+        setProp={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.queryByText("Gap")).toBeNull();
   });
 });
 
@@ -762,6 +812,13 @@ describe("DesignTab — Font size input shows effective default 16 as placeholde
     const input = within(row).getByRole("spinbutton");
     expect(input).toHaveAttribute("placeholder", "16");
   });
+
+  it("uses the selected Button size's real rendered font size", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" p={{ size: "sm" }} />);
+    const fontSizeLabel = screen.getByText("Font size");
+    const row = fontSizeLabel.closest("div")!;
+    expect(within(row).getByRole("spinbutton")).toHaveAttribute("placeholder", "13");
+  });
 });
 
 describe("DesignTab — Border width input shows effective default 0 as placeholder when borderWidth is unset", () => {
@@ -793,6 +850,23 @@ describe("LayoutTabBody — Align icon row shows effective default 'stretch' whe
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
     expect(screen.getByRole("button", { name: "Stretch to fill" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Left" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("reflects legacy container alignment props until the style controls are edited", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="HeroPreset"
+        p={{ alignX: "center", alignY: "bottom" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Center" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Bottom" })).toHaveAttribute("aria-pressed", "true");
   });
 });
 
@@ -1085,6 +1159,23 @@ describe("B2a: Container padding — effective-default display (placeholder)", (
     // First spinbutton is the Top padding number input.
     // DimensionInput converts the effective rem value ("1.5rem") to px for display
     // (1.5 × 16 = 24). See commit that introduced rem→px conversion.
+    expect(spinbuttons[0].placeholder).toBe("24");
+  });
+
+  it("shows the same effective 24px padding for Container-based presets", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="HeroPreset"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     expect(spinbuttons[0].placeholder).toBe("24");
   });
 });

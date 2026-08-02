@@ -1,5 +1,10 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { portfolioBaseDomain, portfolioPublicUrl, portfolioUrlParts } from "./publicUrl";
+import {
+  portfolioBaseDomain,
+  portfolioGalleryUrl,
+  portfolioPublicUrl,
+  portfolioUrlParts,
+} from "./publicUrl";
 
 const originalEnv = { ...process.env };
 afterEach(() => {
@@ -59,5 +64,18 @@ describe("portfolioUrlParts", () => {
     expect(parts.slug).toBe("acme");
     expect(parts.suffix).toBe(".gallurio.com");
     expect(parts.full).toBe("https://acme.gallurio.com");
+  });
+});
+
+describe("portfolioGalleryUrl", () => {
+  it("uses the internal path route when subdomains are disabled", () => {
+    delete process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+    expect(portfolioGalleryUrl("acme")).toBe("http://localhost:3000/w/acme/gallery");
+  });
+
+  it("uses the clean /gallery route on a tenant subdomain", () => {
+    process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = "gallurio.com";
+    expect(portfolioGalleryUrl("acme")).toBe("https://acme.gallurio.com/gallery");
   });
 });

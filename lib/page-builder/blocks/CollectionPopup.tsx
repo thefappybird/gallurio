@@ -44,9 +44,9 @@ type FetchState =
 // ---------------------------------------------------------------------------
 
 const RADIUS_PX: Record<BrandKitRadius, string> = {
-  sharp: "0px",
-  subtle: "6px",
-  rounded: "16px",
+  sharp: "0",
+  subtle: "0.25rem",
+  rounded: "0.5rem",
 };
 
 const BRAND_KIT_RADII_SET = new Set<string>(["sharp", "subtle", "rounded"]);
@@ -117,7 +117,7 @@ function normalizeItem(item: {
 const FOCUS_VISIBLE_STYLES = `
 [data-popup-close]:focus-visible,
 [data-popup-thumb]:focus-visible {
-  outline: 2px solid var(--pf-color-foreground, #111);
+  outline: 2px solid var(--pf-color-fg, #111);
   outline-offset: 2px;
 }
 `;
@@ -150,7 +150,7 @@ export function CollectionPopup({
     BRAND_KIT_RADII_SET.has(popupConfig.radius)
       ? (popupConfig.radius as BrandKitRadius)
       : null;
-  const borderRadius = radiusKey ? RADIUS_PX[radiusKey] : "0px";
+  const borderRadius = radiusKey ? RADIUS_PX[radiusKey] : "var(--pf-radius)";
 
   // ---------------------------------------------------------------------------
   // Fetch helpers
@@ -252,8 +252,9 @@ export function CollectionPopup({
     borderColor:
       borderWidth > 0 && borderColor
         ? borderColor
-        : "var(--pf-color-border, rgba(0,0,0,0.12))",
+        : "color-mix(in srgb, var(--pf-color-fg, #111) 14%, transparent)",
     borderRadius,
+    fontFamily: "var(--pf-font-body)",
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
@@ -311,7 +312,7 @@ export function CollectionPopup({
                     justifyContent: "center",
                     padding: "48px",
                     gap: "8px",
-                    color: "var(--pf-color-foreground, #111)",
+                    color: "var(--pf-color-fg, #111)",
                   }}
                 >
                   <Loader2Icon
@@ -333,7 +334,7 @@ export function CollectionPopup({
                     gap: "12px",
                     padding: "48px",
                     textAlign: "center",
-                    color: "var(--pf-color-foreground, #111)",
+                    color: "var(--pf-color-fg, #111)",
                   }}
                 >
                   <p style={{ margin: 0 }}>{L.failed}</p>
@@ -364,7 +365,7 @@ export function CollectionPopup({
                     alignItems: "center",
                     justifyContent: "center",
                     padding: "48px",
-                    color: "var(--pf-color-foreground, #888)",
+                    color: "color-mix(in srgb, var(--pf-color-fg, #111) 62%, transparent)",
                     fontSize: "0.875rem",
                   }}
                 >
@@ -464,10 +465,10 @@ export function CollectionPopup({
                         }
                         style={{
                           padding: "8px 24px",
-                          border: "1px solid var(--pf-color-foreground, #111)",
+                          border: "1px solid var(--pf-color-fg, #111)",
                           borderRadius: "4px",
                           background: "transparent",
-                          color: "var(--pf-color-foreground, #111)",
+                          color: "var(--pf-color-fg, #111)",
                           cursor: "pointer",
                           fontSize: "0.875rem",
                         }}
@@ -484,7 +485,7 @@ export function CollectionPopup({
                         gap: "8px",
                         padding: "16px 0 8px",
                         textAlign: "center",
-                        color: "var(--pf-color-foreground, #111)",
+                        color: "var(--pf-color-fg, #111)",
                         fontSize: "0.875rem",
                       }}
                     >
@@ -523,7 +524,7 @@ export function CollectionPopup({
                         justifyContent: "center",
                         padding: "24px 0 8px",
                         gap: "8px",
-                        color: "var(--pf-color-foreground, #111)",
+                        color: "var(--pf-color-fg, #111)",
                       }}
                     >
                       <Loader2Icon

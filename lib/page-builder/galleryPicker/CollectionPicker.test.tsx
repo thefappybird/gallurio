@@ -38,6 +38,13 @@ describe("CollectionPicker", () => {
     expect(screen.getByText(/retry/i)).toBeTruthy();
   });
 
+  it("announces the fetch-failure message via role=alert", async () => {
+    mockFetch.mockRejectedValue(new Error("network error"));
+    render(<CollectionPicker value="" onChange={vi.fn()} />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/could not load/i);
+  });
+
   it("renders empty state when no collections", async () => {
     render(<CollectionPicker value="" onChange={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/no collections yet/i)).toBeTruthy());

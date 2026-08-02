@@ -246,7 +246,8 @@ export function CalendarView({
 
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
-  const showPast = searchParams.get("showPast") === "1";
+  // Opt-out convention (see parseBookingsToggleFilters): absent -> ON.
+  const showPast = searchParams.get("showPast") !== "0";
 
   // Keep optimistic state in sync when the server provides new events.
   const prevEventsRef = useRef(events);

@@ -83,7 +83,9 @@ export function BookingValueCollectionChart({ data, currency, locale, labels }: 
               }
               axisLine={false}
               tickLine={false}
-              width={40}
+              // Self-sizing: compact numerals are far wider in some locales
+              // ("800 ألف" vs "800K") and a fixed width clips them.
+              width="auto"
             />
             <Tooltip
               {...CHART_TOOLTIP}

@@ -179,7 +179,7 @@ export function CollectionPicker({ value, onChange }: Props) {
   if (state.status === "error") {
     return (
       <div className="flex flex-col gap-2 py-4">
-        <p className="text-sm text-destructive">{L.error}</p>
+        <p role="alert" className="text-sm text-destructive">{L.error}</p>
         <button
           type="button"
           onClick={retry}

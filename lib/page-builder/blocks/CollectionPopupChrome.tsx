@@ -3,7 +3,7 @@ import { X as XIcon } from "lucide-react";
 import { colorTokenToVar, fontFamilyValue } from "../styleToolkit";
 import type { PortfolioCollectionsPopupConfig } from "../types";
 
-const RADIUS_PX: Record<string, string> = { sharp: "0px", subtle: "6px", rounded: "16px" };
+const RADIUS_PX: Record<string, string> = { sharp: "0", subtle: "0.25rem", rounded: "0.5rem" };
 
 function radiusToCss(r?: string): string | undefined {
   if (!r) return undefined;
@@ -58,7 +58,7 @@ export function CollectionPopupChrome({
 
   const closeSize = config.closeButtonSize ?? 36;
   // unset/cleared → rounded (16px); explicit value wins via RADIUS_PX lookup
-  const closeRadius = radiusToCss(config.closeButtonRadius || "rounded") ?? "16px";
+  const closeRadius = radiusToCss(config.closeButtonRadius || "rounded") ?? "0.5rem";
   const closeBorderW = config.closeButtonBorderWidth ?? 1;
   const closeBorderColor = config.closeButtonBorderColorToken
     ? colorTokenToVar(config.closeButtonBorderColorToken)
@@ -74,8 +74,9 @@ export function CollectionPopupChrome({
     borderColor:
       borderWidth > 0 && borderColor
         ? borderColor
-        : "var(--pf-color-border, rgba(0,0,0,0.12))",
-    borderRadius: shellRadius ?? "0px",
+        : "color-mix(in srgb, var(--pf-color-fg, #111) 14%, transparent)",
+    borderRadius: shellRadius ?? "var(--pf-radius)",
+    fontFamily: "var(--pf-font-body)",
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
@@ -135,7 +136,7 @@ export function CollectionPopupChrome({
           zIndex: 5,
           backgroundColor: bg,
           padding: "16px 56px 12px 16px",
-          borderBottom: "1px solid var(--pf-color-border, rgba(0,0,0,0.1))",
+          borderBottom: "1px solid color-mix(in srgb, var(--pf-color-fg, #111) 14%, transparent)",
         }}
       >
         <h2
@@ -147,11 +148,11 @@ export function CollectionPopupChrome({
             textDecoration: config.titleUnderline ? "underline" : undefined,
             lineHeight: 1.3,
             textAlign: (config.titleAlign || "left") as import("react").CSSProperties["textAlign"],
-            fontFamily: fontFamilyValue(config.titleFontFamily || undefined) ?? "inherit",
+            fontFamily: fontFamilyValue(config.titleFontFamily || undefined) ?? "var(--pf-font-heading)",
             color: config.titleColorToken
               ? (colorTokenToVar(config.titleColorToken) ??
-                "var(--pf-color-foreground, #111)")
-              : "var(--pf-color-foreground, #111)",
+                "var(--pf-color-fg, #111)")
+              : "var(--pf-color-fg, #111)",
           }}
         >
           {title}

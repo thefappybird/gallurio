@@ -117,5 +117,18 @@ export function columns(
 // ---------------------------------------------------------------------------
 
 export function zone(content: PuckBlockEntry[]): PuckData {
-  return { content, root: {} };
+  // A starter template is a concrete design, so its page surface must be
+  // explicit too. Keeping the token (rather than copying the preset hex) means
+  // the page continues to follow later theme-background changes while the
+  // editor canvas, preview, and public render all resolve the same saved value.
+  return {
+    content,
+    root: {
+      props: {
+        _rootStyle: {
+          bgColorToken: "background",
+        },
+      },
+    },
+  };
 }

@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { mfaChallengeAction } from "../../_actions";
 import type { ActionResult } from "../../_actions";
 
@@ -18,6 +18,7 @@ export function MfaForm() {
   );
 
   const error = state && "error" in state ? state.error : null;
+  const fieldErrors = state && "error" in state ? state.fieldErrors : undefined;
 
   return (
     <div className="w-full max-w-sm rounded-[var(--radius-surface)] border border-border bg-card p-8">
@@ -25,23 +26,30 @@ export function MfaForm() {
       <p className="mb-6 text-sm text-muted-foreground">{t("mfa.description")}</p>
 
       <form action={formAction} className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="mfa-code">{t("mfa.codeLabel")}</Label>
-          <Input
-            id="mfa-code"
-            name="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            pattern="[0-9]{6}"
-            placeholder="000000"
-            required
-            disabled={pending}
-            aria-describedby={error ? "mfa-error" : undefined}
-            className="tracking-widest"
-          />
-        </div>
+        <FormField
+          id="mfa-code"
+          label={t("mfa.codeLabel")}
+          error={fieldErrors?.code}
+          describedBy={error ? "mfa-error" : undefined}
+        >
+          {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+            <Input
+              id={id}
+              name="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              pattern="[0-9]{6}"
+              placeholder="000000"
+              required
+              disabled={pending}
+              aria-invalid={ariaInvalid}
+              aria-describedby={ariaDescribedby}
+              className="tracking-widest"
+            />
+          )}
+        </FormField>
 
         {error && (
           <p id="mfa-error" role="alert" className="text-sm text-destructive">

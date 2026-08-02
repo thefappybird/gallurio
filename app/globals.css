@@ -239,6 +239,9 @@ html[data-radius="rounded"] {
 .animate-shake {
   animation: shake 380ms ease-in-out;
 }
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake { animation: none; }
+}
 
 /* react-colorful — the picker injects its own stylesheet at runtime (fixed
    200px width, 8px rounded corners) which lands after globals in the cascade,
@@ -793,4 +796,13 @@ html[data-radius="rounded"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee-scroll { animation: none; }
+}
+
+/* Recharts anchors axis-tick text with SVG `text-anchor`, whose start/end
+   resolve against the inherited direction — under `dir="rtl"` every tick flips
+   to the wrong side of its axis and lands on top of the plot. RTL charts are
+   mirrored via axis props (`reversed` / `orientation`) instead, so keep the SVG
+   itself LTR. */
+[dir="rtl"] .recharts-wrapper svg {
+  direction: ltr;
 }

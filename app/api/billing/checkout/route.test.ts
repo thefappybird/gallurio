@@ -13,6 +13,8 @@ import { __resetRateLimitForTests } from "@/lib/server/rateLimit";
 // ---------------------------------------------------------------------------
 process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID = "1001";
 process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = "1002";
+const ORIGINAL_PAID_BILLING = process.env.PAID_BILLING_ENABLED;
+const ORIGINAL_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted)
@@ -101,9 +103,15 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await stopInMemoryMongo();
+  if (ORIGINAL_PAID_BILLING === undefined) delete process.env.PAID_BILLING_ENABLED;
+  else process.env.PAID_BILLING_ENABLED = ORIGINAL_PAID_BILLING;
+  if (ORIGINAL_APP_URL === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+  else process.env.NEXT_PUBLIC_APP_URL = ORIGINAL_APP_URL;
 });
 
 beforeEach(async () => {
+  process.env.PAID_BILLING_ENABLED = "true";
+  delete process.env.NEXT_PUBLIC_APP_URL;
   await clearCollections();
   vi.clearAllMocks();
   __resetRateLimitForTests();
@@ -186,6 +194,22 @@ describe("billing checkout — cadence", () => {
 });
 
 describe("billing checkout — post-payment redirect", () => {
+  it("uses the configured app URL instead of the request origin", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://dev.gallurio.com/";
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }));
+
+    expect(res.status).toBe(200);
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        redirectUrl: "https://dev.gallurio.com/billing/return?returnTo=%2Fsettings%2Fbilling",
+      })
+    );
+  });
+
   it("targets /onboarding/done when onboarding is true", async () => {
     const wsId = await seedWorkspace();
     wireAuth(wsId);
@@ -199,7 +223,7 @@ describe("billing checkout — post-payment redirect", () => {
     );
   });
 
-  it("targets /settings/billing when onboarding is absent", async () => {
+  it("routes non-onboarding returns through billing reconciliation", async () => {
     const wsId = await seedWorkspace();
     wireAuth(wsId);
 
@@ -208,7 +232,9 @@ describe("billing checkout — post-payment redirect", () => {
 
     expect(res.status).toBe(200);
     expect(mockCreateCheckout).toHaveBeenCalledWith(
-      expect.objectContaining({ redirectUrl: "http://test/settings/billing" })
+      expect.objectContaining({
+        redirectUrl: "http://test/billing/return?returnTo=%2Fsettings%2Fbilling",
+      })
     );
   });
 
@@ -224,7 +250,7 @@ describe("billing checkout — post-payment redirect", () => {
     expect(res.status).toBe(200);
     expect(mockCreateCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
-        redirectUrl: "http://test/inquiries?inquiryId=abc123",
+        redirectUrl: "http://test/billing/return?returnTo=%2Finquiries%3FinquiryId%3Dabc123",
       })
     );
   });
@@ -276,6 +302,7 @@ describe("billing checkout — beta-only mode", () => {
 
   it("fails closed before any Lemon Squeezy call when beta-only mode is active", async () => {
     process.env.BETA_TESTER_ENABLED = "true";
+    process.env.PAID_BILLING_ENABLED = "false";
     const wsId = await seedWorkspace();
     wireAuth(wsId);
 

@@ -76,3 +76,40 @@ describe("expired verification session", () => {
     expect(toast.error).toHaveBeenCalledWith("Your session has expired. Please sign in again.");
   });
 });
+
+describe("SignInForm — field-level errors", () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it("marks the email field invalid on a format-validation failure", async () => {
+    const { signInAction } = await import("../_actions");
+    vi.mocked(signInAction).mockResolvedValue({
+      error: "Please check your input and try again.",
+      fieldErrors: { email: "Enter a valid email address." },
+    });
+
+    renderWithProviders(<SignInForm />);
+
+    const submitButton = screen.getByRole("button", { name: "Sign in" });
+    fireEvent.submit(submitButton.closest("form")!);
+
+    const emailInput = await screen.findByLabelText("Email");
+    await waitFor(() => {
+      expect(emailInput).toHaveAttribute("aria-invalid", "true");
+    });
+  });
+
+  it("a wrong-password attempt shows only the generic error and marks no field invalid (no account enumeration)", async () => {
+    const { signInAction } = await import("../_actions");
+    vi.mocked(signInAction).mockResolvedValue({ error: "Invalid email or password." });
+
+    renderWithProviders(<SignInForm />);
+
+    const submitButton = screen.getByRole("button", { name: "Sign in" });
+    fireEvent.submit(submitButton.closest("form")!);
+
+    await screen.findByText("Invalid email or password.");
+
+    expect(screen.getByLabelText("Email")).not.toHaveAttribute("aria-invalid");
+    expect(screen.getByLabelText("Password")).not.toHaveAttribute("aria-invalid");
+  });
+});

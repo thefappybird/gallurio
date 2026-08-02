@@ -185,11 +185,13 @@ function ActiveTabRadiusRow({
   active,
   onToggle,
   getLabel,
+  effectiveValue,
 }: {
   label: string;
   active: BrandKitRadius | "" | undefined;
   onToggle: (radius: BrandKitRadius | "") => void;
   getLabel: (radius: BrandKitRadius) => string;
+  effectiveValue?: BrandKitRadius;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -197,16 +199,18 @@ function ActiveTabRadiusRow({
       <div className="flex">
         {BRAND_KIT_RADII.map((radius) => {
           const isActive = active === radius;
+          const isEffective = !active && effectiveValue === radius;
           return (
             <button
               key={radius}
               type="button"
               aria-label={getLabel(radius)}
-              aria-pressed={isActive}
+              aria-pressed={isActive || isEffective}
               onClick={() => onToggle(isActive ? "" : radius)}
               className={cn(
                 "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 isActive && "bg-foreground text-background hover:bg-foreground",
+                isEffective && "border-foreground opacity-70",
               )}
             >
               {getLabel(radius)}
@@ -541,6 +545,7 @@ export function ContactPanelDialog({
                       active={contact.activeTabRadius}
                       onToggle={toggleTabRadius}
                       getLabel={(r) => t(`radius.${r}`)}
+                      effectiveValue={effectiveBrandRadius}
                     />
                   </>
                 )}

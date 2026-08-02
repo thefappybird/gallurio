@@ -23,10 +23,10 @@ describe("Pricing page", () => {
     expect(screen.getByText("marketing.pricing:header.headline")).toBeInTheDocument();
   });
 
-  it("shows a Coming soon badge on the Pro card", async () => {
+  it("does not show a Coming soon badge on the Pro card", async () => {
     const page = await PricingPage({ params: Promise.resolve({ locale: "en" }) });
     render(page);
 
-    expect(screen.getByText("marketing.pricing:pro.comingSoon")).toBeInTheDocument();
+    expect(screen.queryByText("marketing.pricing:pro.comingSoon")).not.toBeInTheDocument();
   });
 });

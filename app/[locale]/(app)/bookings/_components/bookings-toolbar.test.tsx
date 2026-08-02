@@ -52,6 +52,21 @@ vi.mock("./invoice-theme-dialog", () => ({
 
 const DEFAULT_INVOICE_THEME = { preset: "classic" as const, main: "#1A1A1A", accent: "#FFFFFF" };
 
+describe("BookingsToolbar action order", () => {
+  it("orders import, export, invoice/receipt theme, then new booking", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+
+    const importButton = screen.getByRole("button", { name: /^import$/i });
+    const exportButton = screen.getByRole("button", { name: /^export$/i });
+    const themeButton = screen.getByRole("button", { name: /invoice.*receipt theme/i });
+    const newBookingButton = screen.getByRole("button", { name: /new booking/i });
+
+    expect(importButton.compareDocumentPosition(exportButton) & 4).toBe(4);
+    expect(exportButton.compareDocumentPosition(themeButton) & 4).toBe(4);
+    expect(themeButton.compareDocumentPosition(newBookingButton) & 4).toBe(4);
+  });
+});
+
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -101,6 +116,21 @@ describe("BookingsToolbar — New Booking button", () => {
   });
 });
 
+describe("BookingsToolbar — export", () => {
+  it("opens the export dialog rather than downloading straight away", () => {
+    // Format is no longer the only choice — team and time range live in the
+    // dialog too — so one button replaces the two format links.
+    render(<BookingsToolbar defaultCurrency="PHP" isOwner />, { wrapper });
+    expect(document.querySelector('a[href*="/api/bookings/export"]')).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^export$/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      document.querySelector<HTMLAnchorElement>('a[href*="/api/bookings/export"]')
+    ).not.toBeNull();
+  });
+});
+
 describe("BookingsToolbar — Show past toggle", () => {
   it("renders a 'Show past' label", () => {
     render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
@@ -108,30 +138,27 @@ describe("BookingsToolbar — Show past toggle", () => {
     expect(screen.getByText(/show past/i)).toBeInTheDocument();
   });
 
-  it("'Show past' switch renders with aria-checked=false by default", () => {
+  it("'Show past' switch renders checked by default (opt-out convention)", () => {
     render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
     // @base-ui Switch renders as role="switch" with aria-checked attribute.
-    const allSwitches = screen.getAllByRole("switch");
-    // Find the switch whose label contains "show past"
-    const showPastSwitch = allSwitches.find(
-      (s) => s.closest("label")?.textContent?.match(/show past/i)
-    );
+    const showPastSwitch = screen
+      .getAllByRole("switch")
+      .find((s) => s.closest("label")?.textContent?.match(/show past/i));
     expect(showPastSwitch).toBeTruthy();
-    // Default state: showPast not in URL → should be false/unchecked
-    expect(showPastSwitch).toHaveAttribute("aria-checked", "false");
+    // showPast absent from the URL → filter is ON.
+    expect(showPastSwitch).toHaveAttribute("aria-checked", "true");
   });
 
-  it("pushes showPast=1 to URL when switch is clicked", () => {
+  it("pushes showPast=0 when the switch is turned off", () => {
     render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
-    const allSwitches = screen.getAllByRole("switch");
-    const showPastSwitch = allSwitches.find(
-      (s) => s.closest("label")?.textContent?.match(/show past/i)
-    );
+    const showPastSwitch = screen
+      .getAllByRole("switch")
+      .find((s) => s.closest("label")?.textContent?.match(/show past/i));
     expect(showPastSwitch).toBeTruthy();
     fireEvent.click(showPastSwitch!);
     // router.push is called with the URL as first argument
     const calls = mockPush.mock.calls;
-    expect(calls.some((args) => String(args[0]).includes("showPast=1"))).toBe(true);
+    expect(calls.some((args) => String(args[0]).includes("showPast=0"))).toBe(true);
   });
 });
 
@@ -260,7 +287,7 @@ describe("BookingsToolbar — Invoice theme button", () => {
       />,
       { wrapper }
     );
-    const btn = screen.getByRole("button", { name: /invoice theme/i });
+    const btn = screen.getByRole("button", { name: /invoice.*receipt theme/i });
     fireEvent.click(btn);
     expect(invoiceThemeDialogOpenSpy).toHaveBeenCalledWith(true);
   });
@@ -274,7 +301,7 @@ describe("BookingsToolbar — Invoice theme button", () => {
       />,
       { wrapper }
     );
-    expect(screen.queryByRole("button", { name: /invoice theme/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /invoice.*receipt theme/i })).not.toBeInTheDocument();
   });
 
   // Regression: workspaces created before `invoiceTheme` existed on the schema
@@ -292,6 +319,6 @@ describe("BookingsToolbar — Invoice theme button", () => {
       />,
       { wrapper }
     );
-    expect(screen.getByRole("button", { name: /invoice theme/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /invoice.*receipt theme/i })).toBeInTheDocument();
   });
 });

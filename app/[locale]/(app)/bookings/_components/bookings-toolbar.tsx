@@ -18,16 +18,19 @@ import {
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import { CsvImportDialog } from "./csv-import-dialog";
+import { BookingsExportDialog } from "./bookings-export-dialog";
 import { InvoiceThemeDialog } from "./invoice-theme-dialog";
 import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
 import type { BookingTeamOption } from "../_data/team-options";
-import type { InvoiceThemePresetId } from "@/lib/invoices/theme";
+import { parseBookingsToggleFilters } from "../_data/booking-filters";
+import type { InvoiceThemePresetId, InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
 
 const ALL = "__all__";
 
 export function BookingsToolbar({
   defaultCurrency,
+  workspaceTimezone,
   onAddClick,
   view = "table",
   canCreate = true,
@@ -35,9 +38,13 @@ export function BookingsToolbar({
   selectedTeams = [],
   isOwner = false,
   initialInvoiceTheme,
+  invoiceThemeBusiness,
   onPendingChange,
 }: {
   defaultCurrency: string;
+  /** Passed to the importer so its preview applies the same same-day rule the
+   *  route enforces at commit. */
+  workspaceTimezone?: string;
   /** Notifies the parent when a filter-change navigation is pending, so it can
    *  reflect the wait (e.g. surface the bookings table's loading skeleton). */
   onPendingChange?: (pending: boolean) => void;
@@ -60,6 +67,7 @@ export function BookingsToolbar({
   isOwner?: boolean;
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -74,6 +82,7 @@ export function BookingsToolbar({
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [invoiceThemeOpen, setInvoiceThemeOpen] = useState(false);
 
   // Keep a ref to the latest searchParams so pushParams never captures a stale
@@ -93,21 +102,27 @@ export function BookingsToolbar({
   }, [searchParams]);
 
   const status = searchParams.get("status") ?? ALL;
-  const includeCancelled = searchParams.get("includeCancelled") === "1";
-  const showPast = searchParams.get("showPast") === "1";
+  const { includeCancelled, includePast: showPast } = parseBookingsToggleFilters({
+    includeCancelled: searchParams.get("includeCancelled") ?? undefined,
+    showPast: searchParams.get("showPast") ?? undefined,
+  });
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const exportHref = useMemo(() => {
+  // The list's own filters. The export dialog owns team, range and format and
+  // appends them to this, so a download still matches what's on screen.
+  const exportParams = useMemo(() => {
     const p = new URLSearchParams();
     if (status && status !== ALL) p.set("status", status);
     if (q) p.set("q", q);
-    if (includeCancelled) p.set("includeCancelled", "1");
+    // Opt-out params: only sent when the filter is OFF, so the exported rows
+    // match the table for both toggles.
+    if (!includeCancelled) p.set("includeCancelled", "0");
+    if (!showPast) p.set("showPast", "0");
     if (from) p.set("from", from);
     if (to) p.set("to", to);
-    const qs = p.toString();
-    return `/api/bookings/export${qs ? `?${qs}` : ""}`;
-  }, [status, q, includeCancelled, from, to]);
+    return p.toString();
+  }, [status, q, includeCancelled, showPast, from, to]);
 
   // pushParams reads searchParams via a ref so its identity only changes when
   // router or pathname changes — never on every searchParams object replacement.
@@ -207,7 +222,7 @@ export function BookingsToolbar({
             <Switch
               checked={includeCancelled}
               onCheckedChange={(v: boolean) =>
-                pushParams({ includeCancelled: v ? "1" : null })
+                pushParams({ includeCancelled: v ? null : "0" })
               }
             />
             <span className="select-none text-muted-foreground">
@@ -218,7 +233,7 @@ export function BookingsToolbar({
             <Switch
               checked={showPast}
               onCheckedChange={(v: boolean) =>
-                pushParams({ showPast: v ? "1" : null })
+                pushParams({ showPast: v ? null : "0" })
               }
             />
             <span className="select-none text-muted-foreground">
@@ -232,16 +247,6 @@ export function BookingsToolbar({
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />
-        {isOwner ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
-            onClick={() => setInvoiceThemeOpen(true)}
-          >
-            {t("invoiceTheme")}
-          </Button>
-        ) : null}
         {canCreate ? (
           <Button
             variant="outline"
@@ -253,27 +258,47 @@ export function BookingsToolbar({
             {t("import")}
           </Button>
         ) : null}
+        {/* One button, because format is no longer the only choice: the dialog
+            also picks a team and a time range. */}
         <Button
           variant="outline"
           size="sm"
-          className="min-h-11 flex-1 border-s-0 sm:flex-none sm:min-h-0 sm:border-s"
+          className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
           title={tBookings("export.tooltip")}
-          nativeButton={false}
-          render={<a href={exportHref} download />}
+          onClick={() => setExportOpen(true)}
         >
           <DownloadIcon className="size-4" />
           {t("export")}
         </Button>
+        {isOwner ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            onClick={() => setInvoiceThemeOpen(true)}
+          >
+            {t("invoiceTheme")}
+          </Button>
+        ) : null}
+        <BookingsExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          baseParams={exportParams}
+          teams={teams}
+        />
         <CsvImportDialog
           open={importOpen}
           onClose={() => setImportOpen(false)}
           defaultCurrency={defaultCurrency}
+          workspaceTimezone={workspaceTimezone}
+          teams={teams}
         />
         {initialInvoiceTheme ? (
           <InvoiceThemeDialog
             open={invoiceThemeOpen}
             onClose={() => setInvoiceThemeOpen(false)}
             initialTheme={initialInvoiceTheme}
+            business={invoiceThemeBusiness}
           />
         ) : null}
         {canCreate ? (

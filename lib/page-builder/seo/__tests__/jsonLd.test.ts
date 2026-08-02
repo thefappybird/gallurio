@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/portfolio/publicUrl", () => ({
   portfolioPublicUrl: (slug: string) => `http://localhost:3000/w/${slug}`,
+  portfolioGalleryUrl: (slug: string) => `http://localhost:3000/w/${slug}/gallery`,
 }));
 
 import { resolveSchemaType, buildHomeJsonLd } from "../jsonLd";

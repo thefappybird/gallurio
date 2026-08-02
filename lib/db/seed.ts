@@ -104,45 +104,81 @@ const TEAM_NAMES = [
 const INACTIVE_TEAM_NAME = "After Dark";
 
 const DUMMY_MEMBER_NAMES = [
-  "Jules Mercer",
-  "Avery Sloan",
-  "Noah Harlan",
-  "Mika Torres",
-  "Lena Rowe",
-  "Kai Bennett",
-  "Sage Harper",
-  "Tess Morgan",
-  "Ira Foster",
-  "Milo Graham",
-  "Nina Cruz",
-  "Parker Dean",
-  "Remy Cole",
-  "Skye Porter",
-  "Theo Lane",
-  "Zoe Ellis",
-  "Arlo Kent",
-  "Cora Blake",
-  "Drew Logan",
-  "Esme Reid",
+  "Paolo Villanueva",
+  "Bianca Ramos",
+  "Miguel Dela Cruz",
+  "Andrea Lim",
+  "Rafael Bautista",
+  "Kristine Ocampo",
+  "Joaquin Reyes",
+  "Therese Aguilar",
+  "Enzo Panganiban",
+  "Danica Salvador",
+  "Lorenzo Mercado",
+  "Patricia Sy",
+  "Gabriel Alcantara",
+  "Maria Isabel Yulo",
+  "Nathaniel Uy",
+  "Camille Estrada",
+  "Julian Tiongson",
+  "Reina Macaraeg",
+  "Christian Bernardo",
+  "Alexa Buenaventura",
 ];
 
 const CLIENT_SEEDS = [
-  ["Emma and Liam Carter", "emma.carter@example.com", "+63 917 555 1001", "VIP"],
-  ["Priya Shah", "priya.shah@example.com", "+63 917 555 1002", "repeat"],
-  ["Jordan Patel", "jordan.patel@example.com", "+63 917 555 1003", "corporate"],
-  ["Maya Tan", "maya.tan@example.com", "+63 917 555 1004", "portrait"],
-  ["Olivia Park", "olivia.park@example.com", "+63 917 555 1005", "wedding"],
-  ["Diego Santos", "diego.santos@example.com", "+63 917 555 1006", "referral"],
-  ["Ariana Bloom", "ariana.bloom@example.com", "+63 917 555 1007", "editorial"],
-  ["Northline Events", "ops@northline.example.com", "+63 917 555 1008", "b2b"],
-  ["Hannah Wells", "hannah.wells@example.com", "+63 917 555 1009", "family"],
-  ["Marcus Doyle", "marcus.doyle@example.com", "+63 917 555 1010", "venue"],
-  ["Mia Serrano", "mia.serrano@example.com", "+63 917 555 1011", "brand"],
-  ["Evergreen Hotels", "events@evergreen.example.com", "+63 917 555 1012", "hotel"],
-  ["Sofia Reed", "sofia.reed@example.com", "+63 917 555 1013", "elopement"],
-  ["Noel Bishop", "noel.bishop@example.com", "+63 917 555 1014", "repeat"],
-  ["Camila Hart", "camila.hart@example.com", "+63 917 555 1015", "referral"],
-  ["Summit Peak Co", "marketing@summitpeak.example.com", "+63 917 555 1016", "campaign"],
+  ["Isabelle & Marco Rivera", "isabelle.rivera@gmail.com", "+63 917 428 6013", "VIP"],
+  ["Katrina Soriano", "katrina.soriano@gmail.com", "+63 928 310 4477", "repeat"],
+  ["Jomar Cabrera", "jomar.cabrera@outlook.com", "+63 915 776 2208", "corporate"],
+  ["Maya Tanjuatco", "maya.tanjuatco@gmail.com", "+63 906 553 8891", "portrait"],
+  ["Olivia Delos Santos", "olivia.dls@gmail.com", "+63 977 214 6650", "wedding"],
+  ["Diego Alonzo", "diego.alonzo@yahoo.com", "+63 918 902 3374", "referral"],
+  ["Arianne Bolisay", "arianne.bolisay@gmail.com", "+63 939 641 7702", "editorial"],
+  ["Northline Events Co.", "events@northline.ph", "+63 2 8541 9930", "b2b"],
+  ["Hannah Villamor", "hannah.villamor@gmail.com", "+63 995 118 4426", "family"],
+  ["Marcus Tanchanco", "marcus.tanchanco@gmail.com", "+63 917 660 5518", "venue"],
+  ["Mia Serrano", "mia.serrano@gmail.com", "+63 926 447 9081", "brand"],
+  ["Evergreen Hotels Manila", "weddings@evergreenhotels.ph", "+63 2 8823 7714", "hotel"],
+  ["Sofia Regalado", "sofia.regalado@gmail.com", "+63 947 205 3369", "elopement"],
+  ["Noel Bautista", "noel.bautista@gmail.com", "+63 916 872 4405", "repeat"],
+  ["Camila Hipolito", "camila.hipolito@gmail.com", "+63 908 337 1192", "referral"],
+  ["Summit Peak Coffee", "marketing@summitpeak.ph", "+63 2 8776 2240", "campaign"],
+] as const;
+
+// Realistic inbound-lead identities so the inquiry inbox reads like real
+// traffic instead of numbered placeholders.
+const LEAD_SEEDS = [
+  ["Angelica Fajardo", "angelica.fajardo@gmail.com", "+63 917 331 8802"],
+  ["Renz Dimaculangan", "renz.dima@gmail.com", "+63 928 774 1195"],
+  ["Trisha Ynares", "trisha.ynares@gmail.com", "+63 906 208 6637"],
+  ["Kevin Ang", "kevin.ang@outlook.com", "+63 915 540 9923"],
+  ["Michelle Lacsamana", "michelle.lacsamana@gmail.com", "+63 977 862 3318"],
+  ["Aldrin Poblete", "aldrin.poblete@gmail.com", "+63 939 117 5560"],
+  ["Nicole Rustia", "nicole.rustia@gmail.com", "+63 995 623 7741"],
+  ["Francis Gutierrez", "francis.gutierrez@yahoo.com", "+63 918 445 2276"],
+  ["Jasmine Villaruel", "jasmine.villaruel@gmail.com", "+63 947 738 9014"],
+  ["Carlo Maranan", "carlo.maranan@gmail.com", "+63 926 951 3387"],
+  ["Denise Tolentino", "denise.tolentino@gmail.com", "+63 908 264 7752"],
+  ["Ryan Escalona", "ryan.escalona@gmail.com", "+63 916 583 1108"],
+  ["Pauline Sarmiento", "pauline.sarmiento@gmail.com", "+63 995 476 2295"],
+  ["Emman Castañeda", "emman.castaneda@gmail.com", "+63 917 809 6634"],
+] as const;
+
+const VENUES = [
+  "Blue Leaf Cosmopolitan, Quezon City",
+  "The Peninsula Manila, Makati",
+  "Fernwood Gardens, Quezon City",
+  "Shangri-La The Fort, Taguig",
+  "Hillcreek Gardens, Tagaytay",
+  "Manila Hotel, Ermita",
+  "Glass Garden, Pasig",
+  "Marco Polo Ortigas, Pasig",
+  "Casa Real de Malolos, Bulacan",
+  "Whitespace Manila, Makati",
+  "Sofitel Philippine Plaza, Pasay",
+  "Alta Veranda de Tibig, Batangas",
+  "The Glasshouse at Enderun, Taguig",
+  "Balesin Island Club, Quezon",
 ] as const;
 
 const EVENT_TYPES = [
@@ -154,26 +190,68 @@ const EVENT_TYPES = [
   "other",
 ] as const;
 
+// Both seeded workspaces run on Asia/Manila (UTC+8, no DST). Session instants
+// are built from Manila wall-clock rather than the seeding machine's local
+// timezone, because the app enforces "a session starts and ends on one calendar
+// day in the WORKSPACE timezone" (sessionsAreSameDayInTz). Building them from
+// machine-local time on any non-Manila box silently pushed sessions across
+// Manila midnight, which the calendar then splits into an evening-head plus a
+// morning-continuation candle and refuses to drag.
+const WORKSPACE_TZ = "Asia/Manila";
+const MANILA_UTC_OFFSET_HOURS = 8;
+
+// Sessions are kept inside these Manila hours so they never cross midnight in
+// Manila (the workspace day) or in UTC (the storage day).
+const EARLIEST_START_HOUR = 8;
+const LATEST_END_HOUR = 21;
+
+const manilaDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: WORKSPACE_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const manilaTimeFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: WORKSPACE_TZ,
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
 function dayOffset(days: number): Date {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return date;
 }
 
+/** Instant for a Manila wall-clock date and time. Date.UTC normalizes overflow. */
+function manilaWallClock(year: number, month: number, day: number, hour: number, minute: number): Date {
+  return new Date(Date.UTC(year, month - 1, day, hour - MANILA_UTC_OFFSET_HOURS, minute, 0, 0));
+}
+
+function manilaToday(): [number, number, number] {
+  const [year, month, day] = manilaDateFormatter.format(new Date()).split("-").map(Number);
+  return [year!, month!, day!];
+}
+
 function dateAt(dayDelta: number, hour: number, minute: number, durationHours: number): SessionRange {
-  const startAt = new Date();
-  startAt.setDate(startAt.getDate() + dayDelta);
-  startAt.setHours(hour, minute, 0, 0);
-  const endAt = new Date(startAt);
-  endAt.setHours(endAt.getHours() + durationHours);
+  const [year, month, day] = manilaToday();
+  const startAt = manilaWallClock(year, month, day + dayDelta, hour, minute);
+  const endAt = new Date(startAt.getTime() + durationHours * 3_600_000);
+  // Fail the seed rather than write a session the app itself would reject.
+  if (manilaDateFormatter.format(startAt) !== manilaDateFormatter.format(endAt)) {
+    throw new Error(
+      `Seed built a session crossing Manila midnight: ${startAt.toISOString()} -> ${endAt.toISOString()} ` +
+        `(${hour}:00 + ${durationHours}h). Keep sessions within ${EARLIEST_START_HOUR}:00-${LATEST_END_HOUR}:00 Manila.`
+    );
+  }
   return { startAt, endAt };
 }
 
+/** The Manila calendar date of an instant, as `YYYY-MM-DD`. */
 function isoDateLocal(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return manilaDateFormatter.format(date);
 }
 
 function buildPayments(
@@ -625,7 +703,7 @@ async function createBookingsAndTransactions(
     {
       team: teams[0]!,
       client: clients[0]!,
-      title: "Emma and Liam Carter - Editorial wedding coverage",
+      title: "Isabelle & Marco Rivera - Editorial wedding coverage",
       eventType: "wedding",
       status: "booked" as const,
       sessions: [dateAt(0, 11, 0, 5)],
@@ -637,7 +715,7 @@ async function createBookingsAndTransactions(
     {
       team: teams[1]!,
       client: clients[1]!,
-      title: "Priya Shah - Engagement session",
+      title: "Katrina Soriano - Engagement session",
       eventType: "engagement",
       status: "booked" as const,
       sessions: [dateAt(2, 15, 30, 3)],
@@ -648,8 +726,8 @@ async function createBookingsAndTransactions(
     },
     {
       team: teams[2]!,
-      client: clients[2]!,
-      title: "Northline Events - Leadership summit day one",
+      client: clients[7]!,
+      title: "Northline Events Co. - Leadership summit day one",
       eventType: "corporate",
       status: "booked" as const,
       sessions: [dateAt(4, 9, 0, 8), dateAt(5, 9, 0, 7)],
@@ -661,7 +739,7 @@ async function createBookingsAndTransactions(
     {
       team: teams[4]!,
       client: clients[4]!,
-      title: "Olivia Park - Bridal editorial",
+      title: "Olivia Delos Santos - Bridal editorial",
       eventType: "portrait",
       status: "booked" as const,
       sessions: [dateAt(7, 13, 0, 4)],
@@ -673,19 +751,19 @@ async function createBookingsAndTransactions(
     {
       team: teams[5]!,
       client: clients[5]!,
-      title: "Diego Santos - Anniversary film stills",
+      title: "Diego Alonzo - Anniversary film stills",
       eventType: "anniversary",
       status: "completed" as const,
       sessions: [dateAt(-4, 16, 0, 4)],
       total: 42_000,
       deposit: 14_000,
-      location: "Las Casas Filipinas de Acuzar, Quezon City",
+      location: "The Rooftop at Solaire, Paranaque",
       notes: "Client requested a strong blue-hour set before dinner.",
     },
     {
       team: teams[6]!,
       client: clients[6]!,
-      title: "Ariana Bloom - Brand relaunch portraits",
+      title: "Arianne Bolisay - Brand relaunch portraits",
       eventType: "corporate",
       status: "completed" as const,
       sessions: [dateAt(-12, 10, 0, 6)],
@@ -696,21 +774,22 @@ async function createBookingsAndTransactions(
     },
   ];
 
-  // Fill the dashboard's trailing 52-week heatmap with a believable operating
-  // rhythm: three or four bookings each week, spread across weekdays. Rotating
-  // the patterns prevents a synthetic stripe while keeping weekends visibly
+  // Fill the calendar and the dashboard's trailing 52-week heatmap with a
+  // believable operating rhythm: every day carries work, with repeated
+  // weekdays producing two or three sessions on the busiest days. Rotating the
+  // patterns prevents a synthetic stripe while keeping weekends visibly
   // busier for marketing screenshots.
   const weeklyBookingPatterns = [
-    [0, 2, 5], // Mon, Wed, Sat
-    [1, 3, 5], // Tue, Thu, Sat
-    [0, 3, 4, 6], // Mon, Thu, Fri, Sun
-    [1, 2, 4, 5], // Tue, Wed, Fri, Sat
+    [0, 1, 2, 3, 4, 5, 5, 6, 6], // heavy weekend
+    [0, 0, 1, 2, 3, 3, 4, 5, 6], // heavy Mon/Thu
+    [0, 1, 1, 2, 3, 4, 4, 5, 6, 6], // midweek doubles
+    [0, 1, 2, 2, 3, 4, 5, 5, 6], // Wed/Sat doubles
   ] as const;
   const generated = Array.from({ length: 64 }, (_, weekIndex) => {
     const weekdays = weeklyBookingPatterns[weekIndex % weeklyBookingPatterns.length]!;
 
     return weekdays.map((weekdayOffset, bookingInWeek) => {
-      const index = weekIndex * 4 + bookingInWeek;
+      const index = weekIndex * 10 + bookingInWeek;
       const team = teamForIndex(teams, index + 3);
       const client = clientForIndex(clients, index + 2);
       const status =
@@ -722,9 +801,18 @@ async function createBookingsAndTransactions(
       // Starts 52 weeks ago, with enough forward bookings to keep the calendar
       // and upcoming-work cards full after a reseed.
       const dayDelta = -364 + weekIndex * 7 + weekdayOffset;
-      const startHour = 9 + ((index + weekdayOffset) % 7);
-      const duration = 2 + (index % 5);
-      const total = 26_000 + index * 4_500;
+      // Session lengths span short portrait sittings to full wedding days so
+      // the dashboard heatmap's hours-per-day buckets all get used instead of
+      // clustering in the middle two. Start is pulled back far enough that a
+      // long session still ends the same day.
+      const duration = 2 + (index % 9);
+      const startHour = Math.min(
+        EARLIEST_START_HOUR + ((index + weekdayOffset) % 8),
+        LATEST_END_HOUR - duration
+      );
+      // Bounded so a year of bookings stays in a realistic PHP package range
+      // instead of drifting into seven figures as the index grows.
+      const total = 24_000 + (index % 13) * 6_500;
       const deposit = Math.floor(total * 0.35);
 
       return {
@@ -736,7 +824,7 @@ async function createBookingsAndTransactions(
         sessions: [dateAt(dayDelta, startHour, 0, duration)],
         total,
         deposit,
-        location: `${180 + index} Ayala Avenue, Makati`,
+        location: VENUES[index % VENUES.length]!,
         notes:
           status === "cancelled"
             ? "Client postponed after venue availability changed."
@@ -865,11 +953,11 @@ async function createInquiries(
   owner: SeedIdentity
 ) {
   const leadClients = await Client.insertMany(
-    Array.from({ length: 14 }, (_, index) => ({
+    LEAD_SEEDS.map(([name, email, phone]) => ({
       workspaceId: workspace._id,
-      name: `Lead Prospect ${index + 1}`,
-      email: `lead-prospect-${index + 1}@example.com`,
-      phone: `+63 917 700 ${String(2000 + index).slice(-4)}`,
+      name,
+      email,
+      phone,
       source: "form",
       totalSpent: 0,
       bookingsCount: 0,
@@ -906,11 +994,8 @@ async function createInquiries(
       eventType: eventTypeForIndex(index + 1),
       guestCount: 30 + index * 12,
       location: {
-        label: index % 2 === 0 ? "Outdoor venue" : "City venue",
-        address:
-          index % 2 === 0
-            ? `${220 + index} Rizal Drive, Taguig`
-            : `${75 + index} Molito Complex, Alabang`,
+        label: VENUES[index % VENUES.length]!.split(",")[0]!,
+        address: VENUES[index % VENUES.length]!,
       },
       message:
         status === "archived"
@@ -919,8 +1004,8 @@ async function createInquiries(
       sessions: [
         {
           startDate: isoDateLocal(baseSession.startAt),
-          startTime: `${String(baseSession.startAt.getHours()).padStart(2, "0")}:${String(baseSession.startAt.getMinutes()).padStart(2, "0")}`,
-          endTime: `${String(baseSession.endAt.getHours()).padStart(2, "0")}:${String(baseSession.endAt.getMinutes()).padStart(2, "0")}`,
+          startTime: manilaTimeFormatter.format(baseSession.startAt),
+          endTime: manilaTimeFormatter.format(baseSession.endAt),
         },
       ],
       eventDate,
@@ -945,9 +1030,10 @@ async function createInquiries(
       const [year, month, day] = session.startDate.split("-").map(Number);
       const [startHour, startMinute] = session.startTime.split(":").map(Number);
       const [endHour, endMinute] = session.endTime.split(":").map(Number);
-      const startAt = new Date(year, month - 1, day, startHour, startMinute, 0, 0);
-      const endAt = new Date(year, month - 1, day, endHour, endMinute, 0, 0);
-      return { startAt, endAt };
+      return {
+        startAt: manilaWallClock(year!, month!, day!, startHour!, startMinute!),
+        endAt: manilaWallClock(year!, month!, day!, endHour!, endMinute!),
+      };
     });
     const { firstSessionStart, lastSessionEnd } = firstAndLastSession(sessions);
 

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import {
   verifyEmailAction,
   resendVerificationEmailAction,
@@ -31,6 +31,7 @@ export function VerifyEmailForm({ locale = "en", expiresAt = null }: VerifyEmail
   >(resendVerificationEmailAction, null);
 
   const error = state && "error" in state ? state.error : null;
+  const fieldErrors = state && "error" in state ? state.fieldErrors : undefined;
   const resendOk = resendState && "ok" in resendState;
   const resendError = resendState && "error" in resendState ? resendState.error : null;
   const [remainingSeconds, setRemainingSeconds] = useState(() =>
@@ -67,23 +68,30 @@ export function VerifyEmailForm({ locale = "en", expiresAt = null }: VerifyEmail
       )}
 
       <form action={formAction} className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="verify-code">{t("verifyEmail.codeLabel")}</Label>
-          <Input
-            id="verify-code"
-            name="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            pattern="[0-9]{6}"
-            placeholder="000000"
-            required
-            disabled={pending}
-            aria-describedby={error ? "verify-error" : undefined}
-            className="tracking-widest"
-          />
-        </div>
+        <FormField
+          id="verify-code"
+          label={t("verifyEmail.codeLabel")}
+          error={fieldErrors?.code}
+          describedBy={error ? "verify-error" : undefined}
+        >
+          {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+            <Input
+              id={id}
+              name="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              pattern="[0-9]{6}"
+              placeholder="000000"
+              required
+              disabled={pending}
+              aria-invalid={ariaInvalid}
+              aria-describedby={ariaDescribedby}
+              className="tracking-widest"
+            />
+          )}
+        </FormField>
 
         {error && (
           <p id="verify-error" role="alert" className="text-sm text-destructive">

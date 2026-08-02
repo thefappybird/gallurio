@@ -66,10 +66,10 @@ describe("asText", () => {
 // ---------------------------------------------------------------------------
 
 describe("resolveBlockStyle", () => {
-  it("returns an empty object for no style", () => {
-    expect(resolveBlockStyle()).toEqual({});
-    expect(resolveBlockStyle(null)).toEqual({});
-    expect(resolveBlockStyle({})).toEqual({});
+  it("grounds an unset radius to the effective brand radius", () => {
+    expect(resolveBlockStyle().borderRadius).toBe("var(--pf-radius)");
+    expect(resolveBlockStyle(null).borderRadius).toBe("var(--pf-radius)");
+    expect(resolveBlockStyle({}).borderRadius).toBe("var(--pf-radius)");
   });
 
   it("maps a border to width + token color var", () => {
@@ -114,6 +114,12 @@ describe("resolveBlockStyle", () => {
 
   it("maps a background color token to its var", () => {
     expect(resolveBlockStyle({ bgColorToken: "primary" }).backgroundColor).toBe("var(--pf-color-primary)");
+  });
+
+  it("publishes an explicit text color as an inheritable block token", () => {
+    const css = resolveBlockStyle({ textColorToken: "accent" }) as Record<string, unknown>;
+    expect(css.color).toBe("var(--pf-color-accent)");
+    expect(css["--pf-block-text-color"]).toBe("var(--pf-color-accent)");
   });
 
   it("overrides the brand font vars and fontFamily when a font pair is chosen (legacy fontPair)", () => {

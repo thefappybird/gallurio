@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/ui/turnstile-widget";
+import { FormField, useFieldError } from "@/components/ui/form-field";
 import { signInAction, googleSignInAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 
@@ -31,6 +32,11 @@ export function SignInForm({ returnTo, sessionExpired = false }: SignInFormProps
   const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
   const error = state && "error" in state ? state.error : null;
+  const fieldErrors = state && "error" in state ? state.fieldErrors : undefined;
+  const passwordA11y = useFieldError(fieldErrors?.password, {
+    id: "signin-password",
+    describedBy: error ? "signin-error" : undefined,
+  });
 
   // Turnstile tokens are single-use -- a retry after any failed submission
   // would otherwise fail bot verification even with correct credentials.
@@ -93,23 +99,30 @@ export function SignInForm({ returnTo, sessionExpired = false }: SignInFormProps
         />
 
         {/* Email */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="signin-email">{t("fields.email")}</Label>
-          <Input
-            id="signin-email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            disabled={pending}
-            aria-describedby={error ? "signin-error" : undefined}
-          />
-        </div>
+        <FormField
+          id="signin-email"
+          label={t("fields.email")}
+          error={fieldErrors?.email}
+          describedBy={error ? "signin-error" : undefined}
+        >
+          {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+            <Input
+              id={id}
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              disabled={pending}
+              aria-invalid={ariaInvalid}
+              aria-describedby={ariaDescribedby}
+            />
+          )}
+        </FormField>
 
         {/* Password */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <Label htmlFor="signin-password">{t("fields.password")}</Label>
+            <Label htmlFor={passwordA11y.id}>{t("fields.password")}</Label>
             <Link
               href="./forgot-password"
               className="text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -119,14 +132,15 @@ export function SignInForm({ returnTo, sessionExpired = false }: SignInFormProps
           </div>
           <div className="relative">
             <Input
-              id="signin-password"
+              id={passwordA11y.id}
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
               disabled={pending}
               className="pe-10"
-              aria-describedby={error ? "signin-error" : undefined}
+              aria-invalid={passwordA11y["aria-invalid"]}
+              aria-describedby={passwordA11y["aria-describedby"]}
             />
             <button
               type="button"
@@ -144,6 +158,11 @@ export function SignInForm({ returnTo, sessionExpired = false }: SignInFormProps
               )}
             </button>
           </div>
+          {fieldErrors?.password && (
+            <p id={passwordA11y.errorId} role="alert" className="text-xs text-destructive">
+              {fieldErrors.password}
+            </p>
+          )}
         </div>
 
         {/* Turnstile */}
