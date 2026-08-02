@@ -1,11 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
 import path from "node:path";
+import { openEditorWithDraft } from "./helpers";
 
 // Drive-through for the shared crop-before-upload dialog. Uploads here hit the
 // real dev workspace (wipeable dev DB) and real Cloudflare Images.
 
 const REPO = path.resolve(__dirname, "..");
 const WIDE_PHOTO = path.join(REPO, "public/marketing/screenshots/dashboard-overview-light.png");
+const SECOND_PHOTO = path.join(REPO, "public/marketing/screenshots/bookings-calendar-light.png");
 const SMALL_SVG = path.join(REPO, "public/file.svg");
 const WORDMARK = path.join(REPO, "public/brand/gallurio rect.png");
 
@@ -222,5 +224,39 @@ test.describe("image cropper", () => {
 
     await dialog.getByRole("button", { name: "إلغاء" }).click();
     await expect(dialog).toBeHidden();
+  });
+
+  test("portfolio gallery: bulk photo upload skips the crop dialog", async ({ page }) => {
+    // Desktop-only surface — the portfolio editor is not a mobile-first flow.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openEditorWithDraft(page, "Bold Template");
+
+    await page.getByRole("button", { name: "Photos", exact: true }).click();
+    // Dialog accessible names (not hasText substrings — "Add new collection"
+    // would otherwise case-insensitively match a "New collection" filter too).
+    const manager = page.getByRole("dialog", { name: "Photos & collections", exact: true });
+    await expect(manager).toBeVisible({ timeout: 15_000 });
+
+    // "New collection" hosts its own upload dropzone with a bulk file input —
+    // reuse it without ever saving the collection, so the only side effect is
+    // two Cloudflare asset uploads (no DB collection is created).
+    await manager.getByRole("button", { name: "Add new collection" }).click();
+    const create = page.getByRole("dialog", { name: "New collection", exact: true });
+    await expect(create).toBeVisible({ timeout: 15_000 });
+
+    const input = create.locator('input[type="file"]');
+    await expect(input).toHaveAttribute("multiple", "");
+    await input.setInputFiles([WIDE_PHOTO, SECOND_PHOTO]);
+
+    // The crop dialog must never appear for this bulk path.
+    await expect(cropDialog(page)).toBeHidden({ timeout: 5_000 });
+
+    // Upload actually proceeds: both thumbnails land in the local preview list.
+    await expect(create.getByRole("list", { name: "Uploaded photos" }).getByRole("listitem")).toHaveCount(2, {
+      timeout: 60_000,
+    });
+
+    await create.getByRole("button", { name: "Cancel" }).click();
+    await expect(create).toBeHidden();
   });
 });
