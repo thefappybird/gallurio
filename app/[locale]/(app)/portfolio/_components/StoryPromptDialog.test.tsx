@@ -14,6 +14,17 @@ vi.mock("@/lib/storage/uploadAsset.client", () => ({
   uploadAsset: (...a: unknown[]) => uploadAsset(...a),
 }));
 
+// A single stable requestCrop mock shared across every render — the dialog
+// re-renders on each step/state change, so a per-render override would be
+// consumed by an unrelated render instead of the actual file-input change.
+const requestCropMock = vi.fn(async (file: File) => ({ status: "ok" as const, file }));
+vi.mock("@/lib/media/useImageCropper", () => ({
+  useImageCropper: () => ({
+    cropDialog: null,
+    requestCrop: requestCropMock,
+  }),
+}));
+
 import { toast } from "sonner";
 import { tagBorderClass } from "@/components/app/tag-pill";
 import { StoryPromptDialog } from "./StoryPromptDialog";
@@ -38,6 +49,8 @@ describe("StoryPromptDialog", () => {
   beforeEach(() => {
     completeStoryPromptAction.mockClear();
     uploadAsset.mockReset();
+    requestCropMock.mockClear();
+    requestCropMock.mockImplementation(async (file: File) => ({ status: "ok" as const, file }));
   });
 
   it("shows the welcome step title when open", () => {
@@ -313,6 +326,46 @@ describe("StoryPromptDialog", () => {
       expect(document.querySelector('img[src="https://cdn/logo.png"]')).toBeInTheDocument();
     });
     expect(screen.getByRole("button", { name: /remove logo/i })).toBeInTheDocument();
+  });
+
+  it("hands the cropped file (not the original) to uploadAsset for the logo", async () => {
+    requestCropMock.mockResolvedValueOnce({
+      status: "ok",
+      file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
+    });
+    uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-1", url: "https://cdn/logo.png" } });
+    setup();
+    await goToBrandingStep();
+    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/webp"]') as HTMLInputElement;
+    const file = new File(["logo"], "logo.png", { type: "image/png" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() =>
+      expect(uploadAsset).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "cropped.webp", type: "image/webp" }),
+        expect.anything(),
+        expect.anything(),
+      ),
+    );
+  });
+
+  it("hands the cropped file (not the original) to uploadAsset for the site icon", async () => {
+    requestCropMock.mockResolvedValueOnce({
+      status: "ok",
+      file: new File(["cropped"], "cropped-icon.webp", { type: "image/webp" }),
+    });
+    uploadAsset.mockResolvedValueOnce({ asset: { assetId: "icon-1", url: "https://cdn/icon.png" } });
+    setup();
+    await goToBrandingStep();
+    const fileInput = document.getElementById("story-prompt-icon-file") as HTMLInputElement;
+    const file = new File(["icon"], "icon.png", { type: "image/png" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() =>
+      expect(uploadAsset).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "cropped-icon.webp", type: "image/webp" }),
+        expect.anything(),
+        expect.anything(),
+      ),
+    );
   });
 
   it("accepts a dropped logo or site icon on the branding step", async () => {

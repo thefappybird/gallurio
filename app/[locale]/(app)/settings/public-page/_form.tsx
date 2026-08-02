@@ -23,10 +23,8 @@ import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { useImageRetry } from "@/hooks/useImageRetry";
-
-const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
-const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
-const SITE_ICON_MAX_DIM = 512;
+import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { useImageCropper } from "@/lib/media/useImageCropper";
 
 function parseSeoKeywords(raw: string): string[] {
   const seen = new Set<string>();
@@ -112,6 +110,16 @@ export function PublicPageSettingsForm({
   const [ogError, setOgError] = useState<string | null>(null);
   const ogFileInputRef = useRef<HTMLInputElement>(null);
 
+  const { cropDialog: logoCropDialog, requestCrop: requestLogoCrop } = useImageCropper(
+    CROP_SPECS.headerLogo,
+  );
+  const { cropDialog: iconCropDialog, requestCrop: requestIconCrop } = useImageCropper(
+    CROP_SPECS.siteIcon,
+  );
+  const { cropDialog: ogCropDialog, requestCrop: requestOgCrop } = useImageCropper(
+    CROP_SPECS.ogImage,
+  );
+
   const {
     control,
     register,
@@ -196,17 +204,22 @@ export function PublicPageSettingsForm({
 
   async function handleLogoInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     setLogoError(null);
+    const crop = await requestLogoCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setLogoError(t(crop.reason === "type_not_accepted" ? "logoErrors.type" : "logoErrors.size"));
+      return;
+    }
     setLogoUploading(true);
     try {
       const result = await uploadAsset(
-        file,
+        crop.file,
         {
-          acceptedTypes: ["image/png", "image/jpeg", "image/webp"],
-          maxBytes: 250 * 1024,
-          maxWidth: 512,
-          maxHeight: 256,
+          acceptedTypes: CROP_SPECS.headerLogo.acceptedTypes,
+          maxBytes: CROP_SPECS.headerLogo.maxBytes,
         },
         {
           subfolder: "portfolio_header",
@@ -244,15 +257,19 @@ export function PublicPageSettingsForm({
 
   async function handleIconFile(file: File) {
     setIconError(null);
+    const crop = await requestIconCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setIconError(t(crop.reason === "type_not_accepted" ? "siteIconErrors.type" : "siteIconErrors.size"));
+      return;
+    }
     setIconUploading(true);
     try {
       const result = await uploadAsset(
-        file,
+        crop.file,
         {
-          acceptedTypes: SITE_ICON_TYPES,
-          maxBytes: SITE_ICON_MAX_BYTES,
-          maxWidth: SITE_ICON_MAX_DIM,
-          maxHeight: SITE_ICON_MAX_DIM,
+          acceptedTypes: CROP_SPECS.siteIcon.acceptedTypes,
+          maxBytes: CROP_SPECS.siteIcon.maxBytes,
         },
         { subfolder: "site_icon", delivery: { width: 512, height: 512, fit: "scale-down" } },
       );
@@ -280,6 +297,7 @@ export function PublicPageSettingsForm({
 
   function handleIconInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (file) void handleIconFile(file);
   }
 
@@ -299,9 +317,15 @@ export function PublicPageSettingsForm({
 
   async function handleOgFile(file: File): Promise<void> {
     setOgError(null);
+    const crop = await requestOgCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setOgError(t(crop.reason === "type_not_accepted" ? "ogImageErrors.type" : "ogImageErrors.size"));
+      return;
+    }
     setOgUploading(true);
     try {
-      const result = await uploadImage(file);
+      const result = await uploadImage(crop.file);
       setValue("seo.ogImageUrl", result.url, { shouldDirty: true });
       setValue("seo.ogImageAssetId", result.assetId, { shouldDirty: true });
     } catch (err) {
@@ -699,6 +723,7 @@ export function PublicPageSettingsForm({
                 disabled={ogUploading}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
+                  e.target.value = "";
                   if (file) void handleOgFile(file);
                 }}
               />
@@ -806,7 +831,7 @@ export function PublicPageSettingsForm({
                 ref={iconFileInputRef}
                 id="siteIconFile"
                 type="file"
-                accept={SITE_ICON_TYPES.join(",")}
+                accept={CROP_SPECS.siteIcon.acceptedTypes.join(",")}
                 className="sr-only"
                 aria-label={t("siteIconLabel")}
                 disabled={iconUploading}
@@ -870,6 +895,9 @@ export function PublicPageSettingsForm({
         </div>
 
       </form>
+      {logoCropDialog}
+      {iconCropDialog}
+      {ogCropDialog}
     </div>
   );
 }

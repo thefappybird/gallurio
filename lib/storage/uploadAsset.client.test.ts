@@ -19,8 +19,6 @@ class MockImage {
 const BASE_CONSTRAINTS: AssetValidationConstraints = {
   acceptedTypes: ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/avif"],
   maxBytes: 512 * 1024,
-  maxWidth: 512,
-  maxHeight: 512,
 };
 
 beforeEach(() => {
@@ -67,7 +65,7 @@ describe("uploadAsset", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("accepts an image exceeding maxWidth — dimensions are no longer enforced", async () => {
+  it("accepts a wide image — dimensions are not enforced (guaranteed upstream by the crop dialog)", async () => {
     vi.stubGlobal("Image", class WideImage extends MockImage {
       naturalWidth = 1000;
       naturalHeight = 200;
@@ -90,7 +88,7 @@ describe("uploadAsset", () => {
     });
   });
 
-  it("accepts a rectangular image even when requireSquare is set — dimensions are no longer enforced", async () => {
+  it("accepts a rectangular image — dimensions are not enforced (guaranteed upstream by the crop dialog)", async () => {
     vi.stubGlobal("Image", class RectangularImage extends MockImage {
       naturalWidth = 200;
       naturalHeight = 160;
@@ -101,10 +99,7 @@ describe("uploadAsset", () => {
       .mockResolvedValueOnce({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await uploadAsset(makeFile("image/png"), {
-      ...BASE_CONSTRAINTS,
-      requireSquare: true,
-    });
+    const result = await uploadAsset(makeFile("image/png"), BASE_CONSTRAINTS);
 
     expect(result).toEqual({
       asset: {

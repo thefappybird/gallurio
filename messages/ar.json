@@ -3230,6 +3230,17 @@
     }
   },
   "common": {
+    "imageCropper": {
+      "title": "اقتصاص الصورة",
+      "hintFixed": "حدّد إطار صورتك بنسبة {aspect}. سيتم حفظها بحجم يصل إلى {width}×{height} بكسل.",
+      "hintFree": "حدّد إطار صورتك — أي شكل مناسب. سيتم حفظها بحجم يصل إلى {width}×{height} بكسل.",
+      "zoom": "تكبير",
+      "cancel": "إلغاء",
+      "upload": "رفع",
+      "uploading": "جارٍ الرفع…",
+      "typeNotAccepted": "نوع الملف غير مدعوم.",
+      "fileTooLarge": "حجم الملف كبير جدًا — اختر ملفًا أقل من {limit}."
+    },
     "pagination": {
       "showing": "عرض {from}–{to} من {total}",
       "rowsPerPage": "لكل صفحة",

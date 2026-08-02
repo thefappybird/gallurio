@@ -25,10 +25,8 @@ import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
-
-const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"] as const;
-const LOGO_MAX_BYTES = 250 * 1024;
-const LOGO_MAX_DIM = 256;
+import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { useImageCropper } from "@/lib/media/useImageCropper";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   PH: "Philippines",
@@ -98,6 +96,7 @@ export function WorkspaceBusinessForm({
   const [logoDragActive, setLogoDragActive] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const { cropDialog, requestCrop } = useImageCropper(CROP_SPECS.workspaceLogo);
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
@@ -107,16 +106,19 @@ export function WorkspaceBusinessForm({
 
   async function handleLogoFile(file: File) {
     setLogoError(null);
+    const crop = await requestCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setLogoError(t(crop.reason === "type_not_accepted" ? "logoErrors.type" : "logoErrors.size"));
+      return;
+    }
     setLogoUploading(true);
     try {
       const result = await uploadAsset(
-        file,
+        crop.file,
         {
-          acceptedTypes: LOGO_TYPES,
-          maxBytes: LOGO_MAX_BYTES,
-          maxWidth: LOGO_MAX_DIM,
-          maxHeight: LOGO_MAX_DIM,
-          requireSquare: true,
+          acceptedTypes: CROP_SPECS.workspaceLogo.acceptedTypes,
+          maxBytes: CROP_SPECS.workspaceLogo.maxBytes,
         },
         { subfolder: "logo", delivery: { width: 256, height: 256, fit: "scale-down" } },
       );
@@ -144,6 +146,7 @@ export function WorkspaceBusinessForm({
 
   function handleLogoInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (file) void handleLogoFile(file);
   }
 
@@ -409,7 +412,7 @@ export function WorkspaceBusinessForm({
               ref={logoFileInputRef}
               id="logoFile"
               type="file"
-              accept={LOGO_TYPES.join(",")}
+              accept={CROP_SPECS.workspaceLogo.acceptedTypes.join(",")}
               className="sr-only"
               aria-label={t("logoLabel")}
               disabled={logoUploading}
@@ -449,6 +452,7 @@ export function WorkspaceBusinessForm({
           </Button>
         </div>
       </form>
+      {cropDialog}
     </section>
   );
 }

@@ -8,6 +8,8 @@ import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/Edito
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { useImageCropper } from "@/lib/media/useImageCropper";
 import { cn } from "@/lib/utils";
 import { NumberInputRow, ColorSwatchRow } from "@/lib/page-builder/toolbarPrimitives";
 import { useBrandRadius } from "@/lib/page-builder/brandColors";
@@ -23,10 +25,6 @@ import {
 import type { StyleColorToken } from "@/lib/page-builder/styleToolkit";
 
 type Tab = "setup" | "design";
-const LOGO_MAX_BYTES = 250 * 1024;
-const LOGO_MAX_WIDTH = 512;
-const LOGO_MAX_HEIGHT = 256;
-const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 type Props = {
   header: PortfolioHeaderConfig;
@@ -181,6 +179,7 @@ export function HeaderPanelDialog({
   const [logoError, setLogoError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("setup");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { cropDialog, requestCrop } = useImageCropper(CROP_SPECS.headerLogo);
 
   // Effective brand radius for the radius pickers (display-only, theme-coupled)
   const effectiveBrandRadius = useBrandRadius();
@@ -200,16 +199,20 @@ export function HeaderPanelDialog({
   }
 
   async function uploadLogo(file: File) {
-    setLogoUploading(true);
     setLogoError(null);
+    const crop = await requestCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setLogoError(crop.reason === "type_not_accepted" ? t("logoErrors.type") : t("logoErrors.size"));
+      return;
+    }
+    setLogoUploading(true);
     try {
       const result = await uploadAsset(
-        file,
+        crop.file,
         {
-          acceptedTypes: LOGO_TYPES as readonly string[],
-          maxBytes: LOGO_MAX_BYTES,
-          maxWidth: LOGO_MAX_WIDTH,
-          maxHeight: LOGO_MAX_HEIGHT,
+          acceptedTypes: CROP_SPECS.headerLogo.acceptedTypes,
+          maxBytes: CROP_SPECS.headerLogo.maxBytes,
         },
         { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
       );
@@ -613,6 +616,7 @@ export function HeaderPanelDialog({
         )}
       </div>
 
+      {cropDialog}
     </div>
   );
 }

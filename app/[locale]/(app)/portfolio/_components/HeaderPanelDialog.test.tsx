@@ -5,6 +5,7 @@ import { HeaderPanelDialog } from "./HeaderPanelDialog";
 import { DEFAULT_BRAND_KIT, type PortfolioHeaderConfig } from "@/lib/page-builder/types";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { useImageCropper } from "@/lib/media/useImageCropper";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 
 const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
@@ -18,6 +19,12 @@ vi.mock("@/lib/storage/uploadImage.client", () => ({
 }));
 vi.mock("@/lib/storage/uploadAsset.client", () => ({
   uploadAsset: vi.fn(),
+}));
+vi.mock("@/lib/media/useImageCropper", () => ({
+  useImageCropper: vi.fn(() => ({
+    cropDialog: null,
+    requestCrop: vi.fn(async (file: File) => ({ status: "ok", file })),
+  })),
 }));
 
 const baseProps = {
@@ -337,6 +344,36 @@ describe("HeaderPanelDialog", () => {
         logoUrl: "https://imagedelivery.net/hash/logo-asset-id/public",
         logoAssetId: "logo-asset-id",
       }),
+    );
+  });
+
+  it("hands the cropped file (not the original) to uploadAsset for the logo", async () => {
+    vi.mocked(useImageCropper).mockReturnValueOnce({
+      cropDialog: null,
+      requestCrop: vi.fn(async () => ({
+        status: "ok" as const,
+        file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
+      })),
+    });
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      asset: {
+        assetId: "logo-cropped",
+        url: "https://imagedelivery.net/test-hash/logo-cropped/public",
+      },
+    });
+
+    const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+
+    const input = container.querySelector("input[type='file']") as HTMLInputElement;
+    const file = new File(["logo"], "logo.png", { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(uploadAsset).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "cropped.webp", type: "image/webp" }),
+        expect.anything(),
+        expect.anything(),
+      ),
     );
   });
 

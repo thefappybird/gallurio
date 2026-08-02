@@ -3231,6 +3231,17 @@
     }
   },
   "common": {
+    "imageCropper": {
+      "title": "Crop image",
+      "hintFixed": "Frame your image at {aspect}. It will be saved at up to {width}×{height} pixels.",
+      "hintFree": "Frame your image — any shape works. It will be saved at up to {width}×{height} pixels.",
+      "zoom": "Zoom",
+      "cancel": "Cancel",
+      "upload": "Upload",
+      "uploading": "Uploading…",
+      "typeNotAccepted": "That file type isn't supported.",
+      "fileTooLarge": "That file is too large — pick one under {limit}."
+    },
     "pagination": {
       "showing": "Showing {from}–{to} of {total}",
       "rowsPerPage": "Per page",

@@ -16,7 +16,8 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "@/lib/i18n/navigation";
 import { updateProfileNameAction, updateAvatarAction } from "../_actions";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
-import { ACCEPTED_MIME } from "@/lib/page-builder/photoSpec";
+import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { useImageCropper } from "@/lib/media/useImageCropper";
 import { PasswordSection } from "./_password-section";
 import { MfaSection } from "./_mfa-section";
 
@@ -68,6 +69,7 @@ export function AccountPanel({
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { cropDialog, requestCrop } = useImageCropper(CROP_SPECS.avatar);
 
   // Map the shared uploader's machine-readable failure reasons to friendly,
   // layman copy shown inline beneath the avatar buttons.
@@ -104,11 +106,17 @@ export function AccountPanel({
     // Reset input so the same file can be re-selected after removal
     e.target.value = "";
     setAvatarError(null);
+    const crop = await requestCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setAvatarError(avatarErrorMessage(crop.reason));
+      return;
+    }
     setUploading(true);
     try {
       // Shared, signature-correct uploader (same one the portfolio gallery
       // uses). validateDimensions is off — avatars have no minimum size.
-      const res = await uploadImage(file, {
+      const res = await uploadImage(crop.file, {
         subfolder: "avatars",
         validateDimensions: false,
       });
@@ -247,7 +255,7 @@ export function AccountPanel({
             <input
               ref={fileInputRef}
               type="file"
-              accept={ACCEPTED_MIME.join(",")}
+              accept={CROP_SPECS.avatar.acceptedTypes.join(",")}
               className="sr-only"
               aria-hidden
               tabIndex={-1}
@@ -346,6 +354,7 @@ export function AccountPanel({
 
       {/* MFA */}
       <MfaSection mfaEnabled={mfaEnabled} />
+      {cropDialog}
     </div>
   );
 }

@@ -3230,6 +3230,17 @@
     }
   },
   "common": {
+    "imageCropper": {
+      "title": "I-crop ang larawan",
+      "hintFixed": "I-frame ang iyong larawan sa {aspect}. Ise-save ito nang hanggang {width}×{height} pixels.",
+      "hintFree": "I-frame ang iyong larawan — puwede ang kahit anong hugis. Ise-save ito nang hanggang {width}×{height} pixels.",
+      "zoom": "I-zoom",
+      "cancel": "Kanselahin",
+      "upload": "I-upload",
+      "uploading": "Ina-upload…",
+      "typeNotAccepted": "Hindi suportado ang uri ng file na iyon.",
+      "fileTooLarge": "Masyadong malaki ang file — pumili ng mas maliit sa {limit}."
+    },
     "pagination": {
       "showing": "Ipinapakita ang {from}–{to} ng {total}",
       "rowsPerPage": "Bawat pahina",

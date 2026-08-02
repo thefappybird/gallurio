@@ -16,6 +16,14 @@ vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
 }));
 
+const requestCropMock = vi.fn(async (file: File) => ({ status: "ok" as const, file }));
+vi.mock("@/lib/media/useImageCropper", () => ({
+  useImageCropper: () => ({
+    cropDialog: null,
+    requestCrop: requestCropMock,
+  }),
+}));
+
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
@@ -57,6 +65,7 @@ function uploadResult(url: string, publicId: string) {
 describe("AccountPanel — avatar upload", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requestCropMock.mockImplementation(async (file: File) => ({ status: "ok" as const, file }));
   });
 
   it("renders Upload button when no avatar is set", () => {
@@ -147,6 +156,35 @@ describe("AccountPanel — avatar upload", () => {
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith("Photo updated");
+    });
+  });
+
+  it("hands the cropped file (not the original) to uploadImage", async () => {
+    requestCropMock.mockResolvedValueOnce({
+      status: "ok",
+      file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
+    });
+    mockUpload.mockResolvedValue(
+      uploadResult(
+        "https://res.cloudinary.com/demo/image/upload/v1/a.jpg",
+        "gallurio/ws/avatars/a",
+      ),
+    );
+    mockUpdateAvatar.mockResolvedValue({ ok: true });
+
+    renderWithProviders(<AccountPanel {...defaultProps} />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(mockUpload).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "cropped.webp", type: "image/webp" }),
+        { subfolder: "avatars", validateDimensions: false },
+      );
     });
   });
 

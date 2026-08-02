@@ -80,6 +80,24 @@ vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
 }));
 
+vi.mock("@/lib/media/useImageCropper", () => ({
+  useImageCropper: vi.fn((spec: { aspect: number | null }) => ({
+    cropDialog: null,
+    requestCrop: vi.fn(async (file: File) => {
+      // Distinguish the OG spec (aspect 1200/630) so one test can prove the
+      // upload receives the *cropped* file, not the original — every other
+      // spec passes the file through unchanged (transparent identity).
+      if (spec.aspect === 1200 / 630) {
+        return {
+          status: "ok",
+          file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
+        };
+      }
+      return { status: "ok", file };
+    }),
+  })),
+}));
+
 vi.mock("../../portfolio/_draftActions", () => ({
   publishDraftAction: vi.fn(),
 }));
@@ -295,6 +313,33 @@ describe("PublicPageSettingsForm — site icon section", () => {
     expect(screen.getByRole("img", { name: "ogImageLabel" })).toHaveAttribute(
       "src",
       "https://cdn.cf.net/og-new.jpg",
+    );
+  });
+
+  it("hands the cropped file (not the original) to uploadImage for the OG image", async () => {
+    vi.mocked(uploadImage).mockResolvedValueOnce({
+      url: "https://cdn.cf.net/og-cropped.jpg",
+      assetId: "asset-cropped",
+    } as Awaited<ReturnType<typeof uploadImage>>);
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#ogImageFile") as HTMLInputElement;
+    const file = new File(["data"], "og.jpg", { type: "image/jpeg" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(uploadImage).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "cropped.webp", type: "image/webp" }),
     );
   });
 

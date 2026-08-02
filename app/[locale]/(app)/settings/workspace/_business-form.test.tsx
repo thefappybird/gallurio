@@ -14,8 +14,19 @@ vi.mock("@/hooks/useSlugAvailability", () => ({
   useSlugAvailability: vi.fn(() => ({ status: "idle" })),
 }));
 
+const uploadAsset = vi.fn();
 vi.mock("@/lib/storage/uploadAsset.client", () => ({
-  uploadAsset: vi.fn(),
+  uploadAsset: (...args: unknown[]) => uploadAsset(...args),
+}));
+
+vi.mock("@/lib/media/useImageCropper", () => ({
+  useImageCropper: () => ({
+    cropDialog: null,
+    requestCrop: vi.fn(async () => ({
+      status: "ok",
+      file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
+    })),
+  }),
 }));
 
 vi.mock("@/lib/utils/handleActionResult", () => ({
@@ -86,6 +97,28 @@ describe("WorkspaceBusinessForm — artists business type + other free text", ()
     fireEvent.click(screen.getByRole("button", { name: "save" }));
 
     expect(await screen.findByText(/tell us your business type/i)).toBeInTheDocument();
+  });
+});
+
+describe("WorkspaceBusinessForm — logo upload", () => {
+  it("hands the cropped file (not the original) to uploadAsset for the logo", async () => {
+    uploadAsset.mockResolvedValueOnce({
+      asset: { assetId: "logo-1", url: "https://cdn.cf.net/logo.png" },
+    });
+
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    const fileInput = document.getElementById("logoFile") as HTMLInputElement;
+    const file = new File(["logo"], "logo.png", { type: "image/png" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(uploadAsset).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "cropped.webp", type: "image/webp" }),
+        expect.anything(),
+        expect.anything(),
+      ),
+    );
   });
 });
 

@@ -25,17 +25,10 @@ import { useImageRetry } from "@/hooks/useImageRetry";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { tagBorderClass } from "@/components/app/tag-pill";
 import { completeStoryPromptAction } from "../_actions";
+import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { useImageCropper } from "@/lib/media/useImageCropper";
 
 const MAX_DESCRIPTION = 300;
-
-const LOGO_MAX_BYTES = 250 * 1024;
-const LOGO_MAX_WIDTH = 512;
-const LOGO_MAX_HEIGHT = 256;
-const LOGO_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"] as const;
-
-const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/avif"] as const;
-const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
-const SITE_ICON_MAX_DIM = 512;
 
 function slugify(name: string) {
   return (
@@ -242,6 +235,12 @@ export function StoryPromptDialog({
   const iconFileInputRef = useRef<HTMLInputElement>(null);
   const shareImageFileInputRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const { cropDialog: logoCropDialog, requestCrop: requestLogoCrop } = useImageCropper(
+    CROP_SPECS.headerLogo,
+  );
+  const { cropDialog: iconCropDialog, requestCrop: requestIconCrop } = useImageCropper(
+    CROP_SPECS.siteIcon,
+  );
 
   const suggestedTags = SUGGESTED_TAGS[businessType] ?? SUGGESTED_TAGS.other;
   const displayTags = Array.from(new Set([...suggestedTags, ...keywords]));
@@ -314,12 +313,18 @@ export function StoryPromptDialog({
   }
 
   async function uploadLogo(file: File) {
-    setLogoUploading(true);
     setLogoError(null);
+    const crop = await requestLogoCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setLogoError(t(`branding.logoErrors.${crop.reason === "type_not_accepted" ? "type" : "size"}` as Parameters<typeof t>[0]));
+      return;
+    }
+    setLogoUploading(true);
     try {
       const result = await uploadAsset(
-        file,
-        { acceptedTypes: LOGO_TYPES, maxBytes: LOGO_MAX_BYTES, maxWidth: LOGO_MAX_WIDTH, maxHeight: LOGO_MAX_HEIGHT },
+        crop.file,
+        { acceptedTypes: CROP_SPECS.headerLogo.acceptedTypes, maxBytes: CROP_SPECS.headerLogo.maxBytes },
         { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
       );
       if ("error" in result) {
@@ -347,12 +352,18 @@ export function StoryPromptDialog({
   }
 
   async function uploadIcon(file: File) {
-    setIconUploading(true);
     setIconError(null);
+    const crop = await requestIconCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setIconError(t(`branding.iconErrors.${crop.reason === "type_not_accepted" ? "type" : "size"}` as Parameters<typeof t>[0]));
+      return;
+    }
+    setIconUploading(true);
     try {
       const result = await uploadAsset(
-        file,
-        { acceptedTypes: SITE_ICON_TYPES, maxBytes: SITE_ICON_MAX_BYTES, maxWidth: SITE_ICON_MAX_DIM, maxHeight: SITE_ICON_MAX_DIM },
+        crop.file,
+        { acceptedTypes: CROP_SPECS.siteIcon.acceptedTypes, maxBytes: CROP_SPECS.siteIcon.maxBytes },
         { subfolder: "site_icon", delivery: { width: 512, height: 512, fit: "scale-down" } },
       );
       if ("error" in result) {
@@ -708,7 +719,7 @@ export function StoryPromptDialog({
                     ref={iconFileInputRef}
                     id="story-prompt-icon-file"
                     type="file"
-                    accept={SITE_ICON_TYPES.join(",")}
+                    accept={CROP_SPECS.siteIcon.acceptedTypes.join(",")}
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -821,6 +832,8 @@ export function StoryPromptDialog({
           </div>
         </div>
       </DialogContent>
+      {logoCropDialog}
+      {iconCropDialog}
     </Dialog>
   );
 }

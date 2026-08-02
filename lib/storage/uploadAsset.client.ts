@@ -12,10 +12,6 @@ export type UploadedAsset = {
 export type AssetValidationConstraints = {
   acceptedTypes: readonly string[];
   maxBytes: number;
-  maxWidth?: number;
-  maxHeight?: number;
-  /** Reject rectangular images (for square icons and business logos). */
-  requireSquare?: boolean;
 };
 
 export type AssetValidationError =
@@ -48,11 +44,8 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
 /**
  * Validates and uploads an asset (logo, icon, etc.) directly to Cloudflare Images.
  *
- * Only type and size are enforced here — dimension/square checks are not
- * (Cloudflare's delivery-time `fit` handles sizing). `maxWidth`/`maxHeight`/
- * `requireSquare` on AssetValidationConstraints are accepted but unused;
- * kept so existing call sites don't need updating for what's a
- * documentation-only distinction.
+ * Only type and size are checked here — correct framing/dimensions are
+ * guaranteed upstream by the crop dialog (see lib/media/useImageCropper).
  *
  * Returns { error: AssetValidationError } if validation fails (caller handles UI feedback),
  * or { asset: UploadedAsset } on success.

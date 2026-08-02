@@ -3230,6 +3230,17 @@
     }
   },
   "common": {
+    "imageCropper": {
+      "title": "Pangkas gambar",
+      "hintFixed": "Atur bingkai gambar Anda pada {aspect}. Gambar akan disimpan hingga {width}×{height} piksel.",
+      "hintFree": "Atur bingkai gambar Anda — bentuk apa pun bisa. Gambar akan disimpan hingga {width}×{height} piksel.",
+      "zoom": "Perbesar",
+      "cancel": "Batal",
+      "upload": "Unggah",
+      "uploading": "Mengunggah…",
+      "typeNotAccepted": "Tipe file tersebut tidak didukung.",
+      "fileTooLarge": "File terlalu besar — pilih yang di bawah {limit}."
+    },
     "pagination": {
       "showing": "Menampilkan {from}–{to} dari {total}",
       "rowsPerPage": "Per halaman",

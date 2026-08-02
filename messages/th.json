@@ -3230,6 +3230,17 @@
     }
   },
   "common": {
+    "imageCropper": {
+      "title": "ครอบตัดรูปภาพ",
+      "hintFixed": "จัดกรอบรูปของคุณที่อัตราส่วน {aspect} ระบบจะบันทึกที่ขนาดสูงสุด {width}×{height} พิกเซล",
+      "hintFree": "จัดกรอบรูปของคุณ — ใช้ได้ทุกสัดส่วน ระบบจะบันทึกที่ขนาดสูงสุด {width}×{height} พิกเซล",
+      "zoom": "ซูม",
+      "cancel": "ยกเลิก",
+      "upload": "อัปโหลด",
+      "uploading": "กำลังอัปโหลด…",
+      "typeNotAccepted": "ไม่รองรับไฟล์ประเภทนี้",
+      "fileTooLarge": "ไฟล์ใหญ่เกินไป — เลือกไฟล์ที่เล็กกว่า {limit}"
+    },
     "pagination": {
       "showing": "แสดง {from}–{to} จาก {total}",
       "rowsPerPage": "ต่อหน้า",
