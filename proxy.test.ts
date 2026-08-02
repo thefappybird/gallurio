@@ -209,10 +209,16 @@ describe("proxy", () => {
   describe("*.gallurio.com tenant subdomain routing", () => {
     function withBaseDomain(fn: () => Promise<void>): Promise<void> {
       const previous = process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
+      const previousAppUrl = process.env.NEXT_PUBLIC_APP_URL;
       process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = "gallurio.com";
+      // Mirror the internal app port present behind the production proxy. The
+      // canonical public redirect must always omit it from the browser URL.
+      process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
       return fn().finally(() => {
         if (previous === undefined) delete process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN;
         else process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = previous;
+        if (previousAppUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+        else process.env.NEXT_PUBLIC_APP_URL = previousAppUrl;
       });
     }
 

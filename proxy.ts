@@ -249,7 +249,8 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           // canonical public-page redirects never leak that port.
           const redirectUrl = new URL(publicOrigin(req));
           redirectUrl.protocol = "https:";
-          redirectUrl.host = `${canonicalMatch[1]}.${base}`;
+          redirectUrl.hostname = `${canonicalMatch[1]}.${base}`;
+          redirectUrl.port = "";
           redirectUrl.pathname = canonicalMatch[2] ?? "/";
           redirectUrl.search = req.nextUrl.search;
           return NextResponse.redirect(redirectUrl, 301);
