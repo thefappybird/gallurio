@@ -130,6 +130,15 @@ describe("MediaPicker", () => {
     expect(screen.getByRole("button", { name: /retry/i })).toBeTruthy();
   });
 
+  it("announces the picker-data fetch failure via role=alert", async () => {
+    mockFetch.mockImplementation((u: string) =>
+      u === "/api/portfolio/gallery" ? Promise.reject(new Error("net")) : routeFetch(u)
+    );
+    render(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/could not load/i);
+  });
+
   it("does not render its dialog content when closed", () => {
     render(<MediaPicker mode="single" value="" onChange={vi.fn()} open={false} onOpenChange={vi.fn()} />);
     expect(screen.queryByRole("button", { name: /all photos/i })).toBeNull();

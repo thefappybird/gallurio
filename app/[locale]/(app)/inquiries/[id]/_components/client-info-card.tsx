@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useActionError } from "@/lib/i18n/actionError";
@@ -29,6 +28,8 @@ type Props = {
   readOnly?: boolean;
   /** The inquiry's message, reconciled against the target client's notes. */
   message?: string;
+  /** Increments when a conversion attempt detects a duplicate. */
+  clientResolutionRequest?: number;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 };
 
@@ -41,12 +42,12 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, message = "", onInquiryChanged }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, message = "", clientResolutionRequest = 0, onInquiryChanged }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tMatch = useTranslations("app.inquiries.detail.clientMatch");
-  const router = useRouter();
   const [matches, setMatches] = useState<InquiryClientMatch[]>([]);
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
+  const [handledClientResolutionRequest, setHandledClientResolutionRequest] = useState(0);
   const tp = useTranslations("app.inquiries.preferred");
   const errMsg = useActionError();
   const preferredLabel = (() => {
@@ -71,6 +72,11 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     };
   }, [inquiryId, locked]);
 
+  if (clientResolutionRequest > handledClientResolutionRequest && matches.length > 0) {
+    setHandledClientResolutionRequest(clientResolutionRequest);
+    setMatchDialogOpen(true);
+  }
+
   async function handleMatchResolve(resolution: ClientMatchResolution) {
     const res = await resolveInquiryClientAction(inquiryId, resolution);
     setMatchDialogOpen(false);
@@ -80,7 +86,6 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     }
     toast.success(tMatch("resolvedToast"));
     setMatches([]);
-    router.refresh();
   }
 
   const [editingPhone, setEditingPhone] = useState(false);

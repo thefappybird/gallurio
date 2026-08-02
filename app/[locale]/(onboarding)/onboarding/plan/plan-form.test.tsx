@@ -509,6 +509,37 @@ describe("PlanStepForm — promo code redemption", () => {
     expect(mockRouterRefresh).toHaveBeenCalled();
   });
 
+  it("marks the promo input aria-invalid and links it to the alert message when redemption fails", async () => {
+    const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
+    vi.mocked(redeemPromoCodeAction).mockResolvedValueOnce({
+      error: "promo_code_not_found",
+    });
+
+    renderForm();
+    fireEvent.click(screen.getAllByRole("button", { name: /have a promo code/i })[0]);
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    fireEvent.change(input, { target: { value: "BADCODE" } });
+    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute("aria-invalid", "true");
+    });
+    const describedBy = input.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const alertEl = document.getElementById(describedBy!);
+    expect(alertEl).toHaveAttribute("role", "alert");
+  });
+
+  it("does not mark the promo input invalid before any redemption attempt", async () => {
+    renderForm();
+    fireEvent.click(screen.getAllByRole("button", { name: /have a promo code/i })[0]);
+
+    const input = await screen.findByPlaceholderText(/enter code/i);
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(input).not.toHaveAttribute("aria-describedby");
+  });
+
   it("shows the translated error message and does not redirect when the code is invalid", async () => {
     const { redeemPromoCodeAction } = await import("@/lib/actions/promoCode");
     vi.mocked(redeemPromoCodeAction).mockResolvedValueOnce({

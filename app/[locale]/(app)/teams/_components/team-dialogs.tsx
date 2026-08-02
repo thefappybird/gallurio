@@ -18,6 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TEAM_COLOR_PALETTE } from "@/lib/teams/team-colors";
+import { createTeamSchema, renameTeamSchema } from "@/lib/validators/team";
 import {
   createTeamAction,
   renameTeamAction,
@@ -101,12 +102,10 @@ export function CreateDialog({
 
   function handleSubmit() {
     const trimmed = name.trim();
-    if (!trimmed) {
-      setNameError(t("errors.nameRequired"));
-      return;
-    }
-    if (trimmed.length > 40) {
-      setNameError(t("errors.nameTooLong"));
+    const parsed = createTeamSchema.shape.name.safeParse(trimmed);
+    if (!parsed.success) {
+      const code = parsed.error.issues[0]?.code;
+      setNameError(code === "too_big" ? t("errors.nameTooLong") : t("errors.nameRequired"));
       return;
     }
     setNameError(null);
@@ -158,9 +157,15 @@ export function CreateDialog({
               disabled={pending}
               maxLength={40}
               autoFocus
+              aria-invalid={nameError ? true : undefined}
+              aria-describedby={nameError ? "create-team-name-error" : undefined}
             />
             {nameError && (
-              <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p
+                id="create-team-name-error"
+                role="alert"
+                className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
                 {nameError}
               </p>
             )}
@@ -227,12 +232,10 @@ export function EditDialog({
 
   function handleSubmit() {
     const trimmed = name.trim();
-    if (!trimmed) {
-      setError(t("errors.nameRequired"));
-      return;
-    }
-    if (trimmed.length > 40) {
-      setError(t("errors.nameTooLong"));
+    const parsed = renameTeamSchema.shape.name.safeParse(trimmed);
+    if (!parsed.success) {
+      const code = parsed.error.issues[0]?.code;
+      setError(code === "too_big" ? t("errors.nameTooLong") : t("errors.nameRequired"));
       return;
     }
     setError(null);
@@ -299,9 +302,15 @@ export function EditDialog({
               disabled={pending}
               maxLength={40}
               autoFocus
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "edit-team-name-error" : undefined}
             />
             {error && (
-              <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p
+                id="edit-team-name-error"
+                role="alert"
+                className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
                 {error}
               </p>
             )}

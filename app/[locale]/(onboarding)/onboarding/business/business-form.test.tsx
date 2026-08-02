@@ -118,6 +118,26 @@ describe("BusinessStepForm — artists type + other free text", () => {
   });
 });
 
+describe("BusinessStepForm — field error a11y wiring", () => {
+  it("wires firstName's aria-invalid + aria-describedby to its role=alert error on a blocked submit", async () => {
+    renderForm({ firstName: "" });
+
+    const firstNameInput = screen.getByLabelText(/first name/i);
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(firstNameInput).toHaveAttribute("aria-invalid", "true");
+    const describedBy = firstNameInput.getAttribute("aria-describedby")!.split(" ");
+    expect(describedBy).toContain(alert.id);
+  });
+
+  it("does not mark firstName invalid when the field is valid", () => {
+    renderForm();
+
+    expect(screen.getByLabelText(/first name/i)).not.toHaveAttribute("aria-invalid");
+  });
+});
+
 describe("BusinessStepForm — submit navigation", () => {
   it("navigates to /onboarding/workspace after a successful submit", async () => {
     const { businessStepAction } = await import("@/lib/actions/onboarding");

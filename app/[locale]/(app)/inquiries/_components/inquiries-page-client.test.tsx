@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createElement, type ReactNode } from "react";
-import { act, screen } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 
 // ── navigation / router ────────────────────────────────────────────────────
 const refresh = vi.fn();
 const replace = vi.fn();
+const push = vi.fn();
 vi.mock("@/lib/i18n/navigation", () => ({
-  useRouter: () => ({ refresh, replace, push: vi.fn() }),
+  useRouter: () => ({ refresh, replace, push }),
   usePathname: () => "/en/inquiries",
   Link: ({ children, href }: { children: ReactNode; href: string }) =>
     createElement("a", { href }, children),
@@ -33,11 +34,16 @@ vi.mock("@/app/[locale]/(app)/notifications/_actions", () => ({
 // Expose the rendered rows so tests can inspect optimistic patches.
 let lastRenderedRows: InquiryRow[] = [];
 vi.mock("./inquiry-table", () => ({
-  InquiryTable: ({ rows }: { rows: InquiryRow[] }) => {
+  InquiryTable: ({ rows, onOpenInquiry }: { rows: InquiryRow[]; onOpenInquiry?: (id: string) => void }) => {
     lastRenderedRows = rows;
-    return <div data-testid="inquiry-table" />;
+    return <button type="button" data-testid="inquiry-table" onClick={() => onOpenInquiry?.("inq-1")} />;
   },
 }));
+
+const { getInquiryDetailAction } = vi.hoisted(() => ({
+  getInquiryDetailAction: vi.fn(),
+}));
+vi.mock("../_actions", () => ({ getInquiryDetailAction }));
 
 vi.mock("./inquiry-view-toggle", () => ({
   InquiryViewToggle: () => <div />,
@@ -128,6 +134,8 @@ const historyReplaceState = vi.spyOn(window.history, "replaceState");
 beforeEach(() => {
   refresh.mockReset();
   replace.mockReset();
+  push.mockReset();
+  getInquiryDetailAction.mockResolvedValue({ ok: true, detail });
   liveRefresh.mockReset();
   replace.mockImplementation((href: string) => {
     window.history.replaceState(null, "", href);
@@ -137,6 +145,31 @@ beforeEach(() => {
 });
 
 describe("InquiriesPageClient", () => {
+  it("opens a table inquiry without navigating or refetching the table", async () => {
+    renderInquiriesPage({ ...baseProps, initialDetail: null });
+
+    fireEvent.click(screen.getByTestId("inquiry-table"));
+
+    await waitFor(() => expect(getInquiryDetailAction).toHaveBeenCalledWith("inq-1", "en"));
+    expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();
+    expect(push).not.toHaveBeenCalled();
+    expect(window.location.search).toContain("inquiryId=inq-1");
+  });
+
+  it("opens server-supplied inquiry detail without relying on a second URL sync", () => {
+    window.history.replaceState(null, "", "/en/inquiries?status=all");
+    const view = renderInquiriesPage({ ...baseProps, initialDetail: null });
+    expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
+
+    view.rerender(
+      <NotificationProvider initialNotifications={[]} initialUnreadCount={0}>
+        <InquiriesPageClient {...baseProps} />
+      </NotificationProvider>
+    );
+
+    expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();
+  });
+
   it("does not call router.refresh() when modal closes with no changes", () => {
     renderInquiriesPage(baseProps);
     expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();

@@ -8,6 +8,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useFieldError } from "@/components/ui/form-field";
 import { resetPasswordAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 
@@ -26,6 +27,19 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   const success = state && "ok" in state;
   const error = state && "error" in state ? state.error : null;
+  const fieldErrors = state && "error" in state ? state.fieldErrors : undefined;
+  // The mismatch branch sets fieldErrors.confirmPassword to the same sentence as
+  // the top-level error -- render it once, on the field, not duplicated up top.
+  const topError = error && error === fieldErrors?.confirmPassword ? null : error;
+
+  const passwordA11y = useFieldError(fieldErrors?.password, {
+    id: "reset-password",
+    describedBy: topError ? "reset-error" : undefined,
+  });
+  const confirmPasswordA11y = useFieldError(fieldErrors?.confirmPassword, {
+    id: "reset-confirm",
+    describedBy: topError ? "reset-error" : undefined,
+  });
 
   if (!token) {
     return (
@@ -75,17 +89,18 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
         {/* New password */}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="reset-password">{t("resetPassword.passwordLabel")}</Label>
+          <Label htmlFor={passwordA11y.id}>{t("resetPassword.passwordLabel")}</Label>
           <div className="relative">
             <Input
-              id="reset-password"
+              id={passwordA11y.id}
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               required
               disabled={pending}
               className="pe-10"
-              aria-describedby={error ? "reset-error" : undefined}
+              aria-invalid={passwordA11y["aria-invalid"]}
+              aria-describedby={passwordA11y["aria-describedby"]}
             />
             <button
               type="button"
@@ -102,22 +117,28 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
               )}
             </button>
           </div>
+          {fieldErrors?.password && (
+            <p id={passwordA11y.errorId} role="alert" className="text-xs text-destructive">
+              {fieldErrors.password}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">{t("signUp.passwordHint")}</p>
         </div>
 
         {/* Confirm password */}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="reset-confirm">{t("fields.confirmPassword")}</Label>
+          <Label htmlFor={confirmPasswordA11y.id}>{t("fields.confirmPassword")}</Label>
           <div className="relative">
             <Input
-              id="reset-confirm"
+              id={confirmPasswordA11y.id}
               name="confirmPassword"
               type={showConfirm ? "text" : "password"}
               autoComplete="new-password"
               required
               disabled={pending}
               className="pe-10"
-              aria-describedby={error ? "reset-error" : undefined}
+              aria-invalid={confirmPasswordA11y["aria-invalid"]}
+              aria-describedby={confirmPasswordA11y["aria-describedby"]}
             />
             <button
               type="button"
@@ -134,11 +155,16 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
               )}
             </button>
           </div>
+          {fieldErrors?.confirmPassword && (
+            <p id={confirmPasswordA11y.errorId} role="alert" className="text-xs text-destructive">
+              {fieldErrors.confirmPassword}
+            </p>
+          )}
         </div>
 
-        {error && (
+        {topError && (
           <p id="reset-error" role="alert" className="text-sm text-destructive">
-            {error}
+            {topError}
           </p>
         )}
 

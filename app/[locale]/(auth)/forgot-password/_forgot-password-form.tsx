@@ -6,8 +6,8 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { TurnstileWidget } from "@/components/ui/turnstile-widget";
+import { FormField } from "@/components/ui/form-field";
 import { forgotPasswordAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 
@@ -21,6 +21,7 @@ export function ForgotPasswordForm() {
 
   const success = state && "ok" in state;
   const error = state && "error" in state ? state.error : null;
+  const fieldErrors = state && "error" in state ? state.fieldErrors : undefined;
 
   if (success) {
     return (
@@ -55,18 +56,25 @@ export function ForgotPasswordForm() {
           value={turnstileToken}
         />
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="forgot-email">{t("fields.email")}</Label>
-          <Input
-            id="forgot-email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            disabled={pending}
-            aria-describedby={error ? "forgot-error" : undefined}
-          />
-        </div>
+        <FormField
+          id="forgot-email"
+          label={t("fields.email")}
+          error={fieldErrors?.email}
+          describedBy={error ? "forgot-error" : undefined}
+        >
+          {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+            <Input
+              id={id}
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              disabled={pending}
+              aria-invalid={ariaInvalid}
+              aria-describedby={ariaDescribedby}
+            />
+          )}
+        </FormField>
         <div className="flex justify-center">
           <TurnstileWidget
             onToken={setTurnstileToken}

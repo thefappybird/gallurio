@@ -24,7 +24,6 @@ import { Client } from "@/lib/db/models";
 import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
-import { areAllSessionsPast } from "@/lib/inquiries/session-past";
 import { INQUIRIES_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
 import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
 
@@ -286,13 +285,6 @@ export default async function InquiriesPage({
     }
     const detail = detailResult!;
 
-    const detailSessions = (detail.inquiry.sessions ?? []) as {
-      startDate: string;
-      startTime: string;
-      endTime: string;
-    }[];
-    const isPast = areAllSessionsPast(detailSessions, tz);
-
     initialDetail = {
       inquiryId: String(detail.inquiry._id),
       locale,
@@ -319,7 +311,6 @@ export default async function InquiriesPage({
           }
         : null,
       isOwner: role === "owner",
-      readOnly: isPast,
       hasConflict: await (async () => {
         const detailId = String(detail.inquiry._id);
         // If this inquiry was already included in the page-level conflict query, use that result.
