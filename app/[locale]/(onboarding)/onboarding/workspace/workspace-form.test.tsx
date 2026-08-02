@@ -38,10 +38,15 @@ beforeEach(() => {
 
 function renderForm(
   overrides: Partial<WorkspaceSetupInput> = {},
-  furthestStep: "business" | "workspace" | "plan" | "done" = "workspace"
+  furthestStep: "business" | "workspace" | "plan" | "done" = "workspace",
+  portfolioDomain: string | null = null,
 ) {
   return renderWithProviders(
-    <WorkspaceStepForm defaults={{ ...defaults, ...overrides }} furthestStep={furthestStep} />
+    <WorkspaceStepForm
+      defaults={{ ...defaults, ...overrides }}
+      furthestStep={furthestStep}
+      portfolioDomain={portfolioDomain}
+    />
   );
 }
 
@@ -63,6 +68,15 @@ describe("WorkspaceStepForm", () => {
     fireEvent.change(slugInput, { target: { value: "new-slug" } });
 
     expect(screen.getByText(/gallurio\.com\/w\/new-slug/)).toBeInTheDocument();
+  });
+
+  it("uses a wide editable slug with the production domain anchored on the right", () => {
+    renderForm({}, "workspace", "gallurio.com");
+
+    expect(screen.getByText(".gallurio.com")).toBeInTheDocument();
+    expect(screen.getByText(/sarah-bell\.gallurio\.com/)).toBeInTheDocument();
+    expect(screen.queryByText("gallurio.com/w/")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/workspace url/i)).toHaveClass("flex-1");
   });
 
   it("disables submit while the slug is being checked or unavailable", () => {

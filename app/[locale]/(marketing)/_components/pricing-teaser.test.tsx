@@ -37,10 +37,10 @@ describe("PricingTeaser", () => {
     expect(screen.queryByText("Beta Tester")).not.toBeInTheDocument();
   });
 
-  it("shows a Coming soon indicator alongside the existing badge", () => {
+  it("shows the free-month badge without a launch-status indicator", () => {
     render(<PricingTeaser proPricing={proPricing} />, { wrapper });
 
     expect(screen.getByText("1 month free")).toBeInTheDocument();
-    expect(screen.getByText("Coming soon")).toBeInTheDocument();
+    expect(screen.queryByText("Coming soon")).not.toBeInTheDocument();
   });
 });

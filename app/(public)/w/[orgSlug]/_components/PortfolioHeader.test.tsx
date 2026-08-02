@@ -182,20 +182,20 @@ describe("PortfolioHeader", () => {
     );
   });
 
-  it("uses clean tenant paths and marks /home active when public href overrides are provided", () => {
+  it("uses the tenant root for Home and marks it active when public href overrides are provided", () => {
     render(
       <PortfolioHeader
         slug="luna-studio"
         labels={labels}
-        homeHref="/home"
+        homeHref="/"
         galleryHref="/gallery"
-        activePath="/home"
+        activePath="/"
       />,
     );
     const nav = screen.getByRole("navigation", { name: labels.navLandmark });
     const home = within(nav).getByRole("link", { name: "Home" });
     const gallery = within(nav).getByRole("link", { name: "Gallery" });
-    expect(home).toHaveAttribute("href", "/home");
+    expect(home).toHaveAttribute("href", "/");
     expect(gallery).toHaveAttribute("href", "/gallery");
     expect(home.style.borderBottomColor).not.toBe("transparent");
     expect(gallery.style.borderBottomColor).toBe("transparent");

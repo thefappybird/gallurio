@@ -145,7 +145,7 @@ export function PortfolioHeader({
   const isHomeActive =
     currentPath === homeHref ||
     currentPath === `/w/${slug}/` ||
-    (homeHref === "/home" && currentPath === "/");
+    (homeHref === "/" && currentPath === "/");
   const isGalleryActive = currentPath === galleryHref;
 
   const fontSize = config?.fontSize ? (FONT_SIZE_MAP[config.fontSize] ?? "0.9375rem") : "0.9375rem";

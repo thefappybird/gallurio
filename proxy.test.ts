@@ -286,7 +286,7 @@ describe("proxy", () => {
         }
       }));
 
-    it("301-redirects the canonical /w home route to the tenant /home route", () =>
+    it("301-redirects the canonical /w home route to the tenant root", () =>
       withBaseDomain(async () => {
         const { proxy } = await import("./proxy");
         const req = new NextRequest("http://localhost/w/acme?ref=nav", {
@@ -297,7 +297,7 @@ describe("proxy", () => {
 
         expect(response.status).toBe(301);
         expect(response.headers.get("location")).toBe(
-          "https://acme.gallurio.com/home?ref=nav",
+          "https://acme.gallurio.com/?ref=nav",
         );
       }));
 
@@ -349,7 +349,7 @@ describe("proxy", () => {
         const response = (await proxy(req)) as Response;
 
         expect(response.status).toBe(301);
-        expect(response.headers.get("location")).toBe("https://banaag.gallurio.com/home");
+        expect(response.headers.get("location")).toBe("https://banaag.gallurio.com/");
       }));
 
     it("still 301-redirects a valid multi-part slug like banaag-studio", () =>
@@ -362,7 +362,7 @@ describe("proxy", () => {
         const response = (await proxy(req)) as Response;
 
         expect(response.status).toBe(301);
-        expect(response.headers.get("location")).toBe("https://banaag-studio.gallurio.com/home");
+        expect(response.headers.get("location")).toBe("https://banaag-studio.gallurio.com/");
       }));
 
     it("does not 301-redirect an adversarial /w/ path segment that could hijack the redirect host (open redirect)", () =>

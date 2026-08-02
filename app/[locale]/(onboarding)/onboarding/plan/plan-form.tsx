@@ -275,12 +275,6 @@ export function PlanStepForm({
                   disabled && "cursor-not-allowed opacity-50 hover:border-border"
                 )}
               >
-                {/* Coming soon: paid checkout unavailable while beta-only mode is active (no Merchant of Record selected yet), see docs/RELEASE-CHECKLIST.md */}
-                {!billingAvailable && p.id === "pro" && (
-                  <span className="absolute -top-2 right-3 bg-brand px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-foreground">
-                    {t("comingSoon")}
-                  </span>
-                )}
                 <div className="flex items-baseline justify-between">
                   <h3 className="font-heading text-lg font-semibold">{tPlans(`${p.id}.name`)}</h3>
                   {planChoiceLocked ? (

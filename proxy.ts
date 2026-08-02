@@ -244,10 +244,14 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           WORKSPACE_SLUG_RE.test(canonicalMatch[1]) &&
           !isReservedSlug(canonicalMatch[1])
         ) {
-          const redirectUrl = req.nextUrl.clone();
+          // req.nextUrl can carry the internal upstream port (e.g. :3000)
+          // behind Caddy. Start from the configured browser-facing origin so
+          // canonical public-page redirects never leak that port.
+          const redirectUrl = new URL(publicOrigin(req));
           redirectUrl.protocol = "https:";
           redirectUrl.host = `${canonicalMatch[1]}.${base}`;
-          redirectUrl.pathname = canonicalMatch[2] ?? "/home";
+          redirectUrl.pathname = canonicalMatch[2] ?? "/";
+          redirectUrl.search = req.nextUrl.search;
           return NextResponse.redirect(redirectUrl, 301);
         }
       } else {
@@ -264,7 +268,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
         ) {
           const rewriteUrl = req.nextUrl.clone();
           rewriteUrl.pathname =
-            pathname === "/home"
+            pathname === "/" || pathname === "/home"
               ? `/w/${tenantMatch[1]}`
               : `/w/${tenantMatch[1]}${pathname}`;
           return NextResponse.rewrite(rewriteUrl);

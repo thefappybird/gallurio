@@ -30,6 +30,7 @@ import { getProPricing } from "@/lib/lemonsqueezy/pricing";
 import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { AccountPanel } from "../account/_panel";
 import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import type {
   UpdateWorkspaceBusinessInput,
   PublicPageSettingsInput,
@@ -167,6 +168,7 @@ export default async function SettingsCatchallPage({
 
   const t = await getTranslations("app.settings.tabs");
   const proPricing = await getProPricing();
+  const portfolioDomain = portfolioBaseDomain();
 
   // Active slug: null means base /settings -> render account tab
   const activeSlug = slug;
@@ -203,7 +205,7 @@ export default async function SettingsCatchallPage({
           label: t("workspace"),
           icon: <Building2 className="size-4" />,
           ownerOnly: true,
-          body: <WorkspaceBusinessForm defaults={businessDefaults} />,
+          body: <WorkspaceBusinessForm defaults={businessDefaults} portfolioDomain={portfolioDomain} />,
         },
         {
           slug: "public-page",

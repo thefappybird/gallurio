@@ -40,7 +40,7 @@ describe("portfolioPublicUrl", () => {
 
   it("builds a subdomain URL in production (base domain set)", () => {
     process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN = "gallurio.com";
-    expect(portfolioPublicUrl("acme")).toBe("https://acme.gallurio.com/home");
+    expect(portfolioPublicUrl("acme")).toBe("https://acme.gallurio.com");
   });
 });
 
@@ -62,8 +62,8 @@ describe("portfolioUrlParts", () => {
     expect(parts.mode).toBe("subdomain");
     expect(parts.prefix).toBe("");
     expect(parts.slug).toBe("acme");
-    expect(parts.suffix).toBe(".gallurio.com/home");
-    expect(parts.full).toBe("https://acme.gallurio.com/home");
+    expect(parts.suffix).toBe(".gallurio.com");
+    expect(parts.full).toBe("https://acme.gallurio.com");
   });
 });
 

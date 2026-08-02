@@ -43,8 +43,8 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
             closeMenu: "Close menu",
           }}
           config={header}
-          activePath="/home"
-          homeHref="/home"
+          activePath="/"
+          homeHref="/"
           galleryHref="/gallery"
         />
       </div>

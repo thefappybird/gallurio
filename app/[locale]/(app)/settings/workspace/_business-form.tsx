@@ -70,8 +70,10 @@ const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
 
 export function WorkspaceBusinessForm({
   defaults,
+  portfolioDomain,
 }: {
   defaults: UpdateWorkspaceBusinessInput;
+  portfolioDomain: string | null;
 }) {
   const t = useTranslations("app.settings.workspace");
   const tOnb = useTranslations("onboarding.business");
@@ -181,14 +183,22 @@ export function WorkspaceBusinessForm({
               <span className="font-normal text-muted-foreground">{tOnb("workspaceUrlNote")}</span>
             </Label>
             <div className="flex items-stretch">
-              <span className="flex items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
-                gallurio.com/w/
-              </span>
+              {!portfolioDomain && (
+                <span className="flex items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+                  gallurio.com/w/
+                </span>
+              )}
               <Input
                 id="slug"
                 aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
+                className={portfolioDomain ? "rounded-e-none" : "rounded-s-none"}
                 {...register("slug")}
               />
+              {portfolioDomain && (
+                <span className="flex items-center border border-s-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+                  .{portfolioDomain}
+                </span>
+              )}
             </div>
             <SlugStatusIndicator status={slugStatus} t={tOnb} />
             {errors.slug && <p className="text-sm text-destructive">{fieldMessage(errors.slug)}</p>}

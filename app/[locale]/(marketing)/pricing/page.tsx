@@ -61,8 +61,6 @@ export default async function PricingPage({ params }: Props) {
                 <Badge variant="default" className="bg-brand text-brand-foreground">
                   {t("pro.badge")}
                 </Badge>
-                {/* Coming soon: Lemon Squeezy checkout paused pending MoR verification, see docs/RELEASE-CHECKLIST.md */}
-                <Badge variant="outline">{t("pro.comingSoon")}</Badge>
               </div>
               <p className="text-sm font-semibold text-brand">{t("pro.freeMonth")}</p>
               <p className="text-2xl font-semibold tracking-tight">

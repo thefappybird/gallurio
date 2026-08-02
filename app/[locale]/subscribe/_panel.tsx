@@ -134,7 +134,6 @@ export function SubscribePanel({
       )}
 
       <div className="relative flex flex-col gap-3 border border-brand bg-background p-4">
-        {!billingAvailable && <span className="absolute -top-2 end-3 bg-brand px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-foreground">{tPlan("comingSoon")}</span>}
         <div className="flex items-baseline justify-between">
           <h2 className="font-heading text-lg font-semibold">{tPlans("pro.name")}</h2>
           {billingAvailable && <span className="flex size-5 items-center justify-center bg-brand text-brand-foreground"><Check className="size-3.5" /></span>}

@@ -51,9 +51,14 @@ const COUNTRIES = BILLING_COUNTRY_VALUES.map((value) => ({
 export function WorkspaceStepForm({
   defaults,
   furthestStep,
+  portfolioDomain,
 }: {
   defaults: WorkspaceSetupInput;
   furthestStep: OnboardingStep;
+  // Resolved by the server page and serialized into the initial RSC payload.
+  // Reading NEXT_PUBLIC_* here caused the server and browser bundles to see
+  // different values during local env changes, producing a hydration mismatch.
+  portfolioDomain: string | null;
 }) {
   const t = useTranslations("onboarding.workspace");
   // Slug field copy reuses onboarding.business's existing workspaceUrl/slug*
@@ -129,21 +134,31 @@ export function WorkspaceStepForm({
             <span className="font-normal text-muted-foreground">{tSlug("workspaceUrlNote")}</span>
           </Label>
           <div className="flex items-stretch">
-            <span className="flex items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
-              gallurio.com/w/
-            </span>
+            {!portfolioDomain && (
+              <span className="flex items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+                gallurio.com/w/
+              </span>
+            )}
             <Input
               id="slug"
               placeholder={tSlug("slugPlaceholder")}
+              className={portfolioDomain ? "flex-1" : undefined}
               aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
               {...register("slug")}
             />
+            {portfolioDomain && (
+              <span className="flex shrink-0 items-center border border-l-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+                .{portfolioDomain}
+              </span>
+            )}
           </div>
           <div className="flex justify-between items-center gap-2">
             <SlugStatusIndicator status={slugStatus} t={tSlug} />
             {slugValue && (
               <p className="text-xs text-muted-foreground">
-                {tSlug("slugPreview")} <span className="font-mono">gallurio.com/w/{slugValue}</span>
+                {tSlug("slugPreview")} <span className="font-mono">
+                  {portfolioDomain ? `${slugValue}.${portfolioDomain}` : `gallurio.com/w/${slugValue}`}
+                </span>
               </p>
             )}
           </div>
