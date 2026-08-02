@@ -57,6 +57,49 @@ describe("LocationPicker", () => {
     expect(screen.getByTestId("location-map")).toBeInTheDocument();
   });
 
+  it("renders `error` above the map so it sits under the input, not below the map", () => {
+    renderWithProviders(
+      <LocationPicker value={EMPTY} onChange={() => {}} error="Pick a location" />
+    );
+    const message = screen.getByRole("alert");
+    expect(message).toHaveTextContent("Pick a location");
+    // DOCUMENT_POSITION_FOLLOWING === 4: the map comes AFTER the message.
+    const map = screen.getByTestId("location-map");
+    expect(message.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("marks the input invalid and points aria-describedby at the message", () => {
+    renderWithProviders(
+      <LocationPicker
+        value={EMPTY}
+        onChange={() => {}}
+        error="Pick a location"
+        ariaDescribedby="caller-hint"
+      />
+    );
+    const input = screen.getByRole("combobox");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    // Own error id comes first, caller-supplied ids are preserved after it.
+    const errorId = screen.getByRole("alert").getAttribute("id");
+    expect(input.getAttribute("aria-describedby")).toBe(`${errorId} caller-hint`);
+  });
+
+  it("gives the Apply button a destructive ring and a shake when invalid", () => {
+    renderWithProviders(
+      <LocationPicker
+        value={EMPTY}
+        onChange={() => {}}
+        editable
+        labels={EDITABLE_LABELS}
+        error="Pick a location"
+      />
+    );
+    const apply = screen.getByLabelText("Accept location");
+    expect(apply.className).toContain("ring-destructive");
+    // Motion is a second, non-color signal; the text message is the third.
+    expect(apply.className).toContain("animate-shake");
+  });
+
   it("commits a free-typed address on blur", () => {
     const onChange = vi.fn();
     renderWithProviders(<LocationPicker value={EMPTY} onChange={onChange} />);

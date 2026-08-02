@@ -275,12 +275,6 @@ export function PlanStepForm({
                   disabled && "cursor-not-allowed opacity-50 hover:border-border"
                 )}
               >
-                {/* Coming soon: paid checkout unavailable while beta-only mode is active (no Merchant of Record selected yet), see docs/RELEASE-CHECKLIST.md */}
-                {!billingAvailable && p.id === "pro" && (
-                  <span className="absolute -top-2 right-3 bg-brand px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-foreground">
-                    {t("comingSoon")}
-                  </span>
-                )}
                 <div className="flex items-baseline justify-between">
                   <h3 className="font-heading text-lg font-semibold">{tPlans(`${p.id}.name`)}</h3>
                   {planChoiceLocked ? (
@@ -436,7 +430,7 @@ function PromoCodePanel({
                 transition={{ duration: 0.12, ease: "easeOut" }}
                 className="absolute inset-0 flex items-center gap-2 p-2"
               >
-                <Input ref={promoInputRef} value={promoCode} onChange={(event) => { setPromoCode(event.target.value); onPromoError(null); }} placeholder={tPromo("placeholder")} aria-describedby={promoError ? errorId : undefined} className="min-w-0 flex-1" />
+                <Input ref={promoInputRef} value={promoCode} onChange={(event) => { setPromoCode(event.target.value); onPromoError(null); }} placeholder={tPromo("placeholder")} aria-invalid={promoError ? true : undefined} aria-describedby={promoError ? errorId : undefined} className="min-w-0 flex-1" />
                 <Button type="button" variant="outline" size="sm" onClick={submitPromoCode} disabled={promoLoading || !promoCode || planChoiceLocked}>
                   {promoLoading ? <><Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin" />{tPromo("applying")}</> : tPromo("submit")}
                 </Button>

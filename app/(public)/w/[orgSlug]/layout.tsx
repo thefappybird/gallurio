@@ -20,6 +20,7 @@ import { PageViewBeacon } from "./_components/PageViewBeacon";
 import { buildContactLabels } from "./_components/buildContactLabels";
 import ContactTriggerDelegate from "@/lib/page-builder/contactTrigger.client";
 import type { PortfolioContactConfig, PortfolioHeaderConfig } from "@/lib/page-builder/types";
+import { portfolioGalleryPath, portfolioHomePath } from "@/lib/portfolio/publicUrl";
 
 /**
  * Layout for the public portfolio page (`/w/[orgSlug]`).
@@ -82,6 +83,8 @@ export default async function PublicPortfolioLayout({
       <GoogleFontLoader families={collectGoogleFontFamilies(brandKit)} />
       <PortfolioHeader
         slug={workspace.slug}
+        homeHref={portfolioHomePath(workspace.slug)}
+        galleryHref={portfolioGalleryPath(workspace.slug)}
         labels={{
           brand: workspace.name,
           navLandmark: tNav("navLandmark"),

@@ -5,7 +5,8 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client } from "@/lib/db/models";
+import { Booking, Client, Team } from "@/lib/db/models";
+import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 
 const WS_A = new Types.ObjectId();
 const WS_B = new Types.ObjectId();
@@ -119,6 +120,15 @@ const EXPECTED_HEADERS = [
   "notes",
   "booking_id",
   "session_index",
+  // Appended after the legacy block so existing column positions never move.
+  "clientId",
+  "clientPhone",
+  "locationLat",
+  "locationLng",
+  "teamName",
+  "invoiceNumber",
+  "payments",
+  "createdAt",
 ];
 
 describe("GET /api/bookings/export", () => {
@@ -128,9 +138,44 @@ describe("GET /api/bookings/export", () => {
     const res = await callExport();
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toContain("text/csv");
-    expect(res.headers.get("Content-Disposition")).toMatch(
-      /^attachment; filename="bookings-\d{4}-\d{2}-\d{2}\.csv"$/
+    expect(res.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="gallurio-(all teams)-bookings.csv"'
     );
+  });
+
+  it("neutralizes a formula-leading title but leaves a negative amount numeric", async () => {
+    // Titles are user-authored and would execute on open in Excel/Sheets.
+    // amountTotal must NOT be prefixed or the number stops being a number.
+    await seedBooking(WS_A, { title: "=SUM(1+1)", amountTotal: -500 });
+
+    const res = await callExport();
+    const body = await res.text();
+    const { rows } = parseCsv(body);
+
+    expect(rows[0][EXPECTED_HEADERS.indexOf("title")]).toBe("'=SUM(1+1)");
+    expect(rows[0][EXPECTED_HEADERS.indexOf("amountTotal")]).toBe("-500");
+  });
+
+  it("format=xlsx returns a spreadsheet that parses back to the same rows", async () => {
+    await seedBooking(WS_A, { title: "Garden Wedding" });
+    const { parseXlsxToRows } = await import("@/lib/utils/xlsx");
+
+    const res = await callExport("format=xlsx");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toContain("spreadsheetml.sheet");
+    expect(res.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="gallurio-(all teams)-bookings.xlsx"'
+    );
+
+    const parsed = await parseXlsxToRows(Buffer.from(await res.arrayBuffer()));
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0].title).toBe("Garden Wedding");
+  });
+
+  it("rejects an unknown format instead of silently falling back to CSV", async () => {
+    const res = await callExport("format=pdf");
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("invalid_format");
   });
 
   it("CSV header includes booking_id and session_index as the last two columns", async () => {
@@ -214,7 +259,7 @@ describe("GET /api/bookings/export", () => {
     expect(body).not.toContain("bob@b.com");
   });
 
-  it("excludes cancelled bookings by default", async () => {
+  it("includes cancelled bookings by default (opt-out convention)", async () => {
     await seedBooking(WS_A, { title: "Active", status: "booked" });
     await seedBooking(WS_A, {
       title: "Cancelled",
@@ -229,11 +274,11 @@ describe("GET /api/bookings/export", () => {
     const body = await res.text();
     const lines = body.split("\r\n").filter(Boolean);
 
-    expect(lines).toHaveLength(2); // header + 1 active row
-    expect(body).not.toContain("Cancelled");
+    expect(lines).toHaveLength(3); // header + 2 rows
+    expect(body).toContain("Cancelled");
   });
 
-  it("includes cancelled bookings when includeCancelled=1", async () => {
+  it("excludes cancelled bookings when includeCancelled=0", async () => {
     await seedBooking(WS_A, { title: "Active", status: "booked" });
     await seedBooking(WS_A, {
       title: "Cancelled",
@@ -244,12 +289,44 @@ describe("GET /api/bookings/export", () => {
       endAt: "2026-09-01T18:00:00Z",
     });
 
-    const res = await callExport("includeCancelled=1");
+    const res = await callExport("includeCancelled=0");
+    const body = await res.text();
+    const lines = body.split("\r\n").filter(Boolean);
+
+    expect(lines).toHaveLength(2); // header + 1 active row
+    expect(body).not.toContain("Cancelled");
+  });
+
+  it("includes past bookings by default (opt-out convention)", async () => {
+    await seedBooking(WS_A, {
+      title: "Past Event",
+      startAt: "2020-01-01T09:00:00Z",
+      endAt: "2020-01-01T18:00:00Z",
+    });
+    await seedBooking(WS_A, { title: "Future Event" });
+
+    const res = await callExport();
     const body = await res.text();
     const lines = body.split("\r\n").filter(Boolean);
 
     expect(lines).toHaveLength(3); // header + 2 rows
-    expect(body).toContain("Cancelled");
+    expect(body).toContain("Past Event");
+  });
+
+  it("excludes past bookings when showPast=0", async () => {
+    await seedBooking(WS_A, {
+      title: "Past Event",
+      startAt: "2020-01-01T09:00:00Z",
+      endAt: "2020-01-01T18:00:00Z",
+    });
+    await seedBooking(WS_A, { title: "Future Event" });
+
+    const res = await callExport("showPast=0");
+    const body = await res.text();
+    const lines = body.split("\r\n").filter(Boolean);
+
+    expect(lines).toHaveLength(2); // header + 1 future row
+    expect(body).not.toContain("Past Event");
   });
 
   it("happy path: 3 single-session bookings → header row + 3 data rows", async () => {
@@ -312,5 +389,51 @@ describe("GET /api/bookings/export", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe("GET /api/bookings/export — team narrowing", () => {
+  it("exports every requested team and names each one in the download", async () => {
+    await Team.create([
+      { workspaceId: WS_A, name: "Alpha", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByWorkosUserId: "user_test" },
+      { workspaceId: WS_A, name: "Beta", color: TEAM_COLOR_PALETTE[1], isDefault: false, isActive: true, memberCount: 0, createdByWorkosUserId: "user_test" },
+    ]);
+    const [alpha, beta] = await Team.find({ workspaceId: WS_A }).sort({ name: 1 }).lean();
+
+    await seedBooking(WS_A, { title: "Alpha Wedding" });
+    await Booking.updateOne({ title: "Alpha Wedding" }, { $set: { teamId: alpha._id } });
+    await seedBooking(WS_A, { title: "Beta Wedding" });
+    await Booking.updateOne({ title: "Beta Wedding" }, { $set: { teamId: beta._id } });
+
+    const res = await callExport(
+      `teamId=${alpha._id.toString()}&teamId=${beta._id.toString()}`
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="gallurio-(Alpha,Beta)-bookings.csv"'
+    );
+    const body = await res.text();
+    expect(body).toContain("Alpha Wedding");
+    expect(body).toContain("Beta Wedding");
+  });
+});
+
+describe("GET /api/bookings/export — date range", () => {
+  it("includes bookings on the to-date itself", async () => {
+    // A bare "2026-08-15" is midnight UTC, so $lte would drop everything that
+    // day. The picker hands over whole days, so both ends cover whole days in
+    // the workspace timezone.
+    await seedBooking(WS_A, {
+      title: "Same Day",
+      startAt: "2026-08-15T09:00:00Z",
+      endAt: "2026-08-15T13:00:00Z",
+    });
+
+    const res = await callExport("from=2026-08-15&to=2026-08-15");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="gallurio-(all teams)-bookings-2026-08-15-to-2026-08-15.csv"'
+    );
+    expect(await res.text()).toContain("Same Day");
   });
 });

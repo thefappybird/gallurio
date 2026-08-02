@@ -1,4 +1,7 @@
+"use client";
+
 import { Skeleton } from "@/components/ui/skeleton";
+import { useViewportRemainingHeight } from "@/hooks/use-viewport-remaining-height";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -10,6 +13,20 @@ type Props = {
 
 // Slight width variance per column position makes the skeleton feel more natural.
 const COL_WIDTHS = ["w-2/5", "w-1/3", "w-1/4", "w-1/5", "w-1/6", "w-1/6", "w-1/6"];
+const TABLE_HEADER_HEIGHT = 32;
+const TABLE_ROW_HEIGHT = 41;
+
+export function calculateTableSkeletonRows({
+  availableHeight,
+  headerHeight,
+  rowHeight,
+}: {
+  availableHeight: number;
+  headerHeight: number;
+  rowHeight: number;
+}): number {
+  return Math.max(0, Math.floor((availableHeight - headerHeight) / rowHeight));
+}
 
 function CardCollectionSkeleton({ rows }: { rows: number }) {
   return (
@@ -57,9 +74,18 @@ export function TableSkeleton({
   className,
 }: Props) {
   const showResponsiveCards = typeof cardRows === "number" && cardRows > 0;
+  const { ref, remainingHeight } = useViewportRemainingHeight<HTMLDivElement>();
+  const visibleRows =
+    remainingHeight === null
+      ? rows
+      : calculateTableSkeletonRows({
+          availableHeight: remainingHeight,
+          headerHeight: TABLE_HEADER_HEIGHT,
+          rowHeight: TABLE_ROW_HEIGHT,
+        });
 
   return (
-    <>
+    <div ref={ref} className="min-w-0">
       {showResponsiveCards ? <CardCollectionSkeleton rows={cardRows} /> : null}
       <div
         className={cn(
@@ -81,7 +107,7 @@ export function TableSkeleton({
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: rows }).map((_, rowIdx) => (
+            {Array.from({ length: visibleRows }).map((_, rowIdx) => (
               <tr key={rowIdx} className="border-b border-border last:border-b-0">
                 {Array.from({ length: columns }).map((_, colIdx) => (
                   <td key={colIdx} className="px-3 py-2.5 align-middle">
@@ -95,6 +121,6 @@ export function TableSkeleton({
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

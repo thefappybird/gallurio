@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
 // Stub heavy sub-components to keep the modal test lightweight
@@ -55,6 +55,14 @@ const detail: InquiryDetailModalData = {
 };
 
 describe("InquiryDetailModal", () => {
+  it("has a top-right close button", () => {
+    const onClose = vi.fn();
+    renderWithProviders(<InquiryDetailModal detail={detail} open onClose={onClose} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it("hides InquiryActions when readOnly is true", () => {
     renderWithProviders(
       <InquiryDetailModal

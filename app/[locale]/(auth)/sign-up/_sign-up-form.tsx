@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/ui/turnstile-widget";
+import { FormField, useFieldError } from "@/components/ui/form-field";
 import { signUpAction, googleSignInAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 import { useTransition } from "react";
@@ -30,6 +31,16 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
   const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
   const error = state && "error" in state ? state.error : null;
+  const fieldErrors = state && "error" in state ? state.fieldErrors : undefined;
+  // The mismatch branch sets fieldErrors.confirmPassword to the same sentence as
+  // the top-level error -- render it once, on the field, not duplicated up top.
+  const topError = error && error === fieldErrors?.confirmPassword ? null : error;
+
+  const passwordA11y = useFieldError(fieldErrors?.password, { id: "signup-password" });
+  const confirmPasswordA11y = useFieldError(fieldErrors?.confirmPassword, {
+    id: "signup-confirm",
+    describedBy: topError ? "signup-error" : undefined,
+  });
 
   // Turnstile tokens are single-use -- a retry after any failed submission
   // would otherwise fail bot verification even with valid form input.
@@ -87,61 +98,82 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
 
         {/* Name row */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="signup-firstname">{t("fields.firstName")}</Label>
-            <Input
-              id="signup-firstname"
-              name="firstName"
-              type="text"
-              autoComplete="given-name"
-              required
-              disabled={pending}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="signup-lastname">
-              {t("fields.lastName")}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                {t("fields.optional")}
-              </span>
-            </Label>
-            <Input
-              id="signup-lastname"
-              name="lastName"
-              type="text"
-              autoComplete="family-name"
-              disabled={pending}
-            />
-          </div>
+          <FormField id="signup-firstname" label={t("fields.firstName")} error={fieldErrors?.firstName}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                name="firstName"
+                type="text"
+                autoComplete="given-name"
+                required
+                disabled={pending}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+              />
+            )}
+          </FormField>
+          <FormField
+            id="signup-lastname"
+            label={
+              <>
+                {t("fields.lastName")}{" "}
+                <span className="text-xs font-normal text-muted-foreground">
+                  {t("fields.optional")}
+                </span>
+              </>
+            }
+            error={fieldErrors?.lastName}
+          >
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                name="lastName"
+                type="text"
+                autoComplete="family-name"
+                disabled={pending}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+              />
+            )}
+          </FormField>
         </div>
 
         {/* Email */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="signup-email">{t("fields.email")}</Label>
-          <Input
-            id="signup-email"
-            name={lockedEmail ? undefined : "email"}
-            type="email"
-            autoComplete="email"
-            required
-            disabled={pending || Boolean(lockedEmail)}
-            defaultValue={lockedEmail ?? undefined}
-            aria-describedby={error ? "signup-error" : undefined}
-          />
-        </div>
+        <FormField
+          id="signup-email"
+          label={t("fields.email")}
+          error={fieldErrors?.email}
+          describedBy={topError ? "signup-error" : undefined}
+        >
+          {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+            <Input
+              id={id}
+              name={lockedEmail ? undefined : "email"}
+              type="email"
+              autoComplete="email"
+              required
+              disabled={pending || Boolean(lockedEmail)}
+              defaultValue={lockedEmail ?? undefined}
+              aria-invalid={ariaInvalid}
+              aria-describedby={ariaDescribedby}
+            />
+          )}
+        </FormField>
 
         {/* Password */}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="signup-password">{t("fields.password")}</Label>
+          <Label htmlFor={passwordA11y.id}>{t("fields.password")}</Label>
           <div className="relative">
             <Input
-              id="signup-password"
+              id={passwordA11y.id}
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               required
               disabled={pending}
               className="pe-10"
+              aria-invalid={passwordA11y["aria-invalid"]}
+              aria-describedby={passwordA11y["aria-describedby"]}
             />
             <button
               type="button"
@@ -158,6 +190,11 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
               )}
             </button>
           </div>
+          {fieldErrors?.password && (
+            <p id={passwordA11y.errorId} role="alert" className="text-xs text-destructive">
+              {fieldErrors.password}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">
             {t("signUp.passwordHint")}
           </p>
@@ -165,17 +202,18 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
 
         {/* Confirm password */}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="signup-confirm">{t("fields.confirmPassword")}</Label>
+          <Label htmlFor={confirmPasswordA11y.id}>{t("fields.confirmPassword")}</Label>
           <div className="relative">
             <Input
-              id="signup-confirm"
+              id={confirmPasswordA11y.id}
               name="confirmPassword"
               type={showConfirm ? "text" : "password"}
               autoComplete="new-password"
               required
               disabled={pending}
               className="pe-10"
-              aria-describedby={error ? "signup-error" : undefined}
+              aria-invalid={confirmPasswordA11y["aria-invalid"]}
+              aria-describedby={confirmPasswordA11y["aria-describedby"]}
             />
             <button
               type="button"
@@ -192,6 +230,11 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
               )}
             </button>
           </div>
+          {fieldErrors?.confirmPassword && (
+            <p id={confirmPasswordA11y.errorId} role="alert" className="text-xs text-destructive">
+              {fieldErrors.confirmPassword}
+            </p>
+          )}
         </div>
 
         {/* Turnstile */}
@@ -205,9 +248,9 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
         </div>
 
         {/* Error */}
-        {error && (
+        {topError && (
           <p id="signup-error" role="alert" className="text-sm text-destructive">
-            {error}
+            {topError}
           </p>
         )}
 

@@ -32,6 +32,7 @@ import { STATUS_COLOR_VAR as STATUS_COLOR, CONFLICT_COLOR_VAR } from "@/lib/book
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { escapeHtml } from "@/lib/email/escapeHtml";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { useViewportRemainingHeight } from "@/hooks/use-viewport-remaining-height";
 import { toCalendarGridDate, fromCalendarGridDate } from "./_helpers/calendar-helpers";
 import type { BookingStatus } from "@/lib/validators/booking";
 
@@ -288,12 +289,12 @@ function OverflowPopoverRow({
   );
 }
 
-/** Small "Past" badge overlaid in the top-right corner of a candle. */
+/** Small "Past" badge shown at the inline end of a candle's title row. */
 function PastPill({ label }: { label: string }) {
   return (
     <span
       aria-label={label}
-      className="absolute end-1 top-1 inline-flex items-center border border-white/40 bg-black/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
+      className="inline-flex shrink-0 items-center border border-white/40 bg-black/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
     >
       {label}
     </span>
@@ -411,14 +412,20 @@ export function MonthBookingEvent({
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
-      <span
-        className={`truncate text-xs font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
-      >
-        {booking.title}
-      </span>
+      {showPastVisual ? (
+        <span className="flex min-w-0 items-start gap-1">
+          <span className="min-w-0 flex-1 truncate text-xs font-semibold leading-tight line-through">
+            {booking.title}
+          </span>
+          <PastPill label={t("past")} />
+        </span>
+      ) : (
+        <span className="truncate text-xs font-semibold leading-tight">
+          {booking.title}
+        </span>
+      )}
       <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
       <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
-      {showPastVisual && <PastPill label={t("past")} />}
       <StatusPill
         status={booking.status}
         label={statusLabel}
@@ -483,16 +490,22 @@ export function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         </span>
       ) : (
         <>
-          <span
-            className={`truncate text-sm font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
-          >
-            {ev.title}
-          </span>
+          {showPastVisual ? (
+            <span className="flex min-w-0 items-start gap-1">
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight line-through">
+                {ev.title}
+              </span>
+              <PastPill label={t("past")} />
+            </span>
+          ) : (
+            <span className="truncate text-sm font-semibold leading-tight">
+              {ev.title}
+            </span>
+          )}
           <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
           <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
         </>
       )}
-      {showPastVisual && !isContinuation && <PastPill label={t("past")} />}
       {!isContinuation && (
         <StatusPill
           status={ev.status}
@@ -861,7 +874,7 @@ export function BookingCalendar({
   onDropFromOutside,
   dragFromOutsideItem,
   messages,
-  showPast = false,
+  showPast = true,
   pendingIds,
   colorMode = "status",
   teamColorMap,
@@ -914,7 +927,10 @@ export function BookingCalendar({
   }, []);
 
   // Ref on the calendar wrapper — used for imperative .rbc-time-content scroll.
-  const containerRef = useRef<HTMLDivElement>(null);
+  const {
+    ref: containerRef,
+    remainingHeight: calendarHeight,
+  } = useViewportRemainingHeight<HTMLDivElement>();
 
   const onScrollToHour = useCallback((h: number) => {
     const content = containerRef.current?.querySelector(
@@ -923,7 +939,7 @@ export function BookingCalendar({
     if (content) {
       content.scrollTo({ top: (h / 24) * content.scrollHeight, behavior: "smooth" });
     }
-  }, []);
+  }, [containerRef]);
 
   // Switching to week/day always snaps back to the current week/day so the
   // user doesn't end up stranded in a past or future period after browsing.
@@ -1092,7 +1108,11 @@ export function BookingCalendar({
 
   return (
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
-      <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full min-w-0">
+      <div
+        ref={containerRef}
+        className="h-[calc(100dvh-14rem)] min-h-0 w-full min-w-0"
+        style={calendarHeight === null ? undefined : { height: `${calendarHeight}px` }}
+      >
         <DnDCalendar
           rtl={isRtl}
           localizer={localizer}

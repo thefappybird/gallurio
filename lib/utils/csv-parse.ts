@@ -46,6 +46,16 @@ export function parseCsv(text: string): ParsedCsv {
 }
 
 /**
+ * Reverses `escapeSpreadsheetText` from csv-serialize.ts: removes exactly one
+ * leading apostrophe when it guards a formula trigger, so an exported value
+ * round-trips back to what the user originally typed. A value that genuinely
+ * starts with an apostrophe ("'tis") is left alone.
+ */
+export function stripFormulaGuard(value: string): string {
+  return /^'[=+\-@\t\r]/.test(value) ? value.slice(1) : value;
+}
+
+/**
  * Maps raw CSV header text to the camelCase field name the import schema
  * expects. Case-insensitive; ignores spaces, underscores, and dashes.
  */
@@ -77,6 +87,18 @@ export function normalizeCsvHeader(raw: string): string {
     currency: "currency",
     notes: "notes",
     note: "notes",
+    // Round-trip identity columns emitted by the exporter. Without these the
+    // headers normalize to "bookingid"/"sessionindex"/"clientid" and get
+    // dropped, so an exported file can never come back as an update.
+    bookingid: "bookingId",
+    sessionindex: "sessionIndex",
+    clientid: "clientId",
+    clientphone: "clientPhone",
+    phone: "clientPhone",
+    locationlat: "locationLat",
+    lat: "locationLat",
+    locationlng: "locationLng",
+    lng: "locationLng",
   };
   return MAP[key] ?? key;
 }

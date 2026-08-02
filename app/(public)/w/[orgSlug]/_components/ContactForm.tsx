@@ -189,7 +189,7 @@ export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | u
   }
   // Effective default ON: underline shows unless explicitly disabled (=== false).
   if (config?.activeTabUnderline !== false) {
-    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-fg)")}`;
+    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-accent)")}`;
   }
   return style;
 }
@@ -251,6 +251,13 @@ export function ContactForm({
   };
   const fieldStyle = createFieldStyle();
   const labelStyle = createLabelStyle();
+
+  // Resolved here rather than inside the location Controller's render callback:
+  // that callback is scoped to its own field state and doesn't re-run when only
+  // `errors` changes, so the message would never appear on a blocked submit.
+  const locationError = errors.location?.address
+    ? (errors.location.address.message ?? labels.locationRequired)
+    : undefined;
 
   const { fields, append, remove } = useFieldArray({ control, name: "sessions" });
   const watchedSessions = useWatch({ control, name: "sessions" });
@@ -439,14 +446,14 @@ export function ContactForm({
         <TabsPanel value="client">
           <div>
             <label htmlFor="cf-name" style={labelStyle}>{labels.name}</label>
-            <input id="cf-name" disabled={preview} style={fieldStyle} aria-invalid={errors.name ? "true" : undefined} {...register("name")} />
-            {errors.name && <p style={errorStyle} role="alert">{errors.name.message}</p>}
+            <input id="cf-name" disabled={preview} style={fieldStyle} aria-invalid={errors.name ? "true" : undefined} aria-describedby={errors.name ? "cf-name-error" : undefined} {...register("name")} />
+            {errors.name && <p id="cf-name-error" style={errorStyle} role="alert">{errors.name.message}</p>}
           </div>
 
           <div>
             <label htmlFor="cf-email" style={labelStyle}>{labels.email}</label>
-            <input id="cf-email" type="email" disabled={preview} style={fieldStyle} aria-invalid={errors.email ? "true" : undefined} {...register("email")} />
-            {errors.email && <p style={errorStyle} role="alert">{errors.email.message}</p>}
+            <input id="cf-email" type="email" disabled={preview} style={fieldStyle} aria-invalid={errors.email ? "true" : undefined} aria-describedby={errors.email ? "cf-email-error" : undefined} {...register("email")} />
+            {errors.email && <p id="cf-email-error" style={errorStyle} role="alert">{errors.email.message}</p>}
           </div>
 
           <div>
@@ -490,8 +497,8 @@ export function ContactForm({
         <TabsPanel value="event">
           <div>
             <label htmlFor="cf-eventTitle" style={labelStyle}>{labels.eventTitle}</label>
-            <input id="cf-eventTitle" style={fieldStyle} aria-invalid={errors.eventTitle ? "true" : undefined} {...register("eventTitle")} />
-            {errors.eventTitle && <p style={errorStyle} role="alert">{errors.eventTitle.message}</p>}
+            <input id="cf-eventTitle" style={fieldStyle} aria-invalid={errors.eventTitle ? "true" : undefined} aria-describedby={errors.eventTitle ? "cf-eventTitle-error" : undefined} {...register("eventTitle")} />
+            {errors.eventTitle && <p id="cf-eventTitle-error" style={errorStyle} role="alert">{errors.eventTitle.message}</p>}
           </div>
 
           <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
@@ -543,9 +550,10 @@ export function ContactForm({
                       disabled={preview}
                       style={fieldStyle}
                       aria-invalid={errors.sessions?.[index]?.startDate ? "true" : undefined}
+                      aria-describedby={errors.sessions?.[index]?.startDate ? `cf-start-${index}-error` : undefined}
                       {...register(`sessions.${index}.startDate` as const)}
                     />
-                    {errors.sessions?.[index]?.startDate && <p style={errorStyle} role="alert">{errors.sessions[index]?.startDate?.message}</p>}
+                    {errors.sessions?.[index]?.startDate && <p id={`cf-start-${index}-error`} style={errorStyle} role="alert">{errors.sessions[index]?.startDate?.message}</p>}
                   </div>
 
                   <div className="pf-cf-times" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
@@ -562,9 +570,10 @@ export function ContactForm({
                         lang={TIME_INPUT_LANG[timeMode]}
                         style={fieldStyle}
                         aria-invalid={errors.sessions?.[index]?.endTime ? "true" : undefined}
+                        aria-describedby={errors.sessions?.[index]?.endTime ? `cf-etime-${index}-error` : undefined}
                         {...register(`sessions.${index}.endTime` as const)}
                       />
-                      {errors.sessions?.[index]?.endTime && <p style={errorStyle} role="alert">{errors.sessions[index]?.endTime?.message}</p>}
+                      {errors.sessions?.[index]?.endTime && <p id={`cf-etime-${index}-error`} style={errorStyle} role="alert">{errors.sessions[index]?.endTime?.message}</p>}
                     </div>
                   </div>
                 </CollapsibleDrawer>
@@ -634,7 +643,8 @@ export function ContactForm({
                   }}
                   compact={compactLocationPicker}
                   applyButtonStyle={buildButtonVisualStyle(submitAppearance, false)}
-                  ariaDescribedby={errors.location?.address ? "cf-location-error" : undefined}
+                  error={locationError}
+                  errorStyle={errorStyle}
                   onChange={(value) =>
                     field.onChange({
                       label: value.address || null,
@@ -647,11 +657,6 @@ export function ContactForm({
                 />
               )}
             />
-            {errors.location?.address && (
-              <p id="cf-location-error" style={errorStyle} role="alert">
-                {errors.location.address.message ?? labels.locationRequired}
-              </p>
-            )}
           </div>
 
           <div>
@@ -663,9 +668,10 @@ export function ContactForm({
               placeholder={labels.messagePlaceholder}
               style={{ ...fieldStyle, minHeight: "96px", padding: "0.5rem 0.75rem", resize: "vertical" }}
               aria-invalid={errors.description ? "true" : undefined}
+              aria-describedby={errors.description ? "cf-description-error" : undefined}
               {...register("description")}
             />
-            {errors.description && <p style={errorStyle} role="alert">{errors.description.message}</p>}
+            {errors.description && <p id="cf-description-error" style={errorStyle} role="alert">{errors.description.message}</p>}
           </div>
         </TabsPanel>
       </Tabs>

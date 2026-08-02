@@ -80,6 +80,20 @@ const contact: PortfolioContactConfig = {
 };
 
 describe("ContactFormPreview", () => {
+  it("renders no popup border when the floated border width is 0", () => {
+    renderWithProviders(
+      <ContactFormPreview
+        contact={{}}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
+        defaultTitle="Get in touch"
+        defaultDescription="Tell us about your event."
+      />,
+    );
+    expect(screen.getByLabelText("Contact form preview").style.borderStyle).toBe("none");
+  });
   const originalFetch = global.fetch;
 
   beforeEach(() => {

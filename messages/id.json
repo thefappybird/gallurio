@@ -107,12 +107,12 @@
         "body": "Tanpa kartu pembayaran untuk memulai."
       },
       "item2": {
-        "title": "Paket berbayar: segera hadir.",
+        "title": "Satu paket. Ketentuan jelas.",
         "body": "Harga dan ketentuan ditampilkan jelas sebelum checkout."
       },
       "item3": {
         "title": "Lemon Squeezy menangani checkout",
-        "body": "sebagai merchant of record kami, begitu penagihan aktif."
+        "body": "sebagai merchant of record kami."
       },
       "item4": {
         "title": "Perangkat lunak, bukan jasa.",
@@ -134,14 +134,13 @@
       "title": "Harga sederhana",
       "subtitle": "1 bulan Pro, gratis. Lalu satu paket, bulanan atau tahunan.",
       "viewFullPricing": "Lihat harga lengkap",
-      "disclaimer": "Paket berbayar belum tersedia. Harga dan ketentuan penagihan akan ditampilkan dengan jelas sebelum checkout setelah diluncurkan.",
+      "disclaimer": "Satu bulan gratis. Pro berbayar diperpanjang bulanan atau tahunan sampai dibatalkan.",
       "cadence": {
         "monthly": "Bulanan",
         "yearly": "Tahunan — hemat 2 bulan"
       },
       "pro": {
         "badge": "1 bulan gratis",
-        "comingSoon": "Segera hadir",
         "name": "Pro",
         "priceSuffixMonthly": "/bln",
         "priceSuffixYearly": "/thn",
@@ -164,7 +163,6 @@
       },
       "pro": {
         "badge": "Direkomendasikan",
-        "comingSoon": "Segera hadir",
         "name": "Pro",
         "freeMonth": "Mulai dengan satu bulan gratis. Tidak perlu kartu pembayaran.",
         "description": "Semua yang Anda butuhkan untuk menjalankan booking, klien, galeri, dan halaman publik Anda.",
@@ -180,15 +178,15 @@
         "cta": "Mulai bulan gratis saya"
       },
       "billingNotice": {
-        "body1": "Langganan Pro berbayar belum tersedia. Ketika langganan diluncurkan, harga, periode penagihan, ketentuan perpanjangan, pajak yang berlaku, detail pembayaran, dan proses pembatalan akan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian.",
-        "body2": "Lemon Squeezy akan memproses langganan berbayar sebagai merchant of record Gallurio. Ketentuan checkout, invoice, pengembalian dana, dan pembayaran yang berlaku juga akan ditampilkan melalui alur penagihan.",
+        "body1": "Langganan Pro berbayar tersedia bulanan atau tahunan. Harga, periode penagihan, ketentuan perpanjangan, pajak yang berlaku, detail pembayaran, dan proses pembatalan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian.",
+        "body2": "Lemon Squeezy memproses langganan berbayar sebagai merchant of record Gallurio. Ketentuan checkout, invoice, pengembalian dana, dan pembayaran yang berlaku juga ditampilkan melalui alur penagihan.",
         "body3": "Anda dapat membatalkan langganan berbayar kapan saja melalui alur pengelolaan penagihan. Pembatalan umumnya mencegah biaya perpanjangan di masa depan; akses umumnya berlanjut hingga akhir periode penagihan saat ini.",
         "body4": "Tidak ada biaya yang dikumpulkan selama bulan gratis pertama Anda."
       },
       "pricingTransparency": {
         "title": "Transparansi Harga",
         "body1": "Gallurio tidak akan mengenakan biaya kepada Anda selama bulan gratis. Tidak perlu kartu pembayaran untuk memulai uji coba. Langganan berbayar apa pun memerlukan langkah pembelian atau aktivasi terpisah setelah periode gratis berakhir, dengan ketentuan yang berlaku ditampilkan sebelum pembayaran.",
-        "body2": "Harga dan fitur dapat berubah sebelum langganan berbayar diluncurkan. Perubahan material akan tercermin di halaman ini dan dalam alur checkout."
+        "body2": "Harga dan fitur dapat berubah. Perubahan material akan tercermin di halaman ini dan dalam alur checkout."
       },
       "contactNote": {
         "body": "Untuk pertanyaan penagihan, hubungi"
@@ -650,7 +648,17 @@
       "invalidCode": "Kode tidak valid atau telah kedaluwarsa. Silakan coba lagi.",
       "sessionExpired": "Sesi Anda telah kedaluwarsa. Silakan masuk kembali.",
       "resetTokenInvalid": "Tautan ini tidak valid atau telah kedaluwarsa. Silakan minta yang baru.",
-      "passwordReused": "Silakan pilih kata sandi yang berbeda dari kata sandi Anda saat ini."
+      "passwordReused": "Silakan pilih kata sandi yang berbeda dari kata sandi Anda saat ini.",
+      "fields": {
+        "emailInvalid": "Masukkan alamat email yang valid.",
+        "passwordRequired": "Masukkan kata sandi Anda.",
+        "passwordLength": "Kata sandi harus terdiri dari 8 hingga 128 karakter.",
+        "confirmPasswordRequired": "Konfirmasi kata sandi Anda.",
+        "firstNameRequired": "Masukkan nama depan Anda.",
+        "firstNameTooLong": "Nama depan harus 80 karakter atau kurang.",
+        "lastNameTooLong": "Nama belakang harus 80 karakter atau kurang.",
+        "codeInvalid": "Masukkan kode 6 digit."
+      }
     }
   },
   "app": {
@@ -911,10 +919,26 @@
         "statusAll": "Semua status",
         "showCancelled": "Tampilkan yang dibatalkan",
         "showPast": "Tampilkan yang lalu",
-        "import": "Impor CSV",
-        "export": "Ekspor CSV",
+        "import": "Impor",
+        "export": "Ekspor",
         "add": "Pemesanan baru",
-        "invoiceTheme": "Tema faktur"
+        "invoiceTheme": "Tema faktur & tanda terima"
+      },
+      "exportDialog": {
+        "title": "Ekspor pemesanan",
+        "teamLabel": "Tim",
+        "allTeams": "Semua tim",
+        "rangeLabel": "Rentang waktu",
+        "allTime": "Sepanjang waktu",
+        "dateRange": "Rentang tanggal",
+        "from": "Dari",
+        "to": "Sampai",
+        "formatLabel": "Format",
+        "csv": "CSV",
+        "xlsx": "Excel",
+        "listFiltersApply": "Filter status dan pencarian pada daftar juga berlaku untuk ekspor ini.",
+        "download": "Unduh",
+        "cancel": "Batal"
       },
       "teamPicker": {
         "allTeams": "Semua tim",
@@ -926,9 +950,10 @@
       },
       "import": {
         "title": "Impor pemesanan",
-        "dropzone": "Letakkan file CSV di sini, atau klik untuk memilih",
+        "dropzone": "Letakkan file CSV atau XLSX di sini, atau klik untuk memilih",
         "dropzoneActive": "Lepaskan untuk mengunggah",
-        "template": "Unduh template CSV",
+        "templateCsv": "Unduh template CSV",
+        "templateXlsx": "Unduh template XLSX",
         "preview": "{total} baris ditemukan",
         "validCount": "{count} valid",
         "invalidCount": "{count} dengan kesalahan",
@@ -937,7 +962,9 @@
         "noValidRows": "Tidak ada baris valid untuk diimpor. Perbaiki kesalahan di atas.",
         "success": "Berhasil mengimpor {count} pemesanan.",
         "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
-        "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah CSV yang valid.",
+        "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah file CSV atau XLSX yang valid.",
+        "crossesMidnight": "Mulai dan selesai harus pada hari yang sama di zona waktu ruang kerja ({tz}).",
+        "groupBlocked": "Baris lain dengan booking_id yang sama memiliki kesalahan, jadi seluruh pemesanan ditahan.",
         "columns": {
           "row": "#",
           "title": "Judul",
@@ -952,15 +979,25 @@
           "kindServer": "Server",
           "line": "Baris {csvLine}",
           "rawRow": "Baris mentah",
-          "summary": "Diimpor {created} · Dilewati {skipped}",
-          "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya."
+          "untitled": "Pemesanan tanpa judul",
+          "summary": "Diimpor {created} · Diperbarui {updated} · Dilewati {skipped}",
+          "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya.",
+          "previewHint": "Belum ada yang diimpor. Perbaiki baris ini dan unggah ulang filenya."
         },
         "dialog": {
+          "structureTitle": "Struktur tabel",
           "columnHeader": "Kolom",
           "notesHeader": "Catatan",
           "required": "wajib",
           "optional": "opsional",
           "failedWithDetails": "Impor gagal — lihat detailnya",
+          "teamLabel": "Tetapkan ke tim",
+          "teamDefault": "Tim utama (default)",
+          "duplicateTitle": "Sudah diimpor?",
+          "duplicateBody": "{count, plural, other {# booking di sini cocok dengan yang sudah ada. Tetap impor lagi?}}",
+          "duplicateOnTeam": "Di tim {team}",
+          "duplicateNoTeam": "Tim tidak diketahui",
+          "duplicateContinue": "Tetap impor",
           "failedRetry": "Impor gagal. Silakan coba lagi.",
           "close": "Tutup",
           "cancel": "Batal",
@@ -1001,6 +1038,27 @@
             },
             "notes": {
               "note": "Catatan internal"
+            },
+            "booking_id": {
+              "note": "Dari ekspor. Simpan untuk memperbarui booking itu alih-alih membuat salinan"
+            },
+            "session_index": {
+              "note": "Mengurutkan sesi saat beberapa baris berbagi satu booking_id"
+            },
+            "clientId": {
+              "note": "Dari ekspor. Dicocokkan sebelum clientEmail"
+            },
+            "clientPhone": {
+              "note": "Disimpan pada klien baru; mengisi yang kosong, tidak pernah menimpa"
+            },
+            "locationLat": {
+              "note": "Lintang peta, mis. 14.5995"
+            },
+            "locationLng": {
+              "note": "Bujur peta, mis. 120.9842"
+            },
+            "payments": {
+              "note": "Daftar JSON dari ekspor. Dibaca hanya saat membuat; entri lunas masuk ke buku besar"
             }
           }
         }
@@ -1060,7 +1118,9 @@
         "other": "Lainnya"
       },
       "invoiceThemeDialog": {
-        "title": "Tema faktur",
+        "title": "Tema faktur & tanda terima",
+        "invoice": "Faktur",
+        "receipt": "Tanda terima",
         "presets": {
           "classic": "Klasik",
           "slate": "Slate",
@@ -1941,6 +2001,7 @@
         "saving": "Menyimpan…",
         "cancel": "Batal",
         "createSuccess": "Klien dibuat.",
+        "linkSuccess": "Ditautkan ke klien yang ada.",
         "updateSuccess": "Klien diperbarui.",
         "error": "Ada yang salah. Coba lagi."
       },
@@ -1989,6 +2050,19 @@
         "body": "Anda memiliki perubahan yang belum disimpan untuk klien ini. Perubahan akan hilang jika Anda menutup sekarang.",
         "keep": "Lanjutkan mengubah",
         "discard": "Buang dan tutup"
+      },
+      "matchDialog": {
+        "title": "Apakah klien ini salah satu dari berikut?",
+        "bookingsCount": "{count, plural, one {# booking} other {# booking}}",
+        "escapeCreate": "Tidak, ini klien baru",
+        "escapeLink": "Tautkan ke klien baru",
+        "cancel": "Batal",
+        "submitCreate": "Simpan klien",
+        "submitLink": "Tautkan klien",
+        "reconcileTitle": "{count} kolom berbeda - pilih yang ingin disimpan",
+        "current": "Saat ini",
+        "typed": "Yang Anda masukkan",
+        "additiveTitle": "Akan ditambahkan (tidak ada konflik)"
       },
       "toasts": {
         "reactivating": "Mengaktifkan kembali klien…",
@@ -2071,6 +2145,11 @@
           "savePhone": "Simpan",
           "cancelEdit": "Batal",
           "savedToast": "Telepon diperbarui."
+        },
+        "clientMatch": {
+          "warning": "Pertanyaan ini mungkin milik klien yang sudah ada",
+          "resolveButton": "Selesaikan klien",
+          "resolvedToast": "Klien diperbarui."
         },
         "eventRequest": {
           "title": "Permintaan acara",
@@ -3072,6 +3151,9 @@
       "no_active_workspace": "Tidak ada ruang kerja aktif. Pilih ruang kerja dan coba lagi.",
       "workspace_not_found": "Ruang kerja tidak ditemukan.",
       "owner_only": "Hanya pemilik ruang kerja yang dapat melakukan ini.",
+      "resolve_failed": "Tidak dapat memperbarui klien. Silakan coba lagi.",
+      "client_match_lookup_failed": "Tidak dapat memeriksa klien yang ada. Silakan coba lagi.",
+      "needs_client_resolution": "Pertanyaan ini mungkin milik klien yang sudah ada. Buka dan selesaikan kliennya sebelum mengonversi.",
       "invalid_data": "Data tidak valid. Periksa input Anda dan coba lagi.",
       "completion_requires_full_payment": "Tandai semua pembayaran sebagai dibayar dan cocokkan totalnya sebelum menyelesaikan pemesanan ini.",
       "onboarding_required": "Selesaikan orientasi untuk melanjutkan.",
@@ -3319,6 +3401,13 @@
   "subscribe": {
     "pageTitle": "Berlangganan",
     "logout": "Keluar",
+    "verification": {
+      "title": "Memverifikasi pembayaran Anda",
+      "description": "Kami sedang mengaktifkan akses Pro Anda. Biasanya hanya perlu beberapa detik.",
+      "pendingTitle": "Kami masih mengonfirmasi langganan Anda",
+      "pendingDescription": "Pembayaran Anda sudah selesai. Silakan coba lagi sebentar lagi, atau hubungi dukungan jika ini berlanjut.",
+      "retry": "Coba lagi"
+    },
     "owner": {
       "title": "Akses Pro Anda telah berakhir",
       "description": "Berlangganan kembali ke Gallurio Pro untuk kembali ke dasbor Anda.",

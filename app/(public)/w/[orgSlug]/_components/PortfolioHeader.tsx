@@ -92,6 +92,17 @@ function buildBg(config: PortfolioHeaderConfig | null | undefined): string {
   return `color-mix(in srgb, ${bgColor} ${opacity}%, transparent)`;
 }
 
+export function resolveHeaderBorderBottom(
+  config: PortfolioHeaderConfig | null | undefined,
+): string {
+  return config?.borderBottomWidth
+    ? `${config.borderBottomWidth}px solid ${resolveColor(
+        config.borderBottomColor,
+        "color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
+      )}`
+    : "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)";
+}
+
 
 export function PortfolioHeader({
   slug,
@@ -131,7 +142,10 @@ export function PortfolioHeader({
   const currentPath = activePath ?? pathname;
   const navbarSize = NAVBAR_SIZE_MAP[config?.navbarSize || "balanced"];
 
-  const isHomeActive = currentPath === homeHref || currentPath === `/w/${slug}/`;
+  const isHomeActive =
+    currentPath === homeHref ||
+    currentPath === `/w/${slug}/` ||
+    (homeHref === "/" && currentPath === "/");
   const isGalleryActive = currentPath === galleryHref;
 
   const fontSize = config?.fontSize ? (FONT_SIZE_MAP[config.fontSize] ?? "0.9375rem") : "0.9375rem";
@@ -140,10 +154,7 @@ export function PortfolioHeader({
   const activeLinkColor = resolveColor(config?.activeLinkColor, "var(--pf-color-fg)");
   const shadow = config?.shadowSize ? (SHADOW_MAP[config.shadowSize] ?? "none") : "none";
 
-  const borderBottomStyle =
-    config?.borderBottomWidth
-      ? `${config.borderBottomWidth}px solid ${resolveColor(config.borderBottomColor, "color-mix(in srgb, var(--pf-color-fg) 14%, transparent)")}`
-      : "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)";
+  const borderBottomStyle = resolveHeaderBorderBottom(config);
 
   function getActiveLinkExtraStyle(): React.CSSProperties {
     const style: React.CSSProperties = { color: activeLinkColor };
@@ -155,12 +166,12 @@ export function PortfolioHeader({
     if (config?.activeLinkHighlight) {
       const highlightColor = resolveColor(
         config.highlightColor,
-        "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
+        "var(--pf-color-fg)",
       );
       (style as React.CSSProperties & Record<string, string>)["--pf-active-link-highlight-fill"] = highlightColor;
       (style as React.CSSProperties & Record<string, string>)["--pf-active-link-highlight-opacity"] =
-        `${config.highlightOpacity ?? 100}%`;
-      style.backgroundColor = buildColorWithOpacity(highlightColor, config.highlightOpacity ?? 100);
+        `${config.highlightOpacity ?? 8}%`;
+      style.backgroundColor = buildColorWithOpacity(highlightColor, config.highlightOpacity ?? 8);
       style.borderRadius = config.activeLinkRadius
         ? (RADIUS_MAP[config.activeLinkRadius] ?? "var(--pf-radius)")
         : "var(--pf-radius)";

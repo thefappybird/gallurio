@@ -1,4 +1,19 @@
 import { describe, it, expect } from "vitest";
+import { escapeSpreadsheetText } from "./csv-serialize";
+
+describe("escapeSpreadsheetText", () => {
+  it("neutralizes formula triggers without touching ordinary text", () => {
+    // A booking title or note is attacker-controllable, so a leading =/+/-/@
+    // must not execute when the export is opened in Excel or Sheets.
+    expect(escapeSpreadsheetText("=SUM(A1)")).toBe("'=SUM(A1)");
+    expect(escapeSpreadsheetText("+1")).toBe("'+1");
+    expect(escapeSpreadsheetText("-cmd")).toBe("'-cmd");
+    expect(escapeSpreadsheetText("@echo")).toBe("'@echo");
+    expect(escapeSpreadsheetText("\tlead")).toBe("'\tlead");
+    expect(escapeSpreadsheetText("Garden Wedding")).toBe("Garden Wedding");
+    expect(escapeSpreadsheetText("")).toBe("");
+  });
+});
 import { quoteField, serializeRow, serializeCsv } from "./csv-serialize";
 
 describe("quoteField", () => {

@@ -1,0 +1,9 @@
+﻿clientName,clientEmail,startAt,endAt,title,eventType,status,amountTotal,amountDeposit,currency,locationAddress,notes,booking_id,session_index,clientId,clientPhone,locationLat,locationLng,payments
+No Title Here,,2026-09-01T09:00:00.000Z,,,,,,,,,,,,,,,,
+Bad Date,,the 4th of never,,Unparseable start,,,,,,,,,,,,,,
+,,2026-09-02T09:00:00.000Z,,Missing client name,,,,,,,,,,,,,,
+Bad Email,not-an-email,2026-09-03T09:00:00.000Z,,Malformed address,,,,,,,,,,,,,,
+Bad Enum,,2026-09-04T09:00:00.000Z,,Unknown event type,quinceanera,,,,,,,,,,,,,
+Negative Money,,2026-09-05T09:00:00.000Z,,Total below zero,,,-500,,,,,,,,,,,
+Foreign Booking,,2026-09-06T09:00:00.000Z,,booking_id from another workspace,,,,,,,,6a6c72fb0b6272bc938ef848,,,,,,
+Bad Payments,,2026-09-07T09:00:00.000Z,,payments cell is not JSON,,,,,,,,,,,,,,40000 cash

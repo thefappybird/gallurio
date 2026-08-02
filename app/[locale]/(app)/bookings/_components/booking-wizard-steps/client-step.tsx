@@ -10,8 +10,20 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/app/empty-state";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormField, useFieldError } from "@/components/ui/form-field";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
 import { cn } from "@/lib/utils";
 import type { WizardValues } from "./types";
+
+// `errors.client` is a discriminated-union error object (existing vs. new
+// client) — narrow it to the "new" block's contact fields once here instead
+// of repeating an inline cast at every field.
+type NewClientErrors = Partial<
+  Record<"name" | "email" | "phone", { message?: unknown } | undefined>
+>;
+function newClientErrors(errors: FieldErrors<WizardValues>): NewClientErrors {
+  return (errors.client as NewClientErrors | undefined) ?? {};
+}
 
 export type ClientHit = {
   id: string;
@@ -29,6 +41,9 @@ type Props = {
   clients?: ClientHit[];
   /** True only after the user has tried to advance from this step. */
   showExistingError?: boolean;
+  /** New-client schema issue with no dedicated field slot (e.g. source/tags/
+   *  notes) — rendered as a generic message so it's never a silent dead end. */
+  newClientFormError?: string;
 };
 
 export function ClientStep({
@@ -38,6 +53,7 @@ export function ClientStep({
   readOnlyClientName,
   clients = [],
   showExistingError = false,
+  newClientFormError,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.client");
 
@@ -64,6 +80,7 @@ export function ClientStep({
           errors={errors}
           clients={clients}
           showExistingError={showExistingError}
+          newClientFormError={newClientFormError}
         />
       )}
     />
@@ -76,12 +93,14 @@ function ClientPicker({
   errors,
   clients,
   showExistingError,
+  newClientFormError,
 }: {
   value: WizardValues["client"];
   onChange: (next: WizardValues["client"]) => void;
   errors: FieldErrors<WizardValues>;
   clients: ClientHit[];
   showExistingError: boolean;
+  newClientFormError?: string;
 }) {
   const t = useTranslations("app.bookings.wizard.client");
   const tClients = useTranslations("app.clients");
@@ -123,6 +142,17 @@ function ClientPicker({
 
   const switchToNew = () =>
     onChange({ mode: "new", name: "", email: "", phone: "", source: "manual", tags: [], notes: "" });
+
+  const clientErrors = newClientErrors(errors);
+  const nameError = fieldMessage(clientErrors.name);
+  const emailError = fieldMessage(clientErrors.email);
+  const phoneError = fieldMessage(clientErrors.phone);
+
+  const existingClientError =
+    showExistingError && value.mode === "existing" && !value.clientId
+      ? t("selectRequired")
+      : undefined;
+  const searchFieldA11y = useFieldError(existingClientError, { id: "client-search" });
 
   return (
     <div className="flex flex-col gap-3">
@@ -172,6 +202,9 @@ function ClientPicker({
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              id={searchFieldA11y.id}
+              aria-invalid={searchFieldA11y["aria-invalid"]}
+              aria-describedby={searchFieldA11y["aria-describedby"]}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("searchPlaceholder")}
@@ -218,43 +251,60 @@ function ClientPicker({
               </ul>
             )}
           </div>
-          {showExistingError && value.mode === "existing" && !value.clientId ? (
-            <p className="text-xs text-destructive">{t("selectRequired")}</p>
+          {existingClientError ? (
+            <p id={searchFieldA11y.errorId} role="alert" className="text-xs text-destructive">
+              {existingClientError}
+            </p>
           ) : null}
             </>
           )}
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="client-new-name">{t("name")}</Label>
-            <Input
-              id="client-new-name"
-              value={newClient?.name ?? ""}
-              onChange={(e) => setNewClient({ name: e.target.value })}
-              placeholder={t("namePlaceholder")}
-            />
-            {errors.client && "name" in (errors.client as object) ? (
-              <p className="text-xs text-destructive">
-                {(errors.client as { name?: { message?: string } }).name?.message}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="client-new-email">{t("email")}</Label>
-            <Input
-              id="client-new-email"
-              type="email"
-              value={newClient?.email ?? ""}
-              onChange={(e) => setNewClient({ email: e.target.value })}
-              placeholder={t("emailPlaceholder")}
-            />
-          </div>
+          {newClientFormError ? (
+            <p role="alert" className="text-xs text-destructive">
+              {newClientFormError}
+            </p>
+          ) : null}
+          <FormField id="client-new-name" label={t("name")} error={nameError}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                value={newClient?.name ?? ""}
+                onChange={(e) => setNewClient({ name: e.target.value })}
+                placeholder={t("namePlaceholder")}
+                maxLength={120}
+              />
+            )}
+          </FormField>
+          <FormField id="client-new-email" label={t("email")} error={emailError}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                type="email"
+                value={newClient?.email ?? ""}
+                onChange={(e) => setNewClient({ email: e.target.value })}
+                placeholder={t("emailPlaceholder")}
+              />
+            )}
+          </FormField>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="client-new-phone">{t("phone")}</Label>
-              <PhoneInput id="client-new-phone" value={newClient?.phone ?? ""} onChange={(phone) => setNewClient({ phone: phone ?? "" })} placeholder={t("phonePlaceholder")} />
-            </div>
+            <FormField id="client-new-phone" label={t("phone")} error={phoneError}>
+              {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                <PhoneInput
+                  id={id}
+                  aria-invalid={ariaInvalid}
+                  aria-describedby={ariaDescribedby}
+                  value={newClient?.phone ?? ""}
+                  onChange={(phone) => setNewClient({ phone: phone ?? "" })}
+                  placeholder={t("phonePlaceholder")}
+                />
+              )}
+            </FormField>
             <div className="flex flex-col gap-1.5">
               <Label>{tClients("form.source")}</Label>
               <Select value={newClient?.source ?? "manual"} onValueChange={(source) => source && setNewClient({ source: source as "form" | "manual" | "referral" | "import" })}>
@@ -276,7 +326,7 @@ function ClientPicker({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="client-new-notes">{tClients("form.notes")}</Label>
-            <textarea id="client-new-notes" rows={3} value={newClient?.notes ?? ""} onChange={(e) => setNewClient({ notes: e.target.value })} placeholder={tClients("form.notesPlaceholder")} className="w-full resize-none border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+            <textarea id="client-new-notes" rows={3} maxLength={2000} value={newClient?.notes ?? ""} onChange={(e) => setNewClient({ notes: e.target.value })} placeholder={tClients("form.notesPlaceholder")} className="w-full resize-none border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
           </div>
         </div>
       )}

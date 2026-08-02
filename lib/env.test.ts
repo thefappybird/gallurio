@@ -25,6 +25,7 @@ const VALID_PROD_ENV: Record<string, string> = {
   LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: "111",
   LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: "222",
   LEMONSQUEEZY_TEST_MODE: "false",
+  PAID_BILLING_ENABLED: "true",
   RESEND_API_KEY: "re_abc",
   EMAIL_FROM: "Gallurio <hello@gallurio.com>",
   CRON_SECRET: "cron_secret_value",
@@ -145,6 +146,7 @@ describe("lib/env", () => {
     setEnv(VALID_PROD_ENV);
     setEnv({
       BETA_TESTER_ENABLED: "true",
+      PAID_BILLING_ENABLED: undefined,
       LEMONSQUEEZY_API_KEY: undefined,
       LEMONSQUEEZY_STORE_ID: undefined,
       LEMONSQUEEZY_WEBHOOK_SECRET: undefined,
@@ -157,10 +159,10 @@ describe("lib/env", () => {
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
-  it("still requires valid live Lemon Squeezy configuration in production when beta-only mode is off", () => {
+  it("requires valid live Lemon Squeezy configuration whenever paid billing is enabled", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
-    setEnv({ LEMONSQUEEZY_API_KEY: undefined });
+    setEnv({ BETA_TESTER_ENABLED: "true", LEMONSQUEEZY_API_KEY: undefined });
 
     expect(() => validateEnv()).toThrow(/LEMONSQUEEZY_API_KEY/);
   });

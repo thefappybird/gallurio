@@ -45,7 +45,7 @@ function formatCount(n: number): string {
 
 const TILE_FOCUS_STYLES = `
 [data-featured-tile]:focus-visible {
-  outline: 2px solid var(--pf-color-foreground, #111);
+  outline: 2px solid var(--pf-color-fg, #111);
   outline-offset: 2px;
 }
 `;
@@ -89,22 +89,22 @@ export function FeaturedCollectionsClient({
               display: "block",
               width: "100%",
               padding: 0,
-              border: "1px solid var(--pf-color-border, rgba(0,0,0,0.12))",
+              border: "1px solid color-mix(in srgb, var(--pf-color-fg, #111) 14%, transparent)",
               borderRadius: 0,
-              background: "var(--pf-color-surface, #fff)",
+              background: "var(--pf-color-bg, #fff)",
               cursor: "pointer",
               textAlign: "left",
               fontFamily: "var(--pf-font-body, inherit)",
-              color: "var(--pf-color-foreground, #111)",
+              color: "var(--pf-color-fg, #111)",
               transition: "border-color 0.15s, background 0.15s",
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.borderColor =
-                "var(--pf-color-foreground, #111)";
+                "var(--pf-color-fg, #111)";
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.borderColor =
-                "var(--pf-color-border, rgba(0,0,0,0.12))";
+                "color-mix(in srgb, var(--pf-color-fg, #111) 14%, transparent)";
             }}
             onMouseDown={(e) => {
               (e.currentTarget as HTMLButtonElement).style.background =
@@ -112,7 +112,7 @@ export function FeaturedCollectionsClient({
             }}
             onMouseUp={(e) => {
               (e.currentTarget as HTMLButtonElement).style.background =
-                "var(--pf-color-surface, #fff)";
+                "var(--pf-color-bg, #fff)";
             }}
           >
             {/* Cover */}
@@ -155,7 +155,7 @@ export function FeaturedCollectionsClient({
                   fontSize: "1rem",
                   fontWeight: 600,
                   lineHeight: 1.3,
-                  color: "var(--pf-color-foreground, #111)",
+                  color: "var(--pf-color-fg, #111)",
                 }}
               >
                 {tile.name}
@@ -165,7 +165,7 @@ export function FeaturedCollectionsClient({
                   margin: "0.25rem 0 0",
                   fontSize: "0.875rem",
                   lineHeight: 1.4,
-                  color: "var(--pf-color-foreground, #555)",
+                  color: "color-mix(in srgb, var(--pf-color-fg, #111) 70%, transparent)",
                   opacity: 0.75,
                 }}
               >

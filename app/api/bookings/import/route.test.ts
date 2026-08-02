@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client, Transaction, Team } from "@/lib/db/models";
+import { Booking, Client, Transaction, Team, ActivityLog } from "@/lib/db/models";
 import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 import * as clientTransactions from "@/lib/db/clientTransactions";
 
@@ -40,6 +40,10 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  // The limiter is a module-level Map shared by every case in this file, so
+  // without this the suite exhausts its own window part-way through.
+  const { __resetRateLimitForTests } = await import("@/lib/server/rateLimit");
+  __resetRateLimitForTests();
   // Default: WS_ID context (mirrors the original static mock for all existing tests).
   mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
   // Seed default teams for all test workspaces so the route's
@@ -52,12 +56,17 @@ beforeEach(async () => {
   ]);
 });
 
-async function callImport(rows: unknown[]) {
+async function callImport(rows: unknown[], teamId?: string, confirmDuplicates?: boolean) {
   const { POST } = await import("./route");
+  const body: Record<string, unknown> = { rows };
+  if (teamId !== undefined) body.teamId = teamId;
+  // Default true so the many tests predating the confirm step still commit;
+  // the two that exercise the warning pass it explicitly.
+  body.confirmDuplicates = confirmDuplicates ?? true;
   const req = new Request("http://localhost/api/bookings/import", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ rows }),
+    body: JSON.stringify(body),
   });
   return POST(req);
 }
@@ -73,6 +82,294 @@ const VALID_ROW = {
   amountDeposit: 10000,
   currency: "PHP",
 };
+
+describe("POST /api/bookings/import — file preview", () => {
+  async function callPreview(file: Blob, filename: string) {
+    const { POST } = await import("./route");
+    const form = new FormData();
+    form.append("file", file, filename);
+    return POST(
+      new Request("http://localhost/api/bookings/import", { method: "POST", body: form })
+    );
+  }
+
+  it("accepts a multipart upload instead of rejecting it as bad JSON", async () => {
+    const { rowsToXlsxBuffer } = await import("@/lib/utils/xlsx");
+    const buffer = await rowsToXlsxBuffer(
+      ["title", "clientName", "clientEmail", "startAt"],
+      [["Garden Wedding", "Ana Cruz", "ana@example.com", "2026-06-15T01:00:00.000Z"]]
+    );
+    const res = await callPreview(new Blob([new Uint8Array(buffer)]), "bookings.xlsx");
+    expect(res.status).toBe(200);
+  });
+
+  it("answers 400 when the multipart body carries no file part", async () => {
+    // form.get("file") is null, and reading .size off it is a 500.
+    const { POST } = await import("./route");
+    const body = new FormData();
+    body.append("notafile", "hello");
+    const res = await POST(
+      new Request("http://localhost/api/bookings/import", { method: "POST", body })
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("caps the preview at the same row limit the commit enforces", async () => {
+    // Otherwise a 2MB file of minimal rows returns ~40k rows to the browser,
+    // which then validates and renders every one of them.
+    const header = "title,clientName,startAt\n";
+    const row = "T,C,2026-06-15T01:00:00.000Z\n";
+    const csv = header + row.repeat(600);
+    const res = await callPreview(new Blob([csv]), "big.csv");
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects an oversized upload before parsing it", async () => {
+    // exceljs decompresses in memory, so the byte cap has to bite BEFORE the
+    // parse — that is the actual defense against a zip bomb.
+    const huge = new Blob([new Uint8Array(2_000_001)]);
+    const res = await callPreview(huge, "bookings.xlsx");
+    expect(res.status).toBe(413);
+    expect((await res.json()).error).toBe("import_too_large");
+  });
+
+  it("answers 400 rather than 500 on a truncated zip", async () => {
+    const res = await callPreview(
+      new Blob([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00])]),
+      "x.xlsx"
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("unreadable_file");
+  });
+
+  it("parses the uploaded XLSX into rows and writes nothing", async () => {
+    // The preview is a dry run, so a malformed file can never half-write.
+    const { rowsToXlsxBuffer } = await import("@/lib/utils/xlsx");
+    const buffer = await rowsToXlsxBuffer(
+      ["title", "clientName", "clientEmail", "startAt"],
+      [["Garden Wedding", "Ana Cruz", "ana@example.com", "2026-06-15T01:00:00.000Z"]]
+    );
+
+    const res = await callPreview(new Blob([new Uint8Array(buffer)]), "bookings.xlsx");
+    const body = await res.json();
+
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0].title).toBe("Garden Wedding");
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+});
+
+describe("POST /api/bookings/import — booking_id round-trip", () => {
+  it("regroups rows sharing a booking_id into one updated multi-session booking", async () => {
+    // This is the round-trip contract: an exported two-session booking comes
+    // back as ONE updated booking, not two new single-session duplicates.
+    const client = await Client.create({
+      workspaceId: WS_ID,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      source: "manual",
+    });
+    const existing = await Booking.create({
+      workspaceId: WS_ID,
+      clientId: client._id,
+      clientName: "Jane Smith",
+      title: "Old Title",
+      status: "booked",
+      // Matches VALID_ROW: a real exported row carries the stored amounts back
+      // unchanged, so this exercises session regrouping and nothing else.
+      amount: { total: 50000, deposit: 10000, currency: "PHP" },
+      sessions: [
+        {
+          startAt: new Date("2026-06-15T09:00:00.000Z"),
+          endAt: new Date("2026-06-15T17:00:00.000Z"),
+        },
+      ],
+      firstSessionStart: new Date("2026-06-15T09:00:00.000Z"),
+      lastSessionEnd: new Date("2026-06-15T17:00:00.000Z"),
+    });
+
+    const id = existing._id.toString();
+    const res = await callImport([
+      {
+        ...VALID_ROW,
+        title: "New Title",
+        bookingId: id,
+        sessionIndex: "1",
+        // 01:00–09:00Z is 09:00–17:00 in Asia/Manila, so each session stays
+        // within one workspace-local day (the route's same-day rule).
+        startAt: "2026-06-16T01:00:00.000Z",
+        endAt: "2026-06-16T09:00:00.000Z",
+      },
+      {
+        ...VALID_ROW,
+        title: "New Title",
+        bookingId: id,
+        sessionIndex: "0",
+        startAt: "2026-06-15T01:00:00.000Z",
+        endAt: "2026-06-15T09:00:00.000Z",
+      },
+    ]);
+
+    const body = await res.json();
+    expect(body.created).toBe(0);
+    expect(body.updated).toBe(1);
+
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    const after = await Booking.findById(existing._id).lean();
+    expect(after?.title).toBe("New Title");
+    expect(after?.sessions).toHaveLength(2);
+    // Ordered by session_index, so the derived bounds span both days.
+    expect(after?.firstSessionStart.toISOString()).toBe("2026-06-15T01:00:00.000Z");
+    expect(after?.lastSessionEnd.toISOString()).toBe("2026-06-16T09:00:00.000Z");
+  });
+
+
+  it("resolves the client by clientId when the row has no email, without duplicating", async () => {
+    // Email is optional on Client, so an exported row may carry no email at
+    // all. Without clientId the importer would mint a fresh client on every
+    // run, which is what made repeat imports pile up duplicates.
+    const client = await Client.create({
+      workspaceId: WS_ID,
+      name: "No Email Client",
+      source: "manual",
+    });
+
+    const noEmail: Record<string, unknown> = { ...VALID_ROW };
+    delete noEmail.clientEmail;
+    const res = await callImport([
+      { ...noEmail, clientName: "No Email Client", clientId: client._id.toString() },
+    ]);
+
+    const body = await res.json();
+    expect(body.created).toBe(1);
+    expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.clientId.toString()).toBe(client._id.toString());
+  });
+
+  it("is idempotent: importing the same rows twice never duplicates", async () => {
+    // Retry safety. The first run creates; the second sees the booking_id it
+    // was given back and updates in place.
+    const first = await callImport([VALID_ROW]);
+    expect((await first.json()).created).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    const exportedRow = { ...VALID_ROW, bookingId: booking!._id.toString(), sessionIndex: "0" };
+
+    const second = await callImport([exportedRow]);
+    const body = await second.json();
+    expect(body.created).toBe(0);
+    expect(body.updated).toBe(1);
+
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+    expect(await Client.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("rolls the booking update back when the audit entry fails", async () => {
+    // Every other write path on this branch is transactional. Here the update
+    // and its ActivityLog were two independent writes, so a failure between
+    // them mutated the booking with no audit trail while reporting an error.
+    await callImport([VALID_ROW]);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+
+    const spy = vi
+      .spyOn(ActivityLog, "create")
+      .mockRejectedValueOnce(new Error("audit write failed") as never);
+    try {
+      await callImport([
+        { ...VALID_ROW, title: "Renamed", bookingId: booking!._id.toString(), sessionIndex: "0" },
+      ]);
+    } finally {
+      spy.mockRestore();
+    }
+
+    const after = await Booking.findById(booking!._id).lean();
+    expect(after?.title).toBe("Smith Wedding");
+  });
+
+  it("refuses an amount edit rather than reporting success and ignoring it", async () => {
+    // The update path deliberately never $sets amounts — they are ledger-linked.
+    // Reporting `updated` while discarding the change tells the user their edit
+    // landed when it did not.
+    await callImport([VALID_ROW]);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+
+    const res = await callImport([
+      { ...VALID_ROW, bookingId: booking!._id.toString(), sessionIndex: "0", amountTotal: 99999 },
+    ]);
+    const body = await res.json();
+
+    expect(body.updated).toBe(0);
+    expect(body.errors[0].message).toMatch(/amount/i);
+
+    const after = await Booking.findById(booking!._id).lean();
+    expect(after?.amount?.total).toBe(50000);
+  });
+
+  it("counts skipped ROWS while errors counts problems", async () => {
+    // A 2-row group that fails is one error but two unwritten rows; reporting
+    // skipped=1 would under-report what the user has to fix. Uses a 24-hex id
+    // that does not exist — a non-hex value is now a legal grouping key.
+    const missing = new Types.ObjectId().toHexString();
+    const res = await callImport([
+      { ...VALID_ROW, bookingId: missing, sessionIndex: "0" },
+      { ...VALID_ROW, bookingId: missing, sessionIndex: "1" },
+    ]);
+    const body = await res.json();
+    expect(body.errors).toHaveLength(1);
+    expect(body.skipped).toBe(2);
+  });
+
+  it("rate-limits repeated imports per workspace", async () => {
+    const { rateLimit } = await import("@/lib/server/rateLimit");
+    // Exhaust the window the route uses, then confirm the next call is refused.
+    for (let n = 0; n < 10; n++) {
+      rateLimit(`bookings:import:${WS_ID.toString()}`, { limit: 10, windowMs: 300_000 });
+    }
+    const res = await callImport([VALID_ROW]);
+    expect(res.status).toBe(429);
+    expect((await res.json()).error).toBe("rate_limited");
+  });
+
+  it("refuses a booking_id owned by another workspace and writes nothing", async () => {
+    // A booking_id arrives from a user-supplied file. Updating on it without
+    // re-checking ownership would be a cross-tenant write.
+    const foreignClient = await Client.create({
+      workspaceId: WS_B,
+      name: "Other Co Client",
+      source: "manual",
+    });
+    const foreign = await Booking.create({
+      workspaceId: WS_B,
+      clientId: foreignClient._id,
+      clientName: "Other Co Client",
+      title: "Untouchable",
+      status: "booked",
+      sessions: [
+        {
+          startAt: new Date("2026-06-15T09:00:00.000Z"),
+          endAt: new Date("2026-06-15T17:00:00.000Z"),
+        },
+      ],
+      firstSessionStart: new Date("2026-06-15T09:00:00.000Z"),
+      lastSessionEnd: new Date("2026-06-15T17:00:00.000Z"),
+    });
+
+    // Caller is WS_ID (see beforeEach), targeting WS_B's booking.
+    const res = await callImport([{ ...VALID_ROW, bookingId: foreign._id.toString() }]);
+    const body = await res.json();
+
+    expect(body.created).toBe(0);
+    expect(body.updated).toBe(0);
+    expect(body.errors[0].message).toContain("booking_not_found_in_workspace");
+
+    // The foreign booking is untouched and nothing leaked into the caller's workspace.
+    const after = await Booking.findById(foreign._id).lean();
+    expect(after?.title).toBe("Untouchable");
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+});
 
 describe("POST /api/bookings/import", () => {
   it("creates a booking and client for a valid row", async () => {
@@ -91,6 +388,151 @@ describe("POST /api/bookings/import", () => {
     const client = await Client.findOne({ workspaceId: WS_ID }).lean();
     expect(client?.email).toBe("jane@example.com");
     expect(client?.source).toBe("import");
+  });
+
+  it("strips the exporter's formula guard so a round-trip is lossless", async () => {
+    // The exporter writes "'=SUM(1)" so a spreadsheet cannot execute it. Import
+    // must remove that apostrophe, or every export/import cycle corrupts the
+    // value the user actually typed.
+    await callImport([{ ...VALID_ROW, title: "'=SUM(1) Wedding" }]);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.title).toBe("=SUM(1) Wedding");
+  });
+
+  it("writes clientPhone onto a client it creates", async () => {
+    // The column is exported, aliased, schema-parsed and tested — but the route
+    // never read it, so exporting and re-importing dropped every phone number.
+    await callImport([{ ...VALID_ROW, clientPhone: "+63 917 555 0142" }]);
+
+    const client = await Client.findOne({ workspaceId: WS_ID }).lean();
+    expect(client?.phone).toBe("+63 917 555 0142");
+  });
+
+  it("fills a matched client's empty phone but never overwrites one", async () => {
+    const existing = await Client.create({
+      workspaceId: WS_ID,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      phone: null,
+      source: "manual",
+    });
+
+    await callImport([{ ...VALID_ROW, clientPhone: "+63 917 555 0142" }]);
+    expect((await Client.findById(existing._id).lean())?.phone).toBe("+63 917 555 0142");
+
+    await callImport([
+      { ...VALID_ROW, title: "Second", clientPhone: "+63 900 000 0000" },
+    ]);
+    // Already set — a stale sheet must not clobber the CRM value.
+    expect((await Client.findById(existing._id).lean())?.phone).toBe("+63 917 555 0142");
+  });
+
+  it("groups rows under a non-id booking_id into ONE new multi-session booking", async () => {
+    // Hand-authored files have no booking ids, so without this a three-day
+    // wedding imports as three unrelated bookings with no way to say otherwise.
+    const res = await callImport([
+      { ...VALID_ROW, bookingId: "grp-alonzo", sessionIndex: "0", startAt: "2026-06-15T01:00:00.000Z", endAt: "2026-06-15T09:00:00.000Z" },
+      { ...VALID_ROW, bookingId: "grp-alonzo", sessionIndex: "1", startAt: "2026-06-16T01:00:00.000Z", endAt: "2026-06-16T09:00:00.000Z" },
+    ]);
+    const body = await res.json();
+    expect(body.errors).toHaveLength(0);
+    expect(body.created).toBe(1);
+
+    const bookings = await Booking.find({ workspaceId: WS_ID }).lean();
+    expect(bookings).toHaveLength(1);
+    expect(bookings[0].sessions).toHaveLength(2);
+  });
+
+  it("imports the payments column the exporter writes, and projects the paid ones", async () => {
+    // Export emits JSON.stringify(booking.payments). Reading it back is what
+    // lets a re-import carry a booking's real payment lines, not just a deposit.
+    const payments = JSON.stringify([
+      { title: "Balance", price: 40000, status: "paid", method: "remit", paidAt: "2026-06-20T00:00:00.000Z" },
+    ]);
+    const res = await callImport([
+      { ...VALID_ROW, amountTotal: 50000, amountDeposit: 10000, payments },
+    ]);
+    expect((await res.json()).created).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.payments).toHaveLength(1);
+    expect(booking?.payments?.[0].price).toBe(40000);
+
+    // A paid payment must reach the ledger, or totalSpent understates it.
+    const balance = await Transaction.find({ workspaceId: WS_ID, type: "balance" }).lean();
+    expect(balance).toHaveLength(1);
+    expect(balance[0].amount).toBe(40000);
+  });
+
+  it("assigns imported bookings to the chosen team", async () => {
+    const other = await Team.create({
+      workspaceId: WS_ID,
+      name: "Second Shooters",
+      color: TEAM_COLOR_PALETTE[1],
+      isDefault: false,
+      isActive: true,
+      memberCount: 0,
+      createdByWorkosUserId: "user_test",
+    });
+
+    const res = await callImport([VALID_ROW], String(other._id));
+    expect((await res.json()).created).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(String(booking?.teamId)).toBe(String(other._id));
+  });
+
+  it("rejects a team id belonging to another workspace", async () => {
+    // teamId arrives in the request body, so it is untrusted. A foreign team
+    // must fail exactly like a nonexistent one — no cross-tenant write, and no
+    // existence oracle either.
+    const foreign = await Team.findOne({ workspaceId: WS_A, isDefault: true }).lean();
+
+    const res = await callImport([VALID_ROW], String(foreign!._id));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("invalid_team");
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
+  });
+
+  it("returns needsConfirmation and names the team when rows match existing bookings", async () => {
+    // Warn, never decide. Silently skipping drops rows the owner may have meant
+    // to import again; blocking stops a second team covering the same event.
+    await callImport([VALID_ROW]);
+    const res = await callImport([VALID_ROW], undefined, false);
+    const body = await res.json();
+
+    expect(body.needsConfirmation).toBe(true);
+    expect(body.duplicates[0].title).toBe("Smith Wedding");
+    expect(body.duplicates[0].teamName).toBe("Main");
+    // Nothing written while the question is outstanding.
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(1);
+  });
+
+  it("imports anyway once the owner confirms", async () => {
+    // Confirming means "yes, I meant to" — the second copy is written, which is
+    // what makes covering one event with two teams possible.
+    await callImport([VALID_ROW]);
+    const res = await callImport([VALID_ROW], undefined, true);
+    const body = await res.json();
+
+    expect(body.created).toBe(1);
+    expect(body.errors).toHaveLength(0);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(2);
+  });
+
+  it("refuses to import a completed booking that is not fully paid", async () => {
+    // isCompletionEligible requires deposit + paid payments to equal the total.
+    // Import writes no payments, so a completed row with deposit < total lands
+    // in a state the PATCH route would reject outright.
+    const res = await callImport([
+      { ...VALID_ROW, status: "completed", amountTotal: 50000, amountDeposit: 20000 },
+    ]);
+    const body = await res.json();
+
+    expect(body.created).toBe(0);
+    expect(body.errors[0].message).toMatch(/paid|payment/i);
+    expect(await Booking.countDocuments({ workspaceId: WS_ID })).toBe(0);
   });
 
   it("reuses an existing client when email matches", async () => {
@@ -295,14 +737,21 @@ describe("POST /api/bookings/import", () => {
     expect(txs).toHaveLength(0);
   });
 
-  // --- Issue 3: round-trip compatibility (export fields stripped before validation) ---
+  // --- Export-only columns ride along without being interpreted ---
+  //
+  // These deliberately post RAW snake_case. The real client never does — the
+  // parser maps booking_id -> bookingId before the row is sent — so an
+  // unmapped key here must be ignored, not treated as an identity column.
+  // The genuine round-trip (camelCase bookingId -> update) is covered by the
+  // idempotence test above.
 
-  it("round-trip: row with booking_id and session_index columns imports successfully", async () => {
-    // Simulates a CSV row produced by the exporter being re-imported.
+  it("ignores export-only columns it does not recognise", async () => {
+    // payments is no longer in this set — it is read now.
     const exportRow = {
       ...VALID_ROW,
-      booking_id: new Types.ObjectId().toHexString(),
-      session_index: "0",
+      invoiceNumber: "INV-001",
+      teamName: "Main",
+      createdAt: "2026-01-01T00:00:00.000Z",
     };
     const res = await callImport([exportRow]);
     expect(res.status).toBe(200);
@@ -311,17 +760,18 @@ describe("POST /api/bookings/import", () => {
     expect(body.errors).toHaveLength(0);
   });
 
-  it("round-trip: booking_id and session_index do not appear as booking fields", async () => {
-    const exportRow = {
-      ...VALID_ROW,
-      booking_id: new Types.ObjectId().toHexString(),
-      session_index: "0",
-    };
-    await callImport([exportRow]);
+  it("does not persist export-only columns onto the booking document", async () => {
+    await callImport([{ ...VALID_ROW, invoiceNumber: "INV-001", teamName: "Main" }]);
     const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
-    // The Mongoose doc should not carry these export-only artefacts.
-    expect((booking as Record<string, unknown>)?.booking_id).toBeUndefined();
-    expect((booking as Record<string, unknown>)?.session_index).toBeUndefined();
+    // invoiceNumber is assigned by the invoice route; a sheet must not set it.
+    expect(booking?.invoiceNumber ?? null).toBeNull();
+  });
+
+  it("rejects a malformed payments cell instead of dropping it", async () => {
+    const res = await callImport([{ ...VALID_ROW, payments: '[{"amount":100}]' }]);
+    const body = await res.json();
+    expect(body.created).toBe(0);
+    expect(body.errors[0].message).toMatch(/payments/i);
   });
 
   // --- Issue 4: timezone-aware session validation ---
@@ -414,5 +864,30 @@ describe("POST /api/bookings/import", () => {
     expect(clientsB).toHaveLength(1);
     expect(clientsB[0].email).toBe("alice@example.com");
     expect(clientsB[0].workspaceId.toString()).toBe(WS_B.toString());
+  });
+});
+
+describe("GET /api/bookings/import — template", () => {
+  async function callTemplate(format?: string) {
+    const { GET } = await import("./route");
+    const url = `http://localhost/api/bookings/import${format ? `?format=${format}` : ""}`;
+    return GET(new Request(url));
+  }
+
+  it("serves a CSV template that the importer itself accepts", async () => {
+    const res = await callTemplate("csv");
+    expect(res.status).toBe(200);
+    const text = await res.text();
+
+    const { parseCsv } = await import("@/lib/utils/csv-parse");
+    const rows = parseCsv(text).rows;
+    const result = await callImport(rows);
+    expect(result.status).toBe(200);
+    // Two rows sharing one booking_id: one booking, two sessions.
+    const body = await result.json();
+    expect(body.errors).toEqual([]);
+    expect(body.created).toBe(1);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.sessions).toHaveLength(2);
   });
 });

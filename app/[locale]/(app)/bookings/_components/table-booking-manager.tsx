@@ -8,7 +8,7 @@ import { BookingWizardModal } from "./booking-wizard-modal";
 import { useBookingsToolbarPending } from "./bookings-pending-shell";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import type { BookingTeamOption } from "../_data/team-options";
-import type { InvoiceThemePresetId } from "@/lib/invoices/theme";
+import type { InvoiceThemePresetId, InvoiceThemePreviewBusiness } from "@/lib/invoices/theme";
 
 type ClientHit = {
   id: string;
@@ -36,6 +36,7 @@ type Props = {
   writableTeams: BookingTeamOption[];
   /** Workspace's current invoice PDF theme — seeds the Invoice theme dialog. */
   initialInvoiceTheme?: { preset: InvoiceThemePresetId | "custom"; main: string; accent: string };
+  invoiceThemeBusiness?: InvoiceThemePreviewBusiness;
 };
 
 /**
@@ -58,6 +59,7 @@ export function TableBookingManager({
   isOwner,
   writableTeams,
   initialInvoiceTheme,
+  invoiceThemeBusiness,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -121,12 +123,14 @@ export function TableBookingManager({
     <>
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
+        workspaceTimezone={workspaceTimezone}
         onAddClick={handleAddClick}
         canCreate={canCreate}
         teams={teams}
         selectedTeams={selectedTeams}
         isOwner={isOwner}
         initialInvoiceTheme={initialInvoiceTheme}
+        invoiceThemeBusiness={invoiceThemeBusiness}
         onPendingChange={onPendingChange}
       />
       {addOpen ? (

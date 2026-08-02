@@ -3,7 +3,30 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [1.2.0] - 2026-08-02
+
+Commit: `2b9a3d61ba5eb3f04c83f4ba01c641c69df3bebb`
+
+### Added
+- CSV and XLSX booking import/export now support round-trippable booking data, grouped multi-session bookings, payment lines, team selection, date-range filtering, and downloadable sample files.
+- Booking exports can now cover multiple teams from one dialog, with team-aware filenames and XLSX output.
+- A workspace invoice and receipt theme dialog now provides branded previews using the workspace's business details.
+- Client name-matching and field-reconciliation flows now help staff resolve duplicate client details when creating bookings or converting inquiries.
+
+### Changed
+- Form validation feedback is now consistently rendered next to the affected control across the booking, client, inquiry, onboarding, settings, and authentication flows.
+- Lemon Squeezy checkout now supports paid subscriptions behind the production launch gate, with return-page verification and updated pricing and legal copy.
+- Booking import preview and commit flows now surface row-level conflicts and validation results before data is written.
+
+### Fixed
+- Arabic dashboard charts and segmented controls now render correctly in RTL layouts.
+- Booking imports reject malformed client contact details before progressing, and location errors appear at their input.
+- Import/export handling now recognizes header aliases and prevents spreadsheet-formula injection.
+- Tenant redirects no longer leak an internal origin port into public portfolio URLs.
+
 ## [1.1.3] - 2026-07-25
+
+Commit: `c884bdb220067ba3fae9c3ba4667ab18e788f8ab`
 
 ### Added
 - Public About page that plainly describes Gallurio's portfolio, booking, and client-workspace functionality, plus the optional Google Sign-In identity data use and links to the legal policies.
@@ -20,6 +43,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 - Theme and language menus on standalone header controls now open below their trigger with logical-end alignment; sidebar controls retain their original inline-side behavior.
 
 ## [1.1.2] - 2026-07-22
+
+Commit: `3890761a8542df22667620656f7e402d2fc1c098`
 
 ### Added
 - Public Portfolio Builder demo: visitors can explore the editor without an account using local-only drafts, starter templates, a guided tour, temporary demo-image uploads, and clear upgrade gates.
@@ -39,6 +64,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 
 ## [1.1.1] - 2026-07-21
 
+Commit: `23a5f11e3ff5cdc7c27431923df30170e5594b24`
+
 ### Added
 - Redesigned marketing landing page: split hero contrasting the public portfolio ("Show") against the business workspace ("Manage"), a trust strip, an audience marquee, a "What is Gallurio?" section, and a surfaced transparency/compliance block ahead of pricing.
 - Theme-paired (light/dark) product screenshots via a new `ThemedShot` component, swapping with the visitor's theme the same way the ambient SVG background already does.
@@ -54,6 +81,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 - Ambient background art crossing through hero and final-CTA text, fighting it for contrast in both themes; corrected with a center-out fade mask and a 180-degree rotation of the art layer.
 
 ## [1.1.0] - 2026-07-20
+
+Commit: `d5f2851b7868c2c60bc558b057ab76c7dd6994a4`
 
 ### Added
 - Tenant subdomain routing: `*.gallurio.com` hosts rewrite to `/w/{slug}`, with a permanent 301 from the canonical host's `/w/{slug}` path to the matching subdomain (`NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN`-gated, no-op when unset).
@@ -73,5 +102,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 - WorkOS key now provided during the image build step.
 
 ## [1.0.0] - 2026-07-19
+
+Commit: `39d3f7807aec4bc46ec0bded2118814c43b13ecc`
 
 Initial production release baseline (`Production Release 1.0`, #63), following the beta release of the Gallurio CRM and portfolio builder with Lemon Squeezy billing.

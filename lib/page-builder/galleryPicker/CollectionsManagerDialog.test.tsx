@@ -29,6 +29,13 @@ describe("CollectionsManagerDialog", () => {
     expect(screen.getByText(/use them in gallery blocks/i)).toBeTruthy();
   });
 
+  it("announces the collections fetch failure via role=alert", async () => {
+    mockFetch.mockRejectedValue(new Error("network error"));
+    renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/could not load/i);
+  });
+
   it("renders nothing when closed", () => {
     renderWithProviders(<CollectionsManagerDialog open={false} onOpenChange={vi.fn()} />);
     expect(screen.queryByText("Photos & collections")).toBeNull();

@@ -57,24 +57,24 @@ describe("CollectionPopupChrome", () => {
 
   // ── Field (c): close button radius effective-default (rounded) ─────────────
 
-  it("uses rounded (16px) as close button radius when closeButtonRadius is unset", () => {
+  it("uses the rounded token value as close button radius when closeButtonRadius is unset", () => {
     render(
       <CollectionPopupChrome collectionName="W" config={{}} onClose={() => {}}>
         <div>body</div>
       </CollectionPopupChrome>,
     );
     const btn = screen.getByRole("button", { name: /close/i });
-    expect(btn.style.borderRadius).toBe("16px");
+    expect(btn.style.borderRadius).toBe("0.5rem");
   });
 
-  it("uses rounded (16px) as close button radius when closeButtonRadius is cleared (empty string)", () => {
+  it("uses the rounded token value when closeButtonRadius is cleared (empty string)", () => {
     render(
       <CollectionPopupChrome collectionName="W" config={{ closeButtonRadius: "" }} onClose={() => {}}>
         <div>body</div>
       </CollectionPopupChrome>,
     );
     const btn = screen.getByRole("button", { name: /close/i });
-    expect(btn.style.borderRadius).toBe("16px");
+    expect(btn.style.borderRadius).toBe("0.5rem");
   });
 
   it("respects explicit sharp close button radius (0px)", () => {
@@ -85,5 +85,19 @@ describe("CollectionPopupChrome", () => {
     );
     const btn = screen.getByRole("button", { name: /close/i });
     expect(btn.style.borderRadius).toBe("0px");
+  });
+
+  it("grounds unset popup radius and typography in the active brand kit", () => {
+    const { container } = render(
+      <CollectionPopupChrome collectionName="W" config={{}} onClose={() => {}}>
+        <div>body</div>
+      </CollectionPopupChrome>,
+    );
+    const shell = container.firstElementChild as HTMLElement;
+    const title = screen.getByRole("heading", { level: 2 });
+    expect(shell.style.borderRadius).toBe("var(--pf-radius)");
+    expect(shell.style.fontFamily).toBe("var(--pf-font-body)");
+    expect(title.style.fontFamily).toBe("var(--pf-font-heading)");
+    expect(title.style.fontSize).toBe("1.125rem");
   });
 });

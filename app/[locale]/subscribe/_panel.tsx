@@ -134,7 +134,6 @@ export function SubscribePanel({
       )}
 
       <div className="relative flex flex-col gap-3 border border-brand bg-background p-4">
-        {!billingAvailable && <span className="absolute -top-2 end-3 bg-brand px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-foreground">{tPlan("comingSoon")}</span>}
         <div className="flex items-baseline justify-between">
           <h2 className="font-heading text-lg font-semibold">{tPlans("pro.name")}</h2>
           {billingAvailable && <span className="flex size-5 items-center justify-center bg-brand text-brand-foreground"><Check className="size-3.5" /></span>}
@@ -191,7 +190,7 @@ function PromoCodePanel({ disabled, onSuccess }: { disabled: boolean; onSuccess:
         <AnimatePresence initial={false}>
           {open ? (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} className="absolute inset-0 flex items-center gap-2 p-2">
-              <Input ref={inputRef} value={code} onChange={(event) => setCode(event.target.value)} placeholder={t("placeholder")} className="min-w-0 flex-1" />
+              <Input ref={inputRef} value={code} onChange={(event) => setCode(event.target.value)} placeholder={t("placeholder")} aria-invalid={error ? true : undefined} aria-describedby={error ? "subscribe-promo-error" : undefined} className="min-w-0 flex-1" />
               <Button type="button" variant="outline" size="sm" onClick={submit} disabled={disabled || loading || !code}>
                 {loading ? <><Loader2 className="me-1.5 size-3.5 animate-spin" />{t("applying")}</> : t("submit")}
               </Button>
@@ -204,7 +203,7 @@ function PromoCodePanel({ disabled, onSuccess }: { disabled: boolean; onSuccess:
           )}
         </AnimatePresence>
       </div>
-      {error && open && <p role="alert" className="border-t border-border px-3 py-2 text-xs text-destructive">{error}</p>}
+      {error && open && <p id="subscribe-promo-error" role="alert" className="border-t border-border px-3 py-2 text-xs text-destructive">{error}</p>}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { TIME_INPUT_LANG, formatTime } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
+import { useFieldError } from "@/components/ui/form-field";
 
 export type EditableFieldType =
   | "text"
@@ -121,6 +122,7 @@ export function EditableField({
   );
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const a11y = useFieldError(error ?? undefined);
 
   // Keep a ref to the latest live values so the FieldHandle never captures
   // stale closures (the handle object itself is stable — created once).
@@ -279,6 +281,9 @@ export function EditableField({
               {type === "text" || type === "date" ? (
                 <Input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
+                  id={a11y.id}
+                  aria-invalid={a11y["aria-invalid"]}
+                  aria-describedby={a11y["aria-describedby"]}
                   type={type === "date" ? "date" : "text"}
                   min={type === "date" ? min : undefined}
                   value={toInputValue(draft, type)}
@@ -292,6 +297,9 @@ export function EditableField({
                 <div className="flex gap-2">
                   <Input
                     ref={inputRef as React.RefObject<HTMLInputElement>}
+                    id={a11y.id}
+                    aria-invalid={a11y["aria-invalid"]}
+                    aria-describedby={a11y["aria-describedby"]}
                     type="date"
                     min={min}
                     value={datetimeParts(draft).date}
@@ -311,6 +319,8 @@ export function EditableField({
                   <Input
                     type="time"
                     lang={TIME_INPUT_LANG[timeMode]}
+                    aria-invalid={a11y["aria-invalid"]}
+                    aria-describedby={a11y["aria-describedby"]}
                     className="w-32"
                     value={datetimeParts(draft).time}
                     onChange={(e) =>
@@ -330,6 +340,9 @@ export function EditableField({
               ) : type === "textarea" ? (
                 <Textarea
                   ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+                  id={a11y.id}
+                  aria-invalid={a11y["aria-invalid"]}
+                  aria-describedby={a11y["aria-describedby"]}
                   value={toInputValue(draft, type)}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
@@ -346,6 +359,9 @@ export function EditableField({
                   ) : null}
                   <Input
                     ref={inputRef as React.RefObject<HTMLInputElement>}
+                    id={a11y.id}
+                    aria-invalid={a11y["aria-invalid"]}
+                    aria-describedby={a11y["aria-describedby"]}
                     type="number"
                     inputMode="decimal"
                     min={0}
@@ -363,7 +379,11 @@ export function EditableField({
                   value={String(draft ?? "")}
                   onValueChange={(v) => setDraft(v ?? "")}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger
+                    id={a11y.id}
+                    aria-invalid={a11y["aria-invalid"]}
+                    aria-describedby={a11y["aria-describedby"]}
+                  >
                     <SelectValue placeholder={label}>
                       {options.find((opt) => opt.value === String(draft ?? ""))?.label ?? label}
                     </SelectValue>
@@ -378,7 +398,9 @@ export function EditableField({
                 </Select>
               ) : null}
               {error ? (
-                <span className="text-xs text-destructive">{error}</span>
+                <span id={a11y.errorId} role="alert" className="text-xs text-destructive">
+                  {error}
+                </span>
               ) : null}
             </div>
           )}

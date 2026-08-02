@@ -107,7 +107,17 @@ const SERP_COLORS: Record<
   },
 };
 
-function SearchPreview({ slug, title, description }: { slug: string; title: string; description: string }) {
+function SearchPreview({
+  slug,
+  title,
+  description,
+  portfolioDomain,
+}: {
+  slug: string;
+  title: string;
+  description: string;
+  portfolioDomain: string | null;
+}) {
   const t = useTranslations("app.pageBuilder.editor.storyPrompt");
   const scheme = useForcedInverseScheme();
   const c = SERP_COLORS[scheme];
@@ -127,7 +137,7 @@ function SearchPreview({ slug, title, description }: { slug: string; title: stri
               {title}
             </span>
             <span style={{ color: c.breadcrumb }} className="truncate text-xs">
-              gallurio.com › w › {slug}
+              {portfolioDomain ? `${slug}.${portfolioDomain}` : `gallurio.com/w/${slug}`}
             </span>
           </div>
         </div>
@@ -193,6 +203,7 @@ export function StoryPromptDialog({
   initialKeywords,
   initialInquiryRecipientEmail,
   businessType,
+  portfolioDomain,
   persistOnExit = true,
   onContinueWithGuide,
   onExploreSelf,
@@ -204,6 +215,7 @@ export function StoryPromptDialog({
   initialKeywords: string[];
   initialInquiryRecipientEmail: string;
   businessType: string;
+  portfolioDomain: string | null;
   persistOnExit?: boolean;
   onContinueWithGuide: () => void;
   onExploreSelf: () => void;
@@ -502,7 +514,12 @@ export function StoryPromptDialog({
                     {t("story.charCount", { count: description.length, max: MAX_DESCRIPTION })}
                   </p>
                 </div>
-                <SearchPreview slug={slugify(workspaceName)} title={workspaceName} description={description} />
+                <SearchPreview
+                  slug={slugify(workspaceName)}
+                  title={workspaceName}
+                  description={description}
+                  portfolioDomain={portfolioDomain}
+                />
                 </div>
                 <StepFooter className="justify-between">
                   <Button type="button" variant="outline" onClick={() => setStep(0)}>

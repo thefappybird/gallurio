@@ -15,6 +15,7 @@
 import { isValidElement, type ReactNode } from "react";
 import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
+import { portfolioGalleryPath } from "@/lib/portfolio/publicUrl";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -23,7 +24,6 @@ import {
   buildColorWithOpacity,
   productionStyleField,
   FLEX_JUSTIFY_MAP,
-  FLEX_ALIGN_MAP,
   type BlockStyle,
   type HighlightShape,
   type HighlightSize,
@@ -108,7 +108,9 @@ export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & 
       ref={puck?.dragRef ?? undefined}
       style={{
         fontFamily: "var(--pf-font-body)",
-        color: colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)",
+        color:
+          colorTokenToVar(_style?.textColorToken) ??
+          "var(--pf-block-text-color, var(--pf-color-fg))",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -176,7 +178,9 @@ export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: Bloc
       ref={puck?.dragRef ?? undefined}
       style={{
         fontFamily: "var(--pf-font-body)",
-        color: colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)",
+        color:
+          colorTokenToVar(_style?.textColorToken) ??
+          "var(--pf-block-text-color, var(--pf-color-fg))",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -340,10 +344,16 @@ const BUTTON_ALIGN_TO_MARGIN: Record<string, { marginLeft: string; marginRight: 
 // Button
 // ---------------------------------------------------------------------------
 
+export const BUTTON_SIZE_FONT_PX: Record<"sm" | "md" | "lg", number> = {
+  sm: 13,
+  md: 15,
+  lg: 18,
+};
+
 const BUTTON_SIZE_STYLES = {
-  sm: { padding: "0 1rem", minHeight: "2rem", minWidth: "6rem", fontSize: "0.8125rem" },
-  md: { padding: "0 1.75rem", minHeight: "2.75rem", minWidth: "9rem", fontSize: "0.9375rem" },
-  lg: { padding: "0 2.5rem", minHeight: "3.5rem", minWidth: "12rem", fontSize: "1.125rem" },
+  sm: { padding: "0 1rem", minHeight: "2rem", minWidth: "6rem", fontSize: `${BUTTON_SIZE_FONT_PX.sm / 16}rem` },
+  md: { padding: "0 1.75rem", minHeight: "2.75rem", minWidth: "9rem", fontSize: `${BUTTON_SIZE_FONT_PX.md / 16}rem` },
+  lg: { padding: "0 2.5rem", minHeight: "3.5rem", minWidth: "12rem", fontSize: `${BUTTON_SIZE_FONT_PX.lg / 16}rem` },
 } as const;
 
 export type ButtonBlockProps = {
@@ -363,7 +373,7 @@ export const buttonDefaultProps: ButtonBlockProps = {
 
 export function ButtonBlock({ _style, label, action, align, size, puck }: ButtonBlockProps & { puck?: BlockPuck }) {
   const slug = gallerySlugFrom(puck);
-  const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
+  const href = action === "go-to-gallery" && slug ? portfolioGalleryPath(slug) : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
   const tkBorderRadius = _style?.radius !== undefined ? `${_style.radius}px` : "var(--pf-radius)";
@@ -815,7 +825,6 @@ export const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
   custom: 128,
 };
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
-const ALIGN_X_ITEMS: Record<ContainerAlignX, string> = { left: "flex-start", center: "center", right: "flex-end" };
 // Maps _style.alignItems to CSS text-align for ContainerBlock inner content wrapper.
 // "stretch" has no text-align equivalent; falls back to the legacy alignX (ax) value.
 const ALIGN_TO_TEXT: Record<string, string | undefined> = {

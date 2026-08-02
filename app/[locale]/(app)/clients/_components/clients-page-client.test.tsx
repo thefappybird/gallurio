@@ -37,6 +37,8 @@ vi.mock("@/components/ui/dropdown-menu", () => {
 const routerPush = vi.fn();
 const routerRefresh = vi.fn();
 const routerReplace = vi.fn();
+const historyPushState = vi.spyOn(window.history, "pushState");
+const historyReplaceState = vi.spyOn(window.history, "replaceState");
 vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({ push: routerPush, refresh: routerRefresh, replace: routerReplace }),
   usePathname: () => "/clients",
@@ -65,15 +67,18 @@ vi.mock("./client-detail-modal", () => ({
     open,
     client,
     onClose,
+    onEdit,
   }: {
     open: boolean;
-    client: { name: string } | null;
+    client: ClientRow | null;
     onClose: () => void;
+    onEdit?: (client: ClientRow) => void;
   }) =>
     open && client
       ? createElement("div", { "data-testid": "client-detail-modal" }, [
           createElement("span", { key: "name" }, client.name),
           createElement("button", { key: "close", onClick: onClose }, "Close"),
+          createElement("button", { key: "edit", onClick: () => onEdit?.(client) }, "Edit"),
         ])
       : null,
 }));
@@ -126,6 +131,9 @@ function build(overrides: Partial<React.ComponentProps<typeof ClientsPageClient>
 
 describe("ClientsPageClient", () => {
   beforeEach(() => {
+    window.history.replaceState(null, "", "/clients");
+    historyPushState.mockClear();
+    historyReplaceState.mockClear();
     routerPush.mockClear();
     routerRefresh.mockClear();
     routerReplace.mockClear();
@@ -182,13 +190,42 @@ describe("ClientsPageClient", () => {
     expect(within(modal).getByText("John Dela Cruz")).toBeInTheDocument();
   });
 
-  it("adds the selected client to the URL when opening its detail modal", async () => {
+  it("adds the selected client to the URL without navigating the table", async () => {
     renderWithProviders(<ClientsPageClient {...build()} />);
 
     const viewItems = await screen.findAllByText("View");
     fireEvent.click(viewItems[0]);
 
-    expect(routerPush).toHaveBeenCalledWith("/clients?client=c-inactive");
+    expect(window.location.search).toBe("?client=c-inactive");
+    expect(historyPushState).toHaveBeenCalledOnce();
+    expect(routerPush).not.toHaveBeenCalled();
+  });
+
+  it("closes a client detail modal without replacing the clients route", async () => {
+    renderWithProviders(<ClientsPageClient {...build()} />);
+
+    fireEvent.click((await screen.findAllByText("View"))[0]);
+    fireEvent.click(within(screen.getByTestId("client-detail-modal")).getByRole("button", { name: "Close" }));
+
+    expect(window.location.search).toBe("");
+    expect(historyReplaceState).toHaveBeenCalledOnce();
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("enters and closes client edit mode without navigating the table", async () => {
+    renderWithProviders(<ClientsPageClient {...build()} />);
+
+    fireEvent.click((await screen.findAllByText("View"))[0]);
+    fireEvent.click(within(screen.getByTestId("client-detail-modal")).getByRole("button", { name: "Edit" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+    expect(historyReplaceState).toHaveBeenCalledOnce();
+    expect(routerReplace).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(routerReplace).not.toHaveBeenCalled();
+    expect(routerPush).not.toHaveBeenCalled();
   });
 
   it("reactivation calls server action and refreshes the list on success", async () => {

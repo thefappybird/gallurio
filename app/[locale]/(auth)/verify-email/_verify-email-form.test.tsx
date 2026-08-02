@@ -2,7 +2,7 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test-utils/render";
 import { VerifyEmailForm } from "./_verify-email-form";
-import { resendVerificationEmailAction } from "../_actions";
+import { resendVerificationEmailAction, verifyEmailAction } from "../_actions";
 
 const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
 
@@ -44,5 +44,22 @@ describe("VerifyEmailForm", () => {
     expect(resendButton.querySelector(".animate-spin")).toBeInTheDocument();
 
     resolveResend({ ok: true });
+  });
+
+  it("marks the code field invalid on a bad code", async () => {
+    vi.mocked(verifyEmailAction).mockResolvedValue({
+      error: "Invalid or expired code. Please try again.",
+      fieldErrors: { code: "Enter the 6-digit code." },
+    });
+
+    renderWithProviders(<VerifyEmailForm />);
+
+    const submitButton = screen.getByRole("button", { name: "Verify email" });
+    fireEvent.submit(submitButton.closest("form")!);
+
+    const codeInput = await screen.findByLabelText("Verification code");
+    await waitFor(() => {
+      expect(codeInput).toHaveAttribute("aria-invalid", "true");
+    });
   });
 });
