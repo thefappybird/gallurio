@@ -22,11 +22,9 @@ function cropDialog(page: Page) {
 }
 
 // The settings shell renders the workspace form and the public-page form on the
-// same route, and both ship an input with id="logoFile" (pre-existing duplicate
-// DOM id, not introduced here). Disambiguate on `accept`: only the workspace
-// logo takes SVG.
-const WORKSPACE_LOGO_INPUT = 'input#logoFile[accept*="svg"]';
-const HEADER_LOGO_INPUT = 'input#logoFile:not([accept*="svg"])';
+// same route, so their logo inputs must carry distinct DOM ids.
+const WORKSPACE_LOGO_INPUT = "input#workspaceLogoFile";
+const HEADER_LOGO_INPUT = "input#publicPageLogoFile";
 
 /**
  * Records every Blob the page puts into a FormData. Chromium does not expose a
@@ -226,6 +224,26 @@ test.describe("image cropper", () => {
     await expect(cropDialog(page)).toBeHidden({ timeout: 5_000 });
     await expect(page.locator('img[src*="imagedelivery"]').first()).toBeVisible({ timeout: 60_000 });
     await expect(cropDialog(page)).toBeHidden();
+  });
+
+  test("settings routes render no duplicate DOM ids", async ({ page }) => {
+    // Both the workspace form and the public-page form mount on each of these
+    // routes; they used to share id="logoFile", which makes <label for>
+    // ambiguous and silently points the wrong control at the wrong input.
+    for (const route of ["/settings/workspace", "/settings/public-page"]) {
+      await page.goto(route);
+      await page.locator(WORKSPACE_LOGO_INPUT).waitFor({ state: "attached", timeout: 90_000 });
+
+      const duplicates = await page.evaluate(() => {
+        const seen = new Map<string, number>();
+        for (const el of document.querySelectorAll("[id]")) {
+          seen.set(el.id, (seen.get(el.id) ?? 0) + 1);
+        }
+        return [...seen.entries()].filter(([, n]) => n > 1).map(([id, n]) => `${id}×${n}`);
+      });
+
+      expect(duplicates, `${route} must not repeat a DOM id`).toEqual([]);
+    }
   });
 
   test("workspace logo: raster opens a 1:1 crop", async ({ page }) => {

@@ -501,7 +501,7 @@ export function PublicPageSettingsForm({
             </div>
           ) : (
             <label
-              htmlFor="logoFile"
+              htmlFor="publicPageLogoFile"
               className={[
                 "flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
                 logoUploading
@@ -533,7 +533,7 @@ export function PublicPageSettingsForm({
 
           <input
             ref={logoFileInputRef}
-            id="logoFile"
+            id="publicPageLogoFile"
             type="file"
             accept={CROP_SPECS.headerLogo.acceptedTypes.join(",")}
             className="sr-only"

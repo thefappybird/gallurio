@@ -119,7 +119,7 @@ describe("WorkspaceBusinessForm — logo upload", () => {
 
     render(<WorkspaceBusinessForm defaults={baseDefaults} />);
 
-    const fileInput = document.getElementById("logoFile") as HTMLInputElement;
+    const fileInput = document.getElementById("workspaceLogoFile") as HTMLInputElement;
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
@@ -133,7 +133,7 @@ describe("WorkspaceBusinessForm — logo upload", () => {
 
     render(<WorkspaceBusinessForm defaults={baseDefaults} />);
 
-    const fileInput = document.getElementById("logoFile") as HTMLInputElement;
+    const fileInput = document.getElementById("workspaceLogoFile") as HTMLInputElement;
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
@@ -148,7 +148,7 @@ describe("WorkspaceBusinessForm — logo upload", () => {
 
     render(<WorkspaceBusinessForm defaults={baseDefaults} />);
 
-    const fileInput = document.getElementById("logoFile") as HTMLInputElement;
+    const fileInput = document.getElementById("workspaceLogoFile") as HTMLInputElement;
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(fileInput, { target: { files: [file] } });
 

@@ -419,7 +419,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -468,7 +468,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
     const clickSpy = vi.spyOn(fileInput, "click");
 
     const replaceBtn = screen.getByRole("button", { name: "logoReplace" });
@@ -495,7 +495,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
     const file = new File(["data"], "logo-cancel.png", { type: "image/png" });
 
     await act(async () => {
@@ -519,7 +519,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
     const file = new File(["data"], "logo-toolarge.png", { type: "image/png" });
 
     await act(async () => {
@@ -544,7 +544,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -571,7 +571,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -599,7 +599,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -629,7 +629,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [file] } });

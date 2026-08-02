@@ -81,11 +81,14 @@ several call-site error maps still reference it.
     locked-aspect hints, Arabic RTL chrome over an LTR crop surface;
   - bulk gallery upload still skipping the dialog entirely (regression guard).
 
-## Known, not fixed here
+## Duplicate DOM id, fixed in passing
 
-`settings/workspace` and `settings/public-page` each render two inputs with
-`id="logoFile"` — a duplicate DOM id that predates this change and makes `<label for>`
-ambiguous. The e2e spec disambiguates on the `accept` attribute instead.
+Both settings routes mount the workspace form *and* the public-page form, and both forms
+shipped a logo input with `id="logoFile"`. That predates this change, but it makes
+`<label for>` ambiguous — the label resolves to whichever input the parser saw first, so
+clicking one section's dropzone could focus the other section's input. Renamed to
+`workspaceLogoFile` / `publicPageLogoFile`, with an e2e test asserting neither route
+repeats any id.
 
 ## Out of scope
 

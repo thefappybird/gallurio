@@ -375,7 +375,7 @@ export function WorkspaceBusinessForm({
               </div>
             ) : (
               <label
-                htmlFor="logoFile"
+                htmlFor="workspaceLogoFile"
                 className={[
                   "flex min-h-56 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
                   logoDragActive
@@ -410,7 +410,7 @@ export function WorkspaceBusinessForm({
 
             <input
               ref={logoFileInputRef}
-              id="logoFile"
+              id="workspaceLogoFile"
               type="file"
               accept={CROP_SPECS.workspaceLogo.acceptedTypes.join(",")}
               className="sr-only"
