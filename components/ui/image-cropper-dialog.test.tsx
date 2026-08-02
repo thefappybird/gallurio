@@ -102,6 +102,23 @@ describe("ImageCropperDialog", () => {
     expect(await screen.findByRole("button", { name: "Uploading…" })).toBeDisabled();
   });
 
+  it("ignores an Escape dismissal while encoding is in flight", async () => {
+    const onCancel = vi.fn();
+    const file = new File(["x"], "photo.png", { type: "image/png" });
+    renderWithProviders(
+      <ImageCropperDialog file={file} spec={CROP_SPECS.avatar} onCancel={onCancel} onConfirm={vi.fn()} />
+    );
+
+    const uploadBtn = await screen.findByRole("button", { name: "Upload", hidden: false });
+    await waitFor(() => expect(uploadBtn).not.toBeDisabled());
+    fireEvent.click(uploadBtn);
+    await screen.findByRole("button", { name: "Uploading…" });
+
+    fireEvent.keyDown(document, { key: "Escape", code: "Escape" });
+
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
   it("surfaces the cropFailed alert and keeps the dialog open when cropToFile rejects", async () => {
     const { cropToFile } = await import("@/lib/media/cropImage");
     vi.mocked(cropToFile).mockRejectedValueOnce(new Error("InvalidStateError"));
@@ -120,6 +137,33 @@ describe("ImageCropperDialog", () => {
     );
     expect(onConfirm).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Upload" })).toBeInTheDocument();
+  });
+
+  it("does not carry a stale busy state into a new file session", async () => {
+    const { cropToFile } = await import("@/lib/media/cropImage");
+    let releaseFirstCrop: () => void = () => {};
+    vi.mocked(cropToFile).mockImplementationOnce(
+      () => new Promise((resolve) => {
+        releaseFirstCrop = () => resolve(new File(["x"], "photo.webp"));
+      })
+    );
+    const file1 = new File(["x"], "photo.png", { type: "image/png" });
+    const { rerender } = renderWithProviders(
+      <ImageCropperDialog file={file1} spec={CROP_SPECS.avatar} onCancel={vi.fn()} onConfirm={vi.fn()} />
+    );
+
+    const uploadBtn = await screen.findByRole("button", { name: "Upload", hidden: false });
+    await waitFor(() => expect(uploadBtn).not.toBeDisabled());
+    fireEvent.click(uploadBtn);
+    await screen.findByRole("button", { name: "Uploading…" });
+
+    const file2 = new File(["x"], "photo2.png", { type: "image/png" });
+    rerender(
+      <ImageCropperDialog file={file2} spec={CROP_SPECS.avatar} onCancel={vi.fn()} onConfirm={vi.fn()} />
+    );
+
+    expect(await screen.findByRole("button", { name: "Upload" })).not.toBeDisabled();
+    releaseFirstCrop();
   });
 
   it("shows a loading indicator until the media reports loaded, and hides it after", async () => {

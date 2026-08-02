@@ -65,6 +65,7 @@ export function ImageCropperDialog({
     setImageAspect(spec.maxWidth / spec.maxHeight);
     setMediaStatus("loading");
     setEncodeError(false);
+    setBusy(false);
     return () => URL.revokeObjectURL(url);
   }, [file, spec.maxWidth, spec.maxHeight]);
 
@@ -98,7 +99,7 @@ export function ImageCropperDialog({
     <Dialog
       open={file !== null}
       onOpenChange={(open) => {
-        if (!open) onCancel();
+        if (!open && !busy) onCancel();
       }}
     >
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-lg">
