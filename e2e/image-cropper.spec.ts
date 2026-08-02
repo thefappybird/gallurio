@@ -153,6 +153,28 @@ test.describe("image cropper", () => {
     expect(encoded.width).toBeLessThanOrEqual(512);
   });
 
+  test("an undecodable file surfaces an error instead of dead-ending", async ({ page }) => {
+    await page.goto("/settings/account");
+    await page.getByRole("heading", { name: "Profile" }).waitFor({ timeout: 90_000 });
+
+    // File pickers derive MIME from the extension, so a non-image renamed .png
+    // passes the hook's type check and only fails once the browser decodes it.
+    await page.locator('input[type="file"]').first().setInputFiles({
+      name: "not-really-an-image.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("this is definitely not a PNG"),
+    });
+
+    const dialog = cropDialog(page);
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.getByRole("alert")).toContainText("couldn't be processed", {
+      timeout: 15_000,
+    });
+    // Still escapable — the modal must not trap the user.
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toBeHidden();
+  });
+
   test("zoom slider is keyboard operable and changes zoom", async ({ page }) => {
     await page.goto("/settings/account");
     await page.getByRole("heading", { name: "Profile" }).waitFor({ timeout: 90_000 });

@@ -67,13 +67,19 @@ several call-site error maps still reference it.
 
 ## Verification
 
-- 193 unit/component tests green (`cropImage`, `useImageCropper`, `image-cropper-dialog`,
-  the five rewritten call-site suites, `uploadAsset.client`, locale parity + encoding).
-- `tsc --noEmit` clean.
-- `e2e/image-cropper.spec.ts` drives a real browser: the avatar 1:1 round crop at 375 / 768 /
-  1280, keyboard zoom, cancel-then-re-pick-the-same-file, the SVG bypass, free-aspect vs
-  locked-aspect hints, Arabic RTL chrome over an LTR crop surface, and proof that the blob
-  reaching the uploader is `image/webp` and smaller than the source.
+- 294 unit/component tests green (`cropImage`, `useImageCropper`, `image-cropper-dialog`,
+  the rewritten call-site suites, `uploadAsset.client`, locale parity + encoding).
+- `tsc --noEmit` clean; eslint clean on every touched file.
+- `e2e/image-cropper.spec.ts` — 15 tests driving a real browser:
+  - the avatar 1:1 round crop at 375 / 768 / 1280, and footer buttons still reachable at
+    844×390 (phone landscape, the case where an unconstrained dialog height traps the user);
+  - the encoded blob decoded back and asserted square and ≤512px for the avatar, 1.9:1 and
+    ≤1200×630 for the OG image, `image/webp` and smaller than the source in both;
+  - a non-image renamed `.png` surfacing the decode error instead of dead-ending on a
+    permanently disabled Upload button;
+  - keyboard zoom, cancel-then-re-pick-the-same-file, the SVG bypass, free-aspect vs
+    locked-aspect hints, Arabic RTL chrome over an LTR crop surface;
+  - bulk gallery upload still skipping the dialog entirely (regression guard).
 
 ## Known, not fixed here
 
