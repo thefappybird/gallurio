@@ -27,6 +27,7 @@ function setup(props: Partial<React.ComponentProps<typeof StoryPromptDialog>> = 
       initialKeywords={[]}
       initialInquiryRecipientEmail="owner@example.com"
       businessType="photographer"
+      portfolioDomain="gallurio.com"
       onContinueWithGuide={vi.fn()}
       onExploreSelf={vi.fn()}
       {...props}
@@ -133,7 +134,7 @@ describe("StoryPromptDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /let's go/i }));
     const textarea = screen.getByPlaceholderText(/who you are and what you do/i);
     fireEvent.change(textarea, { target: { value: "We shoot candid weddings." } });
-    expect(screen.getByText(/gallurio\.com › w › studio-aurora/i)).toBeInTheDocument();
+    expect(screen.getByText(/studio-aurora\.gallurio\.com/i)).toBeInTheDocument();
     expect(screen.getAllByText("We shoot candid weddings.")).toHaveLength(2);
   });
 

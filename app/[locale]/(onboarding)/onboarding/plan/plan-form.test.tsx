@@ -146,14 +146,14 @@ describe("PlanStepForm — plan card selection", () => {
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
   });
 
-  it("Pro card is disabled and shows a Coming soon badge in beta-only mode (billingAvailable=false)", () => {
+  it("Pro card is disabled without a launch-status badge when paid billing is unavailable", () => {
     renderForm({ currentPlan: "free", billingAvailable: false });
 
     const proHeading = screen.getByRole("heading", { name: "Pro" });
     const proCard = proHeading.closest("button");
     expect(proCard).not.toBeNull();
     expect(proCard).toBeDisabled();
-    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^popular$/i)).not.toBeInTheDocument();
   });
 

@@ -14,7 +14,7 @@ Subscription billing for Gallurio workspaces. Live implementation is **Lemon Squ
 
 ## Checkout + webhook architecture
 
-- Checkout is **synchronous**: `POST /api/billing/checkout` authenticates, rate-limits, resolves the Pro variant, and returns a Lemon Squeezy-hosted checkout URL directly. No durable workflow engine, no separate billing database.
+- Checkout is **synchronous**: `POST /api/billing/checkout` authenticates, rate-limits, resolves the Pro variant, and returns a Lemon Squeezy-hosted checkout URL directly. Non-onboarding checkout completions pass through `/billing/return`, which performs an authenticated Lemon Squeezy reconciliation before forwarding to the requested in-app route; this is a redirect-race safety net, not a replacement for webhooks. No durable workflow engine, no separate billing database.
 - Webhook: `app/api/webhooks/lemonsqueezy/route.ts`. Raw-body HMAC-SHA256 verification against `X-Signature` before parsing, Zod-validated envelope, Node runtime. Always ack 200 after signature verification even if the handler fails (never 500 into a provider retry loop).
 - Durability = at-least-once delivery + idempotent, effectively-once application via the `WebhookEvent` claim-lease ledger: at most one live worker applies a given event; an expired-lease worker can never overwrite a newer claimant's outcome. Ordering is enforced by comparing `attributes.updated_at` against `Workspace.lsLastEventAt` (`applyOrderedWorkspaceUpdate()`).
 - All 12 registered events, via a typed handler registry (`lib/lemonsqueezy/webhookHandlers.ts`): `subscription_created|updated|cancelled|resumed|expired|paused|unpaused|payment_success|payment_failed|payment_refunded|payment_recovered|plan_changed`.
@@ -25,7 +25,7 @@ Subscription billing for Gallurio workspaces. Live implementation is **Lemon Squ
 
 ## Setup (env vars)
 
-`LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`, `LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID`, `LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID`, `LEMONSQUEEZY_TEST_MODE`. Webhook callback: `https://<domain>/api/webhooks/lemonsqueezy`. Production guard rejects any event with `meta.test_mode === true`.
+`LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`, `LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID`, `LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID`, `LEMONSQUEEZY_TEST_MODE`, `PAID_BILLING_ENABLED`. Webhook callback: `https://<domain>/api/webhooks/lemonsqueezy`. Set `PAID_BILLING_ENABLED=true` only with live Lemon Squeezy credentials and `LEMONSQUEEZY_TEST_MODE=false`; production then rejects any event with `meta.test_mode === true`. This gate is independent of `BETA_TESTER_ENABLED`, so free beta access can remain open while paid checkout is live.
 
 Local webhook testing without a real Lemon Squeezy round-trip: `pnpm lemonsqueezy:sim subscription-created <workspaceId>` (POSTs to `http://localhost:3000/api/webhooks/lemonsqueezy`, override target with `LEMONSQUEEZY_SIM_URL`). See the `lemonsqueezy-dev` skill for the full local sandbox-checkout walkthrough.
 

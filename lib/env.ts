@@ -72,6 +72,7 @@ const shape = {
   NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN: z.string().optional(),
   PAGEVIEW_SALT_SECRET: z.string().optional(),
   BETA_TESTER_ENABLED: z.string().optional(),
+  PAID_BILLING_ENABLED: z.string().optional(),
   PORT: z.string().optional(),
 
   // --- Social links (contact page) — unset hides the icon; fill in later ---
@@ -106,11 +107,8 @@ const REQUIRED_IN_PROD: Partial<Record<EnvKey, FieldRule>> = {
   CRON_SECRET: {},
 };
 
-// Required only in normal paid-production mode. While BETA_TESTER_ENABLED is
-// "true" (the beta-only launch mode — no Merchant of Record selected/approved
-// yet, see docs/RELEASE-CHECKLIST.md), paid checkout/portal stay unavailable
-// server-side (lib/billing/availability.ts) so Lemon Squeezy credentials must
-// not block startup.
+// Required only when paid billing is explicitly enabled. Free beta access is
+// independent, so BETA_TESTER_ENABLED may remain true in paid production.
 const REQUIRED_IN_PROD_PAID_MODE: Partial<Record<EnvKey, FieldRule>> = {
   LEMONSQUEEZY_API_KEY: {},
   LEMONSQUEEZY_STORE_ID: {},
@@ -124,8 +122,8 @@ const REQUIRED_IN_PROD_ALL: Partial<Record<EnvKey, FieldRule>> = {
 };
 
 const envSchema = z.object(shape).superRefine((data, ctx) => {
-  const betaOnlyMode = !isPaidBillingAvailable();
-  const requiredInProd = betaOnlyMode ? REQUIRED_IN_PROD : REQUIRED_IN_PROD_ALL;
+  const paidBillingEnabled = isPaidBillingAvailable();
+  const requiredInProd = paidBillingEnabled ? REQUIRED_IN_PROD_ALL : REQUIRED_IN_PROD;
 
   for (const [key, rule] of Object.entries(requiredInProd) as [EnvKey, FieldRule][]) {
     const val = data[key];
@@ -177,7 +175,7 @@ const envSchema = z.object(shape).superRefine((data, ctx) => {
       });
     }
 
-    if (!betaOnlyMode && data.LEMONSQUEEZY_TEST_MODE !== "false") {
+    if (paidBillingEnabled && data.LEMONSQUEEZY_TEST_MODE !== "false") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["LEMONSQUEEZY_TEST_MODE"],

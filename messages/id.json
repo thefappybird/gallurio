@@ -107,12 +107,12 @@
         "body": "Tanpa kartu pembayaran untuk memulai."
       },
       "item2": {
-        "title": "Paket berbayar: segera hadir.",
+        "title": "Satu paket. Ketentuan jelas.",
         "body": "Harga dan ketentuan ditampilkan jelas sebelum checkout."
       },
       "item3": {
         "title": "Lemon Squeezy menangani checkout",
-        "body": "sebagai merchant of record kami, begitu penagihan aktif."
+        "body": "sebagai merchant of record kami."
       },
       "item4": {
         "title": "Perangkat lunak, bukan jasa.",
@@ -134,14 +134,13 @@
       "title": "Harga sederhana",
       "subtitle": "1 bulan Pro, gratis. Lalu satu paket, bulanan atau tahunan.",
       "viewFullPricing": "Lihat harga lengkap",
-      "disclaimer": "Paket berbayar belum tersedia. Harga dan ketentuan penagihan akan ditampilkan dengan jelas sebelum checkout setelah diluncurkan.",
+      "disclaimer": "Satu bulan gratis. Pro berbayar diperpanjang bulanan atau tahunan sampai dibatalkan.",
       "cadence": {
         "monthly": "Bulanan",
         "yearly": "Tahunan — hemat 2 bulan"
       },
       "pro": {
         "badge": "1 bulan gratis",
-        "comingSoon": "Segera hadir",
         "name": "Pro",
         "priceSuffixMonthly": "/bln",
         "priceSuffixYearly": "/thn",
@@ -164,7 +163,6 @@
       },
       "pro": {
         "badge": "Direkomendasikan",
-        "comingSoon": "Segera hadir",
         "name": "Pro",
         "freeMonth": "Mulai dengan satu bulan gratis. Tidak perlu kartu pembayaran.",
         "description": "Semua yang Anda butuhkan untuk menjalankan booking, klien, galeri, dan halaman publik Anda.",
@@ -180,15 +178,15 @@
         "cta": "Mulai bulan gratis saya"
       },
       "billingNotice": {
-        "body1": "Langganan Pro berbayar belum tersedia. Ketika langganan diluncurkan, harga, periode penagihan, ketentuan perpanjangan, pajak yang berlaku, detail pembayaran, dan proses pembatalan akan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian.",
-        "body2": "Lemon Squeezy akan memproses langganan berbayar sebagai merchant of record Gallurio. Ketentuan checkout, invoice, pengembalian dana, dan pembayaran yang berlaku juga akan ditampilkan melalui alur penagihan.",
+        "body1": "Langganan Pro berbayar tersedia bulanan atau tahunan. Harga, periode penagihan, ketentuan perpanjangan, pajak yang berlaku, detail pembayaran, dan proses pembatalan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian.",
+        "body2": "Lemon Squeezy memproses langganan berbayar sebagai merchant of record Gallurio. Ketentuan checkout, invoice, pengembalian dana, dan pembayaran yang berlaku juga ditampilkan melalui alur penagihan.",
         "body3": "Anda dapat membatalkan langganan berbayar kapan saja melalui alur pengelolaan penagihan. Pembatalan umumnya mencegah biaya perpanjangan di masa depan; akses umumnya berlanjut hingga akhir periode penagihan saat ini.",
         "body4": "Tidak ada biaya yang dikumpulkan selama bulan gratis pertama Anda."
       },
       "pricingTransparency": {
         "title": "Transparansi Harga",
         "body1": "Gallurio tidak akan mengenakan biaya kepada Anda selama bulan gratis. Tidak perlu kartu pembayaran untuk memulai uji coba. Langganan berbayar apa pun memerlukan langkah pembelian atau aktivasi terpisah setelah periode gratis berakhir, dengan ketentuan yang berlaku ditampilkan sebelum pembayaran.",
-        "body2": "Harga dan fitur dapat berubah sebelum langganan berbayar diluncurkan. Perubahan material akan tercermin di halaman ini dan dalam alur checkout."
+        "body2": "Harga dan fitur dapat berubah. Perubahan material akan tercermin di halaman ini dan dalam alur checkout."
       },
       "contactNote": {
         "body": "Untuk pertanyaan penagihan, hubungi"
@@ -3403,6 +3401,13 @@
   "subscribe": {
     "pageTitle": "Berlangganan",
     "logout": "Keluar",
+    "verification": {
+      "title": "Memverifikasi pembayaran Anda",
+      "description": "Kami sedang mengaktifkan akses Pro Anda. Biasanya hanya perlu beberapa detik.",
+      "pendingTitle": "Kami masih mengonfirmasi langganan Anda",
+      "pendingDescription": "Pembayaran Anda sudah selesai. Silakan coba lagi sebentar lagi, atau hubungi dukungan jika ini berlanjut.",
+      "retry": "Coba lagi"
+    },
     "owner": {
       "title": "Akses Pro Anda telah berakhir",
       "description": "Berlangganan kembali ke Gallurio Pro untuk kembali ke dasbor Anda.",

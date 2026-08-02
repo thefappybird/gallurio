@@ -91,7 +91,7 @@ const baseDefaults: UpdateWorkspaceBusinessInput = {
 
 describe("WorkspaceBusinessForm — artists business type + other free text", () => {
   it("renders an 'artists' option in the business type select", () => {
-    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+    render(<WorkspaceBusinessForm defaults={baseDefaults} portfolioDomain={null} />);
 
     const select = screen.getByLabelText("businessType") as HTMLSelectElement;
     const optionValues = Array.from(select.options).map((o) => o.value);
@@ -99,7 +99,7 @@ describe("WorkspaceBusinessForm — artists business type + other free text", ()
   });
 
   it("shows the free-text 'other' input only when 'other' is selected, and surfaces the required error", async () => {
-    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+    render(<WorkspaceBusinessForm defaults={baseDefaults} portfolioDomain={null} />);
 
     expect(screen.queryByLabelText("businessTypeOtherLabel")).not.toBeInTheDocument();
 
@@ -213,7 +213,7 @@ describe("WorkspaceBusinessForm — valid state", () => {
 
 describe("WorkspaceBusinessForm — contact address LocationPicker", () => {
   it("submits the typed address along with its lat/lng", async () => {
-    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+    render(<WorkspaceBusinessForm defaults={baseDefaults} portfolioDomain={null} />);
 
     const addressInput = screen.getByLabelText("Business address");
     fireEvent.change(addressInput, { target: { value: "123 Rizal St, Manila" } });
@@ -229,5 +229,12 @@ describe("WorkspaceBusinessForm — contact address LocationPicker", () => {
         })
       );
     });
+  });
+
+  it("shows the public subdomain as a suffix when portfolio subdomains are enabled", () => {
+    render(<WorkspaceBusinessForm defaults={baseDefaults} portfolioDomain="gallurio.com" />);
+
+    expect(screen.getByText(".gallurio.com")).toBeInTheDocument();
+    expect(screen.queryByText("gallurio.com/w/")).not.toBeInTheDocument();
   });
 });
