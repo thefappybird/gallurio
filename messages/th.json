@@ -1452,7 +1452,7 @@
       "account": {
         "profileSection": "โปรไฟล์",
         "profileHint": "ชื่อและรูปประจำตัวของคุณตามที่เพื่อนร่วมทีมเห็น",
-        "avatarHint": "อัปโหลดไฟล์ JPG, PNG หรือ WebP สี่เหลี่ยมจัตุรัส ขนาดไม่เกิน 10 MB",
+        "avatarHint": "JPG, PNG หรือ WebP ขนาดไม่เกิน 10 MB คุณจะครอบตัดให้เป็นสี่เหลี่ยมจัตุรัส",
         "avatarUpload": "อัปโหลด",
         "avatarReplace": "แทนที่",
         "avatarRemove": "ลบ",
@@ -1587,7 +1587,7 @@
         "logoHint": "แสดงบนใบแจ้งหนี้ที่สร้างขึ้น",
         "logoLabel": "อัปโหลดโลโก้",
         "logoUploading": "กำลังอัปโหลด…",
-        "logoRequirements": "PNG, JPEG, WebP หรือ SVG - สูงสุด 250 KB - สี่เหลี่ยมจัตุรัส ไม่เกิน 256 x 256 พิกเซล",
+        "logoRequirements": "PNG, JPEG, WebP หรือ SVG · สูงสุด 250 KB · คุณจะครอบตัดให้เป็นสี่เหลี่ยมจัตุรัส",
         "logoRemove": "ลบ",
         "logoErrors": {
           "type": "รองรับเฉพาะไฟล์ PNG, JPEG, WebP หรือ SVG",
@@ -1643,7 +1643,7 @@
         "siteIconLabel": "อัปโหลดไอคอนเว็บไซต์",
         "siteIconUpload": "เลือกภาพ",
         "siteIconUploading": "กำลังอัปโหลด…",
-        "siteIconRequirements": "PNG, JPEG, WebP หรือ AVIF · สูงสุด 1 MB · ไม่เกิน 512 × 512 พิกเซล",
+        "siteIconRequirements": "PNG, JPEG, WebP หรือ AVIF · สูงสุด 1 MB · คุณจะครอบตัดให้เป็นสี่เหลี่ยมจัตุรัส",
         "siteIconRemove": "ลบ",
         "siteIconErrors": {
           "type": "รองรับเฉพาะไฟล์ PNG, JPEG, WebP หรือ AVIF",
@@ -1654,7 +1654,7 @@
         },
         "logoSection": "โลโก้",
         "logoHint": "แสดงในส่วนหัวของหน้าเว็บสาธารณะของคุณ",
-        "logoRequirements": "PNG, JPEG หรือ WebP สูงสุด 512x256px ไม่เกิน 250KB",
+        "logoRequirements": "PNG, JPEG หรือ WebP · สูงสุด 250 KB · คุณจะจัดกรอบก่อนอัปโหลด",
         "logoLabel": "อัปโหลดโลโก้",
         "logoReplace": "แทนที่",
         "logoRemove": "ลบ",
@@ -2423,7 +2423,7 @@
           "logoUpload": "อัปโหลดโลโก้",
           "logoUploading": "กำลังอัปโหลด…",
           "logoRemove": "ลบโลโก้",
-          "logoRequirements": "PNG, JPEG หรือ WEBP · สูงสุด 250 KB · ไม่เกิน 512×256",
+          "logoRequirements": "PNG, JPEG หรือ WEBP · สูงสุด 250 KB · คุณจะจัดกรอบก่อนอัปโหลด",
           "logoErrors": {
             "type": "โลโก้ต้องเป็นภาพ PNG, JPEG หรือ WEBP ไม่รองรับ SVG",
             "size": "โลโก้ต้องมีขนาดไม่เกิน 250 KB",
@@ -2901,7 +2901,7 @@
             "logoUpload": "อัปโหลดโลโก้",
             "logoUploading": "กำลังอัปโหลด…",
             "logoRemove": "ลบโลโก้",
-            "logoRequirements": "PNG, JPG หรือ JPEG, หรือ WEBP · สูงสุด 250 KB · ไม่เกิน 512×256",
+            "logoRequirements": "PNG, JPG หรือ JPEG, หรือ WEBP · สูงสุด 250 KB · คุณจะจัดกรอบก่อนอัปโหลด",
             "logoErrors": {
               "type": "โลโก้ต้องเป็นภาพ PNG, JPG หรือ JPEG, หรือ WEBP",
               "size": "โลโก้ต้องมีขนาดไม่เกิน 250 KB",
@@ -2913,7 +2913,7 @@
             "iconUpload": "เลือกภาพ",
             "iconUploading": "กำลังอัปโหลด…",
             "iconRemove": "ลบ",
-            "iconRequirements": "PNG, JPG หรือ JPEG, WebP หรือ AVIF · สูงสุด 1 MB · ไม่เกิน 512 × 512 พิกเซล",
+            "iconRequirements": "PNG, JPG หรือ JPEG, WebP หรือ AVIF · สูงสุด 1 MB · คุณจะครอบตัดให้เป็นสี่เหลี่ยมจัตุรัส",
             "iconErrors": {
               "type": "รองรับเฉพาะไฟล์ PNG, JPG หรือ JPEG, WebP หรือ AVIF",
               "size": "ไอคอนต้องมีขนาดไม่เกิน 1 MB",
@@ -2925,7 +2925,7 @@
             "shareImageUpload": "อัปโหลดภาพสำหรับแชร์",
             "shareImageUploading": "กำลังอัปโหลด...",
             "shareImageRemove": "ลบภาพสำหรับแชร์",
-            "shareImageRequirements": "JPG หรือ JPEG, PNG, WebP หรือ AVIF · สูงสุด 10 MB · แนะนำ 1200 × 630 พิกเซล",
+            "shareImageRequirements": "JPG หรือ JPEG, PNG, WebP หรือ AVIF · สูงสุด 10 MB · คุณจะครอบตัดให้เหลือ 1200 × 630",
             "shareImageErrors": {
               "type": "ใช้ภาพ JPG หรือ JPEG, PNG, WebP หรือ AVIF",
               "size": "ภาพสำหรับแชร์ต้องมีขนาดไม่เกิน 10 MB",
@@ -3233,13 +3233,14 @@
     "imageCropper": {
       "title": "ครอบตัดรูปภาพ",
       "hintFixed": "จัดกรอบรูปของคุณที่อัตราส่วน {aspect} ระบบจะบันทึกที่ขนาดสูงสุด {width}×{height} พิกเซล",
-      "hintFree": "จัดกรอบรูปของคุณ — ใช้ได้ทุกสัดส่วน ระบบจะบันทึกที่ขนาดสูงสุด {width}×{height} พิกเซล",
+      "hintFree": "กรอบจะคงสัดส่วนเดิมของรูปคุณไว้ ซูมและลากเพื่อเลือกส่วนที่จะแสดง บันทึกที่ขนาดสูงสุด {width}×{height} พิกเซล",
       "zoom": "ซูม",
       "cancel": "ยกเลิก",
       "upload": "อัปโหลด",
       "uploading": "กำลังอัปโหลด…",
-      "typeNotAccepted": "ไม่รองรับไฟล์ประเภทนี้",
-      "fileTooLarge": "ไฟล์ใหญ่เกินไป — เลือกไฟล์ที่เล็กกว่า {limit}"
+      "cropArea": "พื้นที่ครอบตัด ลากเพื่อจัดตำแหน่ง หรือใช้ปุ่มลูกศร",
+      "loading": "กำลังโหลดรูปภาพ…",
+      "cropFailed": "ไม่สามารถประมวลผลรูปภาพนั้นได้ ลองเลือกไฟล์อื่น"
     },
     "pagination": {
       "showing": "แสดง {from}–{to} จาก {total}",

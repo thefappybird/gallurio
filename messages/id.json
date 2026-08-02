@@ -1452,7 +1452,7 @@
       "account": {
         "profileSection": "Profil",
         "profileHint": "Nama dan avatar Anda seperti yang dilihat oleh rekan tim.",
-        "avatarHint": "Unggah gambar persegi JPG, PNG, atau WebP, maksimal 10 MB.",
+        "avatarHint": "JPG, PNG, atau WebP maksimal 10 MB. Anda akan memangkasnya menjadi persegi.",
         "avatarUpload": "Unggah",
         "avatarReplace": "Ganti",
         "avatarRemove": "Hapus",
@@ -1587,7 +1587,7 @@
         "logoHint": "Ditampilkan pada faktur yang Anda hasilkan.",
         "logoLabel": "Unggah logo",
         "logoUploading": "Mengunggah…",
-        "logoRequirements": "PNG, JPEG, WebP atau SVG - maks 250 KB - persegi hingga 256 x 256 px",
+        "logoRequirements": "PNG, JPEG, WebP atau SVG · maks 250 KB · Anda akan memangkasnya menjadi persegi",
         "logoRemove": "Hapus",
         "logoErrors": {
           "type": "Hanya file PNG, JPEG, WebP atau SVG yang diterima.",
@@ -1643,7 +1643,7 @@
         "siteIconLabel": "Unggah ikon situs",
         "siteIconUpload": "Pilih gambar",
         "siteIconUploading": "Mengunggah…",
-        "siteIconRequirements": "PNG, JPEG, WebP atau AVIF · maks 1 MB · hingga 512 × 512 px",
+        "siteIconRequirements": "PNG, JPEG, WebP atau AVIF · maks 1 MB · Anda akan memangkasnya menjadi persegi",
         "siteIconRemove": "Hapus",
         "siteIconErrors": {
           "type": "Hanya file PNG, JPEG, WebP atau AVIF yang diterima.",
@@ -1654,7 +1654,7 @@
         },
         "logoSection": "Logo",
         "logoHint": "Ditampilkan di header halaman publik Anda.",
-        "logoRequirements": "PNG, JPEG, atau WebP. Hingga 512x256px, maks 250KB.",
+        "logoRequirements": "PNG, JPEG atau WebP · maks 250 KB · Anda akan membingkainya sebelum diunggah",
         "logoLabel": "Unggah logo",
         "logoReplace": "Ganti",
         "logoRemove": "Hapus",
@@ -2423,7 +2423,7 @@
           "logoUpload": "Unggah logo",
           "logoUploading": "Mengunggah…",
           "logoRemove": "Hapus logo",
-          "logoRequirements": "PNG, JPEG atau WEBP · maks. 250 KB · hingga 512×256",
+          "logoRequirements": "PNG, JPEG atau WEBP · maks. 250 KB · Anda akan membingkainya sebelum diunggah",
           "logoErrors": {
             "type": "Logo harus berupa gambar PNG, JPEG, atau WEBP. SVG tidak didukung.",
             "size": "Logo must be 250 KB or smaller.",
@@ -2901,7 +2901,7 @@
             "logoUpload": "Unggah logo",
             "logoUploading": "Mengunggah…",
             "logoRemove": "Hapus logo",
-            "logoRequirements": "PNG, JPG atau JPEG, atau WEBP · maks 250 KB · hingga 512×256",
+            "logoRequirements": "PNG, JPG atau JPEG, atau WEBP · maks 250 KB · Anda akan membingkainya sebelum diunggah",
             "logoErrors": {
               "type": "Logo harus berupa gambar PNG, JPG atau JPEG, atau WEBP.",
               "size": "Logo harus berukuran 250 KB atau lebih kecil.",
@@ -2913,7 +2913,7 @@
             "iconUpload": "Pilih gambar",
             "iconUploading": "Mengunggah…",
             "iconRemove": "Hapus",
-            "iconRequirements": "PNG, JPG atau JPEG, WebP, atau AVIF · maks 1 MB · hingga 512 × 512 px",
+            "iconRequirements": "PNG, JPG atau JPEG, WebP, atau AVIF · maks 1 MB · Anda akan memangkasnya menjadi persegi",
             "iconErrors": {
               "type": "Hanya file PNG, JPG atau JPEG, WebP, atau AVIF yang diterima.",
               "size": "Ikon harus berukuran 1 MB atau lebih kecil.",
@@ -2925,7 +2925,7 @@
             "shareImageUpload": "Unggah gambar bagikan",
             "shareImageUploading": "Mengunggah...",
             "shareImageRemove": "Hapus gambar bagikan",
-            "shareImageRequirements": "JPG atau JPEG, PNG, WebP, atau AVIF · maks 10 MB · 1200 × 630 px direkomendasikan",
+            "shareImageRequirements": "JPG atau JPEG, PNG, WebP, atau AVIF · maks 10 MB · Anda akan memangkasnya menjadi 1200 × 630",
             "shareImageErrors": {
               "type": "Gunakan gambar JPG atau JPEG, PNG, WebP, atau AVIF.",
               "size": "Gambar bagikan harus 10 MB atau lebih kecil.",
@@ -3233,13 +3233,14 @@
     "imageCropper": {
       "title": "Pangkas gambar",
       "hintFixed": "Atur bingkai gambar Anda pada {aspect}. Gambar akan disimpan hingga {width}×{height} piksel.",
-      "hintFree": "Atur bingkai gambar Anda — bentuk apa pun bisa. Gambar akan disimpan hingga {width}×{height} piksel.",
+      "hintFree": "Bingkai mempertahankan proporsi asli gambar Anda. Perbesar dan geser untuk memilih bagian yang ditampilkan. Disimpan hingga {width}×{height} piksel.",
       "zoom": "Perbesar",
       "cancel": "Batal",
       "upload": "Unggah",
       "uploading": "Mengunggah…",
-      "typeNotAccepted": "Tipe file tersebut tidak didukung.",
-      "fileTooLarge": "File terlalu besar — pilih yang di bawah {limit}."
+      "cropArea": "Area pangkas. Geser untuk mengatur posisi, atau gunakan tombol panah.",
+      "loading": "Memuat gambar…",
+      "cropFailed": "Gambar itu tidak dapat diproses. Coba file lain."
     },
     "pagination": {
       "showing": "Menampilkan {from}–{to} dari {total}",

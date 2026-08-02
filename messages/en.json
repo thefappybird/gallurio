@@ -1452,7 +1452,7 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Your name and avatar as shown to teammates.",
-        "avatarHint": "Upload a square JPG, PNG, or WebP, up to 10 MB.",
+        "avatarHint": "JPG, PNG, or WebP up to 10 MB. You'll crop it to a square.",
         "avatarUpload": "Upload",
         "avatarReplace": "Replace",
         "avatarRemove": "Remove",
@@ -1587,7 +1587,7 @@
         "logoHint": "Shown on your generated invoices.",
         "logoLabel": "Upload logo",
         "logoUploading": "Uploading…",
-        "logoRequirements": "PNG, JPEG, WebP or SVG - max 250 KB - square, up to 256 x 256 px",
+        "logoRequirements": "PNG, JPEG, WebP or SVG · max 250 KB · you'll crop it to a square",
         "logoRemove": "Remove",
         "logoErrors": {
           "type": "Only PNG, JPEG, WebP or SVG files are accepted.",
@@ -1643,7 +1643,7 @@
         "siteIconLabel": "Upload site icon",
         "siteIconUpload": "Choose image",
         "siteIconUploading": "Uploading…",
-        "siteIconRequirements": "PNG, JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
+        "siteIconRequirements": "PNG, JPEG, WebP or AVIF · max 1 MB · you'll crop it to a square",
         "siteIconRemove": "Remove",
         "siteIconErrors": {
           "type": "Only PNG, JPEG, WebP or AVIF files are accepted.",
@@ -1654,7 +1654,7 @@
         },
         "logoSection": "Logo",
         "logoHint": "Shown in your public page header.",
-        "logoRequirements": "PNG, JPEG, or WebP. Up to 512x256px, max 250KB.",
+        "logoRequirements": "PNG, JPEG or WebP · max 250 KB · you'll frame it before it uploads",
         "logoLabel": "Upload logo",
         "logoReplace": "Replace",
         "logoRemove": "Remove",
@@ -2424,7 +2424,7 @@
           "logoUpload": "Upload logo",
           "logoUploading": "Uploading…",
           "logoRemove": "Remove logo",
-          "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · up to 512×256",
+          "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · you'll frame it before it uploads",
           "logoErrors": {
             "type": "Logo must be a PNG, JPEG, or WEBP image. SVG is not supported.",
             "size": "Logo must be 250 KB or smaller.",
@@ -2902,7 +2902,7 @@
             "logoUpload": "Upload logo",
             "logoUploading": "Uploading…",
             "logoRemove": "Remove logo",
-            "logoRequirements": "PNG, JPG or JPEG, or WEBP · max 250 KB · up to 512×256",
+            "logoRequirements": "PNG, JPG or JPEG, or WEBP · max 250 KB · you'll frame it before it uploads",
             "logoErrors": {
               "type": "Logo must be a PNG, JPG or JPEG, or WEBP image.",
               "size": "Logo must be 250 KB or smaller.",
@@ -2914,7 +2914,7 @@
             "iconUpload": "Choose image",
             "iconUploading": "Uploading…",
             "iconRemove": "Remove",
-            "iconRequirements": "PNG, JPG or JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
+            "iconRequirements": "PNG, JPG or JPEG, WebP or AVIF · max 1 MB · you'll crop it to a square",
             "iconErrors": {
               "type": "Only PNG, JPG or JPEG, WebP or AVIF files are accepted.",
               "size": "Icon must be 1 MB or smaller.",
@@ -2926,7 +2926,7 @@
             "shareImageUpload": "Upload share image",
             "shareImageUploading": "Uploading...",
             "shareImageRemove": "Remove share image",
-            "shareImageRequirements": "JPG or JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+            "shareImageRequirements": "JPG or JPEG, PNG, WebP or AVIF · max 10 MB · you'll crop it to 1200 × 630",
             "shareImageErrors": {
               "type": "Use a JPG or JPEG, PNG, WebP, or AVIF image.",
               "size": "Share image must be 10 MB or smaller.",
@@ -3234,13 +3234,14 @@
     "imageCropper": {
       "title": "Crop image",
       "hintFixed": "Frame your image at {aspect}. It will be saved at up to {width}×{height} pixels.",
-      "hintFree": "Frame your image — any shape works. It will be saved at up to {width}×{height} pixels.",
+      "hintFree": "The frame keeps your image's proportions. Zoom and drag to choose what's shown. Saved at up to {width}×{height} pixels.",
       "zoom": "Zoom",
       "cancel": "Cancel",
       "upload": "Upload",
       "uploading": "Uploading…",
-      "typeNotAccepted": "That file type isn't supported.",
-      "fileTooLarge": "That file is too large — pick one under {limit}."
+      "cropArea": "Crop area. Drag to reposition, or use the arrow keys.",
+      "loading": "Loading image…",
+      "cropFailed": "That image couldn't be processed. Try a different file."
     },
     "pagination": {
       "showing": "Showing {from}–{to} of {total}",

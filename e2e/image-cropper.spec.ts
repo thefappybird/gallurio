@@ -28,6 +28,40 @@ function cropDialog(page: Page) {
 const WORKSPACE_LOGO_INPUT = 'input#logoFile[accept*="svg"]';
 const HEADER_LOGO_INPUT = 'input#logoFile:not([accept*="svg"])';
 
+/**
+ * Records every Blob the page puts into a FormData. Chromium does not expose a
+ * multipart file body to the network layer, so this is the only place we can
+ * see what the uploader actually sends. Must be called before `page.goto`.
+ */
+async function captureUploadedBlobs(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __blobs: Blob[] };
+    w.__blobs = [];
+    const append = FormData.prototype.append;
+    FormData.prototype.append = function (
+      this: FormData,
+      name: string,
+      value: string | Blob,
+      fileName?: string,
+    ) {
+      if (value instanceof Blob) w.__blobs.push(value);
+      return fileName === undefined
+        ? append.call(this, name, value as Blob)
+        : append.call(this, name, value as Blob, fileName);
+    } as typeof FormData.prototype.append;
+  });
+}
+
+/** Resolves once the uploader has handed at least one blob to a FormData. */
+async function waitForUploadedBlob(page: Page) {
+  await expect
+    .poll(
+      async () => page.evaluate(() => (window as unknown as { __blobs: Blob[] }).__blobs.length),
+      { timeout: 60_000 },
+    )
+    .toBeGreaterThan(0);
+}
+
 /** Fails if the page scrolls horizontally — the mobile-first guard. */
 async function expectNoHorizontalScroll(page: Page) {
   const overflow = await page.evaluate(
@@ -63,7 +97,34 @@ test.describe("image cropper", () => {
     });
   }
 
-  test("avatar: upload encodes the crop and saves", async ({ page }) => {
+  test("phone landscape: the footer buttons stay reachable", async ({ page }) => {
+    // 390px tall is shorter than the dialog's natural height — without a
+    // max-height + scroll region both ends clip off-screen and the modal traps
+    // the user with Cancel and Upload unreachable.
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto("/settings/account");
+    await page.getByRole("heading", { name: "Profile" }).waitFor({ timeout: 90_000 });
+    await page.locator('input[type="file"]').first().setInputFiles(WIDE_PHOTO);
+
+    const dialog = cropDialog(page);
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+
+    for (const name of ["Cancel", "Upload"]) {
+      const button = dialog.getByRole("button", { name, exact: true });
+      const box = await button.boundingBox();
+      expect(box, `${name} must be laid out`).not.toBeNull();
+      expect(box!.y, `${name} must not clip off the top`).toBeGreaterThanOrEqual(0);
+      expect(box!.y + box!.height, `${name} must not clip off the bottom`).toBeLessThanOrEqual(390);
+    }
+
+    // Reachable means actually clickable, not merely painted.
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("avatar: a wide photo is uploaded as a square, capped at 512px", async ({ page }) => {
+    await captureUploadedBlobs(page);
+
     await page.goto("/settings/account");
     await page.getByRole("heading", { name: "Profile" }).waitFor({ timeout: 90_000 });
     await page.locator('input[type="file"]').first().setInputFiles(WIDE_PHOTO);
@@ -76,6 +137,20 @@ test.describe("image cropper", () => {
 
     await expect(dialog).toBeHidden({ timeout: 60_000 });
     await expect(page.getByText("Photo updated")).toBeVisible({ timeout: 60_000 });
+
+    // The source is a wide landscape screenshot; decode what actually went to
+    // the uploader and prove the crop made it square and within the cap.
+    const encoded = await page.evaluate(async () => {
+      const blobs = (window as unknown as { __blobs: Blob[] }).__blobs;
+      const blob = blobs.at(-1)!;
+      const bitmap = await createImageBitmap(blob);
+      const dims = { width: bitmap.width, height: bitmap.height, type: blob.type };
+      bitmap.close();
+      return dims;
+    });
+    expect(encoded.type).toBe("image/webp");
+    expect(encoded.width, "avatar crop must be square").toBe(encoded.height);
+    expect(encoded.width).toBeLessThanOrEqual(512);
   });
 
   test("zoom slider is keyboard operable and changes zoom", async ({ page }) => {
@@ -150,7 +225,7 @@ test.describe("image cropper", () => {
     await page.locator(HEADER_LOGO_INPUT).setInputFiles(WORDMARK);
     const dialog = cropDialog(page);
     await expect(dialog).toBeVisible({ timeout: 15_000 });
-    await expect(dialog).toContainText("any shape works");
+    await expect(dialog).toContainText("keeps your image's proportions");
     await expect(dialog).toContainText("1024×512");
     // free-aspect surfaces must NOT get the round overlay
     await expect(dialog.locator(".reactEasyCrop_CropAreaRound")).toHaveCount(0);
@@ -165,25 +240,8 @@ test.describe("image cropper", () => {
     await expect(dialog).toBeHidden();
   });
 
-  test("public page: the uploaded blob is re-encoded as image/webp", async ({ page }) => {
-    // Chromium does not expose a multipart file body to the network layer, so
-    // record what the uploader actually puts on the wire at the FormData seam.
-    await page.addInitScript(() => {
-      const w = window as unknown as { __blobs: { type: string; size: number }[] };
-      w.__blobs = [];
-      const append = FormData.prototype.append;
-      FormData.prototype.append = function (
-        this: FormData,
-        name: string,
-        value: string | Blob,
-        fileName?: string,
-      ) {
-        if (value instanceof Blob) w.__blobs.push({ type: value.type, size: value.size });
-        return fileName === undefined
-          ? append.call(this, name, value as Blob)
-          : append.call(this, name, value as Blob, fileName);
-      } as typeof FormData.prototype.append;
-    });
+  test("public page: the OG upload is a 1.9:1 webp smaller than the source", async ({ page }) => {
+    await captureUploadedBlobs(page);
 
     await page.goto("/settings/public-page");
     await page.locator("#ogImageFile").waitFor({ state: "attached", timeout: 90_000 });
@@ -197,17 +255,22 @@ test.describe("image cropper", () => {
     await expect(dialog).toBeHidden({ timeout: 60_000 });
 
     // The dialog closes as soon as the crop is encoded — the upload runs after.
-    const readBlobs = () =>
-      page.evaluate(() => (window as unknown as { __blobs: { type: string; size: number }[] }).__blobs);
-    await expect
-      .poll(async () => (await readBlobs()).length, { timeout: 60_000 })
-      .toBeGreaterThan(0);
+    await waitForUploadedBlob(page);
 
-    const uploaded = (await readBlobs()).at(-1);
-    expect(uploaded, "an image blob must have been uploaded").toBeTruthy();
-    expect(uploaded!.type, "cropped blob must be re-encoded as webp").toBe("image/webp");
-    // Source PNG is ~450 KB; the 1200x630 webp crop must come out smaller.
-    expect(uploaded!.size, "cropped webp must be smaller than the source").toBeLessThan(450_000);
+    const encoded = await page.evaluate(async () => {
+      const blob = (window as unknown as { __blobs: Blob[] }).__blobs.at(-1)!;
+      const bitmap = await createImageBitmap(blob);
+      const dims = { width: bitmap.width, height: bitmap.height, type: blob.type, size: blob.size };
+      bitmap.close();
+      return dims;
+    });
+
+    expect(encoded.type, "cropped blob must be re-encoded as webp").toBe("image/webp");
+    expect(encoded.width).toBeLessThanOrEqual(1200);
+    expect(encoded.height).toBeLessThanOrEqual(630);
+    expect(encoded.width / encoded.height, "OG crop must hold 1.9:1").toBeCloseTo(1200 / 630, 1);
+    // Source PNG is ~450 KB; the webp crop must come out smaller.
+    expect(encoded.size, "cropped webp must be smaller than the source").toBeLessThan(450_000);
   });
 
   test("arabic: chrome flips RTL but the crop surface stays LTR", async ({ page }) => {

@@ -1452,7 +1452,7 @@
       "account": {
         "profileSection": "الملف الشخصي",
         "profileHint": "اسمك وصورتك الرمزية كما تظهر لزملائك.",
-        "avatarHint": "ارفع صورة مربّعة بصيغة JPG أو PNG أو WebP، حتى 10 ميغابايت.",
+        "avatarHint": "JPG أو PNG أو WebP حتى 10 ميغابايت. ستقصّها لتصبح مربعة.",
         "avatarUpload": "رفع",
         "avatarReplace": "استبدال",
         "avatarRemove": "إزالة",
@@ -1587,7 +1587,7 @@
         "logoHint": "يظهر على الفواتير التي تنشئها.",
         "logoLabel": "رفع الشعار",
         "logoUploading": "جارٍ الرفع…",
-        "logoRequirements": "PNG أو JPEG أو WebP أو SVG · 2 ميغابايت كحد أقصى · حتى 2000 × 2000 بكسل",
+        "logoRequirements": "PNG أو JPEG أو WebP أو SVG · 250 كيلوبايت كحد أقصى · ستقصّها لتصبح مربعة",
         "logoRemove": "إزالة",
         "logoErrors": {
           "type": "يُقبل فقط ملفات PNG أو JPEG أو WebP أو SVG.",
@@ -1643,7 +1643,7 @@
         "siteIconLabel": "رفع أيقونة الموقع",
         "siteIconUpload": "اختيار صورة",
         "siteIconUploading": "جارٍ الرفع…",
-        "siteIconRequirements": "PNG أو JPEG أو WebP أو AVIF · 1 ميغابايت كحد أقصى · حتى 512 × 512 بكسل",
+        "siteIconRequirements": "PNG أو JPEG أو WebP أو AVIF · 1 ميغابايت كحد أقصى · ستقصّها لتصبح مربعة",
         "siteIconRemove": "إزالة",
         "siteIconErrors": {
           "type": "تُقبل ملفات PNG أو JPEG أو WebP أو AVIF فقط.",
@@ -1654,7 +1654,7 @@
         },
         "logoSection": "الشعار",
         "logoHint": "يظهر في ترويسة صفحتك العامة.",
-        "logoRequirements": "PNG أو JPEG أو WebP. حتى 512x256px، بحد أقصى 250KB.",
+        "logoRequirements": "PNG أو JPEG أو WebP · 250 كيلوبايت كحد أقصى · ستؤطّرها قبل الرفع",
         "logoLabel": "رفع الشعار",
         "logoReplace": "استبدال",
         "logoRemove": "إزالة",
@@ -2423,7 +2423,7 @@
           "logoUpload": "رفع الشعار",
           "logoUploading": "جارٍ الرفع…",
           "logoRemove": "إزالة الشعار",
-          "logoRequirements": "PNG أو JPEG أو WEBP · 250 كيلوبايت كحد أقصى · حتى 512×256",
+          "logoRequirements": "PNG أو JPEG أو WEBP · 250 كيلوبايت كحد أقصى · ستؤطّرها قبل الرفع",
           "logoErrors": {
             "type": "يجب أن يكون الشعار صورة PNG أو JPEG أو WEBP. صيغة SVG غير مدعومة.",
             "size": "يجب ألا يتجاوز حجم الشعار 250 كيلوبايت.",
@@ -2901,7 +2901,7 @@
             "logoUpload": "رفع الشعار",
             "logoUploading": "جارٍ الرفع…",
             "logoRemove": "إزالة الشعار",
-            "logoRequirements": "PNG أو JPEG أو WEBP · بحد أقصى 250 كيلوبايت · حتى 512×256",
+            "logoRequirements": "PNG أو JPG أو JPEG أو WEBP · 250 كيلوبايت كحد أقصى · ستؤطّرها قبل الرفع",
             "logoErrors": {
               "type": "يجب أن يكون الشعار صورة بصيغة PNG أو JPEG أو WEBP.",
               "size": "يجب ألا يتجاوز حجم الشعار 250 كيلوبايت.",
@@ -2913,7 +2913,7 @@
             "iconUpload": "اختيار صورة",
             "iconUploading": "جارٍ الرفع…",
             "iconRemove": "إزالة",
-            "iconRequirements": "PNG أو JPEG أو WebP أو AVIF · بحد أقصى 1 ميغابايت · حتى 512 × 512 بكسل",
+            "iconRequirements": "PNG أو JPG أو JPEG أو WebP أو AVIF · 1 ميغابايت كحد أقصى · ستقصّها لتصبح مربعة",
             "iconErrors": {
               "type": "تُقبل فقط ملفات PNG أو JPEG أو WebP أو AVIF.",
               "size": "يجب ألا يتجاوز حجم الأيقونة 1 ميغابايت.",
@@ -2925,7 +2925,7 @@
             "shareImageUpload": "Upload share image",
             "shareImageUploading": "Uploading...",
             "shareImageRemove": "Remove share image",
-            "shareImageRequirements": "JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+            "shareImageRequirements": "JPG أو JPEG أو PNG أو WebP أو AVIF · 10 ميغابايت كحد أقصى · ستقصّها إلى 1200 × 630",
             "shareImageErrors": {
               "type": "Use a JPEG, PNG, WebP, or AVIF image.",
               "size": "Share image must be 10 MB or smaller.",
@@ -3233,13 +3233,14 @@
     "imageCropper": {
       "title": "اقتصاص الصورة",
       "hintFixed": "حدّد إطار صورتك بنسبة {aspect}. سيتم حفظها بحجم يصل إلى {width}×{height} بكسل.",
-      "hintFree": "حدّد إطار صورتك — أي شكل مناسب. سيتم حفظها بحجم يصل إلى {width}×{height} بكسل.",
+      "hintFree": "يحافظ الإطار على أبعاد صورتك. كبّر واسحب لاختيار الجزء الظاهر. تُحفظ بحجم يصل إلى {width}×{height} بكسل.",
       "zoom": "تكبير",
       "cancel": "إلغاء",
       "upload": "رفع",
       "uploading": "جارٍ الرفع…",
-      "typeNotAccepted": "نوع الملف غير مدعوم.",
-      "fileTooLarge": "حجم الملف كبير جدًا — اختر ملفًا أقل من {limit}."
+      "cropArea": "منطقة الاقتصاص. اسحب لتغيير الموضع، أو استخدم مفاتيح الأسهم.",
+      "loading": "جارٍ تحميل الصورة…",
+      "cropFailed": "تعذّرت معالجة هذه الصورة. جرّب ملفًا آخر."
     },
     "pagination": {
       "showing": "عرض {from}–{to} من {total}",

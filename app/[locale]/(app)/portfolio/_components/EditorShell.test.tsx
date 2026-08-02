@@ -168,6 +168,17 @@ vi.mock("@/lib/storage/uploadAsset.client", () => ({
   uploadAsset: (...a: unknown[]) => uploadAsset(...a),
 }));
 
+// Real useImageCropper opens ImageCropperDialog, which needs createImageBitmap/
+// canvas (unavailable in this test env) and a real user crop-confirm interaction.
+// Pass the file straight through so the onboarding logo upload flow under test
+// exercises the upload wiring, not the crop UI itself.
+vi.mock("@/lib/media/useImageCropper", () => ({
+  useImageCropper: () => ({
+    cropDialog: null,
+    requestCrop: async (file: File) => ({ status: "ok" as const, file }),
+  }),
+}));
+
 // useSlugAvailability (inside PublishDialog) calls checkSlugAvailabilityAction
 // which transitively imports authkit-nextjs. Mock the action to prevent that.
 vi.mock("@/lib/actions/slug", () => ({
@@ -1231,7 +1242,7 @@ describe("EditorShell", () => {
     await screen.findByRole("heading", { name: "Add your branding" });
 
     const fileInput = document.querySelector(
-      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+      'input[type="file"][accept="image/png,image/jpeg,image/jpg,image/webp"]'
     ) as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [new File(["logo"], "logo.png", { type: "image/png" })] } });
     await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo.png"]')).toBeInTheDocument());

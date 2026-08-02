@@ -23,7 +23,7 @@ import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { useImageRetry } from "@/hooks/useImageRetry";
-import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { CROP_SPECS, UPLOAD_MAX_BYTES } from "@/lib/media/cropSpecs";
 import { useImageCropper } from "@/lib/media/useImageCropper";
 
 function parseSeoKeywords(raw: string): string[] {
@@ -219,7 +219,7 @@ export function PublicPageSettingsForm({
         crop.file,
         {
           acceptedTypes: CROP_SPECS.headerLogo.acceptedTypes,
-          maxBytes: CROP_SPECS.headerLogo.maxBytes,
+          maxBytes: UPLOAD_MAX_BYTES,
         },
         {
           subfolder: "portfolio_header",
@@ -269,7 +269,7 @@ export function PublicPageSettingsForm({
         crop.file,
         {
           acceptedTypes: CROP_SPECS.siteIcon.acceptedTypes,
-          maxBytes: CROP_SPECS.siteIcon.maxBytes,
+          maxBytes: UPLOAD_MAX_BYTES,
         },
         { subfolder: "site_icon", delivery: { width: 512, height: 512, fit: "scale-down" } },
       );
@@ -535,7 +535,7 @@ export function PublicPageSettingsForm({
             ref={logoFileInputRef}
             id="logoFile"
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept={CROP_SPECS.headerLogo.acceptedTypes.join(",")}
             className="sr-only"
             aria-label={t("logoLabel")}
             disabled={logoUploading}
@@ -717,7 +717,7 @@ export function PublicPageSettingsForm({
                 ref={ogFileInputRef}
                 id="ogImageFile"
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/avif"
+                accept={CROP_SPECS.ogImage.acceptedTypes.join(",")}
                 className="sr-only"
                 aria-label={t("ogImageLabel")}
                 disabled={ogUploading}

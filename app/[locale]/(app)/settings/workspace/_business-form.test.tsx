@@ -3,7 +3,7 @@
  * (address / lat / lng roundtrip into the form's submitted payload).
  */
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("next-intl", () => ({
@@ -19,13 +19,16 @@ vi.mock("@/lib/storage/uploadAsset.client", () => ({
   uploadAsset: (...args: unknown[]) => uploadAsset(...args),
 }));
 
+// Typed against the real union so per-test overrides can return cancelled/error
+// without TS narrowing the mock to the default "ok" shape.
+const requestCropMock = vi.fn<(file: File) => Promise<CropRequestResult>>(async () => ({
+  status: "ok",
+  file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
+}));
 vi.mock("@/lib/media/useImageCropper", () => ({
   useImageCropper: () => ({
     cropDialog: null,
-    requestCrop: vi.fn(async () => ({
-      status: "ok",
-      file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
-    })),
+    requestCrop: requestCropMock,
   }),
 }));
 
@@ -57,6 +60,7 @@ vi.mock("@/components/ui/location-picker", () => ({
 
 import { WorkspaceBusinessForm } from "./_business-form";
 import type { UpdateWorkspaceBusinessInput } from "@/lib/validators/workspace";
+import type { CropRequestResult } from "@/lib/media/useImageCropper";
 
 const baseDefaults: UpdateWorkspaceBusinessInput = {
   name: "Luna Studio",
@@ -101,6 +105,42 @@ describe("WorkspaceBusinessForm — artists business type + other free text", ()
 });
 
 describe("WorkspaceBusinessForm — logo upload", () => {
+  beforeEach(() => {
+    uploadAsset.mockReset();
+    requestCropMock.mockReset();
+    requestCropMock.mockImplementation(async () => ({
+      status: "ok" as const,
+      file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
+    }));
+  });
+
+  it("does not upload and never enters the uploading state when the crop is cancelled", async () => {
+    requestCropMock.mockResolvedValueOnce({ status: "cancelled" });
+
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    const fileInput = document.getElementById("logoFile") as HTMLInputElement;
+    const file = new File(["logo"], "logo.png", { type: "image/png" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => expect(requestCropMock).toHaveBeenCalled());
+    expect(uploadAsset).not.toHaveBeenCalled();
+    expect(screen.queryByText("logoUploading")).not.toBeInTheDocument();
+  });
+
+  it("shows the size-error copy and never calls uploadAsset when the crop gate rejects an oversized file", async () => {
+    requestCropMock.mockResolvedValueOnce({ status: "error", reason: "file_too_large" });
+
+    render(<WorkspaceBusinessForm defaults={baseDefaults} />);
+
+    const fileInput = document.getElementById("logoFile") as HTMLInputElement;
+    const file = new File(["logo"], "logo.png", { type: "image/png" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    expect(await screen.findByText("logoErrors.size")).toBeInTheDocument();
+    expect(uploadAsset).not.toHaveBeenCalled();
+  });
+
   it("hands the cropped file (not the original) to uploadAsset for the logo", async () => {
     uploadAsset.mockResolvedValueOnce({
       asset: { assetId: "logo-1", url: "https://cdn.cf.net/logo.png" },

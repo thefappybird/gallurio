@@ -8,7 +8,7 @@ import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/Edito
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
-import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { CROP_SPECS, UPLOAD_MAX_BYTES } from "@/lib/media/cropSpecs";
 import { useImageCropper } from "@/lib/media/useImageCropper";
 import { cn } from "@/lib/utils";
 import { NumberInputRow, ColorSwatchRow } from "@/lib/page-builder/toolbarPrimitives";
@@ -212,7 +212,7 @@ export function HeaderPanelDialog({
         crop.file,
         {
           acceptedTypes: CROP_SPECS.headerLogo.acceptedTypes,
-          maxBytes: CROP_SPECS.headerLogo.maxBytes,
+          maxBytes: UPLOAD_MAX_BYTES,
         },
         { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
       );
@@ -384,7 +384,7 @@ export function HeaderPanelDialog({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/png,image/jpeg,image/webp"
+                accept={CROP_SPECS.headerLogo.acceptedTypes.join(",")}
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];

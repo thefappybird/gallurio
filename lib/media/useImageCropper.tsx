@@ -29,6 +29,7 @@ export function useImageCropper(
   const requestCrop = (file: File): Promise<CropRequestResult> => {
     if (pendingRef.current) {
       pendingRef.current.resolve({ status: "cancelled" });
+      setPendingBoth(null);
     }
 
     if (!spec.acceptedTypes.includes(file.type)) {

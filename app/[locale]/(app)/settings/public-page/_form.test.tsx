@@ -8,6 +8,7 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
+import type { CropRequestResult } from "@/lib/media/useImageCropper";
 
 // ── External mocks required by the transitive import tree ───────────────────
 
@@ -80,22 +81,33 @@ vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
 }));
 
-vi.mock("@/lib/media/useImageCropper", () => ({
-  useImageCropper: vi.fn((spec: { aspect: number | null }) => ({
-    cropDialog: null,
-    requestCrop: vi.fn(async (file: File) => {
-      // Distinguish the OG spec (aspect 1200/630) so one test can prove the
-      // upload receives the *cropped* file, not the original — every other
-      // spec passes the file through unchanged (transparent identity).
-      if (spec.aspect === 1200 / 630) {
-        return {
-          status: "ok",
-          file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
-        };
-      }
-      return { status: "ok", file };
-    }),
+// One stable requestCrop mock per spec (keyed by aspect), reused across every
+// render — the form re-renders on state changes, so a per-render override
+// (mockReturnValueOnce on useImageCropper itself) can be consumed by an
+// incidental re-render instead of the actual file-input change.
+// Typed against the real union so per-test overrides can return cancelled/error
+// without TS narrowing each mock to the default "ok" shape.
+const { logoCropMock, iconCropMock, ogCropMock } = vi.hoisted(() => ({
+  logoCropMock: vi.fn<(file: File) => Promise<CropRequestResult>>(async (file) => ({
+    status: "ok",
+    file,
   })),
+  iconCropMock: vi.fn<(file: File) => Promise<CropRequestResult>>(async (file) => ({
+    status: "ok",
+    file,
+  })),
+  ogCropMock: vi.fn<(file: File) => Promise<CropRequestResult>>(async () => ({
+    status: "ok",
+    file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
+  })),
+}));
+
+vi.mock("@/lib/media/useImageCropper", () => ({
+  useImageCropper: vi.fn((spec: { aspect: number | null }) => {
+    if (spec.aspect === 1200 / 630) return { cropDialog: null, requestCrop: ogCropMock };
+    if (spec.aspect === null) return { cropDialog: null, requestCrop: logoCropMock };
+    return { cropDialog: null, requestCrop: iconCropMock };
+  }),
 }));
 
 vi.mock("../../portfolio/_draftActions", () => ({
@@ -465,6 +477,57 @@ describe("PublicPageSettingsForm — header logo section", () => {
     });
 
     expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not upload and never enters the uploading state when the logo crop is cancelled", async () => {
+    // This file's mocks are never reset between tests (see the mockClear() note
+    // in the flags-pending-changes test below) — assert on the call-count delta,
+    // not on the mock never having been called across the whole file.
+    const callsBefore = vi.mocked(uploadAsset).mock.calls.length;
+    logoCropMock.mockResolvedValueOnce({ status: "cancelled" });
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const file = new File(["data"], "logo-cancel.png", { type: "image/png" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(vi.mocked(uploadAsset).mock.calls.length).toBe(callsBefore);
+    expect(screen.queryByText("logoUploading")).not.toBeInTheDocument();
+  });
+
+  it("shows the size-error copy and never calls uploadAsset when the crop gate rejects an oversized logo", async () => {
+    const callsBefore = vi.mocked(uploadAsset).mock.calls.length;
+    logoCropMock.mockResolvedValueOnce({ status: "error", reason: "file_too_large" });
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#logoFile") as HTMLInputElement;
+    const file = new File(["data"], "logo-toolarge.png", { type: "image/png" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(await screen.findByText("logoErrors.size")).toBeInTheDocument();
+    expect(vi.mocked(uploadAsset).mock.calls.length).toBe(callsBefore);
   });
 
   it("shows an error alert when the logo upload fails", async () => {

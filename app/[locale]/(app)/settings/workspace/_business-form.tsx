@@ -25,7 +25,7 @@ import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
-import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { CROP_SPECS, UPLOAD_MAX_BYTES } from "@/lib/media/cropSpecs";
 import { useImageCropper } from "@/lib/media/useImageCropper";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
@@ -118,7 +118,7 @@ export function WorkspaceBusinessForm({
         crop.file,
         {
           acceptedTypes: CROP_SPECS.workspaceLogo.acceptedTypes,
-          maxBytes: CROP_SPECS.workspaceLogo.maxBytes,
+          maxBytes: UPLOAD_MAX_BYTES,
         },
         { subfolder: "logo", delivery: { width: 256, height: 256, fit: "scale-down" } },
       );

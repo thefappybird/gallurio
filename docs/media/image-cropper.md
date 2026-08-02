@@ -19,7 +19,7 @@ type + file size on the *input* file — the only things a user can reasonably r
 | File | Role |
 |---|---|
 | `lib/media/cropSpecs.ts` | The per-surface spec table + `aspectLabel()`. Replaces `LOGO_*` / `SITE_ICON_*` constants that had been copy-pasted into four components with values that had drifted apart. |
-| `lib/media/cropImage.ts` | `cropToFile()` — `createImageBitmap` → canvas → `image/webp` @ 0.92. Plus `webpName()`. |
+| `lib/media/cropImage.ts` | `cropToFile()` — `createImageBitmap` → canvas → `image/webp` @ 0.92. Plus `outputName()`. |
 | `components/ui/image-cropper-dialog.tsx` | The modal, built on `react-easy-crop` and the repo's `Dialog` primitives. |
 | `lib/media/useImageCropper.tsx` | Promise-based hook — `requestCrop(file)` resolves `ok` / `cancelled` / `error`. |
 

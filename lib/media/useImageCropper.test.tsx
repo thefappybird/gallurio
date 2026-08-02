@@ -48,7 +48,7 @@ vi.mock("react-easy-crop", async () => {
 
 vi.mock("@/lib/media/cropImage", () => ({
   cropToFile: vi.fn(async (_file, _area, _spec, name: string) => new File(["x"], name, { type: "image/webp" })),
-  webpName: (name: string) => name.replace(/\.[^.]+$/, ".webp"),
+  outputName: (name: string) => name.replace(/\.[^.]+$/, ".webp"),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -137,5 +137,28 @@ describe("useImageCropper", () => {
     });
 
     expect(outcome).toEqual({ status: "error", reason: "type_not_accepted" });
+  });
+
+  it("clears the pending dialog when a superseding request fails validation", async () => {
+    const { result, rerender } = renderHook(() => useImageCropper(CROP_SPECS.workspaceLogo), { wrapper });
+    const goodFile = new File(["x"], "photo.png", { type: "image/png" });
+    const badFile = new File(["x"], "clip.mp4", { type: "video/mp4" });
+
+    let firstPromise!: ReturnType<typeof result.current.requestCrop>;
+    act(() => {
+      firstPromise = result.current.requestCrop(goodFile);
+    });
+    rerender();
+
+    let secondOutcome!: CropRequestResult;
+    await act(async () => {
+      secondOutcome = await result.current.requestCrop(badFile);
+    });
+    rerender();
+
+    await expect(firstPromise).resolves.toEqual({ status: "cancelled" });
+    expect(secondOutcome).toEqual({ status: "error", reason: "type_not_accepted" });
+    const dialogEl = result.current.cropDialog as React.ReactElement<{ file: File | null }>;
+    expect(dialogEl.props.file).toBeNull();
   });
 });

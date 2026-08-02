@@ -1,6 +1,7 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
+import type { CropRequestResult } from "@/lib/media/useImageCropper";
 
 const completeStoryPromptAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
@@ -14,10 +15,20 @@ vi.mock("@/lib/storage/uploadAsset.client", () => ({
   uploadAsset: (...a: unknown[]) => uploadAsset(...a),
 }));
 
+const uploadImage = vi.fn();
+vi.mock("@/lib/storage/uploadImage.client", () => ({
+  uploadImage: (...a: unknown[]) => uploadImage(...a),
+}));
+
 // A single stable requestCrop mock shared across every render — the dialog
 // re-renders on each step/state change, so a per-render override would be
 // consumed by an unrelated render instead of the actual file-input change.
-const requestCropMock = vi.fn(async (file: File) => ({ status: "ok" as const, file }));
+// Typed against the real union so per-test overrides can return cancelled/error
+// without TS narrowing the mock to the default "ok" shape.
+const requestCropMock = vi.fn<(file: File) => Promise<CropRequestResult>>(async (file) => ({
+  status: "ok",
+  file,
+}));
 vi.mock("@/lib/media/useImageCropper", () => ({
   useImageCropper: () => ({
     cropDialog: null,
@@ -49,6 +60,7 @@ describe("StoryPromptDialog", () => {
   beforeEach(() => {
     completeStoryPromptAction.mockClear();
     uploadAsset.mockReset();
+    uploadImage.mockReset();
     requestCropMock.mockClear();
     requestCropMock.mockImplementation(async (file: File) => ({ status: "ok" as const, file }));
   });
@@ -319,7 +331,7 @@ describe("StoryPromptDialog", () => {
     uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-1", url: "https://cdn/logo.png" } });
     setup();
     await goToBrandingStep();
-    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/webp"]') as HTMLInputElement;
+    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/jpg,image/webp"]') as HTMLInputElement;
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(fileInput, { target: { files: [file] } });
     await waitFor(() => {
@@ -336,7 +348,7 @@ describe("StoryPromptDialog", () => {
     uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-1", url: "https://cdn/logo.png" } });
     setup();
     await goToBrandingStep();
-    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/webp"]') as HTMLInputElement;
+    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/jpg,image/webp"]') as HTMLInputElement;
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(fileInput, { target: { files: [file] } });
     await waitFor(() =>
@@ -368,6 +380,53 @@ describe("StoryPromptDialog", () => {
     );
   });
 
+  it("hands the cropped file (not the original) to uploadImage for the share image", async () => {
+    requestCropMock.mockResolvedValueOnce({
+      status: "ok",
+      file: new File(["cropped"], "cropped-share.webp", { type: "image/webp" }),
+    });
+    uploadImage.mockResolvedValueOnce({ assetId: "share-1", url: "https://cdn/share.jpg" });
+    setup();
+    await goToBrandingStep();
+    const fileInput = document.querySelector(
+      'input[type="file"][accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"]',
+    ) as HTMLInputElement;
+    const file = new File(["share"], "share.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() =>
+      expect(uploadImage).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "cropped-share.webp", type: "image/webp" }),
+      ),
+    );
+  });
+
+  it("does not upload and never enters the uploading state when the share-image crop is cancelled", async () => {
+    requestCropMock.mockResolvedValueOnce({ status: "cancelled" });
+    setup();
+    await goToBrandingStep();
+    const fileInput = document.querySelector(
+      'input[type="file"][accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"]',
+    ) as HTMLInputElement;
+    const file = new File(["share"], "share.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() => expect(requestCropMock).toHaveBeenCalled());
+    expect(uploadImage).not.toHaveBeenCalled();
+    expect(screen.queryByText("Uploading...")).not.toBeInTheDocument();
+  });
+
+  it("shows the size-error copy and never calls uploadImage when the crop gate rejects an oversized share image", async () => {
+    requestCropMock.mockResolvedValueOnce({ status: "error", reason: "file_too_large" });
+    setup();
+    await goToBrandingStep();
+    const fileInput = document.querySelector(
+      'input[type="file"][accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"]',
+    ) as HTMLInputElement;
+    const file = new File(["share"], "share.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    expect(await screen.findByText(/share image must be 10 mb or smaller/i)).toBeInTheDocument();
+    expect(uploadImage).not.toHaveBeenCalled();
+  });
+
   it("accepts a dropped logo or site icon on the branding step", async () => {
     uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-drop", url: "https://cdn/logo-drop.png" } });
     setup();
@@ -382,7 +441,7 @@ describe("StoryPromptDialog", () => {
     uploadAsset.mockResolvedValueOnce({ error: "file_too_large" });
     setup();
     await goToBrandingStep();
-    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/webp"]') as HTMLInputElement;
+    const fileInput = document.querySelector('input[type="file"][accept="image/png,image/jpeg,image/jpg,image/webp"]') as HTMLInputElement;
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(fileInput, { target: { files: [file] } });
     expect(await screen.findByRole("alert")).toHaveTextContent(/250 KB or smaller/i);
@@ -445,7 +504,7 @@ describe("StoryPromptDialog", () => {
     await screen.findByRole("heading", { name: /add your branding/i });
     await waitForSingle(/^continue$/i);
     const logoInput = document.querySelector(
-      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+      'input[type="file"][accept="image/png,image/jpeg,image/jpg,image/webp"]'
     ) as HTMLInputElement;
     fireEvent.change(logoInput, { target: { files: [new File(["logo"], "logo.png", { type: "image/png" })] } });
     await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo.png"]')).toBeInTheDocument());

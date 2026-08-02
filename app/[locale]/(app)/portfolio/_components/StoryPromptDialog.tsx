@@ -25,7 +25,7 @@ import { useImageRetry } from "@/hooks/useImageRetry";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { tagBorderClass } from "@/components/app/tag-pill";
 import { completeStoryPromptAction } from "../_actions";
-import { CROP_SPECS } from "@/lib/media/cropSpecs";
+import { CROP_SPECS, UPLOAD_MAX_BYTES } from "@/lib/media/cropSpecs";
 import { useImageCropper } from "@/lib/media/useImageCropper";
 
 const MAX_DESCRIPTION = 300;
@@ -241,6 +241,9 @@ export function StoryPromptDialog({
   const { cropDialog: iconCropDialog, requestCrop: requestIconCrop } = useImageCropper(
     CROP_SPECS.siteIcon,
   );
+  const { cropDialog: shareImageCropDialog, requestCrop: requestShareImageCrop } = useImageCropper(
+    CROP_SPECS.ogImage,
+  );
 
   const suggestedTags = SUGGESTED_TAGS[businessType] ?? SUGGESTED_TAGS.other;
   const displayTags = Array.from(new Set([...suggestedTags, ...keywords]));
@@ -324,7 +327,7 @@ export function StoryPromptDialog({
     try {
       const result = await uploadAsset(
         crop.file,
-        { acceptedTypes: CROP_SPECS.headerLogo.acceptedTypes, maxBytes: CROP_SPECS.headerLogo.maxBytes },
+        { acceptedTypes: CROP_SPECS.headerLogo.acceptedTypes, maxBytes: UPLOAD_MAX_BYTES },
         { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
       );
       if ("error" in result) {
@@ -363,7 +366,7 @@ export function StoryPromptDialog({
     try {
       const result = await uploadAsset(
         crop.file,
-        { acceptedTypes: CROP_SPECS.siteIcon.acceptedTypes, maxBytes: CROP_SPECS.siteIcon.maxBytes },
+        { acceptedTypes: CROP_SPECS.siteIcon.acceptedTypes, maxBytes: UPLOAD_MAX_BYTES },
         { subfolder: "site_icon", delivery: { width: 512, height: 512, fit: "scale-down" } },
       );
       if ("error" in result) {
@@ -391,10 +394,16 @@ export function StoryPromptDialog({
   }
 
   async function uploadShareImage(file: File) {
-    setShareImageUploading(true);
     setShareImageError(null);
+    const crop = await requestShareImageCrop(file);
+    if (crop.status === "cancelled") return;
+    if (crop.status === "error") {
+      setShareImageError(t(`branding.shareImageErrors.${crop.reason === "type_not_accepted" ? "type" : "size"}` as Parameters<typeof t>[0]));
+      return;
+    }
+    setShareImageUploading(true);
     try {
-      const result = await uploadImage(file);
+      const result = await uploadImage(crop.file);
       setShareImageUrl(result.url);
       setShareImageAssetId(result.assetId);
     } catch (err) {
@@ -667,7 +676,7 @@ export function StoryPromptDialog({
                   <input
                     ref={logoFileInputRef}
                     type="file"
-                    accept="image/png,image/jpeg,image/webp"
+                    accept={CROP_SPECS.headerLogo.acceptedTypes.join(",")}
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -768,7 +777,7 @@ export function StoryPromptDialog({
                   <input
                     ref={shareImageFileInputRef}
                     type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"
+                    accept={CROP_SPECS.ogImage.acceptedTypes.join(",")}
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -834,6 +843,7 @@ export function StoryPromptDialog({
       </DialogContent>
       {logoCropDialog}
       {iconCropDialog}
+      {shareImageCropDialog}
     </Dialog>
   );
 }

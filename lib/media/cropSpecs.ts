@@ -52,6 +52,13 @@ export const CROP_SPECS = {
   },
 } as const satisfies Record<string, CropSpec>;
 
+/**
+ * Ceiling for the file actually sent to Cloudflare. A spec's `maxBytes` is a
+ * validation on the file the user picked; the re-encoded crop is a different
+ * artifact whose size nobody controls, so it is bounded only by this.
+ */
+export const UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+
 export function aspectLabel(aspect: number): string {
   return `${Number(aspect.toFixed(2))}:1`;
 }

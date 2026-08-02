@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { cropToFile, webpName } from "@/lib/media/cropImage";
+import { cropToFile, outputName } from "@/lib/media/cropImage";
 import { aspectLabel, type CropSpec } from "@/lib/media/cropSpecs";
 
 type ImageCropperDialogProps = {
@@ -48,6 +48,8 @@ export function ImageCropperDialog({
   // Kept as state (not a ref) so the Upload button's disabled state re-renders
   // reactively the moment the crop area first arrives.
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [mediaStatus, setMediaStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [encodeError, setEncodeError] = useState(false);
 
   useEffect(() => {
     if (!file) {
@@ -61,19 +63,26 @@ export function ImageCropperDialog({
     setZoom(1);
     setCroppedAreaPixels(null);
     setImageAspect(spec.maxWidth / spec.maxHeight);
+    setMediaStatus("loading");
+    setEncodeError(false);
     return () => URL.revokeObjectURL(url);
   }, [file, spec.maxWidth, spec.maxHeight]);
 
   const handleConfirm = async () => {
     if (!file || !croppedAreaPixels) return;
     setBusy(true);
+    setEncodeError(false);
     try {
-      const cropped = await cropToFile(file, croppedAreaPixels, spec, webpName(file.name));
+      const cropped = await cropToFile(file, croppedAreaPixels, spec, outputName(file.name));
       onConfirm(cropped);
+    } catch {
+      setEncodeError(true);
     } finally {
       setBusy(false);
     }
   };
+
+  const showError = mediaStatus === "error" || encodeError;
 
   const hint =
     description ??
@@ -92,49 +101,69 @@ export function ImageCropperDialog({
         if (!open) onCancel();
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{title ?? t("title")}</DialogTitle>
           <DialogDescription>{hint}</DialogDescription>
         </DialogHeader>
 
-        <div
-          dir="ltr"
-          className="relative h-[min(60vh,420px)] w-full overflow-hidden rounded-[var(--radius)] bg-muted"
-        >
-          {objectUrl && (
-            <Cropper
-              image={objectUrl}
-              crop={crop}
-              zoom={zoom}
-              aspect={spec.aspect ?? imageAspect}
-              cropShape={spec.round ? "round" : "rect"}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onCropComplete={(_area, areaPixels) => {
-                setCroppedAreaPixels(areaPixels);
-              }}
-              onMediaLoaded={(mediaSize: MediaSize) => {
-                setImageAspect(mediaSize.naturalWidth / mediaSize.naturalHeight);
-              }}
-            />
-          )}
-        </div>
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
+          <div
+            dir="ltr"
+            className="relative h-[min(60vh,420px)] w-full overflow-hidden rounded-[var(--radius)] bg-muted"
+          >
+            {objectUrl && (
+              <Cropper
+                image={objectUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={spec.aspect ?? imageAspect}
+                cropShape={spec.round ? "round" : "rect"}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={(_area, areaPixels) => {
+                  setCroppedAreaPixels(areaPixels);
+                }}
+                onMediaLoaded={(mediaSize: MediaSize) => {
+                  setImageAspect(mediaSize.naturalWidth / mediaSize.naturalHeight);
+                  setMediaStatus("ready");
+                }}
+                mediaProps={{ onError: () => setMediaStatus("error") }}
+                cropperProps={{ "aria-label": t("cropArea") }}
+                classes={{
+                  cropAreaClassName: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                }}
+              />
+            )}
+            {mediaStatus === "loading" && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
+                <span className="sr-only">{t("loading")}</span>
+              </div>
+            )}
+          </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor={zoomId} className="text-xs text-muted-foreground">
-            {t("zoom")}
-          </label>
-          <input
-            id={zoomId}
-            type="range"
-            min={1}
-            max={3}
-            step={0.05}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full accent-primary"
-          />
+          <div className="flex flex-col gap-1">
+            <label htmlFor={zoomId} className="text-xs text-muted-foreground">
+              {t("zoom")}
+            </label>
+            <input
+              id={zoomId}
+              type="range"
+              min={1}
+              max={3}
+              step={0.05}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-full accent-primary"
+            />
+          </div>
+
+          {showError && (
+            <p role="alert" className="text-xs text-destructive">
+              {t("cropFailed")}
+            </p>
+          )}
         </div>
 
         <DialogFooter>

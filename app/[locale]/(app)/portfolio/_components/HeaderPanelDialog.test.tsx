@@ -5,7 +5,6 @@ import { HeaderPanelDialog } from "./HeaderPanelDialog";
 import { DEFAULT_BRAND_KIT, type PortfolioHeaderConfig } from "@/lib/page-builder/types";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
-import { useImageCropper } from "@/lib/media/useImageCropper";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 
 const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
@@ -20,10 +19,15 @@ vi.mock("@/lib/storage/uploadImage.client", () => ({
 vi.mock("@/lib/storage/uploadAsset.client", () => ({
   uploadAsset: vi.fn(),
 }));
+// A single stable requestCrop mock shared across every render — the dialog
+// re-renders on tab/state changes, so a per-render override (mockReturnValueOnce
+// on useImageCropper itself) can be silently eaten by a stray re-render instead
+// of the actual file-input change.
+const requestCropMock = vi.fn(async (file: File) => ({ status: "ok" as const, file }));
 vi.mock("@/lib/media/useImageCropper", () => ({
   useImageCropper: vi.fn(() => ({
     cropDialog: null,
-    requestCrop: vi.fn(async (file: File) => ({ status: "ok", file })),
+    requestCrop: requestCropMock,
   })),
 }));
 
@@ -59,6 +63,7 @@ function installImageMock(width = 128, height = 64) {
 beforeEach(() => {
   vi.clearAllMocks();
   installImageMock();
+  requestCropMock.mockImplementation(async (file: File) => ({ status: "ok" as const, file }));
 });
 
 describe("HeaderPanelDialog", () => {
@@ -124,7 +129,9 @@ describe("HeaderPanelDialog", () => {
 
   it("shows limits copy near the logo uploader", () => {
     renderWithProviders(<HeaderPanelDialog {...baseProps} />);
-    expect(screen.getByText("PNG, JPEG or WEBP · max 250 KB · up to 512×256")).toBeInTheDocument();
+    expect(
+      screen.getByText("PNG, JPEG or WEBP · max 250 KB · you'll frame it before it uploads"),
+    ).toBeInTheDocument();
   });
 
   it("shows inline role=alert error for oversized file (dimension violation)", async () => {
@@ -348,12 +355,9 @@ describe("HeaderPanelDialog", () => {
   });
 
   it("hands the cropped file (not the original) to uploadAsset for the logo", async () => {
-    vi.mocked(useImageCropper).mockReturnValueOnce({
-      cropDialog: null,
-      requestCrop: vi.fn(async () => ({
-        status: "ok" as const,
-        file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
-      })),
+    requestCropMock.mockResolvedValueOnce({
+      status: "ok" as const,
+      file: new File(["cropped"], "cropped.webp", { type: "image/webp" }),
     });
     vi.mocked(uploadAsset).mockResolvedValueOnce({
       asset: {

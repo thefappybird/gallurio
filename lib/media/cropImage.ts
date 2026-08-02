@@ -14,20 +14,25 @@ export async function cropToFile(
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas_unavailable");
-  ctx.drawImage(bitmap, area.x, area.y, area.width, area.height, 0, 0, w, h);
-  bitmap.close();
+  try {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas_unavailable");
+    ctx.drawImage(bitmap, area.x, area.y, area.width, area.height, 0, 0, w, h);
+  } finally {
+    bitmap.close();
+  }
 
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, "image/webp", 0.92);
   });
   if (!blob) throw new Error("encode_failed");
 
-  return new File([blob], fileName, { type: "image/webp" });
+  const ext = blob.type.split("/")[1] ?? "webp";
+  const name = fileName.replace(/\.[^.]+$/, `.${ext}`);
+  return new File([blob], name, { type: blob.type });
 }
 
-export function webpName(originalName: string): string {
+export function outputName(originalName: string): string {
   if (!originalName) return "image.webp";
   const idx = originalName.lastIndexOf(".");
   const base = idx > 0 ? originalName.slice(0, idx) : originalName;
