@@ -62,6 +62,23 @@ describe("TimezoneCombobox", () => {
     expect(listbox).toHaveClass("max-h-64", "overflow-y-auto");
   });
 
+  it("forwards invalid + ariaDescribedby to the trigger button", () => {
+    render(
+      <TimezoneCombobox
+        id="timezone"
+        value="Asia/Manila"
+        onChange={vi.fn()}
+        searchPlaceholder="Search timezones"
+        noMatchesLabel="No matching timezones"
+        invalid
+        ariaDescribedby="timezone-error"
+      />,
+    );
+    const trigger = screen.getByRole("button");
+    expect(trigger).toHaveAttribute("aria-invalid", "true");
+    expect(trigger).toHaveAttribute("aria-describedby", "timezone-error");
+  });
+
   it("supports ArrowDown + Enter keyboard selection", () => {
     const onChange = vi.fn();
     setup("Etc/UTC", onChange);

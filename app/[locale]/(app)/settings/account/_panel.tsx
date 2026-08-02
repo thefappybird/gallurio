@@ -20,6 +20,7 @@ import { CROP_SPECS } from "@/lib/media/cropSpecs";
 import { useImageCropper } from "@/lib/media/useImageCropper";
 import { PasswordSection } from "./_password-section";
 import { MfaSection } from "./_mfa-section";
+import { useFieldError } from "@/components/ui/form-field";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80, "Name is too long"),
@@ -177,6 +178,7 @@ export function AccountPanel({
 
   const avatarBusy = uploading || avatarPending;
   const initials = getInitials(displayName, email);
+  const avatarA11y = useFieldError(avatarError ?? undefined, { id: "avatar-upload" });
 
   return (
     <div className="flex w-full flex-col gap-8">
@@ -215,6 +217,7 @@ export function AccountPanel({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarBusy}
                 aria-label={avatarUrl ? t("avatarReplace") : t("avatarUpload")}
+                aria-describedby={avatarA11y["aria-describedby"]}
               >
                 {uploading ? (
                   <>
@@ -242,13 +245,14 @@ export function AccountPanel({
                   onClick={handleRemoveAvatar}
                   disabled={avatarBusy}
                   aria-label={t("avatarRemove")}
+                  aria-describedby={avatarA11y["aria-describedby"]}
                 >
                   {t("avatarRemove")}
                 </Button>
               )}
             </div>
             {avatarError && (
-              <p role="alert" className="text-xs text-destructive">
+              <p id={avatarA11y.errorId} role="alert" className="text-xs text-destructive">
                 {avatarError}
               </p>
             )}

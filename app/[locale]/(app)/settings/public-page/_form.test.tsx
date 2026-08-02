@@ -7,7 +7,7 @@
  */
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import type { CropRequestResult } from "@/lib/media/useImageCropper";
 
 // ── External mocks required by the transitive import tree ───────────────────
@@ -388,6 +388,19 @@ describe("PublicPageSettingsForm — header logo section", () => {
     expect(screen.getByText("logoLabel")).toBeInTheDocument();
   });
 
+  it("does not use the bare 'logoFile' id (collides with the workspace panel mounted alongside it)", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+    expect(document.getElementById("logoFile")).not.toBeInTheDocument();
+    expect(document.getElementById("public-page-logoFile")).toBeInTheDocument();
+  });
+
   it("shows logo preview when logoUrl is set in defaults", () => {
     render(
       <PublicPageSettingsForm
@@ -419,7 +432,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -468,7 +481,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const clickSpy = vi.spyOn(fileInput, "click");
 
     const replaceBtn = screen.getByRole("button", { name: "logoReplace" });
@@ -495,7 +508,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo-cancel.png", { type: "image/png" });
 
     await act(async () => {
@@ -519,7 +532,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo-toolarge.png", { type: "image/png" });
 
     await act(async () => {
@@ -544,7 +557,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -571,7 +584,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -599,7 +612,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
 
     await act(async () => {
@@ -629,7 +642,7 @@ describe("PublicPageSettingsForm — header logo section", () => {
       />
     );
 
-    const fileInput = document.querySelector("#publicPageLogoFile") as HTMLInputElement;
+    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
     const file = new File(["data"], "logo.png", { type: "image/png" });
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
@@ -645,6 +658,92 @@ describe("PublicPageSettingsForm — header logo section", () => {
     // These mocks have no shared reset; clear our call so the later
     // absolute-call-count assertion in the keywords suite stays accurate.
     vi.mocked(updatePublicPageSettingsAction).mockClear();
+  });
+});
+
+describe("PublicPageSettingsForm — native email validation must not swallow submit", () => {
+  it("surfaces the zod email error instead of letting the browser silently block submit", async () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("inquiryRecipientEmail"), {
+      target: { value: "not-an-email" },
+    });
+
+    const saveBtn = screen.getByText("save").closest("button")!;
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    expect(await screen.findByText(/enter a valid email/i)).toBeInTheDocument();
+  });
+});
+
+describe("PublicPageSettingsForm — field error a11y wiring", () => {
+  it("wires aria-invalid + aria-describedby to a role=alert message for invalid seoTitle and inquiryRecipientEmail, preserving hints", async () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("seoTitle"), {
+      target: { value: "x".repeat(80) },
+    });
+    fireEvent.change(screen.getByLabelText("inquiryRecipientEmail"), {
+      target: { value: "not-an-email" },
+    });
+
+    const saveBtn = screen.getByText("save").closest("button")!;
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    const titleInput = await screen.findByLabelText("seoTitle");
+    await waitFor(() => expect(titleInput).toHaveAttribute("aria-invalid", "true"));
+    const titleDescribedBy = titleInput.getAttribute("aria-describedby")!;
+    expect(titleDescribedBy).toBeTruthy();
+    const titleDescribedIds = titleDescribedBy.split(" ");
+    const titleErrorEl = titleDescribedIds
+      .map((id) => document.getElementById(id))
+      .find((el) => el?.getAttribute("role") === "alert");
+    expect(titleErrorEl).toHaveTextContent(/70 characters/i);
+    // Hint paragraph is still referenced, not replaced by the error.
+    expect(screen.getByText("seoTitleHint").id).toBeTruthy();
+    expect(titleDescribedIds).toContain(screen.getByText("seoTitleHint").id);
+
+    const emailInput = screen.getByLabelText("inquiryRecipientEmail");
+    expect(emailInput).toHaveAttribute("aria-invalid", "true");
+    const emailDescribedBy = emailInput.getAttribute("aria-describedby");
+    expect(emailDescribedBy).toBeTruthy();
+    const emailError = document.getElementById(emailDescribedBy!);
+    expect(emailError).toHaveAttribute("role", "alert");
+    expect(emailError).toHaveTextContent(/enter a valid email/i);
+  });
+});
+
+describe("PublicPageSettingsForm — valid state", () => {
+  it("renders no alert and no aria-invalid on seoTitle when the form is untouched", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    expect(screen.getByLabelText("seoTitle")).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 

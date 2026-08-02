@@ -23,8 +23,8 @@ function cropDialog(page: Page) {
 
 // The settings shell renders the workspace form and the public-page form on the
 // same route, so their logo inputs must carry distinct DOM ids.
-const WORKSPACE_LOGO_INPUT = "input#workspaceLogoFile";
-const HEADER_LOGO_INPUT = "input#publicPageLogoFile";
+const WORKSPACE_LOGO_INPUT = "input#workspace-logoFile";
+const HEADER_LOGO_INPUT = "input#public-page-logoFile";
 
 /**
  * Records every Blob the page puts into a FormData. Chromium does not expose a

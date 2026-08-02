@@ -650,7 +650,17 @@
       "invalidCode": "Invalid or expired code. Please try again.",
       "sessionExpired": "Your session has expired. Please sign in again.",
       "resetTokenInvalid": "This link is invalid or has expired. Please request a new one.",
-      "passwordReused": "Please choose a password different from your current one."
+      "passwordReused": "Please choose a password different from your current one.",
+      "fields": {
+        "emailInvalid": "Enter a valid email address.",
+        "passwordRequired": "Enter your password.",
+        "passwordLength": "Password must be between 8 and 128 characters.",
+        "confirmPasswordRequired": "Confirm your password.",
+        "firstNameRequired": "Enter your first name.",
+        "firstNameTooLong": "First name must be 80 characters or fewer.",
+        "lastNameTooLong": "Last name must be 80 characters or fewer.",
+        "codeInvalid": "Enter the 6-digit code."
+      }
     }
   },
   "app": {

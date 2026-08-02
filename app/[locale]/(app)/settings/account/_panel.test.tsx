@@ -62,6 +62,28 @@ function uploadResult(url: string, publicId: string) {
   };
 }
 
+describe("AccountPanel — avatar upload error a11y wiring", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("wires the Upload button's aria-describedby to a role=alert avatar error", async () => {
+    mockUpload.mockRejectedValue(new Error("type_not_accepted"));
+    renderWithProviders(<AccountPanel {...defaultProps} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(["data"], "doc.pdf", { type: "application/pdf" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    const uploadBtn = await screen.findByRole("button", { name: "Upload" });
+    await waitFor(() => expect(uploadBtn).toHaveAttribute("aria-describedby"));
+    const describedBy = uploadBtn.getAttribute("aria-describedby")!;
+    const errorEl = document.getElementById(describedBy);
+    expect(errorEl).toHaveAttribute("role", "alert");
+    expect(errorEl).toHaveTextContent(/JPG/i);
+  });
+});
+
 describe("AccountPanel — avatar upload", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -650,7 +650,17 @@
       "invalidCode": "Hindi tamang code o nag-expire na. Pakisubukan muli.",
       "sessionExpired": "Nag-expire na ang iyong session. Mangyaring mag-sign in muli.",
       "resetTokenInvalid": "Ang link na ito ay invalid o nag-expire na. Mangyaring humingi ng bago.",
-      "passwordReused": "Pumili ng password na iba sa kasalukuyan mong password."
+      "passwordReused": "Pumili ng password na iba sa kasalukuyan mong password.",
+      "fields": {
+        "emailInvalid": "Maglagay ng wastong email address.",
+        "passwordRequired": "Ilagay ang iyong password.",
+        "passwordLength": "Ang password ay dapat may 8 hanggang 128 na character.",
+        "confirmPasswordRequired": "Kumpirmahin ang iyong password.",
+        "firstNameRequired": "Ilagay ang iyong pangalan.",
+        "firstNameTooLong": "Ang pangalan ay dapat 80 character o mas kaunti.",
+        "lastNameTooLong": "Ang apelyido ay dapat 80 character o mas kaunti.",
+        "codeInvalid": "Ilagay ang 6-digit na code."
+      }
     }
   },
   "app": {
