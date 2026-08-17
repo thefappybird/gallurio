@@ -137,7 +137,7 @@ export default async function ClientsPage({
 
     let found: Awaited<ReturnType<typeof getClientById>> = null;
     try {
-      found = await getClientById(workspace._id, sp.client);
+      found = await getClientById(workspace._id, sp.client, rates);
     } catch (err) {
       // Unexpected error (e.g. transient DB failure) — log with context, then
       // treat as not-found and strip the stale param rather than crashing the
