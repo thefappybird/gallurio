@@ -78,6 +78,40 @@ describe("getCollectionCoverage", () => {
     expect(coverage.coveragePct).toBeCloseTo(40, 5);
   });
 
+  it("rolls a foreign-currency booking and payment up into the workspace currency", async () => {
+    const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-08T00:00:00.000Z") };
+
+    const booking = await Booking.create({
+      workspaceId: wid,
+      clientId,
+      clientName: "Overseas Client",
+      title: "Overseas Booking",
+      status: "booked",
+      sessions: [
+        { startAt: monWeek1_10am, endAt: new Date(monWeek1_10am.getTime() + 2 * 3_600_000) },
+      ],
+      firstSessionStart: monWeek1_10am,
+      lastSessionEnd: new Date(monWeek1_10am.getTime() + 2 * 3_600_000),
+      amount: { total: 200, deposit: 0, currency: "USD" },
+    });
+
+    await Transaction.create([
+      {
+        workspaceId: wid,
+        bookingId: booking._id,
+        amount: 50,
+        currency: "USD",
+        type: "deposit",
+        paidAt: null,
+      },
+    ]);
+
+    const coverage = await getCollectionCoverage(wid, range, { PHP: 1, USD: 58 });
+
+    expect(coverage.confirmedValue).toBe(200 * 58);
+    expect(coverage.collected).toBe(50 * 58);
+  });
+
   it("clamps coveragePct to 100 on overpayment", async () => {
     const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-08T00:00:00.000Z") };
 

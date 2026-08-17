@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import { Booking, Client, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { dayBoundInTz } from "@/lib/utils/timezone";
+import { convertedAmountExpr, type RateMap } from "@/lib/pricing/currencyConverter";
 
 type WorkspaceId = Types.ObjectId;
 export type SerializedActivity = {
@@ -51,7 +52,10 @@ export type KpiSnapshot = {
   outstandingBalance: number;
 };
 
-export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnapshot> {
+export async function getKpiSnapshot(
+  workspaceId: WorkspaceId,
+  rates: RateMap = {}
+): Promise<KpiSnapshot> {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -65,7 +69,12 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
           type: { $in: ["deposit", "balance", "refund"] },
         },
       },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+        },
+      },
     ]),
     // "Starts this month" — firstSessionStart in range.
     Booking.countDocuments({
@@ -94,7 +103,12 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
                 type: { $in: ["deposit", "balance"] },
               },
             },
-            { $group: { _id: null, sum: { $sum: "$amount" } } },
+            {
+              $group: {
+                _id: null,
+                sum: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+              },
+            },
           ],
           as: "tx",
         },
@@ -102,7 +116,7 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
       {
         $group: {
           _id: null,
-          total: { $sum: "$amount.total" },
+          total: { $sum: convertedAmountExpr("$amount.total", "$amount.currency", rates) },
           paid: { $sum: { $ifNull: [{ $arrayElemAt: ["$tx.sum", 0] }, 0] } },
         },
       },
@@ -136,7 +150,12 @@ function pctTrend(current: number, prior: number, positiveIsGood: boolean): KpiT
   return { value: ((current - prior) / prior) * 100, positiveIsGood };
 }
 
-async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date) {
+async function monthRevenue(
+  workspaceId: WorkspaceId,
+  start: Date,
+  end: Date,
+  rates: RateMap
+) {
   const agg = await Transaction.aggregate<{ total: number }>([
     {
       $match: {
@@ -145,7 +164,9 @@ async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date) {
         type: { $in: ["deposit", "balance", "refund"] },
       },
     },
-    { $group: { _id: null, total: { $sum: "$amount" } } },
+    {
+      $group: { _id: null, total: { $sum: convertedAmountExpr("$amount", "$currency", rates) } },
+    },
   ]);
   return agg[0]?.total ?? 0;
 }
@@ -154,7 +175,8 @@ export type DateRange = { from: Date | null; to: Date | null };
 
 export async function getKpiSnapshotWithDeltas(
   workspaceId: WorkspaceId,
-  range?: DateRange
+  range?: DateRange,
+  rates: RateMap = {}
 ): Promise<{ snapshot: KpiSnapshot; trends: KpiTrends }> {
   const now = new Date();
   const thisStart = startOfMonth(now);
@@ -170,8 +192,8 @@ export async function getKpiSnapshotWithDeltas(
     thisInquiriesCreated,
     lastInquiriesCreated,
   ] = await Promise.all([
-    getKpiSnapshot(workspaceId),
-    monthRevenue(workspaceId, lastStart, lastEnd),
+    getKpiSnapshot(workspaceId, rates),
+    monthRevenue(workspaceId, lastStart, lastEnd, rates),
     Booking.countDocuments({
       workspaceId,
       firstSessionStart: { $gte: lastStart, $lte: lastEnd },
@@ -194,7 +216,7 @@ export async function getKpiSnapshotWithDeltas(
     const start = range.from ?? new Date(0);
     const end = range.to ?? new Date();
     const [rev, active, inq] = await Promise.all([
-      monthRevenue(workspaceId, start, end),
+      monthRevenue(workspaceId, start, end, rates),
       Booking.countDocuments({
         workspaceId,
         firstSessionStart: { $gte: start, $lte: end },
@@ -211,7 +233,7 @@ export async function getKpiSnapshotWithDeltas(
       const pStart = new Date(range.from.getTime() - 1 - len);
       const pEnd = new Date(range.from.getTime() - 1);
       const [pRev, pActive, pInq] = await Promise.all([
-        monthRevenue(workspaceId, pStart, pEnd),
+        monthRevenue(workspaceId, pStart, pEnd, rates),
         Booking.countDocuments({
           workspaceId,
           firstSessionStart: { $gte: pStart, $lte: pEnd },
@@ -316,7 +338,8 @@ export async function getRevenueTrend(
   workspaceId: WorkspaceId,
   days = 30,
   range?: DateRange,
-  timezone = "UTC"
+  timezone = "UTC",
+  rates: RateMap = {}
 ): Promise<RevenuePoint[]> {
   // Bucket by the workspace-local day so the trend agrees with bookings and
   // inquiry events. The page passes the resolved workspace timezone; the "UTC"
@@ -361,7 +384,7 @@ export async function getRevenueTrend(
     {
       $group: {
         _id: { $dateToString: { format: "%Y-%m-%d", date: "$paidAt", timezone } },
-        total: { $sum: "$amount" },
+        total: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
       },
     },
   ]);
@@ -469,7 +492,8 @@ export type TransactionsByTeam = {
 
 export async function getTransactionsByTeam(
   workspaceId: WorkspaceId,
-  range?: DateRange
+  range?: DateRange,
+  rates: RateMap = {}
 ): Promise<TransactionsByTeam[]> {
   let paidAt: Record<string, Date>;
   if (range?.from || range?.to) {
@@ -491,7 +515,12 @@ export async function getTransactionsByTeam(
         type: { $in: ["deposit", "balance", "refund"] },
       },
     },
-    { $group: { _id: "$teamId", total: { $sum: "$amount" } } },
+    {
+      $group: {
+        _id: "$teamId",
+        total: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+      },
+    },
     { $sort: { total: -1 } },
   ]);
 
@@ -579,7 +608,8 @@ export type RevenueComparison = {
 };
 
 export async function getRevenueComparison(
-  workspaceId: WorkspaceId
+  workspaceId: WorkspaceId,
+  rates: RateMap = {}
 ): Promise<RevenueComparison> {
   const now = new Date();
   const thisStart = startOfMonth(now);
@@ -597,7 +627,9 @@ export async function getRevenueComparison(
           type: { $in: ["deposit", "balance", "refund"] },
         },
       },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+      {
+        $group: { _id: null, total: { $sum: convertedAmountExpr("$amount", "$currency", rates) } },
+      },
     ]),
     Transaction.aggregate<{ total: number }>([
       {
@@ -607,7 +639,9 @@ export async function getRevenueComparison(
           type: { $in: ["deposit", "balance", "refund"] },
         },
       },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+      {
+        $group: { _id: null, total: { $sum: convertedAmountExpr("$amount", "$currency", rates) } },
+      },
     ]),
   ]);
 

@@ -28,6 +28,7 @@ import {
   getScheduledVsCollectedSeries,
   getCollectionCoverage,
 } from "./_data/booking-analytics";
+import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
 import { KpiStrip } from "./_components/kpi-strip";
 import { TodaysEventsList } from "./_components/todays-events-list";
 import { UpcomingWeekList } from "./_components/upcoming-week-list";
@@ -164,6 +165,10 @@ async function BookingsTab({
 }) {
   const timeMode = await getUserTimeFormat();
   const tz = resolveWorkspaceTimezone(workspace);
+  // Bookings and payments may be recorded in a client's own currency. Resolve
+  // the multipliers once here so every total below adds up in the workspace
+  // currency the cards are labelled with.
+  const rates = await getWorkspaceRateMap(wid, workspace.currency);
 
   const [
     kpi,
@@ -181,23 +186,23 @@ async function BookingsTab({
     heatmap,
     eventTrend,
   ] = await Promise.all([
-    getKpiSnapshotWithDeltas(wid, range),
+    getKpiSnapshotWithDeltas(wid, range, rates),
     getTodaysEvents(wid),
     getUpcomingWeek(wid),
     getActivityFeed(wid, 20),
-    getRevenueTrend(wid, 30, range, tz),
+    getRevenueTrend(wid, 30, range, tz, rates),
     getBookingsByDay(wid, new Date()),
-    getTransactionsByTeam(wid, range),
+    getTransactionsByTeam(wid, range, rates),
     getBookingsCountByTeam(wid, range),
     getTopClients(wid, 5),
     getBookingTeamOptions({ role, userId, workspace }),
-    getScheduledVsCollectedSeries(wid, range, tz),
-    getCollectionCoverage(wid, range),
+    getScheduledVsCollectedSeries(wid, range, tz, rates),
+    getCollectionCoverage(wid, range, rates),
     getBookedHoursHeatmap(wid, range, tz, {
       workspaceCreatedAt: workspace.createdAt,
       endWeek: heatmapEndWeek,
     }),
-    getEventTypeValueTrend(wid, range, tz),
+    getEventTypeValueTrend(wid, range, tz, rates),
   ]);
 
   const eventTypeLabels = t.raw("eventTypes") as Record<string, string>;

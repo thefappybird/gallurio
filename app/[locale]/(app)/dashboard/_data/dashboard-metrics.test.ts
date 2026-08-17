@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { Client } from "@/lib/db/models";
-import { getTopClients } from "./dashboard-metrics";
+import { Client, Transaction } from "@/lib/db/models";
+import { getKpiSnapshot, getTopClients } from "./dashboard-metrics";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -41,5 +41,20 @@ describe("getTopClients", () => {
     expect(top.totalSpent).toBe(5000);
     expect((top as Record<string, unknown>).email).toBeUndefined();
     expect((top as Record<string, unknown>).transactions).toBeUndefined();
+  });
+});
+
+describe("getKpiSnapshot — multi-currency roll-up", () => {
+  it("converts foreign-currency transactions into the workspace currency before summing", async () => {
+    const ws = new Types.ObjectId();
+    const paidAt = new Date();
+    await Transaction.create([
+      { workspaceId: ws, amount: 1000, currency: "PHP", type: "deposit", method: "cash", paidAt },
+      { workspaceId: ws, amount: 10, currency: "USD", type: "balance", method: "cash", paidAt },
+    ]);
+
+    const snapshot = await getKpiSnapshot(ws, { PHP: 1, USD: 58 });
+
+    expect(snapshot.revenueThisMonth).toBe(1000 + 10 * 58);
   });
 });
