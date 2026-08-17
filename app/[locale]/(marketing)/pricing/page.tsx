@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/lib/i18n/navigation";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { LocalPriceNote } from "@/components/app/local-price-note";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 const SUPPORT_EMAIL = "support@gallurio.com";
@@ -25,7 +26,7 @@ export default async function PricingPage({ params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations("marketing.pricing");
-  const proPricing = await getProPricing();
+  const proPricing = await getDisplayPricing();
 
   const proFeatures = [
     t("pro.feature1"),
@@ -71,6 +72,13 @@ export default async function PricingPage({ params }: Props) {
                   {t("pro.priceSuffixMonthly")}
                 </span>
               </p>
+              {proPricing.local ? (
+                <LocalPriceNote
+                  amount={proPricing.local.monthly}
+                  currency={proPricing.local.currency}
+                  billedIn={proPricing.currency}
+                />
+              ) : null}
               <p className="text-sm text-muted-foreground">
                 {t("pro.yearlyNote", { price: yearlyPrice })}
               </p>

@@ -12,6 +12,7 @@ import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { useActionError } from "@/lib/i18n/actionError";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { LocalPriceNote } from "@/components/app/local-price-note";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
@@ -144,6 +145,13 @@ export function SubscribePanel({
           <span className="font-heading text-2xl font-semibold">{selectedPrice}</span>
           <span className="text-xs text-muted-foreground">{cadence === "yearly" ? tPlan("cadence.yearly") : tPlan("cadence.monthly")}</span>
         </div>
+        {proPricing.local && (
+          <LocalPriceNote
+            amount={cadence === "yearly" ? proPricing.local.yearly : proPricing.local.monthly}
+            currency={proPricing.local.currency}
+            billedIn={proPricing.currency}
+          />
+        )}
         <p className="text-xs text-muted-foreground">{tPlans("pro.tagline")}</p>
       </div>
 

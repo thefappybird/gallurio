@@ -7,7 +7,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/db/models";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { buttonVariants } from "@/components/ui/button";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { PricingTeaser } from "./_components/pricing-teaser";
@@ -44,7 +44,7 @@ export default async function Home({ params }: Props) {
   const t = await getTranslations("marketing");
   const tTerms = await getTranslations("marketing.terms");
   const tPrivacy = await getTranslations("marketing.privacy");
-  const proPricing = await getProPricing();
+  const proPricing = await getDisplayPricing();
 
   const trustItems = [t("trust.item1"), t("trust.item2"), t("trust.item3"), t("trust.item4")];
 

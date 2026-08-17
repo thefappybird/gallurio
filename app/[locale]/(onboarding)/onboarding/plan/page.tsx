@@ -1,13 +1,13 @@
 import { loadOnboardingContext, requireStep } from "@/lib/auth/onboardingStep";
 import { isPaidBillingAvailable } from "@/lib/billing/availability";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { PromoCode } from "@/lib/db/models";
 import { PlanStepForm } from "./plan-form";
 
 export default async function PlanStepPage() {
   const ctx = await loadOnboardingContext();
   requireStep(ctx, "plan");
-  const proPricing = await getProPricing();
+  const proPricing = await getDisplayPricing();
   const acceptedPromoCodes = ctx.workspace?.codesRedeemed.length
     ? await PromoCode.find({ _id: { $in: ctx.workspace.codesRedeemed } })
         .sort({ createdAt: -1 })

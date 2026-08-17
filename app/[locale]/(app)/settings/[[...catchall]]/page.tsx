@@ -26,7 +26,7 @@ import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { AccountPanel } from "../account/_panel";
 import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
@@ -166,7 +166,7 @@ export default async function SettingsCatchallPage({
   };
 
   const t = await getTranslations("app.settings.tabs");
-  const proPricing = await getProPricing();
+  const proPricing = await getDisplayPricing();
 
   // Active slug: null means base /settings -> render account tab
   const activeSlug = slug;

@@ -3357,6 +3357,7 @@
     }
   },
   "plans": {
+    "localEstimate": "≈ {price} · เรียกเก็บเป็น {currency}",
     "free": {
       "name": "ฟรี",
       "description": "Pro เต็มรูปแบบฟรี 1 เดือน",

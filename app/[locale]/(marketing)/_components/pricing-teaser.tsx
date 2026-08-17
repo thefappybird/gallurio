@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { CheckIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
+import { LocalPriceNote } from "@/components/app/local-price-note";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,15 @@ export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
               name={t("pro.name")}
               price={price}
               priceNote={t("pro.priceNote")}
+              localNote={
+                proPricing.local ? (
+                  <LocalPriceNote
+                    amount={cadence === "monthly" ? proPricing.local.monthly : proPricing.local.yearly}
+                    currency={proPricing.local.currency}
+                    billedIn={proPricing.currency}
+                  />
+                ) : null
+              }
               description={t("pro.description")}
               features={[t("pro.feature1"), t("pro.feature2"), t("pro.feature3")]}
               cta={t("pro.cta")}
@@ -90,6 +100,7 @@ function PlanCard({
   name,
   price,
   priceNote,
+  localNote,
   description,
   features,
   cta,
@@ -100,6 +111,7 @@ function PlanCard({
   name: string;
   price: string;
   priceNote?: string;
+  localNote?: React.ReactNode;
   description: string;
   features: string[];
   cta: string;
@@ -135,6 +147,7 @@ function PlanCard({
           {price}
           {priceNote ? <span className="ms-1 text-sm font-medium text-muted-foreground">{priceNote}</span> : null}
         </p>
+        {localNote ? <p className="mt-1">{localNote}</p> : null}
       </div>
       <p className="text-sm leading-6 text-muted-foreground">{description}</p>
       <ul className="flex flex-col gap-2 text-sm">

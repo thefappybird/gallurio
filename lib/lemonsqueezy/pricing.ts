@@ -1,7 +1,13 @@
 import { PLAN_CATALOG } from "./plans";
 import { getLatestVariantPriceCents, getStoreCurrency } from "./client";
 
-export type ProPricing = { currency: string; monthly: number; yearly: number };
+export type PriceAmounts = { currency: string; monthly: number; yearly: number };
+
+// `local` is a display-only equivalent in the visitor's currency, attached by
+// lib/pricing/localPricing.ts. Absent when it can't be resolved, or when the
+// visitor is already in the store's currency. Never authoritative — Lemon
+// Squeezy charges `currency`.
+export type ProPricing = PriceAmounts & { local?: PriceAmounts | null };
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h — pricing is global, not tenant-scoped
 

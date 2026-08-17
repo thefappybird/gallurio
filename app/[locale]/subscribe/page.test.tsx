@@ -14,8 +14,8 @@ vi.mock("next-intl/server", () => ({
   getTranslations: vi.fn().mockResolvedValue((key: string) => key),
 }));
 
-vi.mock("@/lib/lemonsqueezy/pricing", () => ({
-  getProPricing: vi.fn().mockResolvedValue({ currency: "PHP", monthly: 250, yearly: 2500 }),
+vi.mock("@/lib/pricing/localPricing", () => ({
+  getDisplayPricing: vi.fn().mockResolvedValue({ currency: "PHP", monthly: 250, yearly: 2500 }),
 }));
 
 const requireOrgMock = vi.fn();

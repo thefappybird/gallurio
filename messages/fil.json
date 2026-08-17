@@ -3357,6 +3357,7 @@
     }
   },
   "plans": {
+    "localEstimate": "≈ {price} · siningil sa {currency}",
     "free": {
       "name": "Free",
       "description": "1 buwan ng buong Pro, libre",

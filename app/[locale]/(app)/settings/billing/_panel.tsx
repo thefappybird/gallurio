@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { PLAN_CATALOG } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { LocalPriceNote } from "@/components/app/local-price-note";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
 import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
@@ -252,6 +253,17 @@ export function BillingPanel({
                           </span>
                         )}
                       </div>
+                      {entry.id === "pro" && proPricing.local && (
+                        <LocalPriceNote
+                          amount={
+                            cadence === "yearly"
+                              ? proPricing.local.yearly
+                              : proPricing.local.monthly
+                          }
+                          currency={proPricing.local.currency}
+                          billedIn={proPricing.currency}
+                        />
+                      )}
                     </div>
                     <Button
                       size="sm"

@@ -12,6 +12,7 @@ import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { LocalPriceNote } from "@/components/app/local-price-note";
 import { useActionError } from "@/lib/i18n/actionError";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
@@ -310,6 +311,15 @@ export function PlanStepForm({
                   <span className="font-heading text-2xl font-semibold">{price}</span>
                   <span className="text-xs text-muted-foreground">{cadenceLabel}</span>
                 </div>
+                {p.id === "pro" && proPricing.local && (
+                  <LocalPriceNote
+                    amount={
+                      cadence === "yearly" ? proPricing.local.yearly : proPricing.local.monthly
+                    }
+                    currency={proPricing.local.currency}
+                    billedIn={proPricing.currency}
+                  />
+                )}
                 <p className="text-xs text-muted-foreground">{tPlans(`${p.id}.tagline`)}</p>
                 <ul className="mt-1 flex flex-col gap-1.5 text-xs">
                   {p.featureKeys.map((key) => (

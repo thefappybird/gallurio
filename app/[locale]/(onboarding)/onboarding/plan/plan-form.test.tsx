@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { PlanStepForm } from "./plan-form";
+import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 
 const { mockRouterPush, mockRouterRefresh } = vi.hoisted(() => ({
   mockRouterPush: vi.fn(),
@@ -84,13 +85,14 @@ function renderForm(
     activation?: "free" | "pro" | "beta" | "promo" | null;
     acceptedPromoCode?: string | null;
     billingAvailable?: boolean;
+    proPricing?: ProPricing;
   } = {}
 ) {
   return renderWithProviders(
     <PlanStepForm
       currentPlan={props.currentPlan ?? "free"}
       furthestStep={props.furthestStep ?? "plan"}
-      proPricing={{ currency: "PHP", monthly: 250, yearly: 2500 }}
+      proPricing={props.proPricing ?? { currency: "PHP", monthly: 250, yearly: 2500 }}
       betaTesterEnabled={props.betaTesterEnabled}
       planChoiceLocked={props.planChoiceLocked}
       activation={props.activation}
@@ -548,5 +550,22 @@ describe("PlanStepForm — cadence toggle", () => {
     });
     expect(within(proCard).getByText("₱3,000")).toHaveClass("line-through");
     expect(screen.getByText(/save 2 months/i)).toBeInTheDocument();
+  });
+});
+
+describe("PlanStepForm — local currency estimate", () => {
+  it("shows the converted Pro price on the Pro card", () => {
+    renderForm({
+      currentPlan: "pro",
+      proPricing: {
+        currency: "PHP",
+        monthly: 250,
+        yearly: 2500,
+        local: { currency: "USD", monthly: 4.3, yearly: 43 },
+      },
+    });
+
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
+    expect(within(proCard).getByText(/≈ \$4\.30 · billed in PHP/)).toBeInTheDocument();
   });
 });

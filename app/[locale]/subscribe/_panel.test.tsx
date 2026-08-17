@@ -78,6 +78,19 @@ describe("SubscribePanel — renders", () => {
     expect(screen.queryByText(/\/ month/i)).not.toBeInTheDocument();
   });
 
+  it("shows the local-currency estimate for the selected cadence", () => {
+    renderPanel({
+      proPricing: {
+        currency: "PHP",
+        monthly: 250,
+        yearly: 2500,
+        local: { currency: "USD", monthly: 4.3, yearly: 43 },
+      },
+    });
+
+    expect(screen.getByText(/≈ \$4\.30 · billed in PHP/)).toBeInTheDocument();
+  });
+
   it("shows a subscribe button", () => {
     renderPanel();
     expect(screen.getByRole("button", { name: /subscribe/i })).toBeInTheDocument();

@@ -4,7 +4,7 @@ import { LogOutIcon } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { User } from "@/lib/db/models";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
 import { SignOutLink } from "@/components/app/sign-out-link";
 import { SubscribePanel } from "./_panel";
@@ -42,7 +42,7 @@ export default async function SubscribePage({
 
   if (role === "owner") {
     const [proPricing, user] = await Promise.all([
-      getProPricing(),
+      getDisplayPricing(),
       User.findOne(
         { workosUserId: userId },
         { "betaParticipation.recordedAt": 1 },
