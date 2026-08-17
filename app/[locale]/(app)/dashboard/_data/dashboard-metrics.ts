@@ -3,7 +3,11 @@ import { Types } from "mongoose";
 import { Booking, Client, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { dayBoundInTz } from "@/lib/utils/timezone";
-import { convertedAmountExpr, type RateMap } from "@/lib/pricing/currencyConverter";
+import {
+  convertedAmountExpr,
+  isSingleCurrency,
+  type RateMap,
+} from "@/lib/pricing/currencyConverter";
 
 type WorkspaceId = Types.ObjectId;
 export type SerializedActivity = {
@@ -453,12 +457,42 @@ export async function getBookingsByDay(
   return rows.map((r) => ({ date: r._id, count: r.count }));
 }
 
-export async function getTopClients(workspaceId: WorkspaceId, limit = 5) {
-  return Client.find({ workspaceId })
-    .sort({ totalSpent: -1 })
-    .limit(limit)
-    .select({ _id: 1, name: 1, totalSpent: 1 })
+export async function getTopClients(workspaceId: WorkspaceId, limit = 5, rates: RateMap = {}) {
+  // Client.totalSpent is a running sum in whatever currency each booking used,
+  // so it is only a valid sort key when the workspace stores one currency.
+  if (isSingleCurrency(rates)) {
+    return Client.find({ workspaceId })
+      .sort({ totalSpent: -1 })
+      .limit(limit)
+      .select({ _id: 1, name: 1, totalSpent: 1 })
+      .lean();
+  }
+
+  // Otherwise rank off the ledger, converted — same definition of "spend" the
+  // stored field is written from (lib/db/clientTransactions.ts).
+  const rows = await Transaction.aggregate<{ _id: Types.ObjectId; totalSpent: number }>([
+    { $match: { workspaceId, clientId: { $ne: null }, type: { $in: ["deposit", "balance"] } } },
+    {
+      $group: {
+        _id: "$clientId",
+        totalSpent: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+      },
+    },
+    { $sort: { totalSpent: -1 } },
+    { $limit: limit },
+  ]);
+
+  if (rows.length === 0) return [];
+
+  const clients = await Client.find({ workspaceId, _id: { $in: rows.map((r) => r._id) } })
+    .select({ _id: 1, name: 1 })
     .lean();
+  const nameById = new Map(clients.map((c) => [String(c._id), c.name]));
+
+  return rows.flatMap((r) => {
+    const name = nameById.get(String(r._id));
+    return name ? [{ _id: r._id, name, totalSpent: r.totalSpent }] : [];
+  });
 }
 
 export type EventTypeBreakdown = { eventType: string; count: number };

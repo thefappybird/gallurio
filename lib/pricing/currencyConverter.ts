@@ -24,6 +24,12 @@ export async function buildRateMap(
   return map;
 }
 
+// True when the map holds at most the target currency itself — i.e. nothing
+// needs converting and callers can take their cheap path.
+export function isSingleCurrency(rates: RateMap): boolean {
+  return Object.keys(rates).length <= 1;
+}
+
 // In-JS counterpart of convertedAmountExpr, for totals summed in application
 // code rather than in an aggregation pipeline. Same pass-through rule.
 export function convertAmount(

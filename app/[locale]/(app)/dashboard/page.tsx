@@ -194,7 +194,7 @@ async function BookingsTab({
     getBookingsByDay(wid, new Date()),
     getTransactionsByTeam(wid, range, rates),
     getBookingsCountByTeam(wid, range),
-    getTopClients(wid, 5),
+    getTopClients(wid, 5, rates),
     getBookingTeamOptions({ role, userId, workspace }),
     getScheduledVsCollectedSeries(wid, range, tz, rates),
     getCollectionCoverage(wid, range, rates),

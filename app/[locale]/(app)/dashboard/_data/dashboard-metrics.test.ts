@@ -44,6 +44,44 @@ describe("getTopClients", () => {
   });
 });
 
+describe("getTopClients — multi-currency roll-up", () => {
+  it("ranks and totals clients in the workspace currency, not by the raw stored field", async () => {
+    const ws = new Types.ObjectId();
+    const local = await Client.create({ workspaceId: ws, name: "Local Studio", totalSpent: 9_000 });
+    const overseas = await Client.create({
+      workspaceId: ws,
+      name: "Overseas Studio",
+      totalSpent: 200,
+    });
+
+    await Transaction.create([
+      {
+        workspaceId: ws,
+        clientId: local._id,
+        amount: 9_000,
+        currency: "PHP",
+        type: "deposit",
+        method: "cash",
+      },
+      {
+        workspaceId: ws,
+        clientId: overseas._id,
+        amount: 200,
+        currency: "USD",
+        type: "deposit",
+        method: "cash",
+      },
+    ]);
+
+    const top = await getTopClients(ws, 5, { PHP: 1, USD: 58 });
+
+    // ₱9,000 vs $200 ≈ ₱11,600 — the overseas client outranks the local one
+    // once converted, the opposite of the raw stored ordering.
+    expect(top.map((c) => c.name)).toEqual(["Overseas Studio", "Local Studio"]);
+    expect(top[0].totalSpent).toBe(200 * 58);
+  });
+});
+
 describe("getKpiSnapshot — multi-currency roll-up", () => {
   it("converts foreign-currency transactions into the workspace currency before summing", async () => {
     const ws = new Types.ObjectId();

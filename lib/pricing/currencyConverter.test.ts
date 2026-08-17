@@ -39,6 +39,16 @@ describe("buildRateMap", () => {
   });
 });
 
+describe("isSingleCurrency", () => {
+  it("is true only when nothing needs converting", async () => {
+    const { isSingleCurrency } = await import("./currencyConverter");
+
+    expect(isSingleCurrency({})).toBe(true);
+    expect(isSingleCurrency({ PHP: 1 })).toBe(true);
+    expect(isSingleCurrency({ PHP: 1, USD: 58 })).toBe(false);
+  });
+});
+
 describe("convertAmount", () => {
   it("converts a known currency and passes through an unknown one", async () => {
     const { convertAmount } = await import("./currencyConverter");

@@ -83,14 +83,34 @@ value into shell history you keep, and do not commit it.
 - Server logs print `[fx] Failed to fetch reference rates, currency conversion
   disabled: …` when the API call itself fails.
 
+## `Client.totalSpent`
+
+The field stays a **raw, unconverted** running sum in the currencies each
+booking used, written by `lib/db/clientTransactions.ts`. It is converted at
+**read** time instead, by `getConvertedClientTotals`, which re-derives the total
+from the `Transaction` ledger (`type: deposit|balance` — the same definition the
+write path uses) with `convertedAmountExpr`.
+
+Read-time was chosen over storing a converted value because the dashboard
+roll-up also uses current rates. Freezing a write-time rate into the field would
+make the clients table and the dashboard disagree about the same client, with no
+way for the user to tell which one is right. A backfill is also avoided.
+
+Conversion is applied at every place the total is rendered labelled with the
+workspace currency:
+
+| Site | How |
+| --- | --- |
+| Clients list | `listClients({ rates })` |
+| Client detail modal | `getClientByIdAction` → `getClientById(…, rates)` |
+| Dashboard top clients | `getTopClients(wid, 5, rates)` — ranks off the converted ledger, since the stored field is not a valid sort key for a mixed-currency workspace |
+
+Single-currency workspaces skip all of it: `getConvertedClientTotals` returns
+`null` and `getTopClients` keeps its indexed `sort({ totalSpent: -1 })`, so the
+common path costs nothing extra.
+
 ## Known limitations
 
-- **`Client.totalSpent` is not converted.** It is a denormalized running total
-  maintained at write time in `lib/db/clientTransactions.ts`, in whatever
-  currency the booking used. Converting it correctly means storing the rate at
-  write time plus a backfill, which is a separate change. The clients table
-  renders each client's own `currency`, so nothing is currently mislabelled —
-  but a mixed-currency workspace's `totalSpent` ordering is not meaningful.
 - **Rates are indicative.** Daily reference rates, not the rate a card issuer
   or Lemon Squeezy applies. Never present a converted figure as an amount
   charged.

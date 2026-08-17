@@ -2,6 +2,8 @@ import "server-only";
 import { Types } from "mongoose";
 import { Client, Booking, Transaction } from "@/lib/db/models";
 import type { ClientDoc } from "@/lib/db/models/Client";
+import { getConvertedClientTotals } from "@/lib/pricing/clientTotals";
+import type { RateMap } from "@/lib/pricing/currencyConverter";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -13,6 +15,9 @@ export type ListClientsParams = {
   includeInactive?: boolean;  // default: active only (isActive: true)
   page?: number;        // 1-indexed, default 1
   limit?: number;       // 25 | 50 | 100, default 25
+  // Workspace rate map. Supplied when the caller renders totalSpent labelled
+  // with the workspace currency — see the note on ClientListItem.
+  rates?: RateMap;
 };
 
 // Booking metrics are derived at read time rather than denormalized onto the
@@ -28,7 +33,7 @@ export type ClientListItem = ClientDoc & {
 export async function listClients(
   params: ListClientsParams
 ): Promise<{ items: ClientListItem[]; total: number }> {
-  const { workspaceId, q, source, tags, includeInactive, page = 1, limit = 25 } = params;
+  const { workspaceId, q, source, tags, includeInactive, page = 1, limit = 25, rates = {} } = params;
   const filter: Record<string, unknown> = { workspaceId };
 
   // Collect into $and so multiple $or groups (active-state, search) don't
@@ -90,10 +95,16 @@ export async function listClients(
   ]);
 
   const statsById = new Map(stats.map((s) => [String(s._id), s]));
+  // Null for a single-currency workspace — the stored totalSpent is already
+  // correct there and costs no extra query.
+  const convertedTotals = await getConvertedClientTotals(workspaceId, clientIds, rates);
   const merged: ClientListItem[] = items.map((c) => {
     const s = statsById.get(String(c._id));
     return {
       ...c,
+      // With a rate map, the ledger is authoritative — a client with no
+      // spend rows has spent nothing, so don't fall back to the raw field.
+      totalSpent: convertedTotals ? (convertedTotals.get(String(c._id)) ?? 0) : c.totalSpent,
       bookingsCount: s?.count ?? 0,
       lastBookingAt: s?.lastStart ?? null,
     };
@@ -104,7 +115,8 @@ export async function listClients(
 
 export async function getClientById(
   workspaceId: WorkspaceId,
-  clientId: string
+  clientId: string,
+  rates: RateMap = {}
 ): Promise<ClientListItem | null> {
   if (!Types.ObjectId.isValid(clientId)) return null;
 
@@ -130,8 +142,11 @@ export async function getClientById(
     },
   ]);
 
+  const convertedTotals = await getConvertedClientTotals(workspaceId, [c._id], rates);
+
   return {
     ...c,
+    totalSpent: convertedTotals ? (convertedTotals.get(String(c._id)) ?? 0) : c.totalSpent,
     bookingsCount: stats[0]?.count ?? 0,
     lastBookingAt: stats[0]?.lastStart ?? null,
   };

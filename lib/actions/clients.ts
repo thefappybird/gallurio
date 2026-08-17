@@ -7,6 +7,7 @@ import { Client } from "@/lib/db/models";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
 import { isClientMatch } from "@/lib/clients/nameMatch";
+import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
 import type { ClientMatchCard } from "@/components/app/client-match-dialog";
 import {
   getClientBookings,
@@ -197,7 +198,8 @@ export async function getClientByIdAction(
     const ctx = await requireOrg();
     await connectDB();
 
-    const c = await getClientById(ctx.workspace._id, clientId);
+    const rates = await getWorkspaceRateMap(ctx.workspace._id, ctx.workspace.currency ?? "PHP");
+    const c = await getClientById(ctx.workspace._id, clientId, rates);
     if (!c) return { error: "client_not_found" };
 
     return {

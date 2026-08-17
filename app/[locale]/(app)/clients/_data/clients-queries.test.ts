@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { Client, Booking } from "@/lib/db/models";
+import { Client, Booking, Transaction } from "@/lib/db/models";
 import { listClients, getWorkspaceTags, getClientBookings, getClientById } from "./clients-queries";
 
 const workspaceId = new Types.ObjectId();
@@ -436,5 +436,41 @@ describe("getClientBookings", () => {
     expect(row.lastSessionEnd).toBeInstanceOf(Date);
     expect(row.total).toBe(12500);
     expect(row.currency).toBe("USD");
+  });
+});
+
+describe("listClients — multi-currency totalSpent", () => {
+  it("recomputes totalSpent in the workspace currency when rates are supplied", async () => {
+    const client = await seedClient(workspaceId, { name: "Overseas Studio" });
+    await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 5_100 } });
+    await Transaction.create([
+      { workspaceId, clientId: client._id, amount: 5_000, currency: "PHP", type: "deposit" },
+      { workspaceId, clientId: client._id, amount: 100, currency: "USD", type: "balance" },
+    ]);
+
+    const { items } = await listClients({ workspaceId, rates: { PHP: 1, USD: 58 } });
+
+    expect(items[0].totalSpent).toBe(5_000 + 100 * 58);
+  });
+
+  it("leaves the stored totalSpent alone for a single-currency workspace", async () => {
+    const client = await seedClient(workspaceId, { name: "Local Studio" });
+    await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 5_000 } });
+
+    const { items } = await listClients({ workspaceId, rates: { PHP: 1 } });
+
+    expect(items[0].totalSpent).toBe(5_000);
+  });
+
+  it("converts totalSpent on the single-client lookup too", async () => {
+    const client = await seedClient(workspaceId, { name: "Overseas Studio" });
+    await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 100 } });
+    await Transaction.create([
+      { workspaceId, clientId: client._id, amount: 100, currency: "USD", type: "deposit" },
+    ]);
+
+    const found = await getClientById(workspaceId, String(client._id), { PHP: 1, USD: 58 });
+
+    expect(found?.totalSpent).toBe(100 * 58);
   });
 });
