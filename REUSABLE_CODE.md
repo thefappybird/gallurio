@@ -97,6 +97,11 @@ Composed, app-specific shared components.
 |--------|--------|-----------|---------|
 | `lib/utils.ts` | `cn` | `(...ClassValue[]) => string` | Merge Tailwind classes (clsx + twMerge) |
 | `lib/utils/format-currency.ts` | `formatMoney` | `(amount, currency, locale) => string` | Localized currency via Intl.NumberFormat |
+| `lib/pricing/fxRates.ts` | `getFxRate` | `(base, target) => Promise<number\|null>` | Daily FX rate via Open Exchange Rates (`OPENEXCHANGERATES_APP_ID`), 24h cached, `null` on any failure. **Display/aggregation only — never charge with this** |
+| `lib/pricing/currencyConverter.ts` | `buildRateMap`, `convertAmount`, `convertedAmountExpr` | `(target, currencies) => Promise<RateMap>`; `(amount, currency, rates) => number`; `(amountField, currencyField, rates) => Mongo expr` | Roll mixed-currency records up into one currency, in JS or inside an aggregation `$sum` |
+| `lib/pricing/workspaceRates.ts` | `getWorkspaceRateMap` | `(workspaceId, workspaceCurrency) => Promise<RateMap>` | Which currencies a workspace actually stores → rate map. Single-currency workspaces cost no FX call |
+| `lib/pricing/localPricing.ts` | `getDisplayPricing` | `() => Promise<ProPricing>` | Live Lemon Squeezy price + a display-only `local` estimate from `CF-IPCountry`. **Reads `headers()`** — server components only |
+| `components/app/local-price-note.tsx` | `LocalPriceNote` | `{amount, currency, billedIn}` | The `≈ $4.30 · billed in PHP` line under a price |
 | `lib/utils/csv-parse.ts` | `parseCsv` | `(text) => { headers, rows }` | RFC-4180 CSV parser (quotes, CRLF/LF) |
 | `lib/utils/csv-parse.ts` | `normalizeCsvHeader` | `(raw) => string` | Map raw header → camelCase |
 | `lib/utils/csv-parse.ts` | `stripFormulaGuard` | `(value) => string` | Reverse the export-side apostrophe guard; leaves a genuinely apostrophe-led value alone |
