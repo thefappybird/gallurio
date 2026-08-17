@@ -71,6 +71,7 @@ const shape = {
   EMAIL_REPLY_TO: z.string().optional(),
   NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN: z.string().optional(),
   PAGEVIEW_SALT_SECRET: z.string().optional(),
+  OPENEXCHANGERATES_APP_ID: z.string().optional(),
   BETA_TESTER_ENABLED: z.string().optional(),
   PORT: z.string().optional(),
 
