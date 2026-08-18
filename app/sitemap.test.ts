@@ -43,6 +43,14 @@ describe("sitemap()", () => {
     expect(urls).toContain("http://localhost:3000/compare/gallurio-vs-honeybook");
   });
 
+  it("lists the blog content", async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+
+    expect(urls).toContain(
+      "http://localhost:3000/blog/how-to-price-event-photography-packages"
+    );
+  });
+
   it("yields two entries per published workspace with correct URLs and priorities", async () => {
     await Workspace.create(makePublishedWorkspace("alpha-studio"));
 
