@@ -19,6 +19,7 @@ const MARKETING_PATHS = [
   "/contact",
   "/book-demo",
   "/compare",
+  "/blog",
   "/privacy",
   "/terms",
   "/refunds",
@@ -40,7 +41,9 @@ function marketingEntries(): MetadataRoute.Sitemap {
     priority: 0.9,
   }));
 
-  return [...pages, ...compare];
+  const blog: MetadataRoute.Sitemap = [];
+
+  return [...pages, ...compare, ...blog];
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
