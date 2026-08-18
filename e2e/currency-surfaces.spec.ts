@@ -483,3 +483,68 @@ test.describe("E. clients regression", () => {
     expect(errors, `console errors: ${errors.join(" | ")}`).toEqual([]);
   });
 });
+
+// F. Rate-map memo regression — the 5-minute per-workspace memo in
+// getWorkspaceRateMap must not shift or cross-key figures across navigations
+// within one warm session: dashboard -> clients -> dashboard.
+test.describe("F. rate-map memo across navigations", () => {
+  test("₱ figures on /dashboard are identical before and after visiting /clients", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error") errors.push(msg.text());
+    });
+    await page.setViewportSize({ width: 1280, height: 1000 });
+
+    await page.goto("/dashboard");
+    const phpFiguresBefore = page.getByText(/₱\s?[\d,]/);
+    await expect(phpFiguresBefore.first()).toBeVisible();
+    const before = await phpFiguresBefore.allTextContents();
+    expect(before.length).toBeGreaterThanOrEqual(4);
+
+    await page.goto("/clients");
+    await expect(page.getByText("Total Spent").filter({ visible: true }).first()).toBeVisible();
+
+    await page.goto("/dashboard");
+    const phpFiguresAfter = page.getByText(/₱\s?[\d,]/);
+    await expect(phpFiguresAfter.first()).toBeVisible();
+    const after = await phpFiguresAfter.allTextContents();
+
+    expect(after, "dashboard ₱ figures shifted after a warm-memo revisit").toEqual(before);
+    expect(errors, `console errors: ${errors.join(" | ")}`).toEqual([]);
+  });
+});
+
+// G. Top clients ordering — the getTopClients $limit*2-then-slice change must
+// not truncate below the available rows or break descending order.
+test.describe("G. top clients ordering", () => {
+  test("Top clients card renders up to 5 rows, descending by spend, in ₱", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error") errors.push(msg.text());
+    });
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto("/dashboard");
+
+    const cardTitle = page.getByText("Top clients by spend").first();
+    await expect(cardTitle).toBeVisible();
+    const card = cardTitle.locator('xpath=ancestor::*[@data-slot="card"]');
+    await expect(card).toHaveCount(1);
+
+    const rows = card.locator("ul > li");
+    const rowCount = await rows.count();
+    expect(rowCount).toBeGreaterThan(0);
+    expect(rowCount).toBeLessThanOrEqual(5);
+
+    const figures = await rows.locator("span.tabular-nums").allTextContents();
+    expect(figures.length).toBe(rowCount);
+    for (const fig of figures) {
+      expect(fig).toMatch(/₱\s?[\d,]/);
+    }
+
+    const amounts = figures.map((f) => Number(f.replace(/[^\d.]/g, "")));
+    const sorted = [...amounts].sort((a, b) => b - a);
+    expect(amounts, "top clients not in descending order").toEqual(sorted);
+
+    expect(errors, `console errors: ${errors.join(" | ")}`).toEqual([]);
+  });
+});
