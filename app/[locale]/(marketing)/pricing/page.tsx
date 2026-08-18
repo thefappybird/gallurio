@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getDisplayPricing } from "@/lib/pricing/localPricing";
-import { marketingMetadata } from "@/lib/seo/metadata";
+import { marketingMetadata, localeUrl } from "@/lib/seo/metadata";
+import { buildSoftwareApplicationLd } from "@/lib/seo/marketingJsonLd";
+import { safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { PricingPlans } from "./_plans";
 
 const SUPPORT_EMAIL = "support@gallurio.com";
@@ -33,8 +35,18 @@ export default async function PricingPage({ params }: Props) {
   const proPricing = await getDisplayPricing();
   const betaEnabled = process.env.BETA_TESTER_ENABLED === "true";
 
+  const softwareApplicationLd = buildSoftwareApplicationLd({
+    price: proPricing.monthly,
+    currency: proPricing.currency,
+    url: localeUrl(locale, "/pricing"),
+  });
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(softwareApplicationLd) }}
+      />
       {/* Header */}
       <section className="px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-3xl text-start">
