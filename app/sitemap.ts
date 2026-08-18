@@ -41,7 +41,12 @@ function marketingEntries(): MetadataRoute.Sitemap {
     priority: 0.9,
   }));
 
-  const blog: MetadataRoute.Sitemap = [];
+  const blog = listEntries("blog").map((entry) => ({
+    url: `${base}/blog/${entry.slug}`,
+    lastModified: new Date(entry.updatedAt ?? entry.publishedAt),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
 
   return [...pages, ...compare, ...blog];
 }
