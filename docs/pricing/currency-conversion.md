@@ -38,7 +38,8 @@ absent country falls back to USD.
 Open Exchange Rates, via the existing `OPENEXCHANGERATES_APP_ID`. The free plan
 serves one USD-based table per call (`base` is a paid feature), so every
 non-USD pair is cross-rated off that table — one fetch a day covers every
-currency in the app, well inside the free plan's 1,000 requests/month.
+currency in the app on the success path; a failed fetch is retried on the next
+call, so a sustained outage can consume quota faster.
 
 The ECB feed (`api.frankfurter.dev`) was rejected: it publishes ~30 currencies
 and none of the Gulf ones, which would leave the `ar` locale without rates.
@@ -79,7 +80,8 @@ value into shell history you keep, and do not commit it.
 - Visit `/pricing` from outside the Philippines (or with a proxy). A second
   muted line appears under the price: `≈ $4.30 · billed in PHP`.
 - With the key unset, that line is simply absent and the PHP price renders
-  alone — the feature fails closed, it never shows a wrong number.
+  alone. This fail-closed guarantee covers the price estimate only; the
+  workspace roll-up falls back to summing raw amounts.
 - Server logs print `[fx] Failed to fetch reference rates, currency conversion
   disabled: …` when the API call itself fails.
 
@@ -105,15 +107,14 @@ workspace currency:
 | Client detail modal | `getClientByIdAction` → `getClientById(…, rates)` |
 | Dashboard top clients | `getTopClients(wid, 5, rates)` — ranks off the converted ledger, since the stored field is not a valid sort key for a mixed-currency workspace |
 
-Single-currency workspaces skip all of it: `getConvertedClientTotals` returns
-`null` and `getTopClients` keeps its indexed `sort({ totalSpent: -1 })`, so the
-common path costs nothing extra.
+Single-currency workspaces skip the conversion, but still pay the two
+`distinct` queries that resolve the rate map (memoized per workspace for 5
+minutes — see `getWorkspaceRateMap`). `getTopClients` keeps its
+`sort({ totalSpent: -1 })` — there is no `{workspaceId, totalSpent}` index on
+`Client`.
 
 ## Known limitations
 
 - **Rates are indicative.** Daily reference rates, not the rate a card issuer
   or Lemon Squeezy applies. Never present a converted figure as an amount
   charged.
-- **The rate map is resolved per dashboard render** (two `distinct` queries,
-  workspace-scoped). If dashboard latency becomes a concern, cache the map per
-  workspace rather than dropping the conversion.
