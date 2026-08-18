@@ -53,6 +53,15 @@ export function parseEntry(kind: ContentKind, slug: string, raw: string): Conten
   return { ...parsed.data, kind, slug, body: content };
 }
 
-export function listEntries(_kind: ContentKind): ContentEntry[] {
-  return [];
+export function listEntries(kind: ContentKind): ContentEntry[] {
+  const dir = join(process.cwd(), "content", kind);
+  const names = readdirSync(dir);
+
+  return names.map((name) =>
+    parseEntry(kind, name.slice(0, -".mdx".length), readFileSync(join(dir, name), "utf8"))
+  );
+}
+
+export function getEntry(kind: ContentKind, slug: string): ContentEntry | null {
+  return listEntries(kind).find((entry) => entry.slug === slug) ?? null;
 }

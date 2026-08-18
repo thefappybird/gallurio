@@ -66,4 +66,11 @@ describe("listEntries()", () => {
   it("reads the .mdx files on disk", () => {
     expect(listEntries("compare").length).toBeGreaterThan(0);
   });
+
+  it("looks an entry up by slug", () => {
+    const first = listEntries("compare")[0];
+
+    expect(getEntry("compare", first.slug)?.title).toBe(first.title);
+    expect(getEntry("compare", "no-such-page")).toBeNull();
+  });
 });
