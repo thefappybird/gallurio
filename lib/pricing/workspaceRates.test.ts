@@ -56,4 +56,19 @@ describe("getWorkspaceRateMap", () => {
 
     expect(map).toEqual({ PHP: 1, USD: 58, AED: 15.8 });
   });
+
+  it("never includes a currency that only another workspace stores", async () => {
+    getFxRateMock.mockImplementation(async (from: string) => (from === "EUR" ? 65 : null));
+    const otherWorkspaceId = new mongoose.Types.ObjectId();
+    const { Booking } = await import("@/lib/db/models");
+    await Booking.collection.insertMany([
+      { workspaceId: otherWorkspaceId, amount: { total: 100, currency: "EUR" } },
+    ]);
+
+    const { getWorkspaceRateMap } = await import("./workspaceRates");
+    const map = await getWorkspaceRateMap(WORKSPACE_ID, "PHP");
+
+    expect(map).toEqual({ PHP: 1 });
+    expect(map.EUR).toBeUndefined();
+  });
 });

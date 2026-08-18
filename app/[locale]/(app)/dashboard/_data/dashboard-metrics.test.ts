@@ -80,6 +80,29 @@ describe("getTopClients — multi-currency roll-up", () => {
     expect(top.map((c) => c.name)).toEqual(["Overseas Studio", "Local Studio"]);
     expect(top[0].totalSpent).toBe(200 * 58);
   });
+
+  it("never ranks another workspace's clients", async () => {
+    const ws = new Types.ObjectId();
+    const otherWs = new Types.ObjectId();
+    const otherClient = await Client.create({
+      workspaceId: otherWs,
+      name: "Other Workspace Client",
+      totalSpent: 999_999,
+    });
+    await Transaction.create([
+      {
+        workspaceId: otherWs,
+        clientId: otherClient._id,
+        amount: 999_999,
+        currency: "USD",
+        type: "deposit",
+      },
+    ]);
+
+    const top = await getTopClients(ws, 5, { PHP: 1, USD: 58 });
+
+    expect(top.map((c) => c.name)).not.toContain("Other Workspace Client");
+  });
 });
 
 describe("getKpiSnapshot — multi-currency roll-up", () => {
@@ -94,5 +117,36 @@ describe("getKpiSnapshot — multi-currency roll-up", () => {
     const snapshot = await getKpiSnapshot(ws, { PHP: 1, USD: 58 });
 
     expect(snapshot.revenueThisMonth).toBe(1000 + 10 * 58);
+  });
+
+  it("computes outstandingBalance across mismatched booking and transaction currencies", async () => {
+    const ws = new Types.ObjectId();
+    const { Booking } = await import("@/lib/db/models");
+    const booking = await Booking.create({
+      workspaceId: ws,
+      teamId: new Types.ObjectId(),
+      clientId: new Types.ObjectId(),
+      clientName: "Test Client",
+      title: "Test Booking",
+      status: "booked",
+      sessions: [{ startAt: new Date(), endAt: new Date(Date.now() + 3_600_000) }],
+      firstSessionStart: new Date(),
+      lastSessionEnd: new Date(Date.now() + 3_600_000),
+      amount: { total: 100, deposit: 0, currency: "USD" },
+    });
+    await Transaction.create([
+      {
+        workspaceId: ws,
+        bookingId: booking._id,
+        amount: 1000,
+        currency: "PHP",
+        type: "deposit",
+        method: "cash",
+      },
+    ]);
+
+    const snapshot = await getKpiSnapshot(ws, { PHP: 1, USD: 58 });
+
+    expect(snapshot.outstandingBalance).toBe(100 * 58 - 1000);
   });
 });

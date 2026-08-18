@@ -50,4 +50,26 @@ describe("getConvertedClientTotals", () => {
     expect(totals?.get(String(clientA))).toBe(5_000 + 100 * 58);
     expect(totals?.get(String(clientB))).toBe(20 * 58);
   });
+
+  it("never returns another workspace's client spend", async () => {
+    const otherWorkspaceId = new Types.ObjectId();
+    const clientOfOtherWorkspace = new Types.ObjectId();
+    await Transaction.create([
+      {
+        workspaceId: otherWorkspaceId,
+        clientId: clientOfOtherWorkspace,
+        amount: 999_999,
+        currency: "USD",
+        type: "deposit",
+      },
+    ]);
+
+    const totals = await getConvertedClientTotals(workspaceId, [clientOfOtherWorkspace], {
+      PHP: 1,
+      USD: 58,
+    });
+
+    expect(totals?.get(String(clientOfOtherWorkspace))).toBeUndefined();
+    expect(totals?.size).toBe(0);
+  });
 });
