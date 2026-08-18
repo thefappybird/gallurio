@@ -462,6 +462,15 @@ describe("listClients — multi-currency totalSpent", () => {
     expect(items[0].totalSpent).toBe(5_000);
   });
 
+  it("falls back to the stored totalSpent for a pre-ledger client with no Transaction rows", async () => {
+    const client = await seedClient(workspaceId, { name: "Legacy Spender" });
+    await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 250_000 } });
+
+    const { items } = await listClients({ workspaceId, rates: { PHP: 1, USD: 58 } });
+
+    expect(items[0].totalSpent).toBe(250_000);
+  });
+
   it("converts totalSpent on the single-client lookup too", async () => {
     const client = await seedClient(workspaceId, { name: "Overseas Studio" });
     await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 100 } });

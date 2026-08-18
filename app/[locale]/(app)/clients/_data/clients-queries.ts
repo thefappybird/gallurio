@@ -102,9 +102,11 @@ export async function listClients(
     const s = statsById.get(String(c._id));
     return {
       ...c,
-      // With a rate map, the ledger is authoritative — a client with no
-      // spend rows has spent nothing, so don't fall back to the raw field.
-      totalSpent: convertedTotals ? (convertedTotals.get(String(c._id)) ?? 0) : c.totalSpent,
+      // With a rate map, the ledger is authoritative for clients it covers.
+      // A client with no Transaction rows predates the ledger (legacy seed
+      // data / pre-multi-currency), so fall back to the stored (unconverted)
+      // totalSpent rather than rendering 0 for real money.
+      totalSpent: convertedTotals ? (convertedTotals.get(String(c._id)) ?? c.totalSpent) : c.totalSpent,
       bookingsCount: s?.count ?? 0,
       lastBookingAt: s?.lastStart ?? null,
     };
@@ -146,7 +148,8 @@ export async function getClientById(
 
   return {
     ...c,
-    totalSpent: convertedTotals ? (convertedTotals.get(String(c._id)) ?? 0) : c.totalSpent,
+    // Unconverted fallback for pre-ledger clients — see the note in listClients.
+    totalSpent: convertedTotals ? (convertedTotals.get(String(c._id)) ?? c.totalSpent) : c.totalSpent,
     bookingsCount: stats[0]?.count ?? 0,
     lastBookingAt: stats[0]?.lastStart ?? null,
   };
