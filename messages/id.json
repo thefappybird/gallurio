@@ -16,7 +16,9 @@
       "terms": "Ketentuan",
       "privacy": "Privasi",
       "refunds": "Pengembalian Dana",
-      "contact": "Kontak"
+      "contact": "Kontak",
+      "comparisons": "Perbandingan",
+      "writing": "Tulisan"
     },
     "metadata": {
       "title": "Gallurio — Alat Portfolio, Pemesanan, dan Klien untuk Bisnis Kreatif",
@@ -575,6 +577,46 @@
         "rateLimited": "Terlalu banyak permintaan. Tunggu beberapa menit dan coba lagi.",
         "generic": "Terjadi kesalahan. Silakan coba lagi."
       }
+    },
+    "compare": {
+      "metadata": {
+        "title": "Perbandingan Gallurio dengan alat yang digunakan bisnis acara",
+        "description": "Bagaimana Gallurio dibandingkan dengan HoneyBook, Dubsado, Pixieset, Squarespace, Wix, Notion, Google Sheets, Google Forms, 17hats, dan Studio Ninja — harga, fitur, dan cocok untuk siapa masing-masing alat."
+      },
+      "breadcrumb": {
+        "home": "Beranda",
+        "index": "Perbandingan"
+      },
+      "index": {
+        "eyebrow": "Perbandingan",
+        "headline": "Gallurio dibandingkan alat yang Anda gunakan sekarang",
+        "intro1": "Sebagian besar bisnis acara beralih ke Gallurio setelah mereka melampaui spreadsheet, CRM umum yang dibuat untuk industri lain, atau alat galeri yang sejak awal tidak menangani pemesanan. Perbandingan ini memaparkan trade-off yang jujur — harga, apa yang dicakup masing-masing alat, dan apa yang tidak — terhadap alat spesifik yang biasa ditinggalkan orang.",
+        "intro2": "Tidak satu pun dari perbandingan ini berpura-pura Gallurio menang di semua hal. Jika alat lain melakukan sesuatu yang tidak dilakukan Gallurio, itu dinyatakan dengan jelas, agar Anda bisa memilih berdasarkan kebutuhan bisnis Anda yang sebenarnya."
+      },
+      "categories": {
+        "crm": "CRM & manajemen klien",
+        "website-builder": "Pembuat situs web",
+        "gallery-delivery": "Alat galeri & pengiriman",
+        "record-keeping": "Spreadsheet & pencatatan",
+        "intake": "Alat inquiry & intake"
+      },
+      "readMore": "Baca perbandingannya"
+    },
+    "blog": {
+      "metadata": {
+        "title": "Tulisan — Gallurio",
+        "description": "Catatan praktis tentang harga, pemesanan, dan menjalankan bisnis acara — dari tim di balik Gallurio."
+      },
+      "breadcrumb": {
+        "home": "Beranda",
+        "index": "Tulisan"
+      },
+      "index": {
+        "eyebrow": "Tulisan",
+        "headline": "Catatan seputar menjalankan bisnis acara",
+        "intro": "Tulisan singkat dan praktis tentang harga, intake klien, dan sisi operasional fotografi, perencanaan, dan pekerjaan acara lainnya — hal-hal yang tidak muat dalam daftar fitur."
+      },
+      "readMore": "Baca selengkapnya"
     }
   },
   "auth": {

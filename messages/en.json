@@ -16,7 +16,9 @@
       "terms": "Terms",
       "privacy": "Privacy",
       "refunds": "Refunds",
-      "contact": "Contact"
+      "contact": "Contact",
+      "comparisons": "Comparisons",
+      "writing": "Writing"
     },
     "metadata": {
       "title": "Gallurio | Portfolio, Booking, and Client Tools for Creative Businesses",
@@ -575,6 +577,46 @@
         "rateLimited": "Too many requests. Please wait a few minutes and try again.",
         "generic": "Something went wrong. Please try again."
       }
+    },
+    "compare": {
+      "metadata": {
+        "title": "Gallurio compared to the tools event businesses actually use",
+        "description": "How Gallurio stacks up against HoneyBook, Dubsado, Pixieset, Squarespace, Wix, Notion, Google Sheets, Google Forms, 17hats, and Studio Ninja — price, features, and who each tool actually fits."
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "index": "Comparisons"
+      },
+      "index": {
+        "eyebrow": "Comparisons",
+        "headline": "Gallurio vs. the tools you're using now",
+        "intro1": "Most event businesses land on Gallurio after outgrowing a spreadsheet, a general CRM built for a different industry, or a gallery tool that never handled bookings in the first place. These comparisons lay out the honest trade-offs — price, what each tool covers, and what it does not — against the specific tools people switch from.",
+        "intro2": "None of these pretend Gallurio wins on every point. Where another tool does something Gallurio does not, that's stated plainly, so you can pick based on what your business actually needs."
+      },
+      "categories": {
+        "crm": "CRM & client management",
+        "website-builder": "Website builders",
+        "gallery-delivery": "Gallery & delivery tools",
+        "record-keeping": "Spreadsheets & record-keeping",
+        "intake": "Inquiry & intake tools"
+      },
+      "readMore": "Read the comparison"
+    },
+    "blog": {
+      "metadata": {
+        "title": "Writing — Gallurio",
+        "description": "Practical notes on pricing, booking, and running an event business — from the team building Gallurio."
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "index": "Writing"
+      },
+      "index": {
+        "eyebrow": "Writing",
+        "headline": "Notes on running an event business",
+        "intro": "Short, practical pieces on pricing, client intake, and the operational side of photography, planning, and other event work — the stuff that doesn't fit in a feature list."
+      },
+      "readMore": "Read more"
     }
   },
   "auth": {

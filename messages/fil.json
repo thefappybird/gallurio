@@ -16,7 +16,9 @@
       "terms": "Mga Tuntunin",
       "privacy": "Privacy",
       "refunds": "Refund",
-      "contact": "Makipag-ugnayan"
+      "contact": "Makipag-ugnayan",
+      "comparisons": "Mga Paghahambing",
+      "writing": "Mga Artikulo"
     },
     "metadata": {
       "title": "Gallurio — Mga Tool sa Portfolio, Booking, at Client para sa Creative Business",
@@ -575,6 +577,46 @@
         "rateLimited": "Masyadong maraming request. Maghintay ng ilang minuto at subukang muli.",
         "generic": "May nangyaring mali. Pakisubukan muli."
       }
+    },
+    "compare": {
+      "metadata": {
+        "title": "Paghahambing ng Gallurio sa mga tool na ginagamit ng mga event business",
+        "description": "Paano naihahambing ang Gallurio sa HoneyBook, Dubsado, Pixieset, Squarespace, Wix, Notion, Google Sheets, Google Forms, 17hats, at Studio Ninja — presyo, feature, at kung kanino talaga bagay ang bawat isa."
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "index": "Mga Paghahambing"
+      },
+      "index": {
+        "eyebrow": "Mga Paghahambing",
+        "headline": "Gallurio kumpara sa mga ginagamit mong tool ngayon",
+        "intro1": "Karamihan sa mga event business ay napupunta sa Gallurio pagkatapos malagpasan ang spreadsheet, isang general CRM na para sa ibang industriya, o gallery tool na hindi talaga ginawa para sa booking. Inilalatag ng mga paghahambing na ito ang totoong trade-off — presyo, ano ang kaya ng bawat tool, at ano ang hindi — laban sa mga partikular na tool na madalas lipatan ng mga tao.",
+        "intro2": "Wala sa mga ito ang nagkukunwaring panalo ang Gallurio sa lahat ng bagay. Kapag may nagagawa ang ibang tool na hindi kaya ng Gallurio, sinasabi iyon nang tapat, para makapili ka batay sa talagang kailangan ng negosyo mo."
+      },
+      "categories": {
+        "crm": "CRM at pamamahala ng client",
+        "website-builder": "Website builder",
+        "gallery-delivery": "Gallery at delivery tool",
+        "record-keeping": "Spreadsheet at record-keeping",
+        "intake": "Inquiry at intake tool"
+      },
+      "readMore": "Basahin ang paghahambing"
+    },
+    "blog": {
+      "metadata": {
+        "title": "Mga Sulatin — Gallurio",
+        "description": "Praktikal na tala tungkol sa pagpepresyo, booking, at pagpapatakbo ng event business — mula sa team sa likod ng Gallurio."
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "index": "Mga Artikulo"
+      },
+      "index": {
+        "eyebrow": "Mga Artikulo",
+        "headline": "Mga tala sa pagpapatakbo ng event business",
+        "intro": "Maiikli at praktikal na sanaysay tungkol sa pagpepresyo, client intake, at ang operational side ng photography, planning, at iba pang event work — ang mga bagay na hindi kasya sa isang feature list."
+      },
+      "readMore": "Basahin pa"
     }
   },
   "auth": {

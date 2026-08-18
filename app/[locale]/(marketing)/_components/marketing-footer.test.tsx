@@ -22,6 +22,8 @@ describe("MarketingFooter", () => {
       "/portfolio-maker-demo",
       "/about",
       "/pricing",
+      "/compare",
+      "/blog",
       "/book-demo",
       "/terms",
       "/privacy",
