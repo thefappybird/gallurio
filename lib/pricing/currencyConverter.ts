@@ -4,23 +4,26 @@ import { getFxRate } from "./fxRates";
 export type RateMap = Record<string, number>;
 
 // Resolves the multipliers needed to roll a set of currencies up into
-// `target`. The target itself never costs a lookup.
+// `target`. The target itself never costs a lookup. All-or-nothing: if any
+// requested foreign currency can't be rated (timeout, rate-limited, etc.),
+// returns `{ [to]: 1 }` so callers take the single-currency (unconverted)
+// path rather than silently summing a mix of converted and raw amounts.
 export async function buildRateMap(
   target: string,
   currencies: readonly string[]
 ): Promise<RateMap> {
   const to = target.toUpperCase();
-  const map: RateMap = {};
+  const foreign = [...new Set(currencies.map((c) => c.toUpperCase()))].filter((c) => c !== to);
 
-  for (const raw of new Set(currencies.map((c) => c.toUpperCase()))) {
-    if (raw === to) {
-      map[raw] = 1;
-      continue;
-    }
-    const rate = await getFxRate(raw, to);
-    if (rate !== null) map[raw] = rate;
-  }
+  if (foreign.length === 0) return { [to]: 1 };
 
+  const rates = await Promise.all(foreign.map((c) => getFxRate(c, to)));
+  if (rates.some((r) => r === null)) return { [to]: 1 };
+
+  const map: RateMap = { [to]: 1 };
+  foreign.forEach((c, i) => {
+    map[c] = rates[i] as number;
+  });
   return map;
 }
 

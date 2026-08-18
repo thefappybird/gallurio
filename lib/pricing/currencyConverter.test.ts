@@ -28,14 +28,26 @@ describe("buildRateMap", () => {
     expect(getFxRateMock).not.toHaveBeenCalled();
   });
 
-  it("looks up each foreign currency once and omits ones with no rate", async () => {
+  it("is all-or-nothing: any unresolved currency drops the whole map to target-only", async () => {
+    getFxRateMock.mockImplementation(async (from: string) =>
+      from === "USD" ? null : from === "AED" ? 15.8 : null
+    );
+    const { buildRateMap, isSingleCurrency } = await import("./currencyConverter");
+
+    const map = await buildRateMap("PHP", ["PHP", "USD", "AED"]);
+
+    expect(map).toEqual({ PHP: 1 });
+    expect(isSingleCurrency(map)).toBe(true);
+  });
+
+  it("resolves every foreign currency when all rates succeed", async () => {
     getFxRateMock.mockImplementation(async (from: string) => (from === "USD" ? 58 : null));
     const { buildRateMap } = await import("./currencyConverter");
 
-    const map = await buildRateMap("PHP", ["PHP", "USD", "USD", "XYZ"]);
+    const map = await buildRateMap("PHP", ["PHP", "USD", "USD"]);
 
     expect(map).toEqual({ PHP: 1, USD: 58 });
-    expect(getFxRateMock).toHaveBeenCalledTimes(2);
+    expect(getFxRateMock).toHaveBeenCalledTimes(1);
   });
 });
 
