@@ -57,4 +57,25 @@ describe("getFxRate", () => {
     const { getFxRate } = await import("./fxRates");
     expect(await getFxRate("PHP", "USD")).toBeNull();
   });
+
+  it("negative-caches a failed fetch so calls within the TTL don't refetch", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: false, status: 429 }) as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    const { getFxRate } = await import("./fxRates");
+
+    await getFxRate("PHP", "USD");
+    await getFxRate("PHP", "USD");
+    await getFxRate("PHP", "USD");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("dedupes concurrent calls on a cold cache into a single fetch", async () => {
+    const fetchMock = stubRates({ USD: 1, PHP: 58 });
+    const { getFxRate } = await import("./fxRates");
+
+    await Promise.all([getFxRate("USD", "PHP"), getFxRate("USD", "PHP")]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

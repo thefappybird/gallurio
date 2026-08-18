@@ -12,12 +12,18 @@ import { env } from "@/lib/env";
 // amount rather than a wrong converted number.
 const ENDPOINT = "https://openexchangerates.org/api/latest.json";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // rates publish once a day
+const NEGATIVE_CACHE_TTL_MS = 60 * 1000; // don't hammer the API while it's down
 const TIMEOUT_MS = 3000;
 const BASE = "USD";
 
 type RateTable = Record<string, number>;
 
 const cache = new Map<string, { rates: RateTable; expiresAt: number }>();
+// Failures are negative-cached for a short TTL so a down/rate-limited upstream
+// doesn't get re-hit on every render. Concurrent misses share one in-flight
+// fetch instead of each issuing their own request.
+let failedUntil = 0;
+let inFlight: Promise<RateTable | null> | null = null;
 
 async function getRateTable(): Promise<RateTable | null> {
   const cached = cache.get(BASE);
@@ -26,26 +32,37 @@ async function getRateTable(): Promise<RateTable | null> {
   const appId = env.OPENEXCHANGERATES_APP_ID;
   if (!appId) return null;
 
-  try {
-    const res = await fetch(`${ENDPOINT}?app_id=${encodeURIComponent(appId)}`, {
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+  if (failedUntil > Date.now()) return null;
+
+  if (inFlight) return inFlight;
+
+  inFlight = (async () => {
+    try {
+      const res = await fetch(`${ENDPOINT}?app_id=${encodeURIComponent(appId)}`, {
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const body = (await res.json()) as { rates?: RateTable };
+      if (typeof body.rates?.USD !== "number") {
+        throw new Error("Unexpected response shape");
+      }
+      cache.set(BASE, { rates: body.rates, expiresAt: Date.now() + CACHE_TTL_MS });
+      return body.rates;
+    } catch (err) {
+      console.error(
+        "[fx] Failed to fetch reference rates, currency conversion disabled:",
+        err instanceof Error ? err.message : err
+      );
+      failedUntil = Date.now() + NEGATIVE_CACHE_TTL_MS;
+      return null;
+    } finally {
+      inFlight = null;
     }
-    const body = (await res.json()) as { rates?: RateTable };
-    if (typeof body.rates?.USD !== "number") {
-      throw new Error("Unexpected response shape");
-    }
-    cache.set(BASE, { rates: body.rates, expiresAt: Date.now() + CACHE_TTL_MS });
-    return body.rates;
-  } catch (err) {
-    console.error(
-      "[fx] Failed to fetch reference rates, currency conversion disabled:",
-      err instanceof Error ? err.message : err
-    );
-    return null;
-  }
+  })();
+
+  return inFlight;
 }
 
 // Returns how many units of `target` one unit of `base` buys, or null when the
