@@ -19,7 +19,10 @@ afterAll(async () => {
   await stopInMemoryMongo();
 });
 
-function hasIndex(indexes: { key: Record<string, number> }[], key: Record<string, number>) {
+function hasIndex(
+  indexes: { key: Record<string, unknown> }[],
+  key: Record<string, number>
+) {
   return indexes.some((i) => JSON.stringify(i.key) === JSON.stringify(key));
 }
 
