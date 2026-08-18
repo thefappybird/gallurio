@@ -46,6 +46,10 @@ export async function GET() {
         link(`/compare/${entry.slug}`, entry.title, entry.description)
       )
     ),
+    section(
+      "Writing",
+      listEntries("blog").map((entry) => link(`/blog/${entry.slug}`, entry.title, entry.description))
+    ),
     section("Policies", [
       link("/privacy", "Privacy policy", "what data is held and why"),
       link("/terms", "Terms", "terms of service"),

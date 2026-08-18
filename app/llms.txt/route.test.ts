@@ -17,4 +17,10 @@ describe("GET /llms.txt", () => {
     expect(body).toMatch(/Pricing: .*250.* per month or .*2,?500.* per year/);
     expect(body).toContain("billed in");
   });
+
+  it("lists the blog content under a Writing section", async () => {
+    const body = await (await GET()).text();
+
+    expect(body).toContain("/blog/how-to-price-event-photography-packages");
+  });
 });
