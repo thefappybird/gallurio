@@ -206,19 +206,25 @@ Two follow-ups, neither blocking:
   settings toggle, and the SEO arithmetic should be re-examined first — every workspace that
   switches it off is a backlink removed.
 
-## 5. /blog was descoped from this branch
+## 5. The blog section
 
-The original plan paired a `/blog` section with `/compare`. It shipped without one, deliberately:
-there is no blog content written, and an empty section is worse than no section — it wastes crawl
-budget and looks abandoned.
+Five posts ship in `content/blog/`, targeting problem-intent searches rather than competitor names:
+pricing packages, taking deposits, client onboarding, portfolio pages that convert, and choosing
+between a website builder and a booking system. This is the larger half of the traffic opportunity —
+comparison pages only reach people already searching a competitor.
 
-What exists: `lib/content/entries.ts` already accepts `kind: "blog"` and reads `content/blog/*.mdx`.
-Adding the section is a `content/blog/` directory plus two routes mirroring `/compare`, and both the
-sitemap and `llms.txt` pick it up from the same index with no further wiring.
+They are listed in `llms.txt` and `/blog` is in the sitemap's static paths. Two things remain: the
+per-post sitemap entries, and the `/blog` routes themselves.
 
-One trap to know about: `listEntries("blog")` throws today because `content/blog/` does not exist —
-`readdirSync` on a missing directory. Nothing calls it, so nothing breaks, but create the directory
-in the same change that first calls it.
+Rules for future posts, carried from these five:
+- Useful to someone who never buys. They rank because they answer the question.
+- No invented statistics — no percentages, no "studies show". Express magnitude with plain reasoning.
+- Say plainly what Gallurio does **not** do whenever a post touches it: no contracts, no
+  e-signatures, no card processing, no automated email sequences, no scheduling links. It records
+  that a payment happened; it does not take the payment.
+- At most one Gallurio mention, near the end, in a paragraph that still gives the tool-agnostic
+  principle. Use `<GallurioPrice />` for any price — never write the number.
+- English only. The article bodies are not translated.
 
 ## 6. Open items
 
