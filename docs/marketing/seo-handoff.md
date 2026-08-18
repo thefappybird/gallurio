@@ -184,7 +184,25 @@ r/UAE - r/india - r/southafrica
 
 ---
 
-## 4. Open items
+## 4. "Powered by Gallurio" conflicts with an advertised Pro feature
+
+Found while implementing. `messages/en.json` already sells
+`plans.pro.features.removeBranding` — **"Remove Gallurio branding"** — as a Pro plan feature. The
+plan for this branch was "mark on all plans, removal toggle unbuilt," which would contradict copy
+that is already on the pricing page.
+
+It also changes the SEO arithmetic. If most paying customers exercise the removal, the backlink
+asset is limited to free and expired workspaces, which is the opposite of the intent.
+
+Recommended resolution, and what the branch assumes unless overridden: **the mark renders by
+default for every workspace, and Pro keeps the advertised ability to switch it off.** That honours
+what has been sold, keeps the link on free and trial workspaces where most new signups sit, and
+leaves the decision with the customer rather than removing it silently.
+
+The alternative — dropping `removeBranding` from the Pro feature list — is a pricing-page change
+and a promise walked back, so it should not happen without a deliberate call.
+
+## 5. Open items
 
 - Confirm Caddy on the VPS does not strip or 403 AI-crawler user agents before requests reach Next
   (`docs/modules/hosting-ops.md`). An allow rule in `robots.txt` means nothing if the edge rejects
