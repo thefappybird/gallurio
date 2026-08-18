@@ -15,6 +15,12 @@ afterEach(async () => {
   await clearCollections();
 });
 
+// The sitemap also carries the static marketing and comparison URLs, which
+// these cases are not about.
+async function tenantEntries() {
+  return (await sitemap()).filter((entry) => entry.url.includes("/w/"));
+}
+
 function makePublishedWorkspace(slug: string, overrides: Record<string, unknown> = {}) {
   return {
     slug,
@@ -30,10 +36,17 @@ function makePublishedWorkspace(slug: string, overrides: Record<string, unknown>
 }
 
 describe("sitemap()", () => {
+  it("lists the marketing pages and the comparison content", async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+
+    expect(urls).toContain("http://localhost:3000/pricing");
+    expect(urls).toContain("http://localhost:3000/compare/gallurio-vs-honeybook");
+  });
+
   it("yields two entries per published workspace with correct URLs and priorities", async () => {
     await Workspace.create(makePublishedWorkspace("alpha-studio"));
 
-    const entries = await sitemap();
+    const entries = await tenantEntries();
 
     expect(entries).toHaveLength(2);
 
@@ -62,7 +75,7 @@ describe("sitemap()", () => {
       publicPage: { publishedAt: null, data: { home: null, gallery: null } },
     });
 
-    const entries = await sitemap();
+    const entries = await tenantEntries();
     expect(entries).toHaveLength(0);
   });
 
@@ -78,7 +91,7 @@ describe("sitemap()", () => {
       })
     );
 
-    const entries = await sitemap();
+    const entries = await tenantEntries();
     expect(entries).toHaveLength(2);
     expect(entries[0].lastModified).toEqual(ts);
     expect(entries[1].lastModified).toEqual(ts);
