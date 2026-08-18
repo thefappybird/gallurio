@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getDisplayPricing } from "@/lib/pricing/localPricing";
+import { marketingMetadata } from "@/lib/seo/metadata";
 import { PricingPlans } from "./_plans";
 
 const SUPPORT_EMAIL = "support@gallurio.com";
@@ -10,10 +11,12 @@ type Props = { params: Promise<{ locale: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "marketing.pricing.metadata" });
-  return {
-    title: { absolute: t("title") },
+  return marketingMetadata({
+    locale,
+    path: "/pricing",
+    title: t("title"),
     description: t("description"),
-  };
+  });
 }
 
 export default async function PricingPage({ params }: Props) {
