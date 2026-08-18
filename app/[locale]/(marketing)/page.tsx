@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CheckIcon } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { marketingMetadata } from "@/lib/seo/metadata";
 import { redirect } from "next/navigation";
 import { Link } from "@/lib/i18n/navigation";
 import { getAuthUser } from "@/lib/auth/session";
@@ -18,10 +19,12 @@ type Props = { params: Promise<{ locale: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "marketing.metadata" });
-  return {
-    title: { absolute: t("title") },
+  return marketingMetadata({
+    locale,
+    path: "/",
+    title: t("title"),
     description: t("description"),
-  };
+  });
 }
 
 export default async function Home({ params }: Props) {
