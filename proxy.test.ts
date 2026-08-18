@@ -73,6 +73,29 @@ describe("proxy", () => {
     );
   });
 
+  it("leaves the crawler-facing files and article routes unauthenticated", async () => {
+    await import("./proxy");
+
+    // The matcher does not exclude .txt or .xml, so these must be listed
+    // explicitly — otherwise a crawler asking for robots.txt is redirected to
+    // /sign-in and indexes nothing.
+    expect(authkitMiddlewareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        middlewareAuth: expect.objectContaining({
+          unauthenticatedPaths: expect.arrayContaining([
+            "/robots.txt",
+            "/sitemap.xml",
+            "/llms.txt",
+            "/compare",
+            "/compare/(.*)",
+            "/blog",
+            "/blog/(.*)",
+          ]),
+        }),
+      }),
+    );
+  });
+
   it("returns JSON 401 instead of leaking an authentication redirect to API fetches", async () => {
     const redirect = NextResponse.redirect(
       new URL("https://api.workos.com/user_management/authorize?client_id=test")

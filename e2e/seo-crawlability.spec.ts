@@ -96,7 +96,8 @@ test("a published portfolio links back to Gallurio", async ({ page }) => {
   const link = page.getByRole("link", { name: /powered by gallurio/i });
   await expect(link).toBeVisible();
   await expect(link).toHaveAttribute("href", "https://gallurio.com");
-  expect(await link.getAttribute("rel")).not.toContain("nofollow");
+  // Absent rel is the expected case and getAttribute returns null for it.
+  expect((await link.getAttribute("rel")) ?? "").not.toContain("nofollow");
 });
 
 for (const { name, width, height } of BREAKPOINTS) {
