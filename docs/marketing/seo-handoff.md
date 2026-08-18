@@ -206,7 +206,21 @@ Two follow-ups, neither blocking:
   settings toggle, and the SEO arithmetic should be re-examined first — every workspace that
   switches it off is a backlink removed.
 
-## 5. Open items
+## 5. /blog was descoped from this branch
+
+The original plan paired a `/blog` section with `/compare`. It shipped without one, deliberately:
+there is no blog content written, and an empty section is worse than no section — it wastes crawl
+budget and looks abandoned.
+
+What exists: `lib/content/entries.ts` already accepts `kind: "blog"` and reads `content/blog/*.mdx`.
+Adding the section is a `content/blog/` directory plus two routes mirroring `/compare`, and both the
+sitemap and `llms.txt` pick it up from the same index with no further wiring.
+
+One trap to know about: `listEntries("blog")` throws today because `content/blog/` does not exist —
+`readdirSync` on a missing directory. Nothing calls it, so nothing breaks, but create the directory
+in the same change that first calls it.
+
+## 6. Open items
 
 - Confirm Caddy on the VPS does not strip or 403 AI-crawler user agents before requests reach Next
   (`docs/modules/hosting-ops.md`). An allow rule in `robots.txt` means nothing if the edge rejects
