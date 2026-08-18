@@ -36,6 +36,10 @@ transactionSchema.index({ workspaceId: 1, bookingId: 1 });
 transactionSchema.index({ workspaceId: 1, paidAt: -1 });
 // Team revenue grouping (dashboard) — newest paid first within a team.
 transactionSchema.index({ workspaceId: 1, teamId: 1, paidAt: -1 });
+// Backs getWorkspaceRateMap's Transaction.distinct("currency", {workspaceId}).
+transactionSchema.index({ workspaceId: 1, currency: 1 });
+// Backs getConvertedClientTotals' {workspaceId, clientId:{$in:[...]}, type} match.
+transactionSchema.index({ workspaceId: 1, clientId: 1 });
 
 export type TransactionDoc = InferSchemaType<typeof transactionSchema> & {
   _id: mongoose.Types.ObjectId;

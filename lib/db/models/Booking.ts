@@ -106,6 +106,8 @@ bookingSchema.index({ workspaceId: 1, teamId: 1, status: 1, firstSessionStart: 1
 // existing firstSessionStart sort this lets MongoDB satisfy the filter+sort
 // via the index without a collection scan.
 bookingSchema.index({ workspaceId: 1, lastSessionEnd: 1, firstSessionStart: 1 });
+// Backs getWorkspaceRateMap's Booking.distinct("amount.currency", {workspaceId}).
+bookingSchema.index({ workspaceId: 1, "amount.currency": 1 });
 
 function recomputeDenormalized(
   sessions: { startAt: Date; endAt: Date }[]
