@@ -58,7 +58,7 @@ export function convertedAmountExpr(
   const branches = Object.entries(rates)
     .filter(([, rate]) => rate !== 1)
     .map(([currency, rate]) => ({
-      case: { $eq: [currencyField, currency] },
+      case: { $eq: [{ $toUpper: { $ifNull: [currencyField, ""] } }, currency] },
       then: { $multiply: [{ $ifNull: [amountField, 0] }, rate] },
     }));
 

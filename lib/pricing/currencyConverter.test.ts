@@ -89,6 +89,7 @@ describe("convertedAmountExpr", () => {
       { amount: 1000, currency: "PHP" },
       { amount: 10, currency: "USD" },
       { amount: 500 }, // legacy row with no currency — already workspace currency
+      { amount: 10, currency: "usd" }, // stored lowercase — no schema enum guarantees case
     ]);
 
     const [row] = await collection
@@ -102,6 +103,6 @@ describe("convertedAmountExpr", () => {
       ])
       .toArray();
 
-    expect(row.total).toBe(1000 + 10 * 58 + 500);
+    expect(row.total).toBe(1000 + 10 * 58 + 500 + 10 * 58);
   });
 });
