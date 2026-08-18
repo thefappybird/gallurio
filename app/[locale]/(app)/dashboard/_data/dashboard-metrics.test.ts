@@ -81,6 +81,31 @@ describe("getTopClients — multi-currency roll-up", () => {
     expect(top[0].totalSpent).toBe(200 * 58);
   });
 
+  it("still returns `limit` rows when a ranked client's Client doc is missing but a lower-ranked one can backfill", async () => {
+    const ws = new Types.ObjectId();
+    // 6 clients ranked 1..6 by spend; rank 3's Client doc gets deleted after
+    // its transaction is recorded (simulates a stale/orphaned ledger row).
+    const clients = await Client.create(
+      [1, 2, 3, 4, 5, 6].map((n) => ({ workspaceId: ws, name: `Client ${n}`, totalSpent: 0 }))
+    );
+    await Transaction.create(
+      clients.map((c, i) => ({
+        workspaceId: ws,
+        clientId: c._id,
+        amount: (6 - i) * 1000, // Client 1 highest, Client 6 lowest
+        currency: "PHP",
+        type: "deposit",
+        method: "cash",
+      }))
+    );
+    await Client.deleteOne({ _id: clients[2]._id }); // rank 3 ("Client 3")
+
+    const top = await getTopClients(ws, 5, { PHP: 1, USD: 58 });
+
+    expect(top).toHaveLength(5);
+    expect(top.map((c) => c.name)).toEqual(["Client 1", "Client 2", "Client 4", "Client 5", "Client 6"]);
+  });
+
   it("never ranks another workspace's clients", async () => {
     const ws = new Types.ObjectId();
     const otherWs = new Types.ObjectId();

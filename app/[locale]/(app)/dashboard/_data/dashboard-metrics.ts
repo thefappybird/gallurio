@@ -479,7 +479,11 @@ export async function getTopClients(workspaceId: WorkspaceId, limit = 5, rates: 
       },
     },
     { $sort: { totalSpent: -1 } },
-    { $limit: limit },
+    // Over-fetch: a ranked row can lose its Client doc (deleted/orphaned), and
+    // the join below drops those rows. limit*2 is a heuristic headroom, not a
+    // guarantee — a workspace with more than `limit` missing docs in a row can
+    // still under-return.
+    { $limit: limit * 2 },
   ]);
 
   if (rows.length === 0) return [];
@@ -489,10 +493,12 @@ export async function getTopClients(workspaceId: WorkspaceId, limit = 5, rates: 
     .lean();
   const nameById = new Map(clients.map((c) => [String(c._id), c.name]));
 
-  return rows.flatMap((r) => {
-    const name = nameById.get(String(r._id));
-    return name ? [{ _id: r._id, name, totalSpent: r.totalSpent }] : [];
-  });
+  return rows
+    .flatMap((r) => {
+      const name = nameById.get(String(r._id));
+      return name ? [{ _id: r._id, name, totalSpent: r.totalSpent }] : [];
+    })
+    .slice(0, limit);
 }
 
 export type EventTypeBreakdown = { eventType: string; count: number };
