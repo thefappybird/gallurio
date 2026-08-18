@@ -184,23 +184,27 @@ r/UAE - r/india - r/southafrica
 
 ---
 
-## 4. "Powered by Gallurio" conflicts with an advertised Pro feature
+## 4. "Powered by Gallurio" and the orphan removeBranding key
 
-Found while implementing. `messages/en.json` already sells
-`plans.pro.features.removeBranding` — **"Remove Gallurio branding"** — as a Pro plan feature. The
-plan for this branch was "mark on all plans, removal toggle unbuilt," which would contradict copy
-that is already on the pricing page.
+`plans.pro.features.removeBranding` — "Remove Gallurio branding" — exists in all five message
+catalogs, which initially looked like a conflict with putting the mark on every published page.
 
-It also changes the SEO arithmetic. If most paying customers exercise the removal, the backlink
-asset is limited to free and expired workspaces, which is the opposite of the intent.
+It is not. The key is orphaned: `PLAN_CATALOG`'s Pro entry lists `unlimitedBookings`,
+`publicPageControls`, `invoicePdfs`, `clientManagement` and `teamManagement`, and nothing else
+references `removeBranding`. It has never rendered on the pricing page or anywhere else, so no
+customer has been promised branding removal.
 
-Recommended resolution, and what the branch assumes unless overridden: **the mark renders by
-default for every workspace, and Pro keeps the advertised ability to switch it off.** That honours
-what has been sold, keeps the link on free and trial workspaces where most new signups sit, and
-leaves the decision with the customer rather than removing it silently.
+The branch therefore ships the mark on **every** published portfolio, free and paid alike, as a
+plain followed link — which is the behaviour that actually compounds, since paid workspaces are the
+ones with traffic worth passing back.
 
-The alternative — dropping `removeBranding` from the Pro feature list — is a pricing-page change
-and a promise walked back, so it should not happen without a deliberate call.
+Two follow-ups, neither blocking:
+
+- **Delete the orphan key** from all five catalogs, or implement what it promises. Leaving a
+  feature string lying around invites someone to wire it up by accident.
+- **If branding removal is ever sold**, it needs a real field on `Workspace.publicPage` plus a
+  settings toggle, and the SEO arithmetic should be re-examined first — every workspace that
+  switches it off is a backlink removed.
 
 ## 5. Open items
 

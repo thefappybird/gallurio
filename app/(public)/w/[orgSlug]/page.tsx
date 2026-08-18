@@ -10,6 +10,7 @@ import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageD
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
+import { PoweredByGallurio } from "./_components/PoweredByGallurio";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
@@ -190,6 +191,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
           the RSC-safe path (AsyncLocalStorage doesn't survive into async block render). */}
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Render data={homeData as any} config={puckConfig as any} metadata={renderMetadata} />
+      <PoweredByGallurio label={t("poweredBy")} />
     </>
   ));
 }
