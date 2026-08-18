@@ -29,7 +29,7 @@ Body.
 `;
 
     expect(() => parseEntry("compare", "gallurio-vs-dubsado", missingDescription)).toThrow(
-      /gallurio-vs-dubsado\.mdx.*description/s
+      /gallurio-vs-dubsado\.mdx[\s\S]*description/
     );
   });
 

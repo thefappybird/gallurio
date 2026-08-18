@@ -36,6 +36,12 @@ export function MarketingFooter() {
           <Link href="/pricing" className="hover:text-foreground">
             {tFooter("pricing")}
           </Link>
+          <Link href="/compare" className="hover:text-foreground">
+            {tFooter("comparisons")}
+          </Link>
+          <Link href="/blog" className="hover:text-foreground">
+            {tFooter("writing")}
+          </Link>
           <Link href="/book-demo" className="hover:text-foreground">
             {tFooter("bookDemo")}
           </Link>
