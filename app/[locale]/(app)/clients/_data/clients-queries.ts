@@ -16,8 +16,11 @@ export type ListClientsParams = {
   page?: number;        // 1-indexed, default 1
   limit?: number;       // 25 | 50 | 100, default 25
   // Workspace rate map. Supplied when the caller renders totalSpent labelled
-  // with the workspace currency — see the note on ClientListItem.
-  rates?: RateMap;
+  // with the workspace currency — see the note on ClientListItem. Accepts a
+  // pending promise so the caller can kick off getWorkspaceRateMap alongside
+  // its other queries instead of awaiting it first — it's only awaited here,
+  // right before it's needed.
+  rates?: RateMap | Promise<RateMap>;
 };
 
 // Booking metrics are derived at read time rather than denormalized onto the
@@ -76,28 +79,30 @@ export async function listClients(
 
   // One aggregation over the visible page to attach { count, lastStart } per
   // client. Bounded by `limit` so the worst case is ~100 client IDs in $in.
+  // Runs alongside the rate-map resolution + converted-totals lookup — both
+  // only need clientIds, not each other's result.
   const clientIds = items.map((c) => c._id);
-  const stats = await Booking.aggregate<{
-    _id: Types.ObjectId;
-    count: number;
-    lastStart: Date | null;
-  }>([
-    // Exclude draft bookings — an unapproved inquiry must not inflate a client's
-    // booking count or "last booking" date in the clients list.
-    { $match: { workspaceId, status: { $ne: "draft" }, clientId: { $in: clientIds } } },
-    {
-      $group: {
-        _id: "$clientId",
-        count: { $sum: 1 },
-        lastStart: { $max: "$firstSessionStart" },
+  const [stats, convertedTotals] = await Promise.all([
+    Booking.aggregate<{
+      _id: Types.ObjectId;
+      count: number;
+      lastStart: Date | null;
+    }>([
+      // Exclude draft bookings — an unapproved inquiry must not inflate a client's
+      // booking count or "last booking" date in the clients list.
+      { $match: { workspaceId, status: { $ne: "draft" }, clientId: { $in: clientIds } } },
+      {
+        $group: {
+          _id: "$clientId",
+          count: { $sum: 1 },
+          lastStart: { $max: "$firstSessionStart" },
+        },
       },
-    },
+    ]),
+    Promise.resolve(rates).then((r) => getConvertedClientTotals(workspaceId, clientIds, r)),
   ]);
 
   const statsById = new Map(stats.map((s) => [String(s._id), s]));
-  // Null for a single-currency workspace — the stored totalSpent is already
-  // correct there and costs no extra query.
-  const convertedTotals = await getConvertedClientTotals(workspaceId, clientIds, rates);
   const merged: ClientListItem[] = items.map((c) => {
     const s = statsById.get(String(c._id));
     return {
@@ -118,7 +123,7 @@ export async function listClients(
 export async function getClientById(
   workspaceId: WorkspaceId,
   clientId: string,
-  rates: RateMap = {}
+  rates: RateMap | Promise<RateMap> = {}
 ): Promise<ClientListItem | null> {
   if (!Types.ObjectId.isValid(clientId)) return null;
 
@@ -129,22 +134,23 @@ export async function getClientById(
 
   if (!c) return null;
 
-  const stats = await Booking.aggregate<{
-    _id: Types.ObjectId;
-    count: number;
-    lastStart: Date | null;
-  }>([
-    { $match: { workspaceId, clientId: c._id } },
-    {
-      $group: {
-        _id: "$clientId",
-        count: { $sum: 1 },
-        lastStart: { $max: "$firstSessionStart" },
+  const [stats, convertedTotals] = await Promise.all([
+    Booking.aggregate<{
+      _id: Types.ObjectId;
+      count: number;
+      lastStart: Date | null;
+    }>([
+      { $match: { workspaceId, clientId: c._id } },
+      {
+        $group: {
+          _id: "$clientId",
+          count: { $sum: 1 },
+          lastStart: { $max: "$firstSessionStart" },
+        },
       },
-    },
+    ]),
+    Promise.resolve(rates).then((r) => getConvertedClientTotals(workspaceId, [c._id], r)),
   ]);
-
-  const convertedTotals = await getConvertedClientTotals(workspaceId, [c._id], rates);
 
   return {
     ...c,

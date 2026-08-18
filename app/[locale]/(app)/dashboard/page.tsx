@@ -163,12 +163,15 @@ async function BookingsTab({
   range: DateRange;
   heatmapEndWeek?: string;
 }) {
-  const timeMode = await getUserTimeFormat();
-  const tz = resolveWorkspaceTimezone(workspace);
   // Bookings and payments may be recorded in a client's own currency. Resolve
   // the multipliers once here so every total below adds up in the workspace
-  // currency the cards are labelled with.
-  const rates = await getWorkspaceRateMap(wid, workspace.currency);
+  // currency the cards are labelled with — fetched alongside the unrelated
+  // time-format cookie read rather than serially before it.
+  const [timeMode, rates] = await Promise.all([
+    getUserTimeFormat(),
+    getWorkspaceRateMap(wid, workspace.currency),
+  ]);
+  const tz = resolveWorkspaceTimezone(workspace);
 
   const [
     kpi,
