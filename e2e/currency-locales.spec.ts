@@ -90,12 +90,14 @@ test.describe("2. ar RTL geometry", () => {
   }
 });
 
-// 3. Dark theme, en + ar, 1280px — the estimate must not disappear into the
-// dark card background. Theme is driven the same way next-themes reads it:
-// the "theme" localStorage key next-themes' blocking init script consumes on
-// first paint (attribute="class", so it lands as html.dark).
+// 3. Dark theme, all 5 locales at 1280px — the estimate must not disappear
+// into the dark card background. Contrast is width-independent, so the
+// breakpoint sweep stays with the light-theme suites above. Theme is driven
+// the same way next-themes reads it: the "theme" localStorage key
+// next-themes' blocking init script consumes on first paint
+// (attribute="class", so it lands as html.dark).
 test.describe("3. dark theme visibility", () => {
-  for (const locale of ["en", "ar"]) {
+  for (const locale of LOCALES) {
     test(`${locale} estimate stays visible against the dark card at 1280px`, async ({ page }) => {
       await page.addInitScript(() => {
         window.localStorage.setItem("theme", "dark");
