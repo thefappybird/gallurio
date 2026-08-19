@@ -16,7 +16,7 @@ import {
   type SupportedCountry,
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
-import { updateWorkspaceBusinessAction } from "../_actions";
+import { updateWorkspaceBusinessAction, previewCurrencyRestatementAction } from "../_actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,19 @@ import {
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
+
+// Mirrors CURRENCY_CHANGE_COOLDOWN_DAYS in lib/pricing/currencyRestatement.ts
+// (server-only, not importable from this client component) — used only to
+// project the unlock date shown in the confirm dialog before the change.
+const CURRENCY_CHANGE_COOLDOWN_DAYS = 90;
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
@@ -116,9 +128,15 @@ export function WorkspaceBusinessForm({
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false);
+  const [currencyPreviewCount, setCurrencyPreviewCount] = useState<number | null>(null);
 
   function handleCurrencySelectChange(next: SupportedCurrency) {
-    if (next !== currencyValue) setCurrencyDialogOpen(true);
+    if (next === currencyValue) return;
+    setCurrencyDialogOpen(true);
+    setCurrencyPreviewCount(null);
+    previewCurrencyRestatementAction().then((result) => {
+      if (!("error" in result)) setCurrencyPreviewCount(result.bookingsCount);
+    });
   }
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
@@ -315,6 +333,16 @@ export function WorkspaceBusinessForm({
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t("currencyConfirmTitle")}</AlertDialogTitle>
+                  {currencyPreviewCount !== null && (
+                    <AlertDialogDescription>
+                      {t("currencyConfirmBody", {
+                        count: currencyPreviewCount,
+                        date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+                          addDays(new Date(), CURRENCY_CHANGE_COOLDOWN_DAYS)
+                        ),
+                      })}
+                    </AlertDialogDescription>
+                  )}
                 </AlertDialogHeader>
               </AlertDialogContent>
             </AlertDialog>

@@ -119,6 +119,30 @@ describe("WorkspaceBusinessForm — currency change lock + restatement dialog", 
 
     expect(await screen.findByText("currencyConfirmTitle")).toBeInTheDocument();
   });
+
+  it("shows the previewed booking count in the confirm dialog body", async () => {
+    previewCurrencyRestatementAction.mockResolvedValueOnce({ bookingsCount: 3 });
+    render(<WorkspaceBusinessForm defaults={baseDefaults} locale="en" />);
+
+    const select = screen.getByLabelText("currency") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "SGD" } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/currencyConfirmBody/).textContent).toContain('"count":3');
+    });
+  });
+
+  it("includes the projected unlock date in the confirm dialog body", async () => {
+    previewCurrencyRestatementAction.mockResolvedValueOnce({ bookingsCount: 3 });
+    render(<WorkspaceBusinessForm defaults={baseDefaults} locale="en" />);
+
+    const select = screen.getByLabelText("currency") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "SGD" } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/currencyConfirmBody/).textContent).toMatch(/"date":/);
+    });
+  });
 });
 
 describe("WorkspaceBusinessForm — contact address LocationPicker", () => {
