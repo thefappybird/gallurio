@@ -179,7 +179,7 @@ describe("changeWorkspaceCurrency", () => {
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws?.currency).toBe("PHP");
     const usdBooking = await Booking.findById(usdBookingId).lean();
-    expect(usdBooking?.amount.fxTarget).toBe("PHP");
+    expect(usdBooking?.amount?.fxTarget).toBe("PHP");
     expect(usdBooking?.payments[0].fxTarget).toBe("PHP");
   });
 
@@ -233,8 +233,8 @@ describe("changeWorkspaceCurrency", () => {
 
     expect(result).toEqual({ ok: true, restated: true });
     const booking = await Booking.findById(bookingId).lean();
-    expect(booking?.amount.fxRate).toBe(1.35);
-    expect(booking?.amount.fxTarget).toBe("SGD");
+    expect(booking?.amount?.fxRate).toBe(1.35);
+    expect(booking?.amount?.fxTarget).toBe("SGD");
     expect(booking?.payments[0].fxRate).toBe(1.35);
     expect(booking?.payments[0].fxTarget).toBe("SGD");
     const tx = await Transaction.findOne({ bookingId }).lean();
@@ -293,7 +293,7 @@ describe("changeWorkspaceCurrency", () => {
     });
 
     const otherBooking = await Booking.findById(otherBookingId).lean();
-    expect(otherBooking?.amount.fxTarget).toBe("PHP");
+    expect(otherBooking?.amount?.fxTarget).toBe("PHP");
     expect(otherBooking?.payments[0].fxTarget).toBe("PHP");
     const otherWs = await Workspace.findById(otherWorkspaceId).lean();
     expect(otherWs?.currency).toBe("PHP");
