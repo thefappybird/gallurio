@@ -33,9 +33,9 @@ describe("getWorkspaceRateMap", () => {
     ]);
 
     const { getWorkspaceRateMap } = await import("./workspaceRates");
-    const map = await getWorkspaceRateMap(WORKSPACE_ID, "PHP");
+    const fx = await getWorkspaceRateMap(WORKSPACE_ID, "PHP");
 
-    expect(map).toEqual({ PHP: 1 });
+    expect(fx).toEqual({ rates: { PHP: 1 }, target: "PHP" });
     expect(getFxRateMock).not.toHaveBeenCalled();
   });
 
@@ -55,9 +55,9 @@ describe("getWorkspaceRateMap", () => {
     ]);
 
     const { getWorkspaceRateMap } = await import("./workspaceRates");
-    const map = await getWorkspaceRateMap(ws, "PHP");
+    const fx = await getWorkspaceRateMap(ws, "PHP");
 
-    expect(map).toEqual({ PHP: 1, USD: 58, AED: 15.8 });
+    expect(fx).toEqual({ rates: { PHP: 1, USD: 58, AED: 15.8 }, target: "PHP" });
   });
 
   it("never includes a currency that only another workspace stores", async () => {
@@ -69,10 +69,10 @@ describe("getWorkspaceRateMap", () => {
     ]);
 
     const { getWorkspaceRateMap } = await import("./workspaceRates");
-    const map = await getWorkspaceRateMap(WORKSPACE_ID, "PHP");
+    const fx = await getWorkspaceRateMap(WORKSPACE_ID, "PHP");
 
-    expect(map).toEqual({ PHP: 1 });
-    expect(map.EUR).toBeUndefined();
+    expect(fx).toEqual({ rates: { PHP: 1 }, target: "PHP" });
+    expect(fx.rates.EUR).toBeUndefined();
   });
 });
 
