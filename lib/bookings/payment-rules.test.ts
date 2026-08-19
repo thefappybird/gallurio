@@ -6,7 +6,17 @@ describe("normalizePayments", () => {
     const now = new Date("2026-07-05T00:00:00Z");
     const result = normalizePayments([{ price: 100, status: "paid" }], now);
     expect(result).toEqual([
-      { price: 100, status: "paid", createdAt: now, paidAt: now, title: "", method: "cash" },
+      {
+        price: 100,
+        status: "paid",
+        createdAt: now,
+        paidAt: now,
+        title: "",
+        method: "cash",
+        fxRate: null,
+        fxTarget: null,
+        fxAt: null,
+      },
     ]);
   });
 
@@ -18,7 +28,17 @@ describe("normalizePayments", () => {
       now
     );
     expect(result).toEqual([
-      { price: 50, status: "unpaid", createdAt: past, paidAt: null, title: "", method: "cash" },
+      {
+        price: 50,
+        status: "unpaid",
+        createdAt: past,
+        paidAt: null,
+        title: "",
+        method: "cash",
+        fxRate: null,
+        fxTarget: null,
+        fxAt: null,
+      },
     ]);
   });
 
@@ -35,6 +55,61 @@ describe("normalizePayments", () => {
   it("defaults a missing payment method to cash and preserves a selected method", () => {
     const result = normalizePayments([{ price: 100, status: "paid", method: "card" }, { price: 50, status: "paid" }]);
     expect(result.map((payment) => payment.method)).toEqual(["card", "cash"]);
+  });
+});
+
+describe("normalizePayments fx freeze", () => {
+  it("leaves fx fields null on an unpaid payment even when a freeze is supplied", () => {
+    const now = new Date("2026-07-05T00:00:00Z");
+    const result = normalizePayments(
+      [{ price: 100, status: "unpaid" }],
+      now,
+      { rate: 58, target: "USD" }
+    );
+    expect(result[0].fxRate).toBeNull();
+    expect(result[0].fxTarget).toBeNull();
+    expect(result[0].fxAt).toBeNull();
+  });
+
+  it("freezes the fx rate on a newly-paid payment when a freeze is supplied", () => {
+    const now = new Date("2026-07-05T00:00:00Z");
+    const result = normalizePayments(
+      [{ price: 100, status: "paid" }],
+      now,
+      { rate: 58, target: "USD" }
+    );
+    expect(result[0].fxRate).toBe(58);
+    expect(result[0].fxTarget).toBe("USD");
+    expect(result[0].fxAt).toEqual(now);
+  });
+
+  it("never recaptures an already-frozen paid payment, even with a different freeze supplied", () => {
+    const now = new Date("2026-07-05T00:00:00Z");
+    const frozenAt = new Date("2026-01-01T00:00:00Z");
+    const result = normalizePayments(
+      [
+        {
+          price: 100,
+          status: "paid",
+          fxRate: 55,
+          fxTarget: "EUR",
+          fxAt: frozenAt,
+        },
+      ],
+      now,
+      { rate: 58, target: "USD" }
+    );
+    expect(result[0].fxRate).toBe(55);
+    expect(result[0].fxTarget).toBe("EUR");
+    expect(result[0].fxAt).toEqual(frozenAt);
+  });
+
+  it("leaves fx fields null on a newly-paid payment when no freeze is supplied", () => {
+    const now = new Date("2026-07-05T00:00:00Z");
+    const result = normalizePayments([{ price: 100, status: "paid" }], now);
+    expect(result[0].fxRate).toBeNull();
+    expect(result[0].fxTarget).toBeNull();
+    expect(result[0].fxAt).toBeNull();
   });
 });
 
