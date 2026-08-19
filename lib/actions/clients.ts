@@ -198,8 +198,8 @@ export async function getClientByIdAction(
     const ctx = await requireOrg();
     await connectDB();
 
-    const rates = await getWorkspaceRateMap(ctx.workspace._id, ctx.workspace.currency ?? "PHP");
-    const c = await getClientById(ctx.workspace._id, clientId, rates);
+    const fx = await getWorkspaceRateMap(ctx.workspace._id, ctx.workspace.currency ?? "PHP");
+    const c = await getClientById(ctx.workspace._id, clientId, fx);
     if (!c) return { error: "client_not_found" };
 
     return {

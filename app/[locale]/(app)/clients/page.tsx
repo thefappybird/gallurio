@@ -57,7 +57,7 @@ export default async function ClientsPage({
   // client who paid in another currency has to be converted first. Kicked off
   // alongside the queries below rather than awaited first — listClients only
   // awaits it right before it's needed.
-  const ratesPromise = getWorkspaceRateMap(workspace._id, workspace.currency ?? "PHP");
+  const fxPromise = getWorkspaceRateMap(workspace._id, workspace.currency ?? "PHP");
 
   const [{ items, total }, availableTags] = await Promise.all([
     listClients({
@@ -68,7 +68,7 @@ export default async function ClientsPage({
       includeInactive: sp.includeInactive === "1",
       page,
       limit,
-      rates: ratesPromise,
+      fx: fxPromise,
     }),
     getWorkspaceTags(workspace._id),
   ]);
@@ -139,7 +139,7 @@ export default async function ClientsPage({
 
     let found: Awaited<ReturnType<typeof getClientById>> = null;
     try {
-      found = await getClientById(workspace._id, sp.client, ratesPromise);
+      found = await getClientById(workspace._id, sp.client, fxPromise);
     } catch (err) {
       // Unexpected error (e.g. transient DB failure) — log with context, then
       // treat as not-found and strip the stale param rather than crashing the

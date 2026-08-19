@@ -1,6 +1,7 @@
 import type { Types } from "mongoose";
 import { Transaction } from "@/lib/db/models";
-import { convertedAmountExpr, isSingleCurrency, type RateMap } from "./currencyConverter";
+import { frozenOrLiveAmountExpr, isSingleCurrency } from "./currencyConverter";
+import type { WorkspaceRates } from "./workspaceRates";
 
 // Same ledger definition Client.totalSpent is written from
 // (lib/db/clientTransactions.ts) — keep the two in step.
@@ -15,9 +16,9 @@ const SPEND_TX_TYPES = ["deposit", "balance"] as const;
 export async function getConvertedClientTotals(
   workspaceId: Types.ObjectId,
   clientIds: Types.ObjectId[],
-  rates: RateMap
+  fx: WorkspaceRates
 ): Promise<Map<string, number> | null> {
-  if (isSingleCurrency(rates)) return null;
+  if (isSingleCurrency(fx.rates)) return null;
   if (clientIds.length === 0) return new Map();
 
   const rows = await Transaction.aggregate<{ _id: Types.ObjectId; total: number }>([
@@ -31,7 +32,7 @@ export async function getConvertedClientTotals(
     {
       $group: {
         _id: "$clientId",
-        total: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+        total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", fx.rates, fx.target) },
       },
     },
   ]);

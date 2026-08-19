@@ -27,7 +27,10 @@ beforeEach(async () => {
 
 describe("getConvertedClientTotals", () => {
   it("returns null for a single-currency workspace so callers keep the stored total", async () => {
-    const totals = await getConvertedClientTotals(workspaceId, [clientA], { PHP: 1 });
+    const totals = await getConvertedClientTotals(workspaceId, [clientA], {
+      rates: { PHP: 1 },
+      target: "PHP",
+    });
 
     expect(totals).toBeNull();
   });
@@ -43,12 +46,67 @@ describe("getConvertedClientTotals", () => {
     ]);
 
     const totals = await getConvertedClientTotals(workspaceId, [clientA, clientB], {
-      PHP: 1,
-      USD: 58,
+      rates: { PHP: 1, USD: 58 },
+      target: "PHP",
     });
 
     expect(totals?.get(String(clientA))).toBe(5_000 + 100 * 58);
     expect(totals?.get(String(clientB))).toBe(20 * 58);
+  });
+
+  it("sums a payment at its frozen rate, not today's live rate", async () => {
+    await Transaction.create([
+      {
+        workspaceId,
+        clientId: clientA,
+        amount: 10,
+        currency: "USD",
+        type: "deposit",
+        fxRate: 55,
+        fxTarget: "PHP",
+      },
+    ]);
+
+    const totals = await getConvertedClientTotals(workspaceId, [clientA], {
+      rates: { PHP: 1, USD: 58 },
+      target: "PHP",
+    });
+
+    expect(totals?.get(String(clientA))).toBe(10 * 55);
+  });
+
+  it("falls back to the live rate when the frozen fxTarget doesn't match the current workspace currency", async () => {
+    await Transaction.create([
+      {
+        workspaceId,
+        clientId: clientA,
+        amount: 10,
+        currency: "USD",
+        type: "deposit",
+        fxRate: 50,
+        fxTarget: "EUR", // stale — workspace currency was restated away from EUR
+      },
+    ]);
+
+    const totals = await getConvertedClientTotals(workspaceId, [clientA], {
+      rates: { PHP: 1, USD: 58 },
+      target: "PHP",
+    });
+
+    expect(totals?.get(String(clientA))).toBe(10 * 58);
+  });
+
+  it("converts an unfrozen legacy payment (no fxRate) the same as before frozen rates existed", async () => {
+    await Transaction.create([
+      { workspaceId, clientId: clientA, amount: 10, currency: "USD", type: "deposit" },
+    ]);
+
+    const totals = await getConvertedClientTotals(workspaceId, [clientA], {
+      rates: { PHP: 1, USD: 58 },
+      target: "PHP",
+    });
+
+    expect(totals?.get(String(clientA))).toBe(10 * 58);
   });
 
   it("never returns another workspace's client spend", async () => {
@@ -65,8 +123,8 @@ describe("getConvertedClientTotals", () => {
     ]);
 
     const totals = await getConvertedClientTotals(workspaceId, [clientOfOtherWorkspace], {
-      PHP: 1,
-      USD: 58,
+      rates: { PHP: 1, USD: 58 },
+      target: "PHP",
     });
 
     expect(totals?.get(String(clientOfOtherWorkspace))).toBeUndefined();

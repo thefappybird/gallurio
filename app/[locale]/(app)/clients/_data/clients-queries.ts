@@ -3,7 +3,11 @@ import { Types } from "mongoose";
 import { Client, Booking, Transaction } from "@/lib/db/models";
 import type { ClientDoc } from "@/lib/db/models/Client";
 import { getConvertedClientTotals } from "@/lib/pricing/clientTotals";
-import type { RateMap } from "@/lib/pricing/currencyConverter";
+import type { WorkspaceRates } from "@/lib/pricing/workspaceRates";
+
+// Default when a caller doesn't need conversion — isSingleCurrency({}) is
+// true, so getConvertedClientTotals takes its cheap no-op path.
+const NO_CONVERSION: WorkspaceRates = { rates: {}, target: "" };
 
 type WorkspaceId = Types.ObjectId;
 
@@ -15,12 +19,12 @@ export type ListClientsParams = {
   includeInactive?: boolean;  // default: active only (isActive: true)
   page?: number;        // 1-indexed, default 1
   limit?: number;       // 25 | 50 | 100, default 25
-  // Workspace rate map. Supplied when the caller renders totalSpent labelled
-  // with the workspace currency — see the note on ClientListItem. Accepts a
-  // pending promise so the caller can kick off getWorkspaceRateMap alongside
-  // its other queries instead of awaiting it first — it's only awaited here,
-  // right before it's needed.
-  rates?: RateMap | Promise<RateMap>;
+  // Workspace rates bundled with their target currency. Supplied when the
+  // caller renders totalSpent labelled with the workspace currency — see the
+  // note on ClientListItem. Accepts a pending promise so the caller can kick
+  // off getWorkspaceRateMap alongside its other queries instead of awaiting
+  // it first — it's only awaited here, right before it's needed.
+  fx?: WorkspaceRates | Promise<WorkspaceRates>;
 };
 
 // Booking metrics are derived at read time rather than denormalized onto the
@@ -36,7 +40,7 @@ export type ClientListItem = ClientDoc & {
 export async function listClients(
   params: ListClientsParams
 ): Promise<{ items: ClientListItem[]; total: number }> {
-  const { workspaceId, q, source, tags, includeInactive, page = 1, limit = 25, rates = {} } = params;
+  const { workspaceId, q, source, tags, includeInactive, page = 1, limit = 25, fx = NO_CONVERSION } = params;
   const filter: Record<string, unknown> = { workspaceId };
 
   // Collect into $and so multiple $or groups (active-state, search) don't
@@ -99,7 +103,7 @@ export async function listClients(
         },
       },
     ]),
-    Promise.resolve(rates).then((r) => getConvertedClientTotals(workspaceId, clientIds, r)),
+    Promise.resolve(fx).then((f) => getConvertedClientTotals(workspaceId, clientIds, f)),
   ]);
 
   const statsById = new Map(stats.map((s) => [String(s._id), s]));
@@ -123,7 +127,7 @@ export async function listClients(
 export async function getClientById(
   workspaceId: WorkspaceId,
   clientId: string,
-  rates: RateMap | Promise<RateMap> = {}
+  fx: WorkspaceRates | Promise<WorkspaceRates> = NO_CONVERSION
 ): Promise<ClientListItem | null> {
   if (!Types.ObjectId.isValid(clientId)) return null;
 
@@ -149,7 +153,7 @@ export async function getClientById(
         },
       },
     ]),
-    Promise.resolve(rates).then((r) => getConvertedClientTotals(workspaceId, [c._id], r)),
+    Promise.resolve(fx).then((f) => getConvertedClientTotals(workspaceId, [c._id], f)),
   ]);
 
   return {

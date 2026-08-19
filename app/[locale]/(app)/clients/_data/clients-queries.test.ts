@@ -448,7 +448,7 @@ describe("listClients — multi-currency totalSpent", () => {
       { workspaceId, clientId: client._id, amount: 100, currency: "USD", type: "balance" },
     ]);
 
-    const { items } = await listClients({ workspaceId, rates: { PHP: 1, USD: 58 } });
+    const { items } = await listClients({ workspaceId, fx: { rates: { PHP: 1, USD: 58 }, target: "PHP" } });
 
     expect(items[0].totalSpent).toBe(5_000 + 100 * 58);
   });
@@ -457,7 +457,7 @@ describe("listClients — multi-currency totalSpent", () => {
     const client = await seedClient(workspaceId, { name: "Local Studio" });
     await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 5_000 } });
 
-    const { items } = await listClients({ workspaceId, rates: { PHP: 1 } });
+    const { items } = await listClients({ workspaceId, fx: { rates: { PHP: 1 }, target: "PHP" } });
 
     expect(items[0].totalSpent).toBe(5_000);
   });
@@ -466,7 +466,7 @@ describe("listClients — multi-currency totalSpent", () => {
     const client = await seedClient(workspaceId, { name: "Legacy Spender" });
     await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 250_000 } });
 
-    const { items } = await listClients({ workspaceId, rates: { PHP: 1, USD: 58 } });
+    const { items } = await listClients({ workspaceId, fx: { rates: { PHP: 1, USD: 58 }, target: "PHP" } });
 
     expect(items[0].totalSpent).toBe(250_000);
   });
@@ -478,7 +478,7 @@ describe("listClients — multi-currency totalSpent", () => {
       { workspaceId, clientId: client._id, amount: 100, currency: "USD", type: "deposit" },
     ]);
 
-    const found = await getClientById(workspaceId, String(client._id), { PHP: 1, USD: 58 });
+    const found = await getClientById(workspaceId, String(client._id), { rates: { PHP: 1, USD: 58 }, target: "PHP" });
 
     expect(found?.totalSpent).toBe(100 * 58);
   });
