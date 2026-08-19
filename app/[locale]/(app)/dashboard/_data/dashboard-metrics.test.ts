@@ -73,7 +73,7 @@ describe("getTopClients — multi-currency roll-up", () => {
       },
     ]);
 
-    const top = await getTopClients(ws, 5, { PHP: 1, USD: 58 });
+    const top = await getTopClients(ws, 5, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
 
     // ₱9,000 vs $200 ≈ ₱11,600 — the overseas client outranks the local one
     // once converted, the opposite of the raw stored ordering.
@@ -100,7 +100,7 @@ describe("getTopClients — multi-currency roll-up", () => {
     );
     await Client.deleteOne({ _id: clients[2]._id }); // rank 3 ("Client 3")
 
-    const top = await getTopClients(ws, 5, { PHP: 1, USD: 58 });
+    const top = await getTopClients(ws, 5, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
 
     expect(top).toHaveLength(5);
     expect(top.map((c) => c.name)).toEqual(["Client 1", "Client 2", "Client 4", "Client 5", "Client 6"]);
@@ -124,7 +124,7 @@ describe("getTopClients — multi-currency roll-up", () => {
       },
     ]);
 
-    const top = await getTopClients(ws, 5, { PHP: 1, USD: 58 });
+    const top = await getTopClients(ws, 5, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
 
     expect(top.map((c) => c.name)).not.toContain("Other Workspace Client");
   });
@@ -139,9 +139,55 @@ describe("getKpiSnapshot — multi-currency roll-up", () => {
       { workspaceId: ws, amount: 10, currency: "USD", type: "balance", method: "cash", paidAt },
     ]);
 
-    const snapshot = await getKpiSnapshot(ws, { PHP: 1, USD: 58 });
+    const snapshot = await getKpiSnapshot(ws, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
 
     expect(snapshot.revenueThisMonth).toBe(1000 + 10 * 58);
+  });
+
+  it("sums a frozen transaction at its frozen rate, not today's live rate", async () => {
+    const ws = new Types.ObjectId();
+    const paidAt = new Date();
+    await Transaction.create([
+      {
+        workspaceId: ws,
+        amount: 10,
+        currency: "USD",
+        type: "deposit",
+        method: "cash",
+        paidAt,
+        fxRate: 55,
+        fxTarget: "PHP",
+      },
+    ]);
+
+    const snapshot = await getKpiSnapshot(ws, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
+
+    expect(snapshot.revenueThisMonth).toBe(10 * 55);
+  });
+
+  it("scheduled Booking totals stay live-converted even when a frozen fx field is present on the booking", async () => {
+    const ws = new Types.ObjectId();
+    const { Booking } = await import("@/lib/db/models");
+    await Booking.create({
+      workspaceId: ws,
+      teamId: new Types.ObjectId(),
+      clientId: new Types.ObjectId(),
+      clientName: "Test Client",
+      title: "Test Booking",
+      status: "booked",
+      sessions: [{ startAt: new Date(), endAt: new Date(Date.now() + 3_600_000) }],
+      firstSessionStart: new Date(),
+      lastSessionEnd: new Date(Date.now() + 3_600_000),
+      // amount.fxRate/fxTarget would normally only be set once a payment
+      // freezes them — asserting the scheduled total ignores them even if
+      // present guards against ever wiring the Booking side onto frozen rates.
+      amount: { total: 100, deposit: 0, currency: "USD", fxRate: 999, fxTarget: "PHP" },
+    });
+
+    const snapshot = await getKpiSnapshot(ws, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
+
+    // 100 * live(58), never 100 * frozen(999).
+    expect(snapshot.outstandingBalance).toBe(100 * 58);
   });
 
   it("computes outstandingBalance across mismatched booking and transaction currencies", async () => {
@@ -170,7 +216,7 @@ describe("getKpiSnapshot — multi-currency roll-up", () => {
       },
     ]);
 
-    const snapshot = await getKpiSnapshot(ws, { PHP: 1, USD: 58 });
+    const snapshot = await getKpiSnapshot(ws, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
 
     expect(snapshot.outstandingBalance).toBe(100 * 58 - 1000);
   });

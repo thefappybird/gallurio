@@ -3,11 +3,7 @@ import { Types } from "mongoose";
 import { Client, Booking, Transaction } from "@/lib/db/models";
 import type { ClientDoc } from "@/lib/db/models/Client";
 import { getConvertedClientTotals } from "@/lib/pricing/clientTotals";
-import type { WorkspaceRates } from "@/lib/pricing/workspaceRates";
-
-// Default when a caller doesn't need conversion — isSingleCurrency({}) is
-// true, so getConvertedClientTotals takes its cheap no-op path.
-const NO_CONVERSION: WorkspaceRates = { rates: {}, target: "" };
+import { NO_CONVERSION, type WorkspaceRates } from "@/lib/pricing/workspaceRates";
 
 type WorkspaceId = Types.ObjectId;
 

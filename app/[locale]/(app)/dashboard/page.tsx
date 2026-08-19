@@ -167,7 +167,7 @@ async function BookingsTab({
   // the multipliers once here so every total below adds up in the workspace
   // currency the cards are labelled with — fetched alongside the unrelated
   // time-format cookie read rather than serially before it.
-  const [timeMode, rates] = await Promise.all([
+  const [timeMode, fx] = await Promise.all([
     getUserTimeFormat(),
     getWorkspaceRateMap(wid, workspace.currency),
   ]);
@@ -189,23 +189,23 @@ async function BookingsTab({
     heatmap,
     eventTrend,
   ] = await Promise.all([
-    getKpiSnapshotWithDeltas(wid, range, rates),
+    getKpiSnapshotWithDeltas(wid, range, fx),
     getTodaysEvents(wid),
     getUpcomingWeek(wid),
     getActivityFeed(wid, 20),
-    getRevenueTrend(wid, 30, range, tz, rates),
+    getRevenueTrend(wid, 30, range, tz, fx),
     getBookingsByDay(wid, new Date()),
-    getTransactionsByTeam(wid, range, rates),
+    getTransactionsByTeam(wid, range, fx),
     getBookingsCountByTeam(wid, range),
-    getTopClients(wid, 5, rates),
+    getTopClients(wid, 5, fx),
     getBookingTeamOptions({ role, userId, workspace }),
-    getScheduledVsCollectedSeries(wid, range, tz, rates),
-    getCollectionCoverage(wid, range, rates),
+    getScheduledVsCollectedSeries(wid, range, tz, fx),
+    getCollectionCoverage(wid, range, fx),
     getBookedHoursHeatmap(wid, range, tz, {
       workspaceCreatedAt: workspace.createdAt,
       endWeek: heatmapEndWeek,
     }),
-    getEventTypeValueTrend(wid, range, tz, rates),
+    getEventTypeValueTrend(wid, range, tz, fx.rates),
   ]);
 
   const eventTypeLabels = t.raw("eventTypes") as Record<string, string>;

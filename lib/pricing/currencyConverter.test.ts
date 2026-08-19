@@ -73,6 +73,24 @@ describe("convertAmount", () => {
   });
 });
 
+describe("frozenOrLiveAmount", () => {
+  it("uses the frozen rate when fxTarget matches the requested target", async () => {
+    const { frozenOrLiveAmount } = await import("./currencyConverter");
+
+    const result = frozenOrLiveAmount(10, "USD", { PHP: 1, USD: 58 }, "PHP", 55, "PHP");
+
+    expect(result).toBe(10 * 55);
+  });
+
+  it("falls back to the live rate map when fxTarget doesn't match or fxRate is missing", async () => {
+    const { frozenOrLiveAmount } = await import("./currencyConverter");
+    const rates = { PHP: 1, USD: 58 };
+
+    expect(frozenOrLiveAmount(10, "USD", rates, "PHP", 50, "EUR")).toBe(10 * 58);
+    expect(frozenOrLiveAmount(10, "USD", rates, "PHP", null, null)).toBe(10 * 58);
+  });
+});
+
 describe("convertedAmountExpr", () => {
   beforeAll(async () => {
     await startInMemoryMongo();

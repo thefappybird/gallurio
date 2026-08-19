@@ -7,6 +7,10 @@ import { buildRateMap, type RateMap } from "./currencyConverter";
 // target — there is only ever one way to get a target: from this bundle.
 export type WorkspaceRates = { rates: RateMap; target: string };
 
+// Default for callers with nothing to convert — isSingleCurrency({}) is true,
+// so downstream aggregations take their cheap unconverted path.
+export const NO_CONVERSION: WorkspaceRates = { rates: {}, target: "" };
+
 // Per-workspace memo so dashboard/page.tsx, clients/page.tsx, and
 // lib/actions/clients.ts share one result instead of each re-running the two
 // `distinct` collection scans. Short TTL — a stale map for a few minutes is

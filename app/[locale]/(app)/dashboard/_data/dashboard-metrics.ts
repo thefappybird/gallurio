@@ -5,9 +5,10 @@ import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { dayBoundInTz } from "@/lib/utils/timezone";
 import {
   convertedAmountExpr,
+  frozenOrLiveAmountExpr,
   isSingleCurrency,
-  type RateMap,
 } from "@/lib/pricing/currencyConverter";
+import { NO_CONVERSION, type WorkspaceRates } from "@/lib/pricing/workspaceRates";
 
 type WorkspaceId = Types.ObjectId;
 export type SerializedActivity = {
@@ -58,8 +59,9 @@ export type KpiSnapshot = {
 
 export async function getKpiSnapshot(
   workspaceId: WorkspaceId,
-  rates: RateMap = {}
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<KpiSnapshot> {
+  const { rates, target } = fx;
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -76,7 +78,7 @@ export async function getKpiSnapshot(
       {
         $group: {
           _id: null,
-          total: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+          total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
         },
       },
     ]),
@@ -110,7 +112,7 @@ export async function getKpiSnapshot(
             {
               $group: {
                 _id: null,
-                sum: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+                sum: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
               },
             },
           ],
@@ -154,12 +156,7 @@ function pctTrend(current: number, prior: number, positiveIsGood: boolean): KpiT
   return { value: ((current - prior) / prior) * 100, positiveIsGood };
 }
 
-async function monthRevenue(
-  workspaceId: WorkspaceId,
-  start: Date,
-  end: Date,
-  rates: RateMap
-) {
+async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date, fx: WorkspaceRates) {
   const agg = await Transaction.aggregate<{ total: number }>([
     {
       $match: {
@@ -169,7 +166,10 @@ async function monthRevenue(
       },
     },
     {
-      $group: { _id: null, total: { $sum: convertedAmountExpr("$amount", "$currency", rates) } },
+      $group: {
+        _id: null,
+        total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", fx.rates, fx.target) },
+      },
     },
   ]);
   return agg[0]?.total ?? 0;
@@ -180,7 +180,7 @@ export type DateRange = { from: Date | null; to: Date | null };
 export async function getKpiSnapshotWithDeltas(
   workspaceId: WorkspaceId,
   range?: DateRange,
-  rates: RateMap = {}
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<{ snapshot: KpiSnapshot; trends: KpiTrends }> {
   const now = new Date();
   const thisStart = startOfMonth(now);
@@ -196,8 +196,8 @@ export async function getKpiSnapshotWithDeltas(
     thisInquiriesCreated,
     lastInquiriesCreated,
   ] = await Promise.all([
-    getKpiSnapshot(workspaceId, rates),
-    monthRevenue(workspaceId, lastStart, lastEnd, rates),
+    getKpiSnapshot(workspaceId, fx),
+    monthRevenue(workspaceId, lastStart, lastEnd, fx),
     Booking.countDocuments({
       workspaceId,
       firstSessionStart: { $gte: lastStart, $lte: lastEnd },
@@ -220,7 +220,7 @@ export async function getKpiSnapshotWithDeltas(
     const start = range.from ?? new Date(0);
     const end = range.to ?? new Date();
     const [rev, active, inq] = await Promise.all([
-      monthRevenue(workspaceId, start, end, rates),
+      monthRevenue(workspaceId, start, end, fx),
       Booking.countDocuments({
         workspaceId,
         firstSessionStart: { $gte: start, $lte: end },
@@ -237,7 +237,7 @@ export async function getKpiSnapshotWithDeltas(
       const pStart = new Date(range.from.getTime() - 1 - len);
       const pEnd = new Date(range.from.getTime() - 1);
       const [pRev, pActive, pInq] = await Promise.all([
-        monthRevenue(workspaceId, pStart, pEnd, rates),
+        monthRevenue(workspaceId, pStart, pEnd, fx),
         Booking.countDocuments({
           workspaceId,
           firstSessionStart: { $gte: pStart, $lte: pEnd },
@@ -343,8 +343,9 @@ export async function getRevenueTrend(
   days = 30,
   range?: DateRange,
   timezone = "UTC",
-  rates: RateMap = {}
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<RevenuePoint[]> {
+  const { rates, target } = fx;
   // Bucket by the workspace-local day so the trend agrees with bookings and
   // inquiry events. The page passes the resolved workspace timezone; the "UTC"
   // default keeps callers that don't care timezone-neutral.
@@ -388,7 +389,7 @@ export async function getRevenueTrend(
     {
       $group: {
         _id: { $dateToString: { format: "%Y-%m-%d", date: "$paidAt", timezone } },
-        total: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+        total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
       },
     },
   ]);
@@ -457,7 +458,12 @@ export async function getBookingsByDay(
   return rows.map((r) => ({ date: r._id, count: r.count }));
 }
 
-export async function getTopClients(workspaceId: WorkspaceId, limit = 5, rates: RateMap = {}) {
+export async function getTopClients(
+  workspaceId: WorkspaceId,
+  limit = 5,
+  fx: WorkspaceRates = NO_CONVERSION
+) {
+  const { rates, target } = fx;
   // Client.totalSpent is a running sum in whatever currency each booking used,
   // so it is only a valid sort key when the workspace stores one currency.
   if (isSingleCurrency(rates)) {
@@ -475,7 +481,7 @@ export async function getTopClients(workspaceId: WorkspaceId, limit = 5, rates: 
     {
       $group: {
         _id: "$clientId",
-        totalSpent: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+        totalSpent: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
       },
     },
     { $sort: { totalSpent: -1 } },
@@ -533,8 +539,9 @@ export type TransactionsByTeam = {
 export async function getTransactionsByTeam(
   workspaceId: WorkspaceId,
   range?: DateRange,
-  rates: RateMap = {}
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<TransactionsByTeam[]> {
+  const { rates, target } = fx;
   let paidAt: Record<string, Date>;
   if (range?.from || range?.to) {
     paidAt = {};
@@ -558,7 +565,7 @@ export async function getTransactionsByTeam(
     {
       $group: {
         _id: "$teamId",
-        total: { $sum: convertedAmountExpr("$amount", "$currency", rates) },
+        total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
       },
     },
     { $sort: { total: -1 } },
@@ -649,8 +656,9 @@ export type RevenueComparison = {
 
 export async function getRevenueComparison(
   workspaceId: WorkspaceId,
-  rates: RateMap = {}
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<RevenueComparison> {
+  const { rates, target } = fx;
   const now = new Date();
   const thisStart = startOfMonth(now);
   const thisEnd = endOfMonth(now);
@@ -668,7 +676,7 @@ export async function getRevenueComparison(
         },
       },
       {
-        $group: { _id: null, total: { $sum: convertedAmountExpr("$amount", "$currency", rates) } },
+        $group: { _id: null, total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) } },
       },
     ]),
     Transaction.aggregate<{ total: number }>([
@@ -680,7 +688,7 @@ export async function getRevenueComparison(
         },
       },
       {
-        $group: { _id: null, total: { $sum: convertedAmountExpr("$amount", "$currency", rates) } },
+        $group: { _id: null, total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) } },
       },
     ]),
   ]);

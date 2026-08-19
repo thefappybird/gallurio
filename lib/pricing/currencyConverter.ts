@@ -45,6 +45,24 @@ export function convertAmount(
   return rate ? amount * rate : amount;
 }
 
+// In-JS counterpart of frozenOrLiveAmountExpr, for totals summed in
+// application code rather than in an aggregation pipeline. Same rule: prefer
+// the frozen rate only when it targets the same currency being rolled up
+// into; otherwise fall back to the live rate map.
+export function frozenOrLiveAmount(
+  amount: number,
+  currency: string | null | undefined,
+  rates: RateMap,
+  target: string,
+  fxRate?: number | null,
+  fxTarget?: string | null
+): number {
+  if (fxRate && fxRate > 0 && fxTarget && fxTarget.toUpperCase() === target.toUpperCase()) {
+    return amount * fxRate;
+  }
+  return convertAmount(amount, currency, rates);
+}
+
 // Mongo aggregation expression converting one document's amount into the
 // target currency before it is summed. A document whose currency has no entry
 // in `rates` — including legacy rows with no currency field at all — passes
