@@ -34,6 +34,17 @@ vi.mock("@/lib/auth/teamContext", () => ({
   getTeamsForUser: async () => auth.memberships,
 }));
 
+// Mutable so individual tests can simulate a specific rate or an FX outage
+// (null) without touching the network. Default: same-currency freeze only.
+const fx = vi.hoisted(() => ({
+  resolveFxFreeze: vi.fn(async (base: string, target: string) =>
+    base === target ? { rate: 1, target } : null
+  ),
+}));
+vi.mock("@/lib/pricing/fxRates", () => ({
+  resolveFxFreeze: (base: string, target: string) => fx.resolveFxFreeze(base, target),
+}));
+
 beforeAll(async () => {
   await startInMemoryMongo();
 });
@@ -44,6 +55,10 @@ beforeEach(async () => {
   await clearCollections();
   auth.role = "owner";
   auth.memberships = [];
+  fx.resolveFxFreeze.mockReset();
+  fx.resolveFxFreeze.mockImplementation(async (base: string, target: string) =>
+    base === target ? { rate: 1, target } : null
+  );
   // An active team must exist for new bookings to attach to.
   await Team.create({
     _id: teamId,
@@ -213,6 +228,62 @@ describe("POST /api/bookings", () => {
     expect(booking?.payments?.[0].price).toBe(50_000);
     expect(booking?.payments?.[0].status).toBe("paid");
     expect(booking?.payments?.[0].paidAt).toBeInstanceOf(Date);
+  });
+
+  it("freezes the fx rate on a paid payment when the booking currency differs from the workspace currency (PHP)", async () => {
+    fx.resolveFxFreeze.mockResolvedValueOnce({ rate: 58, target: "PHP" });
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(
+        makeBody({
+          amount: { total: 1000, deposit: 0, currency: "USD" },
+          payments: [{ price: 1000, status: "paid" }],
+        })
+      )
+    );
+    expect(res.status).toBe(201);
+    expect(fx.resolveFxFreeze).toHaveBeenCalledWith("USD", "PHP");
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(booking?.payments?.[0].fxRate).toBe(58);
+    expect(booking?.payments?.[0].fxTarget).toBe("PHP");
+    expect(booking?.payments?.[0].fxAt).toBeInstanceOf(Date);
+  });
+
+  it("freezes the fx rate onto the booking amount when a deposit is collected in a foreign currency", async () => {
+    fx.resolveFxFreeze.mockResolvedValueOnce({ rate: 58, target: "PHP" });
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(
+        makeBody({
+          amount: { total: 1000, deposit: 200, currency: "USD" },
+          payments: [],
+        })
+      )
+    );
+    expect(res.status).toBe(201);
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(booking?.amount?.fxRate).toBe(58);
+    expect(booking?.amount?.fxTarget).toBe("PHP");
+    expect(booking?.amount?.fxAt).toBeInstanceOf(Date);
+  });
+
+  it("leaves fx fields null and still creates the booking when the FX rate is unavailable (outage never blocks the write)", async () => {
+    fx.resolveFxFreeze.mockResolvedValueOnce(null);
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(
+        makeBody({
+          amount: { total: 1000, deposit: 200, currency: "USD" },
+          payments: [{ price: 800, status: "paid" }],
+        })
+      )
+    );
+    expect(res.status).toBe(201);
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(booking?.amount?.fxRate ?? null).toBeNull();
+    expect(booking?.amount?.fxTarget ?? null).toBeNull();
+    expect(booking?.payments?.[0].fxRate ?? null).toBeNull();
+    expect(booking?.payments?.[0].fxTarget ?? null).toBeNull();
   });
 
   it("returns 422 when creating a completed booking with ineligible payments", async () => {
