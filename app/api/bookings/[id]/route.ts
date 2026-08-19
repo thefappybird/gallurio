@@ -395,6 +395,11 @@ export async function PATCH(req: Request, { params }: Params) {
               total: mergedAmountTotal,
               deposit: mergedAmountDeposit,
               currency: mergedCurrency,
+              // amount.fx* is never part of setOp (only `payments[]` freezes
+              // per-edit) — the existing frozen state carries straight through.
+              fxRate: existing.amount?.fxRate ?? null,
+              fxTarget: existing.amount?.fxTarget ?? null,
+              fxAt: existing.amount?.fxAt ?? null,
             },
             firstSessionStart: mergedFirstSessionStart,
             // Carry the post-patch team (a same-request team reassignment wins).

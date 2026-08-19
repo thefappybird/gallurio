@@ -343,6 +343,36 @@ describe("reassignBookingBetweenClients", () => {
     expect(newTx?.amount).toBe(10_000);
   });
 
+  it("copies the booking's frozen fx fields onto the new client's deposit transaction", async () => {
+    await seedFromClient();
+    await seedToClient();
+    await Transaction.create({
+      workspaceId: WS_ID,
+      bookingId: REASSIGN_BOOKING_ID,
+      clientId: FROM_CLIENT_ID,
+      amount: 10_000,
+      currency: "PHP",
+      type: "deposit",
+      method: "other",
+      paidAt: REASSIGN_START,
+    });
+
+    await reassignBookingBetweenClients({
+      workspaceId: WS_ID,
+      fromClientId: FROM_CLIENT_ID,
+      toClientId: TO_CLIENT_ID,
+      booking: {
+        ...BASE_REASSIGN_BOOKING,
+        amount: { ...BASE_REASSIGN_BOOKING.amount, fxRate: 0.023, fxTarget: "SGD", fxAt: REASSIGN_START },
+      },
+    });
+
+    const newTx = await Transaction.findOne({ bookingId: REASSIGN_BOOKING_ID, clientId: TO_CLIENT_ID }).lean();
+    expect(newTx?.fxRate).toBe(0.023);
+    expect(newTx?.fxTarget).toBe("SGD");
+    expect(newTx?.fxAt?.toISOString()).toBe(REASSIGN_START.toISOString());
+  });
+
   it("works when deposit is 0 (no Transaction doc involved)", async () => {
     await seedFromClient({ totalSpent: 0 });
     await seedToClient();

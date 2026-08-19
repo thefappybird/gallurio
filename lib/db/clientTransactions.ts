@@ -7,7 +7,14 @@ type ReassignBookingOpts = {
   toClientId: mongoose.Types.ObjectId | string;
   booking: {
     _id: mongoose.Types.ObjectId;
-    amount: { total: number; deposit: number; currency: string };
+    amount: {
+      total: number;
+      deposit: number;
+      currency: string;
+      fxRate?: number | null;
+      fxTarget?: string | null;
+      fxAt?: Date | null;
+    };
     firstSessionStart: Date;
     teamId?: mongoose.Types.ObjectId | string | null;
   };
@@ -206,6 +213,12 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
             type: "deposit",
             method: "other",
             paidAt: occurredAt,
+            // Copied, not recomputed — matches recordBookingForClient. The
+            // rate is frozen once at the booking's own payment time; the
+            // reassignment must carry it forward, never re-freeze at today's rate.
+            fxRate: booking.amount.fxRate ?? null,
+            fxTarget: booking.amount.fxTarget ?? null,
+            fxAt: booking.amount.fxAt ?? null,
           },
         ],
         { session }
