@@ -128,7 +128,8 @@ Preserve UTF-8 everywhere; never output/save mojibake. Verify user-facing Unicod
 - A worktree starts without `.env.local`; you may copy values from the canonical `dev` checkout's `.env.local` for local Playwright verification only — never commit, print, or paste secret values anywhere.
 
 ## Testing
-Every change ships tests: data-layer, components, handlers, validators, tenant isolation. Mock external services only; never mock Mongoose (use in-memory Mongo). Run targeted: `pnpm test --run <fragment>`; full sweep only pre-merge. Billing tests cover: webhook signature verification, price/plan mapping, idempotent webhook application, and tenant isolation.
+Every change ships tests: data-layer, components, handlers, validators, tenant isolation. Mock external services only; never mock Mongoose (use in-memory Mongo).
+- **Nested Mongoose subdocuments are optional on the inferred type.** `booking.amount` and friends need `?.` in test assertions (`b.amount?.currency`), even though the schema always materializes them from defaults. Vitest passes without it; `tsc --noEmit` fails — and only the orchestrator runs that, so a subagent can't catch it. Run targeted: `pnpm test --run <fragment>`; full sweep only pre-merge. Billing tests cover: webhook signature verification, price/plan mapping, idempotent webhook application, and tenant isolation.
 
 ## Done criteria
 Implementation complete · tests passing · lint + typecheck pass · locales updated · 3 breakpoints × 5 locales × light+dark verified · optimistic UI where appropriate · errors surfaced · indexes confirmed for new queries.

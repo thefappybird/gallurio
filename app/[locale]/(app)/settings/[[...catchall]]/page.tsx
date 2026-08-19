@@ -27,6 +27,7 @@ import { PublicPageSettingsForm } from "../public-page/_form";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
 import { getDisplayPricing } from "@/lib/pricing/localPricing";
+import { currencyChangeLockedUntil } from "@/lib/pricing/currencyRestatement";
 import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { AccountPanel } from "../account/_panel";
 import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
@@ -95,6 +96,8 @@ export default async function SettingsCatchallPage({
     logoUrl: workspace.logoUrl ?? "",
     logoAssetId: workspace.logoAssetId ?? "",
   };
+  const currencyLockedUntil =
+    currencyChangeLockedUntil(workspace.currencyChangedAt ?? null)?.toISOString() ?? null;
 
   const draftId = await resolveActiveDraftId(workspace._id);
   const settingsDraftFields = normalizeSettingsSeoFields(
@@ -203,7 +206,13 @@ export default async function SettingsCatchallPage({
           label: t("workspace"),
           icon: <Building2 className="size-4" />,
           ownerOnly: true,
-          body: <WorkspaceBusinessForm defaults={businessDefaults} />,
+          body: (
+            <WorkspaceBusinessForm
+              defaults={businessDefaults}
+              locale={locale}
+              currencyLockedUntil={currencyLockedUntil}
+            />
+          ),
         },
         {
           slug: "public-page",
