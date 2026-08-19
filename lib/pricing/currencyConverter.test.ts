@@ -106,3 +106,97 @@ describe("convertedAmountExpr", () => {
     expect(row.total).toBe(1000 + 10 * 58 + 500 + 10 * 58);
   });
 });
+
+describe("frozenOrLiveAmountExpr", () => {
+  beforeAll(async () => {
+    await startInMemoryMongo();
+  }, 120_000);
+
+  afterAll(async () => {
+    await stopInMemoryMongo();
+  });
+
+  it("uses the frozen rate when fxTarget matches the requested target", async () => {
+    const { frozenOrLiveAmountExpr } = await import("./currencyConverter");
+    const collection = mongoose.connection.db!.collection("fx_frozen_fixtures");
+    await collection.insertMany([
+      { amount: 10, currency: "USD", fxRate: 55, fxTarget: "PHP" },
+    ]);
+
+    const [row] = await collection
+      .aggregate([
+        {
+          $group: {
+            _id: null,
+            total: {
+              $sum: frozenOrLiveAmountExpr(
+                "$amount",
+                "$currency",
+                { PHP: 1, USD: 58 },
+                "PHP"
+              ),
+            },
+          },
+        },
+      ])
+      .toArray();
+
+    expect(row.total).toBe(10 * 55);
+  });
+
+  it("falls back to the live rate map when fxTarget doesn't match the requested target", async () => {
+    const { frozenOrLiveAmountExpr } = await import("./currencyConverter");
+    const collection = mongoose.connection.db!.collection("fx_frozen_mismatch_fixtures");
+    await collection.insertMany([
+      { amount: 10, currency: "USD", fxRate: 50, fxTarget: "EUR" },
+    ]);
+
+    const [row] = await collection
+      .aggregate([
+        {
+          $group: {
+            _id: null,
+            total: {
+              $sum: frozenOrLiveAmountExpr(
+                "$amount",
+                "$currency",
+                { PHP: 1, USD: 58 },
+                "PHP"
+              ),
+            },
+          },
+        },
+      ])
+      .toArray();
+
+    expect(row.total).toBe(10 * 58);
+  });
+
+  it("falls back to the live rate map when fxRate is null", async () => {
+    const { frozenOrLiveAmountExpr } = await import("./currencyConverter");
+    const collection = mongoose.connection.db!.collection("fx_frozen_null_rate_fixtures");
+    await collection.insertMany([
+      { amount: 10, currency: "USD", fxRate: null, fxTarget: null },
+    ]);
+
+    const [row] = await collection
+      .aggregate([
+        {
+          $group: {
+            _id: null,
+            total: {
+              $sum: frozenOrLiveAmountExpr(
+                "$amount",
+                "$currency",
+                { PHP: 1, USD: 58 },
+                "PHP"
+              ),
+            },
+          },
+        },
+      ])
+      .toArray();
+
+    expect(row.total).toBe(10 * 58);
+  });
+});

@@ -66,3 +66,31 @@ export function convertedAmountExpr(
 
   return { $switch: { branches, default: { $ifNull: [amountField, 0] } } };
 }
+
+// Same as convertedAmountExpr, but prefers a rate frozen on the document
+// itself (fxRateField/fxTargetField) over the live rate map, when that frozen
+// rate targets the same currency the caller is rolling up into. Falls back to
+// convertedAmountExpr whenever the frozen rate doesn't apply — no target on
+// the doc, a mismatched target, or an invalid/missing frozen rate.
+export function frozenOrLiveAmountExpr(
+  amountField: string,
+  currencyField: string,
+  rates: RateMap,
+  target: string,
+  fxRateField = "$fxRate",
+  fxTargetField = "$fxTarget"
+): Record<string, unknown> {
+  const to = target.toUpperCase();
+  return {
+    $cond: {
+      if: {
+        $and: [
+          { $eq: [{ $toUpper: { $ifNull: [fxTargetField, ""] } }, to] },
+          { $gt: [{ $ifNull: [fxRateField, 0] }, 0] },
+        ],
+      },
+      then: { $multiply: [{ $ifNull: [amountField, 0] }, fxRateField] },
+      else: convertedAmountExpr(amountField, currencyField, rates),
+    },
+  };
+}
