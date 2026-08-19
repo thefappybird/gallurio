@@ -28,6 +28,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 
 // Mirrors CURRENCY_CHANGE_COOLDOWN_DAYS in lib/pricing/currencyRestatement.ts
@@ -305,11 +307,11 @@ export function WorkspaceBusinessForm({
             <Label htmlFor="currency">{tOnb("currency")}</Label>
             <select
               id="currency"
+              name="currency"
               disabled={!!currencyLockedUntil}
               className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-              {...register("currency", {
-                onChange: (e) => handleCurrencySelectChange(e.target.value as SupportedCurrency),
-              })}
+              value={currencyValue}
+              onChange={(e) => handleCurrencySelectChange(e.target.value as SupportedCurrency)}
             >
               {SUPPORTED_CURRENCIES.map((c) => (
                 <option key={c} value={c}>
@@ -344,6 +346,11 @@ export function WorkspaceBusinessForm({
                     </AlertDialogDescription>
                   )}
                 </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setCurrencyDialogOpen(false)}>
+                    {t("currencyConfirmCancel")}
+                  </AlertDialogCancel>
+                </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
           </div>

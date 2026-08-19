@@ -143,6 +143,21 @@ describe("WorkspaceBusinessForm — currency change lock + restatement dialog", 
       expect(screen.getByText(/currencyConfirmBody/).textContent).toMatch(/"date":/);
     });
   });
+
+  it("reverts the currency select when the confirm dialog is cancelled", async () => {
+    previewCurrencyRestatementAction.mockResolvedValueOnce({ bookingsCount: 3 });
+    render(<WorkspaceBusinessForm defaults={baseDefaults} locale="en" />);
+
+    const select = screen.getByLabelText("currency") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "SGD" } });
+
+    await screen.findByText("currencyConfirmTitle");
+    fireEvent.click(screen.getByRole("button", { name: "currencyConfirmCancel" }));
+
+    await waitFor(() => {
+      expect(select.value).toBe("PHP");
+    });
+  });
 });
 
 describe("WorkspaceBusinessForm — contact address LocationPicker", () => {
