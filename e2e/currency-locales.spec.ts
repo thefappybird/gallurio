@@ -90,37 +90,40 @@ test.describe("2. ar RTL geometry", () => {
   }
 });
 
-// 3. Dark theme, all 5 locales at 1280px — the estimate must not disappear
-// into the dark card background. Contrast is width-independent, so the
-// breakpoint sweep stays with the light-theme suites above. Theme is driven
-// the same way next-themes reads it: the "theme" localStorage key
-// next-themes' blocking init script consumes on first paint
-// (attribute="class", so it lands as html.dark).
+// 3. Dark theme, all 5 locales x 3 breakpoints — the estimate must not
+// disappear into the dark card background. Theme is driven the same way
+// next-themes reads it: the "theme" localStorage key next-themes' blocking
+// init script consumes on first paint (attribute="class", so it lands as
+// html.dark).
 test.describe("3. dark theme visibility", () => {
   for (const locale of LOCALES) {
-    test(`${locale} estimate stays visible against the dark card at 1280px`, async ({ page }) => {
-      await page.addInitScript(() => {
-        window.localStorage.setItem("theme", "dark");
+    for (const width of [375, 768, 1280]) {
+      test(`${locale} estimate stays visible against the dark card at ${width}px`, async ({
+        page,
+      }) => {
+        await page.addInitScript(() => {
+          window.localStorage.setItem("theme", "dark");
+        });
+        const errors = trackConsoleErrors(page);
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(`/${locale}/pricing`);
+
+        await expect(page.locator("html")).toHaveClass(/dark/);
+
+        const note = page.getByText(LOCALE_WORDS[locale]).first();
+        await expect(note).toBeVisible();
+        const card = note.locator('xpath=ancestor::*[@data-slot="card"]');
+        await expect(card).toHaveCount(1);
+
+        const noteColor = await note.evaluate((el) => getComputedStyle(el).color);
+        const cardBg = await card.evaluate((el) => getComputedStyle(el).backgroundColor);
+        expect(noteColor).not.toBe(cardBg);
+
+        await card.screenshot({ path: `test-results/dark-${locale}-pricing-card-${width}.png` });
+
+        expect(await hasOverflow(page), "document has horizontal overflow").toBe(false);
+        expect(errors, `console errors: ${errors.join(" | ")}`).toEqual([]);
       });
-      const errors = trackConsoleErrors(page);
-      await page.setViewportSize({ width: 1280, height: 900 });
-      await page.goto(`/${locale}/pricing`);
-
-      await expect(page.locator("html")).toHaveClass(/dark/);
-
-      const note = page.getByText(LOCALE_WORDS[locale]).first();
-      await expect(note).toBeVisible();
-      const card = note.locator('xpath=ancestor::*[@data-slot="card"]');
-      await expect(card).toHaveCount(1);
-
-      const noteColor = await note.evaluate((el) => getComputedStyle(el).color);
-      const cardBg = await card.evaluate((el) => getComputedStyle(el).backgroundColor);
-      expect(noteColor).not.toBe(cardBg);
-
-      await card.screenshot({ path: `test-results/dark-${locale}-pricing-card-1280.png` });
-
-      expect(await hasOverflow(page), "document has horizontal overflow").toBe(false);
-      expect(errors, `console errors: ${errors.join(" | ")}`).toEqual([]);
-    });
+    }
   }
 });
