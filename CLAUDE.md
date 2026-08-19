@@ -76,6 +76,7 @@ Operate as a senior full-stack engineer with strong mobile-first UI and backend/
 
 ### UI
 - Mobile-first at 375px. Playwright at 3 breakpoints: 375/768/1280px (desktop-only surfaces: 768+1280; public-facing: all three).
+- **Every Playwright run also covers all 5 locales and both themes** — `en`/`fil`/`id`/`ar`/`th` × light + dark, never `en`-light only. Assert on rendered strings (catches mojibake), check `ar` RTL geometry stays inside its container, and measure dark-theme colours against their background rather than assuming the token resolved. A breakpoint-only pass is an incomplete pass.
 - Every async surface: loading/empty/error/populated. Every control: idle/hover-focus-visible/active/disabled.
 - No hover-only UX. Drag needs visible affordances. Large mobile flows: steps/tabs, not tall modals.
 - Accessibility: semantic HTML, labels, keyboard support, focus management, color never the sole signal.
@@ -130,10 +131,10 @@ Preserve UTF-8 everywhere; never output/save mojibake. Verify user-facing Unicod
 Every change ships tests: data-layer, components, handlers, validators, tenant isolation. Mock external services only; never mock Mongoose (use in-memory Mongo). Run targeted: `pnpm test --run <fragment>`; full sweep only pre-merge. Billing tests cover: webhook signature verification, price/plan mapping, idempotent webhook application, and tenant isolation.
 
 ## Done criteria
-Implementation complete · tests passing · lint + typecheck pass · locales updated · 3 breakpoints verified · optimistic UI where appropriate · errors surfaced · indexes confirmed for new queries.
+Implementation complete · tests passing · lint + typecheck pass · locales updated · 3 breakpoints × 5 locales × light+dark verified · optimistic UI where appropriate · errors surfaced · indexes confirmed for new queries.
 
 ## Review / merge flow
-- Consolidate locales → build → strict code review (Playwright run-through at 3 breakpoints, verifying every state — not just that it compiles).
+- Consolidate locales → build → strict code review (Playwright run-through at 3 breakpoints × 5 locales × light+dark, verifying every state — not just that it compiles).
 - Fix findings → once no tasks remain, open a PR with `- [ ]` checklist. Merge to `dev` only after review and explicit approval.
 
 ## Docs hygiene
