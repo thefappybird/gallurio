@@ -26,6 +26,12 @@ export default async function PricingPage({ params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations("marketing.pricing");
+  // getDisplayPricing() reads CF-IPCountry, so this route renders per request
+  // instead of prerendering. That is deliberate: the image is built without the
+  // LEMONSQUEEZY_VARIANT_* env (only NEXT_PUBLIC_* reach the Docker build), so a
+  // prerendered page baked getProPricing()'s static PLAN_CATALOG fallback into
+  // the HTML and served a hardcoded price until the next release. Rendering per
+  // request is what makes this page agree with the live Lemon Squeezy price.
   const proPricing = await getDisplayPricing();
 
   const proFeatures = [
@@ -81,6 +87,14 @@ export default async function PricingPage({ params }: Props) {
               ) : null}
               <p className="text-sm text-muted-foreground">
                 {t("pro.yearlyNote", { price: yearlyPrice })}
+                {proPricing.local ? (
+                  <LocalPriceNote
+                    amount={proPricing.local.yearly}
+                    currency={proPricing.local.currency}
+                    billedIn={proPricing.currency}
+                    className="ms-1"
+                  />
+                ) : null}
               </p>
               <CardDescription>{t("pro.description")}</CardDescription>
             </CardHeader>

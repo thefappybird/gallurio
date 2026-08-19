@@ -33,6 +33,25 @@ proxied Cloudflare DNS). It is spoofable when the origin is reached directly,
 which is harmless: it only picks which approximate figure to render. Unknown or
 absent country falls back to USD.
 
+### `/pricing` renders per request, deliberately
+
+Reading `CF-IPCountry` opts `/pricing` out of prerendering. That is the correct
+trade here, not a regression to undo.
+
+The Docker build only receives `NEXT_PUBLIC_*` build args
+(`.github/workflows/release.yml`), so `LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID` and
+its yearly counterpart are unset during `next build`. `getProPricing()`
+therefore returns its `staticFallback` — the hardcoded `PLAN_CATALOG` PHP
+amounts — and a prerendered `/pricing` baked those into the HTML for all five
+locales, serving a fixed price until the next image build regardless of what
+Lemon Squeezy said. Per-request rendering is what makes the page agree with
+live pricing at all.
+
+The page reads no database and both inputs are process-cached (LS pricing 1h,
+FX table 24h), so the per-request cost is template rendering only. Restoring a
+static shell would mean moving the estimate to a client fetch against a new
+public endpoint plus ISR — more surface for no benefit this page needs.
+
 ## Provider
 
 Open Exchange Rates, via the existing `OPENEXCHANGERATES_APP_ID`. The free plan

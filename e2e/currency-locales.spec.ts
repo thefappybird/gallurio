@@ -34,13 +34,15 @@ function hasOverflow(page: Page) {
 // 1. All 5 locales x /pricing, mobile + desktop, light theme (default).
 test.describe("1. locale coverage on /pricing", () => {
   for (const locale of LOCALES) {
-    for (const width of [375, 1280]) {
+    for (const width of [375, 768, 1280]) {
       test(`${locale} estimate renders correctly at ${width}px`, async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await page.setViewportSize({ width, height: 900 });
         await page.goto(`/${locale}/pricing`);
 
-        const note = page.getByText(LOCALE_WORDS[locale]);
+        // /pricing carries two estimates (monthly price + yearly note); this
+        // suite checks the rendered string per locale, so the first is enough.
+        const note = page.getByText(LOCALE_WORDS[locale]).first();
         await expect(note).toBeVisible();
 
         const text = await note.textContent();
@@ -56,7 +58,7 @@ test.describe("1. locale coverage on /pricing", () => {
 
 // 2. ar (RTL) — highest-risk case: bidi ordering, bleed, overflow.
 test.describe("2. ar RTL geometry", () => {
-  for (const width of [375, 1280]) {
+  for (const width of [375, 768, 1280]) {
     test(`ar pricing card stays RTL without bleed at ${width}px`, async ({ page }) => {
       const errors = trackConsoleErrors(page);
       await page.setViewportSize({ width, height: 900 });
@@ -64,7 +66,7 @@ test.describe("2. ar RTL geometry", () => {
 
       await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 
-      const note = page.getByText(LOCALE_WORDS.ar);
+      const note = page.getByText(LOCALE_WORDS.ar).first();
       await expect(note).toBeVisible();
       const card = note.locator('xpath=ancestor::*[@data-slot="card"]');
       await expect(card).toHaveCount(1);
@@ -104,7 +106,7 @@ test.describe("3. dark theme visibility", () => {
 
       await expect(page.locator("html")).toHaveClass(/dark/);
 
-      const note = page.getByText(LOCALE_WORDS[locale]);
+      const note = page.getByText(LOCALE_WORDS[locale]).first();
       await expect(note).toBeVisible();
       const card = note.locator('xpath=ancestor::*[@data-slot="card"]');
       await expect(card).toHaveCount(1);

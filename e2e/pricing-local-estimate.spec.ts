@@ -15,8 +15,11 @@ for (const width of [375, 768, 1280]) {
 
     await expect(page.getByText("Pro", { exact: true }).first()).toBeVisible();
 
-    const note = page.getByText(ESTIMATE);
-    await expect(note).toBeVisible();
+    // Two estimates: one under the monthly price, one beside the yearly note.
+    const notes = page.getByText(ESTIMATE);
+    await expect(notes).toHaveCount(2);
+    await expect(notes.first()).toBeVisible();
+    await expect(notes.last()).toBeVisible();
 
     // The billed price stays the primary figure.
     await expect(page.getByText(/₱\s?\d/).first()).toBeVisible();
