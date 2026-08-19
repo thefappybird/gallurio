@@ -30,6 +30,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
+  AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
 // Mirrors CURRENCY_CHANGE_COOLDOWN_DAYS in lib/pricing/currencyRestatement.ts
@@ -131,14 +132,21 @@ export function WorkspaceBusinessForm({
 
   const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false);
   const [currencyPreviewCount, setCurrencyPreviewCount] = useState<number | null>(null);
+  const [pendingCurrency, setPendingCurrency] = useState<SupportedCurrency | null>(null);
 
   function handleCurrencySelectChange(next: SupportedCurrency) {
     if (next === currencyValue) return;
+    setPendingCurrency(next);
     setCurrencyDialogOpen(true);
     setCurrencyPreviewCount(null);
     previewCurrencyRestatementAction().then((result) => {
       if (!("error" in result)) setCurrencyPreviewCount(result.bookingsCount);
     });
+  }
+
+  function handleCurrencyConfirm() {
+    if (pendingCurrency) setValue("currency", pendingCurrency, { shouldDirty: true });
+    setCurrencyDialogOpen(false);
   }
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
@@ -350,6 +358,9 @@ export function WorkspaceBusinessForm({
                   <AlertDialogCancel onClick={() => setCurrencyDialogOpen(false)}>
                     {t("currencyConfirmCancel")}
                   </AlertDialogCancel>
+                  <AlertDialogAction onClick={handleCurrencyConfirm}>
+                    {t("currencyConfirmConfirm")}
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
