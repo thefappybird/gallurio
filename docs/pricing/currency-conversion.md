@@ -155,6 +155,44 @@ minutes — see `getWorkspaceRateMap`). `getTopClients` keeps its
 `sort({ totalSpent: -1 })` — there is no `{workspaceId, totalSpent}` index on
 `Client`.
 
+## Changing the workspace currency: restatement + cooldown
+
+`Workspace.currency` is editable in Settings → Workspace. Because every frozen
+row's `fxTarget` is the workspace currency **at the moment it froze**, simply
+flipping `currency` would silently break every existing frozen row — none of
+their `fxTarget`s would match the new currency, so they'd all fall back to
+live conversion, the exact drift freezing exists to prevent.
+
+`lib/pricing/currencyRestatement.ts` (`changeWorkspaceCurrency`,
+`previewCurrencyRestatement`) instead treats a currency change as an explicit
+restatement, wired into `updateWorkspaceBusinessAction`
+(`app/[locale]/(app)/settings/_actions.ts`):
+
+1. Find every booking with an already-frozen payment or deposit
+   (`payments[].fxRate` or `amount.fxRate` non-null), scoped by `workspaceId`.
+2. Resolve today's rate for **every distinct original `amount.currency`**
+   among them, before any write. If any is unresolvable, abort with no writes
+   at all — all-or-nothing, same reasoning as `buildRateMap`'s fallback, but
+   surfaced as a hard error here instead of silently degrading to unconverted,
+   since silently degrading is exactly the bug this restates.
+3. Re-freeze `payments[].fx*` and `amount.fx*` from each row's **original**
+   `amount.currency` at today's rate — never chained off the stale `fxTarget`,
+   which would compound a second conversion into a number meant to be exact.
+4. Copy the same rate onto the derived `Transaction` rows
+   (`type: "deposit" | "balance"`) that already carry a frozen `fx*`, via a
+   direct `updateMany` rather than replaying `syncBookingPaymentsForClient` —
+   `amount`/`price` never change here, only `fx*`, so there is nothing to
+   resync on the `Client.totalSpent` side (it stays untouched, per the
+   raw-unconverted-sum rule above).
+5. Stamp `Workspace.currencyChangedAt = now` **only when something was
+   actually restated**. A workspace with no paid money changes currency
+   freely and never engages the cooldown.
+
+A 90-day cooldown (`CURRENCY_CHANGE_COOLDOWN_DAYS`) then blocks the next
+change while `currencyChangedAt` is set, enforced server-side in
+`changeWorkspaceCurrency` — the settings UI's disabled state is an affordance,
+not the gate.
+
 ## Known limitations
 
 - **Rates are indicative.** Daily reference rates, not the rate a card issuer
