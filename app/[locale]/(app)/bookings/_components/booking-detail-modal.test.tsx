@@ -27,6 +27,7 @@ import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import type { TimeMode } from "@/lib/utils/time-format";
 import { BookingDetailModal } from "./booking-detail-modal";
+import { formatMoney } from "@/lib/utils/format-currency";
 
 // ── Time-format context stub ─────────────────────────────────────────────────
 // Lets individual tests flip the saved time-format preference (mirrors the
@@ -2763,5 +2764,120 @@ describe("Header outstanding balance", () => {
     await waitForLoad();
 
     expect(screen.getByText("Outstanding balance: ₱5,000")).toBeInTheDocument();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Frozen FX rate subtitle — payment rows + booking total
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Frozen FX rate subtitle", () => {
+  const FX_AT = "2026-08-12T00:00:00.000Z";
+
+  function expectedFxSubtitle(price: number, rate: number, target: string) {
+    const converted = formatMoney(price * rate, target, "en", {
+      maximumFractionDigits: 2,
+    });
+    const rateLabel = rate.toLocaleString("en", { maximumFractionDigits: 5 });
+    const dateLabel = new Date(FX_AT).toLocaleDateString("en", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    // getByText's default string matcher normalizes the DOM node's text
+    // (collapsing whitespace, including the NBSP Intl inserts between a
+    // currency code and its amount) but never normalizes the matcher string
+    // itself — so the expected string has to be pre-collapsed the same way.
+    return `≈ ${converted} · rate ${rateLabel} · ${dateLabel}`.replace(/\s+/g, " ");
+  }
+
+  it("shows the frozen rate under a paid payment when fxTarget differs from the booking currency", async () => {
+    const PAYMENT = {
+      price: 1000,
+      status: "paid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
+      title: "Deposit",
+      fxRate: 0.02345,
+      fxTarget: "SGD",
+      fxAt: FX_AT,
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    expect(
+      screen.getByText(expectedFxSubtitle(1000, 0.02345, "SGD"))
+    ).toBeInTheDocument();
+  });
+
+  it("omits the subtitle when the frozen fxTarget equals the booking currency", async () => {
+    const PAYMENT = {
+      price: 1000,
+      status: "paid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
+      title: "Deposit",
+      fxRate: 1,
+      fxTarget: "PHP",
+      fxAt: FX_AT,
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    expect(screen.queryByText(/^≈/)).not.toBeInTheDocument();
+  });
+
+  it("omits the subtitle for an unfrozen (legacy) paid payment", async () => {
+    const PAYMENT = {
+      price: 1000,
+      status: "paid" as const,
+      createdAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
+      title: "Deposit",
+      fxRate: null,
+      fxTarget: null,
+      fxAt: null,
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, payments: [PAYMENT] } })
+    );
+    renderModal();
+    await waitForLoad();
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    expect(screen.queryByText(/^≈/)).not.toBeInTheDocument();
+  });
+
+  it("shows the frozen rate under the booking total when amount.fxTarget differs from the booking currency", async () => {
+    const bookingWithFrozenTotal = {
+      ...MOCK_BOOKING,
+      amount: {
+        total: 10000,
+        deposit: 3000,
+        currency: "PHP",
+        fxRate: 0.5,
+        fxTarget: "USD",
+        fxAt: FX_AT,
+      },
+    };
+    vi.stubGlobal("fetch", makeFetch({ booking: bookingWithFrozenTotal }));
+    renderModal();
+    await waitForLoad();
+    fireEvent.click(screen.getByRole("tab", { name: "Payments" }));
+
+    expect(
+      screen.getByText(expectedFxSubtitle(10000, 0.5, "USD"))
+    ).toBeInTheDocument();
   });
 });

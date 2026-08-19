@@ -1320,6 +1320,7 @@
         "card": "Card",
         "remit": "Remit",
         "paidOn": "دُفع في {date}",
+        "frozenRate": "≈ {price} · السعر {rate} · {date}",
         "empty": "لا توجد مدفوعات مجدولة بعد لهذا الحجز",
         "exceedsBalance": "يتجاوز الرصيد المتبقي",
         "titleRequired": "العنوان مطلوب.",

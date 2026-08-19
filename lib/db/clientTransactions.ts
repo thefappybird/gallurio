@@ -388,11 +388,13 @@ export async function syncBookingPaymentsForClient(opts: SyncBookingPaymentsOpts
       );
     }
 
-    // Deliberately a raw sum in the recorded currencies: totalSpent is stored
-    // unconverted and converted at read time against current rates
+    // Deliberately a raw sum in the recorded currencies, independent of the
+    // frozen fx.* now carried on each payment/booking: totalSpent stays
+    // unconverted and is converted at read time against current rates
     // (lib/pricing/clientTotals.ts), so it never disagrees with the dashboard
-    // roll-up. Do not convert here — that would freeze a write-time rate into
-    // the field and make the two views drift apart.
+    // roll-up. The frozen fx.* fields answer a different question (what a
+    // specific paid amount was worth at the moment it was collected) — do not
+    // fold that into this running total.
     const [summary] = await Transaction.aggregate<{
       total: number;
       lastPaymentDate: Date | null;

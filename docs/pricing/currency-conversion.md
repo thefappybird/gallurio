@@ -104,18 +104,41 @@ value into shell history you keep, and do not commit it.
 - Server logs print `[fx] Failed to fetch reference rates, currency conversion
   disabled: …` when the API call itself fails.
 
-## `Client.totalSpent`
+## Frozen rate on payments and `Client.totalSpent`
 
-The field stays a **raw, unconverted** running sum in the currencies each
-booking used, written by `lib/db/clientTransactions.ts`. It is converted at
-**read** time instead, by `getConvertedClientTotals`, which re-derives the total
-from the `Transaction` ledger (`type: deposit|balance` — the same definition the
-write path uses) with `convertedAmountExpr`.
+A booking's `amount` and each of its `payments[]` carry `fxRate` / `fxTarget` /
+`fxAt`. The rate is frozen **once**, the moment a payment first becomes `paid`
+— `fxTarget` is the workspace currency at that instant, and the rate is never
+recaptured even if the payment is later edited. This is the primary path for
+"what did this paid amount actually convert to."
 
-Read-time was chosen over storing a converted value because the dashboard
-roll-up also uses current rates. Freezing a write-time rate into the field would
-make the clients table and the dashboard disagree about the same client, with no
-way for the user to tell which one is right. A backfill is also avoided.
+The freeze lives on `Booking`, not on `Transaction`: `syncBookingPaymentsForClient`
+deletes and recreates every `type: "balance"` `Transaction` on each booking
+edit, so a rate stored only on the ledger row would re-freeze at today's rate
+on every edit instead of staying pinned to the original payment date. Each
+derived `Transaction` gets a **copy** of its source payment's `fx*` fields so
+the ledger can still show the same frozen figure without owning it.
+
+Only *collected* money freezes. Scheduled/expected amounts (an unpaid
+`amount.total`, a booking with no paid payments yet) have no rate to freeze
+and stay live-converted. Legacy rows written before this shipped, and rows
+where FX was unavailable at the moment of payment, also have null `fx*` — read
+paths fall back to the live rate map for those, and the UI omits any frozen-rate
+subtitle rather than guessing.
+
+`Client.totalSpent` stays a **raw, unconverted** running sum in the currencies
+each booking used, written by `lib/db/clientTransactions.ts` — independent of
+any frozen `fx*` on the underlying payments. It is converted at **read** time
+instead, by `getConvertedClientTotals`, which re-derives the total from the
+`Transaction` ledger (`type: deposit|balance` — the same definition the write
+path uses) with `frozenOrLiveAmountExpr` (prefers each row's frozen rate when
+`fxTarget` matches the current workspace currency, else falls back to the live
+rate map).
+
+Live-map fallback is still what keeps the clients table and the dashboard
+agreeing on rows without a usable frozen rate — there is no way for the user
+to tell which of two disagreeing figures is right, so both read paths apply
+the same preference order.
 
 Conversion is applied at every place the total is rendered labelled with the
 workspace currency:
