@@ -7,7 +7,10 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("next-intl", () => ({
-  useTranslations: vi.fn(() => (key: string) => key),
+  useTranslations: vi.fn(
+    () => (key: string, params?: Record<string, unknown>) =>
+      params ? `${key}:${JSON.stringify(params)}` : key
+  ),
 }));
 
 vi.mock("@/hooks/useSlugAvailability", () => ({
@@ -23,9 +26,12 @@ vi.mock("@/lib/utils/handleActionResult", () => ({
 }));
 
 const updateWorkspaceBusinessAction = vi.fn().mockResolvedValue({ ok: true });
+const previewCurrencyRestatementAction = vi.fn().mockResolvedValue({ bookingsCount: 0 });
 vi.mock("../_actions", () => ({
   updateWorkspaceBusinessAction: (...args: unknown[]) =>
     updateWorkspaceBusinessAction(...args),
+  previewCurrencyRestatementAction: (...args: unknown[]) =>
+    previewCurrencyRestatementAction(...args),
 }));
 
 vi.mock("@/components/ui/location-picker", () => ({
@@ -86,6 +92,32 @@ describe("WorkspaceBusinessForm — artists business type + other free text", ()
     fireEvent.click(screen.getByRole("button", { name: "save" }));
 
     expect(await screen.findByText(/tell us your business type/i)).toBeInTheDocument();
+  });
+});
+
+describe("WorkspaceBusinessForm — currency change lock + restatement dialog", () => {
+  it("disables the currency select and shows the locked hint when a lock is active", () => {
+    render(
+      <WorkspaceBusinessForm
+        defaults={baseDefaults}
+        locale="en"
+        currencyLockedUntil="2026-11-17T00:00:00.000Z"
+      />
+    );
+
+    const select = screen.getByLabelText("currency") as HTMLSelectElement;
+    expect(select).toBeDisabled();
+    expect(screen.getByText(/currencyLockedUntil/)).toBeInTheDocument();
+  });
+
+  it("opens the confirm dialog when the currency select changes to a different value", async () => {
+    previewCurrencyRestatementAction.mockResolvedValueOnce({ bookingsCount: 3 });
+    render(<WorkspaceBusinessForm defaults={baseDefaults} locale="en" />);
+
+    const select = screen.getByLabelText("currency") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "SGD" } });
+
+    expect(await screen.findByText("currencyConfirmTitle")).toBeInTheDocument();
   });
 });
 

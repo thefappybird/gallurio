@@ -22,6 +22,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
@@ -70,11 +76,20 @@ const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
 
 export function WorkspaceBusinessForm({
   defaults,
+  locale = "en",
+  currencyLockedUntil = null,
 }: {
   defaults: UpdateWorkspaceBusinessInput;
+  locale?: string;
+  currencyLockedUntil?: string | null;
 }) {
   const t = useTranslations("app.settings.workspace");
   const tOnb = useTranslations("onboarding.business");
+  const currencyLockedUntilLabel = currencyLockedUntil
+    ? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+        new Date(currencyLockedUntil)
+      )
+    : null;
 
   const {
     register,
@@ -93,11 +108,18 @@ export function WorkspaceBusinessForm({
   const { status: slugStatus } = useSlugAvailability(slugValue, defaults.slug);
   const logoUrl = watch("logoUrl");
   const businessTypeValue = watch("businessType");
+  const currencyValue = watch("currency");
 
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoDragActive, setLogoDragActive] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false);
+
+  function handleCurrencySelectChange(next: SupportedCurrency) {
+    if (next !== currencyValue) setCurrencyDialogOpen(true);
+  }
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
@@ -265,8 +287,11 @@ export function WorkspaceBusinessForm({
             <Label htmlFor="currency">{tOnb("currency")}</Label>
             <select
               id="currency"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("currency")}
+              disabled={!!currencyLockedUntil}
+              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+              {...register("currency", {
+                onChange: (e) => handleCurrencySelectChange(e.target.value as SupportedCurrency),
+              })}
             >
               {SUPPORTED_CURRENCIES.map((c) => (
                 <option key={c} value={c}>
@@ -274,10 +299,25 @@ export function WorkspaceBusinessForm({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-muted-foreground">{t("currencyWarning")}</p>
+            <p className="text-xs text-muted-foreground">
+              {currencyLockedUntilLabel
+                ? t("currencyLockedUntil", { date: currencyLockedUntilLabel })
+                : t("currencyWarning")}
+            </p>
             {errors.currency && (
               <p className="text-sm text-destructive">{fieldMessage(errors.currency)}</p>
             )}
+
+            <AlertDialog
+              open={currencyDialogOpen}
+              onOpenChange={(next) => !next && setCurrencyDialogOpen(false)}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t("currencyConfirmTitle")}</AlertDialogTitle>
+                </AlertDialogHeader>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           <div className="flex flex-col gap-1.5">
