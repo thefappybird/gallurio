@@ -30,6 +30,13 @@ const paymentSchema = new Schema(
     // itself (rather than only its derived Transaction) so edits and receipts
     // retain the original method.
     method: { type: String, enum: ["cash", "card", "remit"], default: "cash" },
+    // FX rate/target/timestamp frozen the moment this payment is first marked
+    // paid. Never recaptured after that — money already collected must not
+    // reprice as today's live rate moves. Null while unpaid or when no rate
+    // was available at freeze time (read path falls back to a live rate).
+    fxRate: { type: Number, default: null },
+    fxTarget: { type: String, default: null },
+    fxAt: { type: Date, default: null },
   },
   { _id: false }
 );
@@ -74,6 +81,12 @@ const bookingSchema = new Schema(
       total: { type: Number, default: 0 },
       deposit: { type: Number, default: 0 },
       currency: { type: String, default: "PHP" },
+      // Frozen FX rate/target/timestamp for the deposit portion, same rule as
+      // paymentSchema.fxRate: set once when the deposit is collected, never
+      // recaptured on later edits.
+      fxRate: { type: Number, default: null },
+      fxTarget: { type: String, default: null },
+      fxAt: { type: Date, default: null },
     },
     payments: { type: [paymentSchema], default: [] },
     invoiceNumber: { type: String, default: null },

@@ -28,6 +28,12 @@ const transactionSchema = new Schema(
     lsSubscriptionId: { type: String, default: null },
     notes: { type: String, default: "" },
     paidAt: { type: Date, default: null },
+    // Copies of the source booking payment's frozen fx fields, written by the
+    // ledger sync that derives this row. Never recomputed here — the booking
+    // payment is the source of truth, this is just a denormalized copy.
+    fxRate: { type: Number, default: null },
+    fxTarget: { type: String, default: null },
+    fxAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
