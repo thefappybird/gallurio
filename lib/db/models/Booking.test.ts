@@ -108,8 +108,10 @@ describe("Booking model — payments", () => {
 
   it("defaults the booking amount's fx fields to null when omitted", async () => {
     const b = await Booking.create(baseBooking());
-    expect(b.amount.fxRate).toBeNull();
-    expect(b.amount.fxTarget).toBeNull();
-    expect(b.amount.fxAt).toBeNull();
+    // `amount` is an optional subdocument on the inferred type, but the schema
+    // always materializes it from its defaults.
+    expect(b.amount?.fxRate).toBeNull();
+    expect(b.amount?.fxTarget).toBeNull();
+    expect(b.amount?.fxAt).toBeNull();
   });
 });
