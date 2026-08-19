@@ -15,6 +15,7 @@ import {
 } from "@/lib/validators/workspace";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { deleteImage, verifyImageOwnership } from "@/lib/storage/cloudflareImages";
+import { changeWorkspaceCurrency, previewCurrencyRestatement } from "@/lib/pricing/currencyRestatement";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
@@ -78,6 +79,25 @@ export async function updateWorkspaceBusinessAction(
   ).lean();
   const oldLogoAssetId = current?.logoAssetId || undefined;
 
+  // Currency change gate: all-or-nothing restatement of already-frozen
+  // payments/deposits, plus the 90-day cooldown. Runs before the write below
+  // so a rejected currency change never partially saves the rest of the form.
+  const currencyResult = await changeWorkspaceCurrency({
+    workspaceId: ctx.workspace._id,
+    currentCurrency: ctx.workspace.currency,
+    currentCurrencyChangedAt: ctx.workspace.currencyChangedAt ?? null,
+    newCurrency: currency,
+  });
+  if (!currencyResult.ok) {
+    if (currencyResult.error === "currency_change_locked") {
+      return {
+        error: "currency_change_locked",
+        params: { unlockDate: currencyResult.unlockDate.toISOString() },
+      };
+    }
+    return { error: "fx_rate_unavailable" };
+  }
+
   try {
     await Workspace.updateOne(
       { _id: ctx.workspace._id },
@@ -123,6 +143,20 @@ export async function updateWorkspaceBusinessAction(
 
   revalidatePath("/settings/workspace", "page");
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Currency-change preview — count of paid payments/deposits that would be
+// restated if the owner confirms a currency change. Feeds the confirm dialog.
+// ---------------------------------------------------------------------------
+
+export async function previewCurrencyRestatementAction(): Promise<
+  { bookingsCount: number } | { error: string }
+> {
+  const ctx = await ownerContext();
+  if ("error" in ctx) return { error: ctx.error };
+
+  return previewCurrencyRestatement(ctx.workspace._id);
 }
 
 // ---------------------------------------------------------------------------
