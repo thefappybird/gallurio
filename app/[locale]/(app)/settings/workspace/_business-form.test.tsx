@@ -25,6 +25,11 @@ vi.mock("@/lib/utils/handleActionResult", () => ({
   toastActionResult: vi.fn(() => true),
 }));
 
+const toastError = vi.fn();
+vi.mock("sonner", () => ({
+  toast: { error: (...args: unknown[]) => toastError(...args) },
+}));
+
 const updateWorkspaceBusinessAction = vi.fn().mockResolvedValue({ ok: true });
 const previewCurrencyRestatementAction = vi.fn().mockResolvedValue({ bookingsCount: 0 });
 vi.mock("../_actions", () => ({
@@ -179,6 +184,35 @@ describe("WorkspaceBusinessForm — currency change lock + restatement dialog", 
       expect(updateWorkspaceBusinessAction).toHaveBeenCalledWith(
         expect.objectContaining({ currency: "SGD" })
       );
+    });
+  });
+
+  it("shows the localized lock error with the formatted unlock date on a locked submit", async () => {
+    updateWorkspaceBusinessAction.mockResolvedValueOnce({
+      error: "currency_change_locked",
+      params: { unlockDate: "2026-11-17T00:00:00.000Z" },
+    });
+    render(<WorkspaceBusinessForm defaults={baseDefaults} locale="en" />);
+
+    fireEvent.change(screen.getByLabelText("businessName"), { target: { value: "New name" } });
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith(
+        expect.stringContaining("currencyChangeLockedError")
+      );
+    });
+  });
+
+  it("shows the FX rate error and does not treat it as saved on fx_rate_unavailable", async () => {
+    updateWorkspaceBusinessAction.mockResolvedValueOnce({ error: "fx_rate_unavailable" });
+    render(<WorkspaceBusinessForm defaults={baseDefaults} locale="en" />);
+
+    fireEvent.change(screen.getByLabelText("businessName"), { target: { value: "New name" } });
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("currencyChangeRateError");
     });
   });
 });

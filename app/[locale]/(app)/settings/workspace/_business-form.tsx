@@ -5,6 +5,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 import { toastActionResult } from "@/lib/utils/handleActionResult";
 import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
 import {
@@ -151,6 +152,19 @@ export function WorkspaceBusinessForm({
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
+    if (result?.error === "currency_change_locked") {
+      const rawDate = result.params?.unlockDate;
+      const date =
+        typeof rawDate === "string"
+          ? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(rawDate))
+          : "";
+      toast.error(t("currencyChangeLockedError", { date }));
+      return;
+    }
+    if (result?.error === "fx_rate_unavailable") {
+      toast.error(t("currencyChangeRateError"));
+      return;
+    }
     if (!toastActionResult(result, t("savedToast"))) return;
     reset(data);
   }
