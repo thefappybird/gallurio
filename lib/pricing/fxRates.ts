@@ -83,3 +83,20 @@ export async function getFxRate(base: string, target: string): Promise<number | 
 
   return perUsdTo / perUsdFrom;
 }
+
+// Resolves a freeze-worthy FX snapshot for a booking write: `{ rate, target }`
+// to store on a payment/amount, or `null` when unavailable — the caller then
+// leaves the write unfrozen and the read path falls back to a live rate. Same
+// currency still returns `{ rate: 1, target }` (a real, storable freeze).
+// Never throws: an FX outage must never fail or block a booking write.
+export async function resolveFxFreeze(
+  base: string,
+  target: string
+): Promise<{ rate: number; target: string } | null> {
+  try {
+    const rate = await getFxRate(base, target);
+    return rate != null && rate > 0 ? { rate, target } : null;
+  } catch {
+    return null;
+  }
+}

@@ -2,7 +2,11 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vites
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Client, Transaction } from "@/lib/db/models";
-import { recordBookingForClient, reassignBookingBetweenClients } from "./clientTransactions";
+import {
+  recordBookingForClient,
+  reassignBookingBetweenClients,
+  syncBookingPaymentsForClient,
+} from "./clientTransactions";
 
 const WS_ID = new Types.ObjectId();
 const WS_A = new Types.ObjectId();
@@ -601,5 +605,57 @@ describe("reassignBookingBetweenClients", () => {
     expect(from?.lastPaymentDate ?? null).toBeNull();
     expect(from?.lastPaymentAmount ?? null).toBeNull();
     expect(from?.bookingsCount).toBe(1);
+  });
+});
+
+describe("recordBookingForClient — fx copy", () => {
+  it("copies the booking amount's frozen fx fields onto the deposit Transaction", async () => {
+    await makeClient();
+    const fxAt = new Date("2026-06-01T00:00:00.000Z");
+
+    await recordBookingForClient({
+      workspaceId: WS_ID,
+      clientId: CLIENT_ID,
+      booking: {
+        ...BASE_BOOKING,
+        amount: { total: 50_000, deposit: 10_000, currency: "USD", fxRate: 58.25, fxTarget: "PHP", fxAt },
+      },
+      source: "manual",
+    });
+
+    const tx = await Transaction.findOne({ workspaceId: WS_ID, bookingId: BOOKING_ID }).lean();
+    expect(tx?.fxRate).toBe(58.25);
+    expect(tx?.fxTarget).toBe("PHP");
+    expect(tx?.fxAt?.toISOString()).toBe(fxAt.toISOString());
+  });
+});
+
+describe("syncBookingPaymentsForClient — fx copy", () => {
+  it("copies a paid payment's frozen fx fields onto the derived balance Transaction", async () => {
+    await makeClient();
+    const fxAt = new Date("2026-06-10T00:00:00.000Z");
+
+    await syncBookingPaymentsForClient({
+      workspaceId: WS_ID,
+      clientId: CLIENT_ID,
+      booking: {
+        _id: BOOKING_ID,
+        amount: { currency: "USD" },
+        payments: [
+          {
+            price: 100,
+            status: "paid",
+            fxRate: 58.25,
+            fxTarget: "PHP",
+            fxAt,
+          },
+        ],
+      },
+    });
+
+    const tx = await Transaction.findOne({ workspaceId: WS_ID, type: "balance" }).lean();
+    expect(tx?.fxRate).toBe(58.25);
+    expect(tx?.fxTarget).toBe("PHP");
+    expect(tx?.fxAt?.toISOString()).toBe(fxAt.toISOString());
   });
 });

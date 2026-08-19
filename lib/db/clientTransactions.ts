@@ -299,7 +299,14 @@ type RecordBookingOpts = {
   clientId: mongoose.Types.ObjectId | string;
   booking: {
     _id: mongoose.Types.ObjectId;
-    amount: { total: number; deposit: number; currency: string };
+    amount: {
+      total: number;
+      deposit: number;
+      currency: string;
+      fxRate?: number | null;
+      fxTarget?: string | null;
+      fxAt?: Date | null;
+    };
     firstSessionStart: Date;
     teamId?: mongoose.Types.ObjectId | string | null;
   };
@@ -320,6 +327,9 @@ type SyncBookingPaymentsOpts = {
       title?: string;
       method?: "cash" | "card" | "remit";
       paidAt?: Date | null;
+      fxRate?: number | null;
+      fxTarget?: string | null;
+      fxAt?: Date | null;
     }>;
   };
   session?: mongoose.ClientSession;
@@ -354,6 +364,12 @@ export async function syncBookingPaymentsForClient(opts: SyncBookingPaymentsOpts
           method: payment.method ?? "cash",
           notes: payment.title ?? "",
           paidAt: payment.paidAt ?? new Date(),
+          // Copied, not recomputed — this survives the deleteMany+recreate
+          // cycle above. The rate itself is frozen once by normalizePayments
+          // at write time; deriving it again here would re-freeze on every edit.
+          fxRate: payment.fxRate ?? null,
+          fxTarget: payment.fxTarget ?? null,
+          fxAt: payment.fxAt ?? null,
         })),
         { session }
       );
@@ -437,6 +453,11 @@ export async function recordBookingForClient(opts: RecordBookingOpts): Promise<v
             type: "deposit",
             method: "other",
             paidAt: occurredAt,
+            // Copied from the booking amount, which the caller freezes (or
+            // leaves null on an FX outage) at write time — never recomputed here.
+            fxRate: booking.amount.fxRate ?? null,
+            fxTarget: booking.amount.fxTarget ?? null,
+            fxAt: booking.amount.fxAt ?? null,
           },
         ],
         { session }

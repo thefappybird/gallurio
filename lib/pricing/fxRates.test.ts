@@ -79,3 +79,11 @@ describe("getFxRate", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("resolveFxFreeze", () => {
+  it("returns a freeze snapshot when a rate is available", async () => {
+    stubRates({ USD: 1, PHP: 58 });
+    const { resolveFxFreeze } = await import("./fxRates");
+    expect(await resolveFxFreeze("USD", "PHP")).toEqual({ rate: 58, target: "PHP" });
+  });
+});
