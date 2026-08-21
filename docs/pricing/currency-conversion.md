@@ -9,6 +9,31 @@ Two separate things use one FX source:
    transaction into the workspace currency before summing, so a workspace with
    a USD-paying client still gets one correct PHP figure.
 
+## Which currency a figure is shown in
+
+| Surface | Headline | Subtitle |
+| --- | --- | --- |
+| Public price surfaces (landing teaser, `/pricing`, `/subscribe`, onboarding plan, settings billing) | the visitor's own currency | `Billed as ₱250 PHP` — what Lemon Squeezy charges |
+| Booking list rows, calendar | workspace currency | none |
+| Booking detail, client detail bookings/payments | the record's own currency | workspace equivalent; rate + date when the money froze one |
+| Dashboard KPIs, Total Spent, top clients | workspace currency | none |
+| Booking export (CSV/XLSX) | the record's own currency | `workspaceAmountTotal` / `workspaceCurrency` columns |
+
+Two rules drive the table. In-app, the workspace has one currency, so any
+record that does *not* use it carries a subtitle naming what it is worth in
+that currency, and a record that does use it carries no subtitle at all. Lists
+and aggregates are the exception: a column of mixed currencies cannot be
+scanned or summed by eye, so those convert and show one currency.
+
+On public pages the visitor has no workspace, so the headline is their own
+currency — a price only reads as a price in a currency you use daily. If the
+rate table has no entry for it, the headline falls back to USD rather than to
+the store currency. The amount actually charged is always named underneath;
+that line disappears only when the visitor already uses the store currency.
+`headlinePrice()` (`lib/pricing/displayPrice.ts`) picks the pair, and
+`BilledAsNote` renders the disclosure — dropping the trailing ISO code in
+locales that format the amount with the code already.
+
 ## Why the app does this and not Lemon Squeezy
 
 Lemon Squeezy has a single store currency, used across its dashboard, checkout
