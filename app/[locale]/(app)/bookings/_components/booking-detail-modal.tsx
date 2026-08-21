@@ -86,6 +86,7 @@ import {
 } from "@/lib/validators/booking";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { FxSubtitle } from "@/components/app/fx-subtitle";
 import { TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import {
@@ -176,44 +177,6 @@ function normalizeBookingDoc(booking: BookingDoc | null): BookingDoc | null {
     payments: Array.isArray(booking.payments) ? booking.payments : [],
     notes: booking.notes ?? "",
   };
-}
-
-/** Subtitle showing the rate a paid amount was frozen at, so the figure next
- *  to it never gets mistaken for one converted at today's rate. Only rendered
- *  by callers that already checked fxRate/fxTarget are present and differ
- *  from the booking's own currency — never recomputes or guesses a rate. */
-function FxSubtitle({
-  price,
-  rate,
-  target,
-  at,
-  locale,
-  className,
-}: {
-  price: number;
-  rate: number;
-  target: string;
-  at: string | null;
-  locale: string;
-  className?: string;
-}) {
-  const tPayments = useTranslations("app.bookings.payments");
-  const converted = formatMoney(price * rate, target, locale, {
-    maximumFractionDigits: 2,
-  });
-  const rateLabel = rate.toLocaleString(locale, { maximumFractionDigits: 5 });
-  const dateLabel = at
-    ? new Date(at).toLocaleDateString(locale, {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "";
-  return (
-    <span className={cn("text-xs text-muted-foreground", className)}>
-      {tPayments("frozenRate", { price: converted, rate: rateLabel, date: dateLabel })}
-    </span>
-  );
 }
 
 type Props = {
@@ -2371,7 +2334,7 @@ function BookingTabs({
             booking.amount.fxTarget &&
             booking.amount.fxTarget !== booking.amount.currency ? (
               <FxSubtitle
-                price={total}
+                amount={total}
                 rate={booking.amount.fxRate}
                 target={booking.amount.fxTarget}
                 at={booking.amount.fxAt ?? null}
@@ -2607,7 +2570,7 @@ function BookingTabs({
                 payment.fxTarget &&
                 payment.fxTarget !== booking.amount.currency ? (
                   <FxSubtitle
-                    price={effectivePrice}
+                    amount={effectivePrice}
                     rate={payment.fxRate}
                     target={payment.fxTarget}
                     at={payment.fxAt ?? null}

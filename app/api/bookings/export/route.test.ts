@@ -52,6 +52,14 @@ function futureIso(daysAhead: number, hourUtc: number): string {
   return d.toISOString();
 }
 
+// Fixed rate map so the workspace-currency columns convert deterministically.
+// The real helper memoizes per workspace for five minutes, which would make
+// this depend on which test seeded a foreign currency first.
+vi.mock("@/lib/pricing/workspaceRates", () => ({
+  NO_CONVERSION: { rates: {}, target: "" },
+  getWorkspaceRateMap: vi.fn(async () => ({ rates: { PHP: 1, SGD: 40 }, target: "PHP" })),
+}));
+
 async function seedBooking(
   wsId: Types.ObjectId,
   overrides: Record<string, unknown> = {}
@@ -139,6 +147,8 @@ const EXPECTED_HEADERS = [
   "invoiceNumber",
   "payments",
   "createdAt",
+  "workspaceAmountTotal",
+  "workspaceCurrency",
 ];
 
 describe("GET /api/bookings/export", () => {
@@ -193,6 +203,18 @@ describe("GET /api/bookings/export", () => {
     const body = await res.text();
     const { headers } = parseCsv(body);
     expect(headers).toEqual(EXPECTED_HEADERS);
+  });
+
+  it("carries a workspace-currency total for a foreign-currency booking", async () => {
+    await seedBooking(WS_A, { title: "SGD job", amountTotal: 1000, currency: "SGD" });
+
+    const res = await callExport();
+    const body = await res.text();
+    const { headers, rows } = parseCsv(body);
+
+    const idx = headers.indexOf("workspaceAmountTotal");
+    expect(idx).toBeGreaterThan(-1);
+    expect(Number(rows[0][idx])).toBeGreaterThan(1000);
   });
 
   it("single-session booking → 1 data row, session_index=0, booking_id matches", async () => {

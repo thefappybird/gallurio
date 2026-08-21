@@ -1321,6 +1321,7 @@
         "unpaid": "Unpaid",
         "paidOn": "Paid on {date}",
         "frozenRate": "≈ {price} · rate {rate} · {date}",
+        "approx": "≈ {price}",
         "empty": "No payments scheduled yet for this booking",
         "exceedsBalance": "Exceeds remaining balance",
         "titleRequired": "Title is required",

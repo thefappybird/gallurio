@@ -11,6 +11,7 @@ import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getClientBookingsAction, getClientPaymentsAction } from "@/lib/actions/clients";
 import type { ClientBookingRow, ClientPaymentRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
+import { FxSubtitle } from "@/components/app/fx-subtitle";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { ClientRow } from "./clients-table";
 import { SourceBadge } from "./source-badge";
@@ -261,13 +262,24 @@ function ClientDetailModalInner({
                         <Badge variant="outline" className="text-xs capitalize">
                           {tBookingStatus(b.status as BookingStatus)}
                         </Badge>
-                        <span className="text-sm tabular-nums">
-                          {new Intl.NumberFormat(locale, {
-                            style: "currency",
-                            currency: b.currency,
-                            minimumFractionDigits: 0,
-                          }).format(b.total)}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm tabular-nums">
+                            {new Intl.NumberFormat(locale, {
+                              style: "currency",
+                              currency: b.currency,
+                              minimumFractionDigits: 0,
+                            }).format(b.total)}
+                          </span>
+                          {b.converted ? (
+                            <FxSubtitle
+                              amount={b.converted.rate ? b.total : b.converted.amount}
+                              target={b.converted.currency}
+                              rate={b.converted.rate}
+                              at={b.converted.at}
+                              locale={locale}
+                            />
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -286,7 +298,18 @@ function ClientDetailModalInner({
                 {payments.map((payment) => (
                   <div key={payment.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border border-border px-3 py-2">
                     <span className="truncate text-sm font-medium">{payment.bookingTitle}</span>
-                    <span className="tabular-nums text-sm font-medium text-brand">{new Intl.NumberFormat(locale, { style: "currency", currency: payment.currency, minimumFractionDigits: 0 }).format(payment.amount)}</span>
+                    <div className="flex flex-col items-end">
+                      <span className="tabular-nums text-sm font-medium text-brand">{new Intl.NumberFormat(locale, { style: "currency", currency: payment.currency, minimumFractionDigits: 0 }).format(payment.amount)}</span>
+                      {payment.converted ? (
+                        <FxSubtitle
+                          amount={payment.converted.rate ? payment.amount : payment.converted.amount}
+                          target={payment.converted.currency}
+                          rate={payment.converted.rate}
+                          at={payment.converted.at}
+                          locale={locale}
+                        />
+                      ) : null}
+                    </div>
                     <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                       <span className="truncate">{payment.paymentTitle}</span>
                       {payment.method !== "other" ? (

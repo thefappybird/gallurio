@@ -1321,6 +1321,7 @@
         "unpaid": "ยังไม่ชำระ",
         "paidOn": "ชำระเมื่อ {date}",
         "frozenRate": "≈ {price} · อัตรา {rate} · {date}",
+        "approx": "≈ {price}",
         "empty": "ยังไม่มีการชำระเงินที่กำหนดไว้สำหรับการจองนี้",
         "exceedsBalance": "เกินยอดคงเหลือ",
         "titleRequired": "ต้องระบุชื่อรายการ",

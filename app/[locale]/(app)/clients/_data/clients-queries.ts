@@ -4,6 +4,7 @@ import { Client, Booking, Transaction } from "@/lib/db/models";
 import type { ClientDoc } from "@/lib/db/models/Client";
 import { getConvertedClientTotals } from "@/lib/pricing/clientTotals";
 import { NO_CONVERSION, type WorkspaceRates } from "@/lib/pricing/workspaceRates";
+import { frozenOrLiveAmount } from "@/lib/pricing/currencyConverter";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -171,6 +172,48 @@ export async function getWorkspaceTags(workspaceId: WorkspaceId): Promise<string
   return result.filter((t): t is string => typeof t === "string").sort();
 }
 
+/**
+ * What a foreign-currency figure is worth in the workspace currency. Null when
+ * the record already uses the workspace currency (nothing to disclose) or when
+ * no rate could be resolved. `rate`/`at` are set only for money that froze a
+ * rate when it was collected — never a guess.
+ */
+export type ConvertedFigure = {
+  amount: number;
+  currency: string;
+  rate: number | null;
+  at: string | null;
+};
+
+function convertedFor(
+  amount: number,
+  currency: string | null | undefined,
+  fx: WorkspaceRates | undefined,
+  frozen?: { rate?: number | null; at?: Date | null }
+): ConvertedFigure | null {
+  if (!fx) return null;
+  const source = (currency ?? fx.target).toUpperCase();
+  if (source === fx.target.toUpperCase()) return null;
+
+  const usableFrozen =
+    frozen?.rate && frozen.rate > 0 ? { rate: frozen.rate, at: frozen.at ?? null } : null;
+  if (!usableFrozen && !fx.rates[source]) return null;
+
+  return {
+    amount: frozenOrLiveAmount(
+      amount,
+      source,
+      fx.rates,
+      fx.target,
+      usableFrozen?.rate,
+      usableFrozen ? fx.target : null
+    ),
+    currency: fx.target,
+    rate: usableFrozen?.rate ?? null,
+    at: usableFrozen?.at ? new Date(usableFrozen.at).toISOString() : null,
+  };
+}
+
 export type ClientBookingRow = {
   id: string;
   title: string;
@@ -179,6 +222,7 @@ export type ClientBookingRow = {
   lastSessionEnd: Date;
   total: number;
   currency: string;
+  converted: ConvertedFigure | null;
 };
 
 export type ClientPaymentRow = {
@@ -189,13 +233,15 @@ export type ClientPaymentRow = {
   currency: string;
   method: "cash" | "card" | "remit" | "other";
   paidAt: Date | null;
+  converted: ConvertedFigure | null;
 };
 
 export async function getClientPayments(
   workspaceId: WorkspaceId,
   clientId: WorkspaceId,
   page = 1,
-  limit = 20
+  limit = 20,
+  fx?: WorkspaceRates
 ): Promise<{ items: ClientPaymentRow[]; hasMore: boolean }> {
   const skip = (page - 1) * limit;
   const transactions = await Transaction.find({
@@ -222,6 +268,13 @@ export async function getClientPayments(
       currency: row.currency ?? "PHP",
       method: (row.method === "card" || row.method === "remit" || row.method === "cash" ? row.method : "other"),
       paidAt: row.paidAt ?? null,
+      converted: convertedFor(row.amount, row.currency, fx, {
+        rate:
+          row.fxTarget && fx && row.fxTarget.toUpperCase() === fx.target.toUpperCase()
+            ? row.fxRate
+            : null,
+        at: row.fxAt ?? null,
+      }),
     })),
     hasMore: transactions.length > limit,
   };
@@ -229,7 +282,8 @@ export async function getClientPayments(
 
 export async function getClientBookings(
   workspaceId: WorkspaceId,
-  clientId: WorkspaceId
+  clientId: WorkspaceId,
+  fx?: WorkspaceRates
 ): Promise<ClientBookingRow[]> {
   const bookings = await Booking.find({ workspaceId, clientId, status: { $ne: "draft" } })
     .sort({ firstSessionStart: -1 })
@@ -244,5 +298,11 @@ export async function getClientBookings(
     lastSessionEnd: b.lastSessionEnd,
     total: b.amount?.total ?? 0,
     currency: b.amount?.currency ?? "PHP",
+    converted: convertedFor(b.amount?.total ?? 0, b.amount?.currency, fx, {
+      rate: b.amount?.fxTarget && fx && b.amount.fxTarget.toUpperCase() === fx.target.toUpperCase()
+        ? b.amount?.fxRate
+        : null,
+      at: b.amount?.fxAt ?? null,
+    }),
   }));
 }

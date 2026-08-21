@@ -101,7 +101,8 @@ export async function getClientPaymentsAction(
     }
     const ctx = await requireOrg();
     await connectDB();
-    return await getClientPayments(ctx.workspace._id, new Types.ObjectId(clientId), page);
+    const fx = await getWorkspaceRateMap(ctx.workspace._id, ctx.workspace.currency ?? "PHP");
+    return await getClientPayments(ctx.workspace._id, new Types.ObjectId(clientId), page, 20, fx);
   } catch {
     return { error: "payments_load_failed" };
   }
@@ -182,10 +183,8 @@ export async function getClientBookingsAction(
     const ctx = await requireOrg();
     await connectDB();
 
-    return await getClientBookings(
-      ctx.workspace._id,
-      new Types.ObjectId(clientId)
-    );
+    const fx = await getWorkspaceRateMap(ctx.workspace._id, ctx.workspace.currency ?? "PHP");
+    return await getClientBookings(ctx.workspace._id, new Types.ObjectId(clientId), fx);
   } catch {
     return { error: "bookings_load_failed" };
   }

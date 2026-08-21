@@ -355,6 +355,18 @@ describe("getClientBookings", () => {
     expect(rows[0].title).toBe("My Booking");
   });
 
+  it("carries the workspace-currency equivalent for a foreign-currency booking", async () => {
+    const clientId = new Types.ObjectId();
+    await seedBooking(workspaceId, clientId, { title: "SGD job", total: 1000, currency: "SGD" });
+
+    const rows = await getClientBookings(workspaceId, clientId, {
+      rates: { PHP: 1, SGD: 40 },
+      target: "PHP",
+    });
+
+    expect(rows[0].converted).toEqual({ amount: 40000, currency: "PHP", rate: null, at: null });
+  });
+
   it("rejects cross-workspace access — returns empty, not error", async () => {
     const clientId = new Types.ObjectId();
     await seedBooking(otherWorkspaceId, clientId, { title: "Other WS Booking" });
