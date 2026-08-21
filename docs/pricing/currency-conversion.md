@@ -2,9 +2,11 @@
 
 Two separate things use one FX source:
 
-1. **Local price estimate** — the Pro subscription price is shown with an
-   approximate equivalent in the visitor's currency (`≈ $4.30 · billed in PHP`).
-   Display only. Lemon Squeezy always charges the store currency by variant id.
+1. **Local price headline** — the Pro subscription price is shown in the
+   visitor's own currency (`$4.30 / month`), with the amount Lemon Squeezy
+   actually charges named underneath (`Billed as ₱250 PHP`). The headline is a
+   conversion, not a quote: Lemon Squeezy always charges the store currency by
+   variant id.
 2. **Workspace roll-up** — dashboard totals convert every booking and
    transaction into the workspace currency before summing, so a workspace with
    a USD-paying client still gets one correct PHP figure.
@@ -48,10 +50,12 @@ charged stays in the store currency regardless of what the visitor is shown.
 | --- | --- |
 | `lib/pricing/fxRates.ts` | Fetches the daily USD rate table, caches it 24h, returns `null` on any failure |
 | `lib/pricing/countryCurrency.ts` | ISO country → currency table, USD fallback |
-| `lib/pricing/localPricing.ts` | `getDisplayPricing()` — live LS price + local estimate |
+| `lib/pricing/localPricing.ts` | `getDisplayPricing()` — live LS price + the visitor's own currency (USD when unrateable) |
+| `lib/pricing/displayPrice.ts` | `headlinePrice()` — picks the headline figure and the billed figure to disclose |
 | `lib/pricing/currencyConverter.ts` | `buildRateMap` / `convertAmount` / `convertedAmountExpr` |
 | `lib/pricing/workspaceRates.ts` | `getWorkspaceRateMap()` — which currencies a workspace stores |
-| `components/app/local-price-note.tsx` | The `≈ … · billed in …` line |
+| `components/app/billed-as-note.tsx` | The `Billed as ₱250 PHP` line under the headline |
+| `components/app/fx-subtitle.tsx` | The `≈ ₱48,440 · rate … · date` line under an in-app record |
 
 Country comes from Cloudflare's `CF-IPCountry` header (production sits behind
 proxied Cloudflare DNS). It is spoofable when the origin is reached directly,
@@ -121,10 +125,10 @@ value into shell history you keep, and do not commit it.
 
 ### Verifying it works
 
-- Visit `/pricing` from outside the Philippines (or with a proxy). A second
-  muted line appears under the price: `≈ $4.30 · billed in PHP`.
-- With the key unset, that line is simply absent and the PHP price renders
-  alone. This fail-closed guarantee covers the price estimate only; the
+- Visit `/pricing` from outside the Philippines (or with a proxy). The headline
+  price is in your own currency and a muted line under it reads
+  `Billed as ₱250 PHP`.
+- With the key unset, the PHP price is the headline and that line is absent. This fail-closed guarantee covers the price estimate only; the
   workspace roll-up falls back to summing raw amounts.
 - Server logs print `[fx] Failed to fetch reference rates, currency conversion
   disabled: …` when the API call itself fails.
