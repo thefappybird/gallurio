@@ -60,7 +60,7 @@ export function CollectionCoverageCard({ coverage, currency, locale, labels }: P
   return (
     <Card className="h-full rounded-[var(--radius)]">
       {header}
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-1 flex-col gap-4">
         <dl className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between gap-2">
             <div className="min-w-0">
@@ -92,6 +92,10 @@ export function CollectionCoverageCard({ coverage, currency, locale, labels }: P
             </span>
           </div>
         </dl>
+        {/* Pinned to the bottom of the card: the summary is the conclusion of
+            the three rows above it, and the card is stretched to match its
+            neighbour, so anchoring it here removes the trailing gap. */}
+        <div className="mt-auto flex flex-col gap-2 border-t border-border pt-3">
         <div
           role="progressbar"
           aria-valuenow={pct}
@@ -103,6 +107,7 @@ export function CollectionCoverageCard({ coverage, currency, locale, labels }: P
           <div className="h-full rounded-full bg-[var(--chart-1)]" style={{ width: `${pct}%` }} />
         </div>
         <p className="text-xs text-muted-foreground">{formatTemplate(labels.coverage, { pct })}</p>
+        </div>
       </CardContent>
     </Card>
   );

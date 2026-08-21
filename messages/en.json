@@ -801,6 +801,10 @@
         "quickAdd": "Create a booking, client, or inquiry."
       },
       "totalLabel": "Total",
+      "miniCalendar": {
+        "today": "Today",
+        "monthTotal": "{count, plural, one {# booking this month} other {# bookings this month}}"
+      },
       "calendarTeam": {
         "label": "Filter by team",
         "all": "All teams"

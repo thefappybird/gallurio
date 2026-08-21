@@ -21,7 +21,7 @@ export function RevenueTrendChart({ data, currency, locale, title }: Props) {
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <DashboardInfoHint hint="revenueTrend" />
       </CardHeader>
-      <CardContent className="h-48 p-0 pl-1">
+      <CardContent className="min-h-48 flex-1 p-0 pl-1">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
             <defs>

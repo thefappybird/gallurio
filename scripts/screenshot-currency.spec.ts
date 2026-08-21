@@ -137,9 +137,21 @@ const SURFACES: Surface[] = [
   },
   {
     dir: "04-dashboard",
-    title: "Dashboard — multi-currency roll-up in the workspace currency",
+    title: "Dashboard (bookings) — multi-currency roll-up in the workspace currency",
     drive: async (page, combo) => {
-      await page.goto(localePath(combo.locale, "/dashboard"), { waitUntil: "domcontentloaded" });
+      await page.goto(localePath(combo.locale, "/dashboard?tab=bookings"), {
+        waitUntil: "domcontentloaded",
+      });
+      await settled(page);
+    },
+  },
+  {
+    dir: "11-dashboard-portfolio",
+    title: "Dashboard (portfolio) — card layout and space usage",
+    drive: async (page, combo) => {
+      await page.goto(localePath(combo.locale, "/dashboard?tab=portfolio"), {
+        waitUntil: "domcontentloaded",
+      });
       await settled(page);
     },
   },
@@ -230,6 +242,14 @@ const SURFACES: Surface[] = [
     },
   },
   {
+    dir: "12-bookings-list",
+    title: "Bookings list — every row in the workspace currency",
+    drive: async (page, combo) => {
+      await page.goto(localePath(combo.locale, "/bookings"), { waitUntil: "domcontentloaded" });
+      await settled(page);
+    },
+  },
+  {
     dir: "10-booking-fx-subtitle",
     title: "Booking detail — frozen FX rate subtitle on a foreign-currency booking",
     viewportOnly: true,
@@ -276,6 +296,7 @@ async function capture(
     viewport: { width: combo.width, height: 900 },
     storageState: surface.anonymous ? undefined : AUTH_STATE,
     locale: "en-US",
+    reducedMotion: "reduce",
   });
   // next-themes reads this key in its blocking init script on first paint.
   await context.addInitScript((t) => {
@@ -285,7 +306,19 @@ async function capture(
   const page = await context.newPage();
   try {
     await surface.drive(page, combo);
-    await page.waitForTimeout(600); // let fonts/images settle
+    if (!surface.viewportOnly) {
+      // Chromium's fullPage capture resizes the viewport, which remounts the
+      // charts and restarts their entry animation — the shot then shows an
+      // empty plot area. Grow the viewport to the page first, then let the
+      // charts finish drawing before the capture.
+      const pageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+      await page.setViewportSize({
+        width: combo.width,
+        height: Math.min(Math.max(pageHeight, 900), 8_000),
+      });
+    }
+    // recharts' entry animation runs 1.5s and restarts on the resize above.
+    await page.waitForTimeout(1_200);
     const dir = path.join(OUT_ROOT, surface.dir);
     fs.mkdirSync(dir, { recursive: true });
     await page.screenshot({

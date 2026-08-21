@@ -801,6 +801,10 @@
         "quickAdd": "สร้างการจอง ลูกค้า หรือคำขอจอง"
       },
       "totalLabel": "รวม",
+      "miniCalendar": {
+        "today": "วันนี้",
+        "monthTotal": "{count, plural, other {# การจองในเดือนนี้}}"
+      },
       "calendarTeam": {
         "label": "กรองตามทีม",
         "all": "ทุกทีม"

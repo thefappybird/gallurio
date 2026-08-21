@@ -801,6 +801,10 @@
         "quickAdd": "أنشئ حجزًا أو عميلًا أو استفسارًا."
       },
       "totalLabel": "الإجمالي",
+      "miniCalendar": {
+        "today": "اليوم",
+        "monthTotal": "{count, plural, zero {# حجز هذا الشهر} one {حجز واحد هذا الشهر} two {حجزان هذا الشهر} few {# حجوزات هذا الشهر} many {# حجزًا هذا الشهر} other {# حجز هذا الشهر}}"
+      },
       "calendarTeam": {
         "label": "تصفية حسب الفريق",
         "all": "كل الفرق"

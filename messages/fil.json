@@ -801,6 +801,10 @@
         "quickAdd": "Gumawa ng booking, kliyente, o inquiry."
       },
       "totalLabel": "Kabuuan",
+      "miniCalendar": {
+        "today": "Ngayon",
+        "monthTotal": "{count, plural, one {# booking ngayong buwan} other {# na booking ngayong buwan}}"
+      },
       "calendarTeam": {
         "label": "I-filter ayon sa team",
         "all": "Lahat ng team"

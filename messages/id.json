@@ -801,6 +801,10 @@
         "quickAdd": "Buat pemesanan, klien, atau pertanyaan."
       },
       "totalLabel": "Total",
+      "miniCalendar": {
+        "today": "Hari ini",
+        "monthTotal": "{count, plural, other {# pemesanan bulan ini}}"
+      },
       "calendarTeam": {
         "label": "Filter berdasarkan tim",
         "all": "Semua tim"

@@ -35,11 +35,11 @@ export function PortfolioConversionFunnelCard({ funnel, labels }: Props) {
       <CardHeader className="flex flex-row items-center gap-1.5 pb-3">
         <CardTitle className="text-sm font-medium">{labels.title}</CardTitle><DashboardInfoHint hint="portfolioFunnel" />
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 p-4 pt-0">
+      <CardContent className="flex flex-1 flex-col gap-4 p-4 pt-0">
         {visitorDays === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">{labels.empty}</p>
         ) : (
-          <>
+          <div className="flex flex-1 flex-col justify-between gap-4">
             <div className="flex items-center justify-between gap-2 text-sm">
               <span className="font-medium">{labels.visitorDays}</span>
               <span className="tabular-nums">{visitorDays}</span>
@@ -62,7 +62,7 @@ export function PortfolioConversionFunnelCard({ funnel, labels }: Props) {
                 {Math.min(100, pct(inquiries, visitorDays))}% {labels.ofTotal}
               </span>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

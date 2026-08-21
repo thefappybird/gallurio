@@ -57,20 +57,28 @@ function KpiCard({
   icon: LucideIcon;
   trend: KpiTrend;
 }) {
-  // Compact: larger icon on the left; label + trend on row 1, value on row 2.
+  // Compact: icon on the left, label + trend on row 1, value on row 2. Two
+  // cards share a 375px row, which leaves ~100px of text column — too little
+  // for both the icon and a six-figure amount, so the icon only appears once
+  // there is room for it. The label wraps rather than truncating: a KPI whose
+  // label reads "OUTSTANDING BALA…" is not a KPI.
   return (
     <Card className="rounded-[var(--radius)] border-border">
       <CardContent className="flex items-center gap-3 px-3 py-2">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius)] border border-brand/30 bg-brand-4 text-brand">
+        <span className="hidden size-11 shrink-0 items-center justify-center rounded-[var(--radius)] border border-brand/30 bg-brand-4 text-brand sm:flex">
           <Icon className="size-5" />
         </span>
-        <div className="flex min-w-0 flex-col">
-          <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            <span className="truncate">{label}</span>
-            <DashboardInfoHint hint="kpi" />
-            <TrendBadge trend={trend} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="flex items-start gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="min-w-0 flex-1 leading-tight">{label}</span>
+            <span className="flex shrink-0 items-center gap-1.5">
+              <DashboardInfoHint hint="kpi" />
+              <TrendBadge trend={trend} />
+            </span>
           </span>
-          <span className="text-xl font-semibold tracking-tight">{value}</span>
+          <span className="text-lg font-semibold tracking-tight tabular-nums lg:text-xl">
+            {value}
+          </span>
         </div>
       </CardContent>
     </Card>

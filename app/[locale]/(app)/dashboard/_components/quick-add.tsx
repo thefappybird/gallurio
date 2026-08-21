@@ -23,12 +23,12 @@ export function QuickAdd({ title, labels }: Props) {
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <DashboardInfoHint hint="quickAdd" />
       </CardHeader>
-      <CardContent className="flex flex-col gap-1">
+      <CardContent className="flex flex-1 flex-col gap-2">
         {actions.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
-            className="flex items-center gap-2 rounded-[var(--radius)] border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="flex flex-1 items-center gap-2 rounded-[var(--radius)] border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <Icon className="size-4" />
             <span>{label}</span>

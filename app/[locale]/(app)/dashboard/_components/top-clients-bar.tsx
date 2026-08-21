@@ -25,7 +25,7 @@ export function TopClientsBar({ clients, currency, locale, title, empty }: Props
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <DashboardInfoHint hint="topClients" />
       </CardHeader>
-      <CardContent className="flex flex-col gap-3 p-4 pt-0">
+      <CardContent className="flex flex-1 flex-col justify-between gap-3 p-4 pt-0">
         {clients.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>
         ) : (

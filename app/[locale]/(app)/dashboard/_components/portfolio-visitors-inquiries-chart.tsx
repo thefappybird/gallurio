@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { usePrefersReducedMotion } from "@/hooks/use-reduced-motion";
 import { useIsRtl } from "@/lib/i18n/rtl";
 import { CHART_TOOLTIP } from "@/lib/charts/tooltip";
 
@@ -27,6 +28,7 @@ type Props = {
 };
 
 export function PortfolioVisitorsInquiriesChart({ data, locale, labels }: Props) {
+  const reduceMotion = usePrefersReducedMotion();
   const isRtl = useIsRtl();
   const isEmpty =
     data.length === 0 || data.every((d) => d.visitors === 0 && d.inquiries === 0);
@@ -86,14 +88,14 @@ export function PortfolioVisitorsInquiriesChart({ data, locale, labels }: Props)
           }
         />
         <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" iconSize={8} />
-        <Bar
+        <Bar isAnimationActive={!reduceMotion}
           yAxisId="inquiries"
           dataKey="inquiries"
           name={labels.inquiries}
           fill="var(--chart-2)"
           radius={[2, 2, 0, 0]}
         />
-        <Line
+        <Line isAnimationActive={!reduceMotion}
           yAxisId="visitors"
           type="monotone"
           dataKey="visitors"
