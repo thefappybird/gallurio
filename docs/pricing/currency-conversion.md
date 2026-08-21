@@ -193,6 +193,15 @@ change while `currencyChangedAt` is set, enforced server-side in
 `changeWorkspaceCurrency` — the settings UI's disabled state is an affordance,
 not the gate.
 
+The restatement and the rest of the settings write share **one** transaction:
+`updateWorkspaceBusinessAction` opens the session and passes it in
+(`changeWorkspaceCurrency({ …, session })`), so neither half of a submit can
+survive alone. A rejected currency change saves none of the other fields, and
+a failing field write — a duplicate slug racing past the pre-check into the
+unique index — rolls back the re-frozen rows and the `currencyChangedAt` stamp
+with it. Without that, an owner could be told the save failed while a real
+90-day cooldown had already started.
+
 ## Known limitations
 
 - **Rates are indicative.** Daily reference rates, not the rate a card issuer

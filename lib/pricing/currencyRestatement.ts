@@ -69,6 +69,12 @@ export async function changeWorkspaceCurrency(opts: {
   currentCurrency: string;
   currentCurrencyChangedAt: Date | null;
   newCurrency: string;
+  /**
+   * Join the caller's transaction instead of opening one. The settings action
+   * passes its own session so a later failure in the same submit (a duplicate
+   * slug, say) rolls the restatement back with it.
+   */
+  session?: mongoose.ClientSession;
 }): Promise<ChangeWorkspaceCurrencyResult> {
   const { workspaceId, currentCurrencyChangedAt } = opts;
   const from = opts.currentCurrency.toUpperCase();
@@ -86,7 +92,11 @@ export async function changeWorkspaceCurrency(opts: {
     // Nothing to restate — persist the currency but leave currencyChangedAt
     // untouched so the cooldown never engages for a workspace with no paid
     // money.
-    await Workspace.updateOne({ _id: workspaceId }, { $set: { currency: to } });
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      { $set: { currency: to } },
+      { session: opts.session }
+    );
     return { ok: true, restated: false };
   }
 
@@ -111,9 +121,8 @@ export async function changeWorkspaceCurrency(opts: {
 
   const now = new Date();
 
-  const session = await mongoose.startSession();
-  try {
-    await session.withTransaction(async () => {
+  const writes = async (session: mongoose.ClientSession) => {
+    {
       for (const [currency, ids] of idsByCurrency) {
         const rate = rateByCurrency.get(currency)!;
 
@@ -152,9 +161,20 @@ export async function changeWorkspaceCurrency(opts: {
         { $set: { currency: to, currencyChangedAt: now } },
         { session }
       );
-    });
-  } finally {
-    await session.endSession();
+    }
+  };
+
+  if (opts.session) {
+    // Already inside the caller's transaction — it owns commit and abort, so a
+    // later failure in the same submit rolls this restatement back too.
+    await writes(opts.session);
+  } else {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(() => writes(session));
+    } finally {
+      await session.endSession();
+    }
   }
 
   return { ok: true, restated: true };

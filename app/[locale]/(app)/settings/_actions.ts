@@ -1,5 +1,6 @@
 "use server";
 
+import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -15,7 +16,11 @@ import {
 } from "@/lib/validators/workspace";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { deleteImage, verifyImageOwnership } from "@/lib/storage/cloudflareImages";
-import { changeWorkspaceCurrency, previewCurrencyRestatement } from "@/lib/pricing/currencyRestatement";
+import {
+  changeWorkspaceCurrency,
+  previewCurrencyRestatement,
+  type ChangeWorkspaceCurrencyResult,
+} from "@/lib/pricing/currencyRestatement";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
@@ -27,6 +32,9 @@ import { connectDB } from "@/lib/db/mongoose";
 // ---------------------------------------------------------------------------
 // Workspace business settings
 // ---------------------------------------------------------------------------
+
+/** Aborts the settings transaction when the currency gate rejects the change. */
+class CurrencyChangeRejected extends Error {}
 
 export async function updateWorkspaceBusinessAction(
   input: UpdateWorkspaceBusinessInput,
@@ -80,46 +88,61 @@ export async function updateWorkspaceBusinessAction(
   const oldLogoAssetId = current?.logoAssetId || undefined;
 
   // Currency change gate: all-or-nothing restatement of already-frozen
-  // payments/deposits, plus the 90-day cooldown. Runs before the write below
-  // so a rejected currency change never partially saves the rest of the form.
-  const currencyResult = await changeWorkspaceCurrency({
-    workspaceId: ctx.workspace._id,
-    currentCurrency: ctx.workspace.currency,
-    currentCurrencyChangedAt: ctx.workspace.currencyChangedAt ?? null,
-    newCurrency: currency,
-  });
-  if (!currencyResult.ok) {
-    if (currencyResult.error === "currency_change_locked") {
-      return {
-        error: "currency_change_locked",
-        params: { unlockDate: currencyResult.unlockDate.toISOString() },
-      };
-    }
-    return { error: "fx_rate_unavailable" };
-  }
-
+  // payments/deposits, plus the 90-day cooldown. It shares this transaction
+  // with the field write below, so neither half of the submit can survive on
+  // its own — a rejected currency change saves nothing, and a failed field
+  // write (a duplicate slug racing in) un-does the restatement and its
+  // 90-day cooldown stamp.
+  const gate: { rejection: Extract<ChangeWorkspaceCurrencyResult, { ok: false }> | null } = {
+    rejection: null,
+  };
+  const session = await mongoose.startSession();
   try {
-    await Workspace.updateOne(
-      { _id: ctx.workspace._id },
-      {
-        $set: {
-          name,
-          slug,
-          businessType,
-          businessTypeOther: businessTypeOtherValue,
-          country,
-          currency,
-          timezone,
-          "contact.email": contactEmail,
-          "contact.address": contactAddress,
-          "contact.addressLat": contactAddressLat ?? null,
-          "contact.addressLng": contactAddressLng ?? null,
-          logoUrl,
-          logoAssetId,
+    await session.withTransaction(async () => {
+      const currencyResult = await changeWorkspaceCurrency({
+        workspaceId: ctx.workspace._id,
+        currentCurrency: ctx.workspace.currency,
+        currentCurrencyChangedAt: ctx.workspace.currencyChangedAt ?? null,
+        newCurrency: currency,
+        session,
+      });
+      if (!currencyResult.ok) {
+        gate.rejection = currencyResult;
+        throw new CurrencyChangeRejected();
+      }
+
+      await Workspace.updateOne(
+        { _id: ctx.workspace._id },
+        {
+          $set: {
+            name,
+            slug,
+            businessType,
+            businessTypeOther: businessTypeOtherValue,
+            country,
+            currency,
+            timezone,
+            "contact.email": contactEmail,
+            "contact.address": contactAddress,
+            "contact.addressLat": contactAddressLat ?? null,
+            "contact.addressLng": contactAddressLng ?? null,
+            logoUrl,
+            logoAssetId,
+          },
         },
-      },
-    );
+        { session },
+      );
+    });
   } catch (err) {
+    if (err instanceof CurrencyChangeRejected && gate.rejection) {
+      if (gate.rejection.error === "currency_change_locked") {
+        return {
+          error: "currency_change_locked",
+          params: { unlockDate: gate.rejection.unlockDate.toISOString() },
+        };
+      }
+      return { error: "fx_rate_unavailable" };
+    }
     // Race-safe: map E11000 duplicate-key on slug to the same friendly message.
     if (
       typeof err === "object" &&
@@ -130,6 +153,8 @@ export async function updateWorkspaceBusinessAction(
       return { error: "url_taken" };
     }
     throw err;
+  } finally {
+    await session.endSession();
   }
 
   // Delete the old logo from Cloudflare if the owner replaced or cleared it.
