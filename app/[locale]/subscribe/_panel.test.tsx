@@ -78,7 +78,7 @@ describe("SubscribePanel — renders", () => {
     expect(screen.queryByText(/\/ month/i)).not.toBeInTheDocument();
   });
 
-  it("shows the local-currency estimate for the selected cadence", () => {
+  it("names the billed amount under the local-currency headline", () => {
     renderPanel({
       proPricing: {
         currency: "PHP",
@@ -88,7 +88,7 @@ describe("SubscribePanel — renders", () => {
       },
     });
 
-    expect(screen.getByText(/≈ \$4\.30 · billed in PHP/)).toBeInTheDocument();
+    expect(screen.getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
   });
 
   it("shows a subscribe button", () => {

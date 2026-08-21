@@ -12,7 +12,8 @@ import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
-import { LocalPriceNote } from "@/components/app/local-price-note";
+import { BilledAsNote } from "@/components/app/billed-as-note";
+import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { useActionError } from "@/lib/i18n/actionError";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { StepShell, StepBackButton, isStepCompleted } from "../_components/step-shell";
@@ -130,15 +131,29 @@ export function PlanStepForm({
     });
   }
 
-  function amountFor(p: PlanCatalogEntry, cadence: "monthly" | "yearly"): number {
-    if (p.id === "pro") return cadence === "yearly" ? proPricing.yearly : proPricing.monthly;
-    return cadence === "yearly" && p.yearlyAmount ? p.yearlyAmount : p.amount;
+  // Pro headlines the visitor's own currency (BilledAsNote names the charged
+  // amount underneath). A zero-priced plan carries no currency of its own, so
+  // it follows the headline currency rather than showing a stray store-currency
+  // zero next to it.
+  const proHeadline = headlinePrice(proPricing, cadence);
+  const proMonthlyHeadline = headlinePrice(proPricing, "monthly");
+
+  function displayFor(
+    p: PlanCatalogEntry,
+    cadence: "monthly" | "yearly"
+  ): { amount: number; currency: string } {
+    if (p.id === "pro") return { amount: proHeadline.amount, currency: proHeadline.currency };
+    const amount = cadence === "yearly" && p.yearlyAmount ? p.yearlyAmount : p.amount;
+    return { amount, currency: amount === 0 ? proHeadline.currency : proPricing.currency };
   }
 
   const busy = loading || pending;
   const selectedEntry = PLAN_CATALOG.find((p) => p.id === selected);
-  const selectedPrice = selectedEntry
-    ? formatMoney(amountFor(selectedEntry, cadence), proPricing.currency, locale)
+  const selectedDisplay = selectedEntry ? displayFor(selectedEntry, cadence) : null;
+  const selectedPrice = selectedDisplay
+    ? formatMoney(selectedDisplay.amount, selectedDisplay.currency, locale, {
+        maximumFractionDigits: selectedDisplay.amount < 100 ? 2 : 0,
+      })
     : "";
 
   const cta =
@@ -243,11 +258,18 @@ export function PlanStepForm({
         <div className="grid grid-cols-1 mt-2 gap-3 md:grid-cols-2">
           {PLAN_CATALOG.map((p) => {
             const active = selected === p.id;
-            const priceAmount = amountFor(p, cadence);
-            const price = formatMoney(priceAmount, proPricing.currency, locale);
+            const display = displayFor(p, cadence);
+            const priceAmount = display.amount;
+            const price = formatMoney(display.amount, display.currency, locale, {
+              maximumFractionDigits: display.amount < 100 ? 2 : 0,
+            });
             const yearlyComparePrice =
               p.id === "pro" && cadence === "yearly"
-                ? formatMoney(proPricing.monthly * 12, proPricing.currency, locale)
+                ? formatMoney(
+                    proMonthlyHeadline.amount * 12,
+                    proMonthlyHeadline.currency,
+                    locale
+                  )
                 : null;
             const cadenceLabel =
               p.amount === 0
@@ -311,13 +333,10 @@ export function PlanStepForm({
                   <span className="font-heading text-2xl font-semibold">{price}</span>
                   <span className="text-xs text-muted-foreground">{cadenceLabel}</span>
                 </div>
-                {p.id === "pro" && proPricing.local && (
-                  <LocalPriceNote
-                    amount={
-                      cadence === "yearly" ? proPricing.local.yearly : proPricing.local.monthly
-                    }
-                    currency={proPricing.local.currency}
-                    billedIn={proPricing.currency}
+                {p.id === "pro" && proHeadline.billed && (
+                  <BilledAsNote
+                    amount={proHeadline.billed.amount}
+                    currency={proHeadline.billed.currency}
                   />
                 )}
                 <p className="text-xs text-muted-foreground">{tPlans(`${p.id}.tagline`)}</p>

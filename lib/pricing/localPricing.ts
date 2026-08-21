@@ -18,13 +18,21 @@ export async function getDisplayPricing(): Promise<ProPricing> {
   const target = currencyForCountry(country);
   if (target === pricing.currency) return pricing;
 
-  const rate = await getFxRate(pricing.currency, target);
+  // The visitor's own currency is the headline price, so a currency the rate
+  // table doesn't carry falls back to USD rather than dropping them back to
+  // the store currency — USD reads as a price anywhere, PHP does not.
+  let display = target;
+  let rate = await getFxRate(pricing.currency, target);
+  if (!rate && target !== "USD" && pricing.currency !== "USD") {
+    display = "USD";
+    rate = await getFxRate(pricing.currency, "USD");
+  }
   if (!rate) return pricing;
 
   return {
     ...pricing,
     local: {
-      currency: target,
+      currency: display,
       monthly: pricing.monthly * rate,
       yearly: pricing.yearly * rate,
     },

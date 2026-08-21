@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
-import { LocalPriceNote } from "./local-price-note";
+import { BilledAsNote } from "./billed-as-note";
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -12,11 +12,10 @@ function wrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-describe("LocalPriceNote", () => {
-  it("shows the converted amount alongside the currency actually billed", () => {
-    render(<LocalPriceNote amount={4.3} currency="USD" billedIn="PHP" />, { wrapper });
+describe("BilledAsNote", () => {
+  it("names the amount and currency the card is actually charged", () => {
+    render(<BilledAsNote amount={250} currency="PHP" />, { wrapper });
 
-    expect(screen.getByText(/\$4\.30/)).toBeInTheDocument();
-    expect(screen.getByText(/billed in PHP/)).toBeInTheDocument();
+    expect(screen.getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
   });
 });

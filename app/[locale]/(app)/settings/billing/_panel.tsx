@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { PLAN_CATALOG } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
-import { LocalPriceNote } from "@/components/app/local-price-note";
+import { BilledAsNote } from "@/components/app/billed-as-note";
+import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
 import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
@@ -224,11 +225,22 @@ export function BillingPanel({
             {PLAN_CATALOG.filter((p) => p.id !== "free" && p.id !== currentPlan).map(
               (entry) => {
                 const busy = loadingPlan === entry.id;
-                const monthlyPrice = entry.id === "pro" ? proPricing.monthly : entry.amount;
+                // Pro headlines the owner's own currency; BilledAsNote names what
+                // Lemon Squeezy charges. A zero-priced plan follows the headline
+                // currency rather than showing a stray store-currency zero.
+                const proMonthly = headlinePrice(proPricing, "monthly");
+                const proYearly = headlinePrice(proPricing, "yearly");
+                const monthlyPrice = entry.id === "pro" ? proMonthly.amount : entry.amount;
                 const yearlyPrice =
-                  entry.id === "pro" ? proPricing.yearly : entry.yearlyAmount ?? entry.amount * 12;
+                  entry.id === "pro" ? proYearly.amount : entry.yearlyAmount ?? entry.amount * 12;
                 const yearlyComparePrice = monthlyPrice * 12;
-                const currency = entry.id === "pro" ? proPricing.currency : entry.currency;
+                const billed = cadence === "yearly" ? proYearly.billed : proMonthly.billed;
+                const currency =
+                  entry.id === "pro"
+                    ? proMonthly.currency
+                    : entry.amount === 0
+                      ? proMonthly.currency
+                      : entry.currency;
                 return (
                   <div
                     key={entry.id}
@@ -253,16 +265,8 @@ export function BillingPanel({
                           </span>
                         )}
                       </div>
-                      {entry.id === "pro" && proPricing.local && (
-                        <LocalPriceNote
-                          amount={
-                            cadence === "yearly"
-                              ? proPricing.local.yearly
-                              : proPricing.local.monthly
-                          }
-                          currency={proPricing.local.currency}
-                          billedIn={proPricing.currency}
-                        />
+                      {entry.id === "pro" && billed && (
+                        <BilledAsNote amount={billed.amount} currency={billed.currency} />
                       )}
                     </div>
                     <Button

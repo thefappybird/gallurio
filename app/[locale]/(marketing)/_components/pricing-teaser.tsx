@@ -5,7 +5,8 @@ import { useTranslations, useLocale } from "next-intl";
 import { CheckIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
-import { LocalPriceNote } from "@/components/app/local-price-note";
+import { BilledAsNote } from "@/components/app/billed-as-note";
+import { headlinePrice } from "@/lib/pricing/displayPrice";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
@@ -20,10 +21,13 @@ export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
   const locale = useLocale();
   const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
 
-  const price =
-    cadence === "monthly"
-      ? `${formatMoney(proPricing.monthly, proPricing.currency, locale)}${t("pro.priceSuffixMonthly")}`
-      : `${formatMoney(proPricing.yearly, proPricing.currency, locale)}${t("pro.priceSuffixYearly")}`;
+  const headline = headlinePrice(proPricing, cadence);
+  const headlineAmount = formatMoney(headline.amount, headline.currency, locale, {
+    maximumFractionDigits: headline.amount < 100 ? 2 : 0,
+  });
+  const price = `${headlineAmount}${
+    cadence === "monthly" ? t("pro.priceSuffixMonthly") : t("pro.priceSuffixYearly")
+  }`;
 
   return (
     <section id="pricing" className="border-t border-border px-4 py-16 sm:px-6 sm:py-24">
@@ -67,11 +71,10 @@ export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
               price={price}
               priceNote={t("pro.priceNote")}
               localNote={
-                proPricing.local ? (
-                  <LocalPriceNote
-                    amount={cadence === "monthly" ? proPricing.local.monthly : proPricing.local.yearly}
-                    currency={proPricing.local.currency}
-                    billedIn={proPricing.currency}
+                headline.billed ? (
+                  <BilledAsNote
+                    amount={headline.billed.amount}
+                    currency={headline.billed.currency}
                   />
                 ) : null
               }

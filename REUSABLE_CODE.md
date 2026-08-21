@@ -102,7 +102,8 @@ Composed, app-specific shared components.
 | `lib/pricing/clientTotals.ts` | `getConvertedClientTotals` | `(workspaceId, clientIds, rates) => Promise<Map<string,number>\|null>` | Re-derives `Client.totalSpent` in the workspace currency from the Transaction ledger. `null` for a single-currency workspace — keep the stored field |
 | `lib/pricing/workspaceRates.ts` | `getWorkspaceRateMap` | `(workspaceId, workspaceCurrency) => Promise<RateMap>` | Which currencies a workspace actually stores → rate map. Single-currency workspaces cost no FX call |
 | `lib/pricing/localPricing.ts` | `getDisplayPricing` | `() => Promise<ProPricing>` | Live Lemon Squeezy price + a display-only `local` estimate from `CF-IPCountry`. **Reads `headers()`** — server components only |
-| `components/app/local-price-note.tsx` | `LocalPriceNote` | `{amount, currency, billedIn}` | The `≈ $4.30 · billed in PHP` line under a price |
+| `components/app/billed-as-note.tsx` | `BilledAsNote` | `{amount, currency}` | The `Billed as ₱250 PHP` line under a price headlined in the visitor's currency |
+| `lib/pricing/displayPrice.ts` | `headlinePrice` | `(pricing, cadence) => {amount, currency, billed}` | Picks the headline figure (visitor's currency) and the billed figure to disclose |
 | `lib/utils/csv-parse.ts` | `parseCsv` | `(text) => { headers, rows }` | RFC-4180 CSV parser (quotes, CRLF/LF) |
 | `lib/utils/csv-parse.ts` | `normalizeCsvHeader` | `(raw) => string` | Map raw header → camelCase |
 | `lib/utils/csv-parse.ts` | `stripFormulaGuard` | `(value) => string` | Reverse the export-side apostrophe guard; leaves a genuinely apostrophe-led value alone |

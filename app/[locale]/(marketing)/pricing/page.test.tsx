@@ -40,7 +40,7 @@ describe("Pricing page", () => {
     expect(screen.getByText("marketing.pricing:pro.comingSoon")).toBeInTheDocument();
   });
 
-  it("shows the local-currency estimate next to the billed price", async () => {
+  it("names the billed amount next to the billed price", async () => {
     displayPricing.value = {
       currency: "PHP",
       monthly: 250,
@@ -55,10 +55,10 @@ describe("Pricing page", () => {
       </NextIntlClientProvider>
     );
 
-    expect(screen.getByText(/≈ \$4\.30 · billed in PHP/)).toBeInTheDocument();
+    expect(screen.getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
   });
 
-  it("shows a local-currency estimate for the yearly price too", async () => {
+  it("names the billed yearly amount under the local-currency headline", async () => {
     displayPricing.value = {
       currency: "PHP",
       monthly: 250,
@@ -73,6 +73,6 @@ describe("Pricing page", () => {
       </NextIntlClientProvider>
     );
 
-    expect(screen.getByText(/≈ \$43\.00 · billed in PHP/)).toBeInTheDocument();
+    expect(screen.getByText(/Billed as ₱2,500 PHP/)).toBeInTheDocument();
   });
 });

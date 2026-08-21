@@ -12,7 +12,8 @@ import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { useActionError } from "@/lib/i18n/actionError";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { formatMoney } from "@/lib/utils/format-currency";
-import { LocalPriceNote } from "@/components/app/local-price-note";
+import { BilledAsNote } from "@/components/app/billed-as-note";
+import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
@@ -92,11 +93,13 @@ export function SubscribePanel({
   }
 
   const busy = loading || pending;
-  const selectedPrice = formatMoney(
-    cadence === "yearly" ? proPricing.yearly : proPricing.monthly,
-    proPricing.currency,
-    locale,
-  );
+  // Headline in the visitor's own currency; the charged amount is named by
+  // BilledAsNote underneath.
+  const headline = headlinePrice(proPricing, cadence);
+  const monthlyHeadline = headlinePrice(proPricing, "monthly");
+  const selectedPrice = formatMoney(headline.amount, headline.currency, locale, {
+    maximumFractionDigits: headline.amount < 100 ? 2 : 0,
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -141,16 +144,12 @@ export function SubscribePanel({
           {billingAvailable && <span className="flex size-5 items-center justify-center bg-brand text-brand-foreground"><Check className="size-3.5" /></span>}
         </div>
         <div className="flex items-baseline gap-1">
-          {cadence === "yearly" && <span className="text-sm text-muted-foreground line-through">{formatMoney(proPricing.monthly * 12, proPricing.currency, locale)}</span>}
+          {cadence === "yearly" && <span className="text-sm text-muted-foreground line-through">{formatMoney(monthlyHeadline.amount * 12, monthlyHeadline.currency, locale)}</span>}
           <span className="font-heading text-2xl font-semibold">{selectedPrice}</span>
           <span className="text-xs text-muted-foreground">{cadence === "yearly" ? tPlan("cadence.yearly") : tPlan("cadence.monthly")}</span>
         </div>
-        {proPricing.local && (
-          <LocalPriceNote
-            amount={cadence === "yearly" ? proPricing.local.yearly : proPricing.local.monthly}
-            currency={proPricing.local.currency}
-            billedIn={proPricing.currency}
-          />
+        {headline.billed && (
+          <BilledAsNote amount={headline.billed.amount} currency={headline.billed.currency} />
         )}
         <p className="text-xs text-muted-foreground">{tPlans("pro.tagline")}</p>
       </div>

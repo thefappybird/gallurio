@@ -5,7 +5,8 @@ import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LocalPriceNote } from "@/components/app/local-price-note";
+import { BilledAsNote } from "@/components/app/billed-as-note";
+import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 const SUPPORT_EMAIL = "support@gallurio.com";
@@ -43,8 +44,14 @@ export default async function PricingPage({ params }: Props) {
     t("pro.feature6"),
   ];
 
-  const monthlyPrice = formatMoney(proPricing.monthly, proPricing.currency, locale);
-  const yearlyPrice = formatMoney(proPricing.yearly, proPricing.currency, locale);
+  const monthly = headlinePrice(proPricing, "monthly");
+  const yearly = headlinePrice(proPricing, "yearly");
+  const monthlyPrice = formatMoney(monthly.amount, monthly.currency, locale, {
+    maximumFractionDigits: monthly.amount < 100 ? 2 : 0,
+  });
+  const yearlyPrice = formatMoney(yearly.amount, yearly.currency, locale, {
+    maximumFractionDigits: yearly.amount < 100 ? 2 : 0,
+  });
 
   return (
     <>
@@ -78,20 +85,15 @@ export default async function PricingPage({ params }: Props) {
                   {t("pro.priceSuffixMonthly")}
                 </span>
               </p>
-              {proPricing.local ? (
-                <LocalPriceNote
-                  amount={proPricing.local.monthly}
-                  currency={proPricing.local.currency}
-                  billedIn={proPricing.currency}
-                />
+              {monthly.billed ? (
+                <BilledAsNote amount={monthly.billed.amount} currency={monthly.billed.currency} />
               ) : null}
               <p className="text-sm text-muted-foreground">
                 {t("pro.yearlyNote", { price: yearlyPrice })}
-                {proPricing.local ? (
-                  <LocalPriceNote
-                    amount={proPricing.local.yearly}
-                    currency={proPricing.local.currency}
-                    billedIn={proPricing.currency}
+                {yearly.billed ? (
+                  <BilledAsNote
+                    amount={yearly.billed.amount}
+                    currency={yearly.billed.currency}
                     className="ms-1"
                   />
                 ) : null}

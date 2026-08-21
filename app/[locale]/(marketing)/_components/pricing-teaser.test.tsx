@@ -30,7 +30,7 @@ describe("PricingTeaser", () => {
     expect(screen.getByText(/₱2,500/)).toBeInTheDocument();
   });
 
-  it("shows the local-currency estimate for the selected cadence", () => {
+  it("names the billed amount under the local-currency headline", () => {
     render(
       <PricingTeaser
         proPricing={{ ...proPricing, local: { currency: "USD", monthly: 4.3, yearly: 43 } }}
@@ -38,10 +38,10 @@ describe("PricingTeaser", () => {
       { wrapper }
     );
 
-    expect(screen.getByText(/≈ \$4\.30 · billed in PHP/)).toBeInTheDocument();
+    expect(screen.getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /yearly/i }));
-    expect(screen.getByText(/≈ \$43\.00 · billed in PHP/)).toBeInTheDocument();
+    expect(screen.getByText(/Billed as ₱2,500 PHP/)).toBeInTheDocument();
   });
 
   it("does not render a Free or Beta Tester card", () => {

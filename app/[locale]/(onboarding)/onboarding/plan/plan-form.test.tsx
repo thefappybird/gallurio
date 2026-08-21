@@ -566,6 +566,6 @@ describe("PlanStepForm — local currency estimate", () => {
     });
 
     const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
-    expect(within(proCard).getByText(/≈ \$4\.30 · billed in PHP/)).toBeInTheDocument();
+    expect(within(proCard).getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
   });
 });

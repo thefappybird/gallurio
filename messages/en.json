@@ -3366,7 +3366,7 @@
     }
   },
   "plans": {
-    "localEstimate": "≈ {price} · billed in {currency}",
+    "billedAs": "Billed as {price} {currency}",
     "free": {
       "name": "Free",
       "description": "1 month of full Pro, free",

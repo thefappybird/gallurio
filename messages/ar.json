@@ -3365,7 +3365,7 @@
     }
   },
   "plans": {
-    "localEstimate": "≈ {price} · تُحصَّل بعملة {currency}",
+    "billedAs": "يُحصَّل بمبلغ {price} {currency}",
     "free": {
       "name": "مجاني",
       "description": "شهر واحد من Pro الكامل، مجانًا",

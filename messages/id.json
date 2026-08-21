@@ -3365,7 +3365,7 @@
     }
   },
   "plans": {
-    "localEstimate": "≈ {price} · ditagih dalam {currency}",
+    "billedAs": "Ditagih sebesar {price} {currency}",
     "free": {
       "name": "Free",
       "description": "1 bulan Pro penuh, gratis",

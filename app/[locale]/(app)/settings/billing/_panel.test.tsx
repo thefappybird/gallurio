@@ -104,7 +104,7 @@ describe("BillingPanel — renders", () => {
     expect(screen.queryByText(/\/ year/i)).not.toBeInTheDocument();
   });
 
-  it("shows the local-currency estimate on the Pro plan card", () => {
+  it("names the billed amount on the Pro plan card", () => {
     renderPanel({
       currentPlan: "free",
       proPricing: {
@@ -115,7 +115,7 @@ describe("BillingPanel — renders", () => {
       },
     });
 
-    expect(screen.getByText(/≈ \$4\.30 · billed in PHP/)).toBeInTheDocument();
+    expect(screen.getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
   });
 
   it("switches to yearly Pro pricing when the cadence toggle is clicked", () => {
