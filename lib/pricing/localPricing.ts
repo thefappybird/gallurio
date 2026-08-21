@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { getProPricing, type ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { currencyForCountry } from "./countryCurrency";
+import { tierForCountry } from "./pricingTier";
 import { getFxRate } from "./fxRates";
 
 // Live Lemon Squeezy pricing plus a display-only equivalent in the visitor's
@@ -12,9 +13,9 @@ import { getFxRate } from "./fxRates";
 // render next to the real price. Lemon Squeezy charges the store currency by
 // variant id regardless. Unknown/absent country falls back to USD.
 export async function getDisplayPricing(): Promise<ProPricing> {
-  const pricing = await getProPricing();
-
   const country = (await headers()).get("cf-ipcountry");
+  const pricing = await getProPricing(tierForCountry(country));
+
   const target = currencyForCountry(country);
   if (target === pricing.currency) return pricing;
 

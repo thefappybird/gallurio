@@ -299,6 +299,11 @@ const workspaceSchema = new Schema(
       default: null,
     },
     lsCurrentPeriodEnd: { type: Date, default: null },
+    // Variant id the subscription was created/renewed with — carries the
+    // pricing tier (base vs. global). No index: only ever read by _id.
+    // null on every pre-existing subscriber, which is correct — they were
+    // all sold at base price.
+    lsVariantId: { type: String, default: null },
     // Provider timestamp (attributes.updated_at, falling back to created_at)
     // of the last webhook/reconciliation write that was actually applied —
     // never the delivery/receipt time. Gates every timestamped billing update

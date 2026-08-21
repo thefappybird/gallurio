@@ -84,4 +84,24 @@ describe("getDisplayPricing", () => {
     expect(pricing.local).toBeUndefined();
     expect(pricing.monthly).toBe(250);
   });
+
+  it("resolves the global pricing tier for a global country", async () => {
+    headerStore.country = "US";
+    const getProPricing = vi.mocked((await import("@/lib/lemonsqueezy/pricing")).getProPricing);
+
+    const { getDisplayPricing } = await import("./localPricing");
+    await getDisplayPricing();
+
+    expect(getProPricing).toHaveBeenCalledWith("global");
+  });
+
+  it("resolves the base pricing tier for the launch market", async () => {
+    headerStore.country = "PH";
+    const getProPricing = vi.mocked((await import("@/lib/lemonsqueezy/pricing")).getProPricing);
+
+    const { getDisplayPricing } = await import("./localPricing");
+    await getDisplayPricing();
+
+    expect(getProPricing).toHaveBeenCalledWith("base");
+  });
 });
