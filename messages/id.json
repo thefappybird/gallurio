@@ -3371,6 +3371,7 @@
   },
   "plans": {
     "billedAs": "Ditagih sebesar {price} {currency}",
+    "billedAsCode": "Ditagih sebesar {price}",
     "free": {
       "name": "Free",
       "description": "1 bulan Pro penuh, gratis",

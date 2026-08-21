@@ -3,16 +3,16 @@ import { test, expect, type Page } from "@playwright/test";
 // Public pricing page — anonymous, same reason as pricing-local-estimate.spec.ts.
 test.use({ storageState: { cookies: [], origins: [] } });
 
-// Locally there is no CF-IPCountry header, so the local-currency estimate
-// always falls back to USD; the billed currency is the workspace default,
-// PHP. The billed-currency code itself is never translated (ISO code stays
-// Latin script even inside the Arabic/Thai sentence).
+// Locally there is no CF-IPCountry header, so the headline price falls back to
+// USD and the billed amount underneath stays in the store currency, PHP. The
+// currency code itself is never translated (the ISO code stays Latin script
+// even inside the Arabic/Thai sentence).
 const LOCALE_WORDS: Record<string, RegExp> = {
-  en: /billed in PHP/,
-  fil: /siningil sa PHP/,
-  id: /ditagih dalam PHP/,
-  ar: /تُحصَّل بعملة PHP/,
-  th: /เรียกเก็บเป็น PHP/,
+  en: /Billed as .* PHP/,
+  fil: /Siningil bilang .* PHP/,
+  id: /Ditagih sebesar .* PHP/,
+  ar: /يُحصَّل بمبلغ .* PHP/,
+  th: /เรียกเก็บเป็น .* PHP/,
 };
 
 const LOCALES = Object.keys(LOCALE_WORDS);
@@ -46,7 +46,6 @@ test.describe("1. locale coverage on /pricing", () => {
         await expect(note).toBeVisible();
 
         const text = await note.textContent();
-        expect(text).toContain("≈");
         expect(text).toMatch(/\d/);
 
         expect(await hasOverflow(page), "document has horizontal overflow").toBe(false);

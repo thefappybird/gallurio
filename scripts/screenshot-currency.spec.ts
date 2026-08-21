@@ -175,8 +175,16 @@ const SURFACES: Surface[] = [
       const row = (await table.isVisible().catch(() => false)) ? table : card;
       await row.waitFor({ state: "visible", timeout: 30_000 });
       await row.click();
-      await page.getByRole("dialog").waitFor({ state: "visible", timeout: 20_000 });
-      await page.waitForTimeout(800);
+      const dialog = page.getByRole("dialog");
+      await dialog.waitFor({ state: "visible", timeout: 20_000 });
+      // Payments tab (3rd): where a foreign-currency record carries its
+      // workspace-currency subtitle. Switched by position — the tab labels are
+      // localized.
+      const paymentsTab = dialog.getByRole("tab").nth(2);
+      if (await paymentsTab.isVisible().catch(() => false)) {
+        await paymentsTab.click();
+      }
+      await page.waitForTimeout(1_500);
     },
   },
   {

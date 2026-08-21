@@ -2,7 +2,9 @@ import { test, expect } from "@playwright/test";
 
 // Locally there is no CF-IPCountry header, so the estimate always falls back
 // to USD, same as e2e/pricing-local-estimate.spec.ts.
-const ESTIMATE = /≈\s*\$[\d,.]+ · billed in PHP/;
+// The headline price is the visitor's own currency (USD locally, with no
+// CF-IPCountry header); this line names what Lemon Squeezy actually charges.
+const ESTIMATE = /Billed as ₱[\d,.]+ PHP/;
 
 // A. Landing page pricing teaser — anonymous, follows the cadence toggle.
 test.describe("A. landing pricing teaser", () => {

@@ -3372,6 +3372,7 @@
   },
   "plans": {
     "billedAs": "Billed as {price} {currency}",
+    "billedAsCode": "Billed as {price}",
     "free": {
       "name": "Free",
       "description": "1 month of full Pro, free",

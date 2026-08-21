@@ -3371,6 +3371,7 @@
   },
   "plans": {
     "billedAs": "يُحصَّل بمبلغ {price} {currency}",
+    "billedAsCode": "يُحصَّل بمبلغ {price}",
     "free": {
       "name": "مجاني",
       "description": "شهر واحد من Pro الكامل، مجانًا",

@@ -186,6 +186,7 @@ function ClientDetailModalInner({
                     style: "currency",
                     currency: client.currency,
                     minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
                   }).format(client.totalSpent)}
                 </span>
                 <span className="text-xs text-muted-foreground">{t("detail.overview.totalSpent")}</span>
@@ -268,6 +269,7 @@ function ClientDetailModalInner({
                               style: "currency",
                               currency: b.currency,
                               minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
                             }).format(b.total)}
                           </span>
                           {b.converted ? (
@@ -296,10 +298,13 @@ function ClientDetailModalInner({
             {payments && payments.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {payments.map((payment) => (
-                  <div key={payment.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border border-border px-3 py-2">
+                  // One column below sm: the FX subtitle is wider than a 375px
+                  // row can spare beside a booking title, and squeezing both
+                  // into one line collapsed the title to an ellipsis.
+                  <div key={payment.id} className="grid grid-cols-1 gap-x-3 gap-y-1 border border-border px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <span className="truncate text-sm font-medium">{payment.bookingTitle}</span>
-                    <div className="flex flex-col items-end">
-                      <span className="tabular-nums text-sm font-medium text-brand">{new Intl.NumberFormat(locale, { style: "currency", currency: payment.currency, minimumFractionDigits: 0 }).format(payment.amount)}</span>
+                    <div className="flex flex-col items-start sm:items-end">
+                      <span className="tabular-nums text-sm font-medium text-brand">{new Intl.NumberFormat(locale, { style: "currency", currency: payment.currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(payment.amount)}</span>
                       {payment.converted ? (
                         <FxSubtitle
                           amount={payment.converted.rate ? payment.amount : payment.converted.amount}
@@ -316,7 +321,7 @@ function ClientDetailModalInner({
                         <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px] capitalize">{payment.method}</Badge>
                       ) : null}
                     </span>
-                    <span className="text-xs text-muted-foreground">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                    <span className="text-xs text-muted-foreground sm:text-end">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
                   </div>
                 ))}
                 {paymentsHasMore ? <Button type="button" variant="outline" size="sm" onClick={loadMorePayments} loading={paymentsLoadingMore}>{t("table.pagination.next")}</Button> : null}

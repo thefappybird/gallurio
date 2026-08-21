@@ -6,7 +6,9 @@ test.use({ storageState: { cookies: [], origins: [] } });
 // Locally there is no CF-IPCountry header, so the estimate falls back to USD.
 // The note is absent entirely when no FX rate is available (no API key,
 // network failure) — that fail-closed path is covered by unit tests.
-const ESTIMATE = /≈\s*\$[\d,.]+ · billed in PHP/;
+// The headline price is the visitor's own currency (USD locally, with no
+// CF-IPCountry header); this line names what Lemon Squeezy actually charges.
+const ESTIMATE = /Billed as ₱[\d,.]+ PHP/;
 
 for (const width of [375, 768, 1280]) {
   test(`pricing page shows the local-currency estimate at ${width}px`, async ({ page }) => {

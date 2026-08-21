@@ -3371,6 +3371,7 @@
   },
   "plans": {
     "billedAs": "เรียกเก็บเป็น {price} {currency}",
+    "billedAsCode": "เรียกเก็บเป็น {price}",
     "free": {
       "name": "ฟรี",
       "description": "Pro เต็มรูปแบบฟรี 1 เดือน",

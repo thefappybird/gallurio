@@ -21,11 +21,16 @@ export function BilledAsNote({
 
   const price = formatMoney(amount, currency, locale, {
     maximumFractionDigits: amount < 100 ? 2 : 0,
+    currencyDisplay: "narrowSymbol",
   });
+
+  // Locales that have no symbol for this currency format it with the ISO code
+  // ("PHP 250"), where appending the code again reads as "PHP 250 PHP".
+  const alreadyNamed = price.toUpperCase().includes(currency.toUpperCase());
 
   return (
     <span className={cn("text-xs text-muted-foreground", className)}>
-      {t("billedAs", { price, currency })}
+      {alreadyNamed ? t("billedAsCode", { price }) : t("billedAs", { price, currency })}
     </span>
   );
 }

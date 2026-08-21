@@ -3371,6 +3371,7 @@
   },
   "plans": {
     "billedAs": "Siningil bilang {price} {currency}",
+    "billedAsCode": "Siningil bilang {price}",
     "free": {
       "name": "Free",
       "description": "1 buwan ng buong Pro, libre",
