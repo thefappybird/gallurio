@@ -300,7 +300,7 @@ export default async function Home({ params }: Props) {
         </cite>
       </section>
 
-      <PricingTeaser proPricing={proPricing} />
+      <PricingTeaser proPricing={proPricing} betaEnabled={process.env.BETA_TESTER_ENABLED === "true"} />
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}
       <section className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">

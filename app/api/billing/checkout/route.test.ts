@@ -13,6 +13,8 @@ import { __resetRateLimitForTests } from "@/lib/server/rateLimit";
 // ---------------------------------------------------------------------------
 process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID = "1001";
 process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = "1002";
+process.env.LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID = "2001";
+process.env.LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID = "2002";
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted)
@@ -79,10 +81,13 @@ function wireAuth(wsId: Types.ObjectId) {
   });
 }
 
-function makeReq(body: unknown = { plan: "starter" }) {
+function makeReq(
+  body: unknown = { plan: "starter" },
+  extraHeaders: Record<string, string> = {}
+) {
   return new Request("http://test/api/billing/checkout", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...extraHeaders },
     body: JSON.stringify(body),
   });
 }
@@ -185,6 +190,62 @@ describe("billing checkout — cadence", () => {
   });
 });
 
+describe("billing checkout — pricing tier", () => {
+  it("picks the global variant for a global-country CF-IPCountry header", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }, { "cf-ipcountry": "US" }));
+
+    expect(res.status).toBe(200);
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: "2001" })
+    );
+  });
+
+  it("picks the base variant for a base-tier country header", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }, { "cf-ipcountry": "PH" }));
+
+    expect(res.status).toBe(200);
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: "1001" })
+    );
+  });
+
+  it("picks the base variant when no CF-IPCountry header is present", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ plan: "pro" }));
+
+    expect(res.status).toBe(200);
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: "1001" })
+    );
+  });
+
+  it("ignores a tier supplied in the request body — only the CF-IPCountry header decides", async () => {
+    const wsId = await seedWorkspace();
+    wireAuth(wsId);
+
+    const { POST } = await loadRoute();
+    const res = await POST(
+      makeReq({ plan: "pro", tier: "global" }, { "cf-ipcountry": "PH" })
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockCreateCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ variantId: "1001" })
+    );
+  });
+});
+
 describe("billing checkout — post-payment redirect", () => {
   it("targets /onboarding/done when onboarding is true", async () => {
     const wsId = await seedWorkspace();
@@ -263,31 +324,6 @@ describe("billing checkout — gated workspace", () => {
     expect(mockRequireOrg).toHaveBeenCalledWith(
       expect.objectContaining({ allowWhenGated: true })
     );
-  });
-});
-
-describe("billing checkout — beta-only mode", () => {
-  const ORIGINAL_BETA = process.env.BETA_TESTER_ENABLED;
-
-  afterAll(() => {
-    if (ORIGINAL_BETA === undefined) delete process.env.BETA_TESTER_ENABLED;
-    else process.env.BETA_TESTER_ENABLED = ORIGINAL_BETA;
-  });
-
-  it("fails closed before any Lemon Squeezy call when beta-only mode is active", async () => {
-    process.env.BETA_TESTER_ENABLED = "true";
-    const wsId = await seedWorkspace();
-    wireAuth(wsId);
-
-    const { POST } = await loadRoute();
-    const res = await POST(makeReq({ plan: "pro" }));
-
-    expect(res.status).toBe(403);
-    const body = await res.json();
-    expect(body).toEqual({ error: "billing_unavailable" });
-    expect(mockCreateCheckout).not.toHaveBeenCalled();
-
-    delete process.env.BETA_TESTER_ENABLED;
   });
 });
 

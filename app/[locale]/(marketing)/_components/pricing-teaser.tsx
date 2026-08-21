@@ -6,20 +6,30 @@ import { CheckIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { BilledAsNote } from "@/components/app/billed-as-note";
+import { BetaPlanCard } from "@/components/app/beta-plan-card";
 import { headlinePrice } from "@/lib/pricing/displayPrice";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
 
-// Landing-page pricing summary — mirrors the live /pricing page's single-Pro
-// story: 1 month free, then a paid Pro subscription (monthly/yearly) priced
-// live from Lemon Squeezy. No free tier, no Studio/Business — those aren't
-// sold. Provider-neutral copy — no payment processor named in the teaser
-// itself.
-export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
+// Landing-page pricing summary — mirrors the live /pricing page's story:
+// while the beta is open, a free Beta tab leads; otherwise a paid Pro
+// subscription (monthly/yearly) priced live from Lemon Squeezy. No free
+// tier, no Studio/Business — those aren't sold.
+export function PricingTeaser({
+  proPricing,
+  betaEnabled,
+}: {
+  proPricing: ProPricing;
+  betaEnabled: boolean;
+}) {
   const t = useTranslations("marketing.pricingTeaser");
+  const tPlans = useTranslations("plans");
   const locale = useLocale();
-  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
+  const [selection, setSelection] = useState<"beta" | "monthly" | "yearly">(
+    betaEnabled ? "beta" : "monthly"
+  );
+  const cadence = selection === "yearly" ? "yearly" : "monthly";
 
   const headline = headlinePrice(proPricing, cadence);
   const headlineAmount = formatMoney(headline.amount, headline.currency, locale, {
@@ -38,25 +48,38 @@ export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
         </div>
 
         <div className="mt-8 flex justify-center">
-          <div className="inline-flex gap-1 rounded-[var(--radius)] border border-border p-1">
+          <div className="inline-flex flex-wrap justify-center gap-1 rounded-[var(--radius)] border border-border p-1">
+            {betaEnabled ? (
+              <button
+                type="button"
+                onClick={() => setSelection("beta")}
+                aria-pressed={selection === "beta"}
+                className={cn(
+                  "rounded-[calc(var(--radius)-0.05rem)] px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3",
+                  selection === "beta" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tPlans("beta.tabLabel")}
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={() => setCadence("monthly")}
-              aria-pressed={cadence === "monthly"}
+              onClick={() => setSelection("monthly")}
+              aria-pressed={selection === "monthly"}
               className={cn(
-                "rounded-[calc(var(--radius)-0.05rem)] px-3 py-1.5 text-sm font-semibold transition-colors",
-                cadence === "monthly" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground"
+                "rounded-[calc(var(--radius)-0.05rem)] px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3",
+                selection === "monthly" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {t("cadence.monthly")}
             </button>
             <button
               type="button"
-              onClick={() => setCadence("yearly")}
-              aria-pressed={cadence === "yearly"}
+              onClick={() => setSelection("yearly")}
+              aria-pressed={selection === "yearly"}
               className={cn(
-                "rounded-[calc(var(--radius)-0.05rem)] px-3 py-1.5 text-sm font-semibold transition-colors",
-                cadence === "yearly" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground"
+                "rounded-[calc(var(--radius)-0.05rem)] px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3",
+                selection === "yearly" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {t("cadence.yearly")}
@@ -66,25 +89,37 @@ export function PricingTeaser({ proPricing }: { proPricing: ProPricing }) {
 
         <div className="mt-8 flex justify-center">
           <div className="w-full max-w-sm">
-            <PlanCard
-              name={t("pro.name")}
-              price={price}
-              priceNote={t("pro.priceNote")}
-              localNote={
-                headline.billed ? (
-                  <BilledAsNote
-                    amount={headline.billed.amount}
-                    currency={headline.billed.currency}
-                  />
-                ) : null
-              }
-              description={t("pro.description")}
-              features={[t("pro.feature1"), t("pro.feature2"), t("pro.feature3")]}
-              cta={t("pro.cta")}
-              badge={t("pro.badge")}
-              comingSoon={t("pro.comingSoon")}
-              featured
-            />
+            {selection === "beta" ? (
+              <BetaPlanCard
+                action={
+                  <Link
+                    href="/sign-up"
+                    className={buttonVariants({ variant: "brand", size: "sm", className: "mt-auto" })}
+                  >
+                    {tPlans("beta.cta")}
+                  </Link>
+                }
+              />
+            ) : (
+              <PlanCard
+                name={t("pro.name")}
+                price={price}
+                priceNote={t("pro.priceNote")}
+                localNote={
+                  headline.billed ? (
+                    <BilledAsNote
+                      amount={headline.billed.amount}
+                      currency={headline.billed.currency}
+                    />
+                  ) : null
+                }
+                description={t("pro.description")}
+                features={[t("pro.feature1"), t("pro.feature2"), t("pro.feature3")]}
+                cta={t("pro.cta")}
+                badge={t("pro.badge")}
+                featured
+              />
+            )}
           </div>
         </div>
 
@@ -108,7 +143,6 @@ function PlanCard({
   features,
   cta,
   badge,
-  comingSoon,
   featured = false,
 }: {
   name: string;
@@ -119,7 +153,6 @@ function PlanCard({
   features: string[];
   cta: string;
   badge?: string;
-  comingSoon?: string;
   featured?: boolean;
 }) {
   return (
@@ -129,19 +162,11 @@ function PlanCard({
         featured && "border-brand ring-1 ring-brand"
       )}
     >
-      {badge || comingSoon ? (
+      {badge ? (
         <div className="flex flex-wrap items-center gap-2">
-          {badge ? (
-            <span className="w-fit rounded-[var(--radius)] bg-brand px-2 py-0.5 text-xs font-bold text-brand-foreground">
-              {badge}
-            </span>
-          ) : null}
-          {/* Coming soon: Lemon Squeezy checkout paused pending MoR verification, see docs/RELEASE-CHECKLIST.md */}
-          {comingSoon ? (
-            <span className="w-fit rounded-[var(--radius)] border border-border px-2 py-0.5 text-xs font-bold text-foreground">
-              {comingSoon}
-            </span>
-          ) : null}
+          <span className="w-fit rounded-[var(--radius)] bg-brand px-2 py-0.5 text-xs font-bold text-brand-foreground">
+            {badge}
+          </span>
         </div>
       ) : null}
       <div>

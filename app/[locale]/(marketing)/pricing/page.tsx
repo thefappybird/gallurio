@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/lib/i18n/navigation";
 import { getDisplayPricing } from "@/lib/pricing/localPricing";
-import { formatMoney } from "@/lib/utils/format-currency";
-import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { BilledAsNote } from "@/components/app/billed-as-note";
-import { headlinePrice } from "@/lib/pricing/displayPrice";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { PricingPlans } from "./_plans";
 
 const SUPPORT_EMAIL = "support@gallurio.com";
 
@@ -34,24 +28,7 @@ export default async function PricingPage({ params }: Props) {
   // the HTML and served a hardcoded price until the next release. Rendering per
   // request is what makes this page agree with the live Lemon Squeezy price.
   const proPricing = await getDisplayPricing();
-
-  const proFeatures = [
-    t("pro.feature1"),
-    t("pro.feature2"),
-    t("pro.feature3"),
-    t("pro.feature4"),
-    t("pro.feature5"),
-    t("pro.feature6"),
-  ];
-
-  const monthly = headlinePrice(proPricing, "monthly");
-  const yearly = headlinePrice(proPricing, "yearly");
-  const monthlyPrice = formatMoney(monthly.amount, monthly.currency, locale, {
-    maximumFractionDigits: monthly.amount < 100 ? 2 : 0,
-  });
-  const yearlyPrice = formatMoney(yearly.amount, yearly.currency, locale, {
-    maximumFractionDigits: yearly.amount < 100 ? 2 : 0,
-  });
+  const betaEnabled = process.env.BETA_TESTER_ENABLED === "true";
 
   return (
     <>
@@ -68,52 +45,7 @@ export default async function PricingPage({ params }: Props) {
       {/* Pro Plan */}
       <section className="border-t border-border px-4 py-12 sm:px-6">
         <div className="mx-auto max-w-3xl">
-          <Card className="ring-2 ring-brand">
-            <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-lg">{t("pro.name")}</CardTitle>
-                <Badge variant="default" className="bg-brand text-brand-foreground">
-                  {t("pro.badge")}
-                </Badge>
-                {/* Coming soon: Lemon Squeezy checkout paused pending MoR verification, see docs/RELEASE-CHECKLIST.md */}
-                <Badge variant="outline">{t("pro.comingSoon")}</Badge>
-              </div>
-              <p className="text-sm font-semibold text-brand">{t("pro.freeMonth")}</p>
-              <p className="text-2xl font-semibold tracking-tight">
-                {monthlyPrice}
-                <span className="ms-1 text-sm font-normal text-muted-foreground">
-                  {t("pro.priceSuffixMonthly")}
-                </span>
-              </p>
-              {monthly.billed ? (
-                <BilledAsNote amount={monthly.billed.amount} currency={monthly.billed.currency} />
-              ) : null}
-              <p className="text-sm text-muted-foreground">
-                {t("pro.yearlyNote", { price: yearlyPrice })}
-                {yearly.billed ? (
-                  <BilledAsNote
-                    amount={yearly.billed.amount}
-                    currency={yearly.billed.currency}
-                    className="ms-1"
-                  />
-                ) : null}
-              </p>
-              <CardDescription>{t("pro.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-disc space-y-1 ps-5 text-sm text-muted-foreground">
-                {proFeatures.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-              <Link
-                href="/sign-up"
-                className={buttonVariants({ variant: "brand", size: "lg", className: "mt-6" })}
-              >
-                {t("pro.cta")}
-              </Link>
-            </CardContent>
-          </Card>
+          <PricingPlans proPricing={proPricing} betaEnabled={betaEnabled} />
         </div>
       </section>
 

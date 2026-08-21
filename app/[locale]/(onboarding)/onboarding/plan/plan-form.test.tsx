@@ -84,7 +84,6 @@ function renderForm(
     planChoiceLocked?: boolean;
     activation?: "free" | "pro" | "beta" | "promo" | null;
     acceptedPromoCode?: string | null;
-    billingAvailable?: boolean;
     proPricing?: ProPricing;
   } = {}
 ) {
@@ -97,7 +96,6 @@ function renderForm(
       planChoiceLocked={props.planChoiceLocked}
       activation={props.activation}
       acceptedPromoCode={props.acceptedPromoCode}
-      billingAvailable={props.billingAvailable ?? true}
     />
   );
 }
@@ -138,6 +136,32 @@ describe("PlanStepForm — renders", () => {
   });
 });
 
+describe("PlanStepForm — plan tabs", () => {
+  it("defaults to the Beta tab and renders the Beta plan card when betaTesterEnabled", () => {
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
+    expect(screen.getByRole("tab", { name: "Beta", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
+  });
+
+  it("has no Beta tab when betaTesterEnabled is false", () => {
+    renderForm({ currentPlan: "free" });
+    expect(screen.queryByRole("tab", { name: "Beta" })).not.toBeInTheDocument();
+  });
+
+  it("switching to Monthly shows only the Pro card with checkout enabled while beta is on", async () => {
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
+
+    fireEvent.click(screen.getByRole("tab", { name: /monthly/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Pro" })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("heading", { name: "Free" })).not.toBeInTheDocument();
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
+    expect(proCard).not.toBeDisabled();
+  });
+});
+
 describe("PlanStepForm — plan card selection", () => {
   it("Pro card is enabled with no Coming soon badge when billing is available (paid mode)", () => {
     renderForm({ currentPlan: "free" });
@@ -148,36 +172,12 @@ describe("PlanStepForm — plan card selection", () => {
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
   });
 
-  it("Pro card is disabled and shows a Coming soon badge in beta-only mode (billingAvailable=false)", () => {
-    renderForm({ currentPlan: "free", billingAvailable: false });
-
-    const proHeading = screen.getByRole("heading", { name: "Pro" });
-    const proCard = proHeading.closest("button");
-    expect(proCard).not.toBeNull();
-    expect(proCard).toBeDisabled();
-    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
-    expect(screen.queryByText(/^popular$/i)).not.toBeInTheDocument();
-  });
-
-  it("clicking the disabled Pro card does not change the CTA from free text in beta-only mode", async () => {
-    renderForm({ currentPlan: "free", billingAvailable: false });
-
-    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
-    fireEvent.click(proCard);
-
-    await act(async () => {});
-    expect(screen.getByRole("button", { name: /free month/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
-  });
-
   it("locks alternatives after a paid, promo, or beta plan activation", () => {
     renderForm({ currentPlan: "beta", planChoiceLocked: true, betaTesterEnabled: true, activation: "beta" });
 
     expect(screen.getByRole("status")).toHaveTextContent(/plan is now activated/i);
     expect(screen.getByText(/^active$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /finish onboarding/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Free" }).closest("button")).toBeDisabled();
-    expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
     for (const btn of screen.getAllByRole("button", { name: /have a promo code/i })) {
       expect(btn).toBeDisabled();
     }
@@ -201,14 +201,6 @@ describe("PlanStepForm — plan card selection", () => {
     expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/^active$/i)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
-  });
-});
-
-describe("PlanStepForm — beta-only mode never loads Lemon Squeezy", () => {
-  it("never injects the lemon.js script when billingAvailable is false", () => {
-    renderForm({ currentPlan: "free", billingAvailable: false });
-    expect(document.querySelector('script[src*="lemon.js"]')).toBeNull();
-    expect(createLemonSqueezyMock).not.toHaveBeenCalled();
   });
 });
 
@@ -415,7 +407,9 @@ describe("PlanStepForm — beta tester activation", () => {
 
     renderForm({ currentPlan: "free", betaTesterEnabled: true });
 
-    const betaBtn = screen.getByRole("button", { name: /activate beta access/i });
+    // Both the card's own activate button and the shared footer CTA trigger
+    // the same activation while on the Beta tab.
+    const betaBtn = screen.getAllByRole("button", { name: /activate beta access/i })[0];
     fireEvent.click(betaBtn);
 
     await waitFor(() => {
@@ -427,7 +421,7 @@ describe("PlanStepForm — beta tester activation", () => {
   it("refreshes the router cache before navigating on a successful beta activation", async () => {
     renderForm({ currentPlan: "free", betaTesterEnabled: true });
 
-    const betaBtn = screen.getByRole("button", { name: /activate beta access/i });
+    const betaBtn = screen.getAllByRole("button", { name: /activate beta access/i })[0];
     fireEvent.click(betaBtn);
 
     await waitFor(() => {

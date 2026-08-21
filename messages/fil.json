@@ -134,14 +134,13 @@
       "title": "Simpleng presyo",
       "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",
       "viewFullPricing": "Tingnan ang buong presyo",
-      "disclaimer": "Hindi pa available ang mga paid plan. Malinaw na ipapakita ang presyo at mga tuntunin sa pagsingil bago ang checkout kapag inilunsad na ang mga ito.",
+      "disclaimer": "Ipinapakita ang mga presyo sa iyong lokal na currency. Lumalabas ang mga tuntunin sa pagsingil, buwis, at detalye ng renewal bago mo makumpleto ang checkout.",
       "cadence": {
         "monthly": "Buwanan",
         "yearly": "Taunan — makatipid ng 2 buwan"
       },
       "pro": {
         "badge": "1 buwang libre",
-        "comingSoon": "Malapit na",
         "name": "Pro",
         "priceSuffixMonthly": "/buwan",
         "priceSuffixYearly": "/taon",
@@ -164,13 +163,11 @@
       },
       "pro": {
         "badge": "Rekomendado",
-        "comingSoon": "Malapit na",
         "name": "Pro",
         "freeMonth": "Simulan nang may 1 buwang libre, walang kailangang card.",
         "description": "Lahat ng kailangan mo para patakbuhin ang mga booking, client, gallery, at ang pampublikong page mo.",
         "priceSuffixMonthly": "/ buwan",
         "priceSuffixYearly": "/ taon",
-        "yearlyNote": "O {price} taunang bayad — makatipid ng 2 buwan.",
         "feature1": "Portfolio page builder & pampublikong site",
         "feature2": "Walang limit na booking at inquiry",
         "feature3": "Client management at team roles",
@@ -180,15 +177,15 @@
         "cta": "Simulan ang libreng buwan ko"
       },
       "billingNotice": {
-        "body1": "Hindi pa available ang mga paid na Pro subscription. Kapag inilunsad na ang mga subscription, malinaw na ipapakita ang presyo, billing period, mga tuntunin sa renewal, naaangkop na buwis, detalye ng bayad, at proseso ng cancellation bago mo makumpleto ang isang pagbili.",
+        "body1": "Malinaw na ipapakita ang presyo, billing period, mga tuntunin sa renewal, naaangkop na buwis, detalye ng bayad, at proseso ng cancellation bago mo makumpleto ang isang pagbili.",
         "body2": "Ang Lemon Squeezy ang magpoproseso ng mga paid subscription bilang merchant of record ng Gallurio. Ipapakita rin ang naaangkop na tuntunin sa checkout, invoice, refund, at bayad sa buong billing flow.",
         "body3": "Maaari mong i-cancel ang isang paid subscription anumang oras sa pamamagitan ng billing management flow. Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge; magpapatuloy ang access hanggang sa katapusan ng kasalukuyang billing period.",
         "body4": "Walang bayad na kinokolekta sa iyong unang libreng buwan."
       },
       "pricingTransparency": {
         "title": "Transparency sa Presyo",
-        "body1": "Hindi ka sisingilin ng Gallurio habang ang libreng buwan. Walang kailangang payment card para simulan ang trial. Ang anumang paid subscription ay nangangailangan ng hiwalay na pagbili o activation step pagkatapos ng libreng panahon, kasama ang naaangkop na tuntunin na ipapakita bago ang bayad.",
-        "body2": "Maaaring magbago ang presyo at mga feature bago ilunsad ang mga paid subscription. Ipapakita ang mahahalagang pagbabago sa page na ito at sa checkout flow."
+        "body1": "Hindi ka sinisingil ng Gallurio habang ang libreng buwan. Walang kailangang payment card para magsimula. Ang pag-subscribe ay hiwalay na hakbang pagkatapos ng libreng panahon, kasama ang naaangkop na tuntunin na ipapakita bago ang bayad.",
+        "body2": "Maaaring magbago ang presyo at mga feature. Ipapakita ang mahahalagang pagbabago sa page na ito at sa checkout flow."
       },
       "contactNote": {
         "body": "Para sa mga tanong sa billing, makipag-ugnayan sa"
@@ -1554,7 +1551,6 @@
           "paused": "Naka-pause",
           "trialing": "Trial"
         },
-        "notYetAvailable": "Hindi pa available ang mga paid subscription. Bumalik ulit sa lalong madaling panahon, o gumamit ng promo code sa ibaba kung mayroon ka.",
         "manageSection": "Pamahalaan ang subscription",
         "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
         "manageButton": "Pamahalaan ang subscription",
@@ -3214,7 +3210,6 @@
       "export_too_large": "Masyadong maraming booking para i-export. I-paliitin ang iyong mga filter at subukan muli.",
       "free_plan_no_checkout": "Hindi kailangan ng checkout ang libreng plano.",
       "lemonsqueezy_variant_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
-      "billing_unavailable": "Hindi pa available ang mga paid subscription. Bumalik ulit sa lalong madaling panahon.",
       "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
       "checkout_init_failed": "Hindi masimulaan ang checkout. Pakisubukan muli.",
       "no_subscription": "Wala kang aktibong subscription na mapapamahalaan.",
@@ -3324,7 +3319,6 @@
       "title": "Pumili ng planong angkop",
       "description": "Maaari kang magpalit ng plano o magkansela anumang oras mula sa mga setting ng iyong workspace.",
       "popular": "Popular",
-      "comingSoon": "Malapit na",
       "cadence": {
         "forever": "unang buwan libre",
         "monthly": "/ buwan",
@@ -3345,12 +3339,7 @@
       "activatedNotice": "Aktibo na ang iyong Gallurio Plan. Tapusin ang onboarding para baguhin ang iyong subscription plan.",
       "activePill": "Aktibo",
       "finishOnboarding": "Tapusin ang onboarding",
-      "acceptedPromoCode": "Promo code {code}",
-      "betaTester": {
-        "label": "Beta Tester",
-        "headline": "Kumuha ng libreng beta access ngayon",
-        "activate": "I-activate ang beta access"
-      }
+      "acceptedPromoCode": "Promo code {code}"
     },
     "done": {
       "title": "Handa ka na, {workspaceName}.",
@@ -3399,7 +3388,16 @@
       }
     },
     "beta": {
-      "name": "Beta"
+      "name": "Beta",
+      "label": "Beta tester",
+      "tabLabel": "Beta",
+      "price": "Libre",
+      "priceSuffix": "habang beta",
+      "tagline": "Lahat ng nasa Pro, libre habang beta pa ang Gallurio.",
+      "note": "Walang kailangang card. Aabisuhan ka namin 7 araw bago matapos ang beta.",
+      "activate": "I-activate ang beta access",
+      "active": "Aktibo na ang iyong beta access.",
+      "cta": "Sumali sa beta"
     },
     "promo": {
       "name": "Promo"

@@ -134,14 +134,13 @@
       "title": "Harga sederhana",
       "subtitle": "1 bulan Pro, gratis. Lalu satu paket, bulanan atau tahunan.",
       "viewFullPricing": "Lihat harga lengkap",
-      "disclaimer": "Paket berbayar belum tersedia. Harga dan ketentuan penagihan akan ditampilkan dengan jelas sebelum checkout setelah diluncurkan.",
+      "disclaimer": "Harga ditampilkan dalam mata uang lokal Anda. Ketentuan penagihan, pajak, dan detail perpanjangan ditampilkan sebelum Anda menyelesaikan checkout.",
       "cadence": {
         "monthly": "Bulanan",
         "yearly": "Tahunan — hemat 2 bulan"
       },
       "pro": {
         "badge": "1 bulan gratis",
-        "comingSoon": "Segera hadir",
         "name": "Pro",
         "priceSuffixMonthly": "/bln",
         "priceSuffixYearly": "/thn",
@@ -164,13 +163,11 @@
       },
       "pro": {
         "badge": "Direkomendasikan",
-        "comingSoon": "Segera hadir",
         "name": "Pro",
         "freeMonth": "Mulai dengan satu bulan gratis. Tidak perlu kartu pembayaran.",
         "description": "Semua yang Anda butuhkan untuk menjalankan booking, klien, galeri, dan halaman publik Anda.",
         "priceSuffixMonthly": "/ bulan",
         "priceSuffixYearly": "/ tahun",
-        "yearlyNote": "Atau {price} ditagih tahunan — hemat 2 bulan.",
         "feature1": "Pembuat halaman portfolio & situs publik",
         "feature2": "Booking dan permintaan tanpa batas",
         "feature3": "Manajemen klien & peran tim",
@@ -180,15 +177,15 @@
         "cta": "Mulai bulan gratis saya"
       },
       "billingNotice": {
-        "body1": "Langganan Pro berbayar belum tersedia. Ketika langganan diluncurkan, harga, periode penagihan, ketentuan perpanjangan, pajak yang berlaku, detail pembayaran, dan proses pembatalan akan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian.",
+        "body1": "Harga, periode penagihan, ketentuan perpanjangan, pajak yang berlaku, detail pembayaran, dan proses pembatalan ditampilkan dengan jelas sebelum Anda menyelesaikan pembelian.",
         "body2": "Lemon Squeezy akan memproses langganan berbayar sebagai merchant of record Gallurio. Ketentuan checkout, invoice, pengembalian dana, dan pembayaran yang berlaku juga akan ditampilkan melalui alur penagihan.",
         "body3": "Anda dapat membatalkan langganan berbayar kapan saja melalui alur pengelolaan penagihan. Pembatalan umumnya mencegah biaya perpanjangan di masa depan; akses umumnya berlanjut hingga akhir periode penagihan saat ini.",
         "body4": "Tidak ada biaya yang dikumpulkan selama bulan gratis pertama Anda."
       },
       "pricingTransparency": {
         "title": "Transparansi Harga",
-        "body1": "Gallurio tidak akan mengenakan biaya kepada Anda selama bulan gratis. Tidak perlu kartu pembayaran untuk memulai uji coba. Langganan berbayar apa pun memerlukan langkah pembelian atau aktivasi terpisah setelah periode gratis berakhir, dengan ketentuan yang berlaku ditampilkan sebelum pembayaran.",
-        "body2": "Harga dan fitur dapat berubah sebelum langganan berbayar diluncurkan. Perubahan material akan tercermin di halaman ini dan dalam alur checkout."
+        "body1": "Gallurio tidak mengenakan biaya kepada Anda selama bulan gratis. Tidak perlu kartu pembayaran untuk memulai. Berlangganan adalah langkah terpisah setelah periode gratis berakhir, dengan ketentuan yang berlaku ditampilkan sebelum pembayaran.",
+        "body2": "Harga dan fitur dapat berubah. Perubahan material akan tercermin di halaman ini dan dalam alur checkout."
       },
       "contactNote": {
         "body": "Untuk pertanyaan penagihan, hubungi"
@@ -1554,7 +1551,6 @@
           "paused": "Dijeda",
           "trialing": "Masa percobaan"
         },
-        "notYetAvailable": "Langganan berbayar belum tersedia. Periksa kembali nanti, atau gunakan kode promo di bawah jika Anda memilikinya.",
         "manageSection": "Kelola langganan",
         "manageDescription": "Perbarui metode pembayaran, lihat faktur, atau batalkan langganan Anda langsung melalui Lemon Squeezy.",
         "manageButton": "Kelola langganan",
@@ -3214,7 +3210,6 @@
       "export_too_large": "Terlalu banyak pemesanan untuk diekspor. Persempit filter dan coba lagi.",
       "free_plan_no_checkout": "Paket gratis tidak memerlukan pembayaran.",
       "lemonsqueezy_variant_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
-      "billing_unavailable": "Langganan berbayar belum tersedia. Silakan periksa kembali nanti.",
       "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
       "checkout_init_failed": "Gagal memulai pembayaran. Silakan coba lagi.",
       "no_subscription": "Anda tidak memiliki langganan aktif untuk dikelola.",
@@ -3324,7 +3319,6 @@
       "title": "Pilih paket yang sesuai",
       "description": "Anda dapat mengubah paket atau membatalkan kapan saja dari pengaturan ruang kerja Anda.",
       "popular": "Populer",
-      "comingSoon": "Segera hadir",
       "cadence": {
         "forever": "bulan pertama gratis",
         "monthly": "/ bulan",
@@ -3345,12 +3339,7 @@
       "activatedNotice": "Paket Gallurio Anda sekarang aktif. Selesaikan onboarding untuk mengubah paket langganan Anda.",
       "activePill": "Aktif",
       "finishOnboarding": "Selesaikan onboarding",
-      "acceptedPromoCode": "Kode promo {code}",
-      "betaTester": {
-        "label": "Beta Tester",
-        "headline": "Dapatkan akses beta gratis sekarang",
-        "activate": "Aktifkan akses beta"
-      }
+      "acceptedPromoCode": "Kode promo {code}"
     },
     "done": {
       "title": "Anda sudah siap, {workspaceName}.",
@@ -3399,7 +3388,16 @@
       }
     },
     "beta": {
-      "name": "Beta"
+      "name": "Beta",
+      "label": "Beta tester",
+      "tabLabel": "Beta",
+      "price": "Gratis",
+      "priceSuffix": "selama beta",
+      "tagline": "Semua fitur Pro, gratis selama Gallurio dalam masa beta.",
+      "note": "Tidak perlu kartu. Kami akan memberi tahu 7 hari sebelum masa beta berakhir.",
+      "activate": "Aktifkan akses beta",
+      "active": "Akses beta Anda aktif.",
+      "cta": "Gabung ke beta"
     },
     "promo": {
       "name": "Promo"

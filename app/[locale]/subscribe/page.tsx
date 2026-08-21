@@ -2,7 +2,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { LogOutIcon } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
-import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { User } from "@/lib/db/models";
 import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
@@ -60,7 +59,6 @@ export default async function SubscribePage({
           <SubscribePanel
             proPricing={proPricing}
             returnTo={returnTo}
-            billingAvailable={isPaidBillingAvailable()}
             betaAvailable={
               process.env.BETA_TESTER_ENABLED === "true" &&
               !user?.betaParticipation?.recordedAt

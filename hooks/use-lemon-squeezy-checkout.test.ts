@@ -108,12 +108,6 @@ describe("useLemonSqueezyCheckout", () => {
     expect(newCallback).toHaveBeenCalledOnce();
   });
 
-  it("never injects the script when enabled is false", async () => {
-    renderHook(() => useLemonSqueezyCheckout(vi.fn(), false));
-    expect(document.querySelector('script[src*="lemon.js"]')).toBeNull();
-    expect(createLemonSqueezyMock).not.toHaveBeenCalled();
-  });
-
   it("removes the injected script tag on unmount", async () => {
     const { unmount } = renderHook(() => useLemonSqueezyCheckout(vi.fn()));
     expect(document.querySelector('script[src*="lemon.js"]')).not.toBeNull();

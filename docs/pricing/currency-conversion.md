@@ -48,7 +48,9 @@ charged stays in the store currency regardless of what the visitor is shown.
 
 | File | Role |
 | --- | --- |
-| `lib/pricing/fxRates.ts` | Fetches the daily USD rate table, caches it 24h, returns `null` on any failure |
+| `lib/pricing/fxRates.ts` | Reads the daily USD rate table from `FxRateTable`, falls back to fetching it directly, returns `null` only when no table is stored at all |
+| `lib/db/models/FxRateTable.ts` | `FxRateTable` (daily snapshot) / `FxFetchLock` (single-flight claim lease) |
+| `app/api/cron/fx-rates/route.ts` | Daily cron: fetches Open Exchange Rates once, upserts today's `FxRateTable` doc |
 | `lib/pricing/countryCurrency.ts` | ISO country → currency table, USD fallback |
 | `lib/pricing/localPricing.ts` | `getDisplayPricing()` — live LS price + the visitor's own currency (USD when unrateable) |
 | `lib/pricing/displayPrice.ts` | `headlinePrice()` — picks the headline figure and the billed figure to disclose |
@@ -76,8 +78,10 @@ locales, serving a fixed price until the next image build regardless of what
 Lemon Squeezy said. Per-request rendering is what makes the page agree with
 live pricing at all.
 
-The page reads no database and both inputs are process-cached (LS pricing 1h,
-FX table 24h), so the per-request cost is template rendering only. Restoring a
+LS pricing is process-cached 1h. The FX table is process-memoized ~15 min
+(see "Storage and refresh" below) and normally comes straight from that memo
+or the day's already-fetched `FxRateTable` doc, so the per-request cost stays
+template rendering plus a cheap indexed read, not a network call. Restoring a
 static shell would mean moving the estimate to a client fetch against a new
 public endpoint plus ISR — more surface for no benefit this page needs.
 
@@ -85,12 +89,84 @@ public endpoint plus ISR — more surface for no benefit this page needs.
 
 Open Exchange Rates, via the existing `OPENEXCHANGERATES_APP_ID`. The free plan
 serves one USD-based table per call (`base` is a paid feature), so every
-non-USD pair is cross-rated off that table — one fetch a day covers every
-currency in the app on the success path; a failed fetch is retried on the next
-call, so a sustained outage can consume quota faster.
+non-USD pair is cross-rated off that table — a daily cron makes exactly one
+fetch a day cover every currency in the app; see "Storage and refresh" below
+for how the request path avoids ever re-hitting the API itself in steady
+state.
 
 The ECB feed (`api.frankfurter.dev`) was rejected: it publishes ~30 currencies
 and none of the Gulf ones, which would leave the `ar` locale without rates.
+
+## Storage and refresh
+
+The rate table lives in Mongo (`FxRateTable`, `lib/db/models/FxRateTable.ts`),
+one document per UTC day keyed `_id: "YYYY-MM-DD"` (sorts lexicographically, so
+"latest" is `sort({ _id: -1 }).limit(1)`, no extra index). It is deliberately
+not `workspaceId`-scoped — global market data with no tenant dimension, unlike
+every other collection in this repo. History is kept, not overwritten: each
+day is ~5KB and it doubles as the audit trail behind a restated frozen rate
+(see "Changing the workspace currency" below).
+
+`getFxRate()`/`resolveFxFreeze()` (`lib/pricing/fxRates.ts`) read three layers,
+Open Exchange Rates last:
+
+1. **In-process memo, ~15 min.** Keeps per-render work off Mongo.
+2. **Today's `FxRateTable` doc**, written by the daily cron below. This is the
+   only layer that runs in steady state — the request path never calls Open
+   Exchange Rates when the cron has already done its job for the day.
+3. **Fallback fetch, only when today's doc is missing** (the cron failed or
+   hasn't run yet). Before calling the API, the caller takes a claim lease —
+   a single lock row (`FxFetchLock`, `_id: "fx-fetch-lock"`) claimed via
+   `findOneAndUpdate({ _id, lockedUntil: { $lt: now } }, { $set: { lockedUntil: now + 60s } }, { upsert: true })`.
+   One container wins and fetches; every other container (including a
+   duplicate-key race two containers can hit upserting the same lock row at
+   the same instant) skips the fetch and falls through to step 4. Without
+   this, N running containers would all miss the cache at once and each fire
+   its own request against the same 1,000/month quota.
+4. **Stale-if-error.** A failed or skipped fetch still serves whatever table
+   is already stored, however old — an outage degrades conversions to
+   "yesterday's rate," never to "no conversion at all." `getFxRate()` returns
+   `null` only when there is no stored table whatsoever (a cold start against
+   a broken upstream) — the existing fail-open contract callers already
+   depend on.
+
+`app/api/cron/fx-rates/route.ts` is the daily job: Node runtime, the same
+timing-safe Bearer `CRON_SECRET` auth as the other cron routes (401 without a
+match), calls Open Exchange Rates once, and upserts today's `FxRateTable` doc.
+Idempotent — firing it twice the same day just overwrites with the same data,
+so a retry or manual re-run is harmless. In steady state this route is the
+only caller of Open Exchange Rates: 1 fetch/day × ~31 days/month, against the
+1,000/month free quota.
+
+### VPS systemd timer
+
+Same pattern as the other scheduled jobs in `docs/modules/hosting-ops.md`
+("Scheduled jobs (systemd timers, not Vercel Cron)") — reuses the same
+`/etc/gallurio/cron.env` (`CRON_SECRET`, `APP_ORIGIN`) that
+`gallurio-billing-lifecycle`/`gallurio-invite-seats` already read. Unit files:
+`deploy/systemd/gallurio-fx-rates.service` and
+`deploy/systemd/gallurio-fx-rates.timer`.
+
+```
+sudo cp deploy/systemd/gallurio-fx-rates.* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now gallurio-fx-rates.timer
+```
+
+The timer stanza:
+
+```
+[Timer]
+OnCalendar=*-*-* 00:15:00 UTC
+Persistent=true
+RandomizedDelaySec=60
+```
+
+00:15 UTC — shortly after Open Exchange Rates' daily publish, ahead of
+business hours in every market Gallurio serves. `Persistent=true` catches up a
+run missed by downtime/reboot; a missed run is not urgent on its own since
+stale-if-error keeps serving the last table indefinitely. Status:
+`systemctl list-timers`, `journalctl -u gallurio-fx-rates.service`.
 
 ## Adding it to the VPS
 
@@ -230,6 +306,46 @@ a failing field write — a duplicate slug racing past the pre-check into the
 unique index — rolls back the re-frozen rows and the `currencyChangedAt` stamp
 with it. Without that, an owner could be told the save failed while a real
 90-day cooldown had already started.
+
+## Pricing tiers
+
+Two price tiers of the same Pro plan, sold as two Lemon Squeezy variant
+pairs:
+
+| Tier | Monthly | Yearly | Who |
+| --- | --- | --- | --- |
+| `base` | $5 | $50 | Everyone by default, including the launch market (PH) |
+| `global` | $15 | $150 | A fixed list of 28 high-income countries |
+
+`lib/pricing/pricingTier.ts` (`tierForCountry`) holds the country list and
+resolves it from `CF-IPCountry` — same header `countryCurrency.ts` reads, but
+a separate, short, explicit table: a currency-guess miss just shows an odd
+number, a tier miss changes what Lemon Squeezy actually charges. Tier is
+**always** resolved server-side, in `lib/pricing/localPricing.ts` (display)
+and `app/api/billing/checkout/route.ts` (charging) — never accepted from the
+client or request body.
+
+Absent country, `XX` (Cloudflare's own unknown code), and `T1` (Tor) all
+resolve to `base`. In production Cloudflare always sets `CF-IPCountry`, so a
+missing value means the origin was reached directly (proxy bypassed) rather
+than a real unknown visitor — defaulting to the cheap tier leaks less than
+overcharging a launch-market buyer whose header didn't arrive.
+
+Lemon Squeezy renews a subscription against the variant it was created with,
+not a re-evaluated tier — a customer who relocates after subscribing keeps
+their original price. `Workspace.lsVariantId`, written by every subscription
+snapshot (`lib/billing/subscriptionSnapshot.ts`), records which variant a
+subscriber is actually on so settings can show what they actually pay;
+existing subscribers (all sold at base price, before this shipped) read
+`null`, which is correct — it reads as base tier.
+
+`lib/lemonsqueezy/plans.ts#getProVariantsForTier` resolves a tier's variant
+ids and offline fallback amounts; `PLAN_CATALOG`'s single `"pro"` entry always
+carries the base pair, so every other consumer (entitlements, settings,
+onboarding) keeps working unchanged. `getProPricing(tier)`
+(`lib/lemonsqueezy/pricing.ts`) caches live pricing per tier, 1h TTL each.
+`planForVariantId` checks all four variant ids (base + global, monthly +
+yearly) so a global-tier subscriber's webhook maps to `"pro"` too.
 
 ## Known limitations
 

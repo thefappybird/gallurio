@@ -134,14 +134,13 @@
       "title": "Simple pricing",
       "subtitle": "1 month of Pro, free. Then one plan, monthly or yearly.",
       "viewFullPricing": "View full pricing",
-      "disclaimer": "Paid plans aren't available yet. Pricing and billing terms will be shown clearly before checkout once they launch.",
+      "disclaimer": "Prices are shown in your local currency. Billing terms, taxes, and renewal details appear before you complete checkout.",
       "cadence": {
         "monthly": "Monthly",
         "yearly": "Yearly — save 2 months"
       },
       "pro": {
         "badge": "1 month free",
-        "comingSoon": "Coming soon",
         "name": "Pro",
         "priceSuffixMonthly": "/mo",
         "priceSuffixYearly": "/yr",
@@ -164,13 +163,11 @@
       },
       "pro": {
         "badge": "Recommended",
-        "comingSoon": "Coming soon",
         "name": "Pro",
         "freeMonth": "Start with one month free. No payment card is required.",
         "description": "Everything you need to run bookings, clients, galleries, and your public page.",
         "priceSuffixMonthly": "/ month",
         "priceSuffixYearly": "/ year",
-        "yearlyNote": "Or {price} billed yearly — save 2 months.",
         "feature1": "Portfolio page builder & public site",
         "feature2": "Unlimited bookings and inquiries",
         "feature3": "Client management & team roles",
@@ -180,15 +177,15 @@
         "cta": "Start my free month"
       },
       "billingNotice": {
-        "body1": "Paid Pro subscriptions are not yet available. When subscriptions launch, the price, billing period, renewal terms, applicable taxes, payment details, and cancellation process will be shown clearly before you complete a purchase.",
+        "body1": "The price, billing period, renewal terms, applicable taxes, payment details, and cancellation process are shown clearly before you complete a purchase.",
         "body2": "Lemon Squeezy will process paid subscriptions as Gallurio's merchant of record. The applicable checkout, invoice, refund, and payment terms will also be shown through the billing flow.",
         "body3": "You may cancel a paid subscription at any time through the billing management flow. Cancellation normally prevents future renewal charges; access generally continues until the end of the current billing period.",
         "body4": "No charge is collected during your first free month."
       },
       "pricingTransparency": {
         "title": "Pricing Transparency",
-        "body1": "Gallurio will not charge you during the free month. No payment card is required to start the trial. Any paid subscription requires a separate purchase or activation step after the free period, with the applicable terms displayed before payment.",
-        "body2": "Prices and features may change before paid subscriptions launch. Material changes will be reflected on this page and in the checkout flow."
+        "body1": "Gallurio does not charge you during the free month. No payment card is required to start. Subscribing is a separate step after the free period, with the applicable terms displayed before payment.",
+        "body2": "Prices and features may change. Material changes will be reflected on this page and in the checkout flow."
       },
       "contactNote": {
         "body": "For billing questions, contact"
@@ -1554,7 +1551,6 @@
           "paused": "Paused",
           "trialing": "Trialing"
         },
-        "notYetAvailable": "Paid subscriptions aren't available yet. Check back soon, or use a promo code below if you have one.",
         "manageSection": "Manage subscription",
         "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
         "manageButton": "Manage subscription",
@@ -3215,7 +3211,6 @@
       "export_too_large": "Too many bookings to export. Narrow your filters and try again.",
       "free_plan_no_checkout": "The free plan doesn't require checkout.",
       "lemonsqueezy_variant_not_configured": "This plan isn't available right now. Please contact support.",
-      "billing_unavailable": "Paid subscriptions aren't available yet. Please check back soon.",
       "no_verified_email": "Add and verify an email before subscribing.",
       "checkout_init_failed": "Couldn't start checkout. Please try again.",
       "no_subscription": "You don't have an active subscription to manage.",
@@ -3325,7 +3320,6 @@
       "title": "Pick the plan that fits",
       "description": "You can change plans or cancel anytime from your workspace settings.",
       "popular": "Popular",
-      "comingSoon": "Coming soon",
       "cadence": {
         "forever": "first month free",
         "monthly": "/ month",
@@ -3346,12 +3340,7 @@
       "activatedNotice": "Your Gallurio Plan is now activated. Finish onboarding to change your subscription plan.",
       "activePill": "Active",
       "finishOnboarding": "Finish onboarding",
-      "acceptedPromoCode": "Promo code {code}",
-      "betaTester": {
-        "label": "Beta tester",
-        "headline": "Get free beta access now",
-        "activate": "Activate beta access"
-      }
+      "acceptedPromoCode": "Promo code {code}"
     },
     "done": {
       "title": "You're all set, {workspaceName}.",
@@ -3400,7 +3389,16 @@
       }
     },
     "beta": {
-      "name": "Beta"
+      "name": "Beta",
+      "label": "Beta tester",
+      "tabLabel": "Beta",
+      "price": "Free",
+      "priceSuffix": "while in beta",
+      "tagline": "Everything in Pro, free while Gallurio is in beta.",
+      "note": "No card required. We'll give you 7 days' notice before the beta ends.",
+      "activate": "Activate beta access",
+      "active": "Your beta access is active.",
+      "cta": "Join the beta"
     },
     "promo": {
       "name": "Promo"

@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
-import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { connectDB } from "@/lib/db/mongoose";
 import { createSubscriptionCheckout } from "@/lib/lemonsqueezy/client";
-import { getPlanCatalog, isPaidPlan } from "@/lib/lemonsqueezy/plans";
+import { getProVariantsForTier, isPaidPlan } from "@/lib/lemonsqueezy/plans";
+import { tierForCountry } from "@/lib/pricing/pricingTier";
 import { rateLimit } from "@/lib/server/rateLimit";
 import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
 import { hasActivatedOnboardingPlan } from "@/lib/onboarding/planActivation";
@@ -25,12 +25,6 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  // Cheap, zero-I/O check first — avoids an auth session decrypt + 2 Mongo
-  // round trips on every request for as long as beta-only mode is on.
-  if (!isPaidBillingAvailable()) {
-    return NextResponse.json({ error: "billing_unavailable" }, { status: 403 });
-  }
-
   // A gated owner must be able to POST here too - re-subscribing is how they
   // un-gate themselves.
   const ctx = await requireOrg({ allowDuringOnboarding: true, allowWhenGated: true });
@@ -66,8 +60,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const catalog = getPlanCatalog(plan);
-  const variantId = cadence === "yearly" ? catalog.yearlyVariantId : catalog.variantId;
+  // Tier decides what the customer is charged, so it is resolved server-side
+  // from this request's own CF-IPCountry header — never accepted from the
+  // client/request body.
+  const tier = tierForCountry(req.headers.get("cf-ipcountry"));
+  const variants = getProVariantsForTier(tier);
+  const variantId = cadence === "yearly" ? variants.yearlyVariantId : variants.monthlyVariantId;
   if (!variantId) {
     return NextResponse.json(
       { error: "lemonsqueezy_variant_not_configured" },

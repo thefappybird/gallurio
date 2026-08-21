@@ -1,7 +1,6 @@
 "use server";
 
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
-import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { getLemonSqueezySubscription } from "@/lib/lemonsqueezy/client";
 
 // Lemon Squeezy's Customer Portal is a pre-signed, short-lived (24h) URL that
@@ -11,10 +10,6 @@ import { getLemonSqueezySubscription } from "@/lib/lemonsqueezy/client";
 export async function getSubscriptionManageUrlAction(): Promise<
   ActionResult & { url?: string }
 > {
-  // Cheap, zero-I/O check first — avoids an owner session decrypt + 2 Mongo
-  // round trips on every call for as long as beta-only mode is on.
-  if (!isPaidBillingAvailable()) return { error: "billing_unavailable" };
-
   const ctx = await ownerContext();
   if ("error" in ctx) return ctx;
 

@@ -13,6 +13,7 @@ import { PLAN_CATALOG, type PlanCatalogEntry } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { BilledAsNote } from "@/components/app/billed-as-note";
+import { BetaPlanCard } from "@/components/app/beta-plan-card";
 import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { useActionError } from "@/lib/i18n/actionError";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
@@ -30,7 +31,6 @@ export function PlanStepForm({
   furthestStep,
   proPricing,
   betaTesterEnabled = false,
-  billingAvailable = true,
 }: {
   currentPlan: string;
   planChoiceLocked?: boolean;
@@ -39,7 +39,6 @@ export function PlanStepForm({
   furthestStep: OnboardingStep;
   proPricing: ProPricing;
   betaTesterEnabled?: boolean;
-  billingAvailable?: boolean;
 }) {
   const t = useTranslations("onboarding.plan");
   const tPlans = useTranslations("plans");
@@ -47,7 +46,10 @@ export function PlanStepForm({
   const locale = useLocale();
   const router = useRouter();
   const [selected, setSelected] = useState<PlanTier>(currentPlan === "pro" ? "pro" : "free");
-  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
+  const [tab, setTab] = useState<"beta" | "monthly" | "yearly">(
+    betaTesterEnabled ? "beta" : "monthly"
+  );
+  const cadence: "monthly" | "yearly" = tab === "yearly" ? "yearly" : "monthly";
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -55,11 +57,15 @@ export function PlanStepForm({
   const lemonSqueezy = useLemonSqueezyCheckout(() => {
     router.refresh();
     router.push("/onboarding/done");
-  }, billingAvailable);
+  });
 
   async function submit() {
     if (planChoiceLocked) {
       router.push("/onboarding/done");
+      return;
+    }
+    if (tab === "beta") {
+      activateBeta();
       return;
     }
     setCheckoutError(null);
@@ -155,10 +161,14 @@ export function PlanStepForm({
         maximumFractionDigits: selectedDisplay.amount < 100 ? 2 : 0,
       })
     : "";
+  // While beta is on, Monthly/Annual only ever offer Pro — Free is hidden.
+  const visiblePlans = betaTesterEnabled ? PLAN_CATALOG.filter((p) => p.id === "pro") : PLAN_CATALOG;
 
   const cta =
     planChoiceLocked
       ? t("finishOnboarding")
+      : tab === "beta"
+      ? tPlans("beta.activate")
       : selected === "free"
       ? t("ctaFree")
       : t("ctaPaid", { price: selectedPrice });
@@ -176,7 +186,7 @@ export function PlanStepForm({
             {busy ? (
               <>
                 <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                {selected === "free" ? t("settingUp") : t("opening")}
+                {tab === "beta" || selected === "free" ? t("settingUp") : t("opening")}
               </>
             ) : (
               cta
@@ -189,16 +199,23 @@ export function PlanStepForm({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex items-center gap-2">
             <SegmentedToggle
-              value={cadence}
-              onChange={setCadence}
+              value={tab}
+              onChange={setTab}
               disabled={planChoiceLocked}
-              ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+              ariaLabel={
+                betaTesterEnabled
+                  ? `${tPlans("beta.tabLabel")} / ${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`
+                  : `${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`
+              }
               options={[
-                { key: "monthly", label: t("cadenceToggle.monthly") },
-                { key: "yearly", label: t("cadenceToggle.yearly") },
+                ...(betaTesterEnabled
+                  ? [{ key: "beta" as const, label: tPlans("beta.tabLabel") }]
+                  : []),
+                { key: "monthly" as const, label: t("cadenceToggle.monthly") },
+                { key: "yearly" as const, label: t("cadenceToggle.yearly") },
               ]}
             />
-            {cadence === "yearly" && (
+            {tab === "yearly" && (
               <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
                 {t("cadenceToggle.savePill")}
               </span>
@@ -226,135 +243,136 @@ export function PlanStepForm({
           </p>
         )}
 
-        {betaTesterEnabled && (
-          <div className="flex flex-col items-start justify-between gap-3 border border-brand bg-brand/5 p-4 sm:flex-row sm:items-center">
-            <div>
-              <div className="flex gap-2 items-center">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-brand">
-                  {t("betaTester.label")}
-                </span>
+        {tab === "beta" ? (
+          <BetaPlanCard
+            className="mt-2"
+            action={
+              <div className="flex flex-col gap-2">
                 {planChoiceLocked && activation === "beta" && (
-                  <span className="bg-brand text-brand-foreground px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider">
+                  <span className="w-fit bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
                     {t("activePill")}
                   </span>
                 )}
-                
-              </div>
-              <h3 className="font-heading text-lg font-semibold">{t("betaTester.headline")}</h3>
-            </div>
-            <Button
-              type="button"
-              variant="brand"
-              size="lg"
-              onClick={activateBeta}
-              disabled={busy || planChoiceLocked}
-              className="w-full sm:w-auto"
-            >
-              {t("betaTester.activate")}
-            </Button>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 mt-2 gap-3 md:grid-cols-2">
-          {PLAN_CATALOG.map((p) => {
-            const active = selected === p.id;
-            const display = displayFor(p, cadence);
-            const priceAmount = display.amount;
-            const price = formatMoney(display.amount, display.currency, locale, {
-              maximumFractionDigits: display.amount < 100 ? 2 : 0,
-            });
-            const yearlyComparePrice =
-              p.id === "pro" && cadence === "yearly"
-                ? formatMoney(
-                    proMonthlyHeadline.amount * 12,
-                    proMonthlyHeadline.currency,
-                    locale
-                  )
-                : null;
-            const cadenceLabel =
-              p.amount === 0
-                ? t("cadence.forever")
-                : cadence === "yearly"
-                  ? t("cadence.yearly")
-                  : t("cadence.monthly");
-            const isCurrentPlan = activation === p.id;
-            const disabled =
-              (!billingAvailable && p.id === "pro") || (planChoiceLocked && !isCurrentPlan);
-            return (
-              <motion.button
-                key={p.id}
-                type="button"
-                disabled={disabled}
-                whileHover={disabled ? undefined : { y: -2 }}
-                whileTap={disabled ? undefined : { scale: 0.985 }}
-                onClick={() => {
-                  if (disabled) return;
-                  setSelected(p.id);
-                  setCheckoutError(null);
-                }}
-                className={cn(
-                  "relative flex flex-col gap-3 border bg-background p-4 text-left transition-colors",
-                  active ? "border-brand" : "border-border hover:border-brand/40 focus-visible:border-brand/40",
-                  disabled && "cursor-not-allowed opacity-50 hover:border-border"
-                )}
-              >
-                {/* Coming soon: paid checkout unavailable while beta-only mode is active (no Merchant of Record selected yet), see docs/RELEASE-CHECKLIST.md */}
-                {!billingAvailable && p.id === "pro" && (
-                  <span className="absolute -top-2 right-3 bg-brand px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand-foreground">
-                    {t("comingSoon")}
-                  </span>
-                )}
-                <div className="flex items-baseline justify-between">
-                  <h3 className="font-heading text-lg font-semibold">{tPlans(`${p.id}.name`)}</h3>
-                  {planChoiceLocked ? (
-                    isCurrentPlan && (
-                      <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
-                        {t("activePill")}
-                      </span>
-                    )
-                  ) : isCurrentPlan ? (
-                    <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
-                      {t("activePill")}
-                    </span>
+                <Button
+                  type="button"
+                  variant="brand"
+                  onClick={activateBeta}
+                  disabled={busy || planChoiceLocked}
+                  className="w-full"
+                >
+                  {busy ? (
+                    <>
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                      {t("settingUp")}
+                    </>
                   ) : (
-                    active && (
-                      <span className="flex h-5 w-5 items-center justify-center bg-brand text-brand-foreground">
-                        <Check className="h-3.5 w-3.5" />
-                      </span>
-                    )
+                    tPlans("beta.activate")
                   )}
-                </div>
-                <div className="flex items-baseline gap-1">
-                  {yearlyComparePrice && (
-                    <span className="text-sm text-muted-foreground line-through">
-                      {yearlyComparePrice}
-                    </span>
-                  )}
-                  <span className="font-heading text-2xl font-semibold">{price}</span>
-                  <span className="text-xs text-muted-foreground">{cadenceLabel}</span>
-                </div>
-                {p.id === "pro" && proHeadline.billed && (
-                  <BilledAsNote
-                    amount={proHeadline.billed.amount}
-                    currency={proHeadline.billed.currency}
-                  />
-                )}
-                <p className="text-xs text-muted-foreground">{tPlans(`${p.id}.tagline`)}</p>
-                <ul className="mt-1 flex flex-col gap-1.5 text-xs">
-                  {p.featureKeys.map((key) => (
-                    <li key={key} className="flex items-start gap-1.5">
-                      <Check className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
-                      <span>{tPlans(key.replace(/^plans\./, ""))}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.button>
-            );
-          })}
-        </div>
+                </Button>
+              </div>
+            }
+          />
+        ) : (
+          <>
+            <div
+              className={cn(
+                "grid grid-cols-1 mt-2 gap-3",
+                visiblePlans.length > 1 && "md:grid-cols-2"
+              )}
+            >
+              {visiblePlans.map((p) => {
+                const active = selected === p.id;
+                const display = displayFor(p, cadence);
+                const price = formatMoney(display.amount, display.currency, locale, {
+                  maximumFractionDigits: display.amount < 100 ? 2 : 0,
+                });
+                const yearlyComparePrice =
+                  p.id === "pro" && cadence === "yearly"
+                    ? formatMoney(
+                        proMonthlyHeadline.amount * 12,
+                        proMonthlyHeadline.currency,
+                        locale
+                      )
+                    : null;
+                const cadenceLabel =
+                  p.amount === 0
+                    ? t("cadence.forever")
+                    : cadence === "yearly"
+                      ? t("cadence.yearly")
+                      : t("cadence.monthly");
+                const isCurrentPlan = activation === p.id;
+                const disabled = planChoiceLocked && !isCurrentPlan;
+                return (
+                  <motion.button
+                    key={p.id}
+                    type="button"
+                    disabled={disabled}
+                    whileHover={disabled ? undefined : { y: -2 }}
+                    whileTap={disabled ? undefined : { scale: 0.985 }}
+                    onClick={() => {
+                      if (disabled) return;
+                      setSelected(p.id);
+                      setCheckoutError(null);
+                    }}
+                    className={cn(
+                      "relative flex flex-col gap-3 border bg-background p-4 text-left transition-colors",
+                      active ? "border-brand" : "border-border hover:border-brand/40 focus-visible:border-brand/40",
+                      disabled && "cursor-not-allowed opacity-50 hover:border-border"
+                    )}
+                  >
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="font-heading text-lg font-semibold">{tPlans(`${p.id}.name`)}</h3>
+                      {planChoiceLocked ? (
+                        isCurrentPlan && (
+                          <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
+                            {t("activePill")}
+                          </span>
+                        )
+                      ) : isCurrentPlan ? (
+                        <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
+                          {t("activePill")}
+                        </span>
+                      ) : (
+                        active && (
+                          <span className="flex h-5 w-5 items-center justify-center bg-brand text-brand-foreground">
+                            <Check className="h-3.5 w-3.5" />
+                          </span>
+                        )
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      {yearlyComparePrice && (
+                        <span className="text-sm text-muted-foreground line-through">
+                          {yearlyComparePrice}
+                        </span>
+                      )}
+                      <span className="font-heading text-2xl font-semibold">{price}</span>
+                      <span className="text-xs text-muted-foreground">{cadenceLabel}</span>
+                    </div>
+                    {p.id === "pro" && proHeadline.billed && (
+                      <BilledAsNote
+                        amount={proHeadline.billed.amount}
+                        currency={proHeadline.billed.currency}
+                      />
+                    )}
+                    <p className="text-xs text-muted-foreground">{tPlans(`${p.id}.tagline`)}</p>
+                    <ul className="mt-1 flex flex-col gap-1.5 text-xs">
+                      {p.featureKeys.map((key) => (
+                        <li key={key} className="flex items-start gap-1.5">
+                          <Check className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
+                          <span>{tPlans(key.replace(/^plans\./, ""))}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.button>
+                );
+              })}
+            </div>
 
-        {selected !== "free" && (
-          <p className="text-xs text-muted-foreground">{t("checkoutNote")}</p>
+            {selected !== "free" && (
+              <p className="text-xs text-muted-foreground">{t("checkoutNote")}</p>
+            )}
+          </>
         )}
 
         <div className="sm:hidden">

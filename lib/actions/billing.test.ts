@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/auth/ownerContext", () => ({
   ownerContext: vi.fn(),
@@ -20,26 +20,6 @@ beforeEach(() => {
 });
 
 describe("getSubscriptionManageUrlAction", () => {
-  const ORIGINAL_BETA = process.env.BETA_TESTER_ENABLED;
-  afterEach(() => {
-    if (ORIGINAL_BETA === undefined) delete process.env.BETA_TESTER_ENABLED;
-    else process.env.BETA_TESTER_ENABLED = ORIGINAL_BETA;
-  });
-
-  it("fails closed with billing_unavailable in beta-only mode, without calling Lemon Squeezy", async () => {
-    process.env.BETA_TESTER_ENABLED = "true";
-    mockOwnerContext.mockResolvedValue({
-      userId: "u1",
-      workspaceId: "ws1",
-      workspace: { lsSubscriptionId: "sub_1" } as never,
-    });
-
-    const result = await getSubscriptionManageUrlAction();
-
-    expect(result).toEqual({ error: "billing_unavailable" });
-    expect(mockGetSubscription).not.toHaveBeenCalled();
-  });
-
   it("returns the error from ownerContext when the caller isn't authorized", async () => {
     mockOwnerContext.mockResolvedValue({ error: "not_authenticated" });
 

@@ -12,7 +12,9 @@ import { BilledAsNote } from "@/components/app/billed-as-note";
 import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
+import { activateBetaTesterAction } from "@/lib/actions/onboarding";
 import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
+import { BetaPlanCard } from "@/components/app/beta-plan-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
@@ -27,7 +29,7 @@ export type BillingPanelProps = {
   workspaceId: string;
   customerEmail: string;
   proPricing: ProPricing;
-  billingAvailable: boolean;
+  betaEnabled: boolean;
 };
 
 function formatDate(d: Date | null): string {
@@ -42,7 +44,7 @@ export function BillingPanel({
   lsSubscriptionStatus,
   lsCurrentPeriodEnd,
   proPricing,
-  billingAvailable,
+  betaEnabled,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
@@ -50,10 +52,22 @@ export function BillingPanel({
   const errMsg = useActionError();
   const locale = useLocale();
 
+  // Beta-tester workspaces have full Pro-equivalent access with no Lemon
+  // Squeezy subscription behind them (see grantPlan) -- they must never see
+  // the LS-catalog-driven upgrade cards or a "manage via Lemon Squeezy" link.
+  const isBeta = currentPlan === "beta";
+  const isActiveSubscriber =
+    currentPlan !== "free" && lsSubscriptionStatus === "active";
+  const showBetaTab = betaEnabled && !isActiveSubscriber && !isBeta;
+
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [managingSubscription, setManagingSubscription] = useState(false);
-  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
+  const [tab, setTab] = useState<"beta" | "monthly" | "yearly">(
+    showBetaTab ? "beta" : "monthly"
+  );
+  const cadence: "monthly" | "yearly" = tab === "yearly" ? "yearly" : "monthly";
+  const [activatingBeta, setActivatingBeta] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -62,7 +76,21 @@ export function BillingPanel({
     toast.success(t("upgradeSuccess"));
     // Reload page to reflect new plan from server.
     window.location.reload();
-  }, billingAvailable);
+  });
+
+  async function activateBeta() {
+    setCheckoutError(null);
+    setActivatingBeta(true);
+    const result = await activateBetaTesterAction();
+    setActivatingBeta(false);
+    if (result?.error) {
+      const msg = errMsg(result.error);
+      setCheckoutError(msg);
+      toast.error(msg);
+      return;
+    }
+    window.location.reload();
+  }
 
   async function openUpgradeCheckout(plan: PlanTier) {
     if (plan === "free" || plan === currentPlan) return;
@@ -133,13 +161,6 @@ export function BillingPanel({
     }
   }
 
-  // Beta-tester workspaces have full Pro-equivalent access with no Lemon
-  // Squeezy subscription behind them (see grantPlan) -- they must never see
-  // the LS-catalog-driven upgrade cards or a "manage via Lemon Squeezy" link.
-  const isBeta = currentPlan === "beta";
-  const isActiveSubscriber =
-    currentPlan !== "free" && lsSubscriptionStatus === "active";
-
   const statusLabel = lsSubscriptionStatus
     ? t(`subscriptionStatus.${lsSubscriptionStatus}`)
     : null;
@@ -204,23 +225,50 @@ export function BillingPanel({
       {/* Beta tester — full access, nothing to upgrade or manage */}
       {isBeta ? (
         <p className="text-sm text-muted-foreground">{t("betaAccessNote")}</p>
-      ) : !billingAvailable ? (
-        <p className="text-sm text-muted-foreground">{t("notYetAvailable")}</p>
       ) : !isActiveSubscriber ? (
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("availablePlans")}
           </p>
           <SegmentedToggle
-            value={cadence}
-            onChange={setCadence}
-            ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+            value={tab}
+            onChange={setTab}
+            ariaLabel={
+              showBetaTab
+                ? `${tPlans("beta.tabLabel")} / ${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`
+                : `${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`
+            }
             options={[
-              { key: "monthly", label: t("cadenceToggle.monthly") },
-              { key: "yearly", label: t("cadenceToggle.yearly") },
+              ...(showBetaTab
+                ? [{ key: "beta" as const, label: tPlans("beta.tabLabel") }]
+                : []),
+              { key: "monthly" as const, label: t("cadenceToggle.monthly") },
+              { key: "yearly" as const, label: t("cadenceToggle.yearly") },
             ]}
             className="w-fit"
           />
+          {tab === "beta" ? (
+            <BetaPlanCard
+              action={
+                <Button
+                  type="button"
+                  variant="brand"
+                  onClick={activateBeta}
+                  disabled={activatingBeta}
+                  className="w-full"
+                >
+                  {activatingBeta ? (
+                    <>
+                      <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
+                      {t("opening")}
+                    </>
+                  ) : (
+                    tPlans("beta.activate")
+                  )}
+                </Button>
+              }
+            />
+          ) : (
           <div className="flex flex-col gap-2">
             {PLAN_CATALOG.filter((p) => p.id !== "free" && p.id !== currentPlan).map(
               (entry) => {
@@ -289,6 +337,7 @@ export function BillingPanel({
               }
             )}
           </div>
+          )}
         </div>
       ) : (
         /* Active subscriber — link to Lemon Squeezy's self-service portal */
