@@ -12,6 +12,7 @@ import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { normalizePayments, isCompletionEligible, remainingBalance, type PaymentInput } from "@/lib/bookings/payment-rules";
+import { resolveFxFreeze } from "@/lib/pricing/fxRates";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/email/booking/bookingCancelled";
 
@@ -291,7 +292,26 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 
   if ("payments" in setOp) {
-    setOp.payments = normalizePayments(setOp.payments as PaymentInput[]);
+    // Booking payments have no stable id (see syncBookingPaymentsForClient) —
+    // the client resends the whole array by its own local index on every
+    // edit, and never round-trips fx fields at all. Carry the prior row's
+    // frozen fx state forward positionally before normalizing, or every edit
+    // would look like a brand-new paid row and recapture at today's rate.
+    const rawPayments = setOp.payments as PaymentInput[];
+    const priorPayments = existing.payments ?? [];
+    const carried = rawPayments.map((p, i) => ({
+      ...p,
+      fxRate: priorPayments[i]?.fxRate ?? null,
+      fxTarget: priorPayments[i]?.fxTarget ?? null,
+      fxAt: priorPayments[i]?.fxAt ?? null,
+    }));
+
+    // Resolved once per request. Same-currency still returns a real {rate:1}
+    // freeze; an FX outage resolves to null and never blocks the write.
+    const effectiveCurrency =
+      (setOp["amount.currency"] as string | undefined) ?? existing.amount?.currency ?? "PHP";
+    const freeze = await resolveFxFreeze(effectiveCurrency, ctx.workspace.currency ?? "PHP");
+    setOp.payments = normalizePayments(carried, undefined, freeze);
   }
 
   // Apply the validated team reassignment into the same $set + activity diff.
@@ -375,6 +395,11 @@ export async function PATCH(req: Request, { params }: Params) {
               total: mergedAmountTotal,
               deposit: mergedAmountDeposit,
               currency: mergedCurrency,
+              // amount.fx* is never part of setOp (only `payments[]` freezes
+              // per-edit) — the existing frozen state carries straight through.
+              fxRate: existing.amount?.fxRate ?? null,
+              fxTarget: existing.amount?.fxTarget ?? null,
+              fxAt: existing.amount?.fxAt ?? null,
             },
             firstSessionStart: mergedFirstSessionStart,
             // Carry the post-patch team (a same-request team reassignment wins).

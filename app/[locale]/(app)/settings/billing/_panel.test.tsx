@@ -9,7 +9,7 @@
  * @/lib/i18n/navigation: aliased to stub via vitest.config.ts.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BillingPanel, type BillingPanelProps } from "./_panel";
 
@@ -19,6 +19,10 @@ vi.mock("@/lib/actions/billing", () => ({
 
 vi.mock("@/lib/actions/promoCode", () => ({
   redeemPromoCodeAction: vi.fn().mockResolvedValue({ ok: true, startsImmediately: true }),
+}));
+
+vi.mock("@/lib/actions/onboarding", () => ({
+  activateBetaTesterAction: vi.fn().mockResolvedValue({}),
 }));
 
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
@@ -71,7 +75,7 @@ const defaultProps: BillingPanelProps = {
   workspaceId: "ws_test_123",
   customerEmail: "owner@example.com",
   proPricing: { currency: "PHP", monthly: 250, yearly: 2500 },
-  billingAvailable: true,
+  betaEnabled: false,
 };
 
 function renderPanel(overrides: Partial<BillingPanelProps> = {}) {
@@ -86,8 +90,11 @@ describe("BillingPanel — renders", () => {
 
   it("shows the current plan name", () => {
     renderPanel({ currentPlan: "pro" });
-    // The plan name badge shows "Pro"
-    expect(screen.getByText("Pro")).toBeInTheDocument();
+    // The plan name sits next to the "Current plan" label. A non-subscribing
+    // Pro workspace also lists Pro among the available plans, so scope the
+    // lookup to the summary card rather than the whole panel.
+    const summary = screen.getByText(/current plan/i).parentElement!;
+    expect(within(summary).getByText("Pro")).toBeInTheDocument();
   });
 
   it("shows upgrade CTAs for a free plan user", () => {
@@ -98,10 +105,32 @@ describe("BillingPanel — renders", () => {
     ).toBeInTheDocument();
   });
 
+  it("offers Pro to a grant-backed Pro workspace with no subscription behind it", () => {
+    renderPanel({ currentPlan: "pro", lsSubscriptionStatus: null });
+
+    expect(
+      screen.getByRole("button", { name: /upgrade to the pro plan/i })
+    ).toBeInTheDocument();
+  });
+
   it("defaults to monthly Pro pricing", () => {
     renderPanel({ currentPlan: "free" });
     expect(screen.getByText(/\/ month/i)).toBeInTheDocument();
     expect(screen.queryByText(/\/ year/i)).not.toBeInTheDocument();
+  });
+
+  it("names the billed amount on the Pro plan card", () => {
+    renderPanel({
+      currentPlan: "free",
+      proPricing: {
+        currency: "PHP",
+        monthly: 250,
+        yearly: 2500,
+        local: { currency: "USD", monthly: 4.3, yearly: 43 },
+      },
+    });
+
+    expect(screen.getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
   });
 
   it("switches to yearly Pro pricing when the cadence toggle is clicked", () => {
@@ -394,51 +423,12 @@ describe("BillingPanel — manage subscription", () => {
   });
 });
 
-describe("BillingPanel — beta-only mode (billingAvailable=false)", () => {
-  it("does not render upgrade cards and shows the not-yet-available message for a free plan", () => {
-    renderPanel({ currentPlan: "free", billingAvailable: false });
-    expect(
-      screen.queryByRole("button", { name: /upgrade to the pro plan/i })
-    ).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: /yearly/i })).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/paid subscriptions aren't available yet/i)
-    ).toBeInTheDocument();
-  });
 
-  it("does not render the manage subscription button for an active subscriber", () => {
-    renderPanel({
-      currentPlan: "pro",
-      lsSubscriptionStatus: "active",
-      billingAvailable: false,
-    });
-    expect(
-      screen.queryByRole("button", { name: /manage subscription/i })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/paid subscriptions aren't available yet/i)
-    ).toBeInTheDocument();
-  });
-
-  it("still renders and allows expanding the promo code disclosure", async () => {
-    renderPanel({ currentPlan: "free", billingAvailable: false });
-    expect(screen.getByRole("button", { name: /have a promo code/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /have a promo code/i }));
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter code/i)).toBeInTheDocument();
-    });
-  });
-
-  it("never injects the lemon.js script tag", async () => {
-    renderPanel({ currentPlan: "free", billingAvailable: false });
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(createLemonSqueezyMock).not.toHaveBeenCalled();
-    expect(
-      Array.from(document.querySelectorAll("script")).some((s) => s.src.includes("lemon.js"))
-    ).toBe(false);
+describe("BillingPanel — Beta tab", () => {
+  it("defaults to the Beta tab and renders the Beta plan card when betaEnabled", () => {
+    renderPanel({ currentPlan: "free", betaEnabled: true });
+    expect(screen.getByRole("tab", { name: "Beta", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
   });
 });
 

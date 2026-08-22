@@ -24,6 +24,8 @@ const VALID_PROD_ENV: Record<string, string> = {
   LEMONSQUEEZY_WEBHOOK_SECRET: "ls_whsec",
   LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: "111",
   LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: "222",
+  LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID: "333",
+  LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID: "444",
   LEMONSQUEEZY_TEST_MODE: "false",
   PAID_BILLING_ENABLED: "true",
   RESEND_API_KEY: "re_abc",
@@ -152,6 +154,8 @@ describe("lib/env", () => {
       LEMONSQUEEZY_WEBHOOK_SECRET: undefined,
       LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: undefined,
       LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: undefined,
+      LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID: undefined,
+      LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID: undefined,
       LEMONSQUEEZY_TEST_MODE: undefined,
     });
 
@@ -165,6 +169,14 @@ describe("lib/env", () => {
     setEnv({ BETA_TESTER_ENABLED: "true", LEMONSQUEEZY_API_KEY: undefined });
 
     expect(() => validateEnv()).toThrow(/LEMONSQUEEZY_API_KEY/);
+  });
+
+  it("requires the global-tier variant ids whenever paid billing is enabled", () => {
+    resetEnv();
+    setEnv(VALID_PROD_ENV);
+    setEnv({ LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID: undefined });
+
+    expect(() => validateEnv()).toThrow(/LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID/);
   });
 
   it("never includes secret values in the thrown error message", () => {

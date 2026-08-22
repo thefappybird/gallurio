@@ -42,6 +42,8 @@ vi.mock("@/lib/storage/cloudflareImages", () => ({
   verifyImageOwnership: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock("@/lib/pricing/fxRates", () => ({ getFxRate: vi.fn() }));
+
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
 }));
@@ -102,6 +104,7 @@ vi.mock("@/lib/i18n/routing", () => ({
 
 import {
   updateWorkspaceBusinessAction,
+  previewCurrencyRestatementAction,
   updatePublicPageSettingsAction,
   togglePublicPagePublishedAction,
   updateTimeFormatAction,
@@ -299,6 +302,39 @@ describe("updateWorkspaceBusinessAction", () => {
     expect(mongooseModule).toBeDefined(); // sanity
   });
 
+  it("a duplicate-key race on the slug write leaves the currency unchanged", async () => {
+    await seedWorkspaceA();
+
+    // Same race as above, but with a currency change in the same submit: the
+    // slug write fails, so the currency change must not survive either.
+    const realUpdateOne = Workspace.updateOne.bind(Workspace) as (
+      ...args: unknown[]
+    ) => unknown;
+    const fakeE11000 = Object.assign(new Error("E11000 duplicate key error"), {
+      code: 11000,
+      name: "MongoServerError",
+      keyPattern: { slug: 1 },
+    });
+    const updateOneSpy = vi
+      .spyOn(Workspace, "updateOne")
+      .mockImplementation(((...args: unknown[]) => {
+        const set = (args[1] as { $set?: Record<string, unknown> } | undefined)?.$set;
+        if (set && "slug" in set) throw fakeE11000;
+        return realUpdateOne(...args);
+      }) as typeof Workspace.updateOne);
+
+    await updateWorkspaceBusinessAction({
+      ...validInput,
+      slug: "brand-new-slug",
+      currency: "USD" as const,
+    });
+
+    updateOneSpy.mockRestore();
+
+    const wsA = await Workspace.findById(WS_A_ID).lean();
+    expect(wsA?.currency).toBe("PHP");
+  });
+
   it("role gating — non-owner gets error and doc is unchanged", async () => {
     await seedWorkspaceA();
 
@@ -399,6 +435,25 @@ describe("updateWorkspaceBusinessAction", () => {
     expect(ws?.logoAssetId ?? "").toBe("");
   });
 
+  it("rejects a currency change within the 90-day cooldown — nothing is updated", async () => {
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { currencyChangedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) } },
+    );
+
+    const result = await updateWorkspaceBusinessAction({
+      ...validInput,
+      currency: "SGD",
+      name: "Should Not Save",
+    });
+
+    expect(result.error).toBe("currency_change_locked");
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.currency).toBe("PHP");
+    expect(ws?.name).toBe("Sarah Photography");
+  });
+
   it("deletes the old logo asset when replaced with a new one", async () => {
     await seedWorkspaceA();
     await Workspace.updateOne(
@@ -417,6 +472,32 @@ describe("updateWorkspaceBusinessAction", () => {
 
     expect(result.ok).toBe(true);
     expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("old_logo_id");
+  });
+});
+
+// ---- previewCurrencyRestatementAction ----------------------------------------
+
+describe("previewCurrencyRestatementAction", () => {
+  it("counts only the caller's own workspace's frozen bookings", async () => {
+    await seedWorkspaceA();
+    await seedWorkspaceB();
+    const { Booking } = await import("@/lib/db/models");
+    await Booking.collection.insertMany([
+      {
+        workspaceId: WS_A_ID,
+        amount: { total: 100, deposit: 0, currency: "USD", fxRate: 58, fxTarget: "PHP" },
+        payments: [{ price: 100, status: "paid", fxRate: 58, fxTarget: "PHP" }],
+      },
+      {
+        workspaceId: WS_B_ID,
+        amount: { total: 100, deposit: 0, currency: "USD", fxRate: 1.35, fxTarget: "SGD" },
+        payments: [{ price: 100, status: "paid", fxRate: 1.35, fxTarget: "SGD" }],
+      },
+    ]);
+
+    const result = await previewCurrencyRestatementAction();
+
+    expect(result).toEqual({ bookingsCount: 1 });
   });
 });
 

@@ -4,6 +4,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 // array captures the values at module-evaluation time.
 const PRO_VARIANT_ID = "1001";
 const PRO_YEARLY_VARIANT_ID = "1002";
+const GLOBAL_VARIANT_ID = "2001";
+const GLOBAL_YEARLY_VARIANT_ID = "2002";
 
 let planForVariantId: (id: string) => import("@/lib/db/models").PlanTier;
 let PLAN_CATALOG: ReadonlyArray<import("@/lib/lemonsqueezy/plans").PlanCatalogEntry>;
@@ -11,25 +13,39 @@ let isPaidPlan: (plan: import("@/lib/db/models").PlanTier) => boolean;
 let getPlanCatalog: (
   id: import("@/lib/db/models").PlanTier
 ) => import("@/lib/lemonsqueezy/plans").PlanCatalogEntry;
+let getProVariantsForTier: (
+  tier: import("@/lib/pricing/pricingTier").PricingTier
+) => import("@/lib/lemonsqueezy/plans").ProTierVariants;
 
 beforeAll(async () => {
   process.env.LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID = PRO_VARIANT_ID;
   process.env.LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID = PRO_YEARLY_VARIANT_ID;
+  process.env.LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID = GLOBAL_VARIANT_ID;
+  process.env.LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID = GLOBAL_YEARLY_VARIANT_ID;
 
   const mod = await import("@/lib/lemonsqueezy/plans");
   planForVariantId = mod.planForVariantId;
   PLAN_CATALOG = mod.PLAN_CATALOG;
   isPaidPlan = mod.isPaidPlan;
   getPlanCatalog = mod.getPlanCatalog;
+  getProVariantsForTier = mod.getProVariantsForTier;
 });
 
 describe("planForVariantId", () => {
-  it("returns 'pro' for the monthly pro variant id", () => {
+  it("returns 'pro' for the base monthly variant id", () => {
     expect(planForVariantId(PRO_VARIANT_ID)).toBe("pro");
   });
 
-  it("returns 'pro' for the yearly pro variant id", () => {
+  it("returns 'pro' for the base yearly variant id", () => {
     expect(planForVariantId(PRO_YEARLY_VARIANT_ID)).toBe("pro");
+  });
+
+  it("returns 'pro' for the global monthly variant id", () => {
+    expect(planForVariantId(GLOBAL_VARIANT_ID)).toBe("pro");
+  });
+
+  it("returns 'pro' for the global yearly variant id", () => {
+    expect(planForVariantId(GLOBAL_YEARLY_VARIANT_ID)).toBe("pro");
   });
 
   it("returns 'free' for an unknown variant id", () => {
@@ -38,6 +54,28 @@ describe("planForVariantId", () => {
 
   it("returns 'free' for an empty string", () => {
     expect(planForVariantId("")).toBe("free");
+  });
+});
+
+describe("getProVariantsForTier", () => {
+  it("resolves the base pair and fallback amounts for 'base'", () => {
+    const result = getProVariantsForTier("base");
+    expect(result).toEqual({
+      monthlyVariantId: PRO_VARIANT_ID,
+      yearlyVariantId: PRO_YEARLY_VARIANT_ID,
+      monthlyAmount: 5,
+      yearlyAmount: 50,
+    });
+  });
+
+  it("resolves the global pair and fallback amounts for 'global'", () => {
+    const result = getProVariantsForTier("global");
+    expect(result).toEqual({
+      monthlyVariantId: GLOBAL_VARIANT_ID,
+      yearlyVariantId: GLOBAL_YEARLY_VARIANT_ID,
+      monthlyAmount: 15,
+      yearlyAmount: 150,
+    });
   });
 });
 
@@ -53,10 +91,10 @@ describe("PLAN_CATALOG shape", () => {
     expect(free.variantId).toBeUndefined();
   });
 
-  it("pro plan has monthly amount 250, yearly amount 2500, and correct variant ids", () => {
+  it("pro plan carries the base tier's monthly amount 5, yearly amount 50, and variant ids", () => {
     const pro = PLAN_CATALOG.find((p) => p.id === "pro")!;
-    expect(pro.amount).toBe(250);
-    expect(pro.yearlyAmount).toBe(2500);
+    expect(pro.amount).toBe(5);
+    expect(pro.yearlyAmount).toBe(50);
     expect(pro.variantId).toBe(PRO_VARIANT_ID);
     expect(pro.yearlyVariantId).toBe(PRO_YEARLY_VARIANT_ID);
   });
@@ -66,9 +104,9 @@ describe("PLAN_CATALOG shape", () => {
     expect(pro.highlight).toBe(true);
   });
 
-  it("all plans use PHP currency", () => {
+  it("all plans use USD currency", () => {
     for (const p of PLAN_CATALOG) {
-      expect(p.currency).toBe("PHP");
+      expect(p.currency).toBe("USD");
     }
   });
 

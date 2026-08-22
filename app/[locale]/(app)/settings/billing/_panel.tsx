@@ -8,9 +8,15 @@ import { toast } from "sonner";
 import { PLAN_CATALOG } from "@/lib/lemonsqueezy/plans";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { BilledAsNote } from "@/components/app/billed-as-note";
+import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
+import { activateBetaTesterAction } from "@/lib/actions/onboarding";
 import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
+import { BetaPlanCard } from "@/components/app/beta-plan-card";
+import { PlanCard } from "@/components/app/plan-card";
+import { SavePill } from "@/components/app/save-pill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
@@ -25,7 +31,7 @@ export type BillingPanelProps = {
   workspaceId: string;
   customerEmail: string;
   proPricing: ProPricing;
-  billingAvailable: boolean;
+  betaEnabled: boolean;
 };
 
 function formatDate(d: Date | null): string {
@@ -40,7 +46,7 @@ export function BillingPanel({
   lsSubscriptionStatus,
   lsCurrentPeriodEnd,
   proPricing,
-  billingAvailable,
+  betaEnabled,
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
@@ -48,10 +54,22 @@ export function BillingPanel({
   const errMsg = useActionError();
   const locale = useLocale();
 
+  // Beta-tester workspaces have full Pro-equivalent access with no Lemon
+  // Squeezy subscription behind them (see grantPlan) -- they must never see
+  // the LS-catalog-driven upgrade cards or a "manage via Lemon Squeezy" link.
+  const isBeta = currentPlan === "beta";
+  const isActiveSubscriber =
+    currentPlan !== "free" && lsSubscriptionStatus === "active";
+  const showBetaTab = betaEnabled && !isActiveSubscriber && !isBeta;
+
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [managingSubscription, setManagingSubscription] = useState(false);
-  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
+  const [tab, setTab] = useState<"beta" | "monthly" | "yearly">(
+    showBetaTab ? "beta" : "monthly"
+  );
+  const cadence: "monthly" | "yearly" = tab === "yearly" ? "yearly" : "monthly";
+  const [activatingBeta, setActivatingBeta] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -60,7 +78,21 @@ export function BillingPanel({
     toast.success(t("upgradeSuccess"));
     // Reload page to reflect new plan from server.
     window.location.reload();
-  }, billingAvailable);
+  });
+
+  async function activateBeta() {
+    setCheckoutError(null);
+    setActivatingBeta(true);
+    const result = await activateBetaTesterAction();
+    setActivatingBeta(false);
+    if (result?.error) {
+      const msg = errMsg(result.error);
+      setCheckoutError(msg);
+      toast.error(msg);
+      return;
+    }
+    window.location.reload();
+  }
 
   async function openUpgradeCheckout(plan: PlanTier) {
     if (plan === "free" || plan === currentPlan) return;
@@ -131,19 +163,15 @@ export function BillingPanel({
     }
   }
 
-  // Beta-tester workspaces have full Pro-equivalent access with no Lemon
-  // Squeezy subscription behind them (see grantPlan) -- they must never see
-  // the LS-catalog-driven upgrade cards or a "manage via Lemon Squeezy" link.
-  const isBeta = currentPlan === "beta";
-  const isActiveSubscriber =
-    currentPlan !== "free" && lsSubscriptionStatus === "active";
-
   const statusLabel = lsSubscriptionStatus
     ? t(`subscriptionStatus.${lsSubscriptionStatus}`)
     : null;
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    // The current-plan summary and the promo drawer run the full width of the
+    // settings pane, framing the plan block as a header and a footer; the plans
+    // themselves keep their old 2xl measure and centre between the two.
+    <div className="flex flex-col gap-6">
       {/* Current plan summary */}
       <div className="flex items-start gap-3 border border-border bg-card p-4">
         <CreditCard className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -202,59 +230,95 @@ export function BillingPanel({
       {/* Beta tester — full access, nothing to upgrade or manage */}
       {isBeta ? (
         <p className="text-sm text-muted-foreground">{t("betaAccessNote")}</p>
-      ) : !billingAvailable ? (
-        <p className="text-sm text-muted-foreground">{t("notYetAvailable")}</p>
       ) : !isActiveSubscriber ? (
-        <div className="flex flex-col gap-3">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("availablePlans")}
           </p>
           <SegmentedToggle
-            value={cadence}
-            onChange={setCadence}
-            ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+            value={tab}
+            onChange={setTab}
+            ariaLabel={
+              showBetaTab
+                ? `${tPlans("beta.tabLabel")} / ${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`
+                : `${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`
+            }
             options={[
-              { key: "monthly", label: t("cadenceToggle.monthly") },
-              { key: "yearly", label: t("cadenceToggle.yearly") },
+              ...(showBetaTab
+                ? [{ key: "beta" as const, label: tPlans("beta.tabLabel") }]
+                : []),
+              { key: "monthly" as const, label: t("cadenceToggle.monthly") },
+              { key: "yearly" as const, label: t("cadenceToggle.yearly") },
             ]}
             className="w-fit"
           />
+          {tab === "beta" ? (
+            <BetaPlanCard
+              action={
+                <Button
+                  type="button"
+                  variant="brand"
+                  onClick={activateBeta}
+                  disabled={activatingBeta}
+                  className="w-full"
+                >
+                  {activatingBeta ? (
+                    <>
+                      <Loader2 className="me-1.5 size-3.5 animate-spin" aria-hidden="true" />
+                      {t("opening")}
+                    </>
+                  ) : (
+                    tPlans("beta.activate")
+                  )}
+                </Button>
+              }
+            />
+          ) : (
           <div className="flex flex-col gap-2">
-            {PLAN_CATALOG.filter((p) => p.id !== "free" && p.id !== currentPlan).map(
-              (entry) => {
-                const busy = loadingPlan === entry.id;
-                const monthlyPrice = entry.id === "pro" ? proPricing.monthly : entry.amount;
-                const yearlyPrice =
-                  entry.id === "pro" ? proPricing.yearly : entry.yearlyAmount ?? entry.amount * 12;
-                const yearlyComparePrice = monthlyPrice * 12;
-                const currency = entry.id === "pro" ? proPricing.currency : entry.currency;
-                return (
-                  <div
-                    key={entry.id}
-                    className="flex items-center justify-between gap-4 border border-border bg-background px-4 py-3"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium">{tPlans(`${entry.id}.name`)}</span>
-                      <div className="flex items-baseline gap-1 text-xs text-muted-foreground">
-                        {cadence === "yearly" ? (
-                          <>
-                            <span className="line-through">
-                              {formatMoney(yearlyComparePrice, currency, locale)}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {formatMoney(yearlyPrice, currency, locale)}
-                            </span>
-                            <span>{t("perYear")}</span>
-                          </>
-                        ) : (
-                          <span>
-                            {formatMoney(monthlyPrice, currency, locale)} {t("perMonth")}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+            {/* This block only renders for a non-subscriber, so `currentPlan`
+                here is a grant (free month, promo) or a lapsed subscription —
+                never something to hide the Pro card behind. Filtering it out
+                left the Monthly/Annual tabs empty with no way to subscribe. */}
+            {PLAN_CATALOG.filter((p) => p.id !== "free").map((entry) => {
+              const busy = loadingPlan === entry.id;
+              // Pro headlines the owner's own currency; BilledAsNote names what
+              // Lemon Squeezy charges. A zero-priced plan follows the headline
+              // currency rather than showing a stray store-currency zero.
+              const proMonthly = headlinePrice(proPricing, "monthly");
+              const proYearly = headlinePrice(proPricing, "yearly");
+              const monthlyPrice = entry.id === "pro" ? proMonthly.amount : entry.amount;
+              const yearlyPrice =
+                entry.id === "pro" ? proYearly.amount : entry.yearlyAmount ?? entry.amount * 12;
+              const billed = cadence === "yearly" ? proYearly.billed : proMonthly.billed;
+              const currency =
+                entry.id === "pro"
+                  ? proMonthly.currency
+                  : entry.amount === 0
+                    ? proMonthly.currency
+                    : entry.currency;
+              const yearly = cadence === "yearly";
+              return (
+                <PlanCard
+                  key={entry.id}
+                  name={tPlans(`${entry.id}.name`)}
+                  badge={yearly ? <SavePill label={t("cadenceToggle.savePill")} /> : null}
+                  comparePrice={
+                    yearly ? formatMoney(monthlyPrice * 12, currency, locale) : null
+                  }
+                  price={formatMoney(yearly ? yearlyPrice : monthlyPrice, currency, locale)}
+                  priceSuffix={yearly ? t("perYear") : t("perMonth")}
+                  billed={
+                    entry.id === "pro" && billed ? (
+                      <BilledAsNote amount={billed.amount} currency={billed.currency} />
+                    ) : null
+                  }
+                  tagline={tPlans(`${entry.id}.tagline`)}
+                  features={entry.featureKeys.map((key) => tPlans(key.replace(/^plans\./, "")))}
+                  featured
+                  action={
                     <Button
-                      size="sm"
+                      className="w-full"
+                      variant="brand"
                       disabled={!!loadingPlan}
                       onClick={() => openUpgradeCheckout(entry.id)}
                       aria-label={t("upgradeToAriaLabel", { plan: tPlans(`${entry.id}.name`) })}
@@ -268,11 +332,12 @@ export function BillingPanel({
                         t("upgradeTo", { plan: tPlans(`${entry.id}.name`) })
                       )}
                     </Button>
-                  </div>
-                );
-              }
-            )}
+                  }
+                />
+              );
+            })}
           </div>
+          )}
         </div>
       ) : (
         /* Active subscriber — link to Lemon Squeezy's self-service portal */

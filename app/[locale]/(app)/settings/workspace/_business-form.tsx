@@ -5,6 +5,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 import { toastActionResult } from "@/lib/utils/handleActionResult";
 import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
 import {
@@ -16,16 +17,38 @@ import {
   type SupportedCountry,
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
-import { updateWorkspaceBusinessAction } from "../_actions";
+import { updateWorkspaceBusinessAction, previewCurrencyRestatementAction } from "../_actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
 import { FormField, useFieldError } from "@/components/ui/form-field";
+
+// Mirrors CURRENCY_CHANGE_COOLDOWN_DAYS in lib/pricing/currencyRestatement.ts
+// (server-only, not importable from this client component) — used only to
+// project the unlock date shown in the confirm dialog before the change.
+const CURRENCY_CHANGE_COOLDOWN_DAYS = 90;
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
 
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"] as const;
 const LOGO_MAX_BYTES = 250 * 1024;
@@ -71,13 +94,22 @@ const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
 
 export function WorkspaceBusinessForm({
   defaults,
+  locale = "en",
+  currencyLockedUntil = null,
   portfolioDomain = null,
 }: {
   defaults: UpdateWorkspaceBusinessInput;
+  locale?: string;
+  currencyLockedUntil?: string | null;
   portfolioDomain?: string | null;
 }) {
   const t = useTranslations("app.settings.workspace");
   const tOnb = useTranslations("onboarding.business");
+  const currencyLockedUntilLabel = currencyLockedUntil
+    ? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+        new Date(currencyLockedUntil)
+      )
+    : null;
 
   const {
     register,
@@ -96,11 +128,31 @@ export function WorkspaceBusinessForm({
   const { status: slugStatus } = useSlugAvailability(slugValue, defaults.slug);
   const logoUrl = watch("logoUrl");
   const businessTypeValue = watch("businessType");
+  const currencyValue = watch("currency");
 
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoDragActive, setLogoDragActive] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false);
+  const [currencyPreviewCount, setCurrencyPreviewCount] = useState<number | null>(null);
+  const [pendingCurrency, setPendingCurrency] = useState<SupportedCurrency | null>(null);
+
+  function handleCurrencySelectChange(next: SupportedCurrency) {
+    if (next === currencyValue) return;
+    setPendingCurrency(next);
+    setCurrencyDialogOpen(true);
+    setCurrencyPreviewCount(null);
+    previewCurrencyRestatementAction().then((result) => {
+      if (!("error" in result)) setCurrencyPreviewCount(result.bookingsCount);
+    });
+  }
+
+  function handleCurrencyConfirm() {
+    if (pendingCurrency) setValue("currency", pendingCurrency, { shouldDirty: true });
+    setCurrencyDialogOpen(false);
+  }
 
   const nameError = fieldMessage(errors.name);
   const slugError = fieldMessage(errors.slug);
@@ -116,6 +168,19 @@ export function WorkspaceBusinessForm({
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
+    if (result?.error === "currency_change_locked") {
+      const rawDate = result.params?.unlockDate;
+      const date =
+        typeof rawDate === "string"
+          ? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(rawDate))
+          : "";
+      toast.error(t("currencyChangeLockedError", { date }));
+      return;
+    }
+    if (result?.error === "fx_rate_unavailable") {
+      toast.error(t("currencyChangeRateError"));
+      return;
+    }
     if (!toastActionResult(result, t("savedToast"))) return;
     reset(data);
   }
@@ -310,10 +375,13 @@ export function WorkspaceBusinessForm({
             <Label htmlFor="currency">{tOnb("currency")}</Label>
             <select
               id="currency"
+              name="currency"
+              disabled={!!currencyLockedUntil}
               aria-invalid={!!currencyError || undefined}
               aria-describedby={currencyError ? "currency-error" : undefined}
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("currency")}
+              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+              value={currencyValue}
+              onChange={(e) => handleCurrencySelectChange(e.target.value as SupportedCurrency)}
             >
               {SUPPORTED_CURRENCIES.map((c) => (
                 <option key={c} value={c}>
@@ -321,12 +389,45 @@ export function WorkspaceBusinessForm({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-muted-foreground">{t("currencyWarning")}</p>
+            <p className="text-xs text-muted-foreground">
+              {currencyLockedUntilLabel
+                ? t("currencyLockedUntil", { date: currencyLockedUntilLabel })
+                : t("currencyWarning")}
+            </p>
             {currencyError && (
               <p id="currency-error" role="alert" className="text-sm text-destructive">
                 {currencyError}
               </p>
             )}
+
+            <AlertDialog
+              open={currencyDialogOpen}
+              onOpenChange={(next) => !next && setCurrencyDialogOpen(false)}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t("currencyConfirmTitle")}</AlertDialogTitle>
+                  {currencyPreviewCount !== null && (
+                    <AlertDialogDescription>
+                      {t("currencyConfirmBody", {
+                        count: currencyPreviewCount,
+                        date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+                          addDays(new Date(), CURRENCY_CHANGE_COOLDOWN_DAYS)
+                        ),
+                      })}
+                    </AlertDialogDescription>
+                  )}
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setCurrencyDialogOpen(false)}>
+                    {t("currencyConfirmCancel")}
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={handleCurrencyConfirm}>
+                    {t("currencyConfirmConfirm")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           <div className="flex flex-col gap-1.5">

@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/lib/i18n/navigation";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
-import { formatMoney } from "@/lib/utils/format-currency";
-import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
+import { PricingPlans } from "./_plans";
 
 const SUPPORT_EMAIL = "support@gallurio.com";
 
@@ -25,19 +21,14 @@ export default async function PricingPage({ params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations("marketing.pricing");
-  const proPricing = await getProPricing();
-
-  const proFeatures = [
-    t("pro.feature1"),
-    t("pro.feature2"),
-    t("pro.feature3"),
-    t("pro.feature4"),
-    t("pro.feature5"),
-    t("pro.feature6"),
-  ];
-
-  const monthlyPrice = formatMoney(proPricing.monthly, proPricing.currency, locale);
-  const yearlyPrice = formatMoney(proPricing.yearly, proPricing.currency, locale);
+  // getDisplayPricing() reads CF-IPCountry, so this route renders per request
+  // instead of prerendering. That is deliberate: the image is built without the
+  // LEMONSQUEEZY_VARIANT_* env (only NEXT_PUBLIC_* reach the Docker build), so a
+  // prerendered page baked getProPricing()'s static PLAN_CATALOG fallback into
+  // the HTML and served a hardcoded price until the next release. Rendering per
+  // request is what makes this page agree with the live Lemon Squeezy price.
+  const proPricing = await getDisplayPricing();
+  const betaEnabled = process.env.BETA_TESTER_ENABLED === "true";
 
   return (
     <>
@@ -54,40 +45,7 @@ export default async function PricingPage({ params }: Props) {
       {/* Pro Plan */}
       <section className="border-t border-border px-4 py-12 sm:px-6">
         <div className="mx-auto max-w-3xl">
-          <Card className="ring-2 ring-brand">
-            <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-lg">{t("pro.name")}</CardTitle>
-                <Badge variant="default" className="bg-brand text-brand-foreground">
-                  {t("pro.badge")}
-                </Badge>
-              </div>
-              <p className="text-sm font-semibold text-brand">{t("pro.freeMonth")}</p>
-              <p className="text-2xl font-semibold tracking-tight">
-                {monthlyPrice}
-                <span className="ms-1 text-sm font-normal text-muted-foreground">
-                  {t("pro.priceSuffixMonthly")}
-                </span>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t("pro.yearlyNote", { price: yearlyPrice })}
-              </p>
-              <CardDescription>{t("pro.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-disc space-y-1 ps-5 text-sm text-muted-foreground">
-                {proFeatures.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-              <Link
-                href="/sign-up"
-                className={buttonVariants({ variant: "brand", size: "lg", className: "mt-6" })}
-              >
-                {t("pro.cta")}
-              </Link>
-            </CardContent>
-          </Card>
+          <PricingPlans proPricing={proPricing} betaEnabled={betaEnabled} />
         </div>
       </section>
 

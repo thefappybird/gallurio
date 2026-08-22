@@ -3,6 +3,12 @@ import { Types } from "mongoose";
 import { Booking, Client, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { dayBoundInTz } from "@/lib/utils/timezone";
+import {
+  convertedAmountExpr,
+  frozenOrLiveAmountExpr,
+  isSingleCurrency,
+} from "@/lib/pricing/currencyConverter";
+import { NO_CONVERSION, type WorkspaceRates } from "@/lib/pricing/workspaceRates";
 
 type WorkspaceId = Types.ObjectId;
 export type SerializedActivity = {
@@ -51,7 +57,11 @@ export type KpiSnapshot = {
   outstandingBalance: number;
 };
 
-export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnapshot> {
+export async function getKpiSnapshot(
+  workspaceId: WorkspaceId,
+  fx: WorkspaceRates = NO_CONVERSION
+): Promise<KpiSnapshot> {
+  const { rates, target } = fx;
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -65,7 +75,12 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
           type: { $in: ["deposit", "balance", "refund"] },
         },
       },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
+        },
+      },
     ]),
     // "Starts this month" — firstSessionStart in range.
     Booking.countDocuments({
@@ -94,7 +109,12 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
                 type: { $in: ["deposit", "balance"] },
               },
             },
-            { $group: { _id: null, sum: { $sum: "$amount" } } },
+            {
+              $group: {
+                _id: null,
+                sum: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
+              },
+            },
           ],
           as: "tx",
         },
@@ -102,7 +122,7 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
       {
         $group: {
           _id: null,
-          total: { $sum: "$amount.total" },
+          total: { $sum: convertedAmountExpr("$amount.total", "$amount.currency", rates) },
           paid: { $sum: { $ifNull: [{ $arrayElemAt: ["$tx.sum", 0] }, 0] } },
         },
       },
@@ -136,7 +156,7 @@ function pctTrend(current: number, prior: number, positiveIsGood: boolean): KpiT
   return { value: ((current - prior) / prior) * 100, positiveIsGood };
 }
 
-async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date) {
+async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date, fx: WorkspaceRates) {
   const agg = await Transaction.aggregate<{ total: number }>([
     {
       $match: {
@@ -145,7 +165,12 @@ async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date) {
         type: { $in: ["deposit", "balance", "refund"] },
       },
     },
-    { $group: { _id: null, total: { $sum: "$amount" } } },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", fx.rates, fx.target) },
+      },
+    },
   ]);
   return agg[0]?.total ?? 0;
 }
@@ -154,7 +179,8 @@ export type DateRange = { from: Date | null; to: Date | null };
 
 export async function getKpiSnapshotWithDeltas(
   workspaceId: WorkspaceId,
-  range?: DateRange
+  range?: DateRange,
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<{ snapshot: KpiSnapshot; trends: KpiTrends }> {
   const now = new Date();
   const thisStart = startOfMonth(now);
@@ -170,8 +196,8 @@ export async function getKpiSnapshotWithDeltas(
     thisInquiriesCreated,
     lastInquiriesCreated,
   ] = await Promise.all([
-    getKpiSnapshot(workspaceId),
-    monthRevenue(workspaceId, lastStart, lastEnd),
+    getKpiSnapshot(workspaceId, fx),
+    monthRevenue(workspaceId, lastStart, lastEnd, fx),
     Booking.countDocuments({
       workspaceId,
       firstSessionStart: { $gte: lastStart, $lte: lastEnd },
@@ -194,7 +220,7 @@ export async function getKpiSnapshotWithDeltas(
     const start = range.from ?? new Date(0);
     const end = range.to ?? new Date();
     const [rev, active, inq] = await Promise.all([
-      monthRevenue(workspaceId, start, end),
+      monthRevenue(workspaceId, start, end, fx),
       Booking.countDocuments({
         workspaceId,
         firstSessionStart: { $gte: start, $lte: end },
@@ -211,7 +237,7 @@ export async function getKpiSnapshotWithDeltas(
       const pStart = new Date(range.from.getTime() - 1 - len);
       const pEnd = new Date(range.from.getTime() - 1);
       const [pRev, pActive, pInq] = await Promise.all([
-        monthRevenue(workspaceId, pStart, pEnd),
+        monthRevenue(workspaceId, pStart, pEnd, fx),
         Booking.countDocuments({
           workspaceId,
           firstSessionStart: { $gte: pStart, $lte: pEnd },
@@ -316,8 +342,10 @@ export async function getRevenueTrend(
   workspaceId: WorkspaceId,
   days = 30,
   range?: DateRange,
-  timezone = "UTC"
+  timezone = "UTC",
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<RevenuePoint[]> {
+  const { rates, target } = fx;
   // Bucket by the workspace-local day so the trend agrees with bookings and
   // inquiry events. The page passes the resolved workspace timezone; the "UTC"
   // default keeps callers that don't care timezone-neutral.
@@ -361,7 +389,7 @@ export async function getRevenueTrend(
     {
       $group: {
         _id: { $dateToString: { format: "%Y-%m-%d", date: "$paidAt", timezone } },
-        total: { $sum: "$amount" },
+        total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
       },
     },
   ]);
@@ -430,12 +458,53 @@ export async function getBookingsByDay(
   return rows.map((r) => ({ date: r._id, count: r.count }));
 }
 
-export async function getTopClients(workspaceId: WorkspaceId, limit = 5) {
-  return Client.find({ workspaceId })
-    .sort({ totalSpent: -1 })
-    .limit(limit)
-    .select({ _id: 1, name: 1, totalSpent: 1 })
+export async function getTopClients(
+  workspaceId: WorkspaceId,
+  limit = 5,
+  fx: WorkspaceRates = NO_CONVERSION
+) {
+  const { rates, target } = fx;
+  // Client.totalSpent is a running sum in whatever currency each booking used,
+  // so it is only a valid sort key when the workspace stores one currency.
+  if (isSingleCurrency(rates)) {
+    return Client.find({ workspaceId })
+      .sort({ totalSpent: -1 })
+      .limit(limit)
+      .select({ _id: 1, name: 1, totalSpent: 1 })
+      .lean();
+  }
+
+  // Otherwise rank off the ledger, converted — same definition of "spend" the
+  // stored field is written from (lib/db/clientTransactions.ts).
+  const rows = await Transaction.aggregate<{ _id: Types.ObjectId; totalSpent: number }>([
+    { $match: { workspaceId, clientId: { $ne: null }, type: { $in: ["deposit", "balance"] } } },
+    {
+      $group: {
+        _id: "$clientId",
+        totalSpent: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
+      },
+    },
+    { $sort: { totalSpent: -1 } },
+    // Over-fetch: a ranked row can lose its Client doc (deleted/orphaned), and
+    // the join below drops those rows. limit*2 is a heuristic headroom, not a
+    // guarantee — a workspace with more than `limit` missing docs in a row can
+    // still under-return.
+    { $limit: limit * 2 },
+  ]);
+
+  if (rows.length === 0) return [];
+
+  const clients = await Client.find({ workspaceId, _id: { $in: rows.map((r) => r._id) } })
+    .select({ _id: 1, name: 1 })
     .lean();
+  const nameById = new Map(clients.map((c) => [String(c._id), c.name]));
+
+  return rows
+    .flatMap((r) => {
+      const name = nameById.get(String(r._id));
+      return name ? [{ _id: r._id, name, totalSpent: r.totalSpent }] : [];
+    })
+    .slice(0, limit);
 }
 
 export type EventTypeBreakdown = { eventType: string; count: number };
@@ -469,8 +538,10 @@ export type TransactionsByTeam = {
 
 export async function getTransactionsByTeam(
   workspaceId: WorkspaceId,
-  range?: DateRange
+  range?: DateRange,
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<TransactionsByTeam[]> {
+  const { rates, target } = fx;
   let paidAt: Record<string, Date>;
   if (range?.from || range?.to) {
     paidAt = {};
@@ -491,7 +562,12 @@ export async function getTransactionsByTeam(
         type: { $in: ["deposit", "balance", "refund"] },
       },
     },
-    { $group: { _id: "$teamId", total: { $sum: "$amount" } } },
+    {
+      $group: {
+        _id: "$teamId",
+        total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) },
+      },
+    },
     { $sort: { total: -1 } },
   ]);
 
@@ -579,8 +655,10 @@ export type RevenueComparison = {
 };
 
 export async function getRevenueComparison(
-  workspaceId: WorkspaceId
+  workspaceId: WorkspaceId,
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<RevenueComparison> {
+  const { rates, target } = fx;
   const now = new Date();
   const thisStart = startOfMonth(now);
   const thisEnd = endOfMonth(now);
@@ -597,7 +675,9 @@ export async function getRevenueComparison(
           type: { $in: ["deposit", "balance", "refund"] },
         },
       },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+      {
+        $group: { _id: null, total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) } },
+      },
     ]),
     Transaction.aggregate<{ total: number }>([
       {
@@ -607,7 +687,9 @@ export async function getRevenueComparison(
           type: { $in: ["deposit", "balance", "refund"] },
         },
       },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+      {
+        $group: { _id: null, total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", rates, target) } },
+      },
     ]),
   ]);
 

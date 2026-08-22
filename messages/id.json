@@ -134,10 +134,11 @@
       "title": "Harga sederhana",
       "subtitle": "1 bulan Pro, gratis. Lalu satu paket, bulanan atau tahunan.",
       "viewFullPricing": "Lihat harga lengkap",
-      "disclaimer": "Satu bulan gratis. Pro berbayar diperpanjang bulanan atau tahunan sampai dibatalkan.",
+      "disclaimer": "Satu bulan gratis. Pro berbayar diperpanjang bulanan atau tahunan sampai dibatalkan. Harga ditampilkan dalam mata uang lokal Anda. Ketentuan penagihan, pajak, dan detail perpanjangan ditampilkan sebelum Anda menyelesaikan checkout.",
       "cadence": {
         "monthly": "Bulanan",
-        "yearly": "Tahunan — hemat 2 bulan"
+        "yearly": "Tahunan",
+        "savePill": "Hemat 2 bulan"
       },
       "pro": {
         "badge": "1 bulan gratis",
@@ -157,6 +158,11 @@
         "title": "Harga — Gallurio",
         "description": "Lihat harga Gallurio Pro untuk profesional dan studio kreatif — satu bulan gratis, lalu satu paket bulanan atau tahunan."
       },
+      "cadence": {
+        "monthly": "Bulanan",
+        "yearly": "Tahunan",
+        "savePill": "Hemat 2 bulan"
+      },
       "header": {
         "headline": "Paket sederhana untuk profesional dan studio kreatif.",
         "body": "Setiap workspace baru mendapatkan satu bulan Gallurio Pro penuh, gratis, tanpa kartu diperlukan. Setelah itu, lanjutkan dengan satu langganan Pro — bulanan atau tahunan."
@@ -168,7 +174,6 @@
         "description": "Semua yang Anda butuhkan untuk menjalankan booking, klien, galeri, dan halaman publik Anda.",
         "priceSuffixMonthly": "/ bulan",
         "priceSuffixYearly": "/ tahun",
-        "yearlyNote": "Atau {price} ditagih tahunan — hemat 2 bulan.",
         "feature1": "Pembuat halaman portfolio & situs publik",
         "feature2": "Booking dan permintaan tanpa batas",
         "feature3": "Manajemen klien & peran tim",
@@ -218,11 +223,11 @@
       "betaAccess": {
         "title": "4. Akses Beta dan Gratis",
         "body1": "Gallurio dapat menawarkan akses beta atau promosi. Fitur beta dapat tidak lengkap, berubah, ditangguhkan, atau dihapus. Akses beta atau gratis tidak menjamin ketersediaan permanen atau fitur di masa mendatang.",
-        "body2": "Kecuali dinyatakan lain oleh Gallurio, akses promosi tidak memerlukan kartu pembayaran. Jika penagihan berbayar diperkenalkan, paket, harga, ketentuan perpanjangan, dan tanggal penagihan yang berlaku akan ditampilkan sebelum pembelian."
+        "body2": "Kecuali dinyatakan lain oleh Gallurio, akses promosi tidak memerlukan kartu pembayaran. Jika berlaku penagihan berbayar, paket, harga, ketentuan perpanjangan, dan tanggal penagihan yang berlaku ditampilkan sebelum pembelian."
       },
       "subscriptions": {
         "title": "5. Langganan dan Lemon Squeezy",
-        "body1": "Langganan Pro berbayar, jika tersedia, akan ditampilkan dengan harga, interval penagihan, ketentuan perpanjangan, dan pajak yang berlaku sebelum pembelian.",
+        "body1": "Langganan Pro berbayar ditampilkan dengan harga, interval penagihan, ketentuan perpanjangan, dan pajak yang berlaku sebelum pembelian.",
         "body2": "Lemon Squeezy bertindak sebagai merchant of record untuk langganan Gallurio. Lemon Squeezy dapat memproses checkout, pembayaran, penagihan, pajak, invoice, pengembalian dana, chargeback, dan hal layanan pelanggan terkait berdasarkan ketentuan dan kebijakannya sendiri.",
         "body3": "Langganan diperpanjang sesuai ketentuan penagihan yang ditampilkan saat checkout hingga dibatalkan. Pembatalan umumnya mencegah biaya perpanjangan di masa depan tetapi tidak secara otomatis menghasilkan pengembalian dana.",
         "body4": "Jika pembayaran gagal atau langganan berakhir, Gallurio dapat membatasi fitur Pro atau menonaktifkan halaman publik setelah pemberitahuan yang wajar. Data akun dapat tetap disimpan, dan akses dapat dipulihkan jika langganan diperpanjang, tunduk pada paket dan status produk yang berlaku.",
@@ -809,6 +814,10 @@
         "quickAdd": "Buat pemesanan, klien, atau pertanyaan."
       },
       "totalLabel": "Total",
+      "miniCalendar": {
+        "today": "Hari ini",
+        "monthTotal": "{count, plural, other {# pemesanan bulan ini}}"
+      },
       "calendarTeam": {
         "label": "Filter berdasarkan tim",
         "all": "Semua tim"
@@ -1328,6 +1337,9 @@
         "paid": "Dibayar",
         "unpaid": "Belum dibayar",
         "paidOn": "Dibayar pada {date}",
+        "frozenRate": "≈ {price} · kurs {rate} · {date}",
+        "frozenRateTrailing": "{date} · kurs {rate} · ≈ {price}",
+        "approx": "≈ {price}",
         "empty": "Belum ada pembayaran terjadwal untuk pemesanan ini",
         "exceedsBalance": "Melebihi sisa saldo",
         "titleRequired": "Judul diperlukan.",
@@ -1556,7 +1568,6 @@
           "paused": "Dijeda",
           "trialing": "Masa percobaan"
         },
-        "notYetAvailable": "Langganan berbayar belum tersedia. Periksa kembali nanti, atau gunakan kode promo di bawah jika Anda memilikinya.",
         "manageSection": "Kelola langganan",
         "manageDescription": "Perbarui metode pembayaran, lihat faktur, atau batalkan langganan Anda langsung melalui Lemon Squeezy.",
         "manageButton": "Kelola langganan",
@@ -1586,7 +1597,14 @@
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Ruang kerja diperbarui.",
-        "currencyWarning": "Berlaku untuk pemesanan baru. Jumlah yang sudah ada tetap menggunakan mata uang aslinya.",
+        "currencyWarning": "Mengubah mata uang akan menghitung ulang semua jumlah yang sudah dibayar ke mata uang baru, dan mengunci kolom ini selama 90 hari setelahnya.",
+        "currencyConfirmTitle": "Ubah mata uang workspace?",
+        "currencyConfirmBody": "{count, plural, =0 {Tidak ada total yang akan berubah. Anda dapat mengubah mata uang kapan saja.} other {# booking akan dihitung ulang. Setelah ini, Anda tidak dapat mengubah mata uang lagi hingga {date}.}}",
+        "currencyConfirmConfirm": "Konfirmasi perubahan",
+        "currencyConfirmCancel": "Batal",
+        "currencyLockedUntil": "Mata uang terkunci hingga {date}.",
+        "currencyChangeLockedError": "Anda dapat mengubah mata uang lagi pada {date}.",
+        "currencyChangeRateError": "Gagal mengambil nilai tukar hari ini. Silakan coba lagi sebentar.",
         "contactEmail": "Email kontak",
         "contactEmailPlaceholder": "anda@contoh.com",
         "contactAddress": "Alamat bisnis",
@@ -3209,7 +3227,6 @@
       "export_too_large": "Terlalu banyak pemesanan untuk diekspor. Persempit filter dan coba lagi.",
       "free_plan_no_checkout": "Paket gratis tidak memerlukan pembayaran.",
       "lemonsqueezy_variant_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
-      "billing_unavailable": "Langganan berbayar belum tersedia. Silakan periksa kembali nanti.",
       "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
       "checkout_init_failed": "Gagal memulai pembayaran. Silakan coba lagi.",
       "no_subscription": "Anda tidak memiliki langganan aktif untuk dikelola.",
@@ -3319,7 +3336,6 @@
       "title": "Pilih paket yang sesuai",
       "description": "Anda dapat mengubah paket atau membatalkan kapan saja dari pengaturan ruang kerja Anda.",
       "popular": "Populer",
-      "comingSoon": "Segera hadir",
       "cadence": {
         "forever": "bulan pertama gratis",
         "monthly": "/ bulan",
@@ -3340,12 +3356,7 @@
       "activatedNotice": "Paket Gallurio Anda sekarang aktif. Selesaikan onboarding untuk mengubah paket langganan Anda.",
       "activePill": "Aktif",
       "finishOnboarding": "Selesaikan onboarding",
-      "acceptedPromoCode": "Kode promo {code}",
-      "betaTester": {
-        "label": "Beta Tester",
-        "headline": "Dapatkan akses beta gratis sekarang",
-        "activate": "Aktifkan akses beta"
-      }
+      "acceptedPromoCode": "Kode promo {code}"
     },
     "done": {
       "title": "Anda sudah siap, {workspaceName}.",
@@ -3365,6 +3376,8 @@
     }
   },
   "plans": {
+    "billedAs": "Ditagih sebesar {price} {currency}",
+    "billedAsCode": "Ditagih sebesar {price}",
     "free": {
       "name": "Free",
       "description": "1 bulan Pro penuh, gratis",
@@ -3392,7 +3405,16 @@
       }
     },
     "beta": {
-      "name": "Beta"
+      "name": "Beta",
+      "label": "Beta tester",
+      "tabLabel": "Beta",
+      "price": "Gratis",
+      "priceSuffix": "selama beta",
+      "tagline": "Semua fitur Pro, gratis selama Gallurio dalam masa beta.",
+      "note": "Tidak perlu kartu. Kami akan memberi tahu 7 hari sebelum masa beta berakhir.",
+      "activate": "Aktifkan akses beta",
+      "active": "Akses beta Anda aktif.",
+      "cta": "Gabung ke beta"
     },
     "promo": {
       "name": "Promo"

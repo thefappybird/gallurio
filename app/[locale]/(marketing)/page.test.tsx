@@ -21,6 +21,10 @@ vi.mock("next-intl/server", () => ({
   }),
 }));
 
+vi.mock("@/lib/pricing/localPricing", () => ({
+  getDisplayPricing: vi.fn(async () => ({ currency: "PHP", monthly: 250, yearly: 2500 })),
+}));
+
 const getAuthUserMock = vi.fn();
 vi.mock("@/lib/auth/session", () => ({
   getAuthUser: () => getAuthUserMock(),

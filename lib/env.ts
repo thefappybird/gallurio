@@ -53,6 +53,8 @@ const shape = {
   LEMONSQUEEZY_WEBHOOK_SECRET: z.string().optional(),
   LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: z.string().optional(),
   LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: z.string().optional(),
+  LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID: z.string().optional(),
+  LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID: z.string().optional(),
   LEMONSQUEEZY_TEST_MODE: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
@@ -71,6 +73,7 @@ const shape = {
   EMAIL_REPLY_TO: z.string().optional(),
   NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN: z.string().optional(),
   PAGEVIEW_SALT_SECRET: z.string().optional(),
+  OPENEXCHANGERATES_APP_ID: z.string().optional(),
   BETA_TESTER_ENABLED: z.string().optional(),
   PAID_BILLING_ENABLED: z.string().optional(),
   PORT: z.string().optional(),
@@ -108,14 +111,18 @@ const REQUIRED_IN_PROD: Partial<Record<EnvKey, FieldRule>> = {
 };
 
 // Required only when paid billing is explicitly enabled. Free beta access is
-// independent, so BETA_TESTER_ENABLED may remain true in paid production.
+// independent, so BETA_TESTER_ENABLED may remain true in paid production —
+// the flag only decides whether the Beta plan option is offered in the UI.
 const REQUIRED_IN_PROD_PAID_MODE: Partial<Record<EnvKey, FieldRule>> = {
   LEMONSQUEEZY_API_KEY: {},
   LEMONSQUEEZY_STORE_ID: {},
   LEMONSQUEEZY_WEBHOOK_SECRET: {},
   LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: {},
   LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: {},
+  LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID: {},
+  LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID: {},
 };
+
 const REQUIRED_IN_PROD_ALL: Partial<Record<EnvKey, FieldRule>> = {
   ...REQUIRED_IN_PROD,
   ...REQUIRED_IN_PROD_PAID_MODE,

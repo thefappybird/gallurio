@@ -26,8 +26,8 @@ import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
-import { isPaidBillingAvailable } from "@/lib/billing/availability";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
+import { currencyChangeLockedUntil } from "@/lib/pricing/currencyRestatement";
 import { AccountPanel } from "../account/_panel";
 import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
@@ -96,6 +96,8 @@ export default async function SettingsCatchallPage({
     logoUrl: workspace.logoUrl ?? "",
     logoAssetId: workspace.logoAssetId ?? "",
   };
+  const currencyLockedUntil =
+    currencyChangeLockedUntil(workspace.currencyChangedAt ?? null)?.toISOString() ?? null;
 
   const draftId = await resolveActiveDraftId(workspace._id);
   const settingsDraftFields = normalizeSettingsSeoFields(
@@ -167,7 +169,7 @@ export default async function SettingsCatchallPage({
   };
 
   const t = await getTranslations("app.settings.tabs");
-  const proPricing = await getProPricing();
+  const proPricing = await getDisplayPricing();
   const portfolioDomain = portfolioBaseDomain();
 
   // Active slug: null means base /settings -> render account tab
@@ -205,7 +207,14 @@ export default async function SettingsCatchallPage({
           label: t("workspace"),
           icon: <Building2 className="size-4" />,
           ownerOnly: true,
-          body: <WorkspaceBusinessForm defaults={businessDefaults} portfolioDomain={portfolioDomain} />,
+          body: (
+            <WorkspaceBusinessForm
+              defaults={businessDefaults}
+              locale={locale}
+              currencyLockedUntil={currencyLockedUntil}
+              portfolioDomain={portfolioDomain}
+            />
+          ),
         },
         {
           slug: "public-page",
@@ -245,7 +254,7 @@ export default async function SettingsCatchallPage({
               workspaceId={String(workspace._id)}
               customerEmail={authUser?.email ?? ""}
               proPricing={proPricing}
-              billingAvailable={isPaidBillingAvailable()}
+              betaEnabled={process.env.BETA_TESTER_ENABLED === "true"}
             />
           ),
         },

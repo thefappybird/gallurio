@@ -193,7 +193,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
               {publishedAt ? t("portfolio.published") : t("portfolio.notPublished")}
             </span>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm">
+          <CardContent className="flex flex-1 flex-col gap-3 text-sm">
             {publishedAt && (
               <span className="text-xs text-muted-foreground">
                 {t("portfolio.lastPublished", {
@@ -205,7 +205,7 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
                 })}
               </span>
             )}
-            <div className="mt-1 flex flex-col gap-1">
+            <div className="mt-auto flex flex-col gap-2">
               <a
                 href={portfolioPublicUrl(workspace.slug)}
                 target="_blank"

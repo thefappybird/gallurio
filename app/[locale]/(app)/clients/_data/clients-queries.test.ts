@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { Client, Booking } from "@/lib/db/models";
+import { Client, Booking, Transaction } from "@/lib/db/models";
 import { listClients, getWorkspaceTags, getClientBookings, getClientById } from "./clients-queries";
 
 const workspaceId = new Types.ObjectId();
@@ -355,6 +355,18 @@ describe("getClientBookings", () => {
     expect(rows[0].title).toBe("My Booking");
   });
 
+  it("carries the workspace-currency equivalent for a foreign-currency booking", async () => {
+    const clientId = new Types.ObjectId();
+    await seedBooking(workspaceId, clientId, { title: "SGD job", total: 1000, currency: "SGD" });
+
+    const rows = await getClientBookings(workspaceId, clientId, {
+      rates: { PHP: 1, SGD: 40 },
+      target: "PHP",
+    });
+
+    expect(rows[0].converted).toEqual({ amount: 40000, currency: "PHP", rate: null, at: null });
+  });
+
   it("rejects cross-workspace access — returns empty, not error", async () => {
     const clientId = new Types.ObjectId();
     await seedBooking(otherWorkspaceId, clientId, { title: "Other WS Booking" });
@@ -436,5 +448,50 @@ describe("getClientBookings", () => {
     expect(row.lastSessionEnd).toBeInstanceOf(Date);
     expect(row.total).toBe(12500);
     expect(row.currency).toBe("USD");
+  });
+});
+
+describe("listClients — multi-currency totalSpent", () => {
+  it("recomputes totalSpent in the workspace currency when rates are supplied", async () => {
+    const client = await seedClient(workspaceId, { name: "Overseas Studio" });
+    await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 5_100 } });
+    await Transaction.create([
+      { workspaceId, clientId: client._id, amount: 5_000, currency: "PHP", type: "deposit" },
+      { workspaceId, clientId: client._id, amount: 100, currency: "USD", type: "balance" },
+    ]);
+
+    const { items } = await listClients({ workspaceId, fx: { rates: { PHP: 1, USD: 58 }, target: "PHP" } });
+
+    expect(items[0].totalSpent).toBe(5_000 + 100 * 58);
+  });
+
+  it("leaves the stored totalSpent alone for a single-currency workspace", async () => {
+    const client = await seedClient(workspaceId, { name: "Local Studio" });
+    await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 5_000 } });
+
+    const { items } = await listClients({ workspaceId, fx: { rates: { PHP: 1 }, target: "PHP" } });
+
+    expect(items[0].totalSpent).toBe(5_000);
+  });
+
+  it("falls back to the stored totalSpent for a pre-ledger client with no Transaction rows", async () => {
+    const client = await seedClient(workspaceId, { name: "Legacy Spender" });
+    await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 250_000 } });
+
+    const { items } = await listClients({ workspaceId, fx: { rates: { PHP: 1, USD: 58 }, target: "PHP" } });
+
+    expect(items[0].totalSpent).toBe(250_000);
+  });
+
+  it("converts totalSpent on the single-client lookup too", async () => {
+    const client = await seedClient(workspaceId, { name: "Overseas Studio" });
+    await Client.updateOne({ _id: client._id }, { $set: { totalSpent: 100 } });
+    await Transaction.create([
+      { workspaceId, clientId: client._id, amount: 100, currency: "USD", type: "deposit" },
+    ]);
+
+    const found = await getClientById(workspaceId, String(client._id), { rates: { PHP: 1, USD: 58 }, target: "PHP" });
+
+    expect(found?.totalSpent).toBe(100 * 58);
   });
 });

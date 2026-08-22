@@ -233,9 +233,9 @@ export function MiniBookingCalendar({
         </div>
         <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span className="size-2 bg-brand" aria-hidden /> Today
+            <span className="size-2 bg-brand" aria-hidden /> {t("miniCalendar.today")}
           </span>
-          <span>{totalBookings} bookings this month</span>
+          <span>{t("miniCalendar.monthTotal", { count: totalBookings })}</span>
         </div>
       </CardContent>
     </Card>
