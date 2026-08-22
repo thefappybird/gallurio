@@ -270,7 +270,11 @@ export function BillingPanel({
             />
           ) : (
           <div className="flex flex-col gap-2">
-            {PLAN_CATALOG.filter((p) => p.id !== "free" && p.id !== currentPlan).map(
+            {/* This block only renders for a non-subscriber, so `currentPlan`
+                here is a grant (free month, promo) or a lapsed subscription —
+                never something to hide the Pro card behind. Filtering it out
+                left the Monthly/Annual tabs empty with no way to subscribe. */}
+            {PLAN_CATALOG.filter((p) => p.id !== "free").map(
               (entry) => {
                 const busy = loadingPlan === entry.id;
                 // Pro headlines the owner's own currency; BilledAsNote names what

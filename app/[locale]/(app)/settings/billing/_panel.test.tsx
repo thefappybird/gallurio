@@ -9,7 +9,7 @@
  * @/lib/i18n/navigation: aliased to stub via vitest.config.ts.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BillingPanel, type BillingPanelProps } from "./_panel";
 
@@ -90,13 +90,24 @@ describe("BillingPanel — renders", () => {
 
   it("shows the current plan name", () => {
     renderPanel({ currentPlan: "pro" });
-    // The plan name badge shows "Pro"
-    expect(screen.getByText("Pro")).toBeInTheDocument();
+    // The plan name sits next to the "Current plan" label. A non-subscribing
+    // Pro workspace also lists Pro among the available plans, so scope the
+    // lookup to the summary card rather than the whole panel.
+    const summary = screen.getByText(/current plan/i).parentElement!;
+    expect(within(summary).getByText("Pro")).toBeInTheDocument();
   });
 
   it("shows upgrade CTAs for a free plan user", () => {
     renderPanel({ currentPlan: "free" });
     // Buttons have aria-label "Upgrade to the {Plan} plan"
+    expect(
+      screen.getByRole("button", { name: /upgrade to the pro plan/i })
+    ).toBeInTheDocument();
+  });
+
+  it("offers Pro to a grant-backed Pro workspace with no subscription behind it", () => {
+    renderPanel({ currentPlan: "pro", lsSubscriptionStatus: null });
+
     expect(
       screen.getByRole("button", { name: /upgrade to the pro plan/i })
     ).toBeInTheDocument();
