@@ -279,6 +279,7 @@ function ClientDetailModalInner({
                               rate={b.converted.rate}
                               at={b.converted.at}
                               locale={locale}
+                              align="end"
                             />
                           ) : null}
                         </div>
@@ -312,6 +313,7 @@ function ClientDetailModalInner({
                           rate={payment.converted.rate}
                           at={payment.converted.at}
                           locale={locale}
+                          align="end"
                         />
                       ) : null}
                     </div>

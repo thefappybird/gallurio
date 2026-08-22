@@ -1328,6 +1328,7 @@
         "unpaid": "Belum dibayar",
         "paidOn": "Dibayar pada {date}",
         "frozenRate": "≈ {price} · kurs {rate} · {date}",
+        "frozenRateTrailing": "{date} · kurs {rate} · ≈ {price}",
         "approx": "≈ {price}",
         "empty": "Belum ada pembayaran terjadwal untuk pemesanan ini",
         "exceedsBalance": "Melebihi sisa saldo",

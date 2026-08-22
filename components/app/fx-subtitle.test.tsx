@@ -27,4 +27,20 @@ describe("FxSubtitle", () => {
 
     expect(screen.getByText(/≈ ₱48,440.00 · rate 48.44 · Aug 19, 2026/)).toBeInTheDocument();
   });
+
+  it("puts the converted figure last when the amount above it is end-aligned", () => {
+    render(
+      <FxSubtitle
+        amount={1000}
+        target="PHP"
+        rate={48.44}
+        at="2026-08-19T00:00:00.000Z"
+        locale="en"
+        align="end"
+      />,
+      { wrapper }
+    );
+
+    expect(screen.getByText(/Aug 19, 2026 · rate 48.44 · ≈ ₱48,440.00/)).toBeInTheDocument();
+  });
 });

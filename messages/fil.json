@@ -1328,6 +1328,7 @@
         "unpaid": "Hindi pa bayad",
         "paidOn": "Binayaran noong {date}",
         "frozenRate": "≈ {price} · rate na {rate} · {date}",
+        "frozenRateTrailing": "{date} · rate na {rate} · ≈ {price}",
         "approx": "≈ {price}",
         "empty": "Wala pang naka-iskedyul na bayad para sa booking na ito",
         "exceedsBalance": "Lumalampas sa natitirang balanse",

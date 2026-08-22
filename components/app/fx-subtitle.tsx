@@ -14,6 +14,11 @@ import { cn } from "@/lib/utils";
  * rate and date are named with it, so the number can be reconciled against a
  * bank statement. Without one, it is a live conversion at today's rate and
  * only the converted figure is shown — never a guessed rate.
+ *
+ * `align` keeps the converted figure adjacent to the amount it restates: the
+ * whole point is reading the two as a pair. Under a start-aligned amount the
+ * figure leads the line; under an end-aligned one it trails, so it still
+ * lands directly beneath.
  */
 export function FxSubtitle({
   amount,
@@ -21,6 +26,7 @@ export function FxSubtitle({
   rate,
   at,
   locale,
+  align = "start",
   className,
 }: {
   amount: number;
@@ -28,6 +34,7 @@ export function FxSubtitle({
   rate?: number | null;
   at?: string | null;
   locale: string;
+  align?: "start" | "end";
   className?: string;
 }) {
   const t = useTranslations("app.bookings.payments");
@@ -38,7 +45,13 @@ export function FxSubtitle({
 
   if (!frozen) {
     return (
-      <span className={cn("text-xs text-muted-foreground", className)}>
+      <span
+        className={cn(
+          "text-xs text-muted-foreground",
+          align === "end" && "text-end",
+          className
+        )}
+      >
         {t("approx", { price })}
       </span>
     );
@@ -54,8 +67,18 @@ export function FxSubtitle({
     : "";
 
   return (
-    <span className={cn("text-xs text-muted-foreground", className)}>
-      {t("frozenRate", { price, rate: rateLabel, date: dateLabel })}
+    <span
+      className={cn(
+        "text-xs text-muted-foreground",
+        align === "end" && "text-end",
+        className
+      )}
+    >
+      {t(align === "end" ? "frozenRateTrailing" : "frozenRate", {
+        price,
+        rate: rateLabel,
+        date: dateLabel,
+      })}
     </span>
   );
 }

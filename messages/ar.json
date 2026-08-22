@@ -1328,6 +1328,7 @@
         "remit": "Remit",
         "paidOn": "دُفع في {date}",
         "frozenRate": "≈ {price} · السعر {rate} · {date}",
+        "frozenRateTrailing": "{date} · السعر {rate} · ≈ {price}",
         "approx": "≈ {price}",
         "empty": "لا توجد مدفوعات مجدولة بعد لهذا الحجز",
         "exceedsBalance": "يتجاوز الرصيد المتبقي",
