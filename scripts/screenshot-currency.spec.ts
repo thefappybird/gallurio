@@ -258,10 +258,29 @@ const SURFACES: Surface[] = [
     title: "Client detail modal — same converted figure as the list row",
     viewportOnly: true,
     drive: async (page, combo) => {
-      await page.goto(localePath(combo.locale, "/clients"), { waitUntil: "domcontentloaded" });
+      // Open the client that actually carries a foreign-currency payment — the
+      // point of this surface is the converted figure, and whoever sorts first
+      // in the unfiltered list usually has no payments at all. ?q= filters
+      // server-side, which is steadier than driving the search box (its input
+      // isn't the first one in the DOM at every breakpoint). Falls back to the
+      // unfiltered list when the FX fixture is absent, e.g. after a reseed.
+      const FX_CLIENT = "Playwright FX Client";
+      await page.goto(
+        localePath(combo.locale, `/clients?q=${encodeURIComponent(FX_CLIENT)}`),
+        { waitUntil: "domcontentloaded" }
+      );
       await settled(page);
-      const table = page.locator("table tbody tr").first();
-      const card = page.locator('[data-testid="clients-card-list"] article').first();
+      let table = page.locator("table tbody tr").first();
+      let card = page.locator('[data-testid="clients-card-list"] article').first();
+      const filteredHit =
+        (await table.isVisible().catch(() => false)) ||
+        (await card.isVisible().catch(() => false));
+      if (!filteredHit) {
+        await page.goto(localePath(combo.locale, "/clients"), { waitUntil: "domcontentloaded" });
+        await settled(page);
+        table = page.locator("table tbody tr").first();
+        card = page.locator('[data-testid="clients-card-list"] article').first();
+      }
       const row = (await table.isVisible().catch(() => false)) ? table : card;
       await row.waitFor({ state: "visible", timeout: 30_000 });
       await row.click();
