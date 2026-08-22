@@ -201,7 +201,45 @@ async function redirectExpiredVerificationToSignIn(locale: string): Promise<neve
 // Shared result shape
 // ---------------------------------------------------------------------------
 
-export type ActionResult = { error: string } | { ok: true };
+export type ActionResult =
+  | { error: string; fieldErrors?: Record<string, string> }
+  | { ok: true };
+
+type Translator = Awaited<ReturnType<typeof getTranslations>>;
+
+/**
+ * A field's keyMap entry is either one message key (single failure mode) or
+ * `{ tooBig, default }` when the field's two failure modes need different
+ * copy (e.g. "required" vs "too long").
+ */
+type FieldMessageKey = string | { tooBig: string; default: string };
+
+/**
+ * Maps Zod field-level failures to localized messages via `keyMap`, branching
+ * on the issue code where a field has more than one message. Fields not
+ * present in `keyMap` (turnstileToken, token, returnTo — not user-visible
+ * inputs) are silently dropped, never surfaced — the loop walks `keyMap`,
+ * never the raw issues, so an unmapped field can never leak through.
+ */
+function localizeFieldErrors(
+  error: z.ZodError,
+  keyMap: Record<string, FieldMessageKey>,
+  t: Translator,
+): Record<string, string> | undefined {
+  const mapped: Record<string, string> = {};
+  for (const [field, entry] of Object.entries(keyMap)) {
+    const issue = error.issues.find((i) => i.path[0] === field);
+    if (!issue) continue;
+    const messageKey =
+      typeof entry === "string"
+        ? entry
+        : issue.code === "too_big"
+          ? entry.tooBig
+          : entry.default;
+    mapped[field] = t(messageKey);
+  }
+  return Object.keys(mapped).length > 0 ? mapped : undefined;
+}
 
 // ---------------------------------------------------------------------------
 // Sign-in
@@ -230,7 +268,15 @@ export async function signInAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidInput") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error,
+      {
+        email: "errors.fields.emailInvalid",
+        password: "errors.fields.passwordRequired",
+      },
+      t,
+    );
+    return { error: t("errors.invalidInput"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const { email, password, turnstileToken, returnTo } = parsed.data;
@@ -366,14 +412,31 @@ export async function signUpAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidInput") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error,
+      {
+        firstName: {
+          tooBig: "errors.fields.firstNameTooLong",
+          default: "errors.fields.firstNameRequired",
+        },
+        lastName: "errors.fields.lastNameTooLong",
+        email: "errors.fields.emailInvalid",
+        password: "errors.fields.passwordLength",
+        confirmPassword: "errors.fields.confirmPasswordRequired",
+      },
+      t,
+    );
+    return { error: t("errors.invalidInput"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const { firstName, lastName, email, password, confirmPassword, turnstileToken } =
     parsed.data;
 
   if (password !== confirmPassword) {
-    return { error: t("errors.passwordMismatch") };
+    return {
+      error: t("errors.passwordMismatch"),
+      fieldErrors: { confirmPassword: t("errors.passwordMismatch") },
+    };
   }
 
   // Bot check
@@ -469,7 +532,12 @@ export async function forgotPasswordAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidInput") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error,
+      { email: "errors.fields.emailInvalid" },
+      t,
+    );
+    return { error: t("errors.invalidInput"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const { email, turnstileToken } = parsed.data;
@@ -528,13 +596,24 @@ export async function resetPasswordAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidInput") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error,
+      {
+        password: "errors.fields.passwordLength",
+        confirmPassword: "errors.fields.confirmPasswordRequired",
+      },
+      t,
+    );
+    return { error: t("errors.invalidInput"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const { token, password, confirmPassword } = parsed.data;
 
   if (password !== confirmPassword) {
-    return { error: t("errors.passwordMismatch") };
+    return {
+      error: t("errors.passwordMismatch"),
+      fieldErrors: { confirmPassword: t("errors.passwordMismatch") },
+    };
   }
 
   try {
@@ -573,7 +652,12 @@ export async function verifyEmailAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidCode") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error,
+      { code: "errors.fields.codeInvalid" },
+      t,
+    );
+    return { error: t("errors.invalidCode"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   const pending = await getEmailVerificationPending();
@@ -682,7 +766,12 @@ export async function mfaChallengeAction(
   });
 
   if (!parsed.success) {
-    return { error: t("errors.invalidCode") };
+    const fieldErrors = localizeFieldErrors(
+      parsed.error,
+      { code: "errors.fields.codeInvalid" },
+      t,
+    );
+    return { error: t("errors.invalidCode"), ...(fieldErrors ? { fieldErrors } : {}) };
   }
 
   // Rate limit — MFA brute-force prevention

@@ -107,12 +107,12 @@
         "body": "Walang kailangang payment card para magsimula."
       },
       "item2": {
-        "title": "Mga bayad na plano: malapit na.",
+        "title": "Isang plano. Malinaw na terms.",
         "body": "Ipapakita nang malinaw ang presyo at terms bago mag-checkout."
       },
       "item3": {
         "title": "Ang Lemon Squeezy ang humahawak ng checkout",
-        "body": "bilang aming merchant of record, kapag naka-live na ang billing."
+        "body": "bilang aming merchant of record."
       },
       "item4": {
         "title": "Software, hindi serbisyo.",
@@ -134,7 +134,7 @@
       "title": "Simpleng presyo",
       "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",
       "viewFullPricing": "Tingnan ang buong presyo",
-      "disclaimer": "Ipinapakita ang mga presyo sa iyong lokal na currency. Lumalabas ang mga tuntunin sa pagsingil, buwis, at detalye ng renewal bago mo makumpleto ang checkout.",
+      "disclaimer": "Isang buwang libre. Ang paid Pro ay nagre-renew buwanan o taunan hanggang i-cancel. Ipinapakita ang mga presyo sa iyong lokal na currency. Lumalabas ang mga tuntunin sa pagsingil, buwis, at detalye ng renewal bago mo makumpleto ang checkout.",
       "cadence": {
         "monthly": "Buwanan",
         "yearly": "Taunan",
@@ -183,14 +183,14 @@
         "cta": "Simulan ang libreng buwan ko"
       },
       "billingNotice": {
-        "body1": "Malinaw na ipapakita ang presyo, billing period, mga tuntunin sa renewal, naaangkop na buwis, detalye ng bayad, at proseso ng cancellation bago mo makumpleto ang isang pagbili.",
-        "body2": "Ang Lemon Squeezy ang magpoproseso ng mga paid subscription bilang merchant of record ng Gallurio. Ipapakita rin ang naaangkop na tuntunin sa checkout, invoice, refund, at bayad sa buong billing flow.",
+        "body1": "Available ang paid Pro subscription buwanan o taunan. Malinaw na ipinapakita ang presyo, billing period, mga tuntunin sa renewal, naaangkop na buwis, detalye ng bayad, at proseso ng cancellation bago mo makumpleto ang isang pagbili.",
+        "body2": "Ang Lemon Squeezy ang nagpoproseso ng mga paid subscription bilang merchant of record ng Gallurio. Ipinapakita rin ang naaangkop na tuntunin sa checkout, invoice, refund, at bayad sa buong billing flow.",
         "body3": "Maaari mong i-cancel ang isang paid subscription anumang oras sa pamamagitan ng billing management flow. Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge; magpapatuloy ang access hanggang sa katapusan ng kasalukuyang billing period.",
         "body4": "Walang bayad na kinokolekta sa iyong unang libreng buwan."
       },
       "pricingTransparency": {
         "title": "Transparency sa Presyo",
-        "body1": "Hindi ka sinisingil ng Gallurio habang ang libreng buwan. Walang kailangang payment card para magsimula. Ang pag-subscribe ay hiwalay na hakbang pagkatapos ng libreng panahon, kasama ang naaangkop na tuntunin na ipapakita bago ang bayad.",
+        "body1": "Hindi ka sisingilin ng Gallurio habang ang libreng buwan. Walang kailangang payment card para simulan ang trial. Ang anumang paid subscription ay nangangailangan ng hiwalay na pagbili o activation step pagkatapos ng libreng panahon, kasama ang naaangkop na tuntunin na ipapakita bago ang bayad.",
         "body2": "Maaaring magbago ang presyo at mga feature. Ipapakita ang mahahalagang pagbabago sa page na ito at sa checkout flow."
       },
       "contactNote": {
@@ -653,7 +653,17 @@
       "invalidCode": "Hindi tamang code o nag-expire na. Pakisubukan muli.",
       "sessionExpired": "Nag-expire na ang iyong session. Mangyaring mag-sign in muli.",
       "resetTokenInvalid": "Ang link na ito ay invalid o nag-expire na. Mangyaring humingi ng bago.",
-      "passwordReused": "Pumili ng password na iba sa kasalukuyan mong password."
+      "passwordReused": "Pumili ng password na iba sa kasalukuyan mong password.",
+      "fields": {
+        "emailInvalid": "Maglagay ng wastong email address.",
+        "passwordRequired": "Ilagay ang iyong password.",
+        "passwordLength": "Ang password ay dapat may 8 hanggang 128 na character.",
+        "confirmPasswordRequired": "Kumpirmahin ang iyong password.",
+        "firstNameRequired": "Ilagay ang iyong pangalan.",
+        "firstNameTooLong": "Ang pangalan ay dapat 80 character o mas kaunti.",
+        "lastNameTooLong": "Ang apelyido ay dapat 80 character o mas kaunti.",
+        "codeInvalid": "Ilagay ang 6-digit na code."
+      }
     }
   },
   "app": {
@@ -3413,6 +3423,13 @@
   "subscribe": {
     "pageTitle": "Mag-subscribe",
     "logout": "Mag-log out",
+    "verification": {
+      "title": "Vine-verify ang iyong payment",
+      "description": "Ina-activate namin ang iyong Pro access. Karaniwan itong tumatagal ng ilang segundo.",
+      "pendingTitle": "Kinukumpirma pa namin ang iyong subscription",
+      "pendingDescription": "Kumpleto na ang payment mo. Subukan muli maya-maya, o makipag-ugnayan sa support kung magpapatuloy ito.",
+      "retry": "Subukan muli"
+    },
     "owner": {
       "title": "Natapos na ang iyong Pro access",
       "description": "Mag-subscribe muli sa Gallurio Pro para bumalik sa iyong dashboard.",

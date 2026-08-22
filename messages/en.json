@@ -107,12 +107,12 @@
         "body": "No payment card required to start."
       },
       "item2": {
-        "title": "Paid plans: coming soon.",
+        "title": "One plan. Clear terms.",
         "body": "Price and terms shown clearly before checkout."
       },
       "item3": {
         "title": "Lemon Squeezy handles checkout",
-        "body": "as our merchant of record, once billing goes live."
+        "body": "as our merchant of record."
       },
       "item4": {
         "title": "Software, not services.",
@@ -134,7 +134,7 @@
       "title": "Simple pricing",
       "subtitle": "1 month of Pro, free. Then one plan, monthly or yearly.",
       "viewFullPricing": "View full pricing",
-      "disclaimer": "Prices are shown in your local currency. Billing terms, taxes, and renewal details appear before you complete checkout.",
+      "disclaimer": "One month free. Paid Pro renews monthly or yearly until cancelled. Prices are shown in your local currency. Billing terms, taxes, and renewal details appear before you complete checkout.",
       "cadence": {
         "monthly": "Monthly",
         "yearly": "Yearly",
@@ -183,14 +183,14 @@
         "cta": "Start my free month"
       },
       "billingNotice": {
-        "body1": "The price, billing period, renewal terms, applicable taxes, payment details, and cancellation process are shown clearly before you complete a purchase.",
-        "body2": "Lemon Squeezy will process paid subscriptions as Gallurio's merchant of record. The applicable checkout, invoice, refund, and payment terms will also be shown through the billing flow.",
+        "body1": "Paid Pro subscriptions are available monthly or yearly. The price, billing period, renewal terms, applicable taxes, payment details, and cancellation process are shown clearly before you complete a purchase.",
+        "body2": "Lemon Squeezy processes paid subscriptions as Gallurio's merchant of record. The applicable checkout, invoice, refund, and payment terms are also shown through the billing flow.",
         "body3": "You may cancel a paid subscription at any time through the billing management flow. Cancellation normally prevents future renewal charges; access generally continues until the end of the current billing period.",
         "body4": "No charge is collected during your first free month."
       },
       "pricingTransparency": {
         "title": "Pricing Transparency",
-        "body1": "Gallurio does not charge you during the free month. No payment card is required to start. Subscribing is a separate step after the free period, with the applicable terms displayed before payment.",
+        "body1": "Gallurio will not charge you during the free month. No payment card is required to start the trial. Any paid subscription requires a separate purchase or activation step after the free period, with the applicable terms displayed before payment.",
         "body2": "Prices and features may change. Material changes will be reflected on this page and in the checkout flow."
       },
       "contactNote": {
@@ -653,7 +653,17 @@
       "invalidCode": "Invalid or expired code. Please try again.",
       "sessionExpired": "Your session has expired. Please sign in again.",
       "resetTokenInvalid": "This link is invalid or has expired. Please request a new one.",
-      "passwordReused": "Please choose a password different from your current one."
+      "passwordReused": "Please choose a password different from your current one.",
+      "fields": {
+        "emailInvalid": "Enter a valid email address.",
+        "passwordRequired": "Enter your password.",
+        "passwordLength": "Password must be between 8 and 128 characters.",
+        "confirmPasswordRequired": "Confirm your password.",
+        "firstNameRequired": "Enter your first name.",
+        "firstNameTooLong": "First name must be 80 characters or fewer.",
+        "lastNameTooLong": "Last name must be 80 characters or fewer.",
+        "codeInvalid": "Enter the 6-digit code."
+      }
     }
   },
   "app": {
@@ -3414,6 +3424,13 @@
   "subscribe": {
     "pageTitle": "Subscribe",
     "logout": "Log out",
+    "verification": {
+      "title": "Verifying your payment",
+      "description": "We are activating your Pro access. This usually takes a few seconds.",
+      "pendingTitle": "We are still confirming your subscription",
+      "pendingDescription": "Your payment is complete. Please try again in a moment, or contact support if this continues.",
+      "retry": "Try again"
+    },
     "owner": {
       "title": "Your Pro access has ended",
       "description": "Resubscribe to Gallurio Pro to get back into your dashboard.",

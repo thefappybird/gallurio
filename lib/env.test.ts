@@ -27,6 +27,7 @@ const VALID_PROD_ENV: Record<string, string> = {
   LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID: "333",
   LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID: "444",
   LEMONSQUEEZY_TEST_MODE: "false",
+  PAID_BILLING_ENABLED: "true",
   RESEND_API_KEY: "re_abc",
   EMAIL_FROM: "Gallurio <hello@gallurio.com>",
   CRON_SECRET: "cron_secret_value",
@@ -142,7 +143,27 @@ describe("lib/env", () => {
     expect(() => validateEnv()).toThrow(/SUB_EXPIRED_WORKOS_PASSWORD/);
   });
 
-  it("still requires valid live Lemon Squeezy configuration in production regardless of BETA_TESTER_ENABLED", () => {
+  it("passes validation in beta-only production mode with no Lemon Squeezy configuration", () => {
+    resetEnv();
+    setEnv(VALID_PROD_ENV);
+    setEnv({
+      BETA_TESTER_ENABLED: "true",
+      PAID_BILLING_ENABLED: undefined,
+      LEMONSQUEEZY_API_KEY: undefined,
+      LEMONSQUEEZY_STORE_ID: undefined,
+      LEMONSQUEEZY_WEBHOOK_SECRET: undefined,
+      LEMONSQUEEZY_VARIANT_PRO_MONTHLY_ID: undefined,
+      LEMONSQUEEZY_VARIANT_PRO_YEARLY_ID: undefined,
+      LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID: undefined,
+      LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID: undefined,
+      LEMONSQUEEZY_TEST_MODE: undefined,
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("requires valid live Lemon Squeezy configuration whenever paid billing is enabled", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     setEnv({ BETA_TESTER_ENABLED: "true", LEMONSQUEEZY_API_KEY: undefined });
@@ -150,15 +171,7 @@ describe("lib/env", () => {
     expect(() => validateEnv()).toThrow(/LEMONSQUEEZY_API_KEY/);
   });
 
-  it("still requires valid live Lemon Squeezy configuration in production", () => {
-    resetEnv();
-    setEnv(VALID_PROD_ENV);
-    setEnv({ LEMONSQUEEZY_API_KEY: undefined });
-
-    expect(() => validateEnv()).toThrow(/LEMONSQUEEZY_API_KEY/);
-  });
-
-  it("requires the global-tier variant ids in production", () => {
+  it("requires the global-tier variant ids whenever paid billing is enabled", () => {
     resetEnv();
     setEnv(VALID_PROD_ENV);
     setEnv({ LEMONSQUEEZY_VARIANT_GLOBAL_MONTHLY_ID: undefined });

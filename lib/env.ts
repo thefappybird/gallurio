@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isPaidBillingAvailable } from "./billing/availability";
 
 // This module is also imported by the raw `tsx server.ts` entrypoint before
 // Next.js installs its compiler aliases, so it cannot use Next's `server-only`
@@ -74,6 +75,7 @@ const shape = {
   PAGEVIEW_SALT_SECRET: z.string().optional(),
   OPENEXCHANGERATES_APP_ID: z.string().optional(),
   BETA_TESTER_ENABLED: z.string().optional(),
+  PAID_BILLING_ENABLED: z.string().optional(),
   PORT: z.string().optional(),
 
   // --- Social links (contact page) — unset hides the icon; fill in later ---
@@ -106,9 +108,12 @@ const REQUIRED_IN_PROD: Partial<Record<EnvKey, FieldRule>> = {
   RESEND_API_KEY: {},
   EMAIL_FROM: {},
   CRON_SECRET: {},
-  // Lemon Squeezy is verified and live — its credentials are always required
-  // in production now (beta-tester mode no longer suppresses this; it only
-  // controls whether the Beta plan option is offered in the UI).
+};
+
+// Required only when paid billing is explicitly enabled. Free beta access is
+// independent, so BETA_TESTER_ENABLED may remain true in paid production —
+// the flag only decides whether the Beta plan option is offered in the UI.
+const REQUIRED_IN_PROD_PAID_MODE: Partial<Record<EnvKey, FieldRule>> = {
   LEMONSQUEEZY_API_KEY: {},
   LEMONSQUEEZY_STORE_ID: {},
   LEMONSQUEEZY_WEBHOOK_SECRET: {},
@@ -118,8 +123,16 @@ const REQUIRED_IN_PROD: Partial<Record<EnvKey, FieldRule>> = {
   LEMONSQUEEZY_VARIANT_GLOBAL_YEARLY_ID: {},
 };
 
+const REQUIRED_IN_PROD_ALL: Partial<Record<EnvKey, FieldRule>> = {
+  ...REQUIRED_IN_PROD,
+  ...REQUIRED_IN_PROD_PAID_MODE,
+};
+
 const envSchema = z.object(shape).superRefine((data, ctx) => {
-  for (const [key, rule] of Object.entries(REQUIRED_IN_PROD) as [EnvKey, FieldRule][]) {
+  const paidBillingEnabled = isPaidBillingAvailable();
+  const requiredInProd = paidBillingEnabled ? REQUIRED_IN_PROD_ALL : REQUIRED_IN_PROD;
+
+  for (const [key, rule] of Object.entries(requiredInProd) as [EnvKey, FieldRule][]) {
     const val = data[key];
     if (!val) {
       ctx.addIssue({
@@ -169,7 +182,7 @@ const envSchema = z.object(shape).superRefine((data, ctx) => {
       });
     }
 
-    if (data.LEMONSQUEEZY_TEST_MODE !== "false") {
+    if (paidBillingEnabled && data.LEMONSQUEEZY_TEST_MODE !== "false") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["LEMONSQUEEZY_TEST_MODE"],

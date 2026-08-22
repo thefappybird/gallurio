@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
+import { isPaidBillingAvailable } from "@/lib/billing/availability";
 import { connectDB } from "@/lib/db/mongoose";
 import { createSubscriptionCheckout } from "@/lib/lemonsqueezy/client";
 import { getProVariantsForTier, isPaidPlan } from "@/lib/lemonsqueezy/plans";
@@ -25,6 +26,12 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Cheap, zero-I/O check first — avoids an auth session decrypt + 2 Mongo
+  // round trips on every request for as long as paid billing is switched off.
+  if (!isPaidBillingAvailable()) {
+    return NextResponse.json({ error: "billing_unavailable" }, { status: 403 });
+  }
+
   // A gated owner must be able to POST here too - re-subscribing is how they
   // un-gate themselves.
   const ctx = await requireOrg({ allowDuringOnboarding: true, allowWhenGated: true });
@@ -97,10 +104,23 @@ export async function POST(req: Request) {
   // screen redirects the top-level page rather than staying embedded.
   // `returnTo` (e.g. the caller's original destination behind a /subscribe
   // gate) takes precedence over the onboarding/default targets when present.
-  const redirectUrl = new URL(
-    sanitizeLocalReturnTo(returnTo) ?? (onboarding ? "/onboarding/done" : "/settings/billing"),
-    req.url,
-  ).toString();
+  const redirectOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || req.url;
+  const redirectUrl = onboarding
+    ? new URL("/onboarding/done", redirectOrigin)
+    : new URL("/billing/return", redirectOrigin);
+
+  // A returning, gated owner cannot reach Settings until the subscription is
+  // reflected in Mongo. Route every non-onboarding completion through the
+  // authenticated return page first: it reconciles the just-created
+  // subscription directly with Lemon Squeezy, then forwards to this safe
+  // in-app destination. This is a recovery/safety net; the webhook remains
+  // the authoritative, durable path.
+  if (!onboarding) {
+    redirectUrl.searchParams.set(
+      "returnTo",
+      sanitizeLocalReturnTo(returnTo) ?? "/settings/billing",
+    );
+  }
 
   let checkoutUrl: string;
   try {
@@ -109,7 +129,7 @@ export async function POST(req: Request) {
       email,
       name,
       workspaceId,
-      redirectUrl,
+      redirectUrl: redirectUrl.toString(),
     });
   } catch (err) {
     console.error("[billing.checkout] lemonsqueezy checkout init failed", err);

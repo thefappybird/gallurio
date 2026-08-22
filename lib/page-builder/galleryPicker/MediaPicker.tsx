@@ -669,7 +669,7 @@ function CenterSpinner({ label }: { label: string }) {
 function ErrorRetry({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-2 py-10">
-      <p className="text-sm text-destructive">{L.error}</p>
+      <p role="alert" className="text-sm text-destructive">{L.error}</p>
       <button
         type="button"
         onClick={onRetry}

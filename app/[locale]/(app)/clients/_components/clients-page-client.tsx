@@ -105,22 +105,22 @@ export function ClientsPageClient({
   // Remove the ?client= param so closing the modal (or transitioning to
   // edit/deactivate) doesn't reopen it on a hard refresh or back-navigation.
   function stripClientParam() {
-    if (!searchParams.has("client")) return;
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("client")) return;
     params.delete("client");
     const qs = params.toString();
-    startTransition(() => {
-      router.replace(qs ? `${pathname}?${qs}` : pathname);
-    });
+    window.history.replaceState(
+      window.history.state,
+      "",
+      qs ? `${pathname}?${qs}` : pathname
+    );
   }
 
   function setClientParam(clientId: string) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     params.set("client", clientId);
     const qs = params.toString();
-    startTransition(() => {
-      router.push(`${pathname}?${qs}`);
-    });
+    window.history.pushState(window.history.state, "", `${pathname}?${qs}`);
   }
 
   // If the form is open with unsaved edits, intercept the next action that

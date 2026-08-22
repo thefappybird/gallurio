@@ -7,7 +7,7 @@ import type {
 } from "@/lib/page-builder/types";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/home",
+  usePathname: () => "/",
 }));
 
 const brandKit: PortfolioBrandKit = {
@@ -39,11 +39,11 @@ describe("HeaderFormPreview production-renderer parity", () => {
     renderPreview();
     expect(screen.getByRole("link", { name: "My Studio", hidden: true })).toHaveAttribute(
       "href",
-      "/home",
+      "/",
     );
     expect(screen.getByRole("link", { name: "Home", hidden: true })).toHaveAttribute(
       "href",
-      "/home",
+      "/",
     );
     expect(screen.getByRole("link", { name: "Gallery", hidden: true })).toHaveAttribute(
       "href",

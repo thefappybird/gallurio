@@ -21,4 +21,4 @@ Bookings, clients, calendar, teams, notifications, and audit trail — the day-t
 
 ## Public-facing legal/marketing pages
 
-`app/[locale]/(marketing)/{terms,privacy,refunds,...}` render from `messages/<locale>.json` under the `marketing.*` namespace (`marketing.terms`, `marketing.privacy`, `marketing.refunds`) — that JSON is the live source of truth for legal copy, not a standalone doc. Current copy states paid Pro subscriptions are not yet available pending a Merchant-of-Record decision (see `docs/modules/billing.md`); formal legal sign-off on wording is tracked in `docs/RELEASE-CHECKLIST.md`.
+`app/[locale]/(marketing)/{terms,privacy,refunds,...}` render from `messages/<locale>.json` under the `marketing.*` namespace (`marketing.terms`, `marketing.privacy`, `marketing.refunds`) — that JSON is the live source of truth for legal copy, not a standalone doc. Paid Pro subscriptions are enabled only when the separate `PAID_BILLING_ENABLED` launch gate is true (see `docs/modules/billing.md`); formal legal sign-off on wording remains required before production activation.

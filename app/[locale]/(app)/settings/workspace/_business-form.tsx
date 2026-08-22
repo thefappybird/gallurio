@@ -34,6 +34,11 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
+import { useSlugAvailability } from "@/hooks/useSlugAvailability";
+import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { fieldMessage } from "@/lib/utils/fieldMessage";
+import { FormField, useFieldError } from "@/components/ui/form-field";
+
 // Mirrors CURRENCY_CHANGE_COOLDOWN_DAYS in lib/pricing/currencyRestatement.ts
 // (server-only, not importable from this client component) — used only to
 // project the unlock date shown in the confirm dialog before the change.
@@ -44,9 +49,6 @@ function addDays(date: Date, days: number): Date {
   d.setDate(d.getDate() + days);
   return d;
 }
-import { useSlugAvailability } from "@/hooks/useSlugAvailability";
-import { uploadAsset } from "@/lib/storage/uploadAsset.client";
-import { fieldMessage } from "@/lib/utils/fieldMessage";
 
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"] as const;
 const LOGO_MAX_BYTES = 250 * 1024;
@@ -94,10 +96,12 @@ export function WorkspaceBusinessForm({
   defaults,
   locale = "en",
   currencyLockedUntil = null,
+  portfolioDomain = null,
 }: {
   defaults: UpdateWorkspaceBusinessInput;
   locale?: string;
   currencyLockedUntil?: string | null;
+  portfolioDomain?: string | null;
 }) {
   const t = useTranslations("app.settings.workspace");
   const tOnb = useTranslations("onboarding.business");
@@ -149,6 +153,18 @@ export function WorkspaceBusinessForm({
     if (pendingCurrency) setValue("currency", pendingCurrency, { shouldDirty: true });
     setCurrencyDialogOpen(false);
   }
+
+  const nameError = fieldMessage(errors.name);
+  const slugError = fieldMessage(errors.slug);
+  const slugInvalid = slugStatus === "taken" || slugStatus === "invalid";
+  const slugA11y = useFieldError(slugError, { id: "slug", describedBy: "slug-status" });
+  const businessTypeError = fieldMessage(errors.businessType);
+  const businessTypeOtherError = fieldMessage(errors.businessTypeOther);
+  const countryError = fieldMessage(errors.country);
+  const currencyError = fieldMessage(errors.currency);
+  const timezoneError = fieldMessage(errors.timezone);
+  const contactEmailError = fieldMessage(errors.contactEmail);
+  const logoA11y = useFieldError(logoError ?? undefined, { id: "workspace-logoFile" });
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
@@ -232,96 +248,126 @@ export function WorkspaceBusinessForm({
         <p className="text-sm text-muted-foreground">{t("businessSectionHint")}</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-2">
         <div className="flex flex-col sm:flex-row gap-1.5 w-full">
+          <FormField
+            id="name"
+            className="w-full"
+            label={tOnb("businessName")}
+            error={nameError}
+          >
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                {...register("name")}
+              />
+            )}
+          </FormField>
           <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="name">{tOnb("businessName")}</Label>
-            <Input id="name" {...register("name")} />
-            {errors.name && <p className="text-sm text-destructive">{fieldMessage(errors.name)}</p>}
-          </div>
-          <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="slug">
+            <Label htmlFor={slugA11y.id}>
               {tOnb("workspaceUrl")}{" "}
               <span className="font-normal text-muted-foreground">{tOnb("workspaceUrlNote")}</span>
             </Label>
             <div className="flex items-stretch">
-              <span className="flex items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
-                gallurio.com/w/
-              </span>
+              {!portfolioDomain && (
+                <span className="flex items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+                  gallurio.com/w/
+                </span>
+              )}
               <Input
-                id="slug"
-                aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
+                id={slugA11y.id}
+                aria-invalid={slugInvalid || !!slugError || undefined}
+                aria-describedby={slugA11y["aria-describedby"]}
+                className={portfolioDomain ? "rounded-e-none" : "rounded-s-none"}
                 {...register("slug")}
               />
+              {portfolioDomain && (
+                <span className="flex items-center border border-s-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+                  .{portfolioDomain}
+                </span>
+              )}
             </div>
-            <SlugStatusIndicator status={slugStatus} t={tOnb} />
-            {errors.slug && <p className="text-sm text-destructive">{fieldMessage(errors.slug)}</p>}
+            <div id="slug-status">
+              <SlugStatusIndicator status={slugStatus} t={tOnb} />
+            </div>
+            {slugError && (
+              <p id={slugA11y.errorId} role="alert" className="text-sm text-destructive">
+                {slugError}
+              </p>
+            )}
           </div>
         </div>
 
 
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="businessType">{tOnb("businessType")}</Label>
-            <select
-              id="businessType"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("businessType")}
-            >
-              <option value="photographer">{tOnb("businessTypes.photographer")}</option>
-              <option value="venue">{tOnb("businessTypes.venue")}</option>
-              <option value="planner">{tOnb("businessTypes.planner")}</option>
-              <option value="stylist">{tOnb("businessTypes.stylist")}</option>
-              <option value="catering">{tOnb("businessTypes.catering")}</option>
-              <option value="entertainer">{tOnb("businessTypes.entertainer")}</option>
-              <option value="artists">{tOnb("businessTypes.artists")}</option>
-              <option value="other">{tOnb("businessTypes.other")}</option>
-            </select>
-            {errors.businessType && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.businessType)}</p>
+          <FormField id="businessType" label={tOnb("businessType")} error={businessTypeError}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <select
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...register("businessType")}
+              >
+                <option value="photographer">{tOnb("businessTypes.photographer")}</option>
+                <option value="venue">{tOnb("businessTypes.venue")}</option>
+                <option value="planner">{tOnb("businessTypes.planner")}</option>
+                <option value="stylist">{tOnb("businessTypes.stylist")}</option>
+                <option value="catering">{tOnb("businessTypes.catering")}</option>
+                <option value="entertainer">{tOnb("businessTypes.entertainer")}</option>
+                <option value="artists">{tOnb("businessTypes.artists")}</option>
+                <option value="other">{tOnb("businessTypes.other")}</option>
+              </select>
             )}
-          </div>
+          </FormField>
 
           {businessTypeValue === "other" && (
-            <div className="flex flex-col gap-1.5 md:col-span-2">
-              <Label htmlFor="businessTypeOther">{tOnb("businessTypeOtherLabel")}</Label>
-              <Input
-                id="businessTypeOther"
-                placeholder={tOnb("businessTypeOtherPlaceholder")}
-                {...register("businessTypeOther")}
-              />
-              {errors.businessTypeOther && (
-                <p className="text-sm text-destructive">{fieldMessage(errors.businessTypeOther)}</p>
+            <FormField
+              id="businessTypeOther"
+              className="md:col-span-2"
+              label={tOnb("businessTypeOtherLabel")}
+              error={businessTypeOtherError}
+            >
+              {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+                <Input
+                  id={id}
+                  aria-invalid={ariaInvalid}
+                  aria-describedby={ariaDescribedby}
+                  placeholder={tOnb("businessTypeOtherPlaceholder")}
+                  {...register("businessTypeOther")}
+                />
               )}
-            </div>
+            </FormField>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="country">{tOnb("country")}</Label>
-            <select
-              id="country"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("country", {
-                onChange: (e) => {
-                  const next = e.target.value as SupportedCountry;
-                  setValue("currency", COUNTRY_TO_CURRENCY[next], {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  });
-                },
-              })}
-            >
-              {BILLING_COUNTRY_VALUES.map((c) => (
-                <option key={c} value={c}>
-                  {COUNTRY_LABELS[c]}
-                </option>
-              ))}
-            </select>
-            {errors.country && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.country)}</p>
+          <FormField id="country" label={tOnb("country")} error={countryError}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <select
+                id={id}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...register("country", {
+                  onChange: (e) => {
+                    const next = e.target.value as SupportedCountry;
+                    setValue("currency", COUNTRY_TO_CURRENCY[next], {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    });
+                  },
+                })}
+              >
+                {BILLING_COUNTRY_VALUES.map((c) => (
+                  <option key={c} value={c}>
+                    {COUNTRY_LABELS[c]}
+                  </option>
+                ))}
+              </select>
             )}
-          </div>
+          </FormField>
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -331,6 +377,8 @@ export function WorkspaceBusinessForm({
               id="currency"
               name="currency"
               disabled={!!currencyLockedUntil}
+              aria-invalid={!!currencyError || undefined}
+              aria-describedby={currencyError ? "currency-error" : undefined}
               className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
               value={currencyValue}
               onChange={(e) => handleCurrencySelectChange(e.target.value as SupportedCurrency)}
@@ -346,8 +394,10 @@ export function WorkspaceBusinessForm({
                 ? t("currencyLockedUntil", { date: currencyLockedUntilLabel })
                 : t("currencyWarning")}
             </p>
-            {errors.currency && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.currency)}</p>
+            {currencyError && (
+              <p id="currency-error" role="alert" className="text-sm text-destructive">
+                {currencyError}
+              </p>
             )}
 
             <AlertDialog
@@ -392,30 +442,34 @@ export function WorkspaceBusinessForm({
                   value={field.value}
                   onChange={field.onChange}
                   disabled={field.disabled}
+                  invalid={!!timezoneError}
+                  ariaDescribedby={timezoneError ? "timezone-error" : undefined}
                   searchPlaceholder={tOnb("timezoneSearchPlaceholder")}
                   noMatchesLabel={tOnb("timezoneNoMatches")}
                 />
               )}
             />
-            {errors.timezone && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.timezone)}</p>
+            {timezoneError && (
+              <p id="timezone-error" role="alert" className="text-sm text-destructive">
+                {timezoneError}
+              </p>
             )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="contactEmail">{t("contactEmail")}</Label>
-            <Input
-              id="contactEmail"
-              type="email"
-              placeholder={t("contactEmailPlaceholder")}
-              {...register("contactEmail")}
-            />
-            {errors.contactEmail && (
-              <p className="text-sm text-destructive">{fieldMessage(errors.contactEmail)}</p>
+          <FormField id="contactEmail" label={t("contactEmail")} error={contactEmailError}>
+            {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
+              <Input
+                id={id}
+                type="email"
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedby}
+                placeholder={t("contactEmailPlaceholder")}
+                {...register("contactEmail")}
+              />
             )}
-          </div>
+          </FormField>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="contactAddress">{t("contactAddress")}</Label>
@@ -472,7 +526,7 @@ export function WorkspaceBusinessForm({
               </div>
             ) : (
               <label
-                htmlFor="logoFile"
+                htmlFor="workspace-logoFile"
                 className={[
                   "flex min-h-56 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
                   logoDragActive
@@ -507,17 +561,18 @@ export function WorkspaceBusinessForm({
 
             <input
               ref={logoFileInputRef}
-              id="logoFile"
+              id={logoA11y.id}
               type="file"
               accept={LOGO_TYPES.join(",")}
               className="sr-only"
               aria-label={t("logoLabel")}
+              aria-describedby={logoA11y["aria-describedby"]}
               disabled={logoUploading}
               onChange={handleLogoInputChange}
             />
 
             {logoError && (
-              <p className="text-sm text-destructive" role="alert">
+              <p id={logoA11y.errorId} className="text-sm text-destructive" role="alert">
                 {logoError}
               </p>
             )}

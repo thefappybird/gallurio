@@ -30,6 +30,7 @@ import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { currencyChangeLockedUntil } from "@/lib/pricing/currencyRestatement";
 import { AccountPanel } from "../account/_panel";
 import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import type {
   UpdateWorkspaceBusinessInput,
   PublicPageSettingsInput,
@@ -169,6 +170,7 @@ export default async function SettingsCatchallPage({
 
   const t = await getTranslations("app.settings.tabs");
   const proPricing = await getDisplayPricing();
+  const portfolioDomain = portfolioBaseDomain();
 
   // Active slug: null means base /settings -> render account tab
   const activeSlug = slug;
@@ -210,6 +212,7 @@ export default async function SettingsCatchallPage({
               defaults={businessDefaults}
               locale={locale}
               currencyLockedUntil={currencyLockedUntil}
+              portfolioDomain={portfolioDomain}
             />
           ),
         },

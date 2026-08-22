@@ -159,6 +159,8 @@ type Props = {
   /** Explicit text direction for the public page ("" = derived from locale). */
   initialFormDir?: string;
   publicOrigin: string;
+  /** Tenant subdomain used in public URL previews; null uses path-based fallback. */
+  portfolioDomain?: string | null;
   /** Locale-aware path to the chrome-less preview route (iframe src base). */
   previewBasePath: string;
   /** Starter templates for the switcher. */
@@ -583,6 +585,7 @@ export function EditorShell({
   initialFormDir,
   initialHeaderConfig,
   initialCollectionsPopup,
+  portfolioDomain = null,
   previewBasePath,
   templates,
   currentTemplateId,
@@ -2346,6 +2349,7 @@ export function EditorShell({
           initialKeywords={initialSeoKeywords}
           initialInquiryRecipientEmail={initialInquiryRecipientEmail}
           businessType={workspaceBusinessType}
+          portfolioDomain={portfolioDomain}
           persistOnExit
           onBrandingSaved={({ logoUrl, logoAssetId }) => {
             if (!logoUrl || !logoAssetId) return;

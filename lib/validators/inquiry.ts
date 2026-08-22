@@ -136,9 +136,24 @@ export function inquirySessionsToBookingSessions(
 // session editor to update an existing inquiry's requested dates.
 // ---------------------------------------------------------------------------
 
+const inquirySessionEditSchema = z
+  .object({
+    startDate: z.string().regex(DATE_RE, "Invalid date"),
+    startTime: z.string().regex(TIME_RE, "Invalid time"),
+    endTime: z.string().regex(TIME_RE, "Invalid time"),
+  })
+  .refine((session) => session.endTime > session.startTime, {
+    message: "End time must be after start time",
+    path: ["endTime"],
+  })
+  .refine((session) => session.startDate <= horizonIso(), {
+    message: "Date is too far in the future",
+    path: ["startDate"],
+  });
+
 export const inquirySessionsEditSchema = z.object({
   sessions: z
-    .array(inquirySessionSchema)
+    .array(inquirySessionEditSchema)
     .min(1, "At least one session is required")
     .max(20, "Too many sessions"),
   phone: z.string().trim().min(7).max(30).optional().or(z.literal("")),

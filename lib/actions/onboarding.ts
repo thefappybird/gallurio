@@ -358,7 +358,6 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
     const { listActiveSubscriptionsForEmail } = await import("@/lib/lemonsqueezy/client");
     const { planForVariantId } = await import("@/lib/lemonsqueezy/plans");
     const { applySubscriptionSnapshot } = await import("@/lib/billing/subscriptionSnapshot");
-    const { resolveProviderEventTimestamp } = await import("@/lib/billing/webhookOrdering");
 
     const subs = await listActiveSubscriptionsForEmail(email);
     if (subs.length === 0) return;
@@ -401,7 +400,11 @@ export async function reconcileLemonSqueezySubscription(workspaceId: string): Pr
       rawStatus: sub.attributes.status as string | null | undefined,
       variantId,
       renewsAt: sub.attributes.renews_at as string | null | undefined,
-      eventTimestamp: resolveProviderEventTimestamp(sub.attributes as Record<string, unknown>),
+      // This is a fresh, authenticated lookup of Lemon Squeezy's current
+      // active state, not a delayed webhook. Do not let a stale timestamp
+      // left by the workspace's previous subscription suppress a legitimate
+      // resubscription with a new subscription id.
+      eventTimestamp: null,
     });
   } catch (err) {
     console.error("[onboarding/done] lemonsqueezy reconcile failed", err);

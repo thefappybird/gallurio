@@ -38,10 +38,15 @@ beforeEach(() => {
 
 function renderForm(
   overrides: Partial<WorkspaceSetupInput> = {},
-  furthestStep: "business" | "workspace" | "plan" | "done" = "workspace"
+  furthestStep: "business" | "workspace" | "plan" | "done" = "workspace",
+  portfolioDomain: string | null = null,
 ) {
   return renderWithProviders(
-    <WorkspaceStepForm defaults={{ ...defaults, ...overrides }} furthestStep={furthestStep} />
+    <WorkspaceStepForm
+      defaults={{ ...defaults, ...overrides }}
+      furthestStep={furthestStep}
+      portfolioDomain={portfolioDomain}
+    />
   );
 }
 
@@ -65,11 +70,45 @@ describe("WorkspaceStepForm", () => {
     expect(screen.getByText(/gallurio\.com\/w\/new-slug/)).toBeInTheDocument();
   });
 
+  it("uses a wide editable slug with the production domain anchored on the right", () => {
+    renderForm({}, "workspace", "gallurio.com");
+
+    expect(screen.getByText(".gallurio.com")).toBeInTheDocument();
+    expect(screen.getByText(/sarah-bell\.gallurio\.com/)).toBeInTheDocument();
+    expect(screen.queryByText("gallurio.com/w/")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/workspace url/i)).toHaveClass("flex-1");
+  });
+
+  it("marks the slug input invalid and wires aria-describedby to the role=alert error on a blocked submit", async () => {
+    renderForm();
+
+    const slugInput = screen.getByLabelText(/workspace url/i);
+    fireEvent.change(slugInput, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(slugInput).toHaveAttribute("aria-invalid", "true");
+    const describedBy = slugInput.getAttribute("aria-describedby")!.split(" ");
+    expect(describedBy).toContain(alert.id);
+  });
+
   it("disables submit while the slug is being checked or unavailable", () => {
     mockUseSlugAvailability.mockReturnValue({ status: "taken" });
     renderForm();
 
     expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
+  });
+
+  it("wires the slug input's aria-describedby to the live slug-status region even with no error", () => {
+    renderForm();
+
+    const slugInput = screen.getByLabelText(/workspace url/i);
+    const describedBy = slugInput.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const ids = describedBy!.split(" ");
+    // At least one id must resolve to an element in the document (the
+    // SlugStatusIndicator's live region), even before any error exists.
+    expect(ids.some((id) => document.getElementById(id))).toBe(true);
   });
 
   it("checks and saves the generated slug before continuing from a completed step", async () => {
