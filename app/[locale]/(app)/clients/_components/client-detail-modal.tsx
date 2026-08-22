@@ -304,7 +304,10 @@ function ClientDetailModalInner({
                   // into one line collapsed the title to an ellipsis.
                   <div key={payment.id} className="grid grid-cols-1 gap-x-3 gap-y-1 border border-border px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <span className="truncate text-sm font-medium">{payment.bookingTitle}</span>
-                    <div className="flex flex-col items-start sm:items-end">
+                    {/* End-aligned at every width so the FxSubtitle's trailing
+                        converted figure stays directly under the amount, the
+                        same as the bookings tab above. */}
+                    <div className="flex flex-col items-end">
                       <span className="tabular-nums text-sm font-medium text-brand">{new Intl.NumberFormat(locale, { style: "currency", currency: payment.currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(payment.amount)}</span>
                       {payment.converted ? (
                         <FxSubtitle
