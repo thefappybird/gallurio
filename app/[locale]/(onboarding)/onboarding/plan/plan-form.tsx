@@ -14,6 +14,8 @@ import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { BilledAsNote } from "@/components/app/billed-as-note";
 import { BetaPlanCard } from "@/components/app/beta-plan-card";
+import { PlanCard } from "@/components/app/plan-card";
+import { SavePill } from "@/components/app/save-pill";
 import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { useActionError } from "@/lib/i18n/actionError";
 import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
@@ -215,11 +217,6 @@ export function PlanStepForm({
                 { key: "yearly" as const, label: t("cadenceToggle.yearly") },
               ]}
             />
-            {tab === "yearly" && (
-              <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
-                {t("cadenceToggle.savePill")}
-              </span>
-            )}
           </div>
           <div className="hidden w-72 sm:block">
             <PromoCodePanel
@@ -288,68 +285,46 @@ export function PlanStepForm({
                 const isCurrentPlan = activation === p.id;
                 const disabled = planChoiceLocked && !isCurrentPlan;
                 return (
-                  <motion.button
+                  <PlanCard
                     key={p.id}
-                    type="button"
+                    name={tPlans(`${p.id}.name`)}
+                    badge={
+                      <>
+                        {p.id === "pro" && cadence === "yearly" && !isCurrentPlan ? (
+                          <SavePill label={t("cadenceToggle.savePill")} />
+                        ) : null}
+                        {isCurrentPlan ? (
+                          <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
+                            {t("activePill")}
+                          </span>
+                        ) : active && !planChoiceLocked ? (
+                          <span className="flex h-5 w-5 items-center justify-center bg-brand text-brand-foreground">
+                            <Check className="h-3.5 w-3.5" />
+                          </span>
+                        ) : null}
+                      </>
+                    }
+                    comparePrice={yearlyComparePrice}
+                    price={price}
+                    priceSuffix={cadenceLabel}
+                    billed={
+                      p.id === "pro" && proHeadline.billed ? (
+                        <BilledAsNote
+                          amount={proHeadline.billed.amount}
+                          currency={proHeadline.billed.currency}
+                        />
+                      ) : null
+                    }
+                    tagline={tPlans(`${p.id}.tagline`)}
+                    features={p.featureKeys.map((key) => tPlans(key.replace(/^plans\./, "")))}
+                    selected={active}
                     disabled={disabled}
-                    whileHover={disabled ? undefined : { y: -2 }}
-                    whileTap={disabled ? undefined : { scale: 0.985 }}
-                    onClick={() => {
+                    onSelect={() => {
                       if (disabled) return;
                       setSelected(p.id);
                       setCheckoutError(null);
                     }}
-                    className={cn(
-                      "relative flex flex-col gap-3 border bg-background p-4 text-left transition-colors",
-                      active ? "border-brand" : "border-border hover:border-brand/40 focus-visible:border-brand/40",
-                      disabled && "cursor-not-allowed opacity-50 hover:border-border"
-                    )}
-                  >
-                    <div className="flex items-baseline justify-between">
-                      <h3 className="font-heading text-lg font-semibold">{tPlans(`${p.id}.name`)}</h3>
-                      {planChoiceLocked ? (
-                        isCurrentPlan && (
-                          <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
-                            {t("activePill")}
-                          </span>
-                        )
-                      ) : isCurrentPlan ? (
-                        <span className="bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
-                          {t("activePill")}
-                        </span>
-                      ) : (
-                        active && (
-                          <span className="flex h-5 w-5 items-center justify-center bg-brand text-brand-foreground">
-                            <Check className="h-3.5 w-3.5" />
-                          </span>
-                        )
-                      )}
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                      {yearlyComparePrice && (
-                        <span className="text-sm text-muted-foreground line-through">
-                          {yearlyComparePrice}
-                        </span>
-                      )}
-                      <span className="font-heading text-2xl font-semibold">{price}</span>
-                      <span className="text-xs text-muted-foreground">{cadenceLabel}</span>
-                    </div>
-                    {p.id === "pro" && proHeadline.billed && (
-                      <BilledAsNote
-                        amount={proHeadline.billed.amount}
-                        currency={proHeadline.billed.currency}
-                      />
-                    )}
-                    <p className="text-xs text-muted-foreground">{tPlans(`${p.id}.tagline`)}</p>
-                    <ul className="mt-1 flex flex-col gap-1.5 text-xs">
-                      {p.featureKeys.map((key) => (
-                        <li key={key} className="flex items-start gap-1.5">
-                          <Check className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
-                          <span>{tPlans(key.replace(/^plans\./, ""))}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </motion.button>
+                  />
                 );
               })}
             </div>

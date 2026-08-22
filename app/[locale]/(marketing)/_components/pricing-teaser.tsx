@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { CheckIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { BilledAsNote } from "@/components/app/billed-as-note";
 import { BetaPlanCard } from "@/components/app/beta-plan-card";
+import { PlanCard } from "@/components/app/plan-card";
+import { SavePill } from "@/components/app/save-pill";
 import { headlinePrice } from "@/lib/pricing/displayPrice";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
@@ -88,11 +89,6 @@ export function PricingTeaser({
               {t("cadence.yearly")}
             </button>
           </div>
-          {selection === "yearly" ? (
-            <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
-              {t("cadence.savePill")}
-            </span>
-          ) : null}
         </div>
 
         <div className="mt-8 flex justify-center">
@@ -110,10 +106,19 @@ export function PricingTeaser({
               />
             ) : (
               <PlanCard
+                className="rounded-[var(--radius-surface)] p-6"
                 name={t("pro.name")}
+                badge={
+                  <>
+                    {selection === "yearly" ? <SavePill label={t("cadence.savePill")} /> : null}
+                    <span className="w-fit rounded-[var(--radius)] bg-brand px-2 py-0.5 text-xs font-bold text-brand-foreground">
+                      {t("pro.badge")}
+                    </span>
+                  </>
+                }
                 price={price}
-                priceNote={t("pro.priceNote")}
-                localNote={
+                priceSuffix={t("pro.priceNote")}
+                billed={
                   headline.billed ? (
                     <BilledAsNote
                       amount={headline.billed.amount}
@@ -121,11 +126,17 @@ export function PricingTeaser({
                     />
                   ) : null
                 }
-                description={t("pro.description")}
+                tagline={t("pro.description")}
                 features={[t("pro.feature1"), t("pro.feature2"), t("pro.feature3")]}
-                cta={t("pro.cta")}
-                badge={t("pro.badge")}
                 featured
+                action={
+                  <Link
+                    href="/sign-up"
+                    className={buttonVariants({ variant: "brand", size: "sm", className: "mt-3 w-full" })}
+                  >
+                    {t("pro.cta")}
+                  </Link>
+                }
               />
             )}
           </div>
@@ -139,67 +150,5 @@ export function PricingTeaser({
         <p className="mt-3 text-center text-xs text-muted-foreground">{t("disclaimer")}</p>
       </div>
     </section>
-  );
-}
-
-function PlanCard({
-  name,
-  price,
-  priceNote,
-  localNote,
-  description,
-  features,
-  cta,
-  badge,
-  featured = false,
-}: {
-  name: string;
-  price: string;
-  priceNote?: string;
-  localNote?: React.ReactNode;
-  description: string;
-  features: string[];
-  cta: string;
-  badge?: string;
-  featured?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 rounded-[var(--radius-surface)] border border-border bg-card p-6 text-start",
-        featured && "border-brand ring-1 ring-brand"
-      )}
-    >
-      {badge ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="w-fit rounded-[var(--radius)] bg-brand px-2 py-0.5 text-xs font-bold text-brand-foreground">
-            {badge}
-          </span>
-        </div>
-      ) : null}
-      <div>
-        <p className="text-sm font-bold">{name}</p>
-        <p className="mt-1 text-3xl font-bold tracking-tight">
-          {price}
-          {priceNote ? <span className="ms-1 text-sm font-medium text-muted-foreground">{priceNote}</span> : null}
-        </p>
-        {localNote ? <p className="mt-1">{localNote}</p> : null}
-      </div>
-      <p className="text-sm leading-6 text-muted-foreground">{description}</p>
-      <ul className="flex flex-col gap-2 text-sm">
-        {features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2">
-            <CheckIcon className="mt-0.5 size-3.5 shrink-0 text-brand" aria-hidden />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <Link
-        href="/sign-up"
-        className={buttonVariants({ variant: featured ? "brand" : "outline", size: "sm", className: "mt-auto" })}
-      >
-        {cta}
-      </Link>
-    </div>
   );
 }

@@ -7,10 +7,11 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BilledAsNote } from "@/components/app/billed-as-note";
 import { BetaPlanCard } from "@/components/app/beta-plan-card";
+import { PlanCard } from "@/components/app/plan-card";
+import { SavePill } from "@/components/app/save-pill";
 import { headlinePrice } from "@/lib/pricing/displayPrice";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { formatMoney } from "@/lib/utils/format-currency";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 // Client half of the pricing page's plan block — the tab state (Beta /
@@ -88,11 +89,6 @@ export function PricingPlans({
             {t("cadence.yearly")}
           </button>
         </div>
-        {selection === "yearly" ? (
-          <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
-            {t("cadence.savePill")}
-          </span>
-        ) : null}
       </div>
 
       <div className="mt-8">
@@ -106,35 +102,37 @@ export function PricingPlans({
             }
           />
         ) : (
-          <Card className="ring-2 ring-brand">
-            <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-lg">{t("pro.name")}</CardTitle>
+          <PlanCard
+            className="rounded-[var(--radius-surface)] p-6"
+            name={t("pro.name")}
+            badge={
+              <>
+                {selection === "yearly" ? <SavePill label={t("cadence.savePill")} /> : null}
                 <Badge variant="default" className="bg-brand text-brand-foreground">
                   {t("pro.badge")}
                 </Badge>
-              </div>
-              <p className="text-sm font-semibold text-brand">{t("pro.freeMonth")}</p>
-              <p className="text-2xl font-semibold tracking-tight">
-                {headlineAmount}
-                <span className="ms-1 text-sm font-normal text-muted-foreground">{priceSuffix}</span>
-              </p>
-              {headline.billed ? (
+              </>
+            }
+            price={headlineAmount}
+            priceSuffix={priceSuffix}
+            billed={
+              headline.billed ? (
                 <BilledAsNote amount={headline.billed.amount} currency={headline.billed.currency} />
-              ) : null}
-              <CardDescription>{t("pro.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-disc space-y-1 ps-5 text-sm text-muted-foreground">
-                {proFeatures.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-              <Link href="/sign-up" className={buttonVariants({ variant: "brand", size: "lg", className: "mt-6" })}>
+              ) : null
+            }
+            tagline={t("pro.description")}
+            features={proFeatures}
+            note={t("pro.freeMonth")}
+            featured
+            action={
+              <Link
+                href="/sign-up"
+                className={buttonVariants({ variant: "brand", size: "lg", className: "mt-3 w-full" })}
+              >
                 {t("pro.cta")}
               </Link>
-            </CardContent>
-          </Card>
+            }
+          />
         )}
       </div>
     </>

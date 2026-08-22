@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/navigation";
-import { Check, Loader2, TicketPercent, X } from "lucide-react";
+import { Loader2, TicketPercent, X } from "lucide-react";
 import { toast } from "sonner";
 import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 import { activateBetaRecoveryAction } from "@/lib/actions/subscriptionRecovery";
@@ -14,6 +14,9 @@ import { useLemonSqueezyCheckout } from "@/hooks/use-lemon-squeezy-checkout";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { BilledAsNote } from "@/components/app/billed-as-note";
 import { BetaPlanCard } from "@/components/app/beta-plan-card";
+import { PlanCard } from "@/components/app/plan-card";
+import { SavePill } from "@/components/app/save-pill";
+import { getPlanCatalog } from "@/lib/lemonsqueezy/plans";
 import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +105,9 @@ export function SubscribePanel({
   const selectedPrice = formatMoney(headline.amount, headline.currency, locale, {
     maximumFractionDigits: headline.amount < 100 ? 2 : 0,
   });
+  const proFeatures = getPlanCatalog("pro").featureKeys.map((key) =>
+    tPlans(key.replace(/^plans\./, ""))
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -123,11 +129,6 @@ export function SubscribePanel({
             { key: "yearly" as const, label: t("cadenceToggle.yearly") },
           ]}
         />
-        {tab === "yearly" && (
-          <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
-            {t("cadenceToggle.savePill")}
-          </span>
-        )}
       </div>
 
       {tab === "beta" ? (
@@ -152,31 +153,47 @@ export function SubscribePanel({
           }
         />
       ) : (
-        <div className="relative flex flex-col gap-3 border border-brand bg-background p-4">
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-heading text-lg font-semibold">{tPlans("pro.name")}</h2>
-            <span className="flex size-5 items-center justify-center bg-brand text-brand-foreground"><Check className="size-3.5" /></span>
-          </div>
-          <div className="flex items-baseline gap-1">
-            {cadence === "yearly" && <span className="text-sm text-muted-foreground line-through">{formatMoney(monthlyHeadline.amount * 12, monthlyHeadline.currency, locale)}</span>}
-            <span className="font-heading text-2xl font-semibold">{selectedPrice}</span>
-            <span className="text-xs text-muted-foreground">{cadence === "yearly" ? tPlan("cadence.yearly") : tPlan("cadence.monthly")}</span>
-          </div>
-          {headline.billed && (
-            <BilledAsNote amount={headline.billed.amount} currency={headline.billed.currency} />
-          )}
-          <p className="text-xs text-muted-foreground">{tPlans("pro.tagline")}</p>
-        </div>
+        <PlanCard
+          name={tPlans("pro.name")}
+          badge={cadence === "yearly" ? <SavePill label={t("cadenceToggle.savePill")} /> : null}
+          comparePrice={
+            cadence === "yearly"
+              ? formatMoney(monthlyHeadline.amount * 12, monthlyHeadline.currency, locale)
+              : null
+          }
+          price={selectedPrice}
+          priceSuffix={cadence === "yearly" ? tPlan("cadence.yearly") : tPlan("cadence.monthly")}
+          billed={
+            headline.billed ? (
+              <BilledAsNote amount={headline.billed.amount} currency={headline.billed.currency} />
+            ) : null
+          }
+          tagline={tPlans("pro.tagline")}
+          features={proFeatures}
+          featured
+          action={
+            <Button
+              className="w-full"
+              variant="brand"
+              disabled={busy}
+              onClick={openCheckout}
+              aria-label={t("subscribeAriaLabel")}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="me-1.5 size-3.5 animate-spin" />
+                  {t("opening")}
+                </>
+              ) : (
+                tPlan("ctaPaid", { price: selectedPrice })
+              )}
+            </Button>
+          }
+        />
       )}
 
       <PromoCodePanel disabled={busy} onSuccess={resumeWorkspace} />
       {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-
-      {tab !== "beta" && (
-        <Button disabled={busy} onClick={openCheckout} aria-label={t("subscribeAriaLabel")}>
-          {loading ? <><Loader2 className="me-1.5 size-3.5 animate-spin" />{t("opening")}</> : tPlan("ctaPaid", { price: selectedPrice })}
-        </Button>
-      )}
     </div>
   );
 }

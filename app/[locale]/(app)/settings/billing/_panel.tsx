@@ -15,6 +15,8 @@ import { getSubscriptionManageUrlAction } from "@/lib/actions/billing";
 import { activateBetaTesterAction } from "@/lib/actions/onboarding";
 import { redeemPromoCodeAction } from "@/lib/actions/promoCode";
 import { BetaPlanCard } from "@/components/app/beta-plan-card";
+import { PlanCard } from "@/components/app/plan-card";
+import { SavePill } from "@/components/app/save-pill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
@@ -274,55 +276,46 @@ export function BillingPanel({
                 here is a grant (free month, promo) or a lapsed subscription —
                 never something to hide the Pro card behind. Filtering it out
                 left the Monthly/Annual tabs empty with no way to subscribe. */}
-            {PLAN_CATALOG.filter((p) => p.id !== "free").map(
-              (entry) => {
-                const busy = loadingPlan === entry.id;
-                // Pro headlines the owner's own currency; BilledAsNote names what
-                // Lemon Squeezy charges. A zero-priced plan follows the headline
-                // currency rather than showing a stray store-currency zero.
-                const proMonthly = headlinePrice(proPricing, "monthly");
-                const proYearly = headlinePrice(proPricing, "yearly");
-                const monthlyPrice = entry.id === "pro" ? proMonthly.amount : entry.amount;
-                const yearlyPrice =
-                  entry.id === "pro" ? proYearly.amount : entry.yearlyAmount ?? entry.amount * 12;
-                const yearlyComparePrice = monthlyPrice * 12;
-                const billed = cadence === "yearly" ? proYearly.billed : proMonthly.billed;
-                const currency =
-                  entry.id === "pro"
+            {PLAN_CATALOG.filter((p) => p.id !== "free").map((entry) => {
+              const busy = loadingPlan === entry.id;
+              // Pro headlines the owner's own currency; BilledAsNote names what
+              // Lemon Squeezy charges. A zero-priced plan follows the headline
+              // currency rather than showing a stray store-currency zero.
+              const proMonthly = headlinePrice(proPricing, "monthly");
+              const proYearly = headlinePrice(proPricing, "yearly");
+              const monthlyPrice = entry.id === "pro" ? proMonthly.amount : entry.amount;
+              const yearlyPrice =
+                entry.id === "pro" ? proYearly.amount : entry.yearlyAmount ?? entry.amount * 12;
+              const billed = cadence === "yearly" ? proYearly.billed : proMonthly.billed;
+              const currency =
+                entry.id === "pro"
+                  ? proMonthly.currency
+                  : entry.amount === 0
                     ? proMonthly.currency
-                    : entry.amount === 0
-                      ? proMonthly.currency
-                      : entry.currency;
-                return (
-                  <div
-                    key={entry.id}
-                    className="flex items-center justify-between gap-4 border border-border bg-background px-4 py-3"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium">{tPlans(`${entry.id}.name`)}</span>
-                      <div className="flex items-baseline gap-1 text-xs text-muted-foreground">
-                        {cadence === "yearly" ? (
-                          <>
-                            <span className="line-through">
-                              {formatMoney(yearlyComparePrice, currency, locale)}
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {formatMoney(yearlyPrice, currency, locale)}
-                            </span>
-                            <span>{t("perYear")}</span>
-                          </>
-                        ) : (
-                          <span>
-                            {formatMoney(monthlyPrice, currency, locale)} {t("perMonth")}
-                          </span>
-                        )}
-                      </div>
-                      {entry.id === "pro" && billed && (
-                        <BilledAsNote amount={billed.amount} currency={billed.currency} />
-                      )}
-                    </div>
+                    : entry.currency;
+              const yearly = cadence === "yearly";
+              return (
+                <PlanCard
+                  key={entry.id}
+                  name={tPlans(`${entry.id}.name`)}
+                  badge={yearly ? <SavePill label={t("cadenceToggle.savePill")} /> : null}
+                  comparePrice={
+                    yearly ? formatMoney(monthlyPrice * 12, currency, locale) : null
+                  }
+                  price={formatMoney(yearly ? yearlyPrice : monthlyPrice, currency, locale)}
+                  priceSuffix={yearly ? t("perYear") : t("perMonth")}
+                  billed={
+                    entry.id === "pro" && billed ? (
+                      <BilledAsNote amount={billed.amount} currency={billed.currency} />
+                    ) : null
+                  }
+                  tagline={tPlans(`${entry.id}.tagline`)}
+                  features={entry.featureKeys.map((key) => tPlans(key.replace(/^plans\./, "")))}
+                  featured
+                  action={
                     <Button
-                      size="sm"
+                      className="w-full"
+                      variant="brand"
                       disabled={!!loadingPlan}
                       onClick={() => openUpgradeCheckout(entry.id)}
                       aria-label={t("upgradeToAriaLabel", { plan: tPlans(`${entry.id}.name`) })}
@@ -336,10 +329,10 @@ export function BillingPanel({
                         t("upgradeTo", { plan: tPlans(`${entry.id}.name`) })
                       )}
                     </Button>
-                  </div>
-                );
-              }
-            )}
+                  }
+                />
+              );
+            })}
           </div>
           )}
         </div>
