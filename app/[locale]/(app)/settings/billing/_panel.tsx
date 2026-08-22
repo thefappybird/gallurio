@@ -168,7 +168,10 @@ export function BillingPanel({
     : null;
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    // The current-plan summary and the promo drawer run the full width of the
+    // settings pane, framing the plan block as a header and a footer; the plans
+    // themselves keep their old 2xl measure and centre between the two.
+    <div className="flex flex-col gap-6">
       {/* Current plan summary */}
       <div className="flex items-start gap-3 border border-border bg-card p-4">
         <CreditCard className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -228,7 +231,7 @@ export function BillingPanel({
       {isBeta ? (
         <p className="text-sm text-muted-foreground">{t("betaAccessNote")}</p>
       ) : !isActiveSubscriber ? (
-        <div className="flex flex-col gap-3">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("availablePlans")}
           </p>

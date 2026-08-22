@@ -44,6 +44,9 @@ export function PricingPlans({
   const headlineAmount = formatMoney(headline.amount, headline.currency, locale, {
     maximumFractionDigits: headline.amount < 100 ? 2 : 0,
   });
+  // Twelve months at the monthly rate — what the annual plan is measured
+  // against, shown struck through beside the annual price.
+  const monthlyHeadline = headlinePrice(proPricing, "monthly");
   const priceSuffix = cadence === "monthly" ? t("pro.priceSuffixMonthly") : t("pro.priceSuffixYearly");
 
   return (
@@ -114,6 +117,11 @@ export function PricingPlans({
               </>
             }
             price={headlineAmount}
+            comparePrice={
+              cadence === "yearly"
+                ? formatMoney(monthlyHeadline.amount * 12, monthlyHeadline.currency, locale)
+                : null
+            }
             priceSuffix={priceSuffix}
             billed={
               headline.billed ? (

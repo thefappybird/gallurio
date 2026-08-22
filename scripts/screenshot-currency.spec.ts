@@ -222,7 +222,16 @@ const SURFACES: Surface[] = [
       if (!page.url().includes("/onboarding/plan")) {
         throw new Unreachable(`redirected to ${page.url()} — seeded owner is already onboarded`);
       }
-      await settled(page);
+      // The onboarding shell renders no <main>, so settled() can't be used
+      // here — wait on the plan toggle instead, then give the headline price
+      // the same short grace period.
+      await page.getByRole("tab").first().waitFor({ state: "visible", timeout: 60_000 });
+      await page.waitForLoadState("networkidle").catch(() => {});
+      await page
+        .getByText(MONEY)
+        .first()
+        .waitFor({ state: "visible", timeout: 15_000 })
+        .catch(() => {});
     },
   },
   {

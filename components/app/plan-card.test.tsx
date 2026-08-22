@@ -25,4 +25,16 @@ describe("PlanCard", () => {
     expect(screen.getByText("Unlimited bookings")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade" })).toBeInTheDocument();
   });
+
+  it("puts the charged price ahead of the struck-through reference", () => {
+    renderWithProviders(
+      <PlanCard name="Pro" comparePrice="$60" price="$50.00" priceSuffix="/ year" />
+    );
+
+    const price = screen.getByText("$50.00");
+    const compare = screen.getByText("$60");
+    expect(price.compareDocumentPosition(compare)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
 });

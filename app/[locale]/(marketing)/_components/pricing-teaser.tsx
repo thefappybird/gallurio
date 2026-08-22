@@ -39,6 +39,8 @@ export function PricingTeaser({
   const price = `${headlineAmount}${
     cadence === "monthly" ? t("pro.priceSuffixMonthly") : t("pro.priceSuffixYearly")
   }`;
+  // Twelve months at the monthly rate — the annual price's reference figure.
+  const monthlyHeadline = headlinePrice(proPricing, "monthly");
 
   return (
     <section id="pricing" className="border-t border-border px-4 py-16 sm:px-6 sm:py-24">
@@ -117,6 +119,11 @@ export function PricingTeaser({
                   </>
                 }
                 price={price}
+                comparePrice={
+                  cadence === "yearly"
+                    ? formatMoney(monthlyHeadline.amount * 12, monthlyHeadline.currency, locale)
+                    : null
+                }
                 priceSuffix={t("pro.priceNote")}
                 billed={
                   headline.billed ? (

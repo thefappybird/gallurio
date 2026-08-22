@@ -69,11 +69,14 @@ export function PlanCard({
         {badge ? <div className="flex shrink-0 items-center gap-1.5">{badge}</div> : null}
       </div>
 
+      {/* Price first, then the struck reference: the amount actually charged
+          is what the reader is looking for, and leading with the crossed-out
+          figure made the card read as if it cost the larger number. */}
       <div className="flex flex-wrap items-baseline gap-1">
+        <span className="font-heading text-2xl font-semibold">{price}</span>
         {comparePrice ? (
           <span className="text-sm text-muted-foreground line-through">{comparePrice}</span>
         ) : null}
-        <span className="font-heading text-2xl font-semibold">{price}</span>
         {priceSuffix ? (
           <span className="text-xs text-muted-foreground">{priceSuffix}</span>
         ) : null}

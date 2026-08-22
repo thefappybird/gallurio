@@ -320,13 +320,19 @@ function ClientDetailModalInner({
                         />
                       ) : null}
                     </div>
-                    <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                      <span className="truncate">{payment.paymentTitle}</span>
-                      {payment.method !== "other" ? (
-                        <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px] capitalize">{payment.method}</Badge>
-                      ) : null}
-                    </span>
-                    <span className="text-xs text-muted-foreground sm:text-end">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                    {/* Below sm the wrapper keeps the label and the date on one
+                        justified row — stacking them read as two orphan lines.
+                        `sm:contents` dissolves it again so both land back in
+                        their own grid columns once there are two. */}
+                    <div className="flex items-center justify-between gap-3 sm:contents">
+                      <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="truncate">{payment.paymentTitle}</span>
+                        {payment.method !== "other" ? (
+                          <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px] capitalize">{payment.method}</Badge>
+                        ) : null}
+                      </span>
+                      <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground sm:text-end">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                    </div>
                   </div>
                 ))}
                 {paymentsHasMore ? <Button type="button" variant="outline" size="sm" onClick={loadMorePayments} loading={paymentsLoadingMore}>{t("table.pagination.next")}</Button> : null}
