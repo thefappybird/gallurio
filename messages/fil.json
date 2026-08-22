@@ -137,7 +137,8 @@
       "disclaimer": "Ipinapakita ang mga presyo sa iyong lokal na currency. Lumalabas ang mga tuntunin sa pagsingil, buwis, at detalye ng renewal bago mo makumpleto ang checkout.",
       "cadence": {
         "monthly": "Buwanan",
-        "yearly": "Taunan — makatipid ng 2 buwan"
+        "yearly": "Taunan",
+        "savePill": "Makatipid ng 2 buwan"
       },
       "pro": {
         "badge": "1 buwang libre",
@@ -156,6 +157,11 @@
       "metadata": {
         "title": "Presyo — Gallurio",
         "description": "Tingnan ang presyo ng Gallurio Pro para sa mga creative professional at studio — isang buwang libre, tapos iisang buwanan o taunang plano."
+      },
+      "cadence": {
+        "monthly": "Buwanan",
+        "yearly": "Taunan",
+        "savePill": "Makatipid ng 2 buwan"
       },
       "header": {
         "headline": "Simpleng mga plano para sa mga creative professional at studio.",
@@ -217,11 +223,11 @@
       "betaAccess": {
         "title": "4. Beta at Libreng Access",
         "body1": "Maaaring mag-alok ang Gallurio ng beta o promotional access. Maaaring hindi kumpleto, magbago, ma-suspend, o matanggal ang mga beta feature. Hindi ginagarantiya ng beta o libreng access ang permanenteng availability o mga susunod na feature.",
-        "body2": "Maliban kung sinabi ng Gallurio, hindi kailangan ng payment card ang promotional access. Kapag inilunsad ang paid billing, ipapakita ang naaangkop na plano, presyo, tuntunin sa renewal, at petsa ng billing bago ang pagbili."
+        "body2": "Maliban kung sinabi ng Gallurio, hindi kailangan ng payment card ang promotional access. Kung may naaangkop na paid billing, ipinapakita ang plano, presyo, tuntunin sa renewal, at petsa ng billing bago ang pagbili."
       },
       "subscriptions": {
         "title": "5. Subscriptions at Lemon Squeezy",
-        "body1": "Kapag available na, ipapakita ang mga paid Pro subscription kasama ang presyo, billing interval, tuntunin sa renewal, at naaangkop na buwis bago ang pagbili.",
+        "body1": "Ipinapakita ang mga paid Pro subscription kasama ang presyo, billing interval, tuntunin sa renewal, at naaangkop na buwis bago ang pagbili.",
         "body2": "Ang Lemon Squeezy ang kumikilos bilang merchant of record para sa mga subscription ng Gallurio. Maaaring iproseso ng Lemon Squeezy ang checkout, bayad, billing, buwis, invoice, refund, chargebacks, at kaugnay na customer-service matters sa ilalim ng sarili nitong mga tuntunin at patakaran.",
         "body3": "Nag-re-renew ang mga subscription alinsunod sa tuntunin sa billing na ipinapakita sa checkout hanggang i-cancel. Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge ngunit hindi ito awtomatikong gumagawa ng refund.",
         "body4": "Kung nabigo ang isang bayad o natapos ang isang subscription, maaaring limitahan ng Gallurio ang mga Pro feature o i-offline ang isang public page pagkatapos ng makatwirang abiso. Maaaring manatiling naka-retain ang data ng account, at maibabalik ang access kung na-renew ang subscription, alinsunod sa naaangkop na plano at product state.",

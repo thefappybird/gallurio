@@ -47,11 +47,12 @@ export function PricingTeaser({
           <p className="mx-auto mt-3 max-w-md text-base leading-7 text-muted-foreground">{t("subtitle")}</p>
         </div>
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
           <div className="inline-flex flex-wrap justify-center gap-1 rounded-[var(--radius)] border border-border p-1">
             {betaEnabled ? (
               <button
                 type="button"
+                data-testid="plan-tab-beta"
                 onClick={() => setSelection("beta")}
                 aria-pressed={selection === "beta"}
                 className={cn(
@@ -64,6 +65,7 @@ export function PricingTeaser({
             ) : null}
             <button
               type="button"
+              data-testid="plan-tab-monthly"
               onClick={() => setSelection("monthly")}
               aria-pressed={selection === "monthly"}
               className={cn(
@@ -75,6 +77,7 @@ export function PricingTeaser({
             </button>
             <button
               type="button"
+              data-testid="plan-tab-yearly"
               onClick={() => setSelection("yearly")}
               aria-pressed={selection === "yearly"}
               className={cn(
@@ -85,6 +88,11 @@ export function PricingTeaser({
               {t("cadence.yearly")}
             </button>
           </div>
+          {selection === "yearly" ? (
+            <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
+              {t("cadence.savePill")}
+            </span>
+          ) : null}
         </div>
 
         <div className="mt-8 flex justify-center">

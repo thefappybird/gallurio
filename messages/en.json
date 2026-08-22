@@ -137,7 +137,8 @@
       "disclaimer": "Prices are shown in your local currency. Billing terms, taxes, and renewal details appear before you complete checkout.",
       "cadence": {
         "monthly": "Monthly",
-        "yearly": "Yearly — save 2 months"
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
       },
       "pro": {
         "badge": "1 month free",
@@ -156,6 +157,11 @@
       "metadata": {
         "title": "Pricing — Gallurio",
         "description": "See Gallurio Pro pricing for creative professionals and studios — one month free, then a single monthly or yearly plan."
+      },
+      "cadence": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
       },
       "header": {
         "headline": "Simple plans for creative professionals and studios.",
@@ -217,11 +223,11 @@
       "betaAccess": {
         "title": "4. Beta and Free Access",
         "body1": "Gallurio may offer beta or promotional access. Beta features may be incomplete, changed, suspended, or removed. Beta or free access does not guarantee permanent availability or future features.",
-        "body2": "Unless Gallurio states otherwise, promotional access does not require a payment card. If paid billing is introduced, the applicable plan, price, renewal terms, and billing date will be shown before purchase."
+        "body2": "Unless Gallurio states otherwise, promotional access does not require a payment card. Where paid billing applies, the applicable plan, price, renewal terms, and billing date are shown before purchase."
       },
       "subscriptions": {
         "title": "5. Subscriptions and Lemon Squeezy",
-        "body1": "Paid Pro subscriptions, when available, will be presented with their price, billing interval, renewal terms, and applicable taxes before purchase.",
+        "body1": "Paid Pro subscriptions are presented with their price, billing interval, renewal terms, and applicable taxes before purchase.",
         "body2": "Lemon Squeezy acts as the merchant of record for Gallurio subscriptions. Lemon Squeezy may process checkout, payment, billing, tax, invoices, refunds, chargebacks, and related customer-service matters under its own terms and policies.",
         "body3": "Subscriptions renew according to the billing terms shown at checkout until cancelled. A cancellation generally prevents future renewal charges but does not automatically create a refund.",
         "body4": "If a payment fails or a subscription ends, Gallurio may restrict Pro features or take a public page offline after reasonable notice. Account data may be retained, and access may be restored if the subscription is renewed, subject to the applicable plan and product state.",

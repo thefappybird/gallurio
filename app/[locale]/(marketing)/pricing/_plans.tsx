@@ -23,7 +23,6 @@ export function PricingPlans({
   betaEnabled: boolean;
 }) {
   const t = useTranslations("marketing.pricing");
-  const tCadence = useTranslations("marketing.pricingTeaser");
   const tPlans = useTranslations("plans");
   const locale = useLocale();
   const [selection, setSelection] = useState<"beta" | "monthly" | "yearly">(
@@ -48,11 +47,12 @@ export function PricingPlans({
 
   return (
     <>
-      <div className="flex justify-center">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         <div className="inline-flex flex-wrap justify-center gap-1 rounded-[var(--radius)] border border-border p-1">
           {betaEnabled ? (
             <button
               type="button"
+              data-testid="plan-tab-beta"
               onClick={() => setSelection("beta")}
               aria-pressed={selection === "beta"}
               className={cn(
@@ -65,6 +65,7 @@ export function PricingPlans({
           ) : null}
           <button
             type="button"
+            data-testid="plan-tab-monthly"
             onClick={() => setSelection("monthly")}
             aria-pressed={selection === "monthly"}
             className={cn(
@@ -72,10 +73,11 @@ export function PricingPlans({
               selection === "monthly" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {tCadence("cadence.monthly")}
+            {t("cadence.monthly")}
           </button>
           <button
             type="button"
+            data-testid="plan-tab-yearly"
             onClick={() => setSelection("yearly")}
             aria-pressed={selection === "yearly"}
             className={cn(
@@ -83,9 +85,14 @@ export function PricingPlans({
               selection === "yearly" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {tCadence("cadence.yearly")}
+            {t("cadence.yearly")}
           </button>
         </div>
+        {selection === "yearly" ? (
+          <span className="bg-brand/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-brand">
+            {t("cadence.savePill")}
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-8">
