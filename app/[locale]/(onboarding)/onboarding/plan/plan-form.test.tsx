@@ -143,6 +143,12 @@ describe("PlanStepForm — plan tabs", () => {
     expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
   });
 
+  it("offers a single activate CTA on the Beta tab", () => {
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
+
+    expect(screen.getAllByRole("button", { name: /activate beta access/i })).toHaveLength(1);
+  });
+
   it("has no Beta tab when betaTesterEnabled is false", () => {
     renderForm({ currentPlan: "free" });
     expect(screen.queryByRole("tab", { name: "Beta" })).not.toBeInTheDocument();
@@ -181,7 +187,7 @@ describe("PlanStepForm — plan card selection", () => {
     for (const btn of screen.getAllByRole("button", { name: /have a promo code/i })) {
       expect(btn).toBeDisabled();
     }
-    expect(screen.getByRole("button", { name: /activate beta access/i })).toBeDisabled();
+    expect(screen.getByRole("tab", { name: /^beta$/i })).toBeDisabled();
     expect(screen.getByRole("tab", { name: /monthly/i })).toBeDisabled();
   });
 
@@ -407,9 +413,7 @@ describe("PlanStepForm — beta tester activation", () => {
 
     renderForm({ currentPlan: "free", betaTesterEnabled: true });
 
-    // Both the card's own activate button and the shared footer CTA trigger
-    // the same activation while on the Beta tab.
-    const betaBtn = screen.getAllByRole("button", { name: /activate beta access/i })[0];
+    const betaBtn = screen.getByRole("button", { name: /activate beta access/i });
     fireEvent.click(betaBtn);
 
     await waitFor(() => {
@@ -421,7 +425,7 @@ describe("PlanStepForm — beta tester activation", () => {
   it("refreshes the router cache before navigating on a successful beta activation", async () => {
     renderForm({ currentPlan: "free", betaTesterEnabled: true });
 
-    const betaBtn = screen.getAllByRole("button", { name: /activate beta access/i })[0];
+    const betaBtn = screen.getByRole("button", { name: /activate beta access/i });
     fireEvent.click(betaBtn);
 
     await waitFor(() => {

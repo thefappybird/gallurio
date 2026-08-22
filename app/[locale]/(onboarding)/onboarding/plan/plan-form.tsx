@@ -244,32 +244,17 @@ export function PlanStepForm({
         )}
 
         {tab === "beta" ? (
+          // The step footer owns the activate CTA here, the same way it
+          // commits a Monthly/Annual card selection. The card only reports
+          // state, so the step keeps one primary action.
           <BetaPlanCard
             className="mt-2"
             action={
-              <div className="flex flex-col gap-2">
-                {planChoiceLocked && activation === "beta" && (
-                  <span className="w-fit bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
-                    {t("activePill")}
-                  </span>
-                )}
-                <Button
-                  type="button"
-                  variant="brand"
-                  onClick={activateBeta}
-                  disabled={busy || planChoiceLocked}
-                  className="w-full"
-                >
-                  {busy ? (
-                    <>
-                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                      {t("settingUp")}
-                    </>
-                  ) : (
-                    tPlans("beta.activate")
-                  )}
-                </Button>
-              </div>
+              planChoiceLocked && activation === "beta" ? (
+                <span className="w-fit bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-foreground">
+                  {t("activePill")}
+                </span>
+              ) : undefined
             }
           />
         ) : (
