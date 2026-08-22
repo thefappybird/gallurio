@@ -24,9 +24,27 @@ import fs from "node:fs";
 import path from "node:path";
 
 const OUT_ROOT = path.resolve(__dirname, "..", "e2e", "__screenshots__", "currency");
-const AUTH_STATE = path.resolve(__dirname, "..", "e2e", ".auth", "owner.json");
+// SHOT_AUTH_FILE lets a one-off run swap in a different seeded account's
+// storage state (e.g. the expired-subscription owner) without touching the
+// default active-owner captures.
+const AUTH_STATE = path.resolve(
+  __dirname,
+  "..",
+  "e2e",
+  ".auth",
+  process.env.SHOT_AUTH_FILE ?? "owner.json"
+);
 
-type Combo = { locale: string; width: number; theme: "light" | "dark" };
+type TabKey = "beta" | "monthly" | "yearly";
+type Combo = {
+  locale: string;
+  width: number;
+  theme: "light" | "dark";
+  /** Click this plan tab after the surface loads (default state is "beta"). */
+  tab?: TabKey;
+  /** CF-IPCountry header value — drives which Pro tier/currency renders. */
+  country?: string;
+};
 
 // en covers the full 3-breakpoint x 2-theme grid; ar covers RTL at both
 // extremes; fil/id/th each get a desktop shot so all five locales are visible.
@@ -51,7 +69,57 @@ type Surface = {
   anonymous?: boolean;
   viewportOnly?: boolean; // modal shots: capture the viewport, not the full page
   drive: (page: Page, combo: Combo) => Promise<void>;
+  /** Switches the Beta/Monthly/Annual plan tab after drive() lands. */
+  clickTab?: (page: Page, tab: TabKey) => Promise<void>;
+  /** Extra combos layered on top of COMBOS, e.g. tab or country variants. */
+  extraCombos?: Combo[];
 };
+
+// 01/02 render the toggle as plain buttons tagged data-testid="plan-tab-<key>".
+// 03/09/13 render it via the shared SegmentedToggle (role="tab"), first-to-last
+// beta/monthly/yearly — safe to index because BETA_TESTER_ENABLED is on in
+// this env, so all three options are always present.
+async function clickPlanTabByTestId(page: Page, tab: TabKey): Promise<void> {
+  const btn = page.getByTestId(`plan-tab-${tab}`);
+  await btn.waitFor({ state: "visible", timeout: 15_000 });
+  await btn.click();
+}
+async function clickPlanTabByRole(page: Page, tab: TabKey): Promise<void> {
+  const idx = tab === "beta" ? 0 : tab === "monthly" ? 1 : 2;
+  const t = page.getByRole("tab").nth(idx);
+  await t.waitFor({ state: "visible", timeout: 15_000 });
+  await t.click();
+}
+
+// Non-"beta" tab states for the toggle-fit + i18n judging pass: 375px is the
+// priority breakpoint (longest labels in ar/th), with a couple of desktop and
+// dark-theme checks thrown in. "beta" itself is already the default state
+// captured by COMBOS, so it isn't repeated here.
+const TAB_JUDGE_COMBOS: Combo[] = [
+  { locale: "en", width: 375, theme: "light", tab: "monthly" },
+  { locale: "en", width: 375, theme: "light", tab: "yearly" },
+  { locale: "en", width: 1280, theme: "light", tab: "yearly" },
+  { locale: "ar", width: 375, theme: "light", tab: "monthly" },
+  { locale: "ar", width: 375, theme: "dark", tab: "yearly" },
+  { locale: "ar", width: 1280, theme: "light", tab: "yearly" },
+  { locale: "th", width: 375, theme: "light", tab: "monthly" },
+  { locale: "th", width: 375, theme: "light", tab: "yearly" },
+  { locale: "fil", width: 375, theme: "light", tab: "monthly" },
+  { locale: "id", width: 375, theme: "light", tab: "yearly" },
+];
+
+// One combo per country in the tier table — headline currency/tier is what's
+// under test, so locale/breakpoint/theme stay fixed at a single baseline.
+const COUNTRY_MATRIX = ["PH", "ID", "TH", "US", "AE", "JP"];
+// tab: "monthly" — the default Beta tab is free and shows no price, so it
+// can't reveal the per-country tier/currency. Force the paid tab open.
+const COUNTRY_COMBOS: Combo[] = COUNTRY_MATRIX.map((cc) => ({
+  locale: "en",
+  width: 1280,
+  theme: "light",
+  tab: "monthly",
+  country: cc,
+}));
 
 // Money renders as "₱1,234.00" under en, but non-en locales format the same
 // PHP amount with an alphabetic code and locale digits, so this is only ever a
@@ -108,6 +176,8 @@ const SURFACES: Surface[] = [
     dir: "01-landing-pricing-teaser",
     title: "Landing page — pricing teaser (local estimate under the price)",
     anonymous: true,
+    clickTab: clickPlanTabByTestId,
+    extraCombos: [...TAB_JUDGE_COMBOS, ...COUNTRY_COMBOS],
     drive: async (page, combo) => {
       await page.goto(localePath(combo.locale, "/"), { waitUntil: "domcontentloaded" });
       const section = page.locator("#pricing");
@@ -119,6 +189,8 @@ const SURFACES: Surface[] = [
     dir: "02-pricing-page",
     title: "/pricing — per-request render with the local estimate",
     anonymous: true,
+    clickTab: clickPlanTabByTestId,
+    extraCombos: [...TAB_JUDGE_COMBOS, ...COUNTRY_COMBOS],
     drive: async (page, combo) => {
       await page.goto(localePath(combo.locale, "/pricing"), { waitUntil: "domcontentloaded" });
       await settled(page);
@@ -127,12 +199,30 @@ const SURFACES: Surface[] = [
   {
     dir: "03-subscribe",
     title: "/subscribe — Pro panel with the local estimate",
+    clickTab: clickPlanTabByRole,
+    extraCombos: [...TAB_JUDGE_COMBOS, ...COUNTRY_COMBOS],
     drive: async (page, combo) => {
       await page.goto(localePath(combo.locale, "/subscribe"), { waitUntil: "domcontentloaded" });
       await page.waitForLoadState("networkidle").catch(() => {});
       if (!page.url().includes("/subscribe")) {
         throw new Unreachable(`redirected to ${page.url()}`);
       }
+    },
+  },
+  {
+    dir: "13-onboarding-plan-step",
+    title: "Onboarding — plan step (needs a not-yet-onboarded account)",
+    clickTab: clickPlanTabByRole,
+    extraCombos: [...TAB_JUDGE_COMBOS, ...COUNTRY_COMBOS],
+    drive: async (page, combo) => {
+      await page.goto(localePath(combo.locale, "/onboarding/plan"), {
+        waitUntil: "domcontentloaded",
+      });
+      await page.waitForLoadState("networkidle").catch(() => {});
+      if (!page.url().includes("/onboarding/plan")) {
+        throw new Unreachable(`redirected to ${page.url()} — seeded owner is already onboarded`);
+      }
+      await settled(page);
     },
   },
   {
@@ -242,6 +332,8 @@ const SURFACES: Surface[] = [
   {
     dir: "09-settings-billing",
     title: "Settings > Billing — Pro row with the local estimate",
+    clickTab: clickPlanTabByRole,
+    extraCombos: [...TAB_JUDGE_COMBOS, ...COUNTRY_COMBOS],
     drive: async (page, combo) => {
       await page.goto(localePath(combo.locale, "/settings/billing"), {
         waitUntil: "domcontentloaded",
@@ -305,6 +397,7 @@ async function capture(
     storageState: surface.anonymous ? undefined : AUTH_STATE,
     locale: "en-US",
     reducedMotion: "reduce",
+    extraHTTPHeaders: combo.country ? { "cf-ipcountry": combo.country } : undefined,
   });
   // next-themes reads this key in its blocking init script on first paint.
   await context.addInitScript((t) => {
@@ -314,6 +407,18 @@ async function capture(
   const page = await context.newPage();
   try {
     await surface.drive(page, combo);
+    if (combo.tab && combo.tab !== "beta" && surface.clickTab) {
+      // The toggle buttons are server-rendered before hydration finishes; a
+      // click fired too early lands on an un-wired button and is silently a
+      // no-op (same class of race as the 08 currency-confirm-dialog surface).
+      await page.waitForLoadState("networkidle").catch(() => {});
+      try {
+        await surface.clickTab(page, combo.tab);
+      } catch {
+        throw new Unreachable("plan tab toggle not present (account already subscribed/beta)");
+      }
+      await page.waitForTimeout(700);
+    }
     if (!surface.viewportOnly) {
       // Chromium's fullPage capture resizes the viewport, which remounts the
       // charts and restarts their entry animation — the shot then shows an
@@ -329,8 +434,11 @@ async function capture(
     await page.waitForTimeout(1_200);
     const dir = path.join(OUT_ROOT, surface.dir);
     fs.mkdirSync(dir, { recursive: true });
+    const nameParts = [combo.locale, `${combo.width}px`, combo.theme];
+    if (combo.tab) nameParts.push(combo.tab);
+    if (combo.country) nameParts.push(`cc-${combo.country}`);
     await page.screenshot({
-      path: path.join(dir, `${combo.locale}-${combo.width}px-${combo.theme}.jpg`),
+      path: path.join(dir, `${nameParts.join("-")}.jpg`),
       type: "jpeg",
       quality: 60,
       fullPage: !surface.viewportOnly,
@@ -359,10 +467,12 @@ function writeGallery(results: Result[]): void {
       : [];
     const shots = files
       .map((f) => {
-        const [locale, width, theme] = f.replace(/\.jpg$/, "").split("-");
+        // Base combos are "<locale>-<width>px-<theme>"; tab/country combos
+        // append "-<tab>" and/or "-cc-<CODE>" — just show the whole stem.
+        const label = f.replace(/\.jpg$/, "").split("-").join(" · ");
         return `      <figure>
         <a href="${s.dir}/${f}"><img loading="lazy" src="${s.dir}/${f}" alt=""></a>
-        <figcaption>${locale} · ${width} · ${theme}</figcaption>
+        <figcaption>${label}</figcaption>
       </figure>`;
       })
       .join("\n");
@@ -419,15 +529,17 @@ test("capture currency surfaces", async ({ browser, baseURL }) => {
   const results: Result[] = [];
   for (const surface of SURFACES) {
     if (only.length && !only.some((o) => surface.dir.startsWith(o))) continue;
-    for (const combo of COMBOS) {
+    const combos = [...COMBOS, ...(surface.extraCombos ?? [])];
+    for (const combo of combos) {
       let r = await capture(browser, surface, combo, baseURL ?? "http://localhost:3000");
       if (r.status === "failed") {
         r = await capture(browser, surface, combo, baseURL ?? "http://localhost:3000");
       }
       results.push(r);
       const tag = r.status === "ok" ? "ok" : r.status.toUpperCase();
+      const extra = [combo.tab, combo.country ? `cc-${combo.country}` : null].filter(Boolean).join(" ");
       console.log(
-        `[${tag}] ${surface.dir} ${combo.locale} ${combo.width}px ${combo.theme}` +
+        `[${tag}] ${surface.dir} ${combo.locale} ${combo.width}px ${combo.theme}${extra ? " " + extra : ""}` +
           (r.note ? ` — ${r.note}` : "")
       );
     }
