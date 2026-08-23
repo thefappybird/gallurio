@@ -17,6 +17,17 @@ import {
  * FeaturedWork collection ids. ONE `GalleryItem.find({ workspaceId,
  * collectionId: { $in } })` — no N+1. Ids belonging to another workspace
  * simply never match the filter, so they resolve to nothing (tenant-safe).
+ *
+ * Bounded at the DB: `.sort({ order: 1, _id: 1 }).limit(limit)` — a
+ * collection with thousands of photos must not load them all into memory
+ * just to keep the first `limit`. The `{ workspaceId, collectionId, order }`
+ * index (see `GalleryItem.ts`) covers `{ workspaceId, collectionId: $in }`
+ * as an equality-prefix + single-$in-field query with `order` as the sort
+ * suffix — Mongo serves this as a per-collectionId index scan merged by the
+ * sort key (SORT_MERGE), no in-memory sort stage. The `_id` tiebreak makes
+ * truncation deterministic (stable across requests) even where `order` ties.
+ * This also fixes non-deterministic truncation: which images survive the cap
+ * no longer depends on Mongo's natural insertion order.
  */
 export async function collectCollectionImages(opts: {
   workspaceId: string;
@@ -29,6 +40,8 @@ export async function collectCollectionImages(opts: {
 
   await connectDB();
   const docs = (await GalleryItem.find({ workspaceId, collectionId: { $in: collectionIds } })
+    .sort({ order: 1, _id: 1 })
+    .limit(limit)
     .select({ assetId: 1, altText: 1, caption: 1 })
     .lean()) as Array<{ assetId?: string; altText?: string; caption?: string }>;
 
@@ -39,7 +52,10 @@ export async function collectCollectionImages(opts: {
     if (!url) continue;
     images.push({ url, alt: d.altText || d.caption || "" });
   }
-  return capPublishedImages(images, limit);
+  // The DB query is already bounded to `limit` docs — this cap only dedupes
+  // by URL (copies can share an assetId). Silent: the combiner below owns
+  // the single per-request truncation warning.
+  return capPublishedImages(images, limit, { warn: false });
 }
 
 /**
@@ -55,7 +71,10 @@ export async function collectGalleryPublishedImages(opts: {
   limit?: number;
 }): Promise<PublishedImage[]> {
   const limit = opts.limit ?? PUBLISHED_IMAGE_CAP;
-  const blockImages = collectPublishedGalleryImages(opts.galleryData, limit);
+  // Both sources cap silently — this is the single per-request truncation
+  // warning site, so an over-cap portfolio logs at most once per anonymous
+  // hit instead of once per source.
+  const blockImages = collectPublishedGalleryImages(opts.galleryData, limit, { warn: false });
   const collectionIds = collectFeaturedCollectionIds(opts.galleryData);
   const collectionImages =
     collectionIds.length > 0

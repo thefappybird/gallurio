@@ -65,6 +65,23 @@ describe("collectCollectionImages", () => {
     const result = await collectCollectionImages({ workspaceId: new Types.ObjectId().toString(), collectionIds: [], limit: 10 });
     expect(result).toEqual([]);
   });
+
+  it("bounds the DB query itself: a collection larger than the cap returns exactly `limit`, in stable (order,_id) order, not Mongo's insertion order", async () => {
+    const ws = new Types.ObjectId();
+    const col = new Types.ObjectId();
+    // Insert out of `order` sequence so natural/insertion order would differ
+    // from the expected (order, _id) result if the query weren't sorted.
+    for (const i of [4, 2, 0, 3, 1]) {
+      await makeItem(ws, col, i, { order: i });
+    }
+    const result = await collectCollectionImages({ workspaceId: ws.toString(), collectionIds: [col.toString()], limit: 3 });
+    expect(result).toHaveLength(3);
+    expect(result.map((r) => r.url)).toEqual([
+      "https://cdn.example.com/asset-0",
+      "https://cdn.example.com/asset-1",
+      "https://cdn.example.com/asset-2",
+    ]);
+  });
 });
 
 describe("collectGalleryPublishedImages", () => {
