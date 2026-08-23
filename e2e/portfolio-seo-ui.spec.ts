@@ -48,15 +48,31 @@ function localePath(locale: Locale, p: string): string {
 
 async function gotoPortfolio(page: Page, locale: Locale): Promise<void> {
   await page.goto(localePath(locale, "/portfolio"));
-  await page.locator("[data-testid='portfolio-editor-shell']").waitFor({ timeout: 90_000 });
+
+  // Draft recovery is decided from localStorage after hydration, so allow the
+  // entry dialog to mount before checking for it. Checking immediately races
+  // the effect and leaves a late overlay intercepting the first editor click.
   await page.waitForTimeout(1_200);
 
   const resumeLabel = pick(locale, "app.pageBuilder.editor.entryDialog.resumeTitle");
   const cont = page.getByRole("button", { name: resumeLabel });
   if (await cont.isVisible({ timeout: 5_000 }).catch(() => false)) {
     await cont.click();
-    await page.waitForTimeout(600);
+    await expect(cont).toBeHidden({ timeout: 15_000 });
   }
+
+  await page
+    .locator('[data-slot="dialog-overlay"][data-open]')
+    .waitFor({ state: "detached", timeout: 15_000 });
+
+  // The entry dialog marks the editor subtree aria-hidden. Dismiss it before
+  // waiting for the active shell, and ignore a stale hidden hydration copy.
+  await page
+    .locator("[data-testid='portfolio-editor-shell']:visible")
+    .first()
+    .waitFor({ timeout: 90_000 });
+  await page.waitForTimeout(1_200);
+
   // First-visit spotlight guide would otherwise intercept clicks.
   const skipGuide = page.getByRole("button", { name: /Skip Guide/i });
   if (await skipGuide.isVisible({ timeout: 2_000 }).catch(() => false)) {
@@ -90,42 +106,20 @@ async function openEditCollectionImageMeta(page: Page, locale: Locale) {
   return { dialog, trigger };
 }
 
-/** Adds a Gallery Grid preset to the canvas, opens its MediaPicker, navigates into "All photos". */
+/** Opens the seeded Gallery Grid's MediaPicker and navigates into "All photos". */
 async function openMediaPickerAllPhotos(page: Page, locale: Locale = "en") {
   await gotoPortfolio(page, locale);
 
-  // The block-library panel is localized, so the draggable item's visible
-  // label follows the chrome locale.
-  const galleryGridLabel = pick(locale, "app.pageBuilder.editor.puckConfig.blocks.galleryGridPreset");
-  const galleryGridItem = page.getByText(galleryGridLabel, { exact: true }).first();
-  const canvas = page.locator("[data-puck-preview]").first();
-  const placeholder = page.getByText("No photos in this collection yet.");
-
-  // The dnd-kit pointer-sensor drag is occasionally missed by the synthetic
-  // mouse sequence (activation threshold not registered in time) — retry
-  // once rather than flake the whole surface on a drag-simulation miss.
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const box = await galleryGridItem.boundingBox();
-    const canvasBox = await canvas.boundingBox();
-    if (!box || !canvasBox) throw new Error("could not locate Gallery Grid component / canvas");
-    const bx = box.x + box.width / 2;
-    const by = box.y + box.height / 2;
-    const cx = canvasBox.x + canvasBox.width / 2;
-    const cy = canvasBox.y + 50;
-    await page.mouse.move(bx, by);
-    await page.mouse.down();
-    await page.mouse.move(bx + 6, by + 6);
-    await page.waitForTimeout(80);
-    await page.mouse.move((bx + cx) / 2, (by + cy) / 2, { steps: 10 });
-    await page.mouse.move(cx, cy, { steps: 18 });
-    await page.mouse.move(cx, cy + 4, { steps: 4 });
-    await page.waitForTimeout(80);
-    await page.mouse.up();
-    await page.waitForTimeout(900);
-
-    if (await placeholder.isVisible({ timeout: attempt === 1 ? 8_000 : 15_000 }).catch(() => false)) break;
-    if (attempt === 2) throw new Error("Gallery Grid block did not land on the canvas after 2 drag attempts");
-  }
+  // Every seeded non-scratch template has an empty Gallery Grid on the Gallery
+  // zone. Reuse that stable fixture: this spec verifies MediaPicker, not Puck's
+  // separately-covered dnd-kit behavior.
+  const galleryLabel = pick(locale, "app.pageBuilder.editor.zone.gallery");
+  await page.getByRole("button", { name: galleryLabel, exact: true }).first().click();
+  const placeholder = page
+    .getByText("No photos in this collection yet.")
+    .filter({ visible: true })
+    .first();
+  await expect(placeholder).toBeVisible({ timeout: 15_000 });
 
   await placeholder.click();
   await page.waitForTimeout(400);

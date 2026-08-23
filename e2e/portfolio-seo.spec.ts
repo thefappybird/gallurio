@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { portfolioGalleryUrl, portfolioPublicUrl } from "../lib/portfolio/publicUrl";
 
 // Portfolio discovery surfaces are public by definition — run anonymous, the
 // same way seo-crawlability.spec.ts does for the marketing pages. This file
@@ -10,12 +11,12 @@ test.use({ storageState: { cookies: [], origins: [] } });
 const SLUG = "seed-owner-demo";
 const HOME = `/w/${SLUG}`;
 const GALLERY = `/w/${SLUG}/gallery`;
+const PUBLIC_HOME = portfolioPublicUrl(SLUG);
+const PUBLIC_GALLERY = portfolioGalleryUrl(SLUG);
 
-// NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN is unset in local dev, so canonical URLs
-// are path-based and the tenant crawler files are reachable under /w/{slug}/.
-// In subdomain mode the proxy rewrites {slug}.{base}/robots.txt to this same
-// route — proxy.test.ts pins that mapping, so asserting the path form here
-// exercises the handler without needing wildcard DNS locally.
+// Requests use the path form so the handlers are reachable without wildcard
+// DNS locally. Their emitted discovery URLs must still follow the configured
+// canonical strategy (subdomain or path), which the public URL helpers resolve.
 
 /** Every JSON-LD block in a raw HTML document, parsed. */
 function extractJsonLd(html: string): Record<string, unknown>[] {
@@ -69,7 +70,7 @@ test.describe("tenant crawler endpoints", () => {
     expect(body).toContain("Allow: /");
     expect(body).toContain("Disallow: /api/");
     // The sitemap it advertises must be the tenant's own, not the apex one.
-    expect(body).toMatch(new RegExp(`Sitemap: https?://[^\\s]*/w/${SLUG}/sitemap\\.xml`));
+    expect(body).toContain(`Sitemap: ${PUBLIC_HOME}/sitemap.xml`);
   });
 
   test("the portfolio serves its own sitemap with both pages and image entries", async ({
@@ -85,20 +86,20 @@ test.describe("tenant crawler endpoints", () => {
     // The image namespace must be declared whenever image children may appear.
     expect(body).toContain("http://www.google.com/schemas/sitemap-image/1.1");
     expect(body).toContain(`<loc>`);
-    expect(body).toContain(`/w/${SLUG}</loc>`);
-    expect(body).toContain(`/w/${SLUG}/gallery</loc>`);
+    expect(body).toContain(`<loc>${PUBLIC_HOME}</loc>`);
+    expect(body).toContain(`<loc>${PUBLIC_GALLERY}</loc>`);
   });
 
   test("the apex sitemap lists the published portfolio", async ({ request }) => {
     const body = await (await request.get("/sitemap.xml")).text();
-    expect(body).toContain(`/w/${SLUG}`);
+    expect(body).toContain(`<loc>${PUBLIC_HOME}</loc>`);
   });
 });
 
 test.describe("portfolio metadata in raw HTML", () => {
-  for (const [label, path] of [
-    ["home", HOME],
-    ["gallery", GALLERY],
+  for (const [label, path, canonicalUrl] of [
+    ["home", HOME, PUBLIC_HOME],
+    ["gallery", GALLERY, PUBLIC_GALLERY],
   ] as const) {
     test(`${label} serves a canonical, title and non-empty description to a crawler running no JavaScript`, async ({
       request,
@@ -113,7 +114,7 @@ test.describe("portfolio metadata in raw HTML", () => {
 
       const canonical = html.match(/<link rel="canonical" href="([^"]+)"/);
       expect(canonical, `${label} has no canonical`).not.toBeNull();
-      expect(canonical![1]).toContain(path);
+      expect(canonical![1]).toBe(canonicalUrl);
 
       const title = html.match(/<title>([^<]*)<\/title>/);
       expect(title, `${label} has no <title>`).not.toBeNull();

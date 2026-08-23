@@ -100,20 +100,19 @@ describe("buildGalleryJsonLd", () => {
     expect(ig2).not.toHaveProperty("image");
   });
 
-  it("builds ImageObject[] from images, omitting description when alt is blank", () => {
+  it("builds ImageObject[] only from images with a real URL and description", () => {
     const [ig] = buildGalleryJsonLd({
       name: "Studio A",
       slug: "studio-a",
       images: [
         { url: "https://cdn/a.jpg", alt: "Wedding shot" },
         { url: "https://cdn/b.jpg", alt: "" },
+        { url: "https://cdn/c.jpg", alt: "   " },
       ],
     });
     const images = ig.image as Record<string, unknown>[];
-    expect(images).toHaveLength(2);
+    expect(images).toHaveLength(1);
     expect(images[0]).toEqual({ "@type": "ImageObject", contentUrl: "https://cdn/a.jpg", url: "https://cdn/a.jpg", description: "Wedding shot" });
-    expect(images[1]).toEqual({ "@type": "ImageObject", contentUrl: "https://cdn/b.jpg", url: "https://cdn/b.jpg" });
-    expect(images[1]).not.toHaveProperty("description");
   });
 });
 

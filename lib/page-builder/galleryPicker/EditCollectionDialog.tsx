@@ -89,7 +89,7 @@ export function EditCollectionDialog({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [errMsg]);
 
   useEffect(() => {
     if (open && collection) {
@@ -100,7 +100,7 @@ export function EditCollectionDialog({
       setError(null);
       void loadAll(collection.id);
     }
-    // loadAll is stable (useCallback with no deps); collection identity drives re-runs
+    // Collection identity drives re-runs; loadAll only changes with the error translator.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, collection?.id]);
 

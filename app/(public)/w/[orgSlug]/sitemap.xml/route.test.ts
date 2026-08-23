@@ -52,6 +52,7 @@ describe("GET /w/[orgSlug]/sitemap.xml", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("application/xml; charset=utf-8");
+    expect(res.headers.get("cache-control")).toBe("no-store");
     expect(body).toContain("<loc>http://localhost:3000/w/studio</loc>");
     expect(body).toContain("<loc>http://localhost:3000/w/studio/gallery</loc>");
   });

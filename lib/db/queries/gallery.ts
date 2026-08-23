@@ -548,6 +548,7 @@ export async function propagateItemAltText(opts: {
         let arrChanged = false;
         const nextArr = arr.map((entry) => {
           if (entry && typeof entry === "object" && (entry as { id?: unknown }).id === itemId) {
+            if ((entry as { alt?: unknown }).alt === alt) return entry;
             arrChanged = true;
             return { ...(entry as Record<string, unknown>), alt };
           }

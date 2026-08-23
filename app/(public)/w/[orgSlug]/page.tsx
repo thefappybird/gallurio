@@ -6,7 +6,7 @@ import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
-import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
+import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
@@ -92,7 +92,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // merge and blanks out the layout's default favicon instead of inheriting
   // it, so the key must be omitted entirely to fall back correctly.
   if (iconUrl) result.icons = { icon: iconUrl, shortcut: iconUrl, apple: iconUrl };
+  const rawHome = (publicPage?.data as { home?: unknown } | null | undefined)?.home;
   if (seo.noindex) result.robots = { index: false, follow: false };
+  else if (!hasRenderableBlocks(rawHome)) result.robots = { index: false, follow: true };
   return result;
 }
 

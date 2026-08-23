@@ -2,6 +2,7 @@ import "server-only";
 
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
+import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
 import {
@@ -36,10 +37,25 @@ export async function collectCollectionImages(opts: {
 }): Promise<PublishedImage[]> {
   const { workspaceId, limit } = opts;
   const collectionIds = opts.collectionIds.filter((id) => Types.ObjectId.isValid(id));
-  if (!workspaceId || collectionIds.length === 0) return [];
+  if (!Types.ObjectId.isValid(workspaceId) || collectionIds.length === 0) return [];
 
   await connectDB();
-  const docs = (await GalleryItem.find({ workspaceId, collectionId: { $in: collectionIds } })
+
+  // A published Puck snapshot can retain a collection reference after the
+  // owner makes that collection private. The public popup already gates on
+  // `isPublic`; the crawler surfaces must enforce the same boundary or they
+  // expose private collection asset URLs through JSON-LD and image sitemaps.
+  const publicCollections = await GalleryCollection.find({
+    workspaceId,
+    _id: { $in: collectionIds },
+    isPublic: true,
+  })
+    .select({ _id: 1 })
+    .lean<Array<{ _id: Types.ObjectId }>>();
+  const publicCollectionIds = publicCollections.map((collection) => collection._id);
+  if (publicCollectionIds.length === 0) return [];
+
+  const docs = (await GalleryItem.find({ workspaceId, collectionId: { $in: publicCollectionIds } })
     .sort({ order: 1, _id: 1 })
     .limit(limit)
     .select({ assetId: 1, altText: 1, caption: 1 })

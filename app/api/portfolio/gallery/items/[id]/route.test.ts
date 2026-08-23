@@ -251,6 +251,40 @@ describe("PATCH /api/portfolio/gallery/items/[id]", () => {
     expect(home.content[0].props.images[0].alt).toBe("Original alt");
   });
 
+  it("propagates a changed caption when it is the effective alt fallback", async () => {
+    await GalleryItem.updateOne({ _id: itemId }, { $set: { altText: "" } });
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.data.home": {
+            content: [
+              {
+                type: "GalleryGrid",
+                props: {
+                  id: "g1",
+                  images: [{ id: itemId.toString(), publicId: "img_meta", alt: "Original caption" }],
+                  columns: 3,
+                  gap: "normal",
+                },
+              },
+            ],
+          },
+        },
+      }
+    );
+
+    const res = (await PATCH(
+      makeReq({ caption: "Updated fallback caption" }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(res.status).toBe(200);
+
+    const ws = await Workspace.findById(workspaceId).lean();
+    const home = ws!.publicPage!.data!.home as { content: Array<{ props: { images: Array<{ alt: string }> } }> };
+    expect(home.content[0].props.images[0].alt).toBe("Updated fallback caption");
+  });
+
   it("still returns 200 with the updated item when alt propagation throws", async () => {
     const gallery = await import("@/lib/db/queries/gallery");
     const propSpy = vi.spyOn(gallery, "propagateItemAltText").mockRejectedValueOnce(new Error("boom"));

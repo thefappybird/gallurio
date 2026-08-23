@@ -47,6 +47,7 @@ describe("GET /w/[orgSlug]/robots.txt", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+    expect(res.headers.get("cache-control")).toBe("no-store");
     expect(body).toContain("Allow: /");
     expect(body).toContain("Disallow: /api/");
     expect(body).toContain("Sitemap: http://localhost:3000/w/studio/sitemap.xml");

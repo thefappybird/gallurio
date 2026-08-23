@@ -64,7 +64,10 @@ vi.mock("@/lib/page-builder/seo/jsonLd", async () => {
 // elsewhere (normalizePublicPageData's own tests).
 vi.mock("@/lib/page-builder/normalizePublicPageData", () => ({
   normalizePublicPageData: vi.fn((raw: unknown) => (raw ? { root: {}, content: [] } : null)),
-  hasRenderableBlocks: vi.fn(() => false),
+  hasRenderableBlocks: vi.fn((raw: unknown) => {
+    const data = raw as { content?: unknown[] } | null | undefined;
+    return Array.isArray(data?.content) && data.content.length > 0;
+  }),
 }));
 
 vi.mock("@/lib/page-builder/seo/publishedImages.server", () => ({
@@ -175,6 +178,36 @@ describe("gallery generateMetadata", () => {
     mockFind.mockResolvedValueOnce(makePublishedWorkspace());
     const result = await generateMetadata({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
     expect(result.title).toBe("Luna Studio — Gallery");
+  });
+
+  it("marks the thin Coming Soon placeholder noindex while allowing crawlers to follow its links", async () => {
+    mockFind.mockResolvedValueOnce(makePublishedWorkspace());
+
+    const result = await generateMetadata({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+
+    expect(result.robots).toEqual({ index: false, follow: true });
+  });
+
+  it("leaves a populated Gallery page indexable", async () => {
+    mockFind.mockResolvedValueOnce(
+      makePublishedWorkspace({
+        publicPage: {
+          templateId: "minimal",
+          data: { home: null, gallery: { root: {}, content: [{ type: "Heading", props: {} }] } },
+          brandKit: DEFAULT_BRAND_KIT,
+          publishedAt: new Date(),
+          lastPublishedAt: null,
+          latestVersion: 0,
+          seoTitle: "",
+          seoDescription: "",
+          inquiryRecipientEmail: "",
+        },
+      } as Partial<WorkspaceDoc>)
+    );
+
+    const result = await generateMetadata({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+
+    expect(result.robots).toBeUndefined();
   });
 
   it("uses seoDescription when set, else falls back to the translated gallery default (never English-hardcoded/empty)", async () => {

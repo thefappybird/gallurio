@@ -7,7 +7,7 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
-import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
+import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
@@ -71,7 +71,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // layout's default favicon during Next's metadata merge instead of
   // inheriting it.
   if (iconUrl) result.icons = { icon: iconUrl, shortcut: iconUrl, apple: iconUrl };
+  const rawGallery = (publicPage?.data as { gallery?: unknown } | null | undefined)?.gallery;
   if (seo.noindex) result.robots = { index: false, follow: false };
+  else if (!hasRenderableBlocks(rawGallery)) result.robots = { index: false, follow: true };
   return result;
 }
 

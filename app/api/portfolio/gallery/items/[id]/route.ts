@@ -60,7 +60,7 @@ export async function PATCH(req: Request, { params }: Params) {
   // page without waiting for the next publish (see propagateItemAltText).
   // A propagation failure must not fail this request: the write it's built
   // on top of already succeeded, so log and still return 200.
-  if (parsed.data.altText !== undefined) {
+  if (parsed.data.altText !== undefined || parsed.data.caption !== undefined) {
     try {
       await propagateItemAltText({
         workspaceId: ctx.workspace._id.toString(),

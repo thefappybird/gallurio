@@ -178,12 +178,20 @@ export function buildGalleryJsonLd(input: JsonLdInput): [Record<string, unknown>
     isPartOf: { "@id": websiteId },
     author: { "@id": businessId },
   };
-  const images = (input.images ?? []).filter((img) => defined(img.url));
+  // Only make an ImageObject claim when both halves are meaningful. A URL
+  // without an owner-supplied description remains crawlable in page HTML/the
+  // image sitemap, but it is not promoted as described structured data.
+  const images = (input.images ?? []).filter(
+    (img) => defined(img.url) && typeof img.alt === "string" && img.alt.trim().length > 0
+  );
   if (images.length > 0) {
     imageGallery.image = images.map((img): Record<string, unknown> => {
-      const obj: Record<string, unknown> = { "@type": "ImageObject", contentUrl: img.url, url: img.url };
-      if (defined(img.alt)) obj.description = img.alt;
-      return obj;
+      return {
+        "@type": "ImageObject",
+        contentUrl: img.url,
+        url: img.url,
+        description: img.alt.trim(),
+      };
     });
   }
 

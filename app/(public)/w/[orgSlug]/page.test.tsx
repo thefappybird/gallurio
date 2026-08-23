@@ -253,6 +253,40 @@ describe("generateMetadata", () => {
     expect(result.title).toBe("Luna Studio");
   });
 
+  it("marks the thin Coming Soon placeholder noindex while allowing crawlers to follow its links", async () => {
+    const workspace = makePublishedWorkspace();
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.robots).toEqual({ index: false, follow: true });
+  });
+
+  it("leaves a populated Home page indexable", async () => {
+    const workspace = makePublishedWorkspace({
+      publicPage: {
+        templateId: "minimal",
+        data: { home: { root: {}, content: [{ type: "Heading", props: {} }] }, gallery: null },
+        brandKit: DEFAULT_BRAND_KIT,
+        publishedAt: new Date(),
+        lastPublishedAt: null,
+        latestVersion: 0,
+        seoTitle: "",
+        seoDescription: "",
+        inquiryRecipientEmail: "",
+      },
+    } as Partial<WorkspaceDoc>);
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.robots).toBeUndefined();
+  });
+
   it("never emits an empty description — falls back to the businessType default when seoDescription is blank", async () => {
     const workspace = makePublishedWorkspace({ businessType: "photographer" });
     mockFind.mockResolvedValueOnce(workspace);

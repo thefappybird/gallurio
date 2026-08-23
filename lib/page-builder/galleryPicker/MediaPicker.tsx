@@ -179,8 +179,17 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   }
 
   // Derive typed selections based on mode.
-  const selection = mode === "multi" ? asPhotoSelection(value as MediaPickerSelection[]) : [];
-  const collectionSelection = mode === "collections" ? asCollectionSelection(value as MediaPickerCollectionSelection[]) : [];
+  const selection = useMemo(
+    () => (mode === "multi" ? asPhotoSelection(value as MediaPickerSelection[]) : []),
+    [mode, value]
+  );
+  const collectionSelection = useMemo(
+    () =>
+      mode === "collections"
+        ? asCollectionSelection(value as MediaPickerCollectionSelection[])
+        : [],
+    [mode, value]
+  );
 
   // Reset navigation each time the modal opens.
   useEffect(() => {
