@@ -5,10 +5,11 @@ import path from "node:path";
 // Verifies browser-observed behavior (not just compile-time correctness) for
 // three surfaces shipped on this branch without Playwright evidence:
 //  1. ImageMetaDialog (alt-text editor) — reached via MediaPicker (Puck field
-//     panel, English-only chrome) and via EditCollectionDialog (Photos
-//     manager, localized chrome).
-//  2. The pencil trigger on both tile types (recently size-5 -> size-6 for
-//     WCAG 2.2 SC 2.5.8), alongside the tile's other overlay controls.
+//     panel) and via EditCollectionDialog (Photos manager). Both entry points
+//     render localized copy: Puck portals its field panel, so next-intl context
+//     reaches it.
+//  2. Every overlay control on both tile types — grip, checkbox, Cover and
+//     pencil are all 24x24 CSS px minimum (WCAG 2.2 SC 2.5.8).
 //  3. The settings public-page SEO auto-hints.
 
 const LOCALES = ["en", "fil", "id", "ar", "th"] as const;
@@ -89,13 +90,12 @@ async function openEditCollectionImageMeta(page: Page, locale: Locale) {
   return { dialog, trigger };
 }
 
-/** Adds a Gallery Grid preset to the canvas, opens its (English-only) MediaPicker, navigates into "All photos". */
+/** Adds a Gallery Grid preset to the canvas, opens its MediaPicker, navigates into "All photos". */
 async function openMediaPickerAllPhotos(page: Page, locale: Locale = "en") {
   await gotoPortfolio(page, locale);
 
-  // The block-library panel itself IS localized (unlike the MediaPicker/
-  // ImageMetaDialog copy this helper exists to reach), so the draggable
-  // item's visible label follows the chrome locale.
+  // The block-library panel is localized, so the draggable item's visible
+  // label follows the chrome locale.
   const galleryGridLabel = pick(locale, "app.pageBuilder.editor.puckConfig.blocks.galleryGridPreset");
   const galleryGridItem = page.getByText(galleryGridLabel, { exact: true }).first();
   const canvas = page.locator("[data-puck-preview]").first();
@@ -292,6 +292,14 @@ test.describe("375px tile overlay controls", () => {
       expect(b.y, `${name} top edge inside tile`).toBeGreaterThanOrEqual(tileBox!.y - 1);
       expect(b.y + b.height, `${name} bottom edge inside tile`).toBeLessThanOrEqual(tileBox!.y + tileBox!.height + 1);
     }
+
+    // WCAG 2.2 SC 2.5.8 — 24x24 CSS px minimum on every overlay control, not
+    // just the pencil. The grip is aria-hidden (the whole <li> is the drag
+    // target) but is sized to match so the four corners read as one control set.
+    for (const [name, b] of entries) {
+      expect(b.width, `${name} target width`).toBeGreaterThanOrEqual(24);
+      expect(b.height, `${name} target height`).toBeGreaterThanOrEqual(24);
+    }
   });
 
   test("pencil hit target is >=24x24 CSS px on both tile types", async ({ page }) => {
@@ -419,24 +427,47 @@ test.describe("Locale x theme — EditCollectionDialog ImageMetaDialog", () => {
 });
 
 // ===========================================================================
-// 4. MediaPicker path stays English-only regardless of locale (intentional)
+// 4. MediaPicker path is localized too
 // ===========================================================================
+// Puck renders its field panel through createPortal and never mounts a second
+// React root, so NextIntlClientProvider context does reach MediaPicker. The
+// alt-text dialog used to be handed a hardcoded English label object there,
+// which made the same dialog English from a Puck images field and translated
+// from the Photos manager. These tests pin the fix.
 
-test.describe("MediaPicker ImageMetaDialog — deliberately English-only chrome", () => {
+test.describe("MediaPicker ImageMetaDialog — localized chrome", () => {
   for (const locale of ["ar", "th"] as const) {
-    test(`${locale}: MediaPicker + ImageMetaDialog still render English copy`, async ({ page }) => {
+    test(`${locale}: MediaPicker + ImageMetaDialog render translated copy`, async ({ page }) => {
       // Block library panel is desktop-only — build at 1280, then shrink to 375
       // to check the already-open dialog's mobile reflow.
       await page.setViewportSize({ width: 1280, height: 900 });
       const dialog = await openMediaPickerAllPhotos(page, locale);
       await page.setViewportSize({ width: 375, height: 812 });
       await page.waitForTimeout(300);
-      await dialog.locator('button[aria-label^="Edit alt text for"]').first().click();
+
+      // The pencil's aria-label is `editTrigger` with the photo name appended,
+      // so match on the localized prefix rather than the whole string.
+      const pencilPrefix = pick(locale, "app.pageBuilder.editor.imageMeta.editTrigger")
+        .split("{name}")[0]
+        .trim();
+      await dialog.locator(`button[aria-label^="${pencilPrefix}"]`).first().click();
       await page.waitForTimeout(400);
-      const metaDialog = page.getByRole("dialog", { name: "Edit alt text" });
+
+      const metaDialog = page.getByRole("dialog", {
+        name: pick(locale, "app.pageBuilder.editor.imageMeta.title"),
+      });
       await expect(metaDialog).toBeVisible();
-      await expect(metaDialog.getByText("Alt text", { exact: true })).toBeVisible();
-      await expect(metaDialog.getByRole("button", { name: "Save" })).toBeVisible();
+      await expect(
+        metaDialog.getByText(pick(locale, "app.pageBuilder.editor.imageMeta.altLabel"), { exact: true }),
+      ).toBeVisible();
+      await expect(
+        metaDialog.getByRole("button", { name: pick(locale, "app.pageBuilder.editor.imageMeta.save") }),
+      ).toBeVisible();
+
+      // The English fallback copy must be gone — that regression is the point.
+      await expect(metaDialog.getByText("Alt text", { exact: true })).toHaveCount(0);
+      await expect(metaDialog.getByRole("button", { name: "Save" })).toHaveCount(0);
+
       await page.screenshot({
         path: `e2e/__screenshots__/imagemeta-mediapicker-375-${locale}.png`,
       });
@@ -589,17 +620,14 @@ test.describe("ImageMetaDialog states", () => {
     await expect(trigger).toBeFocused();
   });
 
-  // KNOWN FAILURE, pre-existing and app-wide — not introduced by this branch.
-  // `components/ui/button.tsx` carries `active:not-aria-[haspopup]:translate-y-px`
-  // (identical on `dev`). The `:active` pseudo-class does match — verified with
-  // `el.matches(":active") === true` — but the computed `transform` stays `none`,
-  // so the compound Tailwind v4 arbitrary variant appears not to compile. The
-  // effect is that no button anywhere in the app shows a pressed state.
-  //
-  // Left as `fixme` rather than deleted so the gap stays visible: fixing a shared
-  // primitive is an app-wide visual change and belongs in its own branch, not in
-  // a portfolio-SEO one. Drop the `.fixme` once button.tsx is fixed.
-  test.fixme("controls: idle / hover / focus-visible / active / disabled are visually distinct", async ({ page }) => {
+  // `components/ui/button.tsx` carries `active:not-aria-[haspopup]:translate-y-px`.
+  // Tailwind v4 compiles every `translate-*` utility to the standalone `translate`
+  // CSS property (`translate: var(--tw-translate-x) var(--tw-translate-y)`), NOT to
+  // `transform` — so `getComputedStyle(el).transform` reads `none` even while the
+  // pressed state is working. An earlier revision of this test read `transform` and
+  // on that basis reported an app-wide button bug that does not exist. Read
+  // `translate`, and only `translate`, for any v4 `translate-*` utility.
+  test("controls: idle / hover / focus-visible / active / disabled are visually distinct", async ({ page }) => {
     const { dialog } = await openEditCollectionImageMeta(page, "en");
     const cancelBtn = dialog.getByRole("button", { name: "Cancel" });
 
@@ -624,14 +652,14 @@ test.describe("ImageMetaDialog states", () => {
     await cancelBtn.hover();
     await page.mouse.down();
     await page.waitForTimeout(80);
-    const activeTransform = await cancelBtn.evaluate((el) => getComputedStyle(el).transform);
+    const activeTranslate = await cancelBtn.evaluate((el) => getComputedStyle(el).translate);
     await page.mouse.up();
 
-    console.log("[controls]", JSON.stringify({ idle, hovered, focusRing, activeTransform }));
+    console.log("[controls]", JSON.stringify({ idle, hovered, focusRing, activeTranslate }));
 
     expect(hovered, "hover background differs from idle").not.toBe(idle);
     expect(focusRing.boxShadow, "focus-visible ring is present").not.toBe("none");
-    expect(activeTransform, "active state applies a transform").not.toBe("none");
+    expect(activeTranslate, "active state applies a translate").not.toBe("none");
 
     // Disabled: covered by the "saving" state test (Save + Cancel both `disabled` while pending).
   });
