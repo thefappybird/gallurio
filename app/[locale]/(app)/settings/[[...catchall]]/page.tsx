@@ -230,6 +230,8 @@ export default async function SettingsCatchallPage({
               targetDraftId={String(draftId)}
               initialHasPendingChanges={initialHasPendingChanges}
               publishedDefaults={publishedDefaults}
+              workspaceName={workspace.name}
+              businessType={workspace.businessType}
             />
           ),
         },

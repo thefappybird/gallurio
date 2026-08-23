@@ -69,7 +69,10 @@ vi.mock("next-intl/server", () => ({
 // ── Component-level mocks ───────────────────────────────────────────────────
 
 vi.mock("next-intl", () => ({
-  useTranslations: vi.fn(() => (key: string) => key),
+  useTranslations: vi.fn(
+    () => (key: string, params?: Record<string, unknown>) =>
+      params ? `${key}:${JSON.stringify(params)}` : key
+  ),
 }));
 
 vi.mock("@/lib/storage/uploadAsset.client", () => ({
@@ -874,5 +877,91 @@ describe("PublicPageSettingsForm — SEO keywords typing round-trip", () => {
     );
 
     expect(keywordsInput.value).toBe("wedding photographer, editorial");
+  });
+});
+
+describe("PublicPageSettingsForm — automatic SEO status hints", () => {
+  it("shows the automatic-description hint with a preview when seoDescription is blank", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+        workspaceName="Luna Studio"
+        businessType="photographer"
+      />
+    );
+
+    const hint = screen.getByText(/seoDescriptionAutoHint/);
+    expect(hint).toBeInTheDocument();
+    // The preview text is built from the same publicPage.seoDefaults keys
+    // the public Home page resolves from — assert the interpolated
+    // businessType + workspace name both made it into the rendered hint.
+    expect(hint).toHaveTextContent("Luna Studio");
+    expect(hint).toHaveTextContent("homeDescription");
+  });
+
+  it("hides the automatic-description hint when seoDescription is filled", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{ ...baseDefaults, seoDescription: "Hand-written description." }}
+        locale="en"
+        workspaceName="Luna Studio"
+        businessType="photographer"
+      />
+    );
+
+    expect(screen.queryByText(/seoDescriptionAutoHint/)).not.toBeInTheDocument();
+  });
+
+  it("shows the automatic-title hint when seoTitle is blank", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+        workspaceName="Luna Studio"
+      />
+    );
+
+    expect(screen.getByText("seoTitleAutoHint")).toBeInTheDocument();
+  });
+
+  it("hides the automatic-title hint when seoTitle is filled", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{ ...baseDefaults, seoTitle: "Luna Studio — Weddings" }}
+        locale="en"
+        workspaceName="Luna Studio"
+      />
+    );
+
+    expect(screen.queryByText("seoTitleAutoHint")).not.toBeInTheDocument();
+  });
+
+  it("makes the automatic-description hint disappear live as the owner types", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+        workspaceName="Luna Studio"
+      />
+    );
+
+    expect(screen.getByText(/seoDescriptionAutoHint/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("seoDescription"), {
+      target: { value: "My own pitch." },
+    });
+
+    expect(screen.queryByText(/seoDescriptionAutoHint/)).not.toBeInTheDocument();
   });
 });
