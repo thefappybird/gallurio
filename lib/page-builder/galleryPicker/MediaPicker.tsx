@@ -156,6 +156,8 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const [feed, setFeed] = useState<FeedState>(EMPTY_FEED);
   const [createOpen, setCreateOpen] = useState(false);
   const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
+  // The pencil button that opened the alt-text dialog — restores focus there on close.
+  const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Upload state (scoped to the open collection / all feed).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -620,7 +622,10 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               orderOf={orderOf}
               onPickSingle={pickSingle}
               onToggleMulti={toggleMulti}
-              onEditItem={setMetaItem}
+              onEditItem={(item, triggerEl) => {
+                metaTriggerRef.current = triggerEl;
+                setMetaItem(item);
+              }}
               onLoadMore={() => nav.kind === "photos" && feed.nextCursor && fetchFeed(nav.id, feed.nextCursor)}
               onRetry={() => nav.kind === "photos" && fetchFeed(nav.id, null)}
               emptyLabel={nav.id === ALL_PHOTOS_ID ? L.emptyWorkspace : L.emptyCollection}
@@ -690,6 +695,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         }}
         onSaved={handleMetaSaved}
         labels={META_L}
+        triggerRef={metaTriggerRef}
       />
     </Dialog>
   );
@@ -814,7 +820,7 @@ function PhotoGrid({
   orderOf: (id: string) => number;
   onPickSingle: (item: PickerItem) => void;
   onToggleMulti: (item: PickerItem) => void;
-  onEditItem: (item: PickerItem) => void;
+  onEditItem: (item: PickerItem, triggerEl: HTMLButtonElement) => void;
   onLoadMore: () => void;
   onRetry: () => void;
   emptyLabel: string;
@@ -861,7 +867,7 @@ function PhotoGrid({
                   aria-label={L.editAria(item.caption || L.photoFallback)}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEditItem(item);
+                    onEditItem(item, e.currentTarget);
                   }}
                   className="absolute bottom-1 left-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >

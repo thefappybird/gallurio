@@ -44,6 +44,8 @@ export function EditCollectionDialog({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
+  // The pencil button that opened the alt-text dialog — restores focus there on close.
+  const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const colId = collection?.id ?? null;
 
@@ -343,7 +345,10 @@ export function EditCollectionDialog({
                     <button
                       type="button"
                       aria-label={tMeta("editTrigger", { name: item.caption || tMeta("photoFallback") })}
-                      onClick={() => setMetaItem(item)}
+                      onClick={(e) => {
+                        metaTriggerRef.current = e.currentTarget;
+                        setMetaItem(item);
+                      }}
                       className="absolute bottom-0.5 right-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       <PencilIcon className="size-3" aria-hidden />
@@ -385,6 +390,7 @@ export function EditCollectionDialog({
         }}
         onSaved={handleMetaSaved}
         labels={metaLabels}
+        triggerRef={metaTriggerRef}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={(n) => { if (!n && !busy) setConfirmDelete(false); }}>

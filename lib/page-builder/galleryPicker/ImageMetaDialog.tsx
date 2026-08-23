@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -36,12 +36,15 @@ export function ImageMetaDialog({
   onOpenChange,
   onSaved,
   labels,
+  triggerRef,
 }: {
   item: PickerItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: (updated: PickerItem) => void;
   labels: ImageMetaLabels;
+  /** The pencil button that opened this dialog — restores focus there on close (see `finalFocus` below). */
+  triggerRef?: RefObject<HTMLElement | null>;
 }) {
   const [altText, setAltText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -55,6 +58,27 @@ export function ImageMetaDialog({
       setSaving(false);
     }
   }, [open, item]);
+
+  // This dialog is always mounted nested inside another dialog (the Photos
+  // manager or the MediaPicker), inside the portfolio editor. The editor's
+  // global Puck-hotkey guard (EditorShell.tsx's `interceptPuckHotkeys`) is a
+  // document-level, capture-phase keydown listener that swallows Escape (and
+  // other Puck shortcuts) via stopImmediatePropagation whenever the event
+  // target is a text input/textarea — which our alt-text field always is. It
+  // mounts once with the editor shell, ahead of this dialog, so any listener
+  // we register on `document` fires too late to ever see the event. `window`
+  // captures before `document` does, so a capture-phase listener there lets
+  // us dismiss on Escape without touching that shared, editor-wide guard.
+  useEffect(() => {
+    if (!open) return;
+    function onWindowKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape" || saving) return;
+      e.stopPropagation();
+      onOpenChange(false);
+    }
+    window.addEventListener("keydown", onWindowKeyDown, true);
+    return () => window.removeEventListener("keydown", onWindowKeyDown, true);
+  }, [open, saving, onOpenChange]);
 
   async function handleSave() {
     if (!item || saving) return;
@@ -90,7 +114,7 @@ export function ImageMetaDialog({
         if (!saving) onOpenChange(next);
       }}
     >
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm" finalFocus={triggerRef}>
         <DialogHeader>
           <DialogTitle>{labels.title}</DialogTitle>
         </DialogHeader>
