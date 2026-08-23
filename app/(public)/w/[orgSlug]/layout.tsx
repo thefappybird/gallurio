@@ -14,7 +14,6 @@ import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
-import { SyncDocumentLang } from "./_components/SyncDocumentLang";
 import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { PageViewBeacon } from "./_components/PageViewBeacon";
 import { buildContactLabels } from "./_components/buildContactLabels";
@@ -75,7 +74,6 @@ export default async function PublicPortfolioLayout({
       style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={`${className} min-h-svh`}
     >
-      <SyncDocumentLang locale={locale} />
       {/* Brand kit heading/body may be a Google Font (see fonts.ts) — next/font/google
           can't be used since the choice is per-workspace runtime data, not known at
           build time. Loads via a dynamically-injected CSS2 <link>; per-block Google

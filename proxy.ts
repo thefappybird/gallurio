@@ -22,6 +22,14 @@ import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
+// Carries the resolved portfolio workspace slug from this proxy (which sees
+// the Host header / rewritten path) down to app/(public)/layout.tsx (which
+// owns <html> but, as a root layout, cannot read the [orgSlug] child route's
+// params). Trust boundary: only this proxy may set it — every branch below
+// strips any inbound copy before deciding whether to set its own, so a
+// client cannot forge which workspace's locale/dir gets served.
+export const PORTFOLIO_SLUG_HEADER = "x-gallurio-portfolio-slug";
+
 // Root-level routes that live outside the [locale] segment. next-intl would
 // rewrite these under /[locale] and 404 them, so they bypass it entirely.
 const ROOT_CRAWLER_PATHS = new Set([
@@ -294,7 +302,12 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
             pathname === "/" || pathname === "/home"
               ? `/w/${tenantMatch[1]}`
               : `/w/${tenantMatch[1]}${pathname}`;
-          return NextResponse.rewrite(rewriteUrl);
+          // Trust boundary: drop any inbound copy before stamping our own —
+          // see PORTFOLIO_SLUG_HEADER above.
+          const portfolioHeaders = new Headers(req.headers);
+          portfolioHeaders.delete(PORTFOLIO_SLUG_HEADER);
+          portfolioHeaders.set(PORTFOLIO_SLUG_HEADER, tenantMatch[1]);
+          return NextResponse.rewrite(rewriteUrl, { request: { headers: portfolioHeaders } });
         }
       }
     }
@@ -306,7 +319,17 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   //    would rewrite /w/... to /[locale]/w/... (a non-existent route) and 404.
   // -------------------------------------------------------------------------
   if (pathname === "/w" || pathname.startsWith("/w/")) {
-    return NextResponse.next();
+    // Trust boundary: drop any inbound copy first — see PORTFOLIO_SLUG_HEADER
+    // above. Only set our own when the path segment is a real, non-reserved
+    // workspace slug (same guard the canonical-redirect branch above uses),
+    // so nothing attacker-shaped reaches the layout's DB lookup.
+    const portfolioHeaders = new Headers(req.headers);
+    portfolioHeaders.delete(PORTFOLIO_SLUG_HEADER);
+    const slugMatch = pathname.match(/^\/w\/([^/]+)/);
+    if (slugMatch && WORKSPACE_SLUG_RE.test(slugMatch[1]) && !isReservedSlug(slugMatch[1])) {
+      portfolioHeaders.set(PORTFOLIO_SLUG_HEADER, slugMatch[1]);
+    }
+    return NextResponse.next({ request: { headers: portfolioHeaders } });
   }
 
   // Root metadata and crawler files (not locale-prefixed). Falling through to

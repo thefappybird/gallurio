@@ -490,6 +490,85 @@ describe("proxy", () => {
         expect(response.headers.get("x-middleware-rewrite")).toBeNull();
         expect(response.status).not.toBe(301);
       }));
+
+    it("stamps the resolved slug onto PORTFOLIO_SLUG_HEADER on a tenant subdomain rewrite", () =>
+      withBaseDomain(async () => {
+        const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+        const req = new NextRequest("http://localhost/gallery", {
+          headers: { host: "acme.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        const manifest = (response.headers.get("x-middleware-override-headers") ?? "")
+          .split(",")
+          .map((s) => s.trim());
+        expect(manifest).toContain(PORTFOLIO_SLUG_HEADER);
+        expect(response.headers.get(`x-middleware-request-${PORTFOLIO_SLUG_HEADER}`)).toBe("acme");
+      }));
+
+    it("does not propagate a forged inbound PORTFOLIO_SLUG_HEADER on a tenant subdomain rewrite", () =>
+      withBaseDomain(async () => {
+        const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+        const req = new NextRequest("http://localhost/gallery", {
+          headers: { host: "acme.gallurio.com", [PORTFOLIO_SLUG_HEADER]: "evil" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.headers.get(`x-middleware-request-${PORTFOLIO_SLUG_HEADER}`)).toBe("acme");
+      }));
+  });
+
+  describe("PORTFOLIO_SLUG_HEADER on the /w/ bypass", () => {
+    it("sets the header to the requested slug on a direct /w/{slug} request", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/w/acme/gallery");
+
+      const response = (await proxy(req)) as Response;
+
+      const manifest = (response.headers.get("x-middleware-override-headers") ?? "")
+        .split(",")
+        .map((s) => s.trim());
+      expect(manifest).toContain(PORTFOLIO_SLUG_HEADER);
+      expect(response.headers.get(`x-middleware-request-${PORTFOLIO_SLUG_HEADER}`)).toBe("acme");
+    });
+
+    it("does not set the header for a bare /w request", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/w");
+
+      const response = (await proxy(req)) as Response;
+
+      const manifest = (response.headers.get("x-middleware-override-headers") ?? "")
+        .split(",")
+        .map((s) => s.trim());
+      expect(manifest).not.toContain(PORTFOLIO_SLUG_HEADER);
+      expect(response.headers.get(`x-middleware-request-${PORTFOLIO_SLUG_HEADER}`)).toBeNull();
+    });
+
+    it("does not propagate a forged inbound PORTFOLIO_SLUG_HEADER on an unrelated /w/ request", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/w/acme", {
+        headers: { [PORTFOLIO_SLUG_HEADER]: "evil" },
+      });
+
+      const response = (await proxy(req)) as Response;
+
+      expect(response.headers.get(`x-middleware-request-${PORTFOLIO_SLUG_HEADER}`)).toBe("acme");
+    });
+
+    it("does not set the header for a reserved slug under /w/", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/w/dev");
+
+      const response = (await proxy(req)) as Response;
+
+      const manifest = (response.headers.get("x-middleware-override-headers") ?? "")
+        .split(",")
+        .map((s) => s.trim());
+      expect(manifest).not.toContain(PORTFOLIO_SLUG_HEADER);
+    });
   });
 
   it("unions both middlewares' request-header manifests so the locale header survives on protected routes", async () => {
