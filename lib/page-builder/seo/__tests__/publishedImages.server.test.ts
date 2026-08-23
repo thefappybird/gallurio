@@ -1,0 +1,85 @@
+import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from "vitest";
+import { Types } from "mongoose";
+import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
+import { GalleryItem } from "@/lib/db/models/GalleryItem";
+
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  imageDeliveryUrl: (id: string) => (id ? `https://cdn.example.com/${id}` : ""),
+}));
+
+import { collectCollectionImages, collectGalleryPublishedImages } from "../publishedImages.server";
+
+beforeAll(async () => {
+  await startInMemoryMongo();
+});
+afterAll(async () => {
+  await stopInMemoryMongo();
+});
+afterEach(async () => {
+  await clearCollections();
+});
+beforeEach(() => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
+
+async function makeItem(workspaceId: Types.ObjectId, collectionId: Types.ObjectId, i: number, over: Record<string, unknown> = {}) {
+  return GalleryItem.create({
+    workspaceId,
+    collectionId,
+    assetId: `asset-${i}`,
+    url: `https://x/${i}.jpg`,
+    altText: `Alt ${i}`,
+    caption: `Cap ${i}`,
+    order: i,
+    ...over,
+  });
+}
+
+describe("collectCollectionImages", () => {
+  it("returns images for the given collections, scoped to the workspace", async () => {
+    const ws = new Types.ObjectId();
+    const col = new Types.ObjectId();
+    await makeItem(ws, col, 0);
+    const result = await collectCollectionImages({ workspaceId: ws.toString(), collectionIds: [col.toString()], limit: 10 });
+    expect(result).toEqual([{ url: "https://cdn.example.com/asset-0", alt: "Alt 0" }]);
+  });
+
+  it("never returns a foreign-workspace item", async () => {
+    const wsA = new Types.ObjectId();
+    const wsB = new Types.ObjectId();
+    const col = new Types.ObjectId();
+    await makeItem(wsB, col, 0);
+    const result = await collectCollectionImages({ workspaceId: wsA.toString(), collectionIds: [col.toString()], limit: 10 });
+    expect(result).toEqual([]);
+  });
+
+  it("falls back alt to caption then empty string", async () => {
+    const ws = new Types.ObjectId();
+    const col = new Types.ObjectId();
+    await makeItem(ws, col, 0, { altText: "", caption: "" });
+    const result = await collectCollectionImages({ workspaceId: ws.toString(), collectionIds: [col.toString()], limit: 10 });
+    expect(result[0].alt).toBe("");
+  });
+
+  it("returns empty array when collectionIds is empty", async () => {
+    const result = await collectCollectionImages({ workspaceId: new Types.ObjectId().toString(), collectionIds: [], limit: 10 });
+    expect(result).toEqual([]);
+  });
+});
+
+describe("collectGalleryPublishedImages", () => {
+  it("merges gallery-block images and FeaturedWork collection images, deduped by url", async () => {
+    const ws = new Types.ObjectId();
+    const col = new Types.ObjectId();
+    await makeItem(ws, col, 0, { assetId: "shared-asset" });
+    const galleryData = {
+      content: [
+        { type: "GalleryGrid", props: { images: [{ id: "x", publicId: "shared-asset", alt: "grid alt" }] } },
+        { type: "FeaturedWork", props: { collections: [{ id: col.toString() }] } },
+      ],
+    };
+    const result = await collectGalleryPublishedImages({ workspaceId: ws.toString(), galleryData });
+    // Both sources resolve to the same delivery URL for "shared-asset" — deduped to one entry.
+    expect(result).toEqual([{ url: "https://cdn.example.com/shared-asset", alt: "grid alt" }]);
+  });
+});

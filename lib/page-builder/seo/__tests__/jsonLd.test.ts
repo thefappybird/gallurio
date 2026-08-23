@@ -58,6 +58,66 @@ describe("buildGalleryJsonLd", () => {
     expect(ig.url).toBe("http://localhost:3000/w/studio-a/gallery");
     expect(ig.name).toBe("Studio A — Gallery");
   });
+
+  it("omits image entirely when images is absent or empty", () => {
+    const [ig] = buildGalleryJsonLd({ name: "Studio A", slug: "studio-a" });
+    expect(ig).not.toHaveProperty("image");
+    const [ig2] = buildGalleryJsonLd({ name: "Studio A", slug: "studio-a", images: [] });
+    expect(ig2).not.toHaveProperty("image");
+  });
+
+  it("builds ImageObject[] from images, omitting description when alt is blank", () => {
+    const [ig] = buildGalleryJsonLd({
+      name: "Studio A",
+      slug: "studio-a",
+      images: [
+        { url: "https://cdn/a.jpg", alt: "Wedding shot" },
+        { url: "https://cdn/b.jpg", alt: "" },
+      ],
+    });
+    const images = ig.image as Record<string, unknown>[];
+    expect(images).toHaveLength(2);
+    expect(images[0]).toEqual({ "@type": "ImageObject", contentUrl: "https://cdn/a.jpg", url: "https://cdn/a.jpg", description: "Wedding shot" });
+    expect(images[1]).toEqual({ "@type": "ImageObject", contentUrl: "https://cdn/b.jpg", url: "https://cdn/b.jpg" });
+    expect(images[1]).not.toHaveProperty("description");
+  });
+});
+
+describe("JSON-LD graph @ids", () => {
+  it("gives every node a stable, canonical @id", () => {
+    const [business, website, webpage] = buildHomeJsonLd({ name: "Studio A", slug: "studio-a" });
+    expect(business["@id"]).toBe("http://localhost:3000/w/studio-a#business");
+    expect(website["@id"]).toBe("http://localhost:3000/w/studio-a#website");
+    expect(webpage["@id"]).toBe("http://localhost:3000/w/studio-a#webpage");
+    const [gallery, breadcrumb] = buildGalleryJsonLd({ name: "Studio A", slug: "studio-a" });
+    expect(gallery["@id"]).toBe("http://localhost:3000/w/studio-a/gallery#gallery");
+    expect(breadcrumb["@id"]).toBe("http://localhost:3000/w/studio-a/gallery#breadcrumb");
+  });
+
+  it("cross-references resolve to a node that exists in the combined graph", () => {
+    const [business, website, webpage] = buildHomeJsonLd({ name: "Studio A", slug: "studio-a" });
+    const [gallery] = buildGalleryJsonLd({ name: "Studio A", slug: "studio-a" });
+    const ids = new Set([business, website, webpage, gallery].map((n) => n["@id"]));
+
+    expect(ids.has((website.publisher as Record<string, unknown>)["@id"] as string)).toBe(true);
+    expect(ids.has((webpage.isPartOf as Record<string, unknown>)["@id"] as string)).toBe(true);
+    expect(ids.has((webpage.about as Record<string, unknown>)["@id"] as string)).toBe(true);
+    expect(ids.has((gallery.isPartOf as Record<string, unknown>)["@id"] as string)).toBe(true);
+    expect(ids.has((gallery.author as Record<string, unknown>)["@id"] as string)).toBe(true);
+  });
+
+  it("emits no undefined or empty-string values anywhere in the graph", () => {
+    const nodes = [
+      ...buildHomeJsonLd({ name: "Studio A", slug: "studio-a" }),
+      ...buildGalleryJsonLd({ name: "Studio A", slug: "studio-a", images: [{ url: "https://cdn/a.jpg", alt: "x" }] }),
+    ];
+    for (const node of nodes) {
+      for (const [key, value] of Object.entries(node)) {
+        expect(value, `${key} should not be undefined`).not.toBeUndefined();
+        expect(value, `${key} should not be an empty string`).not.toBe("");
+      }
+    }
+  });
 });
 
 describe("safeJsonLd", () => {
