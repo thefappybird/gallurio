@@ -2,6 +2,8 @@ import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { hasRenderableBlocks } from "@/lib/page-builder/normalizePublicPageData";
 import { portfolioGalleryUrl, portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import type { PublicPageSeo } from "@/lib/page-builder/types";
+import { collectGalleryPublishedImages } from "@/lib/page-builder/seo/publishedImages.server";
+import type { PublishedImage } from "@/lib/page-builder/seo/publishedImages";
 
 // Node runtime: connects to MongoDB (Edge runtime cannot use Mongoose).
 export const runtime = "nodejs";
@@ -24,10 +26,15 @@ function xmlEscape(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function urlEntry(loc: string, lastmod: Date | null | undefined): string {
+function urlEntry(loc: string, lastmod: Date | null | undefined, images: PublishedImage[] = []): string {
   const lines = ["  <url>", `    <loc>${xmlEscape(loc)}</loc>`];
   if (lastmod) lines.push(`    <lastmod>${lastmod.toISOString()}</lastmod>`);
-  // Gallery image entries are appended here once the published-image collector lands.
+  for (const img of images) {
+    lines.push("    <image:image>");
+    lines.push(`      <image:loc>${xmlEscape(img.url)}</image:loc>`);
+    if (img.alt) lines.push(`      <image:caption>${xmlEscape(img.alt)}</image:caption>`);
+    lines.push("    </image:image>");
+  }
   lines.push("  </url>");
   return lines.join("\n");
 }
@@ -46,7 +53,13 @@ export async function GET(_req: Request, { params }: Params) {
 
   const entries: string[] = [];
   if (hasRenderableBlocks(data?.home)) entries.push(urlEntry(portfolioPublicUrl(orgSlug), lastmod));
-  if (hasRenderableBlocks(data?.gallery)) entries.push(urlEntry(portfolioGalleryUrl(orgSlug), lastmod));
+  if (hasRenderableBlocks(data?.gallery)) {
+    const images = await collectGalleryPublishedImages({
+      workspaceId: String(workspace._id),
+      galleryData: data?.gallery,
+    });
+    entries.push(urlEntry(portfolioGalleryUrl(orgSlug), lastmod, images));
+  }
 
   // Neither page renderable: still return a valid (empty) urlset rather than
   // 404 — simpler than special-casing a published-but-contentless workspace,

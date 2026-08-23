@@ -43,6 +43,16 @@ vi.mock("next-intl/server", () => ({
       notFoundTitle: "Portfolio not found",
       notFoundBody: "This portfolio doesn't exist or hasn't been published yet.",
       startingFrom: "Starting from {price}",
+      homeDescription: "{name} is a {businessType} — browse recent work and get in touch to book.",
+      homeDescriptionGeneric: "{name} — browse recent work and get in touch to book.",
+      "businessType.photographer": "Photographer",
+      "businessType.venue": "Venue",
+      "businessType.planner": "Event Planner",
+      "businessType.stylist": "Stylist",
+      "businessType.catering": "Catering",
+      "businessType.entertainer": "Entertainer",
+      "businessType.artists": "Artist",
+      "businessType.other": "Business",
     };
     let s = en[key] ?? key;
     if (vars) for (const k of Object.keys(vars)) s = s.replace(`{${k}}`, String(vars[k]));
@@ -72,7 +82,7 @@ vi.mock("@/lib/portfolio/publicUrl", () => ({
 }));
 
 vi.mock("@/lib/page-builder/seo/jsonLd", () => ({
-  buildHomeJsonLd: vi.fn(() => [{}, {}]),
+  buildHomeJsonLd: vi.fn(() => [{}, {}, {}]),
   safeJsonLd: vi.fn(() => "{}"),
 }));
 
@@ -187,15 +197,28 @@ describe("generateMetadata", () => {
     expect(result.title).toBe("Luna Studio");
   });
 
-  it("returns undefined description when seoDescription is empty", async () => {
-    const workspace = makePublishedWorkspace();
+  it("never emits an empty description — falls back to the businessType default when seoDescription is blank", async () => {
+    const workspace = makePublishedWorkspace({ businessType: "photographer" });
     mockFind.mockResolvedValueOnce(workspace);
 
     const result = await generateMetadata({
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
 
-    expect(result.description).toBeUndefined();
+    expect(result.description).toBe("Luna Studio is a Photographer — browse recent work and get in touch to book.");
+    expect(result.description).not.toBe("");
+    expect(result.openGraph?.description).toBe(result.description);
+  });
+
+  it("uses the generic default (no businessType phrase) when businessType is 'other'", async () => {
+    const workspace = makePublishedWorkspace({ businessType: "other" });
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.description).toBe("Luna Studio — browse recent work and get in touch to book.");
   });
 
   it("sets the canonical alternates URL to /w/<slug>", async () => {

@@ -16,6 +16,8 @@ import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types"
 import { portfolioGalleryUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { resolveGallerySeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
+import { collectGalleryPublishedImages } from "@/lib/page-builder/seo/publishedImages.server";
 
 type PageProps = {
   params: Promise<{ orgSlug: string }>;
@@ -28,18 +30,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { publicPage, name } = workspace;
   const seo = (publicPage?.seo as PublicPageSeo | undefined) ?? {};
+  const locale = resolvePublicChromeLocale(workspace);
+  const t = await getTranslations({ locale, namespace: "publicPage.seoDefaults" });
 
-  const title = `${name} — Gallery`;
-  const seoDescription = publicPage?.seoDescription || undefined;
-  const description =
-    seo.galleryDescription ||
-    seoDescription ||
-    `${name} — Photography Portfolio`;
+  const galleryTitle = `${name} — Gallery`;
+  const defaultDescription = t(SEO_DEFAULT_KEYS.galleryDescription, { name });
+  const { title, description } = resolveGallerySeo({
+    name,
+    galleryDescription: seo.galleryDescription,
+    seoDescription: publicPage?.seoDescription,
+    defaultDescription,
+    galleryTitle,
+  });
+
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
   const galleryUrl = portfolioGalleryUrl(workspace.slug);
-  const locale = resolvePublicChromeLocale(workspace);
 
   const result: Metadata = {
     title,
@@ -85,11 +92,18 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
 
+  // Published-image collection only makes sense once real gallery content
+  // exists — the ComingSoon branch has no images by definition.
+  const images = galleryData
+    ? await collectGalleryPublishedImages({ workspaceId: String(workspace._id), galleryData })
+    : [];
+
   // Build gallery JSON-LD — injected in both branches.
   const [galleryLd, breadcrumbLd] = buildGalleryJsonLd({
     name: workspace.name,
     slug: workspace.slug,
     businessType: workspace.businessType || undefined,
+    images,
   });
 
   if (!galleryData) {

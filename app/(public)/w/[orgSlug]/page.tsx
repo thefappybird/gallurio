@@ -16,6 +16,8 @@ import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types"
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildHomeJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { resolveHomeSeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
+import { BUSINESS_TYPE_VALUES } from "@/lib/validators/workspace";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,14 +38,34 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { publicPage, name } = workspace;
   const seo = (publicPage?.seo as PublicPageSeo | undefined) ?? {};
+  const locale = resolvePublicChromeLocale(workspace);
+  const t = await getTranslations({ locale, namespace: "publicPage.seoDefaults" });
 
-  const title = publicPage?.seoTitle || name;
-  const description = publicPage?.seoDescription || undefined;
+  // Home's default description is only ever built from facts already on the
+  // workspace (name + the business type the owner picked) — never invented.
+  const businessType = workspace.businessType || undefined;
+  const isKnownBusinessType =
+    !!businessType && businessType !== "other" && (BUSINESS_TYPE_VALUES as readonly string[]).includes(businessType);
+  const businessTypeLabelKey = isKnownBusinessType
+    ? SEO_DEFAULT_KEYS.businessType[businessType as keyof typeof SEO_DEFAULT_KEYS.businessType]
+    : undefined;
+  const businessTypeLabel = businessTypeLabelKey ? t(businessTypeLabelKey) : null;
+  const defaultDescription = businessTypeLabel
+    ? t(SEO_DEFAULT_KEYS.homeDescription, { name, businessType: businessTypeLabel })
+    : t(SEO_DEFAULT_KEYS.homeDescriptionGeneric, { name });
+
+  const { title, description } = resolveHomeSeo({
+    name,
+    seoTitle: publicPage?.seoTitle,
+    seoDescription: publicPage?.seoDescription,
+    businessTypeLabel,
+    defaultDescription,
+  });
+
   const ogImageUrl = seo.ogImageUrl || undefined;
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const canonical = portfolioPublicUrl(orgSlug);
-  const locale = resolvePublicChromeLocale(workspace);
 
   const result: Metadata = {
     title,
@@ -51,7 +73,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: { canonical },
     openGraph: {
       title,
-      description: description ?? "",
+      description,
       type: "website",
       url: canonical,
       siteName: name,
@@ -109,7 +131,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   if (socials?.tiktok) sameAs.push(`https://www.tiktok.com/@${socials.tiktok}`);
   if (socials?.website) sameAs.push(socials.website);
 
-  const [businessLd, websiteLd] = buildHomeJsonLd({
+  const [businessLd, websiteLd, webpageLd] = buildHomeJsonLd({
     name: workspace.name,
     slug: workspace.slug,
     businessType: workspace.businessType || undefined,
@@ -132,6 +154,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(webpageLd) }} />
         <ComingSoonFallback
           workspace={workspace}
           labels={{ comingSoon: t("comingSoon"), poweredBy: t("poweredBy") }}
@@ -184,6 +207,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(webpageLd) }} />
       {/* Per-block Google Font overrides (see lib/page-builder/fonts.ts) — the brand
           kit's own heading/body Google Font is loaded by the layout. */}
       <GoogleFontLoader families={collectGoogleFontFamilies(homeData)} />

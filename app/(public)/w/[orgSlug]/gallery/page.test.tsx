@@ -23,6 +23,7 @@ vi.mock("next-intl/server", () => ({
       comingSoon: "Coming soon",
       poweredBy: "Powered by Gallurio",
       startingFrom: "Starting from {price}",
+      galleryDescription: "Browse {name}'s portfolio gallery — recent photos and highlights.",
     };
     let s = en[key] ?? key;
     if (vars) for (const k of Object.keys(vars)) s = s.replace(`{${k}}`, String(vars[k]));
@@ -108,7 +109,7 @@ describe("gallery generateMetadata", () => {
     expect(result.title).toBe("Luna Studio — Gallery");
   });
 
-  it("uses seoDescription when set, else falls back to the name + Photography Portfolio", async () => {
+  it("uses seoDescription when set, else falls back to the translated gallery default (never English-hardcoded/empty)", async () => {
     mockFind.mockResolvedValueOnce(
       makePublishedWorkspace({
         publicPage: {
@@ -131,7 +132,14 @@ describe("gallery generateMetadata", () => {
     const fallback = await generateMetadata({
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
-    expect(fallback.description).toBe("Luna Studio — Photography Portfolio");
+    expect(fallback.description).toBe("Browse Luna Studio's portfolio gallery — recent photos and highlights.");
+    expect(fallback.description).not.toBe("");
+  });
+
+  it("Gallery's default description differs from what Home's default would be", async () => {
+    mockFind.mockResolvedValueOnce(makePublishedWorkspace());
+    const result = await generateMetadata({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+    expect(result.description).not.toContain("browse recent work and get in touch to book");
   });
 
   it("sets the canonical alternates URL to /w/<slug>/gallery", async () => {

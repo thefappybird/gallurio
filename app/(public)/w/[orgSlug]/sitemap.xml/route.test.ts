@@ -1,6 +1,11 @@
-import { afterAll, beforeAll, afterEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, afterEach, describe, expect, it, vi } from "vitest";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models/Workspace";
+
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  imageDeliveryUrl: (id: string) => (id ? `https://cdn.example.com/${id}` : ""),
+}));
+
 import { GET } from "./route";
 
 beforeAll(async () => {
@@ -102,5 +107,24 @@ describe("GET /w/[orgSlug]/sitemap.xml", () => {
 
     expect(datedBody).toContain("<lastmod>2026-03-20T10:00:00.000Z</lastmod>");
     expect(undatedBody).not.toContain("<lastmod>");
+  });
+
+  it("emits <image:image> entries for the Gallery <url> from published gallery-block images", async () => {
+    const galleryPage = {
+      root: {},
+      content: [
+        { type: "GalleryGrid", props: { images: [{ id: "x", publicId: "asset-1", alt: "Wedding shot" }] } },
+      ],
+    };
+    await Workspace.create(makePublished("with-images", { publicPage: { publishedAt: new Date(), data: { home: PAGE, gallery: galleryPage } } }));
+
+    const body = await (await call("with-images")).text();
+
+    expect(body).toContain("<image:image>");
+    expect(body).toContain("<image:loc>https://cdn.example.com/asset-1</image:loc>");
+    expect(body).toContain("<image:caption>Wedding shot</image:caption>");
+    // Home's <url> has no images.
+    const homeEntry = body.slice(0, body.indexOf("with-images/gallery"));
+    expect(homeEntry).not.toContain("<image:image>");
   });
 });
