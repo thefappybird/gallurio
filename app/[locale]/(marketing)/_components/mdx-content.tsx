@@ -1,5 +1,7 @@
 import { Suspense, type ComponentProps } from "react";
 import { GallurioPrice } from "./GallurioPrice";
+import { ProductShot } from "./editorial-media";
+import { YouTubeEmbed } from "./youtube-embed";
 
 /**
  * Component overrides for MDX article bodies (compare + blog).
@@ -22,6 +24,8 @@ export function buildMdxComponents() {
         <GallurioPrice {...props} />
       </Suspense>
     ),
+    ProductShot,
+    YouTubeEmbed,
     table: (props: ComponentProps<"table">) => (
       <div className="overflow-x-auto">
         <table {...props} />

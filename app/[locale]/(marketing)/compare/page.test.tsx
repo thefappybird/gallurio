@@ -1,12 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
-  getTranslations: vi.fn(async (arg?: string | { locale?: string; namespace?: string }) => {
-    const namespace = typeof arg === "string" ? arg : arg?.namespace;
-    return (key: string) => `${namespace}:${key}`;
-  }),
 }));
 
 vi.mock("@/lib/content/entries", () => ({
@@ -44,34 +40,31 @@ vi.mock("@/lib/content/entries", () => ({
 import CompareIndexPage, { generateMetadata } from "./page";
 
 describe("Compare index page", () => {
-  it("groups entries by category, newest first within each group", async () => {
-    const page = await CompareIndexPage({ params: Promise.resolve({ locale: "en" }) });
+  it("uses the shared editorial index and keeps comparisons newest first", async () => {
+    const page = CompareIndexPage();
     render(page);
 
-    const crmHeading = screen.getByText("marketing.compare:categories.crm");
-    const crmList = crmHeading.nextElementSibling as HTMLElement;
-    const links = within(crmList).getAllByRole("link");
-    expect(links.map((l) => l.textContent)).toEqual(["Gallurio vs HoneyBook", "Gallurio vs Dubsado"]);
-    expect(links[0]).toHaveAttribute("href", "/compare/gallurio-vs-honeybook");
-
-    expect(screen.getByText("marketing.compare:categories.website-builder")).toBeInTheDocument();
+    const articleLinks = screen.getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("/compare/"));
+    expect(articleLinks.map((link) => link.textContent)).toEqual([
+      "Gallurio vs HoneyBook",
+      "Gallurio vs Wix",
+      "Gallurio vs Dubsado",
+    ]);
     expect(screen.getByText("Gallurio vs Wix")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Comparisons" })).toHaveAttribute("aria-current", "page");
   });
 
   it("shows introductory prose above the list", async () => {
-    const page = await CompareIndexPage({ params: Promise.resolve({ locale: "en" }) });
+    const page = CompareIndexPage();
     render(page);
 
-    expect(screen.getByText("marketing.compare:index.intro1")).toBeInTheDocument();
-    expect(screen.getByText("marketing.compare:index.intro2")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Gallurio compared with the tools you use now" })).toBeInTheDocument();
+    expect(screen.getByText(/Direct comparisons of price/)).toBeInTheDocument();
   });
 
   it("publishes the compare index title and description", async () => {
-    await generateMetadata({ params: Promise.resolve({ locale: "en" }) });
-
-    expect(vi.mocked(await import("next-intl/server")).getTranslations).toHaveBeenCalledWith({
-      locale: "en",
-      namespace: "marketing.compare.metadata",
-    });
+    const metadata = generateMetadata();
+    expect(metadata.alternates?.canonical).toBe("http://localhost:3000/compare");
+    expect(metadata.alternates?.languages).not.toHaveProperty("ar");
   });
 });

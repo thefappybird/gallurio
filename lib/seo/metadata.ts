@@ -29,6 +29,11 @@ type MarketingMetadataInput = {
   description: string;
 };
 
+type EditorialMetadataInput = Omit<MarketingMetadataInput, "locale"> & {
+  publishedAt?: string;
+  updatedAt?: string;
+};
+
 export function marketingMetadata({
   locale,
   path,
@@ -39,5 +44,56 @@ export function marketingMetadata({
     title: { absolute: title },
     description,
     alternates: { canonical: localeUrl(locale, path), languages: hreflang(path) },
+  };
+}
+
+/**
+ * Metadata for the English-only editorial surface (`/resources`, `/blog`,
+ * and `/compare`). These pages deliberately do not advertise translated
+ * alternates: locale-prefixed requests permanently redirect to the one
+ * English URL instead.
+ */
+export function editorialMetadata({
+  path,
+  title,
+  description,
+  publishedAt,
+  updatedAt,
+}: EditorialMetadataInput): Metadata {
+  const canonical = localeUrl(routing.defaultLocale, path);
+  const socialImage = {
+    alt: "Gallurio — Your event business, beautifully managed.",
+    url: "/opengraph-image",
+  };
+  return {
+    title: { absolute: title },
+    description,
+    alternates: {
+      canonical,
+      languages: { en: canonical, "x-default": canonical },
+    },
+    openGraph: publishedAt
+      ? {
+          type: "article",
+          url: canonical,
+          title,
+          description,
+          publishedTime: publishedAt,
+          modifiedTime: updatedAt,
+          images: [socialImage],
+        }
+      : {
+          type: "website",
+          url: canonical,
+          title,
+          description,
+          images: [socialImage],
+        },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/opengraph-image"],
+    },
   };
 }

@@ -1,4 +1,5 @@
 import { getDisplayPricing } from "@/lib/pricing/localPricing";
+import { headlinePrice } from "@/lib/pricing/displayPrice";
 import { formatMoney } from "@/lib/utils/format-currency";
 
 type Period = "monthly" | "yearly";
@@ -10,27 +11,28 @@ type Period = "monthly" | "yearly";
  * it renders mid-sentence inside English-only articles — localizing just this
  * fragment would produce a mixed-language sentence.
  *
- * The figure always comes from getDisplayPricing() so an article can never
- * quote a stale number. `local` is a display-only conversion; the billed
- * currency is named alongside it so the estimate cannot be mistaken for what
- * is charged.
+ * The figure always comes from getDisplayPricing() so it follows the visitor's
+ * regional tier and cannot quote a stale number. Like every other price
+ * surface, a local-currency estimate leads when available and the billed USD
+ * amount is named alongside it.
  */
 export async function GallurioPrice({ period }: { period?: Period }) {
   const pricing = await getDisplayPricing();
 
-  const monthly = `${formatMoney(pricing.monthly, pricing.currency, "en")}/mo`;
-  const yearly = `${formatMoney(pricing.yearly, pricing.currency, "en")}/yr`;
+  const formatPeriod = (cadence: Period) => {
+    const headline = headlinePrice(pricing, cadence);
+    const suffix = cadence === "monthly" ? "/mo" : "/yr";
+    const amount = formatMoney(headline.amount, headline.currency, "en", {
+      maximumFractionDigits: headline.amount < 100 ? 2 : 0,
+    });
 
-  if (period === "monthly") return <>{monthly}</>;
-  if (period === "yearly") return <>{yearly}</>;
+    if (!headline.billed) return `${amount}${suffix}`;
 
-  if (!pricing.local) return <>{`${monthly} — ${yearly}`}</>;
+    const billed = formatMoney(headline.billed.amount, headline.billed.currency, "en");
+    return `${amount}${suffix} (billed as ${billed}${suffix})`;
+  };
 
-  // Small converted amounts need their minor units to stay meaningful:
-  // PHP 250 is about $4.30, not $4.
-  const local = formatMoney(pricing.local.monthly, pricing.local.currency, "en", {
-    maximumFractionDigits: pricing.local.monthly < 100 ? 2 : 0,
-  });
+  if (period) return <>{formatPeriod(period)}</>;
 
-  return <>{`${monthly} (about ${local}, billed in ${pricing.currency}) — ${yearly}`}</>;
+  return <>{`${formatPeriod("monthly")} — ${formatPeriod("yearly")}`}</>;
 }

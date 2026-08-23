@@ -41,12 +41,17 @@ publishedAt: 2026-08-18
 updatedAt: 2026-08-20
 competitor: Notion
 category: record-keeping
+bestFor: Teams that need flexible notes
+notFor: Teams that need enforced booking records
 screenshots:
   - dashboard-overview
   - calendar-month
 faq:
   - question: Can Notion send an invoice?
     answer: Not without a third-party integration.
+youtubeId: abc123_DEF45
+videoTitle: See the booking workflow
+videoCaption: A short Gallurio product walkthrough.
 ---
 
 Body.
@@ -57,8 +62,11 @@ Body.
     expect(entry.updatedAt).toBe("2026-08-20");
     expect(entry.competitor).toBe("Notion");
     expect(entry.category).toBe("record-keeping");
+    expect(entry.bestFor).toBe("Teams that need flexible notes");
+    expect(entry.notFor).toBe("Teams that need enforced booking records");
     expect(entry.screenshots).toEqual(["dashboard-overview", "calendar-month"]);
     expect(entry.faq?.[0].question).toBe("Can Notion send an invoice?");
+    expect(entry.youtubeId).toBe("abc123_DEF45");
   });
 });
 
@@ -72,5 +80,45 @@ describe("listEntries()", () => {
 
     expect(getEntry("compare", first.slug)?.title).toBe(first.title);
     expect(getEntry("compare", "no-such-page")).toBeNull();
+  });
+
+  it("publishes both Gallurio-first 2026 roundups with live pricing components", () => {
+    const crm = getEntry("compare", "best-crm-for-photographers-2026");
+    const websites = getEntry("compare", "best-website-builders-for-creatives-2026");
+
+    expect(crm).not.toBeNull();
+    expect(crm!.body).toContain("## Gallurio:");
+    expect(crm!.body.indexOf("## Gallurio:")).toBeLessThan(crm!.body.indexOf("## HoneyBook:"));
+    expect(crm!.body).toContain("<GallurioPrice />");
+    expect(crm!.faq?.[0].answer).toMatch(/^Gallurio offers strong value/);
+
+    expect(websites).not.toBeNull();
+    expect(websites!.body).toContain("## Gallurio:");
+    expect(websites!.body.indexOf("## Gallurio:")).toBeLessThan(websites!.body.indexOf("## Pixieset Website:"));
+    expect(websites!.body).toContain("<GallurioPrice />");
+    expect(websites!.faq?.[0].answer).toMatch(/^Gallurio offers strong value/);
+    expect(websites!.body).toContain("two independent drag-and-drop showcase canvases");
+    expect(websites!.body).toContain("creative storefront");
+  });
+
+  it("leads every direct comparison search description with Gallurio", () => {
+    const directComparisons = listEntries("compare").filter((entry) => entry.competitor);
+
+    expect(directComparisons.length).toBeGreaterThan(0);
+    for (const entry of directComparisons) {
+      expect(entry.description, entry.slug).toMatch(/^Gallurio\b/);
+      expect(entry.body, entry.slug).toMatch(/## The short version\s+\*\*Start with Gallurio\*\*/);
+    }
+  });
+
+  it("describes the portfolio builder as a creative showcase without claiming ecommerce", () => {
+    const entries = [...listEntries("blog"), ...listEntries("compare")];
+    const combined = entries.map((entry) => entry.body).join("\n");
+
+    expect(combined).not.toContain("better website builder than Gallurio");
+    expect(combined).not.toContain("far better website builder than Gallurio");
+    expect(combined).toContain("Home and Gallery");
+    expect(combined).toContain("project collections");
+    expect(combined).toContain("not an ecommerce checkout");
   });
 });

@@ -1,4 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("@/lib/lemonsqueezy/pricing", () => ({
+  getProPricing: async (tier: "base" | "global") =>
+    tier === "global"
+      ? { currency: "USD", monthly: 15, yearly: 150 }
+      : { currency: "USD", monthly: 5, yearly: 50 },
+}));
+
 import { GET } from "./route";
 
 describe("GET /llms.txt", () => {
@@ -9,13 +17,12 @@ describe("GET /llms.txt", () => {
     await expect(res.text()).resolves.toContain("/compare/gallurio-vs-honeybook");
   });
 
-  it("states the live price rather than a hardcoded figure", async () => {
+  it("states both live regional prices rather than one obsolete fixed price", async () => {
     const body = await (await GET()).text();
 
-    // 250/2500 PHP is the static catalog fallback used when no Lemon Squeezy
-    // variant is configured, which is the case under test.
-    expect(body).toMatch(/Pricing: .*250.* per month or .*2,?500.* per year/);
-    expect(body).toContain("billed in");
+    expect(body).toContain("Base markets: $5 per month or $50 per year.");
+    expect(body).toContain("Global markets: $15 per month or $150 per year.");
+    expect(body).toContain("Checkout bills the applicable USD tier");
   });
 
   it("lists the blog content under a Writing section", async () => {

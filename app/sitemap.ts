@@ -20,6 +20,7 @@ const MARKETING_PATHS = [
   "/book-demo",
   "/compare",
   "/blog",
+  "/resources",
   "/privacy",
   "/terms",
   "/refunds",

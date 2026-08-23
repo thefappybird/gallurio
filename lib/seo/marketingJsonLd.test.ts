@@ -73,6 +73,8 @@ describe("buildArticleLd", () => {
       url: "http://localhost:3000/blog/announcing",
       datePublished: "2026-01-01T00:00:00.000Z",
       dateModified: "2026-01-01T00:00:00.000Z",
+      author: { "@type": "Organization", name: "Gallurio Editorial", url: "http://localhost:3000/about" },
+      publisher: { "@type": "Organization", name: "Gallurio", url: "http://localhost:3000" },
     });
   });
 });

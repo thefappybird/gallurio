@@ -23,11 +23,19 @@ const frontmatterSchema = z.object({
   // Comparison pages only. `category` groups them on the /compare index.
   competitor: z.string().min(1).optional(),
   category: z.string().min(1).optional(),
+  // Editorial summary fields used by comparison verdict strips.
+  bestFor: z.string().min(1).optional(),
+  notFor: z.string().min(1).optional(),
   faq: z
     .array(z.object({ question: z.string().min(1), answer: z.string().min(1) }))
     .optional(),
   // Shot ids from docs/marketing/screenshot-spec.md.
   screenshots: z.array(z.string().min(1)).optional(),
+  // Optional YouTube embed seam. Articles remain valid before the final
+  // video is uploaded; adding the id later enables the shared player.
+  youtubeId: z.string().regex(/^[A-Za-z0-9_-]{6,20}$/).optional(),
+  videoTitle: z.string().min(1).optional(),
+  videoCaption: z.string().min(1).optional(),
 });
 
 export type ContentEntry = z.infer<typeof frontmatterSchema> & {

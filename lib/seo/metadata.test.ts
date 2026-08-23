@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { localeUrl, marketingMetadata } from "./metadata";
+import { editorialMetadata, localeUrl, marketingMetadata } from "./metadata";
 
 describe("localeUrl()", () => {
   it("leaves the default locale unprefixed and prefixes the rest", () => {
@@ -38,5 +38,47 @@ describe("marketingMetadata()", () => {
 
     expect(meta.title).toEqual({ absolute: "Pricing" });
     expect(meta.description).toBe("What Gallurio costs.");
+  });
+});
+
+describe("editorialMetadata()", () => {
+  it("publishes one English canonical without non-English alternates", () => {
+    const meta = editorialMetadata({
+      path: "/blog/example",
+      title: "Example",
+      description: "An English article.",
+    });
+
+    expect(meta.alternates).toEqual({
+      canonical: "http://localhost:3000/blog/example",
+      languages: {
+        en: "http://localhost:3000/blog/example",
+        "x-default": "http://localhost:3000/blog/example",
+      },
+    });
+  });
+
+  it("publishes article-specific social metadata when dates are provided", () => {
+    const meta = editorialMetadata({
+      path: "/compare/example",
+      title: "Example comparison",
+      description: "A useful comparison.",
+      publishedAt: "2026-08-18",
+      updatedAt: "2026-08-23",
+    });
+
+    expect(meta.openGraph).toMatchObject({
+      type: "article",
+      url: "http://localhost:3000/compare/example",
+      title: "Example comparison",
+      description: "A useful comparison.",
+      publishedTime: "2026-08-18",
+      modifiedTime: "2026-08-23",
+    });
+    expect(meta.twitter).toMatchObject({
+      card: "summary_large_image",
+      title: "Example comparison",
+      description: "A useful comparison.",
+    });
   });
 });

@@ -167,6 +167,22 @@ describe("proxy", () => {
     expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    ["/fil/blog", "/blog"],
+    ["/id/blog/how-to-price", "/blog/how-to-price"],
+    ["/ar/compare/gallurio-vs-wix?ref=nav", "/compare/gallurio-vs-wix?ref=nav"],
+    ["/th/resources", "/resources"],
+  ])("permanently redirects English-only editorial route %s to %s", async (path, expected) => {
+    const { proxy } = await import("./proxy");
+
+    const response = (await proxy(new NextRequest(`http://localhost${path}`))) as Response;
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe(`http://localhost${expected}`);
+    expect(authMiddlewareMock).not.toHaveBeenCalled();
+    expect(intlMiddlewareMock).not.toHaveBeenCalled();
+  });
+
   it("preserves original path+query as returnTo when redirecting unauthenticated users to sign-in (local /sign-in redirect)", async () => {
     // Simulate authkitMiddleware signalling an unauthenticated request by
     // returning a redirect to /sign-in (mock/test environments).

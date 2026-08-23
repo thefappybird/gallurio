@@ -1,6 +1,6 @@
 # Comparison page screenshot work order
 
-Self-contained brief for whoever captures the images for the ten comparison pages. Nothing here
+Self-contained brief for whoever captures the images for the individual comparisons and pillar pages. Nothing here
 depends on the SEO branch's code — the app as it stands today has every screen listed.
 
 Load the `run-gallurio` skill for booting the app and signing in as the seeded owner, and
@@ -14,7 +14,7 @@ permanent reference.
 
 ## Capture rules
 
-- **Output:** `public/marketing/compare/<shot-id>.png`. Shot ids are given below and are stable —
+- **Output:** `public/marketing/editorial/<shot-id>.png`. Shot ids are given below and are stable —
   the MDX frontmatter references them by id.
 - **Viewports:** `1280x800` for every desktop shot, `375x812` for every shot marked *(mobile)*.
   Device scale factor **2** on all of them.
@@ -57,7 +57,7 @@ Used across most or all ten pages. Capture once.
 | `client-record` | Client record with booking history and total spent | One client, their contact details, and a history list of two or more past bookings |
 | `inquiries-inbox` | Inquiry inbox with unread and converted inquiries | Mixed read/unread state, at least one showing it became a booking |
 | `invoice-pdf` | Generated invoice PDF | The rendered PDF itself, not the dialog. Branded, with line items and a total |
-| `pricing-local` | Pricing page showing the localized price estimate | The Pro card with the `~ $X - billed in PHP` note visible. Capture from a US-geo context so the note renders |
+| `pricing-local` | Pricing page showing the localized price estimate | The Pro card with the local-currency headline and `billed as $X` note visible. Capture from a non-USD geo context such as AE so the note renders |
 
 ## Portfolio and public-page shots
 
@@ -104,7 +104,7 @@ re-shoot a single frame — it writes to the shared dev DB each time.
 
 The site-builder and gallery pages lean on `editor-*` and `public-*` because the argument there is
 "your website already does the selling — it should also do the booking." The CRM pages lean on
-`bookings-*` and `invoice-*` because the argument is feature parity at a fifth of the price.
+`bookings-*` and `invoice-*` because the argument is focused feature parity with regional pricing.
 
 ---
 

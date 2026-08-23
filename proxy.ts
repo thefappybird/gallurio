@@ -58,6 +58,7 @@ const UNAUTHENTICATED_PATHS = [
   "/compare/(.*)",
   "/blog",
   "/blog/(.*)",
+  "/resources",
   "/terms",
   "/privacy",
   "/refunds",
@@ -313,6 +314,21 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   // hitting the bare path needs them served as-is.
   if (ROOT_CRAWLER_PATHS.has(pathname)) {
     return NextResponse.next();
+  }
+
+  // The editorial surface is intentionally English-only. A translated shell
+  // around an untranslated article sends conflicting language signals and
+  // creates duplicate locale URLs, so collapse every prefixed request onto
+  // the default-locale (unprefixed) canonical before next-intl handles it.
+  const localePrefix = pathname.match(LOCALE_PREFIX_RE)?.[0];
+  const editorialPath = stripLocale(pathname);
+  const isEditorialPath = ["/resources", "/blog", "/compare"].some(
+    (prefix) => editorialPath === prefix || editorialPath.startsWith(`${prefix}/`),
+  );
+  if (localePrefix && isEditorialPath) {
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = editorialPath;
+    return NextResponse.redirect(redirectUrl, 308);
   }
 
   // -------------------------------------------------------------------------
