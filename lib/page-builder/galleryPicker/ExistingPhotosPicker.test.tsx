@@ -11,8 +11,8 @@ const collections = Array.from({ length: 9 }, (_, i) => ({
   id: `c${i}`, name: `Collection ${i}`, coverUrl: `https://x/c${i}.jpg`, coverPublicId: `pid-c${i}`, itemCount: 2,
 }));
 const photos = [
-  { id: "p1", publicId: "pid-1", thumbUrl: "https://x/1.jpg", caption: "One" },
-  { id: "p2", publicId: "pid-2", thumbUrl: "https://x/2.jpg", caption: "Two" },
+  { id: "p1", publicId: "pid-1", thumbUrl: "https://x/1.jpg", caption: "One", altText: null },
+  { id: "p2", publicId: "pid-2", thumbUrl: "https://x/2.jpg", caption: "Two", altText: null },
 ];
 function routeFetch(url: string) {
   if (url === "/api/portfolio/gallery") {

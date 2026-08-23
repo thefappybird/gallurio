@@ -7,8 +7,8 @@ const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 const items = [
-  { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A" },
-  { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B" },
+  { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", altText: null },
+  { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B", altText: null },
 ];
 
 beforeEach(() => {

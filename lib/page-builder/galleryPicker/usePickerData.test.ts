@@ -10,6 +10,7 @@ const MOCK_DATA = {
       publicId: "cf-asset-abc123",
       thumbUrl: "https://imagedelivery.net/test-hash/cf-asset-abc123/w=200,h=200,fit=cover,q=85,f=auto",
       caption: null,
+      altText: null,
     },
   ],
 };

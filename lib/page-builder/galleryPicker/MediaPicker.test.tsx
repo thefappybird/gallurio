@@ -9,6 +9,8 @@ vi.mock("@/lib/storage/uploadImage.client", () => ({
 }));
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
@@ -18,8 +20,8 @@ const collections = [
   { id: "col3", name: "Events", coverUrl: "https://x/c3.jpg", coverPublicId: "pid-col3", itemCount: 2 },
 ];
 const colItems = [
-  { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A" },
-  { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B" },
+  { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", altText: null },
+  { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B", altText: null },
 ];
 
 // Route fetch by URL: picker-data (/api/portfolio/gallery) vs paginated feed.
@@ -342,8 +344,8 @@ describe("MediaPicker", () => {
 
   it("multi mode: 'select all on page' forwards width/height from items that carry dims", async () => {
     const richItems = [
-      { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", width: 800, height: 600 },
-      { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B" },
+      { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", altText: null, width: 800, height: 600 },
+      { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B", altText: null },
     ];
     mockFetch.mockImplementation((u: string) => {
       if (u === "/api/portfolio/gallery") {
@@ -363,7 +365,7 @@ describe("MediaPicker", () => {
 
   it("multi mode: selecting an item that carries width/height includes dims in the selection", async () => {
     const richItems = [
-      { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", width: 1200, height: 800 },
+      { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", altText: null, width: 1200, height: 800 },
     ];
     mockFetch.mockImplementation((u: string) => {
       if (u === "/api/portfolio/gallery") {
@@ -383,8 +385,8 @@ describe("MediaPicker", () => {
       { id: "slow", name: "SlowCol", coverUrl: "https://x/s.jpg", itemCount: 1 },
       { id: "fast", name: "FastCol", coverUrl: "https://x/f.jpg", itemCount: 1 },
     ];
-    const slowItems = [{ id: "s1", publicId: "pid-s1", thumbUrl: "https://x/s1.jpg", caption: "SlowPhoto" }];
-    const fastItems = [{ id: "f1", publicId: "pid-f1", thumbUrl: "https://x/f1.jpg", caption: "FastPhoto" }];
+    const slowItems = [{ id: "s1", publicId: "pid-s1", thumbUrl: "https://x/s1.jpg", caption: "SlowPhoto", altText: null }];
+    const fastItems = [{ id: "f1", publicId: "pid-f1", thumbUrl: "https://x/f1.jpg", caption: "FastPhoto", altText: null }];
 
     // Deferred promise for the slow collection's feed; resolve it manually later.
     let resolveSlow: (r: Response) => void = () => {};
@@ -413,13 +415,13 @@ describe("MediaPicker", () => {
     fireEvent.click(await screen.findByRole("button", { name: /fastcol/i }));
 
     // Fast collection's photo should render.
-    await screen.findByRole("button", { name: /FastPhoto/ });
+    await screen.findByRole("button", { name: "FastPhoto" });
 
     // Now let the stale slow response resolve — it must not overwrite the view.
     resolveSlow({ ok: true, json: async () => ({ items: slowItems, nextCursor: null }) } as Response);
 
     await waitFor(() => expect(screen.queryByRole("button", { name: /SlowPhoto/ })).toBeNull());
-    expect(screen.getByRole("button", { name: /FastPhoto/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "FastPhoto" })).toBeTruthy();
   });
 
   describe("upload auto-select", () => {
@@ -498,6 +500,39 @@ describe("MediaPicker", () => {
         ])
       );
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+  });
+
+  describe("edit alt text trigger", () => {
+    it("renders with an accessible name and opens the dialog without toggling selection", async () => {
+      const onChange = vi.fn();
+      render(<MediaPicker mode="single" value="" onChange={onChange} open onOpenChange={vi.fn()} />);
+      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
+      expect(onChange).not.toHaveBeenCalled();
+      expect(await screen.findByLabelText("Alt text")).toBeTruthy();
+    });
+
+    it("PATCHes on save and the tile reflects the new alt text when reopened", async () => {
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+        if (u === "/api/portfolio/gallery/items/a" && (init as RequestInit)?.method === "PATCH") {
+          return Promise.resolve({ ok: true, json: async () => ({ ...colItems[0], altText: "Bride and groom" }) } as Response);
+        }
+        return routeFetch(u);
+      });
+      render(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
+      fireEvent.change(await screen.findByLabelText("Alt text"), { target: { value: "Bride and groom" } });
+      fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+      await waitFor(() =>
+        expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/a" && (i as RequestInit)?.method === "PATCH")).toBe(true)
+      );
+      await waitFor(() => expect(screen.queryByLabelText("Alt text")).toBeNull());
+
+      fireEvent.click(screen.getByRole("button", { name: /edit alt text for A/i }));
+      expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
     });
   });
 });

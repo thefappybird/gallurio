@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
-import { GripVerticalIcon, ImagePlusIcon, Loader2Icon, StarIcon, Trash2Icon } from "lucide-react";
+import { GripVerticalIcon, ImagePlusIcon, Loader2Icon, PencilIcon, StarIcon, Trash2Icon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
@@ -13,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
+import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
+import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import type { PickerCollection, PickerItem } from "./types";
 
 const PAGE = 48;
@@ -26,6 +29,8 @@ export function EditCollectionDialog({
   onChanged: () => void;
 }) {
   const errMsg = useActionError();
+  const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
+  const cache = useGalleryPickerCache();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -38,8 +43,27 @@ export function EditCollectionDialog({
   const [uploading, setUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
 
   const colId = collection?.id ?? null;
+
+  const metaLabels: ImageMetaLabels = {
+    title: tMeta("title"),
+    altLabel: tMeta("altLabel"),
+    altHelp: tMeta("altHelp"),
+    altPlaceholder: tMeta("altPlaceholder"),
+    counter: (count, max) => tMeta("counter", { count, max }),
+    save: tMeta("save"),
+    saving: tMeta("saving"),
+    cancel: tMeta("cancel"),
+    savedToast: tMeta("savedToast"),
+    errorMessage: (code) => errMsg(code),
+  };
+
+  function handleMetaSaved(updated: PickerItem) {
+    setItems((prev) => prev.map((it) => (it.id === updated.id ? updated : it)));
+    if (colId) cache?.bust(colId);
+  }
 
   const loadAll = useCallback(async (id: string) => {
     setLoading(true);
@@ -218,7 +242,7 @@ export function EditCollectionDialog({
           });
           if (res.ok) {
             const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
-            setItems((prev) => [...prev, { id: created.id, publicId: up.assetId, thumbUrl: created.thumbUrl, caption: created.caption }]);
+            setItems((prev) => [...prev, { id: created.id, publicId: up.assetId, thumbUrl: created.thumbUrl, caption: created.caption, altText: null }]);
           } else {
             setError(errMsg("photo_add_failed"));
           }
@@ -316,6 +340,14 @@ export function EditCollectionDialog({
                     >
                       <StarIcon className="size-3" aria-hidden /> Cover
                     </button>
+                    <button
+                      type="button"
+                      aria-label={tMeta("editTrigger", { name: item.caption || tMeta("photoFallback") })}
+                      onClick={() => setMetaItem(item)}
+                      className="absolute bottom-0.5 right-0.5 inline-flex size-5 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <PencilIcon className="size-3" aria-hidden />
+                    </button>
                   </li>
                 );
               })}
@@ -343,6 +375,16 @@ export function EditCollectionDialog({
         onOpenChange={setPickerOpen}
         excludePublicIds={items.map((i) => i.publicId)}
         onAdd={addExisting}
+      />
+
+      <ImageMetaDialog
+        item={metaItem}
+        open={metaItem !== null}
+        onOpenChange={(next) => {
+          if (!next) setMetaItem(null);
+        }}
+        onSaved={handleMetaSaved}
+        labels={metaLabels}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={(n) => { if (!n && !busy) setConfirmDelete(false); }}>

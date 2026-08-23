@@ -6,6 +6,7 @@ import {
   GripVerticalIcon,
   ImagePlusIcon,
   Loader2Icon,
+  PencilIcon,
   PlusIcon,
   XIcon,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
+import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
 import type { PickerCollection, PickerItem } from "./types";
 
 // Plain strings — the Puck field panel is not wrapped in an IntlProvider.
@@ -55,7 +57,28 @@ const L = {
   errSize: "Each photo must be under 15 MB.",
   errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
+  editAria: (name: string) => `Edit alt text for ${name}`,
+  photoFallback: "photo",
 };
+
+// Copy for the shared ImageMetaDialog — plain strings for the same reason as `L` above.
+const META_L = {
+  title: "Edit alt text",
+  altLabel: "Alt text",
+  altHelp: "Describe what the photo shows. Read aloud by screen readers and used by search engines.",
+  altPlaceholder: "e.g. Bride and groom dancing under string lights",
+  counter: (count: number, max: number) => `${count}/${max} characters`,
+  save: "Save",
+  saving: "Saving…",
+  cancel: "Cancel",
+  savedToast: "Alt text saved.",
+  errorMessage: (code: string | null) => {
+    if (code === "not_found") return "Not found.";
+    if (code === "owner_only") return "Only the workspace owner can do this.";
+    if (code === "invalid_input") return "Please check the form and try again.";
+    return "Something went wrong. Please try again.";
+  },
+} satisfies ImageMetaLabels;
 
 const ALL_PHOTOS_ID = "all";
 const PAGE_SIZE = 16;
@@ -132,6 +155,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const [nav, setNav] = useState<Nav>({ kind: "collections" });
   const [feed, setFeed] = useState<FeedState>(EMPTY_FEED);
   const [createOpen, setCreateOpen] = useState(false);
+  const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
 
   // Upload state (scoped to the open collection / all feed).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +172,12 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const remember = useCallback((items: PickerItem[]) => {
     for (const it of items) seen.current.set(it.id, it);
   }, []);
+
+  function handleMetaSaved(updated: PickerItem) {
+    remember([updated]);
+    setFeed((f) => ({ ...f, items: f.items.map((it) => (it.id === updated.id ? updated : it)) }));
+    if (nav.kind === "photos") cache?.bust(nav.id);
+  }
 
   // Derive typed selections based on mode.
   const selection = mode === "multi" ? asPhotoSelection(value as MediaPickerSelection[]) : [];
@@ -397,6 +427,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           publicId: r.value.assetId,
           thumbUrl: created.thumbUrl,
           caption: created.caption,
+          altText: null,
           // uploadImage already measured naturalWidth/Height before the upload;
           // propagate them so a freshly-uploaded image carries dims into any
           // subsequent selection, enabling the block to reserve space (CLS fix).
@@ -589,6 +620,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               orderOf={orderOf}
               onPickSingle={pickSingle}
               onToggleMulti={toggleMulti}
+              onEditItem={setMetaItem}
               onLoadMore={() => nav.kind === "photos" && feed.nextCursor && fetchFeed(nav.id, feed.nextCursor)}
               onRetry={() => nav.kind === "photos" && fetchFeed(nav.id, null)}
               emptyLabel={nav.id === ALL_PHOTOS_ID ? L.emptyWorkspace : L.emptyCollection}
@@ -648,6 +680,16 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           cache?.bust(); // invalidate all cached pages so the new collection appears
           retry();
         }}
+      />
+
+      <ImageMetaDialog
+        item={metaItem}
+        open={metaItem !== null}
+        onOpenChange={(next) => {
+          if (!next) setMetaItem(null);
+        }}
+        onSaved={handleMetaSaved}
+        labels={META_L}
       />
     </Dialog>
   );
@@ -760,6 +802,7 @@ function PhotoGrid({
   orderOf,
   onPickSingle,
   onToggleMulti,
+  onEditItem,
   onLoadMore,
   onRetry,
   emptyLabel,
@@ -771,6 +814,7 @@ function PhotoGrid({
   orderOf: (id: string) => number;
   onPickSingle: (item: PickerItem) => void;
   onToggleMulti: (item: PickerItem) => void;
+  onEditItem: (item: PickerItem) => void;
   onLoadMore: () => void;
   onRetry: () => void;
   emptyLabel: string;
@@ -787,7 +831,7 @@ function PhotoGrid({
           {feed.items.map((item) => {
             const selected = isSelected(item.id);
             return (
-              <li key={item.id} role="option" aria-selected={selected}>
+              <li key={item.id} role="option" aria-selected={selected} className="relative">
                 <button
                   type="button"
                   onClick={() => (mode === "single" ? onPickSingle(item) : onToggleMulti(item))}
@@ -804,6 +848,17 @@ function PhotoGrid({
                       {mode === "multi" ? orderOf(item.id) : "✓"}
                     </span>
                   )}
+                </button>
+                <button
+                  type="button"
+                  aria-label={L.editAria(item.caption || L.photoFallback)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditItem(item);
+                  }}
+                  className="absolute bottom-1 left-1 inline-flex size-5 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <PencilIcon className="size-3" aria-hidden />
                 </button>
               </li>
             );
