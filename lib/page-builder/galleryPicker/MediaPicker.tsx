@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import {
   ArrowLeftIcon,
   GripVerticalIcon,
@@ -27,7 +29,8 @@ import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
 import type { PickerCollection, PickerItem } from "./types";
 
-// Plain strings — the Puck field panel is not wrapped in an IntlProvider.
+// Plain strings — the Puck field panel IS wrapped in context (Puck portals into the
+// app tree, no separate createRoot), so this is English by choice, not constraint.
 const L = {
   title: "Choose photos",
   titleSingle: "Choose a photo",
@@ -57,28 +60,7 @@ const L = {
   errSize: "Each photo must be under 15 MB.",
   errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
-  editAria: (name: string) => `Edit alt text for ${name}`,
-  photoFallback: "photo",
 };
-
-// Copy for the shared ImageMetaDialog — plain strings for the same reason as `L` above.
-const META_L = {
-  title: "Edit alt text",
-  altLabel: "Alt text",
-  altHelp: "Describe what the photo shows. Read aloud by screen readers and used by search engines.",
-  altPlaceholder: "e.g. Bride and groom dancing under string lights",
-  counter: (count: number, max: number) => `${count}/${max} characters`,
-  save: "Save",
-  saving: "Saving…",
-  cancel: "Cancel",
-  savedToast: "Alt text saved.",
-  errorMessage: (code: string | null) => {
-    if (code === "not_found") return "Not found.";
-    if (code === "owner_only") return "Only the workspace owner can do this.";
-    if (code === "invalid_input") return "Please check the form and try again.";
-    return "Something went wrong. Please try again.";
-  },
-} satisfies ImageMetaLabels;
 
 const ALL_PHOTOS_ID = "all";
 const PAGE_SIZE = 16;
@@ -150,6 +132,8 @@ function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPi
 }
 
 export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: Props) {
+  const errMsg = useActionError();
+  const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
   const { state, retry } = usePickerData();
   const cache = useGalleryPickerCache();
   const [nav, setNav] = useState<Nav>({ kind: "collections" });
@@ -158,6 +142,19 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
   // The pencil button that opened the alt-text dialog — restores focus there on close.
   const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const metaLabels: ImageMetaLabels = {
+    title: tMeta("title"),
+    altLabel: tMeta("altLabel"),
+    altHelp: tMeta("altHelp"),
+    altPlaceholder: tMeta("altPlaceholder"),
+    counter: (count, max) => tMeta("counter", { count, max }),
+    save: tMeta("save"),
+    saving: tMeta("saving"),
+    cancel: tMeta("cancel"),
+    savedToast: tMeta("savedToast"),
+    errorMessage: (code) => errMsg(code),
+  };
 
   // Upload state (scoped to the open collection / all feed).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -626,6 +623,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
                 metaTriggerRef.current = triggerEl;
                 setMetaItem(item);
               }}
+              editLabelFor={(name) => tMeta("editTrigger", { name: name || tMeta("photoFallback") })}
               onLoadMore={() => nav.kind === "photos" && feed.nextCursor && fetchFeed(nav.id, feed.nextCursor)}
               onRetry={() => nav.kind === "photos" && fetchFeed(nav.id, null)}
               emptyLabel={nav.id === ALL_PHOTOS_ID ? L.emptyWorkspace : L.emptyCollection}
@@ -694,7 +692,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           if (!next) setMetaItem(null);
         }}
         onSaved={handleMetaSaved}
-        labels={META_L}
+        labels={metaLabels}
         triggerRef={metaTriggerRef}
       />
     </Dialog>
@@ -809,6 +807,7 @@ function PhotoGrid({
   onPickSingle,
   onToggleMulti,
   onEditItem,
+  editLabelFor,
   onLoadMore,
   onRetry,
   emptyLabel,
@@ -821,6 +820,7 @@ function PhotoGrid({
   onPickSingle: (item: PickerItem) => void;
   onToggleMulti: (item: PickerItem) => void;
   onEditItem: (item: PickerItem, triggerEl: HTMLButtonElement) => void;
+  editLabelFor: (name: string | null) => string;
   onLoadMore: () => void;
   onRetry: () => void;
   emptyLabel: string;
@@ -864,7 +864,7 @@ function PhotoGrid({
                 </button>
                 <button
                   type="button"
-                  aria-label={L.editAria(item.caption || L.photoFallback)}
+                  aria-label={editLabelFor(item.caption)}
                   onClick={(e) => {
                     e.stopPropagation();
                     onEditItem(item, e.currentTarget);
