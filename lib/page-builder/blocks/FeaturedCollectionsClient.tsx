@@ -117,10 +117,15 @@ export function FeaturedCollectionsClient({
           >
             {/* Cover */}
             {tile.coverUrl ? (
+              // Cover is a meaningful image — real alt (the collection name) so
+              // it's crawlable in server HTML. aria-hidden keeps it out of the
+              // a11y tree so it isn't announced twice: the wrapping <button>
+              // already carries the collection name as its accessible name.
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={tile.coverUrl}
-                alt=""
+                alt={tile.name}
+                aria-hidden="true"
                 loading="lazy"
                 decoding="async"
                 style={{
