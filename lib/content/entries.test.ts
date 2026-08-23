@@ -107,7 +107,24 @@ describe("listEntries()", () => {
     expect(directComparisons.length).toBeGreaterThan(0);
     for (const entry of directComparisons) {
       expect(entry.description, entry.slug).toMatch(/^Gallurio\b/);
+      expect(entry.description, entry.slug).toMatch(/\balternative\b/i);
       expect(entry.body, entry.slug).toMatch(/## The short version\s+\*\*Start with Gallurio\*\*/);
+    }
+  });
+
+  it("answers portfolio-discovery questions without promising rankings", () => {
+    const directComparisons = listEntries("compare").filter((entry) => entry.competitor);
+
+    for (const entry of directComparisons) {
+      const discoveryAnswer = entry.faq?.find((item) =>
+        /SEO|discover|search results|online/i.test(item.question)
+      )?.answer;
+
+      expect(discoveryAnswer, entry.slug).toBeDefined();
+      expect(discoveryAnswer, entry.slug).toContain("canonical URLs");
+      expect(discoveryAnswer, entry.slug).toMatch(
+        /does not guarantee|cannot guarantee|no platform can guarantee|not guaranteed/i
+      );
     }
   });
 
