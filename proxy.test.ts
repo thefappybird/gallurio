@@ -591,7 +591,7 @@ describe("proxy", () => {
 
       await proxy(req);
 
-      const calledReq = authMiddlewareMock.mock.calls[0]?.[0] as NextRequest;
+      const calledReq = (authMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
       expect(calledReq.headers.get(PORTFOLIO_SLUG_HEADER)).toBeNull();
     });
 
@@ -627,7 +627,7 @@ describe("proxy", () => {
 
       await proxy(req);
 
-      const calledReq = intlMiddlewareMock.mock.calls[0]?.[0] as NextRequest;
+      const calledReq = (intlMiddlewareMock.mock.calls[0] as unknown[] | undefined)?.[0] as NextRequest;
       expect(calledReq.headers.get(PORTFOLIO_SLUG_HEADER)).toBeNull();
     });
   });

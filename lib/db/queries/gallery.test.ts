@@ -469,13 +469,19 @@ describe("propagateItemAltText", () => {
     const saved = await Workspace.findById(ws._id).lean();
     const savedHome = saved!.publicPage!.data!.home as typeof home;
     expect(savedHome.content[0]).toEqual(home.content[0]); // Heading block untouched
-    const images = savedHome.content[1].props.images as Array<{ id: string; publicId: string; alt: string }>;
-    expect(images).toEqual([
+    // content[] is inferred as a union of the two block shapes, so narrow to the
+    // gallery block's props once rather than at each assertion.
+    const gridProps = savedHome.content[1].props as {
+      images: Array<{ id: string; publicId: string; alt: string }>;
+      columns: number;
+      gap: string;
+    };
+    expect(gridProps.images).toEqual([
       { id: other, publicId: "p0", alt: "keep me" },
       { id: itemId, publicId: "p1", alt: "new alt" },
     ]);
-    expect(savedHome.content[1].props.columns).toBe(3);
-    expect(savedHome.content[1].props.gap).toBe("normal");
+    expect(gridProps.columns).toBe(3);
+    expect(gridProps.gap).toBe("normal");
   });
 
   it("is a no-op for a missing workspace, malformed itemId, or empty page", async () => {
