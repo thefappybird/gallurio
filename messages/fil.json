@@ -2554,6 +2554,19 @@
           "description": "Sabihin sa amin ang tungkol sa iyong event.",
           "submit": "Magpadala ng katanungan"
         },
+        "imageMeta": {
+          "title": "I-edit ang alt text",
+          "altLabel": "Alt text",
+          "altHelp": "Ilarawan kung ano ang ipinapakita ng larawan. Binabasa nang malakas ng mga screen reader at ginagamit ng mga search engine para maunawaan ang larawan.",
+          "altPlaceholder": "hal. Nobyo at nobya na sumasayaw sa ilalim ng mga ilaw",
+          "counter": "{count}/{max} na character",
+          "save": "I-save",
+          "saving": "Sine-save…",
+          "cancel": "Kanselahin",
+          "savedToast": "Na-save ang alt text.",
+          "editTrigger": "I-edit ang alt text para sa {name}",
+          "photoFallback": "larawan"
+        },
         "mobileBanner": {
           "title": "Mas maganda ang editor sa mas malaking screen",
           "body": "Ang drag-and-drop na pag-edit ay dinisenyo para sa tablet at desktop.",

@@ -2554,6 +2554,19 @@
           "description": "Ceritakan tentang acara Anda.",
           "submit": "Kirim pertanyaan"
         },
+        "imageMeta": {
+          "title": "Edit teks alternatif",
+          "altLabel": "Teks alternatif",
+          "altHelp": "Jelaskan apa yang ditampilkan foto ini. Dibacakan oleh pembaca layar dan digunakan mesin pencari untuk memahami gambar.",
+          "altPlaceholder": "mis. Pengantin pria dan wanita menari di bawah lampu",
+          "counter": "{count}/{max} karakter",
+          "save": "Simpan",
+          "saving": "Menyimpan…",
+          "cancel": "Batal",
+          "savedToast": "Teks alternatif disimpan.",
+          "editTrigger": "Edit teks alternatif untuk {name}",
+          "photoFallback": "foto"
+        },
         "mobileBanner": {
           "title": "Editor bekerja paling baik di layar yang lebih besar",
           "body": "Pengeditan seret dan lepas dirancang untuk tablet dan desktop.",

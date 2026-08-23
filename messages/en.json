@@ -2561,6 +2561,19 @@
           "openPreview": "Open preview",
           "continue": "Continue anyway"
         },
+        "imageMeta": {
+          "title": "Edit alt text",
+          "altLabel": "Alt text",
+          "altHelp": "Describe what the photo shows. Read aloud by screen readers and used by search engines to understand the image.",
+          "altPlaceholder": "e.g. Bride and groom dancing under string lights",
+          "counter": "{count}/{max} characters",
+          "save": "Save",
+          "saving": "Saving…",
+          "cancel": "Cancel",
+          "savedToast": "Alt text saved.",
+          "editTrigger": "Edit alt text for {name}",
+          "photoFallback": "photo"
+        },
         "contactSettings": "Edit contact settings",
         "contactSettingsShort": "Contact Form",
         "headerSettings": "Navigation",
