@@ -81,14 +81,70 @@ vi.mock("@/lib/portfolio/publicUrl", () => ({
   portfolioPublicUrl: (slug: string) => `http://localhost:3000/w/${slug}`,
 }));
 
-vi.mock("@/lib/page-builder/seo/jsonLd", () => ({
-  buildHomeJsonLd: vi.fn(() => [{}, {}, {}]),
-  safeJsonLd: vi.fn(() => "{}"),
-}));
+// Wraps the real implementation with vi.fn so existing `toHaveBeenCalledWith`
+// spy assertions keep working, while also letting the new self-containment
+// test below inspect real emitted @ids (a fully-stubbed [{}, {}, {}] mock
+// cannot exercise that invariant).
+vi.mock("@/lib/page-builder/seo/jsonLd", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/page-builder/seo/jsonLd")>(
+    "@/lib/page-builder/seo/jsonLd"
+  );
+  return {
+    ...actual,
+    buildHomeJsonLd: vi.fn(actual.buildHomeJsonLd),
+    safeJsonLd: vi.fn(actual.safeJsonLd),
+  };
+});
 
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { buildHomeJsonLd } from "@/lib/page-builder/seo/jsonLd";
+
+// ---------------------------------------------------------------------------
+// Reusable regression guard (mirrors lib/page-builder/seo/__tests__/jsonLd.test.ts):
+// every `@id` referenced anywhere in this page's emitted JSON-LD <script> tags
+// must be defined by one of those same scripts' top-level nodes.
+// ---------------------------------------------------------------------------
+
+function collectJsonLdNodes(node: React.ReactNode, into: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (Array.isArray(node)) {
+    for (const n of node) collectJsonLdNodes(n, into);
+    return into;
+  }
+  if (!node || typeof node !== "object" || !("type" in node)) return into;
+  const el = node as React.ReactElement<Record<string, unknown>>;
+  if (el.type === "script" && el.props?.type === "application/ld+json") {
+    const html = (el.props.dangerouslySetInnerHTML as { __html?: string } | undefined)?.__html;
+    if (typeof html === "string") into.push(JSON.parse(html));
+    return into;
+  }
+  if (el.props?.children) collectJsonLdNodes(el.props.children as React.ReactNode, into);
+  return into;
+}
+
+function collectAllIds(value: unknown, into: Set<string> = new Set()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const v of value) collectAllIds(v, into);
+    return into;
+  }
+  if (value && typeof value === "object") {
+    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+      if (key === "@id" && typeof v === "string") into.add(v);
+      else collectAllIds(v, into);
+    }
+  }
+  return into;
+}
+
+function assertAllIdsResolveWithinPage(nodes: Record<string, unknown>[]) {
+  const definedIds = new Set(nodes.map((n) => n["@id"] as string));
+  const referencedIds = collectAllIds(nodes);
+  for (const id of referencedIds) {
+    expect(definedIds.has(id), `@id "${id}" is referenced but not defined among this page's rendered nodes`).toBe(
+      true
+    );
+  }
+}
 
 const mockFind = vi.mocked(findPublishedWorkspaceBySlug);
 const mockResolvePublicChromeLocale = vi.mocked(resolvePublicChromeLocale);
@@ -352,6 +408,18 @@ describe("PortfolioHomePage — JSON-LD keywords", () => {
     await PortfolioHomePage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
 
     expect(mockBuildHomeJsonLd).toHaveBeenCalledWith(expect.objectContaining({ keywords: undefined }));
+  });
+
+  it("every @id referenced in the rendered JSON-LD resolves to a node defined on this same page", async () => {
+    const workspace = makePublishedWorkspace({
+      contact: { email: "hi@studio.com", socials: { instagram: "studio_ig" } },
+    } as Partial<WorkspaceDoc>);
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const element = await PortfolioHomePage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+    const nodes = collectJsonLdNodes(element);
+    expect(nodes).toHaveLength(3);
+    assertAllIdsResolveWithinPage(nodes);
   });
 });
 

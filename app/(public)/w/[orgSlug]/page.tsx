@@ -14,7 +14,7 @@ import { PoweredByGallurio } from "./_components/PoweredByGallurio";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
-import { buildHomeJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
+import { buildHomeJsonLd, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import { resolveHomeSeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
 import { BUSINESS_TYPE_VALUES } from "@/lib/validators/workspace";
@@ -124,28 +124,9 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   const tPopup = await getTranslations({ locale, namespace: "publicPage.collectionPopup" });
 
   // Build JSON-LD once — injected in both the ComingSoon branch and the main render.
-  const socials = workspace.contact?.socials;
-  const sameAs: string[] = [];
-  if (socials?.instagram) sameAs.push(`https://www.instagram.com/${socials.instagram}`);
-  if (socials?.facebook) sameAs.push(`https://www.facebook.com/${socials.facebook}`);
-  if (socials?.tiktok) sameAs.push(`https://www.tiktok.com/@${socials.tiktok}`);
-  if (socials?.website) sameAs.push(socials.website);
-
-  const [businessLd, websiteLd, webpageLd] = buildHomeJsonLd({
-    name: workspace.name,
-    slug: workspace.slug,
-    businessType: workspace.businessType || undefined,
-    description: workspace.publicPage?.seoDescription || undefined,
-    image:
-      (workspace.publicPage?.seo as { ogImageUrl?: string } | undefined)?.ogImageUrl ||
-      workspace.publicPage?.siteIcon?.url ||
-      undefined,
-    email: workspace.contact?.email || undefined,
-    phone: workspace.contact?.phone || undefined,
-    address: workspace.contact?.address || undefined,
-    sameAs,
-    keywords: (workspace.publicPage?.seo as { keywords?: string[] } | undefined)?.keywords,
-  });
+  // buildPortfolioJsonLdInput is also called by the Gallery page so the two
+  // pages' business/website nodes can never drift.
+  const [businessLd, websiteLd, webpageLd] = buildHomeJsonLd(buildPortfolioJsonLdInput(workspace));
 
   // ComingSoonFallback does not need workspace block context — only <Render>
   // (and the blocks it invokes) reads the AsyncLocalStorage store.

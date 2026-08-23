@@ -14,7 +14,7 @@ import { ComingSoonFallback } from "../_components/ComingSoonFallback";
 import { PoweredByGallurio } from "../_components/PoweredByGallurio";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioGalleryUrl } from "@/lib/portfolio/publicUrl";
-import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
+import { buildGalleryJsonLd, buildPortfolioEntityNodes, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import { resolveGallerySeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
 import { collectGalleryPublishedImages } from "@/lib/page-builder/seo/publishedImages.server";
@@ -98,17 +98,19 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
     ? await collectGalleryPublishedImages({ workspaceId: String(workspace._id), galleryData })
     : [];
 
-  // Build gallery JSON-LD — injected in both branches.
-  const [galleryLd, breadcrumbLd] = buildGalleryJsonLd({
-    name: workspace.name,
-    slug: workspace.slug,
-    businessType: workspace.businessType || undefined,
-    images,
-  });
+  // Build JSON-LD — injected in both branches. business/website nodes reuse
+  // the same shared-entity mapping as the Home page (buildPortfolioJsonLdInput)
+  // so this page's @id references to #business/#website resolve to nodes
+  // defined in this page's own markup, not just the Home page's.
+  const sharedJsonLdInput = buildPortfolioJsonLdInput(workspace);
+  const [businessLd, websiteLd] = buildPortfolioEntityNodes(sharedJsonLdInput);
+  const [galleryLd, breadcrumbLd] = buildGalleryJsonLd({ ...sharedJsonLdInput, images });
 
   if (!galleryData) {
     return (
       <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
         <ComingSoonFallback
@@ -143,6 +145,8 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
 
   return runWithRenderWorkspace(renderWorkspace, () => (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
       {/* Per-block Google Font overrides (see lib/page-builder/fonts.ts) — the brand

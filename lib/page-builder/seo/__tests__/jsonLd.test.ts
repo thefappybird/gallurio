@@ -5,7 +5,41 @@ vi.mock("@/lib/portfolio/publicUrl", () => ({
   portfolioGalleryUrl: (slug: string) => `http://localhost:3000/w/${slug}/gallery`,
 }));
 
-import { resolveSchemaType, buildHomeJsonLd } from "../jsonLd";
+import {
+  resolveSchemaType,
+  buildHomeJsonLd,
+  buildPortfolioEntityNodes,
+  buildPortfolioJsonLdInput,
+} from "../jsonLd";
+
+// ---------------------------------------------------------------------------
+// Reusable regression guard: every `@id` value referenced ANYWHERE in a set
+// of JSON-LD nodes must equal one of those same nodes' own top-level `@id` —
+// i.e. every reference resolves within the page that emits it. Run against
+// each page's full node set (see also the two page.test.tsx files).
+// ---------------------------------------------------------------------------
+
+function collectAllIds(value: unknown, into: Set<string> = new Set()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const v of value) collectAllIds(v, into);
+    return into;
+  }
+  if (value && typeof value === "object") {
+    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+      if (key === "@id" && typeof v === "string") into.add(v);
+      else collectAllIds(v, into);
+    }
+  }
+  return into;
+}
+
+function assertAllIdsResolveWithinPage(nodes: Record<string, unknown>[]) {
+  const definedIds = new Set(nodes.map((n) => n["@id"] as string));
+  const referencedIds = collectAllIds(nodes);
+  for (const id of referencedIds) {
+    expect(definedIds.has(id), `@id "${id}" is referenced but not defined among this page's nodes`).toBe(true);
+  }
+}
 
 describe("resolveSchemaType", () => {
   it("maps photographer to PhotographyBusiness", () => {
@@ -106,6 +140,25 @@ describe("JSON-LD graph @ids", () => {
     expect(ids.has((gallery.author as Record<string, unknown>)["@id"] as string)).toBe(true);
   });
 
+  it("Home page's own node set is self-contained — every referenced @id resolves within it", () => {
+    const homeNodes = buildHomeJsonLd({ name: "Studio A", slug: "studio-a" });
+    assertAllIdsResolveWithinPage(homeNodes);
+  });
+
+  it("Gallery page's own node set is self-contained — every referenced @id resolves within it (regression: previously gallery.author/isPartOf dangled)", () => {
+    const [business, website] = buildPortfolioEntityNodes({ name: "Studio A", slug: "studio-a" });
+    const galleryNodes = buildGalleryJsonLd({ name: "Studio A", slug: "studio-a" });
+    assertAllIdsResolveWithinPage([business, website, ...galleryNodes]);
+  });
+
+  it("buildPortfolioEntityNodes returns business/website deep-equal to the ones buildHomeJsonLd emits for the same input", () => {
+    const input = { name: "Studio A", slug: "studio-a", businessType: "photographer", email: "hi@studio.com" };
+    const [homeBusiness, homeWebsite] = buildHomeJsonLd(input);
+    const [business, website] = buildPortfolioEntityNodes(input);
+    expect(business).toEqual(homeBusiness);
+    expect(website).toEqual(homeWebsite);
+  });
+
   it("emits no undefined or empty-string values anywhere in the graph", () => {
     const nodes = [
       ...buildHomeJsonLd({ name: "Studio A", slug: "studio-a" }),
@@ -117,6 +170,74 @@ describe("JSON-LD graph @ids", () => {
         expect(value, `${key} should not be an empty string`).not.toBe("");
       }
     }
+  });
+});
+
+describe("buildPortfolioJsonLdInput", () => {
+  it("maps name/slug/businessType/contact fields directly", () => {
+    const input = buildPortfolioJsonLdInput({
+      name: "Studio A",
+      slug: "studio-a",
+      businessType: "photographer",
+      contact: { email: "hi@studio.com", phone: "+63 900", address: "Manila" },
+    });
+    expect(input).toMatchObject({
+      name: "Studio A",
+      slug: "studio-a",
+      businessType: "photographer",
+      email: "hi@studio.com",
+      phone: "+63 900",
+      address: "Manila",
+    });
+  });
+
+  it("builds sameAs from socials in a fixed order (instagram, facebook, tiktok, website)", () => {
+    const input = buildPortfolioJsonLdInput({
+      name: "X",
+      slug: "x",
+      contact: {
+        socials: { instagram: "studio_ig", facebook: "studio.fb", tiktok: "studio_tt", website: "https://studio.example" },
+      },
+    });
+    expect(input.sameAs).toEqual([
+      "https://www.instagram.com/studio_ig",
+      "https://www.facebook.com/studio.fb",
+      "https://www.tiktok.com/@studio_tt",
+      "https://studio.example",
+    ]);
+  });
+
+  it("omits unset socials rather than pushing empty entries", () => {
+    const input = buildPortfolioJsonLdInput({ name: "X", slug: "x", contact: { socials: { instagram: "only_ig" } } });
+    expect(input.sameAs).toEqual(["https://www.instagram.com/only_ig"]);
+  });
+
+  it("falls back image to siteIcon.url when seo.ogImageUrl is unset", () => {
+    const input = buildPortfolioJsonLdInput({
+      name: "X",
+      slug: "x",
+      publicPage: { siteIcon: { url: "https://cdn/icon.png" } },
+    });
+    expect(input.image).toBe("https://cdn/icon.png");
+  });
+
+  it("prefers seo.ogImageUrl over siteIcon.url", () => {
+    const input = buildPortfolioJsonLdInput({
+      name: "X",
+      slug: "x",
+      publicPage: { seo: { ogImageUrl: "https://cdn/og.png" }, siteIcon: { url: "https://cdn/icon.png" } },
+    });
+    expect(input.image).toBe("https://cdn/og.png");
+  });
+
+  it("passes seo.keywords through and omits description when seoDescription is unset", () => {
+    const input = buildPortfolioJsonLdInput({
+      name: "X",
+      slug: "x",
+      publicPage: { seo: { keywords: ["wedding", "manila"] } },
+    });
+    expect(input.keywords).toEqual(["wedding", "manila"]);
+    expect(input.description).toBeUndefined();
   });
 });
 
