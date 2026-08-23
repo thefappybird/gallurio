@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { listEntries } from "./entries";
 import { renderContent } from "./render";
 
 describe("renderContent()", () => {
@@ -30,5 +31,17 @@ describe("renderContent()", () => {
     render(await renderContent("## The short version", {}));
 
     expect(screen.getByRole("heading", { level: 2, name: "The short version" })).toBeInTheDocument();
+  });
+
+  it("compiles every published guide and comparison with the shared MDX components", async () => {
+    const components = {
+      GallurioPrice: () => <span>Current price</span>,
+      ProductShot: ({ id }: { id: string }) => <figure>{id}</figure>,
+      YouTubeEmbed: ({ title }: { title: string }) => <div>{title}</div>,
+    };
+
+    for (const entry of [...listEntries("blog"), ...listEntries("compare")]) {
+      await expect(renderContent(entry.body, components), entry.slug).resolves.toBeTruthy();
+    }
   });
 });

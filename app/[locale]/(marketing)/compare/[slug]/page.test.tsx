@@ -25,6 +25,8 @@ function baseEntry(): Record<string, unknown> {
     category: "crm",
     body: "## The short version\n\nBody text.",
     faq: [{ question: "Is it cheaper?", answer: "Yes." }],
+    bestFor: "Simple booking operations",
+    notFor: "Contract automation",
   };
 }
 
@@ -62,6 +64,9 @@ describe("Compare slug page", () => {
     expect(screen.getByRole("heading", { name: "Gallurio vs HoneyBook" })).toBeInTheDocument();
     expect(screen.getByText("HoneyBook comparison.")).toBeInTheDocument();
     expect(screen.getByTestId("article-content")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Frequently asked questions" })).toBeInTheDocument();
+    expect(screen.getByText("Yes.")).toBeInTheDocument();
+    expect(screen.getByText("Gallurio Editorial")).toBeInTheDocument();
   });
 
   it("emits Article, Breadcrumb, and FAQ JSON-LD script tags", async () => {
@@ -107,5 +112,6 @@ describe("Compare slug page", () => {
     expect((meta.alternates as { canonical?: string })?.canonical).toBe(
       "http://localhost:3000/compare/gallurio-vs-honeybook"
     );
+    expect((meta.alternates as { languages?: Record<string, string> })?.languages).not.toHaveProperty("fil");
   });
 });

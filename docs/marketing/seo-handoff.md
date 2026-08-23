@@ -1,15 +1,18 @@
 # SEO and distribution handoff
 
-Durable record of work deferred out of the `feat/seo-crawl-and-compare-pages` branch. That branch
-ships the crawl foundation (robots, llms.txt, sitemap, canonical/hreflang, JSON-LD, the
-"Powered by Gallurio" portfolio backlink) and the first ten comparison pages. Everything below is
-the next set of decisions and work, not yet built.
+Durable record of Gallurio's editorial SEO system and the work still deferred from the
+`feat/seo-crawl-and-compare-pages` branch. The branch ships the crawl foundation (robots, llms.txt,
+sitemap, canonical/hreflang, JSON-LD, and the "Powered by Gallurio" portfolio backlink), five
+practical guides, ten individual comparisons, and 2026 pillar pages for photography CRMs and
+creative website builders. Sections
+below distinguish shipped rules from the remaining backlog.
 
-Strategy in one line: rank and get quoted for competitor-intent searches, using price as the wedge.
-Pro is PHP 250/mo and PHP 2500/yr, which lands near USD 4/mo and about USD 3.50/mo billed annually,
-against competitors at USD 16-36. Every price surface already localizes per visitor via
-`getDisplayPricing()` (`lib/pricing/localPricing.ts`), so the argument works in any market without
-per-region content.
+Strategy in one line: rank and get quoted for competitor-intent searches, using Gallurio's focused
+scope and regional pricing as the wedge. Pro now has base and global USD tiers selected from the
+visitor's country. Every price surface resolves the applicable live tier through
+`getDisplayPricing()` (`lib/pricing/localPricing.ts`), leads with a local-currency estimate when one
+is available, and names the billed USD amount. Articles must use `<GallurioPrice />`; fixed Gallurio
+amounts or fixed price-ratio claims will be wrong for at least one region.
 
 ---
 
@@ -213,8 +216,9 @@ pricing packages, taking deposits, client onboarding, portfolio pages that conve
 between a website builder and a booking system. This is the larger half of the traffic opportunity —
 comparison pages only reach people already searching a competitor.
 
-They are listed in `llms.txt` and `/blog` is in the sitemap's static paths. Two things remain: the
-per-post sitemap entries, and the `/blog` routes themselves.
+They are listed in `llms.txt`; `/resources`, `/blog`, `/compare`, and every article are included in
+the sitemap. `/resources` is the shared discovery surface, while `/blog` and `/compare` remain useful
+filtered landing pages.
 
 Rules for future posts, carried from these five:
 - Useful to someone who never buys. They rank because they answer the question.
@@ -224,7 +228,15 @@ Rules for future posts, carried from these five:
   that a payment happened; it does not take the payment.
 - At most one Gallurio mention, near the end, in a paragraph that still gives the tool-agnostic
   principle. Use `<GallurioPrice />` for any price — never write the number.
-- English only. The article bodies are not translated.
+- English only. The article bodies and editorial header/footer chrome are not translated.
+- Locale-prefixed editorial URLs permanently redirect to the unprefixed English URL. Their metadata
+  emits only the English canonical plus `x-default`; do not add localized alternates until the full
+  article and its surrounding editorial experience are genuinely translated.
+- Use `<ProductShot id="..." />` for approved application screenshots. Each rendered figure carries
+  an explicit `Gallurio ...` subtitle plus a descriptive caption. Each ID must exist in the
+  curated media registry with specific alt text and a useful visible caption.
+- A public YouTube video can be added through `youtubeId`, `videoTitle`, and optional `videoCaption`
+  frontmatter. Leave the fields absent until the final public video ID exists.
 
 ## 6. Open items
 

@@ -3,10 +3,6 @@ import { render, screen } from "@testing-library/react";
 
 vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
-  getTranslations: vi.fn(async (arg?: string | { locale?: string; namespace?: string }) => {
-    const namespace = typeof arg === "string" ? arg : arg?.namespace;
-    return (key: string) => `${namespace}:${key}`;
-  }),
 }));
 
 vi.mock("@/lib/content/entries", () => ({
@@ -34,10 +30,10 @@ import BlogIndexPage, { generateMetadata } from "./page";
 
 describe("Blog index page", () => {
   it("lists posts newest first with title, description, and a formatted <time>", async () => {
-    const page = await BlogIndexPage({ params: Promise.resolve({ locale: "en" }) });
+    const page = BlogIndexPage();
     render(page);
 
-    const links = screen.getAllByRole("link");
+    const links = screen.getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("/blog/"));
     expect(links.map((l) => l.textContent)).toEqual(["Newer post", "Older post"]);
     expect(links[0]).toHaveAttribute("href", "/blog/newer-post");
 
@@ -46,14 +42,13 @@ describe("Blog index page", () => {
     const times = document.querySelectorAll("time");
     expect(times[0]).toHaveAttribute("datetime", "2026-08-18");
     expect(times[0].textContent).toContain("2026");
+    expect(screen.getByRole("heading", { name: "Practical guides for the work behind the event" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Guides" })).toHaveAttribute("aria-current", "page");
   });
 
   it("publishes the blog index title and description", async () => {
-    await generateMetadata({ params: Promise.resolve({ locale: "en" }) });
-
-    expect(vi.mocked(await import("next-intl/server")).getTranslations).toHaveBeenCalledWith({
-      locale: "en",
-      namespace: "marketing.blog.metadata",
-    });
+    const metadata = generateMetadata();
+    expect(metadata.alternates?.canonical).toBe("http://localhost:3000/blog");
+    expect(metadata.alternates?.languages).not.toHaveProperty("fil");
   });
 });

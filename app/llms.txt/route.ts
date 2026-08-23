@@ -11,9 +11,16 @@ export const runtime = "nodejs";
 // index the sitemap uses, so the two cannot drift apart.
 export async function GET() {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const pricing = await getProPricing();
-  const monthly = formatMoney(pricing.monthly, pricing.currency, "en");
-  const yearly = formatMoney(pricing.yearly, pricing.currency, "en");
+  const [basePricing, globalPricing] = await Promise.all([
+    getProPricing("base"),
+    getProPricing("global"),
+  ]);
+  const formatPricing = (pricing: typeof basePricing) => ({
+    monthly: formatMoney(pricing.monthly, pricing.currency, "en"),
+    yearly: formatMoney(pricing.yearly, pricing.currency, "en"),
+  });
+  const baseAmounts = formatPricing(basePricing);
+  const globalAmounts = formatPricing(globalPricing);
 
   const section = (heading: string, lines: string[]) =>
     lines.length ? [`## ${heading}`, "", ...lines, ""].join("\n") : "";
@@ -29,8 +36,10 @@ export async function GET() {
     "> PDFs, and a public portfolio page whose contact form turns an enquiry into a",
     "> client and a booking in a single transaction.",
     "",
-    `Pricing: one plan at ${monthly} per month or ${yearly} per year, billed in`,
-    `${pricing.currency} and shown to visitors converted into their own currency.`,
+    "Pricing: one Pro plan with regional pricing.",
+    `Base markets: ${baseAmounts.monthly} per month or ${baseAmounts.yearly} per year.`,
+    `Global markets: ${globalAmounts.monthly} per month or ${globalAmounts.yearly} per year.`,
+    "Checkout bills the applicable USD tier; pages show a local-currency estimate when available.",
     "There is no higher tier. New workspaces get one month of the full plan free.",
     "",
     section("Product", [
@@ -39,6 +48,7 @@ export async function GET() {
       link("/about", "About", "who builds it"),
       link("/contact", "Contact", "how to reach support"),
       link("/book-demo", "Book a demo", "a walkthrough with a person"),
+      link("/resources", "Resources", "practical guides and honest software comparisons"),
     ]),
     section(
       "Comparisons",

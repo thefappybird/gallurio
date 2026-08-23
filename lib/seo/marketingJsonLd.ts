@@ -48,6 +48,7 @@ export type ArticleLdInput = {
 };
 
 export function buildArticleLd(input: ArticleLdInput): Record<string, unknown> {
+  const origin = new URL(input.url).origin;
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -56,6 +57,16 @@ export function buildArticleLd(input: ArticleLdInput): Record<string, unknown> {
     url: input.url,
     datePublished: input.publishedAt,
     dateModified: input.updatedAt ?? input.publishedAt,
+    author: {
+      "@type": "Organization",
+      name: "Gallurio Editorial",
+      url: `${origin}/about`,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Gallurio",
+      url: origin,
+    },
   };
 }
 

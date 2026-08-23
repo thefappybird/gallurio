@@ -62,6 +62,7 @@ describe("Blog slug page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("A working method for setting package prices.")).toBeInTheDocument();
     expect(screen.getByTestId("article-content")).toBeInTheDocument();
+    expect(screen.getByText("Gallurio Editorial")).toBeInTheDocument();
 
     const time = document.querySelector("time");
     expect(time).toHaveAttribute("datetime", "2026-08-18");
@@ -101,5 +102,6 @@ describe("Blog slug page", () => {
     expect((meta.alternates as { canonical?: string })?.canonical).toBe(
       "http://localhost:3000/blog/how-to-price-event-photography-packages"
     );
+    expect((meta.alternates as { languages?: Record<string, string> })?.languages).not.toHaveProperty("fil");
   });
 });

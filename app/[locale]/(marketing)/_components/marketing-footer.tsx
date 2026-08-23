@@ -2,13 +2,28 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Link } from "@/lib/i18n/navigation";
+import { Link, usePathname } from "@/lib/i18n/navigation";
+import { isEditorialRoute } from "./editorial-route";
+
+const ENGLISH_FOOTER = {
+  portfolioMaker: "Portfolio Builder",
+  about: "About",
+  pricing: "Pricing",
+  resources: "Resources",
+  bookDemo: "Book a Demo",
+  terms: "Terms of Service",
+  privacy: "Privacy Policy",
+  refunds: "Refund Policy",
+  contact: "Contact",
+} as const;
 
 export function MarketingFooter() {
   const tFooter = useTranslations("marketing.footer");
   const tAppInfo = useTranslations("marketing.appInfo");
   const tTerms = useTranslations("marketing.terms");
   const tPrivacy = useTranslations("marketing.privacy");
+  const pathname = usePathname();
+  const englishOnly = isEditorialRoute(pathname);
 
   return (
     <footer className="border-t border-border">
@@ -28,34 +43,31 @@ export function MarketingFooter() {
           className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
         >
           <Link href="/portfolio-maker-demo" className="hover:text-foreground">
-            {tFooter("portfolioMaker")}
+            {englishOnly ? ENGLISH_FOOTER.portfolioMaker : tFooter("portfolioMaker")}
           </Link>
           <Link href="/about" className="hover:text-foreground">
-            {tAppInfo("navigationLabel")}
+            {englishOnly ? ENGLISH_FOOTER.about : tAppInfo("navigationLabel")}
           </Link>
           <Link href="/pricing" className="hover:text-foreground">
-            {tFooter("pricing")}
+            {englishOnly ? ENGLISH_FOOTER.pricing : tFooter("pricing")}
           </Link>
-          <Link href="/compare" className="hover:text-foreground">
-            {tFooter("comparisons")}
-          </Link>
-          <Link href="/blog" className="hover:text-foreground">
-            {tFooter("writing")}
+          <Link href="/resources" className="hover:text-foreground">
+            {englishOnly ? ENGLISH_FOOTER.resources : tFooter("resources")}
           </Link>
           <Link href="/book-demo" className="hover:text-foreground">
-            {tFooter("bookDemo")}
+            {englishOnly ? ENGLISH_FOOTER.bookDemo : tFooter("bookDemo")}
           </Link>
           <Link href="/terms" className="hover:text-foreground">
-            {tTerms("title")}
+            {englishOnly ? ENGLISH_FOOTER.terms : tTerms("title")}
           </Link>
           <Link href="/privacy" className="hover:text-foreground">
-            {tPrivacy("title")}
+            {englishOnly ? ENGLISH_FOOTER.privacy : tPrivacy("title")}
           </Link>
           <Link href="/refunds" className="hover:text-foreground">
-            {tFooter("refundPolicy")}
+            {englishOnly ? ENGLISH_FOOTER.refunds : tFooter("refundPolicy")}
           </Link>
           <Link href="/contact" className="hover:text-foreground">
-            {tFooter("contact")}
+            {englishOnly ? ENGLISH_FOOTER.contact : tFooter("contact")}
           </Link>
         </nav>
       </div>
