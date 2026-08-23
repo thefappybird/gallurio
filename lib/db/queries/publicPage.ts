@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Workspace } from "@/lib/db/models/Workspace";
 import { User } from "@/lib/db/models/User";
 import { DEFAULT_TIME_MODE, type TimeMode } from "@/lib/utils/time-format";
+import { hasRenderableBlocks } from "@/lib/page-builder/normalizePublicPageData";
 
 /**
  * Resolves a public portfolio page by workspace slug.
@@ -96,11 +97,17 @@ export const getOwnerTimeFormat = cache(async (ownerUserId: string): Promise<Tim
 export type PublishedWorkspaceSlug = {
   slug: string;
   lastPublishedAt: Date | null;
+  hasHome: boolean;
+  hasGallery: boolean;
 };
 
 /**
- * Returns slug + lastPublishedAt for every workspace whose portfolio has been
- * published at least once. Used by app/sitemap.ts to build the global sitemap.
+ * Returns slug + lastPublishedAt + per-page renderability for every workspace
+ * whose portfolio has been published at least once and isn't crawler-excluded.
+ * Used by app/sitemap.ts to build the global sitemap.
+ *
+ * `"publicPage.seo.noindex": { $ne: true }` also matches documents with no
+ * `seo` subdoc at all (pre-existing workspaces default to indexable).
  *
  * No tenant scoping: this is a public list of published pages, intentionally
  * cross-workspace.
@@ -119,15 +126,28 @@ export async function listPublishedWorkspaceSlugs(): Promise<PublishedWorkspaceS
 
   type SlugProjection = {
     slug: string;
-    publicPage: { lastPublishedAt?: Date | null };
+    publicPage: {
+      lastPublishedAt?: Date | null;
+      data?: { home?: unknown; gallery?: unknown };
+    };
   };
 
-  const docs = await Workspace.find({ "publicPage.publishedAt": { $ne: null } })
-    .select({ slug: 1, "publicPage.lastPublishedAt": 1, _id: 0 })
-    .lean<SlugProjection[]>();
+  const query = Workspace.find({
+    "publicPage.publishedAt": { $ne: null },
+    "publicPage.seo.noindex": { $ne: true },
+  }).select({ slug: 1, "publicPage.lastPublishedAt": 1, "publicPage.data": 1, _id: 0 });
 
-  return docs.map((d) => ({
-    slug: d.slug,
-    lastPublishedAt: d.publicPage?.lastPublishedAt ?? null,
-  }));
+  // Cursor-iterate rather than materialize the whole result set: tenant count
+  // is unbounded and this list only grows with the platform.
+  const results: PublishedWorkspaceSlug[] = [];
+  for await (const doc of query.cursor()) {
+    const d = doc.toObject() as SlugProjection;
+    results.push({
+      slug: d.slug,
+      lastPublishedAt: d.publicPage?.lastPublishedAt ?? null,
+      hasHome: hasRenderableBlocks(d.publicPage?.data?.home),
+      hasGallery: hasRenderableBlocks(d.publicPage?.data?.gallery),
+    });
+  }
+  return results;
 }

@@ -15,6 +15,9 @@ afterEach(async () => {
   await clearCollections();
 });
 
+const BLOCK = { type: "Heading", props: { text: "Hi" } };
+const PAGE = { root: {}, content: [BLOCK] };
+
 function makePublished(slug: string, overrides: Record<string, unknown> = {}) {
   return {
     slug,
@@ -23,7 +26,7 @@ function makePublished(slug: string, overrides: Record<string, unknown> = {}) {
     currency: "PHP",
     publicPage: {
       publishedAt: new Date(),
-      data: { home: null, gallery: null },
+      data: { home: PAGE, gallery: PAGE },
     },
     ...overrides,
   };
@@ -76,6 +79,48 @@ describe("listPublishedWorkspaceSlugs", () => {
     const entry = result[0] as Record<string, unknown>;
     expect(entry._id).toBeUndefined();
     expect(entry.name).toBeUndefined();
+  });
+
+  it("excludes workspaces with publicPage.seo.noindex === true", async () => {
+    await Workspace.create([
+      makePublished("visible-ws"),
+      makePublished("noindex-ws", {
+        publicPage: {
+          publishedAt: new Date(),
+          data: { home: PAGE, gallery: PAGE },
+          seo: { noindex: true },
+        },
+      }),
+    ]);
+
+    const result = await listPublishedWorkspaceSlugs();
+    const slugs = result.map((r) => r.slug);
+
+    expect(slugs).toContain("visible-ws");
+    expect(slugs).not.toContain("noindex-ws");
+  });
+
+  it("computes hasHome/hasGallery from renderable block presence in publicPage.data", async () => {
+    await Workspace.create([
+      makePublished("both-ws"),
+      makePublished("home-only-ws", {
+        publicPage: { publishedAt: new Date(), data: { home: PAGE, gallery: null } },
+      }),
+      makePublished("gallery-only-ws", {
+        publicPage: { publishedAt: new Date(), data: { home: null, gallery: PAGE } },
+      }),
+      makePublished("neither-ws", {
+        publicPage: { publishedAt: new Date(), data: { home: null, gallery: null } },
+      }),
+    ]);
+
+    const result = await listPublishedWorkspaceSlugs();
+    const bySlug = Object.fromEntries(result.map((r) => [r.slug, r]));
+
+    expect(bySlug["both-ws"]).toMatchObject({ hasHome: true, hasGallery: true });
+    expect(bySlug["home-only-ws"]).toMatchObject({ hasHome: true, hasGallery: false });
+    expect(bySlug["gallery-only-ws"]).toMatchObject({ hasHome: false, hasGallery: true });
+    expect(bySlug["neither-ws"]).toMatchObject({ hasHome: false, hasGallery: false });
   });
 
   it("returns null lastPublishedAt when field is absent on the document", async () => {
