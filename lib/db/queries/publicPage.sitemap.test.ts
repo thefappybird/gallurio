@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models/Workspace";
+import { hasRenderableBlocks } from "@/lib/page-builder/normalizePublicPageData";
 import { listPublishedWorkspaceSlugs } from "./publicPage";
 
 beforeAll(async () => {
@@ -121,6 +122,58 @@ describe("listPublishedWorkspaceSlugs", () => {
     expect(bySlug["home-only-ws"]).toMatchObject({ hasHome: true, hasGallery: false });
     expect(bySlug["gallery-only-ws"]).toMatchObject({ hasHome: false, hasGallery: true });
     expect(bySlug["neither-ws"]).toMatchObject({ hasHome: false, hasGallery: false });
+  });
+
+  describe("hasHome/hasGallery aggregation parity with hasRenderableBlocks", () => {
+    // Shared fixture table: the $project aggregation in listPublishedWorkspaceSlugs
+    // must agree with hasRenderableBlocks (the single source of truth) on every
+    // shape below — a drift here means the sitemap advertises a URL that
+    // actually renders "Coming Soon" (or omits a page that does render).
+    const FIXTURES: { name: string; value: unknown }[] = [
+      { name: "missing (key absent)", value: undefined },
+      { name: "non-object (string)", value: "not-an-object" },
+      { name: "empty content, no zones", value: { root: {}, content: [] } },
+      { name: "content-only", value: { root: {}, content: [BLOCK] } },
+      {
+        name: "zones-only (empty content)",
+        value: { root: {}, content: [], zones: { "x:zone": [BLOCK] } },
+      },
+      {
+        name: "both content and zones",
+        value: { root: {}, content: [BLOCK], zones: { "x:zone": [BLOCK] } },
+      },
+      {
+        name: "malformed content entries (null / non-object)",
+        value: { root: {}, content: [null, "x"] },
+      },
+      {
+        name: "zones present but value is not an array",
+        value: { root: {}, content: [], zones: { "x:zone": "not-an-array" } },
+      },
+      {
+        name: "zones itself is an array, not an object",
+        value: { root: {}, content: [], zones: [BLOCK] },
+      },
+    ];
+
+    it("agrees with hasRenderableBlocks for every fixture shape", async () => {
+      await Workspace.create(
+        FIXTURES.map((f, i) =>
+          makePublished(`parity-fixture-${i}`, {
+            publicPage: { publishedAt: new Date(), data: { home: f.value, gallery: null } },
+          })
+        )
+      );
+
+      const result = await listPublishedWorkspaceSlugs();
+      const bySlug = Object.fromEntries(result.map((r) => [r.slug, r]));
+
+      for (const [i, f] of FIXTURES.entries()) {
+        const slug = `parity-fixture-${i}`;
+        expect(bySlug[slug], `fixture "${f.name}" missing from results`).toBeDefined();
+        expect(bySlug[slug].hasHome, `fixture "${f.name}"`).toBe(hasRenderableBlocks(f.value));
+      }
+    });
   });
 
   it("returns null lastPublishedAt when field is absent on the document", async () => {
