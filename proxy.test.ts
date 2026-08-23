@@ -449,6 +449,47 @@ describe("proxy", () => {
         expect(authMiddlewareMock).not.toHaveBeenCalled();
         expect(intlMiddlewareMock).not.toHaveBeenCalled();
       }));
+
+    it("rewrites a tenant subdomain's /robots.txt to /w/{slug}/robots.txt", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/robots.txt", {
+          headers: { host: "acme.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        const rewriteTarget = response.headers.get("x-middleware-rewrite");
+        expect(rewriteTarget).not.toBeNull();
+        expect(new URL(rewriteTarget!).pathname).toBe("/w/acme/robots.txt");
+      }));
+
+    it("rewrites a tenant subdomain's /sitemap.xml to /w/{slug}/sitemap.xml", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/sitemap.xml", {
+          headers: { host: "acme.gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        const rewriteTarget = response.headers.get("x-middleware-rewrite");
+        expect(rewriteTarget).not.toBeNull();
+        expect(new URL(rewriteTarget!).pathname).toBe("/w/acme/sitemap.xml");
+      }));
+
+    it("does not rewrite /robots.txt on the canonical apex host (falls through to the root handler)", () =>
+      withBaseDomain(async () => {
+        const { proxy } = await import("./proxy");
+        const req = new NextRequest("http://localhost/robots.txt", {
+          headers: { host: "gallurio.com" },
+        });
+
+        const response = (await proxy(req)) as Response;
+
+        expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+        expect(response.status).not.toBe(301);
+      }));
   });
 
   it("unions both middlewares' request-header manifests so the locale header survives on protected routes", async () => {
