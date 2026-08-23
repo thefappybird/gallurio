@@ -830,10 +830,17 @@ function PhotoGrid({
         <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4" role="listbox" aria-label="Photos">
           {feed.items.map((item) => {
             const selected = isSelected(item.id);
+            // role="option" sits on the button, not the <li>: the pencil button below is a
+            // second interactive descendant, and ARIA's option role forbids interactive
+            // descendants — nesting both under a role="option" <li> hid one control from
+            // browse-mode AT. The <li> is role="presentation" so it doesn't also expose as
+            // a stray listitem inside the listbox.
             return (
-              <li key={item.id} role="option" aria-selected={selected} className="relative">
+              <li key={item.id} role="presentation" className="relative">
                 <button
                   type="button"
+                  role="option"
+                  aria-selected={selected}
                   onClick={() => (mode === "single" ? onPickSingle(item) : onToggleMulti(item))}
                   aria-label={`${item.caption || "Photo"}${selected ? " — selected" : ""}`}
                   className={cn(
@@ -856,7 +863,7 @@ function PhotoGrid({
                     e.stopPropagation();
                     onEditItem(item);
                   }}
-                  className="absolute bottom-1 left-1 inline-flex size-5 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="absolute bottom-1 left-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <PencilIcon className="size-3" aria-hidden />
                 </button>

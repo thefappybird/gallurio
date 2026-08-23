@@ -344,7 +344,7 @@ export function EditCollectionDialog({
                       type="button"
                       aria-label={tMeta("editTrigger", { name: item.caption || tMeta("photoFallback") })}
                       onClick={() => setMetaItem(item)}
-                      className="absolute bottom-0.5 right-0.5 inline-flex size-5 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="absolute bottom-0.5 right-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       <PencilIcon className="size-3" aria-hidden />
                     </button>

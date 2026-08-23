@@ -52,7 +52,7 @@ describe("MediaPicker", () => {
     const onOpenChange = vi.fn();
     render(<MediaPicker mode="single" value="" onChange={onChange} open onOpenChange={onOpenChange} />);
     fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /^A/ }));
+    fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
     expect(onChange).toHaveBeenCalledWith("pid-a");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
@@ -61,7 +61,7 @@ describe("MediaPicker", () => {
     const onChange = vi.fn();
     render(<MediaPicker mode="multi" max={1} value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /^A/ }));
+    fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
     expect(onChange).toHaveBeenCalledWith([{ id: "a", publicId: "pid-a" }]);
   });
 
@@ -376,7 +376,7 @@ describe("MediaPicker", () => {
     const onChange = vi.fn();
     render(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /^A/ }));
+    fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
     expect(onChange).toHaveBeenCalledWith([{ id: "a", publicId: "pid-a", width: 1200, height: 800 }]);
   });
 
@@ -415,13 +415,13 @@ describe("MediaPicker", () => {
     fireEvent.click(await screen.findByRole("button", { name: /fastcol/i }));
 
     // Fast collection's photo should render.
-    await screen.findByRole("button", { name: "FastPhoto" });
+    await screen.findByRole("option", { name: "FastPhoto" });
 
     // Now let the stale slow response resolve — it must not overwrite the view.
     resolveSlow({ ok: true, json: async () => ({ items: slowItems, nextCursor: null }) } as Response);
 
-    await waitFor(() => expect(screen.queryByRole("button", { name: /SlowPhoto/ })).toBeNull());
-    expect(screen.getByRole("button", { name: "FastPhoto" })).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole("option", { name: /SlowPhoto/ })).toBeNull());
+    expect(screen.getByRole("option", { name: "FastPhoto" })).toBeTruthy();
   });
 
   describe("upload auto-select", () => {
@@ -511,6 +511,20 @@ describe("MediaPicker", () => {
       fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
       expect(onChange).not.toHaveBeenCalled();
       expect(await screen.findByLabelText("Alt text")).toBeTruthy();
+    });
+
+    it("meets the 24x24 minimum target size (WCAG 2.2 SC 2.5.8)", async () => {
+      render(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
+      expect(editTrigger.className).toMatch(/\bsize-6\b/);
+    });
+
+    it("does not nest the edit trigger inside role=option (ARIA forbids interactive descendants of option)", async () => {
+      render(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
+      expect(editTrigger.closest('[role="option"]')).toBeNull();
     });
 
     it("PATCHes on save and the tile reflects the new alt text when reopened", async () => {

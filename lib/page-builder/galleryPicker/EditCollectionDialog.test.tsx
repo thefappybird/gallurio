@@ -144,6 +144,12 @@ describe("EditCollectionDialog", () => {
     expect(screen.getByRole("button", { name: /edit alt text for B/i })).toBeTruthy();
   });
 
+  it("meets the 24x24 minimum target size (WCAG 2.2 SC 2.5.8)", async () => {
+    open();
+    const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
+    expect(editTrigger.className).toMatch(/\bsize-6\b/);
+  });
+
   it("editing alt text PATCHes the item and the tile reflects it when reopened", async () => {
     mockFetch.mockImplementation((u: string, init?: RequestInit) => {
       if (u === "/api/portfolio/gallery/items/a" && init?.method === "PATCH") {
