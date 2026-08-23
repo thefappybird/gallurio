@@ -45,10 +45,6 @@ export function resolveHomeSeo(input: {
   name: string;
   seoTitle?: string | null;
   seoDescription?: string | null;
-  /** Already-translated label, or null. Not consumed here — the caller folds it
-   *  into `defaultDescription` before calling; kept on the input contract so the
-   *  settings UI and this resolver share one shape. */
-  businessTypeLabel?: string | null;
   /** Already-translated template output (Home's default description). */
   defaultDescription: string;
 }): SeoStrings {

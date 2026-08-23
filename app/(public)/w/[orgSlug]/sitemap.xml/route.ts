@@ -51,14 +51,17 @@ export async function GET(_req: Request, { params }: Params) {
   const data = workspace.publicPage?.data as { home?: unknown; gallery?: unknown } | null | undefined;
   const lastmod = workspace.publicPage?.lastPublishedAt ?? null;
 
+  // Use the resolved DB slug (always lowercase), never the raw route param —
+  // otherwise a mixed-case request emits <loc> values that disagree with
+  // app/sitemap.ts, which lists the lowercase DB slug.
   const entries: string[] = [];
-  if (hasRenderableBlocks(data?.home)) entries.push(urlEntry(portfolioPublicUrl(orgSlug), lastmod));
+  if (hasRenderableBlocks(data?.home)) entries.push(urlEntry(portfolioPublicUrl(workspace.slug), lastmod));
   if (hasRenderableBlocks(data?.gallery)) {
     const images = await collectGalleryPublishedImages({
       workspaceId: String(workspace._id),
       galleryData: data?.gallery,
     });
-    entries.push(urlEntry(portfolioGalleryUrl(orgSlug), lastmod, images));
+    entries.push(urlEntry(portfolioGalleryUrl(workspace.slug), lastmod, images));
   }
 
   // Neither page renderable: still return a valid (empty) urlset rather than

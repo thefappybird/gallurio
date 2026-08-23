@@ -41,9 +41,17 @@ export async function GET(_req: Request, { params }: Params) {
     return new Response("User-agent: *\nDisallow: /\n", { headers: HEADERS });
   }
 
-  const body = ["User-agent: *", "Allow: /", "Disallow: /api/", "", `Sitemap: ${tenantSitemapUrl(orgSlug)}`, ""].join(
-    "\n"
-  );
+  // Resolved DB slug (always lowercase), never the raw route param — keeps
+  // this in sync with the tenant sitemap route and app/sitemap.ts, both of
+  // which use workspace.slug.
+  const body = [
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /api/",
+    "",
+    `Sitemap: ${tenantSitemapUrl(workspace.slug)}`,
+    "",
+  ].join("\n");
 
   return new Response(body, { headers: HEADERS });
 }

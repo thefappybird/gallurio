@@ -58,14 +58,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     name,
     seoTitle: publicPage?.seoTitle,
     seoDescription: publicPage?.seoDescription,
-    businessTypeLabel,
     defaultDescription,
   });
 
   const ogImageUrl = seo.ogImageUrl || undefined;
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
-  const canonical = portfolioPublicUrl(orgSlug);
+  // Use the resolved DB slug (always lowercase), never the raw route param —
+  // otherwise a mixed-case request (e.g. /w/AcmeStudio) emits a canonical URL
+  // that disagrees with app/sitemap.ts, which lists the lowercase DB slug.
+  const canonical = portfolioPublicUrl(workspace.slug);
 
   const result: Metadata = {
     title,

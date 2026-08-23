@@ -109,6 +109,20 @@ describe("GET /w/[orgSlug]/sitemap.xml", () => {
     expect(undatedBody).not.toContain("<lastmod>");
   });
 
+  it("emits lowercase <loc> entries from the DB slug even when the route param arrives mixed-case", async () => {
+    // The DB slug is always lowercase (Mongoose lowercase: true) and
+    // findPublishedWorkspaceBySlug lowercases its lookup — a mixed-case
+    // route param must still resolve the workspace, and the emitted <loc>
+    // must match the lowercase slug app/sitemap.ts advertises, not the raw param.
+    await Workspace.create(makePublished("mixed-case-studio"));
+
+    const body = await (await call("Mixed-Case-Studio")).text();
+
+    expect(body).toContain("<loc>http://localhost:3000/w/mixed-case-studio</loc>");
+    expect(body).toContain("<loc>http://localhost:3000/w/mixed-case-studio/gallery</loc>");
+    expect(body).not.toContain("Mixed-Case-Studio");
+  });
+
   it("emits <image:image> entries for the Gallery <url> from published gallery-block images", async () => {
     // Nested one level inside a preset's slot (`props.content`), mirroring
     // how the editor actually publishes gallery blocks — not the flat

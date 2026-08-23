@@ -52,6 +52,15 @@ describe("GET /w/[orgSlug]/robots.txt", () => {
     expect(body).toContain("Sitemap: http://localhost:3000/w/studio/sitemap.xml");
   });
 
+  it("emits a lowercase Sitemap URL from the DB slug even when the route param arrives mixed-case", async () => {
+    await Workspace.create(makePublished("mixed-case-studio"));
+
+    const body = await (await call("Mixed-Case-Studio")).text();
+
+    expect(body).toContain("Sitemap: http://localhost:3000/w/mixed-case-studio/sitemap.xml");
+    expect(body).not.toContain("Mixed-Case-Studio");
+  });
+
   it("404s for an unknown slug", async () => {
     const res = await call("nope");
     expect(res.status).toBe(404);
