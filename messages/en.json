@@ -1738,6 +1738,8 @@
         },
         "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
         "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
+        "seoTitleAutoHint": "No title yet — your workspace name will be used instead.",
+        "seoDescriptionAutoHint": "No description yet — this will be used instead: “{preview}”",
         "seoKeywords": "SEO tags",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, bay area",
         "seoKeywordsHint": "Optional tags, separated by commas — spaces inside a phrase are kept. Used in the page's structured data. Add up to 10.",
@@ -3592,6 +3594,21 @@
       "retry": "Retry",
       "empty": "No photos in this collection yet.",
       "fullSizeAlt": "Full size photo"
+    },
+    "seoDefaults": {
+      "homeDescription": "{name} — {businessType}. Browse recent work and get in touch to book.",
+      "homeDescriptionGeneric": "{name} — browse recent work and get in touch to book.",
+      "galleryDescription": "Browse {name}'s portfolio gallery — recent photos and highlights.",
+      "businessType": {
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Event Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer",
+        "artists": "Artist",
+        "other": "Business"
+      }
     }
   },
   "notFound": {

@@ -1738,6 +1738,8 @@
         },
         "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
         "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
+        "seoTitleAutoHint": "Wala pang title — gagamitin na lang ang pangalan ng iyong workspace.",
+        "seoDescriptionAutoHint": "Wala pang description — ito ang gagamitin: “{preview}”",
         "seoKeywords": "Mga tag ng SEO",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, metro manila",
         "seoKeywordsHint": "Opsyonal na mga tag na pinaghihiwalay ng kuwit — mananatili ang espasyo sa loob ng bawat parirala. Ginagamit sa structured data ng pahina. Hanggang 10 tag.",
@@ -3591,6 +3593,21 @@
       "retry": "Subukang muli",
       "empty": "Wala pang mga larawan sa koleksyong ito.",
       "fullSizeAlt": "Larawan sa buong sukat"
+    },
+    "seoDefaults": {
+      "homeDescription": "{name} — {businessType}. Tingnan ang mga bagong gawa at mag-book agad.",
+      "homeDescriptionGeneric": "{name} — tingnan ang mga bagong gawa at mag-book agad.",
+      "galleryDescription": "Tingnan ang gallery ni {name} — kamakailang mga larawan at highlights.",
+      "businessType": {
+        "photographer": "Fotograpo",
+        "venue": "Venue",
+        "planner": "Event Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Tagapaaliw",
+        "artists": "Artist",
+        "other": "Negosyo"
+      }
     }
   },
   "notFound": {

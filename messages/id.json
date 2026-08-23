@@ -1738,6 +1738,8 @@
         },
         "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
         "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
+        "seoTitleAutoHint": "Belum ada judul — nama workspace Anda akan digunakan sebagai gantinya.",
+        "seoDescriptionAutoHint": "Belum ada deskripsi — ini yang akan digunakan: “{preview}”",
         "seoKeywords": "Tag SEO",
         "seoKeywordsPlaceholder": "fotografer pernikahan, editorial, jakarta",
         "seoKeywordsHint": "Tag opsional, dipisahkan koma — spasi di dalam satu frasa tetap dipertahankan. Digunakan dalam data terstruktur halaman. Tambahkan hingga 10 tag.",
@@ -3591,6 +3593,21 @@
       "retry": "Coba lagi",
       "empty": "Belum ada foto di koleksi ini.",
       "fullSizeAlt": "Foto ukuran penuh"
+    },
+    "seoDefaults": {
+      "homeDescription": "{name} — {businessType}. Lihat karya terbaru dan hubungi kami untuk memesan.",
+      "homeDescriptionGeneric": "{name} — lihat karya terbaru dan hubungi kami untuk memesan.",
+      "galleryDescription": "Jelajahi galeri {name} — foto terbaru dan sorotan.",
+      "businessType": {
+        "photographer": "Fotografer",
+        "venue": "Venue",
+        "planner": "Perencana Acara",
+        "stylist": "Penata Gaya",
+        "catering": "Katering",
+        "entertainer": "Penghibur",
+        "artists": "Seniman",
+        "other": "Bisnis"
+      }
     }
   },
   "notFound": {
