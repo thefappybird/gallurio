@@ -1740,7 +1740,7 @@
         "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
         "seoKeywords": "Tag SEO",
         "seoKeywordsPlaceholder": "fotografer pernikahan, editorial, jakarta",
-        "seoKeywordsHint": "Tag opsional dipisahkan koma untuk mesin pencari dan structured data. Tambahkan hingga 10.",
+        "seoKeywordsHint": "Tag opsional, dipisahkan koma — spasi di dalam satu frasa tetap dipertahankan. Digunakan dalam data terstruktur halaman. Tambahkan hingga 10 tag.",
         "galleryDescriptionLabel": "Deskripsi halaman Gallery",
         "galleryDescriptionPlaceholder": "Pameran karya terbaik pernikahan dan potret kami…",
         "galleryDescriptionHint": "Deskripsi terpisah untuk halaman Gallery agar tidak menduplikasi halaman beranda. Target: ~155 karakter.",

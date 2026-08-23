@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useTransition, useOptimistic } from "react";
+import { useEffect, useId, useRef, useState, useTransition, useOptimistic } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -30,13 +30,13 @@ const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] 
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
 const SITE_ICON_MAX_DIM = 512;
 
-function parseSeoKeywords(raw: string): string[] {
+// Phrases are separated by commas (or newlines, if pasted from a list) only —
+// spaces inside a phrase are significant, so "wedding photographer" stays one tag.
+export function parseSeoKeywords(raw: string): string[] {
   const seen = new Set<string>();
   const keywords: string[] = [];
 
-  // A comma can still delimit a multi-word tag, while whitespace makes normal
-  // typing such as "wedding editorial" create two tags without a comma.
-  for (const part of raw.split(/,|\s+/)) {
+  for (const part of raw.split(/[,\n\r]+/)) {
     const trimmed = part.trim();
     if (!trimmed) continue;
     const key = trimmed.toLowerCase();
@@ -129,8 +129,18 @@ export function PublicPageSettingsForm({
 
   const siteIconUrl = watch("siteIconUrl");
   const ogImageUrl = watch("seo.ogImageUrl");
-  const seoKeywords = watch("seo.keywords") ?? [];
   const siteIcon = useImageRetry(siteIconUrl);
+
+  // Raw text typed into the keywords input, kept separate from the parsed
+  // form value so a trailing comma/space the owner just typed isn't eaten
+  // by re-deriving the input from the parsed array on every keystroke.
+  const [seoKeywordsRaw, setSeoKeywordsRaw] = useState(
+    () => (defaults.seo?.keywords ?? []).join(", "),
+  );
+  const seoKeywordsDefaultsKey = JSON.stringify(defaults.seo?.keywords ?? []);
+  useEffect(() => {
+    setSeoKeywordsRaw(JSON.parse(seoKeywordsDefaultsKey).join(", "));
+  }, [seoKeywordsDefaultsKey]);
 
   const seoTitleError = fieldMessage(errors.seoTitle);
   const seoKeywordsError = fieldMessage(errors.seo?.keywords);
@@ -172,6 +182,7 @@ export function PublicPageSettingsForm({
     }
     toast.success(t("savedToast"));
     reset(data);
+    setSeoKeywordsRaw((data.seo?.keywords ?? []).join(", "));
     setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults));
   }
 
@@ -584,7 +595,7 @@ export function PublicPageSettingsForm({
                   <Input
                     id="seoKeywords"
                     placeholder={t("seoKeywordsPlaceholder")}
-                    value={seoKeywords.join(", ")}
+                    value={seoKeywordsRaw}
                     aria-invalid={seoKeywordsError ? true : undefined}
                     aria-describedby={
                       [seoKeywordsError ? "seoKeywords-error" : null, "seoKeywordsHint"]
@@ -592,6 +603,7 @@ export function PublicPageSettingsForm({
                         .join(" ") || undefined
                     }
                     onChange={(e) => {
+                      setSeoKeywordsRaw(e.target.value);
                       field.onChange(parseSeoKeywords(e.target.value));
                     }}
                   />
