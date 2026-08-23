@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiOrg } from "@/lib/auth/apiOrgContext";
-import { updateItemMeta } from "@/lib/db/queries/gallery";
+import { updateItemMeta, propagateItemAltText } from "@/lib/db/queries/gallery";
 
 export const runtime = "nodejs";
 
@@ -54,6 +54,22 @@ export async function PATCH(req: Request, { params }: Params) {
   });
   if (!item) {
     return NextResponse.json({ error: "not_found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
+  }
+
+  // Metadata save already committed — an edited altText must reach the live
+  // page without waiting for the next publish (see propagateItemAltText).
+  // A propagation failure must not fail this request: the write it's built
+  // on top of already succeeded, so log and still return 200.
+  if (parsed.data.altText !== undefined) {
+    try {
+      await propagateItemAltText({
+        workspaceId: ctx.workspace._id.toString(),
+        itemId: id,
+        alt: item.altText || item.caption || "",
+      });
+    } catch (err) {
+      console.error("[gallery:items:patch] alt propagation to published page failed", err);
+    }
   }
 
   return NextResponse.json(item, { status: 200, headers: { "Cache-Control": "no-store" } });

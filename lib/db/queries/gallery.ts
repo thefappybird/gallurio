@@ -13,8 +13,11 @@ import type { GalleryItemDoc } from "@/lib/db/models/GalleryItem";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
+import { Workspace } from "@/lib/db/models/Workspace";
 import { imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
+import { mapBlocks } from "@/lib/page-builder/blockTree";
 import type { PickerCollection, PickerItem } from "@/lib/page-builder/galleryPicker/types";
+import type { PuckData, PuckBlockEntry } from "@/lib/page-builder/types";
 
 const MAX_LIMIT = 100;
 
@@ -490,6 +493,82 @@ export async function updateItemMeta(opts: {
   if (!doc) return null;
 
   return toPickerItem(doc);
+}
+
+/** Prop keys that may hold GalleryImage-shaped `{ id, alt }` entries on a block. */
+const ALT_HOLDING_PROP_KEYS = ["images", "backgroundImages"] as const;
+
+/**
+ * Rewrites the `alt` on every image entry referencing `itemId` inside the
+ * workspace's PUBLISHED page (`publicPage.data.home` / `.gallery`) — the
+ * baked cache `reconcileGalleryImages` (lib/page-builder/reconcile.ts) writes
+ * at publish time, which the live public page's `<img alt>`, its ImageObject
+ * structured data, and the tenant sitemap all read directly. Without this, an
+ * alt-text edit only reaches those surfaces on the next publish. Only the
+ * `alt` string changes on a match — never adds, removes, or reorders images,
+ * never touches layout or any other prop/block.
+ *
+ * `PortfolioDraft` documents are deliberately left untouched — they are
+ * independent snapshots (see the portfolio-drafts skill / docs) that get
+ * reconciled at publish time like the rest of the tree; propagating into a
+ * draft here would blur the "drafts are independent until published" rule.
+ *
+ * No-op (no write) when nothing on the published page references `itemId` —
+ * the common case, since most photos are never placed on the page. Tenant-
+ * safe: the read and the write both filter by the caller's `workspaceId`.
+ */
+export async function propagateItemAltText(opts: {
+  workspaceId: string;
+  itemId: string;
+  alt: string;
+}): Promise<void> {
+  const { workspaceId, itemId, alt } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(workspaceId) || !Types.ObjectId.isValid(itemId)) return;
+
+  await connectDB();
+
+  const ws = (await Workspace.findOne({ _id: workspaceId })
+    .select({ "publicPage.data.home": 1, "publicPage.data.gallery": 1 })
+    .lean()) as { publicPage?: { data?: { home?: PuckData | null; gallery?: PuckData | null } } } | null;
+  if (!ws?.publicPage?.data) return;
+
+  const set: Record<string, PuckData> = {};
+
+  for (const zone of ["home", "gallery"] as const) {
+    const data = ws.publicPage.data[zone];
+    if (!data) continue;
+
+    let changed = false;
+    const next = mapBlocks(data, (block) => {
+      let nextProps = block.props;
+      let propsChanged = false;
+      for (const key of ALT_HOLDING_PROP_KEYS) {
+        const arr = block.props[key];
+        if (!Array.isArray(arr)) continue;
+        let arrChanged = false;
+        const nextArr = arr.map((entry) => {
+          if (entry && typeof entry === "object" && (entry as { id?: unknown }).id === itemId) {
+            arrChanged = true;
+            return { ...(entry as Record<string, unknown>), alt };
+          }
+          return entry;
+        });
+        if (arrChanged) {
+          if (!propsChanged) nextProps = { ...block.props };
+          nextProps[key] = nextArr;
+          propsChanged = true;
+        }
+      }
+      if (!propsChanged) return block;
+      changed = true;
+      return { ...block, props: nextProps } as PuckBlockEntry;
+    });
+    if (changed) set[`publicPage.data.${zone}`] = next;
+  }
+
+  if (Object.keys(set).length === 0) return;
+
+  await Workspace.updateOne({ _id: workspaceId }, { $set: set });
 }
 
 /** Count GalleryItem docs in a workspace that reference a given asset. */

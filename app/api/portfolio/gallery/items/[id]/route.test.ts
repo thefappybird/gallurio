@@ -195,4 +195,77 @@ describe("PATCH /api/portfolio/gallery/items/[id]", () => {
     expect(saved?.caption).toBe("Original caption");
     expect(saved?.altText).toBe("New alt");
   });
+
+  it("propagates a changed altText to the item's entry on the published home page", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.data.home": {
+            content: [
+              {
+                type: "GalleryGrid",
+                props: {
+                  id: "g1",
+                  images: [{ id: itemId.toString(), publicId: "img_meta", alt: "Original alt" }],
+                  columns: 3,
+                  gap: "normal",
+                },
+              },
+            ],
+          },
+        },
+      }
+    );
+
+    const res = (await PATCH(
+      makeReq({ altText: "Updated live alt" }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(res.status).toBe(200);
+
+    const ws = await Workspace.findById(workspaceId).lean();
+    const home = ws!.publicPage!.data!.home as { content: Array<{ props: { images: Array<{ id: string; alt: string }> } }> };
+    expect(home.content[0].props.images[0].alt).toBe("Updated live alt");
+  });
+
+  it("does not propagate when only caption changes (altText untouched, no page write needed)", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          "publicPage.data.home": {
+            content: [
+              { type: "GalleryGrid", props: { id: "g1", images: [{ id: itemId.toString(), publicId: "img_meta", alt: "Original alt" }], columns: 3, gap: "normal" } },
+            ],
+          },
+        },
+      }
+    );
+
+    const res = (await PATCH(makeReq({ caption: "New caption only" }), makeParams(itemId.toString()))) as unknown as MockResp;
+    expect(res.status).toBe(200);
+
+    const ws = await Workspace.findById(workspaceId).lean();
+    const home = ws!.publicPage!.data!.home as { content: Array<{ props: { images: Array<{ id: string; alt: string }> } }> };
+    expect(home.content[0].props.images[0].alt).toBe("Original alt");
+  });
+
+  it("still returns 200 with the updated item when alt propagation throws", async () => {
+    const gallery = await import("@/lib/db/queries/gallery");
+    const propSpy = vi.spyOn(gallery, "propagateItemAltText").mockRejectedValueOnce(new Error("boom"));
+
+    const res = (await PATCH(
+      makeReq({ altText: "Alt that fails to propagate" }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+
+    expect(res.status).toBe(200);
+    expect((res.body as { altText: string | null }).altText).toBe("Alt that fails to propagate");
+
+    const saved = await GalleryItem.findById(itemId).lean();
+    expect(saved?.altText).toBe("Alt that fails to propagate");
+
+    propSpy.mockRestore();
+  });
 });
