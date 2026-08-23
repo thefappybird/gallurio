@@ -18,6 +18,12 @@ const GALLERY_IMAGE_BLOCK_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "Gal
 type StoredImage = { publicId?: unknown; alt?: unknown };
 type StoredCollectionRef = { id?: unknown };
 
+/** Props keys holding image records, never nested blocks — never recurse into these. */
+const NON_BLOCK_ARRAY_PROPS = new Set(["images", "backgroundImages"]);
+
+/** Recursion depth cap while walking untrusted persisted Puck JSON. */
+const MAX_WALK_DEPTH = 10;
+
 function isPuckData(data: unknown): data is PuckData {
   return (
     !!data &&
@@ -26,16 +32,50 @@ function isPuckData(data: unknown): data is PuckData {
   );
 }
 
-/** All block arrays in a Puck data tree: root content + every zone array. */
-function blockArrays(data: PuckData): PuckBlockEntry[][] {
-  const arrays: PuckBlockEntry[][] = [data.content];
-  if (data.zones) {
-    for (const key of Object.keys(data.zones)) {
-      const arr = data.zones[key];
-      if (Array.isArray(arr)) arrays.push(arr);
+function isBlockEntry(value: unknown): value is PuckBlockEntry {
+  if (!value || typeof value !== "object") return false;
+  const v = value as { type?: unknown; props?: unknown };
+  return typeof v.type === "string" && !!v.props && typeof v.props === "object" && !Array.isArray(v.props);
+}
+
+/**
+ * Every block reachable from a Puck data tree: root content, every `zones`
+ * array, and recursively any prop value shaped like a nested block array
+ * (Puck slot fields — `props.content` is the common one, but any prop whose
+ * array holds `{ type, props }` entries counts). Also recurses one level
+ * into arrays-of-arrays defensively. Guards cycles/pathological depth with a
+ * visited-set + depth cap so a malformed tree can't hang or throw.
+ */
+function collectAllBlocks(data: PuckData): PuckBlockEntry[] {
+  const out: PuckBlockEntry[] = [];
+  const visitedArrays = new WeakSet<object>();
+  const visitedBlocks = new WeakSet<object>();
+
+  function walk(arr: unknown, depth: number): void {
+    if (depth > MAX_WALK_DEPTH || !Array.isArray(arr) || visitedArrays.has(arr)) return;
+    visitedArrays.add(arr);
+    for (const item of arr) {
+      if (isBlockEntry(item)) {
+        if (visitedBlocks.has(item)) continue;
+        visitedBlocks.add(item);
+        out.push(item);
+        for (const [key, value] of Object.entries(item.props)) {
+          if (NON_BLOCK_ARRAY_PROPS.has(key)) continue;
+          if (Array.isArray(value)) walk(value, depth + 1);
+        }
+      } else if (Array.isArray(item)) {
+        walk(item, depth + 1);
+      }
     }
   }
-  return arrays;
+
+  walk(data.content, 0);
+  if (data.zones) {
+    for (const key of Object.keys(data.zones)) {
+      walk(data.zones[key], 0);
+    }
+  }
+  return out;
 }
 
 function toPublishedImage(publicId: unknown, alt: unknown): PublishedImage | null {
@@ -82,15 +122,13 @@ export function collectPublishedGalleryImages(
 ): PublishedImage[] {
   if (!isPuckData(data)) return [];
   const raw: PublishedImage[] = [];
-  for (const arr of blockArrays(data)) {
-    for (const block of arr) {
-      if (!GALLERY_IMAGE_BLOCK_TYPES.has(block.type)) continue;
-      const images = block.props?.images;
-      if (!Array.isArray(images)) continue;
-      for (const img of images as StoredImage[]) {
-        const pub = toPublishedImage(img.publicId, img.alt);
-        if (pub) raw.push(pub);
-      }
+  for (const block of collectAllBlocks(data)) {
+    if (!GALLERY_IMAGE_BLOCK_TYPES.has(block.type)) continue;
+    const images = block.props?.images;
+    if (!Array.isArray(images)) continue;
+    for (const img of images as StoredImage[]) {
+      const pub = toPublishedImage(img.publicId, img.alt);
+      if (pub) raw.push(pub);
     }
   }
   return capPublishedImages(raw, limit);
@@ -105,14 +143,12 @@ export function collectPublishedGalleryImages(
 export function collectFeaturedCollectionIds(data: unknown): string[] {
   if (!isPuckData(data)) return [];
   const ids = new Set<string>();
-  for (const arr of blockArrays(data)) {
-    for (const block of arr) {
-      if (block.type !== "FeaturedWork") continue;
-      const cols = block.props?.collections;
-      if (!Array.isArray(cols)) continue;
-      for (const col of cols as StoredCollectionRef[]) {
-        if (typeof col.id === "string" && col.id) ids.add(col.id);
-      }
+  for (const block of collectAllBlocks(data)) {
+    if (block.type !== "FeaturedWork") continue;
+    const cols = block.props?.collections;
+    if (!Array.isArray(cols)) continue;
+    for (const col of cols as StoredCollectionRef[]) {
+      if (typeof col.id === "string" && col.id) ids.add(col.id);
     }
   }
   return [...ids];

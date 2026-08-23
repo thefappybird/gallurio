@@ -110,10 +110,20 @@ describe("GET /w/[orgSlug]/sitemap.xml", () => {
   });
 
   it("emits <image:image> entries for the Gallery <url> from published gallery-block images", async () => {
+    // Nested one level inside a preset's slot (`props.content`), mirroring
+    // how the editor actually publishes gallery blocks — not the flat
+    // top-level shape which would mask a traversal regression.
     const galleryPage = {
       root: {},
       content: [
-        { type: "GalleryGrid", props: { images: [{ id: "x", publicId: "asset-1", alt: "Wedding shot" }] } },
+        {
+          type: "GalleryGridPreset",
+          props: {
+            content: [
+              { type: "GalleryGrid", props: { images: [{ id: "x", publicId: "asset-1", alt: "Wedding shot" }] } },
+            ],
+          },
+        },
       ],
     };
     await Workspace.create(makePublished("with-images", { publicPage: { publishedAt: new Date(), data: { home: PAGE, gallery: galleryPage } } }));
