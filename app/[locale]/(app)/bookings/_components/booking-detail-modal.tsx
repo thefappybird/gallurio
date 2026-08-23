@@ -86,6 +86,7 @@ import {
 } from "@/lib/validators/booking";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { FxSubtitle } from "@/components/app/fx-subtitle";
 import { TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import {
@@ -131,8 +132,25 @@ type BookingDoc = {
   firstSessionStart: string;
   lastSessionEnd: string;
   location: { address: string; lat: number | null; lng: number | null };
-  amount: { total: number; deposit: number; currency: string };
-  payments: { price: number; status: "unpaid" | "paid"; createdAt: string; paidAt: string | null; title: string; method?: "cash" | "card" | "remit" }[];
+  amount: {
+    total: number;
+    deposit: number;
+    currency: string;
+    fxRate?: number | null;
+    fxTarget?: string | null;
+    fxAt?: string | null;
+  };
+  payments: {
+    price: number;
+    status: "unpaid" | "paid";
+    createdAt: string;
+    paidAt: string | null;
+    title: string;
+    method?: "cash" | "card" | "remit";
+    fxRate?: number | null;
+    fxTarget?: string | null;
+    fxAt?: string | null;
+  }[];
   notes: string;
 };
 
@@ -152,6 +170,9 @@ function normalizeBookingDoc(booking: BookingDoc | null): BookingDoc | null {
       total: booking.amount?.total ?? 0,
       deposit: booking.amount?.deposit ?? 0,
       currency: booking.amount?.currency ?? "PHP",
+      fxRate: booking.amount?.fxRate ?? null,
+      fxTarget: booking.amount?.fxTarget ?? null,
+      fxAt: booking.amount?.fxAt ?? null,
     },
     payments: Array.isArray(booking.payments) ? booking.payments : [],
     notes: booking.notes ?? "",
@@ -2293,20 +2314,34 @@ function BookingTabs({
         <SectionHeader label={tSections("pricing")} />
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
-          <EditableField
-            label={tFields("total")}
-            type="money"
-            currency={currency}
-            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
-            {...get("amount.total")}
-            onCommit={(v) => onCommit("amount.total", v)}
-            onDiscardPending={() => onDiscard("amount.total")}
-            disabled={disabled || immutable}
-            readOnly={immutable}
-            editKey="amount.total"
-            registerHandle={registerFieldHandle}
-            onEditingChange={onFieldEditingChange}
-          />
+          <div className="flex flex-col gap-1">
+            <EditableField
+              label={tFields("total")}
+              type="money"
+              currency={currency}
+              formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
+              {...get("amount.total")}
+              onCommit={(v) => onCommit("amount.total", v)}
+              onDiscardPending={() => onDiscard("amount.total")}
+              disabled={disabled || immutable}
+              readOnly={immutable}
+              editKey="amount.total"
+              registerHandle={registerFieldHandle}
+              onEditingChange={onFieldEditingChange}
+            />
+            {booking.amount.fxRate &&
+            booking.amount.fxRate > 0 &&
+            booking.amount.fxTarget &&
+            booking.amount.fxTarget !== booking.amount.currency ? (
+              <FxSubtitle
+                amount={total}
+                rate={booking.amount.fxRate}
+                target={booking.amount.fxTarget}
+                at={booking.amount.fxAt ?? null}
+                locale={locale}
+              />
+            ) : null}
+          </div>
           <EditableField
             label={tFields("deposit")}
             type="money"
@@ -2480,53 +2515,67 @@ function BookingTabs({
             ) : (
               <div
                 key={idx}
-                className="flex items-center justify-between gap-2 border border-border px-2.5 py-1.5"
+                className="flex flex-col gap-1 border border-border px-2.5 py-1.5"
               >
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">
-                    {effectiveTitle || tPayments("label", { n: idx + 1 })}
-                  </span>
-                  <span className="text-sm tabular-nums text-muted-foreground">
-                    {formatMoney(effectivePrice, booking.amount.currency, locale)}
-                  </span>
-                  <Badge variant={effectiveStatus === "paid" ? "default" : "outline"}>
-                    {tPayments(effectiveStatus)}
-                  </Badge>
-                  <span className="text-xs uppercase text-muted-foreground">{effectiveMethod}</span>
-                  {payment.paidAt ? (
-                    <span className="text-xs text-muted-foreground">
-                      {tPayments("paidOn", {
-                        date: new Date(payment.paidAt).toLocaleDateString(locale),
-                      })}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {effectiveTitle || tPayments("label", { n: idx + 1 })}
                     </span>
-                  ) : null}
-                </div>
-                {!immutable ? <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label={`Edit ${tPayments("label", { n: idx + 1 })}`}
-                  onClick={() => {
-                    setEditPaymentPrice(effectivePrice);
-                    setEditPaymentStatus(effectiveStatus);
-                    setEditPaymentTitle(effectiveTitle);
-                    setEditPaymentMethod(effectiveMethod);
-                    setEditingPaymentIndex(idx);
-                  }}
-                >
-                  <PencilIcon className="size-4" />
-                </Button> : null}
-                {!immutable ? (
-                  <Button
+                    <span className="text-sm tabular-nums text-muted-foreground">
+                      {formatMoney(effectivePrice, booking.amount.currency, locale)}
+                    </span>
+                    <Badge variant={effectiveStatus === "paid" ? "default" : "outline"}>
+                      {tPayments(effectiveStatus)}
+                    </Badge>
+                    <span className="text-xs uppercase text-muted-foreground">{effectiveMethod}</span>
+                    {payment.paidAt ? (
+                      <span className="text-xs text-muted-foreground">
+                        {tPayments("paidOn", {
+                          date: new Date(payment.paidAt).toLocaleDateString(locale),
+                        })}
+                      </span>
+                    ) : null}
+                  </div>
+                  {!immutable ? <Button
                     type="button"
                     size="icon-sm"
                     variant="ghost"
-                    aria-label={`Delete ${tPayments("label", { n: idx + 1 })}`}
-                    onClick={() => onToggleRemovePayment(idx)}
-                    className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+                    aria-label={`Edit ${tPayments("label", { n: idx + 1 })}`}
+                    onClick={() => {
+                      setEditPaymentPrice(effectivePrice);
+                      setEditPaymentStatus(effectiveStatus);
+                      setEditPaymentTitle(effectiveTitle);
+                      setEditPaymentMethod(effectiveMethod);
+                      setEditingPaymentIndex(idx);
+                    }}
                   >
-                    <Trash2Icon className="size-4" />
-                  </Button>
+                    <PencilIcon className="size-4" />
+                  </Button> : null}
+                  {!immutable ? (
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={`Delete ${tPayments("label", { n: idx + 1 })}`}
+                      onClick={() => onToggleRemovePayment(idx)}
+                      className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+                    >
+                      <Trash2Icon className="size-4" />
+                    </Button>
+                  ) : null}
+                </div>
+                {payment.fxRate &&
+                payment.fxRate > 0 &&
+                payment.fxTarget &&
+                payment.fxTarget !== booking.amount.currency ? (
+                  <FxSubtitle
+                    amount={effectivePrice}
+                    rate={payment.fxRate}
+                    target={payment.fxTarget}
+                    at={payment.fxAt ?? null}
+                    locale={locale}
+                  />
                 ) : null}
               </div>
             );

@@ -2,7 +2,7 @@ import type { SpotlightStep } from "./SpotlightGuide";
 
 /**
  * Spotlight tour steps for the portfolio editor.
- * Editor chrome is English-only (RELEASE-CHECKLIST §4f).
+ * Editor chrome is intentionally English-only.
  *
  * Gate ids used by EditorShell to compute `gateSatisfied` (actionable steps —
  * Next is hidden until the action is performed):

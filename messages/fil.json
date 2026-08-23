@@ -4,6 +4,7 @@
       "pricing": "Presyo",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Mag-book ng Demo",
+      "resources": "Mga Sanggunian",
       "contact": "Makipag-ugnayan",
       "signIn": "Mag-sign in",
       "getStarted": "Magsimula"
@@ -13,10 +14,13 @@
       "pricing": "Presyo",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Mag-book ng Demo",
+      "resources": "Mga Sanggunian",
       "terms": "Mga Tuntunin",
       "privacy": "Privacy",
       "refunds": "Refund",
-      "contact": "Makipag-ugnayan"
+      "contact": "Makipag-ugnayan",
+      "comparisons": "Mga Paghahambing",
+      "writing": "Mga Artikulo"
     },
     "metadata": {
       "title": "Gallurio — Mga Tool sa Portfolio, Booking, at Client para sa Creative Business",
@@ -134,10 +138,11 @@
       "title": "Simpleng presyo",
       "subtitle": "1 buwang Pro, libre. Pagkatapos, iisang plano, buwanan o taunan.",
       "viewFullPricing": "Tingnan ang buong presyo",
-      "disclaimer": "Isang buwang libre. Ang paid Pro ay nagre-renew buwanan o taunan hanggang i-cancel.",
+      "disclaimer": "Isang buwang libre. Ang paid Pro ay nagre-renew buwanan o taunan hanggang i-cancel. Ipinapakita ang mga presyo sa iyong lokal na currency. Lumalabas ang mga tuntunin sa pagsingil, buwis, at detalye ng renewal bago mo makumpleto ang checkout.",
       "cadence": {
         "monthly": "Buwanan",
-        "yearly": "Taunan — makatipid ng 2 buwan"
+        "yearly": "Taunan",
+        "savePill": "Makatipid ng 2 buwan"
       },
       "pro": {
         "badge": "1 buwang libre",
@@ -157,6 +162,11 @@
         "title": "Presyo — Gallurio",
         "description": "Tingnan ang presyo ng Gallurio Pro para sa mga creative professional at studio — isang buwang libre, tapos iisang buwanan o taunang plano."
       },
+      "cadence": {
+        "monthly": "Buwanan",
+        "yearly": "Taunan",
+        "savePill": "Makatipid ng 2 buwan"
+      },
       "header": {
         "headline": "Simpleng mga plano para sa mga creative professional at studio.",
         "body": "Bawat bagong workspace ay may isang buwan ng buong Gallurio Pro, libre, walang kailangang card. Pagkatapos, magpatuloy sa iisang Pro subscription — buwanan o taunan."
@@ -168,7 +178,6 @@
         "description": "Lahat ng kailangan mo para patakbuhin ang mga booking, client, gallery, at ang pampublikong page mo.",
         "priceSuffixMonthly": "/ buwan",
         "priceSuffixYearly": "/ taon",
-        "yearlyNote": "O {price} taunang bayad — makatipid ng 2 buwan.",
         "feature1": "Portfolio page builder & pampublikong site",
         "feature2": "Walang limit na booking at inquiry",
         "feature3": "Client management at team roles",
@@ -218,11 +227,11 @@
       "betaAccess": {
         "title": "4. Beta at Libreng Access",
         "body1": "Maaaring mag-alok ang Gallurio ng beta o promotional access. Maaaring hindi kumpleto, magbago, ma-suspend, o matanggal ang mga beta feature. Hindi ginagarantiya ng beta o libreng access ang permanenteng availability o mga susunod na feature.",
-        "body2": "Maliban kung sinabi ng Gallurio, hindi kailangan ng payment card ang promotional access. Kapag inilunsad ang paid billing, ipapakita ang naaangkop na plano, presyo, tuntunin sa renewal, at petsa ng billing bago ang pagbili."
+        "body2": "Maliban kung sinabi ng Gallurio, hindi kailangan ng payment card ang promotional access. Kung may naaangkop na paid billing, ipinapakita ang plano, presyo, tuntunin sa renewal, at petsa ng billing bago ang pagbili."
       },
       "subscriptions": {
         "title": "5. Subscriptions at Lemon Squeezy",
-        "body1": "Kapag available na, ipapakita ang mga paid Pro subscription kasama ang presyo, billing interval, tuntunin sa renewal, at naaangkop na buwis bago ang pagbili.",
+        "body1": "Ipinapakita ang mga paid Pro subscription kasama ang presyo, billing interval, tuntunin sa renewal, at naaangkop na buwis bago ang pagbili.",
         "body2": "Ang Lemon Squeezy ang kumikilos bilang merchant of record para sa mga subscription ng Gallurio. Maaaring iproseso ng Lemon Squeezy ang checkout, bayad, billing, buwis, invoice, refund, chargebacks, at kaugnay na customer-service matters sa ilalim ng sarili nitong mga tuntunin at patakaran.",
         "body3": "Nag-re-renew ang mga subscription alinsunod sa tuntunin sa billing na ipinapakita sa checkout hanggang i-cancel. Karaniwang pinipigilan ng cancellation ang mga susunod na renewal charge ngunit hindi ito awtomatikong gumagawa ng refund.",
         "body4": "Kung nabigo ang isang bayad o natapos ang isang subscription, maaaring limitahan ng Gallurio ang mga Pro feature o i-offline ang isang public page pagkatapos ng makatwirang abiso. Maaaring manatiling naka-retain ang data ng account, at maibabalik ang access kung na-renew ang subscription, alinsunod sa naaangkop na plano at product state.",
@@ -570,6 +579,46 @@
         "rateLimited": "Masyadong maraming request. Maghintay ng ilang minuto at subukang muli.",
         "generic": "May nangyaring mali. Pakisubukan muli."
       }
+    },
+    "compare": {
+      "metadata": {
+        "title": "Paghahambing ng Gallurio sa mga tool na ginagamit ng mga event business",
+        "description": "Paano naihahambing ang Gallurio sa HoneyBook, Dubsado, Pixieset, Squarespace, Wix, Notion, Google Sheets, Google Forms, 17hats, at Studio Ninja — presyo, feature, at kung kanino talaga bagay ang bawat isa."
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "index": "Mga Paghahambing"
+      },
+      "index": {
+        "eyebrow": "Mga Paghahambing",
+        "headline": "Gallurio kumpara sa mga ginagamit mong tool ngayon",
+        "intro1": "Karamihan sa mga event business ay napupunta sa Gallurio pagkatapos malagpasan ang spreadsheet, isang general CRM na para sa ibang industriya, o gallery tool na hindi talaga ginawa para sa booking. Inilalatag ng mga paghahambing na ito ang totoong trade-off — presyo, ano ang kaya ng bawat tool, at ano ang hindi — laban sa mga partikular na tool na madalas lipatan ng mga tao.",
+        "intro2": "Wala sa mga ito ang nagkukunwaring panalo ang Gallurio sa lahat ng bagay. Kapag may nagagawa ang ibang tool na hindi kaya ng Gallurio, sinasabi iyon nang tapat, para makapili ka batay sa talagang kailangan ng negosyo mo."
+      },
+      "categories": {
+        "crm": "CRM at pamamahala ng client",
+        "website-builder": "Website builder",
+        "gallery-delivery": "Gallery at delivery tool",
+        "record-keeping": "Spreadsheet at record-keeping",
+        "intake": "Inquiry at intake tool"
+      },
+      "readMore": "Basahin ang paghahambing"
+    },
+    "blog": {
+      "metadata": {
+        "title": "Mga Sulatin — Gallurio",
+        "description": "Praktikal na tala tungkol sa pagpepresyo, booking, at pagpapatakbo ng event business — mula sa team sa likod ng Gallurio."
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "index": "Mga Artikulo"
+      },
+      "index": {
+        "eyebrow": "Mga Artikulo",
+        "headline": "Mga tala sa pagpapatakbo ng event business",
+        "intro": "Maiikli at praktikal na sanaysay tungkol sa pagpepresyo, client intake, at ang operational side ng photography, planning, at iba pang event work — ang mga bagay na hindi kasya sa isang feature list."
+      },
+      "readMore": "Basahin pa"
     }
   },
   "auth": {
@@ -809,6 +858,10 @@
         "quickAdd": "Gumawa ng booking, kliyente, o inquiry."
       },
       "totalLabel": "Kabuuan",
+      "miniCalendar": {
+        "today": "Ngayon",
+        "monthTotal": "{count, plural, one {# booking ngayong buwan} other {# na booking ngayong buwan}}"
+      },
       "calendarTeam": {
         "label": "I-filter ayon sa team",
         "all": "Lahat ng team"
@@ -1328,6 +1381,9 @@
         "paid": "Nabayaran",
         "unpaid": "Hindi pa bayad",
         "paidOn": "Binayaran noong {date}",
+        "frozenRate": "≈ {price} · rate na {rate} · {date}",
+        "frozenRateTrailing": "{date} · rate na {rate} · ≈ {price}",
+        "approx": "≈ {price}",
         "empty": "Wala pang naka-iskedyul na bayad para sa booking na ito",
         "exceedsBalance": "Lumalampas sa natitirang balanse",
         "titleRequired": "Kailangan ang pamagat.",
@@ -1556,7 +1612,6 @@
           "paused": "Naka-pause",
           "trialing": "Trial"
         },
-        "notYetAvailable": "Hindi pa available ang mga paid subscription. Bumalik ulit sa lalong madaling panahon, o gumamit ng promo code sa ibaba kung mayroon ka.",
         "manageSection": "Pamahalaan ang subscription",
         "manageDescription": "I-update ang paraan ng pagbabayad, tingnan ang mga invoice, o kanselahin ang subscription nang direkta sa pamamagitan ng Lemon Squeezy.",
         "manageButton": "Pamahalaan ang subscription",
@@ -1586,7 +1641,14 @@
         "save": "I-save ang mga pagbabago",
         "saving": "Sine-save…",
         "savedToast": "Na-update ang workspace.",
-        "currencyWarning": "Nalalapat sa mga bagong booking. Pinapanatili ng mga kasalukuyang halaga ang orihinal na currency.",
+        "currencyWarning": "Ang pagpapalit ng iyong currency ay muling kakalkulahin ang lahat ng umiiral nang bayad na halaga sa bagong currency, at ilo-lock ang field na ito sa loob ng 90 araw pagkatapos.",
+        "currencyConfirmTitle": "Palitan ang currency ng workspace?",
+        "currencyConfirmBody": "{count, plural, =0 {Walang umiiral na kabuuang babaguhin. Maaari mong palitan ang currency anumang oras.} one {# booking ang muling kakalkulahin. Pagkatapos nito, hindi mo na mapapalitan ang currency hanggang {date}.} other {# na booking ang muling kakalkulahin. Pagkatapos nito, hindi mo na mapapalitan ang currency hanggang {date}.}}",
+        "currencyConfirmConfirm": "Kumpirmahin ang pagbabago",
+        "currencyConfirmCancel": "Kanselahin",
+        "currencyLockedUntil": "Naka-lock ang currency hanggang {date}.",
+        "currencyChangeLockedError": "Maaari mo nang palitan ang currency sa {date}.",
+        "currencyChangeRateError": "Hindi makuha ang palitang halaga ngayong araw. Pakisubukang muli sa ilang sandali.",
         "contactEmail": "Email ng kontak",
         "contactEmailPlaceholder": "ikaw@halimbawa.com",
         "contactAddress": "Address ng negosyo",
@@ -1676,9 +1738,11 @@
         },
         "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
         "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
+        "seoTitleAutoHint": "Wala pang title — gagamitin na lang ang pangalan ng iyong workspace.",
+        "seoDescriptionAutoHint": "Wala pang description — ito ang gagamitin: “{preview}”",
         "seoKeywords": "Mga tag ng SEO",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, metro manila",
-        "seoKeywordsHint": "Opsyonal na mga tag na pinaghiwalay ng kuwit para sa search engine at structured data. Hanggang 10.",
+        "seoKeywordsHint": "Opsyonal na mga tag na pinaghihiwalay ng kuwit — mananatili ang espasyo sa loob ng bawat parirala. Ginagamit sa structured data ng pahina. Hanggang 10 tag.",
         "galleryDescriptionLabel": "Paglalarawan ng Gallery page",
         "galleryDescriptionPlaceholder": "Isang showcase ng aming pinakamahusay na wedding at portrait work…",
         "galleryDescriptionHint": "Hiwalay na paglalarawan para sa iyong Gallery page upang hindi ito magkatulad ng iyong home page. Target: ~155 karakter.",
@@ -2492,6 +2556,19 @@
           "description": "Sabihin sa amin ang tungkol sa iyong event.",
           "submit": "Magpadala ng katanungan"
         },
+        "imageMeta": {
+          "title": "I-edit ang alt text",
+          "altLabel": "Alt text",
+          "altHelp": "Ilarawan kung ano ang ipinapakita ng larawan. Binabasa nang malakas ng mga screen reader at ginagamit ng mga search engine para maunawaan ang larawan.",
+          "altPlaceholder": "hal. Nobyo at nobya na sumasayaw sa ilalim ng mga ilaw",
+          "counter": "{count}/{max} na character",
+          "save": "I-save",
+          "saving": "Sine-save…",
+          "cancel": "Kanselahin",
+          "savedToast": "Na-save ang alt text.",
+          "editTrigger": "I-edit ang alt text para sa {name}",
+          "photoFallback": "larawan"
+        },
         "mobileBanner": {
           "title": "Mas maganda ang editor sa mas malaking screen",
           "body": "Ang drag-and-drop na pag-edit ay dinisenyo para sa tablet at desktop.",
@@ -3209,7 +3286,6 @@
       "export_too_large": "Masyadong maraming booking para i-export. I-paliitin ang iyong mga filter at subukan muli.",
       "free_plan_no_checkout": "Hindi kailangan ng checkout ang libreng plano.",
       "lemonsqueezy_variant_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
-      "billing_unavailable": "Hindi pa available ang mga paid subscription. Bumalik ulit sa lalong madaling panahon.",
       "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
       "checkout_init_failed": "Hindi masimulaan ang checkout. Pakisubukan muli.",
       "no_subscription": "Wala kang aktibong subscription na mapapamahalaan.",
@@ -3319,7 +3395,6 @@
       "title": "Pumili ng planong angkop",
       "description": "Maaari kang magpalit ng plano o magkansela anumang oras mula sa mga setting ng iyong workspace.",
       "popular": "Popular",
-      "comingSoon": "Malapit na",
       "cadence": {
         "forever": "unang buwan libre",
         "monthly": "/ buwan",
@@ -3340,12 +3415,7 @@
       "activatedNotice": "Aktibo na ang iyong Gallurio Plan. Tapusin ang onboarding para baguhin ang iyong subscription plan.",
       "activePill": "Aktibo",
       "finishOnboarding": "Tapusin ang onboarding",
-      "acceptedPromoCode": "Promo code {code}",
-      "betaTester": {
-        "label": "Beta Tester",
-        "headline": "Kumuha ng libreng beta access ngayon",
-        "activate": "I-activate ang beta access"
-      }
+      "acceptedPromoCode": "Promo code {code}"
     },
     "done": {
       "title": "Handa ka na, {workspaceName}.",
@@ -3365,6 +3435,8 @@
     }
   },
   "plans": {
+    "billedAs": "Siningil bilang {price} {currency}",
+    "billedAsCode": "Siningil bilang {price}",
     "free": {
       "name": "Free",
       "description": "1 buwan ng buong Pro, libre",
@@ -3392,7 +3464,16 @@
       }
     },
     "beta": {
-      "name": "Beta"
+      "name": "Beta",
+      "label": "Beta tester",
+      "tabLabel": "Beta",
+      "price": "Libre",
+      "priceSuffix": "habang beta",
+      "tagline": "Lahat ng nasa Pro, libre habang beta pa ang Gallurio.",
+      "note": "Walang kailangang card. Aabisuhan ka namin 7 araw bago matapos ang beta.",
+      "activate": "I-activate ang beta access",
+      "active": "Aktibo na ang iyong beta access.",
+      "cta": "Sumali sa beta"
     },
     "promo": {
       "name": "Promo"
@@ -3512,6 +3593,21 @@
       "retry": "Subukang muli",
       "empty": "Wala pang mga larawan sa koleksyong ito.",
       "fullSizeAlt": "Larawan sa buong sukat"
+    },
+    "seoDefaults": {
+      "homeDescription": "{name} — {businessType}. Tingnan ang mga bagong gawa at mag-book agad.",
+      "homeDescriptionGeneric": "{name} — tingnan ang mga bagong gawa at mag-book agad.",
+      "galleryDescription": "Tingnan ang gallery ni {name} — kamakailang mga larawan at highlights.",
+      "businessType": {
+        "photographer": "Fotograpo",
+        "venue": "Venue",
+        "planner": "Event Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Tagapaaliw",
+        "artists": "Artist",
+        "other": "Negosyo"
+      }
     }
   },
   "notFound": {

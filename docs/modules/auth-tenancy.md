@@ -14,7 +14,7 @@ WorkOS is identity-only: sign-in/up, password auth, Google OAuth, MFA (TOTP), em
 ## Tenancy model
 
 - A `Workspace` is the tenant boundary — never trust a client-supplied `workspaceId`; resolve it from session + the re-validated active-workspace cookie + MongoDB memberships.
-- `User.memberships[]`: `{ workspaceId, role: "owner"|"staff", lastAccessedAt }`. A user owns at most one workspace (onboarding upserts on `ownerUserId`; not yet backed by a unique index — see `docs/RELEASE-CHECKLIST.md` for open hardening items).
+- `User.memberships[]`: `{ workspaceId, role: "owner"|"staff", lastAccessedAt }`. A user owns at most one workspace; onboarding upserts on `ownerUserId`.
 - Team-level membership is the separate `TeamMembership` collection: `{ workspaceId, teamId, workosUserId, role: "member"|"lead" }`, unique on `(workspaceId, teamId, workosUserId)`.
 - `Team`: workspace-scoped department/group — `name` (unique per workspace), `color`, `isDefault` (unique partial index, exactly one default team per workspace), `isActive`/`deactivatedAt`, `memberCount`, `pendingReleaseAcks[]` (ref `Invitation`, for seat-release flows).
 - `Invitation`: email-bound, single-use SHA-256 token hash, `role`, `teamIds[]`/`leadOnTeamIds[]`, `status: pending|accepted|revoked|expired`, unique partial index on `(workspaceId, email)` while `status="pending"`. Acceptance is a transactional multi-doc write. Expired invite seats are released by the hourly `release-expired-invite-seats` cron.

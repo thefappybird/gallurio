@@ -8,6 +8,8 @@ import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { FALLBACK_TZ, localDayStart, dayBoundInTz } from "@/lib/utils/timezone";
 import { Team } from "@/lib/db/models";
 import { rowsToXlsxBuffer } from "@/lib/utils/xlsx";
+import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
+import { frozenOrLiveAmount } from "@/lib/pricing/currencyConverter";
 
 export const runtime = "nodejs";
 
@@ -37,6 +39,12 @@ const CSV_HEADERS = [
   "invoiceNumber",
   "payments",
   "createdAt",
+  // Export-only, appended last: the same money rolled into the workspace
+  // currency, so a mixed-currency export can be summed in a spreadsheet
+  // without the reader having to apply rates by hand. Prefers the rate frozen
+  // when the money was collected; the importer ignores both columns.
+  "workspaceAmountTotal",
+  "workspaceCurrency",
 ] as const;
 
 /**
@@ -214,6 +222,24 @@ export async function GET(req: Request) {
   // Each booking emits one row per session, sharing one booking_id. The
   // importer regroups on that id, so a multi-session booking round-trips
   // intact rather than splitting into one booking per session.
+  const fx = await getWorkspaceRateMap(ctx.workspace._id, ctx.workspace.currency ?? "PHP");
+  const workspaceTotal = (amount: {
+    total?: number | null;
+    currency?: string | null;
+    fxRate?: number | null;
+    fxTarget?: string | null;
+  } | null | undefined): number | "" => {
+    if (!amount || typeof amount.total !== "number") return "";
+    return frozenOrLiveAmount(
+      amount.total,
+      amount.currency,
+      fx.rates,
+      fx.target,
+      amount.fxRate,
+      amount.fxTarget
+    );
+  };
+
   const rows: (string | number)[][] = [];
   for (const b of bookings) {
     const sessions = b.sessions as { startAt: Date; endAt: Date }[];
@@ -248,6 +274,8 @@ export async function GET(req: Request) {
         invoiceNumber: b.invoiceNumber ?? "",
         payments,
         createdAt: b.createdAt ? new Date(b.createdAt).toISOString() : "",
+        workspaceAmountTotal: workspaceTotal(b.amount),
+        workspaceCurrency: fx.target,
       };
       rows.push(CSV_HEADERS.map((h) => guard(h, values[h])));
     });

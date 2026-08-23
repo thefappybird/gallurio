@@ -83,6 +83,18 @@ describe("PortfolioConversionFunnelCard", () => {
     expect(screen.queryByText(/of opened/)).not.toBeInTheDocument();
   });
 
+  it("draws a proportional bar for each stage", () => {
+    renderWithProviders(
+      <PortfolioConversionFunnelCard
+        funnel={{ visitorDays: 100, contactVisitorDays: 40, inquiries: 10, contactTracked: true }}
+        locale="en"
+        labels={labels}
+      />
+    );
+    const bars = screen.getAllByTestId("funnel-bar");
+    expect(bars.map((bar) => bar.style.width)).toEqual(["100%", "40%", "10%"]);
+  });
+
   it("caps the of-opened percent at 100 when inquiries exceed contact-visitor-days", () => {
     renderWithProviders(
       <PortfolioConversionFunnelCard

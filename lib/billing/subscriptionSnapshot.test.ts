@@ -55,6 +55,42 @@ describe("applySubscriptionSnapshot", () => {
     expect(after?.lsSubscriptionStatus).toBe("active");
     expect(after?.lsCurrentPeriodEnd).toBeInstanceOf(Date);
     expect(after?.everSubscribed).toBe(true);
+    expect(after?.lsVariantId).toBe("1001");
+  });
+
+  it("persists lsVariantId even when the team-cap guard refuses to promote the plan", async () => {
+    const { Team, TEAM_COLOR_PALETTE } = await import("@/lib/db/models/team");
+    const ws = await Workspace.create({
+      slug: "snap-6",
+      name: "Snapshot WS 6",
+      ownerUserId: "user_1",
+      plan: "free",
+    });
+    for (let i = 0; i < 20; i++) {
+      await Team.create({
+        workspaceId: ws._id,
+        name: `Team ${i + 1}`,
+        color: TEAM_COLOR_PALETTE[i % TEAM_COLOR_PALETTE.length],
+        isDefault: i === 0,
+        memberCount: 0,
+        createdByWorkosUserId: "user_1",
+      });
+    }
+
+    const applySubscriptionSnapshot = await loadApplySubscriptionSnapshot();
+    await applySubscriptionSnapshot({
+      filter: { _id: ws._id },
+      subscriptionId: "sub_6",
+      customerId: "cust_6",
+      rawStatus: "active",
+      variantId: "1001",
+      renewsAt: null,
+      eventTimestamp: null,
+    });
+
+    const after = await Workspace.findById(ws._id).lean();
+    expect(after?.plan).toBe("free");
+    expect(after?.lsVariantId).toBe("1001");
   });
 
   it("refuses to promote when the workspace exceeds the new tier's team cap", async () => {

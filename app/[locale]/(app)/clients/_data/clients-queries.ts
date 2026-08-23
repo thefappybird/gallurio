@@ -2,6 +2,9 @@ import "server-only";
 import { Types } from "mongoose";
 import { Client, Booking, Transaction } from "@/lib/db/models";
 import type { ClientDoc } from "@/lib/db/models/Client";
+import { getConvertedClientTotals } from "@/lib/pricing/clientTotals";
+import { NO_CONVERSION, type WorkspaceRates } from "@/lib/pricing/workspaceRates";
+import { frozenOrLiveAmount } from "@/lib/pricing/currencyConverter";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -13,6 +16,12 @@ export type ListClientsParams = {
   includeInactive?: boolean;  // default: active only (isActive: true)
   page?: number;        // 1-indexed, default 1
   limit?: number;       // 25 | 50 | 100, default 25
+  // Workspace rates bundled with their target currency. Supplied when the
+  // caller renders totalSpent labelled with the workspace currency — see the
+  // note on ClientListItem. Accepts a pending promise so the caller can kick
+  // off getWorkspaceRateMap alongside its other queries instead of awaiting
+  // it first — it's only awaited here, right before it's needed.
+  fx?: WorkspaceRates | Promise<WorkspaceRates>;
 };
 
 // Booking metrics are derived at read time rather than denormalized onto the
@@ -28,7 +37,7 @@ export type ClientListItem = ClientDoc & {
 export async function listClients(
   params: ListClientsParams
 ): Promise<{ items: ClientListItem[]; total: number }> {
-  const { workspaceId, q, source, tags, includeInactive, page = 1, limit = 25 } = params;
+  const { workspaceId, q, source, tags, includeInactive, page = 1, limit = 25, fx = NO_CONVERSION } = params;
   const filter: Record<string, unknown> = { workspaceId };
 
   // Collect into $and so multiple $or groups (active-state, search) don't
@@ -71,22 +80,27 @@ export async function listClients(
 
   // One aggregation over the visible page to attach { count, lastStart } per
   // client. Bounded by `limit` so the worst case is ~100 client IDs in $in.
+  // Runs alongside the rate-map resolution + converted-totals lookup — both
+  // only need clientIds, not each other's result.
   const clientIds = items.map((c) => c._id);
-  const stats = await Booking.aggregate<{
-    _id: Types.ObjectId;
-    count: number;
-    lastStart: Date | null;
-  }>([
-    // Exclude draft bookings — an unapproved inquiry must not inflate a client's
-    // booking count or "last booking" date in the clients list.
-    { $match: { workspaceId, status: { $ne: "draft" }, clientId: { $in: clientIds } } },
-    {
-      $group: {
-        _id: "$clientId",
-        count: { $sum: 1 },
-        lastStart: { $max: "$firstSessionStart" },
+  const [stats, convertedTotals] = await Promise.all([
+    Booking.aggregate<{
+      _id: Types.ObjectId;
+      count: number;
+      lastStart: Date | null;
+    }>([
+      // Exclude draft bookings — an unapproved inquiry must not inflate a client's
+      // booking count or "last booking" date in the clients list.
+      { $match: { workspaceId, status: { $ne: "draft" }, clientId: { $in: clientIds } } },
+      {
+        $group: {
+          _id: "$clientId",
+          count: { $sum: 1 },
+          lastStart: { $max: "$firstSessionStart" },
+        },
       },
-    },
+    ]),
+    Promise.resolve(fx).then((f) => getConvertedClientTotals(workspaceId, clientIds, f)),
   ]);
 
   const statsById = new Map(stats.map((s) => [String(s._id), s]));
@@ -94,6 +108,11 @@ export async function listClients(
     const s = statsById.get(String(c._id));
     return {
       ...c,
+      // With a rate map, the ledger is authoritative for clients it covers.
+      // A client with no Transaction rows predates the ledger (legacy seed
+      // data / pre-multi-currency), so fall back to the stored (unconverted)
+      // totalSpent rather than rendering 0 for real money.
+      totalSpent: convertedTotals ? (convertedTotals.get(String(c._id)) ?? c.totalSpent) : c.totalSpent,
       bookingsCount: s?.count ?? 0,
       lastBookingAt: s?.lastStart ?? null,
     };
@@ -104,7 +123,8 @@ export async function listClients(
 
 export async function getClientById(
   workspaceId: WorkspaceId,
-  clientId: string
+  clientId: string,
+  fx: WorkspaceRates | Promise<WorkspaceRates> = NO_CONVERSION
 ): Promise<ClientListItem | null> {
   if (!Types.ObjectId.isValid(clientId)) return null;
 
@@ -115,23 +135,28 @@ export async function getClientById(
 
   if (!c) return null;
 
-  const stats = await Booking.aggregate<{
-    _id: Types.ObjectId;
-    count: number;
-    lastStart: Date | null;
-  }>([
-    { $match: { workspaceId, clientId: c._id } },
-    {
-      $group: {
-        _id: "$clientId",
-        count: { $sum: 1 },
-        lastStart: { $max: "$firstSessionStart" },
+  const [stats, convertedTotals] = await Promise.all([
+    Booking.aggregate<{
+      _id: Types.ObjectId;
+      count: number;
+      lastStart: Date | null;
+    }>([
+      { $match: { workspaceId, clientId: c._id } },
+      {
+        $group: {
+          _id: "$clientId",
+          count: { $sum: 1 },
+          lastStart: { $max: "$firstSessionStart" },
+        },
       },
-    },
+    ]),
+    Promise.resolve(fx).then((f) => getConvertedClientTotals(workspaceId, [c._id], f)),
   ]);
 
   return {
     ...c,
+    // Unconverted fallback for pre-ledger clients — see the note in listClients.
+    totalSpent: convertedTotals ? (convertedTotals.get(String(c._id)) ?? c.totalSpent) : c.totalSpent,
     bookingsCount: stats[0]?.count ?? 0,
     lastBookingAt: stats[0]?.lastStart ?? null,
   };
@@ -147,6 +172,48 @@ export async function getWorkspaceTags(workspaceId: WorkspaceId): Promise<string
   return result.filter((t): t is string => typeof t === "string").sort();
 }
 
+/**
+ * What a foreign-currency figure is worth in the workspace currency. Null when
+ * the record already uses the workspace currency (nothing to disclose) or when
+ * no rate could be resolved. `rate`/`at` are set only for money that froze a
+ * rate when it was collected — never a guess.
+ */
+export type ConvertedFigure = {
+  amount: number;
+  currency: string;
+  rate: number | null;
+  at: string | null;
+};
+
+function convertedFor(
+  amount: number,
+  currency: string | null | undefined,
+  fx: WorkspaceRates | undefined,
+  frozen?: { rate?: number | null; at?: Date | null }
+): ConvertedFigure | null {
+  if (!fx) return null;
+  const source = (currency ?? fx.target).toUpperCase();
+  if (source === fx.target.toUpperCase()) return null;
+
+  const usableFrozen =
+    frozen?.rate && frozen.rate > 0 ? { rate: frozen.rate, at: frozen.at ?? null } : null;
+  if (!usableFrozen && !fx.rates[source]) return null;
+
+  return {
+    amount: frozenOrLiveAmount(
+      amount,
+      source,
+      fx.rates,
+      fx.target,
+      usableFrozen?.rate,
+      usableFrozen ? fx.target : null
+    ),
+    currency: fx.target,
+    rate: usableFrozen?.rate ?? null,
+    at: usableFrozen?.at ? new Date(usableFrozen.at).toISOString() : null,
+  };
+}
+
 export type ClientBookingRow = {
   id: string;
   title: string;
@@ -155,6 +222,7 @@ export type ClientBookingRow = {
   lastSessionEnd: Date;
   total: number;
   currency: string;
+  converted: ConvertedFigure | null;
 };
 
 export type ClientPaymentRow = {
@@ -165,13 +233,15 @@ export type ClientPaymentRow = {
   currency: string;
   method: "cash" | "card" | "remit" | "other";
   paidAt: Date | null;
+  converted: ConvertedFigure | null;
 };
 
 export async function getClientPayments(
   workspaceId: WorkspaceId,
   clientId: WorkspaceId,
   page = 1,
-  limit = 20
+  limit = 20,
+  fx?: WorkspaceRates
 ): Promise<{ items: ClientPaymentRow[]; hasMore: boolean }> {
   const skip = (page - 1) * limit;
   const transactions = await Transaction.find({
@@ -198,6 +268,13 @@ export async function getClientPayments(
       currency: row.currency ?? "PHP",
       method: (row.method === "card" || row.method === "remit" || row.method === "cash" ? row.method : "other"),
       paidAt: row.paidAt ?? null,
+      converted: convertedFor(row.amount, row.currency, fx, {
+        rate:
+          row.fxTarget && fx && row.fxTarget.toUpperCase() === fx.target.toUpperCase()
+            ? row.fxRate
+            : null,
+        at: row.fxAt ?? null,
+      }),
     })),
     hasMore: transactions.length > limit,
   };
@@ -205,7 +282,8 @@ export async function getClientPayments(
 
 export async function getClientBookings(
   workspaceId: WorkspaceId,
-  clientId: WorkspaceId
+  clientId: WorkspaceId,
+  fx?: WorkspaceRates
 ): Promise<ClientBookingRow[]> {
   const bookings = await Booking.find({ workspaceId, clientId, status: { $ne: "draft" } })
     .sort({ firstSessionStart: -1 })
@@ -220,5 +298,11 @@ export async function getClientBookings(
     lastSessionEnd: b.lastSessionEnd,
     total: b.amount?.total ?? 0,
     currency: b.amount?.currency ?? "PHP",
+    converted: convertedFor(b.amount?.total ?? 0, b.amount?.currency, fx, {
+      rate: b.amount?.fxTarget && fx && b.amount.fxTarget.toUpperCase() === fx.target.toUpperCase()
+        ? b.amount?.fxRate
+        : null,
+      at: b.amount?.fxAt ?? null,
+    }),
   }));
 }

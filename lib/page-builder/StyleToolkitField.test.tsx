@@ -8,6 +8,13 @@ import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffecti
 import type { BrandColorMap } from "./brandColors";
 import { resolveEffectiveFonts } from "./fonts";
 
+vi.mock("next-intl", () => ({
+  useTranslations: () =>
+    Object.assign((key: string) => key, {
+      has: () => true,
+    }),
+}));
+
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 

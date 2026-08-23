@@ -10,6 +10,7 @@ import { LOCALE_PREFIX_RE, stripLocale } from "@/lib/auth/memberAccess";
 import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
 import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
+import { PORTFOLIO_SLUG_HEADER } from "@/lib/portfolio/portfolioHeaders";
 
 // ---------------------------------------------------------------------------
 // NOTE: Role-based redirects (non-owner to /bookings, root to role landing)
@@ -21,6 +22,24 @@ import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
 // ---------------------------------------------------------------------------
 
 const intlMiddleware = createIntlMiddleware(routing);
+
+// Re-exported for existing/external importers (this file's own tests import
+// it from here). Defined in lib/portfolio/portfolioHeaders.ts — a leaf
+// module — so app/(public)/layout.tsx can import the constant without
+// pulling in this file's module-scope authkitMiddleware()/createIntlMiddleware()
+// calls. Trust boundary: only this proxy may set it — proxy() strips any
+// inbound copy once, up front, before any branch below runs, so a client
+// cannot forge which workspace's locale/dir gets served.
+export { PORTFOLIO_SLUG_HEADER };
+
+// Root-level routes that live outside the [locale] segment. next-intl would
+// rewrite these under /[locale] and 404 them, so they bypass it entirely.
+const ROOT_CRAWLER_PATHS = new Set([
+  "/opengraph-image",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/llms.txt",
+]);
 
 // Routes that never require authentication.
 // Patterns use the same path-to-regexp-style that authkitMiddleware accepts.
@@ -37,6 +56,19 @@ const UNAUTHENTICATED_PATHS = [
   // next-intl normalizes the redundant default-locale prefix to "/".
   ...routing.locales.map((l) => `/${l}`),
   "/pricing",
+  // Crawler-facing files. The matcher below does not exclude .txt or .xml, so
+  // without these every crawler asking for robots.txt or the sitemap was
+  // redirected to /sign-in and saw nothing.
+  "/robots.txt",
+  "/sitemap.xml",
+  "/llms.txt",
+  // Comparison and blog articles — public content, the whole point of which is
+  // being crawled.
+  "/compare",
+  "/compare/(.*)",
+  "/blog",
+  "/blog/(.*)",
+  "/resources",
   "/terms",
   "/privacy",
   "/refunds",
@@ -184,6 +216,15 @@ const authMiddleware: NextMiddleware = authkitMiddleware({
 export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   const { pathname } = req.nextUrl;
 
+  // Trust boundary: strip any inbound PORTFOLIO_SLUG_HEADER up front, on the
+  // shared Headers object every branch below reads from (directly, or via
+  // `requestWithAuthkitHeaders`'s `new Headers(req.headers)` copy) — so a
+  // forged value cannot survive on ANY path (API, crawler files, the
+  // editorial redirect, protected routes), not just the two branches that
+  // stamp their own value. Those two branches (tenant-subdomain rewrite,
+  // /w/ bypass) set their own trusted value further down.
+  req.headers.delete(PORTFOLIO_SLUG_HEADER);
+
   // -------------------------------------------------------------------------
   // 1. API routes — auth-gate non-public ones, no intl middleware.
   // -------------------------------------------------------------------------
@@ -265,6 +306,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           tenantMatch &&
           pathname !== "/w" &&
           !pathname.startsWith("/w/") &&
+          WORKSPACE_SLUG_RE.test(tenantMatch[1]) &&
           !isReservedSlug(tenantMatch[1])
         ) {
           const rewriteUrl = req.nextUrl.clone();
@@ -272,7 +314,11 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
             pathname === "/" || pathname === "/home"
               ? `/w/${tenantMatch[1]}`
               : `/w/${tenantMatch[1]}${pathname}`;
-          return NextResponse.rewrite(rewriteUrl);
+          // req.headers already had any inbound PORTFOLIO_SLUG_HEADER stripped
+          // at the top of proxy() — stamp our own trusted value.
+          const portfolioHeaders = new Headers(req.headers);
+          portfolioHeaders.set(PORTFOLIO_SLUG_HEADER, tenantMatch[1]);
+          return NextResponse.rewrite(rewriteUrl, { request: { headers: portfolioHeaders } });
         }
       }
     }
@@ -284,14 +330,41 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   //    would rewrite /w/... to /[locale]/w/... (a non-existent route) and 404.
   // -------------------------------------------------------------------------
   if (pathname === "/w" || pathname.startsWith("/w/")) {
+    // req.headers already had any inbound PORTFOLIO_SLUG_HEADER stripped at
+    // the top of proxy(). Only set our own when the path segment, lowercased
+    // (findPublishedWorkspaceBySlug/the DB slug are always lowercase — a
+    // mixed-case /w/{Slug} request must still resolve to the same workspace
+    // so lang/dir come out right), is a real, non-reserved workspace slug —
+    // so nothing attacker-shaped reaches the layout's DB lookup.
+    const portfolioHeaders = new Headers(req.headers);
+    const slugMatch = pathname.match(/^\/w\/([^/]+)/);
+    const lowerSlug = slugMatch ? slugMatch[1].toLowerCase() : null;
+    if (lowerSlug && WORKSPACE_SLUG_RE.test(lowerSlug) && !isReservedSlug(lowerSlug)) {
+      portfolioHeaders.set(PORTFOLIO_SLUG_HEADER, lowerSlug);
+    }
+    return NextResponse.next({ request: { headers: portfolioHeaders } });
+  }
+
+  // Root metadata and crawler files (not locale-prefixed). Falling through to
+  // intlMiddleware would rewrite them under /[locale] and 404 — a crawler
+  // hitting the bare path needs them served as-is.
+  if (ROOT_CRAWLER_PATHS.has(pathname)) {
     return NextResponse.next();
   }
 
-  // Platform Open Graph image (root metadata route, not locale-prefixed).
-  // Falling through to intlMiddleware would rewrite it under /[locale] and
-  // 404 — scrapers hitting the bare path need it served as-is.
-  if (pathname === "/opengraph-image") {
-    return NextResponse.next();
+  // The editorial surface is intentionally English-only. A translated shell
+  // around an untranslated article sends conflicting language signals and
+  // creates duplicate locale URLs, so collapse every prefixed request onto
+  // the default-locale (unprefixed) canonical before next-intl handles it.
+  const localePrefix = pathname.match(LOCALE_PREFIX_RE)?.[0];
+  const editorialPath = stripLocale(pathname);
+  const isEditorialPath = ["/resources", "/blog", "/compare"].some(
+    (prefix) => editorialPath === prefix || editorialPath.startsWith(`${prefix}/`),
+  );
+  if (localePrefix && isEditorialPath) {
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = editorialPath;
+    return NextResponse.redirect(redirectUrl, 308);
   }
 
   // -------------------------------------------------------------------------

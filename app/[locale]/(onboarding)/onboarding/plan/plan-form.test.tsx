@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { PlanStepForm } from "./plan-form";
+import type { ProPricing } from "@/lib/lemonsqueezy/pricing";
 
 const { mockRouterPush, mockRouterRefresh } = vi.hoisted(() => ({
   mockRouterPush: vi.fn(),
@@ -83,19 +84,18 @@ function renderForm(
     planChoiceLocked?: boolean;
     activation?: "free" | "pro" | "beta" | "promo" | null;
     acceptedPromoCode?: string | null;
-    billingAvailable?: boolean;
+    proPricing?: ProPricing;
   } = {}
 ) {
   return renderWithProviders(
     <PlanStepForm
       currentPlan={props.currentPlan ?? "free"}
       furthestStep={props.furthestStep ?? "plan"}
-      proPricing={{ currency: "PHP", monthly: 250, yearly: 2500 }}
+      proPricing={props.proPricing ?? { currency: "PHP", monthly: 250, yearly: 2500 }}
       betaTesterEnabled={props.betaTesterEnabled}
       planChoiceLocked={props.planChoiceLocked}
       activation={props.activation}
       acceptedPromoCode={props.acceptedPromoCode}
-      billingAvailable={props.billingAvailable ?? true}
     />
   );
 }
@@ -136,6 +136,38 @@ describe("PlanStepForm — renders", () => {
   });
 });
 
+describe("PlanStepForm — plan tabs", () => {
+  it("defaults to the Beta tab and renders the Beta plan card when betaTesterEnabled", () => {
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
+    expect(screen.getByRole("tab", { name: "Beta", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
+  });
+
+  it("offers a single activate CTA on the Beta tab", () => {
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
+
+    expect(screen.getAllByRole("button", { name: /activate beta access/i })).toHaveLength(1);
+  });
+
+  it("has no Beta tab when betaTesterEnabled is false", () => {
+    renderForm({ currentPlan: "free" });
+    expect(screen.queryByRole("tab", { name: "Beta" })).not.toBeInTheDocument();
+  });
+
+  it("switching to Monthly shows only the Pro card with checkout enabled while beta is on", async () => {
+    renderForm({ currentPlan: "free", betaTesterEnabled: true });
+
+    fireEvent.click(screen.getByRole("tab", { name: /monthly/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Pro" })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("heading", { name: "Free" })).not.toBeInTheDocument();
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
+    expect(proCard).not.toBeDisabled();
+  });
+});
+
 describe("PlanStepForm — plan card selection", () => {
   it("Pro card is enabled with no Coming soon badge when billing is available (paid mode)", () => {
     renderForm({ currentPlan: "free" });
@@ -146,40 +178,16 @@ describe("PlanStepForm — plan card selection", () => {
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
   });
 
-  it("Pro card is disabled without a launch-status badge when paid billing is unavailable", () => {
-    renderForm({ currentPlan: "free", billingAvailable: false });
-
-    const proHeading = screen.getByRole("heading", { name: "Pro" });
-    const proCard = proHeading.closest("button");
-    expect(proCard).not.toBeNull();
-    expect(proCard).toBeDisabled();
-    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^popular$/i)).not.toBeInTheDocument();
-  });
-
-  it("clicking the disabled Pro card does not change the CTA from free text in beta-only mode", async () => {
-    renderForm({ currentPlan: "free", billingAvailable: false });
-
-    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
-    fireEvent.click(proCard);
-
-    await act(async () => {});
-    expect(screen.getByRole("button", { name: /free month/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
-  });
-
   it("locks alternatives after a paid, promo, or beta plan activation", () => {
     renderForm({ currentPlan: "beta", planChoiceLocked: true, betaTesterEnabled: true, activation: "beta" });
 
     expect(screen.getByRole("status")).toHaveTextContent(/plan is now activated/i);
     expect(screen.getByText(/^active$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /finish onboarding/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Free" }).closest("button")).toBeDisabled();
-    expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
     for (const btn of screen.getAllByRole("button", { name: /have a promo code/i })) {
       expect(btn).toBeDisabled();
     }
-    expect(screen.getByRole("button", { name: /activate beta access/i })).toBeDisabled();
+    expect(screen.getByRole("tab", { name: /^beta$/i })).toBeDisabled();
     expect(screen.getByRole("tab", { name: /monthly/i })).toBeDisabled();
   });
 
@@ -199,14 +207,6 @@ describe("PlanStepForm — plan card selection", () => {
     expect(screen.queryByRole("button", { name: /have a promo code/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/^active$/i)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pro" }).closest("button")).toBeDisabled();
-  });
-});
-
-describe("PlanStepForm — beta-only mode never loads Lemon Squeezy", () => {
-  it("never injects the lemon.js script when billingAvailable is false", () => {
-    renderForm({ currentPlan: "free", billingAvailable: false });
-    expect(document.querySelector('script[src*="lemon.js"]')).toBeNull();
-    expect(createLemonSqueezyMock).not.toHaveBeenCalled();
   });
 });
 
@@ -579,5 +579,22 @@ describe("PlanStepForm — cadence toggle", () => {
     });
     expect(within(proCard).getByText("₱3,000")).toHaveClass("line-through");
     expect(screen.getByText(/save 2 months/i)).toBeInTheDocument();
+  });
+});
+
+describe("PlanStepForm — local currency estimate", () => {
+  it("shows the converted Pro price on the Pro card", () => {
+    renderForm({
+      currentPlan: "pro",
+      proPricing: {
+        currency: "PHP",
+        monthly: 250,
+        yearly: 2500,
+        local: { currency: "USD", monthly: 4.3, yearly: 43 },
+      },
+    });
+
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
+    expect(within(proCard).getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
   });
 });

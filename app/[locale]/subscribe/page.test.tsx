@@ -14,8 +14,8 @@ vi.mock("next-intl/server", () => ({
   getTranslations: vi.fn().mockResolvedValue((key: string) => key),
 }));
 
-vi.mock("@/lib/lemonsqueezy/pricing", () => ({
-  getProPricing: vi.fn().mockResolvedValue({ currency: "PHP", monthly: 250, yearly: 2500 }),
+vi.mock("@/lib/pricing/localPricing", () => ({
+  getDisplayPricing: vi.fn().mockResolvedValue({ currency: "PHP", monthly: 250, yearly: 2500 }),
 }));
 
 const requireOrgMock = vi.fn();
@@ -26,6 +26,13 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 const userFindOneMock = vi.fn();
 vi.mock("@/lib/db/models", () => ({
   User: { findOne: (...args: unknown[]) => userFindOneMock(...args) },
+}));
+
+const redirectMock = vi.fn((url: string) => {
+  throw new Error(`REDIRECT:${url}`);
+});
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => redirectMock(url),
 }));
 
 vi.mock("./_panel", () => ({
@@ -91,6 +98,23 @@ describe("SubscribePage — owner", () => {
     );
   });
 
+  it("redirects an entitled owner into the app instead of showing the recovery panel", async () => {
+    requireOrgMock.mockResolvedValue({
+      role: "owner",
+      workspace: {
+        _id: "ws_1",
+        plan: "pro",
+        everSubscribed: true,
+        lsSubscriptionId: "sub_1",
+        lsSubscriptionStatus: "active",
+      },
+    });
+
+    await expect(
+      SubscribePage({ params: makeParams(), searchParams: makeSearchParams() })
+    ).rejects.toThrow("REDIRECT:/dashboard");
+  });
+
   it("requires org with allowDuringOnboarding + allowWhenGated", async () => {
     mockAsOwner();
     await SubscribePage({ params: makeParams(), searchParams: makeSearchParams() });
@@ -103,6 +127,26 @@ describe("SubscribePage — owner", () => {
 });
 
 describe("SubscribePage — staff", () => {
+  it("redirects an entitled staff member to their localized landing route", async () => {
+    requireOrgMock.mockResolvedValue({
+      role: "staff",
+      workspace: {
+        _id: "ws_1",
+        plan: "pro",
+        everSubscribed: true,
+        lsSubscriptionId: "sub_1",
+        lsSubscriptionStatus: "active",
+      },
+    });
+
+    await expect(
+      SubscribePage({
+        params: Promise.resolve({ locale: "fil" }),
+        searchParams: makeSearchParams(),
+      })
+    ).rejects.toThrow("REDIRECT:/fil/bookings");
+  });
+
   it("renders the read-only message and no SubscribePanel", async () => {
     mockAsStaff();
     const el = await SubscribePage({ params: makeParams(), searchParams: makeSearchParams() });

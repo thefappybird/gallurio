@@ -16,7 +16,7 @@ const proPricing = { currency: "PHP", monthly: 250, yearly: 2500 };
 
 describe("PricingTeaser", () => {
   it("renders a single Pro plan with the live monthly price", () => {
-    render(<PricingTeaser proPricing={proPricing} />, { wrapper });
+    render(<PricingTeaser proPricing={proPricing} betaEnabled={false} />, { wrapper });
 
     expect(screen.getByText("Pro")).toBeInTheDocument();
     expect(screen.getByText("1 month free")).toBeInTheDocument();
@@ -24,23 +24,46 @@ describe("PricingTeaser", () => {
   });
 
   it("switches to the live yearly price when the Yearly cadence is selected", () => {
-    render(<PricingTeaser proPricing={proPricing} />, { wrapper });
+    render(<PricingTeaser proPricing={proPricing} betaEnabled={false} />, { wrapper });
 
     fireEvent.click(screen.getByRole("button", { name: /yearly/i }));
     expect(screen.getByText(/₱2,500/)).toBeInTheDocument();
   });
 
-  it("does not render a Free or Beta Tester card", () => {
-    render(<PricingTeaser proPricing={proPricing} />, { wrapper });
+  it("names the billed amount under the local-currency headline", () => {
+    render(
+      <PricingTeaser
+        proPricing={{ ...proPricing, local: { currency: "USD", monthly: 4.3, yearly: 43 } }}
+        betaEnabled={false}
+      />,
+      { wrapper }
+    );
 
-    expect(screen.queryByText("Free")).not.toBeInTheDocument();
-    expect(screen.queryByText("Beta Tester")).not.toBeInTheDocument();
+    expect(screen.getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /yearly/i }));
+    expect(screen.getByText(/Billed as ₱2,500 PHP/)).toBeInTheDocument();
   });
 
-  it("shows the free-month badge without a launch-status indicator", () => {
-    render(<PricingTeaser proPricing={proPricing} />, { wrapper });
+  it("does not show a Beta tab when betaEnabled is false", () => {
+    render(<PricingTeaser proPricing={proPricing} betaEnabled={false} />, { wrapper });
 
-    expect(screen.getByText("1 month free")).toBeInTheDocument();
-    expect(screen.queryByText("Coming soon")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^beta$/i })).not.toBeInTheDocument();
+  });
+
+  it("selects the Beta tab by default when betaEnabled is true", () => {
+    render(<PricingTeaser proPricing={proPricing} betaEnabled={true} />, { wrapper });
+
+    expect(screen.getByRole("button", { name: /^beta$/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
+    const cta = screen.getByRole("link", { name: "Join the beta" });
+    expect(cta).toHaveAttribute("href", "/sign-up");
+  });
+
+  it("shows the Pro price after switching to Monthly from the Beta default", () => {
+    render(<PricingTeaser proPricing={proPricing} betaEnabled={true} />, { wrapper });
+
+    fireEvent.click(screen.getByRole("button", { name: /^monthly$/i }));
+    expect(screen.getByText(/₱250/)).toBeInTheDocument();
   });
 });

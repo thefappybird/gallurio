@@ -347,7 +347,7 @@ export async function resolveInquiryClientAction(
           ]);
 
           if (!referencedByOtherInquiry && !referencedByOtherBooking) {
-            // ponytail: delete-on-relink instead of deferring client+draft-booking creation to approval. Deferring is the correct fix but rewrites 8 draftBookingId call sites, inquiry conflict detection, the calendar overlay, and booking-draft-card's edit UX. Tracked in docs/forms/validation-audit.md.
+            // This deletes on relink rather than deferring client and draft-booking creation to approval. Deferring would rewrite the draft-booking call sites, inquiry conflict detection, calendar overlay, and booking-draft-card editing flow.
             await Client.deleteOne({ _id: previousClientId, workspaceId }, { session });
           } else {
             console.warn(

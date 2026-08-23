@@ -91,6 +91,11 @@ const workspaceSchema = new Schema(
     // publicPage.formLocale (default English). See resolvePublicChromeLocale.
     country: { type: String, default: null },
     currency: { type: String, enum: SUPPORTED_CURRENCIES, default: "PHP", required: true },
+    // Set only when a currency change actually restated >=1 already-frozen
+    // payment/deposit (lib/pricing/currencyRestatement.ts). Gates the 90-day
+    // cooldown before the currency can be changed again. Null = never
+    // changed, or the change touched no paid money — freely editable.
+    currencyChangedAt: { type: Date, default: null },
     timezone: { type: String, default: null },
     // Business logo shown in the CRM app (Business Details settings). Distinct
     // from publicPage.header.logoUrl, which is the portfolio nav logo.
@@ -294,6 +299,11 @@ const workspaceSchema = new Schema(
       default: null,
     },
     lsCurrentPeriodEnd: { type: Date, default: null },
+    // Variant id the subscription was created/renewed with — carries the
+    // pricing tier (base vs. global). No index: only ever read by _id.
+    // null on every pre-existing subscriber, which is correct — they were
+    // all sold at base price.
+    lsVariantId: { type: String, default: null },
     // Provider timestamp (attributes.updated_at, falling back to created_at)
     // of the last webhook/reconciliation write that was actually applied —
     // never the delivery/receipt time. Gates every timestamped billing update

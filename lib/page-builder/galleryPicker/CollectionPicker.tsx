@@ -9,8 +9,9 @@ import { usePickerData } from "./usePickerData";
 import type { PickerCollection } from "./types";
 
 // ---------------------------------------------------------------------------
-// Labels — plain strings (no next-intl here; the editor is not wrapped in
-// an IntlProvider). New i18n keys are declared at the bottom of the file.
+// Labels — plain strings by choice, not by constraint. Puck portals its field
+// panel into the app tree (no separate createRoot), so next-intl context IS
+// available here; this chrome simply has not been localized yet.
 // ---------------------------------------------------------------------------
 
 const L = {

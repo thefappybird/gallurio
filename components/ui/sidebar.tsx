@@ -5,7 +5,7 @@ import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsMobile, useIsBelowDesktop } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -67,6 +67,7 @@ function SidebarProvider({
   onOpenChange?: (open: boolean) => void
 }) {
   const isMobile = useIsMobile()
+  const isBelowDesktop = useIsBelowDesktop()
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // This is the internal state of the sidebar.
@@ -92,6 +93,18 @@ function SidebarProvider({
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
+
+  // Between the mobile sheet's breakpoint and lg the docked sidebar is showing
+  // but the content column is too narrow to spare a full sidebar width, so the
+  // sidebar drops to its icon rail on the way in and returns to the stored
+  // preference on the way out. Written through _setOpen, never setOpen, so a
+  // viewport change never overwrites what the operator actually chose.
+  const wasBelowDesktop = React.useRef(isBelowDesktop)
+  React.useEffect(() => {
+    if (wasBelowDesktop.current === isBelowDesktop) return
+    wasBelowDesktop.current = isBelowDesktop
+    _setOpen(isBelowDesktop ? false : defaultOpen)
+  }, [isBelowDesktop, defaultOpen])
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {

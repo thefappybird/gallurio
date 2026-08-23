@@ -1,0 +1,14 @@
+[Unit]
+Description=Daily timer for gallurio-fx-rates.service
+
+[Timer]
+# 00:15 UTC — after Open Exchange Rates' daily publish, ahead of any
+# workspace's business hours everywhere Gallurio serves.
+OnCalendar=*-*-* 00:15:00 UTC
+# Catch up on a missed run after downtime/reboot.
+Persistent=true
+# Spread load if this host runs other timers around the same time.
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

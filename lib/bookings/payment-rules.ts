@@ -7,6 +7,9 @@ export type PaymentInput = {
   paidAt?: Date | null;
   title?: string;
   method?: PaymentMethod;
+  fxRate?: number | null;
+  fxTarget?: string | null;
+  fxAt?: Date | null;
 };
 export type PaymentRecord = {
   price: number;
@@ -15,17 +18,32 @@ export type PaymentRecord = {
   paidAt: Date | null;
   title: string;
   method: PaymentMethod;
+  fxRate: number | null;
+  fxTarget: string | null;
+  fxAt: Date | null;
 };
 
-export function normalizePayments(raw: PaymentInput[], now = new Date()): PaymentRecord[] {
-  return raw.map((p) => ({
-    price: p.price,
-    status: p.status,
-    createdAt: p.createdAt ?? now,
-    paidAt: p.status === "paid" ? (p.paidAt ?? now) : null,
-    title: p.title ?? "",
-    method: p.method ?? "cash",
-  }));
+export function normalizePayments(
+  raw: PaymentInput[],
+  now = new Date(),
+  freeze?: { rate: number; target: string } | null
+): PaymentRecord[] {
+  return raw.map((p) => {
+    const isPaid = p.status === "paid";
+    const alreadyFrozen = isPaid && p.fxRate != null;
+    const takesFreeze = isPaid && !alreadyFrozen && !!freeze && freeze.rate > 0;
+    return {
+      price: p.price,
+      status: p.status,
+      createdAt: p.createdAt ?? now,
+      paidAt: isPaid ? (p.paidAt ?? now) : null,
+      title: p.title ?? "",
+      method: p.method ?? "cash",
+      fxRate: alreadyFrozen ? (p.fxRate ?? null) : takesFreeze ? freeze!.rate : null,
+      fxTarget: alreadyFrozen ? (p.fxTarget ?? null) : takesFreeze ? freeze!.target : null,
+      fxAt: alreadyFrozen ? (p.fxAt ?? null) : takesFreeze ? now : null,
+    };
+  });
 }
 
 const CENTS_EPSILON = 0.005;

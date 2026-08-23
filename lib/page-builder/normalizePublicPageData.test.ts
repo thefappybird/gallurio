@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { normalizePublicPageData } from "./normalizePublicPageData";
+import { normalizePublicPageData, hasRenderableBlocks } from "./normalizePublicPageData";
 
 const known = new Set(["Heading", "Text"]);
 
@@ -109,6 +109,17 @@ describe("normalizePublicPageData", () => {
       alt: "Legacy photo",
       fit: "cover",
     });
+  });
+
+  it("hasRenderableBlocks: true when content is non-empty or a zone has entries, false otherwise", () => {
+    expect(hasRenderableBlocks({ root: {}, content: [{ type: "Heading", props: {} }] })).toBe(true);
+    expect(
+      hasRenderableBlocks({ root: {}, content: [], zones: { "x:zone": [{ type: "Heading", props: {} }] } })
+    ).toBe(true);
+    expect(hasRenderableBlocks({ root: {}, content: [] })).toBe(false);
+    expect(hasRenderableBlocks(null)).toBe(false);
+    expect(hasRenderableBlocks(undefined)).toBe(false);
+    expect(hasRenderableBlocks("nope")).toBe(false);
   });
 
   it("stays silent for healthy data", () => {

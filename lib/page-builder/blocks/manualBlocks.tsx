@@ -24,6 +24,7 @@ import {
   buildColorWithOpacity,
   productionStyleField,
   FLEX_JUSTIFY_MAP,
+  bgImageUrl,
   type BlockStyle,
   type HighlightShape,
   type HighlightSize,
@@ -210,11 +211,12 @@ export const textBlockConfig: ComponentConfig<TextBlockProps> = {
 };
 
 // ---------------------------------------------------------------------------
-// Image — a resizable container with a BACKGROUND image (not an <img>
-// element). Modeled on Container: the picked image lives in `_style.bgImagePublicId`
-// and is resolved to CSS via resolveBlockStyle (same mechanism Container/Gallery
-// blocks use), explicit width/height + colSpan/rowSpan come from the Layout tab,
-// and bgImageOpacity (F4) fades only the image layer, never the placeholder.
+// Image — a resizable container that renders a real <img> element (crawlable,
+// carries alt text) inside an opacity layer. Modeled on Container: the picked
+// image lives in `_style.bgImagePublicId` and its delivery URL is resolved via
+// the same bgImageUrl() helper resolveBlockStyle uses internally, explicit
+// width/height + colSpan/rowSpan come from the Layout tab, and bgImageOpacity
+// (F4) fades only the image layer, never the placeholder.
 // ---------------------------------------------------------------------------
 
 export type ImageBlockProps = {
@@ -250,29 +252,20 @@ export function ImageBlock({
 
   const opacity = Math.min(100, Math.max(0, effectiveStyle?.bgImageOpacity ?? 100)) / 100;
   const resolved = resolveBlockStyle(effectiveStyle) as Record<string, string | number | undefined>;
-  // Legacy raw-URL fallback (no Cloudflare asset id) — resolveBlockStyle's
-  // bgImagePublicId always resolves through the CF delivery URL builder, so a
-  // bare external URL can't go through it. Apply it directly, same as the
-  // pre-redesign `<img src>` fallback (`imagePublicId ? cfImageUrl(...) : imageUrl`).
-  if (!resolved.backgroundImage && !legacyAssetId && imageUrl) {
-    resolved.backgroundImage = `url(${imageUrl})`;
-    resolved.backgroundSize = "cover";
-    resolved.backgroundPosition = "center";
-  }
-  // backgroundImage/backgroundSize/backgroundPosition come from resolveBlockStyle's
-  // existing bgImagePublicId handling (styleToolkit.ts) but land on a dedicated
-  // layer div (below), not the root, so bgImageOpacity can fade just the image —
-  // never the placeholder or the block's frame (border/shadow/radius).
-  const { backgroundImage, backgroundSize, backgroundPosition, ...rootStyle } = resolved;
-  // Depend on whether resolveBlockStyle actually resolved a URL (not just whether
-  // bgImagePublicId is set) — a publicId that fails to resolve (e.g. no cloud name
-  // configured) must fall through to the placeholder, same as Container's banner.
-  const hasImage = Boolean(backgroundImage);
-  const a11yProps = hasImage
-    ? alt
-      ? { role: "img" as const, "aria-label": alt }
-      : { "aria-hidden": "true" as const }
-    : {};
+  // Strip backgroundImage/backgroundSize/backgroundPosition off the root style —
+  // resolveBlockStyle sets them from bgImagePublicId, but the picture now renders
+  // as a real <img> in a dedicated layer div (below), never as a CSS background.
+  const rootStyle = { ...resolved };
+  delete rootStyle.backgroundImage;
+  delete rootStyle.backgroundSize;
+  delete rootStyle.backgroundPosition;
+  // Resolve the actual delivery URL: current bgImagePublicId first (going through
+  // the same bgImageUrl() helper resolveBlockStyle uses, so a publicId that fails
+  // to resolve — e.g. no cloud name configured — falls through to the placeholder,
+  // same as before), falling back to the legacy raw imageUrl only when there's no
+  // asset id at all (mirrors the legacy-migration precedence above).
+  const src = effectiveStyle?.bgImagePublicId ? bgImageUrl(effectiveStyle.bgImagePublicId) : imageUrl || null;
+  const hasImage = Boolean(src);
 
   return (
     <div
@@ -284,22 +277,33 @@ export function ImageBlock({
         aspectRatio: effectiveStyle?.height ? undefined : "3 / 2",
         ...rootStyle,
       }}
-      {...a11yProps}
       {...resolveBlockAttrs(effectiveStyle)}
     >
       {hasImage ? (
         <div
           data-bg-opacity-layer
-          aria-hidden="true"
           style={{
             position: "absolute",
             inset: 0,
-            backgroundImage: backgroundImage as string | undefined,
-            backgroundSize: backgroundSize as string | undefined,
-            backgroundPosition: backgroundPosition as string | undefined,
             opacity,
           }}
-        />
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src as string}
+            alt={alt || ""}
+            loading="lazy"
+            decoding="async"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+          />
+        </div>
       ) : (
         <div
           style={{

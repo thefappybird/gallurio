@@ -1,10 +1,12 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { LogOutIcon } from "lucide-react";
+import { redirect } from "next/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
-import { isPaidBillingAvailable } from "@/lib/billing/availability";
+import { isWorkspaceGated } from "@/lib/billing/access";
+import { routing } from "@/lib/i18n/routing";
 import { User } from "@/lib/db/models";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { sanitizeLocalReturnTo } from "@/lib/http/localReturnTo";
 import { SignOutLink } from "@/components/app/sign-out-link";
 import { SubscribePanel } from "./_panel";
@@ -35,14 +37,22 @@ export default async function SubscribePage({
   // component, which uses it for a client-side redirect after checkout.
   const returnTo = sanitizeLocalReturnTo(rawReturnTo);
 
-  const { role, userId } = await requireOrg({
+  const { role, userId, workspace } = await requireOrg({
     allowDuringOnboarding: true,
     allowWhenGated: true,
   });
 
+  // This is the recovery surface for a workspace behind the access gate. An
+  // entitled visitor arriving by bookmark, back button or a stale tab would
+  // otherwise be told their access has ended, so send them back into the app.
+  if (!isWorkspaceGated(workspace)) {
+    const landing = role === "owner" ? "/dashboard" : "/bookings";
+    redirect(locale === routing.defaultLocale ? landing : `/${locale}${landing}`);
+  }
+
   if (role === "owner") {
     const [proPricing, user] = await Promise.all([
-      getProPricing(),
+      getDisplayPricing(),
       User.findOne(
         { workosUserId: userId },
         { "betaParticipation.recordedAt": 1 },
@@ -60,7 +70,6 @@ export default async function SubscribePage({
           <SubscribePanel
             proPricing={proPricing}
             returnTo={returnTo}
-            billingAvailable={isPaidBillingAvailable()}
             betaAvailable={
               process.env.BETA_TESTER_ENABLED === "true" &&
               !user?.betaParticipation?.recordedAt

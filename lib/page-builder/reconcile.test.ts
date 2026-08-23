@@ -46,6 +46,18 @@ describe("reconcileGalleryImages", () => {
     expect(images).toEqual([{ id: String(it._id), publicId: `ws/${ws}/item0`, alt: "Alt 0" }]);
   });
 
+  it("altText wins over caption when both are set; caption is only the fallback", async () => {
+    const ws = new Types.ObjectId();
+    const both = await makeItem(ws, 9, { altText: "Alt wins", caption: "Cap loses" });
+    const data: PuckData = {
+      root: {},
+      content: [gridBlock([{ id: String(both._id), publicId: "x" }])],
+    };
+    const out = await reconcileGalleryImages(ws.toString(), data);
+    const images = out.content[0].props.images as Array<{ alt: string }>;
+    expect(images[0].alt).toBe("Alt wins");
+  });
+
   it("falls back alt to caption then empty string", async () => {
     const ws = new Types.ObjectId();
     const noAlt = await makeItem(ws, 1, { altText: "" });
@@ -209,6 +221,62 @@ describe("reconcileGalleryImages", () => {
     expect(out.content[0].props.backgroundImages).toEqual([]);
     findSpy.mockRestore();
   });
+
+  it("reconciles a GalleryGrid nested inside a GalleryGridPreset's props.content slot (single query; refresh; prune; order preserved; sibling untouched)", async () => {
+    // Mirrors the real published shape: GalleryGridPreset @ content[0],
+    // Heading/Text/GalleryGrid nested in its props.content slot.
+    const ws = new Types.ObjectId();
+    const a = await makeItem(ws, 0);
+    const missing = new Types.ObjectId().toString();
+    const findSpy = vi.spyOn(GalleryItem, "find");
+    const data: PuckData = {
+      root: {},
+      content: [
+        {
+          type: "GalleryGridPreset",
+          props: {
+            content: [
+              { type: "Heading", props: { id: "h1", text: "Gallery", level: "h2" } },
+              { type: "Text", props: { id: "t1", text: "desc" } },
+              gridBlock([
+                { id: String(a._id), publicId: "STALE", alt: "stale" },
+                { id: missing, publicId: "x" },
+              ]),
+            ],
+          },
+        },
+      ],
+    };
+    const out = await reconcileGalleryImages(ws.toString(), data);
+    expect(findSpy).toHaveBeenCalledTimes(1);
+    const nested = out.content[0].props.content as Array<{ type: string; props: Record<string, unknown> }>;
+    expect(nested[0].type).toBe("Heading");
+    expect(nested[1].type).toBe("Text");
+    expect(nested[2].props.images).toEqual([
+      { id: String(a._id), publicId: `ws/${ws}/item0`, alt: "Alt 0" },
+    ]);
+    findSpy.mockRestore();
+  });
+
+  it("no-op fast path considers nested blocks: a tree whose ONLY gallery block is nested still queries and reconciles (not skipped)", async () => {
+    const ws = new Types.ObjectId();
+    const a = await makeItem(ws, 0);
+    const findSpy = vi.spyOn(GalleryItem, "find");
+    const data: PuckData = {
+      root: {},
+      content: [
+        {
+          type: "Columns",
+          props: { content: [gridBlock([{ id: String(a._id), publicId: "STALE" }])] },
+        },
+      ],
+    };
+    const out = await reconcileGalleryImages(ws.toString(), data);
+    expect(findSpy).toHaveBeenCalledTimes(1);
+    const nested = out.content[0].props.content as Array<{ props: Record<string, unknown> }>;
+    expect((nested[0].props.images as Array<{ publicId: string }>)[0].publicId).toBe(`ws/${ws}/item0`);
+    findSpy.mockRestore();
+  });
 });
 
 function fwBlock(collections: Array<{ id: string; name?: string; coverPublicId?: string; itemCount?: number }>) {
@@ -271,6 +339,36 @@ describe("reconcileFeaturedCollections", () => {
     const data: PuckData = { root: {}, content: [fwBlock([{ id: String(c1._id) }])], zones: { "z:1": [fwBlock([{ id: String(c2._id) }])] } };
     await reconcileFeaturedCollections(ws.toString(), data);
     expect(findSpy).toHaveBeenCalledTimes(1);
+    findSpy.mockRestore();
+  });
+
+  it("reconciles a FeaturedWork block nested inside a FeaturedWorkPreset's props.content slot (single query; refresh; prune; sibling untouched)", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "Weddings", slug: "w", isPublic: true });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "p0", url: "u", order: 0 });
+    const missing = new Types.ObjectId().toString();
+    const findSpy = vi.spyOn(GalleryCollection, "find");
+    const data: PuckData = {
+      root: {},
+      content: [
+        {
+          type: "FeaturedWorkPreset",
+          props: {
+            content: [
+              { type: "Heading", props: { id: "h1", text: "Work", level: "h2" } },
+              fwBlock([{ id: String(col._id), name: "STALE" }, { id: missing }]),
+            ],
+          },
+        },
+      ],
+    };
+    const out = await reconcileFeaturedCollections(ws.toString(), data);
+    expect(findSpy).toHaveBeenCalledTimes(1);
+    const nested = out.content[0].props.content as Array<{ type: string; props: Record<string, unknown> }>;
+    expect(nested[0].type).toBe("Heading");
+    expect(nested[1].props.collections).toEqual([
+      { id: String(col._id), name: "Weddings", coverPublicId: "p0", itemCount: 1 },
+    ]);
     findSpy.mockRestore();
   });
 });

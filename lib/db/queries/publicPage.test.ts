@@ -257,3 +257,19 @@ describe("resolveWorkspaceOwnerBySlug", () => {
     expect(ownerId).toBe("user_owner_lookup");
   });
 });
+
+describe("findPublishedWorkspaceBySlug — businessType projection", () => {
+  // Regression: businessType was missing from the projection, so every public
+  // page read it as undefined. That silently made BUSINESS_TYPE_SCHEMA_MAP dead
+  // code (every portfolio emitted LocalBusiness instead of PhotographyBusiness
+  // et al.) and forced the generic SEO description variant for every workspace.
+  it("projects businessType so schema.org typing and SEO defaults can use it", async () => {
+    await Workspace.create(
+      makeWorkspaceBase({ slug: "typed-studio", businessType: "photographer" })
+    );
+
+    const ws = await findPublishedWorkspaceBySlug("typed-studio");
+
+    expect(ws?.businessType).toBe("photographer");
+  });
+});

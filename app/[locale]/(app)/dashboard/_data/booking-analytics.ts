@@ -4,6 +4,13 @@ import { Booking, Transaction } from "@/lib/db/models";
 import { splitSessionIntoCandles } from "@/lib/bookings/candle-split";
 import { addDaysStr, weekStartMonday } from "@/lib/utils/iso-week";
 import { dayBoundInTz } from "@/lib/utils/timezone";
+import {
+  convertAmount,
+  frozenOrLiveAmount,
+  frozenOrLiveAmountExpr,
+  type RateMap,
+} from "@/lib/pricing/currencyConverter";
+import { NO_CONVERSION, type WorkspaceRates } from "@/lib/pricing/workspaceRates";
 import { type DateRange } from "./dashboard-metrics";
 import type { DateFilterMode } from "@/lib/dashboard/date-range";
 
@@ -46,15 +53,22 @@ export type EventTypeValueTrend = {
 export async function getEventTypeValueTrend(
   workspaceId: WorkspaceId,
   range: DateRange,
-  timezone: string
+  timezone: string,
+  rates: RateMap = {}
 ): Promise<EventTypeValueTrend> {
   const match: Record<string, unknown> = { workspaceId, status: { $in: ACTIVE_STATUSES } };
   const fss = firstSessionStartMatch(range);
   if (fss) match.firstSessionStart = fss;
 
   const bookings = await Booking.find(match)
-    .select({ eventType: 1, "amount.total": 1, firstSessionStart: 1 })
-    .lean<{ eventType?: string; amount?: { total: number }; firstSessionStart: Date }[]>();
+    .select({ eventType: 1, "amount.total": 1, "amount.currency": 1, firstSessionStart: 1 })
+    .lean<
+      {
+        eventType?: string;
+        amount?: { total: number; currency?: string };
+        firstSessionStart: Date;
+      }[]
+    >();
 
   const totalsByEventType = new Map<string, number>();
   const buckets = new Map<string, Map<string, number>>();
@@ -62,7 +76,7 @@ export async function getEventTypeValueTrend(
   for (const b of bookings) {
     const bucket = weekStartMonday(localDateKey(b.firstSessionStart, timezone));
     const eventType = b.eventType || "other";
-    const value = b.amount?.total ?? 0;
+    const value = convertAmount(b.amount?.total ?? 0, b.amount?.currency, rates);
 
     totalsByEventType.set(eventType, (totalsByEventType.get(eventType) ?? 0) + value);
 
@@ -228,15 +242,22 @@ export type ValueCollectedPoint = { bucket: string; scheduledValue: number; coll
 export async function getScheduledVsCollectedSeries(
   workspaceId: WorkspaceId,
   range: DateRange,
-  timezone: string
+  timezone: string,
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<ValueCollectedPoint[]> {
   const match: Record<string, unknown> = { workspaceId, status: { $in: ACTIVE_STATUSES } };
   const fss = firstSessionStartMatch(range);
   if (fss) match.firstSessionStart = fss;
 
   const bookings = await Booking.find(match)
-    .select({ "amount.total": 1, firstSessionStart: 1 })
-    .lean<{ _id: Types.ObjectId; amount?: { total: number }; firstSessionStart: Date }[]>();
+    .select({ "amount.total": 1, "amount.currency": 1, firstSessionStart: 1 })
+    .lean<
+      {
+        _id: Types.ObjectId;
+        amount?: { total: number; currency?: string };
+        firstSessionStart: Date;
+      }[]
+    >();
 
   if (bookings.length === 0) return [];
 
@@ -245,7 +266,11 @@ export async function getScheduledVsCollectedSeries(
   for (const b of bookings) {
     const bucket = weekStartMonday(localDateKey(b.firstSessionStart, timezone));
     bucketByBookingId.set(String(b._id), bucket);
-    scheduledByBucket.set(bucket, (scheduledByBucket.get(bucket) ?? 0) + (b.amount?.total ?? 0));
+    scheduledByBucket.set(
+      bucket,
+      (scheduledByBucket.get(bucket) ?? 0) +
+        convertAmount(b.amount?.total ?? 0, b.amount?.currency, fx.rates)
+    );
   }
 
   // Collected regardless of paidAt -- linked by bookingId to the cohort.
@@ -255,14 +280,26 @@ export async function getScheduledVsCollectedSeries(
     bookingId: { $in: ids },
     type: { $in: NET_TX_TYPES },
   })
-    .select({ bookingId: 1, amount: 1 })
-    .lean<{ bookingId: Types.ObjectId; amount: number }[]>();
+    .select({ bookingId: 1, amount: 1, currency: 1, fxRate: 1, fxTarget: 1 })
+    .lean<
+      {
+        bookingId: Types.ObjectId;
+        amount: number;
+        currency?: string;
+        fxRate?: number | null;
+        fxTarget?: string | null;
+      }[]
+    >();
 
   const collectedByBucket = new Map<string, number>();
   for (const t of txns) {
     const bucket = bucketByBookingId.get(String(t.bookingId));
     if (!bucket) continue;
-    collectedByBucket.set(bucket, (collectedByBucket.get(bucket) ?? 0) + t.amount);
+    collectedByBucket.set(
+      bucket,
+      (collectedByBucket.get(bucket) ?? 0) +
+        frozenOrLiveAmount(t.amount, t.currency, fx.rates, fx.target, t.fxRate, t.fxTarget)
+    );
   }
 
   return [...scheduledByBucket.keys()].sort().map((bucket) => ({
@@ -281,17 +318,23 @@ export type CollectionCoverage = {
 
 export async function getCollectionCoverage(
   workspaceId: WorkspaceId,
-  range: DateRange
+  range: DateRange,
+  fx: WorkspaceRates = NO_CONVERSION
 ): Promise<CollectionCoverage> {
   const match: Record<string, unknown> = { workspaceId, status: { $in: ACTIVE_STATUSES } };
   const fss = firstSessionStartMatch(range);
   if (fss) match.firstSessionStart = fss;
 
   const bookings = await Booking.find(match)
-    .select({ "amount.total": 1 })
-    .lean<{ _id: Types.ObjectId; amount?: { total: number } }[]>();
+    .select({ "amount.total": 1, "amount.currency": 1 })
+    .lean<{ _id: Types.ObjectId; amount?: { total: number; currency?: string } }[]>();
 
-  const confirmedValue = bookings.reduce((sum, b) => sum + (b.amount?.total ?? 0), 0);
+  // Scheduled value only — nothing paid yet, so nothing to freeze. Stays
+  // live-converted even though `collected` below prefers frozen rates.
+  const confirmedValue = bookings.reduce(
+    (sum, b) => sum + convertAmount(b.amount?.total ?? 0, b.amount?.currency, fx.rates),
+    0
+  );
 
   if (bookings.length === 0) {
     return { confirmedValue: 0, collected: 0, remaining: 0, coveragePct: 0 };
@@ -306,7 +349,12 @@ export async function getCollectionCoverage(
         type: { $in: NET_TX_TYPES },
       },
     },
-    { $group: { _id: null, total: { $sum: "$amount" } } },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: frozenOrLiveAmountExpr("$amount", "$currency", fx.rates, fx.target) },
+      },
+    },
   ]);
 
   const collected = agg[0]?.total ?? 0;

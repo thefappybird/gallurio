@@ -7,6 +7,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { listBookings, getBookingById } from "./_data/bookings-queries";
+import { bookingRowAmount } from "./_data/booking-rows";
+import { getWorkspaceRateMap } from "@/lib/pricing/workspaceRates";
 import { parseBookingsToggleFilters } from "./_data/booking-filters";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { type BookingsView } from "./_components/view-toggle";
@@ -230,6 +232,9 @@ export default async function BookingsPage({
           tz: filters.workspaceTimezone,
         });
 
+  // List rows always read in the workspace currency — see bookingRowAmount.
+  const fx = await getWorkspaceRateMap(workspace._id, workspace.currency);
+
   const rows: BookingRow[] = bookings.map((b) => {
     const bSessions = b.sessions as { startAt: Date; endAt: Date }[];
     // lastSessionEnd = max(endAt) across all sessions — used to compute isPast.
@@ -247,8 +252,7 @@ export default async function BookingsPage({
       })),
       lastSessionEnd,
       status: b.status as BookingStatus,
-      total: b.amount?.total ?? 0,
-      currency: b.amount?.currency ?? workspace.currency,
+      ...bookingRowAmount(b.amount, fx.rates, fx.target),
     };
   });
 

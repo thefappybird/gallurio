@@ -58,6 +58,17 @@ vi.mock("@/lib/notifications/send", () => ({
   sendNotification: (arg: unknown) => notificationMock(arg),
 }));
 
+// Mutable so individual tests can simulate a specific rate or an FX outage
+// (null) without touching the network. Default: same-currency freeze only.
+const fx = vi.hoisted(() => ({
+  resolveFxFreeze: vi.fn(async (base: string, target: string) =>
+    base === target ? { rate: 1, target } : null
+  ),
+}));
+vi.mock("@/lib/pricing/fxRates", () => ({
+  resolveFxFreeze: (base: string, target: string) => fx.resolveFxFreeze(base, target),
+}));
+
 beforeAll(async () => {
   await startInMemoryMongo();
 });
@@ -77,6 +88,10 @@ beforeEach(async () => {
   cancelledMocks.resolveWorkspaceBrand.mockReturnValue({ kind: "partner", name: "Test", accentHex: null, poweredByGallurio: false });
   notificationMock.mockReset();
   notificationMock.mockResolvedValue(undefined);
+  fx.resolveFxFreeze.mockReset();
+  fx.resolveFxFreeze.mockImplementation(async (base: string, target: string) =>
+    base === target ? { rate: 1, target } : null
+  );
   await Team.create({
     _id: teamId,
     workspaceId,
@@ -453,6 +468,78 @@ describe("PATCH /api/bookings/[id] — payments + completion guard", () => {
     expect(res.status).toBe(200);
     const fresh = await Booking.findById(b._id).lean();
     expect(fresh?.status).toBe("completed");
+  });
+
+  it("freezes the fx rate on a payment that newly becomes paid, when the booking currency differs from workspace currency (PHP)", async () => {
+    fx.resolveFxFreeze.mockResolvedValueOnce({ rate: 58, target: "PHP" });
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      amount: { total: 1000, deposit: 0, currency: "USD" },
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ payments: [{ price: 1000, status: "paid" }] }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    expect(fx.resolveFxFreeze).toHaveBeenCalledWith("USD", "PHP");
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.payments?.[0].fxRate).toBe(58);
+    expect(fresh?.payments?.[0].fxTarget).toBe("PHP");
+  });
+
+  it("never recaptures an already-frozen payment when the client resends the payments array on an unrelated edit", async () => {
+    const c = await seedClient(workspaceId);
+    const frozenAt = new Date("2026-01-01T00:00:00.000Z");
+    const b = await seedBooking(workspaceId, c._id, {
+      amount: { total: 1000, deposit: 0, currency: "USD" },
+      payments: [
+        {
+          price: 1000,
+          status: "paid",
+          createdAt: frozenAt,
+          paidAt: frozenAt,
+          fxRate: 55,
+          fxTarget: "PHP",
+          fxAt: frozenAt,
+        },
+      ],
+    });
+    // A fresh freeze WOULD be available today at a different rate — proving
+    // the stored 55 survives only because it is never recaptured, not because
+    // the mock happened to return null.
+    fx.resolveFxFreeze.mockResolvedValue({ rate: 58, target: "PHP" });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      // Client never round-trips fx fields — this is the shape the real UI sends.
+      makePatch(
+        { title: "Renamed", payments: [{ price: 1000, status: "paid" }] },
+        b._id.toString()
+      ),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.payments?.[0].fxRate).toBe(55);
+    expect(fresh?.payments?.[0].fxTarget).toBe("PHP");
+    expect(fresh?.payments?.[0].fxAt?.toISOString()).toBe(frozenAt.toISOString());
+  });
+
+  it("leaves fx fields null and still applies the patch when the FX rate is unavailable (outage never blocks the write)", async () => {
+    fx.resolveFxFreeze.mockResolvedValueOnce(null);
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, {
+      amount: { total: 1000, deposit: 0, currency: "USD" },
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ payments: [{ price: 1000, status: "paid" }] }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.payments?.[0].fxRate ?? null).toBeNull();
+    expect(fresh?.payments?.[0].fxTarget ?? null).toBeNull();
   });
 
   it("returns 422 payments_exceed_balance when a payments patch pushes the sum past total - deposit", async () => {

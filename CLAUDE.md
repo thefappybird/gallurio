@@ -34,8 +34,8 @@ Delegation is a cost trade-off, not a reflex: every subagent pays a fixed contex
 - **Tight, closed-ended prompts**: name exact files + line ranges, state the exact question, cap the return ("return ONLY the 3 exported signatures, nothing else"). Open-ended prompts make agents wander and dump verbose context.
 - **Workflow two-phase pattern**: reader phase (`lean-reader` agent, haiku, parallel) returns raw excerpts → executor phase receives those excerpts inline. Executors never explore.
 - Never use Sonnet with 1M context. Prompt-polishing helpers live in `.claude/`.
-- **Max 2 concurrent subagents**: this machine has limited RAM and crashes on wide parallel fan-out. Dispatch any multi-agent work — including the fixed roster below — in waves of at most 2 running at once, even where the task would otherwise justify more parallelism.
-- **Orchestrator-only builds + full typecheck, strictly one at a time**: subagents never run `pnpm build`/`pnpm dev`/`next build`/`next dev` or the full-project typecheck (`pnpm run typecheck` / `tsc --noEmit`) themselves — only the top-level orchestrating session runs those, after a subagent reports its change is green. **Exactly one build or typecheck runs at any moment, ever** — never two concurrently, not even two the orchestrator itself started (no backgrounded build alongside a foreground one, no `tsc` while a build runs, no two worktrees building at once). Concurrent Next/TS workers balloon RAM and crash this box. Queue them: start the next only after the previous has exited. Subagents verify with only their own **scoped** tests (`pnpm test --run <fragment>`) + `eslint` on the files they touched.
+- **Max 3 concurrent subagents** (raised from 2 on 2026-08-18): the RAM crashes came from **concurrent builds/typechecks**, not from agent count — see the orchestrator-only-builds rule below, which is the actual guard. Dispatch multi-agent work in waves of at most 3 running at once.
+- **Orchestrator-only builds + full typecheck, strictly one at a time**: subagents never run `pnpm build`/`pnpm dev`/`next build`/`next dev` or the full-project typecheck (`pnpm run typecheck` / `tsc --noEmit`) themselves — only the top-level orchestrating session runs those, after a subagent reports its change is green. **Exactly one build or typecheck runs at any moment, ever** — never two concurrently, not even two the orchestrator itself started (no backgrounded build alongside a foreground one, no `tsc` while a build runs, no two worktrees building at once). Concurrent Next/TS workers balloon RAM and crash this box — this, not subagent count, is what caused the crashes previously blamed on wide fan-out. Queue them: start the next only after the previous has exited. Subagents verify with only their own **scoped** tests (`pnpm test --run <fragment>`) + `eslint` on the files they touched.
 - **Serialize tdd-guard'd implementer subagents (queue)**: the tdd-guard's last-test-run state is shared per worktree, so two implementer agents running their Red→Green cycles at once clobber each other and hit false "premature implementation" rejections (confirmed — the collision is the shared guard state, not file overlap). Default is **one at a time** in a shared worktree (queue them). Never bypass the guard by having the orchestrator apply an agent's file for it. Read-only agents (Explore/lean-reader/reviewers) still parallelize freely — they write no code and run no guarded tests. (`isolation: "worktree"` per agent is the alternative — separate guard state — but adds a merge-back step.)
 - **tdd-guard policy (set 2026-07-31): ON for solo orchestrator work, OFF for agent fan-out.** Disable before dispatching parallel implementers, then **re-enable in the same turn** — treat that as an obligation, not a nicety. It is a globally-enabled plugin (`"tdd-guard@tdd-guard"` in `~/.claude/settings.json`), so toggling it affects **every project**, not just this worktree; say so out loud when you flip it.
   - **It cannot be scoped to paths.** Verified against upstream config docs: tdd-guard supports no ignore patterns, globs, or per-directory exemptions. The only levers are the global plugin toggle and `tdd-guard on/off`. Don't go looking again.
@@ -76,6 +76,7 @@ Operate as a senior full-stack engineer with strong mobile-first UI and backend/
 
 ### UI
 - Mobile-first at 375px. Playwright at 3 breakpoints: 375/768/1280px (desktop-only surfaces: 768+1280; public-facing: all three).
+- **Every Playwright run also covers all 5 locales and both themes** — `en`/`fil`/`id`/`ar`/`th` × light + dark, never `en`-light only. Assert on rendered strings (catches mojibake), check `ar` RTL geometry stays inside its container, and measure dark-theme colours against their background rather than assuming the token resolved. A breakpoint-only pass is an incomplete pass.
 - Every async surface: loading/empty/error/populated. Every control: idle/hover-focus-visible/active/disabled.
 - No hover-only UX. Drag needs visible affordances. Large mobile flows: steps/tabs, not tall modals.
 - Accessibility: semantic HTML, labels, keyboard support, focus management, color never the sole signal.
@@ -85,7 +86,7 @@ Operate as a senior full-stack engineer with strong mobile-first UI and backend/
 - Server Components by default; Server Actions for in-app mutations; Route Handlers for webhooks/public APIs. Node runtime unless Edge is justified.
 - Validate at boundaries with Zod, then trust parsed types. Shape responses to caller needs. Cache intentionally.
 - Prevent N+1; cursor-paginate unbounded lists; Mongo transactions for multi-doc writes that must succeed together; make retry-prone mutations idempotent; never swallow errors.
-- **Endpoint hardening**: apply the full checklist in `docs/modules/hosting-ops.md`'s Endpoint hardening section on every new/updated endpoint. Known lapses: `docs/backend-audit-findings.md`.
+- **Endpoint hardening**: apply the full checklist in `docs/modules/hosting-ops.md`'s Endpoint hardening section on every new/updated endpoint.
 
 ## Multi-tenant rules
 - Never trust client-supplied `workspaceId` — resolve scope from the WorkOS session + re-validated active-workspace cookie + MongoDB memberships (never WorkOS Organizations).
@@ -127,18 +128,19 @@ Preserve UTF-8 everywhere; never output/save mojibake. Verify user-facing Unicod
 - A worktree starts without `.env.local`; you may copy values from the canonical `dev` checkout's `.env.local` for local Playwright verification only — never commit, print, or paste secret values anywhere.
 
 ## Testing
-Every change ships tests: data-layer, components, handlers, validators, tenant isolation. Mock external services only; never mock Mongoose (use in-memory Mongo). Run targeted: `pnpm test --run <fragment>`; full sweep only pre-merge. Billing tests cover: webhook signature verification, price/plan mapping, idempotent webhook application, and tenant isolation.
+Every change ships tests: data-layer, components, handlers, validators, tenant isolation. Mock external services only; never mock Mongoose (use in-memory Mongo).
+- **Nested Mongoose subdocuments are optional on the inferred type.** `booking.amount` and friends need `?.` in test assertions (`b.amount?.currency`), even though the schema always materializes them from defaults. Vitest passes without it; `tsc --noEmit` fails — and only the orchestrator runs that, so a subagent can't catch it. Run targeted: `pnpm test --run <fragment>`; full sweep only pre-merge. Billing tests cover: webhook signature verification, price/plan mapping, idempotent webhook application, and tenant isolation.
 
 ## Done criteria
-Implementation complete · tests passing · lint + typecheck pass · locales updated · 3 breakpoints verified · optimistic UI where appropriate · errors surfaced · indexes confirmed for new queries.
+Implementation complete · tests passing · lint + typecheck pass · locales updated · 3 breakpoints × 5 locales × light+dark verified · optimistic UI where appropriate · errors surfaced · indexes confirmed for new queries.
 
 ## Review / merge flow
-- Consolidate locales → build → strict code review (Playwright run-through at 3 breakpoints, verifying every state — not just that it compiles).
+- Consolidate locales → build → strict code review (Playwright run-through at 3 breakpoints × 5 locales × light+dark, verifying every state — not just that it compiles).
 - Fix findings → once no tasks remain, open a PR with `- [ ]` checklist. Merge to `dev` only after review and explicit approval.
 
 ## Docs hygiene
 - Scratch docs (spec, plan, audit, review) consolidated into ONE `docs/<area>/` summary before PR, rest deleted. Net result: at most one new/changed doc per PR.
-- Never delete: README, master-plan, product-spec-reference, blueprint, backend-audit-findings, RELEASE-CHECKLIST, REUSABLE_CODE.
+- Keep durable product, operational, and reusable-code references current; remove completed scratch docs and repair their inbound references in the same change.
 
 ## Commands
 `pnpm dev` · `pnpm start` · `pnpm seed`. Prefer RTK for diff/log/read/test/lint/type/build when a summary suffices.

@@ -6,7 +6,8 @@ import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { BookingImportRowInput } from "@/lib/validators/booking";
 import { recordBookingForClient, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
-import { isCompletionEligible } from "@/lib/bookings/payment-rules";
+import { isCompletionEligible, normalizePayments } from "@/lib/bookings/payment-rules";
+import { resolveFxFreeze } from "@/lib/pricing/fxRates";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import {
   groupImportRows,
@@ -237,6 +238,25 @@ export async function POST(req: Request) {
   // the canonical value regardless of what the CSV row says.
   const clientIdByEmail = new Map<string, { id: string; name: string }>();
   const defaultCurrency = ctx.workspace.currency ?? "PHP";
+
+  // Booking-currency FX is resolved once per distinct currency in the file —
+  // never once per row — and entirely before any transaction opens, so a
+  // slow/failed upstream fetch never holds a Mongo session open. Reads the
+  // raw cell rather than the (not-yet-parsed) row so this only needs one pass.
+  const rowCurrencies = new Set<string>();
+  for (const raw of json.rows as Record<string, unknown>[]) {
+    const c =
+      typeof raw.currency === "string" && raw.currency.trim()
+        ? raw.currency.trim().toUpperCase()
+        : defaultCurrency.toUpperCase();
+    rowCurrencies.add(c);
+  }
+  const freezeByCurrency = new Map<string, { rate: number; target: string } | null>();
+  await Promise.all(
+    [...rowCurrencies].map(async (currency) => {
+      freezeByCurrency.set(currency, await resolveFxFreeze(currency, defaultCurrency));
+    })
+  );
 
   // Rows sharing a booking_id are ONE multi-session booking. Grouping is what
   // makes the exporter's one-row-per-session output round-trip instead of
@@ -607,6 +627,11 @@ export async function POST(req: Request) {
           // No email — cannot be cached for deduplication; no-op.
         }
 
+        const rowCurrency = row.currency ?? defaultCurrency;
+        const freeze = freezeByCurrency.get(rowCurrency.toUpperCase()) ?? null;
+        const now = new Date();
+        const depositFreeze = (row.amountDeposit ?? 0) > 0 ? freeze : null;
+
         const [booking] = await Booking.create(
           [
             {
@@ -628,14 +653,15 @@ export async function POST(req: Request) {
               amount: {
                 total: row.amountTotal ?? 0,
                 deposit: row.amountDeposit ?? 0,
-                currency: row.currency ?? defaultCurrency,
+                currency: rowCurrency,
+                fxRate: depositFreeze?.rate ?? null,
+                fxTarget: depositFreeze?.target ?? null,
+                fxAt: depositFreeze ? now : null,
               },
-              // createdAt is required by the Booking schema. An exported
-              // payment always carries one; a hand-authored row need not.
-              payments: (row.payments ?? []).map((p) => ({
-                ...p,
-                createdAt: p.createdAt ?? new Date(),
-              })),
+              // normalizePayments also fills createdAt (required by the schema;
+              // an exported payment always carries one, a hand-authored row
+              // need not) and applies the same freeze rule as a manual create.
+              payments: normalizePayments(row.payments ?? [], now, freeze),
               notes: row.notes ?? "",
             },
           ],
