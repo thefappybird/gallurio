@@ -14,6 +14,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
 import { imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
+import type { PickerCollection, PickerItem } from "@/lib/page-builder/galleryPicker/types";
 
 const MAX_LIMIT = 100;
 
@@ -76,21 +77,11 @@ export async function getItemsByIds(opts: {
 
 const PICKER_ITEMS_CAP = 60;
 
-export type PickerCollection = {
-  id: string;
-  name: string;
-  coverUrl: string | null;
-  coverPublicId: string;
-  itemCount: number;
-};
-
-export type PickerItem = {
-  id: string;
-  /** Asset ID — used by single-image fields (Hero/CTA backgrounds). */
-  publicId: string;
-  thumbUrl: string;
-  caption: string | null;
-};
+// These shapes are the picker API's contract, consumed by the gallery picker
+// components. They used to be declared twice — here and in the picker's own
+// types module — which let the two drift silently (a field added to one was
+// invisible to the other). Re-export the single definition instead.
+export type { PickerCollection, PickerItem };
 
 /**
  * Returns all gallery collections (with cover thumbnails) for a workspace.

@@ -114,9 +114,13 @@ export function ImageMetaDialog({
                 </span>
               }
             >
-              {(a11y) => (
+              {/* Destructure rather than spread: FieldA11y also carries `errorId`,
+                  which is caller metadata, not a DOM attribute. */}
+              {({ id, "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedby }) => (
                 <Textarea
-                  {...a11y}
+                  id={id}
+                  aria-invalid={ariaInvalid}
+                  aria-describedby={ariaDescribedby}
                   autoFocus
                   value={altText}
                   placeholder={labels.altPlaceholder}
