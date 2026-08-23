@@ -558,6 +558,17 @@ describe("proxy", () => {
       expect(response.headers.get(`x-middleware-request-${PORTFOLIO_SLUG_HEADER}`)).toBe("acme");
     });
 
+    it("lowercases a mixed-case /w/{Slug} path segment before stamping the header", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/w/Acme-Studio/gallery");
+
+      const response = (await proxy(req)) as Response;
+
+      expect(response.headers.get(`x-middleware-request-${PORTFOLIO_SLUG_HEADER}`)).toBe(
+        "acme-studio",
+      );
+    });
+
     it("does not set the header for a reserved slug under /w/", async () => {
       const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
       const req = new NextRequest("http://localhost/w/dev");
@@ -568,6 +579,56 @@ describe("proxy", () => {
         .split(",")
         .map((s) => s.trim());
       expect(manifest).not.toContain(PORTFOLIO_SLUG_HEADER);
+    });
+  });
+
+  describe("PORTFOLIO_SLUG_HEADER trust boundary — stripped once at proxy() entry", () => {
+    it("strips a forged inbound header before AuthKit runs on the /api branch", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/api/health", {
+        headers: { [PORTFOLIO_SLUG_HEADER]: "evil" },
+      });
+
+      await proxy(req);
+
+      const calledReq = authMiddlewareMock.mock.calls[0]?.[0] as NextRequest;
+      expect(calledReq.headers.get(PORTFOLIO_SLUG_HEADER)).toBeNull();
+    });
+
+    it("strips a forged inbound header on a root crawler-file path", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/robots.txt", {
+        headers: { [PORTFOLIO_SLUG_HEADER]: "evil" },
+      });
+
+      const response = (await proxy(req)) as Response;
+
+      expect(req.headers.get(PORTFOLIO_SLUG_HEADER)).toBeNull();
+      expect(response.headers.get(`x-middleware-request-${PORTFOLIO_SLUG_HEADER}`)).toBeNull();
+    });
+
+    it("strips a forged inbound header on the editorial 308-redirect branch", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/en/blog", {
+        headers: { [PORTFOLIO_SLUG_HEADER]: "evil" },
+      });
+
+      const response = (await proxy(req)) as Response;
+
+      expect(response.status).toBe(308);
+      expect(req.headers.get(PORTFOLIO_SLUG_HEADER)).toBeNull();
+    });
+
+    it("strips a forged inbound header before it reaches next-intl on a protected route", async () => {
+      const { proxy, PORTFOLIO_SLUG_HEADER } = await import("./proxy");
+      const req = new NextRequest("http://localhost/bookings", {
+        headers: { [PORTFOLIO_SLUG_HEADER]: "evil" },
+      });
+
+      await proxy(req);
+
+      const calledReq = intlMiddlewareMock.mock.calls[0]?.[0] as NextRequest;
+      expect(calledReq.headers.get(PORTFOLIO_SLUG_HEADER)).toBeNull();
     });
   });
 

@@ -17,14 +17,8 @@ vi.mock("@/lib/fonts/portfolio", () => ({
   portfolioFontVariables: "font-vars",
 }));
 
-// layout.tsx imports PORTFOLIO_SLUG_HEADER from "@/proxy". The real proxy.ts
-// calls authkitMiddleware()/createIntlMiddleware() at module scope (see
-// proxy.test.ts, which mocks both before importing it) — stub the whole
-// module here instead so importing the layout doesn't drag that in.
-vi.mock("@/proxy", () => ({ PORTFOLIO_SLUG_HEADER: "x-gallurio-portfolio-slug" }));
-
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
-import { PORTFOLIO_SLUG_HEADER } from "@/proxy";
+import { PORTFOLIO_SLUG_HEADER } from "@/lib/portfolio/portfolioHeaders";
 import PublicRootLayout from "./layout";
 
 function makeWorkspace(overrides: Partial<{

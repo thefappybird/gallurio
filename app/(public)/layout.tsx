@@ -5,7 +5,7 @@ import { portfolioFontVariables } from "@/lib/fonts/portfolio";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { resolveEffectiveDir } from "@/lib/i18n/rtl";
-import { PORTFOLIO_SLUG_HEADER } from "@/proxy";
+import { PORTFOLIO_SLUG_HEADER } from "@/lib/portfolio/portfolioHeaders";
 import "../globals.css";
 
 export const metadata: Metadata = {
