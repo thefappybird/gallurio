@@ -110,7 +110,10 @@ export function ImageMetaDialog({
               hint={
                 <span className="flex flex-col gap-0.5">
                   <span>{labels.altHelp}</span>
-                  <span aria-live="polite">{labels.counter(altText.length, IMAGE_META_ALT_MAX)}</span>
+                  {/* Live only near/over the limit — announcing on every keystroke drowns the rest of the dialog. */}
+                  <span aria-live={IMAGE_META_ALT_MAX - altText.length <= 20 ? "polite" : undefined}>
+                    {labels.counter(altText.length, IMAGE_META_ALT_MAX)}
+                  </span>
                 </span>
               }
             >

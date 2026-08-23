@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
+import { ImageMetaDialog, IMAGE_META_ALT_MAX, type ImageMetaLabels } from "./ImageMetaDialog";
 import type { PickerItem } from "./types";
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -71,6 +71,19 @@ describe("ImageMetaDialog", () => {
     open();
     fireEvent.change(screen.getByLabelText("Alt text"), { target: { value: "New alt text" } });
     expect(screen.getByText("12/300")).toBeTruthy();
+  });
+
+  it("does not mark the counter as a live region while typing well under the limit", () => {
+    open();
+    fireEvent.change(screen.getByLabelText("Alt text"), { target: { value: "New alt text" } });
+    expect(screen.getByText("12/300").getAttribute("aria-live")).toBeNull();
+  });
+
+  it("marks the counter as a polite live region once within 20 characters of the limit", () => {
+    open();
+    const nearLimit = "x".repeat(IMAGE_META_ALT_MAX - 20); // exactly 20 remaining
+    fireEvent.change(screen.getByLabelText("Alt text"), { target: { value: nearLimit } });
+    expect(screen.getByText(`${nearLimit.length}/300`).getAttribute("aria-live")).toBe("polite");
   });
 
   it("PATCHes the item id with only { altText } on save", async () => {
