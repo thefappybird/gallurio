@@ -426,6 +426,34 @@ test.describe("Locale x theme — EditCollectionDialog ImageMetaDialog", () => {
   }
 });
 
+test("ar: the collection dialog title is bidi-isolated so its quotes cannot reorder", async ({
+  page,
+}) => {
+  await gotoPortfolio(page, "ar");
+  await page.locator('[data-tour-id="photos"]').click();
+  await page.waitForTimeout(700);
+
+  const editLabel = tpl("ar", "app.pageBuilder.editor.photosDialog.editAria", { name: "Weddings" });
+  await page.getByRole("button", { name: editLabel }).click();
+  await page.waitForTimeout(900);
+
+  // The title is still English chrome inside an RTL document. Without an
+  // explicit isolate the neutral quotes attach to the wrong side and it renders
+  // as `"Weddings" Edit`. The DOM text is identical either way, so assert on the
+  // isolate itself rather than on the string.
+  const isolate = page.locator('[role="dialog"] span[dir="ltr"]').first();
+  await expect(isolate).toHaveText('Edit "Weddings"');
+  expect(await isolate.evaluate((el) => getComputedStyle(el).direction)).toBe("ltr");
+  await expect(isolate.locator("bdi")).toHaveText("Weddings");
+
+  // The dialog around it stays RTL — the isolate must not flip the whole header.
+  const dialogDir = await page
+    .locator('[role="dialog"]')
+    .first()
+    .evaluate((el) => getComputedStyle(el).direction);
+  expect(dialogDir).toBe("rtl");
+});
+
 // ===========================================================================
 // 4. MediaPicker path is localized too
 // ===========================================================================

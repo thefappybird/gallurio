@@ -277,7 +277,18 @@ export function EditCollectionDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
-        <DialogHeader><DialogTitle className="truncate">Edit &quot;{collection.name}&quot;</DialogTitle></DialogHeader>
+        <DialogHeader>
+          {/* This chrome is still English while the surrounding app may be RTL.
+              Left unisolated, the neutral quotes reorder around the LTR "Edit"
+              under `ar` and the title renders as `"Weddings" Edit`. `dir="ltr"`
+              makes the whole title one isolate; the inner <bdi> keeps an
+              Arabic-named collection from breaking the quotes back out. */}
+          <DialogTitle className="truncate">
+            <span dir="ltr" className="inline-block max-w-full truncate align-bottom">
+              Edit &quot;<bdi>{collection.name}</bdi>&quot;
+            </span>
+          </DialogTitle>
+        </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-1">
           <div className="flex flex-col gap-1.5">
