@@ -1,17 +1,50 @@
 import { describe, it, expect } from "vitest";
 import robots from "./robots";
 
+function ruleFor(result: ReturnType<typeof robots>, agent: string) {
+  const rules = Array.isArray(result.rules) ? result.rules : [result.rules];
+  const rule = rules.find((r) => {
+    const ua = r.userAgent;
+    return Array.isArray(ua) ? ua.includes(agent) : ua === agent;
+  });
+  if (!rule) throw new Error(`no rule for user agent ${agent}`);
+  return rule;
+}
+
+function disallowList(result: ReturnType<typeof robots>, agent: string) {
+  const { disallow } = ruleFor(result, agent);
+  return Array.isArray(disallow) ? disallow : disallow ? [disallow] : [];
+}
+
 describe("robots()", () => {
-  it("allows /w/ and disallows app shell and api routes", () => {
+  it("disallows an app segment at both its unprefixed and locale-prefixed paths", () => {
+    const disallow = disallowList(robots(), "*");
+
+    expect(disallow).toContain("/dashboard");
+    expect(disallow).toContain("/fil/dashboard");
+  });
+
+  it("keeps every locale's marketing pages crawlable", () => {
+    const disallow = disallowList(robots(), "*");
+
+    expect(disallow).not.toContain("/fil/");
+    expect(disallow).not.toContain("/th/");
+  });
+
+  it("names AI crawlers and gives them the same access as everyone else", () => {
     const result = robots();
 
-    const rules = Array.isArray(result.rules) ? result.rules : [result.rules];
-    expect(rules).toHaveLength(1);
-    const rule = rules[0];
+    for (const agent of ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"]) {
+      expect(disallowList(result, agent)).toContain("/dashboard");
+      expect(ruleFor(result, agent).allow).toContain("/w/");
+    }
+  });
 
-    expect(rule.userAgent).toBe("*");
-    expect(rule.allow).toBe("/w/");
-    expect(rule.disallow).toEqual(["/en/", "/fil/", "/id/", "/ar/", "/th/", "/api/"]);
+  it("re-opens the public portfolio demo that the /portfolio rule would shadow", () => {
+    const rule = ruleFor(robots(), "*");
+
+    expect(rule.disallow).toContain("/portfolio");
+    expect(rule.allow).toContain("/portfolio-maker-demo");
   });
 
   it("includes /sitemap.xml in the sitemap field", () => {

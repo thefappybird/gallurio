@@ -11,6 +11,7 @@ import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageD
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
+import { PoweredByGallurio } from "../_components/PoweredByGallurio";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioGalleryUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
@@ -135,6 +136,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
       <GoogleFontLoader families={collectGoogleFontFamilies(galleryData)} />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+      <PoweredByGallurio label={t("poweredBy")} />
     </>
   ));
 }

@@ -22,6 +22,15 @@ import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
+// Root-level routes that live outside the [locale] segment. next-intl would
+// rewrite these under /[locale] and 404 them, so they bypass it entirely.
+const ROOT_CRAWLER_PATHS = new Set([
+  "/opengraph-image",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/llms.txt",
+]);
+
 // Routes that never require authentication.
 // Patterns use the same path-to-regexp-style that authkitMiddleware accepts.
 const UNAUTHENTICATED_PATHS = [
@@ -37,6 +46,19 @@ const UNAUTHENTICATED_PATHS = [
   // next-intl normalizes the redundant default-locale prefix to "/".
   ...routing.locales.map((l) => `/${l}`),
   "/pricing",
+  // Crawler-facing files. The matcher below does not exclude .txt or .xml, so
+  // without these every crawler asking for robots.txt or the sitemap was
+  // redirected to /sign-in and saw nothing.
+  "/robots.txt",
+  "/sitemap.xml",
+  "/llms.txt",
+  // Comparison and blog articles — public content, the whole point of which is
+  // being crawled.
+  "/compare",
+  "/compare/(.*)",
+  "/blog",
+  "/blog/(.*)",
+  "/resources",
   "/terms",
   "/privacy",
   "/refunds",
@@ -287,11 +309,26 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
     return NextResponse.next();
   }
 
-  // Platform Open Graph image (root metadata route, not locale-prefixed).
-  // Falling through to intlMiddleware would rewrite it under /[locale] and
-  // 404 — scrapers hitting the bare path need it served as-is.
-  if (pathname === "/opengraph-image") {
+  // Root metadata and crawler files (not locale-prefixed). Falling through to
+  // intlMiddleware would rewrite them under /[locale] and 404 — a crawler
+  // hitting the bare path needs them served as-is.
+  if (ROOT_CRAWLER_PATHS.has(pathname)) {
     return NextResponse.next();
+  }
+
+  // The editorial surface is intentionally English-only. A translated shell
+  // around an untranslated article sends conflicting language signals and
+  // creates duplicate locale URLs, so collapse every prefixed request onto
+  // the default-locale (unprefixed) canonical before next-intl handles it.
+  const localePrefix = pathname.match(LOCALE_PREFIX_RE)?.[0];
+  const editorialPath = stripLocale(pathname);
+  const isEditorialPath = ["/resources", "/blog", "/compare"].some(
+    (prefix) => editorialPath === prefix || editorialPath.startsWith(`${prefix}/`),
+  );
+  if (localePrefix && isEditorialPath) {
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = editorialPath;
+    return NextResponse.redirect(redirectUrl, 308);
   }
 
   // -------------------------------------------------------------------------

@@ -73,6 +73,29 @@ describe("proxy", () => {
     );
   });
 
+  it("leaves the crawler-facing files and article routes unauthenticated", async () => {
+    await import("./proxy");
+
+    // The matcher does not exclude .txt or .xml, so these must be listed
+    // explicitly — otherwise a crawler asking for robots.txt is redirected to
+    // /sign-in and indexes nothing.
+    expect(authkitMiddlewareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        middlewareAuth: expect.objectContaining({
+          unauthenticatedPaths: expect.arrayContaining([
+            "/robots.txt",
+            "/sitemap.xml",
+            "/llms.txt",
+            "/compare",
+            "/compare/(.*)",
+            "/blog",
+            "/blog/(.*)",
+          ]),
+        }),
+      }),
+    );
+  });
+
   it("returns JSON 401 instead of leaking an authentication redirect to API fetches", async () => {
     const redirect = NextResponse.redirect(
       new URL("https://api.workos.com/user_management/authorize?client_id=test")
@@ -142,6 +165,22 @@ describe("proxy", () => {
 
     expect(authMiddlewareMock).not.toHaveBeenCalled();
     expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["/fil/blog", "/blog"],
+    ["/id/blog/how-to-price", "/blog/how-to-price"],
+    ["/ar/compare/gallurio-vs-wix?ref=nav", "/compare/gallurio-vs-wix?ref=nav"],
+    ["/th/resources", "/resources"],
+  ])("permanently redirects English-only editorial route %s to %s", async (path, expected) => {
+    const { proxy } = await import("./proxy");
+
+    const response = (await proxy(new NextRequest(`http://localhost${path}`))) as Response;
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe(`http://localhost${expected}`);
+    expect(authMiddlewareMock).not.toHaveBeenCalled();
+    expect(intlMiddlewareMock).not.toHaveBeenCalled();
   });
 
   it("preserves original path+query as returnTo when redirecting unauthenticated users to sign-in (local /sign-in redirect)", async () => {

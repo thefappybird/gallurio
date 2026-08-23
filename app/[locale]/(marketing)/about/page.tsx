@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { marketingMetadata } from "@/lib/seo/metadata";
 import { Link } from "@/lib/i18n/navigation";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -7,10 +8,12 @@ type Props = { params: Promise<{ locale: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "marketing.appInfo.metadata" });
-  return {
-    title: { absolute: t("title") },
+  return marketingMetadata({
+    locale,
+    path: "/about",
+    title: t("title"),
     description: t("description"),
-  };
+  });
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { marketingMetadata } from "@/lib/seo/metadata";
 import {
   LegalArticle,
   LegalHeader,
@@ -14,10 +15,12 @@ type Props = { params: Promise<{ locale: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "marketing.refunds.metadata" });
-  return {
-    title: { absolute: t("title") },
+  return marketingMetadata({
+    locale,
+    path: "/refunds",
+    title: t("title"),
     description: t("description"),
-  };
+  });
 }
 
 export default async function RefundsPage({ params }: Props) {
