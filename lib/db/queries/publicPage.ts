@@ -55,7 +55,11 @@ export const findPublishedWorkspaceBySlug = cache(async (slug: string) => {
     slug: normalized,
     "publicPage.publishedAt": { $ne: null },
   })
-    .select("slug name country publicPage contact")
+    // `businessType` drives both the schema.org @type (PhotographyBusiness,
+    // EventVenue, ...) and the automatic SEO description variant. Without it in
+    // the projection every portfolio silently fell back to LocalBusiness and the
+    // generic description, making BUSINESS_TYPE_SCHEMA_MAP dead code.
+    .select("slug name country businessType publicPage contact")
     .lean();
 
   return workspace ?? null;
