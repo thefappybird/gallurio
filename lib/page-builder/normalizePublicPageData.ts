@@ -36,6 +36,26 @@ function hasZoneContent(zones: Record<string, unknown> | undefined): boolean {
 }
 
 /**
+ * Single source of truth for "is this stored page data actually renderable" —
+ * used by callers (sitemap/crawler routes) that must decide whether to
+ * advertise a page URL without paying for full normalization.
+ *
+ * Deliberate divergence from `normalizePublicPageData`: this predicate does
+ * no per-entry validation — it only checks array length/presence, not
+ * whether each entry survives normalization. So a page made ONLY of
+ * unregistered/legacy block types, or containing malformed entries (e.g.
+ * `content: [null, "x"]`), still counts as renderable here (rare; accepted —
+ * the URL gets advertised, and the page itself still falls back to "coming
+ * soon" if truly nothing survives normalization at render time).
+ */
+export function hasRenderableBlocks(raw: unknown): boolean {
+  if (!isPlainObject(raw)) return false;
+  const content = Array.isArray(raw.content) ? raw.content : [];
+  const zones = isPlainObject(raw.zones) ? raw.zones : undefined;
+  return content.length > 0 || hasZoneContent(zones);
+}
+
+/**
  * @param raw         the value stored at `publicPage.data.<page>` (unknown shape)
  * @param knownTypes  the set of component `type`s registered in the Puck config
  * @param label       optional label (e.g. "home"/"gallery") for warning context

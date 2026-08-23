@@ -55,27 +55,29 @@ function marketingEntries(): MetadataRoute.Sitemap {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const workspaces = await listPublishedWorkspaceSlugs();
 
-  const tenants = workspaces.flatMap(({ slug, lastPublishedAt }) => {
-    const homeUrl = portfolioPublicUrl(slug);
-    const galleryUrl = portfolioGalleryUrl(slug);
+  const tenants = workspaces.flatMap(({ slug, lastPublishedAt, hasHome, hasGallery }) => {
     // Omit lastModified entirely when the timestamp is absent rather than
     // emitting `undefined`, which some serialisers coerce to null.
     const lastModified = lastPublishedAt ?? undefined;
 
-    return [
-      {
-        url: homeUrl,
+    const entries: MetadataRoute.Sitemap = [];
+    if (hasHome) {
+      entries.push({
+        url: portfolioPublicUrl(slug),
         ...(lastModified !== undefined && { lastModified }),
         changeFrequency: "weekly" as const,
         priority: 0.8,
-      },
-      {
-        url: galleryUrl,
+      });
+    }
+    if (hasGallery) {
+      entries.push({
+        url: portfolioGalleryUrl(slug),
         ...(lastModified !== undefined && { lastModified }),
         changeFrequency: "weekly" as const,
         priority: 0.6,
-      },
-    ];
+      });
+    }
+    return entries;
   });
 
   return [...marketingEntries(), ...tenants];

@@ -1738,9 +1738,11 @@
         },
         "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
         "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
+        "seoTitleAutoHint": "Belum ada judul — nama workspace Anda akan digunakan sebagai gantinya.",
+        "seoDescriptionAutoHint": "Belum ada deskripsi — ini yang akan digunakan: “{preview}”",
         "seoKeywords": "Tag SEO",
         "seoKeywordsPlaceholder": "fotografer pernikahan, editorial, jakarta",
-        "seoKeywordsHint": "Tag opsional dipisahkan koma untuk mesin pencari dan structured data. Tambahkan hingga 10.",
+        "seoKeywordsHint": "Tag opsional, dipisahkan koma — spasi di dalam satu frasa tetap dipertahankan. Digunakan dalam data terstruktur halaman. Tambahkan hingga 10 tag.",
         "galleryDescriptionLabel": "Deskripsi halaman Gallery",
         "galleryDescriptionPlaceholder": "Pameran karya terbaik pernikahan dan potret kami…",
         "galleryDescriptionHint": "Deskripsi terpisah untuk halaman Gallery agar tidak menduplikasi halaman beranda. Target: ~155 karakter.",
@@ -2553,6 +2555,19 @@
           "title": "Mari bekerja sama",
           "description": "Ceritakan tentang acara Anda.",
           "submit": "Kirim pertanyaan"
+        },
+        "imageMeta": {
+          "title": "Edit teks alternatif",
+          "altLabel": "Teks alternatif",
+          "altHelp": "Jelaskan apa yang ditampilkan foto ini. Dibacakan oleh pembaca layar dan digunakan mesin pencari untuk memahami gambar.",
+          "altPlaceholder": "mis. Pengantin pria dan wanita menari di bawah lampu",
+          "counter": "{count}/{max} karakter",
+          "save": "Simpan",
+          "saving": "Menyimpan…",
+          "cancel": "Batal",
+          "savedToast": "Teks alternatif disimpan.",
+          "editTrigger": "Edit teks alternatif untuk {name}",
+          "photoFallback": "foto"
         },
         "mobileBanner": {
           "title": "Editor bekerja paling baik di layar yang lebih besar",
@@ -3578,6 +3593,21 @@
       "retry": "Coba lagi",
       "empty": "Belum ada foto di koleksi ini.",
       "fullSizeAlt": "Foto ukuran penuh"
+    },
+    "seoDefaults": {
+      "homeDescription": "{name} — {businessType}. Lihat karya terbaru dan hubungi kami untuk memesan.",
+      "homeDescriptionGeneric": "{name} — lihat karya terbaru dan hubungi kami untuk memesan.",
+      "galleryDescription": "Jelajahi galeri {name} — foto terbaru dan sorotan.",
+      "businessType": {
+        "photographer": "Fotografer",
+        "venue": "Venue",
+        "planner": "Perencana Acara",
+        "stylist": "Penata Gaya",
+        "catering": "Katering",
+        "entertainer": "Penghibur",
+        "artists": "Seniman",
+        "other": "Bisnis"
+      }
     }
   },
   "notFound": {

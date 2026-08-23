@@ -13,7 +13,11 @@ import type { GalleryItemDoc } from "@/lib/db/models/GalleryItem";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
+import { Workspace } from "@/lib/db/models/Workspace";
 import { imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
+import { mapBlocks } from "@/lib/page-builder/blockTree";
+import type { PickerCollection, PickerItem } from "@/lib/page-builder/galleryPicker/types";
+import type { PuckData, PuckBlockEntry } from "@/lib/page-builder/types";
 
 const MAX_LIMIT = 100;
 
@@ -76,21 +80,11 @@ export async function getItemsByIds(opts: {
 
 const PICKER_ITEMS_CAP = 60;
 
-export type PickerCollection = {
-  id: string;
-  name: string;
-  coverUrl: string | null;
-  coverPublicId: string;
-  itemCount: number;
-};
-
-export type PickerItem = {
-  id: string;
-  /** Asset ID — used by single-image fields (Hero/CTA backgrounds). */
-  publicId: string;
-  thumbUrl: string;
-  caption: string | null;
-};
+// These shapes are the picker API's contract, consumed by the gallery picker
+// components. They used to be declared twice — here and in the picker's own
+// types module — which let the two drift silently (a field added to one was
+// invisible to the other). Re-export the single definition instead.
+export type { PickerCollection, PickerItem };
 
 /**
  * Returns all gallery collections (with cover thumbnails) for a workspace.
@@ -192,7 +186,7 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
   const items = await GalleryItem.find({ workspaceId })
     .sort({ createdAt: -1 })
     .limit(PICKER_ITEMS_CAP + 1)
-    .select({ assetId: 1, caption: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1 })
     .lean();
 
   if (items.length > PICKER_ITEMS_CAP) {
@@ -207,6 +201,7 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
     publicId: it.assetId as string,
     thumbUrl: imageDeliveryUrl(it.assetId as string, { width: 200, height: 200, fit: "cover" }),
     caption: (it.caption as string) || null,
+    altText: (it.altText as string) || null,
   }));
 }
 
@@ -237,13 +232,19 @@ function decodeCursor(cursor: string): { sortValue: string; id: string } | null 
   }
 }
 
-function toPickerItem(it: { _id: unknown; assetId?: unknown; caption?: unknown }): PickerItem {
+function toPickerItem(it: {
+  _id: unknown;
+  assetId?: unknown;
+  caption?: unknown;
+  altText?: unknown;
+}): PickerItem {
   const publicId = (it.assetId as string) ?? "";
   return {
     id: String(it._id),
     publicId,
     thumbUrl: imageDeliveryUrl(publicId, { width: 200, height: 200, fit: "cover" }),
     caption: (it.caption as string) || null,
+    altText: (it.altText as string) || null,
   };
 }
 
@@ -281,7 +282,7 @@ export async function listCollectionItemsPage(opts: {
   const docs = await GalleryItem.find(filter)
     .sort({ order: 1, _id: 1 })
     .limit(limit + 1)
-    .select({ assetId: 1, caption: 1, order: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1, order: 1 })
     .lean();
 
   const hasMore = docs.length > limit;
@@ -321,6 +322,7 @@ export async function listAllItemsPage(opts: {
         docId: { $first: "$_id" },
         createdAt: { $first: "$createdAt" },
         caption: { $first: "$caption" },
+        altText: { $first: "$altText" },
       },
     },
     { $sort: { createdAt: -1, docId: -1 } },
@@ -348,6 +350,7 @@ export async function listAllItemsPage(opts: {
     docId: Types.ObjectId;
     createdAt: Date;
     caption?: string;
+    altText?: string;
   }>(pipeline);
 
   const hasMore = rows.length > limit;
@@ -361,6 +364,7 @@ export async function listAllItemsPage(opts: {
     publicId: r._id,
     thumbUrl: imageDeliveryUrl(r._id, { width: 200, height: 200, fit: "cover" }),
     caption: (r.caption as string) || null,
+    altText: (r.altText as string) || null,
   }));
 
   return { items, nextCursor };
@@ -448,10 +452,124 @@ export async function listCollectionNewest(opts: {
   const docs = await GalleryItem.find({ workspaceId, collectionId })
     .sort({ createdAt: -1, _id: -1 })
     .limit(limit)
-    .select({ assetId: 1, caption: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1 })
     .lean();
 
   return docs.map(toPickerItem);
+}
+
+/**
+ * Updates a single item's `altText` and/or `caption`. Only the keys actually
+ * present in `opts` are written — a request that sends only `caption` never
+ * blanks an existing `altText`, and vice versa. `altText` describes what the
+ * image shows (accessibility + SEO); `caption` is optional visible context.
+ * They are semantically distinct — never derive `altText` from a filename.
+ * Filters by `{ _id: itemId, workspaceId }` always (tenant-safe); a foreign,
+ * missing, or malformed `itemId` returns `null`.
+ */
+export async function updateItemMeta(opts: {
+  workspaceId: string;
+  itemId: string;
+  altText?: string;
+  caption?: string;
+}): Promise<PickerItem | null> {
+  const { workspaceId, itemId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(itemId)) return null;
+
+  const set: Record<string, string> = {};
+  if (opts.altText !== undefined) set.altText = opts.altText;
+  if (opts.caption !== undefined) set.caption = opts.caption;
+  if (Object.keys(set).length === 0) return null;
+
+  await connectDB();
+
+  const doc = await GalleryItem.findOneAndUpdate(
+    { _id: itemId, workspaceId },
+    { $set: set },
+    { new: true }
+  )
+    .select({ assetId: 1, caption: 1, altText: 1 })
+    .lean();
+  if (!doc) return null;
+
+  return toPickerItem(doc);
+}
+
+/** Prop keys that may hold GalleryImage-shaped `{ id, alt }` entries on a block. */
+const ALT_HOLDING_PROP_KEYS = ["images", "backgroundImages"] as const;
+
+/**
+ * Rewrites the `alt` on every image entry referencing `itemId` inside the
+ * workspace's PUBLISHED page (`publicPage.data.home` / `.gallery`) — the
+ * baked cache `reconcileGalleryImages` (lib/page-builder/reconcile.ts) writes
+ * at publish time, which the live public page's `<img alt>`, its ImageObject
+ * structured data, and the tenant sitemap all read directly. Without this, an
+ * alt-text edit only reaches those surfaces on the next publish. Only the
+ * `alt` string changes on a match — never adds, removes, or reorders images,
+ * never touches layout or any other prop/block.
+ *
+ * `PortfolioDraft` documents are deliberately left untouched — they are
+ * independent snapshots (see the portfolio-drafts skill / docs) that get
+ * reconciled at publish time like the rest of the tree; propagating into a
+ * draft here would blur the "drafts are independent until published" rule.
+ *
+ * No-op (no write) when nothing on the published page references `itemId` —
+ * the common case, since most photos are never placed on the page. Tenant-
+ * safe: the read and the write both filter by the caller's `workspaceId`.
+ */
+export async function propagateItemAltText(opts: {
+  workspaceId: string;
+  itemId: string;
+  alt: string;
+}): Promise<void> {
+  const { workspaceId, itemId, alt } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(workspaceId) || !Types.ObjectId.isValid(itemId)) return;
+
+  await connectDB();
+
+  const ws = (await Workspace.findOne({ _id: workspaceId })
+    .select({ "publicPage.data.home": 1, "publicPage.data.gallery": 1 })
+    .lean()) as { publicPage?: { data?: { home?: PuckData | null; gallery?: PuckData | null } } } | null;
+  if (!ws?.publicPage?.data) return;
+
+  const set: Record<string, PuckData> = {};
+
+  for (const zone of ["home", "gallery"] as const) {
+    const data = ws.publicPage.data[zone];
+    if (!data) continue;
+
+    let changed = false;
+    const next = mapBlocks(data, (block) => {
+      let nextProps = block.props;
+      let propsChanged = false;
+      for (const key of ALT_HOLDING_PROP_KEYS) {
+        const arr = block.props[key];
+        if (!Array.isArray(arr)) continue;
+        let arrChanged = false;
+        const nextArr = arr.map((entry) => {
+          if (entry && typeof entry === "object" && (entry as { id?: unknown }).id === itemId) {
+            if ((entry as { alt?: unknown }).alt === alt) return entry;
+            arrChanged = true;
+            return { ...(entry as Record<string, unknown>), alt };
+          }
+          return entry;
+        });
+        if (arrChanged) {
+          if (!propsChanged) nextProps = { ...block.props };
+          nextProps[key] = nextArr;
+          propsChanged = true;
+        }
+      }
+      if (!propsChanged) return block;
+      changed = true;
+      return { ...block, props: nextProps } as PuckBlockEntry;
+    });
+    if (changed) set[`publicPage.data.${zone}`] = next;
+  }
+
+  if (Object.keys(set).length === 0) return;
+
+  await Workspace.updateOne({ _id: workspaceId }, { $set: set });
 }
 
 /** Count GalleryItem docs in a workspace that reference a given asset. */

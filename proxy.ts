@@ -10,6 +10,7 @@ import { LOCALE_PREFIX_RE, stripLocale } from "@/lib/auth/memberAccess";
 import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import { isReservedSlug } from "@/lib/portfolio/reservedSlugs";
 import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
+import { PORTFOLIO_SLUG_HEADER } from "@/lib/portfolio/portfolioHeaders";
 
 // ---------------------------------------------------------------------------
 // NOTE: Role-based redirects (non-owner to /bookings, root to role landing)
@@ -21,6 +22,15 @@ import { WORKSPACE_SLUG_RE } from "@/lib/validators/workspace";
 // ---------------------------------------------------------------------------
 
 const intlMiddleware = createIntlMiddleware(routing);
+
+// Re-exported for existing/external importers (this file's own tests import
+// it from here). Defined in lib/portfolio/portfolioHeaders.ts — a leaf
+// module — so app/(public)/layout.tsx can import the constant without
+// pulling in this file's module-scope authkitMiddleware()/createIntlMiddleware()
+// calls. Trust boundary: only this proxy may set it — proxy() strips any
+// inbound copy once, up front, before any branch below runs, so a client
+// cannot forge which workspace's locale/dir gets served.
+export { PORTFOLIO_SLUG_HEADER };
 
 // Root-level routes that live outside the [locale] segment. next-intl would
 // rewrite these under /[locale] and 404 them, so they bypass it entirely.
@@ -206,6 +216,15 @@ const authMiddleware: NextMiddleware = authkitMiddleware({
 export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   const { pathname } = req.nextUrl;
 
+  // Trust boundary: strip any inbound PORTFOLIO_SLUG_HEADER up front, on the
+  // shared Headers object every branch below reads from (directly, or via
+  // `requestWithAuthkitHeaders`'s `new Headers(req.headers)` copy) — so a
+  // forged value cannot survive on ANY path (API, crawler files, the
+  // editorial redirect, protected routes), not just the two branches that
+  // stamp their own value. Those two branches (tenant-subdomain rewrite,
+  // /w/ bypass) set their own trusted value further down.
+  req.headers.delete(PORTFOLIO_SLUG_HEADER);
+
   // -------------------------------------------------------------------------
   // 1. API routes — auth-gate non-public ones, no intl middleware.
   // -------------------------------------------------------------------------
@@ -287,6 +306,7 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           tenantMatch &&
           pathname !== "/w" &&
           !pathname.startsWith("/w/") &&
+          WORKSPACE_SLUG_RE.test(tenantMatch[1]) &&
           !isReservedSlug(tenantMatch[1])
         ) {
           const rewriteUrl = req.nextUrl.clone();
@@ -294,7 +314,11 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
             pathname === "/" || pathname === "/home"
               ? `/w/${tenantMatch[1]}`
               : `/w/${tenantMatch[1]}${pathname}`;
-          return NextResponse.rewrite(rewriteUrl);
+          // req.headers already had any inbound PORTFOLIO_SLUG_HEADER stripped
+          // at the top of proxy() — stamp our own trusted value.
+          const portfolioHeaders = new Headers(req.headers);
+          portfolioHeaders.set(PORTFOLIO_SLUG_HEADER, tenantMatch[1]);
+          return NextResponse.rewrite(rewriteUrl, { request: { headers: portfolioHeaders } });
         }
       }
     }
@@ -306,7 +330,19 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   //    would rewrite /w/... to /[locale]/w/... (a non-existent route) and 404.
   // -------------------------------------------------------------------------
   if (pathname === "/w" || pathname.startsWith("/w/")) {
-    return NextResponse.next();
+    // req.headers already had any inbound PORTFOLIO_SLUG_HEADER stripped at
+    // the top of proxy(). Only set our own when the path segment, lowercased
+    // (findPublishedWorkspaceBySlug/the DB slug are always lowercase — a
+    // mixed-case /w/{Slug} request must still resolve to the same workspace
+    // so lang/dir come out right), is a real, non-reserved workspace slug —
+    // so nothing attacker-shaped reaches the layout's DB lookup.
+    const portfolioHeaders = new Headers(req.headers);
+    const slugMatch = pathname.match(/^\/w\/([^/]+)/);
+    const lowerSlug = slugMatch ? slugMatch[1].toLowerCase() : null;
+    if (lowerSlug && WORKSPACE_SLUG_RE.test(lowerSlug) && !isReservedSlug(lowerSlug)) {
+      portfolioHeaders.set(PORTFOLIO_SLUG_HEADER, lowerSlug);
+    }
+    return NextResponse.next({ request: { headers: portfolioHeaders } });
   }
 
   // Root metadata and crawler files (not locale-prefixed). Falling through to

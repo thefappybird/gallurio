@@ -1,11 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import {
   ArrowLeftIcon,
   GripVerticalIcon,
   ImagePlusIcon,
   Loader2Icon,
+  PencilIcon,
   PlusIcon,
   XIcon,
 } from "lucide-react";
@@ -23,9 +26,11 @@ import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
+import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
 import type { PickerCollection, PickerItem } from "./types";
 
-// Plain strings — the Puck field panel is not wrapped in an IntlProvider.
+// Plain strings — the Puck field panel IS wrapped in context (Puck portals into the
+// app tree, no separate createRoot), so this is English by choice, not constraint.
 const L = {
   title: "Choose photos",
   titleSingle: "Choose a photo",
@@ -127,11 +132,29 @@ function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPi
 }
 
 export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: Props) {
+  const errMsg = useActionError();
+  const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
   const { state, retry } = usePickerData();
   const cache = useGalleryPickerCache();
   const [nav, setNav] = useState<Nav>({ kind: "collections" });
   const [feed, setFeed] = useState<FeedState>(EMPTY_FEED);
   const [createOpen, setCreateOpen] = useState(false);
+  const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
+  // The pencil button that opened the alt-text dialog — restores focus there on close.
+  const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  const metaLabels: ImageMetaLabels = {
+    title: tMeta("title"),
+    altLabel: tMeta("altLabel"),
+    altHelp: tMeta("altHelp"),
+    altPlaceholder: tMeta("altPlaceholder"),
+    counter: (count, max) => tMeta("counter", { count, max }),
+    save: tMeta("save"),
+    saving: tMeta("saving"),
+    cancel: tMeta("cancel"),
+    savedToast: tMeta("savedToast"),
+    errorMessage: (code) => errMsg(code),
+  };
 
   // Upload state (scoped to the open collection / all feed).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -149,9 +172,24 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     for (const it of items) seen.current.set(it.id, it);
   }, []);
 
+  function handleMetaSaved(updated: PickerItem) {
+    remember([updated]);
+    setFeed((f) => ({ ...f, items: f.items.map((it) => (it.id === updated.id ? updated : it)) }));
+    if (nav.kind === "photos") cache?.bust(nav.id);
+  }
+
   // Derive typed selections based on mode.
-  const selection = mode === "multi" ? asPhotoSelection(value as MediaPickerSelection[]) : [];
-  const collectionSelection = mode === "collections" ? asCollectionSelection(value as MediaPickerCollectionSelection[]) : [];
+  const selection = useMemo(
+    () => (mode === "multi" ? asPhotoSelection(value as MediaPickerSelection[]) : []),
+    [mode, value]
+  );
+  const collectionSelection = useMemo(
+    () =>
+      mode === "collections"
+        ? asCollectionSelection(value as MediaPickerCollectionSelection[])
+        : [],
+    [mode, value]
+  );
 
   // Reset navigation each time the modal opens.
   useEffect(() => {
@@ -397,6 +435,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           publicId: r.value.assetId,
           thumbUrl: created.thumbUrl,
           caption: created.caption,
+          altText: null,
           // uploadImage already measured naturalWidth/Height before the upload;
           // propagate them so a freshly-uploaded image carries dims into any
           // subsequent selection, enabling the block to reserve space (CLS fix).
@@ -589,6 +628,11 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               orderOf={orderOf}
               onPickSingle={pickSingle}
               onToggleMulti={toggleMulti}
+              onEditItem={(item, triggerEl) => {
+                metaTriggerRef.current = triggerEl;
+                setMetaItem(item);
+              }}
+              editLabelFor={(name) => tMeta("editTrigger", { name: name || tMeta("photoFallback") })}
               onLoadMore={() => nav.kind === "photos" && feed.nextCursor && fetchFeed(nav.id, feed.nextCursor)}
               onRetry={() => nav.kind === "photos" && fetchFeed(nav.id, null)}
               emptyLabel={nav.id === ALL_PHOTOS_ID ? L.emptyWorkspace : L.emptyCollection}
@@ -648,6 +692,17 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           cache?.bust(); // invalidate all cached pages so the new collection appears
           retry();
         }}
+      />
+
+      <ImageMetaDialog
+        item={metaItem}
+        open={metaItem !== null}
+        onOpenChange={(next) => {
+          if (!next) setMetaItem(null);
+        }}
+        onSaved={handleMetaSaved}
+        labels={metaLabels}
+        triggerRef={metaTriggerRef}
       />
     </Dialog>
   );
@@ -760,6 +815,8 @@ function PhotoGrid({
   orderOf,
   onPickSingle,
   onToggleMulti,
+  onEditItem,
+  editLabelFor,
   onLoadMore,
   onRetry,
   emptyLabel,
@@ -771,6 +828,8 @@ function PhotoGrid({
   orderOf: (id: string) => number;
   onPickSingle: (item: PickerItem) => void;
   onToggleMulti: (item: PickerItem) => void;
+  onEditItem: (item: PickerItem, triggerEl: HTMLButtonElement) => void;
+  editLabelFor: (name: string | null) => string;
   onLoadMore: () => void;
   onRetry: () => void;
   emptyLabel: string;
@@ -786,10 +845,17 @@ function PhotoGrid({
         <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4" role="listbox" aria-label="Photos">
           {feed.items.map((item) => {
             const selected = isSelected(item.id);
+            // role="option" sits on the button, not the <li>: the pencil button below is a
+            // second interactive descendant, and ARIA's option role forbids interactive
+            // descendants — nesting both under a role="option" <li> hid one control from
+            // browse-mode AT. The <li> is role="presentation" so it doesn't also expose as
+            // a stray listitem inside the listbox.
             return (
-              <li key={item.id} role="option" aria-selected={selected}>
+              <li key={item.id} role="presentation" className="relative">
                 <button
                   type="button"
+                  role="option"
+                  aria-selected={selected}
                   onClick={() => (mode === "single" ? onPickSingle(item) : onToggleMulti(item))}
                   aria-label={`${item.caption || "Photo"}${selected ? " — selected" : ""}`}
                   className={cn(
@@ -804,6 +870,17 @@ function PhotoGrid({
                       {mode === "multi" ? orderOf(item.id) : "✓"}
                     </span>
                   )}
+                </button>
+                <button
+                  type="button"
+                  aria-label={editLabelFor(item.caption)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditItem(item, e.currentTarget);
+                  }}
+                  className="absolute bottom-1 left-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <PencilIcon className="size-3" aria-hidden />
                 </button>
               </li>
             );

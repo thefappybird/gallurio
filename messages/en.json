@@ -1738,9 +1738,11 @@
         },
         "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
         "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
+        "seoTitleAutoHint": "No title yet — your workspace name will be used instead.",
+        "seoDescriptionAutoHint": "No description yet — this will be used instead: “{preview}”",
         "seoKeywords": "SEO tags",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, bay area",
-        "seoKeywordsHint": "Optional comma-separated tags for search engines and structured data. Add up to 10.",
+        "seoKeywordsHint": "Optional tags, separated by commas — spaces inside a phrase are kept. Used in the page's structured data. Add up to 10.",
         "galleryDescriptionLabel": "Gallery page description",
         "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
         "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",
@@ -2560,6 +2562,19 @@
           "body": "Drag-and-drop editing is designed for tablet and desktop.",
           "openPreview": "Open preview",
           "continue": "Continue anyway"
+        },
+        "imageMeta": {
+          "title": "Edit alt text",
+          "altLabel": "Alt text",
+          "altHelp": "Describe what the photo shows. Read aloud by screen readers and used by search engines to understand the image.",
+          "altPlaceholder": "e.g. Bride and groom dancing under string lights",
+          "counter": "{count}/{max} characters",
+          "save": "Save",
+          "saving": "Saving…",
+          "cancel": "Cancel",
+          "savedToast": "Alt text saved.",
+          "editTrigger": "Edit alt text for {name}",
+          "photoFallback": "photo"
         },
         "contactSettings": "Edit contact settings",
         "contactSettingsShort": "Contact Form",
@@ -3579,6 +3594,21 @@
       "retry": "Retry",
       "empty": "No photos in this collection yet.",
       "fullSizeAlt": "Full size photo"
+    },
+    "seoDefaults": {
+      "homeDescription": "{name} — {businessType}. Browse recent work and get in touch to book.",
+      "homeDescriptionGeneric": "{name} — browse recent work and get in touch to book.",
+      "galleryDescription": "Browse {name}'s portfolio gallery — recent photos and highlights.",
+      "businessType": {
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Event Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer",
+        "artists": "Artist",
+        "other": "Business"
+      }
     }
   },
   "notFound": {

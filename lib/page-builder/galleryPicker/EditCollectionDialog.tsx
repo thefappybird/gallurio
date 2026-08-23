@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
-import { GripVerticalIcon, ImagePlusIcon, Loader2Icon, StarIcon, Trash2Icon } from "lucide-react";
+import { GripVerticalIcon, ImagePlusIcon, Loader2Icon, PencilIcon, StarIcon, Trash2Icon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
@@ -13,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
+import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
+import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import type { PickerCollection, PickerItem } from "./types";
 
 const PAGE = 48;
@@ -26,6 +29,8 @@ export function EditCollectionDialog({
   onChanged: () => void;
 }) {
   const errMsg = useActionError();
+  const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
+  const cache = useGalleryPickerCache();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -38,8 +43,29 @@ export function EditCollectionDialog({
   const [uploading, setUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
+  // The pencil button that opened the alt-text dialog — restores focus there on close.
+  const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const colId = collection?.id ?? null;
+
+  const metaLabels: ImageMetaLabels = {
+    title: tMeta("title"),
+    altLabel: tMeta("altLabel"),
+    altHelp: tMeta("altHelp"),
+    altPlaceholder: tMeta("altPlaceholder"),
+    counter: (count, max) => tMeta("counter", { count, max }),
+    save: tMeta("save"),
+    saving: tMeta("saving"),
+    cancel: tMeta("cancel"),
+    savedToast: tMeta("savedToast"),
+    errorMessage: (code) => errMsg(code),
+  };
+
+  function handleMetaSaved(updated: PickerItem) {
+    setItems((prev) => prev.map((it) => (it.id === updated.id ? updated : it)));
+    if (colId) cache?.bust(colId);
+  }
 
   const loadAll = useCallback(async (id: string) => {
     setLoading(true);
@@ -63,7 +89,7 @@ export function EditCollectionDialog({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [errMsg]);
 
   useEffect(() => {
     if (open && collection) {
@@ -74,7 +100,7 @@ export function EditCollectionDialog({
       setError(null);
       void loadAll(collection.id);
     }
-    // loadAll is stable (useCallback with no deps); collection identity drives re-runs
+    // Collection identity drives re-runs; loadAll only changes with the error translator.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, collection?.id]);
 
@@ -218,7 +244,7 @@ export function EditCollectionDialog({
           });
           if (res.ok) {
             const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
-            setItems((prev) => [...prev, { id: created.id, publicId: up.assetId, thumbUrl: created.thumbUrl, caption: created.caption }]);
+            setItems((prev) => [...prev, { id: created.id, publicId: up.assetId, thumbUrl: created.thumbUrl, caption: created.caption, altText: null }]);
           } else {
             setError(errMsg("photo_add_failed"));
           }
@@ -251,7 +277,18 @@ export function EditCollectionDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
-        <DialogHeader><DialogTitle className="truncate">Edit &quot;{collection.name}&quot;</DialogTitle></DialogHeader>
+        <DialogHeader>
+          {/* This chrome is still English while the surrounding app may be RTL.
+              Left unisolated, the neutral quotes reorder around the LTR "Edit"
+              under `ar` and the title renders as `"Weddings" Edit`. `dir="ltr"`
+              makes the whole title one isolate; the inner <bdi> keeps an
+              Arabic-named collection from breaking the quotes back out. */}
+          <DialogTitle className="truncate">
+            <span dir="ltr" className="inline-block max-w-full truncate align-bottom">
+              Edit &quot;<bdi>{collection.name}</bdi>&quot;
+            </span>
+          </DialogTitle>
+        </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-1">
           <div className="flex flex-col gap-1.5">
@@ -297,14 +334,14 @@ export function EditCollectionDialog({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={item.thumbUrl} alt={item.caption ?? ""} className="size-full object-cover" loading="lazy" />
-                    <span aria-hidden className="absolute left-0.5 top-0.5 flex size-5 cursor-grab items-center justify-center bg-background/80">
+                    <span aria-hidden className="absolute left-0.5 top-0.5 flex size-6 cursor-grab items-center justify-center bg-background/80">
                       <GripVerticalIcon className="size-3.5 text-muted-foreground" />
                     </span>
                     <span className="sr-only">
                       <button type="button" aria-label={`Move ${item.caption || "photo"} earlier`} onClick={() => moveByKeyboard(item.id, -1)} disabled={idx === 0}>up</button>
                       <button type="button" aria-label={`Move ${item.caption || "photo"} later`} onClick={() => moveByKeyboard(item.id, 1)} disabled={idx === items.length - 1}>down</button>
                     </span>
-                    <label className="absolute right-0.5 top-0.5 inline-flex size-5 items-center justify-center border border-border bg-background/90">
+                    <label className="absolute right-0.5 top-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90">
                       <input type="checkbox" aria-label={`Select ${item.caption || "photo"}`} checked={isSel} onChange={() => toggleSelect(item.id)} />
                     </label>
                     <button
@@ -312,9 +349,20 @@ export function EditCollectionDialog({
                       aria-label={`Set ${item.caption || "photo"} as cover`}
                       aria-pressed={isCover}
                       onClick={() => setCover(item)}
-                      className={cn("absolute bottom-0.5 left-0.5 inline-flex items-center gap-0.5 border border-border bg-background/90 px-1 py-0.5 text-[10px]", isCover && "bg-foreground text-background")}
+                      className={cn("absolute bottom-0.5 left-0.5 inline-flex h-6 items-center gap-0.5 border border-border bg-background/90 px-1 py-0.5 text-[10px]", isCover && "bg-foreground text-background")}
                     >
                       <StarIcon className="size-3" aria-hidden /> Cover
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={tMeta("editTrigger", { name: item.caption || tMeta("photoFallback") })}
+                      onClick={(e) => {
+                        metaTriggerRef.current = e.currentTarget;
+                        setMetaItem(item);
+                      }}
+                      className="absolute bottom-0.5 right-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <PencilIcon className="size-3" aria-hidden />
                     </button>
                   </li>
                 );
@@ -343,6 +391,17 @@ export function EditCollectionDialog({
         onOpenChange={setPickerOpen}
         excludePublicIds={items.map((i) => i.publicId)}
         onAdd={addExisting}
+      />
+
+      <ImageMetaDialog
+        item={metaItem}
+        open={metaItem !== null}
+        onOpenChange={(next) => {
+          if (!next) setMetaItem(null);
+        }}
+        onSaved={handleMetaSaved}
+        labels={metaLabels}
+        triggerRef={metaTriggerRef}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={(n) => { if (!n && !busy) setConfirmDelete(false); }}>

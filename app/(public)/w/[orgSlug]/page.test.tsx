@@ -43,6 +43,16 @@ vi.mock("next-intl/server", () => ({
       notFoundTitle: "Portfolio not found",
       notFoundBody: "This portfolio doesn't exist or hasn't been published yet.",
       startingFrom: "Starting from {price}",
+      homeDescription: "{name} is a {businessType} — browse recent work and get in touch to book.",
+      homeDescriptionGeneric: "{name} — browse recent work and get in touch to book.",
+      "businessType.photographer": "Photographer",
+      "businessType.venue": "Venue",
+      "businessType.planner": "Event Planner",
+      "businessType.stylist": "Stylist",
+      "businessType.catering": "Catering",
+      "businessType.entertainer": "Entertainer",
+      "businessType.artists": "Artist",
+      "businessType.other": "Business",
     };
     let s = en[key] ?? key;
     if (vars) for (const k of Object.keys(vars)) s = s.replace(`{${k}}`, String(vars[k]));
@@ -71,14 +81,70 @@ vi.mock("@/lib/portfolio/publicUrl", () => ({
   portfolioPublicUrl: (slug: string) => `http://localhost:3000/w/${slug}`,
 }));
 
-vi.mock("@/lib/page-builder/seo/jsonLd", () => ({
-  buildHomeJsonLd: vi.fn(() => [{}, {}]),
-  safeJsonLd: vi.fn(() => "{}"),
-}));
+// Wraps the real implementation with vi.fn so existing `toHaveBeenCalledWith`
+// spy assertions keep working, while also letting the new self-containment
+// test below inspect real emitted @ids (a fully-stubbed [{}, {}, {}] mock
+// cannot exercise that invariant).
+vi.mock("@/lib/page-builder/seo/jsonLd", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/page-builder/seo/jsonLd")>(
+    "@/lib/page-builder/seo/jsonLd"
+  );
+  return {
+    ...actual,
+    buildHomeJsonLd: vi.fn(actual.buildHomeJsonLd),
+    safeJsonLd: vi.fn(actual.safeJsonLd),
+  };
+});
 
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { buildHomeJsonLd } from "@/lib/page-builder/seo/jsonLd";
+
+// ---------------------------------------------------------------------------
+// Reusable regression guard (mirrors lib/page-builder/seo/__tests__/jsonLd.test.ts):
+// every `@id` referenced anywhere in this page's emitted JSON-LD <script> tags
+// must be defined by one of those same scripts' top-level nodes.
+// ---------------------------------------------------------------------------
+
+function collectJsonLdNodes(node: React.ReactNode, into: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (Array.isArray(node)) {
+    for (const n of node) collectJsonLdNodes(n, into);
+    return into;
+  }
+  if (!node || typeof node !== "object" || !("type" in node)) return into;
+  const el = node as React.ReactElement<Record<string, unknown>>;
+  if (el.type === "script" && el.props?.type === "application/ld+json") {
+    const html = (el.props.dangerouslySetInnerHTML as { __html?: string } | undefined)?.__html;
+    if (typeof html === "string") into.push(JSON.parse(html));
+    return into;
+  }
+  if (el.props?.children) collectJsonLdNodes(el.props.children as React.ReactNode, into);
+  return into;
+}
+
+function collectAllIds(value: unknown, into: Set<string> = new Set()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const v of value) collectAllIds(v, into);
+    return into;
+  }
+  if (value && typeof value === "object") {
+    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+      if (key === "@id" && typeof v === "string") into.add(v);
+      else collectAllIds(v, into);
+    }
+  }
+  return into;
+}
+
+function assertAllIdsResolveWithinPage(nodes: Record<string, unknown>[]) {
+  const definedIds = new Set(nodes.map((n) => n["@id"] as string));
+  const referencedIds = collectAllIds(nodes);
+  for (const id of referencedIds) {
+    expect(definedIds.has(id), `@id "${id}" is referenced but not defined among this page's rendered nodes`).toBe(
+      true
+    );
+  }
+}
 
 const mockFind = vi.mocked(findPublishedWorkspaceBySlug);
 const mockResolvePublicChromeLocale = vi.mocked(resolvePublicChromeLocale);
@@ -187,7 +253,7 @@ describe("generateMetadata", () => {
     expect(result.title).toBe("Luna Studio");
   });
 
-  it("returns undefined description when seoDescription is empty", async () => {
+  it("marks the thin Coming Soon placeholder noindex while allowing crawlers to follow its links", async () => {
     const workspace = makePublishedWorkspace();
     mockFind.mockResolvedValueOnce(workspace);
 
@@ -195,7 +261,54 @@ describe("generateMetadata", () => {
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
 
-    expect(result.description).toBeUndefined();
+    expect(result.robots).toEqual({ index: false, follow: true });
+  });
+
+  it("leaves a populated Home page indexable", async () => {
+    const workspace = makePublishedWorkspace({
+      publicPage: {
+        templateId: "minimal",
+        data: { home: { root: {}, content: [{ type: "Heading", props: {} }] }, gallery: null },
+        brandKit: DEFAULT_BRAND_KIT,
+        publishedAt: new Date(),
+        lastPublishedAt: null,
+        latestVersion: 0,
+        seoTitle: "",
+        seoDescription: "",
+        inquiryRecipientEmail: "",
+      },
+    } as Partial<WorkspaceDoc>);
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.robots).toBeUndefined();
+  });
+
+  it("never emits an empty description — falls back to the businessType default when seoDescription is blank", async () => {
+    const workspace = makePublishedWorkspace({ businessType: "photographer" });
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.description).toBe("Luna Studio is a Photographer — browse recent work and get in touch to book.");
+    expect(result.description).not.toBe("");
+    expect(result.openGraph?.description).toBe(result.description);
+  });
+
+  it("uses the generic default (no businessType phrase) when businessType is 'other'", async () => {
+    const workspace = makePublishedWorkspace({ businessType: "other" });
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.description).toBe("Luna Studio — browse recent work and get in touch to book.");
   });
 
   it("sets the canonical alternates URL to /w/<slug>", async () => {
@@ -207,6 +320,23 @@ describe("generateMetadata", () => {
     });
 
     expect((meta.alternates as { canonical?: string })?.canonical).toBe("http://localhost:3000/w/luna-studio");
+  });
+
+  it("builds canonical/openGraph.url from the resolved DB slug, not the raw (possibly mixed-case) route param", async () => {
+    // The DB slug is always lowercase (Mongoose lowercase: true);
+    // findPublishedWorkspaceBySlug lowercases its own lookup, so a mixed-case
+    // route param still resolves — but every emitted URL must echo the DB
+    // slug, not the param, or it disagrees with app/sitemap.ts (which always
+    // lists the lowercase DB slug).
+    const workspace = makePublishedWorkspace({ slug: "luna-studio" });
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const meta = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "Luna-Studio" }),
+    });
+
+    expect((meta.alternates as { canonical?: string })?.canonical).toBe("http://localhost:3000/w/luna-studio");
+    expect(meta.openGraph?.url).toBe("http://localhost:3000/w/luna-studio");
   });
 
   it("sets icons.icon from siteIcon.url when present", async () => {
@@ -329,6 +459,18 @@ describe("PortfolioHomePage — JSON-LD keywords", () => {
     await PortfolioHomePage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
 
     expect(mockBuildHomeJsonLd).toHaveBeenCalledWith(expect.objectContaining({ keywords: undefined }));
+  });
+
+  it("every @id referenced in the rendered JSON-LD resolves to a node defined on this same page", async () => {
+    const workspace = makePublishedWorkspace({
+      contact: { email: "hi@studio.com", socials: { instagram: "studio_ig" } },
+    } as Partial<WorkspaceDoc>);
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const element = await PortfolioHomePage({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
+    const nodes = collectJsonLdNodes(element);
+    expect(nodes).toHaveLength(3);
+    assertAllIdsResolveWithinPage(nodes);
   });
 });
 

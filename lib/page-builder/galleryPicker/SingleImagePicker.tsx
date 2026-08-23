@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import { usePickerData } from "./usePickerData";
 import type { PickerItem } from "./types";
 
-// Plain strings — the Puck editor panel is not wrapped in an IntlProvider, so we
-// match Puck's own English chrome here (see RELEASE-CHECKLIST §4f).
+// Plain strings — matches Puck's own English chrome. next-intl context IS
+// available here (Puck portals into the app tree); this is a choice, not a limit.
 const L = {
   loading: "Loading photos…",
   error: "Could not load photos.",
