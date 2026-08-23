@@ -40,11 +40,13 @@ function hasZoneContent(zones: Record<string, unknown> | undefined): boolean {
  * used by callers (sitemap/crawler routes) that must decide whether to
  * advertise a page URL without paying for full normalization.
  *
- * Deliberate divergence from `normalizePublicPageData`: this predicate has no
- * `knownTypes` set, so a page made ONLY of unregistered/legacy block types
- * still counts as renderable here (rare; accepted — the URL gets advertised,
- * and the page itself still falls back to "coming soon" if truly nothing
- * survives normalization at render time).
+ * Deliberate divergence from `normalizePublicPageData`: this predicate does
+ * no per-entry validation — it only checks array length/presence, not
+ * whether each entry survives normalization. So a page made ONLY of
+ * unregistered/legacy block types, or containing malformed entries (e.g.
+ * `content: [null, "x"]`), still counts as renderable here (rare; accepted —
+ * the URL gets advertised, and the page itself still falls back to "coming
+ * soon" if truly nothing survives normalization at render time).
  */
 export function hasRenderableBlocks(raw: unknown): boolean {
   if (!isPlainObject(raw)) return false;
