@@ -323,14 +323,14 @@ export function EditCollectionDialog({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={item.thumbUrl} alt={item.caption ?? ""} className="size-full object-cover" loading="lazy" />
-                    <span aria-hidden className="absolute left-0.5 top-0.5 flex size-5 cursor-grab items-center justify-center bg-background/80">
+                    <span aria-hidden className="absolute left-0.5 top-0.5 flex size-6 cursor-grab items-center justify-center bg-background/80">
                       <GripVerticalIcon className="size-3.5 text-muted-foreground" />
                     </span>
                     <span className="sr-only">
                       <button type="button" aria-label={`Move ${item.caption || "photo"} earlier`} onClick={() => moveByKeyboard(item.id, -1)} disabled={idx === 0}>up</button>
                       <button type="button" aria-label={`Move ${item.caption || "photo"} later`} onClick={() => moveByKeyboard(item.id, 1)} disabled={idx === items.length - 1}>down</button>
                     </span>
-                    <label className="absolute right-0.5 top-0.5 inline-flex size-5 items-center justify-center border border-border bg-background/90">
+                    <label className="absolute right-0.5 top-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90">
                       <input type="checkbox" aria-label={`Select ${item.caption || "photo"}`} checked={isSel} onChange={() => toggleSelect(item.id)} />
                     </label>
                     <button
@@ -338,7 +338,7 @@ export function EditCollectionDialog({
                       aria-label={`Set ${item.caption || "photo"} as cover`}
                       aria-pressed={isCover}
                       onClick={() => setCover(item)}
-                      className={cn("absolute bottom-0.5 left-0.5 inline-flex items-center gap-0.5 border border-border bg-background/90 px-1 py-0.5 text-[10px]", isCover && "bg-foreground text-background")}
+                      className={cn("absolute bottom-0.5 left-0.5 inline-flex h-6 items-center gap-0.5 border border-border bg-background/90 px-1 py-0.5 text-[10px]", isCover && "bg-foreground text-background")}
                     >
                       <StarIcon className="size-3" aria-hidden /> Cover
                     </button>
