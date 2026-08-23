@@ -192,7 +192,7 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
   const items = await GalleryItem.find({ workspaceId })
     .sort({ createdAt: -1 })
     .limit(PICKER_ITEMS_CAP + 1)
-    .select({ assetId: 1, caption: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1 })
     .lean();
 
   if (items.length > PICKER_ITEMS_CAP) {
@@ -207,6 +207,7 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
     publicId: it.assetId as string,
     thumbUrl: imageDeliveryUrl(it.assetId as string, { width: 200, height: 200, fit: "cover" }),
     caption: (it.caption as string) || null,
+    altText: (it.altText as string) || null,
   }));
 }
 
@@ -237,13 +238,19 @@ function decodeCursor(cursor: string): { sortValue: string; id: string } | null 
   }
 }
 
-function toPickerItem(it: { _id: unknown; assetId?: unknown; caption?: unknown }): PickerItem {
+function toPickerItem(it: {
+  _id: unknown;
+  assetId?: unknown;
+  caption?: unknown;
+  altText?: unknown;
+}): PickerItem {
   const publicId = (it.assetId as string) ?? "";
   return {
     id: String(it._id),
     publicId,
     thumbUrl: imageDeliveryUrl(publicId, { width: 200, height: 200, fit: "cover" }),
     caption: (it.caption as string) || null,
+    altText: (it.altText as string) || null,
   };
 }
 
@@ -281,7 +288,7 @@ export async function listCollectionItemsPage(opts: {
   const docs = await GalleryItem.find(filter)
     .sort({ order: 1, _id: 1 })
     .limit(limit + 1)
-    .select({ assetId: 1, caption: 1, order: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1, order: 1 })
     .lean();
 
   const hasMore = docs.length > limit;
@@ -321,6 +328,7 @@ export async function listAllItemsPage(opts: {
         docId: { $first: "$_id" },
         createdAt: { $first: "$createdAt" },
         caption: { $first: "$caption" },
+        altText: { $first: "$altText" },
       },
     },
     { $sort: { createdAt: -1, docId: -1 } },
@@ -348,6 +356,7 @@ export async function listAllItemsPage(opts: {
     docId: Types.ObjectId;
     createdAt: Date;
     caption?: string;
+    altText?: string;
   }>(pipeline);
 
   const hasMore = rows.length > limit;
@@ -361,6 +370,7 @@ export async function listAllItemsPage(opts: {
     publicId: r._id,
     thumbUrl: imageDeliveryUrl(r._id, { width: 200, height: 200, fit: "cover" }),
     caption: (r.caption as string) || null,
+    altText: (r.altText as string) || null,
   }));
 
   return { items, nextCursor };
@@ -448,10 +458,47 @@ export async function listCollectionNewest(opts: {
   const docs = await GalleryItem.find({ workspaceId, collectionId })
     .sort({ createdAt: -1, _id: -1 })
     .limit(limit)
-    .select({ assetId: 1, caption: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1 })
     .lean();
 
   return docs.map(toPickerItem);
+}
+
+/**
+ * Updates a single item's `altText` and/or `caption`. Only the keys actually
+ * present in `opts` are written — a request that sends only `caption` never
+ * blanks an existing `altText`, and vice versa. `altText` describes what the
+ * image shows (accessibility + SEO); `caption` is optional visible context.
+ * They are semantically distinct — never derive `altText` from a filename.
+ * Filters by `{ _id: itemId, workspaceId }` always (tenant-safe); a foreign,
+ * missing, or malformed `itemId` returns `null`.
+ */
+export async function updateItemMeta(opts: {
+  workspaceId: string;
+  itemId: string;
+  altText?: string;
+  caption?: string;
+}): Promise<PickerItem | null> {
+  const { workspaceId, itemId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(itemId)) return null;
+
+  const set: Record<string, string> = {};
+  if (opts.altText !== undefined) set.altText = opts.altText;
+  if (opts.caption !== undefined) set.caption = opts.caption;
+  if (Object.keys(set).length === 0) return null;
+
+  await connectDB();
+
+  const doc = await GalleryItem.findOneAndUpdate(
+    { _id: itemId, workspaceId },
+    { $set: set },
+    { new: true }
+  )
+    .select({ assetId: 1, caption: 1, altText: 1 })
+    .lean();
+  if (!doc) return null;
+
+  return toPickerItem(doc);
 }
 
 /** Count GalleryItem docs in a workspace that reference a given asset. */

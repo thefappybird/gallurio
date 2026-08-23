@@ -46,6 +46,18 @@ describe("reconcileGalleryImages", () => {
     expect(images).toEqual([{ id: String(it._id), publicId: `ws/${ws}/item0`, alt: "Alt 0" }]);
   });
 
+  it("altText wins over caption when both are set; caption is only the fallback", async () => {
+    const ws = new Types.ObjectId();
+    const both = await makeItem(ws, 9, { altText: "Alt wins", caption: "Cap loses" });
+    const data: PuckData = {
+      root: {},
+      content: [gridBlock([{ id: String(both._id), publicId: "x" }])],
+    };
+    const out = await reconcileGalleryImages(ws.toString(), data);
+    const images = out.content[0].props.images as Array<{ alt: string }>;
+    expect(images[0].alt).toBe("Alt wins");
+  });
+
   it("falls back alt to caption then empty string", async () => {
     const ws = new Types.ObjectId();
     const noAlt = await makeItem(ws, 1, { altText: "" });

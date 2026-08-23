@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest, listPublicCollectionItemsPage, detachItemsFromCollection } from "./gallery";
+import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest, listPublicCollectionItemsPage, detachItemsFromCollection, updateItemMeta } from "./gallery";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -145,6 +145,14 @@ describe("listCollectionItemsPage", () => {
     expect(page.items[0].id).toBeTruthy();
     expect(page.items[0].publicId).toContain(`ws/${ws.toString()}/item0`);
   });
+
+  it("exposes altText on every item", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 1);
+    const page = await listCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.items[0].altText).toBe("Alt 1");
+  });
 });
 
 describe("listAllItemsPage", () => {
@@ -182,6 +190,14 @@ describe("listAllItemsPage", () => {
     const page = await listAllItemsPage({ workspaceId: wsA.toString() });
     expect(page.items).toEqual([]);
   });
+
+  it("exposes altText on every item", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 1);
+    const page = await listAllItemsPage({ workspaceId: ws.toString() });
+    expect(page.items[0].altText).toBe("Alt 1");
+  });
 });
 
 describe("listCollectionNewest", () => {
@@ -211,6 +227,71 @@ describe("listCollectionNewest", () => {
     const colB = await makeCollection(wsB);
     await seedItems(wsB, colB._id, 3);
     expect(await listCollectionNewest({ workspaceId: wsA.toString(), collectionId: colB._id.toString(), limit: 10 })).toEqual([]);
+  });
+
+  it("exposes altText on every item", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await GalleryItem.create({
+      workspaceId: ws, collectionId: col._id,
+      assetId: `ws/${ws}/n0`, url: "https://imagedelivery.net/hash/n0/public",
+      caption: "N0", altText: "Alt N0", order: 0,
+    });
+    const items = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 1 });
+    expect(items[0].altText).toBe("Alt N0");
+  });
+});
+
+describe("updateItemMeta", () => {
+  it("sets altText only, leaving caption untouched", async () => {
+    const ws = new Types.ObjectId();
+    const item = await GalleryItem.create({
+      workspaceId: ws, assetId: "pid", url: "u", caption: "Original caption", altText: "Original alt", order: 0,
+    });
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: item._id.toString(), altText: "New alt" });
+    expect(result).toEqual({ id: item._id.toString(), publicId: "pid", thumbUrl: expect.any(String), caption: "Original caption", altText: "New alt" });
+    const saved = await GalleryItem.findById(item._id).lean();
+    expect(saved?.caption).toBe("Original caption");
+    expect(saved?.altText).toBe("New alt");
+  });
+
+  it("sets caption only, leaving altText untouched", async () => {
+    const ws = new Types.ObjectId();
+    const item = await GalleryItem.create({
+      workspaceId: ws, assetId: "pid", url: "u", caption: "Original caption", altText: "Original alt", order: 0,
+    });
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: item._id.toString(), caption: "New caption" });
+    expect(result?.caption).toBe("New caption");
+    expect(result?.altText).toBe("Original alt");
+  });
+
+  it("returns null for an item in another workspace (tenant isolation)", async () => {
+    const wsA = new Types.ObjectId();
+    const wsB = new Types.ObjectId();
+    const item = await GalleryItem.create({ workspaceId: wsB, assetId: "pid", url: "u", order: 0 });
+    const result = await updateItemMeta({ workspaceId: wsA.toString(), itemId: item._id.toString(), altText: "x" });
+    expect(result).toBeNull();
+    const saved = await GalleryItem.findById(item._id).lean();
+    expect(saved?.altText).toBe("");
+  });
+
+  it("returns null for a missing item", async () => {
+    const ws = new Types.ObjectId();
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: new Types.ObjectId().toString(), altText: "x" });
+    expect(result).toBeNull();
+  });
+
+  it("returns null for a malformed itemId (no throw)", async () => {
+    const ws = new Types.ObjectId();
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: "not-an-id", altText: "x" });
+    expect(result).toBeNull();
+  });
+
+  it("returns null when neither altText nor caption is provided", async () => {
+    const ws = new Types.ObjectId();
+    const item = await GalleryItem.create({ workspaceId: ws, assetId: "pid", url: "u", order: 0 });
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: item._id.toString() });
+    expect(result).toBeNull();
   });
 });
 

@@ -12,6 +12,8 @@ export type PickerItem = {
   publicId: string;
   thumbUrl: string;
   caption: string | null;
+  /** Accessibility/SEO description of what the image shows. Distinct from `caption` (visible context) — never derive from a filename. */
+  altText: string | null;
   /** Natural pixel width — populated from the upload result; absent for server-fetched items. */
   width?: number;
   /** Natural pixel height — populated from the upload result; absent for server-fetched items. */
