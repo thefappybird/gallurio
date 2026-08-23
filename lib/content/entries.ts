@@ -29,7 +29,7 @@ const frontmatterSchema = z.object({
   faq: z
     .array(z.object({ question: z.string().min(1), answer: z.string().min(1) }))
     .optional(),
-  // Shot ids from docs/marketing/screenshot-spec.md.
+  // Shot ids are declared in each article's frontmatter.
   screenshots: z.array(z.string().min(1)).optional(),
   // Optional YouTube embed seam. Articles remain valid before the final
   // video is uploaded; adding the id later enables the shared player.

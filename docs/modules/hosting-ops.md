@@ -38,7 +38,7 @@ sudo systemctl enable --now gallurio-invite-seats.timer gallurio-billing-lifecyc
 
 ## Endpoint hardening
 
-Acceptance criteria for every Server Action, Route Handler, and public/server-component data loader. Known lapses tracked in `docs/backend-audit-findings.md` — read it before touching a flagged area.
+Acceptance criteria for every Server Action, Route Handler, and public/server-component data loader.
 
 - **Rate limiting / abuse control**: every public or cheaply-abusable endpoint (inquiry submit, signed upload, public reads, auth callback, search) has throttling and/or a challenge (honeypot + `rateLimit()`; Turnstile where spam-prone). Bound client-supplied `limit`/`cursor`. Prod runs on Hetzner with no edge WAF — app-level limiting (`lib/server/rateLimit.ts`, in-memory/best-effort) is the only layer.
 - **Error handling never breaks the app**: no empty/log-only catches that continue with bad state; every external call (Lemon Squeezy, Cloudflare, WorkOS, Mongo, email) gets a timeout + graceful failure; every async route/page tree has `error.tsx` or try/catch. Webhooks ack 200 after signature verification even when the handler fails, then dead-letter/log — never 500 into a provider retry loop. Never collapse malformed JSON into `{}`.

@@ -86,7 +86,7 @@ Operate as a senior full-stack engineer with strong mobile-first UI and backend/
 - Server Components by default; Server Actions for in-app mutations; Route Handlers for webhooks/public APIs. Node runtime unless Edge is justified.
 - Validate at boundaries with Zod, then trust parsed types. Shape responses to caller needs. Cache intentionally.
 - Prevent N+1; cursor-paginate unbounded lists; Mongo transactions for multi-doc writes that must succeed together; make retry-prone mutations idempotent; never swallow errors.
-- **Endpoint hardening**: apply the full checklist in `docs/modules/hosting-ops.md`'s Endpoint hardening section on every new/updated endpoint. Known lapses: `docs/backend-audit-findings.md`.
+- **Endpoint hardening**: apply the full checklist in `docs/modules/hosting-ops.md`'s Endpoint hardening section on every new/updated endpoint.
 
 ## Multi-tenant rules
 - Never trust client-supplied `workspaceId` — resolve scope from the WorkOS session + re-validated active-workspace cookie + MongoDB memberships (never WorkOS Organizations).
@@ -140,7 +140,7 @@ Implementation complete · tests passing · lint + typecheck pass · locales upd
 
 ## Docs hygiene
 - Scratch docs (spec, plan, audit, review) consolidated into ONE `docs/<area>/` summary before PR, rest deleted. Net result: at most one new/changed doc per PR.
-- Never delete: README, master-plan, product-spec-reference, blueprint, backend-audit-findings, RELEASE-CHECKLIST, REUSABLE_CODE.
+- Keep durable product, operational, and reusable-code references current; remove completed scratch docs and repair their inbound references in the same change.
 
 ## Commands
 `pnpm dev` · `pnpm start` · `pnpm seed`. Prefer RTK for diff/log/read/test/lint/type/build when a summary suffices.

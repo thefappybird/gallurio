@@ -5,7 +5,7 @@
  * `StyleToolkitField` and the per-text `RichTextField`. Kept dependency-light
  * and presentational so both toolbars look and behave identically.
  *
- * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
+ * Editor chrome is intentionally English-only.
  */
 
 import { useId, useState } from "react";
@@ -596,7 +596,7 @@ export function IconRow<T extends string>({
  * Accessible: real `<label htmlFor>`, `useId` for association. Supports
  * idle / focus-visible / filled states; keyboard-navigable via native input.
  *
- * Editor chrome — English-only (RELEASE-CHECKLIST §4f).
+ * Editor chrome is intentionally English-only.
  */
 export function FloatingLabelInput({
   label,

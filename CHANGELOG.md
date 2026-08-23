@@ -3,6 +3,25 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [1.3.0] - 2026-08-23
+
+Release commits through `b9ac48a3`.
+
+### Added
+- Regional Pro pricing now selects a base or global USD tier server-side, shows a local-currency estimate where rates are available, and clearly identifies the billed USD amount.
+- Workspace currency roll-ups now use daily exchange-rate tables and freeze the applicable rate on paid booking amounts; changing a workspace currency performs an explicit, transactional restatement and then observes a 90-day cooldown.
+- Public editorial discovery now includes practical guides, comparison and pillar pages, article structured data, canonical and hreflang metadata, sitemap entries, and `llms.txt`.
+- Published portfolios now expose tenant-scoped `robots.txt` and `sitemap.xml`, connected JSON-LD, published-image discovery, automatic SEO guidance, and editable gallery-image alt text and captions.
+
+### Changed
+- The unified plan card and billing screens now present the applicable price, annual savings, beta eligibility, and existing Pro grants consistently.
+- The production image now includes editorial content, and the billing-lifecycle timer is deployed with the other systemd jobs.
+
+### Fixed
+- Portfolio metadata no longer advertises empty descriptions or unpublished/index-disabled pages; canonical URLs use the resolved workspace slug.
+- Gallery and editor controls now meet the 24px target size, preserve focus on Escape, and correctly localize the alt-text workflow and Arabic dialog titles.
+- Marketing, pricing, dashboard, client, and booking surfaces now keep converted and charged amounts legible on narrow layouts.
+
 ## [1.2.0] - 2026-08-02
 
 Commit: `2b9a3d61ba5eb3f04c83f4ba01c641c69df3bebb`
