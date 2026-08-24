@@ -7,7 +7,14 @@ type ReassignBookingOpts = {
   toClientId: mongoose.Types.ObjectId | string;
   booking: {
     _id: mongoose.Types.ObjectId;
-    amount: { total: number; deposit: number; currency: string };
+    amount: {
+      total: number;
+      deposit: number;
+      currency: string;
+      fxRate?: number | null;
+      fxTarget?: string | null;
+      fxAt?: Date | null;
+    };
     firstSessionStart: Date;
     teamId?: mongoose.Types.ObjectId | string | null;
   };
@@ -206,6 +213,12 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
             type: "deposit",
             method: "other",
             paidAt: occurredAt,
+            // Copied, not recomputed — matches recordBookingForClient. The
+            // rate is frozen once at the booking's own payment time; the
+            // reassignment must carry it forward, never re-freeze at today's rate.
+            fxRate: booking.amount.fxRate ?? null,
+            fxTarget: booking.amount.fxTarget ?? null,
+            fxAt: booking.amount.fxAt ?? null,
           },
         ],
         { session }
@@ -299,7 +312,14 @@ type RecordBookingOpts = {
   clientId: mongoose.Types.ObjectId | string;
   booking: {
     _id: mongoose.Types.ObjectId;
-    amount: { total: number; deposit: number; currency: string };
+    amount: {
+      total: number;
+      deposit: number;
+      currency: string;
+      fxRate?: number | null;
+      fxTarget?: string | null;
+      fxAt?: Date | null;
+    };
     firstSessionStart: Date;
     teamId?: mongoose.Types.ObjectId | string | null;
   };
@@ -320,6 +340,9 @@ type SyncBookingPaymentsOpts = {
       title?: string;
       method?: "cash" | "card" | "remit";
       paidAt?: Date | null;
+      fxRate?: number | null;
+      fxTarget?: string | null;
+      fxAt?: Date | null;
     }>;
   };
   session?: mongoose.ClientSession;
@@ -354,11 +377,24 @@ export async function syncBookingPaymentsForClient(opts: SyncBookingPaymentsOpts
           method: payment.method ?? "cash",
           notes: payment.title ?? "",
           paidAt: payment.paidAt ?? new Date(),
+          // Copied, not recomputed — this survives the deleteMany+recreate
+          // cycle above. The rate itself is frozen once by normalizePayments
+          // at write time; deriving it again here would re-freeze on every edit.
+          fxRate: payment.fxRate ?? null,
+          fxTarget: payment.fxTarget ?? null,
+          fxAt: payment.fxAt ?? null,
         })),
         { session }
       );
     }
 
+    // Deliberately a raw sum in the recorded currencies, independent of the
+    // frozen fx.* now carried on each payment/booking: totalSpent stays
+    // unconverted and is converted at read time against current rates
+    // (lib/pricing/clientTotals.ts), so it never disagrees with the dashboard
+    // roll-up. The frozen fx.* fields answer a different question (what a
+    // specific paid amount was worth at the moment it was collected) — do not
+    // fold that into this running total.
     const [summary] = await Transaction.aggregate<{
       total: number;
       lastPaymentDate: Date | null;
@@ -432,6 +468,11 @@ export async function recordBookingForClient(opts: RecordBookingOpts): Promise<v
             type: "deposit",
             method: "other",
             paidAt: occurredAt,
+            // Copied from the booking amount, which the caller freezes (or
+            // leaves null on an FX outage) at write time — never recomputed here.
+            fxRate: booking.amount.fxRate ?? null,
+            fxTarget: booking.amount.fxTarget ?? null,
+            fxAt: booking.amount.fxAt ?? null,
           },
         ],
         { session }

@@ -1,7 +1,7 @@
 /**
  * Pure helpers for block action bar dispatch actions.
  *
- * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
+ * Editor chrome is intentionally English-only.
  */
 
 export const ROOT_ZONE = "root:default-zone";

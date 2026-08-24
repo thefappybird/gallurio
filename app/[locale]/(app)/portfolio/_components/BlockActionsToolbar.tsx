@@ -20,7 +20,7 @@
  * Uses createUsePuck with narrow selectors to avoid the bare-usePuck
  * perf warning and to minimise unnecessary re-renders.
  *
- * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
+ * Editor chrome is intentionally English-only.
  */
 
 import { useEffect, useRef, useState } from "react";

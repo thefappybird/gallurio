@@ -25,12 +25,24 @@ load the focused sub-skill for your actual task.
 - **Zones & sub-panels:** `EDITOR_SECTIONS = ["home","gallery","collectionsPopup","header","contact"]`.
   Home/Gallery are Puck zones; header/contact/collectionsPopup are side panels opened via
   `openHeader()` / `openContact()` / `openCollectionsPopup()`.
-- **Chrome is fully localized** (Phase D, RELEASE-CHECKLIST §4f done). Block labels,
-  category titles, field labels, option labels, and the draft-saved toast are translated
-  via `createEditorConfig(t)` in EditorShell and `useTranslations` in dialog components.
-  All 5 locales: `en`, `fil`, `id`, `ar`, `th`. Puck's own built-in strings (drag handles,
-  Insert drawer header, empty-slot placeholder) cannot be localized — Puck 0.20.x has no
-  i18n API for its internal chrome; those strings remain English.
+- **Chrome localization.** Block labels, category titles, field labels, option labels, and
+  the draft-saved toast are translated via `createEditorConfig(t)` in EditorShell and
+  `useTranslations` in dialog components. All 5 locales: `en`, `fil`, `id`, `ar`, `th`.
+  - **next-intl context DOES reach the Puck field panel.** Puck 0.20.x renders its panels
+    and canvas through `createPortal` and never mounts a second React root, so
+    `NextIntlClientProvider` context flows through and `useTranslations` works inside a
+    custom field. Several `galleryPicker/*` files still carry a stale comment claiming the
+    panel "is not wrapped in an IntlProvider" — that is wrong; don't build new workarounds
+    on it.
+  - **Still hardcoded English, by choice not by constraint:** the `L` label objects in
+    `galleryPicker/MediaPicker.tsx`, `CollectionPicker.tsx` and `SingleImagePicker.tsx`
+    (picker chrome — "Choose photos", "Done", upload errors). Owner-facing *content* copy is
+    localized: `ImageMetaDialog` (the alt-text editor) resolves
+    `app.pageBuilder.editor.imageMeta.*` on **both** entry points — the Photos manager
+    (`EditCollectionDialog`) and the Puck images field (`MediaPicker`).
+  - **Puck's own built-in strings** (drag handles, Insert drawer header, empty-slot
+    placeholder) cannot be localized — Puck 0.20.x has no i18n API for its internal chrome;
+    those remain English.
 
 ## Route to the right sub-skill
 - **Guided tour / spotlight / "Guide" button / steps / cutout / why a step won't advance**

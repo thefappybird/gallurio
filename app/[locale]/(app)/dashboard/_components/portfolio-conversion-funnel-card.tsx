@@ -39,30 +39,59 @@ export function PortfolioConversionFunnelCard({ funnel, labels }: Props) {
         {visitorDays === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">{labels.empty}</p>
         ) : (
-          <>
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <span className="font-medium">{labels.visitorDays}</span>
-              <span className="tabular-nums">{visitorDays}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <span className="font-medium">{labels.contactOpened}</span>
-              <span className="tabular-nums text-muted-foreground">
-                {contactTracked
-                  ? `${contactVisitorDays} · ${pct(contactVisitorDays, visitorDays)}% ${labels.ofVisitors}`
-                  : labels.collectingData}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <span className="font-medium">{labels.inquirySubmitted}</span>
-              <span className="tabular-nums text-muted-foreground">
-                {inquiries} ·{" "}
-                {contactTracked
-                  ? `${Math.min(100, pct(inquiries, contactVisitorDays))}% ${labels.ofOpened} · `
-                  : ""}
-                {Math.min(100, pct(inquiries, visitorDays))}% {labels.ofTotal}
-              </span>
-            </div>
-          </>
+          <div className="flex flex-col gap-4">
+            {[
+              {
+                label: labels.visitorDays,
+                value: <span className="tabular-nums">{visitorDays}</span>,
+                width: 100,
+              },
+              {
+                label: labels.contactOpened,
+                value: (
+                  <span className="tabular-nums text-muted-foreground">
+                    {contactTracked
+                      ? `${contactVisitorDays} · ${pct(contactVisitorDays, visitorDays)}% ${labels.ofVisitors}`
+                      : labels.collectingData}
+                  </span>
+                ),
+                width: contactTracked ? pct(contactVisitorDays, visitorDays) : 0,
+              },
+              {
+                label: labels.inquirySubmitted,
+                value: (
+                  <span className="tabular-nums text-muted-foreground">
+                    {inquiries} ·{" "}
+                    {contactTracked
+                      ? `${Math.min(100, pct(inquiries, contactVisitorDays))}% ${labels.ofOpened} · `
+                      : ""}
+                    {Math.min(100, pct(inquiries, visitorDays))}% {labels.ofTotal}
+                  </span>
+                ),
+                width: Math.min(100, pct(inquiries, visitorDays)),
+              },
+            ].map((stage, index) => (
+              <div key={stage.label} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-medium">{stage.label}</span>
+                  {stage.value}
+                </div>
+                {/* The stage bars are what make this read as a funnel rather
+                    than three unrelated rows, and they give the card enough
+                    body to sit beside the visitors chart without its content
+                    being stretched apart to fill the height. */}
+                <div className="h-1.5 w-full bg-muted">
+                  <div
+                    data-testid="funnel-bar"
+                    className={
+                      index === 0 ? "h-full bg-brand" : index === 1 ? "h-full bg-brand/70" : "h-full bg-brand/40"
+                    }
+                    style={{ width: `${stage.width}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

@@ -1,5 +1,5 @@
-// ponytail: production subdomain ROUTING (wildcard DNS + proxy rewrite) is a separate
-// deploy task — this helper is display only; the app still serves /w/{slug}.
+// Canonical public URL helpers. proxy.ts maps configured tenant subdomains to
+// the same /w/{slug} route handlers used by path-mode and local requests.
 
 export function portfolioBaseDomain(): string | null {
   return process.env.NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN?.trim() || null;

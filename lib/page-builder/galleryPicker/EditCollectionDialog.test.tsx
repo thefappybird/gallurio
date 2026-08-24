@@ -9,13 +9,15 @@ vi.mock("@/lib/storage/uploadImage.client", () => ({
 }));
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 const collection = { id: "col1", name: "Weddings", coverUrl: "https://x/c.jpg", coverPublicId: "pid-a", itemCount: 2 };
 const items = [
-  { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A" },
-  { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B" },
+  { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", altText: null },
+  { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B", altText: null },
 ];
 
 function defaultRoute(url: string, init?: RequestInit) {
@@ -134,5 +136,40 @@ describe("EditCollectionDialog", () => {
     for (const cb of allCheckboxes) {
       expect(cb).not.toBeChecked();
     }
+  });
+
+  it("renders a per-photo edit-alt-text trigger with an accessible name", async () => {
+    open();
+    expect(await screen.findByRole("button", { name: /edit alt text for A/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /edit alt text for B/i })).toBeTruthy();
+  });
+
+  it("meets the 24x24 minimum target size (WCAG 2.2 SC 2.5.8)", async () => {
+    open();
+    const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
+    expect(editTrigger.className).toMatch(/\bsize-6\b/);
+  });
+
+  it("editing alt text PATCHes the item and the tile reflects it when reopened", async () => {
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items/a" && init?.method === "PATCH") {
+        return Promise.resolve({ ok: true, json: async () => ({ ...items[0], altText: "Bride and groom" }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
+    const field = await screen.findByLabelText("Alt text");
+    expect(field).toHaveValue("");
+    fireEvent.change(field, { target: { value: "Bride and groom" } });
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+    await waitFor(() =>
+      expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/a" && (i as RequestInit)?.method === "PATCH")).toBe(true)
+    );
+    await waitFor(() => expect(screen.queryByLabelText("Alt text")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: /edit alt text for A/i }));
+    expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
   });
 });

@@ -19,7 +19,7 @@ const NO_CONTENT = () => new Response(null, { status: 204 });
 
 // Layered abuse control (no edge WAF on Hetzner): a per-IP bucket plus a tighter
 // per-(IP, slug, page) cap so one client can't inflate a single counter. The
-// reverse proxy adds the real ceiling (docs/RELEASE-CHECKLIST.md).
+// reverse proxy adds the production ceiling.
 const IP_RATE = { limit: 60, windowMs: 60_000 };
 const PAGE_RATE = { limit: 10, windowMs: 60_000 };
 

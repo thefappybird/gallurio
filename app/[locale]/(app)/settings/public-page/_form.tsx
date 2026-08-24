@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useTransition, useOptimistic } from "react";
+import { useEffect, useId, useRef, useState, useTransition, useOptimistic } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -9,8 +9,10 @@ import { AlertCircle, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   publicPageSettingsSchema,
+  BUSINESS_TYPE_VALUES,
   type PublicPageSettingsInput,
 } from "@/lib/validators/workspace";
+import { SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
 import {
   updatePublicPageSettingsAction,
   togglePublicPagePublishedAction,
@@ -30,13 +32,13 @@ const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] 
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
 const SITE_ICON_MAX_DIM = 512;
 
-function parseSeoKeywords(raw: string): string[] {
+// Phrases are separated by commas (or newlines, if pasted from a list) only —
+// spaces inside a phrase are significant, so "wedding photographer" stays one tag.
+export function parseSeoKeywords(raw: string): string[] {
   const seen = new Set<string>();
   const keywords: string[] = [];
 
-  // A comma can still delimit a multi-word tag, while whitespace makes normal
-  // typing such as "wedding editorial" create two tags without a comma.
-  for (const part of raw.split(/,|\s+/)) {
+  for (const part of raw.split(/[,\n\r]+/)) {
     const trimmed = part.trim();
     if (!trimmed) continue;
     const key = trimmed.toLowerCase();
@@ -78,6 +80,8 @@ export function PublicPageSettingsForm({
   targetDraftId,
   initialHasPendingChanges,
   publishedDefaults,
+  workspaceName = "",
+  businessType,
 }: {
   slug: string;
   publishedAt: Date | null;
@@ -86,8 +90,13 @@ export function PublicPageSettingsForm({
   targetDraftId?: string;
   initialHasPendingChanges?: boolean;
   publishedDefaults?: PublicPageSettingsInput;
+  /** Workspace name — used to preview the automatic SEO description/title when the owner hasn't set their own. */
+  workspaceName?: string;
+  /** Workspace's chosen business type — folded into the automatic description preview, same as the public page's own default. */
+  businessType?: string | null;
 }) {
   const t = useTranslations("app.settings.publicPage");
+  const tSeoDefaults = useTranslations("publicPage.seoDefaults");
   const errMsg = useActionError();
   const formId = useId();
   const [copied, setCopied] = useState(false);
@@ -129,14 +138,54 @@ export function PublicPageSettingsForm({
 
   const siteIconUrl = watch("siteIconUrl");
   const ogImageUrl = watch("seo.ogImageUrl");
-  const seoKeywords = watch("seo.keywords") ?? [];
   const siteIcon = useImageRetry(siteIconUrl);
+
+  // Raw text typed into the keywords input, kept separate from the parsed
+  // form value so a trailing comma/space the owner just typed isn't eaten
+  // by re-deriving the input from the parsed array on every keystroke.
+  const [seoKeywordsRaw, setSeoKeywordsRaw] = useState(
+    () => (defaults.seo?.keywords ?? []).join(", "),
+  );
+  const seoKeywordsDefaultsKey = JSON.stringify(defaults.seo?.keywords ?? []);
+  useEffect(() => {
+    setSeoKeywordsRaw(JSON.parse(seoKeywordsDefaultsKey).join(", "));
+  }, [seoKeywordsDefaultsKey]);
 
   const seoTitleError = fieldMessage(errors.seoTitle);
   const seoKeywordsError = fieldMessage(errors.seo?.keywords);
   const seoDescriptionError = fieldMessage(errors.seoDescription);
   const galleryDescriptionError = fieldMessage(errors.seo?.galleryDescription);
   const inquiryRecipientEmailError = fieldMessage(errors.inquiryRecipientEmail);
+
+  // Live preview of the automatic SEO copy an owner sees when they leave a
+  // field blank — mirrors the public Home page's own default resolution
+  // (lib/portfolio/seoDefaults.ts) so this preview never drifts from what
+  // actually ships. Informational only — never blocks save/publish.
+  const seoTitleValue = watch("seoTitle");
+  const seoDescriptionValue = watch("seoDescription");
+  const showSeoTitleAutoHint = !seoTitleValue?.trim();
+  const showSeoDescriptionAutoHint = !seoDescriptionValue?.trim();
+
+  const isKnownBusinessType =
+    !!businessType &&
+    businessType !== "other" &&
+    (BUSINESS_TYPE_VALUES as readonly string[]).includes(businessType);
+  const businessTypeLabelKey = isKnownBusinessType
+    ? SEO_DEFAULT_KEYS.businessType[
+        businessType as keyof typeof SEO_DEFAULT_KEYS.businessType
+      ]
+    : undefined;
+  const businessTypeLabel = businessTypeLabelKey
+    ? tSeoDefaults(businessTypeLabelKey)
+    : null;
+  const seoDescriptionPreview = businessTypeLabel
+    ? tSeoDefaults(SEO_DEFAULT_KEYS.homeDescription, {
+        name: workspaceName,
+        businessType: businessTypeLabel,
+      })
+    : tSeoDefaults(SEO_DEFAULT_KEYS.homeDescriptionGeneric, {
+        name: workspaceName,
+      });
 
   const logoA11y = useFieldError(logoError ?? undefined, { id: "public-page-logoFile" });
   const ogA11y = useFieldError(ogError ?? undefined, { id: "ogImageFile" });
@@ -172,6 +221,7 @@ export function PublicPageSettingsForm({
     }
     toast.success(t("savedToast"));
     reset(data);
+    setSeoKeywordsRaw((data.seo?.keywords ?? []).join(", "));
     setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults));
   }
 
@@ -559,7 +609,11 @@ export function PublicPageSettingsForm({
                 placeholder={t("seoTitlePlaceholder")}
                 aria-invalid={seoTitleError ? true : undefined}
                 aria-describedby={
-                  [seoTitleError ? "seoTitle-error" : null, "seoTitleHint"]
+                  [
+                    seoTitleError ? "seoTitle-error" : null,
+                    "seoTitleHint",
+                    showSeoTitleAutoHint ? "seoTitleAutoHint" : null,
+                  ]
                     .filter(Boolean)
                     .join(" ") || undefined
                 }
@@ -573,6 +627,11 @@ export function PublicPageSettingsForm({
               <p id="seoTitleHint" className="text-xs text-muted-foreground">
                 {t("seoTitleHint")}
               </p>
+              {showSeoTitleAutoHint && (
+                <p id="seoTitleAutoHint" className="text-xs text-muted-foreground">
+                  {t("seoTitleAutoHint")}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -584,7 +643,7 @@ export function PublicPageSettingsForm({
                   <Input
                     id="seoKeywords"
                     placeholder={t("seoKeywordsPlaceholder")}
-                    value={seoKeywords.join(", ")}
+                    value={seoKeywordsRaw}
                     aria-invalid={seoKeywordsError ? true : undefined}
                     aria-describedby={
                       [seoKeywordsError ? "seoKeywords-error" : null, "seoKeywordsHint"]
@@ -592,6 +651,7 @@ export function PublicPageSettingsForm({
                         .join(" ") || undefined
                     }
                     onChange={(e) => {
+                      setSeoKeywordsRaw(e.target.value);
                       field.onChange(parseSeoKeywords(e.target.value));
                     }}
                   />
@@ -616,7 +676,11 @@ export function PublicPageSettingsForm({
                 placeholder={t("seoDescriptionPlaceholder")}
                 aria-invalid={seoDescriptionError ? true : undefined}
                 aria-describedby={
-                  [seoDescriptionError ? "seoDescription-error" : null, "seoDescriptionHint"]
+                  [
+                    seoDescriptionError ? "seoDescription-error" : null,
+                    "seoDescriptionHint",
+                    showSeoDescriptionAutoHint ? "seoDescriptionAutoHint" : null,
+                  ]
                     .filter(Boolean)
                     .join(" ") || undefined
                 }
@@ -630,6 +694,11 @@ export function PublicPageSettingsForm({
               <p id="seoDescriptionHint" className="text-xs text-muted-foreground">
                 {t("seoDescriptionHint")}
               </p>
+              {showSeoDescriptionAutoHint && (
+                <p id="seoDescriptionAutoHint" className="text-xs text-muted-foreground">
+                  {t("seoDescriptionAutoHint", { preview: seoDescriptionPreview })}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5 xl:col-span-2">

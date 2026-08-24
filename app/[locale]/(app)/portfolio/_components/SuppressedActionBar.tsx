@@ -17,7 +17,7 @@
  * Module-level component — stable reference required so Puck does not
  * remount the subtree on every render.
  *
- * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
+ * Editor chrome is intentionally English-only.
  */
 
 import type { ReactElement, ReactNode } from "react";

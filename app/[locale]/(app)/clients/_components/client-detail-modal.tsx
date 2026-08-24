@@ -11,6 +11,7 @@ import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getClientBookingsAction, getClientPaymentsAction } from "@/lib/actions/clients";
 import type { ClientBookingRow, ClientPaymentRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
+import { FxSubtitle } from "@/components/app/fx-subtitle";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { ClientRow } from "./clients-table";
 import { SourceBadge } from "./source-badge";
@@ -185,6 +186,7 @@ function ClientDetailModalInner({
                     style: "currency",
                     currency: client.currency,
                     minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
                   }).format(client.totalSpent)}
                 </span>
                 <span className="text-xs text-muted-foreground">{t("detail.overview.totalSpent")}</span>
@@ -261,13 +263,26 @@ function ClientDetailModalInner({
                         <Badge variant="outline" className="text-xs capitalize">
                           {tBookingStatus(b.status as BookingStatus)}
                         </Badge>
-                        <span className="text-sm tabular-nums">
-                          {new Intl.NumberFormat(locale, {
-                            style: "currency",
-                            currency: b.currency,
-                            minimumFractionDigits: 0,
-                          }).format(b.total)}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm tabular-nums">
+                            {new Intl.NumberFormat(locale, {
+                              style: "currency",
+                              currency: b.currency,
+                              minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                            }).format(b.total)}
+                          </span>
+                          {b.converted ? (
+                            <FxSubtitle
+                              amount={b.converted.rate ? b.total : b.converted.amount}
+                              target={b.converted.currency}
+                              rate={b.converted.rate}
+                              at={b.converted.at}
+                              locale={locale}
+                              align="end"
+                            />
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -284,16 +299,40 @@ function ClientDetailModalInner({
             {payments && payments.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {payments.map((payment) => (
-                  <div key={payment.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border border-border px-3 py-2">
+                  // One column below sm: the FX subtitle is wider than a 375px
+                  // row can spare beside a booking title, and squeezing both
+                  // into one line collapsed the title to an ellipsis.
+                  <div key={payment.id} className="grid grid-cols-1 gap-x-3 gap-y-1 border border-border px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <span className="truncate text-sm font-medium">{payment.bookingTitle}</span>
-                    <span className="tabular-nums text-sm font-medium text-brand">{new Intl.NumberFormat(locale, { style: "currency", currency: payment.currency, minimumFractionDigits: 0 }).format(payment.amount)}</span>
-                    <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                      <span className="truncate">{payment.paymentTitle}</span>
-                      {payment.method !== "other" ? (
-                        <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px] capitalize">{payment.method}</Badge>
+                    {/* End-aligned at every width so the FxSubtitle's trailing
+                        converted figure stays directly under the amount, the
+                        same as the bookings tab above. */}
+                    <div className="flex flex-col items-end">
+                      <span className="tabular-nums text-sm font-medium text-brand">{new Intl.NumberFormat(locale, { style: "currency", currency: payment.currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(payment.amount)}</span>
+                      {payment.converted ? (
+                        <FxSubtitle
+                          amount={payment.converted.rate ? payment.amount : payment.converted.amount}
+                          target={payment.converted.currency}
+                          rate={payment.converted.rate}
+                          at={payment.converted.at}
+                          locale={locale}
+                          align="end"
+                        />
                       ) : null}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                    </div>
+                    {/* Below sm the wrapper keeps the label and the date on one
+                        justified row — stacking them read as two orphan lines.
+                        `sm:contents` dissolves it again so both land back in
+                        their own grid columns once there are two. */}
+                    <div className="flex items-center justify-between gap-3 sm:contents">
+                      <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="truncate">{payment.paymentTitle}</span>
+                        {payment.method !== "other" ? (
+                          <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px] capitalize">{payment.method}</Badge>
+                        ) : null}
+                      </span>
+                      <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground sm:text-end">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                    </div>
                   </div>
                 ))}
                 {paymentsHasMore ? <Button type="button" variant="outline" size="sm" onClick={loadMorePayments} loading={paymentsLoadingMore}>{t("table.pagination.next")}</Button> : null}

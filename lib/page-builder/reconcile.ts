@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
+import { collectBlocks, mapBlocks } from "@/lib/page-builder/blockTree";
 import type { PuckData, PuckBlockEntry } from "@/lib/page-builder/types";
 
 /** Block types whose `images[]` cache is reconciled against live GalleryItems. */
@@ -32,19 +33,6 @@ function imageKeysOf(type: string): string[] {
 
 type StoredImage = { id?: unknown; publicId?: unknown; alt?: unknown };
 
-/** All block arrays in a Puck data tree: root content + every zone/slot array. */
-function blockArrays(data: PuckData): PuckBlockEntry[][] {
-  const arrays: PuckBlockEntry[][] = [];
-  if (Array.isArray(data.content)) arrays.push(data.content);
-  if (data.zones) {
-    for (const key of Object.keys(data.zones)) {
-      const arr = data.zones[key];
-      if (Array.isArray(arr)) arrays.push(arr);
-    }
-  }
-  return arrays;
-}
-
 function storedImagesAt(block: PuckBlockEntry, key: string): StoredImage[] {
   const imgs = block.props?.[key];
   return Array.isArray(imgs) ? (imgs as StoredImage[]) : [];
@@ -56,7 +44,10 @@ function validId(id: unknown): id is string {
 
 /**
  * Rebuilds every gallery block's `images[]` and every Container/preset block's
- * `backgroundImages[]` from the live GalleryItem documents.
+ * `backgroundImages[]` from the live GalleryItem documents. Walks the FULL
+ * tree via `collectBlocks`/`mapBlocks` (root content, zones, and blocks
+ * nested inside preset slot props — e.g. a GalleryGrid inside
+ * GalleryGridPreset.props.content), not just the top-level arrays.
  *
  * - ONE batched query: `GalleryItem.find({ workspaceId, _id: { $in: allIds } })`
  *   (no N+1). `workspaceId` comes from the CALLER's session — never Puck props —
@@ -64,7 +55,8 @@ function validId(id: unknown): id is string {
  * - For each stored id still present: emit `{ id, publicId: assetId,
  *   alt: altText || caption || "" }`. Refreshes a changed publicId/alt.
  * - Drops ids whose item no longer exists. Preserves the stored order. NEVER adds.
- * - No-op (and no DB call) when the tree has no gallery or background-image blocks.
+ * - No-op (and no DB call) when NO block anywhere in the tree (including
+ *   nested) is a gallery or background-image block.
  *
  * Pure transform over the fetched map — returns a NEW data object; does not mutate
  * the input.
@@ -72,20 +64,18 @@ function validId(id: unknown): id is string {
 export async function reconcileGalleryImages(workspaceId: string, data: PuckData): Promise<PuckData> {
   if (!workspaceId || !data) return data;
 
-  const arrays = blockArrays(data);
-
-  // 1. Collect every reconciled image id across all blocks + zones (images + backgroundImages).
+  // 1. Collect every reconciled image id across every block at every depth
+  //    (root content, zones, AND blocks nested inside preset slot props —
+  //    see collectBlocks) — images + backgroundImages.
   const allIds = new Set<string>();
   let hasImageBlock = false;
-  for (const arr of arrays) {
-    for (const block of arr) {
-      const keys = imageKeysOf(block.type);
-      if (keys.length === 0) continue;
-      hasImageBlock = true;
-      for (const key of keys) {
-        for (const img of storedImagesAt(block, key)) {
-          if (validId(img.id)) allIds.add(img.id);
-        }
+  for (const block of collectBlocks(data)) {
+    const keys = imageKeysOf(block.type);
+    if (keys.length === 0) continue;
+    hasImageBlock = true;
+    for (const key of keys) {
+      for (const img of storedImagesAt(block, key)) {
+        if (validId(img.id)) allIds.add(img.id);
       }
     }
   }
@@ -124,31 +114,22 @@ export async function reconcileGalleryImages(workspaceId: string, data: PuckData
     return { ...block, props: nextProps };
   };
 
-  const nextData: PuckData = {
-    ...data,
-    content: data.content.map(rebuildBlock),
-  };
-
-  if (data.zones) {
-    const nextZones: Record<string, PuckBlockEntry[]> = {};
-    for (const key of Object.keys(data.zones)) {
-      nextZones[key] = Array.isArray(data.zones[key])
-        ? data.zones[key].map(rebuildBlock)
-        : data.zones[key];
-    }
-    nextData.zones = nextZones;
-  }
-
-  return nextData;
+  // mapBlocks reaches every block at every depth (including ones nested
+  // inside preset slot props), applying rebuildBlock to each; blocks with no
+  // image keys pass through the SAME reference.
+  return mapBlocks(data, rebuildBlock);
 }
 
 type StoredCollection = { id?: unknown; name?: unknown; coverPublicId?: unknown; itemCount?: unknown };
 
 /**
  * Rebuilds every FeaturedWork block's `collections[]` cache (name, coverPublicId,
- * itemCount) from the live GalleryCollection + GalleryItem documents.
+ * itemCount) from the live GalleryCollection + GalleryItem documents. Walks
+ * the FULL tree via `collectBlocks`/`mapBlocks` — including FeaturedWork
+ * blocks nested inside preset slot props, not just top-level content/zones.
  *
- * - No-op (no DB call) when the tree has no FeaturedWork blocks.
+ * - No-op (no DB call) when NO FeaturedWork block anywhere in the tree
+ *   (including nested) exists.
  * - ONE batched `GalleryCollection.find` scoped by workspaceId (tenant-safe).
  * - Batched aggregates for item counts and cover resolution — no N+1.
  * - Prunes ids not in the result map (missing or foreign workspace). Preserves
@@ -159,20 +140,17 @@ type StoredCollection = { id?: unknown; name?: unknown; coverPublicId?: unknown;
 export async function reconcileFeaturedCollections(workspaceId: string, data: PuckData): Promise<PuckData> {
   if (!workspaceId || !data) return data;
 
-  const arrays = blockArrays(data);
-
-  // 1. Collect all distinct collection ids from every FeaturedWork block.
+  // 1. Collect all distinct collection ids from every FeaturedWork block at
+  //    every depth (root content, zones, AND nested inside preset slots).
   const allIds = new Set<string>();
   let hasFeaturedWork = false;
-  for (const arr of arrays) {
-    for (const block of arr) {
-      if (block.type !== "FeaturedWork") continue;
-      hasFeaturedWork = true;
-      const cols = block.props?.collections;
-      if (!Array.isArray(cols)) continue;
-      for (const col of cols as StoredCollection[]) {
-        if (validId(col.id)) allIds.add(col.id as string);
-      }
+  for (const block of collectBlocks(data)) {
+    if (block.type !== "FeaturedWork") continue;
+    hasFeaturedWork = true;
+    const cols = block.props?.collections;
+    if (!Array.isArray(cols)) continue;
+    for (const col of cols as StoredCollection[]) {
+      if (validId(col.id)) allIds.add(col.id as string);
     }
   }
   if (!hasFeaturedWork) return data;
@@ -261,20 +239,8 @@ export async function reconcileFeaturedCollections(workspaceId: string, data: Pu
     return { ...block, props: { ...block.props, collections: next } };
   };
 
-  const nextData: PuckData = {
-    ...data,
-    content: data.content.map(rebuildFWBlock),
-  };
-
-  if (data.zones) {
-    const nextZones: Record<string, PuckBlockEntry[]> = {};
-    for (const key of Object.keys(data.zones)) {
-      nextZones[key] = Array.isArray(data.zones[key])
-        ? data.zones[key].map(rebuildFWBlock)
-        : data.zones[key];
-    }
-    nextData.zones = nextZones;
-  }
-
-  return nextData;
+  // mapBlocks reaches every FeaturedWork block at every depth (including ones
+  // nested inside preset slot props); non-FeaturedWork blocks pass through
+  // the SAME reference.
+  return mapBlocks(data, rebuildFWBlock);
 }

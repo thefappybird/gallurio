@@ -15,6 +15,15 @@ afterEach(async () => {
   await clearCollections();
 });
 
+// The sitemap also carries the static marketing and comparison URLs, which
+// these cases are not about.
+async function tenantEntries() {
+  return (await sitemap()).filter((entry) => entry.url.includes("/w/"));
+}
+
+const BLOCK = { type: "Heading", props: { text: "Hi" } };
+const PAGE = { root: {}, content: [BLOCK] };
+
 function makePublishedWorkspace(slug: string, overrides: Record<string, unknown> = {}) {
   return {
     slug,
@@ -23,17 +32,32 @@ function makePublishedWorkspace(slug: string, overrides: Record<string, unknown>
     currency: "PHP",
     publicPage: {
       publishedAt: new Date(),
-      data: { home: null, gallery: null },
+      data: { home: PAGE, gallery: PAGE },
     },
     ...overrides,
   };
 }
 
 describe("sitemap()", () => {
+  it("lists the marketing pages and the comparison content", async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+
+    expect(urls).toContain("http://localhost:3000/pricing");
+    expect(urls).toContain("http://localhost:3000/compare/gallurio-vs-honeybook");
+  });
+
+  it("lists the blog content", async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+
+    expect(urls).toContain(
+      "http://localhost:3000/blog/how-to-price-event-photography-packages"
+    );
+  });
+
   it("yields two entries per published workspace with correct URLs and priorities", async () => {
     await Workspace.create(makePublishedWorkspace("alpha-studio"));
 
-    const entries = await sitemap();
+    const entries = await tenantEntries();
 
     expect(entries).toHaveLength(2);
 
@@ -53,6 +77,56 @@ describe("sitemap()", () => {
     expect(gallery?.changeFrequency).toBe("weekly");
   });
 
+  it("emits only the Home entry when the gallery page has no renderable content", async () => {
+    await Workspace.create(
+      makePublishedWorkspace("home-only-studio", {
+        publicPage: { publishedAt: new Date(), data: { home: PAGE, gallery: null } },
+      })
+    );
+
+    const entries = await tenantEntries();
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].url).not.toMatch(/\/gallery$/);
+  });
+
+  it("emits only the Gallery entry when the home page has no renderable content", async () => {
+    await Workspace.create(
+      makePublishedWorkspace("gallery-only-studio", {
+        publicPage: { publishedAt: new Date(), data: { home: null, gallery: PAGE } },
+      })
+    );
+
+    const entries = await tenantEntries();
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].url).toMatch(/\/gallery$/);
+  });
+
+  it("emits no entries when neither page has renderable content", async () => {
+    await Workspace.create(
+      makePublishedWorkspace("empty-studio", {
+        publicPage: { publishedAt: new Date(), data: { home: null, gallery: null } },
+      })
+    );
+
+    const entries = await tenantEntries();
+
+    expect(entries).toHaveLength(0);
+  });
+
+  it("emits no entries for a noindex workspace even with renderable content", async () => {
+    await Workspace.create(
+      makePublishedWorkspace("noindex-studio", {
+        publicPage: { publishedAt: new Date(), data: { home: PAGE, gallery: PAGE }, seo: { noindex: true } },
+      })
+    );
+
+    const entries = await tenantEntries();
+
+    expect(entries).toHaveLength(0);
+  });
+
   it("omits unpublished workspaces entirely", async () => {
     await Workspace.create({
       slug: "draft-only",
@@ -62,7 +136,7 @@ describe("sitemap()", () => {
       publicPage: { publishedAt: null, data: { home: null, gallery: null } },
     });
 
-    const entries = await sitemap();
+    const entries = await tenantEntries();
     expect(entries).toHaveLength(0);
   });
 
@@ -73,12 +147,12 @@ describe("sitemap()", () => {
         publicPage: {
           publishedAt: ts,
           lastPublishedAt: ts,
-          data: { home: null, gallery: null },
+          data: { home: PAGE, gallery: PAGE },
         },
       })
     );
 
-    const entries = await sitemap();
+    const entries = await tenantEntries();
     expect(entries).toHaveLength(2);
     expect(entries[0].lastModified).toEqual(ts);
     expect(entries[1].lastModified).toEqual(ts);

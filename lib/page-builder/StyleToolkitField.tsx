@@ -10,7 +10,7 @@
  * Simplified blocks (Divider, Spacer, Image, Video, ContactDetails) bypass the
  * tab system and render a minimal inline panel.
  *
- * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
+ * Editor chrome is intentionally English-only.
  */
 
 import { useState } from "react";

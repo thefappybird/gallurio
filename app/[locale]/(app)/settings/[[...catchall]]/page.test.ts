@@ -48,6 +48,8 @@ vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({
     get: vi.fn().mockReturnValue(undefined),
   }),
+  // getDisplayPricing reads CF-IPCountry to pick the local-estimate currency.
+  headers: vi.fn().mockResolvedValue({ get: vi.fn().mockReturnValue(null) }),
 }));
 
 vi.mock("@/lib/db/mongoose", () => ({

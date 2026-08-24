@@ -11,7 +11,7 @@
  *
  * To add more families later: bundle the woff2 in app/fonts/, register a
  * `localFont` in lib/fonts/portfolio.ts (append its var to
- * `portfolioFontVariables`), then add an entry here. See RELEASE-CHECKLIST.
+ * `portfolioFontVariables`), then add an entry here.
  */
 
 export const PORTFOLIO_FONT_KEYS = [

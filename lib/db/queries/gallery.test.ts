@@ -3,7 +3,8 @@ import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest, listPublicCollectionItemsPage, detachItemsFromCollection } from "./gallery";
+import { Workspace } from "@/lib/db/models/Workspace";
+import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest, listPublicCollectionItemsPage, detachItemsFromCollection, updateItemMeta, propagateItemAltText } from "./gallery";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -145,6 +146,14 @@ describe("listCollectionItemsPage", () => {
     expect(page.items[0].id).toBeTruthy();
     expect(page.items[0].publicId).toContain(`ws/${ws.toString()}/item0`);
   });
+
+  it("exposes altText on every item", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 1);
+    const page = await listCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.items[0].altText).toBe("Alt 1");
+  });
 });
 
 describe("listAllItemsPage", () => {
@@ -182,6 +191,14 @@ describe("listAllItemsPage", () => {
     const page = await listAllItemsPage({ workspaceId: wsA.toString() });
     expect(page.items).toEqual([]);
   });
+
+  it("exposes altText on every item", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 1);
+    const page = await listAllItemsPage({ workspaceId: ws.toString() });
+    expect(page.items[0].altText).toBe("Alt 1");
+  });
 });
 
 describe("listCollectionNewest", () => {
@@ -211,6 +228,71 @@ describe("listCollectionNewest", () => {
     const colB = await makeCollection(wsB);
     await seedItems(wsB, colB._id, 3);
     expect(await listCollectionNewest({ workspaceId: wsA.toString(), collectionId: colB._id.toString(), limit: 10 })).toEqual([]);
+  });
+
+  it("exposes altText on every item", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await GalleryItem.create({
+      workspaceId: ws, collectionId: col._id,
+      assetId: `ws/${ws}/n0`, url: "https://imagedelivery.net/hash/n0/public",
+      caption: "N0", altText: "Alt N0", order: 0,
+    });
+    const items = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 1 });
+    expect(items[0].altText).toBe("Alt N0");
+  });
+});
+
+describe("updateItemMeta", () => {
+  it("sets altText only, leaving caption untouched", async () => {
+    const ws = new Types.ObjectId();
+    const item = await GalleryItem.create({
+      workspaceId: ws, assetId: "pid", url: "u", caption: "Original caption", altText: "Original alt", order: 0,
+    });
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: item._id.toString(), altText: "New alt" });
+    expect(result).toEqual({ id: item._id.toString(), publicId: "pid", thumbUrl: expect.any(String), caption: "Original caption", altText: "New alt" });
+    const saved = await GalleryItem.findById(item._id).lean();
+    expect(saved?.caption).toBe("Original caption");
+    expect(saved?.altText).toBe("New alt");
+  });
+
+  it("sets caption only, leaving altText untouched", async () => {
+    const ws = new Types.ObjectId();
+    const item = await GalleryItem.create({
+      workspaceId: ws, assetId: "pid", url: "u", caption: "Original caption", altText: "Original alt", order: 0,
+    });
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: item._id.toString(), caption: "New caption" });
+    expect(result?.caption).toBe("New caption");
+    expect(result?.altText).toBe("Original alt");
+  });
+
+  it("returns null for an item in another workspace (tenant isolation)", async () => {
+    const wsA = new Types.ObjectId();
+    const wsB = new Types.ObjectId();
+    const item = await GalleryItem.create({ workspaceId: wsB, assetId: "pid", url: "u", order: 0 });
+    const result = await updateItemMeta({ workspaceId: wsA.toString(), itemId: item._id.toString(), altText: "x" });
+    expect(result).toBeNull();
+    const saved = await GalleryItem.findById(item._id).lean();
+    expect(saved?.altText).toBe("");
+  });
+
+  it("returns null for a missing item", async () => {
+    const ws = new Types.ObjectId();
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: new Types.ObjectId().toString(), altText: "x" });
+    expect(result).toBeNull();
+  });
+
+  it("returns null for a malformed itemId (no throw)", async () => {
+    const ws = new Types.ObjectId();
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: "not-an-id", altText: "x" });
+    expect(result).toBeNull();
+  });
+
+  it("returns null when neither altText nor caption is provided", async () => {
+    const ws = new Types.ObjectId();
+    const item = await GalleryItem.create({ workspaceId: ws, assetId: "pid", url: "u", order: 0 });
+    const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: item._id.toString() });
+    expect(result).toBeNull();
   });
 });
 
@@ -301,5 +383,114 @@ describe("listCollectionsForPicker — coverPublicId", () => {
     const col = await GalleryCollection.create({ workspaceId: ws, name: "Empty", slug: "empty", isPublic: true });
     const cols = await listCollectionsForPicker(ws.toString());
     expect(cols.find((c) => c.id === String(col._id))!.coverPublicId).toBe("");
+  });
+});
+
+describe("propagateItemAltText", () => {
+  async function makeWorkspace(over: Record<string, unknown> = {}) {
+    return Workspace.create({
+      slug: `ws-${new Types.ObjectId().toString()}`,
+      name: "Studio",
+      ownerUserId: "user_a",
+      currency: "PHP",
+      ...over,
+    });
+  }
+
+  function gridBlock(id: string, images: Array<{ id: string; publicId: string; alt: string }>) {
+    return { type: "GalleryGrid", props: { id, images, columns: 3, gap: "normal" } };
+  }
+
+  it("updates alt on every matching image entry on the published home + gallery pages", async () => {
+    const ws = await makeWorkspace();
+    const itemId = new Types.ObjectId().toString();
+    const home = {
+      content: [gridBlock("g1", [{ id: itemId, publicId: "p1", alt: "old alt" }])],
+    };
+    const gallery = {
+      content: [gridBlock("g2", [{ id: itemId, publicId: "p1", alt: "old alt" }])],
+    };
+    await Workspace.updateOne(
+      { _id: ws._id },
+      { $set: { "publicPage.data.home": home, "publicPage.data.gallery": gallery } }
+    );
+
+    await propagateItemAltText({ workspaceId: ws._id.toString(), itemId, alt: "new alt" });
+
+    const saved = await Workspace.findById(ws._id).lean();
+    const savedHome = saved!.publicPage!.data!.home as typeof home;
+    const savedGallery = saved!.publicPage!.data!.gallery as typeof gallery;
+    expect((savedHome.content[0].props.images as Array<{ alt: string }>)[0].alt).toBe("new alt");
+    expect((savedGallery.content[0].props.images as Array<{ alt: string }>)[0].alt).toBe("new alt");
+  });
+
+  it("never touches a foreign workspace's published page", async () => {
+    const wsA = await makeWorkspace();
+    const wsB = await makeWorkspace();
+    const itemId = new Types.ObjectId().toString();
+    const pageB = { content: [gridBlock("gB", [{ id: itemId, publicId: "p1", alt: "b alt" }])] };
+    await Workspace.updateOne({ _id: wsB._id }, { $set: { "publicPage.data.home": pageB } });
+
+    await propagateItemAltText({ workspaceId: wsA._id.toString(), itemId, alt: "new alt" });
+
+    const savedB = await Workspace.findById(wsB._id).lean();
+    const savedPageB = savedB!.publicPage!.data!.home as typeof pageB;
+    expect((savedPageB.content[0].props.images as Array<{ alt: string }>)[0].alt).toBe("b alt");
+  });
+
+  it("does not write when the item is not present on the published page (common case)", async () => {
+    const ws = await makeWorkspace();
+    const home = { content: [gridBlock("g1", [{ id: new Types.ObjectId().toString(), publicId: "p1", alt: "unrelated" }])] };
+    await Workspace.updateOne({ _id: ws._id }, { $set: { "publicPage.data.home": home } });
+
+    const updateSpy = vi.spyOn(Workspace, "updateOne");
+    await propagateItemAltText({ workspaceId: ws._id.toString(), itemId: new Types.ObjectId().toString(), alt: "new alt" });
+    expect(updateSpy).not.toHaveBeenCalled();
+    updateSpy.mockRestore();
+  });
+
+  it("changes only the alt string — layout, order, and other props are byte-identical afterwards", async () => {
+    const ws = await makeWorkspace();
+    const itemId = new Types.ObjectId().toString();
+    const other = new Types.ObjectId().toString();
+    const home = {
+      content: [
+        { type: "Heading", props: { id: "h1", text: "Gallery", level: "h2" } },
+        gridBlock("g1", [
+          { id: other, publicId: "p0", alt: "keep me" },
+          { id: itemId, publicId: "p1", alt: "old alt" },
+        ]),
+      ],
+    };
+    await Workspace.updateOne({ _id: ws._id }, { $set: { "publicPage.data.home": home } });
+
+    await propagateItemAltText({ workspaceId: ws._id.toString(), itemId, alt: "new alt" });
+
+    const saved = await Workspace.findById(ws._id).lean();
+    const savedHome = saved!.publicPage!.data!.home as typeof home;
+    expect(savedHome.content[0]).toEqual(home.content[0]); // Heading block untouched
+    // content[] is inferred as a union of the two block shapes, so narrow to the
+    // gallery block's props once rather than at each assertion.
+    const gridProps = savedHome.content[1].props as {
+      images: Array<{ id: string; publicId: string; alt: string }>;
+      columns: number;
+      gap: string;
+    };
+    expect(gridProps.images).toEqual([
+      { id: other, publicId: "p0", alt: "keep me" },
+      { id: itemId, publicId: "p1", alt: "new alt" },
+    ]);
+    expect(gridProps.columns).toBe(3);
+    expect(gridProps.gap).toBe("normal");
+  });
+
+  it("is a no-op for a missing workspace, malformed itemId, or empty page", async () => {
+    await expect(
+      propagateItemAltText({ workspaceId: new Types.ObjectId().toString(), itemId: "not-an-id", alt: "x" })
+    ).resolves.toBeUndefined();
+    const ws = await makeWorkspace();
+    await expect(
+      propagateItemAltText({ workspaceId: ws._id.toString(), itemId: new Types.ObjectId().toString(), alt: "x" })
+    ).resolves.toBeUndefined();
   });
 });

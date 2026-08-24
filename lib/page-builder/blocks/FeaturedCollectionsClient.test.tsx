@@ -130,6 +130,19 @@ describe("FeaturedCollectionsClient", () => {
         expect(img.getAttribute("decoding")).toBe("async");
       }
     });
+
+    it("cover <img> alt equals the collection name, and the tile exposes exactly one accessible name", () => {
+      render(<FeaturedCollectionsClient {...baseProps} />);
+      const weddingsButton = screen.getByRole("button", { name: /Weddings/i });
+      expect(weddingsButton).toHaveAccessibleName(/Weddings/i);
+      // Cover img is hidden from the a11y tree (aria-hidden) so its alt text
+      // doesn't get announced twice alongside the button's own aria-label —
+      // getAllByRole("img") must not surface it.
+      expect(screen.queryAllByRole("img")).toHaveLength(0);
+      const coverImg = document.querySelector('img[alt="Weddings"]');
+      expect(coverImg).not.toBeNull();
+      expect(coverImg).toHaveAttribute("aria-hidden", "true");
+    });
   });
 
   describe("grid layout", () => {

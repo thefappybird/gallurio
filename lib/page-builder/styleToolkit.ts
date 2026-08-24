@@ -284,7 +284,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function bgImageUrl(assetId: string): string | null {
+export function bgImageUrl(assetId: string): string | null {
   const url = imageDeliveryUrl(assetId, { width: 1600, fit: "cover" });
   return url || null;
 }

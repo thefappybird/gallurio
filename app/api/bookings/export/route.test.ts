@@ -45,6 +45,21 @@ async function callExport(qs = "") {
   return GET(new Request(url));
 }
 
+function futureIso(daysAhead: number, hourUtc: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysAhead);
+  d.setUTCHours(hourUtc, 0, 0, 0);
+  return d.toISOString();
+}
+
+// Fixed rate map so the workspace-currency columns convert deterministically.
+// The real helper memoizes per workspace for five minutes, which would make
+// this depend on which test seeded a foreign currency first.
+vi.mock("@/lib/pricing/workspaceRates", () => ({
+  NO_CONVERSION: { rates: {}, target: "" },
+  getWorkspaceRateMap: vi.fn(async () => ({ rates: { PHP: 1, SGD: 40 }, target: "PHP" })),
+}));
+
 async function seedBooking(
   wsId: Types.ObjectId,
   overrides: Record<string, unknown> = {}
@@ -56,11 +71,14 @@ async function seedBooking(
     source: "manual",
   });
 
+  // Derived from now, not hardcoded: a fixed default date silently becomes a
+  // *past* booking once it passes, which makes the showPast=0 case assert the
+  // opposite of what it means to test.
   const startAt = new Date(
-    (overrides.startAt as string | undefined) ?? "2026-08-15T09:00:00Z"
+    (overrides.startAt as string | undefined) ?? futureIso(30, 9)
   );
   const endAt = new Date(
-    (overrides.endAt as string | undefined) ?? "2026-08-15T18:00:00Z"
+    (overrides.endAt as string | undefined) ?? futureIso(30, 18)
   );
 
   const sessions = (overrides.sessions as { startAt: string; endAt: string }[] | undefined)
@@ -129,6 +147,8 @@ const EXPECTED_HEADERS = [
   "invoiceNumber",
   "payments",
   "createdAt",
+  "workspaceAmountTotal",
+  "workspaceCurrency",
 ];
 
 describe("GET /api/bookings/export", () => {
@@ -183,6 +203,18 @@ describe("GET /api/bookings/export", () => {
     const body = await res.text();
     const { headers } = parseCsv(body);
     expect(headers).toEqual(EXPECTED_HEADERS);
+  });
+
+  it("carries a workspace-currency total for a foreign-currency booking", async () => {
+    await seedBooking(WS_A, { title: "SGD job", amountTotal: 1000, currency: "SGD" });
+
+    const res = await callExport();
+    const body = await res.text();
+    const { headers, rows } = parseCsv(body);
+
+    const idx = headers.indexOf("workspaceAmountTotal");
+    expect(idx).toBeGreaterThan(-1);
+    expect(Number(rows[0][idx])).toBeGreaterThan(1000);
   });
 
   it("single-session booking → 1 data row, session_index=0, booking_id matches", async () => {
@@ -330,9 +362,11 @@ describe("GET /api/bookings/export", () => {
   });
 
   it("happy path: 3 single-session bookings → header row + 3 data rows", async () => {
-    await seedBooking(WS_A, { title: "Alpha Event", clientName: "Alice", clientEmail: "alice@example.com" });
-    await seedBooking(WS_A, { title: "Beta Event", clientName: "Bob", clientEmail: "bob@example.com", startAt: "2026-09-01T09:00:00Z", endAt: "2026-09-01T18:00:00Z" });
-    await seedBooking(WS_A, { title: "Gamma Event", clientName: "Carol", clientEmail: "carol@example.com", startAt: "2026-10-01T09:00:00Z", endAt: "2026-10-01T18:00:00Z" });
+    // Explicit ascending dates: rows are asserted in order below, so the three
+    // must not depend on where seedBooking's default happens to fall.
+    await seedBooking(WS_A, { title: "Alpha Event", clientName: "Alice", clientEmail: "alice@example.com", startAt: futureIso(10, 9), endAt: futureIso(10, 18) });
+    await seedBooking(WS_A, { title: "Beta Event", clientName: "Bob", clientEmail: "bob@example.com", startAt: futureIso(20, 9), endAt: futureIso(20, 18) });
+    await seedBooking(WS_A, { title: "Gamma Event", clientName: "Carol", clientEmail: "carol@example.com", startAt: futureIso(40, 9), endAt: futureIso(40, 18) });
 
     const res = await callExport();
     const body = await res.text();

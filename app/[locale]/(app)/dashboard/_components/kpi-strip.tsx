@@ -39,7 +39,9 @@ function TrendBadge({ trend }: { trend: KpiTrend }) {
       ? "text-emerald-600 dark:text-emerald-400"
       : "text-destructive";
   return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${tone}`}>
+    <span
+      className={`inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-xs font-medium ${tone}`}
+    >
       <Icon className="size-3" />
       {Math.abs(trend.value).toFixed(1)}%
     </span>
@@ -57,20 +59,36 @@ function KpiCard({
   icon: LucideIcon;
   trend: KpiTrend;
 }) {
-  // Compact: larger icon on the left; label + trend on row 1, value on row 2.
+  // Compact: icon on the left, label + hint on row 1, value + trend on row 2.
+  // Two cards share a 375px row, which leaves ~100px of text column — too
+  // little for both the icon and a six-figure amount, so the icon only appears
+  // once there is room for it. The label wraps rather than truncating: a KPI
+  // whose label reads "OUTSTANDING BALA…" is not a KPI.
+  //
+  // The trend sits with the value, not the label: beside a two-line label it
+  // crowded the info hint into the wrapped text. The value's type scales with
+  // the text column (a container query, so the icon's width counts) and the
+  // trend never shrinks, which keeps a seven-figure amount on the same line as
+  // its badge instead of squeezing it to an ellipsis.
   return (
     <Card className="rounded-[var(--radius)] border-border">
       <CardContent className="flex items-center gap-3 px-3 py-2">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius)] border border-brand/30 bg-brand-4 text-brand">
+        <span className="hidden size-11 shrink-0 items-center justify-center rounded-[var(--radius)] border border-brand/30 bg-brand-4 text-brand sm:flex">
           <Icon className="size-5" />
         </span>
-        <div className="flex min-w-0 flex-col">
-          <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            <span className="truncate">{label}</span>
-            <DashboardInfoHint hint="kpi" />
+        <div className="@container flex min-w-0 flex-1 flex-col">
+          <span className="flex items-start gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="min-w-0 flex-1 leading-tight">{label}</span>
+            <span className="shrink-0">
+              <DashboardInfoHint hint="kpi" />
+            </span>
+          </span>
+          <span className="flex items-baseline justify-between gap-1.5">
+            <span className="min-w-0 truncate text-[clamp(0.9375rem,11cqi,1.25rem)] font-semibold leading-tight tracking-tight tabular-nums">
+              {value}
+            </span>
             <TrendBadge trend={trend} />
           </span>
-          <span className="text-xl font-semibold tracking-tight">{value}</span>
         </div>
       </CardContent>
     </Card>

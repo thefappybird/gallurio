@@ -38,7 +38,7 @@ describe("SingleImagePicker", () => {
   it("stores the photo's publicId (not an id) when picked", async () => {
     const onChange = vi.fn();
     mockFetch.mockResolvedValue(
-      makeData([{ id: "i1", publicId: "gallurio/ws/p1", thumbUrl: "http://x/p1.jpg", caption: "Sunset" }])
+      makeData([{ id: "i1", publicId: "gallurio/ws/p1", thumbUrl: "http://x/p1.jpg", caption: "Sunset", altText: null }])
     );
     render(<SingleImagePicker value="" onChange={onChange} />);
     await waitFor(() => screen.getByRole("button", { name: /sunset/i }));
@@ -49,7 +49,7 @@ describe("SingleImagePicker", () => {
   it("clears the selection", async () => {
     const onChange = vi.fn();
     mockFetch.mockResolvedValue(
-      makeData([{ id: "i1", publicId: "p1", thumbUrl: "http://x/p1.jpg", caption: null }])
+      makeData([{ id: "i1", publicId: "p1", thumbUrl: "http://x/p1.jpg", caption: null, altText: null }])
     );
     render(<SingleImagePicker value="p1" onChange={onChange} />);
     await waitFor(() => screen.getByRole("button", { name: /clear image/i }));

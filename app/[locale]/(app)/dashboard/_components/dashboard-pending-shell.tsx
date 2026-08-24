@@ -36,7 +36,11 @@ export function DashboardPendingShell({
 
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      {/* Title+date own one row and the filter/tab controls own the next until
+          lg. Sharing a row from sm up left the greeting wrapping to three
+          lines and pushed the tab strip off the right edge at 768, where the
+          docked sidebar takes its share of the width. */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         {greeting}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <DashboardDateFilter

@@ -22,9 +22,8 @@ release-safe changes over speculative refactors.
 
 Read the relevant `docs/modules/*.md` file before changing auth, billing,
 media, hosting, endpoint hardening, design, or i18n — `docs/AGENTS-INDEX.md`
-maps each area to its file. Treat
-`docs/RELEASE-CHECKLIST.md` as the launch source of truth and keep its short
-pending list current when release work changes it.
+maps each area to its file. Verify release readiness against the live deploy,
+provider, and repository configuration rather than a stale checklist.
 
 ## Working approach
 
@@ -132,7 +131,6 @@ pending list current when release work changes it.
 
 ## References
 
-- `docs/RELEASE-CHECKLIST.md` — launch gate and current provider/deploy status
 - `docs/AGENTS-INDEX.md` — map of every module doc, skill, and living reference
 - `docs/modules/billing.md` — current implemented billing integration
 - `.env.example` and `lib/env.ts` — environment contract and production checks

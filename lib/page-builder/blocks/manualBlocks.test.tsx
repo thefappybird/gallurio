@@ -275,12 +275,11 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     vi.unstubAllEnvs();
   });
 
-  it("renders a background-image layer (not an <img>) when bgImagePublicId is set", () => {
+  it("renders a real <img> (not just a CSS background) when bgImagePublicId is set", () => {
     const { container } = render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
-    expect(document.querySelector("img")).toBeNull();
-    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
-    expect(layer).not.toBeNull();
-    expect(layer.style.backgroundImage).toContain("photo.jpg");
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.src).toContain("photo.jpg");
   });
 
   it("does NOT show the placeholder when a background image is set", () => {
@@ -288,9 +287,17 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     expect(screen.queryByText(/Pick an image/i)).toBeNull();
   });
 
-  it("uses alt text as an aria-label on the image container", () => {
-    render(<ImageBlock alt="My alt text" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
-    expect(screen.getByRole("img", { name: "My alt text" })).toBeTruthy();
+  it("sets alt text on the <img> element when alt is provided", () => {
+    const { container } = render(<ImageBlock alt="My alt text" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.alt).toBe("My alt text");
+  });
+
+  it("renders alt=\"\" and no role=img anywhere when alt is empty", () => {
+    const { container } = render(<ImageBlock alt="" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.alt).toBe("");
+    expect(container.querySelector('[role="img"]')).toBeNull();
   });
 
   it("defaults the background-image layer to full opacity when bgImageOpacity is unset", () => {
@@ -319,9 +326,9 @@ describe("ImageBlock — legacy prop back-compat (pre-ee5084d shape)", () => {
   it("renders the image from a legacy top-level imagePublicId with no _style.bgImagePublicId", () => {
     const { container } = render(<ImageBlock alt="A photo" imagePublicId="ws/legacy-asset.jpg" />);
     expect(screen.queryByText(/Pick an image/i)).toBeNull();
-    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
-    expect(layer).not.toBeNull();
-    expect(layer.style.backgroundImage).toContain("legacy-asset.jpg");
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.src).toContain("legacy-asset.jpg");
   });
 
   it("renders the image from a legacy raw imageUrl when there is no imagePublicId", () => {
@@ -329,27 +336,27 @@ describe("ImageBlock — legacy prop back-compat (pre-ee5084d shape)", () => {
       <ImageBlock alt="A photo" imageUrl="https://example.com/legacy.jpg" />
     );
     expect(screen.queryByText(/Pick an image/i)).toBeNull();
-    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
-    expect(layer).not.toBeNull();
-    expect(layer.style.backgroundImage).toContain("https://example.com/legacy.jpg");
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.src).toContain("https://example.com/legacy.jpg");
   });
 
   it("prefers legacy imagePublicId over legacy imageUrl when both are present", () => {
     const { container } = render(
       <ImageBlock alt="" imagePublicId="ws/legacy-asset.jpg" imageUrl="https://example.com/legacy.jpg" />
     );
-    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
-    expect(layer.style.backgroundImage).toContain("legacy-asset.jpg");
-    expect(layer.style.backgroundImage).not.toContain("example.com");
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.src).toContain("legacy-asset.jpg");
+    expect(img.src).not.toContain("example.com");
   });
 
   it("never lets a legacy prop override an already-migrated _style.bgImagePublicId", () => {
     const { container } = render(
       <ImageBlock alt="" _style={{ bgImagePublicId: "ws/current.jpg" }} imagePublicId="ws/legacy-asset.jpg" />
     );
-    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
-    expect(layer.style.backgroundImage).toContain("current.jpg");
-    expect(layer.style.backgroundImage).not.toContain("legacy-asset.jpg");
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.src).toContain("current.jpg");
+    expect(img.src).not.toContain("legacy-asset.jpg");
   });
 });
 

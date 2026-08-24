@@ -78,6 +78,73 @@ describe("getCollectionCoverage", () => {
     expect(coverage.coveragePct).toBeCloseTo(40, 5);
   });
 
+  it("rolls a foreign-currency booking and payment up into the workspace currency", async () => {
+    const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-08T00:00:00.000Z") };
+
+    const booking = await Booking.create({
+      workspaceId: wid,
+      clientId,
+      clientName: "Overseas Client",
+      title: "Overseas Booking",
+      status: "booked",
+      sessions: [
+        { startAt: monWeek1_10am, endAt: new Date(monWeek1_10am.getTime() + 2 * 3_600_000) },
+      ],
+      firstSessionStart: monWeek1_10am,
+      lastSessionEnd: new Date(monWeek1_10am.getTime() + 2 * 3_600_000),
+      amount: { total: 200, deposit: 0, currency: "USD" },
+    });
+
+    await Transaction.create([
+      {
+        workspaceId: wid,
+        bookingId: booking._id,
+        amount: 50,
+        currency: "USD",
+        type: "deposit",
+        paidAt: null,
+      },
+    ]);
+
+    const coverage = await getCollectionCoverage(wid, range, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
+
+    expect(coverage.confirmedValue).toBe(200 * 58);
+    expect(coverage.collected).toBe(50 * 58);
+  });
+
+  it("sums collected at a frozen rate, not today's live rate", async () => {
+    const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-08T00:00:00.000Z") };
+
+    const booking = await Booking.create({
+      workspaceId: wid,
+      clientId,
+      clientName: "Overseas Client",
+      title: "Overseas Booking",
+      status: "booked",
+      sessions: [{ startAt: monWeek1_10am, endAt: new Date(monWeek1_10am.getTime() + 2 * 3_600_000) }],
+      firstSessionStart: monWeek1_10am,
+      lastSessionEnd: new Date(monWeek1_10am.getTime() + 2 * 3_600_000),
+      amount: { total: 200, deposit: 0, currency: "USD" },
+    });
+
+    await Transaction.create([
+      {
+        workspaceId: wid,
+        bookingId: booking._id,
+        amount: 50,
+        currency: "USD",
+        type: "deposit",
+        paidAt: null,
+        fxRate: 55,
+        fxTarget: "PHP",
+      },
+    ]);
+
+    const coverage = await getCollectionCoverage(wid, range, { rates: { PHP: 1, USD: 58 }, target: "PHP" });
+
+    expect(coverage.collected).toBe(50 * 55);
+  });
+
   it("clamps coveragePct to 100 on overpayment", async () => {
     const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-08T00:00:00.000Z") };
 
@@ -382,5 +449,44 @@ describe("getScheduledVsCollectedSeries", () => {
     const emptyRange = { from: new Date("2020-01-01T00:00:00.000Z"), to: new Date("2020-01-02T00:00:00.000Z") };
     await seedBooking({ sessions: sess, total: 1_000 });
     expect(await getScheduledVsCollectedSeries(wid, emptyRange, tz)).toEqual([]);
+  });
+
+  it("sums collected at a frozen rate, not today's live rate, while scheduledValue stays live", async () => {
+    const range = { from: new Date("2026-05-25T00:00:00.000Z"), to: new Date("2026-06-15T00:00:00.000Z") };
+    const sessA = [{ startAt: monWeek1_10am, endAt: new Date(monWeek1_10am.getTime() + 3_600_000) }];
+
+    const bookingA = await Booking.create({
+      workspaceId: wid,
+      clientId,
+      clientName: "Demo Client",
+      title: "Demo Booking",
+      status: "booked",
+      sessions: sessA,
+      firstSessionStart: monWeek1_10am,
+      lastSessionEnd: sessA[0].endAt,
+      amount: { total: 200, deposit: 0, currency: "USD" },
+    });
+
+    await Transaction.create([
+      {
+        workspaceId: wid,
+        bookingId: bookingA._id,
+        amount: 10,
+        currency: "USD",
+        type: "deposit",
+        paidAt: null,
+        fxRate: 55,
+        fxTarget: "PHP",
+      },
+    ]);
+
+    const series = await getScheduledVsCollectedSeries(wid, range, tz, {
+      rates: { PHP: 1, USD: 58 },
+      target: "PHP",
+    });
+
+    expect(series).toEqual([
+      { bucket: "2026-06-01", scheduledValue: 200 * 58, collected: 10 * 55 },
+    ]);
   });
 });

@@ -1,7 +1,6 @@
 import "server-only";
 
-// Offsets for the lapse lifecycle (see docs/backend-audit-findings.md and the
-// wave-1 lapse-lifecycle spec). All measured from lifecycle.lapsedAt (T0),
+// Offsets for the lapse lifecycle. All measured from lifecycle.lapsedAt (T0),
 // except PRE_EXPIRY_WARN_DAYS which counts down to an upcoming expiry.
 export const PRE_EXPIRY_WARN_DAYS = 7;
 export const REMIND_1_DAYS = 30;

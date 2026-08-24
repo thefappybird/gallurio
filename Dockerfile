@@ -73,6 +73,11 @@ COPY --from=production-dependencies --chown=gallurio:gallurio /app/node_modules 
 COPY --from=build --chown=gallurio:gallurio /app/.next ./.next
 COPY --from=build --chown=gallurio:gallurio /app/app ./app
 COPY --from=build --chown=gallurio:gallurio /app/components ./components
+# `content/` holds the .mdx sources for /compare and /blog. `/sitemap.xml` and
+# `/llms.txt` are request-time dynamic and read this directory off disk through
+# `lib/content/entries.ts`, so it has to exist in the runtime image, not just
+# the build stage.
+COPY --from=build --chown=gallurio:gallurio /app/content ./content
 COPY --from=build --chown=gallurio:gallurio /app/hooks ./hooks
 COPY --from=build --chown=gallurio:gallurio /app/lib ./lib
 COPY --from=build --chown=gallurio:gallurio /app/messages ./messages

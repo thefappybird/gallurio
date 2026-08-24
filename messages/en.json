@@ -4,6 +4,7 @@
       "pricing": "Pricing",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
+      "resources": "Resources",
       "contact": "Contact",
       "signIn": "Sign in",
       "getStarted": "Get started"
@@ -13,10 +14,13 @@
       "pricing": "Pricing",
       "portfolioMaker": "Portfolio Builder",
       "bookDemo": "Book a Demo",
+      "resources": "Resources",
       "terms": "Terms",
       "privacy": "Privacy",
       "refunds": "Refunds",
-      "contact": "Contact"
+      "contact": "Contact",
+      "comparisons": "Comparisons",
+      "writing": "Writing"
     },
     "metadata": {
       "title": "Gallurio | Portfolio, Booking, and Client Tools for Creative Businesses",
@@ -134,10 +138,11 @@
       "title": "Simple pricing",
       "subtitle": "1 month of Pro, free. Then one plan, monthly or yearly.",
       "viewFullPricing": "View full pricing",
-      "disclaimer": "One month free. Paid Pro renews monthly or yearly until cancelled.",
+      "disclaimer": "One month free. Paid Pro renews monthly or yearly until cancelled. Prices are shown in your local currency. Billing terms, taxes, and renewal details appear before you complete checkout.",
       "cadence": {
         "monthly": "Monthly",
-        "yearly": "Yearly — save 2 months"
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
       },
       "pro": {
         "badge": "1 month free",
@@ -157,6 +162,11 @@
         "title": "Pricing — Gallurio",
         "description": "See Gallurio Pro pricing for creative professionals and studios — one month free, then a single monthly or yearly plan."
       },
+      "cadence": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
+      },
       "header": {
         "headline": "Simple plans for creative professionals and studios.",
         "body": "Every new workspace gets one month of full Gallurio Pro, free, no card required. After that, keep going with a single Pro subscription — monthly or yearly."
@@ -168,7 +178,6 @@
         "description": "Everything you need to run bookings, clients, galleries, and your public page.",
         "priceSuffixMonthly": "/ month",
         "priceSuffixYearly": "/ year",
-        "yearlyNote": "Or {price} billed yearly — save 2 months.",
         "feature1": "Portfolio page builder & public site",
         "feature2": "Unlimited bookings and inquiries",
         "feature3": "Client management & team roles",
@@ -218,11 +227,11 @@
       "betaAccess": {
         "title": "4. Beta and Free Access",
         "body1": "Gallurio may offer beta or promotional access. Beta features may be incomplete, changed, suspended, or removed. Beta or free access does not guarantee permanent availability or future features.",
-        "body2": "Unless Gallurio states otherwise, promotional access does not require a payment card. If paid billing is introduced, the applicable plan, price, renewal terms, and billing date will be shown before purchase."
+        "body2": "Unless Gallurio states otherwise, promotional access does not require a payment card. Where paid billing applies, the applicable plan, price, renewal terms, and billing date are shown before purchase."
       },
       "subscriptions": {
         "title": "5. Subscriptions and Lemon Squeezy",
-        "body1": "Paid Pro subscriptions, when available, will be presented with their price, billing interval, renewal terms, and applicable taxes before purchase.",
+        "body1": "Paid Pro subscriptions are presented with their price, billing interval, renewal terms, and applicable taxes before purchase.",
         "body2": "Lemon Squeezy acts as the merchant of record for Gallurio subscriptions. Lemon Squeezy may process checkout, payment, billing, tax, invoices, refunds, chargebacks, and related customer-service matters under its own terms and policies.",
         "body3": "Subscriptions renew according to the billing terms shown at checkout until cancelled. A cancellation generally prevents future renewal charges but does not automatically create a refund.",
         "body4": "If a payment fails or a subscription ends, Gallurio may restrict Pro features or take a public page offline after reasonable notice. Account data may be retained, and access may be restored if the subscription is renewed, subject to the applicable plan and product state.",
@@ -570,6 +579,46 @@
         "rateLimited": "Too many requests. Please wait a few minutes and try again.",
         "generic": "Something went wrong. Please try again."
       }
+    },
+    "compare": {
+      "metadata": {
+        "title": "Gallurio compared to the tools event businesses actually use",
+        "description": "How Gallurio stacks up against HoneyBook, Dubsado, Pixieset, Squarespace, Wix, Notion, Google Sheets, Google Forms, 17hats, and Studio Ninja — price, features, and who each tool actually fits."
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "index": "Comparisons"
+      },
+      "index": {
+        "eyebrow": "Comparisons",
+        "headline": "Gallurio vs. the tools you're using now",
+        "intro1": "Most event businesses land on Gallurio after outgrowing a spreadsheet, a general CRM built for a different industry, or a gallery tool that never handled bookings in the first place. These comparisons lay out the honest trade-offs — price, what each tool covers, and what it does not — against the specific tools people switch from.",
+        "intro2": "None of these pretend Gallurio wins on every point. Where another tool does something Gallurio does not, that's stated plainly, so you can pick based on what your business actually needs."
+      },
+      "categories": {
+        "crm": "CRM & client management",
+        "website-builder": "Website builders",
+        "gallery-delivery": "Gallery & delivery tools",
+        "record-keeping": "Spreadsheets & record-keeping",
+        "intake": "Inquiry & intake tools"
+      },
+      "readMore": "Read the comparison"
+    },
+    "blog": {
+      "metadata": {
+        "title": "Writing — Gallurio",
+        "description": "Practical notes on pricing, booking, and running an event business — from the team building Gallurio."
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "index": "Writing"
+      },
+      "index": {
+        "eyebrow": "Writing",
+        "headline": "Notes on running an event business",
+        "intro": "Short, practical pieces on pricing, client intake, and the operational side of photography, planning, and other event work — the stuff that doesn't fit in a feature list."
+      },
+      "readMore": "Read more"
     }
   },
   "auth": {
@@ -809,6 +858,10 @@
         "quickAdd": "Create a booking, client, or inquiry."
       },
       "totalLabel": "Total",
+      "miniCalendar": {
+        "today": "Today",
+        "monthTotal": "{count, plural, one {# booking this month} other {# bookings this month}}"
+      },
       "calendarTeam": {
         "label": "Filter by team",
         "all": "All teams"
@@ -1328,6 +1381,9 @@
         "paid": "Paid",
         "unpaid": "Unpaid",
         "paidOn": "Paid on {date}",
+        "frozenRate": "≈ {price} · rate {rate} · {date}",
+        "frozenRateTrailing": "{date} · rate {rate} · ≈ {price}",
+        "approx": "≈ {price}",
         "empty": "No payments scheduled yet for this booking",
         "exceedsBalance": "Exceeds remaining balance",
         "titleRequired": "Title is required",
@@ -1556,7 +1612,6 @@
           "paused": "Paused",
           "trialing": "Trialing"
         },
-        "notYetAvailable": "Paid subscriptions aren't available yet. Check back soon, or use a promo code below if you have one.",
         "manageSection": "Manage subscription",
         "manageDescription": "Update your payment method, view invoices, or cancel your subscription directly through Lemon Squeezy.",
         "manageButton": "Manage subscription",
@@ -1586,7 +1641,14 @@
         "save": "Save changes",
         "saving": "Saving…",
         "savedToast": "Workspace updated.",
-        "currencyWarning": "Applies to new bookings. Existing amounts keep their original currency.",
+        "currencyWarning": "Changing your currency recalculates every existing paid amount into the new currency and locks this field for 90 days afterward.",
+        "currencyConfirmTitle": "Change workspace currency?",
+        "currencyConfirmBody": "{count, plural, =0 {No paid amounts need recalculating. You can change your currency again anytime.} one {# booking's totals will be recalculated. You won't be able to change the currency again until {date}.} other {# bookings' totals will be recalculated. You won't be able to change the currency again until {date}.}}",
+        "currencyConfirmConfirm": "Confirm change",
+        "currencyConfirmCancel": "Cancel",
+        "currencyLockedUntil": "Currency is locked until {date}.",
+        "currencyChangeLockedError": "You can change your currency again on {date}.",
+        "currencyChangeRateError": "Couldn't fetch today's exchange rate. Please try again shortly.",
         "contactEmail": "Contact email",
         "contactEmailPlaceholder": "you@example.com",
         "contactAddress": "Business address",
@@ -1676,9 +1738,11 @@
         },
         "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
         "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
+        "seoTitleAutoHint": "No title yet — your workspace name will be used instead.",
+        "seoDescriptionAutoHint": "No description yet — this will be used instead: “{preview}”",
         "seoKeywords": "SEO tags",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, bay area",
-        "seoKeywordsHint": "Optional comma-separated tags for search engines and structured data. Add up to 10.",
+        "seoKeywordsHint": "Optional tags, separated by commas — spaces inside a phrase are kept. Used in the page's structured data. Add up to 10.",
         "galleryDescriptionLabel": "Gallery page description",
         "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
         "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",
@@ -2499,6 +2563,19 @@
           "openPreview": "Open preview",
           "continue": "Continue anyway"
         },
+        "imageMeta": {
+          "title": "Edit alt text",
+          "altLabel": "Alt text",
+          "altHelp": "Describe what the photo shows. Read aloud by screen readers and used by search engines to understand the image.",
+          "altPlaceholder": "e.g. Bride and groom dancing under string lights",
+          "counter": "{count}/{max} characters",
+          "save": "Save",
+          "saving": "Saving…",
+          "cancel": "Cancel",
+          "savedToast": "Alt text saved.",
+          "editTrigger": "Edit alt text for {name}",
+          "photoFallback": "photo"
+        },
         "contactSettings": "Edit contact settings",
         "contactSettingsShort": "Contact Form",
         "headerSettings": "Navigation",
@@ -3210,7 +3287,6 @@
       "export_too_large": "Too many bookings to export. Narrow your filters and try again.",
       "free_plan_no_checkout": "The free plan doesn't require checkout.",
       "lemonsqueezy_variant_not_configured": "This plan isn't available right now. Please contact support.",
-      "billing_unavailable": "Paid subscriptions aren't available yet. Please check back soon.",
       "no_verified_email": "Add and verify an email before subscribing.",
       "checkout_init_failed": "Couldn't start checkout. Please try again.",
       "no_subscription": "You don't have an active subscription to manage.",
@@ -3320,7 +3396,6 @@
       "title": "Pick the plan that fits",
       "description": "You can change plans or cancel anytime from your workspace settings.",
       "popular": "Popular",
-      "comingSoon": "Coming soon",
       "cadence": {
         "forever": "first month free",
         "monthly": "/ month",
@@ -3341,12 +3416,7 @@
       "activatedNotice": "Your Gallurio Plan is now activated. Finish onboarding to change your subscription plan.",
       "activePill": "Active",
       "finishOnboarding": "Finish onboarding",
-      "acceptedPromoCode": "Promo code {code}",
-      "betaTester": {
-        "label": "Beta tester",
-        "headline": "Get free beta access now",
-        "activate": "Activate beta access"
-      }
+      "acceptedPromoCode": "Promo code {code}"
     },
     "done": {
       "title": "You're all set, {workspaceName}.",
@@ -3366,6 +3436,8 @@
     }
   },
   "plans": {
+    "billedAs": "Billed as {price} {currency}",
+    "billedAsCode": "Billed as {price}",
     "free": {
       "name": "Free",
       "description": "1 month of full Pro, free",
@@ -3393,7 +3465,16 @@
       }
     },
     "beta": {
-      "name": "Beta"
+      "name": "Beta",
+      "label": "Beta tester",
+      "tabLabel": "Beta",
+      "price": "Free",
+      "priceSuffix": "while in beta",
+      "tagline": "Everything in Pro, free while Gallurio is in beta.",
+      "note": "No card required. We'll give you 7 days' notice before the beta ends.",
+      "activate": "Activate beta access",
+      "active": "Your beta access is active.",
+      "cta": "Join the beta"
     },
     "promo": {
       "name": "Promo"
@@ -3513,6 +3594,21 @@
       "retry": "Retry",
       "empty": "No photos in this collection yet.",
       "fullSizeAlt": "Full size photo"
+    },
+    "seoDefaults": {
+      "homeDescription": "{name} — {businessType}. Browse recent work and get in touch to book.",
+      "homeDescriptionGeneric": "{name} — browse recent work and get in touch to book.",
+      "galleryDescription": "Browse {name}'s portfolio gallery — recent photos and highlights.",
+      "businessType": {
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Event Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer",
+        "artists": "Artist",
+        "other": "Business"
+      }
     }
   },
   "notFound": {

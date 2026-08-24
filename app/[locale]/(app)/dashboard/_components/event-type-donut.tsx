@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePrefersReducedMotion } from "@/hooks/use-reduced-motion";
 import { useTranslations } from "next-intl";
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,7 @@ function capitalize(s: string) {
 }
 
 export function EventTypeDonut({ data, title, empty }: Props) {
+  const reduceMotion = usePrefersReducedMotion();
   const t = useTranslations("app.dashboard");
   const total = data.reduce((sum, d) => sum + d.count, 0);
   const slices = data.map((d, i) => ({
@@ -94,14 +96,13 @@ export function EventTypeDonut({ data, title, empty }: Props) {
             <div className="relative h-48 w-48 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
+                  <Pie isAnimationActive={!reduceMotion}
                     data={slices}
                     dataKey="value"
                     nameKey="name"
                     innerRadius="62%"
                     outerRadius="92%"
                     paddingAngle={1}
-                    isAnimationActive
                     animationDuration={350}
                     animationEasing="ease-out"
                     activeShape={ActiveSector}

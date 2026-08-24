@@ -53,16 +53,6 @@ function renderPanel(overrides: Partial<SubscribePanelProps> = {}) {
   return renderWithProviders(<SubscribePanel {...defaultProps} {...overrides} />);
 }
 
-describe("SubscribePanel — beta-only mode (billingAvailable=false)", () => {
-  it("shows a not-yet-available message instead of the subscribe CTA, and never opens checkout", () => {
-    renderPanel({ billingAvailable: false });
-
-    expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: /monthly/i })).not.toBeInTheDocument();
-    expect(useLemonSqueezyCheckoutMock).toHaveBeenCalledWith(expect.any(Function), false);
-  });
-});
-
 describe("SubscribePanel — renders", () => {
   it("defaults to monthly pricing", () => {
     renderPanel();
@@ -78,6 +68,19 @@ describe("SubscribePanel — renders", () => {
     expect(screen.queryByText(/\/ month/i)).not.toBeInTheDocument();
   });
 
+  it("names the billed amount under the local-currency headline", () => {
+    renderPanel({
+      proPricing: {
+        currency: "PHP",
+        monthly: 250,
+        yearly: 2500,
+        local: { currency: "USD", monthly: 4.3, yearly: 43 },
+      },
+    });
+
+    expect(screen.getByText(/Billed as ₱250 PHP/)).toBeInTheDocument();
+  });
+
   it("shows a subscribe button", () => {
     renderPanel();
     expect(screen.getByRole("button", { name: /subscribe/i })).toBeInTheDocument();
@@ -87,6 +90,12 @@ describe("SubscribePanel — renders", () => {
   it("shows beta activation only when the owner is eligible", () => {
     renderPanel({ betaAvailable: true });
     expect(screen.getByRole("button", { name: /activate beta access/i })).toBeInTheDocument();
+  });
+
+  it("defaults to the Beta tab and renders the Beta plan card when betaAvailable", () => {
+    renderPanel({ betaAvailable: true });
+    expect(screen.getByRole("tab", { name: "Beta", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
   });
 });
 

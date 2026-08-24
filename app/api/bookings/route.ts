@@ -9,6 +9,7 @@ import { bookingCreateSchema } from "@/lib/validators/booking";
 import { recordBookingForClient, syncBookingPaymentsForClient } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 import { normalizePayments, isCompletionEligible } from "@/lib/bookings/payment-rules";
+import { resolveFxFreeze } from "@/lib/pricing/fxRates";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,12 @@ export async function POST(req: Request) {
   const { client, teamId, title, eventType, status, sessions, location, amount, notes, payments } =
     parsed.data;
 
-  const normalizedPayments = normalizePayments(payments);
+  // Resolved once per request — same-currency still returns a real {rate:1}
+  // freeze; an FX outage resolves to null and never blocks the write below.
+  const now = new Date();
+  const freeze = await resolveFxFreeze(amount.currency, ctx.workspace.currency ?? "PHP");
+  const normalizedPayments = normalizePayments(payments, now, freeze);
+  const depositFreeze = amount.deposit > 0 ? freeze : null;
   if (status === "completed" && !isCompletionEligible(normalizedPayments, amount)) {
     return NextResponse.json({ error: "completion_requires_full_payment" }, { status: 422 });
   }
@@ -158,6 +164,9 @@ export async function POST(req: Request) {
               total: amount.total,
               deposit: amount.deposit,
               currency: amount.currency,
+              fxRate: depositFreeze?.rate ?? null,
+              fxTarget: depositFreeze?.target ?? null,
+              fxAt: depositFreeze ? now : null,
             },
             payments: normalizedPayments,
             notes,

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { CheckIcon } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { marketingMetadata } from "@/lib/seo/metadata";
 import { redirect } from "next/navigation";
 import { Link } from "@/lib/i18n/navigation";
 import { getAuthUser } from "@/lib/auth/session";
 import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/db/models";
-import { getProPricing } from "@/lib/lemonsqueezy/pricing";
+import { getDisplayPricing } from "@/lib/pricing/localPricing";
 import { buttonVariants } from "@/components/ui/button";
 import { AmbientBackground } from "@/components/app/ambient-background";
 import { PricingTeaser } from "./_components/pricing-teaser";
@@ -18,10 +19,12 @@ type Props = { params: Promise<{ locale: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "marketing.metadata" });
-  return {
-    title: { absolute: t("title") },
+  return marketingMetadata({
+    locale,
+    path: "/",
+    title: t("title"),
     description: t("description"),
-  };
+  });
 }
 
 export default async function Home({ params }: Props) {
@@ -44,7 +47,7 @@ export default async function Home({ params }: Props) {
   const t = await getTranslations("marketing");
   const tTerms = await getTranslations("marketing.terms");
   const tPrivacy = await getTranslations("marketing.privacy");
-  const proPricing = await getProPricing();
+  const proPricing = await getDisplayPricing();
 
   const trustItems = [t("trust.item1"), t("trust.item2"), t("trust.item3"), t("trust.item4")];
 
@@ -300,7 +303,7 @@ export default async function Home({ params }: Props) {
         </cite>
       </section>
 
-      <PricingTeaser proPricing={proPricing} />
+      <PricingTeaser proPricing={proPricing} betaEnabled={process.env.BETA_TESTER_ENABLED === "true"} />
 
       {/* Final CTA — bookend matching the hero, same theme-following treatment. */}
       <section className="relative border-t border-border bg-background px-4 py-20 text-center text-foreground sm:px-6 sm:py-28">

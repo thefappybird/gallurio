@@ -55,7 +55,11 @@ export const findPublishedWorkspaceBySlug = cache(async (slug: string) => {
     slug: normalized,
     "publicPage.publishedAt": { $ne: null },
   })
-    .select("slug name country publicPage contact")
+    // `businessType` drives both the schema.org @type (PhotographyBusiness,
+    // EventVenue, ...) and the automatic SEO description variant. Without it in
+    // the projection every portfolio silently fell back to LocalBusiness and the
+    // generic description, making BUSINESS_TYPE_SCHEMA_MAP dead code.
+    .select("slug name country businessType publicPage contact")
     .lean();
 
   return workspace ?? null;
@@ -96,11 +100,17 @@ export const getOwnerTimeFormat = cache(async (ownerUserId: string): Promise<Tim
 export type PublishedWorkspaceSlug = {
   slug: string;
   lastPublishedAt: Date | null;
+  hasHome: boolean;
+  hasGallery: boolean;
 };
 
 /**
- * Returns slug + lastPublishedAt for every workspace whose portfolio has been
- * published at least once. Used by app/sitemap.ts to build the global sitemap.
+ * Returns slug + lastPublishedAt + per-page renderability for every workspace
+ * whose portfolio has been published at least once and isn't crawler-excluded.
+ * Used by app/sitemap.ts to build the global sitemap.
+ *
+ * `"publicPage.seo.noindex": { $ne: true }` also matches documents with no
+ * `seo` subdoc at all (pre-existing workspaces default to indexable).
  *
  * No tenant scoping: this is a public list of published pages, intentionally
  * cross-workspace.
@@ -114,20 +124,92 @@ export type PublishedWorkspaceSlug = {
  * ponytail: if tenant count exceeds ~50k this must paginate via sitemap index
  * files (Next.js `generateSitemaps` + `id` param on the default export).
  */
+/**
+ * Aggregation-expression mirror of `hasRenderableBlocks`
+ * (lib/page-builder/normalizePublicPageData.ts) — computes the same boolean
+ * server-side so this query never pulls the (potentially huge, per-tenant)
+ * Puck `data` blob across the wire just to answer a yes/no question.
+ *
+ * Must stay in lockstep with the predicate:
+ *   isPlainObject(raw) && (content.length > 0 || hasZoneContent(zones))
+ * where content/zones default to [] / undefined when absent or the wrong
+ * shape. No per-entry validation — a malformed entry (e.g. `null`) still
+ * counts, exactly like the JS predicate (it only checks array length).
+ *
+ * Parity with `hasRenderableBlocks` is enforced by a shared-fixture test in
+ * publicPage.sitemap.test.ts; if this ever drifts, the sitemap silently
+ * advertises URLs that render "Coming Soon".
+ */
+function renderableBlocksAggExpr(fieldPath: string) {
+  return {
+    $let: {
+      vars: {
+        // BSON $type distinguishes "object" (embedded doc) from "array",
+        // "null", and "missing" — the same object/array/nullish split
+        // `isPlainObject` makes in JS.
+        isObj: { $eq: [{ $type: `$${fieldPath}` }, "object"] },
+        contentArr: {
+          $cond: [{ $isArray: `$${fieldPath}.content` }, `$${fieldPath}.content`, []],
+        },
+        zonesObj: {
+          $cond: [{ $eq: [{ $type: `$${fieldPath}.zones` }, "object"] }, `$${fieldPath}.zones`, {}],
+        },
+      },
+      in: {
+        $and: [
+          "$$isObj",
+          {
+            $or: [
+              { $gt: [{ $size: "$$contentArr" }, 0] },
+              {
+                $anyElementTrue: {
+                  $map: {
+                    input: { $objectToArray: "$$zonesObj" },
+                    as: "z",
+                    in: {
+                      $cond: [{ $isArray: "$$z.v" }, { $gt: [{ $size: "$$z.v" }, 0] }, false],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  };
+}
+
 export async function listPublishedWorkspaceSlugs(): Promise<PublishedWorkspaceSlug[]> {
   await connectDB();
 
-  type SlugProjection = {
-    slug: string;
-    publicPage: { lastPublishedAt?: Date | null };
-  };
+  // Aggregation, not find()+lean(): the $project below computes hasHome/
+  // hasGallery server-side so no tenant's Puck `data` blob (home + gallery
+  // trees, tens-to-hundreds of KB each) crosses the wire or gets hydrated
+  // into a Mongoose document — only 4 scalar fields per tenant leave Mongo.
+  const cursor = Workspace.aggregate<PublishedWorkspaceSlug>([
+    {
+      $match: {
+        "publicPage.publishedAt": { $ne: null },
+        "publicPage.seo.noindex": { $ne: true },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        slug: 1,
+        lastPublishedAt: { $ifNull: ["$publicPage.lastPublishedAt", null] },
+        hasHome: renderableBlocksAggExpr("publicPage.data.home"),
+        hasGallery: renderableBlocksAggExpr("publicPage.data.gallery"),
+      },
+    },
+  ]).cursor();
 
-  const docs = await Workspace.find({ "publicPage.publishedAt": { $ne: null } })
-    .select({ slug: 1, "publicPage.lastPublishedAt": 1, _id: 0 })
-    .lean<SlugProjection[]>();
-
-  return docs.map((d) => ({
-    slug: d.slug,
-    lastPublishedAt: d.publicPage?.lastPublishedAt ?? null,
-  }));
+  // Cursor-iterate rather than materialize the whole result set: tenant count
+  // is unbounded and this list only grows with the platform.
+  const results: PublishedWorkspaceSlug[] = [];
+  for await (const doc of cursor) {
+    results.push(doc);
+  }
+  return results;
 }

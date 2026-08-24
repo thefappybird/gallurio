@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { usePrefersReducedMotion } from "@/hooks/use-reduced-motion";
 import { useIsRtl } from "@/lib/i18n/rtl";
 import { CHART_TOOLTIP } from "@/lib/charts/tooltip";
 import type { PageviewPoint } from "../_data/portfolio-analytics";
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function PortfolioViewsChart({ data, locale, labels }: Props) {
+  const reduceMotion = usePrefersReducedMotion();
   const isRtl = useIsRtl();
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -62,8 +64,8 @@ export function PortfolioViewsChart({ data, locale, labels }: Props) {
           }
         />
         <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" iconSize={8} />
-        <Bar dataKey="views" name={labels.views} fill="var(--chart-1)" radius={[2, 2, 0, 0]} />
-        <Bar dataKey="visitors" name={labels.visitors} fill="var(--chart-2)" radius={[2, 2, 0, 0]} />
+        <Bar isAnimationActive={!reduceMotion} dataKey="views" name={labels.views} fill="var(--chart-1)" radius={[2, 2, 0, 0]} />
+        <Bar isAnimationActive={!reduceMotion} dataKey="visitors" name={labels.visitors} fill="var(--chart-2)" radius={[2, 2, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

@@ -59,8 +59,8 @@ export function BookingEventTypeTrendChart({ trend, currency, locale, labels }: 
   return (
     <Card className="h-full rounded-[var(--radius)]">
       {header}
-      <CardContent className="flex flex-col justify-center h-full gap-3">
-        <div className="h-48">
+      <CardContent className="flex h-full flex-1 flex-col justify-center gap-3">
+        <div className="min-h-48 flex-1">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}

@@ -7,14 +7,17 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
-import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
+import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
+import { PoweredByGallurio } from "../_components/PoweredByGallurio";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioGalleryUrl } from "@/lib/portfolio/publicUrl";
-import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
+import { buildGalleryJsonLd, buildPortfolioEntityNodes, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { resolveGallerySeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
+import { collectGalleryPublishedImages } from "@/lib/page-builder/seo/publishedImages.server";
 
 type PageProps = {
   params: Promise<{ orgSlug: string }>;
@@ -27,18 +30,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { publicPage, name } = workspace;
   const seo = (publicPage?.seo as PublicPageSeo | undefined) ?? {};
+  const locale = resolvePublicChromeLocale(workspace);
+  const t = await getTranslations({ locale, namespace: "publicPage.seoDefaults" });
 
-  const title = `${name} — Gallery`;
-  const seoDescription = publicPage?.seoDescription || undefined;
-  const description =
-    seo.galleryDescription ||
-    seoDescription ||
-    `${name} — Photography Portfolio`;
+  const galleryTitle = `${name} — Gallery`;
+  const defaultDescription = t(SEO_DEFAULT_KEYS.galleryDescription, { name });
+  const { title, description } = resolveGallerySeo({
+    name,
+    galleryDescription: seo.galleryDescription,
+    seoDescription: publicPage?.seoDescription,
+    defaultDescription,
+    galleryTitle,
+  });
+
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
   const galleryUrl = portfolioGalleryUrl(workspace.slug);
-  const locale = resolvePublicChromeLocale(workspace);
 
   const result: Metadata = {
     title,
@@ -63,7 +71,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // layout's default favicon during Next's metadata merge instead of
   // inheriting it.
   if (iconUrl) result.icons = { icon: iconUrl, shortcut: iconUrl, apple: iconUrl };
+  const rawGallery = (publicPage?.data as { gallery?: unknown } | null | undefined)?.gallery;
   if (seo.noindex) result.robots = { index: false, follow: false };
+  else if (!hasRenderableBlocks(rawGallery)) result.robots = { index: false, follow: true };
   return result;
 }
 
@@ -84,16 +94,25 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
 
-  // Build gallery JSON-LD — injected in both branches.
-  const [galleryLd, breadcrumbLd] = buildGalleryJsonLd({
-    name: workspace.name,
-    slug: workspace.slug,
-    businessType: workspace.businessType || undefined,
-  });
+  // Published-image collection only makes sense once real gallery content
+  // exists — the ComingSoon branch has no images by definition.
+  const images = galleryData
+    ? await collectGalleryPublishedImages({ workspaceId: String(workspace._id), galleryData })
+    : [];
+
+  // Build JSON-LD — injected in both branches. business/website nodes reuse
+  // the same shared-entity mapping as the Home page (buildPortfolioJsonLdInput)
+  // so this page's @id references to #business/#website resolve to nodes
+  // defined in this page's own markup, not just the Home page's.
+  const sharedJsonLdInput = buildPortfolioJsonLdInput(workspace);
+  const [businessLd, websiteLd] = buildPortfolioEntityNodes(sharedJsonLdInput);
+  const [galleryLd, breadcrumbLd] = buildGalleryJsonLd({ ...sharedJsonLdInput, images });
 
   if (!galleryData) {
     return (
       <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
         <ComingSoonFallback
@@ -128,6 +147,8 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
 
   return runWithRenderWorkspace(renderWorkspace, () => (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
       {/* Per-block Google Font overrides (see lib/page-builder/fonts.ts) — the brand
@@ -135,6 +156,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
       <GoogleFontLoader families={collectGoogleFontFamilies(galleryData)} />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+      <PoweredByGallurio label={t("poweredBy")} />
     </>
   ));
 }

@@ -16,7 +16,7 @@ import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import type { PickerItem } from "./types";
 
-// Plain strings — Puck editor chrome is English (see RELEASE-CHECKLIST §4f).
+// Plain strings: Puck editor chrome is intentionally English-only.
 const L = {
   title: "New collection",
   nameLabel: "Collection title",

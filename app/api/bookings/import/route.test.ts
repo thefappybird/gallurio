@@ -32,6 +32,17 @@ function makeOrgCtx(wsId: Types.ObjectId) {
   };
 }
 
+// Mutable so individual tests can simulate a specific rate or an FX outage
+// (null) without touching the network. Default: same-currency freeze only.
+const fx = vi.hoisted(() => ({
+  resolveFxFreeze: vi.fn(async (base: string, target: string) =>
+    base === target ? { rate: 1, target } : null
+  ),
+}));
+vi.mock("@/lib/pricing/fxRates", () => ({
+  resolveFxFreeze: (base: string, target: string) => fx.resolveFxFreeze(base, target),
+}));
+
 beforeAll(async () => {
   await startInMemoryMongo();
 });
@@ -46,6 +57,10 @@ beforeEach(async () => {
   __resetRateLimitForTests();
   // Default: WS_ID context (mirrors the original static mock for all existing tests).
   mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
+  fx.resolveFxFreeze.mockReset();
+  fx.resolveFxFreeze.mockImplementation(async (base: string, target: string) =>
+    base === target ? { rate: 1, target } : null
+  );
   // Seed default teams for all test workspaces so the route's
   // Team.findOne({ workspaceId, isDefault: true }) succeeds.
   const ownerUserId = "user_test";
@@ -463,6 +478,35 @@ describe("POST /api/bookings/import", () => {
     const balance = await Transaction.find({ workspaceId: WS_ID, type: "balance" }).lean();
     expect(balance).toHaveLength(1);
     expect(balance[0].amount).toBe(40000);
+  });
+
+  it("freezes the fx rate on a paid imported payment when the row currency differs from the workspace currency (PHP)", async () => {
+    fx.resolveFxFreeze.mockResolvedValueOnce({ rate: 58, target: "PHP" });
+    const payments = JSON.stringify([{ price: 40000, status: "paid" }]);
+    const res = await callImport([
+      { ...VALID_ROW, currency: "USD", amountTotal: 50000, amountDeposit: 10000, payments },
+    ]);
+    expect((await res.json()).created).toBe(1);
+    expect(fx.resolveFxFreeze).toHaveBeenCalledWith("USD", "PHP");
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.payments?.[0].fxRate).toBe(58);
+    expect(booking?.payments?.[0].fxTarget).toBe("PHP");
+    expect(booking?.amount?.fxRate).toBe(58);
+    expect(booking?.amount?.fxTarget).toBe("PHP");
+  });
+
+  it("leaves fx fields null and still imports the row when the FX rate is unavailable (outage never blocks the write)", async () => {
+    fx.resolveFxFreeze.mockResolvedValueOnce(null);
+    const payments = JSON.stringify([{ price: 40000, status: "paid" }]);
+    const res = await callImport([
+      { ...VALID_ROW, currency: "USD", amountTotal: 50000, amountDeposit: 10000, payments },
+    ]);
+    expect((await res.json()).created).toBe(1);
+
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    expect(booking?.payments?.[0].fxRate ?? null).toBeNull();
+    expect(booking?.amount?.fxRate ?? null).toBeNull();
   });
 
   it("assigns imported bookings to the chosen team", async () => {

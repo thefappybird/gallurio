@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { usePrefersReducedMotion } from "@/hooks/use-reduced-motion";
 import { useTranslations } from "next-intl";
 import { useIsRtl } from "@/lib/i18n/rtl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +77,7 @@ export function TeamPerformanceCards({
   currency,
   locale,
 }: Props) {
+  const reduceMotion = usePrefersReducedMotion();
   const t = useTranslations("app.dashboard");
   const isRtl = useIsRtl();
   const rows = mergeTeams(revenueByTeam, bookingsByTeam);
@@ -141,7 +143,7 @@ export function TeamPerformanceCards({
           </CardTitle>
           <InfoHint label={t("hints.bookingsPerTeam")} />
         </CardHeader>
-        <CardContent className="min-h-48 flex-1">
+        <CardContent className="min-h-48 flex-1" style={{ minHeight: barData.length * 28 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={barData}
@@ -165,7 +167,7 @@ export function TeamPerformanceCards({
                 axisLine={false}
               />
               <Tooltip {...CHART_TOOLTIP} />
-              <Bar dataKey="bookings" radius={[0, 2, 2, 0]}>
+              <Bar isAnimationActive={!reduceMotion} dataKey="bookings" radius={[0, 2, 2, 0]}>
                 {barData.map((d) => (
                   <Cell key={d.name} fill={d.color} />
                 ))}

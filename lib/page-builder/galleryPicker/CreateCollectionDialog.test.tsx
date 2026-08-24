@@ -8,7 +8,7 @@ const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 const collections = [{ id: "c0", name: "Existing", coverUrl: "https://x/c.jpg", coverPublicId: "pid-c", itemCount: 1 }];
-const photos = [{ id: "src1", publicId: "pid-src1", thumbUrl: "https://x/s.jpg", caption: "Src" }];
+const photos = [{ id: "src1", publicId: "pid-src1", thumbUrl: "https://x/s.jpg", caption: "Src", altText: null }];
 
 beforeEach(() => {
   __clearPickerDataCache();
