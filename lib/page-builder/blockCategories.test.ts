@@ -1,5 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
+import { PRESET_GROUPS } from "./blocks/sectionPresets";
+
+const LEGACY_PRESET_KEYS = [
+  "HeroPreset",
+  "AboutPreset",
+  "ServicesPreset",
+  "CtaPreset",
+  "ContactPreset",
+  "GalleryGridPreset",
+  "GalleryMasonryPreset",
+  "FeaturedWorkPreset",
+  "GalleryLandingPreset",
+  "VideoPreset",
+];
 
 describe("blockCategories", () => {
   it("groups GalleryLandingPreset under Preset blocks, not Manual", () => {
@@ -19,5 +33,29 @@ describe("blockCategories", () => {
   it("registers CollectionCard as a manual block", () => {
     expect(MANUAL_BLOCK_KEYS).toContain("CollectionCard");
     expect(PRESET_BLOCK_KEYS).not.toContain("CollectionCard");
+  });
+
+  it("has exactly 33 unique preset keys (11 groups x 3 variants)", () => {
+    expect(PRESET_BLOCK_KEYS).toHaveLength(33);
+    expect(new Set(PRESET_BLOCK_KEYS).size).toBe(33);
+  });
+
+  it("keeps all ten legacy preset keys for persisted-page compatibility", () => {
+    for (const key of LEGACY_PRESET_KEYS) {
+      expect(PRESET_BLOCK_KEYS).toContain(key);
+    }
+  });
+
+  it("groups presets into exactly 11 groups of exactly 3 keys, no key in two groups", () => {
+    expect(PRESET_GROUPS).toHaveLength(11);
+    const seen = new Set<string>();
+    for (const group of PRESET_GROUPS) {
+      expect(group.keys).toHaveLength(3);
+      for (const key of group.keys) {
+        expect(seen.has(key)).toBe(false);
+        seen.add(key);
+      }
+    }
+    expect(seen.size).toBe(33);
   });
 });

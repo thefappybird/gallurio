@@ -7,232 +7,296 @@
  * and styled INDIVIDUALLY via its own `_style` toolkit — so each piece of text
  * is its own block, not a bundle of text-inputs on one monolithic component.
  *
+ * The compositions live one file per section group under `./presets/`. THIS file
+ * is the registry that names them: 11 groups x 3 variants = 33 component keys,
+ * each carrying its group, its localized label/description keys, and what
+ * workspace content it depends on.
+ *
+ * The registry is the SINGLE source those facts come from. `puckConfig`,
+ * `createEditorConfig`, `PRESET_BLOCK_KEYS`, `fillBlockDefaults`, the editor's
+ * drawer categories, demo-mode filtering, and the guide's preset detection all
+ * derive from it rather than repeating 33 keys by hand.
+ *
  * Client-safe (pure data + the isomorphic ContainerBlock render), so the SAME
  * configs power the editor canvas and the public renderer. Only the `_style`
  * field and the bg-image field differ between editor/prod (the editor swaps in
  * visual pickers) — field KEYS match, so editor/prod parity holds.
  */
 
-import type { Slot } from "@measured/puck";
 import type { ContainerBlockProps } from "./manualBlocks";
+import { HERO_PRESET, HERO_SPLIT_PRESET, HERO_STATEMENT_PRESET } from "./presets/hero";
+import { ABOUT_PRESET, ABOUT_PORTRAIT_PRESET, ABOUT_PROFILE_PRESET } from "./presets/about";
+import { SERVICES_PRESET, SERVICES_MENU_PRESET, SERVICES_FEATURE_PRESET } from "./presets/services";
+import { CTA_PRESET, CTA_IMAGE_PRESET, CTA_MINIMAL_PRESET } from "./presets/cta";
+import { CONTACT_PRESET, CONTACT_SPLIT_PRESET, CONTACT_BAR_PRESET } from "./presets/contact";
+import {
+  GALLERY_GRID_PRESET,
+  GALLERY_GRID_FULL_PRESET,
+  GALLERY_GRID_FRAMED_PRESET,
+} from "./presets/galleryGrid";
+import {
+  GALLERY_MASONRY_PRESET,
+  GALLERY_MASONRY_WALL_PRESET,
+  GALLERY_MASONRY_JOURNAL_PRESET,
+} from "./presets/galleryMasonry";
+import {
+  FEATURED_WORK_PRESET,
+  FEATURED_WORK_LEAD_PRESET,
+  FEATURED_WORK_INDEX_PRESET,
+} from "./presets/featuredWork";
+import {
+  GALLERY_LANDING_PRESET,
+  GALLERY_LANDING_SPLIT_PRESET,
+  GALLERY_LANDING_MASTHEAD_PRESET,
+} from "./presets/galleryLanding";
+import { VIDEO_PRESET, VIDEO_SPLIT_PRESET, VIDEO_CINEMA_PRESET } from "./presets/video";
+import {
+  FOOTER_SIGNATURE_PRESET,
+  FOOTER_DIRECTORY_PRESET,
+  FOOTER_STATEMENT_PRESET,
+} from "./presets/footer";
 
-// A child block in a preset's slot. Props are intentionally loose here — each
-// child's real prop type is enforced where the block is defined.
-function child(type: string, props: Record<string, unknown>) {
-  return { type, props };
+// Re-exported so existing importers (tests, templates) keep working unchanged.
+export {
+  HERO_PRESET, HERO_SPLIT_PRESET, HERO_STATEMENT_PRESET,
+  ABOUT_PRESET, ABOUT_PORTRAIT_PRESET, ABOUT_PROFILE_PRESET,
+  SERVICES_PRESET, SERVICES_MENU_PRESET, SERVICES_FEATURE_PRESET,
+  CTA_PRESET, CTA_IMAGE_PRESET, CTA_MINIMAL_PRESET,
+  CONTACT_PRESET, CONTACT_SPLIT_PRESET, CONTACT_BAR_PRESET,
+  GALLERY_GRID_PRESET, GALLERY_GRID_FULL_PRESET, GALLERY_GRID_FRAMED_PRESET,
+  GALLERY_MASONRY_PRESET, GALLERY_MASONRY_WALL_PRESET, GALLERY_MASONRY_JOURNAL_PRESET,
+  FEATURED_WORK_PRESET, FEATURED_WORK_LEAD_PRESET, FEATURED_WORK_INDEX_PRESET,
+  GALLERY_LANDING_PRESET, GALLERY_LANDING_SPLIT_PRESET, GALLERY_LANDING_MASTHEAD_PRESET,
+  VIDEO_PRESET, VIDEO_SPLIT_PRESET, VIDEO_CINEMA_PRESET,
+  FOOTER_SIGNATURE_PRESET, FOOTER_DIRECTORY_PRESET, FOOTER_STATEMENT_PRESET,
+};
+
+// ---------------------------------------------------------------------------
+// Registry types
+// ---------------------------------------------------------------------------
+
+/** The 11 section groups, in drawer order. */
+export const PRESET_GROUP_IDS = [
+  "hero",
+  "about",
+  "services",
+  "cta",
+  "contact",
+  "galleryGrid",
+  "galleryMasonry",
+  "featuredWork",
+  "galleryLanding",
+  "video",
+  "footer",
+] as const;
+export type PresetGroupId = (typeof PRESET_GROUP_IDS)[number];
+
+/**
+ * Workspace content a preset needs before it says anything. Drives demo-mode
+ * filtering (no collections picker there) and prerequisite copy in the drawer.
+ */
+export const PRESET_DEPENDENCIES = ["gallery", "collections", "contact", "video"] as const;
+export type PresetDependency = (typeof PRESET_DEPENDENCIES)[number];
+
+export type SectionPresetEntry = {
+  /** English label. Also the drawer label wherever no translator runs (production
+   *  `puckConfig`, tests). Within a group these are the VARIANT names — the group
+   *  name is the category title above them. */
+  label: string;
+  /** Key under `app.pageBuilder.editor.puckConfig`. */
+  labelKey: string;
+  /** One-sentence drawer subtitle, English. */
+  description: string;
+  descriptionKey: string;
+  group: PresetGroupId;
+  dependsOn: readonly PresetDependency[];
+  defaultProps: ContainerBlockProps;
+  /** Optional editor-only hints. Never a field — parity with `puckConfig` holds. */
+  metadata?: Record<string, unknown>;
+};
+
+// A registry row. `group` and the camelCase i18n keys are derived from the key so
+// 33 entries cannot drift into inconsistent naming.
+function entry(
+  key: string,
+  group: PresetGroupId,
+  label: string,
+  description: string,
+  defaultProps: ContainerBlockProps,
+  extra?: { dependsOn?: readonly PresetDependency[]; metadata?: Record<string, unknown> }
+): SectionPresetEntry {
+  const camel = key.charAt(0).toLowerCase() + key.slice(1);
+  return {
+    label,
+    labelKey: `puckConfig.blocks.${camel}`,
+    description,
+    descriptionKey: `puckConfig.presetDescriptions.${camel}`,
+    group,
+    dependsOn: extra?.dependsOn ?? [],
+    defaultProps,
+    ...(extra?.metadata ? { metadata: extra.metadata } : {}),
+  };
 }
 
-// `content` literals are validated structurally by Puck at runtime; cast once.
-const slot = (items: ReturnType<typeof child>[]): Slot => items as unknown as Slot;
-
-// Light text for use over a dark hero/CTA image or accent fill (the page's
-// background token is the light pole of the palette).
-const onDark = { textColorToken: "background" } as const;
-
-// A Button sitting ON an accent band. ButtonBlock has no brand-kit fallback:
-// with `buttonStyle` unset it renders a transparent fill with its label and
-// border in `--pf-color-fg`, which against an accent background measures
-// 1.66:1 (Bold) to 3.54:1 (Editorial) — every committed kit fails DESIGN.md's
-// 4.5:1 bar. Inverting the band (background-token fill, accent label) clears it
-// on every kit, because Preset Quality Bar already guarantees accent-on-ground.
-const onAccentBand = {
-  buttonStyle: "solid",
-  buttonColorToken: "background",
-  textColorToken: "accent",
-} as const;
-
-export const HERO_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 50,
-  minHeight: "tall",
-  alignX: "center",
-  alignY: "center",
-  _style: { bgColorToken: "accent" },
-  content: slot([
-    child("Heading", { level: "h1", text: "Capturing moments that last forever", _style: { ...onDark, bold: true } }),
-    child("Text", { text: "Fine art photography for weddings, portraits, and events.", _style: onDark }),
-    child("Button", { label: "Get in Touch", action: "open-contact", align: "center", _style: onAccentBand }),
-  ]),
-};
-
-export const ABOUT_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 0,
-  minHeight: "auto",
-  alignX: "left",
-  alignY: "top",
-  content: slot([
-    child("Heading", { level: "h2", text: "About Me" }),
-    child("Text", {
-      text: "I'm a passionate photographer based in Manila, capturing life's most meaningful moments.\n\nWith over a decade of experience, I bring artistry and technical expertise to every session.",
-    }),
-  ]),
-};
-
-export const CTA_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 0,
-  minHeight: "medium",
-  alignX: "center",
-  alignY: "center",
-  _style: { bgColorToken: "accent" },
-  content: slot([
-    child("Heading", { level: "h2", text: "Ready to book your session?", _style: onDark }),
-    child("Text", { text: "Let's create something beautiful together.", _style: onDark }),
-    child("Button", { label: "Get in Touch", action: "open-contact", align: "center", _style: onAccentBand }),
-  ]),
-};
-
-export const SERVICES_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 0,
-  minHeight: "auto",
-  alignX: "center",
-  alignY: "top",
-  // Unlike Hero/CTA/GalleryLanding (explicit "accent" feature bands), this is a
-  // plain section — but its unstyled children still default to the theme
-  // foreground color, which is the LIGHT pole of the palette on dark themes
-  // (e.g. Luxury). Pin the section's own background to the page's "background"
-  // token so that default text stays legible regardless of theme.
-  _style: { bgColorToken: "background" },
-  content: slot([
-    child("Heading", { level: "h2", text: "Services" }),
-    child("Columns", {
-      columns: 3,
-      content: slot([
-        child("Container", {
-          _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-          content: slot([
-            child("Heading", { level: "h3", text: "Wedding Photography" }),
-            child("Text", { text: "Full-day coverage of your most important day." }),
-            child("Text", { text: "From ₱30,000", _style: { textColorToken: "accent", bold: true } }),
-          ]),
-        }),
-        child("Container", {
-          _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-          content: slot([
-            child("Heading", { level: "h3", text: "Portrait Sessions" }),
-            child("Text", { text: "Individual or family portraits in natural light." }),
-            child("Text", { text: "From ₱8,000", _style: { textColorToken: "accent", bold: true } }),
-          ]),
-        }),
-        child("Container", {
-          _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-          content: slot([
-            child("Heading", { level: "h3", text: "Event Coverage" }),
-            child("Text", { text: "Corporate events, debuts, and intimate gatherings." }),
-            child("Text", { text: "From ₱15,000", _style: { textColorToken: "accent", bold: true } }),
-          ]),
-        }),
-      ]),
-    }),
-  ]),
-};
-
-export const CONTACT_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 0,
-  minHeight: "auto",
-  alignX: "center",
-  alignY: "top",
-  content: slot([
-    child("Heading", { level: "h2", text: "Get in Touch" }),
-    child("Text", { text: "I'd love to hear about your vision. Reach out and let's talk." }),
-    child("ContactDetails", {}),
-    child("Button", { label: "Send a Message", action: "open-contact", align: "center" }),
-  ]),
-};
-
-export const GALLERY_GRID_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 0,
-  minHeight: "auto",
-  alignX: "left",
-  alignY: "top",
-  content: slot([
-    child("Heading", { level: "h2", text: "Gallery highlights" }),
-    child("Text", { text: "A curated selection from one collection." }),
-    child("GalleryGrid", { images: [], columns: 3, gap: "normal" }),
-  ]),
-};
-
-export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 0,
-  minHeight: "auto",
-  alignX: "left",
-  alignY: "top",
-  content: slot([
-    child("Heading", { level: "h2", text: "Story gallery" }),
-    child("Text", { text: "A more editorial layout for one collection." }),
-    child("GalleryMasonry", { images: [], columns: 3, gap: "normal" }),
-  ]),
-};
-
-export const FEATURED_WORK_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 0,
-  minHeight: "auto",
-  alignX: "left",
-  alignY: "top",
-  // Same reasoning as SERVICES_PRESET above — pin to the theme's own background
-  // so unstyled (default-foreground) text stays legible on dark themes.
-  _style: { bgColorToken: "background" },
-  content: slot([
-    child("Heading", { level: "h2", text: "Featured work" }),
-    child("Text", { text: "Spotlight a few signature images." }),
-    child("FeaturedWork", { collections: [], columns: 3 }),
-  ]),
-};
-
-/**
- * Gallery landing — a medium-height, full-bleed hero-style container for the
- * Gallery page. Supports multi-image background (slideshow). No button.
- */
-export const GALLERY_LANDING_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 40,
-  minHeight: "medium",
-  alignX: "center",
-  alignY: "center",
-  _style: { bgColorToken: "accent" },
-  content: slot([
-    child("Heading", { level: "h2", text: "Our gallery", _style: { ...onDark, bold: true } }),
-    child("Text", { text: "A curated look at our work.", _style: onDark }),
-  ]),
-};
-
-/**
- * Video preset — header + description + video. Built on Container like every
- * other preset (NOT a bespoke wrapper) so its Content/Design/Layout tabs expose
- * the full Container style surface (background/background-image incl. opacity,
- * padding, min-height, border, shadow, radius, colSpan/rowSpan, overlay) —
- * matching every other preset's style surface exactly.
- */
-export const VIDEO_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
-  overlayOpacity: 0,
-  minHeight: "auto",
-  alignX: "center",
-  alignY: "top",
-  content: slot([
-    child("Heading", { level: "h2", text: "Watch our story" }),
-    child("Text", { text: "A short film capturing the moments that matter most." }),
-    child("Video", { videoUrl: "" }),
-  ]),
-};
+// ---------------------------------------------------------------------------
+// The 33 presets, in drawer order: group by group, variant A first.
+//
+// The ten original component keys are UNCHANGED — persisted pages reference them.
+// Their LABELS changed from the old flat group name to the variant name, because
+// the group name is now the collapsible category heading above them.
+// ---------------------------------------------------------------------------
 
 export const SECTION_PRESETS = {
-  HeroPreset:           { label: "Hero",            defaultProps: HERO_PRESET },
-  AboutPreset:          { label: "About",           defaultProps: ABOUT_PRESET },
-  ServicesPreset:       { label: "Services",        defaultProps: SERVICES_PRESET },
-  CtaPreset:            { label: "Call to action",  defaultProps: CTA_PRESET },
-  ContactPreset:        { label: "Contact",         defaultProps: CONTACT_PRESET },
-  GalleryGridPreset:    { label: "Gallery Grid",    defaultProps: GALLERY_GRID_PRESET },
-  GalleryMasonryPreset: { label: "Gallery Masonry", defaultProps: GALLERY_MASONRY_PRESET },
-  FeaturedWorkPreset:   { label: "Featured Work",   defaultProps: FEATURED_WORK_PRESET },
-  GalleryLandingPreset: { label: "Gallery landing", defaultProps: GALLERY_LANDING_PRESET },
-  VideoPreset:          { label: "Video Highlight",  defaultProps: VIDEO_PRESET },
-} as const;
+  // ---- Hero ----
+  HeroPreset: entry("HeroPreset", "hero", "Immersive cover",
+    "Tall image or slideshow background with centered copy over a scrim.", HERO_PRESET),
+  HeroSplitPreset: entry("HeroSplitPreset", "hero", "Split introduction",
+    "Copy and CTA beside an editable image that keeps its own proportions.", HERO_SPLIT_PRESET),
+  HeroStatementPreset: entry("HeroStatementPreset", "hero", "Typographic statement",
+    "An oversized headline, a divider and a compact CTA — no image needed.", HERO_STATEMENT_PRESET),
+
+  // ---- About ----
+  AboutPreset: entry("AboutPreset", "about", "Editorial biography",
+    "A heading and long-form biography at a readable measure.", ABOUT_PRESET),
+  AboutPortraitPreset: entry("AboutPortraitPreset", "about", "Portrait and story",
+    "A portrait beside the story, each editable on its own.", ABOUT_PORTRAIT_PRESET),
+  AboutProfilePreset: entry("AboutProfilePreset", "about", "Studio profile",
+    "The story spans two tracks; location, experience and specialty sit beside it.", ABOUT_PROFILE_PRESET),
+
+  // ---- Services ----
+  ServicesPreset: entry("ServicesPreset", "services", "Service cards",
+    "Three equal bordered packages with prices that stay aligned.", SERVICES_PRESET),
+  ServicesMenuPreset: entry("ServicesMenuPreset", "services", "Editorial menu",
+    "Stacked rows split into title, description and price, with no card frames.", SERVICES_MENU_PRESET),
+  ServicesFeaturePreset: entry("ServicesFeaturePreset", "services", "Featured service",
+    "One prominent split service leads, with two quieter ones beneath.", SERVICES_FEATURE_PRESET),
+
+  // ---- Call to action ----
+  CtaPreset: entry("CtaPreset", "cta", "Accent band",
+    "A centered color band closing with a contact CTA.", CTA_PRESET),
+  CtaImagePreset: entry("CtaImagePreset", "cta", "Image invitation",
+    "A short scrimmed image band with start-aligned closing copy.", CTA_IMAGE_PRESET),
+  CtaMinimalPreset: entry("CtaMinimalPreset", "cta", "Minimal closing",
+    "A divider and a headline beside a button, with no background of its own.", CTA_MINIMAL_PRESET),
+
+  // ---- Contact ----
+  ContactPreset: entry("ContactPreset", "contact", "Centered contact",
+    "Heading, introduction, contact details and a CTA, centered.", CONTACT_PRESET,
+    { dependsOn: ["contact"] }),
+  ContactSplitPreset: entry("ContactSplitPreset", "contact", "Split inquiry",
+    "A narrative and CTA beside contact details in a restrained frame.", CONTACT_SPLIT_PRESET,
+    { dependsOn: ["contact"] }),
+  ContactBarPreset: entry("ContactBarPreset", "contact", "Compact contact bar",
+    "A wide closing row that stacks in reading order on a phone.", CONTACT_BAR_PRESET,
+    { dependsOn: ["contact"] }),
+
+  // ---- Gallery grid ----
+  GalleryGridPreset: entry("GalleryGridPreset", "galleryGrid", "Classic grid",
+    "A heading and description above a three-column grid.", GALLERY_GRID_PRESET,
+    { dependsOn: ["gallery"] }),
+  GalleryGridFullPreset: entry("GalleryGridFullPreset", "galleryGrid", "Full-width grid",
+    "A minimal header over an edge-to-edge four-column grid.", GALLERY_GRID_FULL_PRESET,
+    { dependsOn: ["gallery"] }),
+  GalleryGridFramedPreset: entry("GalleryGridFramedPreset", "galleryGrid", "Framed selection",
+    "A padded, bordered section around a small curated set.", GALLERY_GRID_FRAMED_PRESET,
+    { dependsOn: ["gallery"] }),
+
+  // ---- Gallery masonry ----
+  GalleryMasonryPreset: entry("GalleryMasonryPreset", "galleryMasonry", "Editorial story",
+    "A heading and description above a masonry flow.", GALLERY_MASONRY_PRESET,
+    { dependsOn: ["gallery"] }),
+  GalleryMasonryWallPreset: entry("GalleryMasonryWallPreset", "galleryMasonry", "Edge-to-edge wall",
+    "Full width and tight gutters — the photographs form one wall.", GALLERY_MASONRY_WALL_PRESET,
+    { dependsOn: ["gallery"] }),
+  GalleryMasonryJournalPreset: entry("GalleryMasonryJournalPreset", "galleryMasonry", "Journal spread",
+    "The introduction takes one track while the masonry spans the rest.", GALLERY_MASONRY_JOURNAL_PRESET,
+    { dependsOn: ["gallery"] }),
+
+  // ---- Featured work ----
+  FeaturedWorkPreset: entry("FeaturedWorkPreset", "featuredWork", "Collection overview",
+    "An introduction above three clickable collection tiles.", FEATURED_WORK_PRESET,
+    { dependsOn: ["collections"] }),
+  FeaturedWorkLeadPreset: entry("FeaturedWorkLeadPreset", "featuredWork", "Lead collections",
+    "Two large collections in a landscape crop under a stronger introduction.", FEATURED_WORK_LEAD_PRESET,
+    { dependsOn: ["collections"] }),
+  FeaturedWorkIndexPreset: entry("FeaturedWorkIndexPreset", "featuredWork", "Compact project index",
+    "Compact square collection tiles on a contrasting band.", FEATURED_WORK_INDEX_PRESET,
+    { dependsOn: ["collections"] }),
+
+  // ---- Gallery landing ----
+  GalleryLandingPreset: entry("GalleryLandingPreset", "galleryLanding", "Slideshow cover",
+    "A medium-height image or slideshow landing with centered copy.", GALLERY_LANDING_PRESET,
+    {
+      // Editor hint: uploading multiple background images activates the
+      // auto-playing slideshow (ContainerBackgroundControls shows animation
+      // controls at images.length >= 2).
+      metadata: {
+        backgroundImagesHint:
+          "Upload multiple background images to turn this into an auto-playing carousel.",
+      },
+    }),
+  GalleryLandingSplitPreset: entry("GalleryLandingSplitPreset", "galleryLanding", "Split gallery intro",
+    "Copy beside one signature image, editable on its own.", GALLERY_LANDING_SPLIT_PRESET),
+  GalleryLandingMastheadPreset: entry("GalleryLandingMastheadPreset", "galleryLanding", "Minimal masthead",
+    "A type-led title and divider so the gallery starts right below.", GALLERY_LANDING_MASTHEAD_PRESET),
+
+  // ---- Video ----
+  VideoPreset: entry("VideoPreset", "video", "Centered film",
+    "A centered heading, description and embedded film.", VIDEO_PRESET,
+    { dependsOn: ["video"] }),
+  VideoSplitPreset: entry("VideoSplitPreset", "video", "Film and story",
+    "The film takes the larger side of a split, with context beside it.", VIDEO_SPLIT_PRESET,
+    { dependsOn: ["video"] }),
+  VideoCinemaPreset: entry("VideoCinemaPreset", "video", "Cinema band",
+    "A full-width film on a contrasting band with a caption below.", VIDEO_CINEMA_PRESET,
+    { dependsOn: ["video"] }),
+
+  // ---- Footer ----
+  FooterSignaturePreset: entry("FooterSignaturePreset", "footer", "Signature footer",
+    "A divider, the studio name and compact Home, Gallery and Contact links.", FOOTER_SIGNATURE_PRESET),
+  FooterDirectoryPreset: entry("FooterDirectoryPreset", "footer", "Directory footer",
+    "Three columns for identity, navigation and contact details.", FOOTER_DIRECTORY_PRESET,
+    { dependsOn: ["contact"] }),
+  FooterStatementPreset: entry("FooterStatementPreset", "footer", "Closing statement",
+    "A contrasting band with a final statement, CTA and quiet copyright line.", FOOTER_STATEMENT_PRESET),
+} as const satisfies Record<string, SectionPresetEntry>;
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;
+
+/** All 33 keys, in drawer order. */
+export const SECTION_PRESET_KEYS = Object.keys(SECTION_PRESETS) as SectionPresetKey[];
+
+export type PresetGroup = {
+  id: PresetGroupId;
+  /** English category title. */
+  label: string;
+  labelKey: string;
+  keys: readonly SectionPresetKey[];
+};
+
+const GROUP_LABELS: Record<PresetGroupId, string> = {
+  hero: "Hero",
+  about: "About",
+  services: "Services",
+  cta: "Call to action",
+  contact: "Contact",
+  galleryGrid: "Gallery grid",
+  galleryMasonry: "Gallery masonry",
+  featuredWork: "Featured work",
+  galleryLanding: "Gallery landing",
+  video: "Video",
+  footer: "Footer",
+};
+
+/** The drawer's collapsible categories: 11 groups, each with its 3 variants. */
+export const PRESET_GROUPS: readonly PresetGroup[] = PRESET_GROUP_IDS.map((id) => ({
+  id,
+  label: GROUP_LABELS[id],
+  labelKey: `puckConfig.categories.${id}`,
+  keys: SECTION_PRESET_KEYS.filter((key) => SECTION_PRESETS[key].group === id),
+}));
+
+/** Presets that need the (auth-gated) collections picker — hidden in demo mode. */
+export const COLLECTION_PRESET_KEYS: readonly SectionPresetKey[] = SECTION_PRESET_KEYS.filter(
+  (key) => SECTION_PRESETS[key].dependsOn.includes("collections")
+);

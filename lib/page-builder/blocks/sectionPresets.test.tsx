@@ -8,6 +8,7 @@ import {
   GALLERY_LANDING_PRESET,
   GALLERY_MASONRY_PRESET,
   HERO_PRESET,
+  SECTION_PRESET_KEYS,
   SECTION_PRESETS,
   SERVICES_PRESET,
   VIDEO_PRESET,
@@ -92,5 +93,20 @@ describe("VideoPreset (F3 composite block)", () => {
   it("composes Container -> Heading -> Text -> Video, same shape as other presets", () => {
     const children = VIDEO_PRESET.content as Array<{ type: string }>;
     expect(children.map((child) => child.type)).toEqual(["Heading", "Text", "Video"]);
+  });
+});
+
+describe("every registered preset renders through Puck", () => {
+  it.each(SECTION_PRESET_KEYS)("%s mounts with non-empty content", (key) => {
+    const { container } = render(
+      <Render
+        config={puckConfig}
+        data={{
+          root: {},
+          content: [{ type: key, props: { id: `${key}-1`, ...SECTION_PRESETS[key].defaultProps } }],
+        }}
+      />
+    );
+    expect(container.textContent?.length).toBeGreaterThan(0);
   });
 });

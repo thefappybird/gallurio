@@ -18,7 +18,7 @@ import React from "react";
 import type { Config } from "@measured/puck";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PF_PAGE_CONTAINER, PF_RESPONSIVE_CSS } from "./responsive";
-import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
+import { MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
 import { galleryMasonryBlockConfig } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkBlockConfig } from "./blocks/FeaturedWorkBlock";
@@ -40,7 +40,13 @@ import {
   type ContainerBlockProps,
   type ContainerAnchorProps,
 } from "./blocks/manualBlocks";
-import { SECTION_PRESETS } from "./blocks/sectionPresets";
+import {
+  SECTION_PRESETS,
+  SECTION_PRESET_KEYS,
+  PRESET_GROUPS,
+  type SectionPresetKey,
+  type PresetGroupId,
+} from "./blocks/sectionPresets";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
 import type { FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
@@ -61,18 +67,7 @@ import type {
 // Components union — every preset is a Container (composed section).
 // ---------------------------------------------------------------------------
 
-type Components = {
-  // Preset sections (Container-based compositions)
-  HeroPreset: ContainerBlockProps;
-  AboutPreset: ContainerBlockProps;
-  ServicesPreset: ContainerBlockProps;
-  CtaPreset: ContainerBlockProps;
-  ContactPreset: ContainerBlockProps;
-  GalleryGridPreset: ContainerBlockProps;
-  GalleryMasonryPreset: ContainerBlockProps;
-  FeaturedWorkPreset: ContainerBlockProps;
-  GalleryLandingPreset: ContainerBlockProps;
-  VideoPreset: ContainerBlockProps;
+type Components = Record<SectionPresetKey, ContainerBlockProps> & {
   // Data blocks
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
@@ -98,22 +93,33 @@ function presetConfig(label: string, defaultProps: ContainerBlockProps) {
   return { label, fields: containerFields, defaultProps, render: ContainerBlock };
 }
 
+// The drawer's 11 collapsible section-group categories, derived from the
+// registry's PRESET_GROUPS so they can't drift from the 33 preset keys. Only
+// the first group starts open — 33 items all expanded is an unusable drawer.
+// Object.fromEntries widens to string keys, so this one cast restores the
+// exact PresetGroupId -> Category shape (all keys/values are still built
+// straight from PRESET_GROUPS, nothing is hand-typed).
+const presetCategories = Object.fromEntries(
+  PRESET_GROUPS.map((group) => [
+    group.id,
+    { title: group.label, components: [...group.keys], defaultExpanded: group.id === "hero" },
+  ])
+) as Record<PresetGroupId, { title: string; components: SectionPresetKey[]; defaultExpanded: boolean }>;
+
+// The 33 preset components, derived from the registry. Same fromEntries-cast
+// reasoning as presetCategories above: Puck's Config generic wants the exact
+// `Record<SectionPresetKey, ...>` shape that a mapped fromEntries can't infer.
+const presetComponents = Object.fromEntries(
+  SECTION_PRESET_KEYS.map((key) => [key, presetConfig(SECTION_PRESETS[key].label, SECTION_PRESETS[key].defaultProps)])
+) as Record<SectionPresetKey, ReturnType<typeof presetConfig>>;
+
 export const puckConfig: Config<Components> = {
   categories: {
-    presets: { title: "Preset blocks", components: [...PRESET_BLOCK_KEYS], defaultExpanded: true },
+    ...presetCategories,
     manual: { title: "Manual blocks", components: [...MANUAL_BLOCK_KEYS], defaultExpanded: false },
   },
   components: {
-    HeroPreset: presetConfig(SECTION_PRESETS.HeroPreset.label, SECTION_PRESETS.HeroPreset.defaultProps),
-    AboutPreset: presetConfig(SECTION_PRESETS.AboutPreset.label, SECTION_PRESETS.AboutPreset.defaultProps),
-    ServicesPreset: presetConfig(SECTION_PRESETS.ServicesPreset.label, SECTION_PRESETS.ServicesPreset.defaultProps),
-    CtaPreset: presetConfig(SECTION_PRESETS.CtaPreset.label, SECTION_PRESETS.CtaPreset.defaultProps),
-    ContactPreset: presetConfig(SECTION_PRESETS.ContactPreset.label, SECTION_PRESETS.ContactPreset.defaultProps),
-    GalleryGridPreset: presetConfig(SECTION_PRESETS.GalleryGridPreset.label, SECTION_PRESETS.GalleryGridPreset.defaultProps),
-    GalleryMasonryPreset: presetConfig(SECTION_PRESETS.GalleryMasonryPreset.label, SECTION_PRESETS.GalleryMasonryPreset.defaultProps),
-    FeaturedWorkPreset: presetConfig(SECTION_PRESETS.FeaturedWorkPreset.label, SECTION_PRESETS.FeaturedWorkPreset.defaultProps),
-    GalleryLandingPreset: presetConfig(SECTION_PRESETS.GalleryLandingPreset.label, SECTION_PRESETS.GalleryLandingPreset.defaultProps),
-    VideoPreset: presetConfig(SECTION_PRESETS.VideoPreset.label, SECTION_PRESETS.VideoPreset.defaultProps),
+    ...presetComponents,
     GalleryGrid: galleryGridBlockConfig,
     GalleryMasonry: galleryMasonryBlockConfig,
     FeaturedWork: featuredWorkBlockConfig,

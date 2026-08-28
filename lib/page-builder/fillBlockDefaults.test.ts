@@ -1,7 +1,20 @@
 import { describe, it, expect } from "vitest";
 import { fillBlockDefaults } from "./fillBlockDefaults";
+import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
 
 describe("fillBlockDefaults", () => {
+  it.each(SECTION_PRESET_KEYS)(
+    "normalizes every registry preset (%s) with container defaults (bgAnimation, bgSpeed)",
+    (presetKey) => {
+      const data = {
+        content: [{ type: presetKey, props: { id: "p1", content: [] } }],
+      };
+      const result = fillBlockDefaults(data);
+      expect(result.content[0].props.bgAnimation).toBe("crossfade");
+      expect(result.content[0].props.bgSpeed).toBe("medium");
+    },
+  );
+
   it("fills missing gap in Columns _style from defaultProps", () => {
     const data = {
       content: [{ type: "Columns", props: { id: "c1", columns: 2, _style: {} } }],

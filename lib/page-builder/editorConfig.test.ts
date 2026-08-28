@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { editorPuckConfig, createEditorConfig } from "./editorConfig";
+import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate } from "./editorConfig";
 import { puckConfig } from "./config";
-import { SECTION_PRESETS } from "./blocks/sectionPresets";
+import { SECTION_PRESETS, SECTION_PRESET_KEYS, PRESET_GROUPS } from "./blocks/sectionPresets";
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
@@ -22,6 +22,10 @@ import {
 // block's component keys or defaultProps drift from the editor's, saved data
 // won't round-trip. This guards that parity.
 
+type ComponentLike = { fields?: object; defaultProps?: unknown; inline?: boolean; label?: string };
+type ComponentsMap = Record<string, ComponentLike>;
+const componentsOf = (cfg: { components: unknown }) => cfg.components as ComponentsMap;
+
 describe("editorPuckConfig parity with production puckConfig", () => {
   it("registers exactly the same component types", () => {
     expect(Object.keys(editorPuckConfig.components).sort()).toEqual(
@@ -29,17 +33,32 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     );
   });
 
-  const defaults: Record<string, unknown> = {
-    HeroPreset: SECTION_PRESETS.HeroPreset.defaultProps,
-    AboutPreset: SECTION_PRESETS.AboutPreset.defaultProps,
-    ServicesPreset: SECTION_PRESETS.ServicesPreset.defaultProps,
-    CtaPreset: SECTION_PRESETS.CtaPreset.defaultProps,
-    ContactPreset: SECTION_PRESETS.ContactPreset.defaultProps,
-    GalleryGridPreset: SECTION_PRESETS.GalleryGridPreset.defaultProps,
-    GalleryMasonryPreset: SECTION_PRESETS.GalleryMasonryPreset.defaultProps,
-    FeaturedWorkPreset: SECTION_PRESETS.FeaturedWorkPreset.defaultProps,
-    GalleryLandingPreset: SECTION_PRESETS.GalleryLandingPreset.defaultProps,
-    VideoPreset: SECTION_PRESETS.VideoPreset.defaultProps,
+  it("registers every one of the 33 section presets in both configs", () => {
+    for (const key of SECTION_PRESET_KEYS) {
+      expect(componentsOf(editorPuckConfig), key).toHaveProperty(key);
+      expect(componentsOf(puckConfig), key).toHaveProperty(key);
+    }
+  });
+
+  describe.each(SECTION_PRESET_KEYS)("%s (preset)", (key) => {
+    it("is inline: true on the editor side (grid colSpan/rowSpan needs it)", () => {
+      expect(componentsOf(editorPuckConfig)[key]?.inline).toBe(true);
+    });
+
+    it("editor/production field key sets match", () => {
+      const editorFields = Object.keys(componentsOf(editorPuckConfig)[key]?.fields ?? {}).sort();
+      const prodFields = Object.keys(componentsOf(puckConfig)[key]?.fields ?? {}).sort();
+      expect(editorFields).toEqual(prodFields);
+    });
+
+    it("editor/production defaultProps both match the registry", () => {
+      const expected = SECTION_PRESETS[key].defaultProps;
+      expect(componentsOf(editorPuckConfig)[key]?.defaultProps).toEqual(expected);
+      expect(componentsOf(puckConfig)[key]?.defaultProps).toEqual(expected);
+    });
+  });
+
+  const nonPresetDefaults: Record<string, unknown> = {
     GalleryGrid: galleryGridDefaultProps,
     GalleryMasonry: galleryMasonryDefaultProps,
     FeaturedWork: featuredWorkDefaultProps,
@@ -55,21 +74,14 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     Container: containerDefaultProps,
   };
 
-  for (const [type, blockDefaults] of Object.entries(defaults)) {
+  for (const [type, blockDefaults] of Object.entries(nonPresetDefaults)) {
     it(`${type}: editor defaultProps match the block's defaultProps`, () => {
-      const editorDefaults = (
-        editorPuckConfig.components as Record<string, { defaultProps?: unknown }>
-      )[type]?.defaultProps;
-      expect(editorDefaults).toEqual(blockDefaults);
+      expect(componentsOf(editorPuckConfig)[type]?.defaultProps).toEqual(blockDefaults);
     });
 
     it(`${type}: editor field keys match the production block's field keys`, () => {
-      const editorFields = Object.keys(
-        (editorPuckConfig.components as Record<string, { fields?: object }>)[type]?.fields ?? {}
-      ).sort();
-      const prodFields = Object.keys(
-        (puckConfig.components as Record<string, { fields?: object }>)[type]?.fields ?? {}
-      ).sort();
+      const editorFields = Object.keys(componentsOf(editorPuckConfig)[type]?.fields ?? {}).sort();
+      const prodFields = Object.keys(componentsOf(puckConfig)[type]?.fields ?? {}).sort();
       expect(editorFields).toEqual(prodFields);
     });
   }
@@ -111,37 +123,30 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     expect(prodFields).not.toEqual(expect.arrayContaining(["heading", "subheading"]));
   });
 
-  it("registers the new gallery preset section blocks", () => {
-    expect(editorPuckConfig.components).toHaveProperty("GalleryGridPreset");
-    expect(editorPuckConfig.components).toHaveProperty("GalleryMasonryPreset");
-    expect(editorPuckConfig.components).toHaveProperty("FeaturedWorkPreset");
-    expect(puckConfig.components).toHaveProperty("GalleryGridPreset");
-    expect(puckConfig.components).toHaveProperty("GalleryMasonryPreset");
-    expect(puckConfig.components).toHaveProperty("FeaturedWorkPreset");
-  });
-
-  it("Container exposes bgAnimation + bgSpeed and drops the legacy bg-publicId field", () => {
+  it("Container exposes bgAnimation + bgSpeed + overlayColorToken and drops the legacy bg-publicId field", () => {
     const editorFields = Object.keys(editorPuckConfig.components.Container.fields ?? {});
     const prodFields = Object.keys(puckConfig.components.Container.fields ?? {});
     expect(editorFields).toContain("bgAnimation");
     expect(editorFields).toContain("bgSpeed");
+    expect(editorFields).toContain("overlayColorToken");
     expect(editorFields).not.toContain("backgroundImagePublicId");
     expect(prodFields).toContain("bgAnimation");
     expect(prodFields).toContain("bgSpeed");
+    expect(prodFields).toContain("overlayColorToken");
     expect(prodFields).not.toContain("backgroundImagePublicId");
   });
 
-  it("Hero preset inherits the container background animation fields", () => {
+  it("Hero preset inherits the container background animation + overlay color fields", () => {
     const heroFields = Object.keys(editorPuckConfig.components.HeroPreset.fields ?? {});
-    expect(heroFields).toEqual(expect.arrayContaining(["bgAnimation", "bgSpeed"]));
+    expect(heroFields).toEqual(expect.arrayContaining(["bgAnimation", "bgSpeed", "overlayColorToken"]));
   });
 
-  it("registers GalleryLandingPreset in editorPuckConfig", () => {
-    expect(editorPuckConfig.components).toHaveProperty("GalleryLandingPreset");
-  });
-
-  it("registers VideoPreset (F3 composite block) in editorPuckConfig", () => {
-    expect(editorPuckConfig.components).toHaveProperty("VideoPreset");
+  it("Button action options include go-to-home on both configs", () => {
+    type ActionField = { options?: Array<{ value: unknown }> };
+    const editorAction = (editorPuckConfig.components.Button.fields as unknown as { action: ActionField }).action;
+    const prodAction = (puckConfig.components.Button.fields as unknown as { action: ActionField }).action;
+    expect(editorAction.options?.map((o) => o.value)).toContain("go-to-home");
+    expect(prodAction.options?.map((o) => o.value)).toContain("go-to-home");
   });
 });
 
@@ -211,32 +216,49 @@ describe("GalleryLandingPreset carousel hint", () => {
   });
 });
 
-describe("preset section blocks are inline so grid placement applies", () => {
-  // Preset sections render via ContainerBlock, whose root carries the resolved
-  // colSpan/rowSpan (grid-column/grid-row: span N). For that to take effect when
-  // the section is a child of a Columns grid in the EDITOR canvas, Puck must treat
-  // the block as `inline` — otherwise Puck wraps it in its own drag <div> which
-  // becomes the grid child, and the span lands on the inner section (ignored).
-  // Plain Container and Columns are already inline; the presets must match.
-  const PRESET_KEYS = [
-    "HeroPreset",
-    "AboutPreset",
-    "ServicesPreset",
-    "CtaPreset",
-    "ContactPreset",
-    "GalleryGridPreset",
-    "GalleryMasonryPreset",
-    "FeaturedWorkPreset",
-    "GalleryLandingPreset",
-    "VideoPreset",
-  ] as const;
+describe("editorPuckConfig.categories — 11 preset groups + manual", () => {
+  it("has exactly the 11 group ids plus manual, and lists every registered component exactly once", () => {
+    const categories = editorPuckConfig.categories as Record<string, { title?: string; components?: string[] }>;
+    const expectedGroupIds = PRESET_GROUPS.map((g) => g.id);
+    expect(Object.keys(categories).sort()).toEqual([...expectedGroupIds, "manual"].sort());
 
-  for (const key of PRESET_KEYS) {
-    it(`${key} is inline: true`, () => {
-      const cfg = (editorPuckConfig.components as Record<string, { inline?: boolean }>)[key];
-      expect(cfg?.inline).toBe(true);
-    });
-  }
+    const seen = new Set<string>();
+    for (const [catId, cat] of Object.entries(categories)) {
+      for (const componentKey of cat.components ?? []) {
+        expect(seen.has(componentKey), `${componentKey} listed in more than one category (dup at ${catId})`).toBe(false);
+        seen.add(componentKey);
+        expect(editorPuckConfig.components, `${componentKey} listed in ${catId} but not registered`).toHaveProperty(componentKey);
+      }
+    }
+    // ContainerAnchor is editor-only plumbing (insert: false in its permissions) —
+    // it is registered but deliberately absent from every drawer category.
+    const insertable = Object.keys(editorPuckConfig.components).filter((k) => k !== "ContainerAnchor");
+    expect([...seen].sort()).toEqual(insertable.sort());
+  });
+
+  it("only the hero group starts expanded — 33 items all open is unusable", () => {
+    const categories = editorPuckConfig.categories as Record<string, { defaultExpanded?: boolean }>;
+    expect(categories.hero?.defaultExpanded).toBe(true);
+    for (const id of PRESET_GROUPS.map((g) => g.id).filter((id) => id !== "hero")) {
+      expect(categories[id]?.defaultExpanded, id).not.toBe(true);
+    }
+    expect(categories.manual?.defaultExpanded).not.toBe(true);
+  });
+});
+
+describe("English fallback coverage", () => {
+  it("every key createEditorConfig requests resolves to a real string, not the key itself", () => {
+    // englishPuckT falls through to `?? key` on a miss, which is exactly the bug
+    // this guards: a label silently rendering as e.g. "puckConfig.blocks.heroSplitPreset".
+    const misses: string[] = [];
+    const recordingT: PuckTranslate = (key) => {
+      const value = englishPuckT(key);
+      if (value === key) misses.push(key);
+      return value;
+    };
+    createEditorConfig(recordingT);
+    expect(misses).toEqual([]);
+  });
 });
 
 describe("createEditorConfig factory", () => {
@@ -254,18 +276,18 @@ describe("block label renames", () => {
   const label = (cfg: { components: Record<string, { label?: string }> }, key: string) =>
     cfg.components[key]?.label;
 
-  it("renames the gallery/featured preset labels", () => {
-    expect(SECTION_PRESETS.GalleryGridPreset.label).toBe("Gallery Grid");
-    expect(SECTION_PRESETS.GalleryMasonryPreset.label).toBe("Gallery Masonry");
-    expect(SECTION_PRESETS.FeaturedWorkPreset.label).toBe("Featured Work");
-  });
-
   it("renames the manual gallery/featured labels in both configs", () => {
     for (const cfg of [editorPuckConfig, puckConfig] as const) {
       expect(label(cfg as never, "GalleryGrid")).toBe("Photo Grid");
       expect(label(cfg as never, "GalleryMasonry")).toBe("Masonry");
       expect(label(cfg as never, "FeaturedWork")).toBe("Highlights");
-      expect(label(cfg as never, "GalleryLandingPreset")).toBe("Gallery landing");
     }
+  });
+
+  it("preset component labels are the variant name; the group name is now the drawer category title", () => {
+    expect(SECTION_PRESETS.GalleryLandingPreset.label).toBe("Slideshow cover");
+    expect(SECTION_PRESETS.GalleryLandingPreset.group).toBe("galleryLanding");
+    const group = PRESET_GROUPS.find((g) => g.id === "galleryLanding");
+    expect(group?.label).toBe("Gallery landing");
   });
 });

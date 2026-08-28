@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import React from "react";
 import { puckConfig } from "./config";
+import { PRESET_GROUP_IDS } from "./blocks/sectionPresets";
 
 describe("production root render applies root style", () => {
   it("wraps children with the resolved root style", () => {
@@ -34,5 +35,21 @@ describe("production root render applies root style", () => {
     const style = wrapper.querySelector("style");
     expect(style?.innerHTML).toContain("@container pfpage");
     expect(style?.innerHTML).toContain("--pf-pad");
+  });
+});
+
+describe("puckConfig categories", () => {
+  it("has the 11 registry group ids plus 'manual'", () => {
+    const categoryIds = Object.keys(puckConfig.categories ?? {});
+    expect(categoryIds.sort()).toEqual([...PRESET_GROUP_IDS, "manual"].sort());
+  });
+
+  it("every key listed in every category is a registered component", () => {
+    const componentKeys = new Set(Object.keys(puckConfig.components));
+    for (const [categoryId, category] of Object.entries(puckConfig.categories ?? {})) {
+      for (const key of category.components ?? []) {
+        expect(componentKeys.has(key as string), `${categoryId} lists unregistered component ${String(key)}`).toBe(true);
+      }
+    }
   });
 });

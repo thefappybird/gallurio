@@ -2747,19 +2747,30 @@
         "puckConfig": {
           "categories": {
             "presets": "บล็อกสำเร็จรูป",
-            "manual": "บล็อกกำหนดเอง"
+            "manual": "บล็อกกำหนดเอง",
+            "hero": "Hero",
+            "about": "เกี่ยวกับ",
+            "services": "บริการ",
+            "cta": "เรียกร้องการกระทำ",
+            "contact": "ติดต่อ",
+            "galleryGrid": "แกลเลอรีแบบตาราง",
+            "galleryMasonry": "แกลเลอรีแบบเมสันรี",
+            "featuredWork": "ผลงานเด่น",
+            "galleryLanding": "หน้าแกลเลอรี",
+            "video": "วิดีโอ",
+            "footer": "ส่วนท้าย"
           },
           "blocks": {
-            "heroPreset": "Hero",
-            "aboutPreset": "เกี่ยวกับ",
-            "servicesPreset": "บริการ",
-            "ctaPreset": "ปุ่มเรียกร้องการกระทำ",
-            "contactPreset": "ติดต่อ",
-            "galleryGridPreset": "แกลเลอรีแบบตาราง",
-            "galleryMasonryPreset": "แกลเลอรีแบบเมสันรี",
-            "featuredWorkPreset": "ผลงานเด่น",
-            "galleryLandingPreset": "หน้าแกลเลอรี",
-            "videoPreset": "วิดีโอไฮไลต์",
+            "heroPreset": "ปกแบบดื่มด่ำ",
+            "aboutPreset": "ประวัติเชิงบรรณาธิการ",
+            "servicesPreset": "การ์ดบริการ",
+            "ctaPreset": "แถบเน้นสี",
+            "contactPreset": "ติดต่อแบบกึ่งกลาง",
+            "galleryGridPreset": "ตารางคลาสสิก",
+            "galleryMasonryPreset": "เรื่องราวเชิงบรรณาธิการ",
+            "featuredWorkPreset": "ภาพรวมคอลเลกชัน",
+            "galleryLandingPreset": "ปกสไลด์โชว์",
+            "videoPreset": "วิดีโอแบบกึ่งกลาง",
             "galleryGrid": "ตารางรูปภาพ",
             "galleryMasonry": "เมสันรี",
             "featuredWork": "ไฮไลต์",
@@ -2773,7 +2784,65 @@
             "divider": "เส้นแบ่ง",
             "columns": "คอลัมน์",
             "container": "คอนเทนเนอร์",
-            "collectionCard": "การ์ดคอลเลกชัน"
+            "collectionCard": "การ์ดคอลเลกชัน",
+            "heroSplitPreset": "บทนำแบบแบ่งครึ่ง",
+            "heroStatementPreset": "พาดหัวตัวอักษรเด่น",
+            "aboutPortraitPreset": "ภาพเหมือนและเรื่องราว",
+            "aboutProfilePreset": "โปรไฟล์สตูดิโอ",
+            "servicesMenuPreset": "เมนูเชิงบรรณาธิการ",
+            "servicesFeaturePreset": "บริการเด่น",
+            "ctaImagePreset": "คำเชิญพร้อมภาพ",
+            "ctaMinimalPreset": "ปิดท้ายแบบเรียบง่าย",
+            "contactSplitPreset": "คำขอจองแบบแบ่งครึ่ง",
+            "contactBarPreset": "แถบติดต่อกะทัดรัด",
+            "galleryGridFullPreset": "ตารางเต็มความกว้าง",
+            "galleryGridFramedPreset": "คัดสรรแบบมีกรอบ",
+            "galleryMasonryWallPreset": "กำแพงภาพเต็มขอบ",
+            "galleryMasonryJournalPreset": "หน้าคู่แบบนิตยสาร",
+            "featuredWorkLeadPreset": "คอลเลกชันหลัก",
+            "featuredWorkIndexPreset": "ดัชนีโปรเจกต์กะทัดรัด",
+            "galleryLandingSplitPreset": "แนะนำแกลเลอรีแบบแบ่งครึ่ง",
+            "galleryLandingMastheadPreset": "หัวเรื่องแบบเรียบง่าย",
+            "videoSplitPreset": "วิดีโอและเรื่องราว",
+            "videoCinemaPreset": "แถบภาพยนตร์",
+            "footerSignaturePreset": "ส่วนท้ายแบบลายเซ็น",
+            "footerDirectoryPreset": "ส่วนท้ายแบบไดเรกทอรี",
+            "footerStatementPreset": "ข้อความปิดท้าย"
+          },
+          "presetDescriptions": {
+            "heroPreset": "ภาพหรือสไลด์โชว์พื้นหลังสูง พร้อมข้อความกึ่งกลางบนชั้นแสงมืด",
+            "heroSplitPreset": "ข้อความและปุ่ม CTA ข้างภาพที่แก้ไขได้และคงสัดส่วนของตัวเอง",
+            "heroStatementPreset": "พาดหัวขนาดใหญ่ เส้นแบ่ง และปุ่ม CTA กะทัดรัด — ไม่ต้องใช้ภาพ",
+            "aboutPreset": "หัวข้อและประวัติความยาวเต็มในความกว้างที่อ่านง่าย",
+            "aboutPortraitPreset": "ภาพเหมือนข้างเรื่องราว แก้ไขแยกกันได้อิสระ",
+            "aboutProfilePreset": "เรื่องราวขยายสองคอลัมน์ พร้อมที่ตั้ง ประสบการณ์ และความเชี่ยวชาญข้างกัน",
+            "servicesPreset": "แพ็กเกจมีกรอบสามชุดขนาดเท่ากัน ราคาจัดเรียงตรงกัน",
+            "servicesMenuPreset": "แถวเรียงซ้อนแบ่งเป็นชื่อ คำอธิบาย และราคา ไม่มีกรอบการ์ด",
+            "servicesFeaturePreset": "บริการแบบแบ่งครึ่งหนึ่งรายการนำ พร้อมอีกสองรายการที่เรียบกว่าด้านล่าง",
+            "ctaPreset": "แถบสีกึ่งกลางปิดท้ายด้วยปุ่ม CTA ติดต่อ",
+            "ctaImagePreset": "แถบภาพสั้นมีชั้นแสงมืด พร้อมข้อความปิดท้ายชิดต้น",
+            "ctaMinimalPreset": "เส้นแบ่งและพาดหัวข้างปุ่ม ไม่มีพื้นหลังของตัวเอง",
+            "contactPreset": "หัวข้อ คำนำ ข้อมูลติดต่อ และปุ่ม CTA อยู่กึ่งกลาง",
+            "contactSplitPreset": "เนื้อหาและปุ่ม CTA ข้างข้อมูลติดต่อในกรอบเรียบง่าย",
+            "contactBarPreset": "แถวปิดท้ายกว้าง เรียงลำดับการอ่านใหม่บนมือถือ",
+            "galleryGridPreset": "หัวข้อและคำอธิบายเหนือตารางสามคอลัมน์",
+            "galleryGridFullPreset": "ส่วนหัวเรียบง่ายเหนือตารางสี่คอลัมน์เต็มขอบ",
+            "galleryGridFramedPreset": "ส่วนมีขอบและกรอบล้อมรอบชุดภาพคัดสรรขนาดเล็ก",
+            "galleryMasonryPreset": "หัวข้อและคำอธิบายเหนือการจัดวางแบบเมสันรี",
+            "galleryMasonryWallPreset": "เต็มความกว้างและช่องว่างแคบ — ภาพรวมเป็นกำแพงเดียว",
+            "galleryMasonryJournalPreset": "คำนำอยู่หนึ่งคอลัมน์ ขณะที่เมสันรีขยายไปทั่วส่วนที่เหลือ",
+            "featuredWorkPreset": "คำนำเหนือกระเบื้องคอลเลกชันที่คลิกได้สามชิ้น",
+            "featuredWorkLeadPreset": "คอลเลกชันขนาดใหญ่สองชุดในสัดส่วนแนวนอนใต้คำนำที่หนักแน้นขึ้น",
+            "featuredWorkIndexPreset": "กระเบื้องคอลเลกชันสี่เหลี่ยมกะทัดรัดบนแถบตัดกัน",
+            "galleryLandingPreset": "ภาพหรือสไลด์โชว์ความสูงปานกลาง พร้อมข้อความกึ่งกลาง",
+            "galleryLandingSplitPreset": "ข้อความข้างภาพซิกเนเจอร์หนึ่งภาพ แก้ไขแยกได้",
+            "galleryLandingMastheadPreset": "หัวเรื่องนำด้วยตัวอักษรและเส้นแบ่ง ให้แกลเลอรีเริ่มทันทีด้านล่าง",
+            "videoPreset": "หัวข้อ คำอธิบาย และวิดีโอฝังตัวอยู่กึ่งกลาง",
+            "videoSplitPreset": "วิดีโอครองด้านที่ใหญ่กว่าของการแบ่งครึ่ง พร้อมบริบทข้างกัน",
+            "videoCinemaPreset": "วิดีโอเต็มความกว้างบนแถบตัดกัน พร้อมคำบรรยายด้านล่าง",
+            "footerSignaturePreset": "เส้นแบ่ง ชื่อสตูดิโอ และลิงก์กะทัดรัดสู่หน้าแรก แกลเลอรี และติดต่อ",
+            "footerDirectoryPreset": "สามคอลัมน์สำหรับตัวตน การนำทาง และข้อมูลติดต่อ",
+            "footerStatementPreset": "แถบตัดกันพร้อมข้อความปิดท้าย ปุ่ม CTA และบรรทัดลิขสิทธิ์แบบเรียบ"
           },
           "fields": {
             "style": "สไตล์",
@@ -2804,7 +2873,8 @@
             "columnsCount": "คอลัมน์",
             "rowsCount": "แถว",
             "collectionCrop": "การครอบตัด",
-            "collectionCaption": "คำบรรยาย"
+            "collectionCaption": "คำบรรยาย",
+            "overlayColor": "สีโอเวอร์เลย์"
           },
           "options": {
             "bgAnimation": {
@@ -2863,7 +2933,8 @@
             },
             "buttonAction": {
               "openContact": "เปิดแบบฟอร์มติดต่อ",
-              "goToGallery": "ไปที่หน้าแกลเลอรี"
+              "goToGallery": "ไปที่หน้าแกลเลอรี",
+              "goToHome": "ไปที่หน้าแรก"
             },
             "buttonAlign": {
               "left": "ซ้าย",
@@ -2873,6 +2944,14 @@
             "collectionCaption": {
               "show": "แสดง",
               "hide": "ซ่อน"
+            },
+            "overlayColor": {
+              "none": "ไม่มี (ดำ)",
+              "primary": "หลัก",
+              "secondary": "รอง",
+              "accent": "เน้น",
+              "background": "พื้นหลัง",
+              "foreground": "พื้นหน้า"
             }
           }
         },

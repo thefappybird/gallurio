@@ -22,10 +22,12 @@ import {
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
+import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
 
 // Map of block type → its defaultProps.
-// Preset blocks (HeroPreset, etc.) share the ContainerBlockProps shape, so
-// they fall back to containerDefaultProps for normalization.
+// Preset blocks (HeroPreset, etc.) all share the ContainerBlockProps shape, so
+// every one of the registry's 33 keys falls back to containerDefaultProps for
+// normalization — derived so a new/renamed preset can't be missed by hand.
 const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
   Heading: headingDefaultProps as Record<string, unknown>,
   Text: textDefaultProps as Record<string, unknown>,
@@ -38,16 +40,9 @@ const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
   GalleryGrid: galleryGridDefaultProps as Record<string, unknown>,
   GalleryMasonry: galleryMasonryDefaultProps as Record<string, unknown>,
   FeaturedWork: featuredWorkDefaultProps as Record<string, unknown>,
-  // Preset blocks share ContainerBlockProps shape
-  HeroPreset: containerDefaultProps as Record<string, unknown>,
-  AboutPreset: containerDefaultProps as Record<string, unknown>,
-  ServicesPreset: containerDefaultProps as Record<string, unknown>,
-  CtaPreset: containerDefaultProps as Record<string, unknown>,
-  ContactPreset: containerDefaultProps as Record<string, unknown>,
-  GalleryGridPreset: containerDefaultProps as Record<string, unknown>,
-  GalleryMasonryPreset: containerDefaultProps as Record<string, unknown>,
-  FeaturedWorkPreset: containerDefaultProps as Record<string, unknown>,
-  GalleryLandingPreset: containerDefaultProps as Record<string, unknown>,
+  ...Object.fromEntries(
+    SECTION_PRESET_KEYS.map((key) => [key, containerDefaultProps as Record<string, unknown>]),
+  ),
 };
 
 /**

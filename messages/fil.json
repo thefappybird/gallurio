@@ -2747,19 +2747,30 @@
         "puckConfig": {
           "categories": {
             "presets": "Mga preset na bloke",
-            "manual": "Mga manuwal na bloke"
+            "manual": "Mga manuwal na bloke",
+            "hero": "Hero",
+            "about": "Tungkol sa Akin",
+            "services": "Mga Serbisyo",
+            "cta": "Call to action",
+            "contact": "Makipag-ugnayan",
+            "galleryGrid": "Gallery Grid",
+            "galleryMasonry": "Gallery Masonry",
+            "featuredWork": "Mga Itinatampok na Gawa",
+            "galleryLanding": "Gallery landing",
+            "video": "Video",
+            "footer": "Footer"
           },
           "blocks": {
-            "heroPreset": "Hero",
-            "aboutPreset": "Tungkol sa Akin",
-            "servicesPreset": "Mga Serbisyo",
-            "ctaPreset": "Call to action",
-            "contactPreset": "Makipag-ugnayan",
-            "galleryGridPreset": "Gallery Grid",
-            "galleryMasonryPreset": "Gallery Masonry",
-            "featuredWorkPreset": "Mga Itinatampok na Gawa",
-            "galleryLandingPreset": "Gallery landing",
-            "videoPreset": "Video Highlight",
+            "heroPreset": "Immersive Cover",
+            "aboutPreset": "Editorial na Talambuhay",
+            "servicesPreset": "Mga Card ng Serbisyo",
+            "ctaPreset": "Makulay na Banda",
+            "contactPreset": "Nakasentrong Pakikipag-ugnayan",
+            "galleryGridPreset": "Klasikong Grid",
+            "galleryMasonryPreset": "Editorial na Kwento",
+            "featuredWorkPreset": "Overview ng Koleksyon",
+            "galleryLandingPreset": "Slideshow Cover",
+            "videoPreset": "Nakasentrong Video",
             "galleryGrid": "Photo Grid",
             "galleryMasonry": "Masonry",
             "featuredWork": "Mga Highlight",
@@ -2773,7 +2784,65 @@
             "divider": "Divider",
             "columns": "Mga Kolum",
             "container": "Container",
-            "collectionCard": "Card ng koleksyon"
+            "collectionCard": "Card ng koleksyon",
+            "heroSplitPreset": "Split na Panimula",
+            "heroStatementPreset": "Typographic na Pahayag",
+            "aboutPortraitPreset": "Portrait at Kwento",
+            "aboutProfilePreset": "Profile ng Studio",
+            "servicesMenuPreset": "Editorial na Menu",
+            "servicesFeaturePreset": "Itinatampok na Serbisyo",
+            "ctaImagePreset": "Larawang Paanyaya",
+            "ctaMinimalPreset": "Minimal na Pangwakas",
+            "contactSplitPreset": "Split na Inquiry",
+            "contactBarPreset": "Compact na Contact Bar",
+            "galleryGridFullPreset": "Full-Width na Grid",
+            "galleryGridFramedPreset": "Framed na Seleksyon",
+            "galleryMasonryWallPreset": "Edge-to-Edge na Pader",
+            "galleryMasonryJournalPreset": "Journal Spread",
+            "featuredWorkLeadPreset": "Mga Nangungunang Koleksyon",
+            "featuredWorkIndexPreset": "Compact na Project Index",
+            "galleryLandingSplitPreset": "Split na Panimula ng Gallery",
+            "galleryLandingMastheadPreset": "Minimal na Masthead",
+            "videoSplitPreset": "Video at Kwento",
+            "videoCinemaPreset": "Cinema na Banda",
+            "footerSignaturePreset": "Signature Footer",
+            "footerDirectoryPreset": "Directory Footer",
+            "footerStatementPreset": "Pangwakas na Pahayag"
+          },
+          "presetDescriptions": {
+            "heroPreset": "Mataas na larawan o slideshow background na may nakasentrong text sa ibabaw ng scrim.",
+            "heroSplitPreset": "Text at CTA sa tabi ng larawang may sariling proportions.",
+            "heroStatementPreset": "Malaking headline, divider, at maigsing CTA — walang kailangang larawan.",
+            "aboutPreset": "Heading at mahabang talambuhay sa readable na sukat.",
+            "aboutPortraitPreset": "Portrait sa tabi ng kwento, bawat isa ay editable nang hiwalay.",
+            "aboutProfilePreset": "Dalawang track ang kwento; kasama ang location, experience, at specialty.",
+            "servicesPreset": "Tatlong magkapantay na bordered package na may presyong nakahanay.",
+            "servicesMenuPreset": "Mga stacked row na hinati sa title, description, at presyo, walang card frame.",
+            "servicesFeaturePreset": "Isang prominenteng split service ang nangunguna, may dalawa pang tahimik sa ibaba.",
+            "ctaPreset": "Nakasentrong makulay na banda na may closing CTA para sa contact.",
+            "ctaImagePreset": "Maigsing larawan na may scrim at start-aligned na closing text.",
+            "ctaMinimalPreset": "Divider at headline sa tabi ng button, walang sariling background.",
+            "contactPreset": "Heading, panimula, contact details, at CTA — nakasentro.",
+            "contactSplitPreset": "Kwento at CTA sa tabi ng contact details sa restrained na frame.",
+            "contactBarPreset": "Malapad na closing row na nagsta-stack ayon sa reading order sa phone.",
+            "galleryGridPreset": "Heading at description sa itaas ng three-column grid.",
+            "galleryGridFullPreset": "Minimal na header sa itaas ng edge-to-edge na four-column grid.",
+            "galleryGridFramedPreset": "Padded at bordered na seksyon sa paligid ng maliit na curated set.",
+            "galleryMasonryPreset": "Heading at description sa itaas ng masonry flow.",
+            "galleryMasonryWallPreset": "Full width na may tight gutters — nagiging isang pader ang mga larawan.",
+            "galleryMasonryJournalPreset": "Isang track ang panimula habang ang masonry ay umaabot sa natitira.",
+            "featuredWorkPreset": "Panimula sa itaas ng tatlong clickable na collection tile.",
+            "featuredWorkLeadPreset": "Dalawang malaking koleksyon sa landscape crop sa ilalim ng mas malakas na panimula.",
+            "featuredWorkIndexPreset": "Compact na square collection tile sa contrasting na banda.",
+            "galleryLandingPreset": "Medium-height na larawan o slideshow landing na may nakasentrong text.",
+            "galleryLandingSplitPreset": "Text sa tabi ng isang signature na larawan, editable nang hiwalay.",
+            "galleryLandingMastheadPreset": "Type-led na title at divider para direktang magsimula ang gallery.",
+            "videoPreset": "Nakasentrong heading, description, at naka-embed na video.",
+            "videoSplitPreset": "Mas malaking bahagi ng split ang video, may context sa tabi.",
+            "videoCinemaPreset": "Full-width na video sa contrasting na banda na may caption sa ibaba.",
+            "footerSignaturePreset": "Divider, pangalan ng studio, at maigsing Home, Gallery, at Contact links.",
+            "footerDirectoryPreset": "Tatlong column para sa identity, navigation, at contact details.",
+            "footerStatementPreset": "Contrasting na banda na may final statement, CTA, at tahimik na copyright line."
           },
           "fields": {
             "style": "Estilo",
@@ -2804,7 +2873,8 @@
             "columnsCount": "Mga kolum",
             "rowsCount": "Mga hilera",
             "collectionCrop": "Crop",
-            "collectionCaption": "Caption"
+            "collectionCaption": "Caption",
+            "overlayColor": "Kulay ng overlay"
           },
           "options": {
             "bgAnimation": {
@@ -2863,7 +2933,8 @@
             },
             "buttonAction": {
               "openContact": "Buksan ang form ng pakikipag-ugnayan",
-              "goToGallery": "Pumunta sa pahina ng Gallery"
+              "goToGallery": "Pumunta sa pahina ng Gallery",
+              "goToHome": "Pumunta sa pahina ng Home"
             },
             "buttonAlign": {
               "left": "Kaliwa",
@@ -2873,6 +2944,14 @@
             "collectionCaption": {
               "show": "Ipakita",
               "hide": "Itago"
+            },
+            "overlayColor": {
+              "none": "Wala (itim)",
+              "primary": "Pangunahin",
+              "secondary": "Pangalawa",
+              "accent": "Accent",
+              "background": "Background",
+              "foreground": "Foreground"
             }
           }
         },

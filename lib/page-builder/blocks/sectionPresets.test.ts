@@ -16,12 +16,12 @@ function buttonChild(preset: { content: unknown }) {
 }
 
 describe("SECTION_PRESETS labels", () => {
-  it("labels the masonry section preset 'Gallery Masonry'", () => {
-    expect(SECTION_PRESETS.GalleryMasonryPreset.label).toBe("Gallery Masonry");
+  it("labels the masonry section preset with its variant name 'Editorial story'", () => {
+    expect(SECTION_PRESETS.GalleryMasonryPreset.label).toBe("Editorial story");
   });
-  it("keeps the other gallery preset labels", () => {
-    expect(SECTION_PRESETS.GalleryGridPreset.label).toBe("Gallery Grid");
-    expect(SECTION_PRESETS.FeaturedWorkPreset.label).toBe("Featured Work");
+  it("keeps the other gallery preset variant labels", () => {
+    expect(SECTION_PRESETS.GalleryGridPreset.label).toBe("Classic grid");
+    expect(SECTION_PRESETS.FeaturedWorkPreset.label).toBe("Collection overview");
   });
 });
 
@@ -75,8 +75,8 @@ describe("buttons on an accent band", () => {
 });
 
 describe("GalleryLandingPreset", () => {
-  it("is registered in SECTION_PRESETS with label 'Gallery landing'", () => {
-    expect(SECTION_PRESETS.GalleryLandingPreset.label).toBe("Gallery landing");
+  it("is registered in SECTION_PRESETS with variant label 'Slideshow cover'", () => {
+    expect(SECTION_PRESETS.GalleryLandingPreset.label).toBe("Slideshow cover");
   });
 
   it("has minHeight 'medium' and no Button child", () => {

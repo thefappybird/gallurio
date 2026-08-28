@@ -1,0 +1,109 @@
+/**
+ * Footer section presets — closing identity, navigation, and legal line.
+ */
+
+import type { ContainerBlockProps } from "../manualBlocks";
+import { child, slot, pageSection, primaryBandSection, onPrimaryBand } from "./_helpers";
+
+export const FOOTER_SIGNATURE_PRESET: ContainerBlockProps = {
+  backgroundImages: [],
+  minHeight: "auto",
+  alignX: "center",
+  _style: { ...pageSection, gap: 20, paddingTop: "2.5rem", paddingBottom: "2.5rem" },
+  content: slot([
+    child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
+    child("Heading", { level: "h3", text: "Lumen Studio" }),
+    child("Text", { text: "Fine art photography · Manila" }),
+    child("Columns", {
+      columns: 3,
+      minHeight: "0px",
+      _style: { gap: 8 },
+      content: slot([
+        child("Button", { label: "Home", action: "go-to-home", align: "center", size: "sm", _style: { buttonStyle: "outline" } }),
+        child("Button", { label: "Gallery", action: "go-to-gallery", align: "center", size: "sm", _style: { buttonStyle: "outline" } }),
+        child("Button", { label: "Contact", action: "open-contact", align: "center", size: "sm", _style: { buttonStyle: "outline" } }),
+      ]),
+    }),
+  ]),
+};
+
+export const FOOTER_DIRECTORY_PRESET: ContainerBlockProps = {
+  backgroundImages: [],
+  minHeight: "auto",
+  _style: { ...pageSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
+  content: slot([
+    child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
+    child("Columns", {
+      columns: 3,
+      minHeight: "0px",
+      _style: { gap: 40 },
+      content: slot([
+        child("Container", {
+          _style: { gap: 10 },
+          content: slot([
+            child("Heading", { level: "h3", text: "Lumen Studio" }),
+            child("Text", {
+              text: "Fine art photography for weddings, portraits, and events across Metro Manila.",
+            }),
+          ]),
+        }),
+        child("Container", {
+          _style: { gap: 6 },
+          content: slot([
+            child("Heading", { level: "h4", text: "Explore" }),
+            child("Button", { label: "Home", action: "go-to-home", align: "left", size: "sm", _style: { buttonStyle: "outline" } }),
+            child("Button", { label: "Gallery", action: "go-to-gallery", align: "left", size: "sm", _style: { buttonStyle: "outline" } }),
+            child("Button", { label: "Contact", action: "open-contact", align: "left", size: "sm", _style: { buttonStyle: "outline" } }),
+          ]),
+        }),
+        child("Container", {
+          _style: { gap: 12 },
+          content: slot([
+            child("Heading", { level: "h4", text: "Studio" }),
+            child("ContactDetails", {}),
+          ]),
+        }),
+      ]),
+    }),
+    child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
+    child("Text", { text: "© 2026 Lumen Studio" }),
+  ]),
+};
+
+export const FOOTER_STATEMENT_PRESET: ContainerBlockProps = {
+  backgroundImages: [],
+  minHeight: "auto",
+  _style: { ...primaryBandSection, gap: 24, paddingTop: "3.5rem", paddingBottom: "3.5rem" },
+  content: slot([
+    child("Heading", { level: "h2", text: "Let's make something worth keeping." }),
+    child("Button", { label: "Get in Touch", action: "open-contact", align: "left", _style: onPrimaryBand }),
+    child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
+    child("Columns", {
+      columns: 2,
+      minHeight: "0px",
+      _style: { gap: 12 },
+      content: slot([
+        child("Text", { text: "© 2026 Lumen Studio. All rights reserved." }),
+        child("Container", {
+          _style: { gap: 8 },
+          content: slot([
+            child("Button", {
+              label: "Home",
+              action: "go-to-home",
+              align: "right",
+              size: "sm",
+              _style: { buttonStyle: "outline", buttonColorToken: "background" },
+            }),
+            child("Button", {
+              label: "Gallery",
+              action: "go-to-gallery",
+              align: "right",
+              size: "sm",
+              _style: { buttonStyle: "outline", buttonColorToken: "background" },
+            }),
+          ]),
+        }),
+      ]),
+    }),
+  ]),
+};

@@ -2747,19 +2747,30 @@
         "puckConfig": {
           "categories": {
             "presets": "أقسام جاهزة",
-            "manual": "أقسام يدوية"
+            "manual": "أقسام يدوية",
+            "hero": "رئيسي",
+            "about": "نبذة عني",
+            "services": "الخدمات",
+            "cta": "دعوة للتصرُّف",
+            "contact": "تواصل",
+            "galleryGrid": "شبكة المعرض",
+            "galleryMasonry": "معرض متداخل",
+            "featuredWork": "أعمال مميَّزة",
+            "galleryLanding": "صفحة المعرض",
+            "video": "فيديو",
+            "footer": "التذييل"
           },
           "blocks": {
-            "heroPreset": "رئيسي",
-            "aboutPreset": "نبذة عني",
-            "servicesPreset": "الخدمات",
-            "ctaPreset": "دعوة للتصرّف",
-            "contactPreset": "تواصل",
-            "galleryGridPreset": "شبكة المعرض",
-            "galleryMasonryPreset": "معرض متداخل",
-            "featuredWorkPreset": "أعمال مميَّزة",
-            "galleryLandingPreset": "صفحة المعرض",
-            "videoPreset": "فيديو مميز",
+            "heroPreset": "غلاف غامر",
+            "aboutPreset": "سيرة تحريرية",
+            "servicesPreset": "بطاقات الخدمات",
+            "ctaPreset": "شريط بارز",
+            "contactPreset": "تواصل متمركز",
+            "galleryGridPreset": "شبكة كلاسيكية",
+            "galleryMasonryPreset": "سرد تحريري",
+            "featuredWorkPreset": "نظرة على المجموعات",
+            "galleryLandingPreset": "غلاف عرض شرائح",
+            "videoPreset": "فيلم متمركز",
             "galleryGrid": "شبكة الصور",
             "galleryMasonry": "تخطيط متداخل",
             "featuredWork": "أبرز الأعمال",
@@ -2773,7 +2784,65 @@
             "divider": "فاصل",
             "columns": "أعمدة",
             "container": "حاوية",
-            "collectionCard": "بطاقة مجموعة"
+            "collectionCard": "بطاقة مجموعة",
+            "heroSplitPreset": "مقدمة مقسَّمة",
+            "heroStatementPreset": "بيان طباعي",
+            "aboutPortraitPreset": "صورة شخصية وقصة",
+            "aboutProfilePreset": "ملف الاستوديو",
+            "servicesMenuPreset": "قائمة تحريرية",
+            "servicesFeaturePreset": "خدمة مميّزة",
+            "ctaImagePreset": "دعوة بصورة",
+            "ctaMinimalPreset": "ختام بسيط",
+            "contactSplitPreset": "استفسار مقسَّم",
+            "contactBarPreset": "شريط تواصل مدمج",
+            "galleryGridFullPreset": "شبكة بعرض كامل",
+            "galleryGridFramedPreset": "مجموعة مؤطَّرة",
+            "galleryMasonryWallPreset": "جدار بلا حواف",
+            "galleryMasonryJournalPreset": "امتداد صحفي",
+            "featuredWorkLeadPreset": "مجموعات رئيسية",
+            "featuredWorkIndexPreset": "فهرس مشاريع مدمج",
+            "galleryLandingSplitPreset": "مقدمة معرض مقسَّمة",
+            "galleryLandingMastheadPreset": "ترويسة بسيطة",
+            "videoSplitPreset": "فيلم وقصة",
+            "videoCinemaPreset": "شريط سينمائي",
+            "footerSignaturePreset": "تذييل بتوقيع",
+            "footerDirectoryPreset": "تذييل بدليل",
+            "footerStatementPreset": "بيان ختامي"
+          },
+          "presetDescriptions": {
+            "heroPreset": "صورة طويلة أو عرض شرائح خلفي مع نص في المنتصف فوق طبقة تعتيم.",
+            "heroSplitPreset": "نص وزر دعوة بجانب صورة قابلة للتعديل تحافظ على أبعادها.",
+            "heroStatementPreset": "عنوان كبير وفاصل وزر دعوة مضغوط — دون الحاجة لصورة.",
+            "aboutPreset": "عنوان وسيرة ذاتية طويلة بعرض نص مريح للقراءة.",
+            "aboutPortraitPreset": "صورة شخصية بجانب القصة، وكل عنصر قابل للتعديل بمفرده.",
+            "aboutProfilePreset": "تمتد القصة على عمودين؛ الموقع والخبرة والتخصص بجانبها.",
+            "servicesPreset": "ثلاث باقات متساوية بإطارات وأسعار تبقى متراصفة.",
+            "servicesMenuPreset": "صفوف متراصة مقسَّمة إلى عنوان ووصف وسعر، دون إطارات بطاقات.",
+            "servicesFeaturePreset": "خدمة مقسَّمة بارزة تتصدر، مع خدمتين أهدأ أسفلها.",
+            "ctaPreset": "شريط لوني في المنتصف ينتهي بزر دعوة للتواصل.",
+            "ctaImagePreset": "شريط صورة قصير معتّم مع نص ختامي محاذٍ للبداية.",
+            "ctaMinimalPreset": "فاصل وعنوان بجانب زر، دون خلفية خاصة به.",
+            "contactPreset": "عنوان ومقدمة وبيانات تواصل وزر دعوة، في المنتصف.",
+            "contactSplitPreset": "سرد وزر دعوة بجانب بيانات التواصل ضمن إطار هادئ.",
+            "contactBarPreset": "صف ختامي عريض يترتب حسب اتجاه القراءة على الهاتف.",
+            "galleryGridPreset": "عنوان ووصف فوق شبكة من ثلاثة أعمدة.",
+            "galleryGridFullPreset": "ترويسة بسيطة فوق شبكة بأربعة أعمدة بلا حواف.",
+            "galleryGridFramedPreset": "قسم مبطَّن ومؤطَّر حول مجموعة صغيرة مختارة.",
+            "galleryMasonryPreset": "عنوان ووصف فوق تدفق متداخل.",
+            "galleryMasonryWallPreset": "عرض كامل وفواصل ضيقة — تشكّل الصور جدارًا واحدًا.",
+            "galleryMasonryJournalPreset": "تأخذ المقدمة عمودًا واحدًا بينما يمتد المعرض المتداخل على الباقي.",
+            "featuredWorkPreset": "مقدمة فوق ثلاث بطاقات مجموعات قابلة للنقر.",
+            "featuredWorkLeadPreset": "مجموعتان كبيرتان بقصّ أفقي تحت مقدمة أقوى.",
+            "featuredWorkIndexPreset": "بطاقات مجموعات مربَّعة مدمجة على شريط متباين.",
+            "galleryLandingPreset": "صورة أو عرض شرائح متوسّط الارتفاع مع نص في المنتصف.",
+            "galleryLandingSplitPreset": "نص بجانب صورة مميزة واحدة، قابلة للتعديل بمفردها.",
+            "galleryLandingMastheadPreset": "عنوان يقوده الخط وفاصل ليبدأ المعرض مباشرة أسفله.",
+            "videoPreset": "عنوان ووصف في المنتصف مع فيلم مضمَّن.",
+            "videoSplitPreset": "يأخذ الفيلم الجانب الأكبر من التقسيم، مع سياق بجانبه.",
+            "videoCinemaPreset": "فيلم بعرض كامل على شريط متباين مع تسمية توضيحية أسفله.",
+            "footerSignaturePreset": "فاصل واسم الاستوديو وروابط مضغوطة للرئيسية والمعرض والتواصل.",
+            "footerDirectoryPreset": "ثلاثة أعمدة للهوية والتنقل وبيانات التواصل.",
+            "footerStatementPreset": "شريط متباين ببيان ختامي وزر دعوة وسطر حقوق نشر هادئ."
           },
           "fields": {
             "style": "النمط",
@@ -2804,7 +2873,8 @@
             "columnsCount": "الأعمدة",
             "rowsCount": "الصفوف",
             "collectionCrop": "الاقتصاص",
-            "collectionCaption": "التسمية"
+            "collectionCaption": "التسمية",
+            "overlayColor": "لون الطبقة العلوية"
           },
           "options": {
             "bgAnimation": {
@@ -2863,7 +2933,8 @@
             },
             "buttonAction": {
               "openContact": "فتح نموذج التواصل",
-              "goToGallery": "الذهاب إلى صفحة المعرض"
+              "goToGallery": "الذهاب إلى صفحة المعرض",
+              "goToHome": "الذهاب إلى الصفحة الرئيسية"
             },
             "buttonAlign": {
               "left": "يسار",
@@ -2873,6 +2944,14 @@
             "collectionCaption": {
               "show": "إظهار",
               "hide": "إخفاء"
+            },
+            "overlayColor": {
+              "none": "بلا (أسود)",
+              "primary": "أساسي",
+              "secondary": "ثانوي",
+              "accent": "مميِّز",
+              "background": "الخلفية",
+              "foreground": "المقدمة"
             }
           }
         },

@@ -2747,19 +2747,30 @@
         "puckConfig": {
           "categories": {
             "presets": "Blok prasetel",
-            "manual": "Blok manual"
+            "manual": "Blok manual",
+            "hero": "Hero",
+            "about": "Tentang",
+            "services": "Layanan",
+            "cta": "Ajakan bertindak",
+            "contact": "Hubungi",
+            "galleryGrid": "Gallery Grid",
+            "galleryMasonry": "Gallery Masonry",
+            "featuredWork": "Karya Unggulan",
+            "galleryLanding": "Gallery landing",
+            "video": "Video",
+            "footer": "Footer"
           },
           "blocks": {
-            "heroPreset": "Hero",
-            "aboutPreset": "Tentang",
-            "servicesPreset": "Layanan",
-            "ctaPreset": "Ajakan bertindak",
-            "contactPreset": "Hubungi",
-            "galleryGridPreset": "Gallery Grid",
-            "galleryMasonryPreset": "Gallery Masonry",
-            "featuredWorkPreset": "Karya Unggulan",
-            "galleryLandingPreset": "Gallery landing",
-            "videoPreset": "Video Highlight",
+            "heroPreset": "Sampul Imersif",
+            "aboutPreset": "Biografi Editorial",
+            "servicesPreset": "Kartu Layanan",
+            "ctaPreset": "Pita Aksen",
+            "contactPreset": "Kontak Terpusat",
+            "galleryGridPreset": "Grid Klasik",
+            "galleryMasonryPreset": "Cerita Editorial",
+            "featuredWorkPreset": "Ringkasan Koleksi",
+            "galleryLandingPreset": "Sampul Slideshow",
+            "videoPreset": "Video Terpusat",
             "galleryGrid": "Photo Grid",
             "galleryMasonry": "Masonry",
             "featuredWork": "Sorotan",
@@ -2773,7 +2784,65 @@
             "divider": "Pemisah",
             "columns": "Kolom",
             "container": "Container",
-            "collectionCard": "Kartu koleksi"
+            "collectionCard": "Kartu koleksi",
+            "heroSplitPreset": "Perkenalan Terbagi",
+            "heroStatementPreset": "Pernyataan Tipografis",
+            "aboutPortraitPreset": "Potret dan Cerita",
+            "aboutProfilePreset": "Profil Studio",
+            "servicesMenuPreset": "Menu Editorial",
+            "servicesFeaturePreset": "Layanan Unggulan",
+            "ctaImagePreset": "Undangan Bergambar",
+            "ctaMinimalPreset": "Penutup Minimal",
+            "contactSplitPreset": "Pertanyaan Terbagi",
+            "contactBarPreset": "Bilah Kontak Ringkas",
+            "galleryGridFullPreset": "Grid Lebar Penuh",
+            "galleryGridFramedPreset": "Seleksi Berbingkai",
+            "galleryMasonryWallPreset": "Dinding Tepi-ke-Tepi",
+            "galleryMasonryJournalPreset": "Sebaran Jurnal",
+            "featuredWorkLeadPreset": "Koleksi Utama",
+            "featuredWorkIndexPreset": "Indeks Proyek Ringkas",
+            "galleryLandingSplitPreset": "Pengantar Galeri Terbagi",
+            "galleryLandingMastheadPreset": "Masthead Minimal",
+            "videoSplitPreset": "Video dan Cerita",
+            "videoCinemaPreset": "Pita Sinema",
+            "footerSignaturePreset": "Footer Tanda Tangan",
+            "footerDirectoryPreset": "Footer Direktori",
+            "footerStatementPreset": "Pernyataan Penutup"
+          },
+          "presetDescriptions": {
+            "heroPreset": "Gambar tinggi atau latar slideshow dengan teks tersentral di atas overlay gelap.",
+            "heroSplitPreset": "Teks dan CTA di samping gambar yang menjaga proporsinya sendiri.",
+            "heroStatementPreset": "Judul besar, pemisah, dan CTA ringkas — tanpa gambar.",
+            "aboutPreset": "Judul dan biografi panjang pada lebar teks yang mudah dibaca.",
+            "aboutPortraitPreset": "Potret di samping cerita, masing-masing dapat diedit sendiri.",
+            "aboutProfilePreset": "Cerita terbentang dua kolom; lokasi, pengalaman, dan spesialisasi di sampingnya.",
+            "servicesPreset": "Tiga paket berbingkai setara dengan harga yang tetap sejajar.",
+            "servicesMenuPreset": "Baris bertumpuk terbagi judul, deskripsi, dan harga, tanpa bingkai kartu.",
+            "servicesFeaturePreset": "Satu layanan terbagi menonjol di depan, dua lainnya lebih tenang di bawah.",
+            "ctaPreset": "Pita warna tersentral yang ditutup dengan CTA kontak.",
+            "ctaImagePreset": "Pita gambar singkat berlapis gelap dengan teks penutup rata kiri.",
+            "ctaMinimalPreset": "Pemisah dan judul di samping tombol, tanpa latar belakang sendiri.",
+            "contactPreset": "Judul, pengantar, detail kontak, dan CTA, tersentral.",
+            "contactSplitPreset": "Narasi dan CTA di samping detail kontak dalam bingkai sederhana.",
+            "contactBarPreset": "Baris penutup lebar yang bertumpuk sesuai urutan baca di ponsel.",
+            "galleryGridPreset": "Judul dan deskripsi di atas grid tiga kolom.",
+            "galleryGridFullPreset": "Header minimal di atas grid empat kolom tepi-ke-tepi.",
+            "galleryGridFramedPreset": "Bagian berbantalan dan berbingkai di sekitar set kecil pilihan.",
+            "galleryMasonryPreset": "Judul dan deskripsi di atas alur masonry.",
+            "galleryMasonryWallPreset": "Lebar penuh dan celah rapat — foto membentuk satu dinding.",
+            "galleryMasonryJournalPreset": "Pengantar mengambil satu kolom sementara masonry mengisi sisanya.",
+            "featuredWorkPreset": "Pengantar di atas tiga ubin koleksi yang dapat diklik.",
+            "featuredWorkLeadPreset": "Dua koleksi besar dalam potongan lanskap di bawah pengantar yang lebih kuat.",
+            "featuredWorkIndexPreset": "Ubin koleksi persegi ringkas pada pita kontras.",
+            "galleryLandingPreset": "Gambar atau slideshow landing berketinggian sedang dengan teks tersentral.",
+            "galleryLandingSplitPreset": "Teks di samping satu gambar khas, dapat diedit sendiri.",
+            "galleryLandingMastheadPreset": "Judul berbasis tipografi dan pemisah agar galeri langsung dimulai.",
+            "videoPreset": "Judul tersentral, deskripsi, dan video tertanam.",
+            "videoSplitPreset": "Video mengambil sisi lebih besar dari tata terbagi, dengan konteks di sampingnya.",
+            "videoCinemaPreset": "Video lebar penuh pada pita kontras dengan keterangan di bawah.",
+            "footerSignaturePreset": "Pemisah, nama studio, dan tautan Home, Gallery, dan Contact yang ringkas.",
+            "footerDirectoryPreset": "Tiga kolom untuk identitas, navigasi, dan detail kontak.",
+            "footerStatementPreset": "Pita kontras dengan pernyataan akhir, CTA, dan baris hak cipta yang tenang."
           },
           "fields": {
             "style": "Gaya",
@@ -2804,7 +2873,8 @@
             "columnsCount": "Kolom",
             "rowsCount": "Baris",
             "collectionCrop": "Pangkas",
-            "collectionCaption": "Keterangan"
+            "collectionCaption": "Keterangan",
+            "overlayColor": "Warna overlay"
           },
           "options": {
             "bgAnimation": {
@@ -2863,7 +2933,8 @@
             },
             "buttonAction": {
               "openContact": "Buka formulir kontak",
-              "goToGallery": "Ke halaman Gallery"
+              "goToGallery": "Ke halaman Gallery",
+              "goToHome": "Ke halaman Home"
             },
             "buttonAlign": {
               "left": "Kiri",
@@ -2873,6 +2944,14 @@
             "collectionCaption": {
               "show": "Tampilkan",
               "hide": "Sembunyikan"
+            },
+            "overlayColor": {
+              "none": "Tidak ada (hitam)",
+              "primary": "Utama",
+              "secondary": "Sekunder",
+              "accent": "Aksen",
+              "background": "Latar belakang",
+              "foreground": "Latar depan"
             }
           }
         },
