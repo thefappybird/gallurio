@@ -240,9 +240,12 @@ describe("editorPuckConfig.categories — 11 preset groups + manual", () => {
     const categories = editorPuckConfig.categories as Record<string, { defaultExpanded?: boolean }>;
     expect(categories.hero?.defaultExpanded).toBe(true);
     for (const id of PRESET_GROUPS.map((g) => g.id).filter((id) => id !== "hero")) {
-      expect(categories[id]?.defaultExpanded, id).not.toBe(true);
+      // Explicitly `false`, not merely absent: Puck renders a category with no
+      // `defaultExpanded` as EXPANDED, so omitting the key opens all 11 groups.
+      // Verified in the browser — every group came up open until this was pinned.
+      expect(categories[id]?.defaultExpanded, id).toBe(false);
     }
-    expect(categories.manual?.defaultExpanded).not.toBe(true);
+    expect(categories.manual?.defaultExpanded).toBe(false);
   });
 });
 

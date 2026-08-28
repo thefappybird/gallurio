@@ -919,13 +919,16 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
 
   // 11 collapsible drawer categories, one per group. Only the first (hero)
   // starts expanded — 33 items all open at once is an unusable drawer.
+  // `defaultExpanded` must be set EXPLICITLY on every group: Puck renders a
+  // category that omits the key as expanded, so leaving it off the other ten
+  // opens all of them (observed in the browser before this was pinned).
   const presetCategories = PRESET_GROUPS.reduce<
-    Record<string, { title: string; components: SectionPresetKey[]; defaultExpanded?: boolean }>
+    Record<string, { title: string; components: SectionPresetKey[]; defaultExpanded: boolean }>
   >((acc, group, i) => {
     acc[group.id] = {
       title: t(group.labelKey),
       components: [...group.keys],
-      ...(i === 0 ? { defaultExpanded: true } : {}),
+      defaultExpanded: i === 0,
     };
     return acc;
   }, {});
