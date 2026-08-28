@@ -29,6 +29,18 @@ const slot = (items: ReturnType<typeof child>[]): Slot => items as unknown as Sl
 // background token is the light pole of the palette).
 const onDark = { textColorToken: "background" } as const;
 
+// A Button sitting ON an accent band. ButtonBlock has no brand-kit fallback:
+// with `buttonStyle` unset it renders a transparent fill with its label and
+// border in `--pf-color-fg`, which against an accent background measures
+// 1.66:1 (Bold) to 3.54:1 (Editorial) — every committed kit fails DESIGN.md's
+// 4.5:1 bar. Inverting the band (background-token fill, accent label) clears it
+// on every kit, because Preset Quality Bar already guarantees accent-on-ground.
+const onAccentBand = {
+  buttonStyle: "solid",
+  buttonColorToken: "background",
+  textColorToken: "accent",
+} as const;
+
 export const HERO_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   overlayOpacity: 50,
@@ -39,7 +51,7 @@ export const HERO_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h1", text: "Capturing moments that last forever", _style: { ...onDark, bold: true } }),
     child("Text", { text: "Fine art photography for weddings, portraits, and events.", _style: onDark }),
-    child("Button", { label: "Get in Touch", action: "open-contact", align: "center" }),
+    child("Button", { label: "Get in Touch", action: "open-contact", align: "center", _style: onAccentBand }),
   ]),
 };
 
@@ -67,7 +79,7 @@ export const CTA_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Ready to book your session?", _style: onDark }),
     child("Text", { text: "Let's create something beautiful together.", _style: onDark }),
-    child("Button", { label: "Get in Touch", action: "open-contact", align: "center" }),
+    child("Button", { label: "Get in Touch", action: "open-contact", align: "center", _style: onAccentBand }),
   ]),
 };
 

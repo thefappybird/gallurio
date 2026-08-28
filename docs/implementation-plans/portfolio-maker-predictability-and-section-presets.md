@@ -247,6 +247,20 @@ The registry must power both `puckConfig` and `createEditorConfig`, category gro
 
 All presets continue to render through the real `ContainerBlock` and use editable nested manual/data blocks. Do not create monolithic bespoke section renderers whose text and children cannot be selected independently.
 
+### New manual block: `CollectionCard`
+
+`FeaturedWork` today owns the whole grid: it takes a `FeaturedCollectionRef[]`, lays the tiles out itself at a hardcoded `7 / 9` aspect with the caption always on, and its only layout control is `_style.galleryColumns` (2/3/4). That makes the tile un-poachable — a preset cannot place one collection inside a Columns cell, pair a collection with copy, or crop a collection landscape.
+
+Add `CollectionCard` as a **manual block** so a single collection is placeable anywhere the other primitives are.
+
+- Props: one `FeaturedCollectionRef` (`{ id, name, coverPublicId, itemCount }` — same shape `FeaturedWork` already stores, so the picker is reusable), plus `aspectRatio` (default `7 / 9`, matching today's tile), `showCaption` (default true), and the standard `_style`.
+- Render: the existing tile markup — `<button type="button">` wrapping the `imageDeliveryUrl` cover and the name/count caption, `aria-label` naming the collection. Click opens the same `CollectionPopup` that `FeaturedCollectionsClient` owns; extract that trigger so both blocks share one implementation rather than forking it.
+- Register in `MANUAL_BLOCK_KEYS` beside `GalleryGrid` / `GalleryMasonry` / `FeaturedWork`.
+- `FeaturedWork` keeps its own key, props, and render unchanged for persistence compatibility. Internally it should compose `CollectionCard` so the two cannot drift.
+- Demo-mode hiding and `hasFeaturedWork` gating must cover `CollectionCard` too, since it has the same collection dependency.
+
+Two of the new presets exist only because of it: `FeaturedWorkLeadPreset` needs a `3 / 2` landscape crop and `FeaturedWorkIndexPreset` needs `1 / 1`, neither of which `FeaturedWork` can express. Beyond the presets it is the flexible-collections primitive — an owner can put one collection beside a paragraph, span a collection across a Columns row, or build a bespoke index by hand.
+
 ### Grouped drawer experience
 
 Use Puck's supported categories and `drawerItem` override rather than replacing its drag system.
@@ -356,6 +370,23 @@ Each variant must be visually and structurally distinct. Changing only a color, 
 | `FooterStatementPreset` | Closing statement | Contrasting section with a strong final statement, contact CTA, and quiet editable copyright/legal line. |
 
 Footer actions require adding `go-to-home` to `ButtonBlockProps` and both editor/server field options. Resolve the canonical tenant home path from existing portfolio URL helpers and Puck metadata; do not construct untrusted URLs manually. Update all five locale catalogs.
+
+## Contrast audit against DESIGN.md's Preset Quality Bar
+
+Measured (WCAG 2.1) for all 33 presets x all 6 committed brand kits. Three shipped presets fail; the 23 new variants are clean on every kit apart from failures inherited from the Romantic kit itself.
+
+| Preset | Kits affected | Measured | Cause |
+| --- | --- | --- | --- |
+| `CtaPreset` | all six | 1.00:1 | The section ground is `accent` and the kit's solid button fill is also `accent`, so the button has no boundary against its own band. Only the label is visible. |
+| `HeroPreset` | Luxury | 2.64:1 | Text pinned to the Background token over a black scrim; Luxury's background is near-black. |
+| `GalleryLandingPreset` | Luxury | 3.45:1 | Same cause, milder scrim. |
+
+Fixes for the three, to apply with the preset work:
+
+- `CtaPreset` — pin `buttonStyle` on the band so the button stops inheriting the kit's. Outline resolves on all six because its stroke and label take the section's own text token.
+- `HeroPreset` / `GalleryLandingPreset` — tint the scrim with the Primary token instead of black. Primary and Background are a guaranteed opposite pair in every committed kit, so the copy holds on the dark pole too. `CtaImagePreset` already ships this way and measures 8.28-16.40:1 across the six.
+
+The same rule applies to any new preset on a contrasting ground: `FooterStatementPreset` pins `buttonStyle: "outline"` for exactly this reason - a solid accent fill on the Primary band measures 1.66:1 on Bold and 1.70:1 on Modern.
 
 ## Preset design quality bar
 
