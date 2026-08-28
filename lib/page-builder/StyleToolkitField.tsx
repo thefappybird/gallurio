@@ -14,6 +14,7 @@
  */
 
 import { useState } from "react";
+import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
 import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
 import { BlockIdContext } from "./drawerOpenStore";
 import type { LucideIcon } from "lucide-react";
@@ -48,7 +49,7 @@ import {
 } from "lucide-react";
 import type { ComponentData } from "@measured/puck";
 import { usePuckStore } from "./puckHooks";
-import { SingleImageControl, MultiImageControl, MultiCollectionControl } from "./galleryPicker/MediaField";
+import { SingleImageControl, MultiImageControl, MultiCollectionControl, SingleCollectionControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import type { CollectionRef } from "./galleryPicker/MediaField";
 import { useDemoPicker } from "./demoPickerContext";
@@ -77,6 +78,7 @@ import {
   type HighlightShape,
   type HighlightSize,
   type BorderSide,
+  type StyleColorToken,
   effectiveButtonTextToken,
 } from "./styleToolkit";
 import { CountControl } from "./CountControl";
@@ -87,19 +89,12 @@ import {
   COLUMNS_EFFECTIVE_PAD,
 } from "./blocks/manualBlocks";
 
-// Block types that are containers (no text/video inputs in Content tab)
-export const CONTAINER_TYPES = new Set([
-  "Container",
-  "HeroPreset",
-  "AboutPreset",
-  "ServicesPreset",
-  "CtaPreset",
-  "ContactPreset",
-  "GalleryGridPreset",
-  "GalleryMasonryPreset",
-  "FeaturedWorkPreset",
-  "GalleryLandingPreset",
-]);
+// Block types that are containers (no text/video inputs in Content tab).
+// Derived from the section-preset registry (33 keys) rather than hand-listed —
+// every preset is a Container under the hood, so this also newly picks up
+// VideoPreset, which the old hand-list omitted (a live bug: Video presets got
+// the wrong toolkit tab set).
+export const CONTAINER_TYPES = new Set<string>(["Container", ...SECTION_PRESET_KEYS]);
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
 // Frame (border/radius/shadow) is hidden for text/spacer/button leaf blocks.
@@ -112,12 +107,14 @@ const NO_FRAME_BLOCKS = new Set([
 export const GALLERY_CONTAINER_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
 const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
 // Gallery blocks that render images only (no on-page text) — typography controls are hidden.
-const GALLERY_NO_TEXT_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
-export const FLEX_CONTAINER_BLOCKS = new Set([
-  "Container",
-  "HeroPreset", "AboutPreset", "ServicesPreset", "CtaPreset", "ContactPreset",
-  "GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset", "GalleryLandingPreset",
-]);
+// CollectionCard renders its caption through the same hardcoded FeaturedCollectionsClient
+// chrome as FeaturedWork (not driven by _style.textColorToken/fontFamily), so its
+// typography controls would be dead the same way — included here for that reason.
+const GALLERY_NO_TEXT_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork", "CollectionCard"]);
+// Same membership as CONTAINER_TYPES today, but kept as a separate export:
+// callers consult it for a different decision (flex vs. grid layout controls)
+// and other code imports it by name.
+export const FLEX_CONTAINER_BLOCKS = new Set<string>(["Container", ...SECTION_PRESET_KEYS]);
 
 const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry"]);
 
@@ -316,6 +313,10 @@ export function ContainerBackgroundControls({
   speed,
   onAnimationChange,
   onSpeedChange,
+  overlayOpacity,
+  overlayColorToken,
+  onOverlayOpacityChange,
+  onOverlayColorChange,
 }: {
   images: MediaPickerSelection[];
   onImagesChange: (v: MediaPickerSelection[]) => void;
@@ -323,8 +324,16 @@ export function ContainerBackgroundControls({
   speed: string;
   onAnimationChange: (v: string) => void;
   onSpeedChange: (v: string) => void;
+  overlayOpacity: number | undefined;
+  overlayColorToken: StyleColorToken | undefined;
+  onOverlayOpacityChange: (v: number | undefined) => void;
+  onOverlayColorChange: (v: StyleColorToken | undefined) => void;
 }) {
   const showAnimation = images.length >= 2;
+  // A scrim only tints something when there's a background image to tint —
+  // with none, an "enabled" scrim control would do nothing (forbidden by the
+  // control contract), so gate on the same images.length check.
+  const showScrim = images.length >= 1;
   const demo = useDemoPicker();
   return (
     <div className="flex flex-col gap-3">
@@ -366,6 +375,31 @@ export function ContainerBackgroundControls({
           </label>
         </>
       )}
+      {showScrim && (
+        <>
+          <NumberInputRow
+            label="Overlay opacity"
+            value={overlayOpacity}
+            min={0}
+            max={100}
+            suffix="%"
+            effectiveValue={0}
+            onChange={onOverlayOpacityChange}
+          />
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">Overlay color</span>
+            {/* allowNone's "Reset color" clears to undefined — the legacy black
+                scrim — rather than materializing a token. */}
+            {/* ColorSwatchRow's onChange is widened to `string | undefined` for
+                custom-hex callers; the scrim only ever accepts a palette token,
+                so narrow it back here rather than widening the prop. */}
+            <ColorSwatchRow
+              value={overlayColorToken}
+              onChange={(next) => onOverlayColorChange(next as StyleColorToken | undefined)}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -377,6 +411,10 @@ type ContainerBgControls = {
   speed: string;
   onAnimationChange: (v: string) => void;
   onSpeedChange: (v: string) => void;
+  overlayOpacity: number | undefined;
+  overlayColorToken: StyleColorToken | undefined;
+  onOverlayOpacityChange: (v: number | undefined) => void;
+  onOverlayColorChange: (v: StyleColorToken | undefined) => void;
 };
 
 export function BannerSection({
@@ -553,6 +591,25 @@ export function ContentInputs({
       </div>
     );
   }
+  if (type === "CollectionCard") {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-muted-foreground">Collection</span>
+          {demo ? (
+            <p className="text-xs text-muted-foreground">
+              Collections aren&apos;t available in this demo. Sign up free to organize photos into collections.
+            </p>
+          ) : (
+            <SingleCollectionControl
+              value={props.collection as CollectionRef | undefined}
+              onChange={(v) => setProp("collection", v)}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
   if (type === "Columns") {
     return (
       <div className="flex flex-col gap-3">
@@ -671,6 +728,10 @@ function ContentTabBody({
           speed: (p.bgSpeed as string) ?? "medium",
           onAnimationChange: (v) => setProp("bgAnimation", v),
           onSpeedChange: (v) => setProp("bgSpeed", v),
+          overlayOpacity: p.overlayOpacity as number | undefined,
+          overlayColorToken: p.overlayColorToken as StyleColorToken | undefined,
+          onOverlayOpacityChange: (v) => setProp("overlayOpacity", v),
+          onOverlayColorChange: (v) => setProp("overlayColorToken", v),
         }
       : null;
   // Gallery container blocks need both the banner AND their gallery-specific content inputs

@@ -38,6 +38,12 @@ import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/li
 import { createEditorConfig } from "@/lib/page-builder/editorConfig";
 import { reconcileContainerAnchors } from "@/lib/page-builder/containerAnchorReconciler";
 import { PRESET_BLOCK_KEYS } from "@/lib/page-builder/blockCategories";
+import {
+  SECTION_PRESETS,
+  COLLECTION_PRESET_KEYS,
+  type SectionPresetKey,
+  type SectionPresetEntry,
+} from "@/lib/page-builder/blocks/sectionPresets";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolveEffectiveFonts } from "@/lib/page-builder/fonts";
 import { BrandColorsContext } from "@/lib/page-builder/brandColors";
@@ -602,6 +608,47 @@ function prepareForEditor(data: PuckData): Data {
   return reconcileContainerAnchors(ensureIds(withDefaults));
 }
 
+type DrawerCategories = NonNullable<ReturnType<typeof createEditorConfig>["categories"]>;
+
+// Demo mode has no equivalent of the real (auth-gated) collections picker that
+// FeaturedWork's Content tab needs (MultiCollectionControl), and the
+// CollectionCard manual block shares that same dependency. Registry-derived
+// (COLLECTION_PRESET_KEYS), not a hand-picked literal list, so a newly added
+// collection-dependent preset can't slip through.
+const DEMO_HIDDEN_COMPONENT_KEYS: ReadonlySet<string> = new Set([
+  ...COLLECTION_PRESET_KEYS,
+  "FeaturedWork",
+  "CollectionCard",
+]);
+
+/**
+ * Strips every collection-dependent preset variant plus the FeaturedWork /
+ * CollectionCard manual blocks from EVERY drawer category (iterated, no
+ * category named by hand) when demoMode is on. Pre-existing FeaturedWork /
+ * CollectionCard blocks from a seeded template still render — StyleToolkitField
+ * shows a disabled explanatory message instead of the real collections picker
+ * for those. No-op (same reference) outside demo mode.
+ */
+export function filterCategoriesForDemo(categories: DrawerCategories, demoMode: boolean): DrawerCategories {
+  if (!demoMode) return categories;
+  const result: DrawerCategories = { ...categories };
+  for (const id of Object.keys(result)) {
+    const key = id as keyof DrawerCategories;
+    const category = result[key];
+    if (!category?.components) continue;
+    result[key] = {
+      ...category,
+      components: category.components.filter((componentKey) => !DEMO_HIDDEN_COMPONENT_KEYS.has(componentKey)),
+    };
+  }
+  return result;
+}
+
+/** Section-preset entry for a drawer item's component name; undefined for manual blocks. */
+export function resolveDrawerItemPreset(name: string): SectionPresetEntry | undefined {
+  return SECTION_PRESETS[name as SectionPresetKey];
+}
+
 export function EditorShell({
   slug,
   workspaceName,
@@ -644,23 +691,10 @@ export function EditorShell({
     if (!guideMode && !demoMode) return config;
     let categories = config.categories ?? {};
 
-    // Demo mode has no equivalent of the real (auth-gated) collections picker
-    // that FeaturedWork's Content tab needs (MultiCollectionControl) — hide the
-    // block from both drawers so a demo visitor can never insert a new one.
-    // (Pre-existing FeaturedWork blocks from a seeded template still render;
-    // StyleToolkitField shows a disabled explanatory message instead of the
-    // real collections picker for those.)
-    if (demoMode) {
-      categories = {
-        ...categories,
-        manual: categories.manual
-          ? { ...categories.manual, components: categories.manual.components?.filter((k) => k !== "FeaturedWork") }
-          : categories.manual,
-        presets: categories.presets
-          ? { ...categories.presets, components: categories.presets.components?.filter((k) => k !== "FeaturedWorkPreset") }
-          : categories.presets,
-      };
-    }
+    // See filterCategoriesForDemo above: registry-derived removal of every
+    // collection-dependent preset variant plus the FeaturedWork /
+    // CollectionCard manual blocks, across every category (not two named ones).
+    categories = filterCategoriesForDemo(categories, demoMode);
 
     // The guide's first task must create a block with the Style Toolkit tabs
     // used by steps 4â€“6. Keep manual blocks (including bare Video) out of the
@@ -1874,6 +1908,28 @@ export function EditorShell({
     []
   );
 
+  // Section-preset drawer items get a second line with the preset's localized
+  // description (three same-group variants otherwise look identical). Needs
+  // `t`, so it can't live in puckStableOverrides' empty-dep memo above — it
+  // gets its own memo keyed on [t] (stable per locale, same basis
+  // createEditorConfig is memoized on) so its identity only changes on locale
+  // switch, not every render, keeping Puck from remounting the drawer subtree.
+  const drawerItemOverrides = useMemo(
+    () => ({
+      drawerItem: ({ name, children }: { name: string; children: ReactNode }) => {
+        const preset = resolveDrawerItemPreset(name);
+        if (!preset) return <>{children}</>; // manual blocks keep the plain item
+        return (
+          <div className="flex flex-col gap-0.5">
+            {children}
+            <span className="ps-2 text-start text-xs text-muted-foreground">{t(preset.descriptionKey)}</span>
+          </div>
+        );
+      },
+    }),
+    [t]
+  );
+
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
@@ -2199,6 +2255,9 @@ export function EditorShell({
               // preventing Puck from remounting the subtrees (scroll-to-top on canvas;
               // focus loss on every keystroke in the right-panel inputs).
               ...puckStableOverrides,
+              // Locale-scoped: identity only changes on locale switch (see
+              // drawerItemOverrides above), not every render.
+              ...drawerItemOverrides,
             }}
           />
         ) : (

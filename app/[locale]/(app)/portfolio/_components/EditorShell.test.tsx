@@ -1567,13 +1567,23 @@ describe("EditorShell demoMode", () => {
     expect(screen.queryByText(/bonus code/)).not.toBeInTheDocument();
   });
 
-  it("hides FeaturedWork/FeaturedWorkPreset from the block drawer (no demo collections picker exists)", async () => {
+  it("hides every collection-dependent block from the drawer (no demo collections picker exists)", async () => {
     renderWithProviders(<EditorShell {...demoProps} />);
     fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
     await screen.findByTestId("puck");
 
-    expect(__capturedPuckConfig?.categories?.manual?.components).not.toContain("FeaturedWork");
-    expect(__capturedPuckConfig?.categories?.presets?.components).not.toContain("FeaturedWorkPreset");
+    // The manual primitives that need the auth-gated collections picker...
+    const manual = __capturedPuckConfig?.categories?.manual?.components;
+    expect(manual).not.toContain("FeaturedWork");
+    expect(manual).not.toContain("CollectionCard");
+
+    // ...and ALL THREE Featured work preset variants, not just the legacy key.
+    // Presets are grouped by section type now, so this lives in its own category.
+    const featuredWork = __capturedPuckConfig?.categories?.featuredWork?.components;
+    expect(featuredWork).toEqual([]);
+
+    // Nothing else was swept up: a preset with no collection dependency stays.
+    expect(__capturedPuckConfig?.categories?.hero?.components).toContain("HeroPreset");
   });
 
   it("disables the Preview toggle (no real preview route exists for demo data)", async () => {
@@ -1648,12 +1658,19 @@ describe("EditorShell demoMode — opt-in intro gates the guide", () => {
 });
 
 describe("EditorShell real (non-demo) editor — unaffected by the demo picker swap", () => {
-  it("keeps FeaturedWork/FeaturedWorkPreset in the block drawer", async () => {
+  it("keeps every collection-dependent block in the drawer", async () => {
     renderWithProviders(<EditorShell {...baseProps} />);
     await screen.findByTestId("puck");
 
-    expect(__capturedPuckConfig?.categories?.manual?.components).toContain("FeaturedWork");
-    expect(__capturedPuckConfig?.categories?.presets?.components).toContain("FeaturedWorkPreset");
+    const manual = __capturedPuckConfig?.categories?.manual?.components;
+    expect(manual).toContain("FeaturedWork");
+    expect(manual).toContain("CollectionCard");
+
+    expect(__capturedPuckConfig?.categories?.featuredWork?.components).toEqual([
+      "FeaturedWorkPreset",
+      "FeaturedWorkLeadPreset",
+      "FeaturedWorkIndexPreset",
+    ]);
   });
 
   it("keeps the Preview toggle enabled and functional (regression guard for the demo-only disable)", async () => {

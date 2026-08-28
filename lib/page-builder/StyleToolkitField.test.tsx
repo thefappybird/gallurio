@@ -7,6 +7,9 @@ import type { BlockStyle } from "./styleToolkit";
 import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
 import { resolveEffectiveFonts } from "./fonts";
+import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
+import { SingleCollectionControl } from "./galleryPicker/MediaField";
+import { DemoPickerContext } from "./demoPickerContext";
 
 vi.mock("next-intl", () => ({
   useTranslations: () =>
@@ -14,6 +17,40 @@ vi.mock("next-intl", () => ({
       has: () => true,
     }),
 }));
+
+// Replaces the real dialog-based collections picker with two buttons that fire
+// onChange directly — this suite tests the mapping/trim logic (Multi/Single
+// CollectionControl + the CollectionCard Content-tab branch), not the picker's
+// own dialog UI (covered by galleryPicker/MediaField.test.tsx and friends).
+vi.mock("./galleryPicker/MediaPicker", async () => {
+  const React = await import("react");
+  return {
+    MediaPicker: (props: {
+      mode: string;
+      open: boolean;
+      onChange: (next: unknown) => void;
+    }) => {
+      if (!props.open || props.mode !== "collections") return null;
+      return React.createElement(
+        "div",
+        null,
+        React.createElement("button", { type: "button", onClick: () => props.onChange([]) }, "mock-select-none"),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () =>
+              props.onChange([
+                { id: "1", name: "One", coverPublicId: "c1", itemCount: 2 },
+                { id: "2", name: "Two", coverPublicId: "c2", itemCount: 5 },
+              ]),
+          },
+          "mock-select-many"
+        )
+      );
+    },
+  };
+});
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -187,6 +224,10 @@ describe("ContainerBackgroundControls — animation gating", () => {
         speed="medium"
         onAnimationChange={noop}
         onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
       />
     );
     expect(screen.getByText("Background images")).toBeTruthy();
@@ -203,6 +244,10 @@ describe("ContainerBackgroundControls — animation gating", () => {
         speed="medium"
         onAnimationChange={noop}
         onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
       />
     );
     expect(screen.getByLabelText("Background animation")).toBeTruthy();
@@ -219,10 +264,100 @@ describe("ContainerBackgroundControls — animation gating", () => {
         speed="medium"
         onAnimationChange={onAnimationChange}
         onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
       />
     );
     fireEvent.change(screen.getByLabelText("Background animation"), { target: { value: "slide" } });
     expect(onAnimationChange).toHaveBeenCalledWith("slide");
+  });
+});
+
+describe("ContainerBackgroundControls — scrim gating", () => {
+  const noop = () => {};
+
+  it("hides Overlay opacity + color controls with zero background images", () => {
+    render(
+      <ContainerBackgroundControls
+        images={[]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
+      />
+    );
+    expect(screen.queryByText("Overlay opacity")).toBeNull();
+    expect(screen.queryByText("Overlay color")).toBeNull();
+  });
+
+  it("shows Overlay opacity + color controls with one background image", () => {
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
+      />
+    );
+    expect(screen.getByText("Overlay opacity")).toBeTruthy();
+    expect(screen.getByText("Overlay color")).toBeTruthy();
+  });
+
+  it("changing the overlay color swatch calls onOverlayColorChange with the token", () => {
+    const onOverlayColorChange = vi.fn();
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+        overlayOpacity={0}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={onOverlayColorChange}
+      />
+    );
+    const overlayColorLabel = screen.getByText("Overlay color");
+    const overlaySection = overlayColorLabel.parentElement!;
+    fireEvent.click(within(overlaySection).getByRole("button", { name: "Accent" }));
+    expect(onOverlayColorChange).toHaveBeenCalledWith("accent");
+  });
+
+  it("clearing the overlay color swatch calls onOverlayColorChange with undefined", () => {
+    const onOverlayColorChange = vi.fn();
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+        overlayOpacity={0}
+        overlayColorToken="accent"
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={onOverlayColorChange}
+      />
+    );
+    const overlayColorLabel = screen.getByText("Overlay color");
+    const overlaySection = overlayColorLabel.parentElement!;
+    fireEvent.click(within(overlaySection).getByRole("button", { name: "Reset color" }));
+    expect(onOverlayColorChange).toHaveBeenCalledWith(undefined);
   });
 });
 
@@ -280,6 +415,78 @@ describe("gallery section presets are container-typed", () => {
   it("GalleryLandingPreset is a CONTAINER_TYPE and FLEX_CONTAINER_BLOCK", () => {
     expect(CONTAINER_TYPES.has("GalleryLandingPreset")).toBe(true);
     expect(FLEX_CONTAINER_BLOCKS.has("GalleryLandingPreset")).toBe(true);
+  });
+});
+
+describe("CONTAINER_TYPES / FLEX_CONTAINER_BLOCKS — derived from the preset registry", () => {
+  it("contains all 33 registry keys plus Container, nothing hand-listed", () => {
+    for (const key of SECTION_PRESET_KEYS) {
+      expect(CONTAINER_TYPES.has(key)).toBe(true);
+      expect(FLEX_CONTAINER_BLOCKS.has(key)).toBe(true);
+    }
+    expect(CONTAINER_TYPES.has("Container")).toBe(true);
+    expect(FLEX_CONTAINER_BLOCKS.has("Container")).toBe(true);
+    expect(CONTAINER_TYPES.size).toBe(SECTION_PRESET_KEYS.length + 1);
+    expect(FLEX_CONTAINER_BLOCKS.size).toBe(SECTION_PRESET_KEYS.length + 1);
+  });
+
+  it("includes VideoPreset — the hand-listed sets omitted it (live bug)", () => {
+    expect(CONTAINER_TYPES.has("VideoPreset")).toBe(true);
+    expect(FLEX_CONTAINER_BLOCKS.has("VideoPreset")).toBe(true);
+  });
+});
+
+describe("ContentInputs — CollectionCard", () => {
+  it("renders a collection picker control on the Content tab", () => {
+    render(<ContentInputs type="CollectionCard" props={{}} setProp={vi.fn()} />);
+    expect(screen.getByText("Collection")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /choose collection/i })).toBeTruthy();
+  });
+
+  it("picking a collection writes the collection prop", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="CollectionCard" props={{}} setProp={setProp} />);
+    fireEvent.click(screen.getByRole("button", { name: /choose collection/i }));
+    fireEvent.click(screen.getByText("mock-select-many"));
+    expect(setProp).toHaveBeenCalledWith("collection", {
+      id: "1",
+      name: "One",
+      coverPublicId: "c1",
+      itemCount: 2,
+    });
+  });
+
+  it("shows the demo explanation instead of the picker in demo mode", () => {
+    render(
+      <DemoPickerContext.Provider value={{ demoSessionId: "s", onImageCapHit: vi.fn() }}>
+        <ContentInputs type="CollectionCard" props={{}} setProp={vi.fn()} />
+      </DemoPickerContext.Provider>
+    );
+    expect(screen.getByText(/collections aren.t available in this demo/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /choose collection/i })).toBeNull();
+  });
+});
+
+describe("SingleCollectionControl", () => {
+  it("clears to undefined on an empty selection", () => {
+    const onChange = vi.fn();
+    render(
+      <SingleCollectionControl
+        value={{ id: "1", name: "One", coverPublicId: "c1", itemCount: 2 }}
+        onChange={onChange}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /change collection/i }));
+    fireEvent.click(screen.getByText("mock-select-none"));
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it("keeps only the first entry when the picker returns several", () => {
+    const onChange = vi.fn();
+    render(<SingleCollectionControl value={undefined} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /choose collection/i }));
+    fireEvent.click(screen.getByText("mock-select-many"));
+    expect(onChange).toHaveBeenCalledWith({ id: "1", name: "One", coverPublicId: "c1", itemCount: 2 });
   });
 });
 
