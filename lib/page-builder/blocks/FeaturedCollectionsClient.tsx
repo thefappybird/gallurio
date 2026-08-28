@@ -19,7 +19,12 @@ export type FeaturedTile = {
 
 export type FeaturedCollectionsClientProps = {
   tiles: FeaturedTile[];
-  columns: 2 | 3 | 4;
+  /** 1 is the single-tile case used by the CollectionCard block. */
+  columns: 1 | 2 | 3 | 4;
+  /** Cover crop. Defaults to the grid's own 7/9 tile. */
+  aspectRatio?: string;
+  /** Whether the name/count chrome renders under the cover. Defaults to true. */
+  showCaption?: boolean;
   mode: "owner" | "public";
   slug?: string;
   popupConfig: PortfolioCollectionsPopupConfig;
@@ -57,6 +62,8 @@ const TILE_FOCUS_STYLES = `
 export function FeaturedCollectionsClient({
   tiles,
   columns,
+  aspectRatio = "7 / 9",
+  showCaption = true,
   mode,
   slug,
   popupConfig,
@@ -130,7 +137,7 @@ export function FeaturedCollectionsClient({
                 decoding="async"
                 style={{
                   width: "100%",
-                  aspectRatio: "7 / 9",
+                  aspectRatio,
                   objectFit: "cover",
                   display: "block",
                 }}
@@ -141,7 +148,7 @@ export function FeaturedCollectionsClient({
                 data-cover-placeholder=""
                 style={{
                   width: "100%",
-                  aspectRatio: "7 / 9",
+                  aspectRatio,
                   background: "var(--pf-color-muted, #ebebeb)",
                   display: "block",
                 }}
@@ -149,6 +156,7 @@ export function FeaturedCollectionsClient({
             )}
 
             {/* Text chrome */}
+            {showCaption && (
             <div
               style={{
                 padding: "0.75rem 1rem",
@@ -177,6 +185,7 @@ export function FeaturedCollectionsClient({
                 {formatCount(tile.count)}
               </p>
             </div>
+            )}
           </button>
         ))}
       </div>

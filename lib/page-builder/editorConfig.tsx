@@ -58,6 +58,7 @@ import { GalleryGridBlock, galleryGridDefaultProps } from "./blocks/GalleryGridB
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
+import { CollectionCardBlock, collectionCardDefaultProps, COLLECTION_CARD_RATIOS, type CollectionCardProps, type CollectionCardRatio } from "./blocks/CollectionCardBlock";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
 const contactDetailsDefaultProps: ContactDetailsProps = {};
 // Isomorphic blocks — safe to import the real component + defaults into the client.
@@ -115,6 +116,7 @@ type EditorComponents = {
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
   FeaturedWork: FeaturedWorkProps;
+  CollectionCard: CollectionCardProps;
   Video: VideoBlockProps;
   ContactDetails: ContactDetailsProps;
   // Manual primitives
@@ -320,6 +322,11 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.blocks.galleryGrid": "Photo Grid",
   "puckConfig.blocks.galleryMasonry": "Masonry",
   "puckConfig.blocks.featuredWork": "Highlights",
+    "puckConfig.blocks.collectionCard": "Collection card",
+    "puckConfig.fields.collectionCrop": "Crop",
+    "puckConfig.fields.collectionCaption": "Caption",
+    "puckConfig.options.collectionCaption.show": "Show",
+    "puckConfig.options.collectionCaption.hide": "Hide",
   "puckConfig.blocks.video": "Video",
   "puckConfig.blocks.contactDetails": "Contact Details",
   "puckConfig.blocks.heading": "Heading",
@@ -659,6 +666,22 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     render: FeaturedWorkBlock,
   };
 
+  // ---- Collection card ------------------------------------------------------
+
+  const collectionCard: ComponentConfig<CollectionCardProps> = {
+    label: t("puckConfig.blocks.collectionCard"),
+    inline: true,
+    defaultProps: collectionCardDefaultProps,
+    // `collection` is intentionally absent — driven by StyleToolkitField Content
+    // tab's collection picker, exactly like FeaturedWork's `collections`.
+    fields: {
+      _style: styleField,
+      aspectRatio: { type: "select", label: t("puckConfig.fields.collectionCrop"), options: COLLECTION_CARD_RATIOS.map((r) => ({ label: r.replace(/ /g, ""), value: r })) } as unknown as Field<CollectionCardRatio | undefined>,
+      showCaption: { type: "radio", label: t("puckConfig.fields.collectionCaption"), options: [{ label: t("puckConfig.options.collectionCaption.show"), value: true }, { label: t("puckConfig.options.collectionCaption.hide"), value: false }] } as unknown as Field<boolean | undefined>,
+    } as unknown as Fields<CollectionCardProps>,
+    render: CollectionCardBlock,
+  };
+
   // ---- Video ---------------------------------------------------------------
 
   const video: ComponentConfig<VideoBlockProps> = {
@@ -969,6 +992,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
       GalleryGrid: galleryGrid,
       GalleryMasonry: galleryMasonry,
       FeaturedWork: featuredWork,
+    CollectionCard: collectionCard,
       Video: video,
       ContactDetails: contactDetails,
       Heading: heading,

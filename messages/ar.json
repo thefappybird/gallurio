@@ -1965,11 +1965,31 @@
           "confirm": "إزالة العضو"
         },
         "details": {
-          "tabsLabel": "تفاصيل العضو", "tabs": { "details": "التفاصيل", "history": "السجل" },
-          "teams": "الفِرق", "noTeams": "لا توجد فِرق", "completed": "مكتمل", "workingNow": "قيد التنفيذ", "future": "مستقبلية",
-          "fromDate": "من تاريخ", "toDate": "إلى تاريخ", "action": "الإجراء", "allActions": "كل الإجراءات",
-          "actions": { "created": "تم الإنشاء", "updated": "تم التحديث", "deleted": "تم الحذف", "statusChanged": "تم تغيير الحالة", "paymentAdded": "تمت إضافة دفعة" },
-          "loadingHistory": "جارٍ تحميل سجل النشاط", "loading": "جارٍ التحميل…", "loadMore": "تحميل المزيد", "noActivity": "لم يتم العثور على نشاط."
+          "tabsLabel": "تفاصيل العضو",
+          "tabs": {
+            "details": "التفاصيل",
+            "history": "السجل"
+          },
+          "teams": "الفِرق",
+          "noTeams": "لا توجد فِرق",
+          "completed": "مكتمل",
+          "workingNow": "قيد التنفيذ",
+          "future": "مستقبلية",
+          "fromDate": "من تاريخ",
+          "toDate": "إلى تاريخ",
+          "action": "الإجراء",
+          "allActions": "كل الإجراءات",
+          "actions": {
+            "created": "تم الإنشاء",
+            "updated": "تم التحديث",
+            "deleted": "تم الحذف",
+            "statusChanged": "تم تغيير الحالة",
+            "paymentAdded": "تمت إضافة دفعة"
+          },
+          "loadingHistory": "جارٍ تحميل سجل النشاط",
+          "loading": "جارٍ التحميل…",
+          "loadMore": "تحميل المزيد",
+          "noActivity": "لم يتم العثور على نشاط."
         },
         "errors": {
           "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل.",
@@ -2752,7 +2772,8 @@
             "spacer": "فراغ",
             "divider": "فاصل",
             "columns": "أعمدة",
-            "container": "حاوية"
+            "container": "حاوية",
+            "collectionCard": "بطاقة مجموعة"
           },
           "fields": {
             "style": "النمط",
@@ -2781,7 +2802,9 @@
             "spacerHeight": "الارتفاع",
             "dividerThickness": "السُّمك (px)",
             "columnsCount": "الأعمدة",
-            "rowsCount": "الصفوف"
+            "rowsCount": "الصفوف",
+            "collectionCrop": "الاقتصاص",
+            "collectionCaption": "التسمية"
           },
           "options": {
             "bgAnimation": {
@@ -2846,6 +2869,10 @@
               "left": "يسار",
               "center": "وسط",
               "right": "يمين"
+            },
+            "collectionCaption": {
+              "show": "إظهار",
+              "hide": "إخفاء"
             }
           }
         },

@@ -1965,11 +1965,31 @@
           "confirm": "ลบสมาชิก"
         },
         "details": {
-          "tabsLabel": "รายละเอียดสมาชิก", "tabs": { "details": "รายละเอียด", "history": "ประวัติ" },
-          "teams": "ทีม", "noTeams": "ไม่มีทีม", "completed": "เสร็จสิ้น", "workingNow": "กำลังดำเนินการ", "future": "ในอนาคต",
-          "fromDate": "จากวันที่", "toDate": "ถึงวันที่", "action": "การดำเนินการ", "allActions": "ทุกการดำเนินการ",
-          "actions": { "created": "สร้างแล้ว", "updated": "อัปเดตแล้ว", "deleted": "ลบแล้ว", "statusChanged": "เปลี่ยนสถานะแล้ว", "paymentAdded": "เพิ่มการชำระเงินแล้ว" },
-          "loadingHistory": "กำลังโหลดประวัติกิจกรรม", "loading": "กำลังโหลด…", "loadMore": "โหลดเพิ่มเติม", "noActivity": "ไม่พบกิจกรรม"
+          "tabsLabel": "รายละเอียดสมาชิก",
+          "tabs": {
+            "details": "รายละเอียด",
+            "history": "ประวัติ"
+          },
+          "teams": "ทีม",
+          "noTeams": "ไม่มีทีม",
+          "completed": "เสร็จสิ้น",
+          "workingNow": "กำลังดำเนินการ",
+          "future": "ในอนาคต",
+          "fromDate": "จากวันที่",
+          "toDate": "ถึงวันที่",
+          "action": "การดำเนินการ",
+          "allActions": "ทุกการดำเนินการ",
+          "actions": {
+            "created": "สร้างแล้ว",
+            "updated": "อัปเดตแล้ว",
+            "deleted": "ลบแล้ว",
+            "statusChanged": "เปลี่ยนสถานะแล้ว",
+            "paymentAdded": "เพิ่มการชำระเงินแล้ว"
+          },
+          "loadingHistory": "กำลังโหลดประวัติกิจกรรม",
+          "loading": "กำลังโหลด…",
+          "loadMore": "โหลดเพิ่มเติม",
+          "noActivity": "ไม่พบกิจกรรม"
         },
         "errors": {
           "cannotRemoveOwner": "ไม่สามารถลบเจ้าของเวิร์กสเปซได้",
@@ -2752,7 +2772,8 @@
             "spacer": "ตัวเว้นระยะ",
             "divider": "เส้นแบ่ง",
             "columns": "คอลัมน์",
-            "container": "คอนเทนเนอร์"
+            "container": "คอนเทนเนอร์",
+            "collectionCard": "การ์ดคอลเลกชัน"
           },
           "fields": {
             "style": "สไตล์",
@@ -2781,7 +2802,9 @@
             "spacerHeight": "ความสูง",
             "dividerThickness": "ความหนา (พิกเซล)",
             "columnsCount": "คอลัมน์",
-            "rowsCount": "แถว"
+            "rowsCount": "แถว",
+            "collectionCrop": "การครอบตัด",
+            "collectionCaption": "คำบรรยาย"
           },
           "options": {
             "bgAnimation": {
@@ -2846,6 +2869,10 @@
               "left": "ซ้าย",
               "center": "กึ่งกลาง",
               "right": "ขวา"
+            },
+            "collectionCaption": {
+              "show": "แสดง",
+              "hide": "ซ่อน"
             }
           }
         },

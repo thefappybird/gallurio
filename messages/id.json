@@ -1960,11 +1960,31 @@
           "confirm": "Hapus anggota"
         },
         "details": {
-          "tabsLabel": "Detail anggota", "tabs": { "details": "Detail", "history": "Riwayat" },
-          "teams": "Tim", "noTeams": "Tidak ada tim", "completed": "Selesai", "workingNow": "Sedang berjalan", "future": "Mendatang",
-          "fromDate": "Dari tanggal", "toDate": "Sampai tanggal", "action": "Tindakan", "allActions": "Semua tindakan",
-          "actions": { "created": "Dibuat", "updated": "Diperbarui", "deleted": "Dihapus", "statusChanged": "Status diubah", "paymentAdded": "Pembayaran ditambahkan" },
-          "loadingHistory": "Memuat riwayat aktivitas", "loading": "Memuat…", "loadMore": "Muat lebih banyak", "noActivity": "Tidak ada aktivitas ditemukan."
+          "tabsLabel": "Detail anggota",
+          "tabs": {
+            "details": "Detail",
+            "history": "Riwayat"
+          },
+          "teams": "Tim",
+          "noTeams": "Tidak ada tim",
+          "completed": "Selesai",
+          "workingNow": "Sedang berjalan",
+          "future": "Mendatang",
+          "fromDate": "Dari tanggal",
+          "toDate": "Sampai tanggal",
+          "action": "Tindakan",
+          "allActions": "Semua tindakan",
+          "actions": {
+            "created": "Dibuat",
+            "updated": "Diperbarui",
+            "deleted": "Dihapus",
+            "statusChanged": "Status diubah",
+            "paymentAdded": "Pembayaran ditambahkan"
+          },
+          "loadingHistory": "Memuat riwayat aktivitas",
+          "loading": "Memuat…",
+          "loadMore": "Muat lebih banyak",
+          "noActivity": "Tidak ada aktivitas ditemukan."
         },
         "errors": {
           "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",
@@ -2752,7 +2772,8 @@
             "spacer": "Spasi",
             "divider": "Pemisah",
             "columns": "Kolom",
-            "container": "Container"
+            "container": "Container",
+            "collectionCard": "Kartu koleksi"
           },
           "fields": {
             "style": "Gaya",
@@ -2781,7 +2802,9 @@
             "spacerHeight": "Tinggi",
             "dividerThickness": "Ketebalan (px)",
             "columnsCount": "Kolom",
-            "rowsCount": "Baris"
+            "rowsCount": "Baris",
+            "collectionCrop": "Pangkas",
+            "collectionCaption": "Keterangan"
           },
           "options": {
             "bgAnimation": {
@@ -2846,6 +2869,10 @@
               "left": "Kiri",
               "center": "Tengah",
               "right": "Kanan"
+            },
+            "collectionCaption": {
+              "show": "Tampilkan",
+              "hide": "Sembunyikan"
             }
           }
         },

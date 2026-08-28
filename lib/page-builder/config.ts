@@ -22,6 +22,7 @@ import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
 import { galleryMasonryBlockConfig } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkBlockConfig } from "./blocks/FeaturedWorkBlock";
+import { collectionCardBlockConfig } from "./blocks/CollectionCardBlock";
 import { videoBlockConfig } from "./blocks/VideoBlock";
 import { contactDetailsBlockConfig } from "./blocks/ContactDetailsBlock";
 import {
@@ -43,6 +44,7 @@ import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
 import type { FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
+import type { CollectionCardProps } from "./blocks/CollectionCardBlock";
 import type { VideoBlockProps } from "./blocks/VideoBlock";
 import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
 import type {
@@ -75,6 +77,7 @@ type Components = {
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
   FeaturedWork: FeaturedWorkProps;
+  CollectionCard: CollectionCardProps;
   Video: VideoBlockProps;
   ContactDetails: ContactDetailsProps;
   // Manual primitives
@@ -114,6 +117,7 @@ export const puckConfig: Config<Components> = {
     GalleryGrid: galleryGridBlockConfig,
     GalleryMasonry: galleryMasonryBlockConfig,
     FeaturedWork: featuredWorkBlockConfig,
+    CollectionCard: collectionCardBlockConfig,
     Video: videoBlockConfig,
     ContactDetails: contactDetailsBlockConfig,
     Heading: headingBlockConfig,

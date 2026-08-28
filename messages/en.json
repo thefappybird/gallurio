@@ -1966,11 +1966,30 @@
         },
         "details": {
           "tabsLabel": "Member details",
-          "tabs": { "details": "Details", "history": "History" },
-          "teams": "Teams", "noTeams": "No teams", "completed": "Completed", "workingNow": "Working now", "future": "Future",
-          "fromDate": "From date", "toDate": "To date", "action": "Action", "allActions": "All actions",
-          "actions": { "created": "Created", "updated": "Updated", "deleted": "Deleted", "statusChanged": "Status changed", "paymentAdded": "Payment added" },
-          "loadingHistory": "Loading activity history", "loading": "Loading…", "loadMore": "Load more", "noActivity": "No activity found."
+          "tabs": {
+            "details": "Details",
+            "history": "History"
+          },
+          "teams": "Teams",
+          "noTeams": "No teams",
+          "completed": "Completed",
+          "workingNow": "Working now",
+          "future": "Future",
+          "fromDate": "From date",
+          "toDate": "To date",
+          "action": "Action",
+          "allActions": "All actions",
+          "actions": {
+            "created": "Created",
+            "updated": "Updated",
+            "deleted": "Deleted",
+            "statusChanged": "Status changed",
+            "paymentAdded": "Payment added"
+          },
+          "loadingHistory": "Loading activity history",
+          "loading": "Loading…",
+          "loadMore": "Load more",
+          "noActivity": "No activity found."
         },
         "errors": {
           "cannotRemoveOwner": "The workspace owner can't be removed.",
@@ -2753,7 +2772,8 @@
             "spacer": "Spacer",
             "divider": "Divider",
             "columns": "Columns",
-            "container": "Container"
+            "container": "Container",
+            "collectionCard": "Collection card"
           },
           "fields": {
             "style": "Style",
@@ -2782,7 +2802,9 @@
             "spacerHeight": "Height",
             "dividerThickness": "Thickness (px)",
             "columnsCount": "Columns",
-            "rowsCount": "Rows"
+            "rowsCount": "Rows",
+            "collectionCrop": "Crop",
+            "collectionCaption": "Caption"
           },
           "options": {
             "bgAnimation": {
@@ -2847,6 +2869,10 @@
               "left": "Left",
               "center": "Center",
               "right": "Right"
+            },
+            "collectionCaption": {
+              "show": "Show",
+              "hide": "Hide"
             }
           }
         },

@@ -1960,11 +1960,31 @@
           "confirm": "Alisin ang miyembro"
         },
         "details": {
-          "tabsLabel": "Mga detalye ng miyembro", "tabs": { "details": "Mga detalye", "history": "Kasaysayan" },
-          "teams": "Mga koponan", "noTeams": "Walang koponan", "completed": "Natapos", "workingNow": "Kasalukuyang ginagawa", "future": "Hinaharap",
-          "fromDate": "Mula petsa", "toDate": "Hanggang petsa", "action": "Aksyon", "allActions": "Lahat ng aksyon",
-          "actions": { "created": "Ginawa", "updated": "Na-update", "deleted": "Tinanggal", "statusChanged": "Binago ang status", "paymentAdded": "Idinagdag ang bayad" },
-          "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad", "loading": "Naglo-load…", "loadMore": "Mag-load pa", "noActivity": "Walang nakitang aktibidad."
+          "tabsLabel": "Mga detalye ng miyembro",
+          "tabs": {
+            "details": "Mga detalye",
+            "history": "Kasaysayan"
+          },
+          "teams": "Mga koponan",
+          "noTeams": "Walang koponan",
+          "completed": "Natapos",
+          "workingNow": "Kasalukuyang ginagawa",
+          "future": "Hinaharap",
+          "fromDate": "Mula petsa",
+          "toDate": "Hanggang petsa",
+          "action": "Aksyon",
+          "allActions": "Lahat ng aksyon",
+          "actions": {
+            "created": "Ginawa",
+            "updated": "Na-update",
+            "deleted": "Tinanggal",
+            "statusChanged": "Binago ang status",
+            "paymentAdded": "Idinagdag ang bayad"
+          },
+          "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad",
+          "loading": "Naglo-load…",
+          "loadMore": "Mag-load pa",
+          "noActivity": "Walang nakitang aktibidad."
         },
         "errors": {
           "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace.",
@@ -2752,7 +2772,8 @@
             "spacer": "Spacer",
             "divider": "Divider",
             "columns": "Mga Kolum",
-            "container": "Container"
+            "container": "Container",
+            "collectionCard": "Card ng koleksyon"
           },
           "fields": {
             "style": "Estilo",
@@ -2781,7 +2802,9 @@
             "spacerHeight": "Taas",
             "dividerThickness": "Kapal (px)",
             "columnsCount": "Mga kolum",
-            "rowsCount": "Mga hilera"
+            "rowsCount": "Mga hilera",
+            "collectionCrop": "Crop",
+            "collectionCaption": "Caption"
           },
           "options": {
             "bgAnimation": {
@@ -2846,6 +2869,10 @@
               "left": "Kaliwa",
               "center": "Gitna",
               "right": "Kanan"
+            },
+            "collectionCaption": {
+              "show": "Ipakita",
+              "hide": "Itago"
             }
           }
         },

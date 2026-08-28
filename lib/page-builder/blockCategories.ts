@@ -28,6 +28,7 @@ export const MANUAL_BLOCK_KEYS = [
   "GalleryGrid",
   "GalleryMasonry",
   "FeaturedWork",
+  "CollectionCard",
   "Heading",
   "Text",
   "Image",

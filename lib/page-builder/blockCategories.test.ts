@@ -12,4 +12,12 @@ describe("blockCategories", () => {
       expect(MANUAL_BLOCK_KEYS).toContain(key);
     }
   });
+
+  // CollectionCard is the single-collection primitive: FeaturedWork owns a whole
+  // grid at a hardcoded 7/9 tile, so a preset cannot place one collection beside
+  // copy or crop it landscape without it.
+  it("registers CollectionCard as a manual block", () => {
+    expect(MANUAL_BLOCK_KEYS).toContain("CollectionCard");
+    expect(PRESET_BLOCK_KEYS).not.toContain("CollectionCard");
+  });
 });
