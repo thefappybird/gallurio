@@ -81,6 +81,7 @@ export function EditorContainerAnchor({ id }: { id: string }) {
 
   return (
     <div
+      className="pf-container-anchor"
       aria-hidden="true"
       style={{ height: `${height}px`, width: "100%", pointerEvents: "none" }}
     />

@@ -1170,18 +1170,52 @@ describe("ContainerBlock flex defaults", () => {
     expect(section?.style.minHeight).toBe("640px");
   });
 
-  it("uses _style.justifyContent over legacy alignY on the outer section", () => {
+  it("applies legacy vertical distribution to the filling content slot", () => {
     const { container } = render(
       <ContainerBlock content={MockSlot} alignY="top" _style={{ justifyContent: "center" }} />
     );
     const section = container.querySelector("section");
-    expect(section?.style.justifyContent).toBe("center");
+    const inner = screen.getByTestId("slot-inner");
+    expect(section?.style.justifyContent).toBe("");
+    expect(inner.style.justifyContent).toBe("center");
   });
 
-  it("falls back to alignY when _style.justifyContent is absent", () => {
-    const { container } = render(<ContainerBlock content={MockSlot} alignY="bottom" />);
-    const section = container.querySelector("section");
-    expect(section?.style.justifyContent).toBe("flex-end");
+  it("falls back to legacy alignY when no style distribution is present", () => {
+    render(<ContainerBlock content={MockSlot} alignY="bottom" />);
+    expect(screen.getByTestId("slot-inner").style.justifyContent).toBe("flex-end");
+  });
+
+  it("gives the content slot the available height so distribution reaches its real children", () => {
+    render(<ContainerBlock content={MockSlot} minHeight="medium" />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.flex).toBe("1 1 auto");
+    expect(inner.style.minHeight).toBe("0");
+  });
+
+  it("does not inject an anchor CSS workaround into the container", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={MockSlot} puck={{ isEditing: true }} />
+    );
+    expect(html).not.toContain("pf-container-anchor");
+  });
+
+  it("uses dedicated content fields over legacy style and legacy props", () => {
+    render(
+      <ContainerBlock
+        content={MockSlot}
+        alignX="left"
+        alignY="top"
+        _style={{
+          contentHorizontalAlign: "end",
+          contentVerticalDistribution: "between",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      />
+    );
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.textAlign).toBe("end");
+    expect(inner.style.justifyContent).toBe("space-between");
   });
 
   it("inner content wrapper always has alignItems: stretch (children fill full width)", () => {
@@ -1355,6 +1389,10 @@ describe("ContainerBlock — dragRef forwarding", () => {
 // ---------------------------------------------------------------------------
 
 describe("defaultProps gap default (Item 4)", () => {
+  it("gives new Columns a 320px drop surface by default", () => {
+    expect(columnsDefaultProps.minHeight).toBe("320px");
+  });
+
   it("columnsDefaultProps._style.gap is 16 (16px = 1rem, matches fallback)", () => {
     expect(columnsDefaultProps._style?.gap).toBe(16);
   });
@@ -1451,11 +1489,13 @@ describe("A5: ContainerBlock custom min-height", () => {
     expect(html).toContain("min-height:250px");
   });
 
-  it("public page: minHeight=custom without minHeightValue has no min-height constraint (A5)", () => {
+  it("public page: minHeight=custom without minHeightValue has no section min-height constraint (A5)", () => {
     const html = renderToStaticMarkup(
       <ContainerBlock content={stubSlot} minHeight="custom" puck={{ isEditing: false }} />
     );
-    expect(html).not.toContain("min-height");
+    expect(html).not.toContain("min-height:250px");
+    // The filling slot has min-height:0 by design; it is not a section height.
+    expect(html).toContain("min-height:0");
   });
 });
 
@@ -1469,11 +1509,13 @@ describe("A7: ColumnsBlock overallWidth prop", () => {
 });
 
 describe("A5: ColumnsBlock min-height prop", () => {
-  it("renders min-height when minHeight prop is set (A5)", () => {
+  it("makes the inner grid fill its min-height rather than leaving a content-sized grid", () => {
     const html = renderToStaticMarkup(
       <ColumnsBlock columns={2} minHeight="200px" content={stubSlot} />
     );
     expect(html).toContain("min-height:200px");
+    expect(html).toContain("display:flex");
+    expect(html).toContain("flex:1 1 auto");
   });
 });
 

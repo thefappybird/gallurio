@@ -36,6 +36,7 @@ import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/li
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
 import { createEditorConfig } from "@/lib/page-builder/editorConfig";
+import { reconcileContainerAnchors } from "@/lib/page-builder/containerAnchorReconciler";
 import { PRESET_BLOCK_KEYS } from "@/lib/page-builder/blockCategories";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolveEffectiveFonts } from "@/lib/page-builder/fonts";
@@ -551,15 +552,39 @@ function PuckGateReader({
   return null;
 }
 
+/** Keeps editor-only ContainerAnchor data correct after every Puck mutation. */
+function ContainerAnchorReconciler() {
+  const data = usePuckStore((s) => s.appState.data);
+  const dispatch = usePuckStore((s) => s.dispatch);
+
+  useEffect(() => {
+    const normalized = reconcileContainerAnchors(data);
+    if (normalized === data) return;
+    dispatch({ type: "setData", data: normalized });
+  }, [data, dispatch]);
+
+  return null;
+}
+
 // The editor is uncontrolled per zone — Puck owns the live edit state and emits
 // it via onChange. Each content item needs a stable props.id; seeded template
 // data has none, so add deterministic ids before handing data to <Puck>.
 function ensureIds(data: PuckData): Data {
-  const withIds = (items: PuckData["content"], prefix: string) =>
-    (items ?? []).map((b, i) => ({
-      ...b,
-      props: { id: (b.props?.id as string) ?? `${prefix}-${b.type}-${i}`, ...b.props },
-    }));
+  const withIds = (items: PuckData["content"], prefix: string): PuckData["content"] =>
+    (items ?? []).map((b, i) => {
+      const id = (b.props?.id as string) ?? `${prefix}-${b.type}-${i}`;
+      const childContent = b.props?.content;
+      return {
+        ...b,
+        props: {
+          id,
+          ...b.props,
+          ...(Array.isArray(childContent)
+            ? { content: withIds(childContent as PuckData["content"], id) }
+            : {}),
+        },
+      };
+    });
   return {
     root: data.root ?? {},
     content: withIds(data.content, "c"),
@@ -572,7 +597,9 @@ function ensureIds(data: PuckData): Data {
 /** Fill missing defaultProps into every block, then assign stable ids. */
 function prepareForEditor(data: PuckData): Data {
   const withDefaults = fillBlockDefaults(data as unknown as PuckDataLike) as unknown as PuckData;
-  return ensureIds(withDefaults);
+  // Normalize legacy/restored ContainerAnchor data before the first canvas
+  // render, then keep it normalized live with ContainerAnchorReconciler.
+  return reconcileContainerAnchors(ensureIds(withDefaults));
 }
 
 export function EditorShell({
@@ -2144,6 +2171,7 @@ export function EditorShell({
                       setPuckHasPresetBlock(hasPresetBlock);
                     }}
                   />
+                  <ContainerAnchorReconciler />
                   {topBar(
                     <ResponsiveEditCanvasControls
                       formLocale={formLocale}

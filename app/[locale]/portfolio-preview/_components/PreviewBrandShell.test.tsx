@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
@@ -174,6 +175,17 @@ describe("PreviewBrandShell", () => {
     );
 
     expect(screen.getByTestId("inner")).toBeInTheDocument();
+  });
+
+  it("does not server-render fallback children before the local draft is read", () => {
+    const html = renderToStaticMarkup(
+      <PreviewBrandShell slug={SLUG} fallbackCssVars={{}} fallbackClassName="">
+        <span>Published fallback</span>
+      </PreviewBrandShell>,
+    );
+
+    expect(html).toContain("Loading preview");
+    expect(html).not.toContain("Published fallback");
   });
 
   it("falls back when draft brandKit is structurally present but malformed (missing required fields)", () => {

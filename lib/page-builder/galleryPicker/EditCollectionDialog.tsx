@@ -41,6 +41,7 @@ export function EditCollectionDialog({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dragOverUpload, setDragOverUpload] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
@@ -316,10 +317,38 @@ export function EditCollectionDialog({
 
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground"><Loader2Icon className="size-4 animate-spin" aria-hidden /> Loading…</div>
-          ) : items.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No photos in this collection yet.</p>
           ) : (
             <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+              <li className="aspect-square">
+                <button
+                  type="button"
+                  data-testid="collection-upload-drop-card"
+                  aria-label={dragOverUpload ? "Drop to upload" : "Upload photos"}
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "copy";
+                    setDragOverUpload(true);
+                  }}
+                  onDragLeave={() => setDragOverUpload(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverUpload(false);
+                    handleFiles(e.dataTransfer.files);
+                  }}
+                  className={cn(
+                    "flex size-full flex-col items-center justify-center gap-1 border border-dashed px-2 text-center text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60",
+                    dragOverUpload
+                      ? "border-foreground bg-accent text-accent-foreground"
+                      : "border-border bg-muted/40 text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                  )}
+                >
+                  {uploading ? <Loader2Icon className="size-5 animate-spin" aria-hidden /> : <ImagePlusIcon className="size-5" aria-hidden />}
+                  <span>{uploading ? "Uploading…" : "Drop to upload"}</span>
+                  {!uploading && <span className="text-[10px] font-normal">or click to browse</span>}
+                </button>
+              </li>
               {items.map((item, idx) => {
                 const isCover = item.publicId === coverPublicId;
                 const isSel = selected.has(item.id);

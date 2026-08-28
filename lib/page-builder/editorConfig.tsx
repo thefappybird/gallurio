@@ -235,13 +235,13 @@ function resolveContainerFields(_data: unknown, { fields }: { fields: Record<str
 const resolveContainerFieldsTyped = resolveContainerFields as unknown as ComponentConfig<ContainerBlockProps>["resolveFields"];
 
 // ---------------------------------------------------------------------------
-// Anchor presence: resolveData ensures exactly one ContainerAnchor exists as
-// the FIRST slot child. Height is no longer maintained here — EditorContainerAnchor
-// computes its own height reactively from the parent's live children via
-// usePuckStore, avoiding the missing "move" trigger in Puck 0.20.2's
-// ResolveDataTrigger (only "insert"|"replace"|"load"|"force" are available).
-// IDEMPOTENCY: returns the same `data` reference if an anchor already leads the
-// slot so we never produce a spurious resolve → change → resolve loop.
+// Anchor presence: resolveData gives an empty Container one editor-only anchor.
+// Once the slot has real children, it removes every anchor so the canvas and
+// public renderer distribute exactly the same flex children. Puck calls this
+// resolver on insert/load/replace/force; the slot's native minEmptyHeight keeps
+// a container droppable after its final real child is deleted.
+// IDEMPOTENCY: an empty container with the correctly formed anchor retains its
+// data reference, avoiding a spurious resolve → change → resolve loop.
 // ---------------------------------------------------------------------------
 
 type _SlotItem = { type: string; props: Record<string, unknown> };
@@ -255,6 +255,17 @@ function resolveContainerData(data: unknown) {
   const isAnchor = (item: _SlotItem) => item.type === "ContainerAnchor";
   const realChildren = content.filter((item) => !isAnchor(item));
 
+  // The anchor is empty-state editor plumbing only. Once actual content exists,
+  // remove it before Puck lays out the flex slot: the public renderer omits
+  // anchors, so keeping one here makes canvas distribution disagree with preview.
+  if (realChildren.length > 0) {
+    if (content.length === realChildren.length) return data;
+    return {
+      ...d,
+      props: { ...d.props, content: realChildren },
+    };
+  }
+
   // Idempotency: if a correctly-formed anchor already leads the slot, nothing to do.
   // The id check is required: drafts saved before the --anchor convention was
   // introduced may carry an anchor whose id matches the container id (no suffix).
@@ -264,7 +275,7 @@ function resolveContainerData(data: unknown) {
   if (
     first !== undefined &&
     isAnchor(first) &&
-    content.length === realChildren.length + 1 &&
+    content.length === 1 &&
     (first.props as { id?: string }).id === `${d.props.id}--anchor`
   ) {
     return data;
@@ -279,10 +290,7 @@ function resolveContainerData(data: unknown) {
     },
   };
 
-  return {
-    ...d,
-    props: { ...d.props, content: [anchor, ...realChildren] },
-  };
+  return { ...d, props: { ...d.props, content: [anchor] } };
 }
 const resolveContainerDataTyped =
   resolveContainerData as unknown as ComponentConfig<ContainerBlockProps>["resolveData"];

@@ -38,6 +38,15 @@ export type StyleColorToken = (typeof STYLE_COLOR_TOKENS)[number];
 export const SHADOW_SIZES = ["none", "sm", "md", "lg"] as const;
 export type ShadowSize = (typeof SHADOW_SIZES)[number];
 
+/** A physical border edge a block can render. */
+export type BorderSide = "top" | "right" | "bottom" | "left";
+
+/**
+ * Legacy, single-choice border setting. Keep reading it so existing local drafts
+ * retain their appearance; new edits write `borderSides` instead.
+ */
+export type BorderPreset = "all" | BorderSide;
+
 /** Gallery-specific column counts — stored in `_style.galleryColumns` (not a top-level prop). */
 export const GALLERY_COLUMN_OPTIONS = [2, 3, 4] as const;
 export type GalleryColumns = (typeof GALLERY_COLUMN_OPTIONS)[number];
@@ -66,6 +75,10 @@ export type BlockStyle = {
   // Border + frame
   borderWidth?: number; // px
   borderColorToken?: StyleColorToken | string;
+  /** Selected border edges. Undefined preserves the legacy full-frame border. */
+  borderSides?: BorderSide[];
+  /** @deprecated Replaced by the independently-toggleable `borderSides`. */
+  borderPreset?: BorderPreset;
   radius?: number; // px
   shadow?: ShadowSize;
   // Spacing — legacy px numbers (kept for back-compat reads of old drafts)
@@ -90,6 +103,16 @@ export type BlockStyle = {
   rowSpan?: number;
   // Flex container layout — for Container/Flex/preset sections
   flexDirection?: "row" | "column";
+  /** Horizontal arrangement of a Container's child stack. New writes only. */
+  contentHorizontalAlign?: "start" | "center" | "end" | "stretch";
+  /** Vertical distribution of a Container's real children. New writes only. */
+  contentVerticalDistribution?: "start" | "center" | "end" | "between" | "around";
+  /** Inline-axis placement of this block inside a Columns grid cell. New writes only. */
+  cellHorizontalAlign?: "stretch" | "start" | "center" | "end";
+  /** Block-axis placement of this block inside a Columns grid cell. New writes only. */
+  cellVerticalAlign?: "stretch" | "start" | "center" | "end";
+  // Legacy overloaded layout fields. Preserve them as read fallbacks only; new
+  // controls use the explicit content and cell fields above.
   alignItems?: "start" | "center" | "end" | "stretch";
   justifyContent?: "start" | "center" | "end" | "between" | "around";
   gap?: number; // px, gap between children (0–96)
@@ -307,8 +330,26 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   if (style.borderWidth && style.borderWidth > 0) {
     const w = clamp(style.borderWidth, STYLE_LIMITS.borderWidth.min, STYLE_LIMITS.borderWidth.max);
     css.borderStyle = "solid";
-    css.borderWidth = `${w}px`;
     css.borderColor = colorTokenToVar(style.borderColorToken) ?? "var(--pf-color-fg)";
+    const sides: BorderSide[] = style.borderSides ?? (
+      style.borderPreset && style.borderPreset !== "all"
+        ? [style.borderPreset]
+        : ["top", "right", "bottom", "left"]
+    );
+    if (sides.length === 4) {
+      css.borderWidth = `${w}px`;
+    } else {
+      // Set every edge to zero first so changing from a full border has an
+      // immediate, visible result on precisely the selected sides.
+      css.borderWidth = "0px";
+      const sideWidth: Record<BorderSide, string> = {
+        top: "borderTopWidth",
+        right: "borderRightWidth",
+        bottom: "borderBottomWidth",
+        left: "borderLeftWidth",
+      };
+      for (const side of sides) css[sideWidth[side]] = `${w}px`;
+    }
   }
   if (style.radius !== undefined) {
     css.borderRadius = `${clamp(style.radius, STYLE_LIMITS.radius.min, STYLE_LIMITS.radius.max)}px`;
@@ -395,6 +436,12 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
     const js = jsSelf[style.justifyContent];
     if (js) css.justifySelf = js;
   }
+
+  // Explicit grid-cell placement. These deliberately layer after the legacy
+  // overloaded fields above so new data wins while old drafts retain their
+  // established rendering until a user changes the new controls.
+  if (style.cellVerticalAlign) css.alignSelf = style.cellVerticalAlign;
+  if (style.cellHorizontalAlign) css.justifySelf = style.cellHorizontalAlign;
 
   // Gap between children — emitted here so it applies on any flex/grid container.
   // justifyContent is intentionally excluded: flex container blocks apply it to

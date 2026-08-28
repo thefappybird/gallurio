@@ -84,6 +84,25 @@ describe("resolveBlockStyle", () => {
     expect(css.borderColor).toBe("var(--pf-color-fg)");
   });
 
+  it("applies independently selected border sides together", () => {
+    const css = resolveBlockStyle({ borderWidth: 2, borderSides: ["left", "bottom"] });
+    expect(css.borderStyle).toBe("solid");
+    expect(css.borderWidth).toBe("0px");
+    expect(css.borderLeftWidth).toBe("2px");
+    expect(css.borderBottomWidth).toBe("2px");
+    expect(css.borderTopWidth).toBeUndefined();
+  });
+
+  it("keeps full borders as the default, including all selected sides", () => {
+    expect(resolveBlockStyle({ borderWidth: 2 }).borderWidth).toBe("2px");
+    expect(resolveBlockStyle({ borderWidth: 2, borderSides: ["top", "right", "bottom", "left"] }).borderWidth).toBe("2px");
+    expect(resolveBlockStyle({ borderWidth: 2, borderPreset: "all" }).borderWidth).toBe("2px");
+  });
+
+  it("continues to render legacy single-side draft data", () => {
+    expect(resolveBlockStyle({ borderWidth: 2, borderPreset: "left" }).borderLeftWidth).toBe("2px");
+  });
+
   it("ignores a zero border width", () => {
     const css = resolveBlockStyle({ borderWidth: 0 });
     expect(css.borderWidth).toBeUndefined();
@@ -251,6 +270,17 @@ describe("flex layout fields", () => {
     // flex-only values do not produce justifySelf
     expect(resolveBlockStyle({ justifyContent: "between" }).justifySelf).toBeUndefined();
     expect(resolveBlockStyle({ justifyContent: "around" }).justifySelf).toBeUndefined();
+  });
+
+  it("uses the dedicated cell fields for grid placement and lets them override legacy data", () => {
+    const css = resolveBlockStyle({
+      alignItems: "start",
+      justifyContent: "end",
+      cellHorizontalAlign: "center",
+      cellVerticalAlign: "stretch",
+    });
+    expect(css.justifySelf).toBe("center");
+    expect(css.alignSelf).toBe("stretch");
   });
 });
 

@@ -84,12 +84,12 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.queryByText("Padding")).toBeNull();
   });
 
-  it("Layout tab shows Align and Justify when no fieldId (no Puck provider)", () => {
+  it("Layout tab hides unsupported alignment controls when no block is selected", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
-    expect(screen.getByText("Align")).toBeTruthy();
-    expect(screen.getByText("Justify")).toBeTruthy();
+    expect(screen.queryByText("Content alignment")).toBeNull();
+    expect(screen.queryByText("Content distribution")).toBeNull();
   });
 
   it("Content tab shows Banner section without fieldId", () => {
@@ -838,10 +838,42 @@ describe("DesignTab — Border width input shows effective default 0 as placehol
     const input = within(row).getByRole("spinbutton");
     expect(input).toHaveAttribute("placeholder", "0");
   });
+
+  it("choosing a border side makes a 1px border visible when width is unset", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{}} set={set} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Left border" }));
+    expect(set).toHaveBeenCalledWith({ borderSides: ["left"], borderPreset: undefined, borderWidth: 1 });
+  });
+
+  it("adds another side without replacing the current selection", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{ borderWidth: 4, borderSides: ["left"] }} set={set} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bottom border" }));
+    expect(set).toHaveBeenCalledWith({ borderSides: ["left", "bottom"], borderPreset: undefined });
+  });
+
+  it("replaces a full border with the first explicitly selected side", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{ borderWidth: 4 }} set={set} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bottom border" }));
+    expect(set).toHaveBeenCalledWith({ borderSides: ["bottom"], borderPreset: undefined });
+  });
+
+  it("full border overwrites an existing partial selection", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{ borderWidth: 4, borderSides: ["left", "bottom"] }} set={set} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Full border" }));
+    expect(set).toHaveBeenCalledWith({ borderSides: ["top", "right", "bottom", "left"], borderPreset: undefined });
+  });
 });
 
-describe("LayoutTabBody — Align icon row shows effective default 'stretch' when alignItems is unset", () => {
-  it("Stretch to fill icon is marked active (aria-pressed=true) when alignItems is unset", () => {
+describe("LayoutTabBody — content controls preserve legacy effective values", () => {
+  it("Content start is active when the container has no explicit or legacy alignment", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -855,8 +887,8 @@ describe("LayoutTabBody — Align icon row shows effective default 'stretch' whe
     );
     // Open the Layout drawer.
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
-    expect(screen.getByRole("button", { name: "Stretch to fill" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Left" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Content start" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Content center" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("reflects legacy container alignment props until the style controls are edited", () => {
@@ -872,8 +904,26 @@ describe("LayoutTabBody — Align icon row shows effective default 'stretch' whe
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
-    expect(screen.getByRole("button", { name: "Center" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Bottom" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Content center" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Content bottom" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("writes only dedicated content fields when an option is selected", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={set}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Content middle" }));
+    expect(set).toHaveBeenCalledWith({ contentVerticalDistribution: "center" });
   });
 });
 
@@ -956,21 +1006,22 @@ describe("A7: LayoutTabBody — Columns Overall Width control", () => {
   });
 });
 
-describe("A6: LayoutTabBody — Align/Justify IconRow shows Reset button when value set", () => {
-  it("Align Reset button appears when alignItems is explicitly set (A6)", () => {
+describe("LayoutTabBody — cell placement controls", () => {
+  it("writes only dedicated cell fields when a Columns child is placed", () => {
+    const set = vi.fn();
     render(
       <LayoutTabBody
-        s={{ alignItems: "center" }}
-        set={vi.fn()}
-        isGridChild={false}
+        s={{}}
+        set={set}
+        isGridChild
         showJustify={true}
-        blockType="Container"
+        blockType="Image"
         p={{}}
         setProp={() => {}}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
-    expect(screen.getByRole("button", { name: "Reset Align" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Cell middle" }));
+    expect(set).toHaveBeenCalledWith({ cellVerticalAlign: "center" });
   });
 });
 

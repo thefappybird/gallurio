@@ -164,7 +164,6 @@ describe("Container resolveData — anchor id idempotency", () => {
         id: containerId,
         content: [
           { type: "ContainerAnchor", props: { id: wrongAnchorId, height: 0 } },
-          { type: "Heading", props: { id: "h1", text: "Hello" } },
         ],
       },
     };
@@ -176,6 +175,25 @@ describe("Container resolveData — anchor id idempotency", () => {
     expect(anchor.type).toBe("ContainerAnchor");
     // The anchor id MUST be "myblock--anchor", not "myblock".
     expect(anchor.props.id).toBe(`${containerId}--anchor`);
+  });
+
+  it("removes the editor-only anchor when real children exist", () => {
+    type ResolveDataFn = (data: unknown) => unknown;
+    const container = (editorPuckConfig.components as Record<string, { resolveData?: ResolveDataFn }>).Container;
+    const resolveData = container.resolveData!;
+    const heading = { type: "Heading", props: { id: "h1", text: "Hello" } };
+
+    const result = resolveData({
+      props: {
+        id: "myblock",
+        content: [
+          { type: "ContainerAnchor", props: { id: "myblock--anchor", height: 0 } },
+          heading,
+        ],
+      },
+    }) as { props: { content: Array<{ type: string; props: { id?: string } }> } };
+
+    expect(result.props.content).toEqual([heading]);
   });
 });
 

@@ -41,6 +41,10 @@ import {
   Layers2,
   Layers,
   Minus,
+  PanelTop,
+  PanelRight,
+  PanelBottom,
+  PanelLeft,
 } from "lucide-react";
 import type { ComponentData } from "@measured/puck";
 import { usePuckStore } from "./puckHooks";
@@ -72,6 +76,7 @@ import {
   type SelfAlign,
   type HighlightShape,
   type HighlightSize,
+  type BorderSide,
   effectiveButtonTextToken,
 } from "./styleToolkit";
 import { CountControl } from "./CountControl";
@@ -147,20 +152,42 @@ const BLOCK_POSITION_OPTIONS: { value: SelfAlign; label: string; Icon: LucideIco
   { value: "right",  label: "Align block right",   Icon: AlignHorizontalJustifyEnd },
 ];
 
-const ALIGN_OPTIONS: { value: NonNullable<BlockStyle["alignItems"]>; label: string; Icon: LucideIcon }[] = [
-  { value: "start",   label: "Left",           Icon: AlignHorizontalJustifyStart },
-  { value: "center",  label: "Center",          Icon: AlignHorizontalJustifyCenter },
-  { value: "end",     label: "Right",           Icon: AlignHorizontalJustifyEnd },
-  { value: "stretch", label: "Stretch to fill", Icon: Maximize2 },
+const CONTENT_HORIZONTAL_OPTIONS: { value: NonNullable<BlockStyle["contentHorizontalAlign"]>; label: string; Icon: LucideIcon }[] = [
+  { value: "start",   label: "Content start",   Icon: AlignHorizontalJustifyStart },
+  { value: "center",  label: "Content center",  Icon: AlignHorizontalJustifyCenter },
+  { value: "end",     label: "Content end",     Icon: AlignHorizontalJustifyEnd },
+  { value: "stretch", label: "Stretch content", Icon: Maximize2 },
 ];
 
-const JUSTIFY_OPTIONS: { value: NonNullable<BlockStyle["justifyContent"]>; label: string; Icon: LucideIcon }[] = [
-  { value: "start",   label: "Top",           Icon: AlignVerticalJustifyStart },
-  { value: "center",  label: "Middle",        Icon: AlignVerticalJustifyCenter },
-  { value: "end",     label: "Bottom",        Icon: AlignVerticalJustifyEnd },
-  { value: "between", label: "Spread apart",  Icon: AlignVerticalSpaceBetween },
-  { value: "around",  label: "Spread evenly", Icon: AlignVerticalSpaceAround },
+const CONTENT_VERTICAL_OPTIONS: { value: NonNullable<BlockStyle["contentVerticalDistribution"]>; label: string; Icon: LucideIcon }[] = [
+  { value: "start",   label: "Content top",      Icon: AlignVerticalJustifyStart },
+  { value: "center",  label: "Content middle",   Icon: AlignVerticalJustifyCenter },
+  { value: "end",     label: "Content bottom",   Icon: AlignVerticalJustifyEnd },
+  { value: "between", label: "Spread apart",     Icon: AlignVerticalSpaceBetween },
+  { value: "around",  label: "Spread evenly",    Icon: AlignVerticalSpaceAround },
 ];
+
+const CELL_HORIZONTAL_OPTIONS: { value: NonNullable<BlockStyle["cellHorizontalAlign"]>; label: string; Icon: LucideIcon }[] = [
+  { value: "stretch", label: "Fill cell width", Icon: Maximize2 },
+  { value: "start",   label: "Cell start",      Icon: AlignHorizontalJustifyStart },
+  { value: "center",  label: "Cell center",     Icon: AlignHorizontalJustifyCenter },
+  { value: "end",     label: "Cell end",        Icon: AlignHorizontalJustifyEnd },
+];
+
+const CELL_VERTICAL_OPTIONS: { value: NonNullable<BlockStyle["cellVerticalAlign"]>; label: string; Icon: LucideIcon }[] = [
+  { value: "stretch", label: "Fill cell height", Icon: Maximize2 },
+  { value: "start",   label: "Cell top",         Icon: AlignVerticalJustifyStart },
+  { value: "center",  label: "Cell middle",      Icon: AlignVerticalJustifyCenter },
+  { value: "end",     label: "Cell bottom",      Icon: AlignVerticalJustifyEnd },
+];
+
+const BORDER_SIDE_OPTIONS: { value: BorderSide; label: string; Icon: LucideIcon }[] = [
+  { value: "left", label: "Left border", Icon: PanelLeft },
+  { value: "top", label: "Top border", Icon: PanelTop },
+  { value: "bottom", label: "Bottom border", Icon: PanelBottom },
+  { value: "right", label: "Right border", Icon: PanelRight },
+];
+const ALL_BORDER_SIDES: BorderSide[] = ["top", "right", "bottom", "left"];
 
 const MIN_HEIGHT_OPTIONS = [
   { value: "auto",   label: "Auto" },
@@ -917,6 +944,65 @@ function PaddingControls({
 // Design tab
 // ---------------------------------------------------------------------------
 
+function BorderSideControls({
+  s,
+  set,
+}: {
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
+}) {
+  // `borderPreset` is read-only legacy draft support. All new choices use the
+  // set so users can combine sides instead of replacing their last choice.
+  const selectedSides = s.borderSides ?? (
+    s.borderPreset && s.borderPreset !== "all" ? [s.borderPreset] : ALL_BORDER_SIDES
+  );
+  const isFull = selectedSides.length === ALL_BORDER_SIDES.length;
+
+  function save(sides: BorderSide[]) {
+    // Side controls must never appear to do nothing: make a visible 1px border
+    // unless the user has already made an explicit non-zero width choice.
+    set({
+      borderSides: sides,
+      borderPreset: undefined,
+      ...(s.borderWidth && s.borderWidth > 0 ? {} : { borderWidth: 1 }),
+    });
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span className="min-w-0 break-words text-xs text-muted-foreground">Border sides</span>
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        <ToolbarToggle
+          active={isFull}
+          title="Full border"
+          Icon={Square}
+          onClick={() => save(ALL_BORDER_SIDES)}
+        />
+        {BORDER_SIDE_OPTIONS.map(({ value, label, Icon }) => (
+          <ToolbarToggle
+            key={value}
+            active={!isFull && selectedSides.includes(value)}
+            title={label}
+            Icon={Icon}
+            onClick={() => {
+              // Choosing a side from Full intentionally starts a fresh set;
+              // further side clicks build that set one edge at a time.
+              if (isFull) {
+                save([value]);
+                return;
+              }
+              save(selectedSides.includes(value)
+                ? selectedSides.filter((side) => side !== value)
+                : [...selectedSides, value]);
+            }}
+          />
+        ))}
+        <ResetButton onClick={() => set({ borderSides: undefined, borderPreset: undefined })} label="Border sides" />
+      </div>
+    </div>
+  );
+}
+
 export function DesignTab({
   s,
   set,
@@ -1206,6 +1292,7 @@ export function DesignTab({
             effectiveValue={0}
             onChange={(v) => set({ borderWidth: v })}
           />
+          <BorderSideControls s={s} set={set} />
           <div className="flex flex-col gap-1.5">
             <span className="text-xs text-muted-foreground">Border color</span>
             {/* Effective: resolveBlockStyle falls back to var(--pf-color-fg) when borderColorToken
@@ -1309,6 +1396,96 @@ function ColSpanRowSpanControls({
         max={parentRowsCount}
         suffix="rows"
         onChange={(v) => set({ rowSpan: v })}
+      />
+    </>
+  );
+}
+
+function CellLayoutControls({
+  s,
+  set,
+  parentColumnsCount,
+  parentRowsCount,
+}: {
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
+  parentColumnsCount?: number;
+  parentRowsCount?: number;
+}) {
+  const legacyHorizontal =
+    s.justifyContent === "start" || s.justifyContent === "center" || s.justifyContent === "end"
+      ? s.justifyContent
+      : "stretch";
+  const legacyVertical = s.alignItems ?? "stretch";
+
+  return (
+    <>
+      <ColSpanRowSpanControls
+        s={s}
+        set={set}
+        parentColumnsCount={parentColumnsCount}
+        parentRowsCount={parentRowsCount}
+      />
+      <IconRow
+        label="Cell horizontal"
+        value={s.cellHorizontalAlign}
+        options={CELL_HORIZONTAL_OPTIONS}
+        effectiveValue={legacyHorizontal}
+        onChange={(v) => set({ cellHorizontalAlign: v })}
+        onReset={() => set({ cellHorizontalAlign: undefined })}
+      />
+      <IconRow
+        label="Cell vertical"
+        value={s.cellVerticalAlign}
+        options={CELL_VERTICAL_OPTIONS}
+        effectiveValue={legacyVertical}
+        onChange={(v) => set({ cellVerticalAlign: v })}
+        onReset={() => set({ cellVerticalAlign: undefined })}
+      />
+    </>
+  );
+}
+
+function ContentLayoutControls({
+  s,
+  set,
+  p,
+}: {
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
+  p?: Record<string, unknown>;
+}) {
+  const legacyHorizontal = s.align
+    ? ({ left: "start", center: "center", right: "end" } as const)[s.align]
+    : s.alignItems === "stretch"
+      ? ({ left: "start", center: "center", right: "end" } as const)[
+          (p?.alignX as "left" | "center" | "right" | undefined) ?? "left"
+        ]
+      : s.alignItems ?? ({ left: "start", center: "center", right: "end" } as const)[
+          (p?.alignX as "left" | "center" | "right" | undefined) ?? "left"
+        ];
+  const legacyVertical = s.justifyContent ??
+    ({ top: "start", center: "center", bottom: "end" } as const)[
+      (p?.alignY as "top" | "center" | "bottom" | undefined) ?? "top"
+    ];
+
+  return (
+    <>
+      <IconRow
+        label="Content alignment"
+        value={s.contentHorizontalAlign}
+        options={CONTENT_HORIZONTAL_OPTIONS}
+        effectiveValue={legacyHorizontal}
+        onChange={(v) => set({ contentHorizontalAlign: v })}
+        onReset={() => set({ contentHorizontalAlign: undefined })}
+      />
+      <IconRow
+        label="Content distribution"
+        value={s.contentVerticalDistribution}
+        options={CONTENT_VERTICAL_OPTIONS}
+        effectiveValue={legacyVertical}
+        onChange={(v) => set({ contentVerticalDistribution: v })}
+        onReset={() => set({ contentVerticalDistribution: undefined })}
       />
     </>
   );
@@ -1433,7 +1610,6 @@ export function LayoutTabBody({
   s,
   set,
   isGridChild,
-  showJustify,
   blockType = "",
   p,
   setProp,
@@ -1443,7 +1619,8 @@ export function LayoutTabBody({
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
   isGridChild: boolean;
-  showJustify: boolean;
+  /** @deprecated retained for call-site compatibility; flex containers always expose content distribution. */
+  showJustify?: boolean;
   blockType?: string;
   p?: Record<string, unknown>;
   setProp?: (key: string, val: unknown) => void;
@@ -1463,19 +1640,6 @@ export function LayoutTabBody({
     isFlexContainer ? CONTAINER_EFFECTIVE_PAD :
     blockType === "Columns" ? COLUMNS_EFFECTIVE_PAD :
     undefined;
-  const effectiveAlign =
-    isFlexContainer && p?.alignX
-      ? ({ left: "start", center: "center", right: "end" } as const)[
-          p.alignX as "left" | "center" | "right"
-        ]
-      : "stretch";
-  const effectiveJustify =
-    isFlexContainer
-      ? ({ top: "start", center: "center", bottom: "end" } as const)[
-          (p?.alignY as "top" | "center" | "bottom" | undefined) ?? "top"
-        ]
-      : "start";
-
   if (isGalleryLayout) {
     if (isGalleryContainer) {
       // Gallery container blocks: gallery-specific controls plus the section
@@ -1525,17 +1689,12 @@ export function LayoutTabBody({
               </div>
             )}
             {isGridChild ? (
-              <>
-                <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
-                <IconRow
-                  label="Align"
-                  value={s.alignItems}
-                  options={ALIGN_OPTIONS}
-                  effectiveValue="stretch"
-                  onChange={(v) => set({ alignItems: v })}
-                  onReset={() => set({ alignItems: undefined })}
-                />
-              </>
+              <CellLayoutControls
+                s={s}
+                set={set}
+                parentColumnsCount={parentColumnsCount}
+                parentRowsCount={parentRowsCount}
+              />
             ) : null}
           </EditorDrawerSection>
         </EditorDrawerGroup>
@@ -1576,7 +1735,12 @@ export function LayoutTabBody({
             />
           )}
           {isGridChild && (
-            <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+            <CellLayoutControls
+              s={s}
+              set={set}
+              parentColumnsCount={parentColumnsCount}
+              parentRowsCount={parentRowsCount}
+            />
           )}
         </EditorDrawerSection>
       </EditorDrawerGroup>
@@ -1618,6 +1782,14 @@ export function LayoutTabBody({
               onChange={(v) => set({ selfAlign: v })}
             />
             <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
+            {isGridChild && (
+              <CellLayoutControls
+                s={s}
+                set={set}
+                parentColumnsCount={parentColumnsCount}
+                parentRowsCount={parentRowsCount}
+              />
+            )}
           </EditorDrawerSection>
         )}
         {!isButton && (
@@ -1630,6 +1802,14 @@ export function LayoutTabBody({
             />
             <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
             <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
+            {isGridChild && (
+              <CellLayoutControls
+                s={s}
+                set={set}
+                parentColumnsCount={parentColumnsCount}
+                parentRowsCount={parentRowsCount}
+              />
+            )}
           </EditorDrawerSection>
         )}
       </EditorDrawerGroup>
@@ -1735,47 +1915,14 @@ export function LayoutTabBody({
             onChange={(v) => setProp("minHeight", v)}
           />
         )}
-        {isGridChild ? (
-          <>
-            <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
-            <IconRow
-              label="Align"
-              value={s.alignItems}
-              options={ALIGN_OPTIONS}
-              effectiveValue={effectiveAlign}
-              onChange={(v) => set({ alignItems: v })}
-              onReset={() => set({ alignItems: undefined })}
-            />
-            <IconRow
-              label="Justify"
-              value={s.justifyContent}
-              options={JUSTIFY_OPTIONS}
-              effectiveValue={effectiveJustify}
-              onChange={(v) => set({ justifyContent: v })}
-              onReset={() => set({ justifyContent: undefined })}
-            />
-          </>
-        ) : (
-          <>
-            <IconRow
-              label="Align"
-              value={s.alignItems}
-              options={ALIGN_OPTIONS}
-              effectiveValue={effectiveAlign}
-              onChange={(v) => set({ alignItems: v })}
-              onReset={() => set({ alignItems: undefined })}
-            />
-            {showJustify && (
-              <IconRow
-                label="Justify"
-                value={s.justifyContent}
-                options={JUSTIFY_OPTIONS}
-                effectiveValue={effectiveJustify}
-                onChange={(v) => set({ justifyContent: v })}
-                onReset={() => set({ justifyContent: undefined })}
-              />
-            )}
-          </>
+        {isFlexContainer && <ContentLayoutControls s={s} set={set} p={p} />}
+        {isGridChild && (
+          <CellLayoutControls
+            s={s}
+            set={set}
+            parentColumnsCount={parentColumnsCount}
+            parentRowsCount={parentRowsCount}
+          />
         )}
       </EditorDrawerSection>
     </EditorDrawerGroup>

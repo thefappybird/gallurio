@@ -13,6 +13,18 @@ type DraftShape = {
   data?: Partial<Record<"home" | "gallery", PuckData>>;
 };
 
+function readDraftZone(slug: string, zone: "home" | "gallery"): PuckData | null {
+  try {
+    const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+    if (!raw) return null;
+    const draft = JSON.parse(raw) as DraftShape;
+    const zoneData = draft.version === LOCAL_DRAFT_VERSION ? draft.data?.[zone] : undefined;
+    return zoneData && Array.isArray(zoneData.content) ? zoneData : null;
+  } catch {
+    return null;
+  }
+}
+
 export function PreviewClient({
   slug,
   zone,
@@ -24,21 +36,15 @@ export function PreviewClient({
   workspace: RenderWorkspace;
   fallbackData: PuckData;
 }) {
-  const [data, setData] = useState<PuckData>(fallbackData);
+  // PreviewBrandShell does not mount its children until localStorage has been
+  // read, so this lazy state is the first visible render rather than an update
+  // from the published server fallback.
+  const [data, setData] = useState<PuckData>(() => readDraftZone(slug, zone) ?? fallbackData);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
-      if (!raw) return;
-      const draft = JSON.parse(raw) as DraftShape;
-      if (draft.version !== LOCAL_DRAFT_VERSION) return;
-      const zoneData = draft.data?.[zone];
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs the localStorage draft (external store) into React state on mount; server fallbackData is already the initial state
-      if (zoneData && Array.isArray(zoneData.content)) setData(zoneData);
-    } catch {
-      // ignore malformed draft; keep server fallback
-    }
-  }, [slug, zone]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs the localStorage draft (external store) when the preview zone changes
+    setData(readDraftZone(slug, zone) ?? fallbackData);
+  }, [fallbackData, slug, zone]);
 
   return (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

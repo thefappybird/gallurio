@@ -596,6 +596,9 @@ export const COLUMNS_EFFECTIVE_PAD = {
 export const columnsDefaultProps: ColumnsBlockProps = {
   columns: 2,
   rows: undefined,
+  // Match the Container "short" editor footprint so a freshly dropped Columns
+  // block has a real drop surface before it contains any child blocks.
+  minHeight: "320px",
   overallWidth: "page-fit",
   content: [],
   _style: {
@@ -699,6 +702,11 @@ export function ColumnsBlock({
     <div
       ref={puck?.dragRef ?? undefined}
       style={{
+        // A min-height must be available to the actual grid, not just this
+        // wrapper. The flex column makes the grid fill that lower bound while
+        // keeping Hug-content behaviour when no minHeight is set.
+        display: "flex",
+        flexDirection: "column",
         paddingTop: _style?.paddingTop ?? COLUMNS_EFFECTIVE_PAD.top,
         paddingRight: _style?.paddingRight ?? COLUMNS_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
@@ -736,6 +744,8 @@ export function ColumnsBlock({
         // CSS specificity so these always take priority. Public: empty objects —
         // @container rules drive the responsive layout.
         style: {
+          flex: "1 1 auto",
+          minHeight: 0,
           ...(editorGridCols ? { gridTemplateColumns: editorGridCols } : {}),
           ...(editorGridRows ? { gridTemplateRows: editorGridRows } : {}),
         },
@@ -829,10 +839,13 @@ export const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
   custom: 128,
 };
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
-// Maps _style.alignItems to CSS text-align for ContainerBlock inner content wrapper.
-// "stretch" has no text-align equivalent; falls back to the legacy alignX (ax) value.
+// Maps the legacy overloaded alignItems field to text alignment for old drafts.
+// "stretch" has no text-align equivalent; it falls back to legacy alignX.
 const ALIGN_TO_TEXT: Record<string, string | undefined> = {
   start: "left", center: "center", end: "right", stretch: undefined,
+};
+const CONTENT_ALIGN_TO_TEXT: Record<NonNullable<BlockStyle["contentHorizontalAlign"]>, React.CSSProperties["textAlign"]> = {
+  start: "start", center: "center", end: "end", stretch: undefined,
 };
 
 export function ContainerBlock({
@@ -876,20 +889,25 @@ export function ContainerBlock({
   // the dark scrim or the content slot — both render outside this wrapper.
   const bgImageAlpha = Math.min(100, Math.max(0, s.bgImageOpacity ?? 100)) / 100;
 
-  // Vertical positioning of the content block within the section height.
-  const effectiveJustify = s.justifyContent
-    ? FLEX_JUSTIFY_MAP[s.justifyContent as keyof typeof FLEX_JUSTIFY_MAP] ?? ALIGN_Y_MAP[ay]
-    : ALIGN_Y_MAP[ay];
+  // New dedicated fields always win. Legacy reads retain the prior visual
+  // result, but all new controls write only the unambiguous fields.
+  const effectiveJustify = s.contentVerticalDistribution
+    ? FLEX_JUSTIFY_MAP[s.contentVerticalDistribution]
+    : s.justifyContent
+      ? FLEX_JUSTIFY_MAP[s.justifyContent] ?? ALIGN_Y_MAP[ay]
+      : ALIGN_Y_MAP[ay];
 
   // Horizontal TEXT alignment inside child blocks. Children always stretch to full
   // width so that text-align, button justify, etc. have the full container width to
   // work within. _style.align (typography toolbar) takes highest priority, then
   // _style.alignItems maps to text-align semantics (start->left, end->right).
-  const effectiveTextAlign = s.align
-    ? s.align
-    : s.alignItems
-    ? (ALIGN_TO_TEXT[s.alignItems] ?? ax)
-    : ax;
+  const effectiveTextAlign = s.contentHorizontalAlign
+    ? CONTENT_ALIGN_TO_TEXT[s.contentHorizontalAlign]
+    : s.align
+      ? s.align
+      : s.alignItems
+        ? (ALIGN_TO_TEXT[s.alignItems] ?? ax)
+        : ax;
 
   const effectiveGap =
     s.gap != null ? `${Math.min(96, Math.max(0, s.gap))}px` : "1rem";
@@ -909,7 +927,6 @@ export function ContainerBlock({
         display: "flex",
         flexDirection: "column",
         flexGrow: 1,
-        justifyContent: effectiveJustify,
         minHeight: puck?.isEditing
           ? minHeight === "custom"
             ? (minHeightValue ?? "128px")
@@ -964,7 +981,13 @@ export function ContainerBlock({
           margin: "0 auto",
           display: "flex",
           flexDirection: "column",
+          // The slot contains the real Puck children. Giving it the section's
+          // available height means center/between/around distribute those
+          // children rather than a single wrapper sibling.
+          flex: "1 1 auto",
+          minHeight: 0,
           alignItems: "stretch",
+          justifyContent: effectiveJustify,
           textAlign: effectiveTextAlign as React.CSSProperties["textAlign"],
           gap: effectiveGap,
         },
@@ -1060,6 +1083,7 @@ export function ContainerAnchorBlock({
   if (!puck?.isEditing) return <></>;
   return (
     <div
+      className="pf-container-anchor"
       aria-hidden
       style={{ height: `${height}px`, width: "100%", pointerEvents: "none" }}
     />

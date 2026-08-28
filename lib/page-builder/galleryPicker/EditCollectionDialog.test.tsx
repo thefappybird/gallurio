@@ -51,6 +51,24 @@ describe("EditCollectionDialog", () => {
     expect(await screen.findByRole("checkbox", { name: /select A/i })).toBeTruthy();
   });
 
+  it("places a same-size upload drop card before the collection photos", async () => {
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    const card = screen.getByTestId("collection-upload-drop-card");
+    const grid = card.closest("ul");
+    expect(grid?.firstElementChild).toContainElement(card);
+    expect(card.closest("li")?.className).toContain("aspect-square");
+  });
+
+  it("opens the file picker when the upload card is clicked", async () => {
+    const click = vi.spyOn(HTMLInputElement.prototype, "click");
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    fireEvent.click(screen.getByTestId("collection-upload-drop-card"));
+    expect(click).toHaveBeenCalled();
+    click.mockRestore();
+  });
+
   it("renames via PATCH", async () => {
     open();
     const input = await screen.findByLabelText(/collection name/i);
@@ -136,6 +154,34 @@ describe("EditCollectionDialog", () => {
     for (const cb of allCheckboxes) {
       expect(cb).not.toBeChecked();
     }
+  });
+
+  it("uploads files dropped on the first grid card", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "drop-asset",
+      url: "https://x/drop.jpg",
+      width: 900,
+      height: 600,
+      format: "jpeg",
+      sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "drop-id", thumbUrl: "https://x/drop-thumb.jpg", caption: null }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    fireEvent.drop(screen.getByTestId("collection-upload-drop-card"), {
+      dataTransfer: { files: [new File(["data"], "dropped.jpg", { type: "image/jpeg" })] },
+    });
+
+    await waitFor(() => expect(vi.mocked(uploadImage)).toHaveBeenCalled());
+    await waitFor(() => expect(mockFetch.mock.calls.some(([u, i]) =>
+      String(u) === "/api/portfolio/gallery/items" && (i as RequestInit)?.method === "POST"
+    )).toBe(true));
   });
 
   it("renders a per-photo edit-alt-text trigger with an accessible name", async () => {
