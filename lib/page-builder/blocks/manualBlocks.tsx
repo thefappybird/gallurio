@@ -15,7 +15,7 @@
 import { isValidElement, type ReactNode } from "react";
 import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
-import { portfolioGalleryPath } from "@/lib/portfolio/publicUrl";
+import { portfolioGalleryPath, portfolioHomePath } from "@/lib/portfolio/publicUrl";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -25,9 +25,11 @@ import {
   productionStyleField,
   FLEX_JUSTIFY_MAP,
   bgImageUrl,
+  STYLE_COLOR_TOKENS,
   type BlockStyle,
   type HighlightShape,
   type HighlightSize,
+  type StyleColorToken,
 } from "@/lib/page-builder/styleToolkit";
 
 // Highlight (marker band) appearance — mirrors GalleryText.tsx so all blocks
@@ -363,7 +365,7 @@ const BUTTON_SIZE_STYLES = {
 export type ButtonBlockProps = {
   _style?: BlockStyle;
   label: string;
-  action: "open-contact" | "go-to-gallery";
+  action: "open-contact" | "go-to-gallery" | "go-to-home";
   align: "left" | "center" | "right";
   size?: "sm" | "md" | "lg";
 };
@@ -377,7 +379,13 @@ export const buttonDefaultProps: ButtonBlockProps = {
 
 export function ButtonBlock({ _style, label, action, align, size, puck }: ButtonBlockProps & { puck?: BlockPuck }) {
   const slug = gallerySlugFrom(puck);
-  const href = action === "go-to-gallery" && slug ? portfolioGalleryPath(slug) : "#";
+  const href = slug
+    ? action === "go-to-gallery"
+      ? portfolioGalleryPath(slug)
+      : action === "go-to-home"
+        ? portfolioHomePath(slug)
+        : "#"
+    : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
   const tkBorderRadius = _style?.radius !== undefined ? `${_style.radius}px` : "var(--pf-radius)";
@@ -478,6 +486,7 @@ export const buttonBlockConfig: ComponentConfig<ButtonBlockProps> = {
       options: [
         { label: "Open contact form", value: "open-contact" },
         { label: "Go to Gallery page", value: "go-to-gallery" },
+        { label: "Go to Home page", value: "go-to-home" },
       ],
     },
     align: {
@@ -790,6 +799,9 @@ export type ContainerBlockProps = {
   bgSpeed?: "slow" | "medium" | "fast";
   /** Dark scrim over the background, 0-100. Only meaningful with >=1 image. */
   overlayOpacity?: number;
+  /** Palette token tinting the scrim. Unset keeps the legacy black scrim, so
+   *  already-saved pages are unchanged. */
+  overlayColorToken?: StyleColorToken;
   minHeight?: ContainerHeight;
   /** CSS length value when minHeight === "custom", e.g. "200px" or "30%". */
   minHeightValue?: string;
@@ -854,6 +866,7 @@ export function ContainerBlock({
   bgAnimation,
   bgSpeed,
   overlayOpacity,
+  overlayColorToken,
   minHeight,
   minHeightValue,
   alignX,
@@ -866,6 +879,7 @@ export function ContainerBlock({
   bgAnimation?: "crossfade" | "kenburns" | "slide";
   bgSpeed?: "slow" | "medium" | "fast";
   overlayOpacity?: number;
+  overlayColorToken?: StyleColorToken;
   minHeight?: ContainerHeight;
   minHeightValue?: string;
   alignX?: ContainerAlignX;
@@ -884,7 +898,12 @@ export function ContainerBlock({
     .map((img) => ({ id: img.id, src: cfImageUrl(img.publicId, 2000) }))
     .filter((l): l is { id: string; src: string } => Boolean(l.src));
   const hasBg = layers.length > 0;
-  const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
+  const overlayPercent = Math.min(100, Math.max(0, overlayOpacity ?? 0));
+  const overlayAlpha = overlayPercent / 100;
+  const scrimColor =
+    overlayColorToken && (STYLE_COLOR_TOKENS as readonly string[]).includes(overlayColorToken)
+      ? `color-mix(in srgb, ${colorTokenToVar(overlayColorToken)} ${overlayPercent}%, transparent)`
+      : `rgba(0,0,0,${overlayAlpha})`;
   // F4: bgImageOpacity fades only the image layer (the wrapper div below), never
   // the dark scrim or the content slot — both render outside this wrapper.
   const bgImageAlpha = Math.min(100, Math.max(0, s.bgImageOpacity ?? 100)) / 100;
@@ -950,7 +969,7 @@ export function ContainerBlock({
           slideshow island root is itself a `section > div[aria-hidden]`, so the
           scrim must precede it. Do not reorder. */}
       {hasBg && overlayAlpha > 0 && (
-        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }} />
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: scrimColor }} />
       )}
       {hasBg && (
         <div data-bg-opacity-layer aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: bgImageAlpha }}>
@@ -1025,6 +1044,18 @@ export const containerFields = {
     ],
   } as Field<ContainerBlockProps["bgSpeed"]>,
   overlayOpacity: { type: "number", label: "Overlay opacity (0-100)", min: 0, max: 100 } as Field<number | undefined>,
+  overlayColorToken: {
+    type: "select",
+    label: "Overlay color",
+    options: [
+      { label: "None (black)", value: "" },
+      { label: "Primary", value: "primary" },
+      { label: "Secondary", value: "secondary" },
+      { label: "Accent", value: "accent" },
+      { label: "Background", value: "background" },
+      { label: "Foreground", value: "foreground" },
+    ],
+  } as unknown as Field<StyleColorToken | undefined>,
   minHeight: {
     type: "select",
     label: "Min height",

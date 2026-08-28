@@ -450,6 +450,29 @@ describe("ButtonBlock", () => {
     }
   });
 
+  it("sets href='#' for go-to-home when no puck metadata is given", () => {
+    render(<ButtonBlock label="Home" action="go-to-home" align="center" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.getAttribute("href")).toBe("#");
+  });
+
+  it("uses the workspace slug in href for go-to-home when puck metadata provides it", () => {
+    const mockPuck = {
+      metadata: { workspace: { slug: "my-studio" } },
+    } as Parameters<typeof ButtonBlock>[0]["puck"];
+    render(
+      <ButtonBlock label="Home" action="go-to-home" align="center" puck={mockPuck} />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.getAttribute("href")).toBe("/w/my-studio");
+  });
+
+  it("does NOT set data-cta for go-to-home action", () => {
+    render(<ButtonBlock label="Home" action="go-to-home" align="center" />);
+    const a = document.querySelector("a");
+    expect(a?.getAttribute("data-cta")).toBeNull();
+  });
+
   it("wrapper has width fit-content so it shrinks to the button size", () => {
     const { container } = render(
       <ButtonBlock label="Left" action="open-contact" align="left" />
@@ -1335,6 +1358,35 @@ describe("ContainerBlock background images", () => {
     const scrim = container.querySelector('section > div[aria-hidden="true"]:not([data-bg-slideshow])') as HTMLElement | null;
     expect(scrim).not.toBeNull();
     expect(scrim!.style.backgroundColor).toBe("rgba(0, 0, 0, 0.5)");
+  });
+
+  it("tints the scrim with the palette token via color-mix when overlayColorToken is set", () => {
+    // jsdom silently drops color-mix() from inline style; use server markup to assert the raw CSS.
+    const html = renderToStaticMarkup(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+        overlayOpacity={50}
+        overlayColorToken="primary"
+      />
+    );
+    expect(html).toContain(
+      "background-color:color-mix(in srgb, var(--pf-color-primary) 50%, transparent)"
+    );
+  });
+
+  it("renders no scrim when overlayColorToken is set but overlayOpacity is 0", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+        overlayOpacity={0}
+        overlayColorToken="primary"
+      />
+    );
+    expect(
+      container.querySelector('section > div[aria-hidden="true"]:not([data-bg-slideshow]):not([data-bg-opacity-layer])')
+    ).toBeNull();
   });
 
   it("keeps the content slot rendered above the background (z-index 1)", () => {
