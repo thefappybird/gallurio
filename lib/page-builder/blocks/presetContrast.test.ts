@@ -161,6 +161,31 @@ function collect(
     }
   }
 
+  if (type === "ContactDetails") {
+    // buildContactLabelStyle / buildContactValueStyle / buildContactIconColor
+    // hardcode their defaults to a TOKEN each, and deliberately ignore the
+    // section's textColorToken cascade — so `textToken` must not appear here.
+    out.push({
+      what: `${here} label`,
+      fg: resolve(palette, style.labelColorToken as string | undefined, "foreground"),
+      bg: ground,
+      min: 4.5,
+    });
+    out.push({
+      what: `${here} value`,
+      fg: resolve(palette, style.valueColorToken as string | undefined, "accent"),
+      bg: ground,
+      min: 4.5,
+    });
+    // Social icons are non-text UI: the 3:1 component threshold applies.
+    out.push({
+      what: `${here} social icons`,
+      fg: resolve(palette, style.iconColorToken as string | undefined, "accent"),
+      bg: ground,
+      min: 3,
+    });
+  }
+
   const children = props.content;
   if (Array.isArray(children)) {
     children.forEach((c, i) =>
@@ -292,25 +317,26 @@ describe("template seed literals stay legible against every committed brand kit"
   }
 });
 
-describe("ContactDetails value text defaults to accent, not the ambient text cascade", () => {
-  // buildContactValueStyle (styleToolkit.ts) hardcodes every value's default
-  // color to the accent token, regardless of the section's textColorToken.
-  // CONTACT_BAR_PRESET sits its ContactDetails on a `secondary` band, and
-  // accent-vs-secondary is not one of the two guaranteed-opposite pairs.
-  it.each(KIT_IDS)("%s: ContactBarPreset's ContactDetails value is legible on its band", (kitId) => {
-    const palette = KITS[kitId];
-    const props = SECTION_PRESETS.ContactBarPreset.defaultProps as {
-      _style?: Style;
-      content: Block[];
-    };
-    const ground = resolve(palette, props._style?.bgColorToken, "background");
-    const columns = props.content[0];
-    const contactDetails = (columns.props?.content as Block[]).find((b) => b.type === "ContactDetails")!;
-    const style = (contactDetails.props?._style ?? {}) as Style;
-    const valueToken = (style.valueColorToken as string | undefined) ?? "accent";
-    const fg = resolve(palette, valueToken, "accent");
-
-    expect(contrast(fg, ground)).toBeGreaterThanOrEqual(4.5);
+describe("the ContactDetails branch is actually reached by the walker", () => {
+  // Guards against the failure mode where the branch above stops matching (a
+  // renamed block type, a preset restructured so the walker never descends to
+  // it) and every ContactDetails assertion silently becomes vacuous.
+  it("measures the label, value and icons of every ContactDetails in the preset library", () => {
+    const seen = SECTION_PRESET_KEYS.flatMap((key) =>
+      measure(key, "minimal")
+        .map((m) => m.what)
+        .filter((w) => w.includes("ContactDetails")),
+    );
+    // contact.ts ships three, footer.ts one — four blocks, three checks each.
+    expect(seen.filter((w) => w.endsWith("label"))).toHaveLength(4);
+    expect(seen.filter((w) => w.endsWith("value"))).toHaveLength(4);
+    expect(seen.filter((w) => w.endsWith("social icons"))).toHaveLength(4);
+    // The directory footer is the one the icon-align bug was reported against.
+    expect(
+      measure("FooterDirectoryPreset", "minimal").some((m) =>
+        m.what.includes("ContactDetails"),
+      ),
+    ).toBe(true);
   });
 });
 
