@@ -21,6 +21,8 @@
  * left exactly as found.
  */
 import { test, expect, type Page } from "@playwright/test";
+import { openEditorWithDraft } from "./helpers";
+import { E2E_FIXTURE_DRAFT_NAME } from "../lib/db/seedE2eDraft";
 
 const SHELL = "[data-testid='portfolio-editor-shell']";
 const ITEM_NAME = '[class*="_DrawerItem-name_"]';
@@ -259,5 +261,46 @@ test.describe("footer presets match their mockups", () => {
     expect(geometry.borderTop, "link style draws no top edge").toBe("0px");
     expect(geometry.borderLeft, "link style draws no side edge").toBe("0px");
     expect(geometry.radius, "link style has square corners").toBe("0px");
+  });
+});
+
+/**
+ * Guards the seeded e2e fixture draft itself.
+ *
+ * Several legacy specs load this draft to drive the Columns and block-panel
+ * controls. When the fixture silently stops providing what they need, those
+ * specs fail far from the cause — so assert the contract here, once, against
+ * the CURRENT class scheme.
+ *
+ * Note the grid class is per-instance (`pf-cols-<instanceId>`, manualBlocks.tsx).
+ * The old count-based `pf-cols-3` and the bare `pf-cols` no longer exist.
+ */
+test.describe("e2e fixture draft", () => {
+  test("provides a 2-track Columns grid with Container children", async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openEditorWithDraft(page, E2E_FIXTURE_DRAFT_NAME);
+
+    const grid = page.locator('[data-puck-preview] [class*="pf-cols-"]').first();
+    await expect(grid, "the fixture renders a Columns grid").toBeVisible({ timeout: 20_000 });
+
+    // Contract 1: exactly two tracks. The editor injects inline
+    // grid-template-columns because the narrow canvas never trips the 480px
+    // container query, so read the resolved value rather than a class name.
+    const tracks = await grid.evaluate(
+      (el) => getComputedStyle(el).gridTemplateColumns.split(/\s+/).filter(Boolean).length
+    );
+    expect(tracks, "fixture Columns starts at 2 tracks, not 3").toBe(2);
+
+    // Contract 2: Containers are DIRECT grid children, so the grid-child span
+    // controls render for them.
+    const cards = grid.locator('> [data-block="container"]');
+    expect(await cards.count(), "Container cards are direct grid children").toBeGreaterThanOrEqual(2);
+
+    // Contract 3: a heading for the block-properties spec.
+    await expect(
+      page.locator("[data-puck-preview] :is(h1,h2,h3)").first(),
+      "the fixture renders a heading"
+    ).toBeVisible();
   });
 });

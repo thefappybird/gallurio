@@ -4,13 +4,16 @@
  * Live spot-check (the unit tests in fillBlockDefaults.test.ts + manualBlocks.test.tsx
  * cover the merge logic and render parity): open an existing saved draft and confirm
  * the Columns block's Gap control shows the surfaced default (16px) rather than blank.
- * "new draft 2" is seeded with every block and no per-block gap edit, so load-time
- * normalization fills _style.gap = 16 from columnsDefaultProps.
+ * The seeded E2E fixture's Columns block carries NO per-block gap edit (see
+ * lib/db/seedE2eDraft.ts), so load-time normalization fills _style.gap = 16
+ * from columnsDefaultProps. A fixture that pinned a gap would make this pass
+ * while testing nothing.
  */
 import { test, expect, type Page } from "@playwright/test";
 import { openEditorWithDraft } from "./helpers";
+import { E2E_FIXTURE_DRAFT_NAME } from "../lib/db/seedE2eDraft";
 
-const DRAFT_NAME = "new draft 2";
+const DRAFT_NAME = E2E_FIXTURE_DRAFT_NAME;
 
 async function readColumnsGap(page: Page): Promise<string> {
   await openEditorWithDraft(page, DRAFT_NAME);

@@ -1,8 +1,9 @@
 import { type Page, expect } from "@playwright/test";
 
 // Shared portfolio-editor drivers reused across batch verification specs.
-// The seeded owner has saved drafts (item #23: "new draft 2" holds every block),
-// so the entry dialog opens in "returning user" mode.
+// The seeded owner has saved drafts, so the entry dialog opens in "returning
+// user" mode. Structural specs should load E2E_FIXTURE_DRAFT_NAME rather than a
+// design draft — see lib/db/seedE2eDraft.ts for what that fixture guarantees.
 
 /** Open the portfolio editor and load a saved draft by name onto the canvas. */
 export async function openEditorWithDraft(page: Page, draftName: string): Promise<void> {

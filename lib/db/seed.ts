@@ -60,6 +60,7 @@ import {
   type SeedIdentity,
 } from "./seed-fixtures";
 import { getTemplate } from "@/lib/page-builder/templates";
+import { E2E_FIXTURE_DRAFT_NAME, buildE2eFixtureData } from "./seedE2eDraft";
 
 type SessionRange = { startAt: Date; endAt: Date };
 type TeamRef = { _id: mongoose.Types.ObjectId; name: string; color: string };
@@ -634,6 +635,24 @@ async function createPublishedPortfolio(workspace: {
       ...draftMetadata,
       createdAt: dayOffset(-1),
       updatedAt: dayOffset(-1),
+    },
+    {
+      // Owned by the editor e2e specs, not by design. Its structural contract
+      // lives in seedE2eDraft.ts — read it before changing this entry.
+      workspaceId: workspace._id,
+      name: E2E_FIXTURE_DRAFT_NAME,
+      // A real template id, like every other seeded draft. An empty templateId
+      // is the "no template chosen yet" signal and sends the editor into the
+      // template picker on load, which leaves a dialog over the canvas.
+      templateId: minimalTemplate.id,
+      data: buildE2eFixtureData(),
+      brandKit: minimalTemplate.defaultBrandKit,
+      contact: minimalTemplate.defaultContact,
+      header: minimalTemplate.defaultHeader,
+      collectionsPopup: minimalTemplate.defaultCollectionsPopup,
+      ...draftMetadata,
+      createdAt: dayOffset(-12),
+      updatedAt: dayOffset(-12),
     },
   ]);
 
