@@ -549,11 +549,12 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.marginRight).toBe("auto");
   });
 
-  it("defaults to transparent fill and pf-color-fg border when no buttonColorToken is set", () => {
-    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
-    const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.backgroundColor).toBe("transparent");
-    expect(a.style.borderColor).toBe("var(--pf-color-fg)");
+  it("defaults to a transparent fill and a cascade-following border when no buttonColorToken is set", () => {
+    const html = renderToStaticMarkup(
+      <ButtonBlock label="Btn" action="open-contact" align="center" />
+    );
+    expect(html).toContain("background-color:transparent");
+    expect(html).toContain("border-color:var(--pf-block-text-color, var(--pf-color-fg))");
   });
 
   it("_style.buttonColorToken sets the button fill color", () => {
@@ -847,7 +848,7 @@ describe("ButtonBlock", () => {
     expect(html).toContain("color-mix(in srgb, var(--pf-color-accent) 15%, transparent)");
   });
 
-  it("buttonStyle='link' renders portfolio foreground text with a matching bottom edge only", () => {
+  it("buttonStyle='link' renders a bottom edge only, no fill or frame", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.style.backgroundColor).toBe("transparent");
@@ -856,13 +857,22 @@ describe("ButtonBlock", () => {
     expect(a.style.borderBottom).toBe("1px solid currentcolor");
     expect(a.style.borderRadius).toBe("0px");
     expect(a.style.padding).toBe("0.25rem 0px");
-    expect(a.style.color).toBe("var(--pf-color-fg)");
   });
 
-  it("buttonStyle='link' with no textColorToken uses the portfolio foreground", () => {
-    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
-    const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.color).toBe("var(--pf-color-fg)");
+  it("buttonStyle='link' with no textColorToken follows the section text cascade", () => {
+    // jsdom's cssstyle drops a nested var() fallback, so assert on the emitted
+    // markup the way the Heading/Text cascade tests below do.
+    const html = renderToStaticMarkup(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />
+    );
+    expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
+  });
+
+  it("no buttonStyle (legacy) follows the section text cascade for label and border", () => {
+    const html = renderToStaticMarkup(
+      <ButtonBlock label="Btn" action="open-contact" align="center" />
+    );
+    expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
   });
 
   it("buttonStyle='link' with textColorToken overrides currentColor with the explicit token", () => {
@@ -932,10 +942,11 @@ describe("TextBlock and HeadingBlock color parity", () => {
     expect(div.style.color).toBe("var(--pf-color-primary)");
   });
 
-  it("ButtonBlock with no _style uses var(--pf-color-fg) for text (legacy fallback)", () => {
-    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
-    const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.color).toBe("var(--pf-color-fg)");
+  it("ButtonBlock with no _style follows the same text cascade Heading/Text do", () => {
+    const html = renderToStaticMarkup(
+      <ButtonBlock label="Btn" action="open-contact" align="center" />
+    );
+    expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
   });
 
   it("ButtonBlock solid style with no textColorToken uses var(--pf-color-bg) for text", () => {

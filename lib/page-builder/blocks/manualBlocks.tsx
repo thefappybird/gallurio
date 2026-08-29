@@ -404,9 +404,12 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     // directly on aStyle below, overriding the size preset and the frame fields.
     isLink = true;
     buttonBg = "transparent";
-    // Ground the fallback so Puck's selected-block chrome cannot become the
+    // Follow the section text cascade the way Heading/Text do, so a link button
+    // dropped on a primary/accent band stays legible instead of painting the
+    // theme foreground on top of it. Still a var with a concrete fallback --
+    // never `inherit` -- so Puck's selected-block chrome cannot become the
     // inheritance source in the editor canvas.
-    buttonText = customTextColor ?? "var(--pf-color-fg)";
+    buttonText = customTextColor ?? "var(--pf-block-text-color, var(--pf-color-fg))";
     tkBorderWidth = "0px";
     tkBorderColor = "transparent";
   } else if (_style?.buttonStyle === "outline") {
@@ -432,10 +435,14 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   } else {
     // No explicit buttonStyle — legacy per-field behaviour.
     const hasColor = _style?.buttonColorToken !== undefined;
+    // Label and stroke follow the section text cascade (as Heading/Text do), so
+    // an unstyled button on a primary/accent band does not paint the theme
+    // foreground on top of it. See the link branch above.
+    const cascadedFg = "var(--pf-block-text-color, var(--pf-color-fg))";
     buttonBg = hasColor ? (colorTokenToVar(_style!.buttonColorToken) ?? "transparent") : "transparent";
-    buttonText = customTextColor ?? "var(--pf-color-fg)";
+    buttonText = customTextColor ?? cascadedFg;
     tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "2px";
-    tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? (hasColor ? "transparent" : "var(--pf-color-fg)");
+    tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? (hasColor ? "transparent" : cascadedFg);
   }
 
   const legacyMargin = BUTTON_ALIGN_TO_MARGIN[align] ?? BUTTON_ALIGN_TO_MARGIN.left;

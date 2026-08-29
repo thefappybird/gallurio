@@ -136,11 +136,11 @@ function collect(
     const variant = style.buttonStyle as string | undefined;
 
     if (variant === "link") {
-      // Transparent, borderless. Unlike Heading/Text, ButtonBlock's link branch
-      // does NOT read the section's cascaded `--pf-block-text-color` — it falls
-      // back straight to `--pf-color-fg` (the kit's own foreground), same as the
-      // legacy/unset branch below. Only the button's own textColorToken overrides it.
-      out.push({ what: `${here} link label`, fg: custom ? resolve(palette, custom, "foreground") : palette.foreground, bg: ground, min: 4.5 });
+      // Transparent, borderless. Like Heading/Text, ButtonBlock's link branch
+      // reads the section's cascaded `--pf-block-text-color` and only falls back
+      // to `--pf-color-fg` when no ancestor set one — same as the legacy/unset
+      // branch below. `textToken` already folds the button's own override in.
+      out.push({ what: `${here} link label`, fg: resolve(palette, textToken, "foreground"), bg: ground, min: 4.5 });
     } else if (variant === "outline") {
       // Transparent fill: the label sits directly on the section ground.
       out.push({ what: `${here} outline label`, fg: custom ? resolve(palette, custom, "foreground") : fill, bg: ground, min: 4.5 });
@@ -153,10 +153,11 @@ function collect(
       // button reads as floating text. 3:1 is the non-text UI-component threshold.
       out.push({ what: `${here} solid fill vs ground`, fg: fill, bg: ground, min: 3 });
     } else {
-      // Unset: transparent fill, label and 2px border in the theme foreground.
+      // Unset: transparent fill; label and 2px border follow the same text
+      // cascade the link branch does.
       const hasColor = style.buttonColorToken !== undefined;
       const bg = hasColor ? fill : ground;
-      out.push({ what: `${here} default label`, fg: custom ? resolve(palette, custom, "foreground") : palette.foreground, bg, min: 4.5 });
+      out.push({ what: `${here} default label`, fg: resolve(palette, textToken, "foreground"), bg, min: 4.5 });
     }
   }
 

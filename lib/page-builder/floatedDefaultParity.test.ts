@@ -19,6 +19,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { render, renderHook } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   resolveBlockStyle,
   colorTokenToVar,
@@ -244,7 +245,13 @@ describe("Button: effective defaults match ButtonBlock's own render branches", (
   const VARIANTS = ["solid", "soft", "outline", "link", undefined] as const;
 
   it.each(VARIANTS)("buttonStyle=%s: text color matches effectiveButtonTextToken", (buttonStyle) => {
-    const { container } = render(
+    // The link and legacy branches follow the section text cascade, exactly as
+    // Heading/Text do, so their rendered color is a var CHAIN whose fallback is
+    // the token the swatch floats. A control cannot see its ancestors, so that
+    // fallback is the strongest claim it can make -- assert on it rather than on
+    // a flat token. (jsdom's cssstyle also drops a nested var(), hence markup.)
+    const followsCascade = buttonStyle === "link" || buttonStyle === undefined;
+    const html = renderToStaticMarkup(
       ButtonBlock({
         _style: { buttonStyle },
         label: "Go",
@@ -252,9 +259,12 @@ describe("Button: effective defaults match ButtonBlock's own render branches", (
         align: "center",
       }) as React.ReactElement
     );
-    const a = container.querySelector("a") as HTMLAnchorElement;
-    const expectedToken = effectiveButtonTextToken({ buttonStyle });
-    expect(a.style.color).toBe(colorTokenToVar(expectedToken));
+    const expected = colorTokenToVar(effectiveButtonTextToken({ buttonStyle }));
+    expect(html).toContain(
+      followsCascade
+        ? `color:var(--pf-block-text-color, ${expected})`
+        : `color:${expected}`
+    );
   });
 
   it("buttonOpacity unset renders full-opacity fill (control effectiveValue={100})", () => {
