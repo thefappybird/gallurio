@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "lib/page-builder/blocks/manualBlocks.test.tsx"
+        ],
+        "createdAt": "2026-08-29T18:58:00.364Z",
+        "reason": "Not an <img> tag: 'section img' is a CSS selector string inside a querySelector assertion in a unit test. Pre-existing, unrelated to this change."
+      }
+    ]
+  }
+}
