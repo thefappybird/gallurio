@@ -135,10 +135,11 @@ function collect(
     const variant = style.buttonStyle as string | undefined;
 
     if (variant === "link") {
-      // Transparent, borderless: the label renders in CSS `currentColor`, i.e. it
-      // inherits the ambient cascaded text color (the section/container's own
-      // textColorToken), NOT buttonColorToken — unlike outline/soft/solid.
-      out.push({ what: `${here} link label`, fg: custom ? resolve(palette, custom, "foreground") : resolve(palette, textToken, "foreground"), bg: ground, min: 4.5 });
+      // Transparent, borderless. Unlike Heading/Text, ButtonBlock's link branch
+      // does NOT read the section's cascaded `--pf-block-text-color` — it falls
+      // back straight to `--pf-color-fg` (the kit's own foreground), same as the
+      // legacy/unset branch below. Only the button's own textColorToken overrides it.
+      out.push({ what: `${here} link label`, fg: custom ? resolve(palette, custom, "foreground") : palette.foreground, bg: ground, min: 4.5 });
     } else if (variant === "outline") {
       // Transparent fill: the label sits directly on the section ground.
       out.push({ what: `${here} outline label`, fg: custom ? resolve(palette, custom, "foreground") : fill, bg: ground, min: 4.5 });
