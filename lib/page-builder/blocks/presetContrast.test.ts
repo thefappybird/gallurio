@@ -128,13 +128,18 @@ function collect(
   }
 
   if (type === "Button") {
-    // Mirrors ButtonBlock's four branches. The brand kit's own buttonStyle is
+    // Mirrors ButtonBlock's five branches. The brand kit's own buttonStyle is
     // deliberately NOT consulted — ButtonBlock reads only `_style.buttonStyle`.
     const fill = resolve(palette, style.buttonColorToken, "primary");
     const custom = style.textColorToken as string | undefined;
     const variant = style.buttonStyle as string | undefined;
 
-    if (variant === "outline") {
+    if (variant === "link") {
+      // Transparent, borderless: the label renders in CSS `currentColor`, i.e. it
+      // inherits the ambient cascaded text color (the section/container's own
+      // textColorToken), NOT buttonColorToken — unlike outline/soft/solid.
+      out.push({ what: `${here} link label`, fg: custom ? resolve(palette, custom, "foreground") : resolve(palette, textToken, "foreground"), bg: ground, min: 4.5 });
+    } else if (variant === "outline") {
       // Transparent fill: the label sits directly on the section ground.
       out.push({ what: `${here} outline label`, fg: custom ? resolve(palette, custom, "foreground") : fill, bg: ground, min: 4.5 });
     } else if (variant === "soft") {

@@ -178,6 +178,12 @@ const CELL_VERTICAL_OPTIONS: { value: NonNullable<BlockStyle["cellVerticalAlign"
   { value: "end",     label: "Cell bottom",      Icon: AlignVerticalJustifyEnd },
 ];
 
+const CONTACT_ICON_ALIGN_OPTIONS: { value: NonNullable<BlockStyle["contactIconAlign"]>; label: string; Icon: LucideIcon }[] = [
+  { value: "left",   label: "Align icons left",   Icon: AlignLeft },
+  { value: "center", label: "Align icons center", Icon: AlignCenter },
+  { value: "right",  label: "Align icons right",  Icon: AlignRight },
+];
+
 const BORDER_SIDE_OPTIONS: { value: BorderSide; label: string; Icon: LucideIcon }[] = [
   { value: "left", label: "Left border", Icon: PanelLeft },
   { value: "top", label: "Top border", Icon: PanelTop },
@@ -1163,6 +1169,13 @@ export function DesignTab({
               </div>
               <ColorSwatchRow value={s.iconColorToken} effectiveValue="accent" onChange={(t) => set({ iconColorToken: t })} />
             </div>
+            <IconRow
+              label="Icon align"
+              value={s.contactIconAlign}
+              options={CONTACT_ICON_ALIGN_OPTIONS}
+              effectiveValue={s.valueAlign ?? "center"}
+              onChange={(v) => set({ contactIconAlign: v })}
+            />
           </EditorDrawerSection>
         </>
       )}
@@ -1318,7 +1331,7 @@ export function DesignTab({
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
             <div className="flex items-center gap-1.5">
-              {(["solid", "outline", "soft"] as const).map((v) => {
+              {(["solid", "outline", "soft", "link"] as const).map((v) => {
                 const isExplicit = s.buttonStyle === v;
                 const isEffective = s.buttonStyle === undefined && v === "outline";
                 return (
@@ -1627,6 +1640,24 @@ function GalleryLayoutControls({
             })}
           </div>
         </div>
+        {type === "GalleryMasonry" && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">Masonry stagger</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-pressed={!!s.galleryStagger}
+                onClick={() => set({ galleryStagger: s.galleryStagger ? undefined : true })}
+                className={cn(
+                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  s.galleryStagger && "bg-foreground text-background hover:bg-foreground"
+                )}
+              >
+                {s.galleryStagger ? "On" : "Off"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

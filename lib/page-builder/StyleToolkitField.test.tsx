@@ -1507,3 +1507,68 @@ describe("DesignTab — ContactDetails", () => {
     expect(screen.getByText("Inputs")).toBeTruthy();
   });
 });
+
+describe("DesignTab — ContactDetails Icon align (Icons section)", () => {
+  // The Icons drawer is the 2nd section under ContactDetails' Design tab, so
+  // (per EditorDrawerGroup) it starts collapsed — only the 1st (Typography)
+  // auto-opens. Open it before asserting its contents.
+  function openIconsDrawer() {
+    fireEvent.click(screen.getByRole("button", { name: "Icons" }));
+  }
+
+  it("both unset: floats center as the effective (following-theme) value", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="ContactDetails" />);
+    openIconsDrawer();
+    expect(screen.getByRole("button", { name: "Align icons left" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Align icons center" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Align icons right" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("contactIconAlign unset, valueAlign='left': floats left as effective (legacy fallback)", () => {
+    render(<DesignTab s={{ valueAlign: "left" }} set={vi.fn()} blockType="ContactDetails" />);
+    openIconsDrawer();
+    expect(screen.getByRole("button", { name: "Align icons left" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Align icons center" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("explicit contactIconAlign wins over valueAlign and reads as pressed", () => {
+    render(<DesignTab s={{ contactIconAlign: "right", valueAlign: "left" }} set={vi.fn()} blockType="ContactDetails" />);
+    openIconsDrawer();
+    expect(screen.getByRole("button", { name: "Align icons right" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Align icons left" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking Align icons right calls set with contactIconAlign:'right'", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{}} set={set} blockType="ContactDetails" />);
+    openIconsDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Align icons right" }));
+    expect(set).toHaveBeenCalledWith({ contactIconAlign: "right" });
+  });
+
+  it("clicking the already-explicit option again clears it back to undefined", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{ contactIconAlign: "right" }} set={set} blockType="ContactDetails" />);
+    openIconsDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Align icons right" }));
+    expect(set).toHaveBeenCalledWith({ contactIconAlign: undefined });
+  });
+});
+
+describe("StyleToolkitField — GalleryMasonry stagger toggle", () => {
+  it("Layout tab shows Masonry stagger 'Off' by default; click turns it on", () => {
+    const onChange = vi.fn();
+    render(<StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryMasonry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    const toggle = screen.getByRole("button", { name: "Off" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle);
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ galleryStagger: true }));
+  });
+
+  it("does not render the stagger toggle for GalleryGrid (masonry-only control)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.queryByText("Masonry stagger")).toBeNull();
+  });
+});

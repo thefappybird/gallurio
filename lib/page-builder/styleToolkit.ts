@@ -17,7 +17,7 @@
 import type { Field } from "@measured/puck";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { FONT_PAIR_MAP } from "./resolveBrandKit";
-import type { BrandKitFontPair, BrandKitButtonStyle } from "./types";
+import type { BrandKitFontPair, BlockButtonStyle } from "./types";
 import { fontFamilyValue, type PortfolioFontSelection } from "./fonts";
 export { fontFamilyValue };
 
@@ -134,7 +134,7 @@ export type BlockStyle = {
   // buildColorWithOpacity so it composes with each style variant (see manualBlocks.tsx).
   buttonOpacity?: number;
   // Button visual style (solid/outline/soft) — overrides brand-kit default for this button.
-  buttonStyle?: BrandKitButtonStyle;
+  buttonStyle?: BlockButtonStyle;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -182,6 +182,11 @@ export type BlockStyle = {
   // used by flex/grid containers.
   galleryColumns?: GalleryColumns; // 2 | 3 | 4; effective default 3
   galleryGap?: GalleryGap; // "tight" | "normal" | "loose"; effective default "normal"
+  // GalleryMasonry-only: opt-in per-column vertical stagger so the layout reads
+  // as masonry even when every photo shares one aspect ratio. Default OFF —
+  // unset renders byte-identical to before this field existed (live pages ship
+  // this block, so parity matters). See buildMasonryStagger's own doc.
+  galleryStagger?: boolean;
   // Motion
   animation?: AnimationType; // entrance (plays when scrolled into view)
   animationDuration?: number; // ms
@@ -204,6 +209,9 @@ export type BlockStyle = {
   // ContactDetails — social icon controls
   iconSize?: number; // px (default 20)
   iconColorToken?: StyleColorToken | string;
+  /** Icon-row alignment, independent of valueAlign. Unset -> falls back to
+   *  valueAlign, then center. See buildContactIconAlign. */
+  contactIconAlign?: TextAlign;
 };
 
 export const ANIMATION_TYPES = ["none", "fade", "slide-up", "slide-down", "slide-left", "slide-right", "zoom"] as const;
@@ -592,6 +600,19 @@ export function buildContactIconColor(style?: BlockStyle | null): string {
   return "var(--pf-color-accent)";
 }
 
+/**
+ * Resolve the flex `justify-content` for a ContactDetails social-icon row.
+ * Prefers the explicit `contactIconAlign`; falls back to `valueAlign` (the
+ * icon row used to follow the value/text alignment, so unset stays put on
+ * saved pages) and defaults to center when both are unset.
+ */
+export function buildContactIconAlign(style?: BlockStyle | null): "flex-start" | "center" | "flex-end" {
+  const align = style?.contactIconAlign ?? style?.valueAlign;
+  if (align === "left") return "flex-start";
+  if (align === "right") return "flex-end";
+  return "center";
+}
+
 /** Resolve the pixel size for ContactDetails social icons. Default 20px. */
 export function buildContactIconSize(style?: BlockStyle | null): number {
   if (style?.iconSize && Number.isFinite(style.iconSize)) {
@@ -613,7 +634,7 @@ export function effectiveButtonTextToken(
   style: BlockStyle | undefined,
 ): StyleColorToken | string {
   if (style?.buttonStyle === "solid") return "background";
-  if (style?.buttonStyle === "soft" || style?.buttonStyle === "outline")
+  if (style?.buttonStyle === "soft" || style?.buttonStyle === "outline" || style?.buttonStyle === "link")
     return style.buttonColorToken ?? "primary";
   return "foreground"; // unset / legacy branch
 }

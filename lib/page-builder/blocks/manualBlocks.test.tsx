@@ -508,6 +508,20 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.marginRight).toBe("auto");
   });
 
+  it("_style.cellVerticalAlign='center' reaches the wrapper as alignSelf (Columns grid-cell centering)", () => {
+    const { container } = render(
+      <ButtonBlock label="Btn" action="open-contact" align="right" _style={{ cellVerticalAlign: "center" }} />
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.alignSelf).toBe("center");
+  });
+
+  it("with no cellVerticalAlign set, the wrapper has no alignSelf override", () => {
+    const { container } = render(<ButtonBlock label="Btn" action="open-contact" align="right" />);
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.alignSelf).toBe("");
+  });
+
   it("_style.selfAlign center overrides legacy align=left prop", () => {
     const { container } = render(
       <ButtonBlock label="Btn" action="open-contact" align="left" _style={{ selfAlign: "center" }} />
@@ -831,6 +845,63 @@ describe("ButtonBlock", () => {
       />
     );
     expect(html).toContain("color-mix(in srgb, var(--pf-color-accent) 15%, transparent)");
+  });
+
+  it("buttonStyle='link' renders transparent fill, no ring border, and a currentColor bottom edge only", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("transparent");
+    expect(a.style.borderTopWidth).toBe("0px");
+    expect(a.style.borderBottomWidth).toBe("1px");
+    expect(a.style.borderBottom).toBe("1px solid currentcolor");
+    expect(a.style.borderRadius).toBe("0px");
+    expect(a.style.padding).toBe("0.25rem 0px");
+    expect(a.style.color).toBe("currentcolor");
+  });
+
+  it("buttonStyle='link' with no textColorToken uses currentColor for text (inherits)", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("currentcolor");
+  });
+
+  it("buttonStyle='link' with textColorToken overrides currentColor with the explicit token", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "link", textColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-accent)");
+  });
+
+  it("buttonStyle='link' ignores buttonColorToken/borderWidth/radius (deprecated fields for this variant)", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "link", buttonColorToken: "primary", borderWidth: 5, radius: 20 }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("transparent");
+    expect(a.style.borderRadius).toBe("0px");
+  });
+
+  it("buttonStyle='link' with _style.bold applies fontWeight 700 instead of the default 500", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link", bold: true }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.fontWeight).toBe("700");
+  });
+
+  it("buttonStyle='link' without bold uses fontWeight 500", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.fontWeight).toBe("500");
   });
 });
 
@@ -1295,6 +1366,18 @@ describe("ContainerBlock flex defaults", () => {
     render(<ContainerBlock content={MockSlot} _style={{ gap: 32 }} />);
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.gap).toBe("32px");
+  });
+
+  it("defaults to flexDirection:column when _style.flexDirection is unset", () => {
+    render(<ContainerBlock content={MockSlot} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.flexDirection).toBe("column");
+  });
+
+  it("_style.flexDirection='row' lays the slot out as a row (bundled button groups)", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexDirection: "row" }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.flexDirection).toBe("row");
   });
 });
 

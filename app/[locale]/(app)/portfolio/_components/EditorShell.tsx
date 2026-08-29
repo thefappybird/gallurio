@@ -28,6 +28,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { CanvasViewportControls } from "./CanvasViewportControls";
+import { PresetDrawerItem } from "./PresetPreviewCard";
 import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -1817,7 +1818,10 @@ export function EditorShell({
     };
   }, []);
 
-  const { cssVars, className } = resolveBrandKit(brandKit);
+  // Memoized on the kit: `cssVars` is a dependency of `drawerItemOverrides`
+  // below, and that memo must stay referentially stable or Puck remounts the
+  // whole drawer on every render (i.e. on every keystroke).
+  const { cssVars, className } = useMemo(() => resolveBrandKit(brandKit), [brandKit]);
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
   // `--pf-color-*` vars, so we thread the hex values through React context).
   // Use resolveEffectiveFonts so legacy-kit portfolios (only `fontPair` set, no
@@ -1919,15 +1923,25 @@ export function EditorShell({
       drawerItem: ({ name, children }: { name: string; children: ReactNode }) => {
         const preset = resolveDrawerItemPreset(name);
         if (!preset) return <>{children}</>; // manual blocks keep the plain item
+        // The row is name-only: 33 rows each carrying a description made the
+        // drawer too verbose to scan. The description moved into the preview
+        // popover, beside a live miniature of the preset itself.
         return (
-          <div className="flex flex-col gap-0.5">
+          <PresetDrawerItem
+            presetKey={name as SectionPresetKey}
+            name={t(preset.labelKey)}
+            description={t(preset.descriptionKey)}
+            dragHint={t("puckConfig.dragToAddHint")}
+            previewLabel={t("puckConfig.previewBlock")}
+            config={editorConfig as unknown as Config}
+            cssVars={cssVars}
+          >
             {children}
-            <span className="ps-2 text-start text-xs text-muted-foreground">{t(preset.descriptionKey)}</span>
-          </div>
+          </PresetDrawerItem>
         );
       },
     }),
-    [t]
+    [t, editorConfig, cssVars]
   );
 
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.

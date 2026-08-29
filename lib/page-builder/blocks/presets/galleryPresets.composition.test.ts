@@ -144,6 +144,18 @@ describe("gallery/featured/video preset compositions", () => {
     }
   });
 
+  it("every GalleryMasonry preset variant turns on _style.galleryStagger", () => {
+    const masonryPresets = [GALLERY_MASONRY_PRESET, GALLERY_MASONRY_WALL_PRESET, GALLERY_MASONRY_JOURNAL_PRESET];
+    for (const preset of masonryPresets) {
+      const nodes = allNodes(preset as unknown as Record<string, unknown>).filter((n) => n.type === "GalleryMasonry");
+      expect(nodes.length).toBeGreaterThan(0);
+      for (const node of nodes) {
+        const style = node.props._style as Record<string, unknown> | undefined;
+        expect(style?.galleryStagger).toBe(true);
+      }
+    }
+  });
+
   it("FEATURED_WORK_LEAD_PRESET uses CollectionCard at 3/2, FEATURED_WORK_INDEX_PRESET at 1/1", () => {
     const leadCards = allNodes(FEATURED_WORK_LEAD_PRESET as unknown as Record<string, unknown>).filter(
       (n) => n.type === "CollectionCard",

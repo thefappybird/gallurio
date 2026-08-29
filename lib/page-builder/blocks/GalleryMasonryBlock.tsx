@@ -60,6 +60,20 @@ const THUMB_WIDTH_MAP: Record<GalleryColumns, number> = {
   4: 400,
 };
 
+/**
+ * Deterministic per-column vertical offset (px) for the opt-in stagger mode
+ * (`_style.galleryStagger`). Cycles by `index % columns` so adjacent columns
+ * in the same row always get a different offset, producing a genuine masonry
+ * read even when every source photo shares one aspect ratio (the reported
+ * bug — column-count masonry alone looks like a grid when rows align).
+ * Fixed values, no randomness — stable across renders and SSR/hydration.
+ */
+const STAGGER_OFFSET_CYCLE = [0, 32, 16, 48] as const; // covers columns 2 | 3 | 4
+
+export function galleryStaggerOffsetPx(index: number, columns: GalleryColumns): number {
+  return STAGGER_OFFSET_CYCLE[index % columns] ?? 0;
+}
+
 function GalleryBannerLayers({
   layers,
   bgAnimation,
@@ -114,6 +128,9 @@ export function GalleryMasonryBlock({
   const gap = _style?.galleryGap ?? "normal";
   const gapValue = GAP_MAP[gap] ?? "12px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
+  // Opt-in, default OFF — unset renders byte-identical to the pre-existing
+  // column-count layout below (live pages ship this block).
+  const stagger = _style?.galleryStagger === true;
   const labels = getGalleryChromeLabelsFrom(puck);
   const list = Array.isArray(images) ? images : [];
 
@@ -180,8 +197,15 @@ export function GalleryMasonryBlock({
         <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "80rem", margin: "0 auto" }}>
-        <div className="pf-masonry" style={{ columnCount: masonryColsVar(columns) as unknown as number, columnGap: gapValue }}>
-          {list.map((img) => {
+        <div
+          className="pf-masonry"
+          style={
+            stagger
+              ? { display: "grid", gridTemplateColumns: `repeat(${masonryColsVar(columns)}, minmax(0, 1fr))`, gap: gapValue }
+              : { columnCount: masonryColsVar(columns) as unknown as number, columnGap: gapValue }
+          }
+        >
+          {list.map((img, i) => {
             const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth * 2,
@@ -191,7 +215,11 @@ export function GalleryMasonryBlock({
             return (
               <figure
                 key={img.id}
-                style={{ margin: 0, marginBottom: gapValue, padding: 0, breakInside: "avoid" }}
+                style={
+                  stagger
+                    ? { margin: 0, padding: 0, marginTop: `${galleryStaggerOffsetPx(i, columns)}px` }
+                    : { margin: 0, marginBottom: gapValue, padding: 0, breakInside: "avoid" }
+                }
               >
                 <GalleryLightboxTrigger image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}

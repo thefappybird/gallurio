@@ -15,7 +15,7 @@ export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Story gallery" }),
     child("Text", { text: "A more editorial layout for one collection." }),
-    child("GalleryMasonry", { images: [], _style: { galleryColumns: 3, galleryGap: "normal" } }),
+    child("GalleryMasonry", { images: [], _style: { galleryColumns: 3, galleryGap: "normal", galleryStagger: true } }),
   ]),
 };
 
@@ -42,7 +42,7 @@ export const GALLERY_MASONRY_WALL_PRESET: ContainerBlockProps = {
       minHeight: "0px",
       _style: { paddingLeft: "0px", paddingRight: "0px" },
       content: slot([
-        child("GalleryMasonry", { images: [], _style: { galleryColumns: 4, galleryGap: "tight" } }),
+        child("GalleryMasonry", { images: [], _style: { galleryColumns: 4, galleryGap: "tight", galleryStagger: true } }),
       ]),
     }),
   ]),
@@ -75,7 +75,7 @@ export const GALLERY_MASONRY_JOURNAL_PRESET: ContainerBlockProps = {
         }),
         child("GalleryMasonry", {
           images: [],
-          _style: { colSpan: 3, galleryColumns: 2, galleryGap: "normal" },
+          _style: { colSpan: 3, galleryColumns: 2, galleryGap: "normal", galleryStagger: true },
         }),
       ]),
     }),

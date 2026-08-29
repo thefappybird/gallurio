@@ -396,8 +396,18 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   let buttonText: string;
   let tkBorderWidth: string;
   let tkBorderColor: string;
+  let isLink = false;
 
-  if (_style?.buttonStyle === "outline") {
+  if (_style?.buttonStyle === "link") {
+    // Link: no fill, no frame — a hairline underline only, in the inherited
+    // (currentColor) text color. borderBottom/borderRadius/padding are applied
+    // directly on aStyle below, overriding the size preset and the frame fields.
+    isLink = true;
+    buttonBg = "transparent";
+    buttonText = customTextColor ?? "currentColor";
+    tkBorderWidth = "0px";
+    tkBorderColor = "transparent";
+  } else if (_style?.buttonStyle === "outline") {
     // Outline: transparent fill, always 2px border in the button color.
     // borderWidth/borderColorToken from _style are ignored (deprecated in Pass 2).
     buttonBg = "transparent";
@@ -441,6 +451,10 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   if (resolved.marginRight !== undefined) wrapperStyle.marginRight = resolved.marginRight as string;
   if (resolved.marginTop !== undefined) wrapperStyle.marginTop = resolved.marginTop as string;
   if (resolved.marginBottom !== undefined) wrapperStyle.marginBottom = resolved.marginBottom as string;
+  // _style.cellVerticalAlign (e.g. from a Columns grid cell) resolves to
+  // alignSelf on `resolved`, but this wrapper only copied margins from it —
+  // alignSelf had nowhere to land, so the button never centered in its cell.
+  if (resolved.alignSelf !== undefined) wrapperStyle.alignSelf = resolved.alignSelf as string;
 
   const aStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -462,6 +476,16 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     // Shadow suppressed: button no longer reads _style.shadow (deprecated for buttons).
     ...(resolved.fontFamily && { fontFamily: resolved.fontFamily as string }),
     ...(resolved.fontSize && { fontSize: resolved.fontSize as string }),
+    // Link: a hairline underline only — overrides the size preset's box (padding/
+    // min-height/min-width) and the frame fields above with a bottom edge only.
+    ...(isLink && {
+      padding: "0.25rem 0",
+      minHeight: "auto",
+      minWidth: "auto",
+      borderBottom: "1px solid currentColor",
+      borderRadius: "0",
+      fontWeight: _style?.bold ? 700 : 500,
+    }),
   };
 
   return (
@@ -999,7 +1023,10 @@ export function ContainerBlock({
           maxWidth: "80rem",
           margin: "0 auto",
           display: "flex",
-          flexDirection: "column",
+          // _style.flexDirection lets a Container lay its children out as a row
+          // (e.g. a bundled, centered group of Buttons) instead of the default
+          // stack. Unset stays "column" — every existing preset is unaffected.
+          flexDirection: s.flexDirection ?? "column",
           // The slot contains the real Puck children. Giving it the section's
           // available height means center/between/around distribute those
           // children rather than a single wrapper sibling.

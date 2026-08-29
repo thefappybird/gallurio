@@ -26,6 +26,7 @@ import {
   buildContactValueStyle,
   buildContactIconColor,
   buildContactIconSize,
+  buildContactIconAlign,
   effectiveButtonTextToken,
   STYLE_COLOR_TOKENS,
   type StyleColorToken,
@@ -325,6 +326,32 @@ describe("ContactDetails: label/value/icon effective defaults", () => {
   it("icon: size 20px, color accent", () => {
     expect(buildContactIconSize(undefined)).toBe(20);
     expect(buildContactIconColor(undefined)).toBe(colorTokenToVar("accent"));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ContactDetails — icon align effective default. The Icons section's "Icon
+// align" control floats `s.valueAlign ?? "center"` (StyleToolkitField.tsx);
+// it must agree with buildContactIconAlign's own fallback chain, which the
+// render actually applies.
+// ---------------------------------------------------------------------------
+
+describe("ContactDetails: icon align effective default matches the control's floated value", () => {
+  it.each([
+    ["left", "flex-start"],
+    ["center", "center"],
+    ["right", "flex-end"],
+  ] as const)("contactIconAlign unset, valueAlign=%s -> renders %s (control floats valueAlign)", (valueAlign, justify) => {
+    expect(buildContactIconAlign({ valueAlign })).toBe(justify);
+  });
+
+  it("both unset default to center (control's own effectiveValue fallback)", () => {
+    expect(buildContactIconAlign({})).toBe("center");
+    expect(buildContactIconAlign(undefined)).toBe("center");
+  });
+
+  it("explicit contactIconAlign wins over valueAlign", () => {
+    expect(buildContactIconAlign({ contactIconAlign: "right", valueAlign: "left" })).toBe("flex-end");
   });
 });
 

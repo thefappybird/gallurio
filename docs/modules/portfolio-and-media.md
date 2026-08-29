@@ -52,6 +52,51 @@ Two token pairs are guaranteed opposites in every kit, and the preset recipes ar
 
 A button on a contrasting band must pin its own colors — `ButtonBlock` reads only `_style.buttonStyle` and never the brand kit's, so an unset button falls into the legacy branch (transparent fill, `--pf-color-fg` label and border) that vanishes on a colored ground.
 
+### The brand background must be PAINTED, not just declared
+
+`resolveBrandKit` returns `--pf-color-bg` in `cssVars`, but declaring a custom
+property paints nothing. Both portfolio wrappers — the public layout and the
+preview shell — must set `backgroundColor: var(--pf-color-bg)` explicitly after
+spreading `cssVars`. Without it the page ground falls through to whatever the
+surrounding shell paints: the preview route lives under `[locale]`, so a dark app
+theme rendered a light brand kit black. `floatedDefaultParity.test.ts` is the
+permanent gate over this whole class of bug — every control that displays an
+effective default is asserted against what the renderer actually applies when the
+prop is unset.
+
+### Button styles: two unions on purpose
+
+`BRAND_KIT_BUTTON_STYLES` (`solid | outline | soft`) is the workspace-wide default
+picked in the Theme panel. `BLOCK_BUTTON_STYLES` adds `link` and is the per-block
+`_style.buttonStyle` union only — a hairline underline is a deliberate footer
+treatment, never a sensible kit-wide default. `link` renders a transparent fill
+with `border-bottom: 1px solid currentColor`, square corners and `padding: .25rem 0`;
+`outline`'s hardcoded 2px full frame is what made the footer presets read heavier
+than their mockups.
+
+### Container and Columns traps
+
+- `ContainerBlock` accepts `_style.flexDirection` but **ignored it** until recently,
+  hardcoding `column`. That is why footer button groups stacked instead of sitting
+  in a row. Rows also need explicit `marginLeft/marginRight: "0px"` on each Button:
+  `ButtonBlock`'s legacy `align` prop still emits auto margins that fight the row's
+  own `gap`.
+- `ButtonBlock` resolves `_style.cellVerticalAlign` into `alignSelf` but used to
+  copy only the four margins off the resolved object, silently dropping it — which
+  is why a Columns cell refused to center vertically.
+- `ColumnsBlock` supports **equal `fr` tracks only**. Asymmetric ratios (the
+  Directory footer mockup's `1.4fr 0.8fr 1fr`) are not expressible; only
+  `_style.colSpan` varies a child's width.
+
+### Masonry stagger
+
+`GalleryMasonryBlock` is real `column-count` masonry, but uniform-aspect source
+photos make every row line up and it reads as a grid. `_style.galleryStagger`
+(default **off**, so saved pages are unchanged) switches to a CSS grid with a
+deterministic per-index `margin-top` cycle. `column-count` cannot do this: it
+exposes no per-column selector. The trade-off is real — stagger mode flows
+**row-major**, while the default `column-count` path flows column-major.
+
 ### Enabled controls must be truthful
 
 An editor control earns its place only if all of these hold: choosing a different option causes a **visible or interactively verifiable** change in the canvas; the same saved value produces the same result in preview and publish; the control is enabled only when its prerequisite structure exists, and explains itself when disabled; explicit overrides are distinguishable from effective theme defaults and are resettable without freezing a value into props.

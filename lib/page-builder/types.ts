@@ -47,6 +47,12 @@ export type BrandKitRadius = (typeof BRAND_KIT_RADII)[number];
 export const BRAND_KIT_BUTTON_STYLES = ["solid", "outline", "soft"] as const;
 export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 
+/** Per-block button style union. Adds "link" (hairline underline, no fill/frame)
+ *  on top of the brand-kit-wide styles — "link" is not a sensible kit-wide
+ *  default, so it is intentionally excluded from BRAND_KIT_BUTTON_STYLES. */
+export const BLOCK_BUTTON_STYLES = [...BRAND_KIT_BUTTON_STYLES, "link"] as const;
+export type BlockButtonStyle = (typeof BLOCK_BUTTON_STYLES)[number];
+
 // ---------------------------------------------------------------------------
 // PortfolioCollectionsPopupConfig
 // ---------------------------------------------------------------------------

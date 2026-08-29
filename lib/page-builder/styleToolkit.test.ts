@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, GALLERY_COLUMN_OPTIONS, GALLERY_GAP_OPTIONS, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, buildContactIconAlign, GALLERY_COLUMN_OPTIONS, GALLERY_GAP_OPTIONS, type BlockStyle } from "./styleToolkit";
 import { headingDefaultProps, textDefaultProps } from "./blocks/manualBlocks";
 
 // ---------------------------------------------------------------------------
@@ -337,5 +337,35 @@ describe("BlockStyle — galleryColumns", () => {
 
   it("GALLERY_GAP_OPTIONS contains tight, normal, loose", () => {
     expect(GALLERY_GAP_OPTIONS).toEqual(["tight", "normal", "loose"]);
+  });
+});
+
+describe("BlockStyle — galleryStagger", () => {
+  it("resolveBlockStyle does not emit any CSS for galleryStagger (consumed directly by the block, not the shared resolver)", () => {
+    const withStagger = resolveBlockStyle({ galleryStagger: true });
+    const without = resolveBlockStyle({});
+    expect(withStagger).toEqual(without);
+  });
+});
+
+describe("buildContactIconAlign", () => {
+  it("maps left/center/right to flex-start/center/flex-end via contactIconAlign", () => {
+    expect(buildContactIconAlign({ contactIconAlign: "left" })).toBe("flex-start");
+    expect(buildContactIconAlign({ contactIconAlign: "center" })).toBe("center");
+    expect(buildContactIconAlign({ contactIconAlign: "right" })).toBe("flex-end");
+  });
+
+  it("falls back to valueAlign when contactIconAlign is unset", () => {
+    expect(buildContactIconAlign({ valueAlign: "left" })).toBe("flex-start");
+    expect(buildContactIconAlign({ valueAlign: "right" })).toBe("flex-end");
+  });
+
+  it("contactIconAlign wins when both are set", () => {
+    expect(buildContactIconAlign({ contactIconAlign: "left", valueAlign: "right" })).toBe("flex-start");
+  });
+
+  it("defaults to center when both unset / style is undefined", () => {
+    expect(buildContactIconAlign({})).toBe("center");
+    expect(buildContactIconAlign(undefined)).toBe("center");
   });
 });

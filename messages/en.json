@@ -2953,7 +2953,9 @@
               "background": "Background",
               "foreground": "Foreground"
             }
-          }
+          },
+          "dragToAddHint": "Drag this block to add it to your page.",
+          "previewBlock": "Preview this block"
         },
         "tour": {
           "next": "Next",
@@ -3416,7 +3418,14 @@
       "cover_set_failed": "Couldn't set the cover. Please try again.",
       "order_save_failed": "Couldn't save the new order. Please try again.",
       "photo_remove_failed": "Couldn't remove the photo. Please try again.",
-      "photo_add_failed": "Couldn't add the photo. Please try again."
+      "photo_add_failed": "Couldn't add the photo. Please try again.",
+      "upload_type_not_accepted": "\"{type}\" isn't a supported format. Upload {accepted} instead.",
+      "upload_file_too_large": "That file is {actual} MB. The limit is {limit} MB.",
+      "upload_dimension_too_small": "That image is {width}×{height}px. It needs to be at least {min}px on the shorter side.",
+      "upload_invalid_image": "That file couldn't be read as an image. Try a different file.",
+      "upload_quota_exceeded": "You've reached your photo limit. Remove some photos and try again.",
+      "upload_rate_limited": "Too many uploads — wait a moment and try again.",
+      "upload_network_error": "Couldn't reach the server. Check your connection and try again."
     }
   },
   "common": {

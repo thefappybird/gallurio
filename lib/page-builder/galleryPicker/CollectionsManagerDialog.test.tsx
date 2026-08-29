@@ -36,6 +36,20 @@ describe("CollectionsManagerDialog", () => {
     expect(alert).toHaveTextContent(/could not load/i);
   });
 
+  it("shows a skeleton grid (not just a spinner line) while collections are loading", async () => {
+    let resolveFetch: (r: Response) => void = () => {};
+    mockFetch.mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    const status = await screen.findByRole("status");
+    expect(status.querySelectorAll("li").length).toBeGreaterThan(0);
+    resolveFetch({ ok: true, json: async () => ({ collections: [], items: [] }) } as unknown as Response);
+    await screen.findByTestId("collections-empty-state");
+  });
+
   it("renders nothing when closed", () => {
     renderWithProviders(<CollectionsManagerDialog open={false} onOpenChange={vi.fn()} />);
     expect(screen.queryByText("Photos & collections")).toBeNull();

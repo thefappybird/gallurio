@@ -21,16 +21,25 @@ export const CTA_PRESET: ContainerBlockProps = {
 
 export const CTA_IMAGE_PRESET: ContainerBlockProps = {
   backgroundImages: [],
-  minHeight: "short",
-  alignX: "left",
-  alignY: "center",
-  overlayOpacity: 62,
-  overlayColorToken: "primary",
-  _style: { bgColorToken: "accent", gap: 18 },
+  minHeight: "auto",
+  _style: { ...pageSection, gap: 0 },
   content: slot([
-    child("Heading", { level: "h2", text: "Ready to book your session?", _style: onDark }),
-    child("Text", { text: "Let's create something beautiful together.", _style: onDark }),
-    child("Button", { label: "Get in Touch", action: "open-contact", align: "left", _style: onAccentBand }),
+    child("Columns", {
+      columns: 2,
+      minHeight: "0px",
+      _style: { gap: 32 },
+      content: slot([
+        child("Container", {
+          _style: { gap: 16, contentVerticalDistribution: "center" },
+          content: slot([
+            child("Heading", { level: "h2", text: "Ready to book your session?" }),
+            child("Text", { text: "Let's create something beautiful together." }),
+            child("Button", { label: "Get in Touch", action: "open-contact", align: "left", size: "sm" }),
+          ]),
+        }),
+        child("Image", { alt: "Studio portrait" }),
+      ]),
+    }),
   ]),
 };
 

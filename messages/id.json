@@ -2953,7 +2953,9 @@
               "background": "Latar belakang",
               "foreground": "Latar depan"
             }
-          }
+          },
+          "dragToAddHint": "Seret blok ini untuk menambahkannya ke halaman Anda.",
+          "previewBlock": "Pratinjau blok ini"
         },
         "tour": {
           "next": "Berikutnya",
@@ -3416,7 +3418,14 @@
       "cover_set_failed": "Gagal mengatur sampul. Silakan coba lagi.",
       "order_save_failed": "Gagal menyimpan urutan baru. Silakan coba lagi.",
       "photo_remove_failed": "Gagal menghapus foto. Silakan coba lagi.",
-      "photo_add_failed": "Gagal menambahkan foto. Silakan coba lagi."
+      "photo_add_failed": "Gagal menambahkan foto. Silakan coba lagi.",
+      "upload_type_not_accepted": "\"{type}\" bukan format yang didukung. Unggah {accepted} sebagai gantinya.",
+      "upload_file_too_large": "File itu berukuran {actual} MB. Batasnya adalah {limit} MB.",
+      "upload_dimension_too_small": "Gambar itu berukuran {width}×{height}px. Ukuran minimal adalah {min}px pada sisi yang lebih pendek.",
+      "upload_invalid_image": "File itu tidak dapat dibaca sebagai gambar. Coba file lain.",
+      "upload_quota_exceeded": "Anda telah mencapai batas foto. Hapus beberapa foto dan coba lagi.",
+      "upload_rate_limited": "Terlalu banyak unggahan — tunggu sebentar dan coba lagi.",
+      "upload_network_error": "Tidak dapat terhubung ke server. Periksa koneksi Anda dan coba lagi."
     }
   },
   "common": {

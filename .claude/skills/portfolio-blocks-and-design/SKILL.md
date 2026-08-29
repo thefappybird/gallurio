@@ -68,6 +68,16 @@ Puck behaviours that cost real debugging time:
 - Puck auto-creates an **"Other"** category for any registered component listed in no
   category (currently just the internal `ContainerAnchor`).
 
+The drawer row is **name-only**. The one-line description lives in a hover/focus
+preview popover (`PresetPreviewCard.tsx`) alongside a LIVE mini-render of the
+preset — `<Render>` at 1280px scaled into a 16:10 frame, made a `pfpage`
+container so the real container queries resolve to desktop. It renders through
+`createEditorConfig`, NOT the production `puckConfig`: importing that into a
+client component pulls Mongo + AsyncLocalStorage into the bundle and breaks the
+build. Anything added to `drawerItemOverrides`' dependency array must be
+referentially stable — `resolveBrandKit()` called inline returns a fresh object
+every render and would remount Puck's whole drawer on every keystroke.
+
 A section's `_style.textColorToken` cascades to unstyled nested Heading/Text via the
 `--pf-block-text-color` custom property `resolveBlockStyle` publishes — so a contrast band
 sets the token once on the section instead of on every child. Buttons do NOT read it.

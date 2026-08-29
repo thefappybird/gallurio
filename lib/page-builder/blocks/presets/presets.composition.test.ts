@@ -148,8 +148,15 @@ describe("footer statement — contrast-safe button", () => {
 });
 
 describe("overlayColorToken pinned to primary", () => {
-  it("HERO_PRESET and CTA_IMAGE_PRESET both pin overlayColorToken: primary", () => {
+  it("HERO_PRESET pins overlayColorToken: primary", () => {
     expect((HERO_PRESET as unknown as { overlayColorToken?: string }).overlayColorToken).toBe("primary");
-    expect((CTA_IMAGE_PRESET as unknown as { overlayColorToken?: string }).overlayColorToken).toBe("primary");
+  });
+
+  // CTA_IMAGE_PRESET dropped its background image and scrim entirely — it is now
+  // a two-column split (copy + Image) with no overlay, so it carries no scrim token.
+  it("CTA_IMAGE_PRESET has no overlayOpacity/overlayColorToken (two-column split, no scrim)", () => {
+    const props = CTA_IMAGE_PRESET as unknown as { overlayOpacity?: number; overlayColorToken?: string };
+    expect(props.overlayOpacity).toBeUndefined();
+    expect(props.overlayColorToken).toBeUndefined();
   });
 });

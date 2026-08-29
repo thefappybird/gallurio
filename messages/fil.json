@@ -2953,7 +2953,9 @@
               "background": "Background",
               "foreground": "Foreground"
             }
-          }
+          },
+          "dragToAddHint": "I-drag ang block na ito para idagdag sa iyong pahina.",
+          "previewBlock": "I-preview ang block na ito"
         },
         "tour": {
           "next": "Susunod",
@@ -3416,7 +3418,14 @@
       "cover_set_failed": "Hindi matakda ang cover. Pakisubukan muli.",
       "order_save_failed": "Hindi ma-save ang bagong order. Pakisubukan muli.",
       "photo_remove_failed": "Hindi maalis ang larawan. Pakisubukan muli.",
-      "photo_add_failed": "Hindi maidagdag ang larawan. Pakisubukan muli."
+      "photo_add_failed": "Hindi maidagdag ang larawan. Pakisubukan muli.",
+      "upload_type_not_accepted": "Hindi suportado ang \"{type}\". Mag-upload ng {accepted} sa halip.",
+      "upload_file_too_large": "{actual} MB ang file na iyon. Ang limitasyon ay {limit} MB.",
+      "upload_dimension_too_small": "{width}×{height}px ang larawang iyon. Dapat itong hindi bababa sa {min}px sa mas maikling gilid.",
+      "upload_invalid_image": "Hindi mabasa ang file na iyon bilang larawan. Subukan ang ibang file.",
+      "upload_quota_exceeded": "Naabot mo na ang limitasyon ng larawan. Mag-alis ng ilang larawan at subukan muli.",
+      "upload_rate_limited": "Sobrang dami ng pag-upload — maghintay sandali at subukan muli.",
+      "upload_network_error": "Hindi maabot ang server. Suriin ang iyong koneksyon at subukan muli."
     }
   },
   "common": {

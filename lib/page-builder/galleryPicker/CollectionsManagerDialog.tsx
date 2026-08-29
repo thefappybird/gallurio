@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ImagePlusIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
+import { ImagePlusIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { usePickerData } from "./usePickerData";
+import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { EditCollectionDialog } from "./EditCollectionDialog";
 import type { PickerCollection } from "./types";
@@ -83,10 +84,10 @@ export function CollectionsManagerDialog({
           </div>
 
           {state.status === "loading" ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2Icon className="size-4 animate-spin" aria-hidden />
-              {t("loading")}
-            </div>
+            <GridSkeleton
+              gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+              label={t("loading")}
+            />
           ) : state.status === "error" ? (
             <div className="flex flex-col gap-2">
               <p role="alert" className="text-sm text-destructive">{t("error")}</p>

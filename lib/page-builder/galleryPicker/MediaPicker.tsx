@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import {
   ArrowLeftIcon,
+  CheckIcon,
   GripVerticalIcon,
   ImagePlusIcon,
   Loader2Icon,
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
+import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
@@ -44,8 +46,11 @@ const L = {
   retry: "Retry",
   emptyWorkspace: "No photos yet — upload below.",
   emptyCollection: "This collection is empty — upload below.",
+  emptyCollectionsList: "No collections yet — create one below.",
   selectAllPage: "Select all on page",
   selectAllCollection: "Select all in collection",
+  selectAllInTile: (name: string) => `Select all photos in ${name}`,
+  errBulkSelect: "Could not load that collection's photos.",
   clearAll: "Clear selection",
   done: "Done",
   photos: (n: number) => `${n} photo${n === 1 ? "" : "s"}`,
@@ -161,6 +166,10 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Bulk "select all from collection" state (footer button + tile checkmark).
+  const [bulkLoadingId, setBulkLoadingId] = useState<string | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+
   // Monotonic token invalidating in-flight feed fetches when the view changes,
   // so a slow response from a prior collection cannot bleed into the current one.
   const fetchToken = useRef(0);
@@ -198,6 +207,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       setNav({ kind: "collections" });
       setFeed(EMPTY_FEED);
       setUploadError(null);
+      setBulkError(null);
       fetchToken.current++; // invalidate any in-flight feed fetch from a prior open
     }
   }, [open]);
@@ -312,23 +322,42 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // "Select all in collection" — the newest `cap` items across ALL pages,
   // fetched server-side (newest-first). Display order stays collection-`order`;
   // bulk-select is intentionally newest-first (owner wants the latest N).
-  const [bulkLoading, setBulkLoading] = useState(false);
-  async function selectAllInCollection() {
+  // Appends into the EXISTING selection (dedup by id, cap on the combined
+  // total) rather than replacing it — matches the append+dedupe idiom used
+  // by `toggleMulti`/`selectAllOnPage` above. Callable for any collection id,
+  // not just the currently-open one, so the collection-tile checkmark control
+  // can bulk-select without navigating in first.
+  async function selectAllFromCollection(colId: string) {
     if (mode !== "multi") return;
-    if (nav.kind !== "photos" || nav.id === ALL_PHOTOS_ID) return;
     const cap = max ?? SAFETY_CAP;
-    setBulkLoading(true);
+    setBulkLoadingId(colId);
+    setBulkError(null);
     try {
-      const res = await fetch(`/api/portfolio/gallery/collections/${nav.id}?newest=${cap}`);
+      const res = await fetch(`/api/portfolio/gallery/collections/${colId}?newest=${cap}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { items: PickerItem[] };
       remember(data.items);
-      onChange(data.items.slice(0, cap).map((it) => ({ id: it.id, publicId: it.publicId })));
+      const next = [...selection];
+      for (const it of data.items) {
+        if (next.length >= cap) break;
+        if (!next.some((s) => s.id === it.id))
+          next.push({
+            id: it.id,
+            publicId: it.publicId,
+            ...(it.width != null && it.height != null ? { width: it.width, height: it.height } : {}),
+          });
+      }
+      onChange(next);
     } catch {
-      // Non-fatal: leave the current selection untouched.
+      setBulkError(L.errBulkSelect);
     } finally {
-      setBulkLoading(false);
+      setBulkLoadingId(null);
     }
+  }
+
+  function selectAllInCollection() {
+    if (nav.kind !== "photos" || nav.id === ALL_PHOTOS_ID) return;
+    void selectAllFromCollection(nav.id);
   }
 
   function clearSelection() {
@@ -597,16 +626,34 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           </div>
         )}
 
+        {bulkError && (
+          <p role="alert" className="text-xs text-destructive">
+            {bulkError}
+          </p>
+        )}
+
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {state.status === "loading" && <CenterSpinner label={L.loading} />}
+          {state.status === "loading" && (
+            <GridSkeleton
+              gridClassName={
+                nav.kind === "photos"
+                  ? "grid grid-cols-3 gap-1.5 p-1 sm:grid-cols-4"
+                  : "grid grid-cols-2 gap-2 p-1 sm:grid-cols-4"
+              }
+              label={L.loading}
+            />
+          )}
           {state.status === "error" && <ErrorRetry onRetry={retry} />}
 
           {state.status === "ok" && nav.kind === "collections" && mode !== "collections" && (
             <CollectionGrid
               collections={collections}
               hasAnyPhotos={state.data.items.length > 0 || collections.some((c) => c.itemCount > 0)}
+              mode={mode}
+              bulkLoadingId={bulkLoadingId}
               onOpen={openCollection}
               onCreate={() => setCreateOpen(true)}
+              onSelectAllFromCollection={selectAllFromCollection}
             />
           )}
 
@@ -661,8 +708,8 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
                   variant="outline"
                   size="sm"
                   onClick={selectAllInCollection}
-                  loading={bulkLoading}
-                  disabled={bulkLoading || feed.items.length === 0}
+                  loading={bulkLoadingId === nav.id}
+                  disabled={bulkLoadingId !== null || feed.items.length === 0}
                 >
                   {L.selectAllCollection}
                 </Button>
@@ -739,13 +786,19 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
 function CollectionGrid({
   collections,
   hasAnyPhotos,
+  mode,
+  bulkLoadingId,
   onOpen,
   onCreate,
+  onSelectAllFromCollection,
 }: {
   collections: PickerCollection[];
   hasAnyPhotos: boolean;
+  mode: "single" | "multi";
+  bulkLoadingId: string | null;
   onOpen: (id: string, name: string) => void;
   onCreate: () => void;
+  onSelectAllFromCollection: (colId: string) => void;
 }) {
   return (
     <ul className="grid grid-cols-2 gap-2 p-1 sm:grid-cols-4" role="listbox" aria-label="Collections">
@@ -764,7 +817,7 @@ function CollectionGrid({
       </li>
 
       {collections.map((col) => (
-        <li key={col.id} role="option" aria-selected={false}>
+        <li key={col.id} role="option" aria-selected={false} className="relative">
           <button
             type="button"
             onClick={() => onOpen(col.id, col.name)}
@@ -786,6 +839,24 @@ function CollectionGrid({
               <span className="text-xs text-muted-foreground">{L.photos(col.itemCount)}</span>
             </span>
           </button>
+          {mode === "multi" && (
+            <button
+              type="button"
+              aria-label={L.selectAllInTile(col.name)}
+              disabled={bulkLoadingId !== null}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectAllFromCollection(col.id);
+              }}
+              className="absolute right-1 top-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              {bulkLoadingId === col.id ? (
+                <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
+              ) : (
+                <CheckIcon className="size-3.5" aria-hidden />
+              )}
+            </button>
+          )}
         </li>
       ))}
 
@@ -837,10 +908,25 @@ function PhotoGrid({
 }) {
   if (feed.error) return <ErrorRetry onRetry={onRetry} />;
 
+  // Initial load / just-switched-collection: no items yet, feed already
+  // fetching. A skeleton (not a bare spinner) holds the grid's shape so the
+  // dialog body doesn't collapse to near-nothing while it resolves.
+  if (feed.items.length === 0 && feed.loading) {
+    return (
+      <div className="flex flex-col gap-3 p-1">
+        <GridSkeleton gridClassName="grid grid-cols-3 gap-1.5 sm:grid-cols-4" label={L.loading} />
+        {uploadSlot}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 p-1">
-      {feed.items.length === 0 && !feed.loading ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">{emptyLabel}</p>
+      {feed.items.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 border border-dashed border-border p-6 text-center">
+          <ImagePlusIcon className="size-7 text-muted-foreground" aria-hidden />
+          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        </div>
       ) : (
         <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4" role="listbox" aria-label="Photos">
           {feed.items.map((item) => {
@@ -1132,7 +1218,7 @@ function CollectionSelectGrid({
       </li>
 
       {collections.length === 0 && (
-        <li className="col-span-full py-4 text-center text-sm text-muted-foreground">{L.emptyWorkspace}</li>
+        <li className="col-span-full py-4 text-center text-sm text-muted-foreground">{L.emptyCollectionsList}</li>
       )}
     </ul>
   );

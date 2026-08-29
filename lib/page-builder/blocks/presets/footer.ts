@@ -14,14 +14,12 @@ export const FOOTER_SIGNATURE_PRESET: ContainerBlockProps = {
     child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
     child("Heading", { level: "h3", text: "Lumen Studio" }),
     child("Text", { text: "Fine art photography · Manila" }),
-    child("Columns", {
-      columns: 3,
-      minHeight: "0px",
-      _style: { gap: 8 },
+    child("Container", {
+      _style: { flexDirection: "row", contentVerticalDistribution: "center", gap: 20 },
       content: slot([
-        child("Button", { label: "Home", action: "go-to-home", align: "center", size: "sm", _style: { buttonStyle: "outline" } }),
-        child("Button", { label: "Gallery", action: "go-to-gallery", align: "center", size: "sm", _style: { buttonStyle: "outline" } }),
-        child("Button", { label: "Contact", action: "open-contact", align: "center", size: "sm", _style: { buttonStyle: "outline" } }),
+        child("Button", { label: "Home", action: "go-to-home", align: "center", size: "sm", _style: { buttonStyle: "link", marginLeft: "0px", marginRight: "0px" } }),
+        child("Button", { label: "Gallery", action: "go-to-gallery", align: "center", size: "sm", _style: { buttonStyle: "link", marginLeft: "0px", marginRight: "0px" } }),
+        child("Button", { label: "Contact", action: "open-contact", align: "center", size: "sm", _style: { buttonStyle: "link", marginLeft: "0px", marginRight: "0px" } }),
       ]),
     }),
   ]),
@@ -51,9 +49,9 @@ export const FOOTER_DIRECTORY_PRESET: ContainerBlockProps = {
           _style: { gap: 6 },
           content: slot([
             child("Heading", { level: "h4", text: "Explore" }),
-            child("Button", { label: "Home", action: "go-to-home", align: "left", size: "sm", _style: { buttonStyle: "outline" } }),
-            child("Button", { label: "Gallery", action: "go-to-gallery", align: "left", size: "sm", _style: { buttonStyle: "outline" } }),
-            child("Button", { label: "Contact", action: "open-contact", align: "left", size: "sm", _style: { buttonStyle: "outline" } }),
+            child("Button", { label: "Home", action: "go-to-home", align: "left", size: "sm", _style: { buttonStyle: "link" } }),
+            child("Button", { label: "Gallery", action: "go-to-gallery", align: "left", size: "sm", _style: { buttonStyle: "link" } }),
+            child("Button", { label: "Contact", action: "open-contact", align: "left", size: "sm", _style: { buttonStyle: "link" } }),
           ]),
         }),
         child("Container", {
@@ -85,22 +83,10 @@ export const FOOTER_STATEMENT_PRESET: ContainerBlockProps = {
       content: slot([
         child("Text", { text: "© 2026 Lumen Studio. All rights reserved." }),
         child("Container", {
-          _style: { gap: 8 },
+          _style: { flexDirection: "row", contentVerticalDistribution: "end", gap: 16 },
           content: slot([
-            child("Button", {
-              label: "Home",
-              action: "go-to-home",
-              align: "right",
-              size: "sm",
-              _style: { buttonStyle: "outline", buttonColorToken: "background" },
-            }),
-            child("Button", {
-              label: "Gallery",
-              action: "go-to-gallery",
-              align: "right",
-              size: "sm",
-              _style: { buttonStyle: "outline", buttonColorToken: "background" },
-            }),
+            child("Button", { label: "Home", action: "go-to-home", align: "right", size: "sm", _style: { buttonStyle: "link", marginLeft: "0px", marginRight: "0px" } }),
+            child("Button", { label: "Gallery", action: "go-to-gallery", align: "right", size: "sm", _style: { buttonStyle: "link", marginLeft: "0px", marginRight: "0px" } }),
           ]),
         }),
       ]),

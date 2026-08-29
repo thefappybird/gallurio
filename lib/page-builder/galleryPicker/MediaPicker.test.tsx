@@ -44,15 +44,15 @@ beforeEach(() => {
 describe("MediaPicker", () => {
   it("renders the collection grid with the pinned 'All photos' entry", async () => {
     renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
-    await waitFor(() => expect(screen.getByRole("button", { name: /all photos/i })).toBeTruthy());
-    expect(screen.getByRole("button", { name: /weddings/i })).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole("button", { name: /^all photos$/i })).toBeTruthy());
+    expect(screen.getByRole("button", { name: /^weddings$/i })).toBeTruthy();
   });
 
   it("single mode: picking a photo calls onChange(publicId) and closes", async () => {
     const onChange = vi.fn();
     const onOpenChange = vi.fn();
     renderWithProviders(<MediaPicker mode="single" value="" onChange={onChange} open onOpenChange={onOpenChange} />);
-    fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
     fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
     expect(onChange).toHaveBeenCalledWith("pid-a");
     expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -61,7 +61,7 @@ describe("MediaPicker", () => {
   it("multi mode: toggling appends {id,publicId} and respects max", async () => {
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" max={1} value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
-    fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
     fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
     expect(onChange).toHaveBeenCalledWith([{ id: "a", publicId: "pid-a" }]);
   });
@@ -69,7 +69,7 @@ describe("MediaPicker", () => {
   it("multi mode: 'select all on page' respects max (newest/page order, capped)", async () => {
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" max={1} value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
-    fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
     fireEvent.click(await screen.findByRole("button", { name: /select all on page/i }));
     expect(onChange).toHaveBeenCalledWith([{ id: "a", publicId: "pid-a" }]);
   });
@@ -77,7 +77,7 @@ describe("MediaPicker", () => {
   it("multi mode: 'select all in collection' fetches newest-N and sets selection (capped)", async () => {
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" max={2} value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
-    fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
     fireEvent.click(await screen.findByRole("button", { name: /select all in collection/i }));
     await waitFor(() =>
       expect(onChange).toHaveBeenCalledWith([
@@ -87,6 +87,106 @@ describe("MediaPicker", () => {
     );
     // The bulk fetch hit the ?newest= endpoint.
     expect(mockFetch.mock.calls.some(([u]) => String(u).includes("newest="))).toBe(true);
+  });
+
+  it("multi mode: 'select all in collection' appends into an existing selection (dedup by id, cap on the combined total)", async () => {
+    const onChange = vi.fn();
+    // Pre-existing pick "z" is not in the collection's newest set; "a" is
+    // already picked too, so the fetched "a" must not duplicate it. max=2
+    // means only one more slot is free — "b" must NOT bump "z" or "a" out.
+    renderWithProviders(
+      <MediaPicker
+        mode="multi"
+        max={2}
+        value={[
+          { id: "z", publicId: "pid-z" },
+          { id: "a", publicId: "pid-a" },
+        ]}
+        onChange={onChange}
+        open
+        onOpenChange={vi.fn()}
+      />
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /select all in collection/i }));
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith([
+        { id: "z", publicId: "pid-z" },
+        { id: "a", publicId: "pid-a" },
+      ])
+    );
+  });
+
+  it("multi mode: collection tile checkmark bulk-selects that collection without navigating into it", async () => {
+    const onChange = vi.fn();
+    renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+    const checkmark = await screen.findByRole("button", { name: /select all photos in weddings/i });
+    fireEvent.click(checkmark);
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith([
+        { id: "a", publicId: "pid-a" },
+        { id: "b", publicId: "pid-b" },
+      ])
+    );
+    // Still browsing collections — the checkmark click did not trigger the
+    // tile's own "open this collection" action.
+    expect(screen.queryByRole("button", { name: /back to collections/i })).toBeNull();
+    expect(mockFetch.mock.calls.some(([u]) => String(u).includes("newest="))).toBe(true);
+  });
+
+  it("single mode: collection tiles render no bulk-select checkmark", async () => {
+    renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+    await screen.findByRole("button", { name: /^weddings$/i });
+    expect(screen.queryByRole("button", { name: /select all photos in/i })).toBeNull();
+  });
+
+  it("multi mode: surfaces an error (not a silent no-op) when the bulk collection fetch fails", async () => {
+    const onChange = vi.fn();
+    mockFetch.mockImplementation((u: string) => {
+      const url = String(u);
+      if (url === "/api/portfolio/gallery") {
+        return Promise.resolve({ ok: true, json: async () => ({ collections, items: colItems }) } as Response);
+      }
+      if (url.includes("newest=")) {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ items: colItems, nextCursor: null }) } as Response);
+    });
+    renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /select all photos in weddings/i }));
+    await screen.findByRole("alert");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("shows a skeleton grid (not a bare spinner) while picker data is loading, so the dialog body holds its shape", async () => {
+    let resolveFetch: (r: Response) => void = () => {};
+    mockFetch.mockImplementation((u: string) => {
+      if (u === "/api/portfolio/gallery") {
+        return new Promise<Response>((resolve) => {
+          resolveFetch = resolve;
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ items: [], nextCursor: null }) } as Response);
+    });
+    renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+    const status = await screen.findByRole("status");
+    expect(status.querySelectorAll("li").length).toBeGreaterThan(0);
+    resolveFetch({ ok: true, json: async () => ({ collections, items: colItems }) } as Response);
+    await screen.findByRole("button", { name: /^weddings$/i });
+  });
+
+  it("shows an actionable empty state (icon + upload affordance, not a bare sentence) inside an empty collection", async () => {
+    mockFetch.mockImplementation((u: string) => {
+      if (u === "/api/portfolio/gallery") {
+        return Promise.resolve({ ok: true, json: async () => ({ collections, items: [] }) } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ items: [], nextCursor: null }) } as Response);
+    });
+    renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+    await screen.findByText(/this collection is empty/i);
+    // The upload dropzone is present alongside the message — actionable, not a bare sentence.
+    expect(screen.getByRole("button", { name: /upload photo/i })).toBeTruthy();
   });
 
   it("multi mode: reorder chip resolves thumbnail from workspace-wide picker data without opening a collection", async () => {
@@ -109,7 +209,7 @@ describe("MediaPicker", () => {
 
   it("hides 'select all in collection' on the All photos feed", async () => {
     renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />);
-    fireEvent.click(await screen.findByRole("button", { name: /all photos/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^all photos$/i }));
     await waitFor(() => screen.getByRole("button", { name: /select all on page/i }));
     expect(screen.queryByRole("button", { name: /select all in collection/i })).toBeNull();
   });
@@ -144,7 +244,7 @@ describe("MediaPicker", () => {
 
   it("does not render its dialog content when closed", () => {
     renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open={false} onOpenChange={vi.fn()} />);
-    expect(screen.queryByRole("button", { name: /all photos/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^all photos$/i })).toBeNull();
   });
 
   // ---------------------------------------------------------------------------
@@ -183,7 +283,7 @@ describe("MediaPicker", () => {
           onOpenChange={vi.fn()}
         />
       );
-      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       expect(onChange).toHaveBeenCalledWith([
         { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
       ] satisfies MediaPickerCollectionSelection[]);
@@ -269,7 +369,7 @@ describe("MediaPicker", () => {
           onOpenChange={vi.fn()}
         />
       );
-      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       // Photo grid must not appear
       expect(screen.queryByRole("listbox", { name: /photos/i })).toBeNull();
       // Back button must not appear
@@ -356,7 +456,7 @@ describe("MediaPicker", () => {
     });
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
-    fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
     fireEvent.click(await screen.findByRole("button", { name: /select all on page/i }));
     expect(onChange).toHaveBeenCalledWith([
       { id: "a", publicId: "pid-a", width: 800, height: 600 },
@@ -376,7 +476,7 @@ describe("MediaPicker", () => {
     });
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
-    fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
     fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
     expect(onChange).toHaveBeenCalledWith([{ id: "a", publicId: "pid-a", width: 1200, height: 800 }]);
   });
@@ -410,7 +510,7 @@ describe("MediaPicker", () => {
     renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
 
     // Open the slow collection (its feed is still pending).
-    fireEvent.click(await screen.findByRole("button", { name: /slowcol/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^slowcol$/i }));
     // Go back, then open the fast collection.
     fireEvent.click(await screen.findByRole("button", { name: /back to collections/i }));
     fireEvent.click(await screen.findByRole("button", { name: /fastcol/i }));
@@ -455,7 +555,7 @@ describe("MediaPicker", () => {
       );
 
       // Navigate into a collection so the photo grid + upload zone are visible.
-      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       await screen.findByRole("listbox", { name: /photos/i });
 
       // Trigger file upload via the hidden file input inside UploadZone.
@@ -486,7 +586,7 @@ describe("MediaPicker", () => {
         <MediaPicker mode="multi" value={existing} onChange={onChange} open onOpenChange={onOpenChange} />
       );
 
-      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       await screen.findByRole("listbox", { name: /photos/i });
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -508,7 +608,7 @@ describe("MediaPicker", () => {
     it("renders with an accessible name and opens the dialog without toggling selection", async () => {
       const onChange = vi.fn();
       renderWithProviders(<MediaPicker mode="single" value="" onChange={onChange} open onOpenChange={vi.fn()} />);
-      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
       expect(onChange).not.toHaveBeenCalled();
       expect(await screen.findByLabelText("Alt text")).toBeTruthy();
@@ -516,14 +616,14 @@ describe("MediaPicker", () => {
 
     it("meets the 24x24 minimum target size (WCAG 2.2 SC 2.5.8)", async () => {
       renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
-      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
       expect(editTrigger.className).toMatch(/\bsize-6\b/);
     });
 
     it("does not nest the edit trigger inside role=option (ARIA forbids interactive descendants of option)", async () => {
       renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
-      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
       expect(editTrigger.closest('[role="option"]')).toBeNull();
     });
@@ -536,7 +636,7 @@ describe("MediaPicker", () => {
         return routeFetch(u);
       });
       renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
-      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
       fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
       fireEvent.change(await screen.findByLabelText("Alt text"), { target: { value: "Bride and groom" } });
       fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
