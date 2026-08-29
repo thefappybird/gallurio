@@ -98,7 +98,7 @@ type Block = { type?: string; props?: Record<string, unknown> };
 /** One measured pair, named well enough to debug from the failure message alone. */
 type Measurement = { what: string; fg: string; bg: string; min: number };
 
-const TEXT_BLOCKS = new Set(["Heading", "Text", "ContactDetails"]);
+const TEXT_BLOCKS = new Set(["Heading", "Text"]);
 
 function collect(
   block: Block,
@@ -255,6 +255,28 @@ describe("scrimmed presets stay legible once a background image is added", () =>
       expect(failures).toEqual([]);
     });
   }
+});
+
+describe("ContactDetails value text defaults to accent, not the ambient text cascade", () => {
+  // buildContactValueStyle (styleToolkit.ts) hardcodes every value's default
+  // color to the accent token, regardless of the section's textColorToken.
+  // CONTACT_BAR_PRESET sits its ContactDetails on a `secondary` band, and
+  // accent-vs-secondary is not one of the two guaranteed-opposite pairs.
+  it.each(KIT_IDS)("%s: ContactBarPreset's ContactDetails value is legible on its band", (kitId) => {
+    const palette = KITS[kitId];
+    const props = SECTION_PRESETS.ContactBarPreset.defaultProps as {
+      _style?: Style;
+      content: Block[];
+    };
+    const ground = resolve(palette, props._style?.bgColorToken, "background");
+    const columns = props.content[0];
+    const contactDetails = (columns.props?.content as Block[]).find((b) => b.type === "ContactDetails")!;
+    const style = (contactDetails.props?._style ?? {}) as Style;
+    const valueToken = (style.valueColorToken as string | undefined) ?? "accent";
+    const fg = resolve(palette, valueToken, "accent");
+
+    expect(contrast(fg, ground)).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 describe("the token pairs presets rely on are genuine opposites", () => {

@@ -75,7 +75,7 @@ export const CONTACT_BAR_PRESET: ContainerBlockProps = {
             child("Text", { text: "Available for 2026 dates." }),
           ]),
         }),
-        child("ContactDetails", {}),
+        child("ContactDetails", { _style: { valueColorToken: "foreground" } }),
         child("Button", { label: "Send a Message", action: "open-contact", align: "right", _style: { cellVerticalAlign: "center" } }),
       ]),
     }),
