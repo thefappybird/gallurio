@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { UploadError, uploadErrorTranslation, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
@@ -38,6 +39,9 @@ export function EditCollectionDialog({
   const [coverPublicId, setCoverPublicId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Per-file upload failures — never collapsed into one message. Cleared on
+  // every new upload attempt and on dialog reopen.
+  const [fileErrors, setFileErrors] = useState<{ fileName: string; message: string }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -99,6 +103,7 @@ export function EditCollectionDialog({
       setCoverPublicId(collection.coverPublicId);
       setSelected(new Set());
       setError(null);
+      setFileErrors([]);
       void loadAll(collection.id);
     }
     // Collection identity drives re-runs; loadAll only changes with the error translator.
@@ -228,31 +233,73 @@ export function EditCollectionDialog({
     }
   }
 
+  // Maps a caught upload/API failure to a per-file display message. Never
+  // collapses to a bare "couldn't add photo" when a specific reason exists.
+  function describeFailure(err: unknown): string {
+    const detail: UploadErrorDetail = err instanceof UploadError ? err.detail : { code: "network_error" };
+    const { code, params } = uploadErrorTranslation(detail);
+    return errMsg(code, params);
+  }
+
+  async function describeApiFailure(res: Response): Promise<string> {
+    const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: UploadErrorDetail };
+    if (body.detail) {
+      const { code, params } = uploadErrorTranslation(body.detail);
+      return errMsg(code, params);
+    }
+    return errMsg(body.error ?? "photo_add_failed");
+  }
+
   function handleFiles(files: FileList | null) {
     if (!files || !colId) return;
-    const valid = Array.from(files).filter((f) => validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES).ok);
-    if (valid.length === 0) return;
+    const valid: File[] = [];
+    const preErrors: { fileName: string; message: string }[] = [];
+    Array.from(files).forEach((f) => {
+      const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
+      if (check.ok) {
+        valid.push(f);
+        return;
+      }
+      const detail: UploadErrorDetail =
+        check.reason === "type_not_accepted"
+          ? { code: "type_not_accepted", mimeType: f.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+          : { code: "file_too_large", actualBytes: f.size, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES };
+      const { code, params } = uploadErrorTranslation(detail);
+      preErrors.push({ fileName: f.name, message: errMsg(code, params) });
+    });
+    setFileErrors(preErrors);
+    if (valid.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     setUploading(true);
     Promise.allSettled(
       valid.map((f) => uploadImage(f, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES }))
     ).then(async (results) => {
-      const ok = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
-      for (const up of ok) {
+      const newErrors: { fileName: string; message: string }[] = [];
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        const fileName = valid[i].name;
+        if (r.status === "rejected") {
+          newErrors.push({ fileName, message: describeFailure(r.reason) });
+          continue;
+        }
         try {
           const res = await fetch(`/api/portfolio/gallery/items`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...up, collectionId: colId }),
+            body: JSON.stringify({ ...r.value, collectionId: colId }),
           });
           if (res.ok) {
             const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
-            setItems((prev) => [...prev, { id: created.id, publicId: up.assetId, thumbUrl: created.thumbUrl, caption: created.caption, altText: null }]);
+            setItems((prev) => [...prev, { id: created.id, publicId: r.value.assetId, thumbUrl: created.thumbUrl, caption: created.caption, altText: null }]);
           } else {
-            setError(errMsg("photo_add_failed"));
+            newErrors.push({ fileName, message: await describeApiFailure(res) });
           }
         } catch {
-          setError(errMsg("photo_add_failed"));
+          newErrors.push({ fileName, message: errMsg("upload_network_error") });
         }
       }
+      setFileErrors((prev) => [...prev, ...newErrors]);
       setUploading(false);
       onChanged();
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -266,12 +313,12 @@ export function EditCollectionDialog({
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceItemIds: picked.map((p) => p.id) }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error(await describeApiFailure(res));
       const data = (await res.json()) as { items: PickerItem[] };
       setItems((prev) => [...prev, ...data.items]);
       onChanged();
-    } catch {
-      setError(errMsg("photo_add_failed"));
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : errMsg("photo_add_failed"));
     }
   }
 
@@ -314,6 +361,15 @@ export function EditCollectionDialog({
           </div>
 
           {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+          {fileErrors.length > 0 && (
+            <ul role="alert" className="flex flex-col gap-0.5 text-xs text-destructive">
+              {fileErrors.map((fe, i) => (
+                <li key={`${fe.fileName}-${i}`}>
+                  <span className="font-medium">{fe.fileName}:</span> {fe.message}
+                </li>
+              ))}
+            </ul>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground"><Loader2Icon className="size-4 animate-spin" aria-hidden /> Loading…</div>

@@ -85,7 +85,10 @@ describe("HeaderPanelDialog", () => {
   });
 
   it("shows a specific error for invalid logo file size", async () => {
-    vi.mocked(uploadAsset).mockResolvedValueOnce({ error: "file_too_large" });
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      error: "file_too_large",
+      detail: { code: "file_too_large", actualBytes: 251 * 1024, maxBytes: 250 * 1024 },
+    });
     const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
 
     const input = container.querySelector("input[type='file']") as HTMLInputElement;
@@ -121,7 +124,14 @@ describe("HeaderPanelDialog", () => {
   });
 
   it("shows inline role=alert error for oversized file (dimension violation)", async () => {
-    vi.mocked(uploadAsset).mockResolvedValueOnce({ error: "dimensions_too_large" });
+    // `dimensions_too_large` lives in AssetValidationError but has no
+    // UploadErrorCode twin — uploads stopped rejecting on pixel dimensions, so
+    // nothing produces it any more. The dialog renders its message off `error`,
+    // not `detail`, so the detail code here is inert filler.
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      error: "dimensions_too_large",
+      detail: { code: "invalid_image" },
+    });
     const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
     const input = container.querySelector("input[type='file']") as HTMLInputElement;
     const file = new File(["img"], "big.png", { type: "image/png" });
@@ -132,7 +142,14 @@ describe("HeaderPanelDialog", () => {
   });
 
   it("rejects SVG with an inline role=alert type error", async () => {
-    vi.mocked(uploadAsset).mockResolvedValueOnce({ error: "type_not_accepted" });
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      error: "type_not_accepted",
+      detail: {
+        code: "type_not_accepted",
+        mimeType: "image/svg+xml",
+        acceptedTypes: ["image/png", "image/jpeg", "image/webp"],
+      },
+    });
     const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
     const input = container.querySelector("input[type='file']") as HTMLInputElement;
     const svgFile = new File(["<svg/>"], "logo.svg", { type: "image/svg+xml" });

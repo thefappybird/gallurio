@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { verifyImageOwnership, imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
 import { validatePhotoMeta, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { photoCheckDetail } from "@/lib/uploads/photoCheckDetail";
 
 export const runtime = "nodejs";
 
@@ -54,17 +55,18 @@ export async function POST(req: Request) {
   }
 
   // Server-side photo validation — format, size, and dimensions.
-  const photoCheck = validatePhotoMeta(
-    {
-      format: parsed.data.format,
-      sizeBytes: parsed.data.sizeBytes,
-      width: parsed.data.width,
-      height: parsed.data.height,
-    },
-    PORTFOLIO_PHOTO_MAX_BYTES
-  );
+  const photoMeta = {
+    format: parsed.data.format,
+    sizeBytes: parsed.data.sizeBytes,
+    width: parsed.data.width,
+    height: parsed.data.height,
+  };
+  const photoCheck = validatePhotoMeta(photoMeta, PORTFOLIO_PHOTO_MAX_BYTES);
   if (!photoCheck.ok) {
-    return NextResponse.json({ error: photoCheck.reason }, { status: 400 });
+    return NextResponse.json(
+      { error: photoCheck.reason, detail: photoCheckDetail(photoCheck.reason, photoMeta, PORTFOLIO_PHOTO_MAX_BYTES) },
+      { status: 400 }
+    );
   }
 
   await connectDB();

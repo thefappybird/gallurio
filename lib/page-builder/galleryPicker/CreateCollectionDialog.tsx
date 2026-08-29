@@ -11,10 +11,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { UploadError, describeUploadErrorEnglish, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import type { PickerItem } from "./types";
+
+/** Marks a message as already curated (safe to show verbatim), distinguishing
+ *  it from an arbitrary network/fetch error whose raw text should not reach the UI. */
+class DisplayError extends Error {}
 
 // Plain strings: Puck editor chrome is intentionally English-only.
 const L = {
@@ -28,9 +33,6 @@ const L = {
   create: "Create collection",
   creating: "Creating…",
   cancel: "Cancel",
-  errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errSize: "Each photo must be under 15 MB.",
-  errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
   errCreate: "Could not create the collection. Please try again.",
   removePhoto: "Remove photo",
@@ -71,12 +73,15 @@ export function CreateCollectionDialog({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Per-file upload failures — never collapsed into one message.
+  const [fileErrors, setFileErrors] = useState<{ fileName: string; message: string }[]>([]);
 
   function reset() {
     setName("");
     setImages([]);
     setPicked([]);
     setError(null);
+    setFileErrors([]);
     createdIdRef.current = null;
   }
 
@@ -89,36 +94,43 @@ export function CreateCollectionDialog({
   function handleFiles(files: FileList | null) {
     if (!files) return;
     const valid: File[] = [];
-    let typeErr = false;
-    let sizeErr = false;
+    const preErrors: { fileName: string; message: string }[] = [];
     Array.from(files).forEach((f) => {
       const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
-      if (!check.ok) {
-        if (check.reason === "type_not_accepted") typeErr = true;
-        else sizeErr = true;
-      } else valid.push(f);
+      if (check.ok) {
+        valid.push(f);
+        return;
+      }
+      const detail: UploadErrorDetail =
+        check.reason === "type_not_accepted"
+          ? { code: "type_not_accepted", mimeType: f.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+          : { code: "file_too_large", actualBytes: f.size, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES };
+      preErrors.push({ fileName: f.name, message: describeUploadErrorEnglish(detail) });
     });
-    const topError = typeErr ? L.errType : sizeErr ? L.errSize : null;
+    setFileErrors(preErrors);
     if (valid.length === 0) {
-      if (topError) setError(topError);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     setUploading(true);
-    setError(topError);
     Promise.allSettled(
       valid.map((file) =>
         uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
       )
     ).then((results) => {
       const ok: LocalImage[] = [];
-      let dimErr = false;
-      for (const r of results) {
-        if (r.status === "fulfilled") ok.push(r.value);
-        else if ((r.reason instanceof Error ? r.reason.message : "") === "dimension_too_small") dimErr = true;
-      }
+      const newErrors: { fileName: string; message: string }[] = [];
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled") {
+          ok.push(r.value);
+          return;
+        }
+        const detail: UploadErrorDetail = r.reason instanceof UploadError ? r.reason.detail : { code: "network_error" };
+        newErrors.push({ fileName: valid[i].name, message: describeUploadErrorEnglish(detail) });
+      });
       setImages((prev) => [...prev, ...ok]);
       setUploading(false);
-      setError(dimErr ? L.errDim : ok.length === 0 ? L.errUpload : null);
+      setFileErrors((prev) => [...prev, ...newErrors]);
     });
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -137,7 +149,10 @@ export function CreateCollectionDialog({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: name.trim(), items: images }),
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { detail?: UploadErrorDetail };
+          throw new DisplayError(body.detail ? describeUploadErrorEnglish(body.detail) : L.errCreate);
+        }
         const created = await res.json();
         newId = created.id as string;
         createdIdRef.current = newId;
@@ -161,8 +176,8 @@ export function CreateCollectionDialog({
       }
       reset();
       onCreated();
-    } catch {
-      setError(L.errCreate);
+    } catch (err) {
+      setError(err instanceof DisplayError ? err.message : L.errCreate);
     } finally {
       setSaving(false);
     }
@@ -290,6 +305,15 @@ export function CreateCollectionDialog({
             <p role="alert" className="text-xs text-destructive">
               {error}
             </p>
+          )}
+          {fileErrors.length > 0 && (
+            <ul role="alert" className="flex flex-col gap-0.5 text-xs text-destructive">
+              {fileErrors.map((fe, i) => (
+                <li key={`${fe.fileName}-${i}`}>
+                  <span className="font-medium">{fe.fileName}:</span> {fe.message}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 

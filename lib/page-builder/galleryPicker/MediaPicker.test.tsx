@@ -604,6 +604,115 @@ describe("MediaPicker", () => {
     });
   });
 
+  describe("upload errors (per-file)", () => {
+    /** Fetch router that also handles gallery-item creation POST. */
+    function routeWithCreate(url: string, init?: RequestInit) {
+      if (url === "/api/portfolio/gallery/items" && (init as RequestInit)?.method === "POST") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ id: "new-id", thumbUrl: "https://x/new-thumb.jpg", caption: null }),
+        } as Response);
+      }
+      return routeFetch(url);
+    }
+
+    it("mixed batch: reports the failing file by name/reason and still adds the succeeding one", async () => {
+      const { UploadError } = await import("@/lib/uploads/uploadError");
+      vi.mocked(uploadImage)
+        .mockRejectedValueOnce(
+          new UploadError({ code: "file_too_large", actualBytes: 20_000_000, maxBytes: 15_000_000 })
+        )
+        .mockResolvedValueOnce({
+          assetId: "new-asset-id",
+          url: "https://x/new.jpg",
+          width: 800,
+          height: 600,
+          format: "jpeg",
+          sizeBytes: 10000,
+        });
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => routeWithCreate(u, init));
+
+      const onChange = vi.fn();
+      renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const bigFile = new File(["a"], "toobig.jpg", { type: "image/jpeg" });
+      const okFile = new File(["b"], "ok.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [bigFile, okFile] } });
+
+      // Failing file surfaces by name with the real numbers, not a generic message.
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/toobig\.jpg/);
+      expect(alert.textContent).toMatch(/19\.1 MB/); // 20,000,000 bytes
+      expect(alert.textContent).toMatch(/14\.3 MB/); // 15,000,000 bytes
+      // Succeeding file was still added to the selection.
+      await waitFor(() =>
+        expect(onChange).toHaveBeenCalledWith([
+          { id: "new-id", publicId: "new-asset-id", width: 800, height: 600 },
+        ])
+      );
+    });
+
+    it("client-side type rejection surfaces the specific mime type and accepted formats", async () => {
+      const onChange = vi.fn();
+      renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const badFile = new File(["a"], "clip.gif", { type: "image/gif" });
+      fireEvent.change(fileInput, { target: { files: [badFile] } });
+
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/clip\.gif/);
+      expect(alert.textContent).toMatch(/GIF/);
+      expect(uploadImage).not.toHaveBeenCalled();
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("create-POST failure reads .detail instead of showing a bare HTTP status", async () => {
+      vi.mocked(uploadImage).mockResolvedValue({
+        assetId: "new-asset-id",
+        url: "https://x/new.jpg",
+        width: 400,
+        height: 400,
+        format: "jpeg",
+        sizeBytes: 5000,
+      });
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+        if (u === "/api/portfolio/gallery/items" && (init as RequestInit)?.method === "POST") {
+          return Promise.resolve({
+            ok: false,
+            status: 422,
+            json: async () => ({
+              error: "dimension_too_small",
+              detail: { code: "dimension_too_small", actualWidth: 400, actualHeight: 400, minShortSide: 600 },
+            }),
+          } as Response);
+        }
+        return routeFetch(u);
+      });
+
+      const onChange = vi.fn();
+      renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const smallFile = new File(["a"], "small.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [smallFile] } });
+
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/small\.jpg/);
+      expect(alert.textContent).toMatch(/400.*400/);
+      expect(alert.textContent).toMatch(/600/);
+      expect(alert.textContent).not.toMatch(/HTTP/);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
   describe("edit alt text trigger", () => {
     it("renders with an accessible name and opens the dialog without toggling selection", async () => {
       const onChange = vi.fn();

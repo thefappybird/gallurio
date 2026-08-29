@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { UploadError, describeUploadErrorEnglish, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { usePickerData } from "./usePickerData";
 import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
@@ -61,10 +62,6 @@ const L = {
   uploadHere: "Upload photo",
   uploading: "Uploading…",
   dropActive: "Drop to upload",
-  errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errSize: "Each photo must be under 15 MB.",
-  errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
-  errUpload: "Some photos failed to upload.",
 };
 
 const ALL_PHOTOS_ID = "all";
@@ -164,7 +161,9 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // Upload state (scoped to the open collection / all feed).
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  // Per-file upload failures — never collapsed into one message. Cleared on
+  // every new upload attempt and whenever the view (open/collection) changes.
+  const [fileErrors, setFileErrors] = useState<{ fileName: string; message: string }[]>([]);
 
   // Bulk "select all from collection" state (footer button + tile checkmark).
   const [bulkLoadingId, setBulkLoadingId] = useState<string | null>(null);
@@ -206,7 +205,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs the `open` prop (external state) back to a fresh collections view on each open
       setNav({ kind: "collections" });
       setFeed(EMPTY_FEED);
-      setUploadError(null);
+      setFileErrors([]);
       setBulkError(null);
       fetchToken.current++; // invalidate any in-flight feed fetch from a prior open
     }
@@ -261,7 +260,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     fetchToken.current++; // invalidate any in-flight fetch from the prior view
     setNav({ kind: "photos", id, name });
     setFeed(EMPTY_FEED);
-    setUploadError(null);
+    setFileErrors([]);
     void fetchFeed(id, null);
   }
 
@@ -412,20 +411,38 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // Upload (into the open collection, or standalone when on "All photos")
   // -------------------------------------------------------------------------
 
+  // Maps a caught upload/API failure to a per-file display message. Never
+  // collapses to a bare "couldn't add photo" when a specific reason exists.
+  function describeFailure(err: unknown): string {
+    const detail: UploadErrorDetail = err instanceof UploadError ? err.detail : { code: "network_error" };
+    return describeUploadErrorEnglish(detail);
+  }
+
+  async function describeApiFailure(res: Response): Promise<string> {
+    const body = (await res.json().catch(() => ({}))) as { detail?: UploadErrorDetail };
+    const detail: UploadErrorDetail = body.detail ?? { code: "unknown" };
+    return describeUploadErrorEnglish(detail);
+  }
+
   async function handleFiles(files: FileList | null) {
     if (!files || nav.kind !== "photos") return;
     const valid: File[] = [];
-    let typeErr = false;
-    let sizeErr = false;
+    const preErrors: { fileName: string; message: string }[] = [];
     Array.from(files).forEach((f) => {
       const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
-      if (!check.ok) {
-        if (check.reason === "type_not_accepted") typeErr = true;
-        else sizeErr = true;
-      } else valid.push(f);
+      if (check.ok) {
+        valid.push(f);
+        return;
+      }
+      const detail: UploadErrorDetail =
+        check.reason === "type_not_accepted"
+          ? { code: "type_not_accepted", mimeType: f.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+          : { code: "file_too_large", actualBytes: f.size, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES };
+      preErrors.push({ fileName: f.name, message: describeUploadErrorEnglish(detail) });
     });
+    setFileErrors(preErrors);
     if (valid.length === 0) {
-      setUploadError(typeErr ? L.errType : sizeErr ? L.errSize : null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
@@ -433,22 +450,21 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     // owner navigates away does not prepend the new item into the wrong feed.
     const token = fetchToken.current;
     setUploading(true);
-    setUploadError(null);
     const results = await Promise.allSettled(
       valid.map((file) =>
         uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
       )
     );
 
-    let dimErr = false;
-    let generalErr = false;
+    const newErrors: { fileName: string; message: string }[] = [];
     const targetCollection = nav.id === ALL_PHOTOS_ID ? undefined : nav.id;
     const createdItems: PickerItem[] = [];
 
-    for (const r of results) {
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      const fileName = valid[i].name;
       if (r.status === "rejected") {
-        if ((r.reason instanceof Error ? r.reason.message : "") === "dimension_too_small") dimErr = true;
-        else generalErr = true;
+        newErrors.push({ fileName, message: describeFailure(r.reason) });
         continue;
       }
       try {
@@ -457,7 +473,10 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...r.value, collectionId: targetCollection }),
         });
-        if (!createRes.ok) throw new Error(`HTTP ${createRes.status}`);
+        if (!createRes.ok) {
+          newErrors.push({ fileName, message: await describeApiFailure(createRes) });
+          continue;
+        }
         const created = (await createRes.json()) as { id: string; thumbUrl: string; caption: string | null };
         const item: PickerItem = {
           id: created.id,
@@ -478,13 +497,12 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         }
         createdItems.push(item);
       } catch {
-        generalErr = true;
+        newErrors.push({ fileName, message: describeUploadErrorEnglish({ code: "network_error" }) });
       }
     }
 
     setUploading(false);
-    if (dimErr) setUploadError(L.errDim);
-    else if (generalErr) setUploadError(L.errUpload);
+    setFileErrors((prev) => [...prev, ...newErrors]);
     if (fileInputRef.current) fileInputRef.current.value = "";
     // Bust the cache for the affected collection so re-opening it fetches fresh data.
     if (targetCollection) {
@@ -686,7 +704,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               uploadSlot={
                 <UploadZone
                   uploading={uploading}
-                  error={uploadError}
+                  errors={fileErrors}
                   inputRef={fileInputRef}
                   onFiles={handleFiles}
                 />
@@ -989,12 +1007,12 @@ function PhotoGrid({
 
 function UploadZone({
   uploading,
-  error,
+  errors,
   inputRef,
   onFiles,
 }: {
   uploading: boolean;
-  error: string | null;
+  errors: { fileName: string; message: string }[];
   inputRef: React.RefObject<HTMLInputElement | null>;
   onFiles: (files: FileList | null) => void;
 }) {
@@ -1045,10 +1063,14 @@ function UploadZone({
         tabIndex={-1}
         onChange={(e) => onFiles(e.target.files)}
       />
-      {error && (
-        <p role="alert" className="mt-1 text-xs text-destructive">
-          {error}
-        </p>
+      {errors.length > 0 && (
+        <ul role="alert" className="mt-1 flex flex-col gap-0.5 text-xs text-destructive">
+          {errors.map((fe, i) => (
+            <li key={`${fe.fileName}-${i}`}>
+              <span className="font-medium">{fe.fileName}:</span> {fe.message}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

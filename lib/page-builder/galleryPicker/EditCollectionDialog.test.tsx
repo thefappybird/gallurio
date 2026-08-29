@@ -3,6 +3,8 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { EditCollectionDialog } from "./EditCollectionDialog";
 import { __clearPickerDataCache } from "./usePickerData";
+import { UploadError } from "@/lib/uploads/uploadError";
+import { PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 
 vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
@@ -217,5 +219,82 @@ describe("EditCollectionDialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /edit alt text for A/i }));
     expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
+  });
+
+  it("reports a per-file error for a file rejected before upload (unsupported type), instead of silently dropping it", async () => {
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const badFile = new File(["data"], "clip.gif", { type: "image/gif" });
+    fireEvent.change(fileInput, { target: { files: [badFile] } });
+
+    const alert = await screen.findByText(/clip\.gif/i);
+    expect(alert.closest("li")?.textContent).toMatch(/gif/i);
+    // Never uploaded — pre-validation rejected it before hitting the network.
+    expect(uploadImage).not.toHaveBeenCalled();
+  });
+
+  it("reports per-file errors on a mixed batch — some files succeed, one fails at upload, one fails type validation", async () => {
+    vi.mocked(uploadImage).mockImplementation(async (file: File) => {
+      if (file.name === "bad.png") throw new UploadError({ code: "file_too_large", actualBytes: 20_000_000, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES });
+      return { assetId: `asset-${file.name}`, url: `https://x/${file.name}`, width: 900, height: 600, format: "jpeg", sizeBytes: 20000 };
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", thumbUrl: "https://x/up-thumb.jpg", caption: null }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const good = new File(["data"], "good.jpg", { type: "image/jpeg" });
+    const tooBig = new File(["data"], "bad.png", { type: "image/png" });
+    const wrongType = new File(["data"], "clip.gif", { type: "image/gif" });
+    fireEvent.change(fileInput, { target: { files: [good, tooBig, wrongType] } });
+
+    // The one that fails validation reports immediately.
+    await screen.findByText(/clip\.gif/i);
+    // The one that fails upload reports once the batch settles.
+    const badLine = await screen.findByText(/bad\.png/i);
+    expect(badLine.closest("li")?.textContent).toMatch(/20\.0 MB|too large|15/i);
+    // Both are visible together — not collapsed into one message.
+    expect(screen.getByText(/clip\.gif/i)).toBeTruthy();
+    expect(screen.getByText(/bad\.png/i)).toBeTruthy();
+    // The good file still succeeded despite the other two failing.
+    await waitFor(() => expect(mockFetch.mock.calls.some(([u, i]) =>
+      String(u) === "/api/portfolio/gallery/items" && (i as RequestInit)?.method === "POST"
+    )).toBe(true));
+  });
+
+  it("shows the server's specific reason (dimension_too_small) when the create-item API rejects an uploaded photo", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "small-asset", url: "https://x/small.jpg", width: 300, height: 300, format: "jpeg", sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({
+            error: "dimension_too_small",
+            detail: { code: "dimension_too_small", actualWidth: 300, actualHeight: 300, minShortSide: 600 },
+          }),
+        } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["data"], "small.jpg", { type: "image/jpeg" })] } });
+
+    const line = await screen.findByText(/small\.jpg/i);
+    // The rendered message must contain the actual dimensions, not a generic fallback.
+    expect(line.closest("li")?.textContent).toMatch(/300/);
   });
 });

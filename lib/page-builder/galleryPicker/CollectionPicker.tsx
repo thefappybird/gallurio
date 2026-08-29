@@ -3,10 +3,15 @@
 import { useRef, useState } from "react";
 import { ImagePlusIcon, Loader2Icon, PlusIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { UploadError, describeUploadErrorEnglish, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { usePickerData } from "./usePickerData";
 import type { PickerCollection } from "./types";
+
+/** Marks a message as already curated (safe to show verbatim), distinguishing
+ *  it from an arbitrary network/fetch error whose raw text should not reach the UI. */
+class DisplayError extends Error {}
 
 // ---------------------------------------------------------------------------
 // Labels — plain strings by choice, not by constraint. Puck portals its field
@@ -28,10 +33,6 @@ const L = {
   uploading: "Uploading…",
   create: "Create collection",
   creating: "Creating…",
-  errorPhotoType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errorPhotoSize: "Each photo must be under 15 MB.",
-  errorPhotoDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
-  errorUpload: "Some photos failed to upload.",
   errorCreate: "Could not create the collection. Please try again.",
   removePhoto: "Remove photo",
   selected: "Selected",
@@ -46,9 +47,19 @@ type LocalImage = {
   sizeBytes?: number;
 };
 
+type FileError = { fileName: string; message: string };
+
 type CreateFormState =
   | { open: false }
-  | { open: true; name: string; images: LocalImage[]; uploading: boolean; saving: boolean; error: string | null };
+  | {
+      open: true;
+      name: string;
+      images: LocalImage[];
+      uploading: boolean;
+      saving: boolean;
+      error: string | null;
+      fileErrors: FileError[];
+    };
 
 type Props = {
   /** Current collectionId value (empty string = none selected). */
@@ -69,27 +80,27 @@ export function CollectionPicker({ value, onChange }: Props) {
   function handleFiles(files: FileList | null) {
     if (!files || !form.open) return;
     const valid: File[] = [];
-    let typeErr = false;
-    let sizeErr = false;
+    const preErrors: FileError[] = [];
 
     Array.from(files).forEach((f) => {
       const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
-      if (!check.ok) {
-        if (check.reason === "type_not_accepted") typeErr = true;
-        else sizeErr = true;
-      } else {
+      if (check.ok) {
         valid.push(f);
+        return;
       }
+      const detail: UploadErrorDetail =
+        check.reason === "type_not_accepted"
+          ? { code: "type_not_accepted", mimeType: f.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+          : { code: "file_too_large", actualBytes: f.size, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES };
+      preErrors.push({ fileName: f.name, message: describeUploadErrorEnglish(detail) });
     });
 
-    const topError = typeErr ? L.errorPhotoType : sizeErr ? L.errorPhotoSize : null;
-    if (topError && valid.length === 0) {
-      setForm((f) => f.open ? { ...f, error: topError } : f);
+    setForm((f) => (f.open ? { ...f, fileErrors: preErrors } : f));
+    if (valid.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-
-    if (valid.length === 0) return;
-    setForm((f) => f.open ? { ...f, uploading: true, error: topError } : f);
+    setForm((f) => (f.open ? { ...f, uploading: true } : f));
 
     Promise.allSettled(
       valid.map((file) =>
@@ -97,22 +108,18 @@ export function CollectionPicker({ value, onChange }: Props) {
       )
     ).then((results) => {
       const ok: LocalImage[] = [];
-      let dimErr = false;
-      for (const r of results) {
-        if (r.status === "fulfilled") ok.push(r.value);
-        else {
-          const reason = r.reason instanceof Error ? r.reason.message : "";
-          if (reason === "dimension_too_small") dimErr = true;
+      const newErrors: FileError[] = [];
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled") {
+          ok.push(r.value);
+          return;
         }
-      }
+        const detail: UploadErrorDetail = r.reason instanceof UploadError ? r.reason.detail : { code: "network_error" };
+        newErrors.push({ fileName: valid[i].name, message: describeUploadErrorEnglish(detail) });
+      });
       setForm((f) =>
         f.open
-          ? {
-              ...f,
-              uploading: false,
-              images: [...f.images, ...ok],
-              error: dimErr ? L.errorPhotoDim : ok.length === 0 ? L.errorUpload : f.error,
-            }
+          ? { ...f, uploading: false, images: [...f.images, ...ok], fileErrors: [...f.fileErrors, ...newErrors] }
           : f
       );
     });
@@ -137,13 +144,17 @@ export function CollectionPicker({ value, onChange }: Props) {
           items: form.images,
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { detail?: UploadErrorDetail };
+        throw new DisplayError(body.detail ? describeUploadErrorEnglish(body.detail) : L.errorCreate);
+      }
       const { id } = (await res.json()) as { id: string };
       onChange(id);
       setForm({ open: false });
       retry(); // refresh picker data
-    } catch {
-      setForm((f) => f.open ? { ...f, saving: false, error: L.errorCreate } : f);
+    } catch (err) {
+      const message = err instanceof DisplayError ? err.message : L.errorCreate;
+      setForm((f) => f.open ? { ...f, saving: false, error: message } : f);
     }
   }
 
@@ -347,6 +358,15 @@ export function CollectionPicker({ value, onChange }: Props) {
               {form.error}
             </p>
           )}
+          {form.fileErrors.length > 0 && (
+            <ul role="alert" className="flex flex-col gap-0.5 text-xs text-destructive">
+              {form.fileErrors.map((fe, i) => (
+                <li key={`${fe.fileName}-${i}`}>
+                  <span className="font-medium">{fe.fileName}:</span> {fe.message}
+                </li>
+              ))}
+            </ul>
+          )}
 
           <button
             type="button"
@@ -368,7 +388,7 @@ export function CollectionPicker({ value, onChange }: Props) {
         <button
           type="button"
           onClick={() =>
-            setForm({ open: true, name: "", images: [], uploading: false, saving: false, error: null })
+            setForm({ open: true, name: "", images: [], uploading: false, saving: false, error: null, fileErrors: [] })
           }
           className="inline-flex min-h-11 items-center gap-2 border border-dashed border-border px-3 text-sm text-muted-foreground hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >

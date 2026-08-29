@@ -173,6 +173,23 @@ describe("POST /api/portfolio/gallery/collections", () => {
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
 
+  it("identifies which starter item failed via assetId, and attaches format detail", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Mixed Formats",
+        items: [
+          { assetId: "img_ok", url: "https://imagedelivery.net/hash/img_ok/public", format: "jpg", width: 1200, height: 800 },
+          { assetId: "img_bad", url: "https://imagedelivery.net/hash/img_bad/public", format: "gif", width: 1200, height: 800 },
+        ],
+      })
+    )) as unknown as MockResp;
+    expect((res.body as { assetId: string }).assetId).toBe("img_bad");
+    expect((res.body as { detail: Record<string, unknown> }).detail).toMatchObject({
+      code: "format_not_accepted",
+      format: "gif",
+    });
+  });
+
   it("rejects a starter item over the 15 MB portfolio cap — file_too_large", async () => {
     const res = (await POST(
       makeReq({
@@ -215,6 +232,21 @@ describe("POST /api/portfolio/gallery/collections", () => {
     expect(res.status).toBe(400);
     expect((res.body as { error: string }).error).toBe("dimension_too_small");
     expect(await GalleryCollection.countDocuments({})).toBe(0);
+  });
+
+  it("attaches the actual dimensions and minimum as detail on dimension_too_small", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Small Image",
+        items: [{ assetId: "img_small", url: "https://imagedelivery.net/hash/img_small/public", format: "jpg", width: 400, height: 800 }],
+      })
+    )) as unknown as MockResp;
+    expect((res.body as { detail: Record<string, unknown> }).detail).toMatchObject({
+      code: "dimension_too_small",
+      actualWidth: 400,
+      actualHeight: 800,
+      minShortSide: 600,
+    });
   });
 
   it("accepts a starter item with dimensions exactly 600×600", async () => {
