@@ -12,9 +12,10 @@
  * workspace is left as found.
  */
 import { test, expect, type Page, type Locator } from "@playwright/test";
-import { openEditorWithDraft } from "./helpers";
+import { openEditorWithDraft, contrastRatio, readButtonPaint } from "./helpers";
 
 const DRAFT_NAME = "Editorial Summer Refresh";
+const PRESETS = ["Minimal", "Editorial", "Luxury", "Bold", "Romantic", "Modern"] as const;
 
 function canvasOf(page: Page): Locator {
   return page.locator("[data-puck-preview]").first();
@@ -151,5 +152,149 @@ test.describe("Gallery blocks: padding controls float the real render default", 
     // Order is Top, Right, Bottom, Left (DimensionInput rows in PaddingControls).
     expect(placeholders[0], "Top padding placeholder floats the real 4rem default").toBe("64");
     expect(placeholders[1], "Right padding placeholder floats the real 1.5rem default").toBe("24");
+  });
+});
+
+const SHELL = "[data-testid='portfolio-editor-shell']";
+
+/** Resolve --pf-color-bg / --pf-color-fg the same way preset-canvas-parity does. */
+async function readBrandTokens(page: Page): Promise<{ brandBg: string; appFg: string }> {
+  return page.evaluate((shellSel) => {
+    const shell = document.querySelector(shellSel) as HTMLElement;
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none";
+    shell.appendChild(probe);
+    const read = (value: string) => {
+      probe.style.color = value;
+      const computed = getComputedStyle(probe).color;
+      probe.style.color = "";
+      return computed;
+    };
+    const brandBg = read("var(--pf-color-bg)");
+    const appFg = read("var(--foreground)");
+    probe.remove();
+    return { brandBg, appFg };
+  }, SHELL);
+}
+
+async function openThemePanel(page: Page): Promise<void> {
+  await page.locator('button[aria-label="Theme"][title="Theme"]').first().click();
+  await page
+    .getByRole("button", { name: "Apply theme: Minimal" })
+    .waitFor({ state: "visible", timeout: 15_000 });
+}
+
+async function applyPreset(page: Page, name: string): Promise<void> {
+  const tile = page.getByRole("button", { name: `Apply theme: ${name}` });
+  await tile.scrollIntoViewIfNeeded();
+  await tile.click();
+  await expect(tile).toHaveAttribute("aria-pressed", "true", { timeout: 10_000 });
+  await page.waitForTimeout(300);
+}
+
+// Puck ships CSS-module class names; match on the stable hashed prefix. The
+// drawer's expand state lives on the category root's class (`--isExpanded`),
+// not on the clickable title as aria-expanded.
+const CATEGORY_TITLE = '[class*="_ComponentList-title_"]';
+const CATEGORY_ROOT = '[class*="_ComponentList_"]';
+
+function categoryFor(page: Page, title: string): Locator {
+  return page
+    .locator(CATEGORY_ROOT)
+    .filter({ has: page.locator(CATEGORY_TITLE).filter({ hasText: new RegExp(`^${title}$`, "i") }) })
+    .first();
+}
+
+async function expandDrawerGroup(page: Page, title: string): Promise<void> {
+  const category = categoryFor(page, title);
+  await category.waitFor({ state: "visible", timeout: 15_000 });
+  if ((await category.getAttribute("class"))?.includes("--isExpanded")) return;
+  await category.locator(CATEGORY_TITLE).first().click();
+  await page.waitForTimeout(250);
+}
+
+/** Puck's dnd-kit ghost-copy drawer item + activation-threshold drag (see the portfolio-testing skill). */
+async function dragDrawerItemToCanvas(page: Page, itemName: string): Promise<void> {
+  const item = page
+    .locator('[class*="_DrawerItem-name_"]')
+    .filter({ hasText: new RegExp(`^${itemName}$`) })
+    .first();
+  await item.scrollIntoViewIfNeeded();
+  const source = await item.boundingBox();
+  if (!source) throw new Error(`drawer item "${itemName}" has no bounding box`);
+
+  // [data-puck-preview] is sized to its full CONTENT height, not the visible
+  // viewport — its scrollable ancestor (`_PuckCanvas-root_`, `overflow: auto`)
+  // is what's actually clipped to the screen. Dropping against the preview's
+  // own (unclipped) bounding box computes a point far off the real viewport;
+  // use the scrollable ancestor's box instead.
+  const viewport = page.locator('[class*="_PuckCanvas-root_"]').first();
+  const target = await viewport.boundingBox();
+  if (!target) throw new Error("canvas viewport has no bounding box");
+
+  const bx = source.x + source.width / 2;
+  const by = source.y + source.height / 2;
+  const cx = target.x + target.width / 2;
+  const cy = target.y + target.height - 40;
+
+  await page.mouse.move(bx, by);
+  await page.mouse.down();
+  await page.mouse.move(bx + 6, by + 6);
+  await page.waitForTimeout(60);
+  await page.mouse.move(cx, cy, { steps: 18 });
+  await page.mouse.move(cx, cy + 4, { steps: 4 });
+  await page.mouse.up();
+}
+
+test.describe("FooterStatementPreset: link buttons stay legible on a primary band", () => {
+  test("every preset keeps the footer nav links legible (were 1.00:1 before the fix)", async ({
+    page,
+  }) => {
+    test.setTimeout(300_000);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openEditorWithDraft(page, DRAFT_NAME);
+
+    const canvas = canvasOf(page);
+    await canvas.waitFor({ state: "visible", timeout: 30_000 });
+
+    await expandDrawerGroup(page, "Footer");
+    await dragDrawerItemToCanvas(page, "Closing statement");
+
+    const statement = canvas.getByText("Let's make something worth keeping.", { exact: true });
+    await expect(statement, "dragging the Closing statement preset inserted it into the canvas").toHaveCount(
+      1,
+      { timeout: 15_000 }
+    );
+    await statement.scrollIntoViewIfNeeded();
+
+    const homeLink = canvas.locator('a[role="button"]').filter({ hasText: /^Home$/ });
+    const galleryLink = canvas.locator('a[role="button"]').filter({ hasText: /^Gallery$/ });
+    await homeLink.waitFor({ state: "visible", timeout: 15_000 });
+    await galleryLink.waitFor({ state: "visible", timeout: 15_000 });
+
+    await openThemePanel(page);
+
+    for (const preset of PRESETS) {
+      await applyPreset(page, preset);
+      const { brandBg, appFg } = await readBrandTokens(page);
+
+      for (const [label, link] of [
+        ["Home", homeLink],
+        ["Gallery", galleryLink],
+      ] as const) {
+        const paint = await readButtonPaint(link);
+        expect(paint.color, `${preset}: ${label} link is not the app-shell foreground`).not.toBe(
+          appFg
+        );
+        expect(paint.color, `${preset}: ${label} link paints brand background on its primary band`).toBe(
+          brandBg
+        );
+        const contrast = contrastRatio(paint.labelRgb, paint.effectiveRgb);
+        expect(
+          contrast,
+          `${preset}: ${label} link legible on its band (${contrast.toFixed(2)}:1)`
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
   });
 });
