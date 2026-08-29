@@ -49,6 +49,29 @@ plumbing (`display`, `position`, `overflow`, internal `max-width`, aspect ratios
 - `colSpan`/`rowSpan` (a grid child of Columns) → `grid-column/grid-row: span N`
   (`styleToolkit.ts`). They need a real multi-track grid to be visible.
 
+## Section presets & the grouped drawer
+Presets are registered in `blocks/sectionPresets.ts` (the registry: group, i18n keys,
+dependencies, defaultProps) with compositions one file per group under `blocks/presets/`.
+Derive from the registry — never hand-list preset keys again. Durable rules, the frozen
+component keys, and the contrast contract live in `docs/modules/portfolio-and-media.md`.
+
+Puck behaviours that cost real debugging time:
+- **A category with no `defaultExpanded` renders EXPANDED.** Setting it `true` on one group
+  is not enough — set it explicitly on every group, or all 11 come up open. A unit assertion
+  of `not.toBe(true)` passes on `undefined` and will not catch this; assert `toBe(false)`.
+- **Each drawer item renders twice** — the draggable plus a `Drawer-draggableBg` ghost — so
+  every `_DrawerItem*` selector matches 2x per item. Count distinct names in e2e.
+- **The left side bar is not rendered at 375px at all.** The editor is a desktop surface;
+  browser-verify the drawer at 768/1280 only.
+- Category titles are uppercased in CSS and `innerText` reflects it — compare
+  case-insensitively.
+- Puck auto-creates an **"Other"** category for any registered component listed in no
+  category (currently just the internal `ContainerAnchor`).
+
+A section's `_style.textColorToken` cascades to unstyled nested Heading/Text via the
+`--pf-block-text-color` custom property `resolveBlockStyle` publishes — so a contrast band
+sets the token once on the section instead of on every child. Buttons do NOT read it.
+
 ## Container anchor invariant (crash trap)
 A `Container` gets an injected `ContainerAnchor` child (id `${containerId}--anchor`) via
 `resolveContainerData` in `editorConfig.tsx`. **The anchor id MUST carry the `--anchor`

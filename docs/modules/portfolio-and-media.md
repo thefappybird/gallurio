@@ -27,6 +27,37 @@ Branding/SEO entered outside the block editor — the first-visit story-prompt d
 
 - **Workspace logo**: editable from `settings/public-page` (stored on `publicPage.settingsDraft.logo`, promoted to `publicPage.header` on publish). Publish propagates *and* clears the staged header logo independently of the draft's `doc.header`, so a null/migrated draft header can't skip the promotion and strand the live logo.
 
+## Section presets
+
+The insertable section library is **11 groups x 3 variants = 33 registered preset components**: Hero, About, Services, Call to action, Contact, Gallery grid, Gallery masonry, Featured work, Gallery landing, Video, Footer. Every preset is a `Container` whose slot is pre-filled with ordinary manual blocks, so each nested piece stays individually selectable, movable, and editable — never a monolithic section renderer whose text cannot be reached.
+
+- **`lib/page-builder/blocks/sectionPresets.ts` is the registry**, and the only place these facts live: each preset's group, its localized label/description keys, its content dependencies (`gallery` / `collections` / `contact` / `video`), and its `defaultProps`. `puckConfig`, `createEditorConfig`, the drawer categories, `PRESET_BLOCK_KEYS`, `fillBlockDefaults`, and `StyleToolkitField`'s container-type sets all derive from it. Do not reintroduce a hand-maintained parallel list — the two gaps that motivated the registry (`VideoPreset` missing from `fillBlockDefaults` and from both toolkit sets) were both drift between copies.
+- Compositions live one file per group under `blocks/presets/`, with the shared band recipes in `presets/_helpers.ts`.
+- **The ten original component keys are frozen** (`HeroPreset`, `AboutPreset`, `ServicesPreset`, `CtaPreset`, `ContactPreset`, `GalleryGridPreset`, `GalleryMasonryPreset`, `FeaturedWorkPreset`, `GalleryLandingPreset`, `VideoPreset`) — published pages reference them. Their display labels are variant names now, because the group name is the category heading above them; the keys must not be renamed or removed.
+- Footer is an **insertable section preset**, not a global field persisted separately from Puck data. Public pages remain exactly Home, Gallery, and Contact.
+- Gallery layout belongs in `_style.galleryColumns` / `_style.galleryGap`. Top-level `columns`, `gap`, `collectionId`, and `maxItems` props on `GalleryGrid` / `GalleryMasonry` / `FeaturedWork` are stale and are asserted absent.
+- `ContainerBlock` caps its slot at `max-width: 80rem`. The only way a preset breaks the page measure is a `Columns` child with `columns: 1, overallWidth: "full"`.
+- Every `Columns` inside a preset sets an explicit `minHeight`. `columnsDefaultProps.minHeight` is `"320px"` — a row that inherits it grows dead space.
+
+### Contrast is a correctness property, not a style choice
+
+`blocks/presetContrast.test.ts` measures all 33 presets against all 6 committed brand kits (WCAG 2.1), modelling `resolveBlockStyle` and every `ButtonBlock` branch, plus the scrim case that only appears once an owner adds a background image. It is coupled to those renderers on purpose: if either changes, this test changes with it.
+
+Two token pairs are guaranteed opposites in every kit, and the preset recipes are built on them:
+
+- `foreground` / `background`
+- `primary` / `background`
+
+`accent` is only guaranteed against the kit's own ground. That is why an accent band **inverts** its button (background-token fill, accent label) rather than tinting it, and why a scrim is tinted with `primary` rather than black. `ContainerBlock.overlayColorToken` exists for exactly this: unset keeps the legacy `rgba(0,0,0,a)` so saved pages do not shift, and a set token composites via `color-mix`. Copy pinned to the background token over a *black* scrim measured 2.64:1 on the dark Luxury kit before this.
+
+A button on a contrasting band must pin its own colors — `ButtonBlock` reads only `_style.buttonStyle` and never the brand kit's, so an unset button falls into the legacy branch (transparent fill, `--pf-color-fg` label and border) that vanishes on a colored ground.
+
+### Enabled controls must be truthful
+
+An editor control earns its place only if all of these hold: choosing a different option causes a **visible or interactively verifiable** change in the canvas; the same saved value produces the same result in preview and publish; the control is enabled only when its prerequisite structure exists, and explains itself when disabled; explicit overrides are distinguishable from effective theme defaults and are resettable without freezing a value into props.
+
+There are exactly three valid resolutions for a no-op control: make the render honor it, hide/disable it with a stated prerequisite, or remove it. Mutating stored data or changing an invisible computed property does not count — this is why the scrim's opacity and color controls appear only once at least one background image exists.
+
 For the deep architecture (editor shell, Puck blocks, spotlight guide/tour, brand kit, drafts, contact form, effective-default style controls), start at the `portfolio-editor-architecture` skill — it routes to the focused sub-skills (`portfolio-blocks-and-design`, `portfolio-drafts`, `portfolio-theme-brand-kit`, `portfolio-guide`, `portfolio-effective-defaults`, `portfolio-testing`). This module doc intentionally does not duplicate that — it only covers the data model and cross-cutting rules an agent needs before diving in.
 
 ## Data model
