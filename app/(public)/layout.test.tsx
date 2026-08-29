@@ -76,4 +76,17 @@ describe("PublicRootLayout", () => {
     expect(html.lang).toBe("en");
     expect(html.dir).toBe("ltr");
   });
+
+  // The app-shell scrollbar rules in globals.css are scoped to
+  // `html[data-app-shell]`, which app/[locale]/layout.tsx sets. A published
+  // portfolio must NOT carry it: its scrollbar follows the visitor's OS and the
+  // owner's brand, not Gallurio's chrome. This layout imports the same
+  // stylesheet, so the attribute is the only thing keeping the scope apart.
+  it("omits data-app-shell so published pages keep native scrollbars", async () => {
+    const html = (await renderHtml("acme", makeWorkspace({ formLocale: "en" }))) as Record<
+      string,
+      unknown
+    >;
+    expect(html["data-app-shell"]).toBeUndefined();
+  });
 });

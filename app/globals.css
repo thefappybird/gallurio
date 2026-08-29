@@ -806,3 +806,54 @@ html[data-radius="rounded"] {
 [dir="rtl"] .recharts-wrapper svg {
   direction: ltr;
 }
+
+/* ---------------------------------------------------------------------------
+ * App-shell scrollbars
+ *
+ * Compact, theme-following scrollbars for the whole CRM — including Puck's own
+ * editor panels, which ship no scrollbar rules of their own (verified against
+ * @measured/puck/dist/index.css) and so inherit these.
+ *
+ * Scoped to `html[data-app-shell]`, set only by app/[locale]/layout.tsx. The
+ * public portfolio root layout (app/(public)/layout.tsx) imports this same
+ * stylesheet but omits the attribute on purpose: a published page's scrollbar
+ * belongs to the visitor's OS and the owner's brand, not to Gallurio's chrome.
+ *
+ * `scrollbar-width` / `scrollbar-color` are INHERITED properties, so declaring
+ * them once on the root covers every descendant (Firefox, Chrome 121+). The
+ * `::-webkit-scrollbar` block is the fallback for engines that don't yet
+ * support the standard properties; those pseudo-elements do not inherit, hence
+ * the descendant selector. Both use the same tokens as .scrollbar-subtle so the
+ * platform has ONE scrollbar appearance.
+ *
+ * The 9999px thumb matches the existing .scrollbar-subtle utilities above — a
+ * pill is the conventional scrollbar shape and is deliberately outside the
+ * DESIGN.md control/surface radius scale, which governs UI chrome, not this.
+ * ------------------------------------------------------------------------ */
+html[data-app-shell] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+html[data-app-shell] ::-webkit-scrollbar,
+html[data-app-shell]::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html[data-app-shell] ::-webkit-scrollbar-track,
+html[data-app-shell]::-webkit-scrollbar-track {
+  background: transparent;
+}
+html[data-app-shell] ::-webkit-scrollbar-thumb,
+html[data-app-shell]::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+html[data-app-shell] ::-webkit-scrollbar-thumb:hover,
+html[data-app-shell]::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+/* Suppress the dead corner square where two scrollbars meet. */
+html[data-app-shell] ::-webkit-scrollbar-corner,
+html[data-app-shell]::-webkit-scrollbar-corner {
+  background: transparent;
+}

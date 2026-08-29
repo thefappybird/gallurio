@@ -71,7 +71,7 @@ export default async function PublicPortfolioLayout({
     <div
       lang={locale}
       dir={effectiveDir}
-      style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
+      style={{ ...cssVars, backgroundColor: "var(--pf-color-bg)", color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={`${className} min-h-svh`}
     >
       {/* Brand kit heading/body may be a Google Font (see fonts.ts) — next/font/google

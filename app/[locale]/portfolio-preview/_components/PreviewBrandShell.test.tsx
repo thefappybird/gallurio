@@ -217,6 +217,21 @@ describe("PreviewBrandShell", () => {
     expect(style).toContain("--pf-color-bg: #fallback");
   });
 
+  it("paints the brand background color, not just defining the custom property", () => {
+    const { container } = render(
+      <PreviewBrandShell
+        slug={SLUG}
+        fallbackCssVars={{ "--pf-color-bg": "#fcfcfb" }}
+        fallbackClassName="pf-theme-minimal pf-button-solid"
+      >
+        <span>content</span>
+      </PreviewBrandShell>,
+    );
+
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.backgroundColor).toBe("var(--pf-color-bg)");
+  });
+
   it("mounts MotionObserver so entrance-animated blocks reveal on scroll in preview", () => {
     render(
       <PreviewBrandShell
