@@ -241,7 +241,7 @@ describe("Container/Columns: gap + padding effective defaults", () => {
 // ---------------------------------------------------------------------------
 
 describe("Button: effective defaults match ButtonBlock's own render branches", () => {
-  const VARIANTS = ["solid", "soft", "outline", undefined] as const;
+  const VARIANTS = ["solid", "soft", "outline", "link", undefined] as const;
 
   it.each(VARIANTS)("buttonStyle=%s: text color matches effectiveButtonTextToken", (buttonStyle) => {
     const { container } = render(

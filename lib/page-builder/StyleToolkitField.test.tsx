@@ -467,6 +467,29 @@ describe("ContentInputs — CollectionCard", () => {
   });
 });
 
+describe("ContentInputs — Button", () => {
+  it("offers Home, Gallery, and Contact actions", () => {
+    render(<ContentInputs type="Button" props={{ action: "open-contact" }} setProp={vi.fn()} />);
+
+    const options = within(screen.getByRole("combobox", { name: "Action" }))
+      .getAllByRole("option")
+      .map((option) => (option as HTMLOptionElement).value);
+
+    expect(options).toEqual(["open-contact", "go-to-gallery", "go-to-home"]);
+  });
+
+  it("writes the go-to-home action", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Button" props={{ action: "open-contact" }} setProp={setProp} />);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Action" }), {
+      target: { value: "go-to-home" },
+    });
+
+    expect(setProp).toHaveBeenCalledWith("action", "go-to-home");
+  });
+});
+
 describe("SingleCollectionControl", () => {
   it("clears to undefined on an empty selection", () => {
     const onChange = vi.fn();
@@ -598,7 +621,7 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
   });
 
   it("DesignTab for Button shows a 'Button opacity' input in the expanded Button section", () => {
-    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    render(<DesignTab s={{ buttonStyle: "solid" }} set={vi.fn()} blockType="Button" />);
     fireEvent.click(screen.getByRole("button", { name: "Button" }));
     expect(screen.getByText("Button opacity")).toBeTruthy();
   });
@@ -646,6 +669,32 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
     expect(within(colorRow).getByRole("button", { name: "Primary" })).toHaveAttribute(
       "aria-pressed",
       "true",
+    );
+  });
+
+  it("link style hides controls that its renderer ignores", () => {
+    render(<DesignTab s={{ buttonStyle: "link" }} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+
+    expect(screen.queryByText("Button color")).toBeNull();
+    expect(screen.queryByText("Button opacity")).toBeNull();
+    expect(screen.queryByText("Corner radius")).toBeNull();
+    expect(screen.getByText("Button text color")).toBeTruthy();
+    expect(screen.getByText("Button style")).toBeTruthy();
+  });
+
+  it.each(["outline", "soft"] as const)("%s style hides solid-only opacity", (buttonStyle) => {
+    render(<DesignTab s={{ buttonStyle }} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.queryByText("Button opacity")).toBeNull();
+  });
+
+  it("does not float Outline when legacy buttonColorToken data uses the filled render branch", () => {
+    render(<DesignTab s={{ buttonColorToken: "accent" }} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
     );
   });
 });

@@ -73,6 +73,8 @@ export function CollectionCardBlock({
   const popupLabels = puck?.metadata?.collectionPopupLabels as CollectionPopupLabels | undefined;
 
   const hasCollection = Boolean(collection?.id);
+  const presetPreview = puck?.metadata?.presetPreview === true;
+  const previewMinWidth = aspectRatio === "3 / 2" ? "20rem" : aspectRatio === "1 / 1" ? "10rem" : "12rem";
 
   return (
     <div
@@ -109,6 +111,34 @@ export function CollectionCardBlock({
           popupLabels={popupLabels}
           brandVars={ws?.brandVars}
         />
+      ) : presetPreview ? (
+        <div style={{ display: "contents" }}>
+          <div
+            data-cover-placeholder=""
+            data-preset-collection-placeholder="true"
+            style={{
+              width: "100%",
+              // Empty CSS-grid tracks use intrinsic sizing. A contentless 100%
+              // child otherwise contributes zero and collapses to a dot in the
+              // miniature; size the preview fixture by its intended crop.
+              minWidth: previewMinWidth,
+              aspectRatio: aspectRatio ?? "7 / 9",
+              backgroundColor: "color-mix(in srgb, currentColor 14%, transparent)",
+              border: "1px solid color-mix(in srgb, currentColor 28%, transparent)",
+            }}
+          />
+          {showCaption !== false && (
+            <div
+              data-preset-collection-caption="true"
+              style={{
+                width: "62%",
+                height: "0.55rem",
+                marginTop: "0.5rem",
+                backgroundColor: "color-mix(in srgb, currentColor 32%, transparent)",
+              }}
+            />
+          )}
+        </div>
       ) : (
         <div
           data-cover-placeholder=""

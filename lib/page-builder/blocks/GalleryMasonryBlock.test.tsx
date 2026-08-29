@@ -47,6 +47,33 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
     expect(document.querySelector("[data-block='gallery-masonry'][data-empty='true']")).toBeInTheDocument();
   });
 
+  it("shows varied masonry tiles in an empty preset hover preview", () => {
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        images: [],
+        _style: { galleryColumns: 3, galleryGap: "normal" },
+        puck: { metadata: { presetPreview: true } },
+      })
+    );
+
+    expect(screen.queryByText(/no photos in this collection yet/i)).not.toBeInTheDocument();
+    expect(container.querySelector("[data-preset-media-placeholder='masonry']")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-preset-media-tile]")).toHaveLength(6);
+  });
+
+  it("keeps a two-column preview to two complete tiles per column", () => {
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        images: [],
+        _style: { galleryColumns: 2 },
+        puck: { metadata: { presetPreview: true } },
+      })
+    );
+    expect(container.querySelectorAll("[data-preset-media-tile]")).toHaveLength(4);
+  });
+
   it("uses a localized empty label from puck.metadata chrome when present", () => {
     render(
       GalleryMasonryBlock({

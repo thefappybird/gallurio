@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   CollectionCardBlock,
-  collectionCardBlockConfig,
   collectionCardDefaultProps,
 } from "./CollectionCardBlock";
 import type { FeaturedCollectionRef } from "./FeaturedWorkBlock";
@@ -23,5 +22,18 @@ describe("CollectionCardBlock", () => {
     // placeholder div until then; both carry the crop.
     const cover = container.querySelector("[data-featured-tile] img, [data-cover-placeholder]");
     expect(cover).toHaveStyle({ aspectRatio: "3 / 2" });
+  });
+
+  it("renders a visible media shape and caption line in a preset hover preview", () => {
+    const { container } = render(
+      <CollectionCardBlock
+        {...collectionCardDefaultProps}
+        puck={{ metadata: { presetPreview: true } }}
+      />
+    );
+
+    expect(screen.queryByText(/no featured photos selected yet/i)).not.toBeInTheDocument();
+    expect(container.querySelector("[data-preset-collection-placeholder='true']")).toBeInTheDocument();
+    expect(container.querySelector("[data-preset-collection-caption='true']")).toBeInTheDocument();
   });
 });

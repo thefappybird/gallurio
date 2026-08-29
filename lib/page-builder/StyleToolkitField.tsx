@@ -541,7 +541,7 @@ export function ContentInputs({
             className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </label>
-        <div className="flex items-center justify-between gap-2">
+        <label className="flex items-center justify-between gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">Action</span>
           <select
             value={(props.action as string) ?? "open-contact"}
@@ -550,8 +550,9 @@ export function ContentInputs({
           >
             <option value="open-contact">Open contact form</option>
             <option value="go-to-gallery">Go to Gallery page</option>
+            <option value="go-to-home">Go to Home page</option>
           </select>
-        </div>
+        </label>
       </div>
     );
   }
@@ -1082,6 +1083,8 @@ export function DesignTab({
   p?: Record<string, unknown>;
 }) {
   const isButton = blockType === "Button";
+  const isLinkButton = s.buttonStyle === "link";
+  const isSolidButton = s.buttonStyle === "solid";
   const isContactDetails = blockType === "ContactDetails";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
   const effectiveRadius = useEffectiveBrandRadius();
@@ -1292,7 +1295,7 @@ export function DesignTab({
       {isButton && (
         <EditorDrawerSection title="Button">
           {/* 1. Button color */}
-          <div className="flex flex-col gap-1.5">
+          {!isLinkButton && <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5">
               <PaintBucket className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
               <span className="text-xs text-muted-foreground">Button color</span>
@@ -1302,9 +1305,9 @@ export function DesignTab({
               effectiveValue={s.buttonStyle ? "primary" : "foreground"}
               onChange={(t) => set({ buttonColorToken: t })}
             />
-          </div>
+          </div>}
           {/* 2. Button opacity — effective 100 when unset (prop stays unset until edited) */}
-          <NumberInputRow
+          {isSolidButton && <NumberInputRow
             label="Button opacity"
             value={s.buttonOpacity}
             min={0}
@@ -1312,7 +1315,7 @@ export function DesignTab({
             suffix="%"
             effectiveValue={100}
             onChange={(v) => set({ buttonOpacity: v })}
-          />
+          />}
           {/* 3. Button text color */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5">
@@ -1326,14 +1329,19 @@ export function DesignTab({
             />
           </div>
           {/* 4. Corner radius */}
-          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
+          {!isLinkButton && (
+            <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
+          )}
           {/* 5. Button style */}
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
             <div className="flex items-center gap-1.5">
               {(["solid", "outline", "soft", "link"] as const).map((v) => {
                 const isExplicit = s.buttonStyle === v;
-                const isEffective = s.buttonStyle === undefined && v === "outline";
+                const isEffective =
+                  s.buttonStyle === undefined &&
+                  s.buttonColorToken === undefined &&
+                  v === "outline";
                 return (
                   <button
                     key={v}

@@ -30,6 +30,7 @@ import type { GalleryImage } from "./GalleryGridBlock";
 import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import type { ContainerHeight } from "./manualBlocks";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -144,6 +145,7 @@ export function FeaturedWorkBlock({
   const hasBg = layers.length > 0;
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
+  const presetPreview = puck?.metadata?.presetPreview === true;
 
   return (
     <section
@@ -165,7 +167,9 @@ export function FeaturedWorkBlock({
         <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "72rem", margin: "0 auto" }}>
-        {list.length === 0 ? (
+        {list.length === 0 && presetPreview ? (
+          <PresetMediaPlaceholder kind="collections" columns={columns} gap="normal" />
+        ) : list.length === 0 ? (
           <p
             style={{
               color: "var(--pf-color-fg)",

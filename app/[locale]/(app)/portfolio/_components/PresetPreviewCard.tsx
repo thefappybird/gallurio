@@ -26,6 +26,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Render, type Config, type Data } from "@measured/puck";
 import { SECTION_PRESETS, type SectionPresetKey } from "@/lib/page-builder/blocks/sectionPresets";
+import { mapBlocks } from "@/lib/page-builder/blockTree";
+import type { PuckData } from "@/lib/page-builder/types";
 import { PF_CONTAINER_NAME } from "@/lib/page-builder/responsive";
 import {
   closePresetPreview,
@@ -38,12 +40,17 @@ import {
 const PANEL_GAP = 8;
 /** Worst-case panel height (capped preview + the three copy lines), used to
  *  clamp placement without having to measure after mount. */
-const PANEL_MAX_HEIGHT = 260 + 84;
+const PANEL_MAX_HEIGHT = 320 + 96;
 
-/** Layout width the mini-render lays out at, so container queries resolve desktop. */
-const PREVIEW_WIDTH = 1280;
-/** Rendered width of the frame in the panel. */
-export const FRAME_WIDTH = 248;
+/**
+ * Layout width the mini-render lays out at. Keeping it just above the portfolio
+ * tablet breakpoint preserves the real desktop composition while making type
+ * legible at thumbnail scale.
+ */
+export const PREVIEW_WIDTH = 960;
+/** Rendered width of the frame in the panel. This is only 32px wider than the
+ * original card, but makes the live preset materially easier to judge. */
+export const FRAME_WIDTH = 280;
 const SCALE = FRAME_WIDTH / PREVIEW_WIDTH;
 
 /**
@@ -51,19 +58,45 @@ const SCALE = FRAME_WIDTH / PREVIEW_WIDTH;
  * box — a Footer and a Hero are not the same shape, and one ratio either cropped
  * the short ones or over-boxed the tall ones.
  *
- * It is still clamped at both ends: presets range from an auto-height footer to
- * a `minHeight: medium` hero (60vh), so unclamped the panel would range from a
- * sliver to taller than the drawer and would jump as the pointer moves between
- * rows. The floor keeps a short block from collapsing to a line; the ceiling
- * keeps a tall one inside the viewport.
+ * Presets range from an auto-height footer to a `minHeight: medium` hero
+ * (60vh). Short sections keep their exact scaled content height; only the upper
+ * bound is capped so an unusually tall future preset cannot consume the drawer.
  */
-export const PREVIEW_MIN_HEIGHT = 96;
-export const PREVIEW_MAX_HEIGHT = 260;
+export const PREVIEW_MIN_HEIGHT = 0;
+export const PREVIEW_MAX_HEIGHT = 320;
 /** Used until the first measurement lands, so the panel opens at a sane size. */
-const PREVIEW_INITIAL_HEIGHT = 155;
+const PREVIEW_INITIAL_HEIGHT = 168;
 
-const clampHeight = (h: number) =>
-  Math.min(PREVIEW_MAX_HEIGHT, Math.max(PREVIEW_MIN_HEIGHT, h));
+/** Convert the preset's untransformed layout height into its visible height. */
+export const getPreviewFrameHeight = (layoutHeight: number) =>
+  Math.min(PREVIEW_MAX_HEIGHT, Math.max(PREVIEW_MIN_HEIGHT, layoutHeight * SCALE));
+
+/** Build the miniature's Puck tree with deterministic ids at every depth.
+ * Preset compositions are pure literals without ids until Puck inserts them;
+ * `<Render>` needs ids too so its nested slot lists have stable React keys. */
+export function buildPresetPreviewData(presetKey: SectionPresetKey): PuckData {
+  let nestedIndex = 0;
+  const data: PuckData = {
+    root: { props: {} },
+    content: [
+      {
+        type: presetKey,
+        props: {
+          ...SECTION_PRESETS[presetKey].defaultProps,
+          id: `preset-preview-${presetKey}`,
+        },
+      },
+    ],
+  };
+
+  return mapBlocks(data, (block) => {
+    if (typeof block.props.id === "string" && block.props.id.length > 0) return block;
+    return {
+      ...block,
+      props: { ...block.props, id: `preset-preview-${presetKey}-${nestedIndex++}` },
+    };
+  });
+}
 
 /**
  * One preset, rendered small.
@@ -92,29 +125,17 @@ export function PresetPreviewCanvas({
   useEffect(() => {
     const el = innerRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const measure = () => setHeight(clampHeight(el.getBoundingClientRect().height * SCALE));
+    // `getBoundingClientRect()` already includes the CSS transform. Multiplying
+    // that value by SCALE again collapsed every preset to the old 96px floor.
+    // offsetHeight is the untransformed layout measurement, so scale it once.
+    const measure = () => setHeight(getPreviewFrameHeight(el.offsetHeight));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, [presetKey]);
 
-  const data = useMemo(
-    () =>
-      ({
-        root: { props: {} },
-        content: [
-          {
-            type: presetKey,
-            props: {
-              ...SECTION_PRESETS[presetKey].defaultProps,
-              id: `preset-preview-${presetKey}`,
-            },
-          },
-        ],
-      }) as unknown as Data,
-    [presetKey]
-  );
+  const data = useMemo(() => buildPresetPreviewData(presetKey) as unknown as Data, [presetKey]);
 
   return (
     <div
@@ -144,7 +165,7 @@ export function PresetPreviewCanvas({
           containerName: PF_CONTAINER_NAME,
         }}
       >
-        <Render config={config} data={data} />
+        <Render config={config} data={data} metadata={{ presetPreview: true }} />
       </div>
     </div>
   );
@@ -264,6 +285,9 @@ export function PresetPreviewPanel({
         left: pos?.left ?? -9999,
         zIndex: 60,
         width: FRAME_WIDTH + 2,
+        // `.gallurio-editor > div` gives Puck's root height:100%. This panel is
+        // also a direct child, so explicitly opt out and hug the rendered card.
+        height: "fit-content",
       }}
       // Flat per DESIGN.md — hairline ring and a tonal shift, no shadow.
       className="border border-border bg-popover text-popover-foreground"

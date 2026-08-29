@@ -847,7 +847,7 @@ describe("ButtonBlock", () => {
     expect(html).toContain("color-mix(in srgb, var(--pf-color-accent) 15%, transparent)");
   });
 
-  it("buttonStyle='link' renders transparent fill, no ring border, and a currentColor bottom edge only", () => {
+  it("buttonStyle='link' renders portfolio foreground text with a matching bottom edge only", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.style.backgroundColor).toBe("transparent");
@@ -856,13 +856,13 @@ describe("ButtonBlock", () => {
     expect(a.style.borderBottom).toBe("1px solid currentcolor");
     expect(a.style.borderRadius).toBe("0px");
     expect(a.style.padding).toBe("0.25rem 0px");
-    expect(a.style.color).toBe("currentcolor");
+    expect(a.style.color).toBe("var(--pf-color-fg)");
   });
 
-  it("buttonStyle='link' with no textColorToken uses currentColor for text (inherits)", () => {
+  it("buttonStyle='link' with no textColorToken uses the portfolio foreground", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.color).toBe("currentcolor");
+    expect(a.style.color).toBe("var(--pf-color-fg)");
   });
 
   it("buttonStyle='link' with textColorToken overrides currentColor with the explicit token", () => {

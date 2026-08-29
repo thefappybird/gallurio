@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { GalleryGridBlock, galleryGridDefaultProps } from "./GalleryGridBlock";
 import type { GalleryGridProps, GalleryImage } from "./GalleryGridBlock";
@@ -37,6 +37,33 @@ describe("GalleryGridBlock — isomorphic render", () => {
     render(GalleryGridBlock({ ...base, images: [] }));
     expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();
     expect(document.querySelector("[data-block='gallery-grid'][data-empty='true']")).toBeInTheDocument();
+  });
+
+  it("shows the real grid shape in an empty preset hover preview", () => {
+    const { container } = render(
+      GalleryGridBlock({
+        ...base,
+        images: [],
+        _style: { galleryColumns: 3, galleryGap: "normal" },
+        puck: { metadata: { presetPreview: true } },
+      })
+    );
+
+    expect(screen.queryByText(/no photos in this collection yet/i)).not.toBeInTheDocument();
+    expect(container.querySelector("[data-preset-media-placeholder='grid']")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-preset-media-tile]")).toHaveLength(6);
+  });
+
+  it("keeps a two-column preview to two complete rows", () => {
+    const { container } = render(
+      GalleryGridBlock({
+        ...base,
+        images: [],
+        _style: { galleryColumns: 2 },
+        puck: { metadata: { presetPreview: true } },
+      })
+    );
+    expect(container.querySelectorAll("[data-preset-media-tile]")).toHaveLength(4);
   });
 
   it.each([2, 3, 4] as const)("_style.galleryColumns=%i sets responsive gridColsVar on grid-template-columns", (cols) => {

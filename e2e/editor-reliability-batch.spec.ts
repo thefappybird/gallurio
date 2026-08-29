@@ -155,6 +155,22 @@ test.describe("drawer preset previews", () => {
     const popover = page.locator('[data-preset-preview-panel="true"]');
     await popover.waitFor({ state: "visible", timeout: 10_000 });
 
+    const previewGeometry = await popover.evaluate((el) => {
+      const panel = el as HTMLElement;
+      const frame = panel.firstElementChild as HTMLElement;
+      const scaledPreset = frame.firstElementChild as HTMLElement;
+      return {
+        panelHeight: panel.getBoundingClientRect().height,
+        frameHeight: frame.getBoundingClientRect().height,
+        presetHeight: scaledPreset.getBoundingClientRect().height,
+      };
+    });
+    expect(previewGeometry.panelHeight, "the card hugs its preview and copy").toBeLessThan(400);
+    expect(
+      Math.abs(previewGeometry.frameHeight - previewGeometry.presetHeight),
+      "the preview frame follows the rendered preset instead of a generic floor"
+    ).toBeLessThanOrEqual(2);
+
     await expect(popover).toContainText("Drag this block to add it to your page.");
 
     // The real question: does <Render> inside <Puck> actually produce a block
@@ -203,6 +219,47 @@ test.describe("drawer preset previews", () => {
     // Puck's own drawer truncates long names; this predates the batch and is
     // asserted as a known baseline rather than as zero.
     expect(clipped, "name clipping is Puck's own, not introduced here").toBeGreaterThanOrEqual(0);
+  });
+
+  test("empty media presets preview their layout instead of only empty-state copy", async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openEditor(page);
+
+    const category = (name: string) =>
+      page
+        .locator(CATEGORY_ROOT)
+        .filter({ has: page.locator(CATEGORY_TITLE).filter({ hasText: new RegExp(`^${name}$`, "i") }) })
+        .first();
+    const expand = async (name: string) => {
+      const group = category(name);
+      await group.waitFor({ state: "visible", timeout: 15_000 });
+      if (!(await group.getAttribute("class"))?.includes("--isExpanded")) {
+        await group.locator(CATEGORY_TITLE).first().click();
+      }
+      return group;
+    };
+
+    const gallery = await expand("Gallery grid");
+    await hoverRow(
+      page,
+      gallery.locator(ITEM_NAME).filter({ hasText: /^Framed selection$/i }).first()
+    );
+    const panel = page.locator('[data-preset-preview-panel="true"]');
+    await panel.waitFor({ state: "visible", timeout: 10_000 });
+    await expect(panel.locator("[data-preset-media-placeholder='grid']")).toHaveCount(1);
+    await expect(panel.locator("[data-preset-media-tile]")).toHaveCount(4);
+
+    const featured = await expand("Featured work");
+    await hoverRow(
+      page,
+      featured.locator(ITEM_NAME).filter({ hasText: /^Lead collections$/i }).first()
+    );
+    const cardSizes = await panel.locator("[data-preset-collection-placeholder='true']").evaluateAll(
+      (cards) => cards.map((card) => card.getBoundingClientRect()).map(({ width, height }) => ({ width, height }))
+    );
+    expect(cardSizes, "Lead collections shows two visible landscape cards").toHaveLength(2);
+    expect(cardSizes.every(({ width, height }) => width > 80 && height > 50)).toBe(true);
   });
 });
 

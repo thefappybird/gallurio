@@ -321,6 +321,10 @@ describe("effectiveButtonTextToken", () => {
     expect(effectiveButtonTextToken({ buttonStyle: "outline" })).toBe("primary");
   });
 
+  it("link button ignores buttonColorToken and follows portfolio foreground", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "link", buttonColorToken: "accent" })).toBe("foreground");
+  });
+
   it("no buttonStyle (legacy/unset) → 'foreground'", () => {
     expect(effectiveButtonTextToken({})).toBe("foreground");
   });

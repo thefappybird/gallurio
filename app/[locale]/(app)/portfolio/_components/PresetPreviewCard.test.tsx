@@ -3,6 +3,7 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import type { Config } from "@measured/puck";
 import { __resetPresetPreview, getActivePresetPreview } from "@/lib/page-builder/presetPreviewStore";
+import { collectBlocks } from "@/lib/page-builder/blockTree";
 
 // Puck's <Render> mounts the whole block tree — irrelevant to what this file
 // asserts (the row's interaction contract) and slow. Stand it in with a marker
@@ -18,6 +19,10 @@ const {
   PresetDrawerItem,
   PresetPreviewCanvas,
   PresetPreviewPanel,
+  buildPresetPreviewData,
+  getPreviewFrameHeight,
+  FRAME_WIDTH,
+  PREVIEW_WIDTH,
   PREVIEW_MIN_HEIGHT,
   PREVIEW_MAX_HEIGHT,
 } = await import("./PresetPreviewCard");
@@ -153,6 +158,14 @@ describe("PresetDrawerItem", () => {
 });
 
 describe("PresetPreviewCanvas", () => {
+  it("assigns stable unique ids to every nested preset block", () => {
+    const data = buildPresetPreviewData("FeaturedWorkLeadPreset");
+    const ids = collectBlocks(data).map((block) => block.props.id);
+
+    expect(ids.every((id) => typeof id === "string" && id.length > 0)).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("renders the requested preset and carries the brand ground", () => {
     const { container } = renderWithProviders(
       <PresetPreviewCanvas presetKey={"HeroPreset" as never} config={CONFIG} cssVars={CSS_VARS} />
@@ -167,6 +180,10 @@ describe("PresetPreviewCanvas", () => {
     expect(frame.style.pointerEvents).toBe("none");
   });
 
+  it("scales the untransformed preset height exactly once", () => {
+    expect(getPreviewFrameHeight(540)).toBeCloseTo(540 * (FRAME_WIDTH / PREVIEW_WIDTH), 5);
+  });
+
   // The frame follows the preset's own rendered height rather than a fixed
   // 16:10 box, which cropped short blocks badly and over-boxed tall ones.
   it("clamps the measured height so the panel cannot grow without bound", () => {
@@ -178,5 +195,16 @@ describe("PresetPreviewCanvas", () => {
 
     expect(height).toBeGreaterThanOrEqual(PREVIEW_MIN_HEIGHT);
     expect(height).toBeLessThanOrEqual(PREVIEW_MAX_HEIGHT);
+  });
+});
+
+describe("PresetPreviewPanel", () => {
+  it("opts out of the editor root's direct-child height stretch", async () => {
+    const { container } = renderItem();
+    fireEvent.pointerEnter(screen.getByTestId("row-label"));
+    const panel = await screen.findByRole("tooltip");
+
+    expect(panel.style.height).toBe("fit-content");
+    expect(container).toContainElement(panel);
   });
 });

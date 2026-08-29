@@ -399,12 +399,14 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   let isLink = false;
 
   if (_style?.buttonStyle === "link") {
-    // Link: no fill, no frame — a hairline underline only, in the inherited
-    // (currentColor) text color. borderBottom/borderRadius/padding are applied
+    // Link: no fill, no frame — a hairline underline in the portfolio
+    // foreground. borderBottom/borderRadius/padding are applied
     // directly on aStyle below, overriding the size preset and the frame fields.
     isLink = true;
     buttonBg = "transparent";
-    buttonText = customTextColor ?? "currentColor";
+    // Ground the fallback so Puck's selected-block chrome cannot become the
+    // inheritance source in the editor canvas.
+    buttonText = customTextColor ?? "var(--pf-color-fg)";
     tkBorderWidth = "0px";
     tkBorderColor = "transparent";
   } else if (_style?.buttonStyle === "outline") {

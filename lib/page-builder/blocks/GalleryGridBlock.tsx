@@ -27,6 +27,7 @@ import {
 import { padVar, gridColsVar } from "@/lib/page-builder/responsive";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
 
 // ---------------------------------------------------------------------------
@@ -173,6 +174,7 @@ export function GalleryGridBlock({
   const hasBg = layers.length > 0;
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
+  const presetPreview = puck?.metadata?.presetPreview === true;
 
   if (list.length === 0) {
     return (
@@ -196,19 +198,23 @@ export function GalleryGridBlock({
         {hasBg && (
           <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
         )}
-        <p
-          style={{
-            position: "relative",
-            zIndex: 1,
-            fontFamily: "var(--pf-font-body)",
-            color: "var(--pf-color-fg)",
-            opacity: 0.45,
-            fontSize: "0.9375rem",
-            margin: 0,
-          }}
-        >
-          {getGalleryChromeLabelsFrom(puck).empty}
-        </p>
+        {presetPreview ? (
+          <PresetMediaPlaceholder kind="grid" columns={columns} gap={gap} />
+        ) : (
+          <p
+            style={{
+              position: "relative",
+              zIndex: 1,
+              fontFamily: "var(--pf-font-body)",
+              color: "var(--pf-color-fg)",
+              opacity: 0.45,
+              fontSize: "0.9375rem",
+              margin: 0,
+            }}
+          >
+            {getGalleryChromeLabelsFrom(puck).empty}
+          </p>
+        )}
       </section>
     );
   }

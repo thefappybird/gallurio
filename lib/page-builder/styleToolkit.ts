@@ -634,7 +634,7 @@ export function effectiveButtonTextToken(
   style: BlockStyle | undefined,
 ): StyleColorToken | string {
   if (style?.buttonStyle === "solid") return "background";
-  if (style?.buttonStyle === "soft" || style?.buttonStyle === "outline" || style?.buttonStyle === "link")
+  if (style?.buttonStyle === "soft" || style?.buttonStyle === "outline")
     return style.buttonColorToken ?? "primary";
-  return "foreground"; // unset / legacy branch
+  return "foreground"; // link / unset / legacy branch
 }

@@ -112,6 +112,9 @@ export function applyCollectionPopupDefaults(l: CollectionPopupLabels = {}): Req
 export type PortfolioRenderMetadata = {
   workspace?: RenderWorkspace;
   collectionPopupLabels?: CollectionPopupLabels;
+  /** Decorative sample media may replace empty states inside the drawer's
+   * insertion preview. Never set on the editor canvas or public renderer. */
+  presetPreview?: boolean;
 };
 
 /** The `puck` prop Puck injects into every rendered component. */
