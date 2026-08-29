@@ -1,4 +1,5 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
+import { onAccentBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
 import { zone } from "./_blocks";
 
@@ -70,7 +71,7 @@ export const minimalTemplate: PortfolioTemplate = {
                         _style: {
                           selfAlign: "right",
                           radius: 0,
-                          buttonStyle: "solid",
+                          ...onAccentBand,
                         },
                       },
                     },
@@ -84,7 +85,7 @@ export const minimalTemplate: PortfolioTemplate = {
                         id: "Button-minimal-home-6",
                         _style: {
                           selfAlign: "left",
-                          buttonStyle: "soft",
+                          ...onAccentBand,
                         },
                       },
                     },

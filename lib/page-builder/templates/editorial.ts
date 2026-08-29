@@ -1,4 +1,5 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
+import { onPrimaryBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
 import { zone } from "./_blocks";
 
@@ -770,10 +771,8 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         action: "open-contact",
                         align: "center",
                         _style: {
-                          textColorToken: "secondary",
-                          buttonStyle: "solid",
-                          buttonColorToken: "accent",
                           radius: 4,
+                          ...onPrimaryBand,
                         },
                       },
                     },

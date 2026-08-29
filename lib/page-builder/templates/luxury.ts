@@ -1,4 +1,5 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
+import { onAccentBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
 import { zone } from "./_blocks";
 
@@ -78,6 +79,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                   label: "Get in Touch",
                   action: "open-contact",
                   align: "center",
+                  _style: onAccentBand,
                 },
               },
             ],

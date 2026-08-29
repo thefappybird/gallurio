@@ -21,6 +21,7 @@
 import { describe, it, expect } from "vitest";
 import { THEME_PRESET_DEFINITIONS } from "../brandKitPicker/themePresetDefinitions";
 import { SECTION_PRESETS, SECTION_PRESET_KEYS } from "./sectionPresets";
+import { PORTFOLIO_TEMPLATES } from "../templates";
 import type { StyleColorToken } from "../styleToolkit";
 
 // ---------------------------------------------------------------------------
@@ -253,6 +254,39 @@ describe("scrimmed presets stay legible once a background image is added", () =>
         .map((m) => `${m.what}: ${m.value.toFixed(2)}:1 (needs ${m.min}:1, ${m.fg} on ${m.bg})`);
 
       expect(failures).toEqual([]);
+    });
+  }
+});
+
+describe("template seed literals stay legible against every committed brand kit", () => {
+  // bold/editorial/luxury/minimal hand-roll their own inline seed blocks rather
+  // than drawing from SECTION_PRESETS, so they bypass the walk above entirely.
+  // Same color model, same 6-kit sweep — an owner can switch theme after
+  // applying a template, so a seed literal must survive every kit, not just
+  // the template's own default brand kit.
+  const templateIds = PORTFOLIO_TEMPLATES.map((t) => t.id);
+
+  for (const kitId of Object.keys(KITS)) {
+    describe(`${kitId} kit`, () => {
+      it.each(templateIds)("%s template seed stays legible", (templateId) => {
+        const template = PORTFOLIO_TEMPLATES.find((t) => t.id === templateId)!;
+        const data = template.seedData({ workspace: { name: "Studio Aurora" } });
+        const palette = KITS[kitId];
+        const out: Measurement[] = [];
+
+        for (const [zoneName, zoneData] of [["home", data.home], ["gallery", data.gallery]] as const) {
+          (zoneData?.content ?? []).forEach((block, i) =>
+            collect(block as Block, palette, { ground: palette.background, text: "foreground" }, `${templateId}.${zoneName}[${i}]`, out)
+          );
+        }
+
+        const failures = out
+          .map((m) => ({ ...m, value: contrast(m.fg, m.bg) }))
+          .filter((m) => m.value < m.min)
+          .map((m) => `${m.what}: ${m.value.toFixed(2)}:1 (needs ${m.min}:1, ${m.fg} on ${m.bg})`);
+
+        expect(failures).toEqual([]);
+      });
     });
   }
 });
