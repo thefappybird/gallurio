@@ -346,6 +346,23 @@ test.describe("drawer preview interaction", () => {
     await page.waitForTimeout(400);
     await expect(panels, "exactly one panel, ever").toHaveCount(1);
 
+    // Position stability is the third flicker vector: Puck mounts each row
+    // twice, so a pointer crossing between the draggable and its ghost fires
+    // pointerenter on two DIFFERENT elements for the same preset. If the store
+    // re-anchored on each, the panel would jitter between their boxes.
+    await hoverRow(page, names.first());
+    await page.waitForTimeout(300);
+    const before = await panels.first().boundingBox();
+    for (let i = 0; i < 4; i++) {
+      await hoverRow(page, names.nth(1)); // the ghost copy of the same row
+      await hoverRow(page, names.first());
+    }
+    await page.waitForTimeout(300);
+    const after = await panels.first().boundingBox();
+    expect(panels, "still exactly one panel after crossing the mounts").toHaveCount(1);
+    expect(after!.x, "panel does not jitter horizontally").toBeCloseTo(before!.x, 0);
+    expect(after!.y, "panel does not jitter vertically").toBeCloseTo(before!.y, 0);
+
     // Clicking the canvas dismisses it.
     await page.locator("[data-puck-preview]").click({ position: { x: 20, y: 20 } });
     await expect(panels, "acting on the canvas closes the preview").toHaveCount(0, {

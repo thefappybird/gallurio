@@ -34,12 +34,15 @@ function emit(): void {
 /**
  * Show `name`'s preview, anchored beside `row`.
  *
- * Re-opening the same preset still refreshes the anchor (the row may have
- * scrolled) but only notifies when something actually changed, so React never
- * churns while the pointer sits on one row.
+ * The anchor is captured only when the PRESET changes. Re-anchoring on every
+ * pointerenter would reintroduce the flicker from a third direction: Puck's two
+ * mounts of one row are two different elements, so a pointer crossing between
+ * the draggable and its ghost would re-anchor repeatedly and jitter the panel
+ * between their boxes. Holding the first anchor costs nothing — the row does
+ * not move while the pointer is on it.
  */
 export function openPresetPreview(name: string, row: HTMLElement): void {
-  if (active === name && anchor === row) return;
+  if (active === name) return;
   active = name;
   anchor = row;
   emit();

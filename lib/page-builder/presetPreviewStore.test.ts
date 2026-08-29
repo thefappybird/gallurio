@@ -78,16 +78,20 @@ describe("presetPreviewStore", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  // ...but the same preset anchored to the OTHER mount (Puck renders each row
-  // twice) must move the panel rather than leave it beside a stale element.
-  it("notifies when the same preset is re-anchored to a different row", () => {
-    openPresetPreview("HeroPreset", row(100));
+  // Puck mounts each row twice, so a pointer crossing between the draggable and
+  // its ghost fires pointerenter on two DIFFERENT elements for the same preset.
+  // Re-anchoring there would jitter the panel between their boxes — a third
+  // flavour of the flicker. The first anchor wins and nothing is emitted.
+  it("does not re-anchor when the same preset is entered via its other mount", () => {
+    const first = row(100);
+    openPresetPreview("HeroPreset", first);
     const listener = vi.fn();
     subscribePresetPreview(listener);
 
     openPresetPreview("HeroPreset", row(160));
 
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).not.toHaveBeenCalled();
+    expect(getActivePresetAnchor()).toBe(first);
   });
 
   it("does not notify when closing with nothing open", () => {
