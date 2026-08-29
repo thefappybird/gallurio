@@ -246,7 +246,9 @@ export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   primaryColor: "#111111",
   secondaryColor: "#f5f5f5",
   accentColor: "#2f5d56", // Gallurio brand teal
-  backgroundColor: "#ffffff",
+  // Kept identical to the Minimal preset so the Theme panel marks that tile as
+  // the active one for a workspace that has never picked a theme.
+  backgroundColor: "#fcfcfb",
   foregroundColor: "#111111",
   radius: "sharp",
   buttonStyle: "solid",

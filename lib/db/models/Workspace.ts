@@ -42,7 +42,7 @@ const brandKitFields = {
   primaryColor: { type: String, default: "#111111" },
   secondaryColor: { type: String, default: "#f5f5f5" },
   accentColor: { type: String, default: "#2f5d56" },
-  backgroundColor: { type: String, default: "#ffffff" },
+  backgroundColor: { type: String, default: "#fcfcfb" },
   foregroundColor: { type: String, default: "#111111" },
   radius: { type: String, enum: BRAND_KIT_RADII, default: "sharp" },
   buttonStyle: { type: String, enum: BRAND_KIT_BUTTON_STYLES, default: "solid" },

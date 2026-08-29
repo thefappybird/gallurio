@@ -52,4 +52,67 @@ describe("THEME_PRESET_DEFINITIONS", () => {
       });
     });
   }
+
+  // DESIGN.md -> the presets carry the app's Never-Pure discipline outward:
+  // near-black rather than black, near-white rather than white.
+  it("never grounds a preset on pure black or pure white", () => {
+    const pure = ["#ffffff", "#fff", "#000000", "#000"];
+    for (const [preset, def] of Object.entries(THEME_PRESET_DEFINITIONS)) {
+      expect(
+        pure.includes(def.brandKit.backgroundColor.toLowerCase()),
+        `${preset} background ${def.brandKit.backgroundColor}`
+      ).toBe(false);
+    }
+  });
+
+  // DESIGN.md -> The Preset Quality Bar: a shipped preset is a finished design.
+  // Foreground-on-background and accent-on-background clear 4.5:1, and a solid
+  // button's white label clears 4.5:1 against the accent (an accent that only
+  // works as an outline ships only with buttonStyle "outline").
+  it("meets the preset contrast bar", () => {
+    const channel = (c: number) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = (hex: string) => {
+      const h = hex.replace("#", "");
+      return (
+        0.2126 * channel(parseInt(h.slice(0, 2), 16)) +
+        0.7152 * channel(parseInt(h.slice(2, 4), 16)) +
+        0.0722 * channel(parseInt(h.slice(4, 6), 16))
+      );
+    };
+    const ratio = (a: string, b: string) => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+
+    const failures: string[] = [];
+    for (const [preset, def] of Object.entries(THEME_PRESET_DEFINITIONS)) {
+      const { foregroundColor, backgroundColor, accentColor, buttonStyle } =
+        def.brandKit;
+      const checks: [string, number][] = [
+        ["foreground/background", ratio(foregroundColor, backgroundColor)],
+        ["accent/background", ratio(accentColor, backgroundColor)],
+      ];
+      if (buttonStyle === "solid") {
+        checks.push(["white/accent", ratio("#ffffff", accentColor)]);
+      }
+      for (const [label, value] of checks) {
+        if (value < 4.5) {
+          failures.push(`${preset} ${label} ${value.toFixed(2)}:1`);
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  // DESIGN.md -> The Preset Distinction Rule: each preset must be identifiable
+  // at a glance from its ground, accent, and type pairing together.
+  it("gives every preset a unique accent", () => {
+    const accents = Object.values(THEME_PRESET_DEFINITIONS).map((d) =>
+      d.brandKit.accentColor.toLowerCase()
+    );
+    expect(new Set(accents).size).toBe(accents.length);
+  });
 });

@@ -24,7 +24,8 @@ export const THEME_PRESET_DEFINITIONS: Record<
       primaryColor: "#111111",
       secondaryColor: "#f5f5f5",
       accentColor: "#2f5d56",
-      backgroundColor: "#ffffff",
+      // Near-white, not pure white — the gallery ground still reads white-cube.
+      backgroundColor: "#fcfcfb",
       foregroundColor: "#111111",
       radius: "sharp",
       buttonStyle: "solid",
@@ -72,7 +73,8 @@ export const THEME_PRESET_DEFINITIONS: Record<
       primaryColor: "#101010",
       secondaryColor: "#f0f0f0",
       accentColor: "#1f3a5f",
-      backgroundColor: "#ffffff",
+      // Near-white with a faint cool cast, sitting with the navy accent.
+      backgroundColor: "#fbfbfc",
       foregroundColor: "#101010",
       radius: "sharp",
       buttonStyle: "solid",
@@ -87,7 +89,9 @@ export const THEME_PRESET_DEFINITIONS: Record<
       bodyFont: "dm-sans",
       primaryColor: "#3a2b2b",
       secondaryColor: "#f3e6e2",
-      accentColor: "#9c6b6b",
+      // Deepened dusty rose — the lighter #9c6b6b read at only 4.15:1 on the
+      // blush ground.
+      accentColor: "#8a5555",
       backgroundColor: "#fcf6f4",
       foregroundColor: "#3a2b2b",
       radius: "subtle",
@@ -103,7 +107,9 @@ export const THEME_PRESET_DEFINITIONS: Record<
       bodyFont: "dm-sans",
       primaryColor: "#1a1a1a",
       secondaryColor: "#ebebe8",
-      accentColor: "#2f5d56",
+      // Deep aubergine — the one hue not already claimed by another preset
+      // (Minimal owns the pine-teal that mirrors the default brand kit).
+      accentColor: "#4a3a5c",
       backgroundColor: "#f7f7f5",
       foregroundColor: "#1a1a1a",
       radius: "subtle",
