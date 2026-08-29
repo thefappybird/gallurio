@@ -49,6 +49,22 @@ export const PF_PAGE_CONTAINER: CSSProperties = {
 /** CSS declaration establishing the page container — for injected `<style>` seams. */
 export const PF_PAGE_CONTAINER_CSS = `container-type: inline-size; container-name: ${PF_CONTAINER_NAME};`;
 
+/**
+ * Section padding the gallery container blocks (GalleryGrid, GalleryMasonry,
+ * FeaturedWork) paint when `_style` sets none. Lives here as ONE value so the
+ * editor's padding controls can float exactly what the blocks apply — the two
+ * drifting apart is what left those controls blank while the page had 64/24px.
+ */
+export const GALLERY_EFFECTIVE_PAD = {
+  top: "4rem",
+  right: "1.5rem",
+  bottom: "4rem",
+  left: "1.5rem",
+} as const;
+
+/** `GALLERY_EFFECTIVE_PAD` as the CSS shorthand the blocks hand to `padVar`. */
+export const GALLERY_PAD_SHORTHAND = `${GALLERY_EFFECTIVE_PAD.top} ${GALLERY_EFFECTIVE_PAD.right}`;
+
 /** Wrap a default value in the responsive padding custom property. */
 export function padVar(defaultValue: string): string {
   return `var(--pf-pad, ${defaultValue})`;

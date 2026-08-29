@@ -1492,6 +1492,26 @@ describe("B2a: Container padding — effective-default display (placeholder)", (
     const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     expect(spinbuttons[0].placeholder).toBe("24");
   });
+
+  it("shows the gallery blocks' own effective 64px top padding, not a blank control", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="GalleryGrid"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    // "Gallery" is the first drawer here, so Spacing starts collapsed and its
+    // children are unmounted — open it before reaching the padding inputs.
+    fireEvent.click(screen.getByRole("button", { name: "Spacing", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    expect(spinbuttons[0].placeholder).toBe("64");
+  });
 });
 
 describe("Font select — Google Fonts", () => {

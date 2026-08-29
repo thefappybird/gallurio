@@ -23,7 +23,7 @@ import {
 } from "@/lib/page-builder/styleToolkit";
 import type { GalleryImage } from "./GalleryGridBlock";
 import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
-import { padVar, masonryColsVar } from "@/lib/page-builder/responsive";
+import { GALLERY_PAD_SHORTHAND, padVar, masonryColsVar } from "@/lib/page-builder/responsive";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
@@ -152,7 +152,7 @@ export function GalleryMasonryBlock({
           overflow: "hidden",
           backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
           minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
-          padding: padVar("4rem 1.5rem"),
+          padding: padVar(GALLERY_PAD_SHORTHAND),
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -193,7 +193,7 @@ export function GalleryMasonryBlock({
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
         minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
-        padding: padVar("4rem 1.5rem"),
+        padding: padVar(GALLERY_PAD_SHORTHAND),
         fontFamily: "var(--pf-font-body)",
         ...sectionStyle,
       }}

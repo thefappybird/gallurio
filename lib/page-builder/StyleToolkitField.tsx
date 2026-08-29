@@ -81,6 +81,7 @@ import {
   type StyleColorToken,
   effectiveButtonTextToken,
 } from "./styleToolkit";
+import { GALLERY_EFFECTIVE_PAD } from "./responsive";
 import { CountControl } from "./CountControl";
 import { useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import {
@@ -1739,6 +1740,7 @@ export function LayoutTabBody({
   const effectivePad: EffectivePad | undefined =
     isFlexContainer ? CONTAINER_EFFECTIVE_PAD :
     blockType === "Columns" ? COLUMNS_EFFECTIVE_PAD :
+    isGalleryContainer ? GALLERY_EFFECTIVE_PAD :
     undefined;
   if (isGalleryLayout) {
     if (isGalleryContainer) {
@@ -1750,7 +1752,7 @@ export function LayoutTabBody({
             <GalleryLayoutControls type={blockType} s={s} set={set} />
           </EditorDrawerSection>
           <EditorDrawerSection title="Spacing">
-            <PaddingControls s={s} set={set} />
+            <PaddingControls s={s} set={set} effectivePad={effectivePad} />
           </EditorDrawerSection>
           <EditorDrawerSection title="Layout">
             {p !== undefined && setProp !== undefined && (

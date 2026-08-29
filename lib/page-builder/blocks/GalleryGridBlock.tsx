@@ -24,7 +24,7 @@ import {
   getGalleryChromeLabelsFrom,
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
-import { padVar, gridColsVar } from "@/lib/page-builder/responsive";
+import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/responsive";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
@@ -187,7 +187,7 @@ export function GalleryGridBlock({
           overflow: "hidden",
           backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
           minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
-          padding: padVar("4rem 1.5rem"),
+          padding: padVar(GALLERY_PAD_SHORTHAND),
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -228,7 +228,7 @@ export function GalleryGridBlock({
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
         minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
-        padding: padVar("4rem 1.5rem"),
+        padding: padVar(GALLERY_PAD_SHORTHAND),
         fontFamily: "var(--pf-font-body)",
         ...sectionStyle,
       }}
