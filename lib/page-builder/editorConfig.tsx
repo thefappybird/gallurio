@@ -38,10 +38,12 @@ import type { RootPageStyle } from "./rootStyle";
 import { NumberInputRow } from "./toolbarPrimitives";
 import {
   resolveBlockStyle,
+  resolveBlockAttrs,
   buildContactLabelStyle,
   buildContactValueStyle,
   buildContactIconColor,
   buildContactIconSize,
+  buildContactIconAlign,
   contactGridTemplate,
   type BlockStyle,
   type StyleColorToken,
@@ -674,11 +676,10 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
       const valueStyle = buildContactValueStyle(_style);
       const iconColor = buildContactIconColor(_style);
       const iconSize = buildContactIconSize(_style);
-      // Mirror SocialsRow: default to center when valueAlign is unset.
-      const iconJustify =
-        _style?.valueAlign === "left" ? "flex-start" :
-        _style?.valueAlign === "right" ? "flex-end" :
-        "center";
+      // Same resolver as production SocialsRow: contactIconAlign wins, then
+      // valueAlign, then center. Never re-inline this — the canvas silently
+      // drifts from the published page when it does.
+      const iconJustify = buildContactIconAlign(_style);
       return (
         <dl
           ref={puck?.dragRef ?? undefined}
@@ -693,6 +694,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
             color: "var(--pf-color-fg)",
             ...resolveBlockStyle(_style),
           }}
+          {...resolveBlockAttrs(_style)}
         >
           {email && (
             <div style={rowStyle}>
@@ -713,7 +715,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
             </div>
           )}
           {hasSocials && (
-            <div style={rowStyle}>
+            <div style={{ ...rowStyle, gap: "0.25rem" }}>
               <dt style={labelStyle}>Follow</dt>
               <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.875rem", color: iconColor, justifyContent: iconJustify }}>
                 {igHref && <SocialIconLink href={igHref} platform="instagram" size={iconSize} label="Instagram" />}

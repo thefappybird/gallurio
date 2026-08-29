@@ -98,4 +98,47 @@ describe("editor ContactDetails WYSIWYG", () => {
     const dd = container.querySelector("dd") as HTMLElement;
     expect(dd.style.justifyContent).toBe("center");
   });
+
+  it("canvas socials dd honors contactIconAlign over valueAlign", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    const { container } = render(
+      <Render
+        id="cd-icon-align"
+        _style={{ valueAlign: "left", contactIconAlign: "right" }}
+        instagram="testhandle"
+        puck={{} as never}
+      />
+    );
+    const dd = container.querySelector("dd") as HTMLElement;
+    expect(dd.style.justifyContent).toBe("flex-end");
+  });
+
+  it("canvas dl emits the same data-anim/data-hover attrs production does", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    const { container } = render(
+      <Render
+        id="cd-attrs"
+        _style={{ animation: "slide-up", hover: "lift" }}
+        email="hi@example.com"
+        puck={{} as never}
+      />
+    );
+    const dl = container.querySelector("dl") as HTMLElement;
+    expect(dl.getAttribute("data-anim")).toBe("slide-up");
+    expect(dl.getAttribute("data-hover")).toBe("lift");
+  });
+
+  it("canvas Follow-row wrapper uses the same gap production's SocialsRow does", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    const { container } = render(
+      <Render
+        id="cd-follow-gap"
+        _style={undefined}
+        instagram="testhandle"
+        puck={{} as never}
+      />
+    );
+    const wrapper = (container.querySelector("dd") as HTMLElement).parentElement as HTMLElement;
+    expect(wrapper.style.gap).toBe("0.25rem");
+  });
 });
