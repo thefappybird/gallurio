@@ -71,6 +71,7 @@ import {
   listDraftsAction,
   publishDraftAction,
   seedTemplateAction,
+  importDemoPortfolioAction,
   type DraftSummary,
 } from "../_draftActions";
 import { PublishDialog } from "./PublishDialog";
@@ -118,7 +119,14 @@ import { SuppressedActionBar } from "./SuppressedActionBar";
 import { BlockActionsToolbar } from "./BlockActionsToolbar";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { DemoGateModal, type DemoGateType } from "./DemoGateModal";
-import { getOrCreateDemoSessionId, demoDraftKey } from "@/lib/page-builder/demoSession";
+import {
+  getOrCreateDemoSessionId,
+  demoDraftKey,
+  detectImportableDemoSession,
+  readDemoImageLibrary,
+  wipeDemoLocalStorage,
+} from "@/lib/page-builder/demoSession";
+import { DemoImportDetectedDialog } from "./DemoImportDetectedDialog";
 import { DemoPickerContext } from "@/lib/page-builder/demoPickerContext";
 import { getTemplate } from "@/lib/page-builder/templates";
 import { useDemoGuideChrome } from "@/lib/page-builder/demoGuideChrome";
@@ -832,7 +840,14 @@ export function EditorShell({
   // When guideDismissed=true, open the entry immediately — but brand-new users (no saved
   // drafts AND no recoverable buffer) go to the welcome template modal instead.
   // When guideDismissed=false, both stay closed until guide finishes/skips.
+  // Detected once at mount: a leftover Portfolio Maker demo session's saved
+  // buffer, worth offering to import into this draft instead of the normal
+  // entry flow. Never checked in demoMode itself (the demo doesn't import
+  // from itself). Not re-checked after mount — wipeDemoLocalStorage clears
+  // localStorage directly and demoImportOpen tracks dismissal separately.
+  const [detectedDemo] = useState(() => (demoMode ? null : detectImportableDemoSession()));
   const [entryOpen, setEntryOpen] = useState(() => {
+    if (detectedDemo) return false;
     if (!guideDismissed) return false;
     // Brand-new check: no saved drafts AND no localStorage buffer.
     const hasDrafts = initialDrafts.length > 0;
@@ -849,6 +864,7 @@ export function EditorShell({
   });
   // Welcome template modal for brand-new users (no buffer AND no saved drafts).
   const [welcomeTemplatesOpen, setWelcomeTemplatesOpen] = useState(() => {
+    if (detectedDemo) return false;
     if (!guideDismissed) return false;
     const hasDrafts = initialDrafts.length > 0;
     const hasBuffer = (() => {
@@ -863,6 +879,11 @@ export function EditorShell({
     return !hasDrafts && !hasBuffer;
   });
   const [pendingAction, setPendingAction] = useState<{ run: () => void; reseeds: boolean } | null>(null);
+  // Opens immediately (mirroring entryOpen) when guideDismissed was already
+  // true at mount; otherwise openEntryAfterGuide opens it once the
+  // guide/story-prompt phase resolves — see openEntryAfterGuide below.
+  const [demoImportOpen, setDemoImportOpen] = useState(() => Boolean(detectedDemo) && guideDismissed);
+  const [demoImportBusy, setDemoImportBusy] = useState(false);
   // ---- Demo-mode-only state (app/[locale]/portfolio-maker-demo) ----
   const [demoSessionId] = useState<string>(() => (demoMode ? getOrCreateDemoSessionId() : ""));
   // Simplified 2-option entry screen, shown instead of PortfolioEntryDialog /
@@ -1220,6 +1241,66 @@ export function EditorShell({
     } else {
       run();
     }
+  }
+
+  // ---- Demo import (detected on mount — see detectedDemo above) ----
+  // Both paths wipe the demo session's localStorage so the detection can
+  // never fire again for it, regardless of which button was pressed.
+  function handleDemoImportDiscard() {
+    if (detectedDemo) wipeDemoLocalStorage(detectedDemo.sessionId);
+    setDemoImportOpen(false);
+  }
+
+  async function runDemoImport() {
+    if (!detectedDemo) {
+      setDemoImportOpen(false);
+      return;
+    }
+    setDemoImportBusy(true);
+    try {
+      const res = await importDemoPortfolioAction({
+        demoSessionId: detectedDemo.sessionId,
+        draft: {
+          data: detectedDemo.buffer.data,
+          brandKit: detectedDemo.buffer.brandKit,
+          contact: detectedDemo.buffer.contact,
+          header: detectedDemo.buffer.headerConfig,
+          collectionsPopup: detectedDemo.buffer.collectionsPopup,
+          formLocale: detectedDemo.buffer.formLocale,
+          formDir: detectedDemo.buffer.formDir,
+        },
+        images: readDemoImageLibrary(detectedDemo.sessionId).map((img) => ({
+          publicId: img.publicId,
+          width: img.width,
+          height: img.height,
+        })),
+      });
+      if ("error" in res) {
+        toast.error(t("demoImportDialog.errorToast"));
+        return;
+      }
+      if (res.failedAssetIds.length > 0) {
+        toast.error(t("demoImportDialog.partialFailureToast", { count: res.failedAssetIds.length }));
+      } else {
+        toast.success(t("demoImportDialog.importedToast"));
+      }
+      wipeDemoLocalStorage(detectedDemo.sessionId);
+      setDemoImportOpen(false);
+      await applyDraft(res.draft.id);
+    } catch (err) {
+      console.error("[portfolio] demo import failed", err);
+      toast.error(t("demoImportDialog.errorToast"));
+    } finally {
+      setDemoImportBusy(false);
+    }
+  }
+
+  function handleDemoImportConfirm() {
+    // Reuses the existing unsaved-changes guard: if a draft is already loaded
+    // and dirty, UnsavedChangesDialog appears first so the owner can save
+    // before it's replaced (reseeds=true — runDemoImport re-seeds the canvas
+    // itself via applyDraft, so the intermediate restore is skipped).
+    guardThenRun(() => { void runDemoImport(); }, true);
   }
 
   // ---- Apply draft ----
@@ -1685,6 +1766,10 @@ export function EditorShell({
   function openEntryAfterGuide() {
     if (demoMode) {
       setDemoEntryOpen(true);
+      return;
+    }
+    if (detectedDemo) {
+      setDemoImportOpen(true);
       return;
     }
     // Brand-new = no recoverable local buffer AND no saved drafts.
@@ -2561,6 +2646,14 @@ export function EditorShell({
           // to resume it just because they opted out of the tour.
           onExploreSelf={() => { setDemoIntroOpen(false); setDemoEntryOpen(true); }}
           t={tDemo}
+        />
+      )}
+      {!demoMode && (
+        <DemoImportDetectedDialog
+          open={demoImportOpen}
+          busy={demoImportBusy}
+          onConfirm={handleDemoImportConfirm}
+          onDiscard={handleDemoImportDiscard}
         />
       )}
       <UnsavedChangesDialog

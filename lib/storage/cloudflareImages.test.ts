@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   requestDirectUpload,
   verifyImageOwnership,
+  DEMO_UPLOAD_SUBFOLDER,
   deleteImage,
   imageDeliveryUrl,
+  updateImageMetadata,
 } from "./cloudflareImages";
 
 const ACCOUNT_ID = "acc123";
@@ -104,6 +106,32 @@ describe("verifyImageOwnership", () => {
     }));
 
     expect(await verifyImageOwnership("img_1", "ws_1")).toBe(true);
+  });
+
+  // The demo-import path compares a CLIENT-SUPPLIED id against this same
+  // `workspaceId` metadata field. Matching the id alone is therefore not proof
+  // of anything — the asset must also be the right KIND. A real tenant's asset
+  // carries subfolder "gallery"; only a demo upload carries the demo tag.
+  it("returns false when the id matches but the asset is not the expected kind", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        result: { meta: { workspaceId: "ws_1", subfolder: "gallery" } },
+      }),
+    }));
+
+    expect(await verifyImageOwnership("img_1", "ws_1", DEMO_UPLOAD_SUBFOLDER)).toBe(false);
+  });
+
+  it("returns true when both the id and the expected kind match", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        result: { meta: { workspaceId: "demo-session", subfolder: DEMO_UPLOAD_SUBFOLDER } },
+      }),
+    }));
+
+    expect(await verifyImageOwnership("img_1", "demo-session", DEMO_UPLOAD_SUBFOLDER)).toBe(true);
   });
 
   it("returns false when workspaceId does not match", async () => {
@@ -208,6 +236,32 @@ describe("deleteImage", () => {
     // clearTimeout on an already-fired timer) can leak into real-timer mode.
     vi.clearAllTimers();
     vi.useRealTimers();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateImageMetadata
+// ---------------------------------------------------------------------------
+
+describe("updateImageMetadata", () => {
+  it("PATCHes the image's metadata to the correct endpoint", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await updateImageMetadata("img_1", { workspaceId: "ws_real", subfolder: "gallery" });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit & { body: FormData }];
+    expect(url).toContain(`/accounts/${ACCOUNT_ID}/images/v1/img_1`);
+    expect(init.method).toBe("PATCH");
+    const meta = JSON.parse((init.body as FormData).get("metadata") as string);
+    expect(meta).toEqual({ workspaceId: "ws_real", subfolder: "gallery" });
+  });
+
+  it("throws when CF returns non-ok", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => "err" }));
+    await expect(updateImageMetadata("img_1", { workspaceId: "ws_real" })).rejects.toThrow(
+      "CF metadata update failed 500"
+    );
   });
 });
 

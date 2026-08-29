@@ -5,15 +5,19 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { PortfolioDraft, Workspace, type PortfolioDraftDoc } from "@/lib/db/models";
+import { PortfolioDraft, Workspace, GalleryItem, type PortfolioDraftDoc } from "@/lib/db/models";
 import type { PlanTier } from "@/lib/db/models/Workspace";
 import { createDraftSchema, updateDraftSchema } from "@/lib/validators/portfolioDraft";
+import { demoImportSchema } from "@/lib/validators/demoImport";
 import { draftCapForPlan } from "@/lib/page-builder/drafts";
 import type { PuckData } from "@/lib/page-builder/types";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { getTemplate } from "@/lib/page-builder/templates";
-import { deleteImage } from "@/lib/storage/cloudflareImages";
+import { deleteImage, verifyImageOwnership, updateImageMetadata, imageDeliveryUrl, DEMO_UPLOAD_SUBFOLDER } from "@/lib/storage/cloudflareImages";
+
+/** Auto-name for a draft created from an imported Portfolio Maker demo. */
+const DEMO_IMPORT_DRAFT_NAME = "Demo portfolio";
 
 export type DraftSummary = {
   id: string;
@@ -400,5 +404,116 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
   revalidatePath("/sitemap.xml");
   return { ok: true };
+}
+
+export type DemoImportResult =
+  | { ok: true; draft: DraftSummary; failedAssetIds: string[] }
+  | { error: string };
+
+/**
+ * Claims a Portfolio Maker demo session's content into a brand-new draft for
+ * the caller's own workspace: verifies + re-parents each demo-uploaded
+ * Cloudflare asset (creating a GalleryItem for it), then creates a draft
+ * seeded from the demo's blocks/brandKit/contact/header/collectionsPopup.
+ *
+ * Trust boundary: `workspaceId` is never taken from the client — it is always
+ * resolved from the caller's own session via requireOrg(). Each image is only
+ * re-parented after verifyImageOwnership confirms its CURRENT Cloudflare
+ * metadata marks it as belonging to the claimed demoSessionId (demo uploads
+ * are tagged with the demo session id in that field — see
+ * app/api/portfolio-maker-demo/upload/route.ts) — a caller cannot hand in an
+ * arbitrary publicId and adopt another workspace's (or another demo
+ * session's) asset.
+ *
+ * Idempotent for the GalleryItem side: an asset already re-parented into this
+ * workspace (existing GalleryItem row for the same workspaceId+assetId) is
+ * left alone on a retried import rather than duplicated. A single asset
+ * failure never aborts the rest — failures are collected into
+ * `failedAssetIds` and the draft is still created from whatever succeeded.
+ */
+export async function importDemoPortfolioAction(input: unknown): Promise<DemoImportResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = demoImportSchema.safeParse(input);
+  if (!parsed.success) return { error: "invalid_data" };
+
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+  const wsIdStr = String(workspaceId);
+  const { demoSessionId, draft, images } = parsed.data;
+
+  const failedAssetIds: string[] = [];
+  for (const img of images) {
+    try {
+      const owned = await verifyImageOwnership(
+        img.publicId,
+        demoSessionId,
+        DEMO_UPLOAD_SUBFOLDER
+      );
+      if (!owned) {
+        failedAssetIds.push(img.publicId);
+        continue;
+      }
+      await updateImageMetadata(img.publicId, { workspaceId: wsIdStr, subfolder: "gallery" });
+      const existing = await GalleryItem.findOne({ workspaceId, assetId: img.publicId })
+        .select({ _id: 1 })
+        .lean();
+      if (!existing) {
+        const order = await GalleryItem.countDocuments({ workspaceId, collectionId: null });
+        await GalleryItem.create({
+          workspaceId,
+          assetId: img.publicId,
+          // Never the client-supplied url — img is untrusted (it comes
+          // straight out of localStorage) and demoImportImageSchema does not
+          // even accept a url field. Always derive from the ownership-verified
+          // publicId, same as every other read path (lib/db/queries/gallery.ts).
+          url: imageDeliveryUrl(img.publicId),
+          width: img.width ?? null,
+          height: img.height ?? null,
+          order,
+        });
+      }
+    } catch (err) {
+      console.error("[portfolio] demo import: failed to claim asset", img.publicId, err);
+      failedAssetIds.push(img.publicId);
+    }
+  }
+
+  const cap = draftCapForPlan(ctx.workspace.plan as PlanTier);
+  if (Number.isFinite(cap)) {
+    const count = await PortfolioDraft.countDocuments({ workspaceId });
+    if (count >= cap) return { error: `draft_limit_reached:${cap}` };
+  }
+
+  let name = DEMO_IMPORT_DRAFT_NAME;
+  let doc: PortfolioDraftDoc | null = null;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    try {
+      const [created] = await PortfolioDraft.create([
+        {
+          workspaceId,
+          name,
+          templateId: draft.templateId || "scratch",
+          data: draft.data,
+          brandKit: draft.brandKit,
+          contact: draft.contact,
+          header: draft.header,
+          collectionsPopup: draft.collectionsPopup,
+          formLocale: draft.formLocale || "",
+          formDir: draft.formDir || "",
+        },
+      ]);
+      doc = created;
+      break;
+    } catch (err) {
+      if (!isDuplicateKeyError(err)) throw err;
+      name = `${DEMO_IMPORT_DRAFT_NAME} (${attempt + 2})`;
+    }
+  }
+  if (!doc) return { error: "name_taken" };
+
+  revalidatePath("/portfolio");
+  return { ok: true, draft: toSummary(doc), failedAssetIds };
 }
 

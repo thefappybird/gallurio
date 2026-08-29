@@ -2688,6 +2688,15 @@
           "discard": "Itapon",
           "save": "I-save ang mga pagbabago"
         },
+        "demoImportDialog": {
+          "title": "May nakitang naka-save na demo portfolio",
+          "body": "Ipagpatuloy ang pag-edit?",
+          "yes": "Oo",
+          "discard": "Hindi, itapon",
+          "importedToast": "Handa nang i-edit ang iyong demo portfolio.",
+          "partialFailureToast": "Na-import, ngunit {count, plural, one {# larawan} other {# na larawan}} ang hindi nailipat.",
+          "errorToast": "Hindi na-import ang iyong demo portfolio. Pakisubukang muli."
+        },
         "blockActions": {
           "fallbackLabel": "Block",
           "actionsAria": "Mga aksyon ng {label}",

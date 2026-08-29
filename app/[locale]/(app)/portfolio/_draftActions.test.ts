@@ -12,6 +12,11 @@ vi.mock("@/lib/page-builder/reconcile", () => ({
 vi.mock("@/lib/storage/cloudflareImages", () => ({
   deleteImage: vi.fn().mockResolvedValue(undefined),
   verifyImageOwnership: vi.fn().mockResolvedValue(true),
+  updateImageMetadata: vi.fn().mockResolvedValue(undefined),
+  imageDeliveryUrl: (id: string) => `https://imagedelivery.net/hash/${id}/public`,
+  // Mirror the real constant — the demo-import path passes it to
+  // verifyImageOwnership to demand the asset be a DEMO upload, not a tenant's.
+  DEMO_UPLOAD_SUBFOLDER: "portfolio-maker-demo",
 }));
 
 let mockCtx: {
@@ -29,8 +34,8 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { deleteImage } from "@/lib/storage/cloudflareImages";
-import { PortfolioDraft, Workspace } from "@/lib/db/models";
+import { deleteImage, verifyImageOwnership, updateImageMetadata } from "@/lib/storage/cloudflareImages";
+import { PortfolioDraft, Workspace, GalleryItem } from "@/lib/db/models";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import {
   createDraftAction,
@@ -39,6 +44,7 @@ import {
   listDraftsAction,
   getDraftAction,
   publishDraftAction,
+  importDemoPortfolioAction,
 } from "./_draftActions";
 
 const snapshot = {
@@ -70,6 +76,8 @@ beforeEach(async () => {
   await clearCollections();
   revalidatePath.mockClear();
   vi.mocked(deleteImage).mockClear();
+  vi.mocked(verifyImageOwnership).mockClear();
+  vi.mocked(updateImageMetadata).mockClear();
   setWorkspace();
 });
 
@@ -460,5 +468,108 @@ describe("publishDraftAction", () => {
     const res = await publishDraftAction(String(draft._id));
     expect(res).toEqual({ ok: true });
     expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-logo-1");
+  });
+});
+
+describe("importDemoPortfolioAction", () => {
+  // Demo sessions are crypto.randomUUID() (lib/page-builder/demoSession.ts).
+  const DEMO_SESSION = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
+  const demoInput = {
+    demoSessionId: DEMO_SESSION,
+    draft: snapshot,
+    images: [{ publicId: "demo-img-1", width: 800, height: 600 }],
+  };
+
+  it("re-parents a verified demo asset, creates a GalleryItem, and lands a new named draft", async () => {
+    const res = await importDemoPortfolioAction(demoInput);
+    expect("ok" in res && res.ok).toBe(true);
+    if (!("ok" in res)) throw new Error("expected ok");
+    expect(res.draft.name).toBe("Demo portfolio");
+    expect(res.failedAssetIds).toEqual([]);
+
+    expect(vi.mocked(verifyImageOwnership)).toHaveBeenCalledWith(
+      "demo-img-1",
+      DEMO_SESSION,
+      "portfolio-maker-demo"
+    );
+    expect(vi.mocked(updateImageMetadata)).toHaveBeenCalledWith("demo-img-1", {
+      workspaceId: String(mockCtx.workspace._id),
+      subfolder: "gallery",
+    });
+
+    const item = await GalleryItem.findOne({ workspaceId: mockCtx.workspace._id, assetId: "demo-img-1" }).lean();
+    expect(item).not.toBeNull();
+    expect(item!.width).toBe(800);
+  });
+
+  // The demoSessionId is client-supplied and is compared against the asset's
+  // Cloudflare `workspaceId` metadata. If any string were accepted, a caller
+  // could pass a VICTIM WORKSPACE's ObjectId plus a publicId harvested from
+  // that workspace's public portfolio, pass the ownership check, and have the
+  // asset re-parented into their own workspace. Constraining the shape to a
+  // UUID makes a 24-hex ObjectId unrepresentable.
+  it("rejects a demoSessionId shaped like a workspace id, before any Cloudflare call", async () => {
+    const res = await importDemoPortfolioAction({
+      ...demoInput,
+      demoSessionId: String(mockCtx.workspace._id),
+    });
+
+    expect(res).toEqual({ error: "invalid_data" });
+    expect(vi.mocked(verifyImageOwnership)).not.toHaveBeenCalled();
+    expect(vi.mocked(updateImageMetadata)).not.toHaveBeenCalled();
+  });
+
+  it("refuses to adopt an asset that does not belong to the claimed demo session (tenancy attack), but still lands the page", async () => {
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+
+    const res = await importDemoPortfolioAction(demoInput);
+    expect("ok" in res && res.ok).toBe(true);
+    if (!("ok" in res)) throw new Error("expected ok");
+    expect(res.failedAssetIds).toEqual(["demo-img-1"]);
+
+    expect(vi.mocked(updateImageMetadata)).not.toHaveBeenCalled();
+    const item = await GalleryItem.findOne({ workspaceId: mockCtx.workspace._id, assetId: "demo-img-1" }).lean();
+    expect(item).toBeNull();
+  });
+
+  it("is idempotent: retrying the same claim does not duplicate the GalleryItem row", async () => {
+    await importDemoPortfolioAction(demoInput);
+    await importDemoPortfolioAction({ ...demoInput, draft: { ...snapshot } });
+
+    const items = await GalleryItem.find({ workspaceId: mockCtx.workspace._id, assetId: "demo-img-1" }).lean();
+    expect(items).toHaveLength(1);
+  });
+
+  it("blocks staff (owner_only)", async () => {
+    mockCtx.role = "staff";
+    const res = await importDemoPortfolioAction(demoInput);
+    expect(res).toEqual({ error: "owner_only" });
+  });
+
+  it("never persists a client-supplied url — the stored URL is always derived from the verified publicId", async () => {
+    const hostileInput = {
+      ...demoInput,
+      images: [
+        {
+          publicId: "demo-img-1",
+          url: "javascript:alert(1)//https://evil.example/x",
+          width: 800,
+          height: 600,
+        },
+      ],
+    };
+
+    const res = await importDemoPortfolioAction(hostileInput);
+    expect("ok" in res && res.ok).toBe(true);
+
+    const item = await GalleryItem.findOne({ workspaceId: mockCtx.workspace._id, assetId: "demo-img-1" }).lean();
+    expect(item!.url).toBe("https://imagedelivery.net/hash/demo-img-1/public");
+  });
+
+  it("auto-dedupes the draft name when 'Demo portfolio' already exists", async () => {
+    await createDraftAction({ name: "Demo portfolio", ...snapshot });
+    const res = await importDemoPortfolioAction(demoInput);
+    expect("ok" in res && res.ok).toBe(true);
+    if ("ok" in res) expect(res.draft.name).toBe("Demo portfolio (2)");
   });
 });

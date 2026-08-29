@@ -2688,6 +2688,15 @@
           "discard": "Discard",
           "save": "Save changes"
         },
+        "demoImportDialog": {
+          "title": "We detected a saved demo portfolio",
+          "body": "Continue editing?",
+          "yes": "Yes",
+          "discard": "No, discard",
+          "importedToast": "Your demo portfolio is ready to edit.",
+          "partialFailureToast": "Imported, but {count, plural, one {# photo} other {# photos}} could not be transferred.",
+          "errorToast": "Could not import your demo portfolio. Please try again."
+        },
         "blockActions": {
           "fallbackLabel": "Block",
           "actionsAria": "{label} actions",

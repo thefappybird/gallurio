@@ -2688,6 +2688,15 @@
           "discard": "تجاهل",
           "save": "حفظ التغييرات"
         },
+        "demoImportDialog": {
+          "title": "اكتشفنا نموذج معرض أعمال تجريبي محفوظ",
+          "body": "المتابعة في التعديل؟",
+          "yes": "نعم",
+          "discard": "لا، تجاهل",
+          "importedToast": "معرض أعمالك التجريبي جاهز للتعديل.",
+          "partialFailureToast": "{count, plural, one {تم الاستيراد، لكن تعذر نقل صورة واحدة.} other {تم الاستيراد، لكن تعذر نقل # صور.}}",
+          "errorToast": "تعذر استيراد معرض أعمالك التجريبي. يرجى المحاولة مرة أخرى."
+        },
         "blockActions": {
           "fallbackLabel": "قسم",
           "actionsAria": "إجراءات {label}",

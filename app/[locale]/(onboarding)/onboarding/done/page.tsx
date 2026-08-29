@@ -3,6 +3,7 @@ import {
   loadOnboardingContext,
   stepIndex,
 } from "@/lib/auth/onboardingStep";
+import { hasDemoImportMarker } from "@/lib/auth/demoImportMarker";
 import { connectDB } from "@/lib/db/mongoose";
 import { ONBOARDING_STEPS, User, Workspace, type PlanTier } from "@/lib/db/models";
 import { reconcileLemonSqueezySubscription } from "@/lib/actions/onboarding";
@@ -17,7 +18,9 @@ import { DoneStepForm } from "./done-form";
 export default async function DoneStepPage() {
   const ctx = await loadOnboardingContext();
 
-  if (ctx.user?.onboardingCompletedAt) redirect("/dashboard");
+  if (ctx.user?.onboardingCompletedAt) {
+    redirect((await hasDemoImportMarker()) ? "/portfolio" : "/dashboard");
+  }
 
   if (stepIndex(ctx.currentStep) < stepIndex("plan")) {
     redirect(`/onboarding/${ctx.currentStep}`);

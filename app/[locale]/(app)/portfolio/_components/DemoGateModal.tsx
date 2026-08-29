@@ -12,7 +12,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DEMO_PROMO_CODE, isDemoPromoClaimed, markDemoPromoClaimed } from "@/lib/page-builder/demoSession";
+import {
+  DEMO_PROMO_CODE,
+  isDemoPromoClaimed,
+  markDemoPromoClaimed,
+  markDemoSignupIntent,
+} from "@/lib/page-builder/demoSession";
 
 /** Which demo restriction the visitor just hit. `null` = modal closed. */
 export type DemoGateType = "imageCap" | "blockCap" | "publish" | "theme" | null;
@@ -69,7 +74,14 @@ export function DemoGateModal({ gate, onClose }: Props) {
           <Button type="button" variant="outline" onClick={onClose}>
             {t("dismiss")}
           </Button>
-          <Link href="/sign-up" className={buttonVariants({ variant: "brand" })} onClick={onClose}>
+          <Link
+            href="/sign-up"
+            className={buttonVariants({ variant: "brand" })}
+            onClick={() => {
+              markDemoSignupIntent();
+              onClose();
+            }}
+          >
             {t("cta")}
           </Link>
         </DialogFooter>

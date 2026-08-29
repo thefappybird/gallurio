@@ -2688,6 +2688,15 @@
           "discard": "Buang",
           "save": "Simpan perubahan"
         },
+        "demoImportDialog": {
+          "title": "Kami menemukan portofolio demo yang tersimpan",
+          "body": "Lanjutkan mengedit?",
+          "yes": "Ya",
+          "discard": "Tidak, buang",
+          "importedToast": "Portofolio demo Anda siap untuk diedit.",
+          "partialFailureToast": "Diimpor, tetapi {count, plural, other {# foto}} tidak dapat dipindahkan.",
+          "errorToast": "Tidak dapat mengimpor portofolio demo Anda. Silakan coba lagi."
+        },
         "blockActions": {
           "fallbackLabel": "Blok",
           "actionsAria": "Tindakan {label}",

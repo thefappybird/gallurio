@@ -138,6 +138,11 @@ const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
 const listDraftsAction = vi.fn().mockResolvedValue([]);
 const publishDraftAction = vi.fn().mockResolvedValue({ ok: true });
+const importDemoPortfolioAction = vi.fn().mockResolvedValue({
+  ok: true,
+  draft: { id: "demo-d1", name: "Demo portfolio", templateId: "scratch", updatedAt: new Date().toISOString() },
+  failedAssetIds: [],
+});
 const seedTemplateAction = vi.fn((templateId = "minimal") =>
   Promise.resolve({
     ok: true,
@@ -159,6 +164,7 @@ vi.mock("../_draftActions", () => ({
   listDraftsAction: (...a: unknown[]) => listDraftsAction(...a),
   publishDraftAction: (...a: unknown[]) => publishDraftAction(...a),
   seedTemplateAction: (...a: unknown[]) => seedTemplateAction(...a),
+  importDemoPortfolioAction: (...a: unknown[]) => importDemoPortfolioAction(...a),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -1681,5 +1687,91 @@ describe("EditorShell real (non-demo) editor — unaffected by the demo picker s
 
     const openInTab = screen.getByRole("button", { name: "Open in new tab" });
     expect(openInTab).not.toBeDisabled();
+  });
+});
+
+describe("EditorShell — demo import detection", () => {
+  const DEMO_SESSION_KEY = "gallurio:portfolio-maker-demo:session";
+  const demoDraftKey = (id: string) => `gallurio:portfolio-maker-demo:draft:${id}`;
+  const demoBuffer = {
+    version: 2,
+    data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+    brandKit: {},
+    contact: {},
+    formLocale: "",
+    formDir: "",
+    headerConfig: {},
+    collectionsPopup: {},
+    draftId: null,
+    draftName: "New Draft",
+  };
+
+  function seedDemoBuffer(sessionId = "demo-sess-1") {
+    window.localStorage.setItem(DEMO_SESSION_KEY, sessionId);
+    window.localStorage.setItem(demoDraftKey(sessionId), JSON.stringify(demoBuffer));
+  }
+
+  it("shows the demo-import dialog instead of the entry dialog when a demo buffer is detected", async () => {
+    seedDemoBuffer();
+    renderWithProviders(<EditorShell {...baseProps} />);
+
+    expect(
+      await screen.findByText("We detected a saved demo portfolio")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+  });
+
+  it("'No, discard' wipes the demo localStorage and closes the dialog without importing", async () => {
+    seedDemoBuffer("demo-sess-2");
+    renderWithProviders(<EditorShell {...baseProps} />);
+    await screen.findByText("We detected a saved demo portfolio");
+
+    fireEvent.click(screen.getByRole("button", { name: "No, discard" }));
+
+    await waitFor(() =>
+      expect(screen.queryByText("We detected a saved demo portfolio")).not.toBeInTheDocument()
+    );
+    expect(window.localStorage.getItem(DEMO_SESSION_KEY)).toBeNull();
+    expect(window.localStorage.getItem(demoDraftKey("demo-sess-2"))).toBeNull();
+    expect(importDemoPortfolioAction).not.toHaveBeenCalled();
+  });
+
+  it("'Yes' imports the demo session, wipes localStorage, and loads the new draft — skipping the template picker", async () => {
+    seedDemoBuffer("demo-sess-3");
+    renderWithProviders(<EditorShell {...baseProps} />);
+    await screen.findByText("We detected a saved demo portfolio");
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+
+    await waitFor(() => expect(importDemoPortfolioAction).toHaveBeenCalledTimes(1));
+    expect(importDemoPortfolioAction).toHaveBeenCalledWith(
+      expect.objectContaining({ demoSessionId: "demo-sess-3" })
+    );
+    await waitFor(() =>
+      expect(screen.queryByText("We detected a saved demo portfolio")).not.toBeInTheDocument()
+    );
+    expect(window.localStorage.getItem(DEMO_SESSION_KEY)).toBeNull();
+    expect(window.localStorage.getItem(demoDraftKey("demo-sess-3"))).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Choose a template" })).not.toBeInTheDocument();
+    expect(getDraftAction).toHaveBeenCalledWith("demo-d1");
+  });
+
+  it("shows the unsaved-changes guard first when the loaded draft is dirty, then imports on Discard", async () => {
+    seedDemoBuffer("demo-sess-4");
+    renderWithProviders(<EditorShell {...baseProps} />);
+    await screen.findByText("We detected a saved demo portfolio");
+
+    // Dirty the currently-loaded draft underneath the modal (aria-hidden while
+    // the dialog traps focus, so it must be queried with hidden:true).
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change", hidden: true }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+
+    expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+    expect(importDemoPortfolioAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+
+    await waitFor(() => expect(importDemoPortfolioAction).toHaveBeenCalledTimes(1));
   });
 });
