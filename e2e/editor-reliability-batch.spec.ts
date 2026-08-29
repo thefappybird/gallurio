@@ -27,10 +27,15 @@ const ITEM_NAME = '[class*="_DrawerItem-name_"]';
 const CATEGORY_TITLE = '[class*="_ComponentList-title_"]';
 const CATEGORY_ROOT = '[class*="_ComponentList_"]';
 
-/** Fail loudly on a Next error overlay rather than asserting against one. */
-async function assertNoErrorOverlay(page: Page): Promise<void> {
-  const overlay = page.locator("nextjs-portal, [data-nextjs-dialog-overlay]");
-  expect(await overlay.count(), "no Next.js error overlay on the page").toBe(0);
+/**
+ * Collects uncaught page errors. `nextjs-portal` is NOT a usable signal — the dev
+ * server mounts one unconditionally for its own devtools indicator, so counting
+ * the element flags every healthy page.
+ */
+function collectPageErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  return errors;
 }
 
 async function openEditor(page: Page): Promise<void> {
@@ -60,10 +65,11 @@ async function openEditor(page: Page): Promise<void> {
 test.describe("brand background is painted, not just declared", () => {
   test("the preview surface paints --pf-color-bg", async ({ page }) => {
     test.setTimeout(120_000);
+    const errors = collectPageErrors(page);
     await page.goto("/en/portfolio-preview");
     // The shell holds children back until the local-draft read settles.
     await page.locator('[class*="pf-theme-"]').waitFor({ timeout: 60_000 });
-    await assertNoErrorOverlay(page);
+    expect(errors, "preview rendered without an uncaught error").toEqual([]);
 
     const painted = await page.evaluate(() => {
       const el = document.querySelector('[class*="pf-theme-"]');
@@ -110,6 +116,7 @@ test.describe("drawer preset previews", () => {
   test("rows are name-only and the live mini-render mounts inside Puck", async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1280, height: 900 });
+    const errors = collectPageErrors(page);
     await openEditor(page);
 
     // Hero is the one group expanded on arrival.
@@ -149,7 +156,9 @@ test.describe("drawer preset previews", () => {
     expect(rendered, "the preview frame is present").not.toBeNull();
     expect(rendered!.nodes, "the mini-render produced a block tree").toBeGreaterThan(3);
 
-    await assertNoErrorOverlay(page);
+    // Nested Puck contexts are the real risk here: <Render> mounted inside
+    // <Puck> must not throw.
+    expect(errors, "no uncaught error from the nested <Render>").toEqual([]);
   });
 
   test("the drawer does not overflow once rows carry a preview control", async ({ page }) => {
@@ -167,13 +176,88 @@ test.describe("drawer preset previews", () => {
       }, CATEGORY_ROOT);
       expect(overflow, `no drawer category overflows at ${width}px`).toEqual([]);
     }
-    // The eye button must not push names out of their row.
+    // Attribute clipping honestly: measure with the control present, then again
+    // with every control removed from the layout. Only the DIFFERENCE is caused
+    // by this change; Puck's drawer names may already truncate on their own.
+    const clipping = await page.evaluate((sel) => {
+      const count = () =>
+        (Array.from(document.querySelectorAll(sel)) as HTMLElement[]).filter(
+          (n) => n.scrollWidth > n.clientWidth + 1
+        ).length;
+      const withControl = count();
+      const controls = Array.from(
+        document.querySelectorAll('[data-slot="popover-trigger"]')
+      ) as HTMLElement[];
+      const prev = controls.map((c) => c.style.display);
+      controls.forEach((c) => (c.style.display = "none"));
+      const withoutControl = count();
+      controls.forEach((c, i) => (c.style.display = prev[i]));
+      return { withControl, withoutControl, controls: controls.length };
+    }, ITEM_NAME);
+
+    expect(clipping.controls, "the preview controls are present to measure").toBeGreaterThan(0);
     expect(
-      await page.evaluate((sel) => {
-        const names = Array.from(document.querySelectorAll(sel)) as HTMLElement[];
-        return names.filter((n) => n.scrollWidth > n.clientWidth + 1).length;
-      }, ITEM_NAME),
-      "no preset name is clipped by the new control"
-    ).toBe(0);
+      clipping.withControl,
+      `the preview control must not clip a name that fit without it ` +
+        `(with=${clipping.withControl} without=${clipping.withoutControl})`
+    ).toBe(clipping.withoutControl);
+  });
+});
+
+/**
+ * The footer presets were rebuilt to match their approved mockups: nav buttons
+ * use the new `link` style (a 1px bottom rule, no full frame, square corners),
+ * and Signature's three actions sit bundled on ONE centred row rather than
+ * spread across a 3-column grid.
+ *
+ * Structure is unit-tested in the composition suites. What only a browser shows
+ * is the RESOLVED geometry and border box — whether those buttons really land on
+ * one row and really draw a single edge. The drawer's live mini-render is the
+ * cheapest place to look, because it renders the genuine preset through the
+ * genuine config.
+ */
+test.describe("footer presets match their mockups", () => {
+  test("Signature's actions sit on one row and draw only a bottom rule", async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openEditor(page);
+
+    const footer = page
+      .locator(CATEGORY_ROOT)
+      .filter({ has: page.locator(CATEGORY_TITLE).filter({ hasText: /^Footer$/i }) })
+      .first();
+    await footer.waitFor({ state: "visible", timeout: 15_000 });
+    if (!(await footer.getAttribute("class"))?.includes("--isExpanded")) {
+      await footer.locator(CATEGORY_TITLE).first().click();
+      await page.waitForTimeout(300);
+    }
+
+    await footer.getByRole("button", { name: /Preview this block/i }).first().focus();
+    const popover = page.locator('[data-slot="popover-content"]');
+    await popover.waitFor({ state: "visible", timeout: 10_000 });
+
+    // The miniature is aria-hidden (decorative), so query the DOM directly
+    // rather than through the accessibility tree.
+    const geometry = await popover.evaluate((el) => {
+      const links = Array.from(el.querySelectorAll('a[role="button"]')) as HTMLElement[];
+      if (links.length < 3) return { count: links.length };
+      const rows = new Set(links.map((a) => Math.round(a.getBoundingClientRect().top)));
+      const cs = getComputedStyle(links[0]);
+      return {
+        count: links.length,
+        rows: rows.size,
+        borderBottom: cs.borderBottomWidth,
+        borderTop: cs.borderTopWidth,
+        borderLeft: cs.borderLeftWidth,
+        radius: cs.borderTopLeftRadius,
+      };
+    });
+
+    expect(geometry.count, "Signature footer renders its three nav actions").toBe(3);
+    expect(geometry.rows, "all three actions share one row").toBe(1);
+    expect(geometry.borderBottom, "link style draws a 1px bottom rule").toBe("1px");
+    expect(geometry.borderTop, "link style draws no top edge").toBe("0px");
+    expect(geometry.borderLeft, "link style draws no side edge").toBe("0px");
+    expect(geometry.radius, "link style has square corners").toBe("0px");
   });
 });

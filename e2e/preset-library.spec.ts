@@ -140,7 +140,9 @@ test.describe("grouped section-preset drawer", () => {
     expect(expanded.filter((t) => t !== "OTHER")).toEqual(["HERO"]);
   });
 
-  test("each preset item carries its variant name and description", async ({ page }) => {
+  test("each preset item shows its variant name, description moved to the preview", async ({
+    page,
+  }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: 1280, height: 900 });
     await openEditor(page);
@@ -152,8 +154,12 @@ test.describe("grouped section-preset drawer", () => {
     expect(text).toContain("Immersive cover");
     expect(text).toContain("Split introduction");
     expect(text).toContain("Typographic statement");
-    // The subtitle is what lets an owner tell three siblings apart before dragging.
-    expect(text).toContain("Copy and CTA beside an editable image");
+
+    // The one-line description used to sit inline under every name. With 33
+    // presets that made the drawer unscannable, so it moved into the hover /
+    // focus preview popover alongside a live miniature of the preset.
+    // `editor-reliability-batch.spec.ts` covers the popover itself.
+    expect(text).not.toContain("Copy and CTA beside an editable image");
   });
 
   test("the drawer does not overflow horizontally at 768 or 1280", async ({ page }) => {
