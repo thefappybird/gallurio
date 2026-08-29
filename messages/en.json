@@ -2963,8 +2963,7 @@
               "foreground": "Foreground"
             }
           },
-          "dragToAddHint": "Drag this block to add it to your page.",
-          "previewBlock": "Preview this block"
+          "dragToAddHint": "Drag this block to add it to your page."
         },
         "tour": {
           "next": "Next",

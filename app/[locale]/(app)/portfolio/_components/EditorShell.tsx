@@ -28,7 +28,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { CanvasViewportControls } from "./CanvasViewportControls";
-import { PresetDrawerItem } from "./PresetPreviewCard";
+import { PresetDrawerItem, PresetPreviewPanel } from "./PresetPreviewCard";
 import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -2011,22 +2011,20 @@ export function EditorShell({
         // The row is name-only: 33 rows each carrying a description made the
         // drawer too verbose to scan. The description moved into the preview
         // popover, beside a live miniature of the preset itself.
-        return (
-          <PresetDrawerItem
-            presetKey={name as SectionPresetKey}
-            name={t(preset.labelKey)}
-            description={t(preset.descriptionKey)}
-            dragHint={t("puckConfig.dragToAddHint")}
-            previewLabel={t("puckConfig.previewBlock")}
-            config={editorConfig as unknown as Config}
-            cssVars={cssVars}
-          >
-            {children}
-          </PresetDrawerItem>
-        );
+        // Handlers only. The panel itself is rendered ONCE below — Puck mounts
+        // every row twice, so a panel per row produced two stacked copies.
+        return <PresetDrawerItem presetKey={name as SectionPresetKey}>{children}</PresetDrawerItem>;
       },
     }),
-    [t, editorConfig, cssVars]
+    []
+  );
+
+  const describePreset = useCallback(
+    (key: SectionPresetKey) => ({
+      name: t(SECTION_PRESETS[key].labelKey),
+      description: t(SECTION_PRESETS[key].descriptionKey),
+    }),
+    [t]
   );
 
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
@@ -2281,6 +2279,18 @@ export function EditorShell({
               <p className="text-sm font-medium text-foreground">{t("loadingDraftEllipsis")}</p>
             </div>
           </div>
+        )}
+        {/* One preview panel for the whole drawer, positioned against whichever
+            row the store points at. Deliberately OUTSIDE the drawerItem
+            override: Puck renders every row twice, so a panel per row showed
+            two stacked copies of the same card. */}
+        {showPuck && (
+          <PresetPreviewPanel
+            config={editorConfig as unknown as Config}
+            cssVars={cssVars}
+            describe={describePreset}
+            dragHint={t("puckConfig.dragToAddHint")}
+          />
         )}
         {showPuck ? (
           <Puck

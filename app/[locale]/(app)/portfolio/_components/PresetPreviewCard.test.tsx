@@ -1,11 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import type { Config } from "@measured/puck";
+import { __resetPresetPreview, getActivePresetPreview } from "@/lib/page-builder/presetPreviewStore";
 
 // Puck's <Render> mounts the whole block tree — irrelevant to what this file
-// asserts (the row's chrome and the popover's copy) and slow. Stand it in with
-// a marker that still proves the preset key reaches the renderer.
+// asserts (the row's interaction contract) and slow. Stand it in with a marker
+// that still proves the preset key reaches the renderer.
 vi.mock("@measured/puck", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@measured/puck")>()),
   Render: ({ data }: { data: { content: { type: string }[] } }) => (
@@ -13,104 +14,169 @@ vi.mock("@measured/puck", async (importOriginal) => ({
   ),
 }));
 
-const { PresetDrawerItem, PresetPreviewCanvas } = await import("./PresetPreviewCard");
+const {
+  PresetDrawerItem,
+  PresetPreviewCanvas,
+  PresetPreviewPanel,
+  PREVIEW_MIN_HEIGHT,
+  PREVIEW_MAX_HEIGHT,
+} = await import("./PresetPreviewCard");
+
+const DESCRIBE = () => ({ name: "Immersive cover", description: DESCRIPTION });
 
 const CONFIG = { components: {} } as unknown as Config;
 const CSS_VARS = { "--pf-color-bg": "#fcfcfb", "--pf-color-fg": "#111111" };
+const DESCRIPTION = "A full-bleed cover image with the studio name over it.";
 
-function renderItem() {
+beforeEach(() => __resetPresetPreview());
+
+/** A row plus the single shared panel, which is how the editor composes them. */
+function renderItem(presetKey = "HeroPreset", name = "Immersive cover") {
   return renderWithProviders(
-    <PresetDrawerItem
-      presetKey="HeroPreset"
-      name="Immersive cover"
-      description="A full-bleed cover image with the studio name over it."
-      dragHint="Drag this block to add it to your page."
-      previewLabel="Preview this block"
-      config={CONFIG}
-      cssVars={CSS_VARS}
-    >
-      <span>Immersive cover</span>
-    </PresetDrawerItem>
+    <>
+      <PresetDrawerItem presetKey={presetKey as never}>
+        <span data-testid="row-label">{name}</span>
+      </PresetDrawerItem>
+      <PresetPreviewPanel
+        config={CONFIG}
+        cssVars={CSS_VARS}
+        describe={DESCRIBE}
+        dragHint="Drag this block to add it to your page."
+      />
+    </>
   );
 }
 
 describe("PresetDrawerItem", () => {
-  it("keeps the row name-only — the description is not inline", () => {
+  it("keeps the row name-only — the description lives in the preview", () => {
     renderItem();
-    expect(screen.getByText("Immersive cover")).toBeInTheDocument();
-    expect(
-      screen.queryByText("A full-bleed cover image with the studio name over it.")
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("row-label")).toHaveTextContent("Immersive cover");
+    expect(screen.queryByText(DESCRIPTION)).not.toBeInTheDocument();
   });
 
-  it("exposes a named preview control for keyboard and touch", () => {
+  it("no longer renders a separate preview control", () => {
     renderItem();
-    expect(screen.getByRole("button", { name: "Preview this block" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Preview this block/i })).not.toBeInTheDocument();
   });
 
-  it("opens the preview on focus, showing description and the drag hint", async () => {
+  it("renders no panel until something is opened", () => {
     renderItem();
-    const trigger = screen.getByRole("button", { name: "Preview this block" });
-    trigger.focus();
-
-    await waitFor(() => {
-      expect(
-        screen.getByText("A full-bleed cover image with the studio name over it.")
-      ).toBeInTheDocument();
-    });
-    expect(screen.getByText("Drag this block to add it to your page.")).toBeInTheDocument();
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
-  it("waits out the hover delay instead of flashing open immediately", () => {
-    vi.useFakeTimers();
-    try {
-      renderItem();
-      fireEvent.pointerEnter(screen.getByText("Immersive cover"));
-      // Below the 250ms threshold: still closed.
-      vi.advanceTimersByTime(100);
-      expect(screen.queryByText("Drag this block to add it to your page.")).not.toBeInTheDocument();
-    } finally {
-      vi.useRealTimers();
-    }
+  it("opens on hover", async () => {
+    renderItem();
+    fireEvent.pointerEnter(screen.getByTestId("row-label"));
+    await waitFor(() => expect(screen.getByText(DESCRIPTION)).toBeInTheDocument());
   });
 
-  // A drawer row is a drag source. If a press on the preview control bubbled to
-  // Puck, grabbing the eye icon would start dragging the block instead.
-  it("stops pointerdown on the preview control from reaching the row", async () => {
-    const onRowPointerDown = vi.fn();
+  it("opens on click", async () => {
+    renderItem();
+    fireEvent.click(screen.getByTestId("row-label"));
+    await waitFor(() => expect(screen.getByText(DESCRIPTION)).toBeInTheDocument());
+  });
+
+  // The product contract: leaving the row must NOT dismiss it, so the user can
+  // move the pointer toward the panel without it vanishing.
+  it("stays open when the pointer merely leaves the row", async () => {
+    renderItem();
+    const row = screen.getByTestId("row-label");
+    fireEvent.pointerEnter(row);
+    await waitFor(() => expect(screen.getByText(DESCRIPTION)).toBeInTheDocument());
+
+    fireEvent.pointerLeave(row);
+
+    expect(screen.getByText(DESCRIPTION)).toBeInTheDocument();
+    expect(getActivePresetPreview()).toBe("HeroPreset");
+  });
+
+  // Puck mounts each drawer row twice (draggable + ghost). Two rows for the SAME
+  // preset must agree rather than fight — the old per-row state is what made the
+  // panel flicker.
+  it("two mounts of the same row do not fight over the open state", async () => {
     renderWithProviders(
-      <div onPointerDown={onRowPointerDown}>
-        <PresetDrawerItem
-          presetKey="HeroPreset"
-          name="Immersive cover"
-          description="desc"
-          dragHint="hint"
-          previewLabel="Preview this block"
+      <>
+        <PresetDrawerItem presetKey={"HeroPreset" as never}>
+          <span data-testid="real">Immersive cover</span>
+        </PresetDrawerItem>
+        <PresetDrawerItem presetKey={"HeroPreset" as never}>
+          <span data-testid="ghost">Immersive cover</span>
+        </PresetDrawerItem>
+        <PresetPreviewPanel
           config={CONFIG}
           cssVars={CSS_VARS}
-        >
-          <span>Immersive cover</span>
-        </PresetDrawerItem>
-      </div>
+          describe={DESCRIBE}
+          dragHint="hint"
+        />
+      </>
     );
 
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Preview this block" }));
-    expect(onRowPointerDown).not.toHaveBeenCalled();
+    fireEvent.pointerEnter(screen.getByTestId("real"));
+    fireEvent.pointerLeave(screen.getByTestId("real"));
+    fireEvent.pointerEnter(screen.getByTestId("ghost"));
+
+    expect(getActivePresetPreview()).toBe("HeroPreset");
+    // The decisive one: two rows, still ONE card. A panel per row is what
+    // produced two stacked copies in the browser.
+    expect(screen.getAllByRole("tooltip")).toHaveLength(1);
+  });
+
+  it("a pointerdown outside the row and panel closes it", async () => {
+    renderItem();
+    fireEvent.click(screen.getByTestId("row-label"));
+    await waitFor(() => expect(screen.getByText(DESCRIPTION)).toBeInTheDocument());
+
+    fireEvent.pointerDown(document.body);
+
+    await waitFor(() => expect(getActivePresetPreview()).toBeNull());
+  });
+
+  it("Escape closes it", async () => {
+    renderItem();
+    fireEvent.click(screen.getByTestId("row-label"));
+    await waitFor(() => expect(screen.getByText(DESCRIPTION)).toBeInTheDocument());
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => expect(getActivePresetPreview()).toBeNull());
+  });
+
+  it("starting a drag closes it, so the panel never rides along", async () => {
+    renderItem();
+    fireEvent.click(screen.getByTestId("row-label"));
+    await waitFor(() => expect(screen.getByText(DESCRIPTION)).toBeInTheDocument());
+
+    fireEvent.dragStart(screen.getByTestId("row-label"));
+
+    await waitFor(() => expect(getActivePresetPreview()).toBeNull());
   });
 });
 
 describe("PresetPreviewCanvas", () => {
   it("renders the requested preset and carries the brand ground", () => {
     const { container } = renderWithProviders(
-      <PresetPreviewCanvas presetKey="HeroPreset" config={CONFIG} cssVars={CSS_VARS} />
+      <PresetPreviewCanvas presetKey={"HeroPreset" as never} config={CONFIG} cssVars={CSS_VARS} />
     );
     expect(screen.getByTestId("mini-render")).toHaveTextContent("HeroPreset");
 
     const frame = container.firstElementChild as HTMLElement;
     expect(frame.style.backgroundColor).toBe("var(--pf-color-bg)");
-    // Decorative: the popover's own text is the accessible description, and
-    // nothing inside a 19%-scale miniature should be reachable.
+    // Decorative: the panel's own text is the accessible description, and
+    // nothing inside a heavily-scaled miniature should be reachable.
     expect(frame).toHaveAttribute("aria-hidden", "true");
     expect(frame.style.pointerEvents).toBe("none");
+  });
+
+  // The frame follows the preset's own rendered height rather than a fixed
+  // 16:10 box, which cropped short blocks badly and over-boxed tall ones.
+  it("clamps the measured height so the panel cannot grow without bound", () => {
+    const { container } = renderWithProviders(
+      <PresetPreviewCanvas presetKey={"HeroPreset" as never} config={CONFIG} cssVars={CSS_VARS} />
+    );
+    const frame = container.firstElementChild as HTMLElement;
+    const height = parseFloat(frame.style.height);
+
+    expect(height).toBeGreaterThanOrEqual(PREVIEW_MIN_HEIGHT);
+    expect(height).toBeLessThanOrEqual(PREVIEW_MAX_HEIGHT);
   });
 });

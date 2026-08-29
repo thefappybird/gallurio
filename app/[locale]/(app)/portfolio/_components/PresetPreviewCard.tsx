@@ -4,14 +4,19 @@
  * The drawer's section-preset preview.
  *
  * The drawer lists 33 presets in 11 groups. Carrying a one-line description on
- * every row made the list too verbose to scan, so the row is now name-only and
- * the description moved here, next to a picture of what the block actually is.
+ * every row made the list too verbose to scan, so the row is name-only and the
+ * description moved here, next to a picture of what the block actually is.
  *
  * The picture is a LIVE mini-render, not a screenshot: the same preset data and
  * the same Puck config the canvas uses, laid out at desktop width and scaled
- * down into a 16:10 frame. That means it can never go stale when a preset's
- * composition changes, and it follows the workspace's own brand kit — the
- * `--pf-*` vars are threaded in from EditorShell's already-resolved kit.
+ * down. It can never go stale when a preset's composition changes, and it
+ * follows the workspace's own brand kit — the `--pf-*` vars are threaded in
+ * from EditorShell's already-resolved kit.
+ *
+ * Open/close state is NOT local. It lives in `presetPreviewStore` because Puck
+ * renders every drawer item twice (draggable + `Drawer-draggableBg` ghost);
+ * per-row state gave each preset two popovers whose pointer handlers fought,
+ * which read as flicker. See that module for the interaction contract.
  *
  * Data-driven blocks (galleries, featured work, contact details) render their
  * empty states here, because a preset ships with no images selected. That is
@@ -20,27 +25,52 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Render, type Config, type Data } from "@measured/puck";
-import { Eye } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SECTION_PRESETS, type SectionPresetKey } from "@/lib/page-builder/blocks/sectionPresets";
 import { PF_CONTAINER_NAME } from "@/lib/page-builder/responsive";
+import {
+  closePresetPreview,
+  getActivePresetAnchor,
+  openPresetPreview,
+  useActivePresetPreview,
+} from "@/lib/page-builder/presetPreviewStore";
 
-/** Long enough that scanning the list with a mouse doesn't flash every row. */
-const HOVER_DELAY_MS = 250;
+/** Breathing room between the anchor row and the panel, and off the viewport edge. */
+const PANEL_GAP = 8;
+/** Worst-case panel height (capped preview + the three copy lines), used to
+ *  clamp placement without having to measure after mount. */
+const PANEL_MAX_HEIGHT = 260 + 84;
 
 /** Layout width the mini-render lays out at, so container queries resolve desktop. */
 const PREVIEW_WIDTH = 1280;
-/** Rendered width of the 16:10 frame in the popover. */
+/** Rendered width of the frame in the panel. */
 export const FRAME_WIDTH = 248;
-const FRAME_HEIGHT = Math.round((FRAME_WIDTH * 10) / 16);
 const SCALE = FRAME_WIDTH / PREVIEW_WIDTH;
+
+/**
+ * The frame follows the preset's OWN rendered height rather than a fixed 16:10
+ * box — a Footer and a Hero are not the same shape, and one ratio either cropped
+ * the short ones or over-boxed the tall ones.
+ *
+ * It is still clamped at both ends: presets range from an auto-height footer to
+ * a `minHeight: medium` hero (60vh), so unclamped the panel would range from a
+ * sliver to taller than the drawer and would jump as the pointer moves between
+ * rows. The floor keeps a short block from collapsing to a line; the ceiling
+ * keeps a tall one inside the viewport.
+ */
+export const PREVIEW_MIN_HEIGHT = 96;
+export const PREVIEW_MAX_HEIGHT = 260;
+/** Used until the first measurement lands, so the panel opens at a sane size. */
+const PREVIEW_INITIAL_HEIGHT = 155;
+
+const clampHeight = (h: number) =>
+  Math.min(PREVIEW_MAX_HEIGHT, Math.max(PREVIEW_MIN_HEIGHT, h));
 
 /**
  * One preset, rendered small.
  *
  * `aria-hidden` + `pointer-events: none`: this is decorative. The accessible
- * description is the popover's own text, and nothing inside the miniature
- * should be focusable or clickable at 19% scale.
+ * description is the panel's own text, and nothing inside a miniature scaled to
+ * ~19% should be focusable or clickable.
  */
 export function PresetPreviewCanvas({
   presetKey,
@@ -53,6 +83,22 @@ export function PresetPreviewCanvas({
   cssVars: Record<string, string>;
   className?: string;
 }) {
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const [height, setHeight] = useState<number>(PREVIEW_INITIAL_HEIGHT);
+
+  // Measure what the preset actually renders, then scale it into the frame.
+  // ResizeObserver rather than a one-shot read: images and fonts settle after
+  // mount and change the natural height.
+  useEffect(() => {
+    const el = innerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => setHeight(clampHeight(el.getBoundingClientRect().height * SCALE));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [presetKey]);
+
   const data = useMemo(
     () =>
       ({
@@ -76,7 +122,7 @@ export function PresetPreviewCanvas({
       className={className}
       style={{
         width: FRAME_WIDTH,
-        height: FRAME_HEIGHT,
+        height,
         overflow: "hidden",
         pointerEvents: "none",
         // The brand ground, so a dark kit (Luxury) previews dark rather than
@@ -86,13 +132,14 @@ export function PresetPreviewCanvas({
       }}
     >
       <div
+        ref={innerRef}
         style={{
           width: PREVIEW_WIDTH,
           transform: `scale(${SCALE})`,
           transformOrigin: "top left",
           // Makes this element the `pfpage` container, so the same
           // container-query rules that drive the canvas and the public page
-          // resolve against 1280px here instead of the popover's own width.
+          // resolve against 1280px here instead of the panel's own width.
           containerType: "inline-size",
           containerName: PF_CONTAINER_NAME,
         }}
@@ -104,100 +151,134 @@ export function PresetPreviewCanvas({
 }
 
 /**
- * A drawer row: the preset's name (Puck's own item markup) plus the preview
- * affordance.
+ * A drawer row. Handlers only — it renders NO panel.
  *
- * Two ways in, because neither alone covers everyone:
- *   - hovering the row, after a short delay, so scanning the list with a mouse
- *     doesn't flash a popover on every pass;
- *   - a focusable button, which is the only path for keyboard and touch.
+ * Puck mounts every row twice (draggable + `Drawer-draggableBg` ghost). When
+ * each mount owned a panel, both agreed to open and the user got two stacked
+ * copies of the same card. The panel is rendered once by
+ * `PresetPreviewPanel`; a row only reports which preset to show and where.
  *
- * The button stops `pointerdown` from reaching Puck: the row is a drag source,
- * and a press on the preview control must not begin a drag.
+ * Hovering or clicking opens; doing either on a different row swaps it over.
+ * Leaving the row does NOT close — the user must be able to travel toward the
+ * panel. Starting a drag closes, so the card never rides along with the block.
  */
 export function PresetDrawerItem({
   presetKey,
-  name,
-  description,
-  dragHint,
-  previewLabel,
-  config,
-  cssVars,
   children,
 }: {
   presetKey: SectionPresetKey;
-  name: string;
-  description: string;
-  dragHint: string;
-  previewLabel: string;
-  config: Config;
-  cssVars: Record<string, string>;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rowRef = useRef<HTMLDivElement | null>(null);
 
-  const cancel = useCallback(() => {
-    if (timer.current) {
-      clearTimeout(timer.current);
-      timer.current = null;
-    }
-  }, []);
-
-  // Clear a pending open on unmount — the drawer re-renders on every category
-  // toggle, and a timer that fires after unmount would setState on a dead node.
-  useEffect(() => cancel, [cancel]);
-
-  const openSoon = useCallback(() => {
-    cancel();
-    timer.current = setTimeout(() => setOpen(true), HOVER_DELAY_MS);
-  }, [cancel]);
-
-  const close = useCallback(() => {
-    cancel();
-    setOpen(false);
-  }, [cancel]);
+  const show = useCallback(() => {
+    if (rowRef.current) openPresetPreview(presetKey, rowRef.current);
+  }, [presetKey]);
 
   return (
     <div
-      className="flex items-center gap-1"
-      onPointerEnter={openSoon}
-      onPointerLeave={close}
-      // Any press starts a drag; the preview must get out of the way.
-      onPointerDown={close}
+      ref={rowRef}
+      onPointerEnter={show}
+      onClick={show}
+      onFocus={show}
+      onDragStart={closePresetPreview}
     >
-      <div className="min-w-0 flex-1">{children}</div>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          aria-label={previewLabel}
-          className="me-1 inline-flex size-6 shrink-0 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          onPointerDown={(e) => e.stopPropagation()}
-          onFocus={() => setOpen(true)}
-          onBlur={close}
-        >
-          <Eye className="size-3.5" aria-hidden />
-        </PopoverTrigger>
-        <PopoverContent
-          side="right"
-          align="start"
-          // Flat per DESIGN.md — a hairline ring and a tonal shift, no shadow.
-          // `pointer-events-none` keeps the panel from ever intercepting a drag
-          // that starts on the row underneath it.
-          className="pointer-events-none w-auto max-w-[17rem] border-border p-0 shadow-none"
-        >
-          <PresetPreviewCanvas
-            presetKey={presetKey}
-            config={config}
-            cssVars={cssVars}
-            className="border-b border-border"
-          />
-          <div className="flex flex-col gap-1 p-2.5">
-            <span className="text-xs font-medium text-foreground">{name}</span>
-            <span className="text-xs text-muted-foreground">{description}</span>
-            <span className="pt-1 text-xs text-muted-foreground/80">{dragHint}</span>
-          </div>
-        </PopoverContent>
-      </Popover>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The one preview panel for the whole drawer.
+ *
+ * Rendered once by EditorShell rather than per row, and positioned manually
+ * against the anchor the store carries. A popover per row would mean two panels
+ * per preset (Puck's duplicate mount), which is the bug this shape prevents by
+ * construction.
+ *
+ * Dismissal is one rule rather than an enumeration of canvas actions: any
+ * pointerdown outside the panel closes it, which covers clicking the canvas,
+ * another part of the drawer, or the chrome. Escape closes too.
+ */
+export function PresetPreviewPanel({
+  config,
+  cssVars,
+  describe,
+  dragHint,
+}: {
+  config: Config;
+  cssVars: Record<string, string>;
+  /** Resolves a preset key to its localized name + description. */
+  describe: (key: SectionPresetKey) => { name: string; description: string };
+  dragHint: string;
+}) {
+  const activeKey = useActivePresetPreview() as SectionPresetKey | null;
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  // Derived during render, not in an effect: the anchor rect is available
+  // synchronously and the clamp uses a known worst-case height, so there is
+  // nothing to measure after mount. Flips to the anchor's left when the right
+  // side cannot fit, and keeps the card inside the viewport near the end of a
+  // long drawer.
+  const pos = useMemo(() => {
+    if (!activeKey) return null;
+    const anchor = getActivePresetAnchor();
+    if (!anchor) return null;
+    const r = anchor.getBoundingClientRect();
+    const panelW = FRAME_WIDTH + 2;
+    const fitsRight = window.innerWidth - r.right - PANEL_GAP >= panelW;
+    return {
+      left: fitsRight ? r.right + PANEL_GAP : Math.max(PANEL_GAP, r.left - panelW - PANEL_GAP),
+      top: Math.min(Math.max(PANEL_GAP, r.top), window.innerHeight - PANEL_MAX_HEIGHT - PANEL_GAP),
+    };
+  }, [activeKey]);
+
+  useEffect(() => {
+    if (!activeKey) return;
+    const onPointerDown = (e: Event) => {
+      if (panelRef.current?.contains(e.target as Node | null)) return;
+      closePresetPreview();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closePresetPreview();
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [activeKey]);
+
+  if (!activeKey || !SECTION_PRESETS[activeKey]) return null;
+  const { name, description } = describe(activeKey);
+
+  return (
+    <div
+      ref={panelRef}
+      data-preset-preview-panel="true"
+      role="tooltip"
+      style={{
+        position: "fixed",
+        top: pos?.top ?? -9999,
+        left: pos?.left ?? -9999,
+        zIndex: 60,
+        width: FRAME_WIDTH + 2,
+      }}
+      // Flat per DESIGN.md — hairline ring and a tonal shift, no shadow.
+      className="border border-border bg-popover text-popover-foreground"
+    >
+      <PresetPreviewCanvas
+        presetKey={activeKey}
+        config={config}
+        cssVars={cssVars}
+        className="border-b border-border"
+      />
+      <div className="flex flex-col gap-1 p-2.5">
+        <span className="text-xs font-medium text-foreground">{name}</span>
+        <span className="text-xs text-muted-foreground">{description}</span>
+        <span className="pt-1 text-xs text-muted-foreground/80">{dragHint}</span>
+      </div>
     </div>
   );
 }

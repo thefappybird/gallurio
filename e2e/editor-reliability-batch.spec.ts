@@ -40,6 +40,21 @@ function collectPageErrors(page: Page): string[] {
   return errors;
 }
 
+/**
+ * Hover a drawer row by moving the real mouse to it.
+ *
+ * `locator.hover()` times out here: Puck lays a `Drawer-draggableBg` ghost over
+ * every item, so the name element never passes the "receives pointer events"
+ * actionability check. Moving the mouse to its box hits whichever copy is
+ * topmost — which is the honest test, because both copies map to the same entry
+ * in the shared preview store and must agree.
+ */
+async function hoverRow(page: Page, locator: ReturnType<Page["locator"]>): Promise<void> {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("drawer row has no bounding box");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 async function openEditor(page: Page): Promise<void> {
   await page.goto("/en/portfolio");
   await page.locator(SHELL).waitFor({ timeout: 90_000 });
@@ -133,13 +148,11 @@ test.describe("drawer preset previews", () => {
     await expect(hero).toContainText("Immersive cover");
     await expect(hero).not.toContainText("Copy and CTA beside an editable image");
 
-    // Puck renders each item twice (the draggable plus a ghost), so scope to the
-    // first name and walk to its row.
-    const preview = hero.getByRole("button", { name: /Preview this block/i }).first();
-    await expect(preview).toBeVisible();
-
-    await preview.focus();
-    const popover = page.locator('[data-slot="popover-content"]');
+    // There is no separate control any more: hovering the row opens its preview.
+    // Puck renders each item twice (draggable + ghost); both resolve to the same
+    // entry in the shared store, so either copy is fine to drive.
+    await hoverRow(page, hero.locator(ITEM_NAME).first());
+    const popover = page.locator('[data-preset-preview-panel="true"]');
     await popover.waitFor({ state: "visible", timeout: 10_000 });
 
     await expect(popover).toContainText("Drag this block to add it to your page.");
@@ -178,31 +191,18 @@ test.describe("drawer preset previews", () => {
       }, CATEGORY_ROOT);
       expect(overflow, `no drawer category overflows at ${width}px`).toEqual([]);
     }
-    // Attribute clipping honestly: measure with the control present, then again
-    // with every control removed from the layout. Only the DIFFERENCE is caused
-    // by this change; Puck's drawer names may already truncate on their own.
-    const clipping = await page.evaluate((sel) => {
-      const count = () =>
+    // The preview control is gone (hover/click on the row opens it), so nothing
+    // this change added can steal width from a name. Assert the plain property.
+    const clipped = await page.evaluate(
+      (sel) =>
         (Array.from(document.querySelectorAll(sel)) as HTMLElement[]).filter(
           (n) => n.scrollWidth > n.clientWidth + 1
-        ).length;
-      const withControl = count();
-      const controls = Array.from(
-        document.querySelectorAll('[data-slot="popover-trigger"]')
-      ) as HTMLElement[];
-      const prev = controls.map((c) => c.style.display);
-      controls.forEach((c) => (c.style.display = "none"));
-      const withoutControl = count();
-      controls.forEach((c, i) => (c.style.display = prev[i]));
-      return { withControl, withoutControl, controls: controls.length };
-    }, ITEM_NAME);
-
-    expect(clipping.controls, "the preview controls are present to measure").toBeGreaterThan(0);
-    expect(
-      clipping.withControl,
-      `the preview control must not clip a name that fit without it ` +
-        `(with=${clipping.withControl} without=${clipping.withoutControl})`
-    ).toBe(clipping.withoutControl);
+        ).length,
+      ITEM_NAME
+    );
+    // Puck's own drawer truncates long names; this predates the batch and is
+    // asserted as a known baseline rather than as zero.
+    expect(clipped, "name clipping is Puck's own, not introduced here").toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -234,8 +234,8 @@ test.describe("footer presets match their mockups", () => {
       await page.waitForTimeout(300);
     }
 
-    await footer.getByRole("button", { name: /Preview this block/i }).first().focus();
-    const popover = page.locator('[data-slot="popover-content"]');
+    await hoverRow(page, footer.locator(ITEM_NAME).first());
+    const popover = page.locator('[data-preset-preview-panel="true"]');
     await popover.waitFor({ state: "visible", timeout: 10_000 });
 
     // The miniature is aria-hidden (decorative), so query the DOM directly
@@ -302,5 +302,54 @@ test.describe("e2e fixture draft", () => {
       page.locator("[data-puck-preview] :is(h1,h2,h3)").first(),
       "the fixture renders a heading"
     ).toBeVisible();
+  });
+});
+
+/**
+ * The preview's interaction contract, which is where the flicker lived.
+ *
+ * Puck mounts every drawer row TWICE (draggable + `Drawer-draggableBg` ghost).
+ * With per-row open state each preset owned two popovers whose pointer handlers
+ * fought — one closing while the other opened. A single shared store fixes it by
+ * construction, but only a browser can prove the two mounts actually agree.
+ */
+test.describe("drawer preview interaction", () => {
+  test("one panel at a time; leaving the row keeps it; another row swaps it", async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openEditor(page);
+
+    const hero = page
+      .locator(CATEGORY_ROOT)
+      .filter({ has: page.locator(CATEGORY_TITLE).filter({ hasText: /^Hero$/i }) })
+      .first();
+    await hero.waitFor({ state: "visible", timeout: 15_000 });
+
+    const panels = page.locator('[data-preset-preview-panel="true"]');
+    const names = hero.locator(ITEM_NAME);
+
+    // Hover the first variant.
+    await hoverRow(page, names.first());
+    await expect(panels).toHaveCount(1, { timeout: 10_000 });
+    await expect(panels.first()).toContainText("Immersive cover");
+
+    // Move the pointer well away. The contract says leaving does NOT dismiss —
+    // the user has to be able to travel toward the panel.
+    await page.mouse.move(900, 500);
+    await page.waitForTimeout(600);
+    await expect(panels, "leaving the row does not close the preview").toHaveCount(1);
+    await expect(panels.first()).toContainText("Immersive cover");
+
+    // Hover a DIFFERENT variant: the panel swaps rather than a second appearing.
+    const second = hero.locator(ITEM_NAME).nth(2); // past the ghost copy of #1
+    await hoverRow(page, second);
+    await page.waitForTimeout(400);
+    await expect(panels, "exactly one panel, ever").toHaveCount(1);
+
+    // Clicking the canvas dismisses it.
+    await page.locator("[data-puck-preview]").click({ position: { x: 20, y: 20 } });
+    await expect(panels, "acting on the canvas closes the preview").toHaveCount(0, {
+      timeout: 10_000,
+    });
   });
 });

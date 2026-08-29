@@ -2963,8 +2963,7 @@
               "foreground": "Foreground"
             }
           },
-          "dragToAddHint": "I-drag ang block na ito para idagdag sa iyong pahina.",
-          "previewBlock": "I-preview ang block na ito"
+          "dragToAddHint": "I-drag ang block na ito para idagdag sa iyong pahina."
         },
         "tour": {
           "next": "Susunod",

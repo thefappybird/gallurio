@@ -2963,8 +2963,7 @@
               "foreground": "Latar depan"
             }
           },
-          "dragToAddHint": "Seret blok ini untuk menambahkannya ke halaman Anda.",
-          "previewBlock": "Pratinjau blok ini"
+          "dragToAddHint": "Seret blok ini untuk menambahkannya ke halaman Anda."
         },
         "tour": {
           "next": "Berikutnya",
