@@ -777,18 +777,30 @@ export function EditorShell({
   const [templateSeedSnapshot, setTemplateSeedSnapshot] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
+  // Detect a public Portfolio Maker draft before initializing any first-run
+  // dialogs. The owner must choose whether to import or discard it before the
+  // story prompt, guide, or normal draft entry flow can take focus.
+  const [detectedDemo, setDetectedDemo] = useState(() =>
+    demoMode ? null : detectImportableDemoSession(),
+  );
   // The story prompt auto-opens once, before the guide, on a fresh workspace.
   // Also gated on !guideDismissed so an owner who already dismissed the guide
   // via the old (pre-story-prompt) path never sees it retroactively, and on
   // !guideMode since the sandbox tour-preview shell has no real story to capture.
   const [storyPromptOpen, setStoryPromptOpen] = useState(
-    !storyPromptCompleted && !guideDismissed && !guideMode && !demoMode
+    !detectedDemo &&
+      !storyPromptCompleted &&
+      !guideDismissed &&
+      !guideMode &&
+      !demoMode,
   );
   // The guide auto-opens on first run (until the owner persisted a dismissal),
   // and can be reopened on demand via the Guide button for the session. In
   // demoMode it never auto-opens — DemoIntroDialog below gates it behind an
   // explicit "Show me around" choice instead of forcing the tour on load.
-  const [guideOpen, setGuideOpen] = useState(!guideDismissed && !demoMode);
+  const [guideOpen, setGuideOpen] = useState(
+    !detectedDemo && !guideDismissed && !demoMode,
+  );
   // Demo-only: the opt-in welcome modal shown before anything else. Gated on
   // !guideDismissed for the same reason guideOpen is elsewhere — tests (and,
   // in principle, a returning visitor) that start past that point skip
@@ -840,12 +852,8 @@ export function EditorShell({
   // When guideDismissed=true, open the entry immediately — but brand-new users (no saved
   // drafts AND no recoverable buffer) go to the welcome template modal instead.
   // When guideDismissed=false, both stay closed until guide finishes/skips.
-  // Detected once at mount: a leftover Portfolio Maker demo session's saved
-  // buffer, worth offering to import into this draft instead of the normal
-  // entry flow. Never checked in demoMode itself (the demo doesn't import
-  // from itself). Not re-checked after mount — wipeDemoLocalStorage clears
-  // localStorage directly and demoImportOpen tracks dismissal separately.
-  const [detectedDemo] = useState(() => (demoMode ? null : detectImportableDemoSession()));
+  // detectedDemo was captured before the first-run dialog state above so this
+  // decision always takes priority over onboarding prompts.
   const [entryOpen, setEntryOpen] = useState(() => {
     if (detectedDemo) return false;
     if (!guideDismissed) return false;
@@ -879,10 +887,9 @@ export function EditorShell({
     return !hasDrafts && !hasBuffer;
   });
   const [pendingAction, setPendingAction] = useState<{ run: () => void; reseeds: boolean } | null>(null);
-  // Opens immediately (mirroring entryOpen) when guideDismissed was already
-  // true at mount; otherwise openEntryAfterGuide opens it once the
-  // guide/story-prompt phase resolves — see openEntryAfterGuide below.
-  const [demoImportOpen, setDemoImportOpen] = useState(() => Boolean(detectedDemo) && guideDismissed);
+  // Opens immediately whenever a saved public-builder setup is present. The
+  // explicit decision must not be hidden behind the first-run guide.
+  const [demoImportOpen, setDemoImportOpen] = useState(() => Boolean(detectedDemo));
   const [demoImportBusy, setDemoImportBusy] = useState(false);
   // ---- Demo-mode-only state (app/[locale]/portfolio-maker-demo) ----
   const [demoSessionId] = useState<string>(() => (demoMode ? getOrCreateDemoSessionId() : ""));
@@ -1248,7 +1255,17 @@ export function EditorShell({
   // never fire again for it, regardless of which button was pressed.
   function handleDemoImportDiscard() {
     if (detectedDemo) wipeDemoLocalStorage(detectedDemo.sessionId);
+    setDetectedDemo(null);
     setDemoImportOpen(false);
+
+    if (!storyPromptCompleted && !guideDismissed && !guideMode) {
+      setGuideOpen(true);
+      setStoryPromptOpen(true);
+    } else if (!guideDismissed) {
+      openGuide();
+    } else {
+      openNormalEntryFlow();
+    }
   }
 
   async function runDemoImport() {
@@ -1285,6 +1302,7 @@ export function EditorShell({
         toast.success(t("demoImportDialog.importedToast"));
       }
       wipeDemoLocalStorage(detectedDemo.sessionId);
+      setDetectedDemo(null);
       setDemoImportOpen(false);
       await applyDraft(res.draft.id);
     } catch (err) {
@@ -1762,6 +1780,16 @@ export function EditorShell({
 
   // ---- Spotlight guide helpers ----
 
+  function openNormalEntryFlow() {
+    // Brand-new = no recoverable local buffer AND no saved drafts.
+    const isNewUser = !hasRecoverableBuffer && drafts.length === 0;
+    if (isNewUser) {
+      setWelcomeTemplatesOpen(true);
+    } else {
+      setEntryOpen(true);
+    }
+  }
+
   /** Open the correct entry flow after the guide finishes or is skipped. */
   function openEntryAfterGuide() {
     if (demoMode) {
@@ -1772,13 +1800,7 @@ export function EditorShell({
       setDemoImportOpen(true);
       return;
     }
-    // Brand-new = no recoverable local buffer AND no saved drafts.
-    const isNewUser = !hasRecoverableBuffer && drafts.length === 0;
-    if (isNewUser) {
-      setWelcomeTemplatesOpen(true);
-    } else {
-      setEntryOpen(true);
-    }
+    openNormalEntryFlow();
   }
 
   function handleGuideSkip(dontShowAgain: boolean) {

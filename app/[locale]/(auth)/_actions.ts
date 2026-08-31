@@ -15,7 +15,11 @@ import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { signOAuthState } from "@/lib/auth/oauthState";
 import { isPasswordReusedError } from "@/lib/auth/passwordErrors";
 import { authCookieSecure } from "@/lib/auth/cookies";
-import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
+import {
+  defaultPostAuthPath,
+  demoImportPostAuthPath,
+} from "@/lib/auth/postAuthLanding";
+import { consumeDemoImportMarker } from "@/lib/auth/demoImportMarker";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { getClientIp } from "@/lib/server/getClientIp";
 
@@ -188,8 +192,15 @@ async function postAuthRedirect(
     redirect("/api/invites/accept");
   }
 
-  const dest = sanitizeReturnTo(returnTo) ?? defaultPostAuthPath(user, locale);
-  redirect(dest);
+  const explicitDestination = sanitizeReturnTo(returnTo);
+  if (explicitDestination) redirect(explicitDestination);
+
+  const demoDestination = demoImportPostAuthPath(user, locale);
+  if (demoDestination && await consumeDemoImportMarker()) {
+    redirect(demoDestination);
+  }
+
+  redirect(defaultPostAuthPath(user, locale));
 }
 
 async function redirectExpiredVerificationToSignIn(locale: string): Promise<never> {

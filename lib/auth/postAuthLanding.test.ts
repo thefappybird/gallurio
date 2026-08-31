@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultPostAuthPath } from "./postAuthLanding";
+import { defaultPostAuthPath, demoImportPostAuthPath } from "./postAuthLanding";
 
 describe("defaultPostAuthPath", () => {
   it("sends completed owners to dashboard", () => {
@@ -42,5 +42,31 @@ describe("defaultPostAuthPath", () => {
         "fil",
       ),
     ).toBe("/fil/bookings");
+  });
+});
+
+describe("demoImportPostAuthPath", () => {
+  it("sends a completed owner to the localized portfolio editor", () => {
+    expect(
+      demoImportPostAuthPath(
+        { memberships: [{ role: "owner" }], onboardingCompletedAt: new Date() },
+        "fil",
+      ),
+    ).toBe("/fil/portfolio");
+  });
+
+  it("keeps incomplete owners and staff on their normal landing flow", () => {
+    expect(
+      demoImportPostAuthPath(
+        { memberships: [{ role: "owner" }], onboardingCompletedAt: null },
+        "en",
+      ),
+    ).toBeNull();
+    expect(
+      demoImportPostAuthPath(
+        { memberships: [{ role: "staff" }], onboardingCompletedAt: new Date() },
+        "en",
+      ),
+    ).toBeNull();
   });
 });

@@ -1721,12 +1721,31 @@ describe("EditorShell — demo import detection", () => {
     expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
   });
 
-  it("'No, discard' wipes the demo localStorage and closes the dialog without importing", async () => {
+  it("prioritizes the saved-demo decision over a new owner's story prompt and guide", async () => {
+    seedDemoBuffer("demo-sess-first-run");
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        guideDismissed={false}
+        storyPromptCompleted={false}
+      />
+    );
+
+    expect(await screen.findByText("We detected a saved demo portfolio")).toBeInTheDocument();
+    expect(screen.queryByText("Let's tell your story")).not.toBeInTheDocument();
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard saved setup" }));
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+    expect(screen.queryByText("We detected a saved demo portfolio")).not.toBeInTheDocument();
+  });
+
+  it("'Discard saved setup' wipes the demo localStorage and closes the dialog without importing", async () => {
     seedDemoBuffer("demo-sess-2");
     renderWithProviders(<EditorShell {...baseProps} />);
     await screen.findByText("We detected a saved demo portfolio");
 
-    fireEvent.click(screen.getByRole("button", { name: "No, discard" }));
+    fireEvent.click(screen.getByRole("button", { name: "Discard saved setup" }));
 
     await waitFor(() =>
       expect(screen.queryByText("We detected a saved demo portfolio")).not.toBeInTheDocument()
@@ -1736,12 +1755,12 @@ describe("EditorShell — demo import detection", () => {
     expect(importDemoPortfolioAction).not.toHaveBeenCalled();
   });
 
-  it("'Yes' imports the demo session, wipes localStorage, and loads the new draft — skipping the template picker", async () => {
+  it("'Apply saved setup' imports the demo session, wipes localStorage, and loads the new draft — skipping the template picker", async () => {
     seedDemoBuffer("demo-sess-3");
     renderWithProviders(<EditorShell {...baseProps} />);
     await screen.findByText("We detected a saved demo portfolio");
 
-    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply saved setup" }));
 
     await waitFor(() => expect(importDemoPortfolioAction).toHaveBeenCalledTimes(1));
     expect(importDemoPortfolioAction).toHaveBeenCalledWith(
@@ -1765,7 +1784,7 @@ describe("EditorShell — demo import detection", () => {
     // the dialog traps focus, so it must be queried with hidden:true).
     fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change", hidden: true }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply saved setup" }));
 
     expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
     expect(importDemoPortfolioAction).not.toHaveBeenCalled();

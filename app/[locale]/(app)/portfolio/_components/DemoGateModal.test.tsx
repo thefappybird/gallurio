@@ -13,9 +13,16 @@ vi.mock("@/lib/page-builder/demoSession", () => ({
 import { DemoGateModal } from "./DemoGateModal";
 
 describe("DemoGateModal", () => {
-  it("marks the demo-signup intent when the sign-up CTA is clicked", () => {
+  it("offers sign-up and sign-in, marking the demo intent for either path", () => {
     renderWithProviders(<DemoGateModal gate="publish" onClose={vi.fn()} />);
-    fireEvent.click(screen.getByRole("link", { name: /sign up|create.*account|get started/i }));
-    expect(mockMarkDemoSignupIntent).toHaveBeenCalled();
+    const signUp = screen.getByRole("link", { name: /sign up|create.*account|get started/i });
+    const signIn = screen.getByRole("link", { name: /sign in/i });
+
+    expect(signUp).toHaveAttribute("href", "/sign-up");
+    expect(signIn).toHaveAttribute("href", "/sign-in");
+
+    fireEvent.click(signUp);
+    fireEvent.click(signIn);
+    expect(mockMarkDemoSignupIntent).toHaveBeenCalledTimes(2);
   });
 });

@@ -148,7 +148,7 @@ const DEMO_IMPORT_COOKIE = "gw_demo_import";
 const DEMO_IMPORT_COOKIE_MAX_AGE = 60 * 60 * 2; // 2 hours — covers onboarding
 
 /**
- * Marks "this signup came from the Portfolio Maker demo" so the redirect
+ * Marks "this authentication came from the Portfolio Maker demo" so the redirect
  * after onboarding lands on the real editor instead of the dashboard (see
  * lib/auth/demoImportMarker.ts). Set client-side on the demo's sign-up CTA
  * click — a plain (non-httpOnly) cookie is fine here since the marker only
@@ -159,6 +159,12 @@ const DEMO_IMPORT_COOKIE_MAX_AGE = 60 * 60 * 2; // 2 hours — covers onboarding
 export function markDemoSignupIntent(): void {
   if (typeof document === "undefined") return;
   document.cookie = `${DEMO_IMPORT_COOKIE}=1; path=/; max-age=${DEMO_IMPORT_COOKIE_MAX_AGE}; samesite=lax`;
+}
+
+/** Clears a demo handoff that the visitor explicitly chose to discard. */
+export function clearDemoSignupIntent(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${DEMO_IMPORT_COOKIE}=; path=/; max-age=0; samesite=lax`;
 }
 
 /**

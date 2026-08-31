@@ -2690,9 +2690,9 @@
         },
         "demoImportDialog": {
           "title": "We detected a saved demo portfolio",
-          "body": "Continue editing?",
-          "yes": "Yes",
-          "discard": "No, discard",
+          "body": "Apply the portfolio setup saved in this browser to your new workspace, or discard it and start fresh.",
+          "yes": "Apply saved setup",
+          "discard": "Discard saved setup",
           "importedToast": "Your demo portfolio is ready to edit.",
           "partialFailureToast": "Imported, but {count, plural, one {# photo} other {# photos}} could not be transferred.",
           "errorToast": "Could not import your demo portfolio. Please try again."
@@ -3250,6 +3250,7 @@
         "publish": "Ready to go live? Publishing is a Gallurio Pro feature. Sign up for a free month and put your site on the internet today.",
         "theme": "Want to fully customize your colors and fonts? That's a Pro feature. Sign up for a free month to unlock full theme editing.",
         "cta": "Sign up to build without restrictions",
+        "signInCta": "Sign in instead",
         "dismiss": "Keep exploring",
         "promoReveal": "Nice work exploring the editor! Here's a bonus code for an extra free month, stacked on top of your signup free month: {code}"
       },
@@ -3550,6 +3551,7 @@
       "settingUp": "Setting up your dashboard…",
       "settingUpCompact": "Preparing…",
       "goToDashboard": "Go to your dashboard",
+      "goToPortfolio": "Continue to your portfolio",
       "footer": {
         "everything": "Everything in one place",
         "grow": "Built to grow with you",

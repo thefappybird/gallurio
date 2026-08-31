@@ -2690,9 +2690,9 @@
         },
         "demoImportDialog": {
           "title": "May nakitang naka-save na demo portfolio",
-          "body": "Ipagpatuloy ang pag-edit?",
-          "yes": "Oo",
-          "discard": "Hindi, itapon",
+          "body": "Ilapat ang portfolio setup na naka-save sa browser na ito sa bago mong workspace, o i-discard ito at magsimula ulit.",
+          "yes": "Ilapat ang naka-save na setup",
+          "discard": "I-discard ang naka-save na setup",
           "importedToast": "Handa nang i-edit ang iyong demo portfolio.",
           "partialFailureToast": "Na-import, ngunit {count, plural, one {# larawan} other {# na larawan}} ang hindi nailipat.",
           "errorToast": "Hindi na-import ang iyong demo portfolio. Pakisubukang muli."
@@ -3250,6 +3250,7 @@
         "publish": "Handa nang mag-live? Isang Gallurio Pro feature ang pag-publish. Mag-sign up para sa isang libreng buwan at ilagay ang site mo sa internet ngayon.",
         "theme": "Gusto mong lubusang i-customize ang mga kulay at font mo? Pro feature iyon. Mag-sign up para sa isang libreng buwan para ma-unlock ang buong theme editing.",
         "cta": "Mag-sign up para makapag-build nang walang restriction",
+        "signInCta": "Mag-sign in sa halip",
         "dismiss": "Magpatuloy sa pag-explore",
         "promoReveal": "Ang galing mong mag-explore sa editor! Narito ang bonus code para sa dagdag na libreng buwan, idinagdag sa libreng buwan mula sa sign up mo: {code}"
       },
@@ -3550,6 +3551,7 @@
       "settingUp": "Sine-set up ang iyong dashboard…",
       "settingUpCompact": "Inihahanda…",
       "goToDashboard": "Pumunta sa iyong dashboard",
+      "goToPortfolio": "Magpatuloy sa iyong portfolio",
       "footer": {
         "everything": "Lahat nasa iisang lugar",
         "grow": "Ginawa para lumago kasama ka",

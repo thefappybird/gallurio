@@ -14,9 +14,8 @@ import { Button } from "@/components/ui/button";
 /**
  * Shown once when the real editor detects a saved Portfolio Maker demo
  * session in localStorage (see lib/page-builder/demoSession.ts). Both
- * choices wipe the demo's localStorage — the caller is responsible for that
- * (see EditorShell's handlers) so this modal can never appear a second time
- * for the same demo session, regardless of which button was pressed.
+ * The caller owns persistence: discard removes the saved setup immediately,
+ * while apply keeps it until the authenticated editor imports it successfully.
  */
 export function DemoImportDetectedDialog({
   open,

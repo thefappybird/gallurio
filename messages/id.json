@@ -2690,9 +2690,9 @@
         },
         "demoImportDialog": {
           "title": "Kami menemukan portofolio demo yang tersimpan",
-          "body": "Lanjutkan mengedit?",
-          "yes": "Ya",
-          "discard": "Tidak, buang",
+          "body": "Terapkan pengaturan portofolio yang tersimpan di browser ini ke ruang kerja baru Anda, atau hapus dan mulai dari awal.",
+          "yes": "Terapkan pengaturan tersimpan",
+          "discard": "Hapus pengaturan tersimpan",
           "importedToast": "Portofolio demo Anda siap untuk diedit.",
           "partialFailureToast": "Diimpor, tetapi {count, plural, other {# foto}} tidak dapat dipindahkan.",
           "errorToast": "Tidak dapat mengimpor portofolio demo Anda. Silakan coba lagi."
@@ -3250,6 +3250,7 @@
         "publish": "Siap untuk go live? Publishing adalah fitur Gallurio Pro. Daftar untuk satu bulan gratis dan tayangkan situs Anda hari ini.",
         "theme": "Ingin menyesuaikan sepenuhnya warna dan font Anda? Itu fitur Pro. Daftar untuk satu bulan gratis guna membuka edit tema penuh.",
         "cta": "Daftar untuk membangun tanpa batasan",
+        "signInCta": "Masuk sebagai gantinya",
         "dismiss": "Terus jelajahi",
         "promoReveal": "Kerja bagus menjelajahi editor! Ini kode bonus untuk tambahan satu bulan gratis, ditumpuk dengan bulan gratis pendaftaran Anda: {code}"
       },
@@ -3550,6 +3551,7 @@
       "settingUp": "Menyiapkan dasbor Anda…",
       "settingUpCompact": "Menyiapkan…",
       "goToDashboard": "Pergi ke dasbor Anda",
+      "goToPortfolio": "Lanjutkan ke portofolio Anda",
       "footer": {
         "everything": "Semuanya di satu tempat",
         "grow": "Dibangun untuk tumbuh bersama Anda",

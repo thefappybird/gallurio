@@ -144,6 +144,7 @@ test("preset hover cards paint theme-aware image, background, and cinema preview
 
 test("clicking Publish opens the demo gate modal with the locked upsell copy, not a real publish", async ({
   page,
+  context,
 }) => {
   await skipGuideAndReachEntry(page);
   await page.getByRole("button", { name: "Start from scratch" }).click();
@@ -157,10 +158,15 @@ test("clicking Publish opens the demo gate modal with the locked upsell copy, no
     "href",
     /\/sign-up/,
   );
+  const signIn = page.getByRole("link", { name: "Sign in instead" });
+  await expect(signIn).toHaveAttribute("href", /\/sign-in/);
 
-  // Dismiss and confirm we're still on the demo editor, not redirected.
-  await page.getByRole("button", { name: "Keep exploring" }).click();
-  await expect(page).toHaveURL(/\/portfolio-maker-demo/);
+  // Either auth path must carry the handoff marker through authentication and
+  // onboarding. Exercise sign-in here; the component test covers both links.
+  await signIn.click();
+  await expect(page).toHaveURL(/\/sign-in/);
+  const cookies = await context.cookies();
+  expect(cookies.find((cookie) => cookie.name === "gw_demo_import")?.value).toBe("1");
 });
 
 test("the bonus promo code persists in the disclaimer banner after the first gate hit", async ({ page }) => {

@@ -11,10 +11,25 @@ type LandingUser = {
 };
 
 function localized(
-  href: "/dashboard" | "/bookings" | "/onboarding",
+  href: "/dashboard" | "/bookings" | "/onboarding" | "/portfolio",
   locale: string,
 ): string {
   return locale === routing.defaultLocale ? href : `/${locale}${href}`;
+}
+
+/**
+ * A demo-import marker only overrides the normal landing page once the user
+ * already owns a fully-onboarded workspace. New owners still need onboarding,
+ * and staff members must keep their role-appropriate landing page.
+ */
+export function demoImportPostAuthPath(
+  user: LandingUser,
+  locale: string,
+): string | null {
+  const isOwner = user.memberships.some((membership) => membership.role === "owner");
+  return isOwner && user.onboardingCompletedAt
+    ? localized("/portfolio", locale)
+    : null;
 }
 
 export function defaultPostAuthPath(user: LandingUser, locale: string): string {

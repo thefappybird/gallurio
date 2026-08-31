@@ -60,6 +60,11 @@ export function DemoGateModal({ gate, onClose }: Props) {
     if (gate && !isDemoPromoClaimed()) markDemoPromoClaimed();
   }, [gate]);
 
+  function continueToAuth() {
+    markDemoSignupIntent();
+    onClose();
+  }
+
   return (
     <Dialog open={gate !== null} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent className="sm:max-w-md">
@@ -70,17 +75,21 @@ export function DemoGateModal({ gate, onClose }: Props) {
             {showPromo ? ` ${t("promoReveal", { code: DEMO_PROMO_CODE })}` : ""}
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="sm:flex-wrap">
           <Button type="button" variant="outline" onClick={onClose}>
             {t("dismiss")}
           </Button>
           <Link
+            href="/sign-in"
+            className={buttonVariants({ variant: "outline" })}
+            onClick={continueToAuth}
+          >
+            {t("signInCta")}
+          </Link>
+          <Link
             href="/sign-up"
             className={buttonVariants({ variant: "brand" })}
-            onClick={() => {
-              markDemoSignupIntent();
-              onClose();
-            }}
+            onClick={continueToAuth}
           >
             {t("cta")}
           </Link>

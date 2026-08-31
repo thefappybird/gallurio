@@ -17,7 +17,11 @@ import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import { ensureUser } from "@/lib/auth/ensureUser";
 import { verifyOAuthState } from "@/lib/auth/oauthState";
 import { authCookieSecure } from "@/lib/auth/cookies";
-import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
+import {
+  defaultPostAuthPath,
+  demoImportPostAuthPath,
+} from "@/lib/auth/postAuthLanding";
+import { DEMO_IMPORT_COOKIE } from "@/lib/auth/demoImportMarker";
 import type { AuthUser } from "@/lib/auth/session";
 import { routing } from "@/lib/i18n/routing";
 
@@ -89,6 +93,17 @@ function clearCsrfCookie(res: NextResponse, secure: boolean): NextResponse {
   return res;
 }
 
+/** Expires the demo handoff marker once it has selected the destination. */
+function clearDemoImportCookie(res: NextResponse, secure: boolean): NextResponse {
+  res.cookies.set(DEMO_IMPORT_COOKIE, "", {
+    secure,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+  return res;
+}
+
 /** Timing-safe equality for the state nonce vs the cookie nonce. */
 function nonceMatches(a: string | undefined, b: string | undefined): boolean {
   if (!a || !b || a.length !== b.length) return false;
@@ -112,6 +127,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // round-trip. Check for it here so we know where to send the user after auth.
   const hasInviteCookie =
     request.cookies.get("gw_invite_token")?.value != null;
+  const hasDemoImportCookie =
+    request.cookies.get(DEMO_IMPORT_COOKIE)?.value === "1";
 
   debug("incoming", {
     hasCode: Boolean(code),
@@ -184,9 +201,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
 
     // Determine redirect destination.
-    // Priority: invite cookie > returnTo > role-aware default landing
+    // Priority: invite cookie > explicit returnTo > demo handoff > role-aware
+    // default landing. New owners keep the marker through onboarding; only a
+    // completed owner can consume it here.
     let destination: string;
+    let consumedDemoImport = false;
     const fallback = new URL(defaultPostAuthPath(user, locale), origin).toString();
+    const demoDestination = hasDemoImportCookie
+      ? demoImportPostAuthPath(user, locale)
+      : null;
     if (hasInviteCookie) {
       // The invite token is in the httpOnly cookie; send the user back to the
       // accept route with no token in the URL — the route reads the cookie.
@@ -197,10 +220,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       // in Location headers to protocol-relative "//evil.com".
       if (/^\/[^/\\]/.test(returnTo)) {
         const resolved = new URL(returnTo, origin);
-        destination = resolved.origin === origin ? resolved.toString() : fallback;
+        if (resolved.origin === origin) {
+          destination = resolved.toString();
+        } else if (demoDestination) {
+          destination = new URL(demoDestination, origin).toString();
+          consumedDemoImport = true;
+        } else {
+          destination = fallback;
+        }
+      } else if (demoDestination) {
+        destination = new URL(demoDestination, origin).toString();
+        consumedDemoImport = true;
       } else {
         destination = fallback;
       }
+    } else if (demoDestination) {
+      destination = new URL(demoDestination, origin).toString();
+      consumedDemoImport = true;
     } else {
       destination = fallback;
     }
@@ -210,7 +246,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     debug("redirect -> destination", { destination });
     const res = NextResponse.redirect(destination);
     setSessionCookie(res, sealedSession, secure);
-    return clearCsrfCookie(res, secure);
+    clearCsrfCookie(res, secure);
+    return consumedDemoImport ? clearDemoImportCookie(res, secure) : res;
   } catch (err) {
     // Authentication failure — redirect to localized sign-in.
     debug("redirect -> sign-in: exchange/ensureUser threw", {

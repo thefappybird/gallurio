@@ -17,9 +17,10 @@ import { DoneStepForm } from "./done-form";
 // gating on a query param.
 export default async function DoneStepPage() {
   const ctx = await loadOnboardingContext();
+  const hasDemoImport = await hasDemoImportMarker();
 
   if (ctx.user?.onboardingCompletedAt) {
-    redirect((await hasDemoImportMarker()) ? "/portfolio" : "/dashboard");
+    redirect(hasDemoImport ? "/portfolio" : "/dashboard");
   }
 
   if (stepIndex(ctx.currentStep) < stepIndex("plan")) {
@@ -55,6 +56,7 @@ export default async function DoneStepPage() {
       furthestStep="done"
       workspaceName={workspaceName}
       plan={plan}
+      finishDestination={hasDemoImport ? "portfolio" : "dashboard"}
     />
   );
 }
