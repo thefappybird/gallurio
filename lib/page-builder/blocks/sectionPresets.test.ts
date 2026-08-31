@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  PRESET_GROUP_IDS,
   SECTION_PRESETS,
   CTA_PRESET,
   HERO_PRESET,
@@ -7,6 +8,8 @@ import {
   GALLERY_MASONRY_PRESET,
   GALLERY_LANDING_PRESET,
 } from "./sectionPresets";
+
+const SECTION_GROUND_TOKENS = new Set(["background", "primary", "accent"]);
 
 /** The Button child of a preset's top-level content slot. */
 function buttonChild(preset: { content: unknown }) {
@@ -22,6 +25,29 @@ describe("SECTION_PRESETS labels", () => {
   it("keeps the other gallery preset variant labels", () => {
     expect(SECTION_PRESETS.GalleryGridPreset.label).toBe("Classic grid");
     expect(SECTION_PRESETS.FeaturedWorkPreset.label).toBe("Collection overview");
+  });
+});
+
+describe("SECTION_PRESETS semantic color diversity", () => {
+  it("grounds every preset in a supported active-theme section token", () => {
+    for (const [key, preset] of Object.entries(SECTION_PRESETS)) {
+      const style = preset.defaultProps._style as { bgColorToken?: string } | undefined;
+      expect(
+        SECTION_GROUND_TOKENS.has(style?.bgColorToken ?? ""),
+        `${key} needs an explicit background, primary, or accent section ground`
+      ).toBe(true);
+    }
+  });
+
+  it("gives every three-variant group at least two distinct section grounds", () => {
+    for (const group of PRESET_GROUP_IDS) {
+      const grounds = new Set(
+        Object.values(SECTION_PRESETS)
+          .filter((preset) => preset.group === group)
+          .map((preset) => preset.defaultProps._style?.bgColorToken)
+      );
+      expect(grounds.size, `${group} presets all use the same section ground`).toBeGreaterThanOrEqual(2);
+    }
   });
 });
 

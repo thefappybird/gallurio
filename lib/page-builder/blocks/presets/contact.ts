@@ -3,7 +3,16 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, pageSection, hairlineFrame } from "./_helpers";
+import {
+  accentBandSection,
+  child,
+  hairlineFrame,
+  onAccentBand,
+  onPrimaryBand,
+  pageSection,
+  primaryBandSection,
+  slot,
+} from "./_helpers";
 
 export const CONTACT_PRESET: ContainerBlockProps = {
   backgroundImages: [],
@@ -11,6 +20,7 @@ export const CONTACT_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   alignX: "center",
   alignY: "top",
+  _style: pageSection,
   content: slot([
     child("Heading", { level: "h2", text: "Get in Touch" }),
     child("Text", { text: "I'd love to hear about your vision. Reach out and let's talk." }),
@@ -30,13 +40,26 @@ export const CONTACT_SPLIT_PRESET: ContainerBlockProps = {
       _style: { gap: 40 },
       content: slot([
         child("Container", {
-          _style: { gap: 16, contentVerticalDistribution: "center" },
+          _style: {
+            ...primaryBandSection,
+            gap: 16,
+            paddingTop: "2rem",
+            paddingRight: "2rem",
+            paddingBottom: "2rem",
+            paddingLeft: "2rem",
+            contentVerticalDistribution: "center",
+          },
           content: slot([
             child("Heading", { level: "h2", text: "Get in Touch" }),
             child("Text", {
               text: "Tell me the date, the place, and what the day is supposed to feel like. I'll take it from there.",
             }),
-            child("Button", { label: "Send a Message", action: "open-contact", align: "left" }),
+            child("Button", {
+              label: "Send a Message",
+              action: "open-contact",
+              align: "left",
+              _style: onPrimaryBand,
+            }),
           ]),
         }),
         child("Container", {
@@ -61,7 +84,7 @@ export const CONTACT_SPLIT_PRESET: ContainerBlockProps = {
 export const CONTACT_BAR_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
-  _style: { bgColorToken: "secondary", gap: 0, paddingTop: "2.25rem", paddingBottom: "2.25rem" },
+  _style: { ...accentBandSection, gap: 0, paddingTop: "2.25rem", paddingBottom: "2.25rem" },
   content: slot([
     child("Columns", {
       columns: 3,
@@ -75,8 +98,19 @@ export const CONTACT_BAR_PRESET: ContainerBlockProps = {
             child("Text", { text: "Available for 2026 dates." }),
           ]),
         }),
-        child("ContactDetails", { _style: { valueColorToken: "foreground" } }),
-        child("Button", { label: "Send a Message", action: "open-contact", align: "right", _style: { cellVerticalAlign: "center" } }),
+        child("ContactDetails", {
+          _style: {
+            labelColorToken: "background",
+            valueColorToken: "background",
+            iconColorToken: "background",
+          },
+        }),
+        child("Button", {
+          label: "Send a Message",
+          action: "open-contact",
+          align: "right",
+          _style: { ...onAccentBand, cellVerticalAlign: "center" },
+        }),
       ]),
     }),
   ]),

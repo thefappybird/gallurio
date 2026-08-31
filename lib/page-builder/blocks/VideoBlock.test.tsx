@@ -137,6 +137,17 @@ describe("VideoBlock — empty state", () => {
     );
     expect(document.querySelector("iframe")).toBeNull();
   });
+
+  it("shows a visible film frame in the preset hover preview", () => {
+    const { container } = render(
+      <VideoBlock videoUrl="" puck={{ metadata: { presetPreview: true } }} />
+    );
+
+    expect(screen.queryByText(/Paste a YouTube or Vimeo link/i)).not.toBeInTheDocument();
+    expect(
+      container.querySelector("[data-preset-media-placeholder='video']")
+    ).toBeInTheDocument();
+  });
 });
 
 describe("VideoBlock — populated state", () => {

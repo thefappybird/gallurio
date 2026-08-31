@@ -3,7 +3,14 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, pageSection } from "./_helpers";
+import {
+  accentBandSection,
+  child,
+  onAccentBand,
+  pageSection,
+  primaryBandSection,
+  slot,
+} from "./_helpers";
 
 const BIO_TEXT =
   "I'm a passionate photographer based in Manila, capturing life's most meaningful moments.\n\nWith over a decade of experience, I bring artistry and technical expertise to every session.";
@@ -14,6 +21,7 @@ export const ABOUT_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   alignX: "left",
   alignY: "top",
+  _style: pageSection,
   content: slot([
     child("Heading", { level: "h2", text: "About Me" }),
     child("Text", { text: BIO_TEXT }),
@@ -32,11 +40,25 @@ export const ABOUT_PORTRAIT_PRESET: ContainerBlockProps = {
       content: slot([
         child("Image", { alt: "Portrait of the photographer", _style: { cellVerticalAlign: "start" } }),
         child("Container", {
-          _style: { gap: 16, contentVerticalDistribution: "center" },
+          _style: {
+            ...accentBandSection,
+            gap: 16,
+            paddingTop: "2rem",
+            paddingRight: "2rem",
+            paddingBottom: "2rem",
+            paddingLeft: "2rem",
+            contentVerticalDistribution: "center",
+          },
           content: slot([
             child("Heading", { level: "h2", text: "About Me" }),
             child("Text", { text: BIO_TEXT }),
-            child("Button", { label: "Get in Touch", action: "open-contact", align: "left", size: "sm" }),
+            child("Button", {
+              label: "Get in Touch",
+              action: "open-contact",
+              align: "left",
+              size: "sm",
+              _style: onAccentBand,
+            }),
           ]),
         }),
       ]),
@@ -47,7 +69,7 @@ export const ABOUT_PORTRAIT_PRESET: ContainerBlockProps = {
 export const ABOUT_PROFILE_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
-  _style: { ...pageSection, gap: 0 },
+  _style: { ...primaryBandSection, gap: 0 },
   content: slot([
     child("Columns", {
       columns: 3,

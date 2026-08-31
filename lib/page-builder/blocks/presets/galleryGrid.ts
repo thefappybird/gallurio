@@ -3,7 +3,15 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, pageSection, hairlineFrame } from "./_helpers";
+import {
+  accentBandSection,
+  child,
+  hairlineFrame,
+  pageInsetSection,
+  pageSection,
+  primaryBandSection,
+  slot,
+} from "./_helpers";
 
 export const GALLERY_GRID_PRESET: ContainerBlockProps = {
   backgroundImages: [],
@@ -11,6 +19,7 @@ export const GALLERY_GRID_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   alignX: "left",
   alignY: "top",
+  _style: pageSection,
   content: slot([
     child("Heading", { level: "h2", text: "Gallery highlights" }),
     child("Text", { text: "A curated selection from one collection." }),
@@ -22,7 +31,7 @@ export const GALLERY_GRID_FULL_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
   _style: {
-    ...pageSection,
+    ...primaryBandSection,
     gap: 20,
     paddingLeft: "0px",
     paddingRight: "0px",
@@ -50,11 +59,12 @@ export const GALLERY_GRID_FULL_PRESET: ContainerBlockProps = {
 export const GALLERY_GRID_FRAMED_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
-  _style: { ...pageSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
+  _style: { ...accentBandSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
   content: slot([
     child("Container", {
       backgroundImages: [],
       _style: {
+        ...pageInsetSection,
         ...hairlineFrame,
         gap: 28,
         paddingTop: "2.5rem",

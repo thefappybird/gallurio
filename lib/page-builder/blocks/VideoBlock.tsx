@@ -16,6 +16,7 @@ import {
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 
 export type VideoBlockProps = {
   _style?: BlockStyle;
@@ -66,6 +67,7 @@ export function parseVideoEmbed(rawUrl: string | undefined | null): VideoEmbed |
 
 export function VideoBlock({ _style, videoUrl, puck }: VideoBlockProps & { puck?: BlockPuck }) {
   const embed = parseVideoEmbed(videoUrl);
+  const presetPreview = puck?.metadata?.presetPreview === true;
 
   return (
     <section
@@ -99,6 +101,8 @@ export function VideoBlock({ _style, videoUrl, puck }: VideoBlockProps & { puck?
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
           />
         </div>
+      ) : presetPreview ? (
+        <PresetMediaPlaceholder kind="video" />
       ) : (
         <div
           style={{

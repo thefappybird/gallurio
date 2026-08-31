@@ -175,9 +175,9 @@ export const SECTION_PRESETS = {
   CtaPreset: entry("CtaPreset", "cta", "Accent band",
     "A centered color band closing with a contact CTA.", CTA_PRESET),
   CtaImagePreset: entry("CtaImagePreset", "cta", "Image invitation",
-    "A short scrimmed image band with start-aligned closing copy.", CTA_IMAGE_PRESET),
+    "Closing copy and a CTA beside an editable image.", CTA_IMAGE_PRESET),
   CtaMinimalPreset: entry("CtaMinimalPreset", "cta", "Minimal closing",
-    "A divider and a headline beside a button, with no background of its own.", CTA_MINIMAL_PRESET),
+    "A divider and headline beside a button on a contrasting band.", CTA_MINIMAL_PRESET),
 
   // ---- Contact ----
   ContactPreset: entry("ContactPreset", "contact", "Centered contact",

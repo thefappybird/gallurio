@@ -3,7 +3,7 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, pageSection } from "./_helpers";
+import { accentBandSection, child, onAccentBand, pageSection, slot } from "./_helpers";
 
 export const SERVICES_PRESET: ContainerBlockProps = {
   backgroundImages: [],
@@ -77,7 +77,7 @@ const MENU_SERVICES = [
 export const SERVICES_MENU_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
-  _style: { ...pageSection, gap: 0 },
+  _style: { ...accentBandSection, gap: 0 },
   content: slot([
     child("Heading", { level: "h2", text: "Services" }),
     ...MENU_SERVICES.flatMap((service) => [
@@ -89,7 +89,7 @@ export const SERVICES_MENU_PRESET: ContainerBlockProps = {
         content: slot([
           child("Heading", { level: "h3", text: service.title }),
           child("Text", { text: service.description, _style: { colSpan: 1 } }),
-          child("Text", { text: service.price, _style: { textColorToken: "accent", bold: true } }),
+          child("Text", { text: service.price, _style: { textColorToken: "background", bold: true } }),
         ]),
       }),
     ]),
@@ -109,14 +109,28 @@ export const SERVICES_FEATURE_PRESET: ContainerBlockProps = {
       _style: { gap: 32 },
       content: slot([
         child("Container", {
-          _style: { gap: 16, contentVerticalDistribution: "center" },
+          _style: {
+            ...accentBandSection,
+            gap: 16,
+            paddingTop: "2rem",
+            paddingRight: "2rem",
+            paddingBottom: "2rem",
+            paddingLeft: "2rem",
+            contentVerticalDistribution: "center",
+          },
           content: slot([
             child("Heading", { level: "h3", text: "Wedding Photography" }),
             child("Text", {
               text: "Full-day coverage, two shooters, and a curated gallery within four weeks. The one I build the year around.",
             }),
-            child("Text", { text: "From ₱30,000", _style: { textColorToken: "accent", bold: true } }),
-            child("Button", { label: "Get in Touch", action: "open-contact", align: "left", size: "sm" }),
+            child("Text", { text: "From ₱30,000", _style: { textColorToken: "background", bold: true } }),
+            child("Button", {
+              label: "Get in Touch",
+              action: "open-contact",
+              align: "left",
+              size: "sm",
+              _style: onAccentBand,
+            }),
           ]),
         }),
         child("Image", { alt: "Wedding coverage" }),

@@ -4,7 +4,7 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, onDark, pageSection } from "./_helpers";
+import { child, onDark, pageSection, primaryBandSection, slot } from "./_helpers";
 
 /**
  * Gallery landing — a medium-height, full-bleed hero-style container for the
@@ -39,7 +39,15 @@ export const GALLERY_LANDING_SPLIT_PRESET: ContainerBlockProps = {
       content: slot([
         child("Container", {
           backgroundImages: [],
-          _style: { gap: 16, contentVerticalDistribution: "center" },
+          _style: {
+            ...primaryBandSection,
+            gap: 16,
+            paddingTop: "2rem",
+            paddingRight: "2rem",
+            paddingBottom: "2rem",
+            paddingLeft: "2rem",
+            contentVerticalDistribution: "center",
+          },
           content: slot([
             child("Heading", { level: "h2", text: "Our gallery" }),
             child("Text", { text: "A curated look at our work." }),
@@ -59,7 +67,7 @@ export const GALLERY_LANDING_MASTHEAD_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
   alignX: "left",
-  _style: { ...pageSection, gap: 20, paddingTop: "3.5rem", paddingBottom: "3.5rem" },
+  _style: { ...primaryBandSection, gap: 20, paddingTop: "3.5rem", paddingBottom: "3.5rem" },
   content: slot([
     child("Heading", { level: "h2", text: "Our gallery", _style: { bold: true } }),
     child("Text", { text: "A curated look at our work." }),

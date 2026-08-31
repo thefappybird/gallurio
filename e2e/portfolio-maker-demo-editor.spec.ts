@@ -6,6 +6,30 @@ import { test, expect, type Page } from "@playwright/test";
 // left off").
 test.use({ storageState: { cookies: [], origins: [] } });
 
+const DRAWER_ITEM_NAME = '[class*="_DrawerItem-name_"]';
+const DRAWER_CATEGORY_TITLE = '[class*="_ComponentList-title_"]';
+const DRAWER_CATEGORY = '[class*="_ComponentList_"]';
+
+async function hoverPreset(page: Page, groupName: string, presetName: RegExp) {
+  const group = page
+    .locator(DRAWER_CATEGORY)
+    .filter({
+      has: page.locator(DRAWER_CATEGORY_TITLE).filter({
+        hasText: new RegExp(`^${groupName}$`, "i"),
+      }),
+    })
+    .first();
+  await group.waitFor({ state: "visible", timeout: 15_000 });
+  if (!(await group.getAttribute("class"))?.includes("--isExpanded")) {
+    await group.locator(DRAWER_CATEGORY_TITLE).first().click();
+  }
+  const name = group.locator(DRAWER_ITEM_NAME).filter({ hasText: presetName }).first();
+  await name.scrollIntoViewIfNeeded();
+  const box = await name.boundingBox();
+  if (!box) throw new Error(`${groupName} preset row has no bounding box`);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 // The sticky disclaimer banner has role="status", but so do dnd-kit's hidden
 // screen-reader announcement divs elsewhere on the page — scope to the text.
 function disclaimerBanner(page: Page) {
@@ -78,6 +102,44 @@ test("starting from scratch lands on the canvas with Publish visible", async ({ 
   await expect(page.getByRole("button", { name: "Publish" })).toBeVisible({ timeout: 15_000 });
   // Disclaimer banner stays visible once on the canvas, not just at entry.
   await expect(disclaimerBanner(page)).toBeVisible();
+});
+
+test("preset hover cards paint theme-aware image, background, and cinema previews", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await skipGuideAndReachEntry(page);
+  await page.getByRole("button", { name: "Start from scratch" }).click();
+  await expect(page.getByRole("button", { name: "Publish" })).toBeVisible({ timeout: 15_000 });
+
+  const panel = page.locator('[data-preset-preview-panel="true"]');
+
+  await hoverPreset(page, "Hero", /^Immersive cover$/i);
+  await expect(panel.locator("[data-preset-media-placeholder='background']")).toHaveCount(1);
+  const panelHeight = await panel.evaluate((node) => node.getBoundingClientRect().height);
+  expect(panelHeight, "hover card hugs its rendered content").toBeLessThan(400);
+
+  await hoverPreset(page, "About", /^Portrait and story$/i);
+  const image = panel.locator("[data-preset-media-placeholder='image']");
+  await expect(image).toHaveCount(1);
+  const imagePaint = await image.locator("[data-preset-photo-tile='true']").evaluate((tile) => {
+    const style = getComputedStyle(tile);
+    const { width, height } = tile.getBoundingClientRect();
+    return { background: style.backgroundColor, border: style.borderColor, width, height };
+  });
+  expect(imagePaint.width).toBeGreaterThan(80);
+  expect(imagePaint.height).toBeGreaterThan(50);
+  expect(imagePaint.background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(imagePaint.border).not.toBe("rgba(0, 0, 0, 0)");
+
+  await hoverPreset(page, "Video", /^Cinema band$/i);
+  const cinema = panel.locator("[data-preset-media-placeholder='video']");
+  await expect(cinema).toHaveCount(1);
+  const cinemaSize = await cinema.evaluate((node) => {
+    const { width, height } = node.getBoundingClientRect();
+    return { width, height };
+  });
+  expect(cinemaSize.width).toBeGreaterThan(160);
+  expect(cinemaSize.height).toBeGreaterThan(80);
 });
 
 test("clicking Publish opens the demo gate modal with the locked upsell copy, not a real publish", async ({

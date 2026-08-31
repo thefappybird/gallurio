@@ -259,6 +259,17 @@ describe("ImageBlock — no image", () => {
     expect(container.querySelector("[data-bg-opacity-layer]")).toBeNull();
   });
 
+  it("uses a visible sample photograph in a preset hover preview", () => {
+    const { container } = render(
+      <ImageBlock alt="Portrait" puck={{ metadata: { presetPreview: true } }} />
+    );
+
+    expect(screen.queryByText(/Pick an image/i)).not.toBeInTheDocument();
+    expect(
+      container.querySelector("[data-preset-media-placeholder='image']")
+    ).toBeInTheDocument();
+  });
+
   it("falls back to the placeholder when bgImagePublicId is set but cloud name is unset (test env)", () => {
     // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is unset → bgImageUrl returns null,
     // so resolveBlockStyle never sets backgroundImage and hasImage stays false.
@@ -1008,6 +1019,13 @@ describe("SpacerBlock", () => {
 // ---------------------------------------------------------------------------
 
 describe("DividerBlock", () => {
+  it("uses the current section text color for its hairline", () => {
+    const { container } = render(<DividerBlock thickness={1} />);
+    expect(container.querySelector("hr")).toHaveStyle({
+      borderTopColor:
+        "color-mix(in srgb, var(--pf-block-text-color, var(--pf-color-fg)) 20%, transparent)",
+    });
+  });
   it("renders without crashing", () => {
     const { container } = render(<DividerBlock thickness={1} />);
     expect(container).toBeTruthy();
@@ -1412,6 +1430,21 @@ describe("ContainerBlock background images", () => {
     // No background <img> either (no opacity layer, no <img>).
     expect(container.querySelector("[data-bg-opacity-layer]")).toBeNull();
     expect(container.querySelector('section img')).toBeNull();
+  });
+
+  it("shows a sample background only for scrimmed preset hover previews", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[]}
+        overlayOpacity={40}
+        puck={{ metadata: { presetPreview: true } }}
+      />
+    );
+
+    expect(
+      container.querySelector("[data-preset-media-placeholder='background']")
+    ).toBeInTheDocument();
   });
 
   it("renders a single static <img> (no slideshow island) for exactly one image", () => {

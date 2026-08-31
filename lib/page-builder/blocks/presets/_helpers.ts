@@ -68,6 +68,12 @@ export const primaryBandSection = {
   textColorToken: "background",
 } as const;
 
+/** A full-strength accent band with copy on the theme's guaranteed ground. */
+export const accentBandSection = {
+  bgColorToken: "accent",
+  textColorToken: "background",
+} as const;
+
 /**
  * Section style for a plain (non-band) section. Unstyled children default to the
  * theme foreground, which is the LIGHT pole on dark kits — without an explicit
@@ -75,6 +81,12 @@ export const primaryBandSection = {
  * Luxury. Pin the section to the theme's own background token.
  */
 export const pageSection = { bgColorToken: "background" } as const;
+
+/** Reset both the ground and text cascade for a page-colored inset inside a band. */
+export const pageInsetSection = {
+  bgColorToken: "background",
+  textColorToken: "foreground",
+} as const;
 
 /** A hairline frame that earns itself by grouping — never decorative. */
 export const hairlineFrame = {

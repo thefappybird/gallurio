@@ -3,7 +3,15 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, onDark, onAccentBand, pageSection } from "./_helpers";
+import {
+  child,
+  slot,
+  onDark,
+  onAccentBand,
+  onPrimaryBand,
+  pageSection,
+  primaryBandSection,
+} from "./_helpers";
 
 export const HERO_PRESET: ContainerBlockProps = {
   backgroundImages: [],
@@ -51,11 +59,17 @@ export const HERO_STATEMENT_PRESET: ContainerBlockProps = {
   minHeight: "medium",
   alignX: "left",
   alignY: "center",
-  _style: { ...pageSection, gap: 28 },
+  _style: { ...primaryBandSection, gap: 28 },
   content: slot([
     child("Heading", { level: "h1", text: "Capturing moments that last forever", _style: { bold: true } }),
     child("Divider", { thickness: 1, _style: { width: "8rem", paddingLeft: "0px", paddingRight: "0px" } }),
     child("Text", { text: "Fine art photography for weddings, portraits, and events." }),
-    child("Button", { label: "Get in Touch", action: "open-contact", align: "left", size: "sm" }),
+    child("Button", {
+      label: "Get in Touch",
+      action: "open-contact",
+      align: "left",
+      size: "sm",
+      _style: onPrimaryBand,
+    }),
   ]),
 };

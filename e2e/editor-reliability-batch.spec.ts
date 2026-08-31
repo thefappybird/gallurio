@@ -50,6 +50,7 @@ function collectPageErrors(page: Page): string[] {
  * in the shared preview store and must agree.
  */
 async function hoverRow(page: Page, locator: ReturnType<Page["locator"]>): Promise<void> {
+  await locator.scrollIntoViewIfNeeded();
   const box = await locator.boundingBox();
   if (!box) throw new Error("drawer row has no bounding box");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -260,6 +261,44 @@ test.describe("drawer preset previews", () => {
     );
     expect(cardSizes, "Lead collections shows two visible landscape cards").toHaveLength(2);
     expect(cardSizes.every(({ width, height }) => width > 80 && height > 50)).toBe(true);
+
+    const about = await expand("About");
+    await hoverRow(
+      page,
+      about.locator(ITEM_NAME).filter({ hasText: /^Portrait and story$/i }).first()
+    );
+    const imagePreview = panel.locator("[data-preset-media-placeholder='image']");
+    await expect(imagePreview).toHaveCount(1);
+    const imagePaint = await imagePreview.locator("[data-preset-photo-tile='true']").evaluate((tile) => {
+      const style = getComputedStyle(tile);
+      const { width, height } = tile.getBoundingClientRect();
+      return { background: style.backgroundColor, border: style.borderColor, width, height };
+    });
+    expect(imagePaint.width).toBeGreaterThan(80);
+    expect(imagePaint.height).toBeGreaterThan(50);
+    expect(imagePaint.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(imagePaint.border).not.toBe("rgba(0, 0, 0, 0)");
+
+    const hero = await expand("Hero");
+    await hoverRow(
+      page,
+      hero.locator(ITEM_NAME).filter({ hasText: /^Immersive cover$/i }).first()
+    );
+    await expect(panel.locator("[data-preset-media-placeholder='background']")).toHaveCount(1);
+
+    const video = await expand("Video");
+    await hoverRow(
+      page,
+      video.locator(ITEM_NAME).filter({ hasText: /^Cinema band$/i }).first()
+    );
+    const cinema = panel.locator("[data-preset-media-placeholder='video']");
+    await expect(cinema).toHaveCount(1);
+    const cinemaSize = await cinema.evaluate((node) => {
+      const { width, height } = node.getBoundingClientRect();
+      return { width, height };
+    });
+    expect(cinemaSize.width, "Cinema band paints a visible full-width film frame").toBeGreaterThan(160);
+    expect(cinemaSize.height, "Cinema band keeps a visible 16:9 preview").toBeGreaterThan(80);
   });
 });
 

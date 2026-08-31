@@ -3,7 +3,7 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, pageSection, primaryBandSection } from "./_helpers";
+import { accentBandSection, child, slot, pageSection, primaryBandSection } from "./_helpers";
 
 export const FEATURED_WORK_PRESET: ContainerBlockProps = {
   backgroundImages: [],
@@ -26,8 +26,20 @@ export const FEATURED_WORK_LEAD_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   _style: { ...pageSection, gap: 32 },
   content: slot([
-    child("Heading", { level: "h2", text: "Featured work" }),
-    child("Text", { text: "Two projects that say most of what I'd want to say in a first meeting." }),
+    child("Container", {
+      _style: {
+        ...accentBandSection,
+        gap: 12,
+        paddingTop: "2rem",
+        paddingRight: "2rem",
+        paddingBottom: "2rem",
+        paddingLeft: "2rem",
+      },
+      content: slot([
+        child("Heading", { level: "h2", text: "Featured work" }),
+        child("Text", { text: "Two projects that say most of what I'd want to say in a first meeting." }),
+      ]),
+    }),
     child("Columns", {
       columns: 2,
       minHeight: "0px",

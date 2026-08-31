@@ -3,7 +3,14 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, pageSection, primaryBandSection } from "./_helpers";
+import {
+  accentBandSection,
+  child,
+  onAccentBand,
+  pageSection,
+  primaryBandSection,
+  slot,
+} from "./_helpers";
 
 /**
  * Video preset — header + description + video. Built on Container like every
@@ -18,6 +25,7 @@ export const VIDEO_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   alignX: "center",
   alignY: "top",
+  _style: pageSection,
   content: slot([
     child("Heading", { level: "h2", text: "Watch our story" }),
     child("Text", { text: "A short film capturing the moments that matter most." }),
@@ -38,11 +46,25 @@ export const VIDEO_SPLIT_PRESET: ContainerBlockProps = {
         child("Video", { videoUrl: "", _style: { colSpan: 2, cellVerticalAlign: "center" } }),
         child("Container", {
           backgroundImages: [],
-          _style: { gap: 16, contentVerticalDistribution: "center" },
+          _style: {
+            ...accentBandSection,
+            gap: 16,
+            paddingTop: "2rem",
+            paddingRight: "2rem",
+            paddingBottom: "2rem",
+            paddingLeft: "2rem",
+            contentVerticalDistribution: "center",
+          },
           content: slot([
             child("Heading", { level: "h2", text: "Watch our story" }),
             child("Text", { text: "A short film capturing the moments that matter most." }),
-            child("Button", { label: "Get in Touch", action: "open-contact", align: "left", size: "sm" }),
+            child("Button", {
+              label: "Get in Touch",
+              action: "open-contact",
+              align: "left",
+              size: "sm",
+              _style: onAccentBand,
+            }),
           ]),
         }),
       ]),

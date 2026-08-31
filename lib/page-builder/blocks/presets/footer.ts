@@ -3,13 +3,20 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, pageSection, primaryBandSection, onPrimaryBand } from "./_helpers";
+import {
+  accentBandSection,
+  child,
+  onPrimaryBand,
+  pageSection,
+  primaryBandSection,
+  slot,
+} from "./_helpers";
 
 export const FOOTER_SIGNATURE_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
   alignX: "center",
-  _style: { ...pageSection, gap: 20, paddingTop: "2.5rem", paddingBottom: "2.5rem" },
+  _style: { ...accentBandSection, gap: 20, paddingTop: "2.5rem", paddingBottom: "2.5rem" },
   content: slot([
     child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
     child("Heading", { level: "h3", text: "Lumen Studio" }),

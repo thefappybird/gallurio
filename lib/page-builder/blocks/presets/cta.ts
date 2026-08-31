@@ -3,7 +3,15 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, onDark, onAccentBand, pageSection } from "./_helpers";
+import {
+  child,
+  slot,
+  onDark,
+  onAccentBand,
+  onPrimaryBand,
+  pageSection,
+  primaryBandSection,
+} from "./_helpers";
 
 export const CTA_PRESET: ContainerBlockProps = {
   backgroundImages: [],
@@ -30,11 +38,25 @@ export const CTA_IMAGE_PRESET: ContainerBlockProps = {
       _style: { gap: 32 },
       content: slot([
         child("Container", {
-          _style: { gap: 16, contentVerticalDistribution: "center" },
+          _style: {
+            ...primaryBandSection,
+            gap: 16,
+            paddingTop: "2rem",
+            paddingRight: "2rem",
+            paddingBottom: "2rem",
+            paddingLeft: "2rem",
+            contentVerticalDistribution: "center",
+          },
           content: slot([
             child("Heading", { level: "h2", text: "Ready to book your session?" }),
             child("Text", { text: "Let's create something beautiful together." }),
-            child("Button", { label: "Get in Touch", action: "open-contact", align: "left", size: "sm" }),
+            child("Button", {
+              label: "Get in Touch",
+              action: "open-contact",
+              align: "left",
+              size: "sm",
+              _style: onPrimaryBand,
+            }),
           ]),
         }),
         child("Image", { alt: "Studio portrait" }),
@@ -46,7 +68,7 @@ export const CTA_IMAGE_PRESET: ContainerBlockProps = {
 export const CTA_MINIMAL_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
-  _style: { ...pageSection, gap: 28, paddingTop: "3rem", paddingBottom: "3rem" },
+  _style: { ...primaryBandSection, gap: 28, paddingTop: "3rem", paddingBottom: "3rem" },
   content: slot([
     child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
     child("Columns", {
@@ -55,7 +77,12 @@ export const CTA_MINIMAL_PRESET: ContainerBlockProps = {
       _style: { gap: 32 },
       content: slot([
         child("Heading", { level: "h2", text: "Ready to book your session?" }),
-        child("Button", { label: "Get in Touch", action: "open-contact", align: "right", _style: { cellVerticalAlign: "center" } }),
+        child("Button", {
+          label: "Get in Touch",
+          action: "open-contact",
+          align: "right",
+          _style: { ...onPrimaryBand, cellVerticalAlign: "center" },
+        }),
       ]),
     }),
   ]),

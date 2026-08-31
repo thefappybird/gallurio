@@ -4,7 +4,7 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { child, slot, pageSection } from "./_helpers";
+import { accentBandSection, child, pageSection, primaryBandSection, slot } from "./_helpers";
 
 export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
   backgroundImages: [],
@@ -12,6 +12,7 @@ export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   alignX: "left",
   alignY: "top",
+  _style: pageSection,
   content: slot([
     child("Heading", { level: "h2", text: "Story gallery" }),
     child("Text", { text: "A more editorial layout for one collection." }),
@@ -23,7 +24,7 @@ export const GALLERY_MASONRY_WALL_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
   _style: {
-    ...pageSection,
+    ...primaryBandSection,
     gap: 16,
     paddingLeft: "0px",
     paddingRight: "0px",
@@ -60,7 +61,14 @@ export const GALLERY_MASONRY_JOURNAL_PRESET: ContainerBlockProps = {
       content: slot([
         child("Container", {
           backgroundImages: [],
-          _style: { gap: 14 },
+          _style: {
+            ...accentBandSection,
+            gap: 14,
+            paddingTop: "2rem",
+            paddingRight: "2rem",
+            paddingBottom: "2rem",
+            paddingLeft: "2rem",
+          },
           content: slot([
             child("Heading", { level: "h2", text: "Story gallery" }),
             child("Text", { text: "A more editorial layout for one collection." }),

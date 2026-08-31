@@ -62,6 +62,7 @@ function highlightBandStyle(
 }
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { GalleryImage } from "./GalleryGridBlock";
 
 // Returns null when imageId is missing or env is unset, so existing `url(...) || imageUrl` fallbacks still work.
@@ -268,6 +269,7 @@ export function ImageBlock({
   // asset id at all (mirrors the legacy-migration precedence above).
   const src = effectiveStyle?.bgImagePublicId ? bgImageUrl(effectiveStyle.bgImagePublicId) : imageUrl || null;
   const hasImage = Boolean(src);
+  const presetPreview = puck?.metadata?.presetPreview === true;
 
   return (
     <div
@@ -306,6 +308,8 @@ export function ImageBlock({
             }}
           />
         </div>
+      ) : presetPreview ? (
+        <PresetMediaPlaceholder kind="image" />
       ) : (
         <div
           style={{
@@ -584,7 +588,8 @@ export function DividerBlock({ _style, thickness, puck }: DividerBlockProps & { 
           border: 0,
           borderTopWidth: `${t}px`,
           borderTopStyle: "solid",
-          borderTopColor: "color-mix(in srgb, var(--pf-color-fg) 20%, transparent)",
+          borderTopColor:
+            "color-mix(in srgb, var(--pf-block-text-color, var(--pf-color-fg)) 20%, transparent)",
           margin: 0,
         }}
       />
@@ -931,6 +936,8 @@ export function ContainerBlock({
     .map((img) => ({ id: img.id, src: cfImageUrl(img.publicId, 2000) }))
     .filter((l): l is { id: string; src: string } => Boolean(l.src));
   const hasBg = layers.length > 0;
+  const previewBackground =
+    !hasBg && puck?.metadata?.presetPreview === true && (overlayOpacity ?? 0) > 0;
   const overlayPercent = Math.min(100, Math.max(0, overlayOpacity ?? 0));
   const overlayAlpha = overlayPercent / 100;
   const scrimColor =
@@ -1001,7 +1008,7 @@ export function ContainerBlock({
           slot (also zIndex:1, later in DOM order). Order is load-bearing — the
           slideshow island root is itself a `section > div[aria-hidden]`, so the
           scrim must precede it. Do not reorder. */}
-      {hasBg && overlayAlpha > 0 && (
+      {(hasBg || previewBackground) && overlayAlpha > 0 && (
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: scrimColor }} />
       )}
       {hasBg && (
@@ -1022,6 +1029,11 @@ export function ContainerBlock({
               speed={bgSpeed ?? "medium"}
             />
           )}
+        </div>
+      )}
+      {previewBackground && (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+          <PresetMediaPlaceholder kind="background" />
         </div>
       )}
       {Content({

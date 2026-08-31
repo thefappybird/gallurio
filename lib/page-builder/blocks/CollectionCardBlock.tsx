@@ -32,6 +32,7 @@ import {
 } from "@/lib/page-builder/blockContext";
 import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
 import type { FeaturedCollectionRef } from "./FeaturedWorkBlock";
+import { PRESET_MEDIA_STRONG, PresetPhotoTile } from "./PresetMediaPlaceholder";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -117,16 +118,18 @@ export function CollectionCardBlock({
             data-cover-placeholder=""
             data-preset-collection-placeholder="true"
             style={{
+              position: "relative",
+              overflow: "hidden",
               width: "100%",
               // Empty CSS-grid tracks use intrinsic sizing. A contentless 100%
               // child otherwise contributes zero and collapses to a dot in the
               // miniature; size the preview fixture by its intended crop.
               minWidth: previewMinWidth,
               aspectRatio: aspectRatio ?? "7 / 9",
-              backgroundColor: "color-mix(in srgb, currentColor 14%, transparent)",
-              border: "1px solid color-mix(in srgb, currentColor 28%, transparent)",
             }}
-          />
+          >
+            <PresetPhotoTile fill />
+          </div>
           {showCaption !== false && (
             <div
               data-preset-collection-caption="true"
@@ -134,7 +137,7 @@ export function CollectionCardBlock({
                 width: "62%",
                 height: "0.55rem",
                 marginTop: "0.5rem",
-                backgroundColor: "color-mix(in srgb, currentColor 32%, transparent)",
+                backgroundColor: PRESET_MEDIA_STRONG,
               }}
             />
           )}
