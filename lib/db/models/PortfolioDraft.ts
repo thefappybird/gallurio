@@ -9,6 +9,9 @@ const portfolioDraftSchema = new Schema(
     workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", required: true, index: true },
     name: { type: String, required: true, trim: true, maxlength: DRAFT_NAME_MAX },
     templateId: { type: String, default: "" },
+    // Set only on drafts created by importDemoPortfolioAction — no `default`,
+    // so ordinary drafts leave the field unset rather than storing null.
+    demoSessionId: { type: String },
     data: {
       home: { type: Schema.Types.Mixed, default: null },
       gallery: { type: Schema.Types.Mixed, default: null },
@@ -41,6 +44,15 @@ portfolioDraftSchema.index({ workspaceId: 1, updatedAt: -1 });
 // Draft names are unique within a workspace (create + rename). DB-level backstop
 // against the check-then-write race in the create/update actions.
 portfolioDraftSchema.index({ workspaceId: 1, name: 1 }, { unique: true });
+// Makes a demo-portfolio import idempotent per demo session: a retried import
+// with the same demoSessionId hits this unique index rather than creating a
+// second draft. Partial (not sparse) — a plain sparse compound index still
+// indexes every doc because workspaceId is always present, which would collide
+// every ordinary draft on demoSessionId: null. $gt: "" also excludes "".
+portfolioDraftSchema.index(
+  { workspaceId: 1, demoSessionId: 1 },
+  { unique: true, partialFilterExpression: { demoSessionId: { $type: "string", $gt: "" } } }
+);
 
 export type PortfolioDraftDoc = InferSchemaType<typeof portfolioDraftSchema> & {
   _id: mongoose.Types.ObjectId;

@@ -572,4 +572,31 @@ describe("importDemoPortfolioAction", () => {
     expect("ok" in res && res.ok).toBe(true);
     if ("ok" in res) expect(res.draft.name).toBe("Demo portfolio (2)");
   });
+
+  it("is idempotent on the draft: retrying the same demoSessionId returns the same draft instead of a second one", async () => {
+    const first = await importDemoPortfolioAction(demoInput);
+    const second = await importDemoPortfolioAction(demoInput);
+    if (!("ok" in first) || !("ok" in second)) throw new Error("expected ok");
+
+    expect(second.draft.id).toBe(first.draft.id);
+    await expect(PortfolioDraft.countDocuments({ workspaceId: mockCtx.workspace._id })).resolves.toBe(1);
+  });
+
+  it("treats a demoSessionId collision on create as a concurrent win, not a name collision", async () => {
+    // Simulates a race: a concurrent request already landed a draft for this
+    // demoSessionId (under a different auto-deduped name) between this call's
+    // idempotency lookup and its create attempt.
+    const winner = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "Demo portfolio (already imported)",
+      demoSessionId: DEMO_SESSION,
+      ...snapshot,
+    });
+    vi.spyOn(PortfolioDraft, "findOne").mockImplementationOnce(() => null as unknown as ReturnType<typeof PortfolioDraft.findOne>);
+
+    const res = await importDemoPortfolioAction(demoInput);
+    if (!("ok" in res)) throw new Error("expected ok, got " + JSON.stringify(res));
+
+    expect(res.draft.id).toBe(String(winner._id));
+  });
 });

@@ -480,6 +480,17 @@ export async function importDemoPortfolioAction(input: unknown): Promise<DemoImp
     }
   }
 
+  // Retried imports (dropped response after a server-side success, double-submit
+  // that beats the UI's busy flag) are keyed on demoSessionId, not name — the
+  // GalleryItem re-parenting above already reran idempotently, so returning the
+  // existing draft here is correct rather than minting a second "Demo portfolio
+  // (2)" draft.
+  const existingDemoDraft = await PortfolioDraft.findOne({ workspaceId, demoSessionId });
+  if (existingDemoDraft) {
+    revalidatePath("/portfolio");
+    return { ok: true, draft: toSummary(existingDemoDraft), failedAssetIds };
+  }
+
   const cap = draftCapForPlan(ctx.workspace.plan as PlanTier);
   if (Number.isFinite(cap)) {
     const count = await PortfolioDraft.countDocuments({ workspaceId });
@@ -494,6 +505,7 @@ export async function importDemoPortfolioAction(input: unknown): Promise<DemoImp
         {
           workspaceId,
           name,
+          demoSessionId,
           templateId: draft.templateId || "scratch",
           data: draft.data,
           brandKit: draft.brandKit,
@@ -508,6 +520,18 @@ export async function importDemoPortfolioAction(input: unknown): Promise<DemoImp
       break;
     } catch (err) {
       if (!isDuplicateKeyError(err)) throw err;
+      // A conflict on demoSessionId means a concurrent request won the create
+      // race, not a genuine name collision — fetch and return its draft
+      // instead of renaming (renaming would spin all 20 attempts and wrongly
+      // report name_taken).
+      const keyPattern = (err as { keyPattern?: Record<string, unknown> } | null)?.keyPattern;
+      if (keyPattern && "demoSessionId" in keyPattern) {
+        const winner = await PortfolioDraft.findOne({ workspaceId, demoSessionId });
+        if (winner) {
+          doc = winner;
+          break;
+        }
+      }
       name = `${DEMO_IMPORT_DRAFT_NAME} (${attempt + 2})`;
     }
   }
