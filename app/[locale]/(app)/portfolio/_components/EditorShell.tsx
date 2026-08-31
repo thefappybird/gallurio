@@ -1925,9 +1925,11 @@ export function EditorShell({
     };
   }, []);
 
-  // Memoized on the kit: `cssVars` is a dependency of `drawerItemOverrides`
-  // below, and that memo must stay referentially stable or Puck remounts the
-  // whole drawer on every render (i.e. on every keystroke).
+  // Memoized on the kit: resolveBrandKit does real work (font resolution,
+  // luminance-based color-scheme calc) and allocates a fresh cssVars/className
+  // pair each call; this recomputes only when brandKit changes rather than on
+  // every render. Feeds the wrapper div's inline style below, the cssVars prop
+  // threaded into PresetPreviewPanel, and Puck's metadata.workspace.brandVars.
   const { cssVars, className } = useMemo(() => resolveBrandKit(brandKit), [brandKit]);
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
   // `--pf-color-*` vars, so we thread the hex values through React context).
@@ -2019,12 +2021,13 @@ export function EditorShell({
     []
   );
 
-  // Section-preset drawer items get a second line with the preset's localized
-  // description (three same-group variants otherwise look identical). Needs
-  // `t`, so it can't live in puckStableOverrides' empty-dep memo above — it
-  // gets its own memo keyed on [t] (stable per locale, same basis
-  // createEditorConfig is memoized on) so its identity only changes on locale
-  // switch, not every render, keeping Puck from remounting the drawer subtree.
+  // Wraps section-preset drawer items with PresetDrawerItem, which triggers
+  // the shared PresetPreviewPanel (rendered once, above) on hover/focus — the
+  // per-row description moved into that popover, so this override no longer
+  // needs `t` or anything else that changes at runtime. Kept in its own
+  // empty-dep memo (not merged into puckStableOverrides above) so it stays a
+  // fully stable reference regardless of what that memo's contents end up
+  // depending on.
   const drawerItemOverrides = useMemo(
     () => ({
       drawerItem: ({ name, children }: { name: string; children: ReactNode }) => {
@@ -2386,8 +2389,8 @@ export function EditorShell({
               // preventing Puck from remounting the subtrees (scroll-to-top on canvas;
               // focus loss on every keystroke in the right-panel inputs).
               ...puckStableOverrides,
-              // Locale-scoped: identity only changes on locale switch (see
-              // drawerItemOverrides above), not every render.
+              // Fully stable identity (see drawerItemOverrides above), never
+              // changes across renders.
               ...drawerItemOverrides,
             }}
           />
