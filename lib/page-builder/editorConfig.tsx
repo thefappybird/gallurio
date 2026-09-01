@@ -32,7 +32,9 @@
 import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
 import { MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
-import { StyleToolkitField } from "./StyleToolkitField";
+import { StyleToolkitField, type NavDetachContext } from "./StyleToolkitField";
+import { useChromeSync } from "./chromeSyncContext";
+import type { ZoneKey } from "./chromeSync";
 import { RootStyleField } from "./RootStyleField";
 import type { RootPageStyle } from "./rootStyle";
 import { NumberInputRow } from "./toolbarPrimitives";
@@ -432,12 +434,62 @@ export function englishPuckT(key: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Navigation's `_style` field — same "custom" field mechanism as `styleField`
+// below, plus the detach-toggle context StyleToolkitField's NavigationConfigPanel
+// needs (see chromeSyncContext.ts). A real component (not a plain closure) so
+// `useChromeSync()` runs as an ordinary hook call.
+// ---------------------------------------------------------------------------
+
+export function NavStyleField({
+  value,
+  onChange,
+  id,
+  t,
+  zone,
+}: {
+  value: unknown;
+  onChange: (v: unknown) => void;
+  id: string;
+  t: PuckTranslate;
+  zone?: ZoneKey;
+}) {
+  const chromeSync = useChromeSync();
+  const otherZone: ZoneKey | undefined = zone === "home" ? "gallery" : zone === "gallery" ? "home" : undefined;
+  // `zone` is undefined until the caller (EditorShell) passes `activeZone` into
+  // `createEditorConfig` — see this file's handoff note. Until then the toggle
+  // renders with StyleToolkitField's own generic fallback copy, always enabled.
+  const navDetach: NavDetachContext | undefined =
+    zone && otherZone && chromeSync
+      ? {
+          zoneLabel: t(`zone.${zone}`),
+          otherZoneLabel: t(`zone.${otherZone}`),
+          disabled: !chromeSync.canDetach(zone, "nav"),
+        }
+      : undefined;
+
+  return (
+    <StyleToolkitField
+      value={value as BlockStyle | undefined}
+      onChange={onChange as (v: BlockStyle) => void}
+      fieldId={id}
+      navDetach={navDetach}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Factory — builds the editor Puck config with translated labels.
 // Called inside EditorShell via useMemo(() => createEditorConfig(t), [t])
 // where t = useTranslations("app.pageBuilder.editor").
 // ---------------------------------------------------------------------------
 
-export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
+export function createEditorConfig(
+  t: PuckTranslate,
+  // Seam for the detach-toggle's zone context — see NavStyleField/chromeSyncContext.ts.
+  // Undefined today (no call site passes it yet); the toggle degrades to
+  // StyleToolkitField's generic always-enabled fallback until a caller supplies it.
+  activeZone?: ZoneKey
+): Config<EditorComponents> {
   // ---- Shared fields -------------------------------------------------------
 
   const styleField = {
@@ -463,6 +515,25 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     ),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as unknown as Field<any>;
+
+  // ---- Navigation fields (editor-only `_style` override) ------------------
+  // Mirrors `editorContainerFields` below: `navigationFields`'s own `_style` is
+  // the inert `productionStyleField` (round-trip-only, keeps StyleToolkitField
+  // out of the server-rendered production config.ts bundle) — this swaps it
+  // for the real editor field so the Navigation config panel actually renders.
+
+  const navStyleField = {
+    type: "custom",
+    label: t("puckConfig.fields.style"),
+    render: ({ value, onChange, id }: { value: unknown; onChange: (v: unknown) => void; id: string }) => (
+      <NavStyleField value={value} onChange={onChange} id={id} t={t} zone={activeZone} />
+    ),
+  } as unknown as Field<BlockStyle | undefined>;
+
+  const navigationEditorFields = {
+    ...navigationFields,
+    _style: navStyleField,
+  } as unknown as ComponentConfig<NavigationBlockProps>["fields"];
 
   // ---- Container fields (used by Container + all preset blocks) -----------
 
@@ -549,7 +620,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
         const navCfg: ComponentConfig<NavigationBlockProps> = {
           label: t(presetEntry.labelKey),
           inline: true,
-          fields: navigationFields,
+          fields: navigationEditorFields,
           defaultProps: presetEntry.defaultProps as NavigationBlockProps,
           permissions: navigationPermissions,
           render: NavigationBlock as ComponentConfig<NavigationBlockProps>["render"],
@@ -962,7 +1033,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     label: t("puckConfig.blocks.navigation"),
     inline: true,
     defaultProps: navigationDefaultProps,
-    fields: navigationFields,
+    fields: navigationEditorFields,
     permissions: navigationPermissions,
     render: NavigationBlock as ComponentConfig<NavigationBlockProps>["render"],
   };

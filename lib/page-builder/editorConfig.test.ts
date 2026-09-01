@@ -1,7 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { createElement } from "react";
+import { render, screen } from "@testing-library/react";
 import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate } from "./editorConfig";
 import { puckConfig } from "./config";
-import { SECTION_PRESETS, SECTION_PRESET_KEYS, PRESET_GROUPS } from "./blocks/sectionPresets";
+import { ChromeSyncContext, type ChromeSyncCtx } from "./chromeSyncContext";
+import { SECTION_PRESETS, SECTION_PRESET_KEYS, PRESET_GROUPS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
@@ -18,6 +21,22 @@ import {
   columnsDefaultProps,
   containerDefaultProps,
 } from "./blocks/manualBlocks";
+
+// Stubs StyleToolkitField's actual UI (owned/tested elsewhere) so these tests
+// can assert WHAT reaches it (does the field even delegate to it? what
+// navDetach shape?) without depending on its internal rendering/gating.
+vi.mock("./StyleToolkitField", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./StyleToolkitField")>();
+  return {
+    ...actual,
+    StyleToolkitField: (props: { navDetach?: unknown }) =>
+      createElement(
+        "div",
+        { "data-testid": "style-toolkit-stub" },
+        JSON.stringify(props.navDetach ?? null)
+      ),
+  };
+});
 
 // The editor config mirrors the production blocks for client-safe previews. If a
 // block's component keys or defaultProps drift from the editor's, saved data
@@ -332,5 +351,88 @@ describe("block label renames", () => {
     expect(SECTION_PRESETS.GalleryLandingPreset.group).toBe("galleryLanding");
     const group = PRESET_GROUPS.find((g) => g.id === "galleryLanding");
     expect(group?.label).toBe("Gallery landing");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Navigation `_style` editor override — the field panel must actually render.
+// ---------------------------------------------------------------------------
+
+type StyleField = { render: (p: { value: unknown; onChange: (v: unknown) => void; id: string }) => unknown };
+
+describe("Navigation _style editor override", () => {
+  it("resolves the real StyleToolkitField for the base Navigation type (not the inert production placeholder)", () => {
+    const cfg = createEditorConfig(englishPuckT);
+    const field = (cfg.components.Navigation.fields as unknown as { _style: StyleField })._style;
+    render(field.render({ value: undefined, onChange: vi.fn(), id: "nav-1" }));
+    expect(screen.getByTestId("style-toolkit-stub")).toBeInTheDocument();
+  });
+
+  it("resolves the real StyleToolkitField for every nav-group preset", () => {
+    const cfg = createEditorConfig(englishPuckT);
+    for (const key of NAV_PRESET_KEYS) {
+      const field = (cfg.components[key].fields as unknown as { _style: StyleField })._style;
+      const { unmount, getByTestId } = render(
+        field.render({ value: undefined, onChange: vi.fn(), id: `${key}-1` })
+      );
+      expect(getByTestId("style-toolkit-stub")).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("leaves the Container branch's shared editor _style field untouched", () => {
+    const cfg = createEditorConfig(englishPuckT);
+    const containerStyle = (cfg.components.Container.fields as unknown as { _style: StyleField })._style;
+    const heroPresetStyle = (cfg.components.HeroPreset.fields as unknown as { _style: StyleField })._style;
+    // Container-based blocks all share ONE `styleField` instance — proves the
+    // Navigation override didn't touch (or fork) the Container code path.
+    expect(containerStyle).toBe(heroPresetStyle);
+  });
+
+  it("the production config.ts path never delegates to StyleToolkitField (still the inert placeholder)", () => {
+    const field = (puckConfig.components.Navigation.fields as unknown as { _style: StyleField })._style;
+    // If config.ts's Navigation `_style` routed through StyleToolkitField (even
+    // the mocked stub), this would be a rendered element, not null.
+    expect(field.render({ value: undefined, onChange: vi.fn(), id: "nav-1" })).toBeNull();
+  });
+});
+
+describe("Navigation _style navDetach wiring", () => {
+  const mockT: PuckTranslate = (key) => {
+    if (key === "zone.home") return "Home";
+    if (key === "zone.gallery") return "Gallery";
+    return englishPuckT(key);
+  };
+
+  function renderNavStyle(activeZone: "home" | "gallery" | undefined, ctx: ChromeSyncCtx) {
+    const cfg = createEditorConfig(mockT, activeZone);
+    const field = (cfg.components.Navigation.fields as unknown as { _style: StyleField })._style;
+    const el = field.render({ value: undefined, onChange: vi.fn(), id: "nav-1" });
+    render(createElement(ChromeSyncContext.Provider, { value: ctx }, el as never));
+  }
+
+  it("passes zoneLabel/otherZoneLabel/disabled through when activeZone + chromeSync context are present", () => {
+    const ctx: ChromeSyncCtx = {
+      canDetach: (zone) => zone !== "home",
+      detachedZone: () => "home",
+    };
+    renderNavStyle("home", ctx);
+    const payload = JSON.parse(screen.getByTestId("style-toolkit-stub").textContent ?? "null");
+    expect(payload).toEqual({ zoneLabel: "Home", otherZoneLabel: "Gallery", disabled: true });
+  });
+
+  it("flips zoneLabel/otherZoneLabel/disabled for the gallery zone", () => {
+    const ctx: ChromeSyncCtx = {
+      canDetach: (zone) => zone === "gallery",
+      detachedZone: () => null,
+    };
+    renderNavStyle("gallery", ctx);
+    const payload = JSON.parse(screen.getByTestId("style-toolkit-stub").textContent ?? "null");
+    expect(payload).toEqual({ zoneLabel: "Gallery", otherZoneLabel: "Home", disabled: false });
+  });
+
+  it("passes navDetach: undefined when no activeZone is supplied (current EditorShell call site)", () => {
+    renderNavStyle(undefined, { canDetach: () => true, detachedZone: () => null });
+    expect(screen.getByTestId("style-toolkit-stub").textContent).toBe("null");
   });
 });

@@ -5,6 +5,7 @@ import {
   applyCollectionPopupDefaults,
   applyNavChromeDefaults,
   getNavChromeLabelsFrom,
+  getPreviewNavFrom,
 } from "./blockContext";
 
 // ---------------------------------------------------------------------------
@@ -190,6 +191,51 @@ describe("getNavChromeLabelsFrom", () => {
     };
     const puck = { metadata: { workspace: { _id: "ws-3", name: "X", chrome: { nav: chrome } } } };
     expect(getNavChromeLabelsFrom(puck)).toEqual(chrome);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getPreviewNavFrom — preview-iframe href/active-path override
+// ---------------------------------------------------------------------------
+
+describe("getPreviewNavFrom", () => {
+  it("returns null when puck is undefined", () => {
+    expect(getPreviewNavFrom(undefined)).toBeNull();
+  });
+
+  it("returns null when puck is null", () => {
+    expect(getPreviewNavFrom(null)).toBeNull();
+  });
+
+  it("returns null when puck has no metadata", () => {
+    expect(getPreviewNavFrom({})).toBeNull();
+  });
+
+  it("returns null when puck.metadata.workspace has no previewNav (live public page / editor canvas)", () => {
+    expect(
+      getPreviewNavFrom({ metadata: { workspace: { _id: "ws-1", name: "Studio" } } })
+    ).toBeNull();
+  });
+
+  it("passes through the preview override when present", () => {
+    const puck = {
+      metadata: {
+        workspace: {
+          _id: "ws-2",
+          name: "Studio",
+          previewNav: {
+            homeHref: "/en/portfolio-preview?zone=home",
+            galleryHref: "/en/portfolio-preview?zone=gallery",
+            activePath: "/en/portfolio-preview?zone=gallery",
+          },
+        },
+      },
+    };
+    expect(getPreviewNavFrom(puck)).toEqual({
+      homeHref: "/en/portfolio-preview?zone=home",
+      galleryHref: "/en/portfolio-preview?zone=gallery",
+      activePath: "/en/portfolio-preview?zone=gallery",
+    });
   });
 });
 

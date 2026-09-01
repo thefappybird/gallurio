@@ -64,6 +64,20 @@ export type RenderWorkspace = {
     /** External-link confirm template. Contains literal "{url}" for per-link substitution. */
     socialLinkConfirm?: string;
   } | null;
+  /**
+   * Preview-scoped nav overrides — set ONLY by `app/[locale]/portfolio-preview/page.tsx`
+   * so the Navigation block's Home/Gallery links stay inside the preview iframe instead
+   * of navigating to the live public site, and active-link highlighting resolves against
+   * the iframe's own zone param (there is no real per-zone pathname there). Absent on the
+   * live public page and the editor canvas — NavigationBlock falls back to
+   * `portfolioHomePath`/`portfolioGalleryPath` and `usePathname()` in both cases.
+   */
+  previewNav?: {
+    homeHref?: string;
+    galleryHref?: string;
+    /** Which of homeHref/galleryHref is "current" for this preview render. */
+    activePath?: string;
+  } | null;
 };
 
 /** Localized strings consumed by the gallery blocks (resolved at the page boundary). */
@@ -211,4 +225,15 @@ export function getNavChromeLabelsFrom(puck?: BlockPuck | null): Required<NavChr
  */
 export function getRenderWorkspaceFrom(puck?: BlockPuck | null): RenderWorkspace | null {
   return puck?.metadata?.workspace ?? null;
+}
+
+/**
+ * Client-safe: the preview-scoped nav override from Puck `metadata` (no ALS).
+ *
+ * Reads `puck.metadata.workspace.previewNav`. Returns null everywhere the
+ * override is absent (live public page, editor canvas) — callers fall back
+ * to the live public paths in that case.
+ */
+export function getPreviewNavFrom(puck?: BlockPuck | null): RenderWorkspace["previewNav"] | null {
+  return puck?.metadata?.workspace?.previewNav ?? null;
 }

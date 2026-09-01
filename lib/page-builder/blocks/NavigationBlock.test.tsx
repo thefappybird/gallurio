@@ -91,6 +91,91 @@ describe("NavigationBlock — isomorphic render", () => {
     expect(gallery).toHaveAttribute("href", "/w/luna-studio/gallery");
   });
 
+  it("uses live public hrefs when no preview override is supplied", () => {
+    render(
+      NavigationBlock({
+        ...navigationDefaultProps,
+        content: stubSlot,
+        puck: {
+          metadata: {
+            workspace: { _id: "ws-5", name: "Luna Studio", slug: "luna-studio" },
+          },
+        },
+      })
+    );
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/w/luna-studio");
+    expect(screen.getByRole("link", { name: "Gallery" })).toHaveAttribute(
+      "href",
+      "/w/luna-studio/gallery"
+    );
+  });
+
+  it("uses the preview override hrefs when workspace.previewNav is set (stays inside the iframe)", () => {
+    render(
+      NavigationBlock({
+        ...navigationDefaultProps,
+        content: stubSlot,
+        puck: {
+          metadata: {
+            workspace: {
+              _id: "ws-6",
+              name: "Luna Studio",
+              slug: "luna-studio",
+              previewNav: {
+                homeHref: "/en/portfolio-preview?zone=home",
+                galleryHref: "/en/portfolio-preview?zone=gallery",
+                activePath: "/en/portfolio-preview?zone=gallery",
+              },
+            },
+          },
+        },
+      })
+    );
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute(
+      "href",
+      "/en/portfolio-preview?zone=home"
+    );
+    expect(screen.getByRole("link", { name: "Gallery" })).toHaveAttribute(
+      "href",
+      "/en/portfolio-preview?zone=gallery"
+    );
+  });
+
+  it("marks the current preview zone's link active via previewNav.activePath, not usePathname", () => {
+    render(
+      NavigationBlock({
+        ...navigationDefaultProps,
+        // activeLinkScale makes the active link's style visibly diverge
+        // (fontWeight 700) so the assertion doesn't depend on color tokens
+        // that happen to match the inactive default.
+        activeLinkScale: true,
+        content: stubSlot,
+        puck: {
+          metadata: {
+            workspace: {
+              _id: "ws-7",
+              name: "Luna Studio",
+              slug: "luna-studio",
+              previewNav: {
+                homeHref: "/en/portfolio-preview?zone=home",
+                galleryHref: "/en/portfolio-preview?zone=gallery",
+                activePath: "/en/portfolio-preview?zone=gallery",
+              },
+            },
+          },
+        },
+      })
+    );
+    // usePathname() is mocked to "/w/luna-studio" — if activePath weren't
+    // threaded through, neither link would resolve as current.
+    expect(screen.getByRole("link", { name: "Gallery" }).getAttribute("style")).toContain(
+      "font-weight: 700"
+    );
+    expect(screen.getByRole("link", { name: "Home" }).getAttribute("style")).not.toContain(
+      "font-weight: 700"
+    );
+  });
+
   it("renders the content slot as the brand region, in the SAME row as the nav links", () => {
     render(
       NavigationBlock({

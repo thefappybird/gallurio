@@ -128,10 +128,24 @@ export default async function PortfolioPreviewPage({
     body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} />;
   } else {
     const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
+    // Preview-scoped nav override — keeps the Navigation block's Home/Gallery
+    // links inside this iframe instead of navigating to the live public site
+    // (see blockContext.ts's `RenderWorkspace.previewNav`). formLocale/formDir
+    // are re-appended so an in-editor language switch survives a Home<->Gallery
+    // click inside the preview.
+    const previewBasePath = `/${locale}/portfolio-preview`;
+    const previewQuery = `formLocale=${chromeLocale}&formDir=${effectiveDir}`;
+    const previewHomeHref = `${previewBasePath}?zone=home&${previewQuery}`;
+    const previewGalleryHref = `${previewBasePath}?zone=gallery&${previewQuery}`;
     const renderWorkspace = {
       ...buildRenderWorkspace(workspace),
       locale: chromeLocale,
       brandVars: cssVars,
+      previewNav: {
+        homeHref: previewHomeHref,
+        galleryHref: previewGalleryHref,
+        activePath: zone === "gallery" ? previewGalleryHref : previewHomeHref,
+      },
       chrome: {
         startingFrom: t("startingFrom", { price: "{price}" }),
         socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),

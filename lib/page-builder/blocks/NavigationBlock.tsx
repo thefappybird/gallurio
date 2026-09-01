@@ -25,6 +25,7 @@ import { DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
 import {
   getRenderWorkspaceFrom,
   getNavChromeLabelsFrom,
+  getPreviewNavFrom,
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import type { ChromeKind } from "@/lib/page-builder/chromeSync";
@@ -72,14 +73,16 @@ export function NavigationBlock({
 }: NavigationBlockProps & { content: SlotComponent; puck?: BlockPuck }) {
   const workspace = getRenderWorkspaceFrom(puck);
   const labels = getNavChromeLabelsFrom(puck);
+  const previewNav = getPreviewNavFrom(puck);
   const slug = workspace?.slug ?? "";
 
   return (
     <div ref={puck?.dragRef ?? undefined} data-block="navigation">
       <PortfolioHeader
         slug={slug}
-        homeHref={portfolioHomePath(slug)}
-        galleryHref={portfolioGalleryPath(slug)}
+        homeHref={previewNav?.homeHref ?? portfolioHomePath(slug)}
+        galleryHref={previewNav?.galleryHref ?? portfolioGalleryPath(slug)}
+        activePath={previewNav?.activePath}
         labels={{
           brand: workspace?.name ?? "",
           navLandmark: labels.navLandmark,

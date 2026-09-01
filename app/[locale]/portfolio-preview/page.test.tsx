@@ -75,11 +75,17 @@ vi.mock("./_components/PreviewClient", () => ({
   }: {
     zone: string;
     slug: string;
-    workspace: { chrome?: { nav?: { home?: string } } };
+    workspace: {
+      chrome?: { nav?: { home?: string } };
+      previewNav?: { homeHref?: string; galleryHref?: string; activePath?: string };
+    };
   }) => (
     <div data-testid="preview-client">
       {zone}:{slug}
       <div data-testid="preview-client-nav-home">{workspace.chrome?.nav?.home ?? ""}</div>
+      <div data-testid="preview-client-nav-home-href">{workspace.previewNav?.homeHref ?? ""}</div>
+      <div data-testid="preview-client-nav-gallery-href">{workspace.previewNav?.galleryHref ?? ""}</div>
+      <div data-testid="preview-client-nav-active-path">{workspace.previewNav?.activePath ?? ""}</div>
     </div>
   ),
 }));
@@ -153,5 +159,47 @@ describe("PortfolioPreviewPage", () => {
     render(page);
 
     expect(screen.getByTestId("preview-client-nav-home")).toHaveTextContent("en:publicPage.nav:home");
+  });
+
+  it("wires preview-scoped nav hrefs (stay inside the iframe, not the live public site)", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-nav-home-href")).toHaveTextContent(
+      "/en/portfolio-preview?zone=home&formLocale=en&formDir=ltr"
+    );
+    expect(screen.getByTestId("preview-client-nav-gallery-href")).toHaveTextContent(
+      "/en/portfolio-preview?zone=gallery&formLocale=en&formDir=ltr"
+    );
+  });
+
+  it("sets activePath to the home href on the home zone", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-nav-active-path")).toHaveTextContent(
+      "/en/portfolio-preview?zone=home&formLocale=en&formDir=ltr"
+    );
+  });
+
+  it("sets activePath to the gallery href on the gallery zone", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "gallery" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-nav-active-path")).toHaveTextContent(
+      "/en/portfolio-preview?zone=gallery&formLocale=en&formDir=ltr"
+    );
   });
 });
