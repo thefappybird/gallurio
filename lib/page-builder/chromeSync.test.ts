@@ -97,11 +97,11 @@ describe("syncChrome", () => {
     const result = syncChrome(zones, "home", "nav", makeIdFactory("gen"));
     const mirrored = findChrome(result.gallery, "nav")!;
 
-    expect((mirrored.props as { brandText: string }).brandText).toBe("Home Brand");
+    expect((mirrored.props as unknown as { brandText: string }).brandText).toBe("Home Brand");
     expect((mirrored.props as { id: string }).id).toBe("gallery-nav");
-    const slot = (mirrored.props as { content: ComponentData[] }).content;
+    const slot = (mirrored.props as unknown as { content: ComponentData[] }).content;
     expect(slot.map((b) => b.type)).toEqual(["Image", "Heading"]);
-    expect((slot[1].props as { text: string }).text).toBe("Studio");
+    expect((slot[1].props as unknown as { text: string }).text).toBe("Studio");
   });
 
   it("mirrors config props and slot children gallery -> home", () => {
@@ -112,13 +112,13 @@ describe("syncChrome", () => {
     const result = syncChrome(zones, "gallery", "nav", makeIdFactory("gen"));
     const mirrored = findChrome(result.home, "nav")!;
 
-    expect((mirrored.props as { brandText: string }).brandText).toBe("Gallery Brand");
+    expect((mirrored.props as unknown as { brandText: string }).brandText).toBe("Gallery Brand");
     expect((mirrored.props as { id: string }).id).toBe("home-nav");
   });
 
   it("removes a deleted slot child (logo) on the other zone after sync", () => {
     const homeNav = navBlock("home-nav");
-    (homeNav.props as { content: ComponentData[] }).content = [
+    (homeNav.props as unknown as { content: ComponentData[] }).content = [
       block("Heading", "home-nav-title", { text: "Studio" }),
     ];
     const home = zoneWith([homeNav]);
@@ -127,7 +127,7 @@ describe("syncChrome", () => {
 
     const result = syncChrome(zones, "home", "nav", makeIdFactory("gen"));
     const mirrored = findChrome(result.gallery, "nav")!;
-    const slot = (mirrored.props as { content: ComponentData[] }).content;
+    const slot = (mirrored.props as unknown as { content: ComponentData[] }).content;
 
     expect(slot.map((b) => b.type)).toEqual(["Heading"]);
   });
@@ -141,7 +141,7 @@ describe("syncChrome", () => {
     const mirrored = findChrome(result.gallery, "nav")!;
 
     expect((mirrored.props as { id: string }).id).toBe("gallery-nav");
-    const slotIds = (mirrored.props as { content: ComponentData[] }).content.map(
+    const slotIds = (mirrored.props as unknown as { content: ComponentData[] }).content.map(
       (b) => (b.props as { id: string }).id,
     );
     expect(slotIds).not.toContain("home-nav-logo");
@@ -153,7 +153,7 @@ describe("syncChrome", () => {
 
   it("gives fresh ids to nested slots inside slot children", () => {
     const homeNav = navBlock("home-nav");
-    (homeNav.props as { content: ComponentData[] }).content = [
+    (homeNav.props as unknown as { content: ComponentData[] }).content = [
       block("Columns", "home-nav-cols", {
         content: [block("Text", "home-nav-cols-text", { text: "nested" })],
       }),
@@ -164,8 +164,8 @@ describe("syncChrome", () => {
 
     const result = syncChrome(zones, "home", "nav", makeIdFactory("gen"));
     const mirrored = findChrome(result.gallery, "nav")!;
-    const [cols] = (mirrored.props as { content: ComponentData[] }).content;
-    const nested = (cols.props as { content: ComponentData[] }).content;
+    const [cols] = (mirrored.props as unknown as { content: ComponentData[] }).content;
+    const nested = (cols.props as unknown as { content: ComponentData[] }).content;
 
     expect(cols.props.id).not.toBe("home-nav-cols");
     expect(nested[0].props.id).not.toBe("home-nav-cols-text");
@@ -240,9 +240,9 @@ describe("reanchorChrome", () => {
     const result = reanchorChrome(zones, "home", "nav", makeIdFactory("gen"));
     const homeNav = findChrome(result.home, "nav")!;
 
-    expect((homeNav.props as { brandText: string }).brandText).toBe("Anchor Brand");
+    expect((homeNav.props as unknown as { brandText: string }).brandText).toBe("Anchor Brand");
     expect((homeNav.props as { id: string }).id).toBe("home-nav");
-    expect((homeNav.props as { detached: boolean }).detached).toBe(false);
+    expect((homeNav.props as unknown as { detached: boolean }).detached).toBe(false);
     expect(JSON.parse(JSON.stringify(result.gallery))).toEqual(galleryBefore);
   });
 
@@ -302,7 +302,7 @@ describe("normalizeChrome", () => {
       (b) => (b.props as { _chrome?: string })._chrome === "nav",
     );
     expect(navs).toHaveLength(1);
-    expect((navs[0].props as { brandText: string }).brandText).toBe("First");
+    expect((navs[0].props as unknown as { brandText: string }).brandText).toBe("First");
     expect(result.content?.map((b) => b.type)).toEqual(["Navigation", "Hero"]);
   });
 

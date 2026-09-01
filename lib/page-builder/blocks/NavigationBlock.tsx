@@ -70,11 +70,12 @@ export function NavigationBlock({
   _chrome: _chromeMark,
   _style: _styleIgnored,
   ...config
-}: NavigationBlockProps & { content: SlotComponent; puck?: BlockPuck }) {
+}: Omit<NavigationBlockProps, "content"> & { content?: Slot | SlotComponent; puck?: BlockPuck }) {
   const workspace = getRenderWorkspaceFrom(puck);
   const labels = getNavChromeLabelsFrom(puck);
   const previewNav = getPreviewNavFrom(puck);
   const slug = workspace?.slug ?? "";
+  const SlotContent = typeof Content === "function" ? Content : undefined;
 
   return (
     <div ref={puck?.dragRef ?? undefined} data-block="navigation">
@@ -93,13 +94,9 @@ export function NavigationBlock({
           closeMenu: labels.closeMenu,
         }}
         config={config as PortfolioHeaderConfig}
-        brandSlot={
-          typeof Content === "function"
-            ? Content({
-                style: { display: "flex", alignItems: "center", gap: "0.625rem" },
-              })
-            : null
-        }
+        brandSlot={SlotContent?.({
+          style: { display: "flex", alignItems: "center", gap: "0.625rem" },
+        })}
       />
     </div>
   );
@@ -137,5 +134,5 @@ export const navigationBlockConfig: ComponentConfig<NavigationBlockProps> = {
   defaultProps: navigationDefaultProps,
   fields: navigationFields,
   permissions: navigationPermissions,
-  render: NavigationBlock as ComponentConfig<NavigationBlockProps>["render"],
+  render: NavigationBlock,
 };

@@ -235,9 +235,10 @@ describe("scrimmed presets stay legible once a background image is added", () =>
   // exactly one step past that: the owner drops in a photo, the scrim appears,
   // and copy pinned to the background token lands on a BLACK wash that on Luxury
   // is the same near-black. So model the scrim explicitly here.
-  const scrimmed = SECTION_PRESET_KEYS.filter(
-    (key) => ((SECTION_PRESETS[key].defaultProps.overlayOpacity ?? 0) as number) > 0
-  );
+  const scrimmed = SECTION_PRESET_KEYS.filter((key) => {
+    const props = SECTION_PRESETS[key].defaultProps;
+    return "overlayOpacity" in props && (props.overlayOpacity ?? 0) > 0;
+  });
 
   it("there is at least one scrimmed preset to check", () => {
     expect(scrimmed.length).toBeGreaterThan(0);

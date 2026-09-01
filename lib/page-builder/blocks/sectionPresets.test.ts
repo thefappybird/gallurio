@@ -67,7 +67,7 @@ describe("componentType", () => {
   });
 
   it("is 'Navigation' for exactly the 3 nav presets", () => {
-    expect(NAV_PRESET_KEYS.sort()).toEqual(
+    expect([...NAV_PRESET_KEYS].sort()).toEqual(
       ["NavBorderedPreset", "NavScaledPreset", "NavUnderlinedPreset"].sort()
     );
     for (const key of NAV_PRESET_KEYS) {

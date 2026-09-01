@@ -623,7 +623,7 @@ export function createEditorConfig(
           fields: navigationEditorFields,
           defaultProps: presetEntry.defaultProps as NavigationBlockProps,
           permissions: navigationPermissions,
-          render: NavigationBlock as ComponentConfig<NavigationBlockProps>["render"],
+          render: NavigationBlock,
         };
         return [key, navCfg] as const;
       }
@@ -1035,7 +1035,7 @@ export function createEditorConfig(
     defaultProps: navigationDefaultProps,
     fields: navigationEditorFields,
     permissions: navigationPermissions,
-    render: NavigationBlock as ComponentConfig<NavigationBlockProps>["render"],
+    render: NavigationBlock,
   };
 
   // ---- Final config --------------------------------------------------------

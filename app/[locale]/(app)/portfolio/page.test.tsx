@@ -88,6 +88,7 @@ vi.mock("./_components/EditorShell", () => ({
 import PageBuilderEntry from "./page";
 import { listDraftsAction } from "./_draftActions";
 import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
+import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -200,8 +201,8 @@ describe("PageBuilderEntry — canvas loads the active draft, not the published 
         home: { content: [{ type: "Hero", props: { id: "seeded-hero" } }], root: {} },
         gallery: { content: [], root: {} },
       },
-      brandKit: { primary: "#seededcolor" },
-      contact: { email: "seeded@example.com" },
+      brandKit: { ...DEFAULT_BRAND_KIT, primaryColor: "#seededcolor" },
+      contact: { title: "seeded@example.com" },
     });
 
     mockRequireOrg(

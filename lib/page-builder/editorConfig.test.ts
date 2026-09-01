@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createElement } from "react";
+import { createElement, type ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate } from "./editorConfig";
 import { puckConfig } from "./config";
@@ -358,7 +358,7 @@ describe("block label renames", () => {
 // Navigation `_style` editor override — the field panel must actually render.
 // ---------------------------------------------------------------------------
 
-type StyleField = { render: (p: { value: unknown; onChange: (v: unknown) => void; id: string }) => unknown };
+type StyleField = { render: (p: { value: unknown; onChange: (v: unknown) => void; id: string }) => ReactNode };
 
 describe("Navigation _style editor override", () => {
   it("resolves the real StyleToolkitField for the base Navigation type (not the inert production placeholder)", () => {
