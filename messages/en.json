@@ -1722,20 +1722,6 @@
           "image": "Could not read the image. Please try another file.",
           "upload": "Upload failed. Please try again."
         },
-        "logoSection": "Logo",
-        "logoHint": "Shown in your public page header.",
-        "logoRequirements": "PNG, JPEG, or WebP. Up to 512x256px, max 250KB.",
-        "logoLabel": "Upload logo",
-        "logoReplace": "Replace",
-        "logoRemove": "Remove",
-        "logoUploading": "Uploading...",
-        "logoErrors": {
-          "type": "Use a PNG, JPEG, or WebP image.",
-          "size": "Keep the file under 250KB.",
-          "dimensions": "Keep the logo within 512x256px.",
-          "image": "That file isn't a valid image.",
-          "upload": "Upload failed. Please try again."
-        },
         "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
         "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
         "seoTitleAutoHint": "No title yet — your workspace name will be used instead.",
@@ -2499,78 +2485,6 @@
           "tabHighlightOpacityLabel": "Highlight opacity",
           "tabUnderlineColorLabel": "Underline color"
         },
-        "headerDialog": {
-          "title": "Navigation",
-          "close": "Close",
-          "save": "Save",
-          "saving": "Saving…",
-          "tabs": {
-            "setup": "Setup",
-            "design": "Design"
-          },
-          "brandTextLabel": "Heading",
-          "brandTextHelp": "Displayed next to your logo in the navigation bar. Leave empty to show the logo only.",
-          "logoLabel": "Logo",
-          "logoHelp": "Upload your business logo to display beside your name in the header.",
-          "logoUpload": "Upload logo",
-          "logoUploading": "Uploading…",
-          "logoRemove": "Remove logo",
-          "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · up to 512×256",
-          "logoErrors": {
-            "type": "Logo must be a PNG, JPEG, or WEBP image. SVG is not supported.",
-            "size": "Logo must be 250 KB or smaller.",
-            "dimensions": "Logo must be 512 x 256 px or smaller.",
-            "image": "This logo image could not be read.",
-            "upload": "Logo upload failed. Please try again."
-          },
-          "sectionBanner": "Banner",
-          "sectionLinks": "Links",
-          "sectionInactiveLinks": "Inactive links",
-          "sectionActiveStyle": "Active link style",
-          "sectionContactButton": "Contact button",
-          "bgColorLabel": "Background color",
-          "bgOpacityLabel": "Background opacity",
-          "linkColorLabel": "Link text color",
-          "brandTextColorLabel": "Heading color",
-          "activeLinkColorLabel": "Active link text color",
-          "borderBottomLabel": "Border bottom",
-          "borderColorLabel": "Border color",
-          "shadowLabel": "Drop shadow",
-          "navbarSizeLabel": "Navbar size",
-          "fontSizeLabel": "Link size",
-          "activeStyleLabel": "Style",
-          "activeStyleScale": "Scale",
-          "activeStyleHighlight": "Highlight",
-          "activeStyleUnderline": "Underline",
-          "highlightColorLabel": "Highlight color",
-          "highlightOpacityLabel": "Highlight opacity",
-          "cornerRadiusLabel": "Corner radius",
-          "underlineColorLabel": "Underline color",
-          "contactButtonColorLabel": "Button color",
-          "contactButtonOpacityLabel": "Button opacity",
-          "contactButtonTextColorLabel": "Button text color",
-          "radius": {
-            "sharp": "Sharp",
-            "subtle": "Subtle",
-            "rounded": "Rounded"
-          },
-          "shadow": {
-            "none": "None",
-            "sm": "Small",
-            "md": "Medium",
-            "lg": "Large"
-          },
-          "navbarSize": {
-            "sleek": "Sleek",
-            "balanced": "Balanced",
-            "flashy": "Flashy"
-          },
-          "fontSize": {
-            "sm": "S",
-            "md": "M",
-            "lg": "L"
-          }
-        },
         "contactPreview": {
           "title": "Let's work together",
           "description": "Tell us about your event.",
@@ -2597,7 +2511,13 @@
         },
         "contactSettings": "Edit contact settings",
         "contactSettingsShort": "Contact Form",
-        "headerSettings": "Navigation",
+        "chromeDetachToggleLabel": "Detach header on {page}",
+        "chromeDetachHint": "Detached headers style independently and stop mirroring the other page.",
+        "chromeDetachDisabledHint": "{page} already has a detached header — only one page can detach at a time.",
+        "chromeReanchorConfirmTitle": "Match {page}'s styling?",
+        "chromeReanchorConfirmBody": "This page's independent header styling will be replaced with {page}'s. This can't be undone.",
+        "chromeReanchorConfirmCancel": "Cancel",
+        "chromeReanchorConfirmProceed": "Match {page}",
         "preview": {
           "show": "Preview",
           "edit": "Edit",
@@ -3005,22 +2925,6 @@
             "switchPages": {
               "title": "Switch between pages",
               "body": "Switch between the different parts of your portfolio website."
-            },
-            "openNav": {
-              "title": "Open Navigation",
-              "body": "Click Navigation to set up your site's header — brand, logo, menu links, and styling."
-            },
-            "navSetup": {
-              "title": "Navigation · Setup",
-              "body": "The Setup tab is where you set your brand text, navbar size, logo, and menu links."
-            },
-            "logo": {
-              "title": "Your logo lives here",
-              "body": "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page."
-            },
-            "navDesign": {
-              "title": "Navigation · Design",
-              "body": "The Design tab controls header colors, borders, and typography for your nav links."
             },
             "contactForm": {
               "title": "Your inquiry form",

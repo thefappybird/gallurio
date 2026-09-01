@@ -1722,20 +1722,6 @@
           "image": "Tidak dapat membaca gambar. Coba file lain.",
           "upload": "Pengunggahan gagal. Coba lagi."
         },
-        "logoSection": "Logo",
-        "logoHint": "Ditampilkan di header halaman publik Anda.",
-        "logoRequirements": "PNG, JPEG, atau WebP. Hingga 512x256px, maks 250KB.",
-        "logoLabel": "Unggah logo",
-        "logoReplace": "Ganti",
-        "logoRemove": "Hapus",
-        "logoUploading": "Mengunggah...",
-        "logoErrors": {
-          "type": "Gunakan gambar PNG, JPEG, atau WebP.",
-          "size": "Jaga ukuran file di bawah 250KB.",
-          "dimensions": "Jaga logo dalam 512x256px.",
-          "image": "File itu bukan gambar yang valid.",
-          "upload": "Pengunggahan gagal. Coba lagi."
-        },
         "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
         "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
         "seoTitleAutoHint": "Belum ada judul — nama workspace Anda akan digunakan sebagai gantinya.",
@@ -2499,78 +2485,6 @@
           "tabHighlightOpacityLabel": "Opacity sorotan",
           "tabUnderlineColorLabel": "Warna garis bawah"
         },
-        "headerDialog": {
-          "title": "Navigasi",
-          "close": "Tutup",
-          "save": "Simpan",
-          "saving": "Menyimpan…",
-          "tabs": {
-            "setup": "Pengaturan",
-            "design": "Desain"
-          },
-          "brandTextLabel": "Heading",
-          "brandTextHelp": "Awalnya memakai nama ruang kerja. Kosongkan untuk hanya menampilkan logo.",
-          "logoLabel": "Logo",
-          "logoHelp": "Unggah logo bisnis Anda untuk ditampilkan di sebelah nama Anda di header.",
-          "logoUpload": "Unggah logo",
-          "logoUploading": "Mengunggah…",
-          "logoRemove": "Hapus logo",
-          "logoRequirements": "PNG, JPEG atau WEBP · maks. 250 KB · hingga 512×256",
-          "logoErrors": {
-            "type": "Logo harus berupa gambar PNG, JPEG, atau WEBP. SVG tidak didukung.",
-            "size": "Logo must be 250 KB or smaller.",
-            "dimensions": "Logo must be 512 x 256 px or smaller.",
-            "image": "This logo image could not be read.",
-            "upload": "Logo upload failed. Please try again."
-          },
-          "sectionBanner": "Spanduk",
-          "sectionLinks": "Tautan",
-          "sectionInactiveLinks": "Tautan tidak aktif",
-          "sectionActiveStyle": "Gaya tautan aktif",
-          "sectionContactButton": "Contact button",
-          "bgColorLabel": "Warna latar belakang",
-          "bgOpacityLabel": "Opasitas latar belakang",
-          "linkColorLabel": "Warna teks tautan",
-          "brandTextColorLabel": "Warna heading",
-          "activeLinkColorLabel": "Warna teks tautan aktif",
-          "borderBottomLabel": "Batas bawah",
-          "borderColorLabel": "Warna batas",
-          "shadowLabel": "Bayangan",
-          "navbarSizeLabel": "Ukuran navbar",
-          "fontSizeLabel": "Ukuran tautan",
-          "activeStyleLabel": "Gaya",
-          "activeStyleScale": "Skala",
-          "activeStyleHighlight": "Sorot",
-          "activeStyleUnderline": "Garis bawah",
-          "highlightColorLabel": "Warna sorotan",
-          "highlightOpacityLabel": "Highlight opacity",
-          "cornerRadiusLabel": "Corner radius",
-          "underlineColorLabel": "Warna garis bawah",
-          "contactButtonColorLabel": "Button color",
-          "contactButtonOpacityLabel": "Button opacity",
-          "contactButtonTextColorLabel": "Button text color",
-          "radius": {
-            "sharp": "Sharp",
-            "subtle": "Subtle",
-            "rounded": "Rounded"
-          },
-          "shadow": {
-            "none": "Tidak ada",
-            "sm": "Kecil",
-            "md": "Sedang",
-            "lg": "Besar"
-          },
-          "navbarSize": {
-            "sleek": "Sleek",
-            "balanced": "Balanced",
-            "flashy": "Flashy"
-          },
-          "fontSize": {
-            "sm": "S",
-            "md": "M",
-            "lg": "L"
-          }
-        },
         "contactPreview": {
           "title": "Mari bekerja sama",
           "description": "Ceritakan tentang acara Anda.",
@@ -2597,7 +2511,13 @@
         },
         "contactSettings": "Edit pengaturan kontak",
         "contactSettingsShort": "Contact Form",
-        "headerSettings": "Navigasi",
+        "chromeDetachToggleLabel": "Lepaskan header di {page}",
+        "chromeDetachHint": "Header yang dilepaskan bergaya independen dan berhenti mengikuti halaman lainnya.",
+        "chromeDetachDisabledHint": "{page} sudah memiliki header yang dilepaskan — hanya satu halaman yang bisa dilepaskan sekaligus.",
+        "chromeReanchorConfirmTitle": "Samakan dengan gaya {page}?",
+        "chromeReanchorConfirmBody": "Gaya header independen halaman ini akan diganti dengan gaya {page}. Ini tidak bisa dibatalkan.",
+        "chromeReanchorConfirmCancel": "Batal",
+        "chromeReanchorConfirmProceed": "Samakan dengan {page}",
         "preview": {
           "show": "Pratinjau",
           "edit": "Edit",
@@ -3017,22 +2937,6 @@
             "switchPages": {
               "title": "Beralih antar halaman",
               "body": "Beralih antar bagian berbeda dari situs web portofolio Anda."
-            },
-            "openNav": {
-              "title": "Buka Navigasi",
-              "body": "Klik Navigasi untuk mengatur header situs Anda — merek, logo, tautan menu, dan gaya."
-            },
-            "navSetup": {
-              "title": "Navigasi · Pengaturan",
-              "body": "Tab Pengaturan adalah tempat Anda mengatur teks merek, ukuran navbar, logo, dan tautan menu."
-            },
-            "logo": {
-              "title": "Logo Anda ada di sini",
-              "body": "Ini adalah pengunggah logo Anda — PNG, JPEG, atau WEBP yang diunggah di sini akan tampil di header halaman live Anda."
-            },
-            "navDesign": {
-              "title": "Navigasi · Desain",
-              "body": "Tab Desain mengontrol warna header, batas, dan tipografi untuk tautan navigasi Anda."
             },
             "contactForm": {
               "title": "Formulir pertanyaan Anda",

@@ -1722,20 +1722,6 @@
           "image": "تعذّر قراءة الصورة. يرجى تجربة ملف آخر.",
           "upload": "فشل الرفع. يرجى المحاولة مرة أخرى."
         },
-        "logoSection": "الشعار",
-        "logoHint": "يظهر في ترويسة صفحتك العامة.",
-        "logoRequirements": "PNG أو JPEG أو WebP. حتى 512x256px، بحد أقصى 250KB.",
-        "logoLabel": "رفع الشعار",
-        "logoReplace": "استبدال",
-        "logoRemove": "إزالة",
-        "logoUploading": "جارٍ الرفع...",
-        "logoErrors": {
-          "type": "استخدم صورة PNG أو JPEG أو WebP.",
-          "size": "أبقِ حجم الملف أقل من 250KB.",
-          "dimensions": "أبقِ الشعار ضمن 512x256px.",
-          "image": "هذا الملف ليس صورة صالحة.",
-          "upload": "فشل الرفع. يرجى المحاولة مرة أخرى."
-        },
         "seoTitleHint": "العنوان القابل للنقر في Google وتبويب المتصفّح. استهدف ~60 حرفًا. اسم الاستوديو + ما تصوّره.",
         "seoDescriptionHint": "المقتطف الرمادي تحت عنوانك في نتائج البحث. استهدف ~155 حرفًا. روّج لصفحتك الرئيسية.",
         "seoTitleAutoHint": "لا يوجد عنوان بعد — سيُستخدم اسم مساحة العمل بدلًا منه.",
@@ -2499,78 +2485,6 @@
           "tabHighlightOpacityLabel": "شفافية التمييز",
           "tabUnderlineColorLabel": "لون التسطير"
         },
-        "headerDialog": {
-          "title": "التنقّل",
-          "close": "إغلاق",
-          "save": "حفظ",
-          "saving": "جارٍ الحفظ…",
-          "tabs": {
-            "setup": "الإعداد",
-            "design": "التصميم"
-          },
-          "brandTextLabel": "العنوان",
-          "brandTextHelp": "يظهر بجوار شعارك في شريط التنقّل. اتركه فارغًا لإظهار الشعار فقط.",
-          "logoLabel": "الشعار",
-          "logoHelp": "ارفع شعار عملك ليظهر بجوار اسمك في رأس الصفحة.",
-          "logoUpload": "رفع الشعار",
-          "logoUploading": "جارٍ الرفع…",
-          "logoRemove": "إزالة الشعار",
-          "logoRequirements": "PNG أو JPEG أو WEBP · 250 كيلوبايت كحد أقصى · حتى 512×256",
-          "logoErrors": {
-            "type": "يجب أن يكون الشعار صورة PNG أو JPEG أو WEBP. صيغة SVG غير مدعومة.",
-            "size": "يجب ألا يتجاوز حجم الشعار 250 كيلوبايت.",
-            "dimensions": "يجب ألا تتجاوز أبعاد الشعار 512 × 256 بكسل.",
-            "image": "تعذّرت قراءة صورة الشعار هذه.",
-            "upload": "فشل رفع الشعار. يرجى المحاولة مرة أخرى."
-          },
-          "sectionBanner": "اللافتة",
-          "sectionLinks": "الروابط",
-          "sectionInactiveLinks": "الروابط غير النشطة",
-          "sectionActiveStyle": "نمط الرابط النشط",
-          "sectionContactButton": "زر التواصل",
-          "bgColorLabel": "لون الخلفية",
-          "bgOpacityLabel": "شفافية الخلفية",
-          "linkColorLabel": "لون نص الرابط",
-          "brandTextColorLabel": "لون العنوان",
-          "activeLinkColorLabel": "لون نص الرابط النشط",
-          "borderBottomLabel": "الحد السفلي",
-          "borderColorLabel": "لون الحدود",
-          "shadowLabel": "الظل المسقط",
-          "navbarSizeLabel": "حجم شريط التنقّل",
-          "fontSizeLabel": "حجم الرابط",
-          "activeStyleLabel": "النمط",
-          "activeStyleScale": "تكبير",
-          "activeStyleHighlight": "تمييز",
-          "activeStyleUnderline": "تسطير",
-          "highlightColorLabel": "لون التمييز",
-          "highlightOpacityLabel": "شفافية التمييز",
-          "cornerRadiusLabel": "استدارة الزوايا",
-          "underlineColorLabel": "لون التسطير",
-          "contactButtonColorLabel": "لون الزر",
-          "contactButtonOpacityLabel": "شفافية الزر",
-          "contactButtonTextColorLabel": "لون نص الزر",
-          "radius": {
-            "sharp": "حاد",
-            "subtle": "خفيف",
-            "rounded": "مستدير"
-          },
-          "shadow": {
-            "none": "بلا",
-            "sm": "صغير",
-            "md": "متوسط",
-            "lg": "كبير"
-          },
-          "navbarSize": {
-            "sleek": "أنيق",
-            "balanced": "متوازن",
-            "flashy": "لافت"
-          },
-          "fontSize": {
-            "sm": "ص",
-            "md": "م",
-            "lg": "ك"
-          }
-        },
         "contactPreview": {
           "title": "لنعمل معًا",
           "description": "أخبرنا عن مناسبتك.",
@@ -2597,7 +2511,13 @@
         },
         "contactSettings": "تعديل إعدادات التواصل",
         "contactSettingsShort": "نموذج التواصل",
-        "headerSettings": "التنقّل",
+        "chromeDetachToggleLabel": "فصل الترويسة في {page}",
+        "chromeDetachHint": "الترويسات المفصولة تُصمَّم بشكل مستقل ولا تعود متطابقة مع الصفحة الأخرى.",
+        "chromeDetachDisabledHint": "لدى {page} بالفعل ترويسة مفصولة — يمكن فصل صفحة واحدة فقط في كل مرة.",
+        "chromeReanchorConfirmTitle": "مطابقة تصميم {page}؟",
+        "chromeReanchorConfirmBody": "سيتم استبدال تصميم الترويسة المستقل لهذه الصفحة بتصميم {page}. لا يمكن التراجع عن هذا.",
+        "chromeReanchorConfirmCancel": "إلغاء",
+        "chromeReanchorConfirmProceed": "مطابقة {page}",
         "preview": {
           "show": "معاينة",
           "edit": "تعديل",
@@ -3017,22 +2937,6 @@
             "switchPages": {
               "title": "التنقّل بين الصفحات",
               "body": "تنقّل بين الأجزاء المختلفة لموقع معرض أعمالك."
-            },
-            "openNav": {
-              "title": "فتح التنقّل",
-              "body": "انقر على التنقّل لإعداد رأس موقعك — العلامة التجارية والشعار وروابط القائمة والنمط."
-            },
-            "navSetup": {
-              "title": "التنقّل · الإعداد",
-              "body": "تبويب الإعداد هو المكان الذي تضبط فيه نص علامتك التجارية وحجم شريط التنقّل والشعار وروابط القائمة."
-            },
-            "logo": {
-              "title": "شعارك هنا",
-              "body": "هذا هو رافع الشعار — يظهر ملف PNG أو JPEG أو WEBP المضاف هنا في رأس صفحتك المباشرة."
-            },
-            "navDesign": {
-              "title": "التنقّل · التصميم",
-              "body": "يتحكّم تبويب التصميم في ألوان الرأس والحدود والطباعة لروابط التنقّل."
             },
             "contactForm": {
               "title": "نموذج استفساراتك",

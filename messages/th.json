@@ -1722,20 +1722,6 @@
           "image": "ไม่สามารถอ่านภาพนี้ได้ โปรดลองไฟล์อื่น",
           "upload": "อัปโหลดไม่สำเร็จ โปรดลองอีกครั้ง"
         },
-        "logoSection": "โลโก้",
-        "logoHint": "แสดงในส่วนหัวของหน้าเว็บสาธารณะของคุณ",
-        "logoRequirements": "PNG, JPEG หรือ WebP สูงสุด 512x256px ไม่เกิน 250KB",
-        "logoLabel": "อัปโหลดโลโก้",
-        "logoReplace": "แทนที่",
-        "logoRemove": "ลบ",
-        "logoUploading": "กำลังอัปโหลด...",
-        "logoErrors": {
-          "type": "ใช้ภาพ PNG, JPEG หรือ WebP",
-          "size": "ให้ไฟล์มีขนาดไม่เกิน 250KB",
-          "dimensions": "ให้โลโก้อยู่ภายใน 512x256px",
-          "image": "ไฟล์นี้ไม่ใช่ภาพที่ใช้งานได้",
-          "upload": "อัปโหลดไม่สำเร็จ โปรดลองอีกครั้ง"
-        },
         "seoTitleHint": "หัวข้อที่คลิกได้ใน Google และแท็บเบราว์เซอร์ ควรมีความยาวประมาณ 60 ตัวอักษร ใส่ชื่อสตูดิโอและสิ่งที่คุณถ่าย",
         "seoDescriptionHint": "ข้อความสีเทาใต้ชื่อของคุณในผลการค้นหา ควรมีความยาวประมาณ 155 ตัวอักษร นำเสนอหน้าแรกของคุณ",
         "seoTitleAutoHint": "ยังไม่มีชื่อ — จะใช้ชื่อพื้นที่ทำงานของคุณแทน",
@@ -2499,78 +2485,6 @@
           "tabHighlightOpacityLabel": "ความทึบของไฮไลต์",
           "tabUnderlineColorLabel": "สีขีดเส้นใต้"
         },
-        "headerDialog": {
-          "title": "การนำทาง",
-          "close": "ปิด",
-          "save": "บันทึก",
-          "saving": "กำลังบันทึก…",
-          "tabs": {
-            "setup": "ตั้งค่า",
-            "design": "ดีไซน์"
-          },
-          "brandTextLabel": "หัวข้อ",
-          "brandTextHelp": "แสดงข้างโลโก้ของคุณในแถบนำทาง เว้นว่างเพื่อแสดงเฉพาะโลโก้",
-          "logoLabel": "โลโก้",
-          "logoHelp": "อัปโหลดโลโก้ธุรกิจของคุณเพื่อแสดงข้างชื่อของคุณในส่วนหัว",
-          "logoUpload": "อัปโหลดโลโก้",
-          "logoUploading": "กำลังอัปโหลด…",
-          "logoRemove": "ลบโลโก้",
-          "logoRequirements": "PNG, JPEG หรือ WEBP · สูงสุด 250 KB · ไม่เกิน 512×256",
-          "logoErrors": {
-            "type": "โลโก้ต้องเป็นภาพ PNG, JPEG หรือ WEBP ไม่รองรับ SVG",
-            "size": "โลโก้ต้องมีขนาดไม่เกิน 250 KB",
-            "dimensions": "โลโก้ต้องมีขนาดไม่เกิน 512 x 256 พิกเซล",
-            "image": "ไม่สามารถอ่านภาพโลโก้นี้ได้",
-            "upload": "อัปโหลดโลโก้ไม่สำเร็จ โปรดลองอีกครั้ง"
-          },
-          "sectionBanner": "แบนเนอร์",
-          "sectionLinks": "ลิงก์",
-          "sectionInactiveLinks": "ลิงก์ที่ไม่ได้เลือก",
-          "sectionActiveStyle": "สไตล์ลิงก์ที่เลือกอยู่",
-          "sectionContactButton": "ปุ่มติดต่อ",
-          "bgColorLabel": "สีพื้นหลัง",
-          "bgOpacityLabel": "ความทึบพื้นหลัง",
-          "linkColorLabel": "สีข้อความลิงก์",
-          "brandTextColorLabel": "สีหัวข้อ",
-          "activeLinkColorLabel": "สีข้อความลิงก์ที่เลือกอยู่",
-          "borderBottomLabel": "เส้นขอบด้านล่าง",
-          "borderColorLabel": "สีเส้นขอบ",
-          "shadowLabel": "เงาตก",
-          "navbarSizeLabel": "ขนาดแถบนำทาง",
-          "fontSizeLabel": "ขนาดลิงก์",
-          "activeStyleLabel": "สไตล์",
-          "activeStyleScale": "ขยาย",
-          "activeStyleHighlight": "ไฮไลต์",
-          "activeStyleUnderline": "ขีดเส้นใต้",
-          "highlightColorLabel": "สีไฮไลต์",
-          "highlightOpacityLabel": "ความทึบของไฮไลต์",
-          "cornerRadiusLabel": "ความโค้งมุม",
-          "underlineColorLabel": "สีขีดเส้นใต้",
-          "contactButtonColorLabel": "สีปุ่ม",
-          "contactButtonOpacityLabel": "ความทึบของปุ่ม",
-          "contactButtonTextColorLabel": "สีข้อความปุ่ม",
-          "radius": {
-            "sharp": "คม",
-            "subtle": "เล็กน้อย",
-            "rounded": "โค้งมน"
-          },
-          "shadow": {
-            "none": "ไม่มี",
-            "sm": "เล็ก",
-            "md": "กลาง",
-            "lg": "ใหญ่"
-          },
-          "navbarSize": {
-            "sleek": "เรียบหรู",
-            "balanced": "สมดุล",
-            "flashy": "โดดเด่น"
-          },
-          "fontSize": {
-            "sm": "S",
-            "md": "M",
-            "lg": "L"
-          }
-        },
         "contactPreview": {
           "title": "มาทำงานร่วมกันเถอะ",
           "description": "บอกเราเกี่ยวกับงานของคุณ",
@@ -2597,7 +2511,13 @@
         },
         "contactSettings": "แก้ไขการตั้งค่าแบบฟอร์มติดต่อ",
         "contactSettingsShort": "แบบฟอร์มติดต่อ",
-        "headerSettings": "การนำทาง",
+        "chromeDetachToggleLabel": "แยกส่วนหัวออกที่ {page}",
+        "chromeDetachHint": "ส่วนหัวที่แยกออกแล้วจะออกแบบได้อิสระและหยุดซิงก์กับอีกหน้า",
+        "chromeDetachDisabledHint": "{page} มีส่วนหัวที่แยกออกอยู่แล้ว — แยกได้ทีละหน้าเท่านั้น",
+        "chromeReanchorConfirmTitle": "ใช้ดีไซน์เดียวกับ {page} หรือไม่?",
+        "chromeReanchorConfirmBody": "ดีไซน์ส่วนหัวอิสระของหน้านี้จะถูกแทนที่ด้วยดีไซน์ของ {page} การกระทำนี้ย้อนกลับไม่ได้",
+        "chromeReanchorConfirmCancel": "ยกเลิก",
+        "chromeReanchorConfirmProceed": "ใช้ดีไซน์ของ {page}",
         "preview": {
           "show": "ตัวอย่าง",
           "edit": "แก้ไข",
@@ -3005,22 +2925,6 @@
             "switchPages": {
               "title": "สลับระหว่างหน้าเว็บ",
               "body": "สลับระหว่างส่วนต่าง ๆ ของเว็บไซต์พอร์ตโฟลิโอของคุณ"
-            },
-            "openNav": {
-              "title": "เปิดการนำทาง",
-              "body": "คลิกการนำทางเพื่อตั้งค่าส่วนหัวของเว็บไซต์ — แบรนด์ โลโก้ ลิงก์เมนู และสไตล์"
-            },
-            "navSetup": {
-              "title": "การนำทาง · ตั้งค่า",
-              "body": "แท็บตั้งค่าคือที่ที่คุณตั้งข้อความแบรนด์ ขนาดแถบนำทาง โลโก้ และลิงก์เมนู"
-            },
-            "logo": {
-              "title": "โลโก้ของคุณอยู่ที่นี่",
-              "body": "นี่คือตัวอัปโหลดโลโก้ของคุณ — ภาพ PNG, JPEG หรือ WEBP ที่เพิ่มที่นี่จะแสดงในส่วนหัวของหน้าเว็บจริงของคุณ"
-            },
-            "navDesign": {
-              "title": "การนำทาง · ดีไซน์",
-              "body": "แท็บดีไซน์ควบคุมสี เส้นขอบ และตัวอักษรของลิงก์นำทางส่วนหัว"
             },
             "contactForm": {
               "title": "แบบฟอร์มคำขอจองของคุณ",

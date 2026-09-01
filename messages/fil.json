@@ -1722,20 +1722,6 @@
           "image": "Hindi mabasa ang larawan. Subukan ang ibang file.",
           "upload": "Nabigo ang pag-upload. Subukan muli."
         },
-        "logoSection": "Logo",
-        "logoHint": "Ipinapakita sa header ng iyong pampublikong pahina.",
-        "logoRequirements": "PNG, JPEG, o WebP. Hanggang 512x256px, max 250KB.",
-        "logoLabel": "Mag-upload ng logo",
-        "logoReplace": "Palitan",
-        "logoRemove": "Alisin",
-        "logoUploading": "Ina-upload...",
-        "logoErrors": {
-          "type": "Gumamit ng PNG, JPEG, o WebP na larawan.",
-          "size": "Panatilihin ang file sa ibaba ng 250KB.",
-          "dimensions": "Panatilihin ang logo sa loob ng 512x256px.",
-          "image": "Hindi wastong larawan ang file na iyon.",
-          "upload": "Nabigo ang pag-upload. Subukan muli."
-        },
         "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
         "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
         "seoTitleAutoHint": "Wala pang title — gagamitin na lang ang pangalan ng iyong workspace.",
@@ -2499,78 +2485,6 @@
           "tabHighlightOpacityLabel": "Opacity ng highlight",
           "tabUnderlineColorLabel": "Kulay ng salungguhit"
         },
-        "headerDialog": {
-          "title": "Navigation",
-          "close": "Isara",
-          "save": "I-save",
-          "saving": "Sine-save…",
-          "tabs": {
-            "setup": "Setup",
-            "design": "Disenyo"
-          },
-          "brandTextLabel": "Heading",
-          "brandTextHelp": "Nagsisimula sa pangalan ng workspace. Burahin ito para logo lang ang ipakita.",
-          "logoLabel": "Logo",
-          "logoHelp": "I-upload ang logo ng iyong negosyo para ipakita sa tabi ng iyong pangalan sa header.",
-          "logoUpload": "Mag-upload ng logo",
-          "logoUploading": "Ina-upload…",
-          "logoRemove": "Alisin ang logo",
-          "logoRequirements": "PNG, JPEG o WEBP · maks. 250 KB · hanggang 512×256",
-          "logoErrors": {
-            "type": "Ang logo ay dapat na larawang PNG, JPEG, o WEBP. Hindi suportado ang SVG.",
-            "size": "Logo must be 250 KB or smaller.",
-            "dimensions": "Logo must be 512 x 256 px or smaller.",
-            "image": "This logo image could not be read.",
-            "upload": "Logo upload failed. Please try again."
-          },
-          "sectionBanner": "Banner",
-          "sectionLinks": "Mga link",
-          "sectionInactiveLinks": "Mga hindi aktibong link",
-          "sectionActiveStyle": "Estilo ng aktibong link",
-          "sectionContactButton": "Contact button",
-          "bgColorLabel": "Kulay ng background",
-          "bgOpacityLabel": "Opacity ng background",
-          "linkColorLabel": "Kulay ng teksto ng link",
-          "brandTextColorLabel": "Kulay ng heading",
-          "activeLinkColorLabel": "Kulay ng teksto ng aktibong link",
-          "borderBottomLabel": "Border sa ibaba",
-          "borderColorLabel": "Kulay ng border",
-          "shadowLabel": "Drop shadow",
-          "navbarSizeLabel": "Navbar size",
-          "fontSizeLabel": "Laki ng link",
-          "activeStyleLabel": "Estilo",
-          "activeStyleScale": "Palakihin",
-          "activeStyleHighlight": "I-highlight",
-          "activeStyleUnderline": "Salungguhit",
-          "highlightColorLabel": "Kulay ng highlight",
-          "highlightOpacityLabel": "Highlight opacity",
-          "cornerRadiusLabel": "Corner radius",
-          "underlineColorLabel": "Kulay ng salungguhit",
-          "contactButtonColorLabel": "Button color",
-          "contactButtonOpacityLabel": "Button opacity",
-          "contactButtonTextColorLabel": "Button text color",
-          "radius": {
-            "sharp": "Sharp",
-            "subtle": "Subtle",
-            "rounded": "Rounded"
-          },
-          "shadow": {
-            "none": "Wala",
-            "sm": "Maliit",
-            "md": "Katamtaman",
-            "lg": "Malaki"
-          },
-          "navbarSize": {
-            "sleek": "Sleek",
-            "balanced": "Balanced",
-            "flashy": "Flashy"
-          },
-          "fontSize": {
-            "sm": "S",
-            "md": "M",
-            "lg": "L"
-          }
-        },
         "contactPreview": {
           "title": "Magtulungan tayo",
           "description": "Sabihin sa amin ang tungkol sa iyong event.",
@@ -2597,7 +2511,13 @@
         },
         "contactSettings": "I-edit ang setting ng kontak",
         "contactSettingsShort": "Contact Form",
-        "headerSettings": "Navigation",
+        "chromeDetachToggleLabel": "I-detach ang header sa {page}",
+        "chromeDetachHint": "Ang mga naka-detach na header ay may sariling istilo at hindi na sumusunod sa kabilang page.",
+        "chromeDetachDisabledHint": "May naka-detach na header na ang {page} — isang page lang ang puwedeng mag-detach nang sabay.",
+        "chromeReanchorConfirmTitle": "Itugma sa istilo ng {page}?",
+        "chromeReanchorConfirmBody": "Papalitan ng istilo ng {page} ang sariling istilo ng header ng page na ito. Hindi na ito maaaring bawiin.",
+        "chromeReanchorConfirmCancel": "Kanselahin",
+        "chromeReanchorConfirmProceed": "Itugma sa {page}",
         "preview": {
           "show": "Preview",
           "edit": "I-edit",
@@ -3017,22 +2937,6 @@
             "switchPages": {
               "title": "Lumipat sa pagitan ng mga pahina",
               "body": "Lumipat sa pagitan ng iba't ibang bahagi ng iyong portfolio website."
-            },
-            "openNav": {
-              "title": "Buksan ang Navigation",
-              "body": "I-click ang Navigation para i-set up ang header ng iyong site — brand, logo, mga link ng menu, at styling."
-            },
-            "navSetup": {
-              "title": "Navigation · Setup",
-              "body": "Ang tab na Setup ang lugar kung saan mo itatakda ang iyong brand text, laki ng navbar, logo, at mga link ng menu."
-            },
-            "logo": {
-              "title": "Nandito ang iyong logo",
-              "body": "Ito ang iyong logo uploader — ang PNG, JPEG, o WEBP na idinagdag dito ay lilitaw sa header ng iyong live na pahina."
-            },
-            "navDesign": {
-              "title": "Navigation · Design",
-              "body": "Kinokontrol ng tab na Design ang mga kulay ng header, mga border, at typography para sa iyong mga nav link."
             },
             "contactForm": {
               "title": "Ang iyong inquiry form",
