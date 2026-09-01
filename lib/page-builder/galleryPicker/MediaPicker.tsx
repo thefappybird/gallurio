@@ -51,7 +51,6 @@ const L = {
   selectAllPage: "Select all on page",
   selectAllCollection: "Select all in collection",
   selectAllInTile: (name: string) => `Select all photos in ${name}`,
-  clearAllInTile: (name: string) => `Remove photos selected from ${name}`,
   errBulkSelect: "Could not load that collection's photos.",
   clearAll: "Clear selection",
   done: "Done",
@@ -169,7 +168,6 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // Bulk "select all from collection" state (footer button + tile checkmark).
   const [bulkLoadingId, setBulkLoadingId] = useState<string | null>(null);
   const [bulkError, setBulkError] = useState<string | null>(null);
-  const [bulkAddedByCollection, setBulkAddedByCollection] = useState<Record<string, string[]>>({});
 
   // Monotonic token invalidating in-flight feed fetches when the view changes,
   // so a slow response from a prior collection cannot bleed into the current one.
@@ -209,7 +207,6 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       setFeed(EMPTY_FEED);
       setFileErrors([]);
       setBulkError(null);
-      setBulkAddedByCollection({});
       fetchToken.current++; // invalidate any in-flight feed fetch from a prior open
     }
   }, [open]);
@@ -340,27 +337,16 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       const data = (await res.json()) as { items: PickerItem[] };
       remember(data.items);
       const next = [...selection];
-      const previouslyAdded = bulkAddedByCollection[colId] ?? [];
-      const addedIds: string[] = [];
       for (const it of data.items) {
         if (next.length >= cap) break;
-        if (!next.some((s) => s.id === it.id)) {
+        if (!next.some((s) => s.id === it.id))
           next.push({
             id: it.id,
             publicId: it.publicId,
             ...(it.width != null && it.height != null ? { width: it.width, height: it.height } : {}),
           });
-          addedIds.push(it.id);
-        }
       }
       onChange(next);
-      const stillSelectedPreviously = previouslyAdded.filter((id) =>
-        selection.some((item) => item.id === id)
-      );
-      setBulkAddedByCollection((current) => ({
-        ...current,
-        [colId]: [...new Set([...stillSelectedPreviously, ...addedIds])],
-      }));
     } catch {
       setBulkError(L.errBulkSelect);
     } finally {
@@ -373,32 +359,8 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     void selectAllFromCollection(nav.id);
   }
 
-  function isBulkCollectionChecked(colId: string) {
-    const addedIds = bulkAddedByCollection[colId] ?? [];
-    return addedIds.length > 0 && addedIds.every((id) => selection.some((item) => item.id === id));
-  }
-
-  function toggleBulkCollection(colId: string) {
-    if (mode !== "multi") return;
-    const addedIds = bulkAddedByCollection[colId] ?? [];
-    if (isBulkCollectionChecked(colId)) {
-      const addedSet = new Set(addedIds);
-      onChange(selection.filter((item) => !addedSet.has(item.id)));
-      setBulkAddedByCollection((current) => {
-        const next = { ...current };
-        delete next[colId];
-        return next;
-      });
-      return;
-    }
-    void selectAllFromCollection(colId);
-  }
-
   function clearSelection() {
-    if (mode === "multi") {
-      onChange([]);
-      setBulkAddedByCollection({});
-    }
+    if (mode === "multi") onChange([]);
     else if (mode === "collections") onChange([]);
   }
 
@@ -637,32 +599,24 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           </div>
         </DialogHeader>
 
-        {/* Replacement capacity stays outside the scrolling browser so it is
-            visible while browsing, uploading, selecting, and reordering. */}
-        {mode === "multi" && (
+        {/* Multi (photos) reorder strip */}
+        {mode === "multi" && selection.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            <p
-              className="text-xs text-muted-foreground"
-              aria-live="polite"
-              data-testid="media-picker-selection-status"
-            >
-              {L.selectedCount(selection.length, max)}
-              {selection.length > 0 ? ` · ${L.dragHint}` : ""}
+            <p className="text-xs text-muted-foreground">
+              {L.selectedCount(selection.length, max)} · {L.dragHint}
             </p>
-            {selection.length > 0 && (
-              <ul className="flex flex-wrap gap-2" aria-label="Selected photos (drag to reorder)">
-                {selectionItems.map(({ id, item }) => (
-                  <ReorderChip
-                    key={id}
-                    id={id}
-                    item={item}
-                    removeLabel={L.removePhoto}
-                    onReorder={reorder}
-                    onRemove={() => onChange(selection.filter((s) => s.id !== id))}
-                  />
-                ))}
-              </ul>
-            )}
+            <ul className="flex flex-wrap gap-2" aria-label="Selected photos (drag to reorder)">
+              {selectionItems.map(({ id, item }) => (
+                <ReorderChip
+                  key={id}
+                  id={id}
+                  item={item}
+                  removeLabel={L.removePhoto}
+                  onReorder={reorder}
+                  onRemove={() => onChange(selection.filter((s) => s.id !== id))}
+                />
+              ))}
+            </ul>
           </div>
         )}
 
@@ -715,10 +669,9 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               hasAnyPhotos={state.data.items.length > 0 || collections.some((c) => c.itemCount > 0)}
               mode={mode}
               bulkLoadingId={bulkLoadingId}
-              isBulkChecked={isBulkCollectionChecked}
               onOpen={openCollection}
               onCreate={() => setCreateOpen(true)}
-              onToggleBulkCollection={toggleBulkCollection}
+              onSelectAllFromCollection={selectAllFromCollection}
             />
           )}
 
@@ -853,19 +806,17 @@ function CollectionGrid({
   hasAnyPhotos,
   mode,
   bulkLoadingId,
-  isBulkChecked,
   onOpen,
   onCreate,
-  onToggleBulkCollection,
+  onSelectAllFromCollection,
 }: {
   collections: PickerCollection[];
   hasAnyPhotos: boolean;
   mode: "single" | "multi";
   bulkLoadingId: string | null;
-  isBulkChecked: (colId: string) => boolean;
   onOpen: (id: string, name: string) => void;
   onCreate: () => void;
-  onToggleBulkCollection: (colId: string) => void;
+  onSelectAllFromCollection: (colId: string) => void;
 }) {
   return (
     <ul className="grid grid-cols-2 gap-2 p-1 sm:grid-cols-4" role="listbox" aria-label="Collections">
@@ -883,11 +834,8 @@ function CollectionGrid({
         </button>
       </li>
 
-      {collections.map((col) => {
-        const bulkChecked = isBulkChecked(col.id);
-        const bulkLoading = bulkLoadingId === col.id;
-        return (
-          <li key={col.id} role="option" aria-selected={false} className="relative">
+      {collections.map((col) => (
+        <li key={col.id} role="option" aria-selected={false} className="relative">
           <button
             type="button"
             onClick={() => onOpen(col.id, col.name)}
@@ -909,35 +857,26 @@ function CollectionGrid({
               <span className="text-xs text-muted-foreground">{L.photos(col.itemCount)}</span>
             </span>
           </button>
-            {mode === "multi" && (
-              <label
-                className={cn(
-                  "absolute end-1 top-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-within:ring-1 focus-within:ring-ring",
-                  bulkLoadingId !== null && "opacity-50"
-                )}
-              >
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  aria-label={bulkChecked ? L.clearAllInTile(col.name) : L.selectAllInTile(col.name)}
-                  checked={bulkChecked}
-                  disabled={bulkLoadingId !== null}
-                  onClick={(event) => event.stopPropagation()}
-                  onChange={(event) => {
-                    event.stopPropagation();
-                    onToggleBulkCollection(col.id);
-                  }}
-                />
-                {bulkLoading ? (
-                  <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
-                ) : bulkChecked ? (
-                  <CheckIcon className="size-3.5" aria-hidden />
-                ) : null}
-              </label>
-            )}
-          </li>
-        );
-      })}
+          {mode === "multi" && (
+            <button
+              type="button"
+              aria-label={L.selectAllInTile(col.name)}
+              disabled={bulkLoadingId !== null}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectAllFromCollection(col.id);
+              }}
+              className="absolute right-1 top-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              {bulkLoadingId === col.id ? (
+                <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
+              ) : (
+                <CheckIcon className="size-3.5" aria-hidden />
+              )}
+            </button>
+          )}
+        </li>
+      ))}
 
       {/* Create collection */}
       <li>

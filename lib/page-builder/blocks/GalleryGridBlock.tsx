@@ -65,6 +65,9 @@ export type GalleryGridProps = {
 export const galleryGridDefaultProps: GalleryGridProps = {
   content: [],
   images: [],
+  backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
 };
 
 const GAP_MAP: Record<GalleryGap, string> = {
@@ -308,11 +311,39 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   // from saved props; no sidebar field is needed there either.
   // columns/gap are now stored in _style.galleryColumns/_style.galleryGap and edited
   // via the Layout tab GalleryLayoutControls — not as top-level sidebar fields.
-  // Legacy background props remain render-compatible, but are deliberately not
-  // fields: gallery photos come exclusively from the Image-block slot.
+  // Banner fields are managed by StyleToolkitField and stripped by resolveFields in editorConfig.
   fields: {
     _style: productionStyleField,
     content: { type: "slot", allow: ["Image"] },
+    backgroundImages: {
+      type: "array",
+      label: "Background images",
+      arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } },
+    } as unknown as Field<GalleryImage[] | undefined>,
+    bgAnimation: {
+      type: "select",
+      label: "BG animation",
+      options: [
+        { label: "Crossfade", value: "crossfade" },
+        { label: "Ken Burns", value: "kenburns" },
+        { label: "Slide", value: "slide" },
+      ],
+    } as Field<GalleryGridProps["bgAnimation"]>,
+    bgSpeed: {
+      type: "select",
+      label: "BG speed",
+      options: [
+        { label: "Slow", value: "slow" },
+        { label: "Medium", value: "medium" },
+        { label: "Fast", value: "fast" },
+      ],
+    } as Field<GalleryGridProps["bgSpeed"]>,
+    overlayOpacity: {
+      type: "number",
+      label: "Overlay opacity",
+      min: 0,
+      max: 100,
+    } as Field<number | undefined>,
     minHeight: {
       type: "select",
       label: "Min height",

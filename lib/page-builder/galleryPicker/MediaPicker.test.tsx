@@ -4,7 +4,6 @@ import { renderWithProviders } from "@/test-utils/render";
 import { MediaPicker } from "./MediaPicker";
 import type { MediaPickerCollectionSelection } from "./MediaPicker";
 import { __clearPickerDataCache } from "./usePickerData";
-import { useState } from "react";
 
 vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
@@ -118,38 +117,17 @@ describe("MediaPicker", () => {
     );
   });
 
-  it("multi mode: collection checkbox selects and removes only its bulk-added photos", async () => {
+  it("multi mode: collection tile checkmark bulk-selects that collection without navigating into it", async () => {
     const onChange = vi.fn();
-    function Harness() {
-      const [value, setValue] = useState([{ id: "z", publicId: "pid-z" }]);
-      return (
-        <MediaPicker
-          mode="multi"
-          value={value}
-          onChange={(next) => {
-            onChange(next);
-            setValue(next);
-          }}
-          open
-          onOpenChange={vi.fn()}
-        />
-      );
-    }
-    renderWithProviders(<Harness />);
-    const checkmark = await screen.findByRole("checkbox", { name: /select all photos in weddings/i });
-    expect(checkmark).not.toBeChecked();
+    renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+    const checkmark = await screen.findByRole("button", { name: /select all photos in weddings/i });
     fireEvent.click(checkmark);
     await waitFor(() =>
       expect(onChange).toHaveBeenCalledWith([
-        { id: "z", publicId: "pid-z" },
         { id: "a", publicId: "pid-a" },
         { id: "b", publicId: "pid-b" },
       ])
     );
-    await waitFor(() => expect(checkmark).toBeChecked());
-    fireEvent.click(checkmark);
-    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith([{ id: "z", publicId: "pid-z" }]));
-    expect(checkmark).not.toBeChecked();
     // Still browsing collections — the checkmark click did not trigger the
     // tile's own "open this collection" action.
     expect(screen.queryByRole("button", { name: /back to collections/i })).toBeNull();
@@ -159,7 +137,7 @@ describe("MediaPicker", () => {
   it("single mode: collection tiles render no bulk-select checkmark", async () => {
     renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
     await screen.findByRole("button", { name: /^weddings$/i });
-    expect(screen.queryByRole("checkbox", { name: /select all photos in/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /select all photos in/i })).toBeNull();
   });
 
   it("multi mode: surfaces an error (not a silent no-op) when the bulk collection fetch fails", async () => {
@@ -175,17 +153,9 @@ describe("MediaPicker", () => {
       return Promise.resolve({ ok: true, json: async () => ({ items: colItems, nextCursor: null }) } as Response);
     });
     renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
-    fireEvent.click(await screen.findByRole("checkbox", { name: /select all photos in weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /select all photos in weddings/i }));
     await screen.findByRole("alert");
     expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it("pins the replacement capacity before any photo is selected", async () => {
-    renderWithProviders(
-      <MediaPicker mode="multi" max={4} value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />
-    );
-    await screen.findByRole("button", { name: /^weddings$/i });
-    expect(screen.getByTestId("media-picker-selection-status")).toHaveTextContent("0/4 selected");
   });
 
   it("shows a skeleton grid (not a bare spinner) while picker data is loading, so the dialog body holds its shape", async () => {

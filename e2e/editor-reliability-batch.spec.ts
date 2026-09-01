@@ -70,9 +70,9 @@ async function openEditor(page: Page): Promise<void> {
     .catch(() => false);
 
   if (appeared) {
-    // Browser recovery is explicit: Resume applies it and closes outright.
+    // "Continue where you left off" resumes the local draft and closes outright.
     // "Start from scratch" opens a SECOND dialog (the template chooser).
-    const named = dialog.getByRole("button", { name: /Resume|Continue where you left off/i });
+    const named = dialog.getByRole("button", { name: /Continue where you left off/i });
     const resume = (await named.count()) ? named : dialog.getByRole("button");
     await resume.first().click();
     await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 20_000 });
@@ -85,8 +85,7 @@ test.describe("brand background is painted, not just declared", () => {
     test.setTimeout(120_000);
     const errors = collectPageErrors(page);
     await page.goto("/en/portfolio-preview");
-    // The preview renders the selected durable/published fallback directly;
-    // browser recovery is consumed only when the editor opts in.
+    // The shell holds children back until the local-draft read settles.
     await page.locator('[class*="pf-theme-"]').waitFor({ timeout: 60_000 });
     expect(errors, "preview rendered without an uncaught error").toEqual([]);
 
@@ -320,12 +319,6 @@ test.describe("footer presets match their mockups", () => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1280, height: 900 });
     await openEditor(page);
-
-    const presetBlocks = page.getByRole("button", { name: /^Preset blocks$/i });
-    await presetBlocks.waitFor({ state: "visible", timeout: 15_000 });
-    if ((await presetBlocks.getAttribute("aria-expanded")) !== "true") {
-      await presetBlocks.click();
-    }
 
     const footer = page
       .locator(CATEGORY_ROOT)

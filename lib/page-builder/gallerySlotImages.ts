@@ -129,17 +129,6 @@ export function gallerySlotSelections(type: string, props: GallerySlotProps): Me
   return selections;
 }
 
-/** Number of existing Image slots available for replacement in this block. */
-export function gallerySlotLimit(type: string, props: GallerySlotProps): number {
-  if (type === "GalleryGrid" || (type === "GalleryMasonry" && props.masonryLayout !== "columns")) {
-    return imageItems(props.content).length;
-  }
-  if (type !== "GalleryMasonry") return 0;
-  const columns = Math.min(4, Math.max(2, Math.floor(props._style?.galleryColumns ?? 3)));
-  return Array.from({ length: columns }, (_, index) => imageItems(props[`column${index + 1}`]).length)
-    .reduce((total, count) => total + count, 0);
-}
-
 export function gallerySlotPatch(
   type: string,
   props: GallerySlotProps,

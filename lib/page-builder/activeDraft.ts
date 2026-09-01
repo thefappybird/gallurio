@@ -3,8 +3,6 @@ import { connectDB } from "@/lib/db/mongoose";
 import { PortfolioDraft, Workspace } from "@/lib/db/models";
 import { DEFAULT_DRAFT_NAME } from "./drafts";
 import { ensureLegacyDraftMigrated } from "./migrateDraft";
-import { normalizeSharedChromeData } from "./sharedChrome";
-import type { PortfolioHeaderConfig } from "./types";
 
 /**
  * Resolves the draft a workspace's next publish should act on: the most
@@ -32,10 +30,7 @@ export async function resolveActiveDraftId(workspaceId: Types.ObjectId): Promise
       workspaceId,
       name: DEFAULT_DRAFT_NAME,
       templateId: "",
-      data: normalizeSharedChromeData(
-        { home: null, gallery: null },
-        pp?.header as PortfolioHeaderConfig | null | undefined,
-      ),
+      data: { home: null, gallery: null },
       brandKit: null,
       contact: null,
       header: null,

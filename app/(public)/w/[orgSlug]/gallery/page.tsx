@@ -8,12 +8,11 @@ import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
-import { stripPageLocalFooters } from "@/lib/page-builder/sharedChrome";
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
 import { PoweredByGallurio } from "../_components/PoweredByGallurio";
-import { DEFAULT_BRAND_KIT, type PublicPageSeo, type PuckData } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioGalleryUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, buildPortfolioEntityNodes, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
@@ -86,14 +85,11 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   // gallery data is stored as Schema.Types.Mixed; normalize before <Render> so
   // legacy/partial persisted data can't 500 the route (see the Home page note).
   const rawGallery = (workspace.publicPage?.data as { gallery?: unknown } | null | undefined)?.gallery;
-  const normalizedGalleryData = normalizePublicPageData(
+  const galleryData = normalizePublicPageData(
     rawGallery,
     new Set(Object.keys(puckConfig.components)),
     "gallery"
   );
-  const galleryData = normalizedGalleryData
-    ? stripPageLocalFooters(normalizedGalleryData as unknown as PuckData)
-    : null;
 
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });

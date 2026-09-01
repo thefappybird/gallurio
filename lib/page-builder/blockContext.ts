@@ -59,20 +59,6 @@ export type RenderWorkspace = {
   chrome?: {
     startingFrom?: string;
     gallery?: GalleryChromeLabels;
-    navigation?: {
-      labels?: {
-        brand: string;
-        navLandmark: string;
-        home: string;
-        gallery: string;
-        contact: string;
-        openMenu: string;
-        closeMenu: string;
-      };
-      activePath?: string;
-      homeHref?: string;
-      galleryHref?: string;
-    };
     /** External-link confirm template. Contains literal "{url}" for per-link substitution. */
     socialLinkConfirm?: string;
   } | null;

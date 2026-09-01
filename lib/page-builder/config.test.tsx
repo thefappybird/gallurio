@@ -39,10 +39,9 @@ describe("production root render applies root style", () => {
 });
 
 describe("puckConfig categories", () => {
-  it("has the 11 registry groups, manual blocks, and hidden shared chrome", () => {
+  it("has the 11 registry group ids plus 'manual'", () => {
     const categoryIds = Object.keys(puckConfig.categories ?? {});
-    expect(categoryIds.sort()).toEqual([...PRESET_GROUP_IDS, "manual", "chrome"].sort());
-    expect(puckConfig.categories?.chrome?.visible).toBe(false);
+    expect(categoryIds.sort()).toEqual([...PRESET_GROUP_IDS, "manual"].sort());
   });
 
   it("every key listed in every category is a registered component", () => {

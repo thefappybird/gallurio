@@ -207,8 +207,6 @@ export const puckDataSchema = z.object({
 export const portfolioPuckDataSchema = z.object({
   home: puckDataSchema.nullable(),
   gallery: puckDataSchema.nullable(),
-  navigation: puckDataSchema.nullable().optional(),
-  footer: puckDataSchema.nullable().optional(),
 });
 
 export type PortfolioPuckDataInput = z.infer<typeof portfolioPuckDataSchema>;

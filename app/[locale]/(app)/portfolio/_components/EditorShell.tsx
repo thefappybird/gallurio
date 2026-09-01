@@ -2,8 +2,8 @@
 
 import "@measured/puck/puck.css";
 import "./editor.css";
-import { Children, createContext, isValidElement, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Puck, Render, type Config, type Data } from "@measured/puck";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Puck, type Config, type Data } from "@measured/puck";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { isEditableTarget, isSelfManagedComboboxTarget } from "@/lib/page-builder/editableTarget";
@@ -11,7 +11,6 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   CircleHelp,
-  ChevronDown,
   ExternalLinkIcon,
   Files,
   Images,
@@ -44,7 +43,6 @@ import { PRESET_BLOCK_KEYS } from "@/lib/page-builder/blockCategories";
 import {
   SECTION_PRESETS,
   COLLECTION_PRESET_KEYS,
-  PRESET_GROUPS,
   type SectionPresetKey,
   type SectionPresetEntry,
 } from "@/lib/page-builder/blocks/sectionPresets";
@@ -133,24 +131,14 @@ import { DemoImportDetectedDialog } from "./DemoImportDetectedDialog";
 import { DemoPickerContext } from "@/lib/page-builder/demoPickerContext";
 import { getTemplate } from "@/lib/page-builder/templates";
 import { useDemoGuideChrome } from "@/lib/page-builder/demoGuideChrome";
-import type { PortfolioRenderMetadata } from "@/lib/page-builder/blockContext";
-import {
-  createNavigationData,
-  normalizeSharedChromeData,
-  readNavigationConfig,
-  setNavigationConfig,
-  stripPageLocalFooters,
-} from "@/lib/page-builder/sharedChrome";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
-type Zone = "home" | "gallery" | "footer";
-type DraftData = Record<Zone, PuckData> & { navigation: PuckData };
-type InitialDraftData = Pick<DraftData, "home" | "gallery"> & Partial<Pick<DraftData, "navigation" | "footer">>;
+type Zone = "home" | "gallery";
 type EditorSection = Zone | "collectionsPopup" | "header" | "contact";
 
 /** Preview-route `zone` param for the active editor section. */
-export type PreviewZoneParam = "home" | "gallery" | "contact" | "popup" | "footer";
+export type PreviewZoneParam = "home" | "gallery" | "contact" | "popup";
 
 /**
  * Map the active editor section to the preview route's `zone` param so the
@@ -164,7 +152,6 @@ export function previewZoneFor(
 ): PreviewZoneParam {
   if (activeSection === "contact") return "contact";
   if (activeSection === "collectionsPopup") return "popup";
-  if (activeSection === "footer") return "footer";
   return activeZone;
 }
 
@@ -179,7 +166,7 @@ export type EditorTemplateSummary = {
 type Props = {
   slug: string;
   workspaceName: string;
-  initialData: InitialDraftData;
+  initialData: { home: PuckData; gallery: PuckData };
   initialBrandKit: PortfolioBrandKit;
   initialContact: PortfolioContactConfig;
   initialHeaderConfig: PortfolioHeaderConfig;
@@ -253,14 +240,14 @@ const EMPTY_ZONE: PuckData = { content: [], root: {} };
 const SCRATCH_TEMPLATE_ID = "scratch";
 // Demo caps — locked copy references "10" and "20" directly; keep in sync.
 const DEMO_BLOCK_CAP = 20;
-const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "header", "footer", "collectionsPopup", "contact"] as const;
+const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectionsPopup", "header", "contact"] as const;
 // formDir was added as an optional field; absence defaults to LTR at hydration,
 // so v2 buffers stay forward-compatible and must not be invalidated by a bump.
-const LOCAL_DRAFT_VERSION = 3;
+const LOCAL_DRAFT_VERSION = 2;
 
 type PortfolioBrowserDraft = {
   version: typeof LOCAL_DRAFT_VERSION;
-  data: DraftData;
+  data: Record<Zone, PuckData>;
   brandKit: PortfolioBrandKit;
   contact: PortfolioContactConfig;
   formLocale: string;
@@ -269,101 +256,7 @@ type PortfolioBrowserDraft = {
   collectionsPopup: PortfolioCollectionsPopupConfig;
   draftId: string | null;
   draftName: string;
-  templateId: string;
 };
-
-function readBrowserRecovery(key: string): PortfolioBrowserDraft | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Omit<Partial<PortfolioBrowserDraft>, "version"> & { version?: number };
-    if ((parsed.version !== 2 && parsed.version !== LOCAL_DRAFT_VERSION) || !parsed.data) return null;
-    if (!parsed.data.home || !parsed.data.gallery) return null;
-    const normalized = normalizeSharedChromeData(parsed.data, parsed.headerConfig);
-    return {
-      version: LOCAL_DRAFT_VERSION,
-      data: {
-        home: normalized.home,
-        gallery: normalized.gallery,
-        navigation: normalized.navigation,
-        footer: normalized.footer,
-      },
-      brandKit: parsed.brandKit ?? DEFAULT_BRAND_KIT,
-      contact: parsed.contact ?? {},
-      formLocale: typeof parsed.formLocale === "string" ? parsed.formLocale : "",
-      formDir: typeof parsed.formDir === "string" ? parsed.formDir : "",
-      headerConfig: readNavigationConfig(normalized.navigation, parsed.headerConfig ?? DEFAULT_HEADER_CONFIG),
-      collectionsPopup: parsed.collectionsPopup ?? {},
-      draftId: parsed.draftId ?? null,
-      draftName: parsed.draftName || DEFAULT_DRAFT_NAME,
-      templateId: parsed.templateId || SCRATCH_TEMPLATE_ID,
-    };
-  } catch {
-    return null;
-  }
-}
-
-type SharedChromeCanvasValue = {
-  navigation: PuckData;
-  footer: PuckData;
-  activeZone: Zone;
-  config: Config;
-  metadata: PortfolioRenderMetadata;
-};
-
-const SharedChromeCanvasContext = createContext<SharedChromeCanvasValue | null>(null);
-
-function SharedChromeCanvas({ children }: { children: ReactNode }) {
-  const value = useContext(SharedChromeCanvasContext);
-  if (!value) return <>{children}</>;
-  return (
-    <>
-      <Render data={value.navigation as Data} config={value.config} metadata={value.metadata} />
-      {children}
-      {value.activeZone !== "footer" && (
-        <Render data={value.footer as Data} config={value.config} metadata={value.metadata} />
-      )}
-    </>
-  );
-}
-
-export function NestedPresetDrawer({ children, presetTitle }: { children: ReactNode; presetTitle: string }) {
-  const [open, setOpen] = useState(false);
-  const items = Children.toArray(children);
-  const presetGroupIds = new Set<string>(PRESET_GROUPS.map((group) => group.id));
-  const presetGroups: ReactNode[] = [];
-  const siblings: ReactNode[] = [];
-
-  for (const child of items) {
-    const key = isValidElement(child) ? String(child.key ?? "").replace(/^\.\$/, "") : "";
-    if (presetGroupIds.has(key)) presetGroups.push(child);
-    else siblings.push(child);
-  }
-
-  // During Puck's first render the component list is not populated yet. Keep
-  // the wrapper stable and wait for its category effect rather than rendering
-  // an empty accordion shell.
-  if (presetGroups.length === 0) return <div>{children}</div>;
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col" data-tour-id="blocks-panel">
-      <div className="border-b border-border">
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-          className="flex min-h-11 w-full items-center justify-between px-3 text-start text-xs font-semibold uppercase tracking-wide text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <span>{presetTitle}</span>
-          <ChevronDown aria-hidden className={cn("size-4 transition-transform", open && "rotate-180")} />
-        </button>
-        {open && <div>{presetGroups}</div>}
-      </div>
-      {siblings}
-    </div>
-  );
-}
 
 /**
  * Mounts inside Puck's `fields` override and climbs the DOM to find the
@@ -800,7 +693,6 @@ export function EditorShell({
   const setDemoGuideChromeOpen = useDemoGuideChrome();
   const t = useTranslations("app.pageBuilder.editor");
   const tDemo = useTranslations("app.portfolioMakerDemo");
-  const tNav = useTranslations("publicPage.nav");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
   const tLocationPicker = useTranslations("app.bookings.locationPicker");
   const errMsg = useActionError();
@@ -863,11 +755,9 @@ export function EditorShell({
   const [formDir, setFormDir] = useState<"ltr" | "rtl" | "">(
     (initialFormDir as "ltr" | "rtl" | "" | undefined) ?? ""
   );
-  const [renderDraftData, setRenderDraftData] = useState<DraftData>(() => ({
+  const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>(() => ({
     home: prepareForEditor(initialData.home ?? EMPTY_ZONE) as unknown as PuckData,
     gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE) as unknown as PuckData,
-    footer: prepareForEditor(initialData.footer ?? EMPTY_ZONE) as unknown as PuckData,
-    navigation: initialData.navigation ?? createNavigationData(initialHeaderConfig),
   }));
   // currentSlug tracks the live slug after in-dialog edits (optimistic update).
   const [currentSlug, setCurrentSlug] = useState(slug);
@@ -926,12 +816,6 @@ export function EditorShell({
   function handleFormLocaleChange(next: string) {
     setFormLocale(next);
     if (next === "ar") setFormDir("rtl");
-    markRecoveryEdit();
-  }
-
-  function handleFormDirChange(next: "ltr" | "rtl" | "") {
-    setFormDir(next);
-    markRecoveryEdit();
   }
 
   // Puck gate state (populated by PuckGateReader when Puck is mounted)
@@ -965,8 +849,9 @@ export function EditorShell({
   const [savingChanges, setSavingChanges] = useState(false);
   const [draftsOpen, setDraftsOpen] = useState(false);
 
-  // Recovery is offered only for a valid browser buffer. Durable drafts are
-  // already loaded by the server and never trigger an entry decision.
+  // Entry dialog shown on load; deferred until after the guide when guide is not dismissed.
+  // When guideDismissed=true, open the entry immediately — but brand-new users (no saved
+  // drafts AND no recoverable buffer) go to the welcome template modal instead.
   // When guideDismissed=false, both stay closed until guide finishes/skips.
   // detectedDemo was captured before the first-run dialog state above so this
   // decision always takes priority over onboarding prompts.
@@ -974,15 +859,32 @@ export function EditorShell({
     if (detectedDemo) return false;
     if (!guideDismissed) return false;
     // Brand-new check: no saved drafts AND no localStorage buffer.
-    const hasBuffer = Boolean(readBrowserRecovery(`gallurio:portfolio-draft:${slug}`));
-    return hasBuffer;
+    const hasDrafts = initialDrafts.length > 0;
+    const hasBuffer = (() => {
+      if (typeof window === "undefined") return false;
+      try {
+        const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+        return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
+      } catch { return false; }
+    })();
+    return hasDrafts || hasBuffer;
   });
   // Welcome template modal for brand-new users (no buffer AND no saved drafts).
   const [welcomeTemplatesOpen, setWelcomeTemplatesOpen] = useState(() => {
     if (detectedDemo) return false;
     if (!guideDismissed) return false;
     const hasDrafts = initialDrafts.length > 0;
-    const hasBuffer = Boolean(readBrowserRecovery(`gallurio:portfolio-draft:${slug}`));
+    const hasBuffer = (() => {
+      if (typeof window === "undefined") return false;
+      try {
+        const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+        return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
+      } catch { return false; }
+    })();
     return !hasDrafts && !hasBuffer;
   });
   const [pendingAction, setPendingAction] = useState<{ run: () => void; reseeds: boolean } | null>(null);
@@ -1024,8 +926,6 @@ export function EditorShell({
       data: {
         home: prepareForEditor(initialData.home ?? EMPTY_ZONE),
         gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE),
-        footer: prepareForEditor(initialData.footer ?? EMPTY_ZONE),
-        navigation: initialData.navigation ?? createNavigationData(initialHeaderConfig),
       },
       brandKit: initialBrandKit,
       contact: initialContact,
@@ -1042,11 +942,9 @@ export function EditorShell({
 
   // Source of truth for each zone's latest data, updated by Puck's onChange.
   // A ref (not state) so editing doesn't re-feed Puck mid-session.
-  const zoneDataRef = useRef<DraftData>({
+  const zoneDataRef = useRef<Record<Zone, PuckData>>({
     home: prepareForEditor(initialData.home ?? EMPTY_ZONE) as unknown as PuckData,
     gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE) as unknown as PuckData,
-    footer: prepareForEditor(initialData.footer ?? EMPTY_ZONE) as unknown as PuckData,
-    navigation: initialData.navigation ?? createNavigationData(initialHeaderConfig),
   });
   // Puck emits onChange once on mount (and again on the zone-switch remount).
   // Skip that first emission so merely loading a zone doesn't autosave/bump the
@@ -1083,19 +981,6 @@ export function EditorShell({
   // Demo sessions use a distinct namespace (keyed by demoSessionId, not slug)
   // so a demo session can never collide with or leak into a real workspace's draft.
   const draftKey = demoMode ? demoDraftKey(demoSessionId) : `gallurio:portfolio-draft:${slug}`;
-  const [browserRecovery, setBrowserRecovery] = useState<PortfolioBrowserDraft | null>(() =>
-    readBrowserRecovery(draftKey),
-  );
-  const [hasRecoverableBuffer, setHasRecoverableBuffer] = useState(() => browserRecovery !== null);
-  const recoveryWritesEnabledRef = useRef(demoMode);
-  const [previewRecoveryAllowed, setPreviewRecoveryAllowed] = useState(demoMode);
-
-  const markRecoveryEdit = useCallback(() => {
-    if (guideMode) return;
-    recoveryWritesEnabledRef.current = true;
-    setPreviewRecoveryAllowed(true);
-    setHasRecoverableBuffer(true);
-  }, [guideMode]);
 
   // ---- Snapshot helpers ----
   function buildDraftSnapshot() {
@@ -1104,8 +989,6 @@ export function EditorShell({
       data: {
         home: zoneDataRef.current.home,
         gallery: zoneDataRef.current.gallery,
-        navigation: zoneDataRef.current.navigation,
-        footer: zoneDataRef.current.footer,
       },
       brandKit,
       contact,
@@ -1143,7 +1026,6 @@ export function EditorShell({
       collectionsPopup,
       draftId: activeDraftId,
       draftName,
-      templateId,
     };
     try {
       window.localStorage.setItem(draftKey, JSON.stringify(draft));
@@ -1151,7 +1033,7 @@ export function EditorShell({
     } catch {
       return false;
     }
-  }, [brandKit, collectionsPopup, contact, draftKey, formDir, formLocale, guideMode, headerConfig, activeDraftId, draftName, templateId]);
+  }, [brandKit, collectionsPopup, contact, draftKey, formDir, formLocale, guideMode, headerConfig, activeDraftId, draftName]);
 
   // Typing emits a Puck onChange per keystroke; persisting to localStorage on
   // every one makes text blocks laggy. Debounce the local write (trailing) and
@@ -1161,37 +1043,55 @@ export function EditorShell({
     350,
   );
 
+  // Compute on mount whether a recoverable localStorage buffer exists.
+  const [hasRecoverableBuffer] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+      return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
+    } catch {
+      return false;
+    }
+  });
+
   useEffect(() => {
     if (guideMode) return;
-    if (!recoveryWritesEnabledRef.current) return;
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(draftKey);
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+      if (draft.version !== LOCAL_DRAFT_VERSION || !draft.data) return;
+      queueMicrotask(() => {
+        // prepareForEditor both zones so zoneDataRef, renderDraftData, and the
+        // Puck seed are all in the same shape — mismatched shapes cause isDirty=true.
+        const home = prepareForEditor(draft.data?.home ?? zoneDataRef.current.home) as unknown as PuckData;
+        const gallery = prepareForEditor(draft.data?.gallery ?? zoneDataRef.current.gallery) as unknown as PuckData;
+        zoneDataRef.current = { home, gallery };
+        setRenderDraftData({ home, gallery });
+        if (draft.brandKit) setBrandKit(draft.brandKit);
+        if (draft.contact) setContact(draft.contact);
+        if (typeof draft.formLocale === "string") setFormLocale(draft.formLocale);
+        if (typeof draft.formDir === "string") setFormDir(draft.formDir as "ltr" | "rtl" | "");
+        if (draft.headerConfig) setHeaderConfig(draft.headerConfig);
+        if (draft.collectionsPopup) setCollectionsPopup(draft.collectionsPopup);
+        if (draft.draftId !== undefined) setActiveDraftId(draft.draftId);
+        if (draft.draftName) setDraftName(draft.draftName);
+        ignoreNextChange.current = true;
+        setPuckSeed(home as unknown as Data);
+        setSeedNonce((n) => n + 1);
+      });
+    } catch {
+      window.localStorage.removeItem(draftKey);
+    }
+  }, [draftKey, guideMode]);
+
+  useEffect(() => {
+    if (guideMode) return;
     persistLocalDraft();
   }, [activeDraftId, collectionsPopup, contact, draftName, formDir, formLocale, guideMode, headerConfig, persistLocalDraft]);
-
-  function applyBrowserRecovery() {
-    const draft = browserRecovery;
-    if (!draft) return;
-    const home = prepareForEditor(draft.data.home) as unknown as PuckData;
-    const gallery = prepareForEditor(draft.data.gallery) as unknown as PuckData;
-    const footer = prepareForEditor(draft.data.footer) as unknown as PuckData;
-    const navigation = draft.data.navigation;
-    zoneDataRef.current = { home, gallery, footer, navigation };
-    setRenderDraftData(zoneDataRef.current);
-    setBrandKit(draft.brandKit);
-    setContact(draft.contact);
-    setFormLocale(draft.formLocale);
-    setFormDir(draft.formDir as "ltr" | "rtl" | "");
-    setHeaderConfig(readNavigationConfig(navigation, draft.headerConfig));
-    setCollectionsPopup(draft.collectionsPopup);
-    setActiveDraftId(draft.draftId);
-    setDraftName(draft.draftName);
-    setTemplateId(draft.templateId);
-    setSavedSnapshot(null);
-    recoveryWritesEnabledRef.current = true;
-    setPreviewRecoveryAllowed(true);
-    ignoreNextChange.current = true;
-    setPuckSeed(home as unknown as Data);
-    setSeedNonce((n) => n + 1);
-  }
 
   // beforeunload guard while dirty. Flush any pending debounced write so a
   // reload/close never loses the last keystrokes.
@@ -1219,15 +1119,7 @@ export function EditorShell({
 
   const handleChange = useCallback(
     (data: Data) => {
-      const rawNext = data as unknown as PuckData;
-      const next = activeZone === "footer" ? rawNext : stripPageLocalFooters(rawNext);
-      const removedPageFooter =
-        rawNext.content.length !== next.content.length ||
-        rawNext.content.some((entry, index) => entry !== next.content[index]) ||
-        Object.entries(rawNext.zones ?? {}).some(([key, entries]) => {
-          const sanitized = next.zones?.[key] ?? [];
-          return entries.length !== sanitized.length || entries.some((entry, index) => entry !== sanitized[index]);
-        });
+      const next = data as unknown as PuckData;
       if (demoMode) {
         const prevLen = zoneDataRef.current[activeZone].content.length;
         const nextLen = next.content.length;
@@ -1245,24 +1137,14 @@ export function EditorShell({
       }
       zoneDataRef.current[activeZone] = next;
       setRenderDraftData((current) => ({ ...current, [activeZone]: next }));
-      if (removedPageFooter) {
-        // Footer presets belong to the shared Footer document. If legacy data
-        // or a drawer drag introduces one into Home/Gallery, discard it from
-        // that page and remount Puck so it never renders as duplicate chrome.
-        ignoreNextChange.current = true;
-        setPuckSeed(prepareForEditor(next));
-        setSeedNonce((n) => n + 1);
-        return;
-      }
       if (ignoreNextChange.current) {
         ignoreNextChange.current = false;
         return; // mount/remount echo - capture data, but don't autosave.
       }
-      markRecoveryEdit();
       debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
     },
-    [activeZone, debouncedPersistLocalDraft, demoMode, markRecoveryEdit, setActiveDemoGate]
+    [activeZone, debouncedPersistLocalDraft, demoMode, setActiveDemoGate]
   );
 
   // ---- Draft name validation ----
@@ -1299,9 +1181,6 @@ export function EditorShell({
       if (shouldToastValidationError) toast.error(validationError);
       return false;
     }
-    // Consume any pending trailing write before the durable request. Once the
-    // request succeeds, removing the key cannot be undone by that old timer.
-    flushLocalDraft();
     setSavingChanges(true);
     const payload = { name: nameToSave, ...buildDraftSnapshot() };
     try {
@@ -1352,11 +1231,7 @@ export function EditorShell({
       });
       const snapshotStr = JSON.stringify(payload);
       setSavedSnapshot(snapshotStr);
-      if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
-      recoveryWritesEnabledRef.current = false;
-      setBrowserRecovery(null);
-      setHasRecoverableBuffer(false);
-      setPreviewRecoveryAllowed(false);
+      persistLocalDraft();
       toast.success(t("savedToast"));
       return true;
     } finally {
@@ -1466,31 +1341,22 @@ export function EditorShell({
       toast.error(errMsg("draft_load_failed"));
       return;
     }
-    if (!demoMode && typeof window !== "undefined") {
-      window.localStorage.removeItem(draftKey);
-      recoveryWritesEnabledRef.current = false;
-      setBrowserRecovery(null);
-      setHasRecoverableBuffer(false);
-      setPreviewRecoveryAllowed(false);
-    }
     const d = res.draft;
     // prepareForEditor must be applied here so zoneDataRef, renderDraftData, and
     // savedSnapshot all carry the same shape — without it the gallery zone stays
     // raw while the snapshot holds the prepared version → isDirty=true on load.
     const homeData = prepareForEditor((d.data.home as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
     const galleryData = prepareForEditor((d.data.gallery as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
-    const footerData = prepareForEditor((d.data.footer as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
     // Resolve each field to the value that will be committed to state, so the
     // saved snapshot always matches post-apply render state.
     const resolvedBrandKit = (d.brandKit as PortfolioBrandKit) ?? DEFAULT_BRAND_KIT;
     const resolvedContact = (d.contact as PortfolioContactConfig) ?? contact;
-    const navigationData = (d.data.navigation as PuckData) ?? createNavigationData(d.header as PortfolioHeaderConfig);
-    const resolvedHeader = readNavigationConfig(navigationData, (d.header as PortfolioHeaderConfig) ?? headerConfig);
+    const resolvedHeader = (d.header as PortfolioHeaderConfig) ?? headerConfig;
     const resolvedCollectionsPopup = (d.collectionsPopup as PortfolioCollectionsPopupConfig) ?? collectionsPopup;
     const resolvedFormLocale = typeof d.formLocale === "string" ? d.formLocale : formLocale;
     const resolvedFormDir = typeof d.formDir === "string" ? (d.formDir as "ltr" | "rtl" | "") : formDir;
     const resolvedTemplateId = d.templateId || templateId;
-    zoneDataRef.current = { home: homeData, gallery: galleryData, footer: footerData, navigation: navigationData };
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setBrandKit(resolvedBrandKit);
     setContact(resolvedContact);
@@ -1510,7 +1376,7 @@ export function EditorShell({
     setSavedSnapshot(JSON.stringify({
       name: d.name,
       templateId: resolvedTemplateId,
-      data: { home: homeData, gallery: galleryData, footer: footerData, navigation: navigationData },
+      data: { home: homeData, gallery: galleryData },
       brandKit: resolvedBrandKit,
       contact: resolvedContact,
       header: resolvedHeader,
@@ -1518,18 +1384,13 @@ export function EditorShell({
       formLocale: resolvedFormLocale,
       formDir: resolvedFormDir,
     }));
-    if (demoMode) persistLocalDraft();
+    persistLocalDraft();
     setDraftsOpen(false);
   }
 
   // ---- Reset canvas to an empty scratch state (no backing draft) ----
   function resetToScratchCanvas() {
-    zoneDataRef.current = {
-      home: EMPTY_ZONE,
-      gallery: EMPTY_ZONE,
-      footer: EMPTY_ZONE,
-      navigation: createNavigationData(headerConfig),
-    };
+    zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
     setRenderDraftData(zoneDataRef.current);
     setTemplateId(SCRATCH_TEMPLATE_ID);
     setTemplateSeedSnapshot(JSON.stringify(zoneDataRef.current));
@@ -1696,10 +1557,6 @@ export function EditorShell({
       }
       setPublishOpen(false);
       if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
-      recoveryWritesEnabledRef.current = false;
-      setBrowserRecovery(null);
-      setHasRecoverableBuffer(false);
-      setPreviewRecoveryAllowed(false);
       toast.success(t("publishedToast"));
       if (!showPuck) setPreviewNonce((n) => n + 1);
     } finally {
@@ -1763,26 +1620,13 @@ export function EditorShell({
     setHeaderOpen(true);
   }
   function closeHeader(saved: boolean) {
-    if (!saved && headerSnapshot.current) {
-      const restored = headerSnapshot.current;
-      setHeaderConfig(restored);
-      const navigation = setNavigationConfig(zoneDataRef.current.navigation, restored);
-      zoneDataRef.current = { ...zoneDataRef.current, navigation };
-      setRenderDraftData(zoneDataRef.current);
-    }
+    if (!saved && headerSnapshot.current) setHeaderConfig(headerSnapshot.current);
     setHeaderOpen(false);
     if (headerHasSaved.current) setPreviewNonce((n) => n + 1);
   }
   function saveHeaderSnapshot() {
     headerSnapshot.current = headerConfig;
     headerHasSaved.current = true;
-  }
-  function changeHeaderConfig(next: PortfolioHeaderConfig) {
-    setHeaderConfig(next);
-    const navigation = setNavigationConfig(zoneDataRef.current.navigation, next);
-    zoneDataRef.current = { ...zoneDataRef.current, navigation };
-    setRenderDraftData(zoneDataRef.current);
-    markRecoveryEdit();
   }
 
   async function activateCollectionsPopup() {
@@ -1830,18 +1674,13 @@ export function EditorShell({
     // are all in the same shape — consistent with the applyDraft path (B3).
     const homeData = prepareForEditor((seed.data.home as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
     const galleryData = prepareForEditor((seed.data.gallery as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
-    const footerData = prepareForEditor((seed.data.footer as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
     const seedHeader = (seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG;
     const pendingLogo = pendingOnboardingLogoRef.current;
     const resolvedHeader = pendingLogo
       ? { ...seedHeader, logoUrl: pendingLogo.logoUrl, logoAssetId: pendingLogo.logoAssetId }
       : seedHeader;
     pendingOnboardingLogoRef.current = null;
-    const navigationData = setNavigationConfig(
-      (seed.data.navigation as PuckData) ?? createNavigationData(resolvedHeader),
-      resolvedHeader,
-    );
-    zoneDataRef.current = { home: homeData, gallery: galleryData, footer: footerData, navigation: navigationData };
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setBrandKit(seed.brandKit as PortfolioBrandKit);
     setContact(seed.contact as PortfolioContactConfig);
@@ -1869,7 +1708,6 @@ export function EditorShell({
       formLocale,
       formDir,
     }));
-    markRecoveryEdit();
     ignoreNextChange.current = true;
     // Already prepared — pass directly to Puck without double-prepareForEditor.
     setPuckSeed(homeData as unknown as Data);
@@ -1899,18 +1737,11 @@ export function EditorShell({
       return false;
     }
     const seedData = template.seedData({ workspace: { name: workspaceName || "Your Studio" } });
+    const homeData = prepareForEditor(seedData.home ?? EMPTY_ZONE) as unknown as PuckData;
+    const galleryData = prepareForEditor(seedData.gallery ?? EMPTY_ZONE) as unknown as PuckData;
     const seedHeader = template.defaultHeader ?? DEFAULT_HEADER_CONFIG;
-    const normalizedSeed = normalizeSharedChromeData(seedData, seedHeader);
-    const homeData = prepareForEditor(normalizedSeed.home) as unknown as PuckData;
-    const galleryData = prepareForEditor(normalizedSeed.gallery) as unknown as PuckData;
-    const footerData = prepareForEditor(normalizedSeed.footer) as unknown as PuckData;
     const seedCollectionsPopup = template.defaultCollectionsPopup ?? {};
-    zoneDataRef.current = {
-      home: homeData,
-      gallery: galleryData,
-      footer: footerData,
-      navigation: normalizedSeed.navigation,
-    };
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setBrandKit(template.defaultBrandKit);
     setContact(template.defaultContact);
@@ -1933,7 +1764,6 @@ export function EditorShell({
       formLocale,
       formDir,
     }));
-    markRecoveryEdit();
     ignoreNextChange.current = true;
     setPuckSeed(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
@@ -1952,10 +1782,12 @@ export function EditorShell({
   // ---- Spotlight guide helpers ----
 
   function openNormalEntryFlow() {
-    if (hasRecoverableBuffer) {
-      setEntryOpen(true);
-    } else if (drafts.length === 0) {
+    // Brand-new = no recoverable local buffer AND no saved drafts.
+    const isNewUser = !hasRecoverableBuffer && drafts.length === 0;
+    if (isNewUser) {
       setWelcomeTemplatesOpen(true);
+    } else {
+      setEntryOpen(true);
     }
   }
 
@@ -2007,13 +1839,8 @@ export function EditorShell({
   }
 
   function resetGuideCanvas() {
-    zoneDataRef.current = {
-      home: EMPTY_ZONE,
-      gallery: EMPTY_ZONE,
-      footer: EMPTY_ZONE,
-      navigation: createNavigationData(headerConfig),
-    };
-    setRenderDraftData(zoneDataRef.current);
+    zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
+    setRenderDraftData({ home: EMPTY_ZONE, gallery: EMPTY_ZONE });
     setPuckSeed(prepareForEditor(EMPTY_ZONE));
     setSeedNonce((n) => n + 1);
     setDragBaseline(0);
@@ -2135,41 +1962,7 @@ export function EditorShell({
     (key, values) => tLocationPicker(key, values)
   ).form;
   const previewZone = previewZoneFor(activeSection, activeZone);
-  const previewQuery = `zone=${previewZone}&v=${previewNonce}&formLocale=${formLocale}&formDir=${formDir}&draftId=${encodeURIComponent(activeDraftId ?? "")}&recovery=${previewRecoveryAllowed ? "1" : "0"}`;
-  const previewSrc = `${previewBasePath}?${previewQuery}`;
-  const editorRenderMetadata = useMemo<PortfolioRenderMetadata>(() => ({
-    workspace: {
-      _id: "",
-      name: workspaceName,
-      slug: currentSlug,
-      editorPreview: true,
-      publicPage: { collectionsPopup },
-      brandVars: cssVars,
-      chrome: {
-        navigation: {
-          labels: {
-            brand: workspaceName,
-            navLandmark: tNav("navLandmark"),
-            home: tNav("home"),
-            gallery: tNav("gallery"),
-            contact: tNav("contact"),
-            openMenu: tNav("openMenu"),
-            closeMenu: tNav("closeMenu"),
-          },
-          activePath: activeZone === "gallery" ? "/gallery" : "/",
-          homeHref: "/",
-          galleryHref: "/gallery",
-        },
-      },
-    },
-  }), [activeZone, collectionsPopup, cssVars, currentSlug, tNav, workspaceName]);
-  const sharedChromeCanvasValue = useMemo<SharedChromeCanvasValue>(() => ({
-    navigation: renderDraftData.navigation,
-    footer: renderDraftData.footer,
-    activeZone,
-    config: editorConfig as unknown as Config,
-    metadata: editorRenderMetadata,
-  }), [activeZone, editorConfig, editorRenderMetadata, renderDraftData.footer, renderDraftData.navigation]);
+  const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}&formLocale=${formLocale}&formDir=${formDir}`;
 
   // Stable references for Puck overrides that must not change identity on every
   // re-render. Puck treats a new function reference as a reason to unmount and
@@ -2202,10 +1995,15 @@ export function EditorShell({
       // `height: 100%` to resolve against.
       preview: ({ children }: { children: ReactNode }) => (
         <div data-tour-id="canvas-viewport" className="h-full w-full">
-          <SharedChromeCanvas>{children}</SharedChromeCanvas>
+          {children}
         </div>
       ),
       // Left sidebar drawer — tour anchor for the "drag a block" spotlight step.
+      drawer: ({ children }: { children: ReactNode }) => (
+        <div data-tour-id="blocks-panel" className="flex min-h-0 flex-1 flex-col">
+          {children}
+        </div>
+      ),
       // Right properties panel — tour anchor for the "block settings" spotlight step.
       // RightPanelTourMarker climbs to the sidebar column (grid-area: right) and
       // marks it as "properties-panel-full" so the step-3 cutout frames the full
@@ -2222,15 +2020,6 @@ export function EditorShell({
       actionBar: SuppressedActionBar,
     }),
     []
-  );
-
-  const drawerOverride = useMemo(
-    () => ({
-      drawer: ({ children }: { children: ReactNode }) => (
-        <NestedPresetDrawer presetTitle={t("puckConfig.categories.presets")}>{children}</NestedPresetDrawer>
-      ),
-    }),
-    [t],
   );
 
   // Wraps section-preset drawer items with PresetDrawerItem, which triggers
@@ -2330,7 +2119,7 @@ export function EditorShell({
           disabled={demoMode}
           onClick={() => {
             if (demoMode) return;
-            window.open(`${previewBasePath}?${previewQuery}`, "_blank", "noopener,noreferrer");
+            window.open(`${previewBasePath}?zone=${previewZone}`, "_blank", "noopener,noreferrer");
           }}
           className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
@@ -2401,7 +2190,7 @@ export function EditorShell({
             ref={nameEditorRef}
             name={draftName}
             error={pendingAction !== null ? null : nameError}
-            onCommit={(n) => { setDraftName(n); setNameError(null); markRecoveryEdit(); }}
+            onCommit={(n) => { setDraftName(n); setNameError(null); }}
           />
         </div>
       </>
@@ -2442,7 +2231,7 @@ export function EditorShell({
           value={formLocale as Parameters<typeof PortfolioLanguageControl>[0]["value"]}
           onChange={handleFormLocaleChange}
           dir={resolveEffectiveDir(formDir, formLocale)}
-          onDirChange={handleFormDirChange}
+          onDirChange={setFormDir}
         />
       </div>
     );
@@ -2530,7 +2319,6 @@ export function EditorShell({
           />
         )}
         {showPuck ? (
-          <SharedChromeCanvasContext.Provider value={sharedChromeCanvasValue}>
           <Puck
             key={`${activeZone}-${seedNonce}`}
             // Cast to the base Config so Puck's deep generic inference doesn't blow
@@ -2541,7 +2329,16 @@ export function EditorShell({
             onPublish={() => void handlePublish()}
             iframe={{ enabled: false }}
             headerTitle={headerTitle}
-            metadata={editorRenderMetadata}
+            metadata={{
+              workspace: {
+                _id: "",
+                name: workspaceName,
+                slug,
+                editorPreview: true,
+                publicPage: { collectionsPopup },
+                brandVars: cssVars,
+              },
+            }}
             viewports={[
               { width: 1280, label: t("devices.desktop"), icon: "Monitor" },
               { width: 768, label: t("devices.tablet"), icon: "Tablet" },
@@ -2571,7 +2368,7 @@ export function EditorShell({
                       formLocale={formLocale}
                       formDir={formDir}
                       onFormLocaleChange={handleFormLocaleChange}
-                      onFormDirChange={handleFormDirChange}
+                      onFormDirChange={setFormDir}
                     />,
                     <Button
                       type="button"
@@ -2593,13 +2390,11 @@ export function EditorShell({
               // preventing Puck from remounting the subtrees (scroll-to-top on canvas;
               // focus loss on every keystroke in the right-panel inputs).
               ...puckStableOverrides,
-              ...drawerOverride,
               // Fully stable identity (see drawerItemOverrides above), never
               // changes across renders.
               ...drawerItemOverrides,
             }}
           />
-          </SharedChromeCanvasContext.Provider>
         ) : (
           <div className="flex h-full flex-col">
             <div className="border-b border-border bg-card px-3 py-2">
@@ -2636,7 +2431,7 @@ export function EditorShell({
                   <ContactPanelDialog
                     open={contactOpen}
                     contact={contact}
-                      onContactChange={(next) => { setContact(next); markRecoveryEdit(); }}
+                    onContactChange={setContact}
                     brandKit={brandKit}
                     onSaved={saveContactSnapshot}
                     onCancel={() => closeContact(false)}
@@ -2649,7 +2444,7 @@ export function EditorShell({
                   </div>
                   <CollectionsPopupPanelDialog
                     config={collectionsPopup}
-                    onChange={(next) => { setCollectionsPopup(next); markRecoveryEdit(); }}
+                    onChange={setCollectionsPopup}
                     brandKit={brandKit}
                     onSaved={saveCollectionsPopupSnapshot}
                     onCancel={() => closeCollectionsPopup(false)}
@@ -2667,7 +2462,7 @@ export function EditorShell({
                   </div>
                   <HeaderPanelDialog
                     header={headerConfig}
-                      onHeaderChange={changeHeaderConfig}
+                    onHeaderChange={setHeaderConfig}
                     brandKit={brandKit}
                     workspaceName={workspaceName}
                     onSaved={saveHeaderSnapshot}
@@ -2714,7 +2509,7 @@ export function EditorShell({
       <ThemePanelDialog
         open={themeOpen}
         brandKit={brandKit}
-        onBrandKitChange={(next) => { setBrandKit(next); markRecoveryEdit(); }}
+        onBrandKitChange={setBrandKit}
         onSaved={() => closeTheme(true)}
         onCancel={() => closeTheme(false)}
         savedThemes={savedThemes}
@@ -2851,14 +2646,17 @@ export function EditorShell({
       {!demoMode && (
         <PortfolioEntryDialog
           open={entryOpen}
-          // Resume is the only action that applies the browser recovery buffer.
-          canContinue={hasRecoverableBuffer}
+          // "Continue where you left off" resumes the most recent state: the
+          // unsaved-edit buffer if present, otherwise the active draft. It is only
+          // disabled on a true first visit — no active draft now (initialActiveDraftId)
+          // nor a recoverable buffer from last time. Note the buffer is cleared on
+          // save/publish, so it must NOT be the sole gate.
+          canContinue={hasRecoverableBuffer || initialActiveDraftId !== null}
           hasDrafts={drafts.length > 0}
           onContinue={() => {
             // Resuming the existing buffer as-is — never inject a still-pending
             // onboarding logo into it or a later template switch.
             pendingOnboardingLogoRef.current = null;
-            applyBrowserRecovery();
             setEntryOpen(false);
           }}
           onLoadExisting={() => { setEntryOpen(false); setDraftsOpen(true); }}
@@ -2899,7 +2697,7 @@ export function EditorShell({
         saving={savingChanges}
         discarding={discarding}
         name={demoMode ? undefined : draftName}
-        onNameChange={demoMode ? undefined : (next) => { setDraftName(next); setNameError(validateDraftName(next)); markRecoveryEdit(); }}
+        onNameChange={demoMode ? undefined : (next) => { setDraftName(next); setNameError(validateDraftName(next)); }}
         nameLabel={t("draftNameLabel")}
         nameError={nameError}
         title={demoMode ? tDemo("createNewDesign.confirmTitle") : undefined}

@@ -23,23 +23,20 @@ import { PreviewContactCard } from "./_components/PreviewContactCard";
 import { PreviewContactModal } from "./_components/PreviewContactModal";
 import { PreviewClient } from "./_components/PreviewClient";
 import { PreviewBrandShell } from "./_components/PreviewBrandShell";
+import { PreviewHeaderShell } from "./_components/PreviewHeaderShell";
 import { PreviewPopupShell } from "./_components/PreviewPopupShell";
-import { PortfolioDraft } from "@/lib/db/models";
-import { Types } from "mongoose";
-import { normalizeSharedChromeData } from "@/lib/page-builder/sharedChrome";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
 // current (possibly unpublished) draft.
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-type PreviewZone = "home" | "gallery" | "footer" | "contact" | "popup";
+type PreviewZone = "home" | "gallery" | "contact" | "popup";
 
 function parseZone(value: string | string[] | undefined): PreviewZone {
   if (value === "gallery") return "gallery";
   if (value === "contact") return "contact";
   if (value === "popup") return "popup";
-  if (value === "footer") return "footer";
   return "home";
 }
 
@@ -71,8 +68,6 @@ export default async function PortfolioPreviewPage({
     zone?: string | string[];
     formLocale?: string | string[];
     formDir?: string | string[];
-    draftId?: string | string[];
-    recovery?: string | string[];
   }>;
 }) {
   const { locale } = await params;
@@ -84,21 +79,7 @@ export default async function PortfolioPreviewPage({
   if (role !== "owner") notFound();
 
   const pp = workspace.publicPage;
-  const requestedDraftId = typeof sp.draftId === "string" ? sp.draftId : "";
-  const selectedDraft = requestedDraftId && Types.ObjectId.isValid(requestedDraftId)
-    ? await PortfolioDraft.findOne({ _id: requestedDraftId, workspaceId: workspace._id }).lean()
-    : null;
-  const allowBrowserRecovery = sp.recovery === "1";
-  const sharedData = normalizeSharedChromeData(
-    {
-      home: (selectedDraft?.data?.home ?? pp?.data?.home) as PuckData | null,
-      gallery: (selectedDraft?.data?.gallery ?? pp?.data?.gallery) as PuckData | null,
-      navigation: (selectedDraft?.data?.navigation ?? pp?.data?.navigation) as PuckData | null,
-      footer: (selectedDraft?.data?.footer ?? pp?.data?.footer) as PuckData | null,
-    },
-    (selectedDraft?.header ?? pp?.header) as PortfolioHeaderConfig | null,
-  );
-  const { cssVars, className } = resolveBrandKit(selectedDraft?.brandKit ?? pp?.brandKit ?? DEFAULT_BRAND_KIT);
+  const { cssVars, className } = resolveBrandKit(pp?.brandKit ?? DEFAULT_BRAND_KIT);
 
   // A live in-editor language switch overrides the DB-resolved chrome locale —
   // pure override, not a new default (falls back to the existing resolution
@@ -116,22 +97,16 @@ export default async function PortfolioPreviewPage({
   );
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
   // DB fallback — PreviewHeaderShell overrides with the localStorage draft on mount.
+  const headerConfig = (pp?.header ?? null) as PortfolioHeaderConfig | null;
   // DB fallback — PreviewPopupShell overrides with the localStorage draft on mount.
-  const collectionsPopupConfig = (selectedDraft?.collectionsPopup ?? pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
-  const sharedPreviewParams = new URLSearchParams({
-    formLocale: chromeLocale,
-    formDir: effectiveDir,
-    draftId: requestedDraftId,
-    recovery: allowBrowserRecovery ? "1" : "0",
-  });
+  const collectionsPopupConfig = (pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
+  const activePath = zone === "gallery" ? `/w/${workspace.slug}/gallery` : `/w/${workspace.slug}`;
   // Keep the logo + Home link within the preview iframe; do not navigate to the
   // published public site.
-  const previewHomeHref = `/${locale}/portfolio-preview?${sharedPreviewParams.toString()}`;
+  const previewHomeHref = `/${locale}/portfolio-preview`;
   // Keep the Gallery link within the preview iframe; do not navigate to the
   // published public site.
-  const previewGalleryParams = new URLSearchParams(sharedPreviewParams);
-  previewGalleryParams.set("zone", "gallery");
-  const previewGalleryHref = `/${locale}/portfolio-preview?${previewGalleryParams.toString()}`;
+  const previewGalleryHref = `/${locale}/portfolio-preview?zone=gallery`;
 
   // Built unconditionally so PreviewContactModal can mount in home/gallery zones,
   // enabling the navbar Contact button to open the modal (mirrors public layout).
@@ -140,42 +115,8 @@ export default async function PortfolioPreviewPage({
     locale: chromeLocale,
     namespace: "app.bookings.locationPicker",
   });
-  const dbContact = (selectedDraft?.contact ?? pp?.contact ?? null) as PortfolioContactConfig | null;
+  const dbContact = (pp?.contact ?? null) as PortfolioContactConfig | null;
   const contactLabels = buildContactLabels(tForm, tLocationPicker);
-  const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
-  const renderWorkspace = {
-    ...buildRenderWorkspace(workspace),
-    locale: chromeLocale,
-    brandVars: cssVars,
-    chrome: {
-      startingFrom: t("startingFrom", { price: "{price}" }),
-      socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),
-      navigation: {
-        labels: {
-          brand: workspace.name,
-          navLandmark: tNav("navLandmark"),
-          home: tNav("home"),
-          gallery: tNav("gallery"),
-          contact: tNav("contact"),
-          openMenu: tNav("openMenu"),
-          closeMenu: tNav("closeMenu"),
-        },
-        activePath: zone === "gallery" ? previewGalleryHref : previewHomeHref,
-        homeHref: previewHomeHref,
-        galleryHref: previewGalleryHref,
-      },
-      gallery: {
-        empty: t("gallery.empty"),
-        noCollection: t("gallery.noCollection"),
-        unavailable: t("gallery.unavailable"),
-        error: t("gallery.error"),
-        featuredEmpty: t("gallery.featuredEmpty"),
-        carouselHint: t("gallery.carouselHint"),
-        carouselPrev: t("gallery.carouselPrev"),
-        carouselNext: t("gallery.carouselNext"),
-      },
-    },
-  };
 
   let body: React.ReactNode;
 
@@ -195,7 +136,30 @@ export default async function PortfolioPreviewPage({
     // No page header — the popup overlays the full viewport.
     body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} />;
   } else {
-    const fallbackData = sharedData[zone];
+    const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
+    const renderWorkspace = {
+      ...buildRenderWorkspace(workspace),
+      locale: chromeLocale,
+      brandVars: cssVars,
+      chrome: {
+        startingFrom: t("startingFrom", { price: "{price}" }),
+        socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),
+        gallery: {
+          empty: t("gallery.empty"),
+          noCollection: t("gallery.noCollection"),
+          unavailable: t("gallery.unavailable"),
+          error: t("gallery.error"),
+          featuredEmpty: t("gallery.featuredEmpty"),
+          carouselHint: t("gallery.carouselHint"),
+          carouselPrev: t("gallery.carouselPrev"),
+          carouselNext: t("gallery.carouselNext"),
+        },
+      },
+    };
+
+    const fallbackData: PuckData =
+      ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
+      { content: [], root: {} };
 
     body = (
       <PreviewClient
@@ -203,7 +167,6 @@ export default async function PortfolioPreviewPage({
         zone={zone}
         workspace={renderWorkspace}
         fallbackData={fallbackData}
-        allowBrowserRecovery={allowBrowserRecovery}
       />
     );
   }
@@ -217,27 +180,26 @@ export default async function PortfolioPreviewPage({
         slug={workspace.slug}
         fallbackCssVars={cssVars}
         fallbackClassName={className}
-        allowBrowserRecovery={allowBrowserRecovery}
       >
         {showHeader && (
-          <PreviewClient
+          <PreviewHeaderShell
             slug={workspace.slug}
-            zone="navigation"
-            workspace={renderWorkspace}
-            fallbackData={sharedData.navigation}
-            allowBrowserRecovery={allowBrowserRecovery}
+            fallbackConfig={headerConfig}
+            activePath={activePath}
+            homeHref={previewHomeHref}
+            galleryHref={previewGalleryHref}
+            labels={{
+              brand: workspace.name,
+              navLandmark: tNav("navLandmark"),
+              home: tNav("home"),
+              gallery: tNav("gallery"),
+              contact: tNav("contact"),
+              openMenu: tNav("openMenu"),
+              closeMenu: tNav("closeMenu"),
+            }}
           />
         )}
         {body}
-        {showHeader && zone !== "footer" && (
-          <PreviewClient
-            slug={workspace.slug}
-            zone="footer"
-            workspace={renderWorkspace}
-            fallbackData={sharedData.footer}
-            allowBrowserRecovery={allowBrowserRecovery}
-          />
-        )}
         {/* Mount contact modal only when the header is visible (home/gallery zones).
             The contact zone shows PreviewContactCard instead; popup zone has no header.
             This mirrors the public layout's ContactModal mount. */}

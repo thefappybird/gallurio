@@ -14,7 +14,6 @@ import type { PuckData } from "@/lib/page-builder/types";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { getTemplate } from "@/lib/page-builder/templates";
-import { normalizeSharedChromeData, readNavigationConfig } from "@/lib/page-builder/sharedChrome";
 import { deleteImage, verifyImageOwnership, updateImageMetadata, imageDeliveryUrl, DEMO_UPLOAD_SUBFOLDER } from "@/lib/storage/cloudflareImages";
 
 /** Auto-name for a draft created from an imported Portfolio Maker demo. */
@@ -28,12 +27,7 @@ export type DraftSummary = {
 };
 
 export type FullDraft = DraftSummary & {
-  data: {
-    home: PuckData | null;
-    gallery: PuckData | null;
-    navigation: PuckData | null;
-    footer: PuckData | null;
-  };
+  data: { home: PuckData | null; gallery: PuckData | null };
   brandKit: unknown;
   contact: unknown;
   header: unknown;
@@ -65,7 +59,6 @@ export async function createDraftAction(input: unknown): Promise<DraftMutationRe
 
   const parsed = createDraftSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "invalid_data" };
-  const normalizedData = normalizeSharedChromeData(parsed.data.data, parsed.data.header);
 
   await connectDB();
   const workspaceId = ctx.workspace._id;
@@ -97,7 +90,7 @@ export async function createDraftAction(input: unknown): Promise<DraftMutationRe
               workspaceId,
               name: parsed.data.name,
               templateId: parsed.data.templateId || "scratch",
-              data: normalizedData,
+              data: parsed.data.data,
               brandKit: parsed.data.brandKit,
               contact: parsed.data.contact,
               header: parsed.data.header,
@@ -127,7 +120,6 @@ export async function updateDraftAction(input: unknown): Promise<DraftMutationRe
 
   const parsed = updateDraftSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "invalid_data" };
-  const normalizedData = normalizeSharedChromeData(parsed.data.data, parsed.data.header);
 
   await connectDB();
   const workspaceId = ctx.workspace._id;
@@ -149,7 +141,7 @@ export async function updateDraftAction(input: unknown): Promise<DraftMutationRe
         $set: {
           name: parsed.data.name,
           templateId: parsed.data.templateId || "scratch",
-          data: normalizedData,
+          data: parsed.data.data,
           brandKit: parsed.data.brandKit,
           contact: parsed.data.contact,
           header: parsed.data.header,
@@ -225,8 +217,6 @@ export async function getDraftAction(id: unknown): Promise<DraftLoadResult> {
       data: {
         home: (doc.data?.home as PuckData | null) ?? null,
         gallery: (doc.data?.gallery as PuckData | null) ?? null,
-        navigation: (doc.data?.navigation as PuckData | null) ?? null,
-        footer: (doc.data?.footer as PuckData | null) ?? null,
       },
       brandKit: doc.brandKit ?? null,
       contact: doc.contact ?? null,
@@ -243,12 +233,7 @@ export type SeedTemplateResult =
       ok: true;
       seed: {
         templateId: string;
-        data: {
-          home: PuckData;
-          gallery: PuckData;
-          navigation: PuckData;
-          footer: PuckData;
-        };
+        data: { home: PuckData; gallery: PuckData };
         brandKit: unknown;
         contact: unknown;
         header: unknown;
@@ -275,23 +260,13 @@ export async function seedTemplateAction(templateId: unknown): Promise<SeedTempl
     workspace: { name: ctx.workspace.name as string },
   });
 
-  const normalizedData = normalizeSharedChromeData(
-    {
-      home: (data.home as PuckData) ?? null,
-      gallery: (data.gallery as PuckData) ?? null,
-    },
-    template.defaultHeader,
-  );
-
   return {
     ok: true,
     seed: {
       templateId: template.id,
       data: {
-        home: normalizedData.home,
-        gallery: normalizedData.gallery,
-        navigation: normalizedData.navigation,
-        footer: normalizedData.footer,
+        home: (data.home as PuckData) ?? { content: [], root: {} },
+        gallery: (data.gallery as PuckData) ?? { content: [], root: {} },
       },
       brandKit: template.defaultBrandKit,
       contact: template.defaultContact,
@@ -330,17 +305,8 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   const liveLogoAssetId = workspace?.publicPage?.header?.logoAssetId || undefined;
 
   const wsIdStr = String(workspaceId);
-  const normalizedData = normalizeSharedChromeData(
-    {
-      home: (doc.data?.home as PuckData | null) ?? null,
-      gallery: (doc.data?.gallery as PuckData | null) ?? null,
-      navigation: (doc.data?.navigation as PuckData | null) ?? null,
-      footer: (doc.data?.footer as PuckData | null) ?? null,
-    },
-    doc.header,
-  );
-  const home = normalizedData.home;
-  const gallery = normalizedData.gallery;
+  const home = (doc.data?.home as PuckData | null) ?? null;
+  const gallery = (doc.data?.gallery as PuckData | null) ?? null;
 
   const set: Record<string, unknown> = {};
   set["publicPage.data.home"] = home
@@ -349,8 +315,6 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   set["publicPage.data.gallery"] = gallery
     ? await reconcileFeaturedCollections(wsIdStr, await reconcileGalleryImages(wsIdStr, gallery))
     : null;
-  set["publicPage.data.navigation"] = normalizedData.navigation;
-  set["publicPage.data.footer"] = normalizedData.footer;
   // A fully-saved draft always carries these (brandKit required, the rest default
   // to {}). The guards only skip a null left by a migrated/legacy draft, so we
   // never overwrite live published config with null.
@@ -363,15 +327,14 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   // must not leave the leak-safe delete below computing against a value that
   // was never actually written.
   const settingsDraftLogo = workspace?.publicPage?.settingsDraft?.logo;
-  const navigationHeader = readNavigationConfig(normalizedData.navigation, doc.header ?? {});
-  if (doc.header || normalizedData.navigation || settingsDraftLogo) {
+  if (doc.header || settingsDraftLogo) {
     set["publicPage.header"] = settingsDraftLogo
       ? {
-          ...navigationHeader,
+          ...(doc.header ?? {}),
           logoUrl: settingsDraftLogo.assetId ? settingsDraftLogo.url ?? "" : "",
           logoAssetId: settingsDraftLogo.assetId ?? "",
         }
-      : navigationHeader;
+      : doc.header;
   }
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
   set["publicPage.formLocale"] = doc.formLocale ?? "";

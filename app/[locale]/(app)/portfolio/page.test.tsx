@@ -19,6 +19,10 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: () => requireOrgMock(),
 }));
 
+vi.mock("@/lib/page-builder/seedPortfolio", () => ({
+  seedDefaultPortfolio: vi.fn(async () => null),
+}));
+
 vi.mock("@/lib/page-builder/reconcile", () => ({
   reconcileGalleryImages: vi.fn(async (_ws: string, zone: unknown) => zone),
   reconcileFeaturedCollections: vi.fn(async (_ws: string, zone: unknown) => zone),
@@ -34,26 +38,17 @@ vi.mock("./_components/EditorShell", () => ({
     initialSeoKeywords,
     initialInquiryRecipientEmail,
     hasBeenPublished,
-    initialData,
-    initialActiveDraftId,
-    initialActiveDraftName,
   }: {
     initialSeoDescription: string;
     initialSeoKeywords: string[];
     initialInquiryRecipientEmail: string;
     hasBeenPublished: boolean;
-    initialData: unknown;
-    initialActiveDraftId: string | null;
-    initialActiveDraftName: string;
   }) => (
     <div>
       <div data-testid="seo-description">{initialSeoDescription}</div>
       <div data-testid="seo-keywords">{JSON.stringify(initialSeoKeywords)}</div>
       <div data-testid="inquiry-recipient">{initialInquiryRecipientEmail}</div>
       <div data-testid="has-been-published">{String(hasBeenPublished)}</div>
-      <div data-testid="initial-data">{JSON.stringify(initialData)}</div>
-      <div data-testid="active-draft-id">{initialActiveDraftId}</div>
-      <div data-testid="active-draft-name">{initialActiveDraftName}</div>
     </div>
   ),
 }));
@@ -94,73 +89,6 @@ function mockRequireOrg(workspace: { _id: Types.ObjectId; slug: string; name: st
 }
 
 describe("PageBuilderEntry — SEO fields read from active draft", () => {
-  it("loads the newest durable draft before published content and does not seed scratch", async () => {
-    const ws = await seedWorkspace();
-    const older = await PortfolioDraft.create({
-      workspaceId: ws._id,
-      name: "Older",
-      templateId: "scratch",
-      data: {
-        home: { content: [{ type: "HeroPreset", props: { id: "older" } }], root: {} },
-        gallery: { content: [], root: {} },
-      },
-    });
-    const newest = await PortfolioDraft.create({
-      workspaceId: ws._id,
-      name: "Newest",
-      templateId: "scratch",
-      data: {
-        home: { content: [{ type: "HeroPreset", props: { id: "newest" } }], root: {} },
-        gallery: { content: [], root: {} },
-      },
-    });
-    await PortfolioDraft.collection.updateOne(
-      { _id: older._id },
-      { $set: { updatedAt: new Date("2026-08-30T00:00:00.000Z") } },
-    );
-    await PortfolioDraft.collection.updateOne(
-      { _id: newest._id },
-      { $set: { updatedAt: new Date("2026-09-01T00:00:00.000Z") } },
-    );
-
-    mockRequireOrg(
-      { _id: ws._id, slug: ws.slug, name: ws.name, businessType: "photographer" },
-      {
-        data: {
-          home: { content: [{ type: "HeroPreset", props: { id: "published" } }], root: {} },
-          gallery: { content: [], root: {} },
-        },
-      },
-    );
-
-    render(await PageBuilderEntry({ params: Promise.resolve({ locale: "en" }) }));
-
-    expect(screen.getByTestId("active-draft-id")).toHaveTextContent(String(newest._id));
-    expect(screen.getByTestId("active-draft-name")).toHaveTextContent("Newest");
-    expect(screen.getByTestId("initial-data")).toHaveTextContent("newest");
-    expect(screen.getByTestId("initial-data")).not.toHaveTextContent("published");
-  });
-
-  it("falls back to published portfolio content when no durable draft exists", async () => {
-    const ws = await seedWorkspace();
-    const publishedData = {
-      home: { content: [{ type: "HeroPreset", props: { id: "published-home" } }], root: {} },
-      gallery: { content: [], root: {} },
-    };
-    await Workspace.updateOne(
-      { _id: ws._id },
-      { $set: { "publicPage.data": publishedData, "publicPage.templateId": "scratch" } },
-    );
-    mockRequireOrg(
-      { _id: ws._id, slug: ws.slug, name: ws.name, businessType: "photographer" },
-      { data: publishedData, templateId: "scratch" },
-    );
-
-    render(await PageBuilderEntry({ params: Promise.resolve({ locale: "en" }) }));
-
-    expect(screen.getByTestId("initial-data")).toHaveTextContent("published-home");
-  });
-
   it("reads initialSeoDescription/initialSeoKeywords from the active draft, not stale publicPage", async () => {
     const ws = await seedWorkspace();
     // Seed a draft with fresh SEO fields (this is what a real prior save wrote to).
@@ -199,11 +127,12 @@ describe("PageBuilderEntry — SEO fields read from active draft", () => {
     expect(drafts[0]._id.toString()).toBe(draft._id.toString());
   });
 
-  it("falls back to a clean scratch document when there is no durable or published content", async () => {
+  it("falls back to empty defaults when there is no active draft (no drafts, nothing to migrate)", async () => {
     const ws = await seedWorkspace();
 
-    // No published content means there is nothing to migrate, so no durable
-    // draft is synthesized and the editor receives empty scratch Puck data.
+    // No home/gallery content in the live publicPage and seedDefaultPortfolio is
+    // mocked to return null — ensureLegacyDraftMigrated has nothing to migrate,
+    // so no draft ever gets created and listDraftsAction() legitimately returns [].
     mockRequireOrg(
       { _id: ws._id, slug: ws.slug, name: ws.name, businessType: "photographer" },
       {
@@ -220,7 +149,6 @@ describe("PageBuilderEntry — SEO fields read from active draft", () => {
 
     expect(screen.getByTestId("seo-description")).toHaveTextContent("");
     expect(screen.getByTestId("seo-keywords")).toHaveTextContent(JSON.stringify([]));
-    expect(screen.getByTestId("initial-data")).toHaveTextContent('"home":{"content":[]');
 
     expect(await PortfolioDraft.countDocuments({ workspaceId: ws._id })).toBe(0);
   });

@@ -37,7 +37,6 @@ describe("PreviewBrandShell", () => {
         slug={SLUG}
         fallbackCssVars={{ "--pf-color-bg": "#ffffff" }}
         fallbackClassName="pf-theme-minimal pf-button-solid"
-        allowBrowserRecovery
       >
         <span data-testid="child">content</span>
       </PreviewBrandShell>,
@@ -70,7 +69,6 @@ describe("PreviewBrandShell", () => {
         slug={SLUG}
         fallbackCssVars={{}}
         fallbackClassName="pf-theme-minimal pf-button-solid"
-        allowBrowserRecovery
       >
         <span>content</span>
       </PreviewBrandShell>,
@@ -181,7 +179,7 @@ describe("PreviewBrandShell", () => {
 
   it("does not server-render fallback children before the local draft is read", () => {
     const html = renderToStaticMarkup(
-      <PreviewBrandShell slug={SLUG} fallbackCssVars={{}} fallbackClassName="" allowBrowserRecovery>
+      <PreviewBrandShell slug={SLUG} fallbackCssVars={{}} fallbackClassName="">
         <span>Published fallback</span>
       </PreviewBrandShell>,
     );

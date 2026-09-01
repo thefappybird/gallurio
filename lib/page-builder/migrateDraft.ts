@@ -2,8 +2,6 @@ import type { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, PortfolioDraft } from "@/lib/db/models";
 import { DEFAULT_DRAFT_NAME } from "./drafts";
-import { normalizeSharedChromeData } from "./sharedChrome";
-import type { PortfolioHeaderConfig, PuckData } from "./types";
 
 /**
  * One-time, idempotent migration: when a workspace has no drafts yet but already
@@ -21,26 +19,14 @@ export async function ensureLegacyDraftMigrated(workspaceId: Types.ObjectId): Pr
   const home = pp?.data?.home ?? null;
   // null is the intentional empty-zone shape for an unpopulated page, matching publicPage.data.
   const gallery = pp?.data?.gallery ?? null;
-  const navigation = pp?.data?.navigation ?? null;
-  const footer = pp?.data?.footer ?? null;
-  if (!home && !gallery && !navigation && !footer) return;
-
-  const normalizedData = normalizeSharedChromeData(
-    {
-      home: home as PuckData | null,
-      gallery: gallery as PuckData | null,
-      navigation: navigation as PuckData | null,
-      footer: footer as PuckData | null,
-    },
-    pp?.header as PortfolioHeaderConfig | null,
-  );
+  if (!home && !gallery) return;
 
   try {
     await PortfolioDraft.create({
       workspaceId,
       name: DEFAULT_DRAFT_NAME,
       templateId: pp?.templateId ?? "",
-      data: normalizedData,
+      data: { home, gallery },
       brandKit: pp?.brandKit ?? null,
       contact: pp?.contact ?? null,
       header: pp?.header ?? null,

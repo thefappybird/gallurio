@@ -228,12 +228,11 @@ describe("GalleryLandingPreset carousel hint", () => {
   });
 });
 
-describe("editorPuckConfig.categories — nested presets, manual, and shared chrome", () => {
-  it("lists every registered insertable component exactly once while hiding shared chrome", () => {
+describe("editorPuckConfig.categories — 11 preset groups + manual", () => {
+  it("has exactly the 11 group ids plus manual, and lists every registered component exactly once", () => {
     const categories = editorPuckConfig.categories as Record<string, { title?: string; components?: string[] }>;
     const expectedGroupIds = PRESET_GROUPS.map((g) => g.id);
-    expect(Object.keys(categories).sort()).toEqual([...expectedGroupIds, "manual", "chrome"].sort());
-    expect(editorPuckConfig.categories?.chrome?.visible).toBe(false);
+    expect(Object.keys(categories).sort()).toEqual([...expectedGroupIds, "manual"].sort());
 
     const seen = new Set<string>();
     for (const [catId, cat] of Object.entries(categories)) {

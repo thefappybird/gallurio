@@ -4,6 +4,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
 import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG, type PortfolioBrandKit, type PortfolioCollectionsPopupConfig, type PortfolioContactConfig, type PortfolioHeaderConfig, type PortfolioSavedTheme, type PuckData } from "@/lib/page-builder/types";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
+import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
 import { ensureLegacyDraftMigrated } from "@/lib/page-builder/migrateDraft";
@@ -12,7 +13,6 @@ import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { portfolioHeaderLogoUrl } from "@/lib/storage/portfolioAssetUrls";
 import { portfolioBaseDomain } from "@/lib/portfolio/publicUrl";
 import { PortfolioDraft } from "@/lib/db/models";
-import { normalizeSharedChromeData, readNavigationConfig } from "@/lib/page-builder/sharedChrome";
 
 export async function generateMetadata({
   params,
@@ -24,6 +24,8 @@ export async function generateMetadata({
   const t = await getTranslations("app.pageBuilder");
   return { title: t("title") };
 }
+
+const EMPTY_ZONE: PuckData = { content: [], root: {} };
 
 // Strip to plain, serializable JSON before crossing the server→client boundary.
 function toPlain<T>(value: unknown, fallback: T): T {
@@ -57,58 +59,35 @@ export default async function PageBuilderEntry({
 
   const pp = workspace.publicPage;
 
-  // Resolve durable work before considering published content or a scratch
-  // seed. Draft summaries are ordered by updatedAt descending.
-  await ensureLegacyDraftMigrated(workspace._id);
-  const initialDrafts = await listDraftsAction();
-  const activeDraft = initialDrafts[0] ?? null;
-  const initialActiveDraftId = activeDraft?.id ?? null;
-  const initialActiveDraftName = activeDraft?.name ?? DEFAULT_DRAFT_NAME;
-  const activeDraftDoc = initialActiveDraftId
-    ? await PortfolioDraft.findOne({ _id: initialActiveDraftId, workspaceId: workspace._id }).lean()
-    : null;
-
-  // With no durable draft, published content is the fallback. If neither
-  // exists, normalization below supplies a genuine empty scratch document.
-  const homeData: unknown = pp?.data?.home ?? null;
-  const galleryData: unknown = pp?.data?.gallery ?? null;
-  const brandKitData: unknown = pp?.brandKit ?? null;
-  const contactData: unknown = pp?.contact ?? null;
+  // First visit (no seeded home) → seed the closest starter template inline so
+  // the editor opens on a real page (the wizard is gone; the guide overlay and
+  // template switcher take its place). Idempotent + race-safe.
+  let homeData: unknown = pp?.data?.home ?? null;
+  let galleryData: unknown = pp?.data?.gallery ?? null;
+  let brandKitData: unknown = pp?.brandKit ?? null;
+  let contactData: unknown = pp?.contact ?? null;
   let templateId: string = pp?.templateId ?? "scratch";
+  if (!homeData) {
+    const seed = await seedDefaultPortfolio(workspace._id);
+    if (seed) {
+      homeData = seed.data.home;
+      galleryData = seed.data.gallery;
+      brandKitData = seed.brandKit;
+      contactData = seed.contact;
+      templateId = seed.templateId;
+    }
+  }
 
   const workspaceId = String(workspace._id);
-  const guideDismissed = Boolean(pp?.guideDismissedAt);
-  const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
-  const storyPromptCompleted = Boolean(pp?.storyPromptCompletedAt);
-  const workspaceBusinessType = workspace.businessType ?? "";
-
-  const durableOrPublishedData = normalizeSharedChromeData(
-    {
-      home: toPlain<PuckData | null>(activeDraftDoc?.data?.home, null) ?? toPlain<PuckData | null>(homeData, null),
-      gallery: toPlain<PuckData | null>(activeDraftDoc?.data?.gallery, null) ?? toPlain<PuckData | null>(galleryData, null),
-      navigation:
-        toPlain<PuckData | null>(activeDraftDoc?.data?.navigation, null) ??
-        toPlain<PuckData | null>(pp?.data?.navigation, null),
-      footer:
-        toPlain<PuckData | null>(activeDraftDoc?.data?.footer, null) ??
-        toPlain<PuckData | null>(pp?.data?.footer, null),
-    },
-    toPlain<PortfolioHeaderConfig>(activeDraftDoc?.header ?? pp?.header, DEFAULT_HEADER_CONFIG),
-  );
-  const reconcileZone = async (raw: PuckData) =>
-    reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, raw));
+  const reconcileZone = async (raw: unknown) =>
+    reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, toPlain<PuckData>(raw, EMPTY_ZONE)));
   const initialData = {
-    home: await reconcileZone(durableOrPublishedData.home),
-    gallery: await reconcileZone(durableOrPublishedData.gallery),
-    navigation: durableOrPublishedData.navigation,
-    footer: await reconcileZone(durableOrPublishedData.footer),
+    home: await reconcileZone(homeData),
+    gallery: await reconcileZone(galleryData),
   };
-  const initialBrandKit = toPlain<PortfolioBrandKit>(activeDraftDoc?.brandKit ?? brandKitData, DEFAULT_BRAND_KIT);
-  const initialContact = toPlain<PortfolioContactConfig>(activeDraftDoc?.contact ?? contactData, {});
-  const rawInitialHeaderConfig = readNavigationConfig(
-    initialData.navigation,
-    toPlain<PortfolioHeaderConfig>(activeDraftDoc?.header ?? pp?.header, DEFAULT_HEADER_CONFIG),
-  );
+  const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
+  const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
+  const rawInitialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
   const initialHeaderConfig = {
     ...rawInitialHeaderConfig,
     logoUrl: portfolioHeaderLogoUrl({
@@ -116,18 +95,32 @@ export default async function PageBuilderEntry({
       assetId: rawInitialHeaderConfig.logoAssetId,
     }),
   };
-  const initialCollectionsPopup = toPlain<PortfolioCollectionsPopupConfig>(
-    activeDraftDoc?.collectionsPopup ?? pp?.collectionsPopup,
-    {},
-  );
-  const initialFormLocale = toPlain<string>(activeDraftDoc?.formLocale ?? pp?.formLocale, "");
-  const initialFormDir = toPlain<string>(activeDraftDoc?.formDir ?? pp?.formDir, "");
-  templateId = activeDraftDoc?.templateId || templateId;
+  const initialCollectionsPopup = toPlain<PortfolioCollectionsPopupConfig>(pp?.collectionsPopup ?? null, {});
+  const initialFormLocale = toPlain<string>(pp?.formLocale, "");
+  const initialFormDir = toPlain<string>(pp?.formDir, "");
+  const guideDismissed = Boolean(pp?.guideDismissedAt);
+  const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
+  const storyPromptCompleted = Boolean(pp?.storyPromptCompletedAt);
+  const workspaceBusinessType = workspace.businessType ?? "";
+
+  // Migrate legacy publicPage.data into a draft if this workspace has no drafts yet.
+  await ensureLegacyDraftMigrated(workspace._id);
+  const initialDrafts = await listDraftsAction();
+  // First-paint active draft = newest (migrated/most recent). The client entry
+  // chooser lets the owner pick differently.
+  const activeDraft = initialDrafts[0] ?? null;
+  const initialActiveDraftId = activeDraft?.id ?? null;
+  const initialActiveDraftName = activeDraft?.name ?? DEFAULT_DRAFT_NAME;
 
   // Bundled SEO fields (description/keywords) now live on the active draft, not
   // the stale published publicPage — read from the resolved active draft so a
   // page reload reflects the last save instead of reverting to live values.
-  const activeDraftSeo = activeDraftDoc;
+  const activeDraftSeo = initialActiveDraftId
+    ? await PortfolioDraft.findOne(
+        { _id: initialActiveDraftId },
+        { seoDescription: 1, "seo.keywords": 1 },
+      ).lean()
+    : null;
   const initialSeoDescription = activeDraftSeo?.seoDescription ?? "";
   const initialSeoKeywords = toPlain<string[]>(activeDraftSeo?.seo?.keywords, []);
 

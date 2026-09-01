@@ -49,38 +49,6 @@ describe("ensureLegacyDraftMigrated", () => {
     expect(await PortfolioDraft.countDocuments({ workspaceId: ws._id })).toBe(0);
   });
 
-  it("migrates shared chrome even when both page documents are empty", async () => {
-    const ws = await Workspace.create({
-      slug: `s-${Math.round(Math.random() * 1e9)}`,
-      name: "Studio",
-      ownerUserId: "u",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
-      currency: "PHP",
-      plan: "free",
-      publicPage: {
-        data: {
-          home: null,
-          gallery: null,
-          navigation: {
-            content: [{ type: "Navigation", props: { id: "shared-navigation", config: { brandText: "Studio" } } }],
-            root: {},
-          },
-          footer: {
-            content: [{ type: "FooterSignaturePreset", props: { id: "shared-footer" } }],
-            root: {},
-          },
-        },
-        latestVersion: 0,
-      },
-    });
-
-    await ensureLegacyDraftMigrated(ws._id);
-    const draft = await PortfolioDraft.findOne({ workspaceId: ws._id }).lean();
-
-    expect(draft?.data?.navigation).toBeTruthy();
-    expect(draft?.data?.footer).toBeTruthy();
-  });
-
   it("carries forward existing seoTitle/siteIcon/seo.* onto the migrated draft", async () => {
     const ws = await Workspace.create({
       slug: `s-${Math.round(Math.random() * 1e9)}`,

@@ -25,13 +25,6 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: () => requireOrg(),
 }));
 
-const { portfolioDraftFindOne } = vi.hoisted(() => ({
-  portfolioDraftFindOne: vi.fn(),
-}));
-vi.mock("@/lib/db/models", () => ({
-  PortfolioDraft: { findOne: portfolioDraftFindOne },
-}));
-
 vi.mock("@/lib/page-builder/resolveBrandKit", () => ({
   resolveBrandKit: vi.fn(() => ({ cssVars: {}, className: "preview-theme" })),
 }));
@@ -93,26 +86,8 @@ vi.mock("./_components/PreviewContactCard", () => ({
 }));
 
 vi.mock("./_components/PreviewClient", () => ({
-  PreviewClient: ({ zone, slug, workspace, fallbackData, allowBrowserRecovery }: {
-    zone: string;
-    slug: string;
-    workspace: { chrome?: { navigation?: { activePath?: string; labels?: { home?: string } } } };
-    fallbackData: { content?: Array<{ props?: { id?: string; headline?: string; config?: { brandText?: string } } }> };
-    allowBrowserRecovery?: boolean;
-  }) => (
-    <div data-testid={`preview-client-${zone}`} data-recovery={String(Boolean(allowBrowserRecovery))}>
-      {zone}:{slug}
-      <div data-testid={`fallback-${zone}`}>
-        {fallbackData.content?.[0]?.props?.id ?? fallbackData.content?.[0]?.props?.headline ?? ""}
-      </div>
-      {zone === "navigation" && (
-        <>
-          <div data-testid="header-home">{workspace.chrome?.navigation?.labels?.home}</div>
-          <div data-testid="header-brand">{fallbackData.content?.[0]?.props?.config?.brandText}</div>
-          <div data-testid="header-active-path">{workspace.chrome?.navigation?.activePath}</div>
-        </>
-      )}
-    </div>
+  PreviewClient: ({ zone, slug }: { zone: string; slug: string }) => (
+    <div data-testid="preview-client">{zone}:{slug}</div>
   ),
 }));
 
@@ -121,11 +96,9 @@ import PortfolioPreviewPage from "./page";
 describe("PortfolioPreviewPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    portfolioDraftFindOne.mockReturnValue({ lean: vi.fn(async () => null) });
     requireOrg.mockResolvedValue({
       role: "owner",
       workspace: {
-        _id: "workspace-1",
         slug: "studio-aurora",
         name: "Studio Aurora",
         publicPage: {
@@ -149,9 +122,9 @@ describe("PortfolioPreviewPage", () => {
 
     render(page);
 
-    const client = screen.getByTestId("preview-client-home");
+    const client = screen.getByTestId("preview-client");
     expect(client).toHaveTextContent("home:studio-aurora");
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/en/portfolio-preview");
+    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora");
   });
 
   it("renders PreviewClient for gallery zone with correct active path", async () => {
@@ -162,9 +135,9 @@ describe("PortfolioPreviewPage", () => {
 
     render(page);
 
-    const client = screen.getByTestId("preview-client-gallery");
+    const client = screen.getByTestId("preview-client");
     expect(client).toHaveTextContent("gallery:studio-aurora");
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("zone=gallery");
+    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora/gallery");
   });
 
   it("renders contact zone from DB values (no draft param)", async () => {
@@ -190,45 +163,6 @@ describe("PortfolioPreviewPage", () => {
 
     render(page);
 
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("zone=gallery");
-  });
-
-  it("resolves the explicitly selected durable draft without consuming browser recovery", async () => {
-    portfolioDraftFindOne.mockReturnValue({
-      lean: vi.fn(async () => ({
-        data: {
-          home: { content: [{ type: "HeroPreset", props: { id: "selected-draft-home" } }], root: {} },
-          gallery: { content: [], root: {} },
-          navigation: {
-            content: [{ type: "Navigation", props: { id: "shared-navigation", config: { brandText: "Draft brand" } } }],
-            root: {},
-          },
-          footer: { content: [], root: {} },
-        },
-        brandKit: null,
-        contact: { title: "Draft contact" },
-        header: { brandText: "Legacy draft brand" },
-        collectionsPopup: {},
-        formLocale: "",
-        formDir: "",
-      })),
-    });
-
-    const page = await PortfolioPreviewPage({
-      params: Promise.resolve({ locale: "en" }),
-      searchParams: Promise.resolve({
-        zone: "home",
-        draftId: "66d5f72f3a1e2b4c5d6e7f80",
-      }),
-    });
-    render(page);
-
-    expect(portfolioDraftFindOne).toHaveBeenCalledWith({
-      _id: "66d5f72f3a1e2b4c5d6e7f80",
-      workspaceId: "workspace-1",
-    });
-    expect(screen.getByTestId("fallback-home")).toHaveTextContent("selected-draft-home");
-    expect(screen.getByTestId("header-brand")).toHaveTextContent("Draft brand");
-    expect(screen.getByTestId("preview-client-home")).toHaveAttribute("data-recovery", "false");
+    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora/gallery");
   });
 });

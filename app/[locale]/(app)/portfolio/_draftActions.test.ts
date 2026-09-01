@@ -207,24 +207,7 @@ describe("publishDraftAction", () => {
     const created = await createDraftAction({
       name: "Live",
       ...snapshot,
-      data: {
-        home: {
-          content: [
-            { type: "HeroPreset", props: { id: "h" } },
-            { type: "FooterSignaturePreset", props: { id: "legacy-local-footer" } },
-          ],
-          root: {},
-        },
-        gallery: { content: [], root: {} },
-        navigation: {
-          content: [{ type: "Navigation", props: { id: "shared-navigation", config: { brandText: "Draft brand" } } }],
-          root: {},
-        },
-        footer: {
-          content: [{ type: "FooterDirectoryPreset", props: { id: "shared-footer" } }],
-          root: {},
-        },
-      },
+      data: { home: { content: [{ type: "HeroPreset", props: { id: "h" } }], root: {} }, gallery: { content: [], root: {} } },
     });
     if (!("ok" in created)) throw new Error("setup failed");
 
@@ -235,8 +218,6 @@ describe("publishDraftAction", () => {
     expect(ws!.publicPage!.publishedAt).toBeInstanceOf(Date);
     expect(ws!.publicPage!.lastPublishedAt).toBeInstanceOf(Date);
     expect((ws!.publicPage!.data!.home as { content: unknown[] }).content.length).toBe(1);
-    expect((ws!.publicPage!.data!.navigation as { content: Array<{ props: { config: { brandText: string } } }> }).content[0].props.config.brandText).toBe("Draft brand");
-    expect((ws!.publicPage!.data!.footer as { content: Array<{ props: { id: string } }> }).content[0].props.id).toBe("shared-footer");
   });
 
   it("rejects a draft from another workspace (tenant isolation)", async () => {

@@ -78,7 +78,6 @@ import {
 } from "./blocks/VideoBlock";
 import { EditorContainerAnchor } from "./blocks/EditorContainerAnchor";
 import { masonryCloneBlockConfig, type MasonryCloneProps } from "./blocks/MasonryCloneBlock";
-import { navigationBlockConfig, type NavigationBlockProps } from "./blocks/NavigationBlock";
 import {
   HeadingBlock,
   TextBlock,
@@ -130,7 +129,6 @@ type EditorComponents = Record<SectionPresetKey, ContainerBlockProps> & {
   Container: ContainerBlockProps;
   ContainerAnchor: ContainerAnchorProps;
   MasonryClone: MasonryCloneProps;
-  Navigation: NavigationBlockProps;
 };
 
 // ---------------------------------------------------------------------------
@@ -554,15 +552,19 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     defaultProps: galleryGridDefaultProps,
     // `images` is intentionally absent — the editor drives it via StyleToolkitField.
     // columns/gap moved to _style.galleryColumns/_style.galleryGap (Layout tab Gallery section).
-    // Legacy background props still render from saved data, but are not fields.
+    // Banner fields are hidden (visible: false) and managed by StyleToolkitField;
+    // resolveFields strips them so they never appear in the standard Puck sidebar.
     fields: {
       _style: styleField,
       content: { type: "slot", allow: ["Image"] },
+      backgroundImages: { type: "array", label: t("puckConfig.fields.backgroundImages"), visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryGridProps["backgroundImages"]>,
+      bgAnimation: { type: "select", label: t("puckConfig.fields.bgAnimationShort"), visible: false, options: [{ label: t("puckConfig.options.bgAnimation.crossfade"), value: "crossfade" }, { label: t("puckConfig.options.bgAnimation.kenburns"), value: "kenburns" }, { label: t("puckConfig.options.bgAnimation.slide"), value: "slide" }] } as unknown as Field<GalleryGridProps["bgAnimation"]>,
+      bgSpeed: { type: "select", label: t("puckConfig.fields.bgSpeedShort"), visible: false, options: [{ label: t("puckConfig.options.bgSpeedShort.slow"), value: "slow" }, { label: t("puckConfig.options.bgSpeedShort.medium"), value: "medium" }, { label: t("puckConfig.options.bgSpeedShort.fast"), value: "fast" }] } as unknown as Field<GalleryGridProps["bgSpeed"]>,
+      overlayOpacity: { type: "number", label: t("puckConfig.fields.overlayOpacity"), visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
       minHeight: { type: "select", label: t("puckConfig.fields.minHeight"), visible: false, options: [{ label: t("puckConfig.options.minHeightShort.auto"), value: "auto" }, { label: t("puckConfig.options.minHeightShort.short"), value: "short" }, { label: t("puckConfig.options.minHeightShort.medium"), value: "medium" }, { label: t("puckConfig.options.minHeightShort.tall"), value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
     } as unknown as Fields<GalleryGridProps>,
     resolveFields: (_data, { fields }) => {
-      const rest = { ...(fields as Record<string, unknown>) };
-      delete rest.minHeight;
+      const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
       return rest as typeof fields;
     },
     render: GalleryGridBlock,
@@ -574,7 +576,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     defaultProps: galleryMasonryDefaultProps,
     // `images` is intentionally absent — driven by StyleToolkitField.
     // columns/gap moved to _style.galleryColumns/_style.galleryGap (Layout tab Gallery section).
-    // Legacy background props still render from saved data, but are not fields.
+    // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
     fields: {
       _style: styleField,
       content: { type: "slot", allow: ["Image"] },
@@ -582,11 +584,14 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
       column2: { type: "slot", allow: ["Image", "MasonryClone"] },
       column3: { type: "slot", allow: ["Image", "MasonryClone"] },
       column4: { type: "slot", allow: ["Image", "MasonryClone"] },
+      backgroundImages: { type: "array", label: t("puckConfig.fields.backgroundImages"), visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryMasonryProps["backgroundImages"]>,
+      bgAnimation: { type: "select", label: t("puckConfig.fields.bgAnimationShort"), visible: false, options: [{ label: t("puckConfig.options.bgAnimation.crossfade"), value: "crossfade" }, { label: t("puckConfig.options.bgAnimation.kenburns"), value: "kenburns" }, { label: t("puckConfig.options.bgAnimation.slide"), value: "slide" }] } as unknown as Field<GalleryMasonryProps["bgAnimation"]>,
+      bgSpeed: { type: "select", label: t("puckConfig.fields.bgSpeedShort"), visible: false, options: [{ label: t("puckConfig.options.bgSpeedShort.slow"), value: "slow" }, { label: t("puckConfig.options.bgSpeedShort.medium"), value: "medium" }, { label: t("puckConfig.options.bgSpeedShort.fast"), value: "fast" }] } as unknown as Field<GalleryMasonryProps["bgSpeed"]>,
+      overlayOpacity: { type: "number", label: t("puckConfig.fields.overlayOpacity"), visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
       minHeight: { type: "select", label: t("puckConfig.fields.minHeight"), visible: false, options: [{ label: t("puckConfig.options.minHeightShort.auto"), value: "auto" }, { label: t("puckConfig.options.minHeightShort.short"), value: "short" }, { label: t("puckConfig.options.minHeightShort.medium"), value: "medium" }, { label: t("puckConfig.options.minHeightShort.tall"), value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
     } as unknown as Fields<GalleryMasonryProps>,
     resolveFields: (_data, { fields }) => {
-      const rest = { ...(fields as Record<string, unknown>) };
-      delete rest.minHeight;
+      const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
       return rest as typeof fields;
     },
     render: GalleryMasonryBlock,
@@ -949,7 +954,6 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     categories: {
       ...presetCategories,
       manual: { title: t("puckConfig.categories.manual"), components: [...MANUAL_BLOCK_KEYS], defaultExpanded: false },
-      chrome: { title: "Shared chrome", components: ["Navigation"], visible: false },
     } as Config<EditorComponents>["categories"],
     components: {
       ...presetComponents,
@@ -967,7 +971,6 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
       Divider: divider,
       Columns: columns,
       Container: container,
-      Navigation: navigationBlockConfig,
       ContainerAnchor: {
         label: "ContainerAnchor",
         defaultProps: containerAnchorDefaultProps,
