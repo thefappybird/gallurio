@@ -167,8 +167,6 @@ const baseDefaults: PublicPageSettingsInput = {
   seoTitle: "",
   seoDescription: "",
   inquiryRecipientEmail: "",
-  logoUrl: "",
-  logoAssetId: "",
   siteIconUrl: "",
   siteIconAssetId: "",
   seo: {
