@@ -36,6 +36,35 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
     expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 4)");
   });
 
+  it("shows the configured column count in the narrow editor canvas", () => {
+    const { container } = render(
+      GalleryMasonryBlock({ ...base, images: imgs(4), _style: { galleryColumns: 4 }, puck: { isEditing: true } })
+    );
+    const col = container.querySelector(".pf-masonry") as HTMLElement;
+    expect(col.style.columnCount).toBe("4");
+  });
+
+  it("shows the configured column count for explicit preset lanes", () => {
+    const lane: SlotComponent = (props = {}) => <div className={props.className} />;
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        id: "editor-lanes",
+        images: [],
+        masonryLayout: "columns",
+        column1: lane,
+        column2: lane,
+        column3: lane,
+        column4: lane,
+        _style: { galleryColumns: 4 },
+        puck: { isEditing: true },
+      } as Parameters<typeof GalleryMasonryBlock>[0])
+    );
+    const lanes = container.querySelector(".pf-masonry-editor-lanes-columns") as HTMLElement;
+    expect(lanes.style.gridTemplateColumns).toBe("repeat(4, minmax(0, 1fr))");
+    expect(container.querySelectorAll("[data-masonry-column]")).toHaveLength(4);
+  });
+
   it("defaults to 3 columns when _style.galleryColumns is unset", () => {
     const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(2) }));
     const col = container.querySelector(".pf-masonry") as HTMLElement;

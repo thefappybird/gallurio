@@ -182,6 +182,7 @@ export function GalleryMasonryBlock({
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
+  const responsiveColumns = puck?.isEditing ? columns : masonryColsVar(columns);
   const useLegacyImages = list.length > 0;
   const SlotContent = typeof Content === "function" ? Content : undefined;
   const explicitSlots: Array<SlotComponent | undefined> = [column1, column2, column3, column4].map(
@@ -254,7 +255,7 @@ export function GalleryMasonryBlock({
         {useLegacyImages ? (
           <div
             className="pf-masonry"
-            style={{ columnCount: masonryColsVar(columns) as unknown as number, columnGap: gapValue }}
+            style={{ columnCount: responsiveColumns as unknown as number, columnGap: gapValue }}
           >
             {list.map((img) => {
             const src = imageDeliveryUrl(img.publicId, {
@@ -313,7 +314,7 @@ export function GalleryMasonryBlock({
               className={`${blockClassName}-columns`}
               style={{
                 display: "grid",
-                gridTemplateColumns: `repeat(${masonryColsVar(columns)}, minmax(0, 1fr))`,
+                gridTemplateColumns: `repeat(${responsiveColumns}, minmax(0, 1fr))`,
                 gap: gapValue,
               }}
             >
@@ -336,7 +337,7 @@ export function GalleryMasonryBlock({
             <style>{`.${slotClassName}>*{display:inline-block;width:100%;vertical-align:top;break-inside:avoid;margin-bottom:${gapValue};}${alternatingHeights ? `.${slotClassName}>*:nth-child(odd){height:${oddHeight}px !important;aspect-ratio:auto !important;}.${slotClassName}>*:nth-child(even){height:${evenHeight}px !important;aspect-ratio:auto !important;}` : ""}`}</style>
             {SlotContent?.({
               className: slotClassName,
-              style: { columnCount: masonryColsVar(columns) as unknown as number, columnGap: gapValue },
+              style: { columnCount: responsiveColumns as unknown as number, columnGap: gapValue },
             })}
           </>
         )}

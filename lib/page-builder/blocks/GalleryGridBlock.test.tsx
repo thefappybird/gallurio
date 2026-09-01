@@ -72,6 +72,30 @@ describe("GalleryGridBlock — isomorphic render", () => {
     expect(grid.style.gridTemplateColumns).toBe(`var(--pf-grid-cols, repeat(${cols}, 1fr))`);
   });
 
+  it("shows the configured column count in the narrow editor canvas", () => {
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(4), _style: { galleryColumns: 4 }, puck: { isEditing: true } })
+    );
+    const grid = container.querySelector("[data-block='gallery-grid'] > div > div") as HTMLElement;
+    expect(grid.style.gridTemplateColumns).toBe("repeat(4, minmax(0, 1fr))");
+  });
+
+  it("shows the configured column count for the slot-based preset path", () => {
+    const slot: import("@measured/puck").SlotComponent = (props = {}) => (
+      <div data-testid="grid-slot" style={props.style} />
+    );
+    render(
+      GalleryGridBlock({
+        ...base,
+        images: [],
+        content: slot,
+        _style: { galleryColumns: 4 },
+        puck: { isEditing: true },
+      })
+    );
+    expect(screen.getByTestId("grid-slot")).toHaveStyle({ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" });
+  });
+
   it("applies the gap value from _style.galleryGap", () => {
     const { container } = render(GalleryGridBlock({ ...base, images: imgs(1), _style: { galleryGap: "loose" } }));
     const grid = container.querySelector("[data-block='gallery-grid'] > div > div") as HTMLElement;

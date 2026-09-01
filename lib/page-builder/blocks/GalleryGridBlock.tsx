@@ -182,6 +182,9 @@ export function GalleryGridBlock({
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
+  const editorGridColumns = puck?.isEditing
+    ? `repeat(${columns}, minmax(0, 1fr))`
+    : gridColsVar(`repeat(${columns}, 1fr)`);
 
   // Legacy image arrays remain authoritative when present so old published
   // pages keep their exact visuals. New blocks have an empty array and render
@@ -255,7 +258,7 @@ export function GalleryGridBlock({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: gridColsVar(`repeat(${columns}, 1fr)`),
+              gridTemplateColumns: editorGridColumns,
               gap: gapValue,
             }}
           >
@@ -289,7 +292,7 @@ export function GalleryGridBlock({
             className: "pf-gallery-grid-slot",
             style: {
               display: "grid",
-              gridTemplateColumns: gridColsVar(`repeat(${columns}, 1fr)`),
+              gridTemplateColumns: editorGridColumns,
               gap: gapValue,
             },
           })

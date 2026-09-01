@@ -106,14 +106,19 @@ export function MultiImageControl({
   max?: number;
 }) {
   const [open, setOpen] = useState(false);
-  const { byId } = useThumbLookup();
+  const { byId, byPublicId } = useThumbLookup();
   const selection = Array.isArray(value) ? value : [];
+  const normalizedSelection = selection.map((item) => {
+    if (byId.has(item.id)) return item;
+    const resolved = byPublicId.get(item.publicId);
+    return resolved ? { ...item, id: resolved.id } : item;
+  });
 
   return (
     <div className="flex flex-col gap-2">
       {selection.length > 0 && (
         <ul className="flex flex-wrap gap-1.5" aria-label="Selected photos">
-          {selection.slice(0, 6).map((s) => {
+          {normalizedSelection.slice(0, 6).map((s) => {
             const thumb = byId.get(s.id)?.thumbUrl ?? null;
             return (
               <li key={s.id} className="size-10 overflow-hidden border border-border bg-muted">
@@ -145,7 +150,7 @@ export function MultiImageControl({
       <MediaPicker
         mode="multi"
         max={max}
-        value={selection}
+        value={normalizedSelection}
         onChange={(v) => onChange(v as MediaPickerSelection[])}
         open={open}
         onOpenChange={setOpen}

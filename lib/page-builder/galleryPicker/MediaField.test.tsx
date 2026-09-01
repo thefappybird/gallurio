@@ -51,4 +51,13 @@ describe("MultiImageControl", () => {
     renderWithProviders(<MultiImageControl value={[{ id: "a", publicId: "pid-a" }, { id: "b", publicId: "pid-b" }]} onChange={vi.fn()} />);
     expect(screen.getByText(/2 photos/i)).toBeTruthy();
   });
+
+  it("resolves a nested Image publicId to its gallery item thumbnail", async () => {
+    const { container } = renderWithProviders(
+      <MultiImageControl value={[{ id: "pid-a", publicId: "pid-a" }]} onChange={vi.fn()} />
+    );
+    await waitFor(() =>
+      expect(container.querySelector("img")?.getAttribute("src")).toBe("https://x/a.jpg")
+    );
+  });
 });

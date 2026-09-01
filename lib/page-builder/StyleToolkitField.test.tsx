@@ -511,6 +511,32 @@ describe("ContentInputs — Button", () => {
   });
 });
 
+describe("ContentInputs slot galleries", () => {
+  it.each(["GalleryGrid", "GalleryMasonry"])("shows one parent photo picker for %s", (type) => {
+    render(
+      <ContentInputs
+        type={type}
+        props={{ id: `${type}-1`, images: [], masonryLayout: "columns", _style: { galleryColumns: 3 }, content: [], column1: [], column2: [], column3: [] }}
+        setProp={vi.fn()}
+        setProps={vi.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Choose photos" })).toBeInTheDocument();
+  });
+
+  it("keeps legacy image-array galleries read-only", () => {
+    const { container } = render(
+      <ContentInputs
+        type="GalleryGrid"
+        props={{ images: [{ id: "legacy", publicId: "asset/legacy" }] }}
+        setProp={vi.fn()}
+        setProps={vi.fn()}
+      />
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
 describe("SingleCollectionControl", () => {
   it("clears to undefined on an empty selection", () => {
     const onChange = vi.fn();

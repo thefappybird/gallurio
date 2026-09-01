@@ -83,6 +83,12 @@ import {
 } from "./styleToolkit";
 import { GALLERY_EFFECTIVE_PAD } from "./responsive";
 import { CountControl } from "./CountControl";
+import {
+  galleryPropsWithZones,
+  gallerySlotPatch,
+  gallerySlotSelections,
+  galleryZonesWithPatch,
+} from "./gallerySlotImages";
 import { useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import {
   BUTTON_SIZE_FONT_PX,
@@ -118,9 +124,7 @@ const GALLERY_NO_TEXT_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "Featur
 export const FLEX_CONTAINER_BLOCKS = new Set<string>(["Container", ...SECTION_PRESET_KEYS]);
 
 const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry"]);
-// Kept empty: pre-slot gallery arrays still render on published saved pages,
-// but their retired picker is deliberately absent from the inspector.
-const LEGACY_GALLERY_PICKER_BLOCKS = new Set<string>();
+const SLOT_GALLERY_PICKER_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry"]);
 const COLLECTION_CARD_RATIOS = ["7 / 9", "1 / 1", "4 / 5", "3 / 2", "16 / 9"] as const;
 
 const ANIMATION_LABEL: Record<AnimationType, string> = {
@@ -483,10 +487,12 @@ export function ContentInputs({
   type,
   props,
   setProp,
+  setProps,
 }: {
   type: string;
   props: Record<string, unknown>;
   setProp: (key: string, val: unknown) => void;
+  setProps?: (patch: Record<string, unknown>) => void;
 }) {
   const demo = useDemoPicker();
   if (type === "Heading") {
@@ -561,7 +567,11 @@ export function ContentInputs({
       </div>
     );
   }
-  if (LEGACY_GALLERY_PICKER_BLOCKS.has(type)) {
+  if (SLOT_GALLERY_PICKER_BLOCKS.has(type)) {
+    const legacyImages = Array.isArray(props.images) ? props.images : [];
+    if (legacyImages.length > 0) return null;
+    const selections = gallerySlotSelections(type, props);
+    const assign = (next: MediaPickerSelection[]) => setProps?.(gallerySlotPatch(type, props, next));
     // GalleryGrid and GalleryMasonry are images-only — expose the Photos picker.
     return (
       <div className="flex flex-col gap-3">
@@ -569,14 +579,14 @@ export function ContentInputs({
           <span className="text-xs text-muted-foreground">Photos</span>
           {demo ? (
             <DemoMultiImageControl
-              value={(props.images as MediaPickerSelection[]) ?? []}
-              onChange={(v) => setProp("images", v)}
+              value={selections}
+              onChange={assign}
               max={60}
             />
           ) : (
             <MultiImageControl
-              value={(props.images as MediaPickerSelection[]) ?? []}
-              onChange={(v) => setProp("images", v)}
+              value={selections}
+              onChange={assign}
               max={60}
             />
           )}
@@ -732,6 +742,7 @@ function ContentTabBody({
   type,
   p,
   setProp,
+  setProps,
   showBanner,
   isContainer,
 }: {
@@ -740,6 +751,7 @@ function ContentTabBody({
   type: string;
   p: Record<string, unknown> | undefined;
   setProp: (key: string, val: unknown) => void;
+  setProps?: (patch: Record<string, unknown>) => void;
   showBanner: boolean;
   isContainer: boolean;
 }) {
@@ -785,7 +797,7 @@ function ContentTabBody({
           effectiveColorToken={effectiveBannerColor}
         />
       )}
-      {showContentInputs && p && <ContentInputs type={type} props={p} setProp={setProp} />}
+      {showContentInputs && p && <ContentInputs type={type} props={p} setProp={setProp} setProps={setProps} />}
     </div>
   );
 }
@@ -2282,6 +2294,7 @@ function BlockAwarePanel({
   onTabChange?: (t: "content" | "design" | "layout") => void;
 }) {
   const selectedItem = usePuckStore((s) => s.selectedItem);
+  const data = usePuckStore((s) => s.appState.data);
   const dispatch = usePuckStore((s) => s.dispatch);
   const getSelectorForId = usePuckStore((s) => s.getSelectorForId);
   const getItemById = usePuckStore((s) => s.getItemById);
@@ -2342,25 +2355,39 @@ function BlockAwarePanel({
     return 12;
   })();
 
-  function setProp(key: string, val: unknown) {
+  function setProps(patch: Record<string, unknown>) {
     if (!selectedItem) return;
     const id = selectedItem.props?.id;
     if (typeof id !== "string" || !id) return;
     const sel = getSelectorForId(id);
     if (!sel) return;
     const current = getItemById(id) ?? selectedItem;
+    if (SLOT_GALLERY_PICKER_BLOCKS.has(type)) {
+      const nextZones = galleryZonesWithPatch(current.props, patch, data.zones);
+      if (nextZones) {
+        dispatch({ type: "setData", data: { ...data, zones: nextZones } });
+        return;
+      }
+    }
     dispatch({
       type: "replace",
       destinationZone: sel.zone,
       destinationIndex: sel.index,
       data: {
         ...current,
-        props: { ...current.props, [key]: val },
+        props: { ...current.props, ...patch },
       } as ComponentData,
     });
   }
 
-  const p = selectedItem?.props as Record<string, unknown> | undefined;
+  function setProp(key: string, val: unknown) {
+    setProps({ [key]: val });
+  }
+
+  const selectedProps = selectedItem?.props as Record<string, unknown> | undefined;
+  const p = selectedProps && SLOT_GALLERY_PICKER_BLOCKS.has(type)
+    ? galleryPropsWithZones(selectedProps, data.zones)
+    : selectedProps;
 
   // Simplified blocks bypass the tab system entirely. Image (F1) no longer
   // bypasses — it uses the full Content/Design/Layout tabs (Banner for the
@@ -2379,6 +2406,7 @@ function BlockAwarePanel({
             type={type}
             p={p}
             setProp={setProp}
+            setProps={setProps}
             showBanner={isContainer || isGalleryContainer || type === "ContactDetails" || type === "Image"}
             isContainer={isContainer || isGalleryContainer}
           />
