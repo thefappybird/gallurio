@@ -180,7 +180,7 @@ vi.mock("@/lib/actions/slug", () => ({
   checkSlugAvailabilityAction: vi.fn().mockResolvedValue({ available: true }),
 }));
 
-import { EditorShell, previewZoneFor } from "./EditorShell";
+import { EditorShell, NestedPresetDrawer, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
@@ -252,7 +252,6 @@ describe("previewZoneFor", () => {
  * dialog. This helper skips the guide first so the entry dialog then appears.
  */
 async function renderAndDismissEntry(ui: ReactElement) {
-  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
   const result = renderWithProviders(ui);
 
   // If the guide is open, skip it first so the entry dialog becomes visible.
@@ -267,8 +266,8 @@ async function renderAndDismissEntry(ui: ReactElement) {
 
   // "Continue where you left off" is now enabled; clicking it closes the dialog
   // without opening any secondary dialog, keeping the test environment clean.
-  const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
-  fireEvent.click(continueBtn);
+  const continueBtn = screen.queryByRole("button", { name: /Continue where you left off/ });
+  if (continueBtn) fireEvent.click(continueBtn);
   return result;
 }
 
@@ -292,6 +291,30 @@ beforeEach(() => {
       },
     })
   );
+});
+
+describe("NestedPresetDrawer", () => {
+  it("keeps Manual blocks as a sibling and nests preset groups behind one accessible parent", () => {
+    renderWithProviders(
+      <NestedPresetDrawer presetTitle="Preset blocks">
+        <div key="manual">Manual blocks</div>
+        <div key="hero">Hero variants</div>
+        <div key="footer">Footer variants</div>
+      </NestedPresetDrawer>,
+    );
+
+    const toggle = screen.getByRole("button", { name: "Preset blocks" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveClass("text-start");
+    expect(screen.getByText("Manual blocks")).toBeVisible();
+    expect(screen.queryByText("Hero variants")).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Hero variants")).toBeVisible();
+    expect(screen.getByText("Footer variants")).toBeVisible();
+  });
 });
 
 describe("EditorShell", () => {
@@ -486,10 +509,12 @@ describe("EditorShell", () => {
 
   it("publishes the active draft and clears localStorage", async () => {
     await renderAndDismissEntry(<EditorShell {...basePro} />);
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
     await waitFor(() => expect(publishDraftAction).toHaveBeenCalledWith("d1"));
+    expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
   });
 
   it("shows the mobile banner notice", async () => {
@@ -597,34 +622,23 @@ describe("EditorShell", () => {
     expect(saveBtn).toBeDisabled();
   });
 
-  it("entry dialog shows on every load, including when a draft is already loaded", async () => {
-    // baseProps includes initialActiveDraftId: "d1" — a server-loaded draft.
-    // The entry dialog must still appear (spec: shown on every load).
+  it("loads the durable draft directly when there is no browser recovery", () => {
     renderWithProviders(<EditorShell {...baseProps} />);
-    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.getByTestId("puck")).toBeInTheDocument();
   });
 
-  it("enables 'Continue where you left off' when an active draft exists even without an unsaved-edit buffer", async () => {
-    // beforeEach clears localStorage → no recoverable buffer. baseProps still has
-    // an active draft (initialActiveDraftId="d1"). Continue must stay enabled:
-    // it's only disabled on a true first visit (no active draft now nor last time).
+  it("shows Welcome back only for a valid browser recovery buffer", async () => {
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
     renderWithProviders(<EditorShell {...baseProps} />);
     const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
     expect(continueBtn).not.toBeDisabled();
   });
 
-  it("disables 'Continue where you left off' when there is no active draft and no buffer (drafts exist)", async () => {
-    // A saved draft exists (so the entry dialog — not the welcome-template modal —
-    // is shown), but there is no active draft and no buffer → Continue disabled.
-    renderWithProviders(
-      <EditorShell
-        {...baseProps}
-        initialActiveDraftId={null}
-        initialActiveDraftName={undefined}
-      />
-    );
-    const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
-    expect(continueBtn).toBeDisabled();
+  it("ignores a malformed browser recovery buffer", () => {
+    window.localStorage.setItem(DRAFT_KEY, "not-json");
+    renderWithProviders(<EditorShell {...baseProps} />);
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
   });
 
   it("brand-new user (no drafts, no buffer) sees the welcome template modal instead of PortfolioEntryDialog", async () => {
@@ -1088,6 +1102,7 @@ describe("EditorShell", () => {
 
     // Make the draft dirty with a Puck change.
     fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    await waitFor(() => expect(window.localStorage.getItem(DRAFT_KEY)).toContain("Changed"));
 
     // Save changes button must now be enabled (dirty).
     const saveBtn = screen.getByRole("button", { name: "Save changes" });
@@ -1104,6 +1119,18 @@ describe("EditorShell", () => {
     expect(updateDraftAction).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Test Draft" })
     );
+    expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
+
+    // A stale trailing debounce must not recreate recovery after the save.
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
+
+    // The next genuine edit starts a fresh temporary recovery buffer.
+    __capturedPuckOnChange?.({
+      content: [{ type: "Hero", props: { id: "hero-1", headline: "Changed again" } }],
+      root: {},
+    });
+    await waitFor(() => expect(window.localStorage.getItem(DRAFT_KEY)).toContain("Changed again"));
   });
 
   it("open-in-new-tab button opens /portfolio-preview and does not call createPreviewSnapshotAction", async () => {
@@ -1136,13 +1163,13 @@ describe("EditorShell", () => {
     expect(screen.getByText(/1 of \d+/)).toBeInTheDocument();
   });
 
-  it("does NOT render the spotlight guide when guideDismissed=true", async () => {
+  it("does NOT render the spotlight guide when guideDismissed=true", () => {
     renderWithProviders(
       <EditorShell {...baseProps} guideDismissed={true} />
     );
-    // Give async effects a chance to settle before asserting absence
-    await screen.findByText("Welcome back");
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.getByTestId("puck")).toBeInTheDocument();
   });
 
   it("Guide button reopens the spotlight guide after Skip", async () => {
@@ -1170,7 +1197,7 @@ describe("EditorShell", () => {
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
   });
 
-  it("explore-self exit awaits dismissPortfolioGuideAction before proceeding to entry", async () => {
+  it("explore-self exit awaits dismissPortfolioGuideAction before returning to the durable draft", async () => {
     renderWithProviders(
       <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
     );
@@ -1181,8 +1208,8 @@ describe("EditorShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Skip for now" }));
 
     await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
-    // Returning user (baseProps has a draft) lands on the normal entry dialog.
-    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.getByTestId("puck")).toBeInTheDocument();
   });
 
   it("final story prompt explore-self opens the template picker for a brand-new visitor", async () => {
@@ -1282,7 +1309,8 @@ describe("EditorShell", () => {
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
 
     await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
-    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.getByTestId("puck")).toBeInTheDocument();
   });
 
   it("explore-self exit logs a warning but still proceeds when dismissPortfolioGuideAction rejects", async () => {
@@ -1302,8 +1330,9 @@ describe("EditorShell", () => {
         expect.any(Error)
       )
     );
-    // The failed dismiss-write must not block the exit flow.
-    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    // The failed dismiss-write must not block returning to the durable draft.
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.getByTestId("puck")).toBeInTheDocument();
 
     warnSpy.mockRestore();
   });
@@ -1365,7 +1394,7 @@ describe("EditorShell", () => {
     expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
   });
 
-  it("guide skipped → returning user (has drafts) sees PortfolioEntryDialog", async () => {
+  it("guide skipped → returning user continues with the durable draft", async () => {
     // baseProps has initialDrafts with one draft, guideDismissed=false.
     renderWithProviders(
       <EditorShell {...baseProps} guideDismissed={false} />
@@ -1378,17 +1407,17 @@ describe("EditorShell", () => {
     const confirmSkip = within(document.body).getAllByRole("button", { name: "Skip Guide" });
     fireEvent.click(confirmSkip[confirmSkip.length - 1]);
 
-    // Returning user gets the normal PortfolioEntryDialog
-    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.getByTestId("puck")).toBeInTheDocument();
     expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument();
   });
 
-  it("guideDismissed=true, returning user: entry opens immediately without guide", async () => {
-    // baseProps: guideDismissed=true, has drafts → PortfolioEntryDialog opens on load.
+  it("guideDismissed=true, returning user: durable draft opens immediately without guide", () => {
     renderWithProviders(
       <EditorShell {...baseProps} guideDismissed={true} />
     );
-    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.getByTestId("puck")).toBeInTheDocument();
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
   });
 

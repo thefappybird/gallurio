@@ -14,7 +14,7 @@ import {
   type PreviewDraftConfigs,
 } from "./PreviewDraftContext";
 
-const LOCAL_DRAFT_VERSION = 2;
+const LOCAL_DRAFT_VERSION = 3;
 
 type DraftShape = {
   version?: number;
@@ -53,23 +53,26 @@ export function PreviewBrandShell({
   fallbackCssVars,
   fallbackClassName,
   children,
+  allowBrowserRecovery = false,
 }: {
   slug: string;
   fallbackCssVars: Record<string, string>;
   fallbackClassName: string;
   children: ReactNode;
+  allowBrowserRecovery?: boolean;
 }) {
   const [cssVars, setCssVars] = useState<Record<string, string>>(fallbackCssVars);
   const [className, setClassName] = useState<string>(fallbackClassName);
   const [draftConfigs, setDraftConfigs] = useState<PreviewDraftConfigs>(EMPTY_DRAFT_CONFIGS);
-  const [draftReady, setDraftReady] = useState(false);
+  const [draftReady, setDraftReady] = useState(!allowBrowserRecovery);
 
   useEffect(() => {
+    if (!allowBrowserRecovery) return;
     try {
       const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
       if (!raw) return;
       const draft = JSON.parse(raw) as DraftShape;
-      if (draft.version !== LOCAL_DRAFT_VERSION) return;
+      if (draft.version !== LOCAL_DRAFT_VERSION && draft.version !== 2) return;
 
       // --- brandKit ---
       if (draft.brandKit) {
@@ -117,7 +120,7 @@ export function PreviewBrandShell({
     } finally {
       setDraftReady(true);
     }
-  }, [slug]);
+  }, [allowBrowserRecovery, slug]);
 
   return (
     // ponytail: merge cssVars into context at render rather than a second state or effect

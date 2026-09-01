@@ -96,7 +96,7 @@ export function writeDemoImageLibrary(sessionId: string, images: DemoLibraryImag
  */
 export type DemoDraftBuffer = {
   version: number;
-  data: { home: unknown; gallery: unknown };
+  data: { home: unknown; gallery: unknown; navigation?: unknown; footer?: unknown };
   brandKit: unknown;
   contact: unknown;
   formLocale: string;
@@ -114,7 +114,7 @@ export type DemoDraftBuffer = {
  */
 // Must match EditorShell.tsx's LOCAL_DRAFT_VERSION — the real and demo draft
 // buffers share the exact same localStorage format (only the key differs).
-const LOCAL_DRAFT_BUFFER_VERSION = 2;
+const LOCAL_DRAFT_BUFFER_VERSION = 3;
 
 export function readDemoDraftBuffer(sessionId: string): DemoDraftBuffer | null {
   if (typeof window === "undefined") return null;
@@ -122,7 +122,7 @@ export function readDemoDraftBuffer(sessionId: string): DemoDraftBuffer | null {
     const raw = window.localStorage.getItem(demoDraftKey(sessionId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<DemoDraftBuffer>;
-    if (parsed.version !== LOCAL_DRAFT_BUFFER_VERSION || !parsed.data) return null;
+    if ((parsed.version !== 2 && parsed.version !== LOCAL_DRAFT_BUFFER_VERSION) || !parsed.data) return null;
     return parsed as DemoDraftBuffer;
   } catch {
     return null;

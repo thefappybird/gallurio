@@ -2390,6 +2390,7 @@
         "zone": {
           "home": "الرئيسية",
           "gallery": "المعرض",
+          "footer": "التذييل",
           "contact": "نموذج التواصل",
           "groupLabel": "قسم الصفحة",
           "sectionsLabel": "أقسام معرض الأعمال"

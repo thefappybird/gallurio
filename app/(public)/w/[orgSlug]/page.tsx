@@ -7,12 +7,13 @@ import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { hasRenderableBlocks, normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
+import { stripPageLocalFooters } from "@/lib/page-builder/sharedChrome";
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 import { PoweredByGallurio } from "./_components/PoweredByGallurio";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
-import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, type PublicPageSeo, type PuckData } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildHomeJsonLd, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
@@ -115,11 +116,14 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   // persisted data would 500 the whole route. null -> show the ComingSoon fallback.
   const rawHome = (workspace.publicPage?.data as { home?: unknown } | null | undefined)?.home;
 
-  const homeData = normalizePublicPageData(
+  const normalizedHomeData = normalizePublicPageData(
     rawHome,
     new Set(Object.keys(puckConfig.components)),
     "home"
   );
+  const homeData = normalizedHomeData
+    ? stripPageLocalFooters(normalizedHomeData as unknown as PuckData)
+    : null;
 
   // Derive chrome locale from workspace country and resolve translated strings
   // at the page boundary so blocks stay synchronous and unit-testable.

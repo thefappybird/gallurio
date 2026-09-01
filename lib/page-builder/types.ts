@@ -291,10 +291,12 @@ export type PuckData = {
   zones?: Record<string, PuckBlockEntry[]>;
 };
 
-/** The two named zones Gallurio portfolios support. */
+/** Page documents plus shared Puck-managed site chrome. */
 export type PortfolioPuckData = {
   home: PuckData | null;
   gallery: PuckData | null;
+  navigation?: PuckData | null;
+  footer?: PuckData | null;
 };
 
 // ---------------------------------------------------------------------------

@@ -54,6 +54,7 @@ import type { CollectionCardProps } from "./blocks/CollectionCardBlock";
 import type { VideoBlockProps } from "./blocks/VideoBlock";
 import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
 import { masonryCloneBlockConfig, type MasonryCloneProps } from "./blocks/MasonryCloneBlock";
+import { navigationBlockConfig, type NavigationBlockProps } from "./blocks/NavigationBlock";
 import type {
   HeadingBlockProps,
   TextBlockProps,
@@ -87,6 +88,7 @@ type Components = Record<SectionPresetKey, ContainerBlockProps> & {
   Container: ContainerBlockProps;
   ContainerAnchor: ContainerAnchorProps;
   MasonryClone: MasonryCloneProps;
+  Navigation: NavigationBlockProps;
 };
 
 // A composed-section preset is the Container render + fields, with a pre-filled
@@ -119,6 +121,7 @@ export const puckConfig: Config<Components> = {
   categories: {
     ...presetCategories,
     manual: { title: "Manual blocks", components: [...MANUAL_BLOCK_KEYS], defaultExpanded: false },
+    chrome: { title: "Shared chrome", components: ["Navigation"], visible: false },
   },
   components: {
     ...presetComponents,
@@ -138,6 +141,7 @@ export const puckConfig: Config<Components> = {
     Container: containerBlockConfig,
     ContainerAnchor: containerAnchorBlockConfig,
     MasonryClone: masonryCloneBlockConfig,
+    Navigation: navigationBlockConfig,
   },
   root: {
     fields: {},

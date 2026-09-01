@@ -119,6 +119,8 @@ const workspaceSchema = new Schema(
       data: {
         home: { type: Schema.Types.Mixed, default: null },
         gallery: { type: Schema.Types.Mixed, default: null },
+        navigation: { type: Schema.Types.Mixed, default: null },
+        footer: { type: Schema.Types.Mixed, default: null },
       },
       // Soft-archive of the previous {home,gallery} data, written by the wizard
       // reset flow before it overwrites — so an accidental reset is recoverable.

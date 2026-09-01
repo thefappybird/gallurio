@@ -85,6 +85,7 @@ import { GALLERY_EFFECTIVE_PAD } from "./responsive";
 import { CountControl } from "./CountControl";
 import {
   galleryPropsWithZones,
+  gallerySlotLimit,
   gallerySlotPatch,
   gallerySlotSelections,
   galleryZonesWithPatch,
@@ -571,6 +572,7 @@ export function ContentInputs({
     const legacyImages = Array.isArray(props.images) ? props.images : [];
     if (legacyImages.length > 0) return null;
     const selections = gallerySlotSelections(type, props);
+    const slotLimit = gallerySlotLimit(type, props);
     const assign = (next: MediaPickerSelection[]) => setProps?.(gallerySlotPatch(type, props, next));
     // GalleryGrid and GalleryMasonry are images-only — expose the Photos picker.
     return (
@@ -581,13 +583,13 @@ export function ContentInputs({
             <DemoMultiImageControl
               value={selections}
               onChange={assign}
-              max={60}
+              max={slotLimit}
             />
           ) : (
             <MultiImageControl
               value={selections}
               onChange={assign}
-              max={60}
+              max={slotLimit}
             />
           )}
         </div>
@@ -756,7 +758,7 @@ function ContentTabBody({
   isContainer: boolean;
 }) {
   const container: ContainerBgControls | null =
-    isContainer && p
+    isContainer && p && !SLOT_GALLERY_PICKER_BLOCKS.has(type)
       ? {
           images: (p.backgroundImages as MediaPickerSelection[]) ?? [],
           onImagesChange: (v) => setProp("backgroundImages", v),
@@ -776,7 +778,7 @@ function ContentTabBody({
   const showContentInputs = !isContainer || GALLERY_CONTAINER_BLOCKS.has(type);
   // Gallery blocks (GalleryGrid/GalleryMasonry/FeaturedWork) show the banner Color swatch
   // but NOT the background-images picker — the images are the block content, not a backdrop.
-  const hideBgImage = false;
+  const hideBgImage = SLOT_GALLERY_PICKER_BLOCKS.has(type);
   const hasBackgroundImages =
     Array.isArray(p?.backgroundImages) && (p.backgroundImages as unknown[]).length > 0;
   const effectiveBannerColor = GALLERY_CONTAINER_BLOCKS.has(type)

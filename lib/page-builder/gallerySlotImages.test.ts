@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   galleryPropsWithZones,
   gallerySlotPatch,
+  gallerySlotLimit,
   gallerySlotSelections,
   galleryZonesWithPatch,
 } from "./gallerySlotImages";
@@ -17,6 +18,18 @@ const image = (id: string, publicId = "", height?: string) => ({
 });
 
 describe("gallerySlotImages", () => {
+  it("uses the current Image slot count as the fixed replacement limit", () => {
+    expect(gallerySlotLimit("GalleryGrid", {
+      content: [image("one", "asset/a"), image("two"), { type: "Text", props: { id: "ignored" } }],
+    })).toBe(2);
+    expect(gallerySlotLimit("GalleryMasonry", {
+      masonryLayout: "columns",
+      _style: { galleryColumns: 2 },
+      column1: [image("one"), { type: "MasonryClone", props: { id: "clone" } }],
+      column2: [image("two"), image("three")],
+    })).toBe(3);
+  });
+
   it("reads and atomically rewrites Puck zone-backed slots", () => {
     const props = { id: "grid-zoned", images: [], content: [] };
     const zones = { "grid-zoned:content": [image("image-1", "asset/a")] };

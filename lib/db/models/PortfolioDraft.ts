@@ -15,6 +15,8 @@ const portfolioDraftSchema = new Schema(
     data: {
       home: { type: Schema.Types.Mixed, default: null },
       gallery: { type: Schema.Types.Mixed, default: null },
+      navigation: { type: Schema.Types.Mixed, default: null },
+      footer: { type: Schema.Types.Mixed, default: null },
     },
     brandKit: { type: Schema.Types.Mixed, default: null },
     contact: { type: Schema.Types.Mixed, default: null },

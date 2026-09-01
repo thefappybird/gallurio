@@ -7,6 +7,7 @@ vi.mock("@measured/puck", () => ({
     <pre data-testid="render-data">{JSON.stringify(data)}</pre>
   ),
 }));
+vi.mock("@/lib/page-builder/config", () => ({ puckConfig: { components: {} } }));
 
 import { PreviewClient } from "./PreviewClient";
 
@@ -34,6 +35,7 @@ describe("PreviewClient", () => {
         zone="home"
         workspace={{ slug: "studio-aurora" } as never}
         fallbackData={{ content: [], root: {} }}
+        allowBrowserRecovery
       />,
     );
     expect(screen.getByTestId("render-data").textContent).toContain("Hi");
@@ -49,5 +51,28 @@ describe("PreviewClient", () => {
       />,
     );
     expect(screen.getByTestId("render-data").textContent).toContain("Fallback");
+  });
+
+  it("ignores an un-resumed browser recovery buffer", () => {
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        version: 3,
+        data: {
+          home: { content: [{ type: "Heading", props: { id: "local", text: "Local" } }], root: {} },
+        },
+      }),
+    );
+    render(
+      <PreviewClient
+        slug="studio-aurora"
+        zone="home"
+        workspace={{ slug: "studio-aurora" } as never}
+        fallbackData={{ content: [{ type: "Heading", props: { id: "durable", text: "Durable" } }], root: {} }}
+        allowBrowserRecovery={false}
+      />,
+    );
+    expect(screen.getByTestId("render-data").textContent).toContain("Durable");
+    expect(screen.getByTestId("render-data").textContent).not.toContain("Local");
   });
 });
