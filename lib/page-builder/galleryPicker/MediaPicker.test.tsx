@@ -895,4 +895,42 @@ describe("MediaPicker", () => {
       expect(onChange).toHaveBeenCalledWith([{ id: "z", publicId: "pid-z" }]);
     });
   });
+
+  describe("unbounded bulk select-all network request", () => {
+    it("max={null}: requests more than the old 60-item cap", async () => {
+      const onChange = vi.fn();
+      renderWithProviders(<MediaPicker mode="multi" max={null} value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+      const checkbox = await screen.findByRole("checkbox", { name: /select all photos in weddings/i });
+      fireEvent.click(checkbox);
+      await waitFor(() => expect(onChange).toHaveBeenCalled());
+      const newestCall = mockFetch.mock.calls.find(([u]) => String(u).includes("newest="));
+      expect(newestCall).toBeTruthy();
+      const match = String(newestCall![0]).match(/newest=(\d+)/);
+      expect(match).toBeTruthy();
+      expect(Number(match![1])).toBeGreaterThan(60);
+    });
+
+    it("surfaces a message (not a silent drop) when the bulk response is truncated", async () => {
+      mockFetch.mockImplementation((u: string) => {
+        const url = String(u);
+        if (url === "/api/portfolio/gallery") {
+          return Promise.resolve({ ok: true, json: async () => ({ collections, items: colItems }) } as Response);
+        }
+        if (url.includes("newest=")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ items: colItems, nextCursor: null, truncated: true }),
+          } as Response);
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ items: colItems, nextCursor: null }) } as Response);
+      });
+      const onChange = vi.fn();
+      renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+      fireEvent.click(await screen.findByRole("checkbox", { name: /select all photos in weddings/i }));
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/2000/);
+      // The (partial) result is still applied — truncation is surfaced, not swallowed.
+      expect(onChange).toHaveBeenCalled();
+    });
+  });
 });

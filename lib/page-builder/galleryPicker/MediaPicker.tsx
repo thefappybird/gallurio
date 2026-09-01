@@ -54,6 +54,7 @@ const L = {
   selectAllInTile: (name: string) => `Select all photos in ${name}`,
   deselectAllInTile: (name: string) => `Deselect all photos in ${name}`,
   errBulkSelect: "Could not load that collection's photos.",
+  errBulkTruncated: "This collection has more than 2000 photos — showing the first 2000.",
   clearAll: "Clear selection",
   done: "Done",
   photos: (n: number) => `${n} photo${n === 1 ? "" : "s"}`,
@@ -339,16 +340,18 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   async function selectAllFromCollection(colId: string) {
     if (mode !== "multi") return;
     const cap = resolveCap(max);
-    // The server's own bulk-fetch ceiling is 60 regardless of what we ask for
-    // (see PICKER_ITEMS_CAP), and it treats a non-finite `newest` as 1, not
-    // "no limit" — so an unbounded cap here must still send a finite request.
-    const networkLimit = Number.isFinite(cap) ? cap : SAFETY_CAP;
+    // The server treats a non-finite `newest` as 1, not "no limit" — so an
+    // unbounded cap here must still send a finite request. Send a large
+    // sentinel rather than SAFETY_CAP(60): the server clamps to its own
+    // BULK_SELECT_CAP (2000) regardless, so this doesn't need to track that
+    // number — it only needs to not itself be the bottleneck.
+    const networkLimit = Number.isFinite(cap) ? cap : Number.MAX_SAFE_INTEGER;
     setBulkLoadingId(colId);
     setBulkError(null);
     try {
       const res = await fetch(`/api/portfolio/gallery/collections/${colId}?newest=${networkLimit}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { items: PickerItem[] };
+      const data = (await res.json()) as { items: PickerItem[]; truncated?: boolean };
       remember(data.items);
       // Cache this collection's fetched ids so the tile checkbox can derive
       // its checked/mixed/unchecked state without a dedicated request.
@@ -364,6 +367,10 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           });
       }
       onChange(next);
+      // The server caps its own response (BULK_SELECT_CAP) — never let the
+      // owner believe an oversized collection was selected in full when it
+      // wasn't; surface it the same way a fetch failure would be.
+      if (data.truncated) setBulkError(L.errBulkTruncated);
     } catch {
       setBulkError(L.errBulkSelect);
     } finally {
