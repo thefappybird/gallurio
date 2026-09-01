@@ -23,9 +23,8 @@ import {
   STYLE_LIMITS,
 } from "@/lib/page-builder/styleToolkit";
 import type { GalleryImage } from "./GalleryGridBlock";
-import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
+import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GALLERY_PAD_SHORTHAND, padVar, masonryColsVar } from "@/lib/page-builder/responsive";
-import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
@@ -44,11 +43,6 @@ export type GalleryMasonryProps = {
   column4?: Slot;
   /** @deprecated Compatibility renderer for pre-slot saved galleries. */
   images: GalleryImage[];
-  // Banner / container props (same as ContainerBlock)
-  backgroundImages?: GalleryImage[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayOpacity?: number;
   minHeight?: ContainerHeight;
   /** CSS length value when minHeight === "custom", e.g. "400px" or "50vh". */
   minHeightValue?: string;
@@ -63,9 +57,6 @@ export const galleryMasonryDefaultProps: GalleryMasonryProps = {
   column3: [],
   column4: [],
   images: [],
-  backgroundImages: [],
-  bgAnimation: "crossfade",
-  bgSpeed: "medium",
 };
 
 type GalleryMasonryRenderProps = Omit<
@@ -92,53 +83,10 @@ const THUMB_WIDTH_MAP: Record<GalleryColumns, number> = {
   4: 400,
 };
 
-function GalleryBannerLayers({
-  layers,
-  bgAnimation,
-  bgSpeed,
-  overlayAlpha,
-}: {
-  layers: { id: string; src: string }[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayAlpha: number;
-}) {
-  return (
-    <>
-      {overlayAlpha > 0 && (
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }}
-        />
-      )}
-      {layers.length === 1 && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={layers[0].src}
-          alt=""
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      )}
-      {layers.length >= 2 && (
-        <ContainerBackgroundSlideshow
-          images={layers}
-          animation={bgAnimation ?? "crossfade"}
-          speed={bgSpeed ?? "medium"}
-        />
-      )}
-    </>
-  );
-}
-
 export function GalleryMasonryBlock({
   id,
   _style,
   images,
-  backgroundImages,
-  bgAnimation,
-  bgSpeed,
-  overlayOpacity,
   minHeight,
   minHeightValue,
   content: Content,
@@ -177,9 +125,6 @@ export function GalleryMasonryBlock({
   const labels = getGalleryChromeLabelsFrom(puck);
   const list = Array.isArray(images) ? images : [];
 
-  const layers = resolveBannerLayers(backgroundImages);
-  const hasBg = layers.length > 0;
-  const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
   const responsiveColumns = puck?.isEditing ? columns : masonryColsVar(columns);
@@ -199,7 +144,7 @@ export function GalleryMasonryBlock({
         style={{
           position: "relative",
           overflow: "hidden",
-          backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
+          backgroundColor: "var(--pf-color-bg)",
           minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
           padding: padVar(GALLERY_PAD_SHORTHAND),
           display: "flex",
@@ -209,9 +154,6 @@ export function GalleryMasonryBlock({
         }}
         {...resolveBlockAttrs(_style)}
       >
-        {hasBg && (
-          <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
-        )}
         {presetPreview ? (
           <PresetMediaPlaceholder kind="masonry" columns={columns} gap={gap} />
         ) : (
@@ -240,7 +182,7 @@ export function GalleryMasonryBlock({
       style={{
         position: "relative",
         overflow: "hidden",
-        backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
+        backgroundColor: "var(--pf-color-bg)",
         minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
         padding: padVar(GALLERY_PAD_SHORTHAND),
         fontFamily: "var(--pf-font-body)",
@@ -248,9 +190,6 @@ export function GalleryMasonryBlock({
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {hasBg && (
-        <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
-      )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "80rem", margin: "0 auto" }}>
         {useLegacyImages ? (
           <div
@@ -363,35 +302,6 @@ export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
     column2: { type: "slot", allow: ["Image", "MasonryClone"] },
     column3: { type: "slot", allow: ["Image", "MasonryClone"] },
     column4: { type: "slot", allow: ["Image", "MasonryClone"] },
-    backgroundImages: {
-      type: "array",
-      label: "Background images",
-      arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } },
-    } as unknown as Field<GalleryImage[] | undefined>,
-    bgAnimation: {
-      type: "select",
-      label: "BG animation",
-      options: [
-        { label: "Crossfade", value: "crossfade" },
-        { label: "Ken Burns", value: "kenburns" },
-        { label: "Slide", value: "slide" },
-      ],
-    } as Field<GalleryMasonryProps["bgAnimation"]>,
-    bgSpeed: {
-      type: "select",
-      label: "BG speed",
-      options: [
-        { label: "Slow", value: "slow" },
-        { label: "Medium", value: "medium" },
-        { label: "Fast", value: "fast" },
-      ],
-    } as Field<GalleryMasonryProps["bgSpeed"]>,
-    overlayOpacity: {
-      type: "number",
-      label: "Overlay opacity",
-      min: 0,
-      max: 100,
-    } as Field<number | undefined>,
     minHeight: {
       type: "select",
       label: "Min height",

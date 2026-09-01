@@ -791,6 +791,25 @@ describe("Sub-part 2 — gallery blocks hide bg-image picker, keep banner Color"
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
     // Content tab is default; "Background images" label from ContainerBackgroundControls must be absent
     expect(screen.queryByText("Background images")).toBeNull();
+    // Photo Grid dropped background images entirely — the compact "Choose photo"
+    // single-image picker (BannerSection's fallback branch) must be absent too.
+    expect(screen.queryByRole("button", { name: /choose photo/i })).toBeNull();
+  });
+
+  it("GalleryMasonry Content tab does NOT render the background-image picker", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryMasonry" />);
+    expect(screen.queryByText("Background images")).toBeNull();
+    expect(screen.queryByRole("button", { name: /choose photo/i })).toBeNull();
+  });
+
+  it("Container Content tab still renders the background-image picker", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Container" />);
+    expect(screen.getByRole("button", { name: /choose photo/i })).toBeInTheDocument();
+  });
+
+  it("FeaturedWork Content tab still renders the background-image picker", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="FeaturedWork" />);
+    expect(screen.getByRole("button", { name: /choose photo/i })).toBeInTheDocument();
   });
 
   it("BannerSection with hideBgImage=true does NOT render Image picker", () => {

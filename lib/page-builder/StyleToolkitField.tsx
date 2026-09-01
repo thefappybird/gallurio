@@ -587,7 +587,7 @@ export function ContentInputs({
             <MultiImageControl
               value={selections}
               onChange={assign}
-              max={60}
+              max={null}
             />
           )}
         </div>
@@ -774,18 +774,22 @@ function ContentTabBody({
   // (collections picker / photo picker) — unlike true containers (slots), they have
   // direct gallery content controlled via ContentInputs.
   const showContentInputs = !isContainer || GALLERY_CONTAINER_BLOCKS.has(type);
-  // Gallery blocks (GalleryGrid/GalleryMasonry/FeaturedWork) show the banner Color swatch
-  // but NOT the background-images picker — the images are the block content, not a backdrop.
-  const hideBgImage = false;
+  // GalleryGrid/GalleryMasonry dropped background images entirely — the images
+  // are the block content, not a backdrop — so they never show the picker and
+  // always resolve to the plain background swatch. FeaturedWork still supports
+  // a background-image banner and keeps the picker + foreground/background swap.
+  const hideBgImage = SLOT_GALLERY_PICKER_BLOCKS.has(type);
   const hasBackgroundImages =
     Array.isArray(p?.backgroundImages) && (p.backgroundImages as unknown[]).length > 0;
-  const effectiveBannerColor = GALLERY_CONTAINER_BLOCKS.has(type)
-    ? hasBackgroundImages
-      ? "foreground"
-      : "background"
-    : isContainer && hasBackgroundImages
-      ? "foreground"
-      : undefined;
+  const effectiveBannerColor = SLOT_GALLERY_PICKER_BLOCKS.has(type)
+    ? "background"
+    : GALLERY_CONTAINER_BLOCKS.has(type)
+      ? hasBackgroundImages
+        ? "foreground"
+        : "background"
+      : isContainer && hasBackgroundImages
+        ? "foreground"
+        : undefined;
   return (
     <div className="flex flex-col gap-4 p-3">
       {showBanner && (

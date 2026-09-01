@@ -25,7 +25,7 @@ import {
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/responsive";
-import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
@@ -52,11 +52,6 @@ export type GalleryGridProps = {
   /** @deprecated Read-only compatibility for pages saved before gallery slots.
    * New grids use `content` Image blocks instead. */
   images: GalleryImage[];
-  // Banner / container props (same as ContainerBlock)
-  backgroundImages?: GalleryImage[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayOpacity?: number;
   minHeight?: ContainerHeight;
   /** CSS length value when minHeight === "custom", e.g. "400px" or "50vh". */
   minHeightValue?: string;
@@ -65,9 +60,6 @@ export type GalleryGridProps = {
 export const galleryGridDefaultProps: GalleryGridProps = {
   content: [],
   images: [],
-  backgroundImages: [],
-  bgAnimation: "crossfade",
-  bgSpeed: "medium",
 };
 
 const GAP_MAP: Record<GalleryGap, string> = {
@@ -82,79 +74,6 @@ const THUMB_WIDTH_MAP: Record<GalleryColumns, number> = {
   4: 400,
 };
 
-export const GALLERY_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
-  auto: undefined,
-  short: "40vh",
-  medium: "60vh",
-  tall: "80vh",
-  custom: undefined,
-};
-
-/** Resolve the CSS min-height value for a gallery block.
- *  When minHeight is "custom", uses minHeightValue (undefined = no constraint). */
-export function resolveGalleryMinHeight(
-  minHeight: ContainerHeight | undefined,
-  minHeightValue?: string
-): string | undefined {
-  if ((minHeight ?? "auto") === "custom") return minHeightValue || undefined;
-  return GALLERY_MIN_HEIGHT[minHeight ?? "auto"];
-}
-
-/** Resolve a background image public ID to a full-bleed cover URL (client-safe). */
-function bgImageUrl(publicId: string): string | null {
-  return imageDeliveryUrl(publicId, { width: 2000, height: 8000, fit: "scale-down" });
-}
-
-/** Shared banner layer resolution — filters out blank/unresolvable entries. */
-export function resolveBannerLayers(backgroundImages: GalleryImage[] | undefined): { id: string; src: string }[] {
-  return (Array.isArray(backgroundImages) ? backgroundImages : [])
-    .map((img) => ({ id: img.id, src: bgImageUrl(img.publicId) }))
-    .filter((l): l is { id: string; src: string } => Boolean(l.src));
-}
-
-// ---------------------------------------------------------------------------
-// Banner background sub-render (same pattern as ContainerBlock)
-// ---------------------------------------------------------------------------
-
-function GalleryBannerLayers({
-  layers,
-  bgAnimation,
-  bgSpeed,
-  overlayAlpha,
-}: {
-  layers: { id: string; src: string }[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayAlpha: number;
-}) {
-  return (
-    <>
-      {overlayAlpha > 0 && (
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }}
-        />
-      )}
-      {layers.length === 1 && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={layers[0].src}
-          alt=""
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      )}
-      {layers.length >= 2 && (
-        <ContainerBackgroundSlideshow
-          images={layers}
-          animation={bgAnimation ?? "crossfade"}
-          speed={bgSpeed ?? "medium"}
-        />
-      )}
-    </>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -162,10 +81,6 @@ function GalleryBannerLayers({
 export function GalleryGridBlock({
   _style,
   images,
-  backgroundImages,
-  bgAnimation,
-  bgSpeed,
-  overlayOpacity,
   minHeight,
   minHeightValue,
   content: Content,
@@ -177,9 +92,6 @@ export function GalleryGridBlock({
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const list = Array.isArray(images) ? images : [];
 
-  const layers = resolveBannerLayers(backgroundImages);
-  const hasBg = layers.length > 0;
-  const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
   const editorGridColumns = puck?.isEditing
@@ -201,7 +113,7 @@ export function GalleryGridBlock({
         style={{
           position: "relative",
           overflow: "hidden",
-          backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
+          backgroundColor: "var(--pf-color-bg)",
           minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
           padding: padVar(GALLERY_PAD_SHORTHAND),
           display: "flex",
@@ -211,9 +123,6 @@ export function GalleryGridBlock({
         }}
         {...resolveBlockAttrs(_style)}
       >
-        {hasBg && (
-          <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
-        )}
         {presetPreview ? (
           <PresetMediaPlaceholder kind="grid" columns={columns} gap={gap} />
         ) : (
@@ -242,7 +151,7 @@ export function GalleryGridBlock({
       style={{
         position: "relative",
         overflow: "hidden",
-        backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
+        backgroundColor: "var(--pf-color-bg)",
         minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
         padding: padVar(GALLERY_PAD_SHORTHAND),
         fontFamily: "var(--pf-font-body)",
@@ -250,9 +159,6 @@ export function GalleryGridBlock({
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {hasBg && (
-        <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
-      )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "80rem", margin: "0 auto" }}>
         {useLegacyImages ? (
           <div
@@ -315,35 +221,6 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   fields: {
     _style: productionStyleField,
     content: { type: "slot", allow: ["Image"] },
-    backgroundImages: {
-      type: "array",
-      label: "Background images",
-      arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } },
-    } as unknown as Field<GalleryImage[] | undefined>,
-    bgAnimation: {
-      type: "select",
-      label: "BG animation",
-      options: [
-        { label: "Crossfade", value: "crossfade" },
-        { label: "Ken Burns", value: "kenburns" },
-        { label: "Slide", value: "slide" },
-      ],
-    } as Field<GalleryGridProps["bgAnimation"]>,
-    bgSpeed: {
-      type: "select",
-      label: "BG speed",
-      options: [
-        { label: "Slow", value: "slow" },
-        { label: "Medium", value: "medium" },
-        { label: "Fast", value: "fast" },
-      ],
-    } as Field<GalleryGridProps["bgSpeed"]>,
-    overlayOpacity: {
-      type: "number",
-      label: "Overlay opacity",
-      min: 0,
-      max: 100,
-    } as Field<number | undefined>,
     minHeight: {
       type: "select",
       label: "Min height",

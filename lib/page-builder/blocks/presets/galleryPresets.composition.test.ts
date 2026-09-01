@@ -59,10 +59,13 @@ function allNodes(preset: Record<string, unknown>): PresetNode[] {
 }
 
 describe("gallery/featured/video preset compositions", () => {
-  it("every export has backgroundImages: [] and non-empty content", () => {
+  it("every export has an empty backgroundImages seed (or none) and non-empty content", () => {
+    // Photo Grid / Masonry presets stopped seeding `backgroundImages: []` — the
+    // wrapping Container's own defaultProps already supplies it. Absent and `[]`
+    // are equivalent here; either way no preset ships stray background data.
     for (const [name, preset] of Object.entries(ALL_PRESETS)) {
       const p = preset as Record<string, unknown>;
-      expect(p.backgroundImages, name).toEqual([]);
+      expect(p.backgroundImages ?? [], name).toEqual([]);
       expect(Array.isArray(p.content) && (p.content as unknown[]).length > 0, name).toBe(true);
     }
   });

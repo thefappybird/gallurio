@@ -124,14 +124,19 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
 });
 
 describe("GalleryMasonryBlock — banner/container props", () => {
-  it("renders a background image when backgroundImages has one entry", () => {
-    const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
-    const { container } = render(
-      GalleryMasonryBlock({ ...base, images: imgs(1), backgroundImages: bgImages })
-    );
-    const bgImg = container.querySelector("img[aria-hidden='true']");
-    expect(bgImg).toBeTruthy();
-    expect(bgImg?.getAttribute("src")).toContain("bg-pid1");
+  it("ignores legacy backgroundImages data surviving in saved data — no background image", () => {
+    // Masonry dropped background images (docs/portfolio/navigation-block-plan.md,
+    // Workstream A). A saved draft may still carry the key from before the
+    // change; the block must not read it.
+    const legacy = {
+      ...base,
+      images: imgs(1),
+      backgroundImages: [{ id: "bg1", publicId: "bg-pid1" }],
+    } as GalleryMasonryProps & Record<string, unknown>;
+    const { container } = render(GalleryMasonryBlock(legacy));
+    expect(container.querySelector("img[aria-hidden='true']")).toBeNull();
+    const section = container.querySelector("[data-block='gallery-masonry']") as HTMLElement;
+    expect(section.style.backgroundColor).toBe("var(--pf-color-bg)");
   });
 });
 

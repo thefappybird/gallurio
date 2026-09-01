@@ -20,7 +20,6 @@ const gridImages = (count: number) =>
   slot(Array.from({ length: count }, () => child("Image", { alt: "" })));
 
 export const GALLERY_GRID_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
@@ -34,7 +33,6 @@ export const GALLERY_GRID_PRESET: ContainerBlockProps = {
 };
 
 export const GALLERY_GRID_FULL_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
   minHeight: "auto",
   _style: {
     ...primaryBandSection,
@@ -63,12 +61,10 @@ export const GALLERY_GRID_FULL_PRESET: ContainerBlockProps = {
 };
 
 export const GALLERY_GRID_FRAMED_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
   minHeight: "auto",
   _style: { ...accentBandSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
   content: slot([
     child("Container", {
-      backgroundImages: [],
       _style: {
         ...pageInsetSection,
         ...hairlineFrame,

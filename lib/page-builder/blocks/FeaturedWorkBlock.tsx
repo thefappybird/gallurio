@@ -27,8 +27,7 @@ import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
 import { GALLERY_PAD_SHORTHAND, padVar } from "@/lib/page-builder/responsive";
 import type { GalleryImage } from "./GalleryGridBlock";
-import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
-import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { resolveGalleryMinHeight, resolveBannerLayers, GalleryBannerLayers } from "./bannerLayers";
 import type { ContainerHeight } from "./manualBlocks";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 
@@ -63,49 +62,6 @@ export const featuredWorkDefaultProps: FeaturedWorkProps = {
   bgSpeed: "medium",
   minHeight: "medium",
 };
-
-// ---------------------------------------------------------------------------
-// Banner background sub-render (same pattern as ContainerBlock)
-// ---------------------------------------------------------------------------
-
-function GalleryBannerLayers({
-  layers,
-  bgAnimation,
-  bgSpeed,
-  overlayAlpha,
-}: {
-  layers: { id: string; src: string }[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayAlpha: number;
-}) {
-  return (
-    <>
-      {overlayAlpha > 0 && (
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }}
-        />
-      )}
-      {layers.length === 1 && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={layers[0].src}
-          alt=""
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      )}
-      {layers.length >= 2 && (
-        <ContainerBackgroundSlideshow
-          images={layers}
-          animation={bgAnimation ?? "crossfade"}
-          speed={bgSpeed ?? "medium"}
-        />
-      )}
-    </>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Component (sync — isomorphic)

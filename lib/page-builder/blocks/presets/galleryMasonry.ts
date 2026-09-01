@@ -18,7 +18,6 @@ const masonryColumns = (heights: readonly string[], columns: 2 | 3 | 4) => {
 };
 
 export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
@@ -36,7 +35,6 @@ export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
 };
 
 export const GALLERY_MASONRY_WALL_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
   minHeight: "auto",
   _style: {
     ...primaryBandSection,
@@ -69,7 +67,6 @@ export const GALLERY_MASONRY_WALL_PRESET: ContainerBlockProps = {
 };
 
 export const GALLERY_MASONRY_JOURNAL_PRESET: ContainerBlockProps = {
-  backgroundImages: [],
   minHeight: "auto",
   _style: { ...pageSection, gap: 0 },
   content: slot([
@@ -79,7 +76,6 @@ export const GALLERY_MASONRY_JOURNAL_PRESET: ContainerBlockProps = {
       _style: { gap: 40 },
       content: slot([
         child("Container", {
-          backgroundImages: [],
           _style: {
             ...accentBandSection,
             gap: 14,

@@ -54,10 +54,14 @@ describe("gallery section presets", () => {
 
 describe("section preset background shape", () => {
   it("every preset uses backgroundImages: [] (not the legacy backgroundImagePublicId)", () => {
+    // Photo Grid / Masonry presets stopped seeding backgroundImages — the
+    // wrapping Container's own defaultProps already supplies it, so the key is
+    // legitimately absent for those; everywhere it IS present, it must be an array.
     for (const [key, preset] of Object.entries(SECTION_PRESETS)) {
       const props = preset.defaultProps as Record<string, unknown>;
-      expect(props, `${key} should expose backgroundImages`).toHaveProperty("backgroundImages");
-      expect(Array.isArray(props.backgroundImages), `${key}.backgroundImages is an array`).toBe(true);
+      if ("backgroundImages" in props) {
+        expect(Array.isArray(props.backgroundImages), `${key}.backgroundImages is an array`).toBe(true);
+      }
       expect(props, `${key} should drop backgroundImagePublicId`).not.toHaveProperty("backgroundImagePublicId");
     }
   });
