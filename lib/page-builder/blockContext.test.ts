@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { applyGalleryChromeDefaults, getGalleryChromeLabelsFrom, applyCollectionPopupDefaults } from "./blockContext";
+import {
+  applyGalleryChromeDefaults,
+  getGalleryChromeLabelsFrom,
+  applyCollectionPopupDefaults,
+  applyNavChromeDefaults,
+  getNavChromeLabelsFrom,
+} from "./blockContext";
 
 // ---------------------------------------------------------------------------
 // Expected English defaults (must stay byte-identical to blockContext.ts)
@@ -99,6 +105,91 @@ describe("getGalleryChromeLabelsFrom", () => {
     };
     const puck = { metadata: { workspace: { _id: "ws-3", name: "X", chrome: { gallery: chrome } } } };
     expect(getGalleryChromeLabelsFrom(puck)).toEqual(chrome);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Nav chrome — mirrors the gallery chrome tests above.
+// ---------------------------------------------------------------------------
+
+const NAV_DEFAULTS = {
+  navLandmark: "Portfolio",
+  home: "Home",
+  gallery: "Gallery",
+  contact: "Contact",
+  openMenu: "Open menu",
+  closeMenu: "Close menu",
+};
+
+describe("applyNavChromeDefaults", () => {
+  it("returns all 6 defaults when called with an empty object", () => {
+    expect(applyNavChromeDefaults({})).toEqual(NAV_DEFAULTS);
+  });
+
+  it("returns all 6 defaults when called with no argument", () => {
+    expect(applyNavChromeDefaults()).toEqual(NAV_DEFAULTS);
+  });
+
+  it("overrides only the supplied keys, keeping the rest as defaults", () => {
+    const result = applyNavChromeDefaults({ home: "Simula" });
+    expect(result.home).toBe("Simula");
+    expect(result.navLandmark).toBe(NAV_DEFAULTS.navLandmark);
+    expect(result.gallery).toBe(NAV_DEFAULTS.gallery);
+    expect(result.contact).toBe(NAV_DEFAULTS.contact);
+    expect(result.openMenu).toBe(NAV_DEFAULTS.openMenu);
+    expect(result.closeMenu).toBe(NAV_DEFAULTS.closeMenu);
+  });
+});
+
+describe("getNavChromeLabelsFrom", () => {
+  it("returns all-English defaults when puck is undefined", () => {
+    expect(getNavChromeLabelsFrom(undefined)).toEqual(NAV_DEFAULTS);
+  });
+
+  it("returns all-English defaults when puck is null", () => {
+    expect(getNavChromeLabelsFrom(null)).toEqual(NAV_DEFAULTS);
+  });
+
+  it("returns all-English defaults when puck has no metadata", () => {
+    expect(getNavChromeLabelsFrom({})).toEqual(NAV_DEFAULTS);
+  });
+
+  it("returns all-English defaults when puck.metadata.workspace has no chrome", () => {
+    expect(
+      getNavChromeLabelsFrom({ metadata: { workspace: { _id: "ws-1", name: "Studio" } } })
+    ).toEqual(NAV_DEFAULTS);
+  });
+
+  it("overrides home from puck metadata while keeping other keys as defaults", () => {
+    const puck = {
+      metadata: {
+        workspace: {
+          _id: "ws-2",
+          name: "Liwanag",
+          chrome: { nav: { home: "Simula" } },
+        },
+      },
+    };
+    const result = getNavChromeLabelsFrom(puck);
+    expect(result.home).toBe("Simula");
+    expect(result.navLandmark).toBe(NAV_DEFAULTS.navLandmark);
+    expect(result.gallery).toBe(NAV_DEFAULTS.gallery);
+    expect(result.contact).toBe(NAV_DEFAULTS.contact);
+    expect(result.openMenu).toBe(NAV_DEFAULTS.openMenu);
+    expect(result.closeMenu).toBe(NAV_DEFAULTS.closeMenu);
+  });
+
+  it("passes through all 6 keys when fully provided via puck metadata", () => {
+    const chrome = {
+      navLandmark: "NL",
+      home: "H",
+      gallery: "G",
+      contact: "C",
+      openMenu: "OM",
+      closeMenu: "CM",
+    };
+    const puck = { metadata: { workspace: { _id: "ws-3", name: "X", chrome: { nav: chrome } } } };
+    expect(getNavChromeLabelsFrom(puck)).toEqual(chrome);
   });
 });
 

@@ -55,9 +55,17 @@ import { MANUAL_BLOCK_KEYS } from "./blockCategories";
 import {
   SECTION_PRESETS,
   SECTION_PRESET_KEYS,
+  NAV_PRESET_KEYS,
   PRESET_GROUPS,
   type SectionPresetKey,
 } from "./blocks/sectionPresets";
+import {
+  NavigationBlock,
+  navigationDefaultProps,
+  navigationFields,
+  navigationPermissions,
+  type NavigationBlockProps,
+} from "./blocks/NavigationBlock";
 // Data blocks are SERVER modules (Mongo / node:async_hooks). Import their TYPES
 // only — their value defaultProps are inlined below so this CLIENT config never
 // drags the server graph into the editor bundle (that breaks the build).
@@ -110,26 +118,32 @@ import {
   type ContainerAnchorProps,
 } from "./blocks/manualBlocks";
 
-type EditorComponents = Record<SectionPresetKey, ContainerBlockProps> & {
-  // Data blocks
-  GalleryGrid: GalleryGridProps;
-  GalleryMasonry: GalleryMasonryProps;
-  FeaturedWork: FeaturedWorkProps;
-  CollectionCard: CollectionCardProps;
-  Video: VideoBlockProps;
-  ContactDetails: ContactDetailsProps;
-  // Manual primitives
-  Heading: HeadingBlockProps;
-  Text: TextBlockProps;
-  Image: ImageBlockProps;
-  Button: ButtonBlockProps;
-  Spacer: SpacerBlockProps;
-  Divider: DividerBlockProps;
-  Columns: ColumnsBlockProps;
-  Container: ContainerBlockProps;
-  ContainerAnchor: ContainerAnchorProps;
-  MasonryClone: MasonryCloneProps;
-};
+type NavPresetKey = (typeof NAV_PRESET_KEYS)[number];
+
+// The `nav` group's 3 preset keys render through NavigationBlock, not
+// ContainerBlock — they're carved out of the otherwise-uniform preset Record.
+type EditorComponents = Omit<Record<SectionPresetKey, ContainerBlockProps>, NavPresetKey> &
+  Record<NavPresetKey, NavigationBlockProps> & {
+    // Data blocks
+    GalleryGrid: GalleryGridProps;
+    GalleryMasonry: GalleryMasonryProps;
+    FeaturedWork: FeaturedWorkProps;
+    CollectionCard: CollectionCardProps;
+    Video: VideoBlockProps;
+    ContactDetails: ContactDetailsProps;
+    // Manual primitives
+    Heading: HeadingBlockProps;
+    Text: TextBlockProps;
+    Image: ImageBlockProps;
+    Button: ButtonBlockProps;
+    Spacer: SpacerBlockProps;
+    Divider: DividerBlockProps;
+    Columns: ColumnsBlockProps;
+    Container: ContainerBlockProps;
+    ContainerAnchor: ContainerAnchorProps;
+    MasonryClone: MasonryCloneProps;
+    Navigation: NavigationBlockProps;
+  };
 
 // ---------------------------------------------------------------------------
 // Shared preview chrome (uses the brand-kit CSS vars applied by the editor
@@ -327,6 +341,7 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.blocks.divider": "Divider",
   "puckConfig.blocks.columns": "Columns",
   "puckConfig.blocks.container": "Container",
+  "puckConfig.blocks.navigation": "Navigation",
   "puckConfig.fields.style": "Style",
   "puckConfig.fields.pageStyle": "Page style",
   "puckConfig.fields.bgAnimation": "Background animation",
@@ -521,13 +536,26 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
   } as unknown as ComponentConfig<ContainerBlockProps>["fields"];
 
   // ---- Preset block editor configs (derived from SECTION_PRESETS) ---------
-  // 33 keys, one ComponentConfig each — same shape the ten hand-written consts
+  // 36 keys, one ComponentConfig each — same shape the ten hand-written consts
   // used to have. metadata (e.g. GalleryLandingPreset's backgroundImagesHint)
   // comes straight off the registry entry so it is never duplicated here.
+  // The `nav` group's 3 keys render through NavigationBlock instead of
+  // ContainerBlock (componentType: "Navigation" on the registry entry).
 
   const presetComponents = Object.fromEntries(
     SECTION_PRESET_KEYS.map((key) => {
       const presetEntry = SECTION_PRESETS[key];
+      if (presetEntry.componentType === "Navigation") {
+        const navCfg: ComponentConfig<NavigationBlockProps> = {
+          label: t(presetEntry.labelKey),
+          inline: true,
+          fields: navigationFields,
+          defaultProps: presetEntry.defaultProps as NavigationBlockProps,
+          permissions: navigationPermissions,
+          render: NavigationBlock as ComponentConfig<NavigationBlockProps>["render"],
+        };
+        return [key, navCfg] as const;
+      }
       const cfg: ComponentConfig<ContainerBlockProps> = {
         label: t(presetEntry.labelKey),
         // inline so the section root (which carries colSpan/rowSpan grid placement) is
@@ -536,13 +564,14 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
         inline: true,
         fields: editorContainerFields,
         resolveFields: resolveContainerFieldsTyped,
-        defaultProps: presetEntry.defaultProps,
+        defaultProps: presetEntry.defaultProps as ContainerBlockProps,
         render: ContainerBlock,
         ...(presetEntry.metadata ? { metadata: presetEntry.metadata } : {}),
       };
       return [key, cfg] as const;
     })
-  ) as Record<SectionPresetKey, ComponentConfig<ContainerBlockProps>>;
+  ) as unknown as Omit<Record<SectionPresetKey, ComponentConfig<ContainerBlockProps>>, NavPresetKey> &
+    Record<NavPresetKey, ComponentConfig<NavigationBlockProps>>;
 
   // ---- Gallery data blocks -------------------------------------------------
 
@@ -552,19 +581,16 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     defaultProps: galleryGridDefaultProps,
     // `images` is intentionally absent — the editor drives it via StyleToolkitField.
     // columns/gap moved to _style.galleryColumns/_style.galleryGap (Layout tab Gallery section).
-    // Banner fields are hidden (visible: false) and managed by StyleToolkitField;
-    // resolveFields strips them so they never appear in the standard Puck sidebar.
+    // No background-image controls: the grid's own content IS its images now
+    // (see bannerLayers.ts). `minHeight` is hidden and managed by StyleToolkitField;
+    // resolveFields strips it so it never appears in the standard Puck sidebar.
     fields: {
       _style: styleField,
       content: { type: "slot", allow: ["Image"] },
-      backgroundImages: { type: "array", label: t("puckConfig.fields.backgroundImages"), visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryGridProps["backgroundImages"]>,
-      bgAnimation: { type: "select", label: t("puckConfig.fields.bgAnimationShort"), visible: false, options: [{ label: t("puckConfig.options.bgAnimation.crossfade"), value: "crossfade" }, { label: t("puckConfig.options.bgAnimation.kenburns"), value: "kenburns" }, { label: t("puckConfig.options.bgAnimation.slide"), value: "slide" }] } as unknown as Field<GalleryGridProps["bgAnimation"]>,
-      bgSpeed: { type: "select", label: t("puckConfig.fields.bgSpeedShort"), visible: false, options: [{ label: t("puckConfig.options.bgSpeedShort.slow"), value: "slow" }, { label: t("puckConfig.options.bgSpeedShort.medium"), value: "medium" }, { label: t("puckConfig.options.bgSpeedShort.fast"), value: "fast" }] } as unknown as Field<GalleryGridProps["bgSpeed"]>,
-      overlayOpacity: { type: "number", label: t("puckConfig.fields.overlayOpacity"), visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
       minHeight: { type: "select", label: t("puckConfig.fields.minHeight"), visible: false, options: [{ label: t("puckConfig.options.minHeightShort.auto"), value: "auto" }, { label: t("puckConfig.options.minHeightShort.short"), value: "short" }, { label: t("puckConfig.options.minHeightShort.medium"), value: "medium" }, { label: t("puckConfig.options.minHeightShort.tall"), value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
     } as unknown as Fields<GalleryGridProps>,
     resolveFields: (_data, { fields }) => {
-      const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
+      const { minHeight: _mh, ...rest } = fields as Record<string, unknown>;
       return rest as typeof fields;
     },
     render: GalleryGridBlock,
@@ -576,7 +602,8 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     defaultProps: galleryMasonryDefaultProps,
     // `images` is intentionally absent — driven by StyleToolkitField.
     // columns/gap moved to _style.galleryColumns/_style.galleryGap (Layout tab Gallery section).
-    // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
+    // No background-image controls: the masonry's own content IS its images now
+    // (see bannerLayers.ts).
     fields: {
       _style: styleField,
       content: { type: "slot", allow: ["Image"] },
@@ -584,14 +611,10 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
       column2: { type: "slot", allow: ["Image", "MasonryClone"] },
       column3: { type: "slot", allow: ["Image", "MasonryClone"] },
       column4: { type: "slot", allow: ["Image", "MasonryClone"] },
-      backgroundImages: { type: "array", label: t("puckConfig.fields.backgroundImages"), visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryMasonryProps["backgroundImages"]>,
-      bgAnimation: { type: "select", label: t("puckConfig.fields.bgAnimationShort"), visible: false, options: [{ label: t("puckConfig.options.bgAnimation.crossfade"), value: "crossfade" }, { label: t("puckConfig.options.bgAnimation.kenburns"), value: "kenburns" }, { label: t("puckConfig.options.bgAnimation.slide"), value: "slide" }] } as unknown as Field<GalleryMasonryProps["bgAnimation"]>,
-      bgSpeed: { type: "select", label: t("puckConfig.fields.bgSpeedShort"), visible: false, options: [{ label: t("puckConfig.options.bgSpeedShort.slow"), value: "slow" }, { label: t("puckConfig.options.bgSpeedShort.medium"), value: "medium" }, { label: t("puckConfig.options.bgSpeedShort.fast"), value: "fast" }] } as unknown as Field<GalleryMasonryProps["bgSpeed"]>,
-      overlayOpacity: { type: "number", label: t("puckConfig.fields.overlayOpacity"), visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
       minHeight: { type: "select", label: t("puckConfig.fields.minHeight"), visible: false, options: [{ label: t("puckConfig.options.minHeightShort.auto"), value: "auto" }, { label: t("puckConfig.options.minHeightShort.short"), value: "short" }, { label: t("puckConfig.options.minHeightShort.medium"), value: "medium" }, { label: t("puckConfig.options.minHeightShort.tall"), value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
     } as unknown as Fields<GalleryMasonryProps>,
     resolveFields: (_data, { fields }) => {
-      const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
+      const { minHeight: _mh, ...rest } = fields as Record<string, unknown>;
       return rest as typeof fields;
     },
     render: GalleryMasonryBlock,
@@ -932,13 +955,25 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     render: ContainerBlock,
   };
 
+  // ---- Navigation (base type; not drawer-listed — see the 3 `nav` presets
+  // above for the drawer-insertable variants) --------------------------------
+
+  const navigation: ComponentConfig<NavigationBlockProps> = {
+    label: t("puckConfig.blocks.navigation"),
+    inline: true,
+    defaultProps: navigationDefaultProps,
+    fields: navigationFields,
+    permissions: navigationPermissions,
+    render: NavigationBlock as ComponentConfig<NavigationBlockProps>["render"],
+  };
+
   // ---- Final config --------------------------------------------------------
 
-  // 11 collapsible drawer categories, one per group. Only the first (hero)
-  // starts expanded — 33 items all open at once is an unusable drawer.
+  // 12 collapsible drawer categories, one per group. Only the first (nav)
+  // starts expanded — 36 items all open at once is an unusable drawer.
   // `defaultExpanded` must be set EXPLICITLY on every group: Puck renders a
-  // category that omits the key as expanded, so leaving it off the other ten
-  // opens all of them (observed in the browser before this was pinned).
+  // category that omits the key as expanded, so leaving it off the other
+  // eleven opens all of them (observed in the browser before this was pinned).
   const presetCategories = PRESET_GROUPS.reduce<
     Record<string, { title: string; components: SectionPresetKey[]; defaultExpanded: boolean }>
   >((acc, group, i) => {
@@ -971,6 +1006,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
       Divider: divider,
       Columns: columns,
       Container: container,
+      Navigation: navigation,
       ContainerAnchor: {
         label: "ContainerAnchor",
         defaultProps: containerAnchorDefaultProps,

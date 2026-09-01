@@ -1,10 +1,11 @@
-import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import type { PortfolioTemplate } from "./types";
-import { zone } from "./_blocks";
+import { zone, navigationBlock } from "./_blocks";
 
-// An intentionally empty canvas. Brand kit, nav, collections popup, and contact
-// form all fall back to their defaults (DEFAULT_BRAND_KIT here; header/popup keep
-// the editor defaults applied when this template is chosen).
+// An intentionally empty canvas but for the pinned Navigation — brand kit,
+// collections popup, and contact form all fall back to their defaults
+// (DEFAULT_BRAND_KIT here; popup keeps the editor defaults applied when this
+// template is chosen). scratch must not open header-less.
 export const scratchTemplate: PortfolioTemplate = {
   id: "scratch",
   label: "I'll start from scratch",
@@ -19,10 +20,9 @@ export const scratchTemplate: PortfolioTemplate = {
     buttonStyle: "solid",
     buttonColor: "foreground",
   },
-  defaultHeader: { ...DEFAULT_HEADER_CONFIG },
   defaultCollectionsPopup: {},
   seedData: () => ({
-    home: zone([]),
-    gallery: zone([]),
+    home: zone([navigationBlock("Navigation-scratch-home-0")]),
+    gallery: zone([navigationBlock("Navigation-scratch-gal-0")]),
   }),
 };

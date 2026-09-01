@@ -15,7 +15,7 @@
  */
 
 import React from "react";
-import type { Config } from "@measured/puck";
+import type { Config, ComponentConfig } from "@measured/puck";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PF_PAGE_CONTAINER, PF_RESPONSIVE_CSS } from "./responsive";
 import { MANUAL_BLOCK_KEYS } from "./blockCategories";
@@ -43,10 +43,18 @@ import {
 import {
   SECTION_PRESETS,
   SECTION_PRESET_KEYS,
+  NAV_PRESET_KEYS,
   PRESET_GROUPS,
   type SectionPresetKey,
   type PresetGroupId,
 } from "./blocks/sectionPresets";
+import {
+  navigationBlockConfig,
+  navigationFields,
+  navigationPermissions,
+  NavigationBlock,
+  type NavigationBlockProps,
+} from "./blocks/NavigationBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
 import type { FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
@@ -68,52 +76,74 @@ import type {
 // Components union — every preset is a Container (composed section).
 // ---------------------------------------------------------------------------
 
-type Components = Record<SectionPresetKey, ContainerBlockProps> & {
-  // Data blocks
-  GalleryGrid: GalleryGridProps;
-  GalleryMasonry: GalleryMasonryProps;
-  FeaturedWork: FeaturedWorkProps;
-  CollectionCard: CollectionCardProps;
-  Video: VideoBlockProps;
-  ContactDetails: ContactDetailsProps;
-  // Manual primitives
-  Heading: HeadingBlockProps;
-  Text: TextBlockProps;
-  Image: ImageBlockProps;
-  Button: ButtonBlockProps;
-  Spacer: SpacerBlockProps;
-  Divider: DividerBlockProps;
-  Columns: ColumnsBlockProps;
-  Container: ContainerBlockProps;
-  ContainerAnchor: ContainerAnchorProps;
-  MasonryClone: MasonryCloneProps;
-};
+type NavPresetKey = (typeof NAV_PRESET_KEYS)[number];
+
+type Components = Omit<Record<SectionPresetKey, ContainerBlockProps>, NavPresetKey> &
+  Record<NavPresetKey, NavigationBlockProps> & {
+    // Data blocks
+    GalleryGrid: GalleryGridProps;
+    GalleryMasonry: GalleryMasonryProps;
+    FeaturedWork: FeaturedWorkProps;
+    CollectionCard: CollectionCardProps;
+    Video: VideoBlockProps;
+    ContactDetails: ContactDetailsProps;
+    // Manual primitives
+    Heading: HeadingBlockProps;
+    Text: TextBlockProps;
+    Image: ImageBlockProps;
+    Button: ButtonBlockProps;
+    Spacer: SpacerBlockProps;
+    Divider: DividerBlockProps;
+    Columns: ColumnsBlockProps;
+    Container: ContainerBlockProps;
+    ContainerAnchor: ContainerAnchorProps;
+    MasonryClone: MasonryCloneProps;
+    Navigation: NavigationBlockProps;
+  };
 
 // A composed-section preset is the Container render + fields, with a pre-filled
-// `content` slot supplied as defaultProps.
+// `content` slot supplied as defaultProps. `nav` group entries instead render
+// through NavigationBlock (componentType: "Navigation" in the registry).
 function presetConfig(label: string, defaultProps: ContainerBlockProps) {
   return { label, fields: containerFields, defaultProps, render: ContainerBlock };
 }
 
-// The drawer's 11 collapsible section-group categories, derived from the
-// registry's PRESET_GROUPS so they can't drift from the 33 preset keys. Only
-// the first group starts open — 33 items all expanded is an unusable drawer.
+function navPresetConfig(label: string, defaultProps: NavigationBlockProps) {
+  return {
+    label,
+    fields: navigationFields,
+    defaultProps,
+    permissions: navigationPermissions,
+    render: NavigationBlock,
+  };
+}
+
+// The drawer's 12 collapsible section-group categories, derived from the
+// registry's PRESET_GROUPS so they can't drift from the 36 preset keys. Only
+// the first group starts open — 36 items all expanded is an unusable drawer.
 // Object.fromEntries widens to string keys, so this one cast restores the
 // exact PresetGroupId -> Category shape (all keys/values are still built
 // straight from PRESET_GROUPS, nothing is hand-typed).
 const presetCategories = Object.fromEntries(
   PRESET_GROUPS.map((group) => [
     group.id,
-    { title: group.label, components: [...group.keys], defaultExpanded: group.id === "hero" },
+    { title: group.label, components: [...group.keys], defaultExpanded: group.id === "nav" },
   ])
 ) as Record<PresetGroupId, { title: string; components: SectionPresetKey[]; defaultExpanded: boolean }>;
 
-// The 33 preset components, derived from the registry. Same fromEntries-cast
+// The 36 preset components, derived from the registry. Same fromEntries-cast
 // reasoning as presetCategories above: Puck's Config generic wants the exact
 // `Record<SectionPresetKey, ...>` shape that a mapped fromEntries can't infer.
+// `nav` group entries render through NavigationBlock instead of ContainerBlock.
 const presetComponents = Object.fromEntries(
-  SECTION_PRESET_KEYS.map((key) => [key, presetConfig(SECTION_PRESETS[key].label, SECTION_PRESETS[key].defaultProps)])
-) as Record<SectionPresetKey, ReturnType<typeof presetConfig>>;
+  SECTION_PRESET_KEYS.map((key) => {
+    const presetEntry = SECTION_PRESETS[key];
+    return presetEntry.componentType === "Navigation"
+      ? [key, navPresetConfig(presetEntry.label, presetEntry.defaultProps as NavigationBlockProps)]
+      : [key, presetConfig(presetEntry.label, presetEntry.defaultProps as ContainerBlockProps)];
+  })
+) as unknown as Omit<Record<SectionPresetKey, ComponentConfig<ContainerBlockProps>>, NavPresetKey> &
+  Record<NavPresetKey, ComponentConfig<NavigationBlockProps>>;
 
 export const puckConfig: Config<Components> = {
   categories: {
@@ -138,6 +168,7 @@ export const puckConfig: Config<Components> = {
     Container: containerBlockConfig,
     ContainerAnchor: containerAnchorBlockConfig,
     MasonryClone: masonryCloneBlockConfig,
+    Navigation: navigationBlockConfig,
   },
   root: {
     fields: {},

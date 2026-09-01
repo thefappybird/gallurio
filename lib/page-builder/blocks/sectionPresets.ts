@@ -1,29 +1,34 @@
 /**
  * Section presets — the "Preset blocks" shown in the editor drawer.
  *
- * Each preset is a `Container` (see manualBlocks) whose `content` slot is
- * PRE-FILLED with a composition of manual blocks (Heading + Text + Button…).
- * Dragging one in inserts the whole section; every child block is then selected
- * and styled INDIVIDUALLY via its own `_style` toolkit — so each piece of text
- * is its own block, not a bundle of text-inputs on one monolithic component.
+ * Every preset but the `nav` group is a `Container` (see manualBlocks) whose
+ * `content` slot is PRE-FILLED with a composition of manual blocks (Heading +
+ * Text + Button…). Dragging one in inserts the whole section; every child
+ * block is then selected and styled INDIVIDUALLY via its own `_style` toolkit
+ * — so each piece of text is its own block, not a bundle of text-inputs on one
+ * monolithic component. The `nav` group's 3 entries render through
+ * `NavigationBlock` instead (`componentType: "Navigation"`) — see
+ * `./NavigationBlock.tsx`.
  *
  * The compositions live one file per section group under `./presets/`. THIS file
- * is the registry that names them: 11 groups x 3 variants = 33 component keys,
+ * is the registry that names them: 12 groups x 3 variants = 36 component keys,
  * each carrying its group, its localized label/description keys, and what
  * workspace content it depends on.
  *
  * The registry is the SINGLE source those facts come from. `puckConfig`,
  * `createEditorConfig`, `PRESET_BLOCK_KEYS`, `fillBlockDefaults`, the editor's
  * drawer categories, demo-mode filtering, and the guide's preset detection all
- * derive from it rather than repeating 33 keys by hand.
+ * derive from it rather than repeating 36 keys by hand.
  *
- * Client-safe (pure data + the isomorphic ContainerBlock render), so the SAME
- * configs power the editor canvas and the public renderer. Only the `_style`
- * field and the bg-image field differ between editor/prod (the editor swaps in
- * visual pickers) — field KEYS match, so editor/prod parity holds.
+ * Client-safe (pure data + the isomorphic Container/Navigation renders), so
+ * the SAME configs power the editor canvas and the public renderer. Only the
+ * `_style` field and the bg-image field differ between editor/prod (the editor
+ * swaps in visual pickers) — field KEYS match, so editor/prod parity holds.
  */
 
 import type { ContainerBlockProps } from "./manualBlocks";
+import type { NavigationBlockProps } from "./NavigationBlock";
+import { NAV_BORDERED_PRESET, NAV_UNDERLINED_PRESET, NAV_SCALED_PRESET } from "./presets/navigation";
 import { HERO_PRESET, HERO_SPLIT_PRESET, HERO_STATEMENT_PRESET } from "./presets/hero";
 import { ABOUT_PRESET, ABOUT_PORTRAIT_PRESET, ABOUT_PROFILE_PRESET } from "./presets/about";
 import { SERVICES_PRESET, SERVICES_MENU_PRESET, SERVICES_FEATURE_PRESET } from "./presets/services";
@@ -58,6 +63,7 @@ import {
 
 // Re-exported so existing importers (tests, templates) keep working unchanged.
 export {
+  NAV_BORDERED_PRESET, NAV_UNDERLINED_PRESET, NAV_SCALED_PRESET,
   HERO_PRESET, HERO_SPLIT_PRESET, HERO_STATEMENT_PRESET,
   ABOUT_PRESET, ABOUT_PORTRAIT_PRESET, ABOUT_PROFILE_PRESET,
   SERVICES_PRESET, SERVICES_MENU_PRESET, SERVICES_FEATURE_PRESET,
@@ -75,8 +81,9 @@ export {
 // Registry types
 // ---------------------------------------------------------------------------
 
-/** The 11 section groups, in drawer order. */
+/** The 12 section groups, in drawer order. */
 export const PRESET_GROUP_IDS = [
+  "nav",
   "hero",
   "about",
   "services",
@@ -110,20 +117,28 @@ export type SectionPresetEntry = {
   descriptionKey: string;
   group: PresetGroupId;
   dependsOn: readonly PresetDependency[];
-  defaultProps: ContainerBlockProps;
+  defaultProps: ContainerBlockProps | NavigationBlockProps;
+  /** Which Puck render/fields this entry uses. Every preset but the `nav` group
+   *  renders through `ContainerBlock`; defaults to "Container" so the other 33
+   *  entries need no change. */
+  componentType?: "Container" | "Navigation";
   /** Optional editor-only hints. Never a field — parity with `puckConfig` holds. */
   metadata?: Record<string, unknown>;
 };
 
 // A registry row. `group` and the camelCase i18n keys are derived from the key so
-// 33 entries cannot drift into inconsistent naming.
+// entries cannot drift into inconsistent naming.
 function entry(
   key: string,
   group: PresetGroupId,
   label: string,
   description: string,
-  defaultProps: ContainerBlockProps,
-  extra?: { dependsOn?: readonly PresetDependency[]; metadata?: Record<string, unknown> }
+  defaultProps: ContainerBlockProps | NavigationBlockProps,
+  extra?: {
+    dependsOn?: readonly PresetDependency[];
+    metadata?: Record<string, unknown>;
+    componentType?: "Container" | "Navigation";
+  }
 ): SectionPresetEntry {
   const camel = key.charAt(0).toLowerCase() + key.slice(1);
   return {
@@ -134,12 +149,13 @@ function entry(
     group,
     dependsOn: extra?.dependsOn ?? [],
     defaultProps,
+    componentType: extra?.componentType ?? "Container",
     ...(extra?.metadata ? { metadata: extra.metadata } : {}),
   };
 }
 
 // ---------------------------------------------------------------------------
-// The 33 presets, in drawer order: group by group, variant A first.
+// The 36 presets, in drawer order: group by group, variant A first.
 //
 // The ten original component keys are UNCHANGED — persisted pages reference them.
 // Their LABELS changed from the old flat group name to the variant name, because
@@ -147,6 +163,20 @@ function entry(
 // ---------------------------------------------------------------------------
 
 export const SECTION_PRESETS = {
+  // ---- Navigation ----
+  // Dragging one onto a page replaces that zone's existing Navigation (the
+  // header is pinned/undeletable — there is never a second one) rather than
+  // inserting alongside it.
+  NavBorderedPreset: entry("NavBorderedPreset", "nav", "Bordered navbar",
+    "A bottom border and a highlighted active link on a compact bar. Replaces the page's current header.",
+    NAV_BORDERED_PRESET, { componentType: "Navigation" }),
+  NavUnderlinedPreset: entry("NavUnderlinedPreset", "nav", "Underlined navbar",
+    "A quiet bar with an accent underline beneath the active link. Replaces the page's current header.",
+    NAV_UNDERLINED_PRESET, { componentType: "Navigation" }),
+  NavScaledPreset: entry("NavScaledPreset", "nav", "Scaled navbar",
+    "The active link scales up instead of a fill or underline. Replaces the page's current header.",
+    NAV_SCALED_PRESET, { componentType: "Navigation" }),
+
   // ---- Hero ----
   HeroPreset: entry("HeroPreset", "hero", "Immersive cover",
     "Tall image or slideshow background with centered copy over a scrim.", HERO_PRESET),
@@ -263,7 +293,7 @@ export const SECTION_PRESETS = {
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;
 
-/** All 33 keys, in drawer order. */
+/** All 36 keys, in drawer order. */
 export const SECTION_PRESET_KEYS = Object.keys(SECTION_PRESETS) as SectionPresetKey[];
 
 export type PresetGroup = {
@@ -275,6 +305,7 @@ export type PresetGroup = {
 };
 
 const GROUP_LABELS: Record<PresetGroupId, string> = {
+  nav: "Navigation",
   hero: "Hero",
   about: "About",
   services: "Services",
@@ -288,13 +319,20 @@ const GROUP_LABELS: Record<PresetGroupId, string> = {
   footer: "Footer",
 };
 
-/** The drawer's collapsible categories: 11 groups, each with its 3 variants. */
+/** The drawer's collapsible categories: 12 groups, each with its 3 variants. */
 export const PRESET_GROUPS: readonly PresetGroup[] = PRESET_GROUP_IDS.map((id) => ({
   id,
   label: GROUP_LABELS[id],
   labelKey: `puckConfig.categories.${id}`,
   keys: SECTION_PRESET_KEYS.filter((key) => SECTION_PRESETS[key].group === id),
 }));
+
+/** The 3 `nav` group keys — these render through `NavigationBlock`, not
+ *  `ContainerBlock`, so `puckConfig`/`createEditorConfig`/`fillBlockDefaults`
+ *  branch on this instead of assuming every preset is a Container. */
+export const NAV_PRESET_KEYS: readonly SectionPresetKey[] = SECTION_PRESET_KEYS.filter(
+  (key) => SECTION_PRESETS[key].componentType === "Navigation"
+);
 
 /** Presets that need the (auth-gated) collections picker — hidden in demo mode. */
 export const COLLECTION_PRESET_KEYS: readonly SectionPresetKey[] = SECTION_PRESET_KEYS.filter(

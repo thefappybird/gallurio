@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   PRESET_GROUP_IDS,
   SECTION_PRESETS,
+  SECTION_PRESET_KEYS,
+  NAV_PRESET_KEYS,
   CTA_PRESET,
   HERO_PRESET,
   GALLERY_GRID_PRESET,
@@ -29,8 +31,12 @@ describe("SECTION_PRESETS labels", () => {
 });
 
 describe("SECTION_PRESETS semantic color diversity", () => {
-  it("grounds every preset in a supported active-theme section token", () => {
+  // The `nav` group renders through NavigationBlock (componentType: "Navigation"),
+  // not ContainerBlock — it has no `_style.bgColorToken` section-ground concept
+  // (Navigation uses its own `backgroundColor`/`backgroundOpacity` fields instead).
+  it("grounds every Container-shaped preset in a supported active-theme section token", () => {
     for (const [key, preset] of Object.entries(SECTION_PRESETS)) {
+      if (preset.componentType === "Navigation") continue;
       const style = preset.defaultProps._style as { bgColorToken?: string } | undefined;
       expect(
         SECTION_GROUND_TOKENS.has(style?.bgColorToken ?? ""),
@@ -39,14 +45,45 @@ describe("SECTION_PRESETS semantic color diversity", () => {
     }
   });
 
-  it("gives every three-variant group at least two distinct section grounds", () => {
+  it("gives every three-variant Container-shaped group at least two distinct section grounds", () => {
     for (const group of PRESET_GROUP_IDS) {
+      if (group === "nav") continue;
       const grounds = new Set(
         Object.values(SECTION_PRESETS)
           .filter((preset) => preset.group === group)
           .map((preset) => preset.defaultProps._style?.bgColorToken)
       );
       expect(grounds.size, `${group} presets all use the same section ground`).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
+describe("componentType", () => {
+  it("defaults to 'Container' for every non-nav preset", () => {
+    for (const key of SECTION_PRESET_KEYS) {
+      if (NAV_PRESET_KEYS.includes(key)) continue;
+      expect(SECTION_PRESETS[key].componentType, key).toBe("Container");
+    }
+  });
+
+  it("is 'Navigation' for exactly the 3 nav presets", () => {
+    expect(NAV_PRESET_KEYS.sort()).toEqual(
+      ["NavBorderedPreset", "NavScaledPreset", "NavUnderlinedPreset"].sort()
+    );
+    for (const key of NAV_PRESET_KEYS) {
+      expect(SECTION_PRESETS[key].componentType).toBe("Navigation");
+    }
+  });
+});
+
+describe("nav group", () => {
+  it("is first in PRESET_GROUP_IDS", () => {
+    expect(PRESET_GROUP_IDS[0]).toBe("nav");
+  });
+
+  it("every nav preset carries _chrome: 'nav'", () => {
+    for (const key of NAV_PRESET_KEYS) {
+      expect((SECTION_PRESETS[key].defaultProps as { _chrome?: string })._chrome).toBe("nav");
     }
   });
 });

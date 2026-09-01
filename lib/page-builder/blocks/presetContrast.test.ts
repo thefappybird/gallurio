@@ -210,8 +210,8 @@ function measure(presetKey: string, kitId: string): Measurement[] {
 // ---------------------------------------------------------------------------
 
 describe("preset contrast against every committed brand kit", () => {
-  it("covers all 33 presets and all 6 kits", () => {
-    expect(SECTION_PRESET_KEYS).toHaveLength(33);
+  it("covers all 36 presets and all 6 kits", () => {
+    expect(SECTION_PRESET_KEYS).toHaveLength(36);
     expect(KIT_IDS).toHaveLength(6);
   });
 

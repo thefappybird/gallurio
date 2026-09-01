@@ -21,6 +21,24 @@ import {
 } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
+import {
+  navigationDefaultProps,
+  type NavigationBlockProps,
+} from "@/lib/page-builder/blocks/NavigationBlock";
+
+// ---------------------------------------------------------------------------
+// Navigation factory — every template seeds one of these as the first content
+// item in BOTH the home and gallery zones, carrying that template's own header
+// look (see each template file). `config` overrides navigationDefaultProps'
+// PortfolioHeaderConfig fields; `_chrome`/`content` stay the shared default.
+// ---------------------------------------------------------------------------
+
+export function navigationBlock(id: string, config: Partial<NavigationBlockProps> = {}): PuckBlockEntry {
+  return {
+    type: "Navigation",
+    props: { ...navigationDefaultProps, ...config, id, _chrome: "nav" },
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Preset section factories

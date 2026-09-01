@@ -2757,6 +2757,7 @@
           "categories": {
             "presets": "Blok prasetel",
             "manual": "Blok manual",
+            "nav": "Navigasi",
             "hero": "Hero",
             "about": "Tentang",
             "services": "Layanan",
@@ -2770,6 +2771,10 @@
             "footer": "Footer"
           },
           "blocks": {
+            "navigation": "Navigasi",
+            "navBorderedPreset": "Navbar Berbingkai",
+            "navUnderlinedPreset": "Navbar Bergaris Bawah",
+            "navScaledPreset": "Navbar Membesar",
             "heroPreset": "Sampul Imersif",
             "aboutPreset": "Biografi Editorial",
             "servicesPreset": "Kartu Layanan",
@@ -2819,6 +2824,9 @@
             "footerStatementPreset": "Pernyataan Penutup"
           },
           "presetDescriptions": {
+            "navBorderedPreset": "Garis bawah bawah dan tautan aktif yang disorot pada bilah ringkas. Menggantikan header halaman saat ini.",
+            "navUnderlinedPreset": "Bilah tenang dengan garis bawah aksen di bawah tautan aktif. Menggantikan header halaman saat ini.",
+            "navScaledPreset": "Tautan aktif membesar alih-alih isian atau garis bawah. Menggantikan header halaman saat ini.",
             "heroPreset": "Gambar tinggi atau latar slideshow dengan teks tersentral di atas overlay gelap.",
             "heroSplitPreset": "Teks dan CTA di samping gambar yang menjaga proporsinya sendiri.",
             "heroStatementPreset": "Judul besar, pemisah, dan CTA ringkas — tanpa gambar.",

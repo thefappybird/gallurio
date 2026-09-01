@@ -7,6 +7,7 @@ import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
 import { videoDefaultProps } from "./blocks/VideoBlock";
 import { contactDetailsDefaultProps } from "./blocks/ContactDetailsBlock";
+import { navigationDefaultProps } from "./blocks/NavigationBlock";
 import {
   headingDefaultProps,
   textDefaultProps,
@@ -33,7 +34,7 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     );
   });
 
-  it("registers every one of the 33 section presets in both configs", () => {
+  it("registers every one of the 36 section presets in both configs", () => {
     for (const key of SECTION_PRESET_KEYS) {
       expect(componentsOf(editorPuckConfig), key).toHaveProperty(key);
       expect(componentsOf(puckConfig), key).toHaveProperty(key);
@@ -72,6 +73,7 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     Divider: dividerDefaultProps,
     Columns: columnsDefaultProps,
     Container: containerDefaultProps,
+    Navigation: navigationDefaultProps,
   };
 
   for (const [type, blockDefaults] of Object.entries(nonPresetDefaults)) {
@@ -228,8 +230,8 @@ describe("GalleryLandingPreset carousel hint", () => {
   });
 });
 
-describe("editorPuckConfig.categories — 11 preset groups + manual", () => {
-  it("has exactly the 11 group ids plus manual, and lists every registered component exactly once", () => {
+describe("editorPuckConfig.categories — 12 preset groups + manual", () => {
+  it("has exactly the 12 group ids plus manual, and lists every registered component exactly once", () => {
     const categories = editorPuckConfig.categories as Record<string, { title?: string; components?: string[] }>;
     const expectedGroupIds = PRESET_GROUPS.map((g) => g.id);
     expect(Object.keys(categories).sort()).toEqual([...expectedGroupIds, "manual"].sort());
@@ -245,9 +247,12 @@ describe("editorPuckConfig.categories — 11 preset groups + manual", () => {
     // ContainerAnchor is editor-only plumbing (insert: false in its permissions) —
     // it is registered but deliberately absent from every drawer category.
     // FeaturedWork remains registered so a saved legacy block renders, but new
-    // pages compose collection cards inside Columns containers.
+    // pages compose collection cards inside Columns containers. Navigation (the
+    // base type) is likewise registered-but-undrawered — only its 3 `nav` group
+    // presets (NavBorderedPreset etc.) are drawer-insertable; the base type is
+    // auto-injected instead (a later EditorShell wave wires that injection).
     const insertable = Object.keys(editorPuckConfig.components).filter(
-      (k) => k !== "ContainerAnchor" && k !== "MasonryClone" && k !== "FeaturedWork",
+      (k) => k !== "ContainerAnchor" && k !== "MasonryClone" && k !== "FeaturedWork" && k !== "Navigation",
     );
     expect([...seen].sort()).toEqual(insertable.sort());
   });
@@ -270,13 +275,14 @@ describe("editorPuckConfig.categories — 11 preset groups + manual", () => {
       .not.toContain("MasonryClone");
   });
 
-  it("only the hero group starts expanded — 33 items all open is unusable", () => {
+  it("only the nav group starts expanded — 36 items all open is unusable", () => {
     const categories = editorPuckConfig.categories as Record<string, { defaultExpanded?: boolean }>;
-    expect(categories.hero?.defaultExpanded).toBe(true);
-    for (const id of PRESET_GROUPS.map((g) => g.id).filter((id) => id !== "hero")) {
+    expect(categories.nav?.defaultExpanded).toBe(true);
+    for (const id of PRESET_GROUPS.map((g) => g.id).filter((id) => id !== "nav")) {
       // Explicitly `false`, not merely absent: Puck renders a category with no
-      // `defaultExpanded` as EXPANDED, so omitting the key opens all 11 groups.
-      // Verified in the browser — every group came up open until this was pinned.
+      // `defaultExpanded` as EXPANDED, so omitting the key opens all 11 other
+      // groups. Verified in the browser — every group came up open until this
+      // was pinned.
       expect(categories[id]?.defaultExpanded, id).toBe(false);
     }
     expect(categories.manual?.defaultExpanded).toBe(false);

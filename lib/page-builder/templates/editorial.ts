@@ -1,7 +1,7 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import { onPrimaryBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
-import { zone } from "./_blocks";
+import { zone, navigationBlock } from "./_blocks";
 
 /**
  * Editorial — Asymmetric mosaic hero, editorial type, suitable for photographers and planners.
@@ -32,21 +32,21 @@ export const editorialTemplate: PortfolioTemplate = {
     activeTabUnderline: true,
     tabUnderlineColor: "accent",
   },
-  defaultHeader: {
-    fontSize: "sm",
-    navbarSize: "sleek",
-    activeLinkHighlight: false,
-    highlightOpacity: 100,
-    activeLinkUnderline: true,
-    underlineColor: "accent",
-    contactButtonColor: "accent",
-    contactButtonOpacity: 100,
-    contactButtonRadius: "subtle",
-  },
   defaultCollectionsPopup: {},
   seedData: () => ({
     home: zone(
       [
+        navigationBlock("Navigation-editorial-home-0", {
+          fontSize: "sm",
+          navbarSize: "sleek",
+          activeLinkHighlight: false,
+          highlightOpacity: 100,
+          activeLinkUnderline: true,
+          underlineColor: "accent",
+          contactButtonColor: "accent",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "subtle",
+        }),
         {
           type: "Columns",
           props: {
@@ -694,6 +694,17 @@ With over a decade of experience, I bring artistry and technical expertise to ev
     ),
     gallery: zone(
       [
+        navigationBlock("Navigation-editorial-gal-0", {
+          fontSize: "sm",
+          navbarSize: "sleek",
+          activeLinkHighlight: false,
+          highlightOpacity: 100,
+          activeLinkUnderline: true,
+          underlineColor: "accent",
+          contactButtonColor: "accent",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "subtle",
+        }),
         {
           type: "Columns",
           props: {

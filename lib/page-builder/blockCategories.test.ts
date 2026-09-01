@@ -36,9 +36,9 @@ describe("blockCategories", () => {
     expect(PRESET_BLOCK_KEYS).not.toContain("CollectionCard");
   });
 
-  it("has exactly 33 unique preset keys (11 groups x 3 variants)", () => {
-    expect(PRESET_BLOCK_KEYS).toHaveLength(33);
-    expect(new Set(PRESET_BLOCK_KEYS).size).toBe(33);
+  it("has exactly 36 unique preset keys (12 groups x 3 variants)", () => {
+    expect(PRESET_BLOCK_KEYS).toHaveLength(36);
+    expect(new Set(PRESET_BLOCK_KEYS).size).toBe(36);
   });
 
   it("keeps all ten legacy preset keys for persisted-page compatibility", () => {
@@ -47,8 +47,8 @@ describe("blockCategories", () => {
     }
   });
 
-  it("groups presets into exactly 11 groups of exactly 3 keys, no key in two groups", () => {
-    expect(PRESET_GROUPS).toHaveLength(11);
+  it("groups presets into exactly 12 groups of exactly 3 keys, no key in two groups", () => {
+    expect(PRESET_GROUPS).toHaveLength(12);
     const seen = new Set<string>();
     for (const group of PRESET_GROUPS) {
       expect(group.keys).toHaveLength(3);
@@ -57,6 +57,6 @@ describe("blockCategories", () => {
         seen.add(key);
       }
     }
-    expect(seen.size).toBe(33);
+    expect(seen.size).toBe(36);
   });
 });

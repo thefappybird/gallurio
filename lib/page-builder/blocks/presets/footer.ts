@@ -3,6 +3,7 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
+import type { ChromeKind } from "../../chromeSync";
 import {
   accentBandSection,
   child,
@@ -12,7 +13,13 @@ import {
   slot,
 } from "./_helpers";
 
-export const FOOTER_SIGNATURE_PRESET: ContainerBlockProps = {
+// Footer presets stay Container-shaped; `_chrome`/`detached` are the only
+// additions, marking them for chromeSync's home/gallery mirroring (a later
+// EditorShell wave wires the sync itself — this only carries the markers).
+type FooterPresetProps = ContainerBlockProps & { _chrome?: ChromeKind; detached?: boolean };
+
+export const FOOTER_SIGNATURE_PRESET: FooterPresetProps = {
+  _chrome: "footer",
   backgroundImages: [],
   minHeight: "auto",
   alignX: "center",
@@ -32,7 +39,8 @@ export const FOOTER_SIGNATURE_PRESET: ContainerBlockProps = {
   ]),
 };
 
-export const FOOTER_DIRECTORY_PRESET: ContainerBlockProps = {
+export const FOOTER_DIRECTORY_PRESET: FooterPresetProps = {
+  _chrome: "footer",
   backgroundImages: [],
   minHeight: "auto",
   _style: { ...pageSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
@@ -75,7 +83,8 @@ export const FOOTER_DIRECTORY_PRESET: ContainerBlockProps = {
   ]),
 };
 
-export const FOOTER_STATEMENT_PRESET: ContainerBlockProps = {
+export const FOOTER_STATEMENT_PRESET: FooterPresetProps = {
+  _chrome: "footer",
   backgroundImages: [],
   minHeight: "auto",
   _style: { ...primaryBandSection, gap: 24, paddingTop: "3.5rem", paddingBottom: "3.5rem" },

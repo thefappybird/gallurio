@@ -1,7 +1,7 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import { onAccentBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
-import { zone } from "./_blocks";
+import { zone, navigationBlock } from "./_blocks";
 
 /**
  * Minimal — Clean serif palette, image-first hero, about and contact side by side.
@@ -22,14 +22,11 @@ export const minimalTemplate: PortfolioTemplate = {
     tabFontSize: "sm",
     tabColor: "foreground",
   },
-  defaultHeader: {
-    highlightOpacity: 100,
-    contactButtonOpacity: 100,
-  },
   defaultCollectionsPopup: {},
   seedData: () => ({
     home: zone(
       [
+        navigationBlock("Navigation-minimal-home-0"),
         {
           type: "HeroPreset",
           props: {
@@ -202,6 +199,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
     ),
     gallery: zone(
       [
+        navigationBlock("Navigation-minimal-gal-0"),
         {
           type: "Columns",
           props: {

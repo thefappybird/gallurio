@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { fillBlockDefaults, type BlockEntry } from "./fillBlockDefaults";
-import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
+import { SECTION_PRESETS, SECTION_PRESET_KEYS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+
+const CONTAINER_PRESET_KEYS = SECTION_PRESET_KEYS.filter((key) => !NAV_PRESET_KEYS.includes(key));
 
 describe("fillBlockDefaults", () => {
-  it.each(SECTION_PRESET_KEYS)(
-    "normalizes every registry preset (%s) with container defaults (bgAnimation, bgSpeed)",
+  it.each(CONTAINER_PRESET_KEYS)(
+    "normalizes every Container-shaped registry preset (%s) with container defaults (bgAnimation, bgSpeed)",
     (presetKey) => {
       const data = {
         content: [{ type: presetKey, props: { id: "p1", content: [] } }],
@@ -14,6 +16,35 @@ describe("fillBlockDefaults", () => {
       expect(result.content[0].props.bgSpeed).toBe("medium");
     },
   );
+
+  it.each(NAV_PRESET_KEYS)(
+    "normalizes every nav registry preset (%s) with Navigation defaults (_chrome, highlightOpacity)",
+    (presetKey) => {
+      const data = {
+        content: [{ type: presetKey, props: { id: "p1", content: [] } }],
+      };
+      const result = fillBlockDefaults(data);
+      expect(result.content[0].props._chrome).toBe("nav");
+      expect(result.content[0].props.highlightOpacity).toBe(100);
+      expect(result.content[0].props.bgAnimation).toBeUndefined();
+    },
+  );
+
+  it("Navigation (base type) falls back to navigationDefaultProps, not containerDefaultProps", () => {
+    const data = {
+      content: [{ type: "Navigation", props: { id: "n1" } }],
+    };
+    const result = fillBlockDefaults(data);
+    expect(result.content[0].props._chrome).toBe("nav");
+    expect(result.content[0].props.bgAnimation).toBeUndefined();
+  });
+
+  it("every SECTION_PRESET_KEYS entry's componentType agrees with its BLOCK_DEFAULTS fallback", () => {
+    for (const key of SECTION_PRESET_KEYS) {
+      const isNav = SECTION_PRESETS[key].componentType === "Navigation";
+      expect(isNav).toBe(NAV_PRESET_KEYS.includes(key));
+    }
+  });
 
   it("fills missing gap in Columns _style from defaultProps", () => {
     const data = {

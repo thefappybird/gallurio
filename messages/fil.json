@@ -2757,6 +2757,7 @@
           "categories": {
             "presets": "Mga preset na bloke",
             "manual": "Mga manuwal na bloke",
+            "nav": "Navigation",
             "hero": "Hero",
             "about": "Tungkol sa Akin",
             "services": "Mga Serbisyo",
@@ -2770,6 +2771,10 @@
             "footer": "Footer"
           },
           "blocks": {
+            "navigation": "Navigation",
+            "navBorderedPreset": "May Border na Navbar",
+            "navUnderlinedPreset": "May Underline na Navbar",
+            "navScaledPreset": "Navbar na Lumalaki",
             "heroPreset": "Immersive Cover",
             "aboutPreset": "Editorial na Talambuhay",
             "servicesPreset": "Mga Card ng Serbisyo",
@@ -2819,6 +2824,9 @@
             "footerStatementPreset": "Pangwakas na Pahayag"
           },
           "presetDescriptions": {
+            "navBorderedPreset": "Bottom border at naka-highlight na active link sa compact na bar. Papalitan nito ang kasalukuyang header ng page.",
+            "navUnderlinedPreset": "Tahimik na bar na may accent underline sa ilalim ng active link. Papalitan nito ang kasalukuyang header ng page.",
+            "navScaledPreset": "Lumalaki ang active link sa halip na fill o underline. Papalitan nito ang kasalukuyang header ng page.",
             "heroPreset": "Mataas na larawan o slideshow background na may nakasentrong text sa ibabaw ng scrim.",
             "heroSplitPreset": "Text at CTA sa tabi ng larawang may sariling proportions.",
             "heroStatementPreset": "Malaking headline, divider, at maigsing CTA — walang kailangang larawan.",

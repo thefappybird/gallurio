@@ -22,12 +22,15 @@ import {
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
-import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
+import { navigationDefaultProps } from "./blocks/NavigationBlock";
+import { SECTION_PRESETS, SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
 
 // Map of block type → its defaultProps.
-// Preset blocks (HeroPreset, etc.) all share the ContainerBlockProps shape, so
-// every one of the registry's 33 keys falls back to containerDefaultProps for
-// normalization — derived so a new/renamed preset can't be missed by hand.
+// Preset blocks (HeroPreset, etc.) mostly share the ContainerBlockProps shape,
+// so every registry key falls back to containerDefaultProps for normalization
+// — EXCEPT the `nav` group's 3 keys (componentType: "Navigation"), which fall
+// back to navigationDefaultProps instead. Derived off the registry so a new/
+// renamed/re-typed preset can't be missed by hand.
 const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
   Heading: headingDefaultProps as Record<string, unknown>,
   Text: textDefaultProps as Record<string, unknown>,
@@ -37,11 +40,17 @@ const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
   Divider: dividerDefaultProps as Record<string, unknown>,
   Columns: columnsDefaultProps as Record<string, unknown>,
   Container: containerDefaultProps as Record<string, unknown>,
+  Navigation: navigationDefaultProps as Record<string, unknown>,
   GalleryGrid: galleryGridDefaultProps as Record<string, unknown>,
   GalleryMasonry: galleryMasonryDefaultProps as Record<string, unknown>,
   FeaturedWork: featuredWorkDefaultProps as Record<string, unknown>,
   ...Object.fromEntries(
-    SECTION_PRESET_KEYS.map((key) => [key, containerDefaultProps as Record<string, unknown>]),
+    SECTION_PRESET_KEYS.map((key) => [
+      key,
+      (SECTION_PRESETS[key].componentType === "Navigation"
+        ? navigationDefaultProps
+        : containerDefaultProps) as Record<string, unknown>,
+    ]),
   ),
 };
 

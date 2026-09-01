@@ -59,6 +59,8 @@ export type RenderWorkspace = {
   chrome?: {
     startingFrom?: string;
     gallery?: GalleryChromeLabels;
+    /** Localized strings consumed by the Navigation block (resolved at the page boundary). */
+    nav?: NavChromeLabels;
     /** External-link confirm template. Contains literal "{url}" for per-link substitution. */
     socialLinkConfirm?: string;
   } | null;
@@ -74,6 +76,16 @@ export type GalleryChromeLabels = {
   carouselHint?: string;
   carouselPrev?: string;
   carouselNext?: string;
+};
+
+/** Localized strings consumed by the Navigation block (resolved at the page boundary). */
+export type NavChromeLabels = {
+  navLandmark?: string;
+  home?: string;
+  gallery?: string;
+  contact?: string;
+  openMenu?: string;
+  closeMenu?: string;
 };
 
 /** Localized strings consumed by the collection popup (resolved at the page boundary). */
@@ -160,6 +172,32 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
  */
 export function getGalleryChromeLabelsFrom(puck?: BlockPuck | null): Required<GalleryChromeLabels> {
   return applyGalleryChromeDefaults(puck?.metadata?.workspace?.chrome?.gallery ?? {});
+}
+
+/**
+ * Applies the English fallback for every nav chrome label.
+ * Pure function — no ALS, no server-only imports.
+ */
+export function applyNavChromeDefaults(n: NavChromeLabels = {}): Required<NavChromeLabels> {
+  return {
+    navLandmark: n.navLandmark ?? "Portfolio",
+    home: n.home ?? "Home",
+    gallery: n.gallery ?? "Gallery",
+    contact: n.contact ?? "Contact",
+    openMenu: n.openMenu ?? "Open menu",
+    closeMenu: n.closeMenu ?? "Close menu",
+  };
+}
+
+/**
+ * Client-safe: localized nav chrome labels from Puck `metadata` (no ALS).
+ *
+ * Reads `puck.metadata.workspace.chrome.nav` and fills every missing key
+ * with an English default. Safe to import in client components because it never
+ * touches AsyncLocalStorage.
+ */
+export function getNavChromeLabelsFrom(puck?: BlockPuck | null): Required<NavChromeLabels> {
+  return applyNavChromeDefaults(puck?.metadata?.workspace?.chrome?.nav ?? {});
 }
 
 /**

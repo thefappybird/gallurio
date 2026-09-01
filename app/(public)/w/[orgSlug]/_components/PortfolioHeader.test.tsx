@@ -6,6 +6,16 @@ import {
   type PortfolioHeaderLabels,
 } from "./PortfolioHeader";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
+import type { PortfolioHeaderConfig } from "@/lib/page-builder/types";
+import type { PortfolioTemplate } from "@/lib/page-builder/templates/types";
+
+/** Each template no longer carries `defaultHeader` — its header look now lives
+ *  on the Navigation block seeded first into the home zone. */
+function templateNavConfig(template: PortfolioTemplate): PortfolioHeaderConfig {
+  const data = template.seedData({ workspace: { name: "Test Studio" } });
+  const nav = data.home?.content.find((b) => b.type === "Navigation");
+  return (nav?.props ?? {}) as PortfolioHeaderConfig;
+}
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/w/luna-studio",
@@ -294,7 +304,7 @@ describe("PortfolioHeader template render contract", () => {
   it.each(PORTFOLIO_TEMPLATES)(
     "$id renders every seeded header value and effective fallback",
     (template) => {
-      const config = template.defaultHeader;
+      const config = templateNavConfig(template);
       render(
         <PortfolioHeader
           slug="luna-studio"

@@ -2,7 +2,6 @@ import type {
   PortfolioBrandKit,
   PortfolioCollectionsPopupConfig,
   PortfolioContactConfig,
-  PortfolioHeaderConfig,
   PortfolioPuckData,
 } from "@/lib/page-builder/types";
 
@@ -51,8 +50,6 @@ export type PortfolioTemplate = {
   defaultBrandKit: PortfolioBrandKit;
   /** Seeded contact-modal copy/presentation (form fields stay fixed). */
   defaultContact: PortfolioContactConfig;
-  /** Seeded navigation/header chrome config. */
-  defaultHeader: PortfolioHeaderConfig;
   /** Seeded collections popup config. */
   defaultCollectionsPopup: PortfolioCollectionsPopupConfig;
   /**

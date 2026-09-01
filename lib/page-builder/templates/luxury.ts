@@ -1,7 +1,7 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import { onAccentBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
-import { zone } from "./_blocks";
+import { zone, navigationBlock } from "./_blocks";
 
 /**
  * Luxury — Warm gold accent, editorial split-panel hero, refined typographic hierarchy.
@@ -31,20 +31,20 @@ export const luxuryTemplate: PortfolioTemplate = {
     activeTabUnderline: true,
     tabUnderlineColor: "accent",
   },
-  defaultHeader: {
-    fontSize: "sm",
-    activeLinkScale: true,
-    activeLinkHighlight: false,
-    highlightOpacity: 100,
-    contactButtonColor: "accent",
-    contactButtonTextColor: "secondary",
-    contactButtonOpacity: 100,
-    contactButtonRadius: "",
-  },
   defaultCollectionsPopup: {},
   seedData: () => ({
     home: zone(
       [
+        navigationBlock("Navigation-luxury-home-0", {
+          fontSize: "sm",
+          activeLinkScale: true,
+          activeLinkHighlight: false,
+          highlightOpacity: 100,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "secondary",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "",
+        }),
         {
           type: "HeroPreset",
           props: {
@@ -276,6 +276,16 @@ export const luxuryTemplate: PortfolioTemplate = {
     ),
     gallery: zone(
       [
+        navigationBlock("Navigation-luxury-gal-0", {
+          fontSize: "sm",
+          activeLinkScale: true,
+          activeLinkHighlight: false,
+          highlightOpacity: 100,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "secondary",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "",
+        }),
         {
           type: "Columns",
           props: {

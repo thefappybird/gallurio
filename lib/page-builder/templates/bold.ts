@@ -1,7 +1,7 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import { onAccentBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
-import { zone } from "./_blocks";
+import { zone, navigationBlock } from "./_blocks";
 
 /**
  * Bold — High-contrast navy accent, grid mosaic hero, strong typographic presence.
@@ -30,24 +30,24 @@ export const boldTemplate: PortfolioTemplate = {
     activeTabUnderline: true,
     tabUnderlineColor: "accent",
   },
-  defaultHeader: {
-    borderBottomWidth: 2,
-    borderBottomColor: "foreground",
-    navbarSize: "sleek",
-    activeLinkScale: false,
-    activeLinkHighlight: true,
-    highlightOpacity: 40,
-    activeLinkRadius: "subtle",
-    activeLinkUnderline: false,
-    contactButtonColor: "accent",
-    contactButtonTextColor: "background",
-    contactButtonOpacity: 100,
-    contactButtonRadius: "subtle",
-  },
   defaultCollectionsPopup: {},
   seedData: () => ({
     home: zone(
       [
+        navigationBlock("Navigation-bold-home-0", {
+          borderBottomWidth: 2,
+          borderBottomColor: "foreground",
+          navbarSize: "sleek",
+          activeLinkScale: false,
+          activeLinkHighlight: true,
+          highlightOpacity: 40,
+          activeLinkRadius: "subtle",
+          activeLinkUnderline: false,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "background",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "subtle",
+        }),
         {
           type: "Columns",
           props: {
@@ -342,6 +342,20 @@ export const boldTemplate: PortfolioTemplate = {
     ),
     gallery: zone(
       [
+        navigationBlock("Navigation-bold-gal-0", {
+          borderBottomWidth: 2,
+          borderBottomColor: "foreground",
+          navbarSize: "sleek",
+          activeLinkScale: false,
+          activeLinkHighlight: true,
+          highlightOpacity: 40,
+          activeLinkRadius: "subtle",
+          activeLinkUnderline: false,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "background",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "subtle",
+        }),
         {
           type: "Columns",
           props: {
