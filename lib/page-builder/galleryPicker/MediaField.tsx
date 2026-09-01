@@ -103,7 +103,7 @@ export function MultiImageControl({
 }: {
   value: MediaPickerSelection[];
   onChange: (v: MediaPickerSelection[]) => void;
-  max?: number;
+  max?: number | null;
 }) {
   const [open, setOpen] = useState(false);
   const { byId, byPublicId } = useThumbLookup();

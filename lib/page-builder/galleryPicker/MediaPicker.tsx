@@ -9,6 +9,7 @@ import {
   GripVerticalIcon,
   ImagePlusIcon,
   Loader2Icon,
+  MinusIcon,
   PencilIcon,
   PlusIcon,
   XIcon,
@@ -51,11 +52,12 @@ const L = {
   selectAllPage: "Select all on page",
   selectAllCollection: "Select all in collection",
   selectAllInTile: (name: string) => `Select all photos in ${name}`,
+  deselectAllInTile: (name: string) => `Deselect all photos in ${name}`,
   errBulkSelect: "Could not load that collection's photos.",
   clearAll: "Clear selection",
   done: "Done",
   photos: (n: number) => `${n} photo${n === 1 ? "" : "s"}`,
-  selectedCount: (n: number, max?: number) => (max ? `${n}/${max} selected` : `${n} selected`),
+  selectedCount: (n: number, max?: number | null) => (max ? `${n}/${max} selected` : `${n} selected`),
   dragHint: "Drag to reorder",
   removePhoto: "Remove photo",
   removeCollection: "Remove collection",
@@ -67,6 +69,14 @@ const L = {
 const ALL_PHOTOS_ID = "all";
 const PAGE_SIZE = 16;
 const SAFETY_CAP = 60;
+
+/**
+ * Resolves the `max` prop to a concrete selection limit. `null` is an explicit
+ * owner opt-in to unbounded selection; `undefined` keeps today's default cap.
+ */
+function resolveCap(max: number | null | undefined): number {
+  return max === null ? Infinity : max ?? SAFETY_CAP;
+}
 
 export type MediaPickerSelection = {
   id: string;
@@ -99,8 +109,8 @@ type Props =
       /** multi: ordered [{id,publicId}]. */
       value: MediaPickerSelection[];
       onChange: (next: MediaPickerSelection[]) => void;
-      /** hard cap on selections. */
-      max?: number;
+      /** cap on selections; omit for the default 60, `null` for unbounded. */
+      max?: number | null;
       open: boolean;
       onOpenChange: (open: boolean) => void;
     }
@@ -109,7 +119,7 @@ type Props =
       /** collections: ordered [{id,name,coverPublicId,itemCount}]. */
       value: MediaPickerCollectionSelection[];
       onChange: (next: MediaPickerCollectionSelection[]) => void;
-      max?: number;
+      max?: number | null;
       open: boolean;
       onOpenChange: (open: boolean) => void;
     };
@@ -287,7 +297,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       onChange(selection.filter((s) => s.id !== item.id));
       return;
     }
-    if (max != null && selection.length >= max) return;
+    if (selection.length >= resolveCap(max)) return;
     onChange([
       ...selection,
       {
@@ -302,7 +312,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
 
   function selectAllOnPage() {
     if (mode !== "multi") return;
-    const cap = max ?? SAFETY_CAP;
+    const cap = resolveCap(max);
     const next = [...selection];
     for (const it of feed.items) {
       if (next.length >= cap) break;
@@ -328,14 +338,21 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // can bulk-select without navigating in first.
   async function selectAllFromCollection(colId: string) {
     if (mode !== "multi") return;
-    const cap = max ?? SAFETY_CAP;
+    const cap = resolveCap(max);
+    // The server's own bulk-fetch ceiling is 60 regardless of what we ask for
+    // (see PICKER_ITEMS_CAP), and it treats a non-finite `newest` as 1, not
+    // "no limit" — so an unbounded cap here must still send a finite request.
+    const networkLimit = Number.isFinite(cap) ? cap : SAFETY_CAP;
     setBulkLoadingId(colId);
     setBulkError(null);
     try {
-      const res = await fetch(`/api/portfolio/gallery/collections/${colId}?newest=${cap}`);
+      const res = await fetch(`/api/portfolio/gallery/collections/${colId}?newest=${networkLimit}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { items: PickerItem[] };
       remember(data.items);
+      // Cache this collection's fetched ids so the tile checkbox can derive
+      // its checked/mixed/unchecked state without a dedicated request.
+      cache?.addPage(colId, { items: data.items, nextCursor: null });
       const next = [...selection];
       for (const it of data.items) {
         if (next.length >= cap) break;
@@ -357,6 +374,36 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   function selectAllInCollection() {
     if (nav.kind !== "photos" || nav.id === ALL_PHOTOS_ID) return;
     void selectAllFromCollection(nav.id);
+  }
+
+  // Tri-state for a collection tile's checkbox. A tile only knows its own
+  // `itemCount`, not which photos are selected — membership is derived from
+  // the picker cache, which is populated the first time the collection is
+  // opened or bulk-selected. Only trust that cache as *complete* membership
+  // when the cached id count matches `itemCount` exactly; a partially-paged
+  // collection can't safely claim "checked" or "mixed", so it renders
+  // unchecked (the same default as a collection never fetched at all).
+  const collectionCheckState = useCallback(
+    (col: PickerCollection): "checked" | "mixed" | "unchecked" => {
+      const pages = cache?.getPages(col.id);
+      if (!pages || pages.length === 0) return "unchecked";
+      const ids = new Set(pages.flatMap((p) => p.items.map((it) => it.id)));
+      if (ids.size !== col.itemCount) return "unchecked";
+      const selectedIds = new Set(selection.map((s) => s.id));
+      let selectedInCol = 0;
+      for (const id of ids) if (selectedIds.has(id)) selectedInCol++;
+      if (selectedInCol === 0) return "unchecked";
+      return selectedInCol === ids.size ? "checked" : "mixed";
+    },
+    [cache, selection]
+  );
+
+  function deselectAllFromCollection(colId: string) {
+    if (mode !== "multi") return;
+    const pages = cache?.getPages(colId);
+    if (!pages) return;
+    const ids = new Set(pages.flatMap((p) => p.items.map((it) => it.id)));
+    onChange(selection.filter((s) => !ids.has(s.id)));
   }
 
   function clearSelection() {
@@ -387,7 +434,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       onChange(collectionSelection.filter((s) => s.id !== col.id));
       return;
     }
-    const cap = max ?? SAFETY_CAP;
+    const cap = resolveCap(max);
     if (collectionSelection.length >= cap) return;
     onChange([
       ...collectionSelection,
@@ -521,7 +568,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       if (mode === "single") {
         pickSingle(createdItems[0]);
       } else if (mode === "multi") {
-        const cap = max ?? SAFETY_CAP;
+        const cap = resolveCap(max);
         const slots = Math.max(0, cap - selection.length);
         const toAdd = createdItems.slice(0, slots);
         if (toAdd.length > 0) {
@@ -669,9 +716,11 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               hasAnyPhotos={state.data.items.length > 0 || collections.some((c) => c.itemCount > 0)}
               mode={mode}
               bulkLoadingId={bulkLoadingId}
+              checkState={collectionCheckState}
               onOpen={openCollection}
               onCreate={() => setCreateOpen(true)}
               onSelectAllFromCollection={selectAllFromCollection}
+              onDeselectAllFromCollection={deselectAllFromCollection}
             />
           )}
 
@@ -806,17 +855,21 @@ function CollectionGrid({
   hasAnyPhotos,
   mode,
   bulkLoadingId,
+  checkState,
   onOpen,
   onCreate,
   onSelectAllFromCollection,
+  onDeselectAllFromCollection,
 }: {
   collections: PickerCollection[];
   hasAnyPhotos: boolean;
   mode: "single" | "multi";
   bulkLoadingId: string | null;
+  checkState: (col: PickerCollection) => "checked" | "mixed" | "unchecked";
   onOpen: (id: string, name: string) => void;
   onCreate: () => void;
   onSelectAllFromCollection: (colId: string) => void;
+  onDeselectAllFromCollection: (colId: string) => void;
 }) {
   return (
     <ul className="grid grid-cols-2 gap-2 p-1 sm:grid-cols-4" role="listbox" aria-label="Collections">
@@ -857,24 +910,33 @@ function CollectionGrid({
               <span className="text-xs text-muted-foreground">{L.photos(col.itemCount)}</span>
             </span>
           </button>
-          {mode === "multi" && (
-            <button
-              type="button"
-              aria-label={L.selectAllInTile(col.name)}
-              disabled={bulkLoadingId !== null}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectAllFromCollection(col.id);
-              }}
-              className="absolute right-1 top-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-            >
-              {bulkLoadingId === col.id ? (
-                <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
-              ) : (
-                <CheckIcon className="size-3.5" aria-hidden />
-              )}
-            </button>
-          )}
+          {mode === "multi" &&
+            (() => {
+              const state = checkState(col);
+              return (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={state === "checked" ? true : state === "mixed" ? "mixed" : false}
+                  aria-label={state === "checked" ? L.deselectAllInTile(col.name) : L.selectAllInTile(col.name)}
+                  disabled={bulkLoadingId !== null}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (state === "checked") onDeselectAllFromCollection(col.id);
+                    else onSelectAllFromCollection(col.id);
+                  }}
+                  className="absolute right-1 top-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                >
+                  {bulkLoadingId === col.id ? (
+                    <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
+                  ) : state === "checked" ? (
+                    <CheckIcon className="size-3.5" aria-hidden />
+                  ) : state === "mixed" ? (
+                    <MinusIcon className="size-3.5" aria-hidden />
+                  ) : null}
+                </button>
+              );
+            })()}
         </li>
       ))}
 

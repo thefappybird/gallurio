@@ -1,9 +1,11 @@
+import type { ReactElement } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { MediaPicker } from "./MediaPicker";
 import type { MediaPickerCollectionSelection } from "./MediaPicker";
 import { __clearPickerDataCache } from "./usePickerData";
+import { GalleryPickerCacheProvider } from "./GalleryPickerCacheContext";
 
 vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
@@ -120,7 +122,7 @@ describe("MediaPicker", () => {
   it("multi mode: collection tile checkmark bulk-selects that collection without navigating into it", async () => {
     const onChange = vi.fn();
     renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
-    const checkmark = await screen.findByRole("button", { name: /select all photos in weddings/i });
+    const checkmark = await screen.findByRole("checkbox", { name: /select all photos in weddings/i });
     fireEvent.click(checkmark);
     await waitFor(() =>
       expect(onChange).toHaveBeenCalledWith([
@@ -137,7 +139,7 @@ describe("MediaPicker", () => {
   it("single mode: collection tiles render no bulk-select checkmark", async () => {
     renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
     await screen.findByRole("button", { name: /^weddings$/i });
-    expect(screen.queryByRole("button", { name: /select all photos in/i })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /select all photos in/i })).toBeNull();
   });
 
   it("multi mode: surfaces an error (not a silent no-op) when the bulk collection fetch fails", async () => {
@@ -153,7 +155,7 @@ describe("MediaPicker", () => {
       return Promise.resolve({ ok: true, json: async () => ({ items: colItems, nextCursor: null }) } as Response);
     });
     renderWithProviders(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
-    fireEvent.click(await screen.findByRole("button", { name: /select all photos in weddings/i }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: /select all photos in weddings/i }));
     await screen.findByRole("alert");
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -757,6 +759,140 @@ describe("MediaPicker", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /edit alt text for A/i }));
       expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
+    });
+  });
+
+  describe("uncap selection (max=null)", () => {
+    function makeSelection(n: number) {
+      return Array.from({ length: n }, (_, i) => ({ id: `s${i}`, publicId: `pid-s${i}` }));
+    }
+
+    it("max={null}: selection can exceed the default 60 cap", async () => {
+      const onChange = vi.fn();
+      renderWithProviders(
+        <MediaPicker mode="multi" max={null} value={makeSelection(60)} onChange={onChange} open onOpenChange={vi.fn()} />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
+      expect(onChange).toHaveBeenCalledWith([...makeSelection(60), { id: "a", publicId: "pid-a" }]);
+    });
+
+    it("max={null}: counter shows 'N selected' with no denominator and no Infinity", async () => {
+      renderWithProviders(
+        <MediaPicker mode="multi" max={null} value={makeSelection(60)} onChange={vi.fn()} open onOpenChange={vi.fn()} />
+      );
+      const counter = await screen.findByText(/selected/);
+      expect(counter.textContent).toContain("60 selected");
+      expect(counter.textContent).not.toMatch(/\/60/);
+      expect(counter.textContent).not.toMatch(/Infinity/);
+    });
+
+    it("max omitted: the default cap is still 60", async () => {
+      const onChange = vi.fn();
+      renderWithProviders(
+        <MediaPicker mode="multi" value={makeSelection(60)} onChange={onChange} open onOpenChange={vi.fn()} />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("max={12}: cap unchanged at 12", async () => {
+      const onChange = vi.fn();
+      renderWithProviders(
+        <MediaPicker mode="multi" max={12} value={makeSelection(12)} onChange={onChange} open onOpenChange={vi.fn()} />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      fireEvent.click(await screen.findByRole("option", { name: /^A/ }));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("collection tile tri-state checkbox", () => {
+    const twoItemCollections = [
+      { id: "col1", name: "Weddings", coverUrl: "https://x/c1.jpg", coverPublicId: "pid-col1", itemCount: 2 },
+    ];
+    const twoItems = [
+      { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", altText: null },
+      { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B", altText: null },
+    ];
+    function routeTwoItem(url: string) {
+      if (url === "/api/portfolio/gallery") {
+        return Promise.resolve({ ok: true, json: async () => ({ collections: twoItemCollections, items: twoItems }) } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ items: twoItems, nextCursor: null }) } as Response);
+    }
+
+    // Cache membership is required to derive "mixed"/"checked" — the real app
+    // always wraps the editor in GalleryPickerCacheProvider (via EditorShell);
+    // these tests wrap it explicitly since renderWithProviders does not.
+    function renderWithCache(ui: ReactElement) {
+      return renderWithProviders(<GalleryPickerCacheProvider>{ui}</GalleryPickerCacheProvider>);
+    }
+
+    it("renders unchecked for a collection whose ids are not cached", async () => {
+      mockFetch.mockImplementation((u: string) => routeTwoItem(u));
+      renderWithCache(<MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+      const box = await screen.findByRole("checkbox", { name: /select all photos in weddings/i });
+      expect(box.getAttribute("aria-checked")).toBe("false");
+    });
+
+    it("shows 'mixed' when some of the collection's photos are selected", async () => {
+      mockFetch.mockImplementation((u: string) => routeTwoItem(u));
+      renderWithCache(
+        <MediaPicker mode="multi" value={[{ id: "a", publicId: "pid-a" }]} onChange={vi.fn()} open onOpenChange={vi.fn()} />
+      );
+      // Open the collection so its ids get cached, then go back to the tile grid.
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("option", { name: /^A/ });
+      fireEvent.click(screen.getByRole("button", { name: /back to collections/i }));
+      const box = await screen.findByRole("checkbox", { name: /select all photos in weddings/i });
+      expect(box.getAttribute("aria-checked")).toBe("mixed");
+    });
+
+    it("shows 'true' when all of the collection's photos are selected", async () => {
+      mockFetch.mockImplementation((u: string) => routeTwoItem(u));
+      renderWithCache(
+        <MediaPicker
+          mode="multi"
+          value={[
+            { id: "a", publicId: "pid-a" },
+            { id: "b", publicId: "pid-b" },
+          ]}
+          onChange={vi.fn()}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("option", { name: /^A/ });
+      fireEvent.click(screen.getByRole("button", { name: /back to collections/i }));
+      const box = await screen.findByRole("checkbox", { name: /deselect all photos in weddings/i });
+      expect(box.getAttribute("aria-checked")).toBe("true");
+    });
+
+    it("clicking a checked box removes exactly that collection's ids, leaving other selections intact", async () => {
+      mockFetch.mockImplementation((u: string) => routeTwoItem(u));
+      const onChange = vi.fn();
+      renderWithCache(
+        <MediaPicker
+          mode="multi"
+          value={[
+            { id: "a", publicId: "pid-a" },
+            { id: "b", publicId: "pid-b" },
+            { id: "z", publicId: "pid-z" },
+          ]}
+          onChange={onChange}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("option", { name: /^A/ });
+      fireEvent.click(screen.getByRole("button", { name: /back to collections/i }));
+      const box = await screen.findByRole("checkbox", { name: /deselect all photos in weddings/i });
+      fireEvent.click(box);
+      expect(onChange).toHaveBeenCalledWith([{ id: "z", publicId: "pid-z" }]);
     });
   });
 });
