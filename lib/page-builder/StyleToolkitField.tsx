@@ -13,8 +13,8 @@
  * Editor chrome is intentionally English-only.
  */
 
-import { useState } from "react";
-import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
+import { useRef, useState } from "react";
+import { SECTION_PRESET_KEYS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
 import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
 import { BlockIdContext } from "./drawerOpenStore";
 import type { LucideIcon } from "lucide-react";
@@ -46,6 +46,7 @@ import {
   PanelRight,
   PanelBottom,
   PanelLeft,
+  Upload,
 } from "lucide-react";
 import type { ComponentData } from "@measured/puck";
 import { usePuckStore } from "./puckHooks";
@@ -89,19 +90,32 @@ import {
   gallerySlotSelections,
   galleryZonesWithPatch,
 } from "./gallerySlotImages";
-import { useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
+import { useEffectiveBrandRadius, useEffectiveBrandFont, useBrandRadius } from "./brandColors";
 import {
   BUTTON_SIZE_FONT_PX,
   CONTAINER_EFFECTIVE_PAD,
   COLUMNS_EFFECTIVE_PAD,
 } from "./blocks/manualBlocks";
+import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import {
+  HEADER_SHADOW_SIZES,
+  HEADER_FONT_SIZES,
+  HEADER_NAVBAR_SIZES,
+  BRAND_KIT_RADII,
+  type BrandKitRadius,
+  type PortfolioHeaderConfig,
+} from "@/lib/page-builder/types";
 
 // Block types that are containers (no text/video inputs in Content tab).
 // Derived from the section-preset registry (33 keys) rather than hand-listed —
 // every preset is a Container under the hood, so this also newly picks up
 // VideoPreset, which the old hand-list omitted (a live bug: Video presets got
-// the wrong toolkit tab set).
-export const CONTAINER_TYPES = new Set<string>(["Container", ...SECTION_PRESET_KEYS]);
+// the wrong toolkit tab set). The 3 `nav` group keys are excluded — they render
+// through NavigationBlock, are not Container-shaped, and carry no `_style`.
+const CONTAINER_SECTION_KEYS = SECTION_PRESET_KEYS.filter(
+  (key) => !(NAV_PRESET_KEYS as readonly string[]).includes(key)
+);
+export const CONTAINER_TYPES = new Set<string>(["Container", ...CONTAINER_SECTION_KEYS]);
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
 // Frame (border/radius/shadow) is hidden for text/spacer/button leaf blocks.
@@ -120,8 +134,8 @@ const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]
 const GALLERY_NO_TEXT_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork", "CollectionCard"]);
 // Same membership as CONTAINER_TYPES today, but kept as a separate export:
 // callers consult it for a different decision (flex vs. grid layout controls)
-// and other code imports it by name.
-export const FLEX_CONTAINER_BLOCKS = new Set<string>(["Container", ...SECTION_PRESET_KEYS]);
+// and other code imports it by name. Nav keys excluded — see CONTAINER_TYPES.
+export const FLEX_CONTAINER_BLOCKS = new Set<string>(["Container", ...CONTAINER_SECTION_KEYS]);
 
 const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry"]);
 const SLOT_GALLERY_PICKER_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry"]);
@@ -483,16 +497,319 @@ export function BannerSection({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Navigation block field panel — the full `PortfolioHeaderConfig` shape,
+// ported from the retired HeaderPanelDialog into the ordinary Content tab
+// (the config lives on the block's OWN props, not `_style`, so it is wired
+// through ContentInputs's setProp — same mechanism as CollectionCard/Image).
+// ---------------------------------------------------------------------------
+
+const NAV_SHADOW_LABELS: Record<string, string> = { none: "None", sm: "Small", md: "Medium", lg: "Large" };
+const NAV_FONT_SIZE_LABELS: Record<string, string> = { sm: "Small", md: "Medium", lg: "Large" };
+const NAV_NAVBAR_SIZE_LABELS: Record<string, string> = { sleek: "Sleek", balanced: "Balanced", flashy: "Flashy" };
+const NAV_RADIUS_LABELS: Record<BrandKitRadius, string> = { sharp: "Sharp", subtle: "Subtle", rounded: "Rounded" };
+
+const LOGO_MAX_BYTES = 250 * 1024;
+const LOGO_MAX_WIDTH = 512;
+const LOGO_MAX_HEIGHT = 256;
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+/**
+ * The detach toggle's zone context. A single Puck instance only knows the
+ * CURRENTLY-mounted zone's data — whether the OTHER zone (home vs gallery)
+ * already holds a detached chrome block of this kind lives in EditorShell's
+ * `zoneDataRef`, outside this component's reach. The caller resolves that via
+ * `chromeSync.ts`'s `canDetach(zones, thisZone, "nav")` and passes the result
+ * down; StyleToolkitField never reads EditorShell/Puck-zone state itself.
+ */
+export type NavDetachContext = {
+  /** Label of the zone this Navigation instance renders in ("Home" | "Gallery") —
+   *  shown in the toggle's own copy. */
+  zoneLabel: string;
+  /** Label of the OTHER zone — named in the disabled hint. */
+  otherZoneLabel: string;
+  /** True when the OTHER zone's nav is already detached — `!canDetach(zones, thisZone, "nav")`.
+   *  Renders this toggle disabled with a hint naming `otherZoneLabel`. */
+  disabled: boolean;
+};
+
+function NavColorRow({
+  label,
+  value,
+  onChange,
+  effectiveValue,
+}: {
+  label: string;
+  value: string | undefined;
+  onChange: (v: string | undefined) => void;
+  effectiveValue?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <ColorSwatchRow value={value} onChange={onChange} effectiveValue={effectiveValue} />
+    </div>
+  );
+}
+
+function NavRadiusRow({
+  label,
+  value,
+  onChange,
+  effectiveValue,
+}: {
+  label: string;
+  value: BrandKitRadius | "" | undefined;
+  onChange: (v: BrandKitRadius | "") => void;
+  effectiveValue?: BrandKitRadius;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex">
+        {BRAND_KIT_RADII.map((radius) => {
+          const isExplicit = value === radius;
+          const isEffective = !value && effectiveValue === radius;
+          return (
+            <button
+              key={radius}
+              type="button"
+              aria-pressed={isExplicit || isEffective}
+              onClick={() => onChange(isExplicit ? "" : radius)}
+              className={cn(
+                "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                isExplicit && "bg-foreground text-background hover:bg-foreground",
+                isEffective && "border-foreground opacity-70",
+              )}
+            >
+              {NAV_RADIUS_LABELS[radius]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function NavigationLogoUpload({
+  logoUrl,
+  onChange,
+}: {
+  logoUrl: string | undefined;
+  onChange: (next: { logoUrl: string; logoAssetId: string }) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function upload(file: File) {
+    setUploading(true);
+    setError(null);
+    try {
+      const result = await uploadAsset(
+        file,
+        {
+          acceptedTypes: LOGO_TYPES,
+          maxBytes: LOGO_MAX_BYTES,
+          maxWidth: LOGO_MAX_WIDTH,
+          maxHeight: LOGO_MAX_HEIGHT,
+        },
+        { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
+      );
+      if ("error" in result) {
+        switch (result.error) {
+          case "type_not_accepted": setError("PNG, JPEG, or WEBP only."); break;
+          case "file_too_large": setError("Logo must be under 250KB."); break;
+          case "dimensions_too_large": setError("Logo must be at most 512×256px."); break;
+          case "invalid_image": setError("Could not read that image."); break;
+        }
+        return;
+      }
+      onChange({ logoUrl: result.asset.url, logoAssetId: result.asset.assetId });
+    } catch {
+      setError("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5" data-tour-id="logo-uploader">
+      <span className="text-xs text-muted-foreground">Logo</span>
+      {logoUrl ? (
+        <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoUrl}
+            alt="Logo preview"
+            className="h-12 w-auto max-w-full border border-border object-contain"
+          />
+          <button
+            type="button"
+            onClick={() => onChange({ logoUrl: "", logoAssetId: "" })}
+            className="w-fit text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            Remove logo
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex min-h-24 flex-col items-center justify-center gap-2 border border-dashed border-border bg-background px-3 text-center text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60"
+        >
+          <Upload className="size-3.5" aria-hidden />
+          <span>{uploading ? "Uploading…" : "Upload logo"}</span>
+          <span>PNG, JPEG, or WEBP · under 250KB · up to 512×256px</span>
+        </button>
+      )}
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          setError(null);
+          if (file) void upload(file);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
+function NavigationConfigPanel({
+  config,
+  setProp,
+  navDetach,
+  detached,
+}: {
+  config: PortfolioHeaderConfig;
+  setProp: (key: string, val: unknown) => void;
+  navDetach?: NavDetachContext;
+  detached: boolean;
+}) {
+  const effectiveRadius = useBrandRadius();
+  const set = <K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) =>
+    setProp(key, value);
+
+  return (
+    <EditorDrawerGroup>
+      <EditorDrawerSection title="Brand">
+        <ChoiceRow
+          label="Navbar size"
+          value={config.navbarSize || "balanced"}
+          options={HEADER_NAVBAR_SIZES.map((v) => ({ value: v, label: NAV_NAVBAR_SIZE_LABELS[v] }))}
+          onChange={(v) => set("navbarSize", v === "balanced" ? "" : v)}
+        />
+        <NavigationLogoUpload
+          logoUrl={config.logoUrl}
+          onChange={({ logoUrl, logoAssetId }) => {
+            setProp("logoUrl", logoUrl);
+            setProp("logoAssetId", logoAssetId);
+          }}
+        />
+      </EditorDrawerSection>
+
+      <EditorDrawerSection title="Banner">
+        <NavColorRow label="Background color" value={config.backgroundColor} onChange={(v) => set("backgroundColor", v)} effectiveValue="background" />
+        <NumberInputRow label="Background opacity" value={config.backgroundOpacity} min={0} max={100} suffix="%" effectiveValue={100} onChange={(v) => set("backgroundOpacity", v)} />
+        <NumberInputRow label="Bottom border" value={config.borderBottomWidth} min={0} max={8} effectiveValue={1} onChange={(v) => set("borderBottomWidth", v)} />
+        {!!config.borderBottomWidth && (
+          <NavColorRow label="Border color" value={config.borderBottomColor} onChange={(v) => set("borderBottomColor", v)} />
+        )}
+        <ChoiceRow
+          label="Shadow"
+          value={config.shadowSize || "none"}
+          options={HEADER_SHADOW_SIZES.map((v) => ({ value: v, label: NAV_SHADOW_LABELS[v] }))}
+          onChange={(v) => set("shadowSize", v === "none" ? "" : v)}
+        />
+      </EditorDrawerSection>
+
+      <EditorDrawerSection title="Links">
+        <ChoiceRow
+          label="Font size"
+          value={config.fontSize || "md"}
+          options={HEADER_FONT_SIZES.map((v) => ({ value: v, label: NAV_FONT_SIZE_LABELS[v] }))}
+          onChange={(v) => set("fontSize", v === "md" ? "" : v)}
+        />
+        <NavColorRow label="Brand text color" value={config.brandTextColor} onChange={(v) => set("brandTextColor", v)} effectiveValue="foreground" />
+        <NavColorRow label="Inactive link color" value={config.linkColor} onChange={(v) => set("linkColor", v)} effectiveValue="foreground" />
+        <ChoiceRow
+          label="Scale active link"
+          value={config.activeLinkScale ? "on" : "off"}
+          options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
+          onChange={(v) => set("activeLinkScale", v === "on")}
+        />
+        <ChoiceRow
+          label="Highlight active link"
+          value={config.activeLinkHighlight ? "on" : "off"}
+          options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
+          onChange={(v) => set("activeLinkHighlight", v === "on")}
+        />
+        <ChoiceRow
+          label="Underline active link"
+          value={config.activeLinkUnderline !== false ? "on" : "off"}
+          options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
+          onChange={(v) => set("activeLinkUnderline", v === "on" ? undefined : false)}
+        />
+        <NavColorRow label="Active link color" value={config.activeLinkColor} onChange={(v) => set("activeLinkColor", v)} effectiveValue="foreground" />
+        {config.activeLinkHighlight && (
+          <>
+            <NavColorRow label="Highlight color" value={config.highlightColor} onChange={(v) => set("highlightColor", v)} effectiveValue="foreground" />
+            <NumberInputRow label="Highlight opacity" value={config.highlightOpacity} min={0} max={100} suffix="%" effectiveValue={8} onChange={(v) => set("highlightOpacity", v)} />
+            <NavRadiusRow label="Highlight radius" value={config.activeLinkRadius} onChange={(v) => set("activeLinkRadius", v)} effectiveValue={effectiveRadius} />
+          </>
+        )}
+        {config.activeLinkUnderline !== false && (
+          <NavColorRow label="Underline color" value={config.underlineColor} onChange={(v) => set("underlineColor", v)} effectiveValue="accent" />
+        )}
+      </EditorDrawerSection>
+
+      <EditorDrawerSection title="Contact button">
+        <NavColorRow label="Fill color" value={config.contactButtonColor} onChange={(v) => set("contactButtonColor", v)} effectiveValue="primary" />
+        <NumberInputRow label="Fill opacity" value={config.contactButtonOpacity} min={0} max={100} suffix="%" effectiveValue={100} onChange={(v) => set("contactButtonOpacity", v)} />
+        <NavColorRow label="Text color" value={config.contactButtonTextColor} onChange={(v) => set("contactButtonTextColor", v)} effectiveValue="background" />
+        <NavRadiusRow label="Corner radius" value={config.contactButtonRadius} onChange={(v) => set("contactButtonRadius", v)} effectiveValue={effectiveRadius} />
+      </EditorDrawerSection>
+
+      <EditorDrawerSection title="Sync">
+        <HighlightToggle
+          label={`Detach header on ${navDetach?.zoneLabel ?? "this page"}`}
+          on={detached}
+          onToggle={() => setProp("detached", !detached)}
+          disabled={navDetach?.disabled}
+        />
+        <p className="text-xs text-muted-foreground">
+          {navDetach?.disabled
+            ? `${navDetach.otherZoneLabel} already has a detached header — only one page can detach at a time.`
+            : "Detached headers style independently and stop mirroring the other page."}
+        </p>
+      </EditorDrawerSection>
+    </EditorDrawerGroup>
+  );
+}
+
 export function ContentInputs({
   type,
   props,
   setProp,
   setProps,
+  navDetach,
 }: {
   type: string;
   props: Record<string, unknown>;
   setProp: (key: string, val: unknown) => void;
   setProps?: (patch: Record<string, unknown>) => void;
+  /** Only read when `type` is one of NAV_PRESET_KEYS — see NavDetachContext. */
+  navDetach?: NavDetachContext;
 }) {
   const demo = useDemoPicker();
   if (type === "Heading") {
@@ -644,6 +961,16 @@ export function ContentInputs({
       </div>
     );
   }
+  if ((NAV_PRESET_KEYS as readonly string[]).includes(type)) {
+    return (
+      <NavigationConfigPanel
+        config={props as PortfolioHeaderConfig}
+        setProp={setProp}
+        navDetach={navDetach}
+        detached={!!(props as { detached?: boolean }).detached}
+      />
+    );
+  }
   if (type === "Columns") {
     return (
       <div className="flex flex-col gap-3">
@@ -745,6 +1072,7 @@ function ContentTabBody({
   setProps,
   showBanner,
   isContainer,
+  navDetach,
 }: {
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
@@ -754,6 +1082,7 @@ function ContentTabBody({
   setProps?: (patch: Record<string, unknown>) => void;
   showBanner: boolean;
   isContainer: boolean;
+  navDetach?: NavDetachContext;
 }) {
   const container: ContainerBgControls | null =
     isContainer && p
@@ -801,7 +1130,9 @@ function ContentTabBody({
           effectiveColorToken={effectiveBannerColor}
         />
       )}
-      {showContentInputs && p && <ContentInputs type={type} props={p} setProp={setProp} setProps={setProps} />}
+      {showContentInputs && p && (
+        <ContentInputs type={type} props={p} setProp={setProp} setProps={setProps} navDetach={navDetach} />
+      )}
     </div>
   );
 }
@@ -966,10 +1297,12 @@ function HighlightToggle({
   label,
   on,
   onToggle,
+  disabled = false,
 }: {
   label: string;
   on: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between">
@@ -979,9 +1312,10 @@ function HighlightToggle({
         role="switch"
         aria-checked={on}
         aria-label={label}
+        disabled={disabled}
         onClick={onToggle}
         className={cn(
-          "relative inline-flex h-5 w-9 cursor-pointer items-center border border-border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          "relative inline-flex h-5 w-9 cursor-pointer items-center border border-border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
           on ? "bg-foreground" : "bg-muted"
         )}
       >
@@ -2289,6 +2623,7 @@ function DividerPanel({ p, setProp }: { p: Record<string, unknown> | undefined; 
 function BlockAwarePanel({
   s,
   set,
+  navDetach,
 }: {
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
@@ -2296,6 +2631,7 @@ function BlockAwarePanel({
   tab?: "content" | "design" | "layout";
   /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
   onTabChange?: (t: "content" | "design" | "layout") => void;
+  navDetach?: NavDetachContext;
 }) {
   const selectedItem = usePuckStore((s) => s.selectedItem);
   const data = usePuckStore((s) => s.appState.data);
@@ -2413,6 +2749,7 @@ function BlockAwarePanel({
             setProps={setProps}
             showBanner={isContainer || isGalleryContainer || type === "ContactDetails" || type === "Image"}
             isContainer={isContainer || isGalleryContainer}
+            navDetach={navDetach}
           />
         )}
         {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} p={p} />}
@@ -2443,18 +2780,22 @@ export function StyleToolkitField({
   onChange,
   fieldId,
   blockType = "",
+  navDetach,
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle) => void;
   fieldId?: string;
   blockType?: string;
+  /** Only relevant when `blockType` is one of NAV_PRESET_KEYS. StyleToolkitField
+   *  cannot compute this itself — see NavDetachContext. */
+  navDetach?: NavDetachContext;
 }) {
   const [tab, setTab] = useState<"content" | "design" | "layout">("content");
   const s = value ?? {};
   const set = (patch: Partial<BlockStyle>) => onChange({ ...s, ...patch });
 
   if (fieldId) {
-    return <BlockAwarePanel s={s} set={set} tab={tab} onTabChange={setTab} />;
+    return <BlockAwarePanel s={s} set={set} tab={tab} onTabChange={setTab} navDetach={navDetach} />;
   }
 
   // Standalone render (tests — no Puck provider): show full 3-tab panel
@@ -2472,6 +2813,7 @@ export function StyleToolkitField({
           setProp={() => {}}
           showBanner={standaloneIsContainer || !GALLERY_BLOCKS.has(blockType)}
           isContainer={standaloneIsContainer}
+          navDetach={navDetach}
         />
       )}
       {tab === "design" && <DesignTab s={s} set={set} blockType={blockType} />}

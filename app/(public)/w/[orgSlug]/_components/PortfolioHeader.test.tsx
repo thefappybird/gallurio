@@ -295,6 +295,35 @@ describe("PortfolioHeader", () => {
     // Gallery is inactive so it uses linkColor, not activeLinkColor
     expect(screen.getByRole("link", { name: "Gallery" }).style.color).toBe("var(--pf-color-accent)");
   });
+  it("renders brandSlot content in place of the default logo/text link when provided", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        brandSlot={<div data-testid="brand-slot">Custom brand</div>}
+      />,
+    );
+    expect(screen.getByTestId("brand-slot")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Luna Studio" })).not.toBeInTheDocument();
+  });
+
+  it("keeps brandSlot content in the same row (same nav) as the Home/Gallery links", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        brandSlot={<div data-testid="brand-slot">Custom brand</div>}
+      />,
+    );
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(within(nav).getByTestId("brand-slot")).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "Home" })).toBeInTheDocument();
+  });
+
+  it("without brandSlot renders the default logo/brand-text link exactly as before", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    expect(screen.getByRole("link", { name: "Luna Studio" })).toBeInTheDocument();
+  });
 });
 
 describe("PortfolioHeader template render contract", () => {

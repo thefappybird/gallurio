@@ -7,7 +7,7 @@ import type { BlockStyle } from "./styleToolkit";
 import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
 import { resolveEffectiveFonts } from "./fonts";
-import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
+import { SECTION_PRESET_KEYS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
 import { SingleCollectionControl } from "./galleryPicker/MediaField";
 import { DemoPickerContext } from "./demoPickerContext";
 
@@ -419,20 +419,32 @@ describe("gallery section presets are container-typed", () => {
 });
 
 describe("CONTAINER_TYPES / FLEX_CONTAINER_BLOCKS — derived from the preset registry", () => {
-  it("contains all 33 registry keys plus Container, nothing hand-listed", () => {
+  it("contains every Container-shaped registry key plus Container, nothing hand-listed", () => {
     for (const key of SECTION_PRESET_KEYS) {
-      expect(CONTAINER_TYPES.has(key)).toBe(true);
-      expect(FLEX_CONTAINER_BLOCKS.has(key)).toBe(true);
+      const isNav = (NAV_PRESET_KEYS as readonly string[]).includes(key);
+      expect(CONTAINER_TYPES.has(key)).toBe(!isNav);
+      expect(FLEX_CONTAINER_BLOCKS.has(key)).toBe(!isNav);
     }
     expect(CONTAINER_TYPES.has("Container")).toBe(true);
     expect(FLEX_CONTAINER_BLOCKS.has("Container")).toBe(true);
-    expect(CONTAINER_TYPES.size).toBe(SECTION_PRESET_KEYS.length + 1);
-    expect(FLEX_CONTAINER_BLOCKS.size).toBe(SECTION_PRESET_KEYS.length + 1);
+    expect(CONTAINER_TYPES.size).toBe(SECTION_PRESET_KEYS.length - NAV_PRESET_KEYS.length + 1);
+    expect(FLEX_CONTAINER_BLOCKS.size).toBe(SECTION_PRESET_KEYS.length - NAV_PRESET_KEYS.length + 1);
   });
 
   it("includes VideoPreset — the hand-listed sets omitted it (live bug)", () => {
     expect(CONTAINER_TYPES.has("VideoPreset")).toBe(true);
     expect(FLEX_CONTAINER_BLOCKS.has("VideoPreset")).toBe(true);
+  });
+
+  // Regression: the nav group's 3 keys are NOT Container-shaped (they render
+  // through NavigationBlock and carry no `_style`) — a prior version of this
+  // parity test iterated ALL of SECTION_PRESET_KEYS (nav included) and both
+  // sides grew by 3 in lockstep, so the bug went undetected.
+  it("excludes every NAV_PRESET_KEYS entry — Navigation blocks are not containers", () => {
+    for (const key of NAV_PRESET_KEYS) {
+      expect(CONTAINER_TYPES.has(key)).toBe(false);
+      expect(FLEX_CONTAINER_BLOCKS.has(key)).toBe(false);
+    }
   });
 });
 
@@ -485,6 +497,98 @@ describe("DesignTab — CollectionCard", () => {
     expect(screen.getByRole("button", { name: "Collection title" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Photo count" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Typography" })).toBeNull();
+  });
+});
+
+describe("ContentInputs — Navigation", () => {
+  // Sections are collapsible (EditorDrawerGroup, first section open by
+  // default) — open the one under test the same way a real user would.
+  function openSection(name: string) {
+    fireEvent.click(screen.getByRole("button", { name }));
+  }
+
+  it.each(NAV_PRESET_KEYS)("renders the Navigation field panel for %s", (type) => {
+    render(<ContentInputs type={type} props={{}} setProp={vi.fn()} />);
+
+    // "Brand" is open by default.
+    expect(screen.getByText("Navbar size")).toBeInTheDocument();
+    expect(screen.getByText("Upload logo")).toBeInTheDocument();
+
+    openSection("Banner");
+    expect(screen.getByText("Background color")).toBeInTheDocument();
+    expect(screen.getByText("Shadow")).toBeInTheDocument();
+
+    openSection("Links");
+    expect(screen.getByText("Font size")).toBeInTheDocument();
+    expect(screen.getByText("Scale active link")).toBeInTheDocument();
+
+    openSection("Contact button");
+    expect(screen.getByText("Fill color")).toBeInTheDocument();
+  });
+
+  it("writes background color via setProp", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="NavBorderedPreset" props={{}} setProp={setProp} />);
+
+    openSection("Banner");
+    const bgRow = screen.getByText("Background color").closest("div") as HTMLElement;
+    fireEvent.click(within(bgRow).getByRole("button", { name: "Primary" }));
+    expect(setProp).toHaveBeenCalledWith("backgroundColor", "primary");
+  });
+
+  it("shows the highlight color/opacity/radius controls only when activeLinkHighlight is on", () => {
+    const { rerender } = render(
+      <ContentInputs type="NavBorderedPreset" props={{}} setProp={vi.fn()} />
+    );
+    openSection("Links");
+    expect(screen.queryByText("Highlight opacity")).not.toBeInTheDocument();
+
+    rerender(
+      <ContentInputs
+        type="NavBorderedPreset"
+        props={{ activeLinkHighlight: true }}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Highlight opacity")).toBeInTheDocument();
+    expect(screen.getByText("Highlight radius")).toBeInTheDocument();
+  });
+
+  it("shows the detach toggle enabled with no navDetach context", () => {
+    render(<ContentInputs type="NavBorderedPreset" props={{}} setProp={vi.fn()} />);
+    openSection("Sync");
+    const toggle = screen.getByRole("switch", { name: /detach header/i });
+    expect(toggle).not.toBeDisabled();
+  });
+
+  it("disables the detach toggle and shows the hint naming the other page when navDetach.disabled is true", () => {
+    render(
+      <ContentInputs
+        type="NavBorderedPreset"
+        props={{}}
+        setProp={vi.fn()}
+        navDetach={{ zoneLabel: "Gallery", otherZoneLabel: "Home", disabled: true }}
+      />
+    );
+    openSection("Sync");
+    const toggle = screen.getByRole("switch", { name: "Detach header on Gallery" });
+    expect(toggle).toBeDisabled();
+    expect(screen.getByText(/Home already has a detached header/i)).toBeInTheDocument();
+  });
+
+  it("toggling the detach switch calls setProp('detached', ...)", () => {
+    const setProp = vi.fn();
+    render(
+      <ContentInputs
+        type="NavBorderedPreset"
+        props={{ detached: false }}
+        setProp={setProp}
+        navDetach={{ zoneLabel: "Home", otherZoneLabel: "Gallery", disabled: false }}
+      />
+    );
+    openSection("Sync");
+    fireEvent.click(screen.getByRole("switch", { name: "Detach header on Home" }));
+    expect(setProp).toHaveBeenCalledWith("detached", true);
   });
 });
 

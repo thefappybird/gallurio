@@ -277,7 +277,7 @@ describe("gallery generateMetadata", () => {
     });
   });
 
-  it("falls back to header.logoUrl when siteIcon.url is empty", async () => {
+  it("does not fall back to header.logoUrl when siteIcon.url is empty (header logo removed as a favicon source)", async () => {
     const workspace = makePublishedWorkspace({
       publicPage: {
         templateId: "minimal",
@@ -299,11 +299,7 @@ describe("gallery generateMetadata", () => {
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
 
-    expect(result.icons).toEqual({
-      icon: "https://cdn.example.com/logo.png",
-      shortcut: "https://cdn.example.com/logo.png",
-      apple: "https://cdn.example.com/logo.png",
-    });
+    expect(result.icons).toBeUndefined();
   });
 
   it("omits icons when both siteIcon.url and header.logoUrl are empty", async () => {

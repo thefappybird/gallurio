@@ -15,7 +15,7 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildHomeJsonLd, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
-import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import { resolveHomeSeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
 import { BUSINESS_TYPE_VALUES } from "@/lib/validators/workspace";
 
@@ -62,8 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 
   const ogImageUrl = seo.ogImageUrl || undefined;
-  const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
-  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
+  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon) || undefined;
   // Use the resolved DB slug (always lowercase), never the raw route param —
   // otherwise a mixed-case request (e.g. /w/AcmeStudio) emits a canonical URL
   // that disagrees with app/sitemap.ts, which lists the lowercase DB slug.
@@ -125,6 +124,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   // at the page boundary so blocks stay synchronous and unit-testable.
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
+  const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
   const tPopup = await getTranslations({ locale, namespace: "publicPage.collectionPopup" });
 
   // Build JSON-LD once — injected in both the ComingSoon branch and the main render.
@@ -169,6 +169,14 @@ export default async function PortfolioHomePage({ params }: PageProps) {
         carouselHint: t("gallery.carouselHint"),
         carouselPrev: t("gallery.carouselPrev"),
         carouselNext: t("gallery.carouselNext"),
+      },
+      nav: {
+        navLandmark: tNav("navLandmark"),
+        home: tNav("home"),
+        gallery: tNav("gallery"),
+        contact: tNav("contact"),
+        openMenu: tNav("openMenu"),
+        closeMenu: tNav("closeMenu"),
       },
     },
   };

@@ -15,7 +15,7 @@ import { PoweredByGallurio } from "../_components/PoweredByGallurio";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioGalleryUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, buildPortfolioEntityNodes, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
-import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import { resolveGallerySeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
 import { collectGalleryPublishedImages } from "@/lib/page-builder/seo/publishedImages.server";
 
@@ -43,8 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     galleryTitle,
   });
 
-  const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
-  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
+  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon) || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
   const galleryUrl = portfolioGalleryUrl(workspace.slug);
 
@@ -93,6 +92,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
 
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
+  const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
 
   // Published-image collection only makes sense once real gallery content
   // exists — the ComingSoon branch has no images by definition.
@@ -141,6 +141,14 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
         carouselHint: t("gallery.carouselHint"),
         carouselPrev: t("gallery.carouselPrev"),
         carouselNext: t("gallery.carouselNext"),
+      },
+      nav: {
+        navLandmark: tNav("navLandmark"),
+        home: tNav("home"),
+        gallery: tNav("gallery"),
+        contact: tNav("contact"),
+        openMenu: tNav("openMenu"),
+        closeMenu: tNav("closeMenu"),
       },
     },
   };

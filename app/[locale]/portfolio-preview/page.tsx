@@ -11,7 +11,6 @@ import {
   DEFAULT_BRAND_KIT,
   type PortfolioContactConfig,
   type PortfolioCollectionsPopupConfig,
-  type PortfolioHeaderConfig,
   type PuckData,
 } from "@/lib/page-builder/types";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
@@ -23,7 +22,6 @@ import { PreviewContactCard } from "./_components/PreviewContactCard";
 import { PreviewContactModal } from "./_components/PreviewContactModal";
 import { PreviewClient } from "./_components/PreviewClient";
 import { PreviewBrandShell } from "./_components/PreviewBrandShell";
-import { PreviewHeaderShell } from "./_components/PreviewHeaderShell";
 import { PreviewPopupShell } from "./_components/PreviewPopupShell";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
@@ -54,10 +52,12 @@ function parseZone(value: string | string[] | undefined): PreviewZone {
  *   editor's CollectionsPopupPreview; driven by the localStorage draft config
  *   (via PreviewBrandShell → PreviewDraftContext) with DB fallback.
  *
- * Brand-kit CSS vars, header config, contact config, and collectionsPopup config
- * are initially sourced from DB; PreviewBrandShell and the Preview*Shell client
- * components override each with the localStorage draft on mount, so unsaved
- * edits are visible in preview without saving.
+ * Brand-kit CSS vars, contact config, and collectionsPopup config are initially
+ * sourced from DB; PreviewBrandShell and the Preview*Shell client components
+ * override each with the localStorage draft on mount, so unsaved edits are
+ * visible in preview without saving. The header is no longer a separate
+ * shell — it renders inline as the page's own Navigation block, same as the
+ * public site.
  */
 export default async function PortfolioPreviewPage({
   params,
@@ -96,17 +96,8 @@ export default async function PortfolioPreviewPage({
     chromeLocale,
   );
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
-  // DB fallback — PreviewHeaderShell overrides with the localStorage draft on mount.
-  const headerConfig = (pp?.header ?? null) as PortfolioHeaderConfig | null;
   // DB fallback — PreviewPopupShell overrides with the localStorage draft on mount.
   const collectionsPopupConfig = (pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
-  const activePath = zone === "gallery" ? `/w/${workspace.slug}/gallery` : `/w/${workspace.slug}`;
-  // Keep the logo + Home link within the preview iframe; do not navigate to the
-  // published public site.
-  const previewHomeHref = `/${locale}/portfolio-preview`;
-  // Keep the Gallery link within the preview iframe; do not navigate to the
-  // published public site.
-  const previewGalleryHref = `/${locale}/portfolio-preview?zone=gallery`;
 
   // Built unconditionally so PreviewContactModal can mount in home/gallery zones,
   // enabling the navbar Contact button to open the modal (mirrors public layout).
@@ -154,6 +145,14 @@ export default async function PortfolioPreviewPage({
           carouselPrev: t("gallery.carouselPrev"),
           carouselNext: t("gallery.carouselNext"),
         },
+        nav: {
+          navLandmark: tNav("navLandmark"),
+          home: tNav("home"),
+          gallery: tNav("gallery"),
+          contact: tNav("contact"),
+          openMenu: tNav("openMenu"),
+          closeMenu: tNav("closeMenu"),
+        },
       },
     };
 
@@ -181,24 +180,8 @@ export default async function PortfolioPreviewPage({
         fallbackCssVars={cssVars}
         fallbackClassName={className}
       >
-        {showHeader && (
-          <PreviewHeaderShell
-            slug={workspace.slug}
-            fallbackConfig={headerConfig}
-            activePath={activePath}
-            homeHref={previewHomeHref}
-            galleryHref={previewGalleryHref}
-            labels={{
-              brand: workspace.name,
-              navLandmark: tNav("navLandmark"),
-              home: tNav("home"),
-              gallery: tNav("gallery"),
-              contact: tNav("contact"),
-              openMenu: tNav("openMenu"),
-              closeMenu: tNav("closeMenu"),
-            }}
-          />
-        )}
+        {/* The header now renders inline as the page's own Navigation block —
+            see PreviewClient's <Render> — not as a separate shell here. */}
         {body}
         {/* Mount contact modal only when the header is visible (home/gallery zones).
             The contact zone shows PreviewContactCard instead; popup zone has no header.

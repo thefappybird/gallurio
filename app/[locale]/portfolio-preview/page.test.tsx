@@ -49,24 +49,6 @@ vi.mock("@/app/(public)/w/[orgSlug]/_components/buildContactLabels", () => ({
   })),
 }));
 
-vi.mock("@/app/(public)/w/[orgSlug]/_components/PortfolioHeader", () => ({
-  PortfolioHeader: ({
-    labels,
-    config,
-    activePath,
-  }: {
-    labels: { home: string };
-    config: { brandText?: string } | null;
-    activePath?: string;
-  }) => (
-    <div>
-      <div data-testid="header-home">{labels.home}</div>
-      <div data-testid="header-brand">{config?.brandText ?? ""}</div>
-      <div data-testid="header-active-path">{activePath ?? ""}</div>
-    </div>
-  ),
-}));
-
 vi.mock("./_components/PreviewContactCard", () => ({
   PreviewContactCard: ({
     title,
@@ -86,8 +68,19 @@ vi.mock("./_components/PreviewContactCard", () => ({
 }));
 
 vi.mock("./_components/PreviewClient", () => ({
-  PreviewClient: ({ zone, slug }: { zone: string; slug: string }) => (
-    <div data-testid="preview-client">{zone}:{slug}</div>
+  PreviewClient: ({
+    zone,
+    slug,
+    workspace,
+  }: {
+    zone: string;
+    slug: string;
+    workspace: { chrome?: { nav?: { home?: string } } };
+  }) => (
+    <div data-testid="preview-client">
+      {zone}:{slug}
+      <div data-testid="preview-client-nav-home">{workspace.chrome?.nav?.home ?? ""}</div>
+    </div>
   ),
 }));
 
@@ -124,10 +117,9 @@ describe("PortfolioPreviewPage", () => {
 
     const client = screen.getByTestId("preview-client");
     expect(client).toHaveTextContent("home:studio-aurora");
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora");
   });
 
-  it("renders PreviewClient for gallery zone with correct active path", async () => {
+  it("renders PreviewClient for gallery zone with workspace slug", async () => {
     const page = await PortfolioPreviewPage({
       params: Promise.resolve({ locale: "en" }),
       searchParams: Promise.resolve({ zone: "gallery" }),
@@ -137,7 +129,6 @@ describe("PortfolioPreviewPage", () => {
 
     const client = screen.getByTestId("preview-client");
     expect(client).toHaveTextContent("gallery:studio-aurora");
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora/gallery");
   });
 
   it("renders contact zone from DB values (no draft param)", async () => {
@@ -151,11 +142,9 @@ describe("PortfolioPreviewPage", () => {
     expect(screen.getByText("DB title")).toBeInTheDocument();
     expect(screen.getByText("DB description")).toBeInTheDocument();
     expect(screen.getByTestId("contact-label")).toHaveTextContent("en:publicPage.inquiryForm:name");
-    expect(screen.getByTestId("header-home")).toHaveTextContent("en:publicPage.nav:home");
-    expect(screen.getByTestId("header-brand")).toHaveTextContent("DB brand");
   });
 
-  it("maps gallery preview tabs to the gallery active nav path", async () => {
+  it("wires chrome.nav labels into the workspace passed to PreviewClient", async () => {
     const page = await PortfolioPreviewPage({
       params: Promise.resolve({ locale: "en" }),
       searchParams: Promise.resolve({ zone: "gallery" }),
@@ -163,6 +152,6 @@ describe("PortfolioPreviewPage", () => {
 
     render(page);
 
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora/gallery");
+    expect(screen.getByTestId("preview-client-nav-home")).toHaveTextContent("en:publicPage.nav:home");
   });
 });

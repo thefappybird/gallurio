@@ -72,7 +72,7 @@ describe("NavigationBlock — isomorphic render", () => {
     expect(screen.getByRole("link", { name: "Koleksyon" })).toBeInTheDocument();
   });
 
-  it("resolves the brand link from workspace.name and hrefs from workspace.slug", () => {
+  it("resolves nav link hrefs from workspace.slug (independent of the slot)", () => {
     render(
       NavigationBlock({
         ...navigationDefaultProps,
@@ -85,15 +85,40 @@ describe("NavigationBlock — isomorphic render", () => {
       })
     );
     const nav = screen.getByRole("navigation", { name: "Portfolio" });
-    const home = within(nav).getByRole("link", { name: "Luna Studio" });
+    const home = within(nav).getByRole("link", { name: "Home" });
     const gallery = within(nav).getByRole("link", { name: "Gallery" });
     expect(home).toHaveAttribute("href", "/w/luna-studio");
     expect(gallery).toHaveAttribute("href", "/w/luna-studio/gallery");
   });
 
+  it("renders the content slot as the brand region, in the SAME row as the nav links", () => {
+    render(
+      NavigationBlock({
+        ...navigationDefaultProps,
+        content: stubSlot,
+        puck: {
+          metadata: {
+            workspace: { _id: "ws-4", name: "Luna Studio", slug: "luna-studio" },
+          },
+        },
+      })
+    );
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(within(nav).getByTestId("nav-slot")).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "Home" })).toBeInTheDocument();
+  });
+
   it("calls the content slot function and renders its output", () => {
     render(NavigationBlock({ ...navigationDefaultProps, content: stubSlot }));
     expect(screen.getByTestId("nav-slot")).toBeInTheDocument();
+  });
+
+  it("keeps nav links and the contact button when the slot renders empty", () => {
+    const emptySlot: SlotComponent = () => null;
+    render(NavigationBlock({ ...navigationDefaultProps, content: emptySlot }));
+    expect(screen.getByRole("link", { name: "Home" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Gallery" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Contact" })).toBeInTheDocument();
   });
 });
 
@@ -117,5 +142,16 @@ describe("NavigationBlock — defaults and permissions", () => {
   it("navigationBlockConfig does not restrict insert/edit", () => {
     expect(navigationBlockConfig.permissions?.insert).toBeUndefined();
     expect(navigationBlockConfig.permissions?.edit).toBeUndefined();
+  });
+
+  it("navigationFields carries a round-trip-only `_style` key (production placeholder)", () => {
+    const fields = navigationBlockConfig.fields as unknown as {
+      _style?: { type: string; render: (...args: unknown[]) => unknown };
+    };
+    expect(fields._style).toBeDefined();
+    expect(fields._style?.type).toBe("custom");
+    // Production placeholder renders null — the real editing UI is an
+    // editor-only `_style` override (see the file's header comment).
+    expect(fields._style?.render()).toBeNull();
   });
 });

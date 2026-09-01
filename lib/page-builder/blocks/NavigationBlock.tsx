@@ -1,12 +1,13 @@
 /**
  * NavigationBlock — ISOMORPHIC (client-safe) pinned site header.
  *
- * Renders `PortfolioHeader` (the existing, unmodified public-header component)
- * from its OWN props — the full `PortfolioHeaderConfig` shape — plus a free
- * `content` slot (seeded with a logo Image + brand Heading) that the owner may
- * restyle or delete. The nav links (Home/Gallery) and the contact button are
- * rendered by `PortfolioHeader` itself from this block's config fields, so they
- * can never be removed.
+ * Renders `PortfolioHeader` from its OWN props — the full `PortfolioHeaderConfig`
+ * shape — plus a free `content` slot (seeded with a logo Image + brand Heading)
+ * that the owner may restyle or delete. The slot is threaded through
+ * `PortfolioHeader`'s `brandSlot` prop, so it occupies the SAME row as the nav
+ * links (left side), not a separate row. The nav links (Home/Gallery) and the
+ * contact button are rendered by `PortfolioHeader` itself from this block's
+ * config fields, so they can never be removed.
  *
  * `_chrome: "nav"` marks this block for `chromeSync.ts` (home/gallery mirroring)
  * and `detached` opts a single zone out of that sync — both wired up by a later
@@ -27,6 +28,7 @@ import {
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import type { ChromeKind } from "@/lib/page-builder/chromeSync";
+import { productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 import { child, slot } from "./presets/_helpers";
 
 // ---------------------------------------------------------------------------
@@ -38,6 +40,11 @@ export type NavigationBlockProps = PortfolioHeaderConfig & {
   _chrome?: ChromeKind;
   /** Opts this zone's copy out of chrome sync — at most one zone per kind. */
   detached?: boolean;
+  /** Round-trip-only on the public/production path (see `navigationFields`'s
+   *  `_style: productionStyleField`). The Navigation block's own render never
+   *  reads this — its styling lives on the `PortfolioHeaderConfig` fields
+   *  above, edited via StyleToolkitField's NAV_PRESET_KEYS panel. */
+  _style?: BlockStyle;
   /** Free slot for the logo/title — fully editable, restyleable, deletable. */
   content: Slot;
 };
@@ -60,6 +67,7 @@ export function NavigationBlock({
   puck,
   detached: _detached,
   _chrome: _chromeMark,
+  _style: _styleIgnored,
   ...config
 }: NavigationBlockProps & { content: SlotComponent; puck?: BlockPuck }) {
   const workspace = getRenderWorkspaceFrom(puck);
@@ -68,15 +76,6 @@ export function NavigationBlock({
 
   return (
     <div ref={puck?.dragRef ?? undefined} data-block="navigation">
-      {typeof Content === "function" &&
-        Content({
-          style: {
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.5rem 1.5rem",
-          },
-        })}
       <PortfolioHeader
         slug={slug}
         homeHref={portfolioHomePath(slug)}
@@ -91,19 +90,32 @@ export function NavigationBlock({
           closeMenu: labels.closeMenu,
         }}
         config={config as PortfolioHeaderConfig}
+        brandSlot={
+          typeof Content === "function"
+            ? Content({
+                style: { display: "flex", alignItems: "center", gap: "0.625rem" },
+              })
+            : null
+        }
       />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Puck field config — shared by the production `puckConfig` and the editor
-// config's own translated copy. Every `PortfolioHeaderConfig` field stays
-// undeclared (data-only, no sidebar control) here; a later wave wires the
-// full field panel through StyleToolkitField. Only the slot is editable now.
+// Puck field config — shared by the production `puckConfig` (config.ts) and
+// editorConfig.tsx's Navigation branch. `_style` stays the inert
+// `productionStyleField` placeholder here (mirrors `containerFields`) so the
+// key round-trips and this file never pulls the "use client" StyleToolkitField
+// into the server-rendered production config. The REAL editing UI (the
+// NAV_PRESET_KEYS panel in StyleToolkitField.tsx's ContentInputs) must be
+// wired by an editor-only `_style` override in editorConfig.tsx — see this
+// file's header comment / the handoff note in the task report; editorConfig.tsx
+// currently reuses `navigationFields` verbatim with no such override.
 // ---------------------------------------------------------------------------
 
 export const navigationFields = {
+  _style: productionStyleField,
   content: { type: "slot" },
 } as unknown as ComponentConfig<NavigationBlockProps>["fields"];
 
