@@ -81,7 +81,7 @@ describe("portfolio template registry", () => {
         // Preset blocks (e.g. GalleryLandingPreset) are Container-based and have
         // no images prop — only data gallery blocks (GalleryGrid, GalleryMasonry)
         // carry images[]. The type check excludes the *Preset suffix.
-        const GALLERY_DATA_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork"]);
+        const GALLERY_DATA_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
         for (const block of data.gallery?.content ?? []) {
           if (GALLERY_DATA_TYPES.has(block.type)) {
             expect(block.props.images).toEqual([]);

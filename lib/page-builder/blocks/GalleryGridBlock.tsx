@@ -10,7 +10,7 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig, Field, Fields } from "@measured/puck";
+import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@measured/puck";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   resolveBlockStyle,
@@ -46,6 +46,11 @@ export type GalleryImage = {
 
 export type GalleryGridProps = {
   _style?: BlockStyle;
+  /** New composition path: individual Image blocks live in this slot, so they
+   * can be selected, styled, and reordered by Puck. */
+  content?: Slot;
+  /** @deprecated Read-only compatibility for pages saved before gallery slots.
+   * New grids use `content` Image blocks instead. */
   images: GalleryImage[];
   // Banner / container props (same as ContainerBlock)
   backgroundImages?: GalleryImage[];
@@ -58,6 +63,7 @@ export type GalleryGridProps = {
 };
 
 export const galleryGridDefaultProps: GalleryGridProps = {
+  content: [],
   images: [],
   backgroundImages: [],
   bgAnimation: "crossfade",
@@ -162,8 +168,9 @@ export function GalleryGridBlock({
   overlayOpacity,
   minHeight,
   minHeightValue,
+  content: Content,
   puck,
-}: GalleryGridProps & { puck?: BlockPuck }) {
+}: Omit<GalleryGridProps, "content"> & { content?: Slot | SlotComponent; puck?: BlockPuck }) {
   const columns = _style?.galleryColumns ?? 3;
   const gap = _style?.galleryGap ?? "normal";
   const gapValue = GAP_MAP[gap] ?? "8px";
@@ -176,7 +183,13 @@ export function GalleryGridBlock({
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
 
-  if (list.length === 0) {
+  // Legacy image arrays remain authoritative when present so old published
+  // pages keep their exact visuals. New blocks have an empty array and render
+  // the Puck slot of regular Image blocks instead.
+  const useLegacyImages = list.length > 0;
+  const SlotContent = typeof Content === "function" ? Content : undefined;
+
+  if (!useLegacyImages && !SlotContent) {
     return (
       <section
         ref={puck?.dragRef ?? undefined}
@@ -238,14 +251,15 @@ export function GalleryGridBlock({
         <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "80rem", margin: "0 auto" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: gridColsVar(`repeat(${columns}, 1fr)`),
-            gap: gapValue,
-          }}
-        >
-          {list.map((img) => {
+        {useLegacyImages ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: gridColsVar(`repeat(${columns}, 1fr)`),
+              gap: gapValue,
+            }}
+          >
+            {list.map((img) => {
             const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth,
@@ -268,8 +282,18 @@ export function GalleryGridBlock({
                 </GalleryLightboxTrigger>
               </figure>
             );
-          })}
-        </div>
+            })}
+          </div>
+        ) : (
+          SlotContent?.({
+            className: "pf-gallery-grid-slot",
+            style: {
+              display: "grid",
+              gridTemplateColumns: gridColsVar(`repeat(${columns}, 1fr)`),
+              gap: gapValue,
+            },
+          })
+        )}
       </div>
     </section>
   );
@@ -287,6 +311,7 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   // Banner fields are managed by StyleToolkitField and stripped by resolveFields in editorConfig.
   fields: {
     _style: productionStyleField,
+    content: { type: "slot", allow: ["Image"] },
     backgroundImages: {
       type: "array",
       label: "Background images",

@@ -1664,12 +1664,12 @@ describe("EditorShell demoMode — opt-in intro gates the guide", () => {
 });
 
 describe("EditorShell real (non-demo) editor — unaffected by the demo picker swap", () => {
-  it("keeps every collection-dependent block in the drawer", async () => {
+  it("keeps collection cards and presets insertable while hiding deprecated Highlights", async () => {
     renderWithProviders(<EditorShell {...baseProps} />);
     await screen.findByTestId("puck");
 
     const manual = __capturedPuckConfig?.categories?.manual?.components;
-    expect(manual).toContain("FeaturedWork");
+    expect(manual).not.toContain("FeaturedWork");
     expect(manual).toContain("CollectionCard");
 
     expect(__capturedPuckConfig?.categories?.featuredWork?.components).toEqual([

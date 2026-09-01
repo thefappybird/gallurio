@@ -19,11 +19,12 @@ import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
 export const PRESET_BLOCK_KEYS = SECTION_PRESET_KEYS;
 
 // Manual blocks: barebones primitives + the styleable Container/Columns
-// drop-zones + the raw data-driven gallery/featured blocks.
+// drop-zones + the gallery layout blocks. FeaturedWork stays registered solely
+// for saved pages; new compositions use Columns plus individually editable
+// CollectionCard blocks.
 export const MANUAL_BLOCK_KEYS = [
   "GalleryGrid",
   "GalleryMasonry",
-  "FeaturedWork",
   "CollectionCard",
   "Heading",
   "Text",

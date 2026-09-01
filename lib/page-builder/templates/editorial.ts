@@ -520,7 +520,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-editorial-home-40",
                               text: "From ₱30,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -567,7 +567,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-editorial-home-45",
                               text: "From ₱8,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -614,7 +614,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-editorial-home-50",
                               text: "From ₱15,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -709,7 +709,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         level: "h2",
                         text: "Our gallery",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                           bold: true,
                         },
                       },
@@ -720,7 +720,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         id: "Text-editorial-gal-4",
                         text: "A curated look at our work.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -749,7 +749,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         level: "h2",
                         text: "Ready to book your session?",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -759,7 +759,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         id: "Text-editorial-gal-7",
                         text: "Let's create something beautiful together.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },

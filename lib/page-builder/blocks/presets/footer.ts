@@ -92,8 +92,8 @@ export const FOOTER_STATEMENT_PRESET: ContainerBlockProps = {
         child("Container", {
           _style: { flexDirection: "row", contentVerticalDistribution: "end", gap: 16 },
           content: slot([
-            child("Button", { label: "Home", action: "go-to-home", align: "right", size: "sm", _style: { buttonStyle: "link", textColorToken: "background", marginLeft: "0px", marginRight: "0px" } }),
-            child("Button", { label: "Gallery", action: "go-to-gallery", align: "right", size: "sm", _style: { buttonStyle: "link", textColorToken: "background", marginLeft: "0px", marginRight: "0px" } }),
+            child("Button", { label: "Home", action: "go-to-home", align: "right", size: "sm", _style: { buttonStyle: "link", textColorToken: "foreground", marginLeft: "0px", marginRight: "0px" } }),
+            child("Button", { label: "Gallery", action: "go-to-gallery", align: "right", size: "sm", _style: { buttonStyle: "link", textColorToken: "foreground", marginLeft: "0px", marginRight: "0px" } }),
           ]),
         }),
       ]),

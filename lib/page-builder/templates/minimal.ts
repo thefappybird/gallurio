@@ -42,7 +42,7 @@ export const minimalTemplate: PortfolioTemplate = {
                   level: "h1",
                   text: "Capturing moments that last forever",
                   _style: {
-                    textColorToken: "background",
+                    textColorToken: "foreground",
                     bold: true,
                   },
                 },
@@ -53,7 +53,7 @@ export const minimalTemplate: PortfolioTemplate = {
                   id: "Text-minimal-home-3",
                   text: "Fine art photography for weddings, portraits, and events.",
                   _style: {
-                    textColorToken: "background",
+                    textColorToken: "foreground",
                   },
                 },
               },
@@ -217,7 +217,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         level: "h2",
                         text: "Our gallery",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                           bold: true,
                         },
                       },
@@ -228,7 +228,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         id: "Text-minimal-gal-4",
                         text: "A curated look at our work.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -436,7 +436,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-minimal-gal-21",
                               text: "From ₱30,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -483,7 +483,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-minimal-gal-26",
                               text: "From ₱8,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -530,7 +530,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-minimal-gal-31",
                               text: "From ₱15,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },

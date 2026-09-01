@@ -60,7 +60,8 @@ describe("section preset stale props", () => {
     expect(gridChild).toBeDefined();
     expect(gridChild!.props).not.toHaveProperty("collectionId");
     expect(gridChild!.props).not.toHaveProperty("maxItems");
-    expect(gridChild!.props.images).toEqual([]);
+    expect(gridChild!.props.images).toBeUndefined();
+    expect((gridChild!.props.content as unknown[]).every((item) => (item as { type: string }).type === "Image")).toBe(true);
   });
 
   it("GALLERY_MASONRY_PRESET nested GalleryMasonry child has no collectionId or maxItems", () => {
@@ -70,32 +71,33 @@ describe("section preset stale props", () => {
     expect(masonryChild).toBeDefined();
     expect(masonryChild!.props).not.toHaveProperty("collectionId");
     expect(masonryChild!.props).not.toHaveProperty("maxItems");
-    expect(masonryChild!.props.images).toEqual([]);
+    expect(masonryChild!.props.images).toBeUndefined();
+    expect(masonryChild!.props.content).toBeUndefined();
+    expect(masonryChild!.props.masonryLayout).toBe("columns");
+    for (const lane of ["column1", "column2", "column3"]) {
+      expect((masonryChild!.props[lane] as unknown[]).every(
+        (item) => (item as { type: string }).type === "Image"
+      )).toBe(true);
+    }
   });
 });
 
-describe("buttons on an accent band", () => {
-  // ButtonBlock has no brand-kit fallback: with `buttonStyle` unset it renders a
-  // transparent fill with its label and 2px border in `--pf-color-fg`. On a
-  // section whose own background IS the accent, that measures 1.66:1 (Bold) to
-  // 3.54:1 (Editorial) — every committed kit fails DESIGN.md's 4.5:1 bar.
-  // The band's other children already pin `textColorToken: "background"`; the
-  // button has to pin its own colors to match.
-  it("CTA_PRESET's button pins a solid fill in the background token", () => {
+describe("buttons on a colored band", () => {
+  it("CTA_PRESET's button pins an outlined foreground treatment", () => {
     const btn = buttonChild(CTA_PRESET);
     expect(btn?.props._style).toMatchObject({
-      buttonStyle: "solid",
-      buttonColorToken: "background",
-      textColorToken: "accent",
+      buttonStyle: "outline",
+      buttonColorToken: "foreground",
+      textColorToken: "foreground",
     });
   });
 
-  it("HERO_PRESET's button pins the same colors over its scrimmed band", () => {
+  it("HERO_PRESET's button pins the same foreground treatment over its scrim", () => {
     const btn = buttonChild(HERO_PRESET);
     expect(btn?.props._style).toMatchObject({
-      buttonStyle: "solid",
-      buttonColorToken: "background",
-      textColorToken: "accent",
+      buttonStyle: "outline",
+      buttonColorToken: "foreground",
+      textColorToken: "foreground",
     });
   });
 });

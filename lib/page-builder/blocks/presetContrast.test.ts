@@ -1,18 +1,15 @@
 /**
  * Contrast contract for the section-preset library.
  *
- * DESIGN.md's Preset Quality Bar requires every preset to stay legible on every
- * committed brand kit, including the dark pole (Luxury). A preset can only fail
+ * The preset quality bar requires every preset to stay legible on every
+ * committed brand kit, including the dark Luxury kit. A preset can only fail
  * that in one of a few token-level ways, and all of them are computable from the
  * preset DATA plus the kit palette — no browser needed. So this suite walks all
  * 33 compositions against all 6 kits and measures WCAG 2.1 contrast for every
  * piece of text and every button.
  *
- * This is the test that would have caught the three shipped failures the preset
- * work fixed: `CtaPreset` at 1.00:1 (a button with no boundary against its own
- * accent band), and `HeroPreset` / `GalleryLandingPreset` at 2.64:1 / 3.45:1
- * (copy pinned to the background token over a BLACK scrim, on a kit whose
- * background IS near-black).
+ * The theme contract also guarantees that foreground copy clears WCAG AA
+ * against every background, primary, secondary, and accent surface.
  *
  * The color model below mirrors `resolveBlockStyle` and `ButtonBlock` exactly.
  * If either changes, this test must change with it — that coupling is the point.
@@ -143,12 +140,12 @@ function collect(
       out.push({ what: `${here} link label`, fg: resolve(palette, textToken, "foreground"), bg: ground, min: 4.5 });
     } else if (variant === "outline") {
       // Transparent fill: the label sits directly on the section ground.
-      out.push({ what: `${here} outline label`, fg: custom ? resolve(palette, custom, "foreground") : fill, bg: ground, min: 4.5 });
+      out.push({ what: `${here} outline label`, fg: custom ? resolve(palette, custom, "foreground") : palette.foreground, bg: ground, min: 4.5 });
     } else if (variant === "soft") {
       const wash = composite(fill, ground, 0.15);
-      out.push({ what: `${here} soft label`, fg: custom ? resolve(palette, custom, "foreground") : fill, bg: wash, min: 4.5 });
+      out.push({ what: `${here} soft label`, fg: custom ? resolve(palette, custom, "foreground") : palette.foreground, bg: wash, min: 4.5 });
     } else if (variant === "solid") {
-      out.push({ what: `${here} solid label`, fg: custom ? resolve(palette, custom, "foreground") : palette.background, bg: fill, min: 4.5 });
+      out.push({ what: `${here} solid label`, fg: custom ? resolve(palette, custom, "foreground") : palette.foreground, bg: fill, min: 4.5 });
       // A solid fill must also be distinguishable FROM the band it sits on, or the
       // button reads as floating text. 3:1 is the non-text UI-component threshold.
       out.push({ what: `${here} solid fill vs ground`, fg: fill, bg: ground, min: 3 });
@@ -173,14 +170,14 @@ function collect(
     });
     out.push({
       what: `${here} value`,
-      fg: resolve(palette, style.valueColorToken as string | undefined, "accent"),
+      fg: resolve(palette, style.valueColorToken as string | undefined, "foreground"),
       bg: ground,
       min: 4.5,
     });
     // Social icons are non-text UI: the 3:1 component threshold applies.
     out.push({
       what: `${here} social icons`,
-      fg: resolve(palette, style.iconColorToken as string | undefined, "accent"),
+      fg: resolve(palette, style.iconColorToken as string | undefined, "foreground"),
       bg: ground,
       min: 3,
     });
@@ -340,22 +337,14 @@ describe("the ContactDetails branch is actually reached by the walker", () => {
   });
 });
 
-describe("the token pairs presets rely on are genuine opposites", () => {
+describe("the foreground token is safe on every theme surface", () => {
   // Two invariants make the preset recipes safe on the dark pole. If a future
   // brand kit breaks either, dozens of presets go illegible at once — so assert
   // them directly rather than only through the presets that depend on them.
-  it.each(Object.keys(KITS))("%s: foreground and background are a legible pair", (kitId) => {
+  it.each(Object.keys(KITS))("%s: foreground is legible on every surface", (kitId) => {
     const p = KITS[kitId];
-    expect(contrast(p.foreground, p.background)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it.each(Object.keys(KITS))("%s: primary and background are a legible pair", (kitId) => {
-    const p = KITS[kitId];
-    expect(contrast(p.primary, p.background)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it.each(Object.keys(KITS))("%s: accent is legible on its own ground", (kitId) => {
-    const p = KITS[kitId];
-    expect(contrast(p.accent, p.background)).toBeGreaterThanOrEqual(4.5);
+    for (const surface of [p.background, p.primary, p.secondary, p.accent]) {
+      expect(contrast(p.foreground, surface)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

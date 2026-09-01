@@ -63,7 +63,7 @@ export const boldTemplate: PortfolioTemplate = {
                         level: "h1",
                         text: "Capturing moments that last forever",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                           bold: true,
                         },
                       },
@@ -74,7 +74,7 @@ export const boldTemplate: PortfolioTemplate = {
                         id: "Text-bold-home-4",
                         text: "Fine art photography for weddings, portraits, and events.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -213,7 +213,7 @@ export const boldTemplate: PortfolioTemplate = {
                               id: "Text-bold-home-17",
                               text: "From ₱30,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -260,7 +260,7 @@ export const boldTemplate: PortfolioTemplate = {
                               id: "Text-bold-home-22",
                               text: "From ₱8,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -307,7 +307,7 @@ export const boldTemplate: PortfolioTemplate = {
                               id: "Text-bold-home-27",
                               text: "From ₱15,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -407,7 +407,7 @@ export const boldTemplate: PortfolioTemplate = {
                         level: "h2",
                         text: "Our gallery",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                           bold: true,
                         },
                       },
@@ -418,7 +418,7 @@ export const boldTemplate: PortfolioTemplate = {
                         id: "Text-bold-gal-8",
                         text: "A curated look at our work.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },

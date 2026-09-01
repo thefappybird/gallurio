@@ -95,8 +95,19 @@ describe("puckConfig — registry shape", () => {
     }
   });
 
-  it("each registered block has at least one field definition", () => {
+  it("each user-editable block has at least one field definition", () => {
     for (const [name, block] of Object.entries(puckConfig.components)) {
+      if (name === "MasonryClone") {
+        expect(block.fields).toEqual({});
+        expect(block.permissions).toMatchObject({
+          drag: false,
+          delete: false,
+          duplicate: false,
+          insert: false,
+          edit: false,
+        });
+        continue;
+      }
       const fieldCount = Object.keys(block.fields ?? {}).length;
       expect(fieldCount, `${name} must have at least one field`).toBeGreaterThan(0);
     }
@@ -187,7 +198,8 @@ describe("blockShapes integration — GalleryGrid registered (isomorphic; see Ga
     expect(typeof puckConfig.components.GalleryGrid.render).toBe("function");
   });
 
-  it("GalleryGrid defaultProps has images field (baked images model)", () => {
+  it("GalleryGrid has a content slot and keeps images only for saved-page compatibility", () => {
+    expect(puckConfig.components.GalleryGrid.defaultProps).toHaveProperty("content");
     expect(puckConfig.components.GalleryGrid.defaultProps).toHaveProperty("images");
     expect(puckConfig.components.GalleryGrid.defaultProps).not.toHaveProperty("collectionId");
   });

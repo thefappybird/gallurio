@@ -77,6 +77,7 @@ import {
   type VideoBlockProps,
 } from "./blocks/VideoBlock";
 import { EditorContainerAnchor } from "./blocks/EditorContainerAnchor";
+import { masonryCloneBlockConfig, type MasonryCloneProps } from "./blocks/MasonryCloneBlock";
 import {
   HeadingBlock,
   TextBlock,
@@ -127,6 +128,7 @@ type EditorComponents = Record<SectionPresetKey, ContainerBlockProps> & {
   Columns: ColumnsBlockProps;
   Container: ContainerBlockProps;
   ContainerAnchor: ContainerAnchorProps;
+  MasonryClone: MasonryCloneProps;
 };
 
 // ---------------------------------------------------------------------------
@@ -554,6 +556,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     // resolveFields strips them so they never appear in the standard Puck sidebar.
     fields: {
       _style: styleField,
+      content: { type: "slot", allow: ["Image"] },
       backgroundImages: { type: "array", label: t("puckConfig.fields.backgroundImages"), visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryGridProps["backgroundImages"]>,
       bgAnimation: { type: "select", label: t("puckConfig.fields.bgAnimationShort"), visible: false, options: [{ label: t("puckConfig.options.bgAnimation.crossfade"), value: "crossfade" }, { label: t("puckConfig.options.bgAnimation.kenburns"), value: "kenburns" }, { label: t("puckConfig.options.bgAnimation.slide"), value: "slide" }] } as unknown as Field<GalleryGridProps["bgAnimation"]>,
       bgSpeed: { type: "select", label: t("puckConfig.fields.bgSpeedShort"), visible: false, options: [{ label: t("puckConfig.options.bgSpeedShort.slow"), value: "slow" }, { label: t("puckConfig.options.bgSpeedShort.medium"), value: "medium" }, { label: t("puckConfig.options.bgSpeedShort.fast"), value: "fast" }] } as unknown as Field<GalleryGridProps["bgSpeed"]>,
@@ -576,6 +579,11 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
     fields: {
       _style: styleField,
+      content: { type: "slot", allow: ["Image"] },
+      column1: { type: "slot", allow: ["Image", "MasonryClone"] },
+      column2: { type: "slot", allow: ["Image", "MasonryClone"] },
+      column3: { type: "slot", allow: ["Image", "MasonryClone"] },
+      column4: { type: "slot", allow: ["Image", "MasonryClone"] },
       backgroundImages: { type: "array", label: t("puckConfig.fields.backgroundImages"), visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryMasonryProps["backgroundImages"]>,
       bgAnimation: { type: "select", label: t("puckConfig.fields.bgAnimationShort"), visible: false, options: [{ label: t("puckConfig.options.bgAnimation.crossfade"), value: "crossfade" }, { label: t("puckConfig.options.bgAnimation.kenburns"), value: "kenburns" }, { label: t("puckConfig.options.bgAnimation.slide"), value: "slide" }] } as unknown as Field<GalleryMasonryProps["bgAnimation"]>,
       bgSpeed: { type: "select", label: t("puckConfig.fields.bgSpeedShort"), visible: false, options: [{ label: t("puckConfig.options.bgSpeedShort.slow"), value: "slow" }, { label: t("puckConfig.options.bgSpeedShort.medium"), value: "medium" }, { label: t("puckConfig.options.bgSpeedShort.fast"), value: "fast" }] } as unknown as Field<GalleryMasonryProps["bgSpeed"]>,
@@ -593,6 +601,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     label: t("puckConfig.blocks.featuredWork"),
     inline: true,
     defaultProps: featuredWorkDefaultProps,
+    permissions: { insert: false },
     // `collections` is intentionally absent — driven by StyleToolkitField Content tab.
     // columns moved to _style.galleryColumns (Layout tab Gallery section).
     // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
@@ -621,9 +630,15 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     // tab's collection picker, exactly like FeaturedWork's `collections`.
     fields: {
       _style: styleField,
-      aspectRatio: { type: "select", label: t("puckConfig.fields.collectionCrop"), options: COLLECTION_CARD_RATIOS.map((r) => ({ label: r.replace(/ /g, ""), value: r })) } as unknown as Field<CollectionCardRatio | undefined>,
-      showCaption: { type: "radio", label: t("puckConfig.fields.collectionCaption"), options: [{ label: t("puckConfig.options.collectionCaption.show"), value: true }, { label: t("puckConfig.options.collectionCaption.hide"), value: false }] } as unknown as Field<boolean | undefined>,
+      // The custom Content tab owns every content setting so Puck's native
+      // fields cannot leak Crop/Caption beneath Design or Layout.
+      aspectRatio: { type: "select", label: t("puckConfig.fields.collectionCrop"), visible: false, options: COLLECTION_CARD_RATIOS.map((r) => ({ label: r.replace(/ /g, ""), value: r })) } as unknown as Field<CollectionCardRatio | undefined>,
+      showCaption: { type: "radio", label: t("puckConfig.fields.collectionCaption"), visible: false, options: [{ label: t("puckConfig.options.collectionCaption.show"), value: true }, { label: t("puckConfig.options.collectionCaption.hide",), value: false }] } as unknown as Field<boolean | undefined>,
     } as unknown as Fields<CollectionCardProps>,
+    resolveFields: (_data, { fields }) => {
+      const { aspectRatio: _ar, showCaption: _sc, ...rest } = fields as Record<string, unknown>;
+      return rest as typeof fields;
+    },
     render: CollectionCardBlock,
   };
 
@@ -976,6 +991,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
           puck?.isEditing && id ? <EditorContainerAnchor id={id} /> : null
         ) as unknown as ComponentConfig<ContainerAnchorProps>["render"],
       } as ComponentConfig<ContainerAnchorProps>,
+      MasonryClone: masonryCloneBlockConfig,
     },
     // No root.render in the editor: Puck wraps blocks in a DropZone div, so
     // blocks are not direct children of any wrapper here — adding root.render

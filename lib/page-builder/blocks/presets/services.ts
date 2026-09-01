@@ -27,7 +27,7 @@ export const SERVICES_PRESET: ContainerBlockProps = {
           content: slot([
             child("Heading", { level: "h3", text: "Wedding Photography" }),
             child("Text", { text: "Full-day coverage of your most important day." }),
-            child("Text", { text: "From ₱30,000", _style: { textColorToken: "accent", bold: true } }),
+            child("Text", { text: "From ₱30,000", _style: { textColorToken: "foreground", bold: true } }),
           ]),
         }),
         child("Container", {
@@ -35,7 +35,7 @@ export const SERVICES_PRESET: ContainerBlockProps = {
           content: slot([
             child("Heading", { level: "h3", text: "Portrait Sessions" }),
             child("Text", { text: "Individual or family portraits in natural light." }),
-            child("Text", { text: "From ₱8,000", _style: { textColorToken: "accent", bold: true } }),
+            child("Text", { text: "From ₱8,000", _style: { textColorToken: "foreground", bold: true } }),
           ]),
         }),
         child("Container", {
@@ -43,7 +43,7 @@ export const SERVICES_PRESET: ContainerBlockProps = {
           content: slot([
             child("Heading", { level: "h3", text: "Event Coverage" }),
             child("Text", { text: "Corporate events, debuts, and intimate gatherings." }),
-            child("Text", { text: "From ₱15,000", _style: { textColorToken: "accent", bold: true } }),
+            child("Text", { text: "From ₱15,000", _style: { textColorToken: "foreground", bold: true } }),
           ]),
         }),
       ]),
@@ -89,7 +89,7 @@ export const SERVICES_MENU_PRESET: ContainerBlockProps = {
         content: slot([
           child("Heading", { level: "h3", text: service.title }),
           child("Text", { text: service.description, _style: { colSpan: 1 } }),
-          child("Text", { text: service.price, _style: { textColorToken: "background", bold: true } }),
+          child("Text", { text: service.price, _style: { textColorToken: "foreground", bold: true } }),
         ]),
       }),
     ]),
@@ -123,7 +123,7 @@ export const SERVICES_FEATURE_PRESET: ContainerBlockProps = {
             child("Text", {
               text: "Full-day coverage, two shooters, and a curated gallery within four weeks. The one I build the year around.",
             }),
-            child("Text", { text: "From ₱30,000", _style: { textColorToken: "background", bold: true } }),
+            child("Text", { text: "From ₱30,000", _style: { textColorToken: "foreground", bold: true } }),
             child("Button", {
               label: "Get in Touch",
               action: "open-contact",
@@ -152,7 +152,7 @@ export const SERVICES_FEATURE_PRESET: ContainerBlockProps = {
           content: slot([
             child("Heading", { level: "h3", text: "Portrait Sessions" }),
             child("Text", { text: "Individual or family portraits in natural light." }),
-            child("Text", { text: "From ₱8,000", _style: { textColorToken: "accent", bold: true } }),
+            child("Text", { text: "From ₱8,000", _style: { textColorToken: "foreground", bold: true } }),
           ]),
         }),
         child("Container", {
@@ -166,7 +166,7 @@ export const SERVICES_FEATURE_PRESET: ContainerBlockProps = {
           content: slot([
             child("Heading", { level: "h3", text: "Event Coverage" }),
             child("Text", { text: "Corporate events, debuts, and intimate gatherings." }),
-            child("Text", { text: "From ₱15,000", _style: { textColorToken: "accent", bold: true } }),
+            child("Text", { text: "From ₱15,000", _style: { textColorToken: "foreground", bold: true } }),
           ]),
         }),
       ]),

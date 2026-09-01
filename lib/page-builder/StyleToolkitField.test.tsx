@@ -456,6 +456,17 @@ describe("ContentInputs — CollectionCard", () => {
     });
   });
 
+  it("keeps crop and caption settings in the Content tab", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="CollectionCard" props={{}} setProp={setProp} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "3/2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide" }));
+
+    expect(setProp).toHaveBeenCalledWith("aspectRatio", "3 / 2");
+    expect(setProp).toHaveBeenCalledWith("showCaption", false);
+  });
+
   it("shows the demo explanation instead of the picker in demo mode", () => {
     render(
       <DemoPickerContext.Provider value={{ demoSessionId: "s", onImageCapHit: vi.fn() }}>
@@ -464,6 +475,16 @@ describe("ContentInputs — CollectionCard", () => {
     );
     expect(screen.getByText(/collections aren.t available in this demo/i)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /choose collection/i })).toBeNull();
+  });
+});
+
+describe("DesignTab — CollectionCard", () => {
+  it("uses its dedicated caption drawers without a disconnected Typography drawer", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="CollectionCard" />);
+
+    expect(screen.getByRole("button", { name: "Collection title" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo count" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Typography" })).toBeNull();
   });
 });
 
@@ -1376,7 +1397,7 @@ describe("DesignTab — button text color swatch effective state", () => {
     expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("Button buttonStyle='solid' → background swatch is aria-pressed as effective text color", () => {
+  it("Button buttonStyle='solid' → foreground swatch is aria-pressed as effective text color", () => {
     render(
       <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
         <DesignTab s={{ buttonStyle: "solid" }} set={vi.fn()} blockType="Button" />
@@ -1385,11 +1406,11 @@ describe("DesignTab — button text color swatch effective state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Button" }));
     const btnTextLabel = screen.getByText("Button text color");
     const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
-    const backgroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Background" });
-    expect(backgroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
+    const foregroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("Button soft with buttonColorToken='accent' → accent swatch is aria-pressed as effective text color", () => {
+  it("Button soft with buttonColorToken='accent' → foreground swatch is aria-pressed as effective text color", () => {
     render(
       <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
         <DesignTab s={{ buttonStyle: "soft", buttonColorToken: "accent" }} set={vi.fn()} blockType="Button" />
@@ -1398,8 +1419,8 @@ describe("DesignTab — button text color swatch effective state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Button" }));
     const btnTextLabel = screen.getByText("Button text color");
     const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
-    const accentSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Accent" });
-    expect(accentSwatches[0]).toHaveAttribute("aria-pressed", "true");
+    const foregroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
   });
 });
 
@@ -1624,20 +1645,42 @@ describe("DesignTab — ContactDetails Icon align (Icons section)", () => {
   });
 });
 
-describe("StyleToolkitField — GalleryMasonry stagger toggle", () => {
-  it("Layout tab shows Masonry stagger 'Off' by default; click turns it on", () => {
-    const onChange = vi.fn();
-    render(<StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryMasonry" />);
+describe("StyleToolkitField — GalleryMasonry flow", () => {
+  it("does not offer the obsolete Masonry stagger toggle", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryMasonry" />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
-    const toggle = screen.getByRole("button", { name: "Off" });
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
-    fireEvent.click(toggle);
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ galleryStagger: true }));
+    expect(screen.queryByText("Masonry stagger")).toBeNull();
   });
 
-  it("does not render the stagger toggle for GalleryGrid (masonry-only control)", () => {
+  it("does not show the obsolete control for GalleryGrid", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
     expect(screen.queryByText("Masonry stagger")).toBeNull();
+  });
+
+  it("enables the configurable alternating tile-height rhythm", () => {
+    const onChange = vi.fn();
+    render(<StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryMasonry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Alternate" }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ masonryHeightPattern: "alternating" }));
+  });
+
+  it("uses column lanes without exposing the retired flow choice and offers odd/even column rhythms", () => {
+    render(<StyleToolkitField value={{ masonryHeightPattern: "alternating" }} onChange={vi.fn()} blockType="GalleryMasonry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.queryByRole("button", { name: "Flow" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Column lanes" })).toBeNull();
+    expect(screen.getByText("Odd columns")).toBeInTheDocument();
+    expect(screen.getByText("Even columns")).toBeInTheDocument();
+    expect(screen.getAllByText("Odd tile")).toHaveLength(2);
+    expect(screen.getAllByText("Even tile")).toHaveLength(2);
+  });
+
+  it("explains that the loop needs three images in every column", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryMasonry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.getByText(/add at least 3 images to each active column/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "On" })).toBeDisabled();
   });
 });

@@ -101,9 +101,9 @@ describe("gallery/featured/video preset compositions", () => {
     }
   });
 
-  it("no GalleryGrid/GalleryMasonry/FeaturedWork child carries stale top-level layout props", () => {
+  it("no GalleryGrid/GalleryMasonry child carries stale top-level layout props", () => {
     const galleryTypes = new Set(["GalleryGrid", "GalleryMasonry"]);
-    const layoutTypes = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
+    const layoutTypes = galleryTypes;
     for (const [name, preset] of Object.entries(ALL_PRESETS)) {
       const nodes = allNodes(preset as Record<string, unknown>);
       for (const node of nodes) {
@@ -144,14 +144,52 @@ describe("gallery/featured/video preset compositions", () => {
     }
   });
 
-  it("every GalleryMasonry preset variant turns on _style.galleryStagger", () => {
+  it("every GalleryMasonry preset uses Image-only column lanes", () => {
     const masonryPresets = [GALLERY_MASONRY_PRESET, GALLERY_MASONRY_WALL_PRESET, GALLERY_MASONRY_JOURNAL_PRESET];
     for (const preset of masonryPresets) {
       const nodes = allNodes(preset as unknown as Record<string, unknown>).filter((n) => n.type === "GalleryMasonry");
       expect(nodes.length).toBeGreaterThan(0);
       for (const node of nodes) {
         const style = node.props._style as Record<string, unknown> | undefined;
-        expect(style?.galleryStagger).toBe(true);
+        expect(style?.galleryStagger).toBeUndefined();
+        expect(node.props.masonryLayout).toBe("columns");
+        expect(node.props.content).toBeUndefined();
+        const columns = (style?.galleryColumns as number | undefined) ?? 3;
+        for (let index = 1; index <= columns; index += 1) {
+          const lane = node.props[`column${index}`] as PresetNode[];
+          expect(lane.length).toBeGreaterThan(0);
+          expect(lane.every((child) => child.type === "Image")).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("seeds every grid and masonry gallery with independently editable Image blocks", () => {
+    const galleryPresets = [
+      GALLERY_GRID_PRESET,
+      GALLERY_GRID_FULL_PRESET,
+      GALLERY_GRID_FRAMED_PRESET,
+      GALLERY_MASONRY_PRESET,
+      GALLERY_MASONRY_WALL_PRESET,
+      GALLERY_MASONRY_JOURNAL_PRESET,
+    ];
+    for (const preset of galleryPresets) {
+      const galleries = allNodes(preset as unknown as Record<string, unknown>).filter(
+        (node) => node.type === "GalleryGrid" || node.type === "GalleryMasonry",
+      );
+      for (const gallery of galleries) {
+        expect(gallery.props.images).toBeUndefined();
+        if (gallery.type === "GalleryGrid") {
+          const content = gallery.props.content as PresetNode[];
+          expect(content.length).toBeGreaterThan(0);
+          expect(content.every((node) => node.type === "Image")).toBe(true);
+        } else {
+          const style = gallery.props._style as Record<string, unknown> | undefined;
+          const columns = (style?.galleryColumns as number | undefined) ?? 3;
+          const laneImages = Array.from({ length: columns }, (_, index) => gallery.props[`column${index + 1}`] as PresetNode[]).flat();
+          expect(laneImages.length).toBeGreaterThan(0);
+          expect(laneImages.every((node) => node.type === "Image")).toBe(true);
+        }
       }
     }
   });
@@ -172,6 +210,16 @@ describe("gallery/featured/video preset compositions", () => {
     for (const card of indexCards) {
       expect(card.props.aspectRatio).toBe("1 / 1");
     }
+  });
+
+  it("FEATURED_WORK_PRESET uses a three-column, draggable CollectionCard container", () => {
+    const nodes = allNodes(FEATURED_WORK_PRESET as unknown as Record<string, unknown>);
+    expect(nodes.some((node) => node.type === "FeaturedWork")).toBe(false);
+    const columns = nodes.find((node) => node.type === "Columns" && node.props.columns === 3);
+    expect(columns).toBeDefined();
+    const cards = (columns?.props.content as PresetNode[]) ?? [];
+    expect(cards).toHaveLength(3);
+    expect(cards.every((node) => node.type === "CollectionCard")).toBe(true);
   });
 
   it("GALLERY_LANDING_PRESET sets overlayColorToken: 'primary' and no landing variant has a Button", () => {

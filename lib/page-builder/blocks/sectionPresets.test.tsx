@@ -45,7 +45,7 @@ describe("gallery section presets", () => {
   it.each([
     ["GalleryGridPreset", GALLERY_GRID_PRESET, "GalleryGrid"],
     ["GalleryMasonryPreset", GALLERY_MASONRY_PRESET, "GalleryMasonry"],
-    ["FeaturedWorkPreset", FEATURED_WORK_PRESET, "FeaturedWork"],
+    ["FeaturedWorkPreset", FEATURED_WORK_PRESET, "Columns"],
   ] as const)("%s composes Container -> Heading -> Text -> %s", (_label, preset, leafType) => {
     const children = preset.content as Array<{ type: string }>;
     expect(children.map((child) => child.type)).toEqual(["Heading", "Text", leafType]);

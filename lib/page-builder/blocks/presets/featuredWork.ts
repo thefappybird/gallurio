@@ -17,7 +17,16 @@ export const FEATURED_WORK_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Featured work" }),
     child("Text", { text: "Spotlight a few signature images." }),
-    child("FeaturedWork", { collections: [], _style: { galleryColumns: 3 } }),
+    child("Columns", {
+      columns: 3,
+      minHeight: "0px",
+      _style: { gap: 16 },
+      content: slot([
+        child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
+        child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
+        child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
+      ]),
+    }),
   ]),
 };
 

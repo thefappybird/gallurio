@@ -13,6 +13,12 @@ import {
   slot,
 } from "./_helpers";
 
+// Keep each photograph as a first-class Image block. This makes every preset
+// editable with the same picker, crop/size controls, and drag ordering as a
+// hand-built gallery instead of hiding an opaque image array inside a grid.
+const gridImages = (count: number) =>
+  slot(Array.from({ length: count }, () => child("Image", { alt: "" })));
+
 export const GALLERY_GRID_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   overlayOpacity: 0,
@@ -23,7 +29,7 @@ export const GALLERY_GRID_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Gallery highlights" }),
     child("Text", { text: "A curated selection from one collection." }),
-    child("GalleryGrid", { images: [], _style: { galleryColumns: 3, galleryGap: "normal" } }),
+    child("GalleryGrid", { content: gridImages(6), _style: { galleryColumns: 3, galleryGap: "normal" } }),
   ]),
 };
 
@@ -50,7 +56,7 @@ export const GALLERY_GRID_FULL_PRESET: ContainerBlockProps = {
       minHeight: "0px",
       _style: { paddingLeft: "0px", paddingRight: "0px" },
       content: slot([
-        child("GalleryGrid", { images: [], _style: { galleryColumns: 4, galleryGap: "tight" } }),
+        child("GalleryGrid", { content: gridImages(8), _style: { galleryColumns: 4, galleryGap: "tight" } }),
       ]),
     }),
   ]),
@@ -76,7 +82,7 @@ export const GALLERY_GRID_FRAMED_PRESET: ContainerBlockProps = {
       content: slot([
         child("Heading", { level: "h2", text: "Gallery highlights" }),
         child("Text", { text: "A curated selection from one collection." }),
-        child("GalleryGrid", { images: [], _style: { galleryColumns: 2, galleryGap: "loose" } }),
+        child("GalleryGrid", { content: gridImages(4), _style: { galleryColumns: 2, galleryGap: "loose" } }),
       ]),
     }),
   ]),

@@ -24,38 +24,31 @@ export const slot = (items: ReturnType<typeof child>[]): Slot => items as unknow
 // ---------------------------------------------------------------------------
 // Contrast-safe band recipes
 //
-// Two token pairs are guaranteed opposites in every committed brand kit:
-//   foreground / background   and   primary / background
-// Anything pinned against one of those pairs stays legible on the dark pole
-// (Luxury) as well as the five light kits. `accent` is only guaranteed against
-// the kit's own ground, which is why accent bands invert rather than tint.
+// Foreground is guaranteed to clear AA against every theme surface:
+// background, primary, secondary, and accent. This lets owners safely use any
+// palette color as a section/card ground without changing its text token.
 // ---------------------------------------------------------------------------
 
-/** Text sitting on a dark scrim or an accent fill: the page's light pole. */
-export const onDark = { textColorToken: "background" } as const;
+/** Text sitting on a scrim or colored fill uses the universal foreground. */
+export const onDark = { textColorToken: "foreground" } as const;
 
 /**
- * A Button sitting ON an accent band. ButtonBlock has no brand-kit fallback:
- * with `buttonStyle` unset it renders a transparent fill with its label and
- * border in `--pf-color-fg`, which against an accent background measures
- * 1.66:1 (Bold) to 3.54:1 (Editorial) — every committed kit fails the 4.5:1
- * bar. Inverting the band (background-token fill, accent label) clears it on
- * every kit, because the Preset Quality Bar already guarantees accent-on-ground.
+ * A Button sitting on an accent band. The foreground token is guaranteed to
+ * clear AA against every committed accent surface.
  */
 export const onAccentBand = {
-  buttonStyle: "solid",
-  buttonColorToken: "background",
-  textColorToken: "accent",
+  buttonStyle: "outline",
+  buttonColorToken: "foreground",
+  textColorToken: "foreground",
 } as const;
 
 /**
- * A Button sitting ON a primary-token band. Outline takes its label and stroke
- * from `buttonColorToken`, which defaults to `primary` — invisible on a primary
- * ground. Pinning it to `background` uses primary's guaranteed opposite.
+ * A Button sitting on a primary-token band. Pin its label and stroke to the
+ * universal foreground instead of inheriting the same token as its ground.
  */
 export const onPrimaryBand = {
   buttonStyle: "outline",
-  buttonColorToken: "background",
+  buttonColorToken: "foreground",
 } as const;
 
 /**
@@ -65,18 +58,18 @@ export const onPrimaryBand = {
  */
 export const primaryBandSection = {
   bgColorToken: "primary",
-  textColorToken: "background",
+  textColorToken: "foreground",
 } as const;
 
-/** A full-strength accent band with copy on the theme's guaranteed ground. */
+/** A full-strength accent band with copy in the universal foreground. */
 export const accentBandSection = {
   bgColorToken: "accent",
-  textColorToken: "background",
+  textColorToken: "foreground",
 } as const;
 
 /**
  * Section style for a plain (non-band) section. Unstyled children default to the
- * theme foreground, which is the LIGHT pole on dark kits — without an explicit
+ * theme foreground, which is light on dark kits — without an explicit
  * ground they would render on an unstyled white surface and be illegible on
  * Luxury. Pin the section to the theme's own background token.
  */

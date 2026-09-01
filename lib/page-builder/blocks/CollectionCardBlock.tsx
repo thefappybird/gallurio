@@ -20,6 +20,7 @@
 import type { ComponentConfig, Field, Fields } from "@measured/puck";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
+  buildCollectionCardCaptionStyle,
   resolveBlockStyle,
   resolveBlockAttrs,
   productionStyleField,
@@ -76,6 +77,26 @@ export function CollectionCardBlock({
   const hasCollection = Boolean(collection?.id);
   const presetPreview = puck?.metadata?.presetPreview === true;
   const previewMinWidth = aspectRatio === "3 / 2" ? "20rem" : aspectRatio === "1 / 1" ? "10rem" : "12rem";
+  const resolvedStyle = resolveBlockStyle(_style);
+  const emptyTitleStyle = buildCollectionCardCaptionStyle(_style, "title");
+  // The card's frame/background has to paint on the interactive button inside
+  // FeaturedCollectionsClient. Keeping it only on this wrapper makes the cover
+  // ignore a radius until a visible border happens to mask the problem.
+  const tileStyle = {
+    borderRadius: resolvedStyle.borderRadius,
+    borderStyle: resolvedStyle.borderStyle,
+    borderColor: resolvedStyle.borderColor,
+    borderWidth: resolvedStyle.borderWidth,
+    borderTopWidth: resolvedStyle.borderTopWidth,
+    borderRightWidth: resolvedStyle.borderRightWidth,
+    borderBottomWidth: resolvedStyle.borderBottomWidth,
+    borderLeftWidth: resolvedStyle.borderLeftWidth,
+    boxShadow: resolvedStyle.boxShadow,
+    backgroundColor: resolvedStyle.backgroundColor,
+    backgroundImage: resolvedStyle.backgroundImage,
+    backgroundSize: resolvedStyle.backgroundSize,
+    backgroundPosition: resolvedStyle.backgroundPosition,
+  };
 
   return (
     <div
@@ -85,7 +106,7 @@ export function CollectionCardBlock({
       style={{
         width: "100%",
         fontFamily: "var(--pf-font-body)",
-        ...resolveBlockStyle(_style),
+        ...resolvedStyle,
       }}
       {...resolveBlockAttrs(_style)}
     >
@@ -111,6 +132,9 @@ export function CollectionCardBlock({
           popupConfig={ws?.publicPage?.collectionsPopup ?? {}}
           popupLabels={popupLabels}
           brandVars={ws?.brandVars}
+          tileStyle={tileStyle}
+          titleStyle={buildCollectionCardCaptionStyle(_style, "title")}
+          subtitleStyle={buildCollectionCardCaptionStyle(_style, "subtitle")}
         />
       ) : presetPreview ? (
         <div style={{ display: "contents" }}>
@@ -152,11 +176,9 @@ export function CollectionCardBlock({
             border: "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
             display: "grid",
             placeItems: "center",
-            color: "var(--pf-color-fg)",
-            opacity: 0.45,
-            fontSize: "0.9375rem",
             textAlign: "center",
             padding: "1rem",
+            ...emptyTitleStyle,
           }}
         >
           {labels.featuredEmpty}

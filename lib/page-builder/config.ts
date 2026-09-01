@@ -53,6 +53,7 @@ import type { FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
 import type { CollectionCardProps } from "./blocks/CollectionCardBlock";
 import type { VideoBlockProps } from "./blocks/VideoBlock";
 import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
+import { masonryCloneBlockConfig, type MasonryCloneProps } from "./blocks/MasonryCloneBlock";
 import type {
   HeadingBlockProps,
   TextBlockProps,
@@ -85,6 +86,7 @@ type Components = Record<SectionPresetKey, ContainerBlockProps> & {
   Columns: ColumnsBlockProps;
   Container: ContainerBlockProps;
   ContainerAnchor: ContainerAnchorProps;
+  MasonryClone: MasonryCloneProps;
 };
 
 // A composed-section preset is the Container render + fields, with a pre-filled
@@ -135,6 +137,7 @@ export const puckConfig: Config<Components> = {
     Columns: columnsBlockConfig,
     Container: containerBlockConfig,
     ContainerAnchor: containerAnchorBlockConfig,
+    MasonryClone: masonryCloneBlockConfig,
   },
   root: {
     fields: {},

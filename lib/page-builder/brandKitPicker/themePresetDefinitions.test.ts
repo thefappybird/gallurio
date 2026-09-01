@@ -65,10 +65,8 @@ describe("THEME_PRESET_DEFINITIONS", () => {
     }
   });
 
-  // DESIGN.md -> The Preset Quality Bar: a shipped preset is a finished design.
-  // Foreground-on-background and accent-on-background clear 4.5:1, and a solid
-  // button's white label clears 4.5:1 against the accent (an accent that only
-  // works as an outline ships only with buttonStyle "outline").
+  // Every palette color can be chosen as a section/card surface. The theme's
+  // foreground ("Text" in the picker) must remain readable on all of them.
   it("meets the preset contrast bar", () => {
     const channel = (c: number) => {
       const s = c / 255;
@@ -89,15 +87,13 @@ describe("THEME_PRESET_DEFINITIONS", () => {
 
     const failures: string[] = [];
     for (const [preset, def] of Object.entries(THEME_PRESET_DEFINITIONS)) {
-      const { foregroundColor, backgroundColor, accentColor, buttonStyle } =
-        def.brandKit;
+      const { foregroundColor } = def.brandKit;
       const checks: [string, number][] = [
-        ["foreground/background", ratio(foregroundColor, backgroundColor)],
-        ["accent/background", ratio(accentColor, backgroundColor)],
+        ["foreground/background", ratio(foregroundColor, def.brandKit.backgroundColor)],
+        ["foreground/primary", ratio(foregroundColor, def.brandKit.primaryColor)],
+        ["foreground/secondary", ratio(foregroundColor, def.brandKit.secondaryColor)],
+        ["foreground/accent", ratio(foregroundColor, def.brandKit.accentColor)],
       ];
-      if (buttonStyle === "solid") {
-        checks.push(["white/accent", ratio("#ffffff", accentColor)]);
-      }
       for (const [label, value] of checks) {
         if (value < 4.5) {
           failures.push(`${preset} ${label} ${value.toFixed(2)}:1`);
@@ -114,5 +110,12 @@ describe("THEME_PRESET_DEFINITIONS", () => {
       d.brandKit.accentColor.toLowerCase()
     );
     expect(new Set(accents).size).toBe(accents.length);
+  });
+
+  it("gives every preset a unique primary and foreground", () => {
+    const primaries = Object.values(THEME_PRESET_DEFINITIONS).map((d) => d.brandKit.primaryColor.toLowerCase());
+    const foregrounds = Object.values(THEME_PRESET_DEFINITIONS).map((d) => d.brandKit.foregroundColor.toLowerCase());
+    expect(new Set(primaries).size).toBe(primaries.length);
+    expect(new Set(foregrounds).size).toBe(foregrounds.length);
   });
 });

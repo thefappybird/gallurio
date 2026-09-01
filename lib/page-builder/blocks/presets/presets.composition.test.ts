@@ -134,7 +134,7 @@ describe("hero group — reading order and heading levels", () => {
 });
 
 describe("footer statement — contrast-safe button", () => {
-  it("pins buttonStyle: outline and buttonColorToken: background", () => {
+  it("pins buttonStyle: outline and buttonColorToken: foreground", () => {
     const root: Node = { type: "Container", props: FOOTER_STATEMENT_PRESET as unknown as Record<string, unknown> };
     let button: Node | undefined;
     walk(root, (n) => {
@@ -143,7 +143,7 @@ describe("footer statement — contrast-safe button", () => {
     expect(button).toBeDefined();
     const style = button!.props._style as { buttonStyle?: string; buttonColorToken?: string };
     expect(style.buttonStyle).toBe("outline");
-    expect(style.buttonColorToken).toBe("background");
+    expect(style.buttonColorToken).toBe("foreground");
   });
 });
 

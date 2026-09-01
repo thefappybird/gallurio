@@ -10,6 +10,8 @@ Inquiry submission from the public Contact page is a **single transaction**: cre
 
 **Meaningful vs decorative images (SEO):** Google doesn't index CSS background images, so any image that carries meaning renders as a real `<img src alt>` in server HTML — the gallery Grid/Masonry/Carousel blocks, the `Image` block, and featured-collection covers. Alt text source differs per kind: the gallery Grid/Masonry/Carousel blocks pull `GalleryItem.altText || caption || ""` via `reconcileGalleryImages`; the `Image` block's alt is a manual Puck field (`alt` prop, `lib/page-builder/blocks/manualBlocks.tsx`); featured-collection covers use the collection's `name` (`tile.name` in `FeaturedCollectionsClient.tsx`), not `GalleryItem.altText`. Purely decorative layers stay `alt=""` / `aria-hidden` and must never get keyword-stuffed alt text — `ContainerBlock` backgrounds, the featured-collection cover placeholder, and hero background slideshows. Featured-collection covers are the one exception with both: the `<img>` carries a real `alt={collection name}` for crawlers, but also `aria-hidden="true"` so it isn't announced twice — the wrapping `<button>` already exposes the collection name as its accessible name.
 
+For new slot-based Photo Grid/Masonry layouts, the meaningful images are their nested `Image` blocks: use the `alt` prop and `_style.bgImagePublicId`. The former `images[]` reconciliation path remains solely for previously saved gallery blocks.
+
 ## Public discovery (SEO)
 
 - **Sitemap selection.** `listPublishedWorkspaceSlugs()` returns `{ slug, lastPublishedAt, hasHome, hasGallery }`, excluding `publicPage.seo.noindex === true`. `hasHome`/`hasGallery` are computed **in the aggregation** so no page data crosses the wire; a parity test pins the expression against `hasRenderableBlocks()` (`normalizePublicPageData.ts`), which is the single definition of "this page has real content". `app/sitemap.ts` emits Home and Gallery independently, so a portfolio with no Gallery content never advertises a URL that renders Coming Soon.
@@ -36,6 +38,8 @@ The insertable section library is **11 groups x 3 variants = 33 registered prese
 - **The ten original component keys are frozen** (`HeroPreset`, `AboutPreset`, `ServicesPreset`, `CtaPreset`, `ContactPreset`, `GalleryGridPreset`, `GalleryMasonryPreset`, `FeaturedWorkPreset`, `GalleryLandingPreset`, `VideoPreset`) — published pages reference them. Their display labels are variant names now, because the group name is the category heading above them; the keys must not be renamed or removed.
 - Footer is an **insertable section preset**, not a global field persisted separately from Puck data. Public pages remain exactly Home, Gallery, and Contact.
 - Gallery layout belongs in `_style.galleryColumns` / `_style.galleryGap`. Top-level `columns`, `gap`, `collectionId`, and `maxItems` props on `GalleryGrid` / `GalleryMasonry` / `FeaturedWork` are stale and are asserted absent.
+- New Photo Grid and Masonry layouts own a `content` slot of ordinary `Image` blocks. Each photo therefore has its own picker, alt text, crop/size controls, and Puck drag order. Legacy `images[]` gallery data remains read-only compatibility input for previously saved pages; do not seed it in new presets. `FeaturedWork` is retained only for saved pages, while every new collection composition uses `Columns` plus `CollectionCard` blocks.
+- `CollectionCard` has dedicated Card, Collection title, and Photo count design drawers. Its no-collection empty state inherits the Collection title typography and color, so the canvas placeholder previews the same styling instead of using a separate hardcoded foreground treatment.
 - `ContainerBlock` caps its slot at `max-width: 80rem`. The only way a preset breaks the page measure is a `Columns` child with `columns: 1, overallWidth: "full"`.
 - Every `Columns` inside a preset sets an explicit `minHeight`. `columnsDefaultProps.minHeight` is `"320px"` — a row that inherits it grows dead space.
 
@@ -43,14 +47,11 @@ The insertable section library is **11 groups x 3 variants = 33 registered prese
 
 `blocks/presetContrast.test.ts` measures all 33 presets against all 6 committed brand kits (WCAG 2.1), modelling `resolveBlockStyle` and every `ButtonBlock` branch, plus the scrim case that only appears once an owner adds a background image. It is coupled to those renderers on purpose: if either changes, this test changes with it.
 
-Two token pairs are guaranteed opposites in every kit, and the preset recipes are built on them:
+Every committed kit guarantees its `foreground` reaches WCAG AA contrast against all four surface tokens: `background`, `primary`, `secondary`, and `accent`. Presets can therefore use the palette's more varied surfaces without changing their text token or guessing whether the kit is light or dark. Built-in buttons likewise keep their label and boundary on `foreground` unless an owner explicitly overrides them.
 
-- `foreground` / `background`
-- `primary` / `background`
+`ContainerBlock.overlayColorToken` still exists for image scrims: unset keeps the legacy `rgba(0,0,0,a)` so saved pages do not shift, and a set token composites via `color-mix`. Preset image scrims pin both overlay and copy deliberately so their contrast remains measurable.
 
-`accent` is only guaranteed against the kit's own ground. That is why an accent band **inverts** its button (background-token fill, accent label) rather than tinting it, and why a scrim is tinted with `primary` rather than black. `ContainerBlock.overlayColorToken` exists for exactly this: unset keeps the legacy `rgba(0,0,0,a)` so saved pages do not shift, and a set token composites via `color-mix`. Copy pinned to the background token over a *black* scrim measured 2.64:1 on the dark Luxury kit before this.
-
-A button on a contrasting band must pin its own colors — `ButtonBlock` reads only `_style.buttonStyle` and never the brand kit's, so an unset button falls into the legacy branch (transparent fill, `--pf-color-fg` label and border) that vanishes on a colored ground.
+A button on a contrasting band must still pin its own style and color. `ButtonBlock` reads only `_style.buttonStyle` and never the brand kit's button-style preference, while the named solid, soft, and outline branches now default their labels to the universal foreground.
 
 ### The brand background must be PAINTED, not just declared
 
@@ -88,14 +89,33 @@ than their mockups.
   Directory footer mockup's `1.4fr 0.8fr 1fr`) are not expressible; only
   `_style.colSpan` varies a child's width.
 
-### Masonry stagger
+### True masonry flow
 
-`GalleryMasonryBlock` is real `column-count` masonry, but uniform-aspect source
-photos make every row line up and it reads as a grid. `_style.galleryStagger`
-(default **off**, so saved pages are unchanged) switches to a CSS grid with a
-deterministic per-index `margin-top` cycle. `column-count` cannot do this: it
-exposes no per-column selector. The trade-off is real — stagger mode flows
-**row-major**, while the default `column-count` path flows column-major.
+New and migrated `GalleryMasonryBlock` instances use independent flex column
+lanes, so each column continues below its own previous image instead of waiting
+for the tallest item in a shared grid row. The former `_style.galleryStagger`
+value is ignored and is no longer offered as an editor control.
+
+Its legacy `content` slot accepts only `Image` blocks and has no editor mode
+switch; it exists only so saved pages keep rendering. New manual Masonry blocks
+and every Masonry preset use **column lanes**: each active lane is its own
+Image-only Puck slot, so an owner can drag images between lanes and each lane
+flows independently. Optional alternating tile rhythm has separate odd/even
+tile heights for odd-numbered and even-numbered columns. The even-column
+defaults invert the odd-column rhythm so adjacent lanes do not repeat one
+lockstep pattern.
+
+Column lanes also support a presentation-only loop. Once **every active column
+has at least three images**, the first rendered tile of each shorter lane is
+duplicated and cropped into that lane's remaining height up to the tallest
+original lane. The gap and duplicate never increase the masonry's pre-loop
+maximum height. `MasonryClone` is an internal Puck block reconciled at the end
+of each eligible lane. It is absent from insert categories and has drag, delete,
+duplicate, insert, and edit permissions disabled. Its inert, `aria-hidden`
+image props remain linked to that lane's first Image, and the reconciler removes
+all clones whenever Loop is off or any active lane falls below three Images.
+Existing saved flow blocks remain on the compatibility renderer; do not expose
+that retired format as a selectable layout.
 
 ### Enabled controls must be truthful
 

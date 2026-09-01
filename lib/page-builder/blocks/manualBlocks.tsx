@@ -270,6 +270,7 @@ export function ImageBlock({
   const src = effectiveStyle?.bgImagePublicId ? bgImageUrl(effectiveStyle.bgImagePublicId) : imageUrl || null;
   const hasImage = Boolean(src);
   const presetPreview = puck?.metadata?.presetPreview === true;
+  const isEditing = puck?.isEditing === true;
 
   return (
     <div
@@ -325,7 +326,7 @@ export function ImageBlock({
             fontSize: "0.875rem",
           }}
         >
-          Pick an image
+          {isEditing ? "Pick an image" : "Image unavailable"}
         </div>
       )}
     </div>
@@ -420,20 +421,20 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     // Outline: transparent fill, always 2px border in the button color.
     // borderWidth/borderColorToken from _style are ignored (deprecated in Pass 2).
     buttonBg = "transparent";
-    buttonText = customTextColor ?? colorVar;
+    buttonText = customTextColor ?? "var(--pf-color-fg)";
     tkBorderWidth = "2px";
     tkBorderColor = colorVar;
   } else if (_style?.buttonStyle === "soft") {
     // Soft: tinted fill at 15%, no border. borderWidth/borderColorToken ignored (deprecated in Pass 2).
     buttonBg = `color-mix(in srgb, ${colorVar} 15%, transparent)`;
-    buttonText = customTextColor ?? colorVar;
+    buttonText = customTextColor ?? "var(--pf-color-fg)";
     tkBorderWidth = "0px";
     tkBorderColor = "transparent";
   } else if (_style?.buttonStyle === "solid") {
     // Opacity applies to the fill; 100 is a no-op (no color-mix overhead).
     // borderWidth/borderColorToken are ignored for named button styles (deprecated in Pass 2).
     buttonBg = buildColorWithOpacity(colorVar, _style?.buttonOpacity ?? 100);
-    buttonText = customTextColor ?? "var(--pf-color-bg)";
+    buttonText = customTextColor ?? "var(--pf-color-fg)";
     tkBorderWidth = "0px";
     tkBorderColor = "transparent";
   } else {

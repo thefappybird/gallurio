@@ -249,9 +249,15 @@ describe("ImageBlock — no image", () => {
     vi.unstubAllEnvs();
   });
 
-  it("renders the 'Pick an image' placeholder when no background image is set", () => {
-    render(<ImageBlock alt="" />);
+  it("renders the 'Pick an image' prompt only in the editor canvas", () => {
+    render(<ImageBlock alt="" puck={{ isEditing: true }} />);
     expect(screen.getByText(/Pick an image/i)).toBeTruthy();
+  });
+
+  it("uses a visitor-safe empty state in preview and published output", () => {
+    render(<ImageBlock alt="" puck={{ isEditing: false }} />);
+    expect(screen.queryByText(/Pick an image/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Image unavailable/i)).toBeInTheDocument();
   });
 
   it("does NOT render a background-image layer when no background image is set", () => {
@@ -274,7 +280,7 @@ describe("ImageBlock — no image", () => {
     // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is unset → bgImageUrl returns null,
     // so resolveBlockStyle never sets backgroundImage and hasImage stays false.
     render(<ImageBlock alt="" _style={{ bgImagePublicId: "gallurio/ws/img.jpg" }} />);
-    expect(screen.getByText(/Pick an image/i)).toBeTruthy();
+    expect(screen.getByText(/Image unavailable/i)).toBeTruthy();
   });
 });
 
@@ -714,7 +720,7 @@ describe("ButtonBlock", () => {
     expect(a.style.borderColor).toBe("var(--pf-color-primary)");
   });
 
-  it("buttonStyle='soft' uses colorVar for text and sets border transparent", () => {
+  it("buttonStyle='soft' uses surface-safe foreground text and sets border transparent", () => {
     render(
       <ButtonBlock
         label="Btn"
@@ -724,7 +730,7 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.color).toBe("var(--pf-color-accent)");
+    expect(a.style.color).toBe("var(--pf-color-fg)");
     expect(a.style.borderColor).toBe("transparent");
   });
 
@@ -960,10 +966,10 @@ describe("TextBlock and HeadingBlock color parity", () => {
     expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
   });
 
-  it("ButtonBlock solid style with no textColorToken uses var(--pf-color-bg) for text", () => {
+  it("ButtonBlock solid style with no textColorToken uses surface-safe foreground text", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "solid" }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.color).toBe("var(--pf-color-bg)");
+    expect(a.style.color).toBe("var(--pf-color-fg)");
   });
 });
 

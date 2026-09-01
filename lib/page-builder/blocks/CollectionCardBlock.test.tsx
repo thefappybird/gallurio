@@ -36,4 +36,32 @@ describe("CollectionCardBlock", () => {
     expect(container.querySelector("[data-preset-collection-placeholder='true']")).toBeInTheDocument();
     expect(container.querySelector("[data-preset-collection-caption='true']")).toBeInTheDocument();
   });
+
+  it("applies radius to the clickable tile and clips its cover without a border", () => {
+    const { container } = render(
+      <CollectionCardBlock collection={COLLECTION} _style={{ radius: 16, bgColorToken: "primary" }} />,
+    );
+
+    const tile = container.querySelector("[data-featured-tile]") as HTMLElement;
+    expect(tile.style.borderRadius).toBe("16px");
+    expect(tile.style.overflow).toBe("hidden");
+    expect(tile.style.backgroundColor).toBe("var(--pf-color-primary)");
+  });
+
+  it("uses the collection-title typography and color for its empty state", () => {
+    const { container } = render(
+      <CollectionCardBlock
+        _style={{
+          collectionTitleColorToken: "accent",
+          collectionTitleFontSize: 24,
+          collectionTitleBold: true,
+        }}
+      />,
+    );
+
+    const empty = container.querySelector("[data-cover-placeholder]") as HTMLElement;
+    expect(empty.style.color).toBe("var(--pf-color-accent)");
+    expect(empty.style.fontSize).toBe("24px");
+    expect(empty.style.fontWeight).toBe("700");
+  });
 });

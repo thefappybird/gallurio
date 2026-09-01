@@ -249,13 +249,13 @@ export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   fontPair: "merriweather-only",
   headingFont: "merriweather",
   bodyFont: "merriweather",
-  primaryColor: "#111111",
-  secondaryColor: "#f5f5f5",
-  accentColor: "#2f5d56", // Gallurio brand teal
+  primaryColor: "#dde7e4",
+  secondaryColor: "#f0ede7",
+  accentColor: "#b7d2ca", // Gallurio brand teal surface
   // Kept identical to the Minimal preset so the Theme panel marks that tile as
   // the active one for a workspace that has never picked a theme.
   backgroundColor: "#fcfcfb",
-  foregroundColor: "#111111",
+  foregroundColor: "#18201f",
   radius: "sharp",
   buttonStyle: "solid",
 };

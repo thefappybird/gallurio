@@ -85,6 +85,85 @@ function deepFillMissing(
 
 export type BlockEntry = { type: string; props: Record<string, unknown> };
 
+const MASONRY_SLOT_KEYS = ["content", "column1", "column2", "column3", "column4"] as const;
+
+function masonryColumnCount(props: Record<string, unknown>): 2 | 3 | 4 {
+  const style = props._style as Record<string, unknown> | undefined;
+  const columns = style?.galleryColumns;
+  return columns === 2 || columns === 4 ? columns : 3;
+}
+
+function distributeMasonryItems(items: BlockEntry[], columns: 2 | 3 | 4): BlockEntry[][] {
+  const lanes = Array.from({ length: columns }, () => [] as BlockEntry[]);
+  items.forEach((item, index) => lanes[index % columns].push(item));
+  return lanes;
+}
+
+/**
+ * Upgrades the retired single-flow Masonry slot to independent column lanes.
+ * Puck stores an established slot in `zones`, while freshly composed preset
+ * data can still carry the same children inline in props, so both shapes must
+ * migrate. This is editor-load-only and becomes persistent on the next save;
+ * the renderer keeps its legacy fallback for pages that have not been edited.
+ */
+function migrateMasonryLanes(data: PuckDataLike): PuckDataLike {
+  const sourceZones = data.zones
+    ? Object.fromEntries(Object.entries(data.zones).map(([key, items]) => [key, [...items]]))
+    : undefined;
+  const zoneMigrations: Array<{ id: string; columns: 2 | 3 | 4 }> = [];
+
+  const migrateEntry = (block: BlockEntry): BlockEntry => {
+    let props = { ...block.props };
+
+    // Preset data may contain nested slots inline before Puck expands them into
+    // zones. Walk all Masonry slot shapes so nested blocks are upgraded too.
+    for (const key of MASONRY_SLOT_KEYS) {
+      const items = props[key];
+      if (Array.isArray(items)) props[key] = items.map((item) => migrateEntry(item as BlockEntry));
+    }
+
+    if (block.type !== "GalleryMasonry" || props.masonryLayout === "columns") {
+      return { ...block, props };
+    }
+
+    const columns = masonryColumnCount(props);
+    const id = typeof props.id === "string" ? props.id : undefined;
+    const flowZoneKey = id ? `${id}:content` : undefined;
+    const flowZoneItems = flowZoneKey && sourceZones ? sourceZones[flowZoneKey] ?? [] : [];
+    const inlineItems = Array.isArray(props.content) ? (props.content as BlockEntry[]) : [];
+    const sourceItems = flowZoneItems.length > 0 ? flowZoneItems : inlineItems;
+    const lanes = distributeMasonryItems(sourceItems, columns);
+
+    props = { ...props, masonryLayout: "columns", content: [] };
+    if (flowZoneItems.length > 0 && id && sourceZones) {
+      zoneMigrations.push({ id, columns });
+    } else {
+      lanes.forEach((items, index) => {
+        props[`column${index + 1}`] = items;
+      });
+    }
+
+    return { ...block, props };
+  };
+
+  const content = (data.content ?? []).map(migrateEntry);
+  const zones = sourceZones
+    ? Object.fromEntries(Object.entries(sourceZones).map(([key, items]) => [key, items.map(migrateEntry)]))
+    : undefined;
+  if (zones) {
+    for (const { id, columns } of zoneMigrations) {
+      const flowZoneKey = `${id}:content`;
+      const lanes = distributeMasonryItems(zones[flowZoneKey] ?? [], columns);
+      lanes.forEach((items, index) => {
+        zones[`${id}:column${index + 1}`] = items;
+      });
+      delete zones[flowZoneKey];
+    }
+  }
+
+  return { root: data.root, content, zones };
+}
+
 /**
  * Back-compat: an Image block saved before the background-image redesign
  * (commit ee5084d) stored the picture as top-level `imagePublicId`/`imageUrl`
@@ -143,13 +222,14 @@ export type PuckDataLike = {
  * The input is NOT mutated.
  */
 export function fillBlockDefaults(data: PuckDataLike): PuckDataLike {
+  const migrated = migrateMasonryLanes(data);
   return {
-    root: data.root,
-    content: fillItems(data.content ?? []),
-    zones: data.zones
+    root: migrated.root,
+    content: fillItems(migrated.content ?? []),
+    zones: migrated.zones
       ? Object.fromEntries(
-          Object.entries(data.zones).map(([k, v]) => [k, fillItems(v)]),
+          Object.entries(migrated.zones).map(([k, v]) => [k, fillItems(v)]),
         )
-      : data.zones,
+      : migrated.zones,
   };
 }

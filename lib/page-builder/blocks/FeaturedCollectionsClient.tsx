@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { CollectionPopup } from "./CollectionPopup";
 import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
@@ -32,6 +33,12 @@ export type FeaturedCollectionsClientProps = {
   popupLabels?: CollectionPopupLabels;
   /** Brand-kit CSS vars, re-applied on the popup's portaled root (see CollectionPopup). */
   brandVars?: Record<string, string>;
+  /** CollectionCard passes its frame/background here so the clickable tile, not
+   * merely its wrapper, owns clipping and the visible corner radius. */
+  tileStyle?: CSSProperties;
+  /** Optional per-target caption styles for CollectionCard. */
+  titleStyle?: CSSProperties;
+  subtitleStyle?: CSSProperties;
 };
 
 // ---------------------------------------------------------------------------
@@ -55,6 +62,22 @@ const TILE_FOCUS_STYLES = `
 }
 `;
 
+const DEFAULT_TITLE_STYLE: CSSProperties = {
+  margin: 0,
+  fontSize: "1rem",
+  fontWeight: 600,
+  lineHeight: 1.3,
+  color: "var(--pf-color-fg, #111)",
+};
+
+const DEFAULT_SUBTITLE_STYLE: CSSProperties = {
+  margin: "0.25rem 0 0",
+  fontSize: "0.875rem",
+  lineHeight: 1.4,
+  color: "color-mix(in srgb, var(--pf-color-fg, #111) 70%, transparent)",
+  opacity: 0.75,
+};
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -69,6 +92,9 @@ export function FeaturedCollectionsClient({
   popupConfig,
   popupLabels,
   brandVars,
+  tileStyle,
+  titleStyle,
+  subtitleStyle,
 }: FeaturedCollectionsClientProps) {
   const [active, setActive] = useState<FeaturedTile | null>(null);
 
@@ -104,6 +130,11 @@ export function FeaturedCollectionsClient({
               fontFamily: "var(--pf-font-body, inherit)",
               color: "var(--pf-color-fg, #111)",
               transition: "border-color 0.15s, background 0.15s",
+              // A radius must clip the cover even when the border is 0px. The
+              // old radius lived on CollectionCard's outer wrapper, while this
+              // button painted the cover without clipping it.
+              overflow: "hidden",
+              ...tileStyle,
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.borderColor =
@@ -164,22 +195,16 @@ export function FeaturedCollectionsClient({
             >
               <p
                 style={{
-                  margin: 0,
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  lineHeight: 1.3,
-                  color: "var(--pf-color-fg, #111)",
+                  ...DEFAULT_TITLE_STYLE,
+                  ...titleStyle,
                 }}
               >
                 {tile.name}
               </p>
               <p
                 style={{
-                  margin: "0.25rem 0 0",
-                  fontSize: "0.875rem",
-                  lineHeight: 1.4,
-                  color: "color-mix(in srgb, var(--pf-color-fg, #111) 70%, transparent)",
-                  opacity: 0.75,
+                  ...DEFAULT_SUBTITLE_STYLE,
+                  ...subtitleStyle,
                 }}
               >
                 {formatCount(tile.count)}

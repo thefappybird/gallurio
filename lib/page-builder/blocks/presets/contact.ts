@@ -100,9 +100,9 @@ export const CONTACT_BAR_PRESET: ContainerBlockProps = {
         }),
         child("ContactDetails", {
           _style: {
-            labelColorToken: "background",
-            valueColorToken: "background",
-            iconColorToken: "background",
+            labelColorToken: "foreground",
+            valueColorToken: "foreground",
+            iconColorToken: "foreground",
           },
         }),
         child("Button", {

@@ -327,15 +327,15 @@ describe("ContactDetails: label/value/icon effective defaults", () => {
     expect(style.color).toBe(colorTokenToVar("foreground"));
   });
 
-  it("value: fontSize 15px, color accent", () => {
+  it("value: fontSize 15px, color foreground", () => {
     const style = buildContactValueStyle(undefined);
     expect(style.fontSize).toBe("0.9375rem"); // 15px / 16
-    expect(style.color).toBe(colorTokenToVar("accent"));
+    expect(style.color).toBe(colorTokenToVar("foreground"));
   });
 
-  it("icon: size 20px, color accent", () => {
+  it("icon: size 20px, color foreground", () => {
     expect(buildContactIconSize(undefined)).toBe(20);
-    expect(buildContactIconColor(undefined)).toBe(colorTokenToVar("accent"));
+    expect(buildContactIconColor(undefined)).toBe(colorTokenToVar("foreground"));
   });
 });
 

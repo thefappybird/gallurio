@@ -7,7 +7,7 @@
  * render still gets translated copy, falling back to English.
  */
 
-import type { ComponentConfig, Field, Fields } from "@measured/puck";
+import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@measured/puck";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   getGalleryChromeLabelsFrom,
@@ -20,6 +20,7 @@ import {
   type BlockStyle,
   type GalleryColumns,
   type GalleryGap,
+  STYLE_LIMITS,
 } from "@/lib/page-builder/styleToolkit";
 import type { GalleryImage } from "./GalleryGridBlock";
 import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
@@ -30,7 +31,18 @@ import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
 
 export type GalleryMasonryProps = {
+  id?: string;
   _style?: BlockStyle;
+  /** New composition path: individually selectable/reorderable Image blocks. */
+  content?: Slot;
+  /** Explicit lanes make per-column loop copies and cross-column DnD possible. */
+  masonryLayout?: "flow" | "columns";
+  masonryLoop?: boolean;
+  column1?: Slot;
+  column2?: Slot;
+  column3?: Slot;
+  column4?: Slot;
+  /** @deprecated Compatibility renderer for pre-slot saved galleries. */
   images: GalleryImage[];
   // Banner / container props (same as ContainerBlock)
   backgroundImages?: GalleryImage[];
@@ -43,10 +55,29 @@ export type GalleryMasonryProps = {
 };
 
 export const galleryMasonryDefaultProps: GalleryMasonryProps = {
+  content: [],
+  masonryLayout: "columns",
+  masonryLoop: false,
+  column1: [],
+  column2: [],
+  column3: [],
+  column4: [],
   images: [],
   backgroundImages: [],
   bgAnimation: "crossfade",
   bgSpeed: "medium",
+};
+
+type GalleryMasonryRenderProps = Omit<
+  GalleryMasonryProps,
+  "content" | "column1" | "column2" | "column3" | "column4"
+> & {
+  content?: Slot | SlotComponent;
+  column1?: Slot | SlotComponent;
+  column2?: Slot | SlotComponent;
+  column3?: Slot | SlotComponent;
+  column4?: Slot | SlotComponent;
+  puck?: BlockPuck;
 };
 
 const GAP_MAP: Record<GalleryGap, string> = {
@@ -60,20 +91,6 @@ const THUMB_WIDTH_MAP: Record<GalleryColumns, number> = {
   3: 600,
   4: 400,
 };
-
-/**
- * Deterministic per-column vertical offset (px) for the opt-in stagger mode
- * (`_style.galleryStagger`). Cycles by `index % columns` so adjacent columns
- * in the same row always get a different offset, producing a genuine masonry
- * read even when every source photo shares one aspect ratio (the reported
- * bug — column-count masonry alone looks like a grid when rows align).
- * Fixed values, no randomness — stable across renders and SSR/hydration.
- */
-const STAGGER_OFFSET_CYCLE = [0, 32, 16, 48] as const; // covers columns 2 | 3 | 4
-
-export function galleryStaggerOffsetPx(index: number, columns: GalleryColumns): number {
-  return STAGGER_OFFSET_CYCLE[index % columns] ?? 0;
-}
 
 function GalleryBannerLayers({
   layers,
@@ -115,6 +132,7 @@ function GalleryBannerLayers({
 }
 
 export function GalleryMasonryBlock({
+  id,
   _style,
   images,
   backgroundImages,
@@ -123,15 +141,39 @@ export function GalleryMasonryBlock({
   overlayOpacity,
   minHeight,
   minHeightValue,
+  content: Content,
+  masonryLayout,
+  column1,
+  column2,
+  column3,
+  column4,
   puck,
-}: GalleryMasonryProps & { puck?: BlockPuck }) {
+}: GalleryMasonryRenderProps) {
   const columns = _style?.galleryColumns ?? 3;
   const gap = _style?.galleryGap ?? "normal";
   const gapValue = GAP_MAP[gap] ?? "12px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
-  // Opt-in, default OFF — unset renders byte-identical to the pre-existing
-  // column-count layout below (live pages ship this block).
-  const stagger = _style?.galleryStagger === true;
+  // Column lanes are the only new-editing model. The single-slot class remains
+  // solely for saved flow blocks that predate lanes.
+  const blockClassName = `pf-masonry-${(id ?? "default").replace(/[^A-Za-z0-9_-]/g, "")}`;
+  const slotClassName = `${blockClassName}-slot`;
+  const alternatingHeights = _style?.masonryHeightPattern === "alternating";
+  const oddHeight = Math.min(
+    STYLE_LIMITS.masonryPatternHeight.max,
+    Math.max(STYLE_LIMITS.masonryPatternHeight.min, _style?.masonryOddHeight ?? 260),
+  );
+  const evenHeight = Math.min(
+    STYLE_LIMITS.masonryPatternHeight.max,
+    Math.max(STYLE_LIMITS.masonryPatternHeight.min, _style?.masonryEvenHeight ?? 360),
+  );
+  const evenColumnOddHeight = Math.min(
+    STYLE_LIMITS.masonryPatternHeight.max,
+    Math.max(STYLE_LIMITS.masonryPatternHeight.min, _style?.masonryEvenColumnOddHeight ?? 360),
+  );
+  const evenColumnEvenHeight = Math.min(
+    STYLE_LIMITS.masonryPatternHeight.max,
+    Math.max(STYLE_LIMITS.masonryPatternHeight.min, _style?.masonryEvenColumnEvenHeight ?? 260),
+  );
   const labels = getGalleryChromeLabelsFrom(puck);
   const list = Array.isArray(images) ? images : [];
 
@@ -140,8 +182,14 @@ export function GalleryMasonryBlock({
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
+  const useLegacyImages = list.length > 0;
+  const SlotContent = typeof Content === "function" ? Content : undefined;
+  const explicitSlots: Array<SlotComponent | undefined> = [column1, column2, column3, column4].map(
+    (slot) => (typeof slot === "function" ? slot : undefined),
+  );
+  const useColumnLanes = !useLegacyImages && masonryLayout === "columns" && explicitSlots.some(Boolean);
 
-  if (list.length === 0) {
+  if (!useLegacyImages && !SlotContent && !useColumnLanes) {
     return (
       <section
         ref={puck?.dragRef ?? undefined}
@@ -203,15 +251,12 @@ export function GalleryMasonryBlock({
         <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "80rem", margin: "0 auto" }}>
-        <div
-          className="pf-masonry"
-          style={
-            stagger
-              ? { display: "grid", gridTemplateColumns: `repeat(${masonryColsVar(columns)}, minmax(0, 1fr))`, gap: gapValue }
-              : { columnCount: masonryColsVar(columns) as unknown as number, columnGap: gapValue }
-          }
-        >
-          {list.map((img, i) => {
+        {useLegacyImages ? (
+          <div
+            className="pf-masonry"
+            style={{ columnCount: masonryColsVar(columns) as unknown as number, columnGap: gapValue }}
+          >
+            {list.map((img) => {
             const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth * 2,
@@ -221,11 +266,15 @@ export function GalleryMasonryBlock({
             return (
               <figure
                 key={img.id}
-                style={
-                  stagger
-                    ? { margin: 0, padding: 0, marginTop: `${galleryStaggerOffsetPx(i, columns)}px` }
-                    : { margin: 0, marginBottom: gapValue, padding: 0, breakInside: "avoid" }
-                }
+                style={{
+                  display: "inline-block",
+                  width: "100%",
+                  verticalAlign: "top",
+                  margin: 0,
+                  marginBottom: gapValue,
+                  padding: 0,
+                  breakInside: "avoid",
+                }}
               >
                 <GalleryLightboxTrigger image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -250,8 +299,47 @@ export function GalleryMasonryBlock({
                 </GalleryLightboxTrigger>
               </figure>
             );
-          })}
-        </div>
+            })}
+          </div>
+        ) : useColumnLanes ? (
+          <>
+            <style>{`${explicitSlots.map((_, index) => {
+              const columnClassName = `${blockClassName}-column-${index + 1}`;
+              const columnOddHeight = index % 2 === 0 ? oddHeight : evenColumnOddHeight;
+              const columnEvenHeight = index % 2 === 0 ? evenHeight : evenColumnEvenHeight;
+              return `.${columnClassName}{display:flex;min-width:0;flex-direction:column;}.${columnClassName}>*{width:100%;}.${columnClassName}>*:not(:last-child){margin-bottom:${gapValue};}${alternatingHeights ? `.${columnClassName}>*:nth-child(odd){height:${columnOddHeight}px !important;aspect-ratio:auto !important;}.${columnClassName}>*:nth-child(even){height:${columnEvenHeight}px !important;aspect-ratio:auto !important;}` : ""}`;
+            }).join("")}`}</style>
+            <div
+              className={`${blockClassName}-columns`}
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${masonryColsVar(columns)}, minmax(0, 1fr))`,
+                gap: gapValue,
+              }}
+            >
+              {explicitSlots.slice(0, columns).map((ColumnSlot, index) => {
+                const columnClassName = `${blockClassName}-column-${index + 1}`;
+                return (
+                  <div key={columnClassName} data-masonry-column={index + 1}>
+                    {ColumnSlot?.({ className: columnClassName })}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* New masonry slots use CSS columns so Image blocks remain direct,
+                movable Puck children. The scoped rule prevents a single image
+                from splitting across columns while keeping the editor drop zone
+                in the same visual flow as the public page. */}
+            <style>{`.${slotClassName}>*{display:inline-block;width:100%;vertical-align:top;break-inside:avoid;margin-bottom:${gapValue};}${alternatingHeights ? `.${slotClassName}>*:nth-child(odd){height:${oddHeight}px !important;aspect-ratio:auto !important;}.${slotClassName}>*:nth-child(even){height:${evenHeight}px !important;aspect-ratio:auto !important;}` : ""}`}</style>
+            {SlotContent?.({
+              className: slotClassName,
+              style: { columnCount: masonryColsVar(columns) as unknown as number, columnGap: gapValue },
+            })}
+          </>
+        )}
       </div>
     </section>
   );
@@ -269,6 +357,11 @@ export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
   // Banner fields are managed by StyleToolkitField and stripped by resolveFields in editorConfig.
   fields: {
     _style: productionStyleField,
+    content: { type: "slot", allow: ["Image"] },
+    column1: { type: "slot", allow: ["Image", "MasonryClone"] },
+    column2: { type: "slot", allow: ["Image", "MasonryClone"] },
+    column3: { type: "slot", allow: ["Image", "MasonryClone"] },
+    column4: { type: "slot", allow: ["Image", "MasonryClone"] },
     backgroundImages: {
       type: "array",
       label: "Background images",

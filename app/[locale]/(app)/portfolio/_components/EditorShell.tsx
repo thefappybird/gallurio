@@ -38,6 +38,7 @@ import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/li
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
 import { createEditorConfig } from "@/lib/page-builder/editorConfig";
 import { reconcileContainerAnchors } from "@/lib/page-builder/containerAnchorReconciler";
+import { reconcileMasonryClones } from "@/lib/page-builder/masonryCloneReconciler";
 import { PRESET_BLOCK_KEYS } from "@/lib/page-builder/blockCategories";
 import {
   SECTION_PRESETS,
@@ -573,7 +574,7 @@ function ContainerAnchorReconciler() {
   const dispatch = usePuckStore((s) => s.dispatch);
 
   useEffect(() => {
-    const normalized = reconcileContainerAnchors(data);
+    const normalized = reconcileMasonryClones(reconcileContainerAnchors(data));
     if (normalized === data) return;
     dispatch({ type: "setData", data: normalized });
   }, [data, dispatch]);
@@ -614,7 +615,7 @@ function prepareForEditor(data: PuckData): Data {
   const withDefaults = fillBlockDefaults(data as unknown as PuckDataLike) as unknown as PuckData;
   // Normalize legacy/restored ContainerAnchor data before the first canvas
   // render, then keep it normalized live with ContainerAnchorReconciler.
-  return reconcileContainerAnchors(ensureIds(withDefaults));
+  return reconcileMasonryClones(reconcileContainerAnchors(ensureIds(withDefaults)));
 }
 
 type DrawerCategories = NonNullable<ReturnType<typeof createEditorConfig>["categories"]>;

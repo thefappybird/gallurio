@@ -118,6 +118,10 @@ const GALLERY_NO_TEXT_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "Featur
 export const FLEX_CONTAINER_BLOCKS = new Set<string>(["Container", ...SECTION_PRESET_KEYS]);
 
 const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry"]);
+// Kept empty: pre-slot gallery arrays still render on published saved pages,
+// but their retired picker is deliberately absent from the inspector.
+const LEGACY_GALLERY_PICKER_BLOCKS = new Set<string>();
+const COLLECTION_CARD_RATIOS = ["7 / 9", "1 / 1", "4 / 5", "3 / 2", "16 / 9"] as const;
 
 const ANIMATION_LABEL: Record<AnimationType, string> = {
   none: "None",
@@ -557,7 +561,7 @@ export function ContentInputs({
       </div>
     );
   }
-  if (COLLECTION_GALLERY_BLOCKS.has(type)) {
+  if (LEGACY_GALLERY_PICKER_BLOCKS.has(type)) {
     // GalleryGrid and GalleryMasonry are images-only — expose the Photos picker.
     return (
       <div className="flex flex-col gap-3">
@@ -615,6 +619,18 @@ export function ContentInputs({
             />
           )}
         </div>
+        <ChoiceRow
+          label="Crop"
+          value={(props.aspectRatio as string | undefined) ?? "7 / 9"}
+          options={COLLECTION_CARD_RATIOS.map((value) => ({ value, label: value.replace(/ /g, "") }))}
+          onChange={(v) => setProp("aspectRatio", v)}
+        />
+        <ChoiceRow
+          label="Caption"
+          value={(props.showCaption as boolean | undefined) === false ? "hide" : "show"}
+          options={[{ value: "show", label: "Show" }, { value: "hide", label: "Hide"}]}
+          onChange={(v) => setProp("showCaption", v === "show")}
+        />
       </div>
     );
   }
@@ -748,7 +764,7 @@ function ContentTabBody({
   const showContentInputs = !isContainer || GALLERY_CONTAINER_BLOCKS.has(type);
   // Gallery blocks (GalleryGrid/GalleryMasonry/FeaturedWork) show the banner Color swatch
   // but NOT the background-images picker — the images are the block content, not a backdrop.
-  const hideBgImage = GALLERY_CONTAINER_BLOCKS.has(type);
+  const hideBgImage = false;
   const hasBackgroundImages =
     Array.isArray(p?.backgroundImages) && (p.backgroundImages as unknown[]).length > 0;
   const effectiveBannerColor = GALLERY_CONTAINER_BLOCKS.has(type)
@@ -811,6 +827,57 @@ function ChoiceRow<T extends string>({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CollectionCardCaptionControls({
+  target,
+  s,
+  set,
+  effectiveFontFamily,
+}: {
+  target: "title" | "subtitle";
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
+  effectiveFontFamily: BlockStyle["fontFamily"];
+}) {
+  const title = target === "title";
+  const prefix = title ? "collectionTitle" : "collectionSubtitle";
+  const bold = title ? s.collectionTitleBold : s.collectionSubtitleBold;
+  const italic = title ? s.collectionTitleItalic : s.collectionSubtitleItalic;
+  const underline = title ? s.collectionTitleUnderline : s.collectionSubtitleUnderline;
+  const align = title ? s.collectionTitleAlign : s.collectionSubtitleAlign;
+  const fontFamily = title ? s.collectionTitleFontFamily : s.collectionSubtitleFontFamily;
+  const fontSize = title ? s.collectionTitleFontSize : s.collectionSubtitleFontSize;
+  const color = title ? s.collectionTitleColorToken : s.collectionSubtitleColorToken;
+  const setTarget = (key: "Bold" | "Italic" | "Underline" | "Align" | "FontFamily" | "FontSize" | "ColorToken", value: unknown) =>
+    set({ [`${prefix}${key}`]: value } as Partial<BlockStyle>);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <ToolbarToggle active={!!bold} title="Bold" Icon={Bold} onClick={() => setTarget("Bold", !bold)} />
+        <ToolbarToggle active={!!italic} title="Italic" Icon={Italic} onClick={() => setTarget("Italic", !italic)} />
+        <ToolbarToggle active={!!underline} title="Underline" Icon={Underline} onClick={() => setTarget("Underline", !underline)} />
+        <ToolbarToggle active={align === "left"} title="Align left" Icon={AlignLeft} onClick={() => setTarget("Align", align === "left" ? undefined : "left")} />
+        <ToolbarToggle active={align === "center"} title="Align center" Icon={AlignCenter} onClick={() => setTarget("Align", align === "center" ? undefined : "center")} />
+        <ToolbarToggle active={align === "right"} title="Align right" Icon={AlignRight} onClick={() => setTarget("Align", align === "right" ? undefined : "right")} />
+      </div>
+      <ColorSwatchRow
+        value={color}
+        effectiveValue="foreground"
+        onChange={(value) => setTarget("ColorToken", value)}
+      />
+      <FontFamilyRow value={fontFamily} effectiveValue={effectiveFontFamily} onChange={(value) => setTarget("FontFamily", value)} />
+      <NumberInputRow
+        label="Font size"
+        value={fontSize}
+        min={STYLE_LIMITS.fontSize.min}
+        max={STYLE_LIMITS.fontSize.max}
+        effectiveValue={title ? 16 : 14}
+        onChange={(value) => setTarget("FontSize", value)}
+      />
     </div>
   );
 }
@@ -1087,11 +1154,15 @@ export function DesignTab({
   const isLinkButton = s.buttonStyle === "link";
   const isSolidButton = s.buttonStyle === "solid";
   const isContactDetails = blockType === "ContactDetails";
+  const isCollectionCard = blockType === "CollectionCard";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
   const effectiveRadius = useEffectiveBrandRadius();
-  // Image-only gallery blocks (and the Image block itself) have no on-page text —
-  // hide typography controls.
-  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && blockType !== "Image";
+  // Image-only gallery blocks (and the Image block itself) have no on-page text.
+  // CollectionCard owns separate Collection title and Photo count controls, so
+  // its generic typography drawer would edit unrelated legacy style fields.
+  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType)
+    && blockType !== "Image"
+    && blockType !== "CollectionCard";
   // Heading blocks follow the brand heading font; all others follow the body font.
   // ponytail: "body" covers Text, Button, Container, and all other block types since
   // only Heading maps to --pf-font-heading; everything else inherits body via CSS.
@@ -1157,7 +1228,7 @@ export function DesignTab({
                     <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                     <span className="text-xs text-muted-foreground">Value color</span>
                   </div>
-                  <ColorSwatchRow value={s.valueColorToken} effectiveValue="accent" onChange={(t) => set({ valueColorToken: t })} />
+                  <ColorSwatchRow value={s.valueColorToken} effectiveValue="foreground" onChange={(t) => set({ valueColorToken: t })} />
                 </div>
                 <FontFamilyRow value={s.valueFontFamily} effectiveValue={effectiveFontFamily} onChange={(v) => set({ valueFontFamily: v })} />
                 <NumberInputRow label="Font size" value={s.valueFontSize} min={STYLE_LIMITS.fontSize.min} max={STYLE_LIMITS.fontSize.max} effectiveValue={15} onChange={(v) => set({ valueFontSize: v })} />
@@ -1171,7 +1242,7 @@ export function DesignTab({
                 <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="text-xs text-muted-foreground">Icon color</span>
               </div>
-              <ColorSwatchRow value={s.iconColorToken} effectiveValue="accent" onChange={(t) => set({ iconColorToken: t })} />
+              <ColorSwatchRow value={s.iconColorToken} effectiveValue="foreground" onChange={(t) => set({ iconColorToken: t })} />
             </div>
             <IconRow
               label="Icon align"
@@ -1183,7 +1254,27 @@ export function DesignTab({
           </EditorDrawerSection>
         </>
       )}
-      {/* Typography drawer — all blocks except ContactDetails (per-target) and gallery image blocks */}
+      {isCollectionCard && (
+        <>
+          <EditorDrawerSection title="Card">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">Card background</span>
+              <ColorSwatchRow
+                value={s.bgColorToken}
+                effectiveValue="background"
+                onChange={(value) => set({ bgColorToken: value })}
+              />
+            </div>
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Collection title">
+            <CollectionCardCaptionControls target="title" s={s} set={set} effectiveFontFamily={effectiveFontFamily} />
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Photo count">
+            <CollectionCardCaptionControls target="subtitle" s={s} set={set} effectiveFontFamily={effectiveFontFamily} />
+          </EditorDrawerSection>
+        </>
+      )}
+      {/* Typography drawer — blocks without dedicated per-target text controls */}
       {!isContactDetails && showTypography && (
         <EditorDrawerSection title="Typography">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -1590,12 +1681,22 @@ function GalleryLayoutControls({
   type,
   s,
   set,
+  p,
+  setProp,
 }: {
   type: string;
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
+  p?: Record<string, unknown>;
+  setProp?: (key: string, val: unknown) => void;
 }) {
   if (COLLECTION_GALLERY_BLOCKS.has(type)) {
+    const masonryUsesColumnLanes = type === "GalleryMasonry" && p?.masonryLayout !== "flow";
+    const activeMasonryColumns = s.galleryColumns ?? 3;
+    const masonryLoopEligible = masonryUsesColumnLanes && Array.from({ length: activeMasonryColumns }, (_, index) =>
+      Array.isArray(p?.[`column${index + 1}`])
+      && (p?.[`column${index + 1}`] as Array<{ type?: string }>).filter((item) => item.type === "Image").length >= 3,
+    ).every(Boolean);
     // GalleryGrid and GalleryMasonry: show Columns + Gap controls.
     // Values live in _style.galleryColumns / _style.galleryGap.
     // Effective defaults: columns=3, gap="normal" (shown with lighter "following theme" ring).
@@ -1607,14 +1708,23 @@ function GalleryLayoutControls({
             {COLUMNS_OPTIONS.map(({ value, label }) => {
               const isExplicit = s.galleryColumns === value;
               const isEffective = s.galleryColumns === undefined && value === 3;
+              const hasImagesInHiddenLane = masonryUsesColumnLanes && Array.from({ length: 4 - value }, (_, index) =>
+                Array.isArray(p?.[`column${value + index + 1}`])
+                && (p?.[`column${value + index + 1}`] as Array<{ type?: string }>).some((item) => item.type === "Image"),
+              ).some(Boolean);
               return (
                 <button
                   key={value}
                   type="button"
                   aria-pressed={isExplicit || isEffective}
-                  onClick={() => set({ galleryColumns: value })}
+                  disabled={hasImagesInHiddenLane}
+                  title={hasImagesInHiddenLane ? "Move images out of hidden columns before reducing the count." : undefined}
+                  onClick={() => {
+                    set({ galleryColumns: value });
+                    if (type === "GalleryMasonry" && p?.masonryLoop && setProp) setProp("masonryLoop", false);
+                  }}
                   className={cn(
-                    "inline-flex h-7 min-w-[2.5rem] cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    "inline-flex h-7 min-w-[2.5rem] cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45",
                     isExplicit && "bg-foreground text-background hover:bg-foreground",
                     isEffective && "border-foreground opacity-70"
                   )}
@@ -1650,21 +1760,82 @@ function GalleryLayoutControls({
           </div>
         </div>
         {type === "GalleryMasonry" && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Masonry stagger</span>
+          <div className="flex flex-col gap-2">
+            {masonryUsesColumnLanes ? (
+              <>
+                <span className="text-xs text-muted-foreground">Loop</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    aria-pressed={p?.masonryLoop === true}
+                    disabled={!masonryLoopEligible}
+                    title={!masonryLoopEligible ? "Add at least three images to every active column to enable the loop." : undefined}
+                    onClick={() => setProp?.("masonryLoop", true)}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45",
+                      p?.masonryLoop === true && "bg-foreground text-background hover:bg-foreground",
+                    )}
+                  >
+                    On
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={p?.masonryLoop !== true}
+                    onClick={() => setProp?.("masonryLoop", false)}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      p?.masonryLoop !== true && "bg-foreground text-background hover:bg-foreground",
+                    )}
+                  >
+                    Off
+                  </button>
+                </div>
+                {!masonryLoopEligible && <p className="text-xs text-muted-foreground">Add at least 3 images to each active column to enable the loop.</p>}
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">This saved masonry uses the retired flow format. New Masonry blocks use column lanes.</p>
+            )}
+            <span className="text-xs text-muted-foreground">Tile rhythm</span>
             <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                aria-pressed={!!s.galleryStagger}
-                onClick={() => set({ galleryStagger: s.galleryStagger ? undefined : true })}
-                className={cn(
-                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  s.galleryStagger && "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {s.galleryStagger ? "On" : "Off"}
-              </button>
+              {[
+                { value: "none", label: "Free" },
+                { value: "alternating", label: "Alternate" },
+              ].map(({ value, label }) => {
+                const active = (s.masonryHeightPattern ?? "none") === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => set({ masonryHeightPattern: value === "none" ? undefined : "alternating" })}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      active && "bg-foreground text-background hover:bg-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
+            {s.masonryHeightPattern === "alternating" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Odd columns</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <NumberInputRow label="Odd tile" value={s.masonryOddHeight} min={STYLE_LIMITS.masonryPatternHeight.min} max={STYLE_LIMITS.masonryPatternHeight.max} effectiveValue={260} onChange={(value) => set({ masonryOddHeight: value })} />
+                    <NumberInputRow label="Even tile" value={s.masonryEvenHeight} min={STYLE_LIMITS.masonryPatternHeight.min} max={STYLE_LIMITS.masonryPatternHeight.max} effectiveValue={360} onChange={(value) => set({ masonryEvenHeight: value })} />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Even columns</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <NumberInputRow label="Odd tile" value={s.masonryEvenColumnOddHeight} min={STYLE_LIMITS.masonryPatternHeight.min} max={STYLE_LIMITS.masonryPatternHeight.max} effectiveValue={360} onChange={(value) => set({ masonryEvenColumnOddHeight: value })} />
+                    <NumberInputRow label="Even tile" value={s.masonryEvenColumnEvenHeight} min={STYLE_LIMITS.masonryPatternHeight.min} max={STYLE_LIMITS.masonryPatternHeight.max} effectiveValue={260} onChange={(value) => set({ masonryEvenColumnEvenHeight: value })} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1749,7 +1920,7 @@ export function LayoutTabBody({
       return (
         <EditorDrawerGroup>
           <EditorDrawerSection title="Gallery">
-            <GalleryLayoutControls type={blockType} s={s} set={set} />
+            <GalleryLayoutControls type={blockType} s={s} set={set} p={p} setProp={setProp} />
           </EditorDrawerSection>
           <EditorDrawerSection title="Spacing">
             <PaddingControls s={s} set={set} effectivePad={effectivePad} />
@@ -1805,7 +1976,7 @@ export function LayoutTabBody({
     // Non-container gallery blocks: simple layout view with gallery controls only.
     return (
       <div className="flex flex-col gap-4 p-3">
-        <GalleryLayoutControls type={blockType} s={s} set={set} />
+        <GalleryLayoutControls type={blockType} s={s} set={set} p={p} setProp={setProp} />
       </div>
     );
   }
@@ -1813,6 +1984,34 @@ export function LayoutTabBody({
   // Image (F1): resizable, container-like leaf — width/height + colSpan/rowSpan
   // (when a Columns child) + the bgImageOpacity control (F4), gated on a picked
   // background image so it never shows next to an empty placeholder.
+  if (blockType === "CollectionCard") {
+    return (
+      <EditorDrawerGroup>
+        <EditorDrawerSection title="Spacing">
+          <PaddingControls s={s} set={set} />
+        </EditorDrawerSection>
+        <EditorDrawerSection title="Layout">
+          <IconRow
+            label="Block position"
+            value={s.selfAlign}
+            options={BLOCK_POSITION_OPTIONS}
+            onChange={(v) => set({ selfAlign: v })}
+          />
+          <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
+          <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
+          {isGridChild && (
+            <CellLayoutControls
+              s={s}
+              set={set}
+              parentColumnsCount={parentColumnsCount}
+              parentRowsCount={parentRowsCount}
+            />
+          )}
+        </EditorDrawerSection>
+      </EditorDrawerGroup>
+    );
+  }
+
   if (blockType === "Image") {
     return (
       <EditorDrawerGroup>

@@ -21,10 +21,11 @@ describe("blockCategories", () => {
     expect(MANUAL_BLOCK_KEYS).not.toContain("GalleryLandingPreset");
   });
 
-  it("keeps the manual gallery/featured primitives under Manual", () => {
-    for (const key of ["GalleryGrid", "GalleryMasonry", "FeaturedWork"]) {
+  it("keeps gallery layouts insertable but phases Highlights out of Manual", () => {
+    for (const key of ["GalleryGrid", "GalleryMasonry"]) {
       expect(MANUAL_BLOCK_KEYS).toContain(key);
     }
+    expect(MANUAL_BLOCK_KEYS).not.toContain("FeaturedWork");
   });
 
   // CollectionCard is the single-collection primitive: FeaturedWork owns a whole

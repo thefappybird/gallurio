@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fillBlockDefaults } from "./fillBlockDefaults";
+import { fillBlockDefaults, type BlockEntry } from "./fillBlockDefaults";
 import { SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
 
 describe("fillBlockDefaults", () => {
@@ -93,5 +93,58 @@ describe("fillBlockDefaults", () => {
     expect(props.imagePublicId).toBeUndefined();
     expect(props.fit).toBeUndefined();
     expect(props.alt).toBe("A photo");
+  });
+
+  it("migrates a saved Masonry flow zone into ordered column lanes", () => {
+    const images = Array.from({ length: 7 }, (_, index) => ({
+      type: "Image",
+      props: { id: `img-${index + 1}`, alt: `Image ${index + 1}` },
+    }));
+    const data = {
+      content: [{
+        type: "GalleryMasonry",
+        props: { id: "masonry-1", masonryLayout: "flow", _style: { galleryColumns: 3 } },
+      }],
+      zones: { "masonry-1:content": images },
+    };
+
+    const result = fillBlockDefaults(data);
+
+    expect(result.content[0].props.masonryLayout).toBe("columns");
+    expect(result.zones?.["masonry-1:content"]).toBeUndefined();
+    expect(result.zones?.["masonry-1:column1"].map((item) => item.props.id)).toEqual(["img-1", "img-4", "img-7"]);
+    expect(result.zones?.["masonry-1:column2"].map((item) => item.props.id)).toEqual(["img-2", "img-5"]);
+    expect(result.zones?.["masonry-1:column3"].map((item) => item.props.id)).toEqual(["img-3", "img-6"]);
+    expect(data.zones["masonry-1:content"]).toHaveLength(7);
+  });
+
+  it("migrates nested inline Masonry preset children before Puck expands their slots", () => {
+    const data = {
+      content: [{
+        type: "Container",
+        props: {
+          id: "section-1",
+          content: [{
+            type: "GalleryMasonry",
+            props: {
+              id: "masonry-2",
+              content: Array.from({ length: 4 }, (_, index) => ({
+                type: "Image",
+                props: { id: `inline-${index + 1}` },
+              })),
+              _style: { galleryColumns: 2 },
+            },
+          }],
+        },
+      }],
+    };
+
+    const result = fillBlockDefaults(data);
+    const masonry = (result.content[0].props.content as BlockEntry[])[0];
+
+    expect(masonry.props.masonryLayout).toBe("columns");
+    expect((masonry.props.column1 as BlockEntry[]).map((item) => item.props.id)).toEqual(["inline-1", "inline-3"]);
+    expect((masonry.props.column2 as BlockEntry[]).map((item) => item.props.id)).toEqual(["inline-2", "inline-4"]);
+    expect(masonry.props.content).toEqual([]);
   });
 });

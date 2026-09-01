@@ -55,6 +55,10 @@ export type GalleryColumns = (typeof GALLERY_COLUMN_OPTIONS)[number];
 export const GALLERY_GAP_OPTIONS = ["tight", "normal", "loose"] as const;
 export type GalleryGap = (typeof GALLERY_GAP_OPTIONS)[number];
 
+/** Optional automatic tile-height rhythm for editable Masonry image slots. */
+export const MASONRY_HEIGHT_PATTERNS = ["none", "alternating"] as const;
+export type MasonryHeightPattern = (typeof MASONRY_HEIGHT_PATTERNS)[number];
+
 export type TextAlign = "left" | "center" | "right";
 
 export type HeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
@@ -182,11 +186,32 @@ export type BlockStyle = {
   // used by flex/grid containers.
   galleryColumns?: GalleryColumns; // 2 | 3 | 4; effective default 3
   galleryGap?: GalleryGap; // "tight" | "normal" | "loose"; effective default "normal"
-  // GalleryMasonry-only: opt-in per-column vertical stagger so the layout reads
-  // as masonry even when every photo shares one aspect ratio. Default OFF —
-  // unset renders byte-identical to before this field existed (live pages ship
-  // this block, so parity matters). See buildMasonryStagger's own doc.
+  masonryHeightPattern?: MasonryHeightPattern;
+  /** Odd-column tile sequence. Kept on the original keys for saved-style compatibility. */
+  masonryOddHeight?: number;
+  masonryEvenHeight?: number;
+  /** Even-column tile sequence; defaults to the inverse of the odd columns. */
+  masonryEvenColumnOddHeight?: number;
+  masonryEvenColumnEvenHeight?: number;
+  /** @deprecated GalleryMasonry now always uses independent CSS columns. Existing values are ignored. */
   galleryStagger?: boolean;
+  // CollectionCard â€” independent caption typography. The card shell still uses
+  // the shared frame/background controls above; these target its two visible
+  // text nodes rather than applying an opaque, section-wide typography style.
+  collectionTitleBold?: boolean;
+  collectionTitleItalic?: boolean;
+  collectionTitleUnderline?: boolean;
+  collectionTitleAlign?: TextAlign;
+  collectionTitleFontFamily?: PortfolioFontSelection;
+  collectionTitleFontSize?: number;
+  collectionTitleColorToken?: StyleColorToken | string;
+  collectionSubtitleBold?: boolean;
+  collectionSubtitleItalic?: boolean;
+  collectionSubtitleUnderline?: boolean;
+  collectionSubtitleAlign?: TextAlign;
+  collectionSubtitleFontFamily?: PortfolioFontSelection;
+  collectionSubtitleFontSize?: number;
+  collectionSubtitleColorToken?: StyleColorToken | string;
   // Motion
   animation?: AnimationType; // entrance (plays when scrolled into view)
   animationDuration?: number; // ms
@@ -284,6 +309,7 @@ export const STYLE_LIMITS = {
   marginY: { min: 0, max: 200 },
   fontSize: { min: 10, max: 120 },
   gap: { min: 0, max: 96 },
+  masonryPatternHeight: { min: 80, max: 1200 },
 } as const;
 
 // Map a palette token to its CSS custom property.
@@ -525,6 +551,54 @@ export function resolveBlockAttrs(style?: BlockStyle | null): { "data-anim"?: An
   return attrs;
 }
 
+/** Styles the two text nodes rendered inside a CollectionCard's clickable tile.
+ * They intentionally use dedicated fields: the normal block typography applies
+ * to the card shell, while title and photo-count need independent overrides. */
+export function buildCollectionCardCaptionStyle(
+  style: BlockStyle | null | undefined,
+  target: "title" | "subtitle",
+): React.CSSProperties {
+  const title = target === "title";
+  const base: React.CSSProperties = title
+    ? {
+        margin: 0,
+        fontSize: "1rem",
+        fontWeight: 600,
+        lineHeight: 1.3,
+        color: "var(--pf-color-fg)",
+      }
+    : {
+        margin: "0.25rem 0 0",
+        fontSize: "0.875rem",
+        lineHeight: 1.4,
+        color: "color-mix(in srgb, var(--pf-color-fg) 70%, transparent)",
+        opacity: 0.75,
+      };
+  if (!style) return base;
+
+  const fontFamily = title ? style.collectionTitleFontFamily : style.collectionSubtitleFontFamily;
+  const fontSize = title ? style.collectionTitleFontSize : style.collectionSubtitleFontSize;
+  const colorToken = title ? style.collectionTitleColorToken : style.collectionSubtitleColorToken;
+  const bold = title ? style.collectionTitleBold : style.collectionSubtitleBold;
+  const italic = title ? style.collectionTitleItalic : style.collectionSubtitleItalic;
+  const underline = title ? style.collectionTitleUnderline : style.collectionSubtitleUnderline;
+  const align = title ? style.collectionTitleAlign : style.collectionSubtitleAlign;
+  const overrides: React.CSSProperties = {};
+
+  const resolvedFamily = fontFamilyValue(fontFamily);
+  if (resolvedFamily) overrides.fontFamily = resolvedFamily;
+  if (fontSize !== undefined) {
+    overrides.fontSize = `${clamp(fontSize, STYLE_LIMITS.fontSize.min, STYLE_LIMITS.fontSize.max)}px`;
+  }
+  if (colorToken) overrides.color = colorTokenToVar(colorToken) ?? undefined;
+  if (bold) overrides.fontWeight = 700;
+  if (italic) overrides.fontStyle = "italic";
+  if (underline) overrides.textDecoration = "underline";
+  if (align) overrides.textAlign = align;
+
+  return { ...base, ...overrides };
+}
+
 /**
  * Build the CSSProperties for a ContactDetails label (`<dt>`).
  * Applies sensible defaults (uppercase, muted) then layers the label* BlockStyle props on top.
@@ -560,14 +634,14 @@ export function buildContactLabelStyle(style?: BlockStyle | null): React.CSSProp
 
 /**
  * Build the CSSProperties for a ContactDetails value (`<dd>`).
- * Default color is accent so email/phone/socials show in the brand accent color.
+ * Default color is foreground so contact copy stays readable on every theme surface.
  * The value* BlockStyle props layer on top to override.
  */
 export function buildContactValueStyle(style?: BlockStyle | null): React.CSSProperties {
   const base: React.CSSProperties = {
     margin: 0,
     fontSize: "0.9375rem",
-    color: "var(--pf-color-accent)",
+    color: "var(--pf-color-fg)",
   };
   if (!style) return base;
   const overrides: React.CSSProperties = {};
@@ -591,13 +665,13 @@ export function buildContactValueStyle(style?: BlockStyle | null): React.CSSProp
 
 /**
  * Resolve the CSS color for social icons in a ContactDetails block.
- * Default: accent. Overridden by `_style.iconColorToken`.
+ * Default: foreground. Overridden by `_style.iconColorToken`.
  */
 export function buildContactIconColor(style?: BlockStyle | null): string {
   if (style?.iconColorToken) {
-    return colorTokenToVar(style.iconColorToken) ?? "var(--pf-color-accent)";
+    return colorTokenToVar(style.iconColorToken) ?? "var(--pf-color-fg)";
   }
-  return "var(--pf-color-accent)";
+  return "var(--pf-color-fg)";
 }
 
 /**
@@ -628,13 +702,11 @@ export function contactGridTemplate(columns: number | undefined): string {
 }
 
 /** The text-color token a Button actually renders when textColorToken is unset.
- *  Mirrors ButtonBlock's per-variant fallback so the editor control can show the
- *  same effective value. Display-only. */
+ *  Every variant uses the universal foreground so labels remain readable over
+ *  every built-in surface. Display-only. */
 export function effectiveButtonTextToken(
-  style: BlockStyle | undefined,
+  _style: BlockStyle | undefined,
 ): StyleColorToken | string {
-  if (style?.buttonStyle === "solid") return "background";
-  if (style?.buttonStyle === "soft" || style?.buttonStyle === "outline")
-    return style.buttonColorToken ?? "primary";
-  return "foreground"; // link / unset / legacy branch
+  void _style;
+  return "foreground";
 }

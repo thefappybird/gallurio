@@ -306,19 +306,19 @@ describe("default textColorToken — no materialization", () => {
 
 describe("effectiveButtonTextToken", () => {
   it("solid button style → 'background'", () => {
-    expect(effectiveButtonTextToken({ buttonStyle: "solid" })).toBe("background");
+    expect(effectiveButtonTextToken({ buttonStyle: "solid" })).toBe("foreground");
   });
 
   it("soft button with buttonColorToken set → returns that token", () => {
-    expect(effectiveButtonTextToken({ buttonStyle: "soft", buttonColorToken: "accent" })).toBe("accent");
+    expect(effectiveButtonTextToken({ buttonStyle: "soft", buttonColorToken: "accent" })).toBe("foreground");
   });
 
   it("soft button with no buttonColorToken → 'primary'", () => {
-    expect(effectiveButtonTextToken({ buttonStyle: "soft" })).toBe("primary");
+    expect(effectiveButtonTextToken({ buttonStyle: "soft" })).toBe("foreground");
   });
 
   it("outline button with no buttonColorToken → 'primary'", () => {
-    expect(effectiveButtonTextToken({ buttonStyle: "outline" })).toBe("primary");
+    expect(effectiveButtonTextToken({ buttonStyle: "outline" })).toBe("foreground");
   });
 
   it("link button ignores buttonColorToken and follows portfolio foreground", () => {
@@ -349,6 +349,14 @@ describe("BlockStyle — galleryStagger", () => {
     const withStagger = resolveBlockStyle({ galleryStagger: true });
     const without = resolveBlockStyle({});
     expect(withStagger).toEqual(without);
+  });
+});
+
+describe("BlockStyle — masonry tile rhythm", () => {
+  it("exposes bounded alternating-height values without emitting unrelated shared CSS", () => {
+    expect(resolveBlockStyle({ masonryHeightPattern: "alternating", masonryOddHeight: 220, masonryEvenHeight: 380, masonryEvenColumnOddHeight: 410, masonryEvenColumnEvenHeight: 250 })).toEqual(
+      resolveBlockStyle({}),
+    );
   });
 });
 

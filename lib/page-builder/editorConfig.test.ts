@@ -109,6 +109,18 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     expect(prodFields).not.toEqual(expect.arrayContaining(["heading", "description", "footer"]));
   });
 
+  it("allows only Image blocks plus the internal clone inside Masonry lanes", () => {
+    for (const config of [editorPuckConfig, puckConfig]) {
+      const gridField = config.components.GalleryGrid.fields?.content as { allow?: string[] } | undefined;
+      expect(gridField?.allow).toEqual(["Image"]);
+      expect((config.components.GalleryMasonry.fields?.content as { allow?: string[] })?.allow).toEqual(["Image"]);
+      for (const fieldName of ["column1", "column2", "column3", "column4"]) {
+        const field = (config.components.GalleryMasonry.fields as Record<string, unknown> | undefined)?.[fieldName] as { allow?: string[] } | undefined;
+        expect(field?.allow).toEqual(["Image", "MasonryClone"]);
+      }
+    }
+  });
+
   it("removes gallery copy inputs from GalleryMasonry field keys", () => {
     const editorFields = Object.keys(editorPuckConfig.components.GalleryMasonry.fields ?? {});
     const prodFields = Object.keys(puckConfig.components.GalleryMasonry.fields ?? {});
@@ -232,8 +244,30 @@ describe("editorPuckConfig.categories — 11 preset groups + manual", () => {
     }
     // ContainerAnchor is editor-only plumbing (insert: false in its permissions) —
     // it is registered but deliberately absent from every drawer category.
-    const insertable = Object.keys(editorPuckConfig.components).filter((k) => k !== "ContainerAnchor");
+    // FeaturedWork remains registered so a saved legacy block renders, but new
+    // pages compose collection cards inside Columns containers.
+    const insertable = Object.keys(editorPuckConfig.components).filter(
+      (k) => k !== "ContainerAnchor" && k !== "MasonryClone" && k !== "FeaturedWork",
+    );
     expect([...seen].sort()).toEqual(insertable.sort());
+  });
+
+  it("keeps deprecated Highlights registered but impossible to insert", () => {
+    expect(editorPuckConfig.components.FeaturedWork.permissions?.insert).toBe(false);
+    expect(Object.values(editorPuckConfig.categories ?? {}).flatMap((category) => category.components ?? []))
+      .not.toContain("FeaturedWork");
+  });
+
+  it("keeps MasonryClone internal and completely read-only", () => {
+    expect(editorPuckConfig.components.MasonryClone.permissions).toEqual({
+      drag: false,
+      delete: false,
+      duplicate: false,
+      insert: false,
+      edit: false,
+    });
+    expect(Object.values(editorPuckConfig.categories ?? {}).flatMap((category) => category.components ?? []))
+      .not.toContain("MasonryClone");
   });
 
   it("only the hero group starts expanded — 33 items all open is unusable", () => {

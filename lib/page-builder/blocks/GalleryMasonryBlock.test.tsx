@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import { GalleryMasonryBlock, galleryMasonryDefaultProps, galleryStaggerOffsetPx } from "./GalleryMasonryBlock";
+import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./GalleryMasonryBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
+import type { SlotComponent } from "@measured/puck";
 import { puckConfig } from "@/lib/page-builder/config";
 
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
@@ -130,65 +131,90 @@ describe("GalleryMasonryBlock — CLS / dimension reservation", () => {
   });
 });
 
-describe("GalleryMasonryBlock — galleryStagger (opt-in, default off)", () => {
-  it("unset stagger renders the pre-existing column-count layout unchanged", () => {
+describe("GalleryMasonryBlock — true masonry flow", () => {
+  it("uses independent CSS columns", () => {
     const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(3) }));
     const col = container.querySelector(".pf-masonry") as HTMLElement;
     expect(col.style.display).toBe("");
     expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 3)");
     const figure = container.querySelector("figure") as HTMLElement;
-    // `margin: 0` shorthand (unchanged from before this field existed) expands
-    // marginTop to "0px" in the CSSOM — not the stagger mechanism.
     expect(figure.style.marginTop).toBe("0px");
     expect(figure.style.breakInside).toBe("avoid");
+    expect(figure.style.display).toBe("inline-block");
+    expect(figure.style.width).toBe("100%");
   });
 
-  it("explicit galleryStagger:false also renders the column-count layout", () => {
+  it("ignores a saved legacy galleryStagger value", () => {
     const { container } = render(
-      GalleryMasonryBlock({ ...base, images: imgs(2), _style: { galleryStagger: false } })
+      GalleryMasonryBlock({ ...base, images: imgs(2), _style: { galleryStagger: true } })
     );
     const col = container.querySelector(".pf-masonry") as HTMLElement;
     expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 3)");
   });
 
-  it("galleryStagger:true switches the container to a responsive grid", () => {
-    const { container } = render(
-      GalleryMasonryBlock({ ...base, images: imgs(3), _style: { galleryStagger: true, galleryColumns: 3 } })
-    );
-    const col = container.querySelector(".pf-masonry") as HTMLElement;
-    expect(col.style.display).toBe("grid");
-    expect(col.style.gridTemplateColumns).toBe("repeat(var(--pf-masonry-cols, 3), minmax(0, 1fr))");
-  });
-
-  it("galleryStagger:true gives each figure a deterministic per-column marginTop that differs from its row neighbor", () => {
-    const { container } = render(
-      GalleryMasonryBlock({ ...base, images: imgs(3), _style: { galleryStagger: true, galleryColumns: 3 } })
-    );
-    const figures = Array.from(container.querySelectorAll("figure")) as HTMLElement[];
-    expect(figures).toHaveLength(3);
-    expect(figures[0].style.marginTop).toBe(`${galleryStaggerOffsetPx(0, 3)}px`);
-    expect(figures[1].style.marginTop).toBe(`${galleryStaggerOffsetPx(1, 3)}px`);
-    expect(figures[2].style.marginTop).toBe(`${galleryStaggerOffsetPx(2, 3)}px`);
-    // Adjacent columns in the same row must differ (the whole point of stagger).
-    expect(figures[0].style.marginTop).not.toBe(figures[1].style.marginTop);
-    expect(figures[1].style.marginTop).not.toBe(figures[2].style.marginTop);
-  });
-
-  it("offset cycle is a pure function of index/columns — stable across renders (SSR/hydration safe)", () => {
-    expect(galleryStaggerOffsetPx(0, 3)).toBe(galleryStaggerOffsetPx(3, 3));
-    expect(galleryStaggerOffsetPx(1, 3)).toBe(galleryStaggerOffsetPx(4, 3));
-  });
-
-  it("empty state is unaffected by galleryStagger", () => {
+  it("keeps the empty state when legacy galleryStagger data is present", () => {
     render(GalleryMasonryBlock({ ...base, images: [], _style: { galleryStagger: true } }));
     expect(document.querySelector("[data-block='gallery-masonry'][data-empty='true']")).toBeInTheDocument();
   });
 
-  it("lightbox still opens when galleryStagger is on", () => {
+  it("keeps the lightbox working when legacy galleryStagger data is present", () => {
     render(GalleryMasonryBlock({ ...base, images: imgs(2), _style: { galleryStagger: true } }));
     fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
+  });
+
+  it("applies configured alternating heights to every editable Image slot child", () => {
+    const slot: SlotComponent = () => <div data-testid="masonry-slot-child" />;
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        images: [],
+        content: slot,
+        _style: { masonryHeightPattern: "alternating", masonryOddHeight: 220, masonryEvenHeight: 380 },
+      }),
+    );
+
+    const rules = container.querySelector("style")?.textContent ?? "";
+    expect(rules).toContain(":nth-child(odd){height:220px !important");
+    expect(rules).toContain(":nth-child(even){height:380px !important");
+  });
+
+  it("uses different alternate rhythms for odd/even column lanes", () => {
+    const lane = (name: string): SlotComponent => {
+      function MasonryLaneSlot(props: NonNullable<Parameters<SlotComponent>[0]> = {}) {
+        return <div className={props.className} data-testid={name}><div /><div /><div /></div>;
+      }
+      return MasonryLaneSlot;
+    };
+    const { container } = render(
+      GalleryMasonryBlock({
+        ...base,
+        id: "loop-lanes",
+        images: [],
+        masonryLayout: "columns",
+        column1: lane("lane-1"),
+        column2: lane("lane-2"),
+        column3: lane("lane-3"),
+        _style: {
+          galleryColumns: 3,
+          masonryHeightPattern: "alternating",
+          masonryOddHeight: 220,
+          masonryEvenHeight: 380,
+          masonryEvenColumnOddHeight: 410,
+          masonryEvenColumnEvenHeight: 250,
+        },
+      } as Parameters<typeof GalleryMasonryBlock>[0]),
+    );
+
+    const lanes = container.querySelectorAll("[data-masonry-column]");
+    expect(lanes).toHaveLength(3);
+    expect(screen.getAllByTestId(/lane-/)).toHaveLength(3);
+    const rules = container.querySelector("style")?.textContent ?? "";
+    expect(rules).toContain("pf-masonry-loop-lanes-column-1");
+    expect(rules).toContain("height:220px !important");
+    expect(rules).toContain("pf-masonry-loop-lanes-column-2");
+    expect(rules).toContain("height:410px !important");
   });
 });
 
