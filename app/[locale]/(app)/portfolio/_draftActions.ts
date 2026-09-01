@@ -12,6 +12,8 @@ import { demoImportSchema } from "@/lib/validators/demoImport";
 import { draftCapForPlan } from "@/lib/page-builder/drafts";
 import type { PuckData } from "@/lib/page-builder/types";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
+import { normalizeChrome, findChrome } from "@/lib/page-builder/chromeSync";
+import type { Data } from "@measured/puck";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { getTemplate } from "@/lib/page-builder/templates";
 import { deleteImage, verifyImageOwnership, updateImageMetadata, imageDeliveryUrl, DEMO_UPLOAD_SUBFOLDER } from "@/lib/storage/cloudflareImages";
@@ -236,7 +238,10 @@ export type SeedTemplateResult =
         data: { home: PuckData; gallery: PuckData };
         brandKit: unknown;
         contact: unknown;
-        header: unknown;
+        // Optional: template.defaultHeader no longer exists (header now seeds
+        // as a Navigation block inside seedData()). Kept optional, not deleted,
+        // so callers still migrating off header-based state keep compiling.
+        header?: unknown;
         collectionsPopup: unknown;
       };
     }
@@ -270,7 +275,6 @@ export async function seedTemplateAction(templateId: unknown): Promise<SeedTempl
       },
       brandKit: template.defaultBrandKit,
       contact: template.defaultContact,
-      header: template.defaultHeader,
       collectionsPopup: template.defaultCollectionsPopup,
     },
   };
@@ -291,22 +295,40 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
         "publicPage.settingsDraft": 1,
         "publicPage.seo.ogImageAssetId": 1,
         "publicPage.siteIcon.assetId": 1,
-        "publicPage.header.logoAssetId": 1,
       })
       .lean(),
   ]);
   if (!doc) return { error: "draft_not_found" };
 
-  // Captured before the promote-write below, so we can delete a live
-  // og/icon/logo image that publish is about to supersede — but only if it
-  // was actually live.
+  // Captured before the write below, so we can delete a live og/icon image
+  // that publish is about to supersede — but only if it was actually live.
   const liveOgAssetId = workspace?.publicPage?.seo?.ogImageAssetId || undefined;
   const liveSiteIconAssetId = workspace?.publicPage?.siteIcon?.assetId || undefined;
-  const liveLogoAssetId = workspace?.publicPage?.header?.logoAssetId || undefined;
 
   const wsIdStr = String(workspaceId);
-  const home = (doc.data?.home as PuckData | null) ?? null;
-  const gallery = (doc.data?.gallery as PuckData | null) ?? null;
+  let home = (doc.data?.home as PuckData | null) ?? null;
+  let gallery = (doc.data?.gallery as PuckData | null) ?? null;
+  // Guarantee the nav invariant (one Navigation block, at index 0) on both
+  // zones before they ever reach the live public page — belt-and-suspenders
+  // against a client posting a zone with a displaced/duplicated nav.
+  // normalizeChrome cannot invent a Navigation out of a zone that has none
+  // (that requires template/config data it doesn't have); a zone that
+  // genuinely has none is logged and published as-is rather than blocked —
+  // this can only happen from a pre-migration/legacy draft or a client bug,
+  // and rejecting publish outright would strand an owner on a state they
+  // have no in-app way to fix yet.
+  if (home) {
+    home = normalizeChrome(home as unknown as Data) as unknown as PuckData;
+    if (!findChrome(home as unknown as Data, "nav")) {
+      console.warn("[portfolio] publish: home zone has no Navigation block", wsIdStr);
+    }
+  }
+  if (gallery) {
+    gallery = normalizeChrome(gallery as unknown as Data) as unknown as PuckData;
+    if (!findChrome(gallery as unknown as Data, "nav")) {
+      console.warn("[portfolio] publish: gallery zone has no Navigation block", wsIdStr);
+    }
+  }
 
   const set: Record<string, unknown> = {};
   set["publicPage.data.home"] = home
@@ -320,22 +342,10 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   // never overwrite live published config with null.
   if (doc.brandKit) set["publicPage.brandKit"] = doc.brandKit;
   if (doc.contact) set["publicPage.contact"] = doc.contact;
-  // The staged settings-page logo (if any) is the source of truth for the
-  // published header logo, independent of whether the draft snapshot itself
-  // carries a header object — a null/migrated draft.header must not cause
-  // publish to skip promoting a staged logo (or clearing a removed one), and
-  // must not leave the leak-safe delete below computing against a value that
-  // was never actually written.
-  const settingsDraftLogo = workspace?.publicPage?.settingsDraft?.logo;
-  if (doc.header || settingsDraftLogo) {
-    set["publicPage.header"] = settingsDraftLogo
-      ? {
-          ...(doc.header ?? {}),
-          logoUrl: settingsDraftLogo.assetId ? settingsDraftLogo.url ?? "" : "",
-          logoAssetId: settingsDraftLogo.assetId ?? "",
-        }
-      : doc.header;
-  }
+  // publicPage.header is DEPRECATED (read-only legacy migration source — see
+  // Workspace.ts). Publish no longer writes it; the header now lives inside
+  // the zone data above as a Navigation block, and the settings-page logo
+  // control that used to feed this promotion is gone.
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
   set["publicPage.formLocale"] = doc.formLocale ?? "";
   set["publicPage.formDir"] = doc.formDir ?? "";
@@ -388,15 +398,6 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
       await deleteImage(liveSiteIconAssetId);
     } catch (err) {
       console.warn("[portfolio] failed to delete superseded live site icon asset", err);
-    }
-  }
-  const newLogoAssetId =
-    (set["publicPage.header"] as { logoAssetId?: string } | undefined)?.logoAssetId || undefined;
-  if (liveLogoAssetId && liveLogoAssetId !== newLogoAssetId) {
-    try {
-      await deleteImage(liveLogoAssetId);
-    } catch (err) {
-      console.warn("[portfolio] failed to delete superseded live logo asset", err);
     }
   }
 

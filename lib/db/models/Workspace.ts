@@ -52,8 +52,11 @@ const publicPageSettingsDraftSchema = new Schema(
   {
     seoTitle: { type: String, default: "" },
     seoDescription: { type: String, default: "" },
-    // Portfolio header logo, staged here by the story-prompt wizard / future
-    // settings UI until Publish promotes it into live publicPage.header.
+    // DEPRECATED: no code path writes this anymore (the settings-page logo
+    // control and its publish-time promotion into publicPage.header were
+    // removed). Read-only legacy, kept only as a migration source for
+    // load-time auto-migration into the Navigation block. Remove once that
+    // migration has run for every workspace.
     logo: {
       url: { type: String, default: "" },
       assetId: { type: String, default: "" },
@@ -230,8 +233,11 @@ const workspaceSchema = new Schema(
         closeButtonOpacity: { type: Number, default: 0 },
         closeButtonBgColorToken: { type: String, default: "" },
       },
-      // Configurable chrome for the public portfolio navigation header.
-      // All fields optional — header falls back to brand-kit values.
+      // DEPRECATED: the header now lives as a Navigation block inside
+      // publicPage.data (home/gallery zones). No code path writes this
+      // subdocument anymore — read-only legacy, kept only as the source
+      // load-time auto-migration reads into the new Navigation block on
+      // editor open. Remove once that migration has run for every workspace.
       header: {
         brandText: { type: String },
         logoUrl: { type: String, default: "" },

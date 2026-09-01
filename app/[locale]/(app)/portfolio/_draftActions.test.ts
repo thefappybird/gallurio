@@ -283,38 +283,6 @@ describe("publishDraftAction", () => {
     expect(ws!.publicPage!.seo?.keywords).toEqual(["settings", "override"]);
   });
 
-  it("settingsDraft.logo overrides the draft's header logo when publishing", async () => {
-    await Workspace.create({
-      _id: mockCtx.workspace._id,
-      slug: "studio-aurora",
-      name: "Studio Aurora",
-      ownerUserId: "user_owner",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
-      currency: "PHP",
-      plan: "free",
-      publicPage: {
-        data: { home: null, gallery: null },
-        latestVersion: 0,
-        settingsDraft: {
-          logo: { url: "https://imagedelivery.net/h/settings-logo/public", assetId: "settings-logo-1" },
-        },
-      },
-    });
-    const draft = await PortfolioDraft.create({
-      workspaceId: mockCtx.workspace._id,
-      name: "Logo Draft",
-      ...snapshot,
-      header: { logoUrl: "https://imagedelivery.net/h/draft-logo/public", logoAssetId: "draft-logo-1" },
-    });
-
-    const res = await publishDraftAction(String(draft._id));
-    expect(res).toEqual({ ok: true });
-
-    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
-    expect(ws!.publicPage!.header?.logoUrl).toBe("https://imagedelivery.net/h/settings-logo/public");
-    expect(ws!.publicPage!.header?.logoAssetId).toBe("settings-logo-1");
-  });
-
   it("deletes the superseded live OG image when publish promotes a different one", async () => {
     await Workspace.create({
       _id: mockCtx.workspace._id,
@@ -373,7 +341,7 @@ describe("publishDraftAction", () => {
     expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-icon-1");
   });
 
-  it("propagates the staged header logo on publish even when the draft's own header is null, without wrongly deleting the still-referenced live logo", async () => {
+  it("no longer promotes settingsDraft.logo into publicPage.header (write path removed)", async () => {
     await Workspace.create({
       _id: mockCtx.workspace._id,
       slug: "studio-aurora",
@@ -385,48 +353,14 @@ describe("publishDraftAction", () => {
       publicPage: {
         data: { home: null, gallery: null },
         latestVersion: 0,
-        header: { logoUrl: "https://imagedelivery.net/h/live-logo/public", logoAssetId: "live-logo-1" },
         settingsDraft: {
-          logo: { url: "https://imagedelivery.net/h/live-logo/public", assetId: "live-logo-1" },
+          logo: { url: "https://imagedelivery.net/h/settings-logo/public", assetId: "settings-logo-1" },
         },
       },
     });
     const draft = await PortfolioDraft.create({
       workspaceId: mockCtx.workspace._id,
-      name: "Null Header Draft",
-      ...snapshot,
-      header: null,
-    });
-
-    const res = await publishDraftAction(String(draft._id));
-    expect(res).toEqual({ ok: true });
-
-    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
-    expect(ws!.publicPage!.header?.logoAssetId).toBe("live-logo-1");
-    expect(vi.mocked(deleteImage)).not.toHaveBeenCalledWith("live-logo-1");
-  });
-
-  it("clears the header logo on publish when settingsDraft.logo was explicitly removed (assetId cleared to empty)", async () => {
-    await Workspace.create({
-      _id: mockCtx.workspace._id,
-      slug: "studio-aurora",
-      name: "Studio Aurora",
-      ownerUserId: "user_owner",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
-      currency: "PHP",
-      plan: "free",
-      publicPage: {
-        data: { home: null, gallery: null },
-        latestVersion: 0,
-        header: { logoUrl: "https://imagedelivery.net/h/live-logo/public", logoAssetId: "live-logo-1" },
-        settingsDraft: {
-          logo: { url: "", assetId: "" },
-        },
-      },
-    });
-    const draft = await PortfolioDraft.create({
-      workspaceId: mockCtx.workspace._id,
-      name: "Removed Logo Draft",
+      name: "Logo Draft",
       ...snapshot,
       header: { logoUrl: "https://imagedelivery.net/h/draft-logo/public", logoAssetId: "draft-logo-1" },
     });
@@ -435,12 +369,12 @@ describe("publishDraftAction", () => {
     expect(res).toEqual({ ok: true });
 
     const ws = await Workspace.findById(mockCtx.workspace._id).lean();
-    expect(ws!.publicPage!.header?.logoUrl).toBe("");
-    expect(ws!.publicPage!.header?.logoAssetId).toBe("");
-    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-logo-1");
+    // publicPage.header is deprecated/read-only now — publish must leave it untouched.
+    expect(ws!.publicPage!.header?.logoAssetId ?? "").toBe("");
+    expect(vi.mocked(deleteImage)).not.toHaveBeenCalled();
   });
 
-  it("deletes the superseded live logo when settingsDraft.logo promotes a different one", async () => {
+  it("normalizes a displaced Navigation block back to index 0 in both zones before writing", async () => {
     await Workspace.create({
       _id: mockCtx.workspace._id,
       slug: "studio-aurora",
@@ -449,25 +383,69 @@ describe("publishDraftAction", () => {
       clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
       currency: "PHP",
       plan: "free",
-      publicPage: {
-        data: { home: null, gallery: null },
-        latestVersion: 0,
-        header: { logoAssetId: "live-logo-1" },
-        settingsDraft: {
-          logo: { url: "https://imagedelivery.net/h/new-logo/public", assetId: "new-logo-1" },
-        },
-      },
+      publicPage: { data: { home: null, gallery: null }, latestVersion: 0 },
     });
     const draft = await PortfolioDraft.create({
       workspaceId: mockCtx.workspace._id,
-      name: "Logo Draft 2",
+      name: "Displaced Nav Draft",
       ...snapshot,
-      header: { logoUrl: "https://imagedelivery.net/h/draft-logo/public", logoAssetId: "draft-logo-1" },
+      data: {
+        home: {
+          content: [
+            { type: "HeroPreset", props: { id: "h" } },
+            { type: "Navigation", props: { id: "n", _chrome: "nav" } },
+          ],
+          root: {},
+        },
+        gallery: {
+          content: [{ type: "Navigation", props: { id: "n2", _chrome: "nav" } }],
+          root: {},
+        },
+      },
     });
 
     const res = await publishDraftAction(String(draft._id));
     expect(res).toEqual({ ok: true });
-    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-logo-1");
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    const home = ws!.publicPage!.data!.home as { content: { type: string; props: { id: string } }[] };
+    expect(home.content[0].type).toBe("Navigation");
+    expect(home.content[0].props.id).toBe("n");
+  });
+
+  it("publishes a zone with no Navigation block at all rather than blocking (logged, not silent)", async () => {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: { data: { home: null, gallery: null }, latestVersion: 0 },
+    });
+    const draft = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "No Nav Draft",
+      ...snapshot,
+      data: {
+        home: { content: [{ type: "HeroPreset", props: { id: "h" } }], root: {} },
+        gallery: { content: [], root: {} },
+      },
+    });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    const home = ws!.publicPage!.data!.home as { content: unknown[] };
+    expect(home.content).toEqual([{ type: "HeroPreset", props: { id: "h" } }]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("no Navigation block"),
+      expect.any(String)
+    );
+    warnSpy.mockRestore();
   });
 });
 

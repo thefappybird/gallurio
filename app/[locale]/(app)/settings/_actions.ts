@@ -214,12 +214,6 @@ export async function updatePublicPageSettingsAction(
     if (!owned) return { error: "invalid_og_image" };
   }
 
-  const newLogoAssetId = parsed.data.logoAssetId || undefined;
-  if (newLogoAssetId) {
-    const owned = await verifyImageOwnership(newLogoAssetId, workspaceId);
-    if (!owned) return { error: "invalid_logo" };
-  }
-
   // Saved settings live in a workspace-owned draft buffer so this page stays
   // stable across portfolio draft switches without changing the public site
   // until Publish is explicitly triggered. Also read the live published asset
@@ -230,10 +224,8 @@ export async function updatePublicPageSettingsAction(
     {
       "publicPage.settingsDraft.seo.ogImageAssetId": 1,
       "publicPage.settingsDraft.siteIcon.assetId": 1,
-      "publicPage.settingsDraft.logo.assetId": 1,
       "publicPage.seo.ogImageAssetId": 1,
       "publicPage.siteIcon.assetId": 1,
-      "publicPage.header.logoAssetId": 1,
     },
   ).lean();
   const oldOgAssetId =
@@ -242,8 +234,6 @@ export async function updatePublicPageSettingsAction(
   const oldSiteIconAssetId =
     currentAssets?.publicPage?.settingsDraft?.siteIcon?.assetId || undefined;
   const liveSiteIconAssetId = currentAssets?.publicPage?.siteIcon?.assetId || undefined;
-  const oldLogoAssetId = currentAssets?.publicPage?.settingsDraft?.logo?.assetId || undefined;
-  const liveLogoAssetId = currentAssets?.publicPage?.header?.logoAssetId || undefined;
 
   const seoFields: Record<string, unknown> = {};
   if (parsed.data.seo !== undefined) {
@@ -268,8 +258,6 @@ export async function updatePublicPageSettingsAction(
         "publicPage.settingsDraft.seoDescription": parsed.data.seoDescription ?? "",
         "publicPage.settingsDraft.siteIcon.url": parsed.data.siteIconUrl ?? "",
         "publicPage.settingsDraft.siteIcon.assetId": newSiteIconAssetId ?? "",
-        "publicPage.settingsDraft.logo.url": parsed.data.logoUrl ?? "",
-        "publicPage.settingsDraft.logo.assetId": newLogoAssetId ?? "",
         ...seoFields,
       },
     },
@@ -293,13 +281,6 @@ export async function updatePublicPageSettingsAction(
       await deleteImage(oldSiteIconAssetId);
     } catch (err) {
       console.warn("[settings] failed to delete old site icon asset", err);
-    }
-  }
-  if (oldLogoAssetId && oldLogoAssetId !== newLogoAssetId && oldLogoAssetId !== liveLogoAssetId) {
-    try {
-      await deleteImage(oldLogoAssetId);
-    } catch (err) {
-      console.warn("[settings] failed to delete old logo asset", err);
     }
   }
 
