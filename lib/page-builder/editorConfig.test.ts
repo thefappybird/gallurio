@@ -5,6 +5,7 @@ import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate 
 import { puckConfig } from "./config";
 import { ChromeSyncContext, type ChromeSyncCtx } from "./chromeSyncContext";
 import { SECTION_PRESETS, SECTION_PRESET_KEYS, PRESET_GROUPS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+import { MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
@@ -249,40 +250,50 @@ describe("GalleryLandingPreset carousel hint", () => {
   });
 });
 
-describe("editorPuckConfig.categories — 12 preset groups + manual", () => {
-  it("has exactly the 12 group ids plus manual, and lists every registered component exactly once", () => {
-    const categories = editorPuckConfig.categories as Record<string, { title?: string; components?: string[] }>;
-    const expectedGroupIds = PRESET_GROUPS.map((g) => g.id);
-    expect(Object.keys(categories).sort()).toEqual([...expectedGroupIds, "manual"].sort());
+// Puck 0.20's `categories` config is flat and can't nest, so the editor
+// drawer's two-level tree (Preset blocks > group > variant, plus a flat
+// Manual blocks sibling) is hand-built by EditorShell's PresetBlocksDrawer
+// straight from PRESET_GROUPS / MANUAL_BLOCK_KEYS — editorPuckConfig carries
+// no `categories` key. These tests guard the two source lists themselves;
+// the rendered tree (structure, default-open state, demo filtering) is
+// covered in EditorShell.test.tsx.
+describe("PRESET_GROUPS + MANUAL_BLOCK_KEYS — the drawer's two source lists", () => {
+  it("has exactly the 12 group ids, and together with MANUAL_BLOCK_KEYS lists every registered component exactly once", () => {
+    expect(PRESET_GROUPS.map((g) => g.id)).toHaveLength(12);
 
     const seen = new Set<string>();
-    for (const [catId, cat] of Object.entries(categories)) {
-      for (const componentKey of cat.components ?? []) {
-        expect(seen.has(componentKey), `${componentKey} listed in more than one category (dup at ${catId})`).toBe(false);
+    for (const group of PRESET_GROUPS) {
+      for (const componentKey of group.keys) {
+        expect(seen.has(componentKey), `${componentKey} listed in more than one group`).toBe(false);
         seen.add(componentKey);
-        expect(editorPuckConfig.components, `${componentKey} listed in ${catId} but not registered`).toHaveProperty(componentKey);
+        expect(editorPuckConfig.components, `${componentKey} listed in ${group.id} but not registered`).toHaveProperty(componentKey);
       }
     }
+    for (const componentKey of MANUAL_BLOCK_KEYS) {
+      expect(seen.has(componentKey), `${componentKey} listed in both a preset group and manual`).toBe(false);
+      seen.add(componentKey);
+      expect(editorPuckConfig.components, `${componentKey} listed in manual but not registered`).toHaveProperty(componentKey);
+    }
     // ContainerAnchor is editor-only plumbing (insert: false in its permissions) —
-    // it is registered but deliberately absent from every drawer category.
+    // it is registered but deliberately absent from every drawer list.
     // FeaturedWork remains registered so a saved legacy block renders, but new
     // pages compose collection cards inside Columns containers. Navigation (the
     // base type) is likewise registered-but-undrawered — only its 3 `nav` group
     // presets (NavBorderedPreset etc.) are drawer-insertable; the base type is
-    // auto-injected instead (a later EditorShell wave wires that injection).
+    // auto-injected instead.
     const insertable = Object.keys(editorPuckConfig.components).filter(
       (k) => k !== "ContainerAnchor" && k !== "MasonryClone" && k !== "FeaturedWork" && k !== "Navigation",
     );
     expect([...seen].sort()).toEqual(insertable.sort());
   });
 
-  it("keeps deprecated Highlights registered but impossible to insert", () => {
+  it("keeps deprecated Highlights registered but impossible to insert, and out of both drawer lists", () => {
     expect(editorPuckConfig.components.FeaturedWork.permissions?.insert).toBe(false);
-    expect(Object.values(editorPuckConfig.categories ?? {}).flatMap((category) => category.components ?? []))
-      .not.toContain("FeaturedWork");
+    const allListed = [...PRESET_GROUPS.flatMap((g) => g.keys), ...MANUAL_BLOCK_KEYS];
+    expect(allListed).not.toContain("FeaturedWork");
   });
 
-  it("keeps MasonryClone internal and completely read-only", () => {
+  it("keeps MasonryClone internal and completely read-only, and out of both drawer lists", () => {
     expect(editorPuckConfig.components.MasonryClone.permissions).toEqual({
       drag: false,
       delete: false,
@@ -290,21 +301,8 @@ describe("editorPuckConfig.categories — 12 preset groups + manual", () => {
       insert: false,
       edit: false,
     });
-    expect(Object.values(editorPuckConfig.categories ?? {}).flatMap((category) => category.components ?? []))
-      .not.toContain("MasonryClone");
-  });
-
-  it("only the nav group starts expanded — 36 items all open is unusable", () => {
-    const categories = editorPuckConfig.categories as Record<string, { defaultExpanded?: boolean }>;
-    expect(categories.nav?.defaultExpanded).toBe(true);
-    for (const id of PRESET_GROUPS.map((g) => g.id).filter((id) => id !== "nav")) {
-      // Explicitly `false`, not merely absent: Puck renders a category with no
-      // `defaultExpanded` as EXPANDED, so omitting the key opens all 11 other
-      // groups. Verified in the browser — every group came up open until this
-      // was pinned.
-      expect(categories[id]?.defaultExpanded, id).toBe(false);
-    }
-    expect(categories.manual?.defaultExpanded).toBe(false);
+    const allListed = [...PRESET_GROUPS.flatMap((g) => g.keys), ...MANUAL_BLOCK_KEYS];
+    expect(allListed).not.toContain("MasonryClone");
   });
 });
 

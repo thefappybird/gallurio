@@ -2,8 +2,9 @@
 
 import "@measured/puck/puck.css";
 import "./editor.css";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Puck, type Config, type Data } from "@measured/puck";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { Puck, Drawer, type Config, type Data } from "@measured/puck";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { isEditableTarget, isSelfManagedComboboxTarget } from "@/lib/page-builder/editableTarget";
@@ -36,10 +37,10 @@ import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/li
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
-import { createEditorConfig } from "@/lib/page-builder/editorConfig";
+import { createEditorConfig, type PuckTranslate } from "@/lib/page-builder/editorConfig";
 import { reconcileContainerAnchors } from "@/lib/page-builder/containerAnchorReconciler";
 import { reconcileMasonryClones } from "@/lib/page-builder/masonryCloneReconciler";
-import { PRESET_BLOCK_KEYS } from "@/lib/page-builder/blockCategories";
+import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "@/lib/page-builder/blockCategories";
 import {
   findChrome,
   syncChrome,
@@ -53,6 +54,7 @@ import { ChromeSyncContext, type ChromeSyncCtx } from "@/lib/page-builder/chrome
 import {
   SECTION_PRESETS,
   COLLECTION_PRESET_KEYS,
+  PRESET_GROUPS,
   type SectionPresetKey,
   type SectionPresetEntry,
 } from "@/lib/page-builder/blocks/sectionPresets";
@@ -709,45 +711,106 @@ function withPendingLogo(
   return { ...zone, content: nextContent };
 }
 
-type DrawerCategories = NonNullable<ReturnType<typeof createEditorConfig>["categories"]>;
-
 // Demo mode has no equivalent of the real (auth-gated) collections picker that
 // FeaturedWork's Content tab needs (MultiCollectionControl), and the
 // CollectionCard manual block shares that same dependency. Registry-derived
 // (COLLECTION_PRESET_KEYS), not a hand-picked literal list, so a newly added
-// collection-dependent preset can't slip through.
+// collection-dependent preset can't slip through. Filtered directly against
+// the drawer's rendered lists below (Puck 0.20's `categories` config is gone —
+// see PresetBlocksDrawer).
 const DEMO_HIDDEN_COMPONENT_KEYS: ReadonlySet<string> = new Set([
   ...COLLECTION_PRESET_KEYS,
   "FeaturedWork",
   "CollectionCard",
 ]);
 
-/**
- * Strips every collection-dependent preset variant plus the FeaturedWork /
- * CollectionCard manual blocks from EVERY drawer category (iterated, no
- * category named by hand) when demoMode is on. Pre-existing FeaturedWork /
- * CollectionCard blocks from a seeded template still render — StyleToolkitField
- * shows a disabled explanatory message instead of the real collections picker
- * for those. No-op (same reference) outside demo mode.
- */
-export function filterCategoriesForDemo(categories: DrawerCategories, demoMode: boolean): DrawerCategories {
-  if (!demoMode) return categories;
-  const result: DrawerCategories = { ...categories };
-  for (const id of Object.keys(result)) {
-    const key = id as keyof DrawerCategories;
-    const category = result[key];
-    if (!category?.components) continue;
-    result[key] = {
-      ...category,
-      components: category.components.filter((componentKey) => !DEMO_HIDDEN_COMPONENT_KEYS.has(componentKey)),
-    };
-  }
-  return result;
-}
-
 /** Section-preset entry for a drawer item's component name; undefined for manual blocks. */
 export function resolveDrawerItemPreset(name: string): SectionPresetEntry | undefined {
   return SECTION_PRESETS[name as SectionPresetKey];
+}
+
+/**
+ * Renders `overrides.drawerItem` (or `overrides.componentItem`) for a raw
+ * `Drawer.Item`. `Drawer`/`Drawer.Item` exported from `@measured/puck` are
+ * unwired primitives — only Puck's own default `ComponentList.Item` (internal,
+ * not exported) applies the `drawerItem` override automatically. Since
+ * PresetBlocksDrawer builds every `Drawer.Item` itself, it passes this render
+ * function in explicitly as each item's `children` render-prop.
+ */
+type DrawerItemRenderer = (props: { name: string; children: ReactNode }) => ReactElement;
+
+/**
+ * Two-level preset drawer: "Preset blocks" > group > variant, plus a flat
+ * "Manual blocks" sibling. Puck 0.20's `categories` config is flat and cannot
+ * nest, so this replaces it entirely rather than layering on top of it.
+ *
+ * Wrapped in exactly ONE `<Drawer>` — Puck's dnd wiring keys off a single
+ * droppable root, so per-group Drawers would fragment drag-and-drop. The
+ * collapsible sections are plain elements nested inside that one Drawer.
+ *
+ * Demo-mode filtering happens here, directly against
+ * DEMO_HIDDEN_COMPONENT_KEYS, at both the group level and the manual level —
+ * there is no second source of truth to keep in sync.
+ */
+function PresetBlocksDrawer({
+  t,
+  demoMode,
+  hideManualBlocks,
+  drawerItem,
+  resolveLabel,
+}: {
+  t: PuckTranslate;
+  demoMode: boolean;
+  /** The tour sandbox's first task needs the Style Toolkit tabs a composed
+   *  preset section provides — manual blocks (including bare Video) are kept
+   *  out of the sandbox drawer entirely so only preset sections can be dropped. */
+  hideManualBlocks: boolean;
+  drawerItem: DrawerItemRenderer;
+  /** `editorConfig.components[key].label` — raw `Drawer.Item` shows the
+   *  component KEY (e.g. "NavBorderedPreset") unless a `label` is passed
+   *  explicitly, unlike Puck's own default categorized list which resolved
+   *  it automatically. Reusing the config's already-translated label keeps
+   *  one source of truth instead of re-deriving it here. */
+  resolveLabel: (key: string) => string | undefined;
+}) {
+  const manualKeys = MANUAL_BLOCK_KEYS.filter(
+    (key) => !demoMode || !DEMO_HIDDEN_COMPONENT_KEYS.has(key),
+  );
+
+  return (
+    <Drawer>
+      <CollapsibleDrawer title={t("puckConfig.categories.presets")} defaultOpen>
+        <div className="flex flex-col gap-2">
+          {PRESET_GROUPS.map((group) => {
+            const keys = group.keys.filter((key) => !demoMode || !DEMO_HIDDEN_COMPONENT_KEYS.has(key));
+            if (keys.length === 0) return null;
+            return (
+              <CollapsibleDrawer key={group.id} title={t(group.labelKey)} defaultOpen={group.id === "nav"}>
+                <div className="flex flex-col gap-1">
+                  {keys.map((key) => (
+                    <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
+                      {drawerItem}
+                    </Drawer.Item>
+                  ))}
+                </div>
+              </CollapsibleDrawer>
+            );
+          })}
+        </div>
+      </CollapsibleDrawer>
+      {!hideManualBlocks && manualKeys.length > 0 && (
+        <CollapsibleDrawer title={t("puckConfig.categories.manual")}>
+          <div className="flex flex-col gap-1">
+            {manualKeys.map((key) => (
+              <Drawer.Item key={key} name={key} label={resolveLabel(key)}>
+                {drawerItem}
+              </Drawer.Item>
+            ))}
+          </div>
+        </CollapsibleDrawer>
+      )}
+    </Drawer>
+  );
 }
 
 export function EditorShell({
@@ -792,25 +855,10 @@ export function EditorShell({
   // toggle needs to know which zone is currently mounted in Puck — see
   // createEditorConfig's second parameter.
   const [activeZone, setActiveZone] = useState<Zone>("home");
-  const editorConfig = useMemo(() => {
-    const config = createEditorConfig(t, activeZone);
-    if (!guideMode && !demoMode) return config;
-    let categories = config.categories ?? {};
-
-    // See filterCategoriesForDemo above: registry-derived removal of every
-    // collection-dependent preset variant plus the FeaturedWork /
-    // CollectionCard manual blocks, across every category (not two named ones).
-    categories = filterCategoriesForDemo(categories, demoMode);
-
-    // The guide's first task must create a block with the Style Toolkit tabs
-    // used by steps 4â€“6. Keep manual blocks (including bare Video) out of the
-    // sandbox drawer so only composed preset sections can be dropped.
-    if (guideMode) {
-      categories = { ...categories, manual: { ...categories.manual, visible: false } };
-    }
-
-    return { ...config, categories };
-  }, [demoMode, guideMode, t, activeZone]);
+  // Demo/guide-mode drawer filtering (collection-dependent presets, manual
+  // blocks) happens in PresetBlocksDrawer's render, not here — the config's
+  // `components` registry stays the same in every mode.
+  const editorConfig = useMemo(() => createEditorConfig(t, activeZone), [t, activeZone]);
 
   // Demo-mode guide steps: SPOTLIGHT_STEPS with exactly 3 steps' copy
   // overridden (by id) to explain demo limits. slug is cleared on the
@@ -2157,13 +2205,49 @@ export function EditorShell({
   const previewZone = previewZoneFor(activeSection, activeZone);
   const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}&formLocale=${formLocale}&formDir=${formDir}`;
 
+  // Wraps section-preset drawer items with PresetDrawerItem, which triggers
+  // the shared PresetPreviewPanel (rendered once, above) on hover/focus — the
+  // per-row description moved into that popover, so this override no longer
+  // needs `t` or anything else that changes at runtime. Kept in its own
+  // empty-dep memo (not merged into puckStableOverrides below) so it stays a
+  // fully stable reference regardless of what that memo's contents end up
+  // depending on. Defined ahead of puckStableOverrides so its `drawerItem`
+  // render function is available there (passed explicitly to every raw
+  // `Drawer.Item` PresetBlocksDrawer builds — see that component's comment).
+  const drawerItemOverrides = useMemo(
+    () => ({
+      drawerItem: ({ name, children }: { name: string; children: ReactNode }) => {
+        const preset = resolveDrawerItemPreset(name);
+        if (!preset) return <>{children}</>; // manual blocks keep the plain item
+        // The row is name-only: 33 rows each carrying a description made the
+        // drawer too verbose to scan. The description moved into the preview
+        // popover, beside a live miniature of the preset itself.
+        // Handlers only. The panel itself is rendered ONCE below — Puck mounts
+        // every row twice, so a panel per row produced two stacked copies.
+        return <PresetDrawerItem presetKey={name as SectionPresetKey}>{children}</PresetDrawerItem>;
+      },
+    }),
+    []
+  );
+
   // Stable references for Puck overrides that must not change identity on every
   // re-render. Puck treats a new function reference as a reason to unmount and
   // remount the subtree — causing canvas scroll-to-top for `puck`, and focus loss
   // on every keystroke for `drawer`/`fields` (Puck onChange → re-render → new
   // inline arrow → remounted right panel → focused input destroyed).
-  // All three are stable because none of their JSX closes over changing values:
-  // RootCanvasStyle and RightPanelTourMarker are module-level components.
+  // `puck`/`preview`/`fields`/`actionBar` are stable because none of their JSX
+  // closes over changing values (RootCanvasStyle/RightPanelTourMarker are
+  // module-level). `drawer` closes over `t`/`demoMode`/`guideMode`/
+  // `drawerItemOverrides.drawerItem`, listed honestly below — none of the four
+  // actually changes after mount (demoMode/guideMode are fixed per route;
+  // editor chrome is English-only so `t`'s catalog never changes;
+  // drawerItemOverrides is itself a stable empty-dep reference above), so the
+  // memo never recomputes in practice and identity stays stable to Puck too.
+  // It also closes over `editorConfig.components` (for each drawer row's
+  // label) WITHOUT listing `editorConfig` as a dep — deliberately: labels are
+  // built from `t` alone and never vary with `activeZone`, but `editorConfig`'s
+  // own reference DOES change on every Home/Gallery zone switch, and listing
+  // it here would remount the canvas/drawer on every tab click.
   const puckStableOverrides = useMemo(
     () => ({
       // Canvas wrapper — also carries RootCanvasStyle for the iframe background,
@@ -2192,9 +2276,21 @@ export function EditorShell({
         </div>
       ),
       // Left sidebar drawer — tour anchor for the "drag a block" spotlight step.
-      drawer: ({ children }: { children: ReactNode }) => (
+      // `children` (Puck's own flat category-based list) is ignored: the two-
+      // level tree is built by PresetBlocksDrawer instead, wrapped in the same
+      // single Drawer Puck's own list would have used, so drag-and-drop still
+      // has one droppable root.
+      drawer: () => (
         <div data-tour-id="blocks-panel" className="flex min-h-0 flex-1 flex-col">
-          {children}
+          <PresetBlocksDrawer
+            t={t}
+            demoMode={demoMode}
+            hideManualBlocks={guideMode}
+            drawerItem={drawerItemOverrides.drawerItem}
+            resolveLabel={(key) =>
+              (editorConfig.components as Record<string, { label?: string } | undefined>)[key]?.label
+            }
+          />
         </div>
       ),
       // Right properties panel — tour anchor for the "block settings" spotlight step.
@@ -2212,30 +2308,7 @@ export function EditorShell({
       // SuppressedActionBar is module-level — stable reference, no remount risk.
       actionBar: SuppressedActionBar,
     }),
-    []
-  );
-
-  // Wraps section-preset drawer items with PresetDrawerItem, which triggers
-  // the shared PresetPreviewPanel (rendered once, above) on hover/focus — the
-  // per-row description moved into that popover, so this override no longer
-  // needs `t` or anything else that changes at runtime. Kept in its own
-  // empty-dep memo (not merged into puckStableOverrides above) so it stays a
-  // fully stable reference regardless of what that memo's contents end up
-  // depending on.
-  const drawerItemOverrides = useMemo(
-    () => ({
-      drawerItem: ({ name, children }: { name: string; children: ReactNode }) => {
-        const preset = resolveDrawerItemPreset(name);
-        if (!preset) return <>{children}</>; // manual blocks keep the plain item
-        // The row is name-only: 33 rows each carrying a description made the
-        // drawer too verbose to scan. The description moved into the preview
-        // popover, beside a live miniature of the preset itself.
-        // Handlers only. The panel itself is rendered ONCE below — Puck mounts
-        // every row twice, so a panel per row produced two stacked copies.
-        return <PresetDrawerItem presetKey={name as SectionPresetKey}>{children}</PresetDrawerItem>;
-      },
-    }),
-    []
+    [t, demoMode, guideMode, drawerItemOverrides.drawerItem]
   );
 
   const describePreset = useCallback(

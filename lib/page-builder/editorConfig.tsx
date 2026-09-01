@@ -51,9 +51,8 @@ import {
   type StyleColorToken,
 } from "./styleToolkit";
 import { SocialIconLink } from "./blocks/SocialIconLink";
-import { MANUAL_BLOCK_KEYS } from "./blockCategories";
-// Preset registry — single source for the 33 preset component configs + the
-// 11 grouped drawer categories.
+// Preset registry — single source for the 33 preset component configs and
+// the 12 preset groups (EditorShell's drawer nests them; see PresetBlocksDrawer).
 import {
   SECTION_PRESETS,
   SECTION_PRESET_KEYS,
@@ -1040,27 +1039,11 @@ export function createEditorConfig(
 
   // ---- Final config --------------------------------------------------------
 
-  // 12 collapsible drawer categories, one per group. Only the first (nav)
-  // starts expanded — 36 items all open at once is an unusable drawer.
-  // `defaultExpanded` must be set EXPLICITLY on every group: Puck renders a
-  // category that omits the key as expanded, so leaving it off the other
-  // eleven opens all of them (observed in the browser before this was pinned).
-  const presetCategories = PRESET_GROUPS.reduce<
-    Record<string, { title: string; components: SectionPresetKey[]; defaultExpanded: boolean }>
-  >((acc, group, i) => {
-    acc[group.id] = {
-      title: t(group.labelKey),
-      components: [...group.keys],
-      defaultExpanded: i === 0,
-    };
-    return acc;
-  }, {});
+  // No `categories` key: the editor drawer is a hand-built two-level tree
+  // (EditorShell's PresetBlocksDrawer) rather than Puck's flat drawer
+  // categories, which can't nest a "Preset blocks" parent over the 12 groups.
 
   return {
-    categories: {
-      ...presetCategories,
-      manual: { title: t("puckConfig.categories.manual"), components: [...MANUAL_BLOCK_KEYS], defaultExpanded: false },
-    } as Config<EditorComponents>["categories"],
     components: {
       ...presetComponents,
       GalleryGrid: galleryGrid,

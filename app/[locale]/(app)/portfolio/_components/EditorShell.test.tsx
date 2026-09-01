@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useEffect, useState, type ReactNode, type ReactElement } from "react";
+import { act, useEffect, useState, type ReactNode, type ReactElement } from "react";
 import { screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { toast } from "sonner";
@@ -20,10 +20,6 @@ let __puckMountCount = 0;
 // data directly (the "Simulate Puck change" button only emits a fixed
 // 1-block payload, not enough to exercise the demo block cap).
 let __capturedPuckOnChange: ((data: unknown) => void) | undefined;
-// Captures the `config` prop passed to Puck so tests can assert on the
-// demo-mode category filtering (FeaturedWork/FeaturedWorkPreset hidden from
-// the drawer) without needing to render Puck's real sidebar.
-let __capturedPuckConfig: { categories?: Record<string, { components?: readonly string[] }> } | undefined;
 
 // Mock PuckApi shape used by createUsePuck selectors in EditCanvasControls.
 const mockPuckApi = {
@@ -54,29 +50,52 @@ const mockPuckApi = {
 vi.mock("@measured/puck", () => ({
   createUsePuck: () => (selector?: (api: typeof mockPuckApi) => unknown) =>
     selector ? selector(mockPuckApi) : mockPuckApi,
+  // Minimal stand-ins for the exported `Drawer`/`Drawer.Item` primitives (the
+  // EditorShell drawer override builds the nested tree straight from these,
+  // not from Puck's own default categorized list). `Drawer.Item`'s `children`
+  // is a render-prop — invoke it with a stub row so PresetDrawerItem (real,
+  // unmocked) still wraps it, same as production. Declared inside the factory
+  // (not at module scope): vi.mock factories cannot close over top-level
+  // variables, since the mock call is hoisted above them.
+  Drawer: Object.assign(
+    ({ children }: { children: ReactNode }) => <div data-testid="drawer-root">{children}</div>,
+    {
+      Item: ({
+        name,
+        children,
+      }: {
+        name: string;
+        children?: (p: { children: ReactNode; name: string }) => ReactElement;
+      }) => {
+        const row = <div data-testid={`drawer-item:${name}`}>{name}</div>;
+        return children ? children({ name, children: row }) : row;
+      },
+    }
+  ),
+  // Stub for PresetPreviewCard.tsx's live mini-render — the preview panel test
+  // only asserts the panel itself mounts once, not the mini-render's content.
+  Render: () => null,
   Puck: ({
     headerTitle,
     overrides,
     onChange,
     data,
-    config,
   }: {
     headerTitle?: string;
     overrides?: {
       header?: (p: { children: ReactNode }) => ReactNode;
       puck?: (p: { children: ReactNode }) => ReactNode;
+      drawer?: (p: { children: ReactNode }) => ReactNode;
     };
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
     data?: unknown;
-    config?: typeof __capturedPuckConfig;
   }) => {
     // Simulate uncontrolled: capture data only on mount (via useState initializer).
     // Subsequent `data` prop changes are ignored — same as real Puck after mount.
     // Only a key change (remount) will re-initialize this seed.
     const [seed] = useState(() => data);
     __capturedPuckOnChange = onChange as ((data: unknown) => void) | undefined;
-    __capturedPuckConfig = config;
 
     // Count mounts — a new key forces a remount, incrementing this counter.
     useEffect(() => { __puckMountCount++; }, []);
@@ -113,6 +132,7 @@ vi.mock("@measured/puck", () => ({
           children: null,
         })}
         {overrides?.puck?.({ children: <div data-testid="puck-canvas-content" /> })}
+        {overrides?.drawer?.({ children: null })}
       </div>
     );
   },
@@ -182,6 +202,9 @@ vi.mock("@/lib/actions/slug", () => ({
 
 import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { PRESET_GROUPS } from "@/lib/page-builder/blocks/sectionPresets";
+import { englishPuckT } from "@/lib/page-builder/editorConfig";
+import { openPresetPreview, __resetPresetPreview } from "@/lib/page-builder/presetPreviewStore";
 
 /** Reads the onboarding logo's asset id off a persisted buffer's home-zone
  *  Navigation block's slot Image (the block is always seeded first). */
@@ -295,7 +318,7 @@ beforeEach(() => {
   window.localStorage.clear();
   __puckMountCount = 0;
   __capturedPuckOnChange = undefined;
-  __capturedPuckConfig = undefined;
+  __resetPresetPreview();
   listDraftsAction.mockResolvedValue([]);
   seedTemplateAction.mockImplementation((templateId = "minimal") =>
     Promise.resolve({
@@ -1536,9 +1559,9 @@ describe("EditorShell", () => {
     fireEvent.click(within(welcomeCard).getByRole("button", { name: "Next" }));
     const dragCard = await screen.findByRole("dialog", { name: "Drag a block onto your page" });
 
-    // The blocks-panel anchor is a Puck `drawer` override, which the mocked Puck
-    // does not render — so the loading gate shows its spinner until the safety
-    // timeout. Wait for the step body to reveal before asserting footer state.
+    // jsdom returns an all-zero rect for the blocks-panel anchor (no real
+    // layout), so the loading gate shows its spinner until the safety timeout.
+    // Wait for the step body to reveal before asserting footer state.
     await within(dragCard).findByText(/Try it/i);
 
     // Unsatisfied gated step: no Skip-this-step, no Next escape hatch, but the
@@ -1684,18 +1707,19 @@ describe("EditorShell demoMode", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
     await screen.findByTestId("puck");
 
-    // The manual primitives that need the auth-gated collections picker...
-    const manual = __capturedPuckConfig?.categories?.manual?.components;
-    expect(manual).not.toContain("FeaturedWork");
-    expect(manual).not.toContain("CollectionCard");
+    // ALL THREE Featured work preset variants depend on collections, so the
+    // whole group is empty and never rendered at all — not just its items.
+    expect(screen.queryByRole("button", { name: "Featured work" })).not.toBeInTheDocument();
 
-    // ...and ALL THREE Featured work preset variants, not just the legacy key.
-    // Presets are grouped by section type now, so this lives in its own category.
-    const featuredWork = __capturedPuckConfig?.categories?.featuredWork?.components;
-    expect(featuredWork).toEqual([]);
+    // The manual primitives that need the auth-gated collections picker are
+    // filtered too (CollectionCard); FeaturedWork was never manual-listed.
+    fireEvent.click(screen.getByRole("button", { name: "Manual blocks" }));
+    expect(screen.queryByTestId("drawer-item:CollectionCard")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("drawer-item:FeaturedWork")).not.toBeInTheDocument();
 
     // Nothing else was swept up: a preset with no collection dependency stays.
-    expect(__capturedPuckConfig?.categories?.hero?.components).toContain("HeroPreset");
+    fireEvent.click(screen.getByRole("button", { name: "Hero" }));
+    expect(screen.getByTestId("drawer-item:HeroPreset")).toBeInTheDocument();
   });
 
   it("disables the Preview toggle (no real preview route exists for demo data)", async () => {
@@ -1771,18 +1795,16 @@ describe("EditorShell demoMode — opt-in intro gates the guide", () => {
 
 describe("EditorShell real (non-demo) editor — unaffected by the demo picker swap", () => {
   it("keeps collection cards and presets insertable while hiding deprecated Highlights", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
-    await screen.findByTestId("puck");
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
-    const manual = __capturedPuckConfig?.categories?.manual?.components;
-    expect(manual).not.toContain("FeaturedWork");
-    expect(manual).toContain("CollectionCard");
+    fireEvent.click(screen.getByRole("button", { name: "Manual blocks" }));
+    expect(screen.queryByTestId("drawer-item:FeaturedWork")).not.toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:CollectionCard")).toBeInTheDocument();
 
-    expect(__capturedPuckConfig?.categories?.featuredWork?.components).toEqual([
-      "FeaturedWorkPreset",
-      "FeaturedWorkLeadPreset",
-      "FeaturedWorkIndexPreset",
-    ]);
+    fireEvent.click(screen.getByRole("button", { name: "Featured work" }));
+    expect(screen.getByTestId("drawer-item:FeaturedWorkPreset")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:FeaturedWorkLeadPreset")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:FeaturedWorkIndexPreset")).toBeInTheDocument();
   });
 
   it("keeps the Preview toggle enabled and functional (regression guard for the demo-only disable)", async () => {
@@ -1793,6 +1815,54 @@ describe("EditorShell real (non-demo) editor — unaffected by the demo picker s
 
     const openInTab = screen.getByRole("button", { name: "Open in new tab" });
     expect(openInTab).not.toBeDisabled();
+  });
+});
+
+describe("EditorShell — two-level preset drawer", () => {
+  it("renders Preset blocks containing all 12 groups, each containing its variants, plus a flat Manual blocks sibling", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    expect(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.presets") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.manual") })).toBeInTheDocument();
+    for (const group of PRESET_GROUPS) {
+      expect(screen.getByRole("button", { name: englishPuckT(group.labelKey) })).toBeInTheDocument();
+    }
+
+    // nav is open by default — its 3 variants are visible with no click.
+    for (const key of ["NavBorderedPreset", "NavUnderlinedPreset", "NavScaledPreset"]) {
+      expect(screen.getByTestId(`drawer-item:${key}`)).toBeInTheDocument();
+    }
+
+    // hero starts closed — its variants aren't in the DOM until opened.
+    expect(screen.queryByTestId("drawer-item:HeroPreset")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.hero") }));
+    expect(screen.getByTestId("drawer-item:HeroPreset")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:HeroSplitPreset")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:HeroStatementPreset")).toBeInTheDocument();
+
+    // Manual blocks starts closed and sits alongside Preset blocks, not nested
+    // under it.
+    expect(screen.queryByTestId("drawer-item:Heading")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.manual") }));
+    expect(screen.getByTestId("drawer-item:Heading")).toBeInTheDocument();
+  });
+
+  it("keeps the tour anchor on the drawer wrapper", async () => {
+    const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    expect(container.querySelector('[data-tour-id="blocks-panel"]')).toBeInTheDocument();
+  });
+
+  it("mounts exactly one preset preview (not one per drawer row's duplicate mount)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.hero") }));
+    // Drive the shared store directly (same mechanism PresetDrawerItem's
+    // hover/focus handlers use) rather than simulating a real pointer hover,
+    // which React only recognizes via the bubbling pointerover event.
+    act(() => {
+      openPresetPreview("HeroPreset", screen.getByTestId("drawer-item:HeroPreset"));
+    });
+    expect(await screen.findAllByRole("tooltip")).toHaveLength(1);
   });
 });
 
