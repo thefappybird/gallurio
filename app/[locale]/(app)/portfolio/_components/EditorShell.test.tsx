@@ -183,6 +183,18 @@ vi.mock("@/lib/actions/slug", () => ({
 import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
+/** Reads the onboarding logo's asset id off a persisted buffer's home-zone
+ *  Navigation block's slot Image (the block is always seeded first). */
+function navLogoAssetId(buffer: { data?: { home?: { content?: unknown[] } } }): string | undefined {
+  const nav = buffer.data?.home?.content?.find(
+    (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
+  ) as { props?: { content?: unknown[] } } | undefined;
+  const image = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Image") as
+    | { props?: { _style?: { bgImagePublicId?: string } } }
+    | undefined;
+  return image?.props?._style?.bgImagePublicId;
+}
+
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
 // Buffer matches baseProps initial data so restoring it keeps isDirty=false.
 const LOCAL_DRAFT_V2 = {
@@ -269,6 +281,12 @@ async function renderAndDismissEntry(ui: ReactElement) {
   // without opening any secondary dialog, keeping the test environment clean.
   const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
   fireEvent.click(continueBtn);
+  // onContinue restores the local buffer via a queueMicrotask-deferred update
+  // (see restoreLocalDraft) that forces a Puck remount — wait for the dialog
+  // to close, then flush a real macrotask so the remount's own effects (and
+  // its mount-echo onChange) settle before the caller interacts further.
+  await waitFor(() => expect(screen.queryByText("Welcome back")).not.toBeInTheDocument());
+  await new Promise((resolve) => setTimeout(resolve, 0));
   return result;
 }
 
@@ -308,6 +326,25 @@ describe("EditorShell", () => {
     expect(await screen.findByText("Studio Aurora · Gallery")).toBeInTheDocument();
   });
 
+  it("passes the current activeZone to createEditorConfig, recomputing it on zone switch", async () => {
+    // createEditorConfig's second parameter feeds the Navigation field panel's
+    // detach-toggle zone context (label + disabled state) — see editorConfig.tsx
+    // and chromeSyncContext.ts. Real module, not mocked elsewhere in this file;
+    // spy on it to assert EditorShell threads its own activeZone state through
+    // and recomputes when the zone changes, without depending on Puck's real
+    // sidebar (which the top-of-file mock never renders).
+    const editorConfigModule = await import("@/lib/page-builder/editorConfig");
+    const spy = vi.spyOn(editorConfigModule, "createEditorConfig");
+
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    expect(spy).toHaveBeenLastCalledWith(expect.any(Function), "home");
+
+    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    await waitFor(() => expect(spy).toHaveBeenLastCalledWith(expect.any(Function), "gallery"));
+
+    spy.mockRestore();
+  });
+
   it("debounces the local draft write on a Puck change and flushes it on zone switch (Fix #1)", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
@@ -325,14 +362,16 @@ describe("EditorShell", () => {
     );
   });
 
-  it("places Navigation and Contact Form beside the page tabs", async () => {
+  it("places Contact Form and Featured Popup beside the page tabs", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const controls = screen.getByRole("group", { name: "Portfolio sections" });
     expect(within(controls).getByRole("button", { name: "Home" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Gallery" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Featured Popup" })).toBeInTheDocument();
-    expect(within(controls).getByRole("button", { name: "Navigation" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Contact Form" })).toBeInTheDocument();
+    // Navigation is no longer a side-panel tab — it's an ordinary, always-
+    // present Puck block edited in the canvas via its own Content/Design tabs.
+    expect(within(controls).queryByRole("button", { name: "Navigation" })).not.toBeInTheDocument();
   });
 
   it("opens the Featured Popup panel when the Featured Popup tab is clicked", async () => {
@@ -345,34 +384,29 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: "Featured Popup" }).getAttribute("aria-pressed")).toBe("true");
   });
 
-  it.each([
-    { tab: "Contact Form", panel: "Contact form" },
-    { tab: "Navigation", panel: "Navigation" },
-  ])("keeps $tab open while the Featured Popup warning is shown", async ({ tab, panel }) => {
+  it("keeps Contact Form open while the Featured Popup warning is shown", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: tab }));
-    expect(await screen.findByLabelText(panel)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
 
     expect(await screen.findByRole("button", { name: "Open anyway" })).toBeInTheDocument();
-    expect(screen.getByLabelText(panel)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: tab, hidden: true })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Contact form")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Contact Form", hidden: true })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Featured Popup", hidden: true })).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
+  it("shows a preview and hides the canvas while the Contact Form settings panel is open", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Navigation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
     expect(screen.queryByLabelText("Contact form")).not.toBeInTheDocument();
-    expect(await screen.findByLabelText("Navigation")).toBeInTheDocument();
-    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
-    expect(screen.getByText("Studio Aurora")).toBeInTheDocument();
+    expect(await screen.findByTestId("puck")).toBeInTheDocument();
   });
 
   it("keeps the sidebar toggles in the edit-mode header", async () => {
@@ -1254,18 +1288,90 @@ describe("EditorShell", () => {
     // draft on their next visit (and skip straight past the template picker).
     const bufferBeforeTemplate = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
     if (bufferBeforeTemplate) {
-      expect(JSON.parse(bufferBeforeTemplate).headerConfig?.logoUrl).toBeUndefined();
+      expect(navLogoAssetId(JSON.parse(bufferBeforeTemplate))).toBeUndefined();
     }
 
     fireEvent.click(screen.getByRole("button", { name: "Start from scratch" }));
     await waitFor(() => expect(seedTemplateAction).toHaveBeenCalledWith("scratch"));
     await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
 
-    // Applied once a template — including "start from scratch" — is actually picked.
+    // Applied once a template — including "start from scratch" — is actually
+    // picked: patched into the seeded Navigation block's slot Image, not a
+    // separate header field.
     await waitFor(() => {
       const buffered = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
       expect(buffered).toBeTruthy();
-      expect(JSON.parse(buffered!).headerConfig?.logoUrl).toBe("https://cdn/logo.png");
+      expect(navLogoAssetId(JSON.parse(buffered!))).toBe("logo-1");
+    });
+  });
+
+  it("onboarding logo does not leak into an existing draft loaded via applyDraft", async () => {
+    uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-1", url: "https://cdn/logo.png" } });
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Navigation", props: { id: "nav-1", _chrome: "nav", content: [] } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        storyPromptCompleted={false}
+        guideDismissed={false}
+        initialData={{ home: { content: [], root: {} }, gallery: { content: [], root: {} } }}
+      />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Let's go" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your vibe" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Add your branding" });
+
+    const fileInput = document.querySelector(
+      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+    ) as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["logo"], "logo.png", { type: "image/png" })] } });
+    await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo.png"]')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your page is ready to shine" });
+    fireEvent.click(screen.getByRole("button", { name: "I'll explore myself" }));
+    await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
+
+    // Returning user (baseProps has a draft) lands on the normal entry
+    // dialog, not the template picker — load the existing draft instead.
+    // applyDraftInner clears pendingOnboardingLogoRef on entry (before it
+    // even reads the draft), so the captured logo must not leak into it.
+    fireEvent.click(await screen.findByRole("button", { name: /Load an existing draft/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    // Prove the ref was actually cleared (not just that applyDraft's own
+    // buffer-clear masked it): apply a fresh template afterward with no new
+    // upload — its seeded Navigation must carry no logo either.
+    fireEvent.click(await screen.findByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+
+    await waitFor(() => {
+      const buffered = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
+      expect(buffered).toBeTruthy();
+      expect(navLogoAssetId(JSON.parse(buffered!))).toBeUndefined();
     });
   });
 
