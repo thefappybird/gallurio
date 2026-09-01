@@ -433,29 +433,45 @@ export async function listPublicCollectionItemsPage(opts: {
   };
 }
 
+// Safety rail (not a product limit — the picker itself has no cap, per
+// product decision) for the bulk "select all in collection" fetch. A single
+// request pulling an unbounded number of docs is still a DoS surface even
+// though it's owner-authenticated and workspace-scoped, so it gets its own
+// high ceiling instead of reusing the 60-item PICKER_ITEMS_CAP.
+const BULK_SELECT_CAP = 2000;
+
 /**
  * The newest `limit` items of one collection, newest-first — backs the
- * "Select all in collection" bulk action (owner wants the latest N). Tenant-safe;
- * foreign/missing collections return []. `limit` is clamped to the safety cap.
+ * "Select all in collection" bulk action (owner wants the whole collection).
+ * Tenant-safe; foreign/missing collections return `{ items: [], truncated: false }`.
+ * `limit` is clamped to `BULK_SELECT_CAP`; a missing/non-finite/non-positive
+ * `limit` is treated as "give me everything" (up to the cap), never as 1.
+ * `truncated: true` means the collection has more items than the cap and the
+ * caller must not treat the response as the full set.
  */
 export async function listCollectionNewest(opts: {
   workspaceId: string;
   collectionId: string;
   limit: number;
-}): Promise<PickerItem[]> {
+}): Promise<{ items: PickerItem[]; truncated: boolean }> {
   const { workspaceId, collectionId } = opts;
-  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return [];
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], truncated: false };
 
-  const limit = Math.min(Math.max(1, Math.trunc(Number.isFinite(opts.limit) ? opts.limit : 1)), PICKER_ITEMS_CAP);
+  const requested = Number.isFinite(opts.limit) && opts.limit > 0 ? Math.trunc(opts.limit) : BULK_SELECT_CAP;
+  const limit = Math.min(requested, BULK_SELECT_CAP);
   await connectDB();
 
   const docs = await GalleryItem.find({ workspaceId, collectionId })
     .sort({ createdAt: -1, _id: -1 })
-    .limit(limit)
+    .limit(limit + 1)
     .select({ assetId: 1, caption: 1, altText: 1 })
     .lean();
 
-  return docs.map(toPickerItem);
+  // Only the safety ceiling counts as "truncated" — a caller-supplied `limit`
+  // below the ceiling (e.g. a small picker's own selection cap) is an
+  // intentional partial request, not silent data loss.
+  const hitCeiling = limit === BULK_SELECT_CAP && docs.length > limit;
+  return { items: docs.slice(0, limit).map(toPickerItem), truncated: hitCeiling };
 }
 
 /**

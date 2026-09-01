@@ -213,13 +213,54 @@ describe("listCollectionNewest", () => {
         caption: `N${i}`, order: i,
       });
     }
-    const items = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 3 });
+    const { items, truncated } = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 3 });
     expect(items.map((i) => i.caption)).toEqual(["N4", "N3", "N2"]);
+    expect(truncated).toBe(false);
   });
 
-  it("clamps limit to the safety cap and returns [] for bad input", async () => {
-    expect(await listCollectionNewest({ workspaceId: "", collectionId: new Types.ObjectId().toString(), limit: 5 })).toEqual([]);
-    expect(await listCollectionNewest({ workspaceId: new Types.ObjectId().toString(), collectionId: "nope", limit: 5 })).toEqual([]);
+  it("returns every item of a collection larger than the old 60 cap", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 75);
+    const { items, truncated } = await listCollectionNewest({
+      workspaceId: ws.toString(),
+      collectionId: col._id.toString(),
+      limit: 75,
+    });
+    expect(items).toHaveLength(75);
+    expect(truncated).toBe(false);
+  });
+
+  it("returns [] and truncated:false for bad input (empty workspace / invalid collection id)", async () => {
+    expect(
+      await listCollectionNewest({ workspaceId: "", collectionId: new Types.ObjectId().toString(), limit: 5 })
+    ).toEqual({ items: [], truncated: false });
+    expect(
+      await listCollectionNewest({ workspaceId: new Types.ObjectId().toString(), collectionId: "nope", limit: 5 })
+    ).toEqual({ items: [], truncated: false });
+  });
+
+  it("treats a non-finite, missing, or negative limit as 'everything', never as 1", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 5);
+    for (const limit of [NaN, Infinity, -3, 0, undefined as unknown as number]) {
+      const { items } = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit });
+      expect(items).toHaveLength(5);
+    }
+  });
+
+  it("sets truncated:true and clamps at the safety ceiling for an oversized collection", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 2005);
+    const { items, truncated } = await listCollectionNewest({
+      workspaceId: ws.toString(),
+      collectionId: col._id.toString(),
+      limit: 2005,
+    });
+    expect(items).toHaveLength(2000);
+    expect(truncated).toBe(true);
   });
 
   it("does not return another workspace's items (tenant isolation)", async () => {
@@ -227,7 +268,9 @@ describe("listCollectionNewest", () => {
     const wsB = new Types.ObjectId();
     const colB = await makeCollection(wsB);
     await seedItems(wsB, colB._id, 3);
-    expect(await listCollectionNewest({ workspaceId: wsA.toString(), collectionId: colB._id.toString(), limit: 10 })).toEqual([]);
+    expect(
+      await listCollectionNewest({ workspaceId: wsA.toString(), collectionId: colB._id.toString(), limit: 10 })
+    ).toEqual({ items: [], truncated: false });
   });
 
   it("exposes altText on every item", async () => {
@@ -238,7 +281,7 @@ describe("listCollectionNewest", () => {
       assetId: `ws/${ws}/n0`, url: "https://imagedelivery.net/hash/n0/public",
       caption: "N0", altText: "Alt N0", order: 0,
     });
-    const items = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 1 });
+    const { items } = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 1 });
     expect(items[0].altText).toBe("Alt N0");
   });
 });
