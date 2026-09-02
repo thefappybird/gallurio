@@ -93,18 +93,38 @@ export function findChrome(zone: Data, kind: ChromeKind): ComponentData | null {
 /**
  * Mirrors the changed zone's chrome block of `kind` into the other zone, in
  * full (config props + slot children). No-op when either zone's chrome of
- * that kind is detached, or when the source has none.
+ * that kind is detached, or when the source has none and never had one.
+ *
+ * Deletion mirroring: when the source zone no longer has a `kind` block but
+ * `previousSource` shows it had one (and it wasn't detached), the removal is
+ * mirrored onto the other zone too — otherwise a later edit on the other
+ * zone would re-sync a "new" chrome block right back in (see the deleted-
+ * footer-never-sticks case). `previousSource` is the changed zone's OWN data
+ * from immediately before this edit; omit it (or pass a zone that never had
+ * the chrome) to keep the old no-op behavior. Navigation is pinned/
+ * undeletable via Puck permissions, so this path only ever fires for Footer
+ * in practice.
  */
 export function syncChrome(
   zones: Zones,
   changedZone: ZoneKey,
   kind: ChromeKind,
   idFactory: IdFactory = defaultIdFactory,
+  previousSource?: Data,
 ): Zones {
   const source = findChrome(zones[changedZone], kind);
-  if (!source || isDetached(source)) return zones;
-
   const otherZone = otherZoneOf(changedZone);
+
+  if (!source) {
+    const previousBlock = previousSource ? findChrome(previousSource, kind) : null;
+    if (!previousBlock || isDetached(previousBlock)) return zones;
+    const target = findChrome(zones[otherZone], kind);
+    if (!target || isDetached(target)) return zones;
+    const otherContent = (zones[otherZone].content ?? []).filter((block) => block !== target);
+    return { ...zones, [otherZone]: { ...zones[otherZone], content: otherContent } };
+  }
+  if (isDetached(source)) return zones;
+
   const target = findChrome(zones[otherZone], kind);
   if (target && isDetached(target)) return zones;
 

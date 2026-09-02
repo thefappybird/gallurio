@@ -220,6 +220,17 @@ describe("syncChrome", () => {
     expect(result).toBe(zones);
   });
 
+  it("mirrors a deletion: removes the other zone's footer when the source had one and now does not", () => {
+    const previousHome = zoneWith([block("Hero", "home-hero"), footerBlock("home-footer")]);
+    const home = zoneWith([block("Hero", "home-hero")]);
+    const gallery = zoneWith([block("Hero", "gallery-hero"), footerBlock("gallery-footer")]);
+    const zones: Zones = { home, gallery };
+
+    const result = syncChrome(zones, "home", "footer", makeIdFactory("gen"), previousHome);
+    expect(findChrome(result.gallery, "footer")).toBeNull();
+    expect(result.gallery.content?.map((b) => b.type)).toEqual(["Hero"]);
+  });
+
   it("does not mutate frozen inputs", () => {
     const home = deepFreeze(zoneWith([navBlock("home-nav", { brandText: "Frozen" })]));
     const gallery = deepFreeze(zoneWith([navBlock("gallery-nav")]));
