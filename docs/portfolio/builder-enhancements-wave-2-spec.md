@@ -503,6 +503,52 @@ Per project rules: only this session runs `pnpm build` / full typecheck, one at
 a time; implementer subagents run scoped `pnpm test --run <fragment>` and eslint
 on their own files, serialized because tdd-guard state is shared per worktree.
 
+## P1 results (run 2026-09-03)
+
+**Verified in the browser:**
+- Item 2 — drawer rows compute `cursor: grab`, accordion headers `cursor: pointer`.
+- Item 6 — all eight text blocks measured `4px 4px 4px 4px`.
+- Item 8 — Undo/Redo controls mount and are correctly disabled on a fresh load.
+
+**Item 11 — root-caused.** Measured every grid-cell Container at 1280px:
+
+```
+{ sectionH: 399, padY: 56, slotH: 341, contentH: 96,
+  emptySlotH: 246, slackH: 2, hasAnchor: false, puckChildren: 2 }
+```
+
+`slackH ≈ 0` everywhere, so the slot DOES fill the section's content box — the CSS
+was never the problem. The 246px of empty space *inside* the slot is what
+highlights and refuses drops, because Puck resolves a slot's drop target from its
+child rects, not the slot box. Fixed by making the anchor always present and
+letting it absorb the leftover space via `flex: 1 1 auto` (no ResizeObserver, so
+the documented oscillation hazard stays avoided).
+
+**NOT browser-verified: the item 11 fix itself.** 523 unit tests pass, including
+the reconciler's idempotence-by-reference guard, and the production render returns
+an empty fragment outside the editor so anchors cannot leak onto public pages. But
+the confirming browser run was never obtained — see below.
+
+**Why P1 cost 8 runs instead of 1**, recorded so the next session does better:
+1. Three runs were spent on my own bad probes — a global `h2` selector that hit
+   editor chrome, a "dead zone" measurement that didn't subtract the container's
+   own padding (and briefly produced a false 64px finding), and a `getByRole`
+   query that misses the editor toolbar because it sits in an `aria-hidden`
+   subtree.
+2. Interaction steps (click a block, Delete, Ctrl+Z, Move out) could not be driven:
+   Puck's drag overlay intercepts synthetic pointer events on canvas blocks. Those
+   items have 17 and 10 unit tests respectively; the browser was the wrong tool.
+3. A zombie `pnpm dev` (PID held the port without serving) caused a hang that I
+   briefly misread as a regression from the anchor change.
+4. The editor's opening state is not stable across runs: the entry dialog differs
+   for a returning user, and the preset drawer is two-level so draggable rows exist
+   during boot and then collapse behind category rows. A spec that assumes either
+   is flaky by construction.
+
+**Lesson for the next attempt:** pin the editor state explicitly (load a known
+draft by name via `openEditorWithDraft`, never "start from scratch") and assert
+only measurements, never synthetic drags.
+
 ## Verification budget
 
 A previous session lost most of a day to Playwright. Browser runs are rationed
