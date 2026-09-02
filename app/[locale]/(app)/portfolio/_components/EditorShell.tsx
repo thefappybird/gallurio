@@ -8,6 +8,7 @@ import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { isEditableTarget, isSelfManagedComboboxTarget } from "@/lib/page-builder/editableTarget";
+import { useEditorCanvasHotkeys } from "@/lib/page-builder/useEditorCanvasHotkeys";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -598,6 +599,17 @@ function ContainerAnchorReconciler() {
     dispatch({ type: "setData", data: normalized });
   }, [data, dispatch]);
 
+  return null;
+}
+
+/**
+ * Wires up Ctrl/Cmd+Z / Shift+Z / Y (undo/redo) and Delete/Backspace
+ * (remove selected block) — see useEditorCanvasHotkeys for why these are
+ * owned here instead of left to Puck's own global hotkey matcher. Renders
+ * nothing; must live inside the <Puck> tree for usePuckStore's context.
+ */
+function EditorCanvasHotkeys() {
+  useEditorCanvasHotkeys();
   return null;
 }
 
@@ -2509,13 +2521,15 @@ export function EditorShell({
   const puckStableOverrides = useMemo(
     () => ({
       // Canvas wrapper — also carries RootCanvasStyle for the iframe background,
-      // and BlockActionsToolbar (always-visible, portals to body from within
-      // Puck context so createUsePuck selectors are available).
+      // BlockActionsToolbar (always-visible, portals to body from within
+      // Puck context so createUsePuck selectors are available), and
+      // EditorCanvasHotkeys (undo/redo + delete key handling, same reason).
       puck: ({ children }: { children: ReactNode }) => (
         <div data-tour-id="canvas" className="flex min-h-0 flex-1 flex-col">
           {children}
           <RootCanvasStyle />
           <BlockActionsToolbar />
+          <EditorCanvasHotkeys />
         </div>
       ),
       // Tour anchor for the precise canvas VIEWPORT only (Puck's `preview` slot,

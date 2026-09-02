@@ -37,13 +37,15 @@ const mockPuckApi = {
       leftSideBarVisible: true,
       rightSideBarVisible: true,
       viewports: { current: { width: 1280, height: "auto" }, controlsVisible: true, options: [] },
+      itemSelector: null as { index: number; zone?: string } | null,
     },
     data: { content: [], root: {} },
   },
   dispatch: vi.fn(),
-  selectedItem: undefined,
+  selectedItem: undefined as unknown,
   getSelectorForId: vi.fn(),
   getItemById: vi.fn(),
+  getPermissions: vi.fn(() => ({}) as { delete?: boolean; duplicate?: boolean }),
   history: {
     back: vi.fn(),
     forward: vi.fn(),
@@ -372,6 +374,9 @@ async function renderAndDismissEntry(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPuckApi.selectedItem = undefined;
+  mockPuckApi.appState.ui.itemSelector = null;
+  mockPuckApi.getPermissions.mockImplementation(() => ({}));
   window.localStorage.clear();
   __puckMountCount = 0;
   __capturedPuckOnChange = undefined;
@@ -620,6 +625,142 @@ describe("EditorShell", () => {
 
     document.removeEventListener("keydown", outerHandler);
     expect(propagated).toBe(true);
+  });
+
+  // useEditorCanvasHotkeys — own Ctrl/Cmd+Z (undo), Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y
+  // (redo), and Delete/Backspace (remove selected block) instead of relying on
+  // Puck's fragile global hotkey matcher. jsdom has no real cross-document
+  // (canvas iframe) focus to exercise, and Puck itself is mocked here with no
+  // real hotkey listener of its own — so these assert the mechanics that make
+  // double-firing structurally impossible (capture-phase stopImmediatePropagation)
+  // and the guard logic (editable-target skip, permission gate), not an actual
+  // race against Puck's real listener.
+  describe("useEditorCanvasHotkeys", () => {
+    it("Ctrl+Z calls history.back exactly once and consumes the event", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const event = new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true });
+      const preventDefaultSpy = vi.spyOn(event, "preventDefault");
+      const stopSpy = vi.spyOn(event, "stopImmediatePropagation");
+
+      document.body.dispatchEvent(event);
+
+      expect(mockPuckApi.history.back).toHaveBeenCalledTimes(1);
+      expect(mockPuckApi.history.forward).not.toHaveBeenCalled();
+      expect(preventDefaultSpy).toHaveBeenCalledTimes(1);
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("Cmd+Z (metaKey) also calls history.back", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "z", metaKey: true, bubbles: true, cancelable: true })
+      );
+      expect(mockPuckApi.history.back).toHaveBeenCalledTimes(1);
+    });
+
+    it("Ctrl+Shift+Z calls history.forward, not back", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "z", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+      );
+      expect(mockPuckApi.history.forward).toHaveBeenCalledTimes(1);
+      expect(mockPuckApi.history.back).not.toHaveBeenCalled();
+    });
+
+    it("Ctrl+Y calls history.forward", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "y", ctrlKey: true, bubbles: true, cancelable: true })
+      );
+      expect(mockPuckApi.history.forward).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not undo when Ctrl+Z is pressed while focus is in a text field", async () => {
+      const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;
+      const input = document.createElement("input");
+      editorRoot.appendChild(input);
+
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true })
+      );
+
+      expect(mockPuckApi.history.back).not.toHaveBeenCalled();
+    });
+
+    it("Delete removes the selected block via a `remove` dispatch when permitted", async () => {
+      mockPuckApi.selectedItem = { type: "Hero", props: { id: "b1" } };
+      mockPuckApi.appState.ui.itemSelector = { index: 2, zone: "root:default-zone" };
+      mockPuckApi.getPermissions.mockImplementation(() => ({ delete: true }));
+
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })
+      );
+
+      expect(mockPuckApi.dispatch).toHaveBeenCalledWith({ type: "remove", index: 2, zone: "root:default-zone" });
+    });
+
+    it("Backspace also removes the selected block", async () => {
+      mockPuckApi.selectedItem = { type: "Hero", props: { id: "b1" } };
+      mockPuckApi.appState.ui.itemSelector = { index: 0, zone: "root:default-zone" };
+      mockPuckApi.getPermissions.mockImplementation(() => ({ delete: true }));
+
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Backspace", bubbles: true, cancelable: true })
+      );
+
+      expect(mockPuckApi.dispatch).toHaveBeenCalledWith({ type: "remove", index: 0, zone: "root:default-zone" });
+    });
+
+    it("does nothing when Delete is pressed on the pinned Navigation block (permissions.delete === false)", async () => {
+      mockPuckApi.selectedItem = { type: "Navigation", props: { id: "nav-1" } };
+      mockPuckApi.appState.ui.itemSelector = { index: 0, zone: "root:default-zone" };
+      mockPuckApi.getPermissions.mockImplementation(() => ({ delete: false }));
+
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })
+      );
+
+      const removeCalls = mockPuckApi.dispatch.mock.calls.filter(
+        ([action]) => (action as { type?: string })?.type === "remove"
+      );
+      expect(removeCalls).toHaveLength(0);
+    });
+
+    it("does nothing when Delete is pressed with no block selected", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })
+      );
+
+      const removeCalls = mockPuckApi.dispatch.mock.calls.filter(
+        ([action]) => (action as { type?: string })?.type === "remove"
+      );
+      expect(removeCalls).toHaveLength(0);
+    });
+
+    it("does not remove the block when Delete is pressed while focus is in a text field", async () => {
+      mockPuckApi.selectedItem = { type: "Hero", props: { id: "b1" } };
+      mockPuckApi.appState.ui.itemSelector = { index: 0, zone: "root:default-zone" };
+      mockPuckApi.getPermissions.mockImplementation(() => ({ delete: true }));
+
+      const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;
+      const input = document.createElement("input");
+      editorRoot.appendChild(input);
+
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })
+      );
+
+      const removeCalls = mockPuckApi.dispatch.mock.calls.filter(
+        ([action]) => (action as { type?: string })?.type === "remove"
+      );
+      expect(removeCalls).toHaveLength(0);
+    });
   });
 
   it("opens the publish dialog when the Publish button in the editor header is clicked", async () => {
