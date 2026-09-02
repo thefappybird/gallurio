@@ -250,7 +250,7 @@ function imagesField(label: string, opts: { max?: number } = {}): Field<MediaPic
 // The double cast is required because Puck's resolveFields return type is a strict
 // branded Fields<T> — we need to go through unknown to avoid the structural mismatch.
 function resolveContainerFields(_data: unknown, { fields }: { fields: Record<string, unknown> }) {
-  const { bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, overlayColorToken: _oc, alignX: _ax, alignY: _ay, minHeight: _mh, ...rest } = fields;
+  const { bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, overlayColorToken: _oc, alignX: _ax, alignY: _ay, minHeight: _mh, overallWidth: _ow, ...rest } = fields;
   return rest;
 }
 const resolveContainerFieldsTyped = resolveContainerFields as unknown as ComponentConfig<ContainerBlockProps>["resolveFields"];
@@ -614,6 +614,19 @@ export function createEditorConfig(
         { label: t("puckConfig.options.alignY.bottom"), value: "bottom" },
       ],
     } as unknown as Field<ContainerAlignY | undefined>,
+    // Rendered by StyleToolkitField's Layout tab, not the sidebar — but it must
+    // exist here to keep the editor/production field key sets in parity.
+    // Label is never shown (stripped by resolveContainerFields), so it stays
+    // untranslated rather than adding a dead key to five locale catalogs.
+    overallWidth: {
+      type: "select",
+      label: "Overall width",
+      visible: false,
+      options: [
+        { label: "Page fit", value: "page-fit" },
+        { label: "Full", value: "full" },
+      ],
+    } as unknown as Field<ContainerBlockProps["overallWidth"]>,
     content: { type: "slot" },
   } as unknown as ComponentConfig<ContainerBlockProps>["fields"];
 
