@@ -218,6 +218,17 @@ function navLogoAssetId(buffer: { data?: { home?: { content?: unknown[] } } }): 
   return image?.props?._style?.bgImagePublicId;
 }
 
+/** Reads the home-zone Navigation block's slot Heading text off a persisted buffer. */
+function navHeadingText(buffer: { data?: { home?: { content?: unknown[] } } }): string | undefined {
+  const nav = buffer.data?.home?.content?.find(
+    (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
+  ) as { props?: { content?: unknown[] } } | undefined;
+  const heading = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Heading") as
+    | { props?: { text?: string } }
+    | undefined;
+  return heading?.props?.text;
+}
+
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
 // Buffer matches baseProps initial data so restoring it keeps isDirty=false.
 const LOCAL_DRAFT_V2 = {
@@ -1395,6 +1406,117 @@ describe("EditorShell", () => {
       const buffered = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
       expect(buffered).toBeTruthy();
       expect(navLogoAssetId(JSON.parse(buffered!))).toBeUndefined();
+    });
+  });
+
+  describe("chrome sync wiring", () => {
+    it("deleting a detached footer does not open the reanchor confirm or revert the deletion (Fix #3)", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+
+      // Step 1: add a footer to home, already detached, so the other zone
+      // (which has none) never receives a mirrored copy.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: true } },
+        ],
+        root: {},
+      });
+
+      // Step 2: delete that same detached footer.
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero], root: {} });
+
+      expect(screen.queryByText("Match Gallery's styling?")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = (JSON.parse(buffered!).data.home.content ?? []) as { props?: { _chrome?: string } }[];
+        expect(homeContent.some((b) => b.props?._chrome === "footer")).toBe(false);
+      });
+    });
+
+    it("deleting an attached footer mirrors the removal onto the other zone, and it does not come back on a later edit (Fix #4)", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+
+      // Step 1: add an (attached) footer to home — mirrors onto gallery.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } },
+        ],
+        root: {},
+      });
+
+      // Step 2: delete it from home.
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero], root: {} });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as { home: { content?: { props?: { _chrome?: string } }[] }; gallery: { content?: { props?: { _chrome?: string } }[] } };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+      });
+
+      // Step 3: an unrelated edit on gallery (now footer-less) must not
+      // resurrect a footer on either zone.
+      __capturedPuckOnChange?.({
+        content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }, { type: "Hero", props: { id: "g-Hero-1", headline: "Gallery edit" } }],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Home" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        const data = JSON.parse(buffered!).data as { home: { content?: { props?: { _chrome?: string } }[] }; gallery: { content?: { props?: { _chrome?: string } }[] } };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+      });
+    });
+  });
+
+  it("migrates a legacy header's logo + brand text onto the seeded Navigation's slot (Fix #2)", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "hero-1", headline: "Hi" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: { brandText: "Acme Studio", logoUrl: "https://cdn/logo.png", logoAssetId: "asset-99" },
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    await waitFor(() => {
+      const buffered = window.localStorage.getItem(DRAFT_KEY);
+      expect(buffered).toBeTruthy();
+      const buffer = JSON.parse(buffered!);
+      expect(navLogoAssetId(buffer)).toBe("asset-99");
+      expect(navHeadingText(buffer)).toBe("Acme Studio");
     });
   });
 

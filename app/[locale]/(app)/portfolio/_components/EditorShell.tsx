@@ -645,17 +645,44 @@ function demoBlockCount(zone: PuckData): number {
 }
 
 /**
+ * Builds the migrated slot content for a legacy `header` value (predating
+ * Navigation-as-a-block): an Image child carrying `logoAssetId` as
+ * `_style.bgImagePublicId` (same shape `withPendingLogo` writes — omitted
+ * entirely when there is no logo, matching navigationDefaultProps' own
+ * no-placeholder-Image default) plus a Heading carrying `brandText` (falling
+ * back to the same "Studio Name" default `navigationDefaultProps` uses).
+ * Returns undefined when the header carries neither, so `ensureNavigation`
+ * leaves `content` unset and `fillBlockDefaults` fills the ordinary default.
+ */
+function legacyHeaderNavContent(header: PortfolioHeaderConfig): BlockEntry[] | undefined {
+  if (!header.logoAssetId && !header.brandText) return undefined;
+  const children: BlockEntry[] = [];
+  if (header.logoAssetId) {
+    children.push({ type: "Image", props: { alt: "Logo", _style: { bgImagePublicId: header.logoAssetId } } });
+  }
+  children.push({ type: "Heading", props: { level: "h3", text: header.brandText ?? "Studio Name" } });
+  return children;
+}
+
+/**
  * Prepends a bare Navigation entry (no id, no content slot) when `data` has
  * none. `fillBlockDefaults` (called right after, in `prepareForEditor`) fills
  * the missing `content` slot from `navigationDefaultProps`, and `ensureIds`
  * assigns it a stable id — same pipeline every other seeded block goes
  * through. `header` fields always win over the block's own defaults since
- * every `PortfolioHeaderConfig` key is spread directly onto the props.
+ * every `PortfolioHeaderConfig` key is spread directly onto the props; when
+ * `header` carries a legacy logo/brandText, `content` is seeded directly
+ * (see `legacyHeaderNavContent`) so that real logo/brand actually renders
+ * instead of the block's generic placeholder defaults.
  */
 function ensureNavigation(data: PuckData, header: PortfolioHeaderConfig): PuckData {
   const content = data.content ?? [];
   if (content.some((b) => (b.props as { _chrome?: string })._chrome === "nav")) return data;
-  const navEntry: BlockEntry = { type: "Navigation", props: { ...header, _chrome: "nav" } };
+  const migratedContent = legacyHeaderNavContent(header);
+  const navEntry: BlockEntry = {
+    type: "Navigation",
+    props: { ...header, _chrome: "nav", ...(migratedContent ? { content: migratedContent } : {}) },
+  };
   return { ...data, content: [navEntry, ...content] };
 }
 
@@ -682,8 +709,10 @@ function prepareForEditor(
  * `pendingOnboardingLogoRef`) directly into the newly-seeded Navigation
  * block's free `content` slot — the Image child on the left — as
  * `_style.bgImagePublicId`, the same shape ImageBlock reads for any other
- * picked image. A no-op when there is no pending logo or no Navigation/Image
- * child to patch (should not happen — every template seeds both).
+ * picked image. A no-op when there is no pending logo or no Navigation block
+ * to patch. `navigationDefaultProps` seeds no Image child by default (an
+ * unpicked Image renders an "unavailable" placeholder), so when the slot has
+ * none yet one is inserted at the front to carry the logo.
  */
 function withPendingLogo(
   zone: PuckData,
@@ -696,16 +725,18 @@ function withPendingLogo(
   const nav = content[navIndex];
   const slotChildren = (nav.props.content as BlockEntry[] | undefined) ?? [];
   const imageIndex = slotChildren.findIndex((c) => c.type === "Image");
-  if (imageIndex === -1) return zone;
-  const image = slotChildren[imageIndex];
-  const nextSlotChildren = [...slotChildren];
-  nextSlotChildren[imageIndex] = {
+  const image: BlockEntry = imageIndex === -1 ? { type: "Image", props: { alt: "Logo" } } : slotChildren[imageIndex];
+  const patchedImage: BlockEntry = {
     ...image,
     props: {
       ...image.props,
       _style: { ...(image.props._style as Record<string, unknown> | undefined), bgImagePublicId: logo.logoAssetId },
     },
   };
+  const nextSlotChildren =
+    imageIndex === -1
+      ? [patchedImage, ...slotChildren]
+      : slotChildren.map((c, i) => (i === imageIndex ? patchedImage : c));
   const nextContent = [...content];
   nextContent[navIndex] = { ...nav, props: { ...nav.props, content: nextSlotChildren } };
   return { ...zone, content: nextContent };
@@ -1330,9 +1361,14 @@ export function EditorShell({
       // both transitions need to revert what Puck already rendered
       // optimistically (its own uncontrolled field state already flipped).
       for (const kind of CHROME_KINDS) {
-        const wasDetached = isChromeDetached(zoneDataRef.current[activeZone], kind);
-        const isDetachedNow = isChromeDetached(next, kind);
-        if (wasDetached && !isDetachedNow) {
+        const prevChrome = findChrome(zoneDataRef.current[activeZone] as unknown as Data, kind);
+        const nextChrome = findChrome(next as unknown as Data, kind);
+        const wasDetached = Boolean(prevChrome && (prevChrome.props as { detached?: boolean }).detached);
+        const isDetachedNow = Boolean(nextChrome && (nextChrome.props as { detached?: boolean }).detached);
+        // Only a genuine "detach off" toggle enters reanchor. A deleted block
+        // also reads isDetachedNow=false but must NOT be treated the same —
+        // require the block to still exist next.
+        if (wasDetached && nextChrome && !isDetachedNow) {
           setPendingReanchor({ zone: activeZone, kind });
           ignoreNextChange.current = true;
           setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
@@ -1357,9 +1393,13 @@ export function EditorShell({
       // Navigation/Footer mirror across zones: sync the changed zone's chrome
       // into the other zone (no-op when detached), then re-pin the active
       // zone's Navigation to index 0 in case another block landed above it.
+      // The previous (pre-edit) zone is passed through so a genuine deletion
+      // (block existed, now doesn't) mirrors as a removal instead of being
+      // silently ignored — see syncChrome's deletion-mirroring doc.
+      const previousActiveZone = zoneDataRef.current[activeZone] as unknown as Data;
       let zones = { ...zoneDataRef.current, [activeZone]: next } as unknown as Zones;
-      zones = syncChrome(zones, activeZone, "nav");
-      zones = syncChrome(zones, activeZone, "footer");
+      zones = syncChrome(zones, activeZone, "nav", undefined, previousActiveZone);
+      zones = syncChrome(zones, activeZone, "footer", undefined, previousActiveZone);
       zones = { ...zones, [activeZone]: normalizeChrome(zones[activeZone]) };
       const updated = zones as unknown as Record<Zone, PuckData>;
 
