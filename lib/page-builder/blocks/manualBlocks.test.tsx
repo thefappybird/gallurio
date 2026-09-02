@@ -14,6 +14,9 @@ import {
   columnsDefaultProps,
   containerDefaultProps,
   containerResolvePermissions,
+  headingDefaultProps,
+  textDefaultProps,
+  TEXT_EFFECTIVE_PAD,
   type HeadingBlockProps,
 } from "./manualBlocks";
 import {
@@ -106,10 +109,10 @@ describe("HeadingBlock", () => {
     expect(container).toBeTruthy();
   });
 
-  it("wrapper div has no default padding", () => {
+  it("wrapper div has the 4px effective-default padding (grabbable drag strip)", () => {
     const { container } = render(<HeadingBlock text="Test" level="h2" />);
     const div = container.firstChild as HTMLElement;
-    expect(div.style.padding).toBe("");
+    expect(div.style.padding).toBe("4px");
   });
 
   it("renders text without a <mark> when highlight is not set", () => {
@@ -200,10 +203,10 @@ describe("TextBlock", () => {
     expect(container).toBeTruthy();
   });
 
-  it("wrapper div has no default padding", () => {
+  it("wrapper div has the 4px effective-default padding (grabbable drag strip)", () => {
     const { container } = render(<TextBlock text="Test" />);
     const div = container.firstChild as HTMLElement;
-    expect(div.style.padding).toBe("");
+    expect(div.style.padding).toBe("4px");
   });
 
   it("renders text without a <mark> when highlight is not set", () => {
@@ -1680,6 +1683,59 @@ describe("B2a: ContainerBlock render — fallback padding (parity)", () => {
       <ContainerBlock content={stubSlot} _style={{ paddingTop: "3rem" }} />,
     );
     expect(html).toContain("padding-top:3rem");
+  });
+});
+
+describe("HeadingBlock/TextBlock render — 4px effective-default padding (grabbable drag strip)", () => {
+  it("TEXT_EFFECTIVE_PAD is 4px on all four sides", () => {
+    expect(TEXT_EFFECTIVE_PAD).toEqual({ top: "4px", right: "4px", bottom: "4px", left: "4px" });
+  });
+
+  it("headingDefaultProps._style has no padding (effective default is display-only, not materialized)", () => {
+    expect(headingDefaultProps._style?.paddingTop).toBeUndefined();
+  });
+
+  it("textDefaultProps._style has no padding (effective default is display-only, not materialized)", () => {
+    expect(textDefaultProps._style?.paddingTop).toBeUndefined();
+  });
+
+  it("HeadingBlock renders all four sides at 4px when _style is undefined", () => {
+    const html = renderToStaticMarkup(<HeadingBlock text="Hi" level="h2" />);
+    expect(html).toContain("padding-top:4px");
+    expect(html).toContain("padding-right:4px");
+    expect(html).toContain("padding-bottom:4px");
+    expect(html).toContain("padding-left:4px");
+  });
+
+  it("TextBlock renders all four sides at 4px when _style is undefined", () => {
+    const html = renderToStaticMarkup(<TextBlock text="Hi" />);
+    expect(html).toContain("padding-top:4px");
+    expect(html).toContain("padding-right:4px");
+    expect(html).toContain("padding-bottom:4px");
+    expect(html).toContain("padding-left:4px");
+  });
+
+  it("HeadingBlock: explicit _style.paddingTop overrides the 4px fallback", () => {
+    const html = renderToStaticMarkup(
+      <HeadingBlock text="Hi" level="h2" _style={{ paddingTop: "0px" }} />,
+    );
+    expect(html).toContain("padding-top:0px");
+  });
+
+  it("TextBlock: explicit _style.paddingTop overrides the 4px fallback", () => {
+    const html = renderToStaticMarkup(<TextBlock text="Hi" _style={{ paddingTop: "0px" }} />);
+    expect(html).toContain("padding-top:0px");
+  });
+
+  it("HeadingBlock: same render used for canvas (puck.isEditing) and public page renders identical padding (parity)", () => {
+    const editingHtml = renderToStaticMarkup(
+      <HeadingBlock text="Hi" level="h2" puck={{ isEditing: true }} />,
+    );
+    const publicHtml = renderToStaticMarkup(
+      <HeadingBlock text="Hi" level="h2" puck={{ isEditing: false }} />,
+    );
+    expect(editingHtml).toContain("padding-top:4px");
+    expect(publicHtml).toContain("padding-top:4px");
   });
 });
 

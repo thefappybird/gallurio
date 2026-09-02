@@ -106,6 +106,7 @@ import {
   BUTTON_SIZE_FONT_PX,
   CONTAINER_EFFECTIVE_PAD,
   COLUMNS_EFFECTIVE_PAD,
+  TEXT_EFFECTIVE_PAD,
 } from "./blocks/manualBlocks";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import {
@@ -2482,8 +2483,17 @@ export function LayoutTabBody({
   // For text-only and button leaf blocks: position/size + spacing controls.
   if (TEXT_ONLY_BLOCKS.has(blockType)) {
     const isButton = blockType === "Button";
+    // Heading/Text render a 4px effective-default padding (grabbable drag
+    // strip around the inline-editable text) — surface the same Spacing
+    // controls Container/Columns get so it's visible + overridable.
+    const isHeadingOrText = blockType === "Heading" || blockType === "Text";
     return (
       <EditorDrawerGroup>
+        {isHeadingOrText && (
+          <EditorDrawerSection title="Spacing">
+            <PaddingControls s={s} set={set} effectivePad={TEXT_EFFECTIVE_PAD} />
+          </EditorDrawerSection>
+        )}
         {isButton && p && setProp && (
           <EditorDrawerSection title="Layout">
             {/* Button style and Corner radius moved to Design tab → Button section (Pass 2). */}

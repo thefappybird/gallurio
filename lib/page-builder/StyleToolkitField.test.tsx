@@ -1730,6 +1730,40 @@ describe("B2a: Container padding — effective-default display (placeholder)", (
   });
 });
 
+describe("Heading/Text padding — grabbable drag strip, effective-default display", () => {
+  it("LayoutTabBody for Heading shows a Spacing drawer with Padding placeholder '4' when _style has no padding", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={true} blockType="Heading" />,
+    );
+    // Spacing is the first drawer for Heading and auto-opens.
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    expect(spinbuttons[0].placeholder).toBe("4");
+  });
+
+  it("LayoutTabBody for Text shows a Spacing drawer with Padding placeholder '4' when _style has no padding", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={true} blockType="Text" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    expect(spinbuttons[0].placeholder).toBe("4");
+  });
+
+  it("LayoutTabBody for Heading: typing an explicit padding value calls the setter with the real value (not the effective default)", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={true} blockType="Heading" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    fireEvent.change(spinbuttons[0], { target: { value: "0" } });
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.paddingTop).toBe("0px");
+  });
+});
+
 describe("Font select — Google Fonts", () => {
   it("selecting a Google Fonts shortlist entry calls the setter with a google: selection", () => {
     const set = vi.fn();

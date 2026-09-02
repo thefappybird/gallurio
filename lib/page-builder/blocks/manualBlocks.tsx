@@ -93,6 +93,18 @@ export type HeadingBlockProps = {
 
 export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2" };
 
+/**
+ * Effective padding constants for Heading and Text — render fallback + control
+ * effectiveValue. Gives the inline-editable block a grabbable strip around the
+ * text so it isn't 100% covered by Puck's contentEditable overlay.
+ */
+export const TEXT_EFFECTIVE_PAD = {
+  top: "4px",
+  right: "4px",
+  bottom: "4px",
+  left: "4px",
+} as const;
+
 /** Fluid clamp font sizes for headings. `cqi` resolves against the `pfpage` container. */
 const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
   h1: "clamp(2rem, 1.4rem + 4cqi, 3rem)",
@@ -115,6 +127,10 @@ export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & 
         color:
           colorTokenToVar(_style?.textColorToken) ??
           "var(--pf-block-text-color, var(--pf-color-fg))",
+        paddingTop: _style?.paddingTop ?? TEXT_EFFECTIVE_PAD.top,
+        paddingRight: _style?.paddingRight ?? TEXT_EFFECTIVE_PAD.right,
+        paddingBottom: _style?.paddingBottom ?? TEXT_EFFECTIVE_PAD.bottom,
+        paddingLeft: _style?.paddingLeft ?? TEXT_EFFECTIVE_PAD.left,
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -185,6 +201,10 @@ export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: Bloc
         color:
           colorTokenToVar(_style?.textColorToken) ??
           "var(--pf-block-text-color, var(--pf-color-fg))",
+        paddingTop: _style?.paddingTop ?? TEXT_EFFECTIVE_PAD.top,
+        paddingRight: _style?.paddingRight ?? TEXT_EFFECTIVE_PAD.right,
+        paddingBottom: _style?.paddingBottom ?? TEXT_EFFECTIVE_PAD.bottom,
+        paddingLeft: _style?.paddingLeft ?? TEXT_EFFECTIVE_PAD.left,
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
