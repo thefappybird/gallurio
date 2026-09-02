@@ -223,6 +223,27 @@ describe("NavigationBlock — isomorphic render", () => {
   });
 });
 
+describe("NavigationBlock — overallWidth (Item 1)", () => {
+  it("passes overallWidth='full' through to PortfolioHeader's inner nav row by default", () => {
+    render(NavigationBlock({ ...navigationDefaultProps, content: stubSlot }));
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("");
+  });
+
+  it("a pre-existing Navigation block with no overallWidth key still resolves to full (no stored-data rewrite needed)", () => {
+    const { overallWidth: _omit, ...legacyProps } = navigationDefaultProps;
+    render(NavigationBlock({ ...legacyProps, content: stubSlot }));
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("");
+  });
+
+  it("overallWidth='page-fit' clamps PortfolioHeader's inner nav row to 80rem", () => {
+    render(NavigationBlock({ ...navigationDefaultProps, overallWidth: "page-fit", content: stubSlot }));
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("80rem");
+  });
+});
+
 describe("NavigationBlock — defaults and permissions", () => {
   it("defaultProps carry _chrome: 'nav' and a seeded title slot, no placeholder logo", () => {
     expect(navigationDefaultProps._chrome).toBe("nav");

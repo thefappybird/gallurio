@@ -112,6 +112,7 @@ export function PortfolioHeader({
   homeHref: homeHrefProp,
   galleryHref: galleryHrefProp,
   brandSlot,
+  overallWidth = "page-fit",
 }: {
   slug: string;
   labels: PortfolioHeaderLabels;
@@ -129,6 +130,11 @@ export function PortfolioHeader({
    * slot) — replaces the default logo+brand-text link in the SAME row as the
    * nav links when provided. Absent = today's default rendering, unchanged. */
   brandSlot?: React.ReactNode;
+  /** Layout: "page-fit" (default) clamps the inner nav row to 80rem, matching
+   * today's rendering for any caller that omits this prop. "full" lets the row
+   * span the header's full width (NavigationBlock passes this, defaulting to
+   * "full" itself). */
+  overallWidth?: "page-fit" | "full";
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const logo = useImageRetry(config?.logoUrl);
@@ -206,8 +212,8 @@ export function PortfolioHeader({
       <nav
         aria-label={labels.navLandmark}
         style={{
-          maxWidth: "80rem",
-          margin: "0 auto",
+          maxWidth: overallWidth === "full" ? undefined : "80rem",
+          margin: overallWidth === "full" ? undefined : "0 auto",
           padding: navbarSize.navPadding,
           display: "flex",
           alignItems: "center",

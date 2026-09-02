@@ -20,6 +20,7 @@ type FooterPresetProps = ContainerBlockProps & { _chrome?: ChromeKind; detached?
 
 export const FOOTER_SIGNATURE_PRESET: FooterPresetProps = {
   _chrome: "footer",
+  overallWidth: "full",
   backgroundImages: [],
   minHeight: "auto",
   alignX: "center",
@@ -41,6 +42,7 @@ export const FOOTER_SIGNATURE_PRESET: FooterPresetProps = {
 
 export const FOOTER_DIRECTORY_PRESET: FooterPresetProps = {
   _chrome: "footer",
+  overallWidth: "full",
   backgroundImages: [],
   minHeight: "auto",
   _style: { ...pageSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
@@ -85,6 +87,7 @@ export const FOOTER_DIRECTORY_PRESET: FooterPresetProps = {
 
 export const FOOTER_STATEMENT_PRESET: FooterPresetProps = {
   _chrome: "footer",
+  overallWidth: "full",
   backgroundImages: [],
   minHeight: "auto",
   _style: { ...primaryBandSection, gap: 24, paddingTop: "3.5rem", paddingBottom: "3.5rem" },

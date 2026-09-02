@@ -745,6 +745,7 @@ export function NavigationContentPanel({
   setProps,
   navDetach,
   detached,
+  overallWidth,
   t = navDetachFallbackT,
 }: {
   config: PortfolioHeaderConfig;
@@ -752,6 +753,10 @@ export function NavigationContentPanel({
   setProps?: (patch: Record<string, unknown>) => void;
   navDetach?: NavDetachContext;
   detached: boolean;
+  /** Layout: "page-fit" clamps the inner nav row to 80rem; "full" (the chrome
+   *  default — see NavigationBlock) spans the header's full width. Unset shows
+   *  Full as the effective default (Navigation is always `_chrome: "nav"`). */
+  overallWidth?: "page-fit" | "full";
   t?: NavDetachTranslate;
 }) {
   const set = <K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) =>
@@ -789,6 +794,29 @@ export function NavigationContentPanel({
           options={HEADER_SHADOW_SIZES.map((v) => ({ value: v, label: NAV_SHADOW_LABELS[v] }))}
           onChange={(v) => set("shadowSize", v === "none" ? "" : v)}
         />
+        <div className="flex flex-col gap-2">
+          <span className="text-xs text-muted-foreground">Overall width</span>
+          <div className="flex items-center gap-1.5">
+            {(["page-fit", "full"] as const).map((v) => {
+              const label = v === "page-fit" ? "Page fit" : "Full";
+              const isActive = overallWidth === v || (overallWidth === undefined && v === "full");
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => setProp("overallWidth", v)}
+                  className={cn(
+                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    isActive && "bg-foreground text-background hover:bg-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">
@@ -1047,6 +1075,7 @@ export function ContentInputs({
         setProps={setProps}
         navDetach={navDetach}
         detached={!!(props as { detached?: boolean }).detached}
+        overallWidth={(props as { overallWidth?: "page-fit" | "full" }).overallWidth}
         t={t}
       />
     );
@@ -2574,23 +2603,113 @@ export function LayoutTabBody({
           effectiveValue={16}
           onChange={(v) => set({ gap: v })}
         />
-        {/* Overall Width — Columns only: Page fit (default) or Full (100vw full-bleed). */}
-        {isColumns && p !== undefined && setProp && (
+        {/* Width — Fill (default, unset) / Hug (fit-content) / Fixed (DimensionInput). */}
+        {(isFlexContainer || isColumns) && (() => {
+          const widthMode: "fill" | "hug" | "fixed" =
+            s.width === undefined ? "fill" : s.width === "fit-content" ? "hug" : "fixed";
+          return (
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Width</span>
+              <div className="flex items-center gap-1.5">
+                {(["fill", "hug", "fixed"] as const).map((v) => {
+                  const isActive = widthMode === v;
+                  const label = v === "fill" ? "Fill" : v === "hug" ? "Hug" : "Fixed";
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() =>
+                        set({
+                          width:
+                            v === "fill"
+                              ? undefined
+                              : v === "hug"
+                                ? "fit-content"
+                                : widthMode === "fixed"
+                                  ? s.width
+                                  : "200px",
+                        })
+                      }
+                      className={cn(
+                        "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                        isActive && "bg-foreground text-background hover:bg-foreground"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              {widthMode === "fixed" && (
+                <DimensionInput label="Fixed width" value={s.width} onChange={(v) => set({ width: v })} />
+              )}
+            </div>
+          );
+        })()}
+        {/* Overall Width — Container, Navigation-shaped presets, and Columns:
+            Page fit (default) or Full (100vw full-bleed). Chrome blocks (footer)
+            default to Full — see ContainerBlock's own _chrome-aware fallback,
+            mirrored here so the control's "effective" tier matches the render.
+            Disabled while Width is Hug — the two are contradictory and Hug wins
+            (see ContainerBlock render). */}
+        {(isColumns || isFlexContainer) && p !== undefined && setProp && (() => {
+          const chrome = (p as { _chrome?: string })._chrome;
+          const effectiveDefault: "page-fit" | "full" = !isColumns && chrome === "footer" ? "full" : "page-fit";
+          const widthIsHug = s.width === "fit-content";
+          return (
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Overall width</span>
+              <div className="flex items-center gap-1.5">
+                {(["page-fit", "full"] as const).map((v) => {
+                  const label = v === "page-fit" ? "Page fit" : "Full";
+                  const isActive = (p.overallWidth as string | undefined) === v || (p.overallWidth === undefined && v === effectiveDefault);
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      aria-pressed={isActive}
+                      disabled={widthIsHug}
+                      title={widthIsHug ? "Width is set to Hug — overall width has no effect." : undefined}
+                      onClick={() => setProp("overallWidth", v)}
+                      className={cn(
+                        "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                        isActive && "bg-foreground text-background hover:bg-foreground",
+                        widthIsHug && "cursor-not-allowed opacity-50"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+        {/* Direction — Container only (flexDirection is not consumed by Columns).
+            Effective-default display: prop stays unset until the user picks
+            explicitly; unset always shows Vertical as the theme/system default. */}
+        {isFlexContainer && (
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Overall width</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Direction</span>
             <div className="flex items-center gap-1.5">
-              {(["page-fit", "full"] as const).map((v) => {
-                const label = v === "page-fit" ? "Page fit" : "Full";
-                const isActive = (p.overallWidth as string | undefined) === v || (p.overallWidth === undefined && v === "page-fit");
+              {([
+                { value: "column", label: "↓ Vertical" },
+                { value: "row", label: "→ Horizontal" },
+              ] as const).map(({ value, label }) => {
+                const isExplicit = s.flexDirection === value;
+                const isEffective = s.flexDirection === undefined && value === "column";
+                const isActive = isExplicit || isEffective;
                 return (
                   <button
-                    key={v}
+                    key={value}
                     type="button"
                     aria-pressed={isActive}
-                    onClick={() => setProp("overallWidth", v)}
+                    onClick={() => set({ flexDirection: value })}
                     className={cn(
                       "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                      isActive && "bg-foreground text-background hover:bg-foreground"
+                      isExplicit && "bg-foreground text-background hover:bg-foreground",
+                      isEffective && "border-foreground"
                     )}
                   >
                     {label}

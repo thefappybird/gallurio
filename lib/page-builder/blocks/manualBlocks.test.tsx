@@ -1436,6 +1436,91 @@ describe("ContainerBlock flex defaults", () => {
   });
 });
 
+describe("Item 1: ContainerBlock overallWidth prop", () => {
+  it("defaults to page-fit (80rem clamp) when overallWidth and _chrome are both unset", () => {
+    const { container } = render(<ContainerBlock content={stubSlot} />);
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("");
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.maxWidth).toBe("80rem");
+  });
+
+  it("overallWidth='full' breaks the section out to 100vw on the public page and drops the slot's 80rem clamp", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} overallWidth="full" puck={{ isEditing: false }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("100vw");
+    expect(section?.style.marginLeft).toBe("calc(50% - 50vw)");
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.maxWidth).toBe("");
+  });
+
+  it("overallWidth='full' in the editor canvas caps to 100% (not 100vw) so it never overflows the narrow preview", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} overallWidth="full" puck={{ isEditing: true }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("100%");
+    expect(section?.style.marginLeft).toBe("0px");
+  });
+
+  it("_chrome='footer' defaults to full even when overallWidth is absent (fixes pre-existing narrow footers with no stored-data rewrite)", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} _chrome="footer" puck={{ isEditing: false }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("100vw");
+  });
+
+  it("an explicit overallWidth='page-fit' on a footer container overrides the chrome default", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} overallWidth="page-fit" _chrome="footer" />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("");
+  });
+});
+
+describe("Item 4: ContainerBlock width (Fill / Hug / Fixed)", () => {
+  it("Hug (_style.width: fit-content) wins over overallWidth='full' — the section is not full-bleed", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={stubSlot}
+        overallWidth="full"
+        _style={{ width: "fit-content" }}
+        puck={{ isEditing: false }}
+      />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("fit-content");
+    expect(section?.style.marginLeft).toBe("");
+  });
+
+  it("a hugging Container does not apply flexGrow: 1 (would defeat the hug in a flex-row parent)", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} _style={{ width: "fit-content" }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.flexGrow).toBe("0");
+  });
+
+  it("a Fill-width Container (no _style.width) keeps flexGrow: 1 (unchanged default)", () => {
+    const { container } = render(<ContainerBlock content={stubSlot} />);
+    const section = container.querySelector("section");
+    expect(section?.style.flexGrow).toBe("1");
+  });
+
+  it("a fixed width (e.g. 320px) applies to the section via the existing resolveBlockStyle mechanism", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} _style={{ width: "320px" }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("320px");
+    expect(section?.style.flexGrow).toBe("1");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // ContainerBlock — background slideshow branch
 // ---------------------------------------------------------------------------

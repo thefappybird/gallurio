@@ -61,6 +61,7 @@ function highlightBandStyle(
   };
 }
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import type { ChromeKind } from "@/lib/page-builder/chromeSync";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { GalleryImage } from "./GalleryGridBlock";
@@ -867,6 +868,19 @@ export type ContainerBlockProps = {
   minHeightValue?: string;
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
+  /** Layout: "page-fit" keeps the content slot clamped to max-width:80rem;margin:0 auto
+   *  and the outer section unbroken. "full" breaks the outer section out to 100vw
+   *  (100% in the editor canvas, to stay inside the narrow preview) AND drops the
+   *  slot's 80rem clamp — band and content both edge-to-edge.
+   *  Unset falls back to "full" when `_chrome === "footer"`, else "page-fit" — see
+   *  the render. Not written into `containerDefaultProps` on purpose: that keeps
+   *  the fallback theme-coupled (effective-default DISPLAY, not materialized) so a
+   *  pre-existing footer without this key still renders full in BOTH the editor
+   *  canvas and the public page (same render function, same fallback — no drift). */
+  overallWidth?: "page-fit" | "full";
+  /** Marks chrome blocks (footer) for chromeSync's mirroring — same marker prop as
+   *  NavigationBlockProps. Only read here for the overallWidth chrome fallback above. */
+  _chrome?: ChromeKind;
   content: Slot;
 };
 
@@ -931,6 +945,8 @@ export function ContainerBlock({
   minHeightValue,
   alignX,
   alignY,
+  overallWidth,
+  _chrome,
   content: Content,
   puck,
 }: {
@@ -944,12 +960,22 @@ export function ContainerBlock({
   minHeightValue?: string;
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
+  overallWidth?: "page-fit" | "full";
+  _chrome?: ChromeKind;
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
   const ax = alignX ?? "left";
   const ay = alignY ?? "top";
   const s = _style ?? {};
+  // Effective-default DISPLAY (portfolio-effective-defaults skill): the prop stays
+  // unset until the user edits it explicitly. Footer chrome defaults to "full";
+  // every other Container (manual or preset) keeps the pre-existing page-fit
+  // behaviour so already-saved drafts render unchanged. Hug width (fit-content)
+  // always wins over a full-bleed breakout — the two are contradictory.
+  const isHugWidth = s.width === "fit-content";
+  const wantsFullBleed = (overallWidth ?? (_chrome === "footer" ? "full" : "page-fit")) === "full";
+  const applyFullBleed = wantsFullBleed && !isHugWidth;
 
   // Resolve baked background images -> cover-layer URLs (same transform as the
   // legacy single background). Drop any that don't resolve (blank publicId / no
@@ -1007,7 +1033,9 @@ export function ContainerBlock({
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        flexGrow: 1,
+        // A hugging Container (Width=Hug, s.width==="fit-content") must not also
+        // grow to fill its flex parent's main axis — that would defeat the hug.
+        flexGrow: isHugWidth ? 0 : 1,
         minHeight: puck?.isEditing
           ? minHeight === "custom"
             ? (minHeightValue ?? "128px")
@@ -1022,6 +1050,15 @@ export function ContainerBlock({
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...sectionStyle,
+        // Full-bleed breakout, placed after sectionStyle so it always wins over any
+        // explicit _style.width — EXCEPT when Hug is active (applyFullBleed is false
+        // in that case, so sectionStyle's fit-content width stands). Editor canvas
+        // caps to 100% (not 100vw) so it never overflows the narrow preview.
+        ...(applyFullBleed
+          ? puck?.isEditing
+            ? { width: "100%", marginLeft: 0 }
+            : { width: "100vw", marginLeft: "calc(50% - 50vw)" }
+          : {}),
       }}
       {...resolveBlockAttrs(_style)}
     >
@@ -1063,8 +1100,10 @@ export function ContainerBlock({
           position: "relative",
           zIndex: 1,
           width: "100%",
-          maxWidth: "80rem",
-          margin: "0 auto",
+          // "full" breaks the content slot's clamp out too — band and content both
+          // edge-to-edge. Hug already shrinks the section itself (applyFullBleed is
+          // false in that case), so the slot keeps its normal page-fit clamp.
+          ...(applyFullBleed ? {} : { maxWidth: "80rem", margin: "0 auto" }),
           display: "flex",
           // _style.flexDirection lets a Container lay its children out as a row
           // (e.g. a bundled, centered group of Buttons) instead of the default
@@ -1154,6 +1193,14 @@ export const containerFields = {
       { label: "Bottom", value: "bottom" },
     ],
   } as Field<ContainerAlignY | undefined>,
+  overallWidth: {
+    type: "select",
+    label: "Overall width",
+    options: [
+      { label: "Page fit", value: "page-fit" },
+      { label: "Full", value: "full" },
+    ],
+  } as Field<ContainerBlockProps["overallWidth"]>,
   content: { type: "slot" },
 } as unknown as ComponentConfig<ContainerBlockProps>["fields"];
 

@@ -37,6 +37,20 @@ describe("PortfolioHeader", () => {
     expect(screen.getByRole("navigation", { name: "Portfolio" })).toBeInTheDocument();
   });
 
+  it("clamps the inner nav row to 80rem by default (preserves today's rendering for callers that omit overallWidth)", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("80rem");
+    expect(nav.style.margin).toBe("0px auto");
+  });
+
+  it("overallWidth='full' drops the inner nav row's 80rem clamp", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} overallWidth="full" />);
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("");
+    expect(nav.style.margin).toBe("");
+  });
+
   it("links Home and Gallery to the correct workspace URLs", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     const nav = screen.getByRole("navigation", { name: "Portfolio" });

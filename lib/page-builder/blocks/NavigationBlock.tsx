@@ -48,6 +48,13 @@ export type NavigationBlockProps = PortfolioHeaderConfig & {
    *  reads this — its styling lives on the `PortfolioHeaderConfig` fields
    *  above, edited via StyleToolkitField's Navigation Content/Design panels. */
   _style?: BlockStyle;
+  /** Layout: "page-fit" clamps the inner nav row to 80rem; "full" (the default)
+   *  spans the header's full width — see PortfolioHeader. Navigation is always
+   *  `_chrome: "nav"`, so unlike Container/Columns this has no page-fit-by-default
+   *  chrome exception; absent still resolves to "full" (see the render below), so
+   *  a pre-existing Navigation block saved before this prop existed also gets the
+   *  full-width fix without any stored-data rewrite. */
+  overallWidth?: "page-fit" | "full";
   /** Free slot for the logo/title — fully editable, restyleable, deletable. */
   content: Slot;
 };
@@ -55,6 +62,7 @@ export type NavigationBlockProps = PortfolioHeaderConfig & {
 export const navigationDefaultProps: NavigationBlockProps = {
   ...DEFAULT_HEADER_CONFIG,
   _chrome: "nav",
+  overallWidth: "full",
   // No Image child: an empty Image renders an "Image unavailable" placeholder
   // on the public page (ImageBlock, manualBlocks.tsx) — the owner adds a logo
   // Image block into this slot only after a logo is uploaded.
@@ -71,6 +79,7 @@ export function NavigationBlock({
   detached: _detached,
   _chrome: _chromeMark,
   _style: _styleIgnored,
+  overallWidth,
   ...config
 }: Omit<NavigationBlockProps, "content"> & { content?: Slot | SlotComponent; puck?: BlockPuck }) {
   const workspace = getRenderWorkspaceFrom(puck);
@@ -95,6 +104,9 @@ export function NavigationBlock({
           openMenu: labels.openMenu,
           closeMenu: labels.closeMenu,
         }}
+        // Absent (pre-existing saved data) still resolves to "full" — the chrome
+        // default — so an old narrow header is fixed without rewriting stored data.
+        overallWidth={overallWidth ?? "full"}
         config={config as PortfolioHeaderConfig}
         brandSlot={SlotContent?.({
           className: "pf-nav-brand-content",

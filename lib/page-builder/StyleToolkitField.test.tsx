@@ -579,6 +579,27 @@ describe("ContentInputs — Navigation", () => {
   });
 });
 
+describe("Item 1: ContentInputs — Navigation Overall width control", () => {
+  it("shows Page fit and Full buttons, with Full active by default (unset prop)", () => {
+    render(<ContentInputs type="Navigation" props={{}} setProp={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("reflects an explicit overallWidth='page-fit' as active", () => {
+    render(<ContentInputs type="Navigation" props={{ overallWidth: "page-fit" }} setProp={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking Page fit calls setProp('overallWidth', 'page-fit')", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Navigation" props={{}} setProp={setProp} />);
+    fireEvent.click(screen.getByRole("button", { name: "Page fit" }));
+    expect(setProp).toHaveBeenCalledWith("overallWidth", "page-fit");
+  });
+});
+
 describe("Navigation Design panel", () => {
   it("keeps Links open first and Contact button collapsed", () => {
     render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
@@ -1475,6 +1496,191 @@ describe("A7: LayoutTabBody — Columns Overall Width control", () => {
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
     expect(screen.getByRole("button", { name: "Page fit" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Full" })).toBeTruthy();
+  });
+});
+
+describe("Item 1: LayoutTabBody — Container/preset Overall Width control", () => {
+  it("shows Page fit and Full for a plain Container, with Page fit active by default (unset prop, no chrome)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("shows Full active by default for a footer-chrome Container (unset prop, _chrome: footer)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{ _chrome: "footer" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("an explicit overallWidth wins over the footer chrome default", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{ _chrome: "footer", overallWidth: "page-fit" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("clicking Full calls setProp('overallWidth', 'full')", () => {
+    const setProp = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{}}
+        setProp={setProp}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Full" }));
+    expect(setProp).toHaveBeenCalledWith("overallWidth", "full");
+  });
+});
+
+describe("Item 4: LayoutTabBody — Width control (Fill / Hug / Fixed)", () => {
+  it("shows Fill active by default for a Container with no _style.width", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Fill" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Hug" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Fixed" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking Hug calls set({ width: 'fit-content' })", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Hug" }));
+    expect(set).toHaveBeenCalledWith({ width: "fit-content" });
+  });
+
+  it("clicking Fixed from Fill writes a starting numeric width and reveals the DimensionInput", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Fixed" }));
+    expect(set).toHaveBeenCalledWith({ width: "200px" });
+  });
+
+  it("shows the Fixed width DimensionInput when _style.width is an explicit CSS length", () => {
+    render(
+      <LayoutTabBody
+        s={{ width: "320px" }}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Fixed" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Fixed width")).toBeInTheDocument();
+  });
+
+  it("is also offered for Columns", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={false} blockType="Columns" p={{}} setProp={() => {}} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Hug" })).toBeInTheDocument();
+  });
+
+  it("disables the Overall width control while Width is Hug (the two are contradictory — Hug wins)", () => {
+    render(
+      <LayoutTabBody
+        s={{ width: "fit-content" }}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Page fit" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Full" })).toBeDisabled();
+  });
+});
+
+describe("Item 5: LayoutTabBody — Direction control (Container only)", () => {
+  it("shows Vertical active by default when _style.flexDirection is unset", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "↓ Vertical" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "→ Horizontal" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("shows Horizontal active when _style.flexDirection is 'row' (existing presets that already set it by hand)", () => {
+    render(
+      <LayoutTabBody
+        s={{ flexDirection: "row" }}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "→ Horizontal" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("clicking Horizontal calls set({ flexDirection: 'row' })", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "→ Horizontal" }));
+    expect(set).toHaveBeenCalledWith({ flexDirection: "row" });
+  });
+
+  it("is NOT shown for Columns (flexDirection is not consumed by ColumnsBlock)", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={false} blockType="Columns" p={{}} setProp={() => {}} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.queryByRole("button", { name: "↓ Vertical" })).toBeNull();
   });
 });
 
