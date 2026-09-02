@@ -69,12 +69,12 @@
       "portfolioBuilder": {
         "title": "Pembuat portfolio drag-and-drop",
         "panelHeadline": "Buat kesan pertama terasa seperti diri Anda.",
-        "description": "Website builder drag-and-drop tanpa kode — tanpa layar kosong, tanpa developer. Susun galeri, layanan, dan bagian sesuai cara Anda ingin karya Anda dilihat — lalu jadikan benar-benar milik Anda.",
-        "feature1": "Bagian halaman drag-and-drop — tanpa kode",
-        "feature2": "Galeri gambar dan koleksi",
-        "feature3": "Warna, font, dan branding kustom — tanpa perlu developer",
-        "feature4": "Dirancang untuk mengubah pengunjung jadi permintaan",
-        "cta": "Coba portfolio builder-nya"
+        "description": "Page builder berbasis blok tanpa kode — jelajahi pustaka bagian siap pakai dengan pratinjau langsung, tanpa layar kosong untuk memulai. Atur warna, jarak, dan tipografi tiap blok, pilih tata letak galeri Anda, dan terapkan brand kit ke seluruh situs.",
+        "feature1": "Bagian siap pakai dengan pratinjau langsung",
+        "feature2": "Tata letak galeri grid, masonry, dan carousel",
+        "feature3": "Kontrol warna, jarak, dan tipografi per blok",
+        "feature4": "Brand kit dan preset tema untuk seluruh situs",
+        "cta": "Buka portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Permintaan booking",

@@ -69,12 +69,12 @@
       "portfolioBuilder": {
         "title": "Drag-and-drop na portfolio builder",
         "panelHeadline": "Gawin ang unang impresyon na parang ikaw talaga.",
-        "description": "Isang drag-and-drop, walang-code na website builder — walang blangkong screen, walang kailangang developer. Ayusin ang mga gallery, serbisyo, at section sa paraang gusto mo talagang makita ang iyong trabaho — pagkatapos gawin itong tunay na sa iyo.",
-        "feature1": "Drag-and-drop na page section — walang code na kailangan",
-        "feature2": "Mga image gallery at collection",
-        "feature3": "Custom na kulay, font, at branding — walang kailangang developer",
-        "feature4": "Ginawa para gawing inquiry ang mga bisita",
-        "cta": "Subukan ang portfolio builder"
+        "description": "Isang block-based, walang-code na page builder — mag-browse ng library ng mga handa nang section na may live preview, walang blangkong screen na simulan. I-style ang kulay, espasyo, at font ng bawat block, piliin ang layout ng iyong gallery, at ilapat ang brand kit sa buong site mo.",
+        "feature1": "Mga handa nang section na may live preview",
+        "feature2": "Grid, masonry, at carousel na gallery layout",
+        "feature3": "Kontrol sa kulay, espasyo, at font kada block",
+        "feature4": "Brand kit at theme preset, ilapat sa buong site",
+        "cta": "Buksan ang portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",

@@ -69,12 +69,12 @@
       "portfolioBuilder": {
         "title": "Drag-and-drop portfolio builder",
         "panelHeadline": "Make your first impression feel like you.",
-        "description": "A drag-and-drop, no-code website builder — no blank screen, no developer needed. Arrange galleries, services, and sections the way you actually want your work seen, then make it unmistakably yours.",
-        "feature1": "Drag-and-drop page sections — no code needed",
-        "feature2": "Image galleries and collections",
-        "feature3": "Custom colors, fonts, and branding — no developer required",
-        "feature4": "Built to turn visitors into inquiries",
-        "cta": "Try the portfolio builder"
+        "description": "A block-based, no-code page builder — browse a library of ready-made sections with live previews, no blank screen to start from. Style every block's color, spacing, and type, choose your gallery layout, and apply a brand kit across your whole site.",
+        "feature1": "Ready-made sections with live previews",
+        "feature2": "Grid, masonry, and carousel gallery layouts",
+        "feature3": "Per-block color, spacing, and type controls",
+        "feature4": "Brand kit and theme presets, applied sitewide",
+        "cta": "Open the portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",
