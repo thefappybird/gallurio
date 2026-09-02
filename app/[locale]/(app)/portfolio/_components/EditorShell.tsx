@@ -1495,30 +1495,36 @@ export function EditorShell({
         if (next !== beforeRescue) rescued = true;
       }
 
-      // Dropping a preset Navigation (e.g. from the drawer) REPLACES the
-      // pinned one at index 0, rather than being collapsed away as a
+      // Dropping a preset Navigation/Footer (e.g. from the drawer) REPLACES
+      // the pinned one in place, rather than being collapsed away as a
       // duplicate by normalizeChrome below. Detected as a genuine growth in
-      // nav-block count carrying an id not present before — an ordinary
-      // reorder never changes the count, and the mount echo already
-      // returned above, so this can't misfire on either.
-      {
-        const prevNavBlocks = (zoneDataRef.current[activeZone].content ?? []).filter(
-          (b) => (b.props as { _chrome?: string })._chrome === "nav",
+      // that kind's block count carrying an id not present before — an
+      // ordinary reorder never changes the count, and the mount echo already
+      // returned above, so this can't misfire on either. Nav's replacement
+      // is re-seeded with the real workspace brand name (seedNavBrandContent
+      // is NAV-ONLY — a footer never gets brand text); nav goes first
+      // (pinned to the top), footer goes last (pinned to the bottom).
+      for (const kind of CHROME_KINDS) {
+        const prevKindBlocks = (zoneDataRef.current[activeZone].content ?? []).filter(
+          (b) => (b.props as { _chrome?: string })._chrome === kind,
         );
-        const nextNavBlocks = (next.content ?? []).filter(
-          (b) => (b.props as { _chrome?: string })._chrome === "nav",
+        const nextKindBlocks = (next.content ?? []).filter(
+          (b) => (b.props as { _chrome?: string })._chrome === kind,
         );
-        if (nextNavBlocks.length > prevNavBlocks.length && prevNavBlocks.length >= 1) {
-          const prevIds = new Set(prevNavBlocks.map((b) => b.props.id as string));
-          const inserted = nextNavBlocks.find((b) => !prevIds.has(b.props.id as string));
+        if (nextKindBlocks.length > prevKindBlocks.length && prevKindBlocks.length >= 1) {
+          const prevIds = new Set(prevKindBlocks.map((b) => b.props.id as string));
+          const inserted = nextKindBlocks.find((b) => !prevIds.has(b.props.id as string));
           if (inserted) {
-            const pinnedId = prevNavBlocks[0].props.id as string;
-            const seeded = seedNavBrandContent(inserted, workspaceName);
+            const pinnedId = prevKindBlocks[0].props.id as string;
+            const seeded = kind === "nav" ? seedNavBrandContent(inserted, workspaceName) : inserted;
             const replacement = { ...seeded, props: { ...seeded.props, id: pinnedId } };
-            const withoutNavs = (next.content ?? []).filter(
-              (b) => (b.props as { _chrome?: string })._chrome !== "nav",
+            const withoutKind = (next.content ?? []).filter(
+              (b) => (b.props as { _chrome?: string })._chrome !== kind,
             );
-            next = { ...next, content: [replacement, ...withoutNavs] };
+            next = {
+              ...next,
+              content: kind === "nav" ? [replacement, ...withoutKind] : [...withoutKind, replacement],
+            };
           }
         }
       }

@@ -1857,6 +1857,45 @@ describe("EditorShell", () => {
       expect(seed.content[seed.content.length - 1].props._chrome).toBe("footer");
     });
 
+    it("dragging a second footer preset in replaces the pinned Footer in place, keeping its id, staying last, and taking the preset's content", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const homeFooter = { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } };
+
+      // Step 1: establish a pinned footer.
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero, homeFooter], root: {} });
+
+      // Step 2: drop a footer preset alongside it — should replace the
+      // pinned footer in place, not be collapsed away as a duplicate.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          homeFooter,
+          { type: "FooterStatementPreset", props: { id: "preset-footer-1", _chrome: "footer", columns: 3 } },
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = JSON.parse(buffered!).data.home.content as {
+          type: string;
+          props: { id: string; _chrome?: string; columns?: number };
+        }[];
+        const footers = homeContent.filter((b) => b.props._chrome === "footer");
+        expect(footers).toHaveLength(1);
+        expect(footers[0].type).toBe("FooterStatementPreset");
+        expect(footers[0].props.id).toBe("home-footer");
+        expect(footers[0].props.columns).toBe(3);
+        expect(homeContent[homeContent.length - 1]).toBe(footers[0]);
+      });
+    });
+
     it("a footer dropped mid-list survives into zoneDataRef/the persisted buffer and mirrors to the other zone", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
