@@ -47,25 +47,29 @@ The tour is gotcha-dense. The files:
    portal, not in the overlay container — see `portfolio-testing`.
 
 ## Steps & gating (`spotlightSteps.ts`, `SPOTLIGHT_STEPS`)
-- 20 steps; the UI shows "N of 20" and that number == array index + 1. (The `translate`
-  step, anchored to `language-control`, sits just before the `theme` step.)
+- 19 steps; the UI shows "N of 19" and that number == array index + 1. The total comes from
+  `SPOTLIGHT_STEPS.length`, so adding or removing a step re-numbers the counter by itself.
+  (The `translate` step, anchored to `language-control`, sits two steps before `theme`.)
 - A step: `{ id, slug?, anchorId?, secondaryAnchorId?, title, body, placement?, gated?, passthrough? }`.
   Copy IS localized: every real step has a `slug`, and the card renders
   `tg("steps.<slug>.title|body")` from `app.pageBuilder.editor.tour.steps.*` in all 5 locales
   (the literal `title`/`body` are only fallbacks for slug-less test fixtures). Add a new
   step's copy to all 5 message files.
-- **Gate ids** (`EditorShell.tsx` `gateSatisfied`, ~1061): `drag-block` (content count >
-  baseline; needs `passthrough` so the drag can cross panel→canvas), `header-tab`
-  (`headerOpen`, set by `openHeader()` when the Navigation tab is clicked), `contact-tab`
+- **Gate ids** (`EditorShell.tsx` `gateSatisfied`): `drag-block` (content count >
+  baseline; needs `passthrough` so the drag can cross panel→canvas) and `contact-tab`
   (`contactOpen`). When a gated step's condition flips true, the engine auto-advances.
+  Navigation and Footer are ordinary in-canvas Puck blocks now, not side panels, so they
+  have **no gated step and no anchor of their own** — the generic Content/Design/Layout
+  steps cover editing them. (The old `header-tab` gate and `openHeader()` are gone;
+  `spotlightSteps.test.ts` asserts the step stays deleted.)
 - `gated` steps hide Next until satisfied and show the "Try it" pill (style on
   `bg-popover`-contrasting tokens, not `--accent`, or it's invisible).
 
 ## Anchors (`data-tour-id`, in `EditorShell.tsx` unless noted)
 `blocks-panel` (left panel) · `properties-panel-full` (full right column — marked
 dynamically by `RightPanelTourMarker`, which climbs to the Puck column with
-`gridRowStart==="right"`) · `section-tabs` (wraps the five page tabs) · `header-tab`
-(Navigation button) · `contact-tab` · `style-tab-content/-design/-layout`
+`gridRowStart==="right"`) · `section-tabs` (wraps the four page tabs: Home, Gallery,
+Featured popup, Contact Form) · `contact-tab` · `style-tab-content/-design/-layout`
 (`StyleToolkitField.tsx`) · `photos` · `language-control` (globe language/RTL control in the
 edit header, on `PortfolioLanguageControl`'s trigger) · `theme` · `preview-toggle` ·
 `save-changes` · `publish`.

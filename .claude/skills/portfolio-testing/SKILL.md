@@ -23,14 +23,15 @@ Use the **Playwright CLI** (`pnpm exec playwright test`), not the MCP plugin (to
 They are NOT inside `[aria-label="Portfolio editor guide"]`. So:
 - Find Next/Back/Skip on `page.locator('[role="dialog"]')` (document-level), NOT scoped to
   the overlay container.
-- Find anchored controls (e.g. the Navigation tab) inside the overlay:
-  `page.locator('[aria-label="Portfolio editor guide"] [data-tour-id="header-tab"]')`.
+- Find anchored controls (e.g. the Contact Form tab) inside the overlay:
+  `page.locator('[aria-label="Portfolio editor guide"] [data-tour-id="contact-tab"]')`.
+  There is no `header-tab` anchor any more — Navigation is an in-canvas block, not a panel.
 
 ## Reaching a gated step
 A Next-only walker gets STUCK at gated steps (Next is hidden until the gate is satisfied):
 - `drag-block` (step 2) needs a real drag (below).
-- `header-tab` (step 8) advances when you click the Navigation tab (opens header).
-- `contact-tab` (step 12) advances when you click Contact Form.
+- `contact-tab` (step 8) advances when you click Contact Form.
+Those two are the only gates; the tour is 19 steps ending on `publish`.
 To screenshot/verify a late step you must satisfy each gate, not just click Next.
 
 ## dnd-kit drag (validated technique)
