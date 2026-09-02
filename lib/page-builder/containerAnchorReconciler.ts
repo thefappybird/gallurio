@@ -2,7 +2,14 @@
  * Container anchors are editor-only empty-state drop targets. Puck does not run
  * component resolveData after every remove/move, so this reconciler is invoked
  * from the live editor store as well as from Container.resolveData.
+ *
+ * The anchor is kept (appended as the LAST child) not only when a Container is
+ * empty, but also when every real child is itself container-class (Container
+ * or Columns) — see shouldKeepAnchor. Otherwise a Container that nests only
+ * containers/columns has no droppable anchor left to receive a sibling drop.
  */
+
+import { shouldKeepAnchor } from "./containerAnchorPredicate";
 
 type SlotItem = {
   type: string;
@@ -43,28 +50,32 @@ function reconcileItems(items: SlotItem[]): { items: SlotItem[]; changed: boolea
       : [];
     const realChildren = content.filter((child) => !isAnchor(child));
     const id = nextItem.props.id;
+    const keepAnchor = shouldKeepAnchor(realChildren);
 
-    if (realChildren.length > 0) {
+    // Puck supplies a stable id for every editor item. Without one, do not
+    // invent a transient anchor that would churn on the next reconciliation —
+    // just strip any stray anchor instead.
+    if (!keepAnchor || typeof id !== "string" || !id) {
       if (content.length === realChildren.length) return nextItem;
       changed = true;
       return { ...nextItem, props: { ...nextItem.props, content: realChildren } };
     }
 
-    // Puck supplies a stable id for every editor item. Without one, do not
-    // invent a transient anchor that would churn on the next reconciliation.
-    if (typeof id !== "string" || !id) return nextItem;
     const anchorId = `${id}--anchor`;
-    const currentAnchor = content.length === 1 && content[0] && isAnchor(content[0]);
-    if (currentAnchor && content[0].props.id === anchorId) return nextItem;
+    const anchorItem: SlotItem = { type: "ContainerAnchor", props: { id: anchorId, height: 0 } };
+    const desiredContent = [...realChildren, anchorItem];
+
+    const alreadyCorrect =
+      content.length === desiredContent.length &&
+      content.every((child, i) => {
+        const want = desiredContent[i];
+        if (isAnchor(want)) return isAnchor(child) && child.props.id === anchorId;
+        return child === want;
+      });
+    if (alreadyCorrect) return nextItem;
 
     changed = true;
-    return {
-      ...nextItem,
-      props: {
-        ...nextItem.props,
-        content: [{ type: "ContainerAnchor", props: { id: anchorId, height: 0 } }],
-      },
-    };
+    return { ...nextItem, props: { ...nextItem.props, content: desiredContent } };
   });
 
   return { items: changed ? nextItems : items, changed };

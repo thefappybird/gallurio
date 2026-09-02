@@ -15,13 +15,16 @@ type StoreLike = {
 };
 
 // StoreLike is a partial stub; referenced in mountStore via `as never` below.
-function mountStore(selectedItemId: string | null): { dispatch: ReturnType<typeof vi.fn> } {
+function mountStore(
+  selectedItemId: string | null,
+  content: Array<{ type: string }> = [],
+): { dispatch: ReturnType<typeof vi.fn> } {
   const dispatch = vi.fn();
   const getSelectorForId = vi.fn().mockReturnValue({ zone: "default-zone", index: 0 });
 
   const state: StoreLike = {
     // Return a non-null parent so height > 0 (anchor renders, not null).
-    getItemById: () => ({ props: { minHeight: "auto", content: [] } }),
+    getItemById: () => ({ props: { minHeight: "auto", content } }),
     selectedItem: selectedItemId != null ? { props: { id: selectedItemId } } : null,
     dispatch,
     getSelectorForId,
@@ -53,5 +56,27 @@ describe("EditorContainerAnchor selection-bounce guard", () => {
 
     // dispatch must NOT have been called: the guard must prevent the loop.
     expect(dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe("EditorContainerAnchor height — container-class bridge case", () => {
+  it("renders the 4px bridge footprint when the only real child is a Columns block", async () => {
+    mountStore(null, [{ type: "Columns" }]);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
+    expect(el.style.height).toBe("4px");
+  });
+
+  it("renders the 4px bridge footprint when there are two container-class children", async () => {
+    mountStore(null, [{ type: "Columns" }, { type: "Container" }]);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
+    expect(el.style.height).toBe("4px");
+  });
+
+  it("collapses to 0 (renders nothing) when a container-class child sits alongside a non-container child", async () => {
+    mountStore(null, [{ type: "Columns" }, { type: "Heading" }]);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    expect(container.querySelector(".pf-container-anchor")).toBeNull();
   });
 });

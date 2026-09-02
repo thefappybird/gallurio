@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
+import { isContainerClass } from "@/lib/page-builder/containerAnchorPredicate";
 import { CONTAINER_EDITOR_HEIGHT_PX, type ContainerHeight } from "./manualBlocks";
 
 /**
@@ -43,9 +44,10 @@ export function EditorContainerAnchor({ id }: { id: string }) {
       // Empty container — show full editor footprint so it's droppable.
       return CONTAINER_EDITOR_HEIGHT_PX[minHeight];
     }
-    if (realChildren.length === 1 && realChildren[0].type === "Container") {
-      // Bridge case: keep a 4px footprint so a 2nd Container can be dropped
-      // as a sibling (not nested inside the 1st Container).
+    if (realChildren.every((child) => isContainerClass(child.type))) {
+      // Bridge case: every real child is container-class (Container or
+      // Columns, any count) — keep a 4px footprint so another sibling can
+      // still be dropped here instead of nested inside an existing child.
       return 4;
     }
     // Container has real non-container content → collapse anchor to 0.
