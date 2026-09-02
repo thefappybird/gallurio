@@ -655,14 +655,36 @@ function demoBlockCount(zone: PuckData): number {
  * Returns undefined when the header carries neither, so `ensureNavigation`
  * leaves `content` unset and `fillBlockDefaults` fills the ordinary default.
  */
-function legacyHeaderNavContent(header: PortfolioHeaderConfig): BlockEntry[] | undefined {
-  if (!header.logoAssetId && !header.brandText) return undefined;
+function legacyHeaderNavContent(
+  header: PortfolioHeaderConfig,
+  workspaceName: string
+): BlockEntry[] | undefined {
+  const brandName = header.brandText?.trim() || workspaceName.trim();
+  if (!header.logoAssetId && !brandName) return undefined;
   const children: BlockEntry[] = [];
   if (header.logoAssetId) {
     children.push({ type: "Image", props: { alt: "Logo", _style: { bgImagePublicId: header.logoAssetId } } });
   }
-  children.push({ type: "Heading", props: { level: "h3", text: header.brandText ?? "Studio Name" } });
+  children.push({ type: "Heading", props: { level: "h3", text: brandName || "Studio Name" } });
   return children;
+}
+
+/**
+ * Seeds a brand-new Navigation block's Heading child with the real workspace
+ * name, replacing whatever placeholder text the preset/default carried. Only
+ * ever called on a block that just entered the canvas (drawer-dropped preset
+ * variant) — an existing block's already-rendered content is never routed
+ * through here, so an owner's own edited brand text is never touched.
+ */
+function seedNavBrandContent(entry: BlockEntry, workspaceName: string): BlockEntry {
+  const name = workspaceName.trim();
+  if (!name) return entry;
+  const children = (entry.props.content as BlockEntry[] | undefined) ?? [];
+  if (children.length === 0) return entry;
+  const nextChildren = children.map((child) =>
+    child.type === "Heading" ? { ...child, props: { ...child.props, text: name } } : child
+  );
+  return { ...entry, props: { ...entry.props, content: nextChildren } };
 }
 
 /**
@@ -676,10 +698,14 @@ function legacyHeaderNavContent(header: PortfolioHeaderConfig): BlockEntry[] | u
  * (see `legacyHeaderNavContent`) so that real logo/brand actually renders
  * instead of the block's generic placeholder defaults.
  */
-function ensureNavigation(data: PuckData, header: PortfolioHeaderConfig): PuckData {
+function ensureNavigation(
+  data: PuckData,
+  header: PortfolioHeaderConfig,
+  workspaceName: string
+): PuckData {
   const content = data.content ?? [];
   if (content.some((b) => (b.props as { _chrome?: string })._chrome === "nav")) return data;
-  const migratedContent = legacyHeaderNavContent(header);
+  const migratedContent = legacyHeaderNavContent(header, workspaceName);
   const navEntry: BlockEntry = {
     type: "Navigation",
     props: { ...header, _chrome: "nav", ...(migratedContent ? { content: migratedContent } : {}) },
@@ -709,9 +735,10 @@ function ensureNavigation(data: PuckData, header: PortfolioHeaderConfig): PuckDa
  */
 function prepareForEditorWithMeta(
   data: PuckData,
-  headerFallback: PortfolioHeaderConfig = DEFAULT_HEADER_CONFIG
+  headerFallback: PortfolioHeaderConfig = DEFAULT_HEADER_CONFIG,
+  workspaceName = ""
 ): { data: Data; repaired: boolean } {
-  const seeded = ensureNavigation(data, headerFallback);
+  const seeded = ensureNavigation(data, headerFallback, workspaceName);
   const navInjected = seeded !== data;
   const withDefaults = fillBlockDefaults(seeded as unknown as PuckDataLike) as unknown as PuckData;
   // Normalize legacy/restored ContainerAnchor data before the first canvas
@@ -733,9 +760,10 @@ function prepareForEditorWithMeta(
 
 function prepareForEditor(
   data: PuckData,
-  headerFallback: PortfolioHeaderConfig = DEFAULT_HEADER_CONFIG
+  headerFallback: PortfolioHeaderConfig = DEFAULT_HEADER_CONFIG,
+  workspaceName = ""
 ): Data {
-  return prepareForEditorWithMeta(data, headerFallback).data;
+  return prepareForEditorWithMeta(data, headerFallback, workspaceName).data;
 }
 
 /**
@@ -965,8 +993,8 @@ export function EditorShell({
     (initialFormDir as "ltr" | "rtl" | "" | undefined) ?? ""
   );
   const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>(() => ({
-    home: prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData,
-    gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData,
+    home: prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
+    gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
   }));
   // currentSlug tracks the live slug after in-dialog edits (optimistic update).
   const [currentSlug, setCurrentSlug] = useState(slug);
@@ -1127,8 +1155,8 @@ export function EditorShell({
   // Stored as state so it can be read during render for the derived isDirty check.
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(() => {
     if (initialActiveDraftId === null) return null;
-    const homeMeta = prepareForEditorWithMeta(initialData.home ?? EMPTY_ZONE, initialHeaderConfig);
-    const galleryMeta = prepareForEditorWithMeta(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig);
+    const homeMeta = prepareForEditorWithMeta(initialData.home ?? EMPTY_ZONE, initialHeaderConfig, workspaceName);
+    const galleryMeta = prepareForEditorWithMeta(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig, workspaceName);
     // A meaningful repair (e.g. a legacy header migrated into a missing
     // Navigation block) happened on load: the stored draft genuinely lacks
     // what the canvas now shows, so there is no valid "last saved" baseline
@@ -1159,8 +1187,8 @@ export function EditorShell({
   // Source of truth for each zone's latest data, updated by Puck's onChange.
   // A ref (not state) so editing doesn't re-feed Puck mid-session.
   const zoneDataRef = useRef<Record<Zone, PuckData>>({
-    home: prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData,
-    gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData,
+    home: prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
+    gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
   });
   // Puck emits an onChange echo on mount/remount that just replays the seed it
   // was handed — merely loading a zone must not autosave/bump the version, only
@@ -1176,7 +1204,7 @@ export function EditorShell({
   // a genuine edit — which by definition differs from the seed — is never mistaken
   // for one, however Puck's mount/remount timing behaves.
   const lastPuckSeedRef = useRef<PuckData>(
-    prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData
+    prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData
   );
   // Ref to the DraftNameEditor so handleSaveChanges can flush an in-progress rename.
   const nameEditorRef = useRef<DraftNameEditorHandle>(null);
@@ -1206,7 +1234,7 @@ export function EditorShell({
   // re-renders never reset the editor mid-edit, and full re-seeds (applyTemplate,
   // applyDraft) force a remount by bumping seedNonce.
   const [puckSeed, setPuckSeed] = useState<Data>(() =>
-    prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig)
+    prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig, workspaceName)
   );
   // Every re-seed of Puck (mount, zone switch, applyDraft, applyTemplate, ...)
   // must go through this — it's the only place lastPuckSeedRef is updated, so
@@ -1328,11 +1356,11 @@ export function EditorShell({
         // prepareForEditor both zones so zoneDataRef, renderDraftData, and the
         // Puck seed are all in the same shape — mismatched shapes cause isDirty=true.
         const home = withPendingLogo(
-          prepareForEditor(draft.data?.home ?? zoneDataRef.current.home, initialHeaderConfig) as unknown as PuckData,
+          prepareForEditor(draft.data?.home ?? zoneDataRef.current.home, initialHeaderConfig, workspaceName) as unknown as PuckData,
           pendingLogo,
         );
         const gallery = withPendingLogo(
-          prepareForEditor(draft.data?.gallery ?? zoneDataRef.current.gallery, initialHeaderConfig) as unknown as PuckData,
+          prepareForEditor(draft.data?.gallery ?? zoneDataRef.current.gallery, initialHeaderConfig, workspaceName) as unknown as PuckData,
           pendingLogo,
         );
         zoneDataRef.current = { home, gallery };
@@ -1352,7 +1380,7 @@ export function EditorShell({
     } catch {
       window.localStorage.removeItem(draftKey);
     }
-  }, [draftKey, initialHeaderConfig, seedPuck]);
+  }, [draftKey, initialHeaderConfig, seedPuck, workspaceName]);
 
   // demoMode has no per-workspace "saved draft" to protect — the buffer is
   // its only storage — so it keeps the old unconditional auto-restore, fired
@@ -1422,7 +1450,7 @@ export function EditorShell({
         // used elsewhere in this file (bump seedNonce with the pre-add data).
         if (nextLen > DEMO_BLOCK_CAP && nextLen > prevLen) {
           setActiveDemoGate("blockCap");
-          seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
+          seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig, workspaceName));
           setSeedNonce((n) => n + 1);
           return;
         }
@@ -1485,7 +1513,8 @@ export function EditorShell({
           const inserted = nextNavBlocks.find((b) => !prevIds.has(b.props.id as string));
           if (inserted) {
             const pinnedId = prevNavBlocks[0].props.id as string;
-            const replacement = { ...inserted, props: { ...inserted.props, id: pinnedId } };
+            const seeded = seedNavBrandContent(inserted, workspaceName);
+            const replacement = { ...seeded, props: { ...seeded.props, id: pinnedId } };
             const withoutNavs = (next.content ?? []).filter(
               (b) => (b.props as { _chrome?: string })._chrome !== "nav",
             );
@@ -1507,7 +1536,7 @@ export function EditorShell({
         // require the block to still exist next.
         if (wasDetached && nextChrome && !isDetachedNow) {
           setPendingReanchor({ zone: activeZone, kind });
-          seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
+          seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig, workspaceName));
           setSeedNonce((n) => n + 1);
           return;
         }
@@ -1518,7 +1547,7 @@ export function EditorShell({
           } as unknown as Zones;
           if (!canDetach(zonesNow, activeZone, kind)) {
             // Only one zone per kind may be detached — refuse the second toggle.
-            seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
+            seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig, workspaceName));
             setSeedNonce((n) => n + 1);
             return;
           }
@@ -1555,11 +1584,11 @@ export function EditorShell({
       debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
       if (chromeOrderCorrected) {
-        seedPuck(prepareForEditor(updated[activeZone], initialHeaderConfig));
+        seedPuck(prepareForEditor(updated[activeZone], initialHeaderConfig, workspaceName));
         setSeedNonce((n) => n + 1);
       }
     },
-    [activeZone, debouncedPersistLocalDraft, demoMode, initialHeaderConfig, seedPuck]
+    [activeZone, debouncedPersistLocalDraft, demoMode, initialHeaderConfig, seedPuck, workspaceName]
   );
 
   /** Anchor wins: the pending zone adopts the other zone's chrome. */
@@ -1575,7 +1604,7 @@ export function EditorShell({
     zoneDataRef.current = updated;
     setRenderDraftData(updated);
     setPendingReanchor(null);
-    seedPuck(prepareForEditor(updated[activeZone], initialHeaderConfig));
+    seedPuck(prepareForEditor(updated[activeZone], initialHeaderConfig, workspaceName));
     setSeedNonce((n) => n + 1);
     debouncedPersistLocalDraft();
   }
@@ -1799,8 +1828,8 @@ export function EditorShell({
     // prepareForEditor must be applied here so zoneDataRef, renderDraftData, and
     // savedSnapshot all carry the same shape — without it the gallery zone stays
     // raw while the snapshot holds the prepared version → isDirty=true on load.
-    const homeMeta = prepareForEditorWithMeta((d.data.home as PuckData) ?? EMPTY_ZONE, resolvedHeader);
-    const galleryMeta = prepareForEditorWithMeta((d.data.gallery as PuckData) ?? EMPTY_ZONE, resolvedHeader);
+    const homeMeta = prepareForEditorWithMeta((d.data.home as PuckData) ?? EMPTY_ZONE, resolvedHeader, workspaceName);
+    const galleryMeta = prepareForEditorWithMeta((d.data.gallery as PuckData) ?? EMPTY_ZONE, resolvedHeader, workspaceName);
     const homeData = withPendingLogo(homeMeta.data as unknown as PuckData, pendingLogo);
     const galleryData = withPendingLogo(galleryMeta.data as unknown as PuckData, pendingLogo);
     // Resolve each field to the value that will be committed to state, so the
@@ -1855,8 +1884,8 @@ export function EditorShell({
     // Both zones go through prepareForEditor (not just puckSeed/home) — a
     // Save/Publish that never visits the Gallery tab reads zoneDataRef
     // directly, so an unprepared gallery would ship with no Navigation.
-    const homeData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
-    const galleryData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
+    const homeData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData;
+    const galleryData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData;
     zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setTemplateId(SCRATCH_TEMPLATE_ID);
@@ -1965,11 +1994,11 @@ export function EditorShell({
     hideEditorPanels();
     if (sidePanelOpen) {
       hideEditorPanels();
-      seedPuck(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig));
+      seedPuck(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig, workspaceName));
       setActiveZone("home");
     }
     await flushPendingSave(activeZone);
-    seedPuck(prepareForEditor(zoneDataRef.current[zone], initialHeaderConfig));
+    seedPuck(prepareForEditor(zoneDataRef.current[zone], initialHeaderConfig, workspaceName));
     setActiveZone(zone);
     if (previewMode) setPreviewNonce((n) => n + 1);
   }
@@ -1979,7 +2008,7 @@ export function EditorShell({
     try {
       if (previewMode) {
         // Back to editing — remount Puck from the freshest data; ignore its echo.
-        seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
+        seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig, workspaceName));
         setPreviewMode(false);
         return;
       }
@@ -1987,7 +2016,7 @@ export function EditorShell({
       await flushPendingSave(activeZone);
       if (sidePanelOpen) {
         hideEditorPanels();
-        seedPuck(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig));
+        seedPuck(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig, workspaceName));
         setActiveZone("home");
       }
       setPreviewNonce((n) => n + 1);
@@ -2122,11 +2151,11 @@ export function EditorShell({
     const pendingLogo = pendingOnboardingLogoRef.current;
     pendingOnboardingLogoRef.current = null;
     const homeData = withPendingLogo(
-      prepareForEditor((seed.data.home as PuckData) ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData,
+      prepareForEditor((seed.data.home as PuckData) ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
       pendingLogo,
     );
     const galleryData = withPendingLogo(
-      prepareForEditor((seed.data.gallery as PuckData) ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData,
+      prepareForEditor((seed.data.gallery as PuckData) ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
       pendingLogo,
     );
     zoneDataRef.current = { home: homeData, gallery: galleryData };
@@ -2187,8 +2216,8 @@ export function EditorShell({
       return false;
     }
     const seedData = template.seedData({ workspace: { name: workspaceName || "Your Studio" } });
-    const homeData = prepareForEditor(seedData.home ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
-    const galleryData = prepareForEditor(seedData.gallery ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
+    const homeData = prepareForEditor(seedData.home ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData;
+    const galleryData = prepareForEditor(seedData.gallery ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData;
     const seedCollectionsPopup = template.defaultCollectionsPopup ?? {};
     zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
@@ -2290,8 +2319,8 @@ export function EditorShell({
     // unprepared gallery has no Navigation); seedPuck records the handed seed
     // so its mount echo isn't processed as a real edit (every other seedPuck
     // site in this file does the same).
-    const homeData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
-    const galleryData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
+    const homeData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData;
+    const galleryData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData;
     zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     seedPuck(homeData as unknown as Data);

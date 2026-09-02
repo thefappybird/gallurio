@@ -47,6 +47,19 @@ describe("portfolio template registry", () => {
         expect(data.gallery?.content.length ?? 0).toBeGreaterThan(0);
       });
 
+      it("seeds the pinned Navigation's brand Heading with the real workspace name in both zones", () => {
+        for (const zone of [data.home, data.gallery]) {
+          const nav = zone?.content.find(
+            (b) => (b.props as { _chrome?: string })._chrome === "nav"
+          ) as { props: { content?: unknown[] } } | undefined;
+          expect(nav, `Template '${template.id}' has no pinned Navigation block`).toBeDefined();
+          const heading = nav?.props.content?.find(
+            (c) => (c as { type?: string }).type === "Heading"
+          ) as { props?: { text?: string } } | undefined;
+          expect(heading?.props?.text).toBe("Studio Aurora");
+        }
+      });
+
       it("only references blocks that exist in the Puck registry", () => {
         const allBlocks = [
           ...(data.home?.content ?? []),

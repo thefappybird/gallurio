@@ -245,12 +245,26 @@ function navLogoAssetIdFromZone(zone: { content?: unknown[] } | undefined): stri
 }
 
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
-// Buffer matches baseProps initial data so restoring it keeps isDirty=false.
+// Buffer matches baseProps initial data (including its already-present,
+// content-less Navigation block) so restoring it keeps isDirty=false. A
+// buffer with NO Navigation at all would instead take the migration path
+// (ensureNavigation), which now seeds the real workspace name onto a
+// freshly-injected block — a different, dirtying outcome from a Navigation
+// that was already on the canvas.
 const LOCAL_DRAFT_V2 = {
   version: 2,
   data: {
-    home: { content: [{ type: "Hero", props: { headline: "Hi" } }], root: {} },
-    gallery: { content: [], root: {} },
+    home: {
+      content: [
+        { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+        { type: "Hero", props: { headline: "Hi" } },
+      ],
+      root: {},
+    },
+    gallery: {
+      content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }],
+      root: {},
+    },
   },
   draftId: "d1",
   draftName: "Test Draft",
@@ -1658,6 +1672,42 @@ describe("EditorShell", () => {
       });
     });
 
+    it("dropping a nav preset variant seeds its brand Heading with the real workspace name, not the preset's placeholder", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      __capturedPuckOnChange?.({
+        content: [
+          { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+          { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } },
+          {
+            type: "NavBorderedPreset",
+            props: {
+              id: "preset-nav-1",
+              _chrome: "nav",
+              content: [
+                { type: "Image", props: { alt: "Logo" } },
+                { type: "Heading", props: { level: "h3", text: "Studio Name" } },
+              ],
+            },
+          },
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = JSON.parse(buffered!).data.home.content as {
+          type: string;
+          props: { id: string; _chrome?: string; content?: { type: string; props?: { text?: string } }[] };
+        }[];
+        const nav = homeContent.find((b) => b.props._chrome === "nav");
+        const heading = nav?.props.content?.find((c) => c.type === "Heading");
+        expect(heading?.props?.text).toBe("Studio Aurora");
+      });
+    });
+
     it("deleting a detached footer does not open the reanchor confirm or revert the deletion (Fix #3)", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
@@ -2057,6 +2107,42 @@ describe("EditorShell", () => {
         | { props?: { text?: string } }
         | undefined;
       expect(heading?.props?.text).toBe("Acme Studio");
+    });
+  });
+
+  it("migrates a legacy header with no brand text onto the seeded Navigation using the workspace name", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "hero-1", headline: "Hi" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: { logoUrl: "https://cdn/logo.png", logoAssetId: "asset-99" },
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    await waitFor(() => {
+      const zone = __capturedPuckSeed as { content?: unknown[] };
+      const nav = zone.content?.find(
+        (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
+      ) as { props?: { content?: unknown[] } } | undefined;
+      const heading = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Heading") as
+        | { props?: { text?: string } }
+        | undefined;
+      expect(heading?.props?.text).toBe("Studio Aurora");
     });
   });
 
