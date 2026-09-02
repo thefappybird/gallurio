@@ -74,9 +74,24 @@ describe("EditorContainerAnchor height — container-class bridge case", () => {
     expect(el.style.height).toBe("4px");
   });
 
-  it("collapses to 0 (renders nothing) when a container-class child sits alongside a non-container child", async () => {
-    mountStore(null, [{ type: "Columns" }, { type: "Heading" }]);
+});
+
+describe("EditorContainerAnchor height — ordinary-content fill case (Item 11)", () => {
+  it("renders a flex-fill anchor (no fixed height) when the only real child is ordinary content", async () => {
+    mountStore(null, [{ type: "Heading" }]);
     const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
-    expect(container.querySelector(".pf-container-anchor")).toBeNull();
+    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
+    expect(el).not.toBeNull();
+    expect(el.style.flex).toBe("1 1 auto");
+    expect(el.style.minHeight).toBe("0");
+    expect(el.style.height).toBe("");
+  });
+
+  it("renders a flex-fill anchor when ordinary content sits alongside a container-class child", async () => {
+    mountStore(null, [{ type: "Columns" }, { type: "Text" }]);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
+    expect(el).not.toBeNull();
+    expect(el.style.flex).toBe("1 1 auto");
   });
 });

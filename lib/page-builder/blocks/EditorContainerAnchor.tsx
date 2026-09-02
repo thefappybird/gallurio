@@ -5,6 +5,12 @@ import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { isContainerClass } from "@/lib/page-builder/containerAnchorPredicate";
 import { CONTAINER_EDITOR_HEIGHT_PX, type ContainerHeight } from "./manualBlocks";
 
+// "none": no parent found, nothing renders. "fixed": empty/bridge cases —
+// a pixel height computed from Puck data. "fill": ordinary children present
+// — flex-grow absorbs whatever leftover space a stretched sibling creates
+// (see Item 11 note above); collapses to 0px on its own when there's none.
+type AnchorMode = { kind: "none" } | { kind: "fixed"; height: number } | { kind: "fill" };
+
 /**
  * Editor-only container anchor. Computes its own height reactively from the
  * parent container's live child list via usePuckStore, so it self-sizes on
@@ -18,21 +24,33 @@ import { CONTAINER_EDITOR_HEIGHT_PX, type ContainerHeight } from "./manualBlocks
  * render). usePuckStore therefore always runs within a live Puck provider context.
  *
  * A3 note: This component uses NO ResizeObserver and no DOM-size measurements.
- * Height is computed purely from Puck store data (props.minHeight + content length).
- * There is no feedback loop here that could contribute to the Columns oscillation
- * crash described in items 3/4/6. The root cause of that crash — shared
- * containerName "pf-cols" causing cross-instance @container rule contamination —
- * was fixed in ColumnsBlock (A1). This component needs no change.
+ * Height is computed purely from Puck store data (props.minHeight + content length)
+ * for the empty/bridge cases below. There is no feedback loop here that could
+ * contribute to the Columns oscillation crash described in items 3/4/6. The root
+ * cause of that crash — shared containerName "pf-cols" causing cross-instance
+ * @container rule contamination — was fixed in ColumnsBlock (A1).
+ *
+ * Item 11: when the container holds ordinary (non-container) children, the
+ * slot may still be stretched taller than its own content (e.g. a shorter
+ * Columns cell next to a taller sibling). That leftover space is NOT
+ * derivable from Puck data — it depends on measured layout of the sibling.
+ * Rather than add a ResizeObserver (see A3 above — that class of feedback
+ * loop already caused a real crash here), the "fill" mode below gives the
+ * anchor `flex: "1 1 auto"` as the slot's last flex child; since the slot
+ * itself already fills the stretched section (flex: "1 1 auto" in
+ * ContainerBlock), the anchor absorbs exactly the remaining flex space with
+ * pure CSS — no measurement, no feedback loop.
  */
 export function EditorContainerAnchor({ id }: { id: string }) {
   const parentId = id.replace(/--anchor$/, "");
 
-  // Reactively compute height from the parent's live content array. This
-  // selector re-evaluates whenever the parent container's children or
-  // minHeight change (add/remove/reorder triggers a store update → re-render).
-  const height = usePuckStore((s) => {
+  // Reactively compute the anchor's mode from the parent's live content
+  // array. This selector re-evaluates whenever the parent container's
+  // children or minHeight change (add/remove/reorder triggers a store
+  // update → re-render).
+  const mode = usePuckStore((s): AnchorMode => {
     const parent = s.getItemById(parentId);
-    if (!parent) return 0;
+    if (!parent) return { kind: "none" };
 
     const minHeight =
       (parent.props?.minHeight as ContainerHeight | undefined) ?? "auto";
@@ -42,16 +60,18 @@ export function EditorContainerAnchor({ id }: { id: string }) {
 
     if (realChildren.length === 0) {
       // Empty container — show full editor footprint so it's droppable.
-      return CONTAINER_EDITOR_HEIGHT_PX[minHeight];
+      return { kind: "fixed", height: CONTAINER_EDITOR_HEIGHT_PX[minHeight] };
     }
     if (realChildren.every((child) => isContainerClass(child.type))) {
       // Bridge case: every real child is container-class (Container or
       // Columns, any count) — keep a 4px footprint so another sibling can
       // still be dropped here instead of nested inside an existing child.
-      return 4;
+      return { kind: "fixed", height: 4 };
     }
-    // Container has real non-container content → collapse anchor to 0.
-    return 0;
+    // Container has ordinary content: no fixed height (not derivable from
+    // data) — let flex-grow absorb whatever leftover space a stretched
+    // sibling creates. Collapses to 0 on its own when there's none.
+    return { kind: "fill" };
   });
 
   // Selection bounce: if Puck selects this anchor (e.g. user clicks the tiny
@@ -79,13 +99,28 @@ export function EditorContainerAnchor({ id }: { id: string }) {
     dispatch({ type: "setUi", ui: { itemSelector: parentSelector } });
   }, [selectedItem, id, parentId, dispatch, getSelectorForId]);
 
-  if (height === 0) return null;
+  if (mode.kind === "none") return null;
+
+  if (mode.kind === "fill") {
+    // No fixed height (see Item 11 note above): flex-grow, not a pixel value,
+    // absorbs the slot's leftover space so the anchor's own rect covers the
+    // whole highlighted area — matching pointerEvents:"none" below, since
+    // Puck/dnd-kit resolve drops from each child's measured rect, not native
+    // pointer hit-testing (already proven by the empty/bridge cases above).
+    return (
+      <div
+        className="pf-container-anchor"
+        aria-hidden="true"
+        style={{ flex: "1 1 auto", minHeight: 0, width: "100%", pointerEvents: "none" }}
+      />
+    );
+  }
 
   return (
     <div
       className="pf-container-anchor"
       aria-hidden="true"
-      style={{ height: `${height}px`, width: "100%", pointerEvents: "none" }}
+      style={{ height: `${mode.height}px`, width: "100%", pointerEvents: "none" }}
     />
   );
 }

@@ -1,12 +1,13 @@
 /**
- * Container anchors are editor-only empty-state drop targets. Puck does not run
- * component resolveData after every remove/move, so this reconciler is invoked
- * from the live editor store as well as from Container.resolveData.
+ * Container anchors are editor-only drop targets. Puck does not run component
+ * resolveData after every remove/move, so this reconciler is invoked from the
+ * live editor store as well as from Container.resolveData.
  *
- * The anchor is kept (appended as the LAST child) not only when a Container is
- * empty, but also when every real child is itself container-class (Container
- * or Columns) — see shouldKeepAnchor. Otherwise a Container that nests only
- * containers/columns has no droppable anchor left to receive a sibling drop.
+ * The anchor is now always kept (appended as the LAST child) — see
+ * shouldKeepAnchor. Its rendered height (full footprint / 4px bridge / flex-
+ * fill leftover space / 0) is decided by EditorContainerAnchor from live
+ * layout data, not here; this reconciler only maintains the anchor's
+ * PRESENCE and stays a pure, idempotent function of the data.
  */
 
 import { shouldKeepAnchor } from "./containerAnchorPredicate";
@@ -50,7 +51,7 @@ function reconcileItems(items: SlotItem[]): { items: SlotItem[]; changed: boolea
       : [];
     const realChildren = content.filter((child) => !isAnchor(child));
     const id = nextItem.props.id;
-    const keepAnchor = shouldKeepAnchor(realChildren);
+    const keepAnchor = shouldKeepAnchor();
 
     // Puck supplies a stable id for every editor item. Without one, do not
     // invent a transient anchor that would churn on the next reconciliation —
