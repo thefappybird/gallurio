@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Types } from "mongoose";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { buildRenderWorkspace } from "@/lib/page-builder/serverContext";
@@ -7,6 +8,8 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { routing } from "@/lib/i18n/routing";
+import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
+import { PortfolioDraft } from "@/lib/db/models";
 import {
   DEFAULT_BRAND_KIT,
   type PortfolioContactConfig,
@@ -68,6 +71,7 @@ export default async function PortfolioPreviewPage({
     zone?: string | string[];
     formLocale?: string | string[];
     formDir?: string | string[];
+    draftId?: string | string[];
   }>;
 }) {
   const { locale } = await params;
@@ -170,9 +174,28 @@ export default async function PortfolioPreviewPage({
       },
     };
 
-    const fallbackData: PuckData =
+    let fallbackData: PuckData =
       ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
       { content: [], root: {} };
+
+    const draftIdParam = typeof sp.draftId === "string" ? sp.draftId : undefined;
+    if (draftIdParam && Types.ObjectId.isValid(draftIdParam)) {
+      const draftDoc = await PortfolioDraft.findOne(
+        { _id: draftIdParam, workspaceId: workspace._id },
+        { data: 1 },
+      ).lean();
+      const draftZoneData = draftDoc?.data?.[zone] as PuckData | undefined;
+      if (draftZoneData) fallbackData = draftZoneData;
+    }
+
+    // Same rebuild the editor canvas applies (see app/[locale]/(app)/portfolio/page.tsx's
+    // reconcileZone) — keeps the preview's image cache/collections in sync with live
+    // GalleryItems/GalleryCollections instead of showing what was baked at save time.
+    const workspaceId = String(workspace._id);
+    fallbackData = await reconcileFeaturedCollections(
+      workspaceId,
+      await reconcileGalleryImages(workspaceId, fallbackData),
+    );
 
     body = (
       <PreviewClient

@@ -6,6 +6,7 @@ vi.mock("@measured/puck", () => ({
   Render: ({ data }: { data: unknown }) => (
     <pre data-testid="render-data">{JSON.stringify(data)}</pre>
   ),
+  createUsePuck: () => () => undefined,
 }));
 
 import { PreviewClient } from "./PreviewClient";
