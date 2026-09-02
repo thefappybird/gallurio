@@ -21,8 +21,8 @@ export const scratchTemplate: PortfolioTemplate = {
     buttonColor: "foreground",
   },
   defaultCollectionsPopup: {},
-  seedData: () => ({
-    home: zone([navigationBlock("Navigation-scratch-home-0")]),
-    gallery: zone([navigationBlock("Navigation-scratch-gal-0")]),
+  seedData: (ctx) => ({
+    home: zone([navigationBlock("Navigation-scratch-home-0", {}, ctx.workspace.name)]),
+    gallery: zone([navigationBlock("Navigation-scratch-gal-0", {}, ctx.workspace.name)]),
   }),
 };

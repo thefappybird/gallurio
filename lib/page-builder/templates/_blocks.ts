@@ -25,18 +25,34 @@ import {
   navigationDefaultProps,
   type NavigationBlockProps,
 } from "@/lib/page-builder/blocks/NavigationBlock";
+import { child, slot } from "@/lib/page-builder/blocks/presets/_helpers";
 
 // ---------------------------------------------------------------------------
 // Navigation factory — every template seeds one of these as the first content
 // item in BOTH the home and gallery zones, carrying that template's own header
 // look (see each template file). `config` overrides navigationDefaultProps'
-// PortfolioHeaderConfig fields; `_chrome`/`content` stay the shared default.
+// PortfolioHeaderConfig fields; `_chrome` stays the shared default. `content`
+// seeds a Heading with the workspace's real name (falls back to the generic
+// "Studio Name" default when no name is given) instead of publishing the
+// literal placeholder — still no Image child, so no "unavailable" placeholder
+// box ships either; the owner adds a logo Image block themselves.
 // ---------------------------------------------------------------------------
 
-export function navigationBlock(id: string, config: Partial<NavigationBlockProps> = {}): PuckBlockEntry {
+export function navigationBlock(
+  id: string,
+  config: Partial<NavigationBlockProps> = {},
+  workspaceName?: string,
+): PuckBlockEntry {
+  const name = workspaceName?.trim();
   return {
     type: "Navigation",
-    props: { ...navigationDefaultProps, ...config, id, _chrome: "nav" },
+    props: {
+      ...navigationDefaultProps,
+      ...config,
+      id,
+      _chrome: "nav",
+      content: name ? slot([child("Heading", { level: "h3", text: name })]) : navigationDefaultProps.content,
+    },
   };
 }
 

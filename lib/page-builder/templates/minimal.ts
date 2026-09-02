@@ -23,10 +23,10 @@ export const minimalTemplate: PortfolioTemplate = {
     tabColor: "foreground",
   },
   defaultCollectionsPopup: {},
-  seedData: () => ({
+  seedData: (ctx) => ({
     home: zone(
       [
-        navigationBlock("Navigation-minimal-home-0"),
+        navigationBlock("Navigation-minimal-home-0", {}, ctx.workspace.name),
         {
           type: "HeroPreset",
           props: {
@@ -199,7 +199,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
     ),
     gallery: zone(
       [
-        navigationBlock("Navigation-minimal-gal-0"),
+        navigationBlock("Navigation-minimal-gal-0", {}, ctx.workspace.name),
         {
           type: "Columns",
           props: {

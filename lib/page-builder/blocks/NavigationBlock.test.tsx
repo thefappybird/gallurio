@@ -208,10 +208,11 @@ describe("NavigationBlock — isomorphic render", () => {
 });
 
 describe("NavigationBlock — defaults and permissions", () => {
-  it("defaultProps carry _chrome: 'nav' and a seeded logo + title slot", () => {
+  it("defaultProps carry _chrome: 'nav' and a seeded title slot, no placeholder logo", () => {
     expect(navigationDefaultProps._chrome).toBe("nav");
+    // No Image child — an empty Image renders an "Image unavailable" placeholder
+    // on the public page. Owner adds a logo Image block once they have one.
     expect(navigationDefaultProps.content).toEqual([
-      { type: "Image", props: { alt: "Logo" } },
       { type: "Heading", props: { level: "h3", text: "Studio Name" } },
     ]);
   });

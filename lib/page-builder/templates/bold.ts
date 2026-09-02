@@ -31,7 +31,7 @@ export const boldTemplate: PortfolioTemplate = {
     tabUnderlineColor: "accent",
   },
   defaultCollectionsPopup: {},
-  seedData: () => ({
+  seedData: (ctx) => ({
     home: zone(
       [
         navigationBlock("Navigation-bold-home-0", {
@@ -47,7 +47,7 @@ export const boldTemplate: PortfolioTemplate = {
           contactButtonTextColor: "background",
           contactButtonOpacity: 100,
           contactButtonRadius: "subtle",
-        }),
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {
@@ -355,7 +355,7 @@ export const boldTemplate: PortfolioTemplate = {
           contactButtonTextColor: "background",
           contactButtonOpacity: 100,
           contactButtonRadius: "subtle",
-        }),
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {

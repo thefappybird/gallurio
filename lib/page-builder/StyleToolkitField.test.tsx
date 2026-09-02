@@ -507,7 +507,7 @@ describe("ContentInputs — Navigation", () => {
     fireEvent.click(screen.getByRole("button", { name }));
   }
 
-  it.each(NAV_PRESET_KEYS)("renders the Navigation field panel for %s", (type) => {
+  it.each([...NAV_PRESET_KEYS, "Navigation"])("renders the Navigation field panel for %s", (type) => {
     render(<ContentInputs type={type} props={{}} setProp={vi.fn()} />);
 
     // "Brand" is open by default.
@@ -589,6 +589,26 @@ describe("ContentInputs — Navigation", () => {
     openSection("Sync");
     fireEvent.click(screen.getByRole("switch", { name: "Detach header on Home" }));
     expect(setProp).toHaveBeenCalledWith("detached", true);
+  });
+
+  it("uses a provided translate function for the detach toggle copy instead of the hardcoded English", () => {
+    const t = (key: string, values?: Record<string, string | number>) => {
+      if (key === "chromeDetachToggleLabel") return `TX Detach ${values?.page}`;
+      if (key === "chromeDetachDisabledHint") return `TX Disabled ${values?.page}`;
+      return key;
+    };
+    render(
+      <ContentInputs
+        type="NavBorderedPreset"
+        props={{}}
+        setProp={vi.fn()}
+        navDetach={{ zoneLabel: "Gallery", otherZoneLabel: "Home", disabled: true }}
+        t={t}
+      />
+    );
+    openSection("Sync");
+    expect(screen.getByRole("switch", { name: "TX Detach Gallery" })).toBeInTheDocument();
+    expect(screen.getByText("TX Disabled Home")).toBeInTheDocument();
   });
 });
 

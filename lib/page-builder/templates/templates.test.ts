@@ -273,6 +273,13 @@ describe("_blocks factory helpers", () => {
     expect(block.props.fontSize).toBe("sm");
     expect(block.props.contactButtonColor).toBe("accent");
   });
+
+  it("navigationBlock() seeds the content Heading from the given workspace name", () => {
+    const block = navigationBlock("nav-3", {}, "Studio Aurora");
+    expect(block.props.content).toEqual([
+      { type: "Heading", props: { level: "h3", text: "Studio Aurora" } },
+    ]);
+  });
 });
 
 describe("getTemplate", () => {

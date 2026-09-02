@@ -318,7 +318,10 @@ const resolveContainerDataTyped =
 // is a static map — it keeps editorPuckConfig (used in tests) unchanged.
 // ---------------------------------------------------------------------------
 
-export type PuckTranslate = (key: string) => string;
+// `values` is optional and only used by ICU keys that take a placeholder
+// (e.g. `chromeDetachToggleLabel`'s `{page}`) — every existing 1-arg call
+// site keeps working unchanged.
+export type PuckTranslate = (key: string, values?: Record<string, string | number>) => string;
 
 /** English fallback — keyed under app.pageBuilder.editor.puckConfig.* */
 const ENGLISH_PUCK_T: Record<string, string> = {
@@ -472,6 +475,7 @@ export function NavStyleField({
       onChange={onChange as (v: BlockStyle) => void}
       fieldId={id}
       navDetach={navDetach}
+      t={t}
     />
   );
 }

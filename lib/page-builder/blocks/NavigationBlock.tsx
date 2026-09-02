@@ -2,8 +2,10 @@
  * NavigationBlock — ISOMORPHIC (client-safe) pinned site header.
  *
  * Renders `PortfolioHeader` from its OWN props — the full `PortfolioHeaderConfig`
- * shape — plus a free `content` slot (seeded with a logo Image + brand Heading)
- * that the owner may restyle or delete. The slot is threaded through
+ * shape — plus a free `content` slot (seeded with just a brand Heading; no
+ * Image child by default — an empty Image renders an "unavailable" placeholder
+ * on the public page, so owners add a logo Image block themselves) that the
+ * owner may restyle or delete. The slot is threaded through
  * `PortfolioHeader`'s `brandSlot` prop, so it occupies the SAME row as the nav
  * links (left side), not a separate row. The nav links (Home/Gallery) and the
  * contact button are rendered by `PortfolioHeader` itself from this block's
@@ -53,10 +55,10 @@ export type NavigationBlockProps = PortfolioHeaderConfig & {
 export const navigationDefaultProps: NavigationBlockProps = {
   ...DEFAULT_HEADER_CONFIG,
   _chrome: "nav",
-  content: slot([
-    child("Image", { alt: "Logo" }),
-    child("Heading", { level: "h3", text: "Studio Name" }),
-  ]),
+  // No Image child: an empty Image renders an "Image unavailable" placeholder
+  // on the public page (ImageBlock, manualBlocks.tsx) — the owner adds a logo
+  // Image block into this slot once they have one.
+  content: slot([child("Heading", { level: "h3", text: "Studio Name" })]),
 };
 
 // ---------------------------------------------------------------------------

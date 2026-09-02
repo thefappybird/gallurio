@@ -117,6 +117,12 @@ const CONTAINER_SECTION_KEYS = SECTION_PRESET_KEYS.filter(
 );
 export const CONTAINER_TYPES = new Set<string>(["Container", ...CONTAINER_SECTION_KEYS]);
 
+// The actual Puck block type ("Navigation") plus its 3 legacy preset-key
+// aliases — the ContentInputs dispatch below must match on this set, not on
+// NAV_PRESET_KEYS alone, since "Navigation" is never a SectionPresetKey (it's
+// a separate registered block, not a section preset).
+const NAV_CONFIG_TYPES = new Set<string>(["Navigation", ...(NAV_PRESET_KEYS as readonly string[])]);
+
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
 // Frame (border/radius/shadow) is hidden for text/spacer/button leaf blocks.
 // Button has its own consolidated design controls (see DesignTab isButton branch).
@@ -533,6 +539,30 @@ export type NavDetachContext = {
   disabled: boolean;
 };
 
+/**
+ * Translate function for the detach toggle's copy — structurally the same
+ * shape as editorConfig.tsx's `PuckTranslate` (real next-intl `t` at runtime),
+ * widened here with an optional `values` param for the `{page}` ICU
+ * placeholder in `chromeDetachToggleLabel`/`chromeDetachDisabledHint`. Not
+ * imported from editorConfig.tsx to avoid a circular import (that file
+ * imports this one).
+ */
+export type NavDetachTranslate = (key: string, values?: Record<string, string | number>) => string;
+
+// English fallback — used when no `t` is supplied (tests, and any caller that
+// hasn't wired next-intl yet). Text matches messages/en.json's
+// chromeDetachToggleLabel/chromeDetachHint/chromeDetachDisabledHint exactly.
+const NAV_DETACH_EN_FALLBACK: Record<string, string> = {
+  chromeDetachToggleLabel: "Detach header on {page}",
+  chromeDetachHint: "Detached headers style independently and stop mirroring the other page.",
+  chromeDetachDisabledHint: "{page} already has a detached header — only one page can detach at a time.",
+};
+
+function navDetachFallbackT(key: string, values?: Record<string, string | number>): string {
+  const template = NAV_DETACH_EN_FALLBACK[key] ?? key;
+  return values ? template.replace(/\{(\w+)\}/g, (_, k) => String(values[k] ?? "")) : template;
+}
+
 function NavColorRow({
   label,
   value,
@@ -690,11 +720,13 @@ function NavigationConfigPanel({
   setProp,
   navDetach,
   detached,
+  t = navDetachFallbackT,
 }: {
   config: PortfolioHeaderConfig;
   setProp: (key: string, val: unknown) => void;
   navDetach?: NavDetachContext;
   detached: boolean;
+  t?: NavDetachTranslate;
 }) {
   const effectiveRadius = useBrandRadius();
   const set = <K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) =>
@@ -782,15 +814,15 @@ function NavigationConfigPanel({
 
       <EditorDrawerSection title="Sync">
         <HighlightToggle
-          label={`Detach header on ${navDetach?.zoneLabel ?? "this page"}`}
+          label={t("chromeDetachToggleLabel", { page: navDetach?.zoneLabel ?? "this page" })}
           on={detached}
           onToggle={() => setProp("detached", !detached)}
           disabled={navDetach?.disabled}
         />
         <p className="text-xs text-muted-foreground">
           {navDetach?.disabled
-            ? `${navDetach.otherZoneLabel} already has a detached header — only one page can detach at a time.`
-            : "Detached headers style independently and stop mirroring the other page."}
+            ? t("chromeDetachDisabledHint", { page: navDetach.otherZoneLabel })
+            : t("chromeDetachHint")}
         </p>
       </EditorDrawerSection>
     </EditorDrawerGroup>
@@ -803,13 +835,16 @@ export function ContentInputs({
   setProp,
   setProps,
   navDetach,
+  t,
 }: {
   type: string;
   props: Record<string, unknown>;
   setProp: (key: string, val: unknown) => void;
   setProps?: (patch: Record<string, unknown>) => void;
-  /** Only read when `type` is one of NAV_PRESET_KEYS — see NavDetachContext. */
+  /** Only read when `type` is one of NAV_CONFIG_TYPES — see NavDetachContext. */
   navDetach?: NavDetachContext;
+  /** Only read when `type` is one of NAV_CONFIG_TYPES — the detach toggle's copy. */
+  t?: NavDetachTranslate;
 }) {
   const demo = useDemoPicker();
   if (type === "Heading") {
@@ -961,13 +996,14 @@ export function ContentInputs({
       </div>
     );
   }
-  if ((NAV_PRESET_KEYS as readonly string[]).includes(type)) {
+  if (NAV_CONFIG_TYPES.has(type)) {
     return (
       <NavigationConfigPanel
         config={props as PortfolioHeaderConfig}
         setProp={setProp}
         navDetach={navDetach}
         detached={!!(props as { detached?: boolean }).detached}
+        t={t}
       />
     );
   }
@@ -1073,6 +1109,7 @@ function ContentTabBody({
   showBanner,
   isContainer,
   navDetach,
+  t,
 }: {
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
@@ -1083,6 +1120,7 @@ function ContentTabBody({
   showBanner: boolean;
   isContainer: boolean;
   navDetach?: NavDetachContext;
+  t?: NavDetachTranslate;
 }) {
   const container: ContainerBgControls | null =
     isContainer && p
@@ -1131,7 +1169,7 @@ function ContentTabBody({
         />
       )}
       {showContentInputs && p && (
-        <ContentInputs type={type} props={p} setProp={setProp} setProps={setProps} navDetach={navDetach} />
+        <ContentInputs type={type} props={p} setProp={setProp} setProps={setProps} navDetach={navDetach} t={t} />
       )}
     </div>
   );
@@ -2624,14 +2662,16 @@ function BlockAwarePanel({
   s,
   set,
   navDetach,
+  t,
 }: {
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
   /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
   tab?: "content" | "design" | "layout";
   /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
-  onTabChange?: (t: "content" | "design" | "layout") => void;
+  onTabChange?: (tab: "content" | "design" | "layout") => void;
   navDetach?: NavDetachContext;
+  t?: NavDetachTranslate;
 }) {
   const selectedItem = usePuckStore((s) => s.selectedItem);
   const data = usePuckStore((s) => s.appState.data);
@@ -2750,6 +2790,7 @@ function BlockAwarePanel({
             showBanner={isContainer || isGalleryContainer || type === "ContactDetails" || type === "Image"}
             isContainer={isContainer || isGalleryContainer}
             navDetach={navDetach}
+            t={t}
           />
         )}
         {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} p={p} />}
@@ -2781,21 +2822,25 @@ export function StyleToolkitField({
   fieldId,
   blockType = "",
   navDetach,
+  t,
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle) => void;
   fieldId?: string;
   blockType?: string;
-  /** Only relevant when `blockType` is one of NAV_PRESET_KEYS. StyleToolkitField
+  /** Only relevant when `blockType` is one of NAV_CONFIG_TYPES. StyleToolkitField
    *  cannot compute this itself — see NavDetachContext. */
   navDetach?: NavDetachContext;
+  /** Only relevant when `blockType` is one of NAV_CONFIG_TYPES — the detach
+   *  toggle's copy. Falls back to hardcoded English when omitted. */
+  t?: NavDetachTranslate;
 }) {
   const [tab, setTab] = useState<"content" | "design" | "layout">("content");
   const s = value ?? {};
   const set = (patch: Partial<BlockStyle>) => onChange({ ...s, ...patch });
 
   if (fieldId) {
-    return <BlockAwarePanel s={s} set={set} tab={tab} onTabChange={setTab} navDetach={navDetach} />;
+    return <BlockAwarePanel s={s} set={set} tab={tab} onTabChange={setTab} navDetach={navDetach} t={t} />;
   }
 
   // Standalone render (tests — no Puck provider): show full 3-tab panel
@@ -2814,6 +2859,7 @@ export function StyleToolkitField({
           showBanner={standaloneIsContainer || !GALLERY_BLOCKS.has(blockType)}
           isContainer={standaloneIsContainer}
           navDetach={navDetach}
+          t={t}
         />
       )}
       {tab === "design" && <DesignTab s={s} set={set} blockType={blockType} />}

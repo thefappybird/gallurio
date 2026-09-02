@@ -32,7 +32,7 @@ export const luxuryTemplate: PortfolioTemplate = {
     tabUnderlineColor: "accent",
   },
   defaultCollectionsPopup: {},
-  seedData: () => ({
+  seedData: (ctx) => ({
     home: zone(
       [
         navigationBlock("Navigation-luxury-home-0", {
@@ -44,7 +44,7 @@ export const luxuryTemplate: PortfolioTemplate = {
           contactButtonTextColor: "secondary",
           contactButtonOpacity: 100,
           contactButtonRadius: "",
-        }),
+        }, ctx.workspace.name),
         {
           type: "HeroPreset",
           props: {
@@ -285,7 +285,7 @@ export const luxuryTemplate: PortfolioTemplate = {
           contactButtonTextColor: "secondary",
           contactButtonOpacity: 100,
           contactButtonRadius: "",
-        }),
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {

@@ -33,7 +33,7 @@ export const editorialTemplate: PortfolioTemplate = {
     tabUnderlineColor: "accent",
   },
   defaultCollectionsPopup: {},
-  seedData: () => ({
+  seedData: (ctx) => ({
     home: zone(
       [
         navigationBlock("Navigation-editorial-home-0", {
@@ -46,7 +46,7 @@ export const editorialTemplate: PortfolioTemplate = {
           contactButtonColor: "accent",
           contactButtonOpacity: 100,
           contactButtonRadius: "subtle",
-        }),
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {
@@ -704,7 +704,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
           contactButtonColor: "accent",
           contactButtonOpacity: 100,
           contactButtonRadius: "subtle",
-        }),
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {
