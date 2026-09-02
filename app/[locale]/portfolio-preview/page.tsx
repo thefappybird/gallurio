@@ -179,13 +179,21 @@ export default async function PortfolioPreviewPage({
       { content: [], root: {} };
 
     const draftIdParam = typeof sp.draftId === "string" ? sp.draftId : undefined;
+    // Tracks which draft fallbackData actually corresponds to, so the client
+    // only applies its localStorage buffer when it matches — otherwise a
+    // stale buffer for a different draft would render instead of the
+    // requested one.
+    let resolvedDraftId: string | null = null;
     if (draftIdParam && Types.ObjectId.isValid(draftIdParam)) {
       const draftDoc = await PortfolioDraft.findOne(
         { _id: draftIdParam, workspaceId: workspace._id },
         { data: 1 },
       ).lean();
       const draftZoneData = draftDoc?.data?.[zone] as PuckData | undefined;
-      if (draftZoneData) fallbackData = draftZoneData;
+      if (draftZoneData) {
+        fallbackData = draftZoneData;
+        resolvedDraftId = draftIdParam;
+      }
     }
 
     // Same rebuild the editor canvas applies (see app/[locale]/(app)/portfolio/page.tsx's
@@ -203,6 +211,7 @@ export default async function PortfolioPreviewPage({
         zone={zone}
         workspace={renderWorkspace}
         fallbackData={fallbackData}
+        draftId={resolvedDraftId}
       />
     );
   }

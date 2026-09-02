@@ -76,6 +76,7 @@ vi.mock("./_components/PreviewClient", () => ({
     slug,
     workspace,
     fallbackData,
+    draftId,
   }: {
     zone: string;
     slug: string;
@@ -84,6 +85,7 @@ vi.mock("./_components/PreviewClient", () => ({
       previewNav?: { homeHref?: string; galleryHref?: string; activePath?: string };
     };
     fallbackData: unknown;
+    draftId: string | null;
   }) => (
     <div data-testid="preview-client">
       {zone}:{slug}
@@ -92,6 +94,7 @@ vi.mock("./_components/PreviewClient", () => ({
       <div data-testid="preview-client-nav-gallery-href">{workspace.previewNav?.galleryHref ?? ""}</div>
       <div data-testid="preview-client-nav-active-path">{workspace.previewNav?.activePath ?? ""}</div>
       <div data-testid="preview-client-fallback-data">{JSON.stringify(fallbackData)}</div>
+      <div data-testid="preview-client-draft-id">{draftId ?? ""}</div>
     </div>
   ),
 }));
@@ -238,6 +241,7 @@ describe("PortfolioPreviewPage", () => {
     render(page);
 
     expect(screen.getByTestId("preview-client-fallback-data")).toHaveTextContent("Draft Hero");
+    expect(screen.getByTestId("preview-client-draft-id")).toHaveTextContent(String(draft._id));
   });
 
   it("falls back to published data when draftId belongs to another workspace (tenant isolation)", async () => {
@@ -260,6 +264,7 @@ describe("PortfolioPreviewPage", () => {
     const fallback = screen.getByTestId("preview-client-fallback-data");
     expect(fallback).toHaveTextContent("DB Hero");
     expect(fallback).not.toHaveTextContent("Foreign Secret");
+    expect(screen.getByTestId("preview-client-draft-id")).toHaveTextContent("");
   });
 
   it("ignores a malformed draftId and falls back to published data without throwing", async () => {
@@ -271,6 +276,7 @@ describe("PortfolioPreviewPage", () => {
     render(page);
 
     expect(screen.getByTestId("preview-client-fallback-data")).toHaveTextContent("DB Hero");
+    expect(screen.getByTestId("preview-client-draft-id")).toHaveTextContent("");
   });
 
   it("reconciles the draft's gallery image cache against live GalleryItems (parity with the editor canvas)", async () => {
