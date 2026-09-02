@@ -121,7 +121,7 @@ describe("reconcileContainerAnchors", () => {
     const outerContent = normalized.zones?.footer[0].props.content as SlotItemLike[];
     expect(outerContent).toHaveLength(2);
     expect(outerContent[1].type).toBe("ContainerAnchor");
-    const innerContent = (outerContent[0] as { props: { content: SlotItemLike[] } }).props.content;
+    const innerContent = outerContent[0].props.content as SlotItemLike[];
     expect(innerContent).toEqual([anchor("inner--anchor")]);
   });
 
