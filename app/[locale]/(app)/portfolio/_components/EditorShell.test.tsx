@@ -1755,6 +1755,67 @@ describe("EditorShell", () => {
         expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
       });
     });
+
+    it("re-pins a footer dropped below another block and remounts the canvas to match", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const homeFooter = { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } };
+
+      // Establish an attached footer already at the end — no order violation yet.
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero, homeFooter], root: {} });
+      const mountCountAfterAdd = __puckMountCount;
+
+      // Drop a new block BELOW the footer — displaces it from last.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          homeFooter,
+          { type: "Hero", props: { id: "c-Hero-2", headline: "After footer" } },
+        ],
+        root: {},
+      });
+
+      await waitFor(() => expect(__puckMountCount).toBeGreaterThan(mountCountAfterAdd));
+
+      const seed = __capturedPuckSeed as { content: { props: { _chrome?: string } }[] };
+      expect(seed.content[seed.content.length - 1].props._chrome).toBe("footer");
+    });
+
+    it("re-pins Navigation displaced from index 0 and remounts the canvas to match", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const mountCountBefore = __puckMountCount;
+
+      // Drop a block ABOVE Navigation — displaces it from index 0.
+      __capturedPuckOnChange?.({ content: [homeHero, homeNav], root: {} });
+
+      await waitFor(() => expect(__puckMountCount).toBeGreaterThan(mountCountBefore));
+
+      const seed = __capturedPuckSeed as { content: { props: { _chrome?: string } }[] };
+      expect(seed.content[0].props._chrome).toBe("nav");
+    });
+
+    it("does not remount the canvas for an ordinary edit that does not disturb chrome order", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const mountCountBefore = __puckMountCount;
+
+      // Nav stays at index 0 — no chrome-order correction needed, must not remount.
+      __capturedPuckOnChange?.({
+        content: [homeNav, { type: "Hero", props: { id: "c-Hero-1", headline: "Edited" } }],
+        root: {},
+      });
+
+      // Flush any pending effects, then confirm no remount was scheduled.
+      await act(async () => {});
+      expect(__puckMountCount).toBe(mountCountBefore);
+    });
   });
 
   it("migrates a legacy header's logo + brand text onto the seeded Navigation's slot (Fix #2)", async () => {

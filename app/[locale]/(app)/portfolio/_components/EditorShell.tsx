@@ -1469,13 +1469,29 @@ export function EditorShell({
       let zones = { ...zoneDataRef.current, [activeZone]: next } as unknown as Zones;
       zones = syncChrome(zones, activeZone, "nav", undefined, previousActiveZone);
       zones = syncChrome(zones, activeZone, "footer", undefined, previousActiveZone);
-      zones = { ...zones, [activeZone]: normalizeChrome(zones[activeZone]) };
+      // normalizeChrome returns the SAME reference when the zone already
+      // satisfies both invariants (nav at 0, footer last) — an identity check
+      // is therefore the correct "did order change" signal, cheap on the
+      // overwhelmingly common no-op path. <Puck> is uncontrolled per zone, so
+      // writing the corrected order into zoneDataRef/renderDraftData alone
+      // does not move anything on screen — only a forced remount (seedPuck +
+      // seedNonce bump, same technique used above and elsewhere in this file)
+      // does. Canvas selection is lost on that remount, same as every other
+      // reseed path here.
+      const preNormalize = zones[activeZone];
+      const normalizedActive = normalizeChrome(preNormalize);
+      const chromeOrderCorrected = normalizedActive !== preNormalize;
+      zones = { ...zones, [activeZone]: normalizedActive };
       const updated = zones as unknown as Record<Zone, PuckData>;
 
       zoneDataRef.current = updated;
       setRenderDraftData(updated);
       debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
+      if (chromeOrderCorrected) {
+        seedPuck(prepareForEditor(updated[activeZone], initialHeaderConfig));
+        setSeedNonce((n) => n + 1);
+      }
     },
     [activeZone, debouncedPersistLocalDraft, demoMode, initialHeaderConfig, seedPuck]
   );
