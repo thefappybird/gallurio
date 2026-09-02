@@ -1119,10 +1119,22 @@ export function EditorShell({
     home: prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData,
     gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData,
   });
-  // Puck emits onChange once on mount (and again on the zone-switch remount).
-  // Skip that first emission so merely loading a zone doesn't autosave/bump the
-  // version — only genuine edits should.
-  const ignoreNextChange = useRef(true);
+  // Puck emits an onChange echo on mount/remount that just replays the seed it
+  // was handed — merely loading a zone must not autosave/bump the version, only
+  // genuine edits should. A single "ignore the next change" boolean can't track
+  // this reliably: several call sites re-seed Puck in sequence (e.g. a side-panel
+  // close immediately followed by a zone switch that lands back on the SAME
+  // zone), and when a re-seed doesn't cause an actual remount (React bails on an
+  // unchanged key), no echo ever arrives to consume the flag — leaving it
+  // permanently armed to silently swallow the next real edit. Tracking identity
+  // instead is desync-proof: remember the exact seed just handed to Puck, and
+  // treat an onChange as an echo only when its payload IS that seed coming back
+  // unchanged. Any number of stray echoes (zero or several) are safely ignored;
+  // a genuine edit — which by definition differs from the seed — is never mistaken
+  // for one, however Puck's mount/remount timing behaves.
+  const lastPuckSeedRef = useRef<PuckData>(
+    prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData
+  );
   // Ref to the DraftNameEditor so handleSaveChanges can flush an in-progress rename.
   const nameEditorRef = useRef<DraftNameEditorHandle>(null);
   // Snapshots taken when a side panel opens, so closing it without saving reverts
@@ -1153,6 +1165,13 @@ export function EditorShell({
   const [puckSeed, setPuckSeed] = useState<Data>(() =>
     prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig)
   );
+  // Every re-seed of Puck (mount, zone switch, applyDraft, applyTemplate, ...)
+  // must go through this — it's the only place lastPuckSeedRef is updated, so
+  // the two can never drift apart.
+  const seedPuck = useCallback((next: Data) => {
+    lastPuckSeedRef.current = next as unknown as PuckData;
+    setPuckSeed(next);
+  }, []);
   const [seedNonce, setSeedNonce] = useState(0);
   // Demo sessions use a distinct namespace (keyed by demoSessionId, not slug)
   // so a demo session can never collide with or leak into a real workspace's draft.
@@ -1284,14 +1303,13 @@ export function EditorShell({
         if (draft.collectionsPopup) setCollectionsPopup(draft.collectionsPopup);
         if (draft.draftId !== undefined) setActiveDraftId(draft.draftId);
         if (draft.draftName) setDraftName(draft.draftName);
-        ignoreNextChange.current = true;
-        setPuckSeed(home as unknown as Data);
+        seedPuck(home as unknown as Data);
         setSeedNonce((n) => n + 1);
       });
     } catch {
       window.localStorage.removeItem(draftKey);
     }
-  }, [draftKey, initialHeaderConfig]);
+  }, [draftKey, initialHeaderConfig, seedPuck]);
 
   // demoMode has no per-workspace "saved draft" to protect — the buffer is
   // its only storage — so it keeps the old unconditional auto-restore, fired
@@ -1361,25 +1379,25 @@ export function EditorShell({
         // used elsewhere in this file (bump seedNonce with the pre-add data).
         if (nextLen > DEMO_BLOCK_CAP && nextLen > prevLen) {
           setActiveDemoGate("blockCap");
-          ignoreNextChange.current = true;
-          setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
+          seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
           setSeedNonce((n) => n + 1);
           return;
         }
       }
 
-      // Every mount/remount forces a `setPuckSeed` + `seedNonce` bump elsewhere
-      // in this file, which sets this flag so the resulting echo can be told
-      // apart from a genuine edit. Chrome mirroring/detach handling must only
-      // run for genuine edits: the echo replays data that already went
-      // through prepareForEditor (sync + normalize already applied), and
-      // re-running syncChrome on it would regenerate the OTHER zone's slot-
-      // child ids for no reason (chromeSync always mints fresh ids for
-      // mirrored slot children — see cloneChromeBlock), corrupting isDirty.
-      if (ignoreNextChange.current) {
+      // Every mount/remount forces a `seedPuck` + `seedNonce` bump elsewhere in
+      // this file, which records the handed seed so the resulting echo can be
+      // told apart from a genuine edit — an onChange payload that is exactly the
+      // last seed (deep-equal) is that echo, whether zero, one, or several such
+      // echoes actually arrive. Chrome mirroring/detach handling must only run
+      // for genuine edits: the echo replays data that already went through
+      // prepareForEditor (sync + normalize already applied), and re-running
+      // syncChrome on it would regenerate the OTHER zone's slot-child ids for no
+      // reason (chromeSync always mints fresh ids for mirrored slot children —
+      // see cloneChromeBlock), corrupting isDirty.
+      if (JSON.stringify(next) === JSON.stringify(lastPuckSeedRef.current)) {
         zoneDataRef.current = { ...zoneDataRef.current, [activeZone]: next };
         setRenderDraftData((current) => ({ ...current, [activeZone]: next }));
-        ignoreNextChange.current = false;
         return;
       }
 
@@ -1423,8 +1441,7 @@ export function EditorShell({
         // require the block to still exist next.
         if (wasDetached && nextChrome && !isDetachedNow) {
           setPendingReanchor({ zone: activeZone, kind });
-          ignoreNextChange.current = true;
-          setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
+          seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
           setSeedNonce((n) => n + 1);
           return;
         }
@@ -1435,8 +1452,7 @@ export function EditorShell({
           } as unknown as Zones;
           if (!canDetach(zonesNow, activeZone, kind)) {
             // Only one zone per kind may be detached — refuse the second toggle.
-            ignoreNextChange.current = true;
-            setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
+            seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
             setSeedNonce((n) => n + 1);
             return;
           }
@@ -1461,7 +1477,7 @@ export function EditorShell({
       debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
     },
-    [activeZone, debouncedPersistLocalDraft, demoMode, initialHeaderConfig]
+    [activeZone, debouncedPersistLocalDraft, demoMode, initialHeaderConfig, seedPuck]
   );
 
   /** Anchor wins: the pending zone adopts the other zone's chrome. */
@@ -1477,8 +1493,7 @@ export function EditorShell({
     zoneDataRef.current = updated;
     setRenderDraftData(updated);
     setPendingReanchor(null);
-    ignoreNextChange.current = true;
-    setPuckSeed(prepareForEditor(updated[activeZone], initialHeaderConfig));
+    seedPuck(prepareForEditor(updated[activeZone], initialHeaderConfig));
     setSeedNonce((n) => n + 1);
     debouncedPersistLocalDraft();
   }
@@ -1729,9 +1744,8 @@ export function EditorShell({
     setActiveDraftId(d.id);
     setDraftName(d.name);
     setNameError(null);
-    ignoreNextChange.current = true;
     // homeData is already prepareForEditor'd — pass directly to Puck.
-    setPuckSeed(homeData as unknown as Data);
+    seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setActiveZone("home");
     setSavedSnapshot(JSON.stringify({
@@ -1767,8 +1781,7 @@ export function EditorShell({
     setDraftName(DEFAULT_DRAFT_NAME);
     setNameError(null);
     setSavedSnapshot(null);
-    ignoreNextChange.current = true;
-    setPuckSeed(homeData as unknown as Data);
+    seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setActiveZone("home");
   }
@@ -1867,13 +1880,11 @@ export function EditorShell({
     hideEditorPanels();
     if (sidePanelOpen) {
       hideEditorPanels();
-      ignoreNextChange.current = true;
-      setPuckSeed(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig));
+      seedPuck(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig));
       setActiveZone("home");
     }
     await flushPendingSave(activeZone);
-    ignoreNextChange.current = true;
-    setPuckSeed(prepareForEditor(zoneDataRef.current[zone], initialHeaderConfig));
+    seedPuck(prepareForEditor(zoneDataRef.current[zone], initialHeaderConfig));
     setActiveZone(zone);
     if (previewMode) setPreviewNonce((n) => n + 1);
   }
@@ -1883,8 +1894,7 @@ export function EditorShell({
     try {
       if (previewMode) {
         // Back to editing — remount Puck from the freshest data; ignore its echo.
-        ignoreNextChange.current = true;
-        setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
+        seedPuck(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
         setPreviewMode(false);
         return;
       }
@@ -1892,8 +1902,7 @@ export function EditorShell({
       await flushPendingSave(activeZone);
       if (sidePanelOpen) {
         hideEditorPanels();
-        ignoreNextChange.current = true;
-        setPuckSeed(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig));
+        seedPuck(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig));
         setActiveZone("home");
       }
       setPreviewNonce((n) => n + 1);
@@ -2062,9 +2071,8 @@ export function EditorShell({
       formLocale,
       formDir,
     }));
-    ignoreNextChange.current = true;
     // Already prepared — pass directly to Puck without double-prepareForEditor.
-    setPuckSeed(homeData as unknown as Data);
+    seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setSwitching(false);
     setTemplatesOpen(false);
@@ -2119,8 +2127,7 @@ export function EditorShell({
       formLocale,
       formDir,
     }));
-    ignoreNextChange.current = true;
-    setPuckSeed(homeData as unknown as Data);
+    seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setSwitching(false);
     setDemoTemplatesOpen(false);
@@ -2194,16 +2201,15 @@ export function EditorShell({
   }
 
   function resetGuideCanvas() {
-    // Both zones through prepareForEditor (mirrors resetToScratchCanvas —
-    // an unprepared gallery has no Navigation), and ignoreNextChange set
-    // before the remount so its mount echo isn't processed as a real edit
-    // (every other setPuckSeed+setSeedNonce site in this file does the same).
+    // Both zones through prepareForEditor (mirrors resetToScratchCanvas — an
+    // unprepared gallery has no Navigation); seedPuck records the handed seed
+    // so its mount echo isn't processed as a real edit (every other seedPuck
+    // site in this file does the same).
     const homeData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
     const galleryData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
     zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
-    ignoreNextChange.current = true;
-    setPuckSeed(homeData as unknown as Data);
+    seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setDragBaseline(0);
   }

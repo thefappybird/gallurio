@@ -463,6 +463,70 @@ describe("EditorShell", () => {
     expect(await screen.findByTestId("puck")).toBeInTheDocument();
   });
 
+  it("does not drop the first genuine edit after closing a side panel by re-selecting the already-active zone", async () => {
+    // Opening Contact Form while on Home, then clicking Home again to return
+    // to the canvas, re-selects the zone you're already on while a side panel
+    // is open. That path used to arm the mount-echo guard without a matching
+    // Puck remount to consume it, so the very next real edit was discarded.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    expect(await screen.findByTestId("puck")).toBeInTheDocument();
+
+    // A genuine edit taken through the (buggy) mount-echo branch still lands
+    // in in-memory state — the observable loss is that it never schedules the
+    // debounced localStorage autosave (that call sits after the echo guard's
+    // early return), so it vanishes from "Continue where you left off".
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(window.localStorage.getItem(DRAFT_KEY) ?? "").toContain("Changed");
+  });
+
+  // Note: there is no reachable "raw mount, before any entry action" edit —
+  // PortfolioEntryDialog is a non-dismissible modal, so the first click a real
+  // user can make on Puck always follows some entry choice (Continue / Load
+  // existing / Start scratch). "Continue" (restoreLocalDraft) is exercised as
+  // the mount-adjacent reseed by every renderAndDismissEntry-based test that
+  // fires "Simulate Puck change" right after, e.g. "keeps Puck edits local"
+  // above and the zone-switch regression test below.
+
+  it("does not drop the first genuine edit after applyDraft loads a different draft", async () => {
+    const props = {
+      ...baseProps,
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d2",
+        name: "Summer",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Summer" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Applying Summer" })).not.toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled();
+  });
+
   it("keeps the sidebar toggles in the edit-mode header", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByRole("button", { name: "Toggle blocks panel" })).toBeInTheDocument();
@@ -1122,6 +1186,18 @@ describe("EditorShell", () => {
     await waitFor(() => {
       expect(__puckMountCount).toBeGreaterThan(mountCountBefore);
     });
+  });
+
+  it("does not drop the first genuine edit made right after applyTemplate re-seeds the canvas", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Minimal/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Use this template" }));
+    await screen.findByTestId("puck", {}, { timeout: 3000 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled();
   });
 
   it("unsaved-changes modal shows the draft name input and blocks Save when name is a duplicate", async () => {
