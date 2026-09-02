@@ -20,6 +20,10 @@ let __puckMountCount = 0;
 // data directly (the "Simulate Puck change" button only emits a fixed
 // 1-block payload, not enough to exercise the demo block cap).
 let __capturedPuckOnChange: ((data: unknown) => void) | undefined;
+// Captures the live `metadata` prop so tests can assert on what EditorShell
+// threads into Puck's canvas context (e.g. the nav chrome labels — see
+// getNavChromeLabelsFrom).
+let __capturedPuckMetadata: unknown;
 
 // Mock PuckApi shape used by createUsePuck selectors in EditCanvasControls.
 const mockPuckApi = {
@@ -80,6 +84,7 @@ vi.mock("@measured/puck", () => ({
     overrides,
     onChange,
     data,
+    metadata,
   }: {
     headerTitle?: string;
     overrides?: {
@@ -90,12 +95,14 @@ vi.mock("@measured/puck", () => ({
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
     data?: unknown;
+    metadata?: unknown;
   }) => {
     // Simulate uncontrolled: capture data only on mount (via useState initializer).
     // Subsequent `data` prop changes are ignored — same as real Puck after mount.
     // Only a key change (remount) will re-initialize this seed.
     const [seed] = useState(() => data);
     __capturedPuckOnChange = onChange as ((data: unknown) => void) | undefined;
+    __capturedPuckMetadata = metadata;
 
     // Count mounts — a new key forces a remount, incrementing this counter.
     useEffect(() => { __puckMountCount++; }, []);
@@ -205,6 +212,7 @@ import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { PRESET_GROUPS } from "@/lib/page-builder/blocks/sectionPresets";
 import { englishPuckT } from "@/lib/page-builder/editorConfig";
 import { openPresetPreview, __resetPresetPreview } from "@/lib/page-builder/presetPreviewStore";
+import { enMessages } from "@/test-utils/render";
 
 /** Reads the onboarding logo's asset id off a persisted buffer's home-zone
  *  Navigation block's slot Image (the block is always seeded first). */
@@ -297,9 +305,12 @@ describe("previewZoneFor", () => {
  * When the SpotlightGuide is open (guideDismissed=false), it gates the entry
  * dialog. This helper skips the guide first so the entry dialog then appears.
  */
-async function renderAndDismissEntry(ui: ReactElement) {
+async function renderAndDismissEntry(
+  ui: ReactElement,
+  options?: Parameters<typeof renderWithProviders>[1]
+) {
   window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
-  const result = renderWithProviders(ui);
+  const result = renderWithProviders(ui, options);
 
   // If the guide is open, skip it first so the entry dialog becomes visible.
   // "Skip Guide" now opens a confirm modal; confirm via the modal's own
@@ -329,6 +340,7 @@ beforeEach(() => {
   window.localStorage.clear();
   __puckMountCount = 0;
   __capturedPuckOnChange = undefined;
+  __capturedPuckMetadata = undefined;
   __resetPresetPreview();
   listDraftsAction.mockResolvedValue([]);
   seedTemplateAction.mockImplementation((templateId = "minimal") =>
@@ -1466,6 +1478,52 @@ describe("EditorShell", () => {
         const homeContent = (JSON.parse(buffered!).data.home.content ?? []) as { props?: { _chrome?: string } }[];
         expect(homeContent.some((b) => b.props?._chrome === "footer")).toBe(false);
       });
+    });
+
+    it("discarding to a scratch canvas seeds Navigation in the gallery zone too, not just home (Fix #5)", async () => {
+      renderWithProviders(
+        <EditorShell
+          {...baseProps}
+          initialActiveDraftId={null}
+          initialActiveDraftName={undefined}
+          initialDrafts={[]}
+        />
+      );
+      // Brand-new (no drafts, no buffer) — welcome template picker, not the
+      // normal entry dialog.
+      fireEvent.click(await screen.findByRole("button", { name: "Start from scratch" }));
+      await waitFor(() => expect(seedTemplateAction).toHaveBeenCalledWith("scratch"));
+      await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
+
+      // activeDraftId is still null right after applying — Publish routes
+      // through the unsaved-changes guard.
+      fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Discard" }));
+      await waitFor(() => expect(listDraftsAction).toHaveBeenCalled());
+      // Discard's pending action re-opens the publish dialog — close it so
+      // the toolbar underneath is reachable again.
+      fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+
+      // Save WITHOUT ever visiting the Gallery tab — this is what ships to
+      // the server; zoneDataRef.current.gallery must already carry
+      // Navigation, not rely on selectZone's own repair-on-visit.
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+      await waitFor(() => expect(createDraftAction).toHaveBeenCalled());
+      const payload = createDraftAction.mock.calls[0][0] as {
+        data: { gallery: { content?: { props?: { _chrome?: string } }[] } };
+      };
+      expect((payload.data.gallery.content ?? []).some((b) => b.props?._chrome === "nav")).toBe(true);
+    });
+
+    it("threads localized nav chrome labels into the editor canvas's Puck metadata (Fix #7)", async () => {
+      const messages = structuredClone(enMessages);
+      messages.publicPage.nav.home = "TRANSLATED_HOME_LABEL";
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, { messages });
+
+      const metadata = __capturedPuckMetadata as {
+        workspace?: { chrome?: { nav?: { home?: string } } };
+      };
+      expect(metadata?.workspace?.chrome?.nav?.home).toBe("TRANSLATED_HOME_LABEL");
     });
 
     it("deleting an attached footer mirrors the removal onto the other zone, and it does not come back on a later edit (Fix #4)", async () => {

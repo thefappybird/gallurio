@@ -879,6 +879,7 @@ export function EditorShell({
   const t = useTranslations("app.pageBuilder.editor");
   const tDemo = useTranslations("app.portfolioMakerDemo");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
+  const tNav = useTranslations("publicPage.nav");
   const tLocationPicker = useTranslations("app.bookings.locationPicker");
   const errMsg = useActionError();
   // Declared ahead of editorConfig below (normally further down with the rest
@@ -1717,7 +1718,12 @@ export function EditorShell({
 
   // ---- Reset canvas to an empty scratch state (no backing draft) ----
   function resetToScratchCanvas() {
-    zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
+    // Both zones go through prepareForEditor (not just puckSeed/home) — a
+    // Save/Publish that never visits the Gallery tab reads zoneDataRef
+    // directly, so an unprepared gallery would ship with no Navigation.
+    const homeData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
+    const galleryData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setTemplateId(SCRATCH_TEMPLATE_ID);
     setTemplateSeedSnapshot(JSON.stringify(zoneDataRef.current));
@@ -1727,7 +1733,7 @@ export function EditorShell({
     setNameError(null);
     setSavedSnapshot(null);
     ignoreNextChange.current = true;
-    setPuckSeed(prepareForEditor(EMPTY_ZONE, initialHeaderConfig));
+    setPuckSeed(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setActiveZone("home");
   }
@@ -1827,12 +1833,12 @@ export function EditorShell({
     if (sidePanelOpen) {
       hideEditorPanels();
       ignoreNextChange.current = true;
-      setPuckSeed(prepareForEditor(zoneDataRef.current.home));
+      setPuckSeed(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig));
       setActiveZone("home");
     }
     await flushPendingSave(activeZone);
     ignoreNextChange.current = true;
-    setPuckSeed(prepareForEditor(zoneDataRef.current[zone]));
+    setPuckSeed(prepareForEditor(zoneDataRef.current[zone], initialHeaderConfig));
     setActiveZone(zone);
     if (previewMode) setPreviewNonce((n) => n + 1);
   }
@@ -1843,7 +1849,7 @@ export function EditorShell({
       if (previewMode) {
         // Back to editing — remount Puck from the freshest data; ignore its echo.
         ignoreNextChange.current = true;
-        setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone]));
+        setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone], initialHeaderConfig));
         setPreviewMode(false);
         return;
       }
@@ -1852,7 +1858,7 @@ export function EditorShell({
       if (sidePanelOpen) {
         hideEditorPanels();
         ignoreNextChange.current = true;
-        setPuckSeed(prepareForEditor(zoneDataRef.current.home));
+        setPuckSeed(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig));
         setActiveZone("home");
       }
       setPreviewNonce((n) => n + 1);
@@ -2153,9 +2159,16 @@ export function EditorShell({
   }
 
   function resetGuideCanvas() {
-    zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
-    setRenderDraftData({ home: EMPTY_ZONE, gallery: EMPTY_ZONE });
-    setPuckSeed(prepareForEditor(EMPTY_ZONE, initialHeaderConfig));
+    // Both zones through prepareForEditor (mirrors resetToScratchCanvas —
+    // an unprepared gallery has no Navigation), and ignoreNextChange set
+    // before the remount so its mount echo isn't processed as a real edit
+    // (every other setPuckSeed+setSeedNonce site in this file does the same).
+    const homeData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
+    const galleryData = prepareForEditor(EMPTY_ZONE, initialHeaderConfig) as unknown as PuckData;
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
+    setRenderDraftData(zoneDataRef.current);
+    ignoreNextChange.current = true;
+    setPuckSeed(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setDragBaseline(0);
   }
@@ -2683,6 +2696,19 @@ export function EditorShell({
                 editorPreview: true,
                 publicPage: { collectionsPopup },
                 brandVars: cssVars,
+                // Without this, getNavChromeLabelsFrom falls back to English —
+                // the public page and the preview route both pass chrome.nav
+                // already; the canvas was the one surface missing it.
+                chrome: {
+                  nav: {
+                    navLandmark: tNav("navLandmark"),
+                    home: tNav("home"),
+                    gallery: tNav("gallery"),
+                    contact: tNav("contact"),
+                    openMenu: tNav("openMenu"),
+                    closeMenu: tNav("closeMenu"),
+                  },
+                },
               },
             }}
             viewports={[
