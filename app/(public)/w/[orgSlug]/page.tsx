@@ -15,7 +15,7 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildHomeJsonLd, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
-import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import { resolveHomeSeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
 import { BUSINESS_TYPE_VALUES } from "@/lib/validators/workspace";
 
@@ -62,7 +62,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 
   const ogImageUrl = seo.ogImageUrl || undefined;
-  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon) || undefined;
+  // Legacy `publicPage.header` logo is read only as a back-compat favicon
+  // fallback for pages published before the Navigation block existed.
+  const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
+  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   // Use the resolved DB slug (always lowercase), never the raw route param —
   // otherwise a mixed-case request (e.g. /w/AcmeStudio) emits a canonical URL
   // that disagrees with app/sitemap.ts, which lists the lowercase DB slug.

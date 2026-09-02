@@ -15,7 +15,7 @@ import { PoweredByGallurio } from "../_components/PoweredByGallurio";
 import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioGalleryUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, buildPortfolioEntityNodes, buildPortfolioJsonLdInput, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
-import { portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
+import { portfolioHeaderLogoUrl, portfolioSiteIconUrl } from "@/lib/storage/portfolioAssetUrls";
 import { resolveGallerySeo, SEO_DEFAULT_KEYS } from "@/lib/portfolio/seoDefaults";
 import { collectGalleryPublishedImages } from "@/lib/page-builder/seo/publishedImages.server";
 
@@ -43,7 +43,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     galleryTitle,
   });
 
-  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon) || undefined;
+  // Legacy `publicPage.header` logo is read only as a back-compat favicon
+  // fallback for pages published before the Navigation block existed.
+  const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
+  const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
   const galleryUrl = portfolioGalleryUrl(workspace.slug);
 
