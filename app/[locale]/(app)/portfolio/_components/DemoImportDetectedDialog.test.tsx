@@ -10,8 +10,8 @@ describe("DemoImportDetectedDialog", () => {
     renderWithProviders(
       <DemoImportDetectedDialog open busy={false} onConfirm={onConfirm} onDiscard={onDiscard} />
     );
-    fireEvent.click(screen.getByRole("button", { name: /yes/i }));
-    fireEvent.click(screen.getByRole("button", { name: /no, discard/i }));
+    fireEvent.click(screen.getByRole("button", { name: /apply saved setup/i }));
+    fireEvent.click(screen.getByRole("button", { name: /discard saved setup/i }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onDiscard).toHaveBeenCalledTimes(1);
   });
