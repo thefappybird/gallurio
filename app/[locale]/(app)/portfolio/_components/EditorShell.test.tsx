@@ -24,6 +24,11 @@ let __capturedPuckOnChange: ((data: unknown) => void) | undefined;
 // threads into Puck's canvas context (e.g. the nav chrome labels — see
 // getNavChromeLabelsFrom).
 let __capturedPuckMetadata: unknown;
+// Captures the seed actually mounted into Puck (post-prepareForEditor,
+// post-withPendingLogo) on every mount/remount — more direct than round-
+// tripping through the debounced localStorage buffer, which may not have
+// flushed yet when the assertion runs.
+let __capturedPuckSeed: unknown;
 
 // Mock PuckApi shape used by createUsePuck selectors in EditCanvasControls.
 const mockPuckApi = {
@@ -103,6 +108,7 @@ vi.mock("@measured/puck", () => ({
     const [seed] = useState(() => data);
     __capturedPuckOnChange = onChange as ((data: unknown) => void) | undefined;
     __capturedPuckMetadata = metadata;
+    __capturedPuckSeed = seed;
 
     // Count mounts — a new key forces a remount, incrementing this counter.
     useEffect(() => { __puckMountCount++; }, []);
@@ -226,15 +232,16 @@ function navLogoAssetId(buffer: { data?: { home?: { content?: unknown[] } } }): 
   return image?.props?._style?.bgImagePublicId;
 }
 
-/** Reads the home-zone Navigation block's slot Heading text off a persisted buffer. */
-function navHeadingText(buffer: { data?: { home?: { content?: unknown[] } } }): string | undefined {
-  const nav = buffer.data?.home?.content?.find(
+/** Same as `navLogoAssetId` but reads a raw `{content}` zone shape directly
+ *  (e.g. `__capturedPuckSeed`) instead of a persisted buffer's `data.home`. */
+function navLogoAssetIdFromZone(zone: { content?: unknown[] } | undefined): string | undefined {
+  const nav = zone?.content?.find(
     (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
   ) as { props?: { content?: unknown[] } } | undefined;
-  const heading = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Heading") as
-    | { props?: { text?: string } }
+  const image = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Image") as
+    | { props?: { _style?: { bgImagePublicId?: string } } }
     | undefined;
-  return heading?.props?.text;
+  return image?.props?._style?.bgImagePublicId;
 }
 
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
@@ -341,6 +348,7 @@ beforeEach(() => {
   __puckMountCount = 0;
   __capturedPuckOnChange = undefined;
   __capturedPuckMetadata = undefined;
+  __capturedPuckSeed = undefined;
   __resetPresetPreview();
   listDraftsAction.mockResolvedValue([]);
   seedTemplateAction.mockImplementation((templateId = "minimal") =>
@@ -1351,7 +1359,7 @@ describe("EditorShell", () => {
     });
   });
 
-  it("onboarding logo does not leak into an existing draft loaded via applyDraft", async () => {
+  it("onboarding logo is migrated onto a draft loaded via applyDraft, then cleared (Fix #8)", async () => {
     uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-1", url: "https://cdn/logo.png" } });
     getDraftAction.mockResolvedValueOnce({
       ok: true,
@@ -1400,15 +1408,21 @@ describe("EditorShell", () => {
 
     // Returning user (baseProps has a draft) lands on the normal entry
     // dialog, not the template picker — load the existing draft instead.
-    // applyDraftInner clears pendingOnboardingLogoRef on entry (before it
-    // even reads the draft), so the captured logo must not leak into it.
+    // A brand-new workspace's first-ever visit also reaches this exact path
+    // (page.tsx auto-seeds one draft before the owner ever sees the editor,
+    // so drafts.length===1 here does not mean "real returning user"), so the
+    // captured logo is migrated onto whatever draft gets loaded (Fix #8).
     fireEvent.click(await screen.findByRole("button", { name: /Load an existing draft/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
     await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
 
-    // Prove the ref was actually cleared (not just that applyDraft's own
-    // buffer-clear masked it): apply a fresh template afterward with no new
-    // upload — its seeded Navigation must carry no logo either.
+    await waitFor(() => {
+      expect(navLogoAssetIdFromZone(__capturedPuckSeed as { content?: unknown[] })).toBe("logo-1");
+    });
+
+    // Prove the ref was actually cleared after being consumed once (not
+    // reapplied indefinitely): a fresh template afterward with no new
+    // upload carries no logo.
     fireEvent.click(await screen.findByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
     fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
@@ -1418,6 +1432,83 @@ describe("EditorShell", () => {
       const buffered = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
       expect(buffered).toBeTruthy();
       expect(navLogoAssetId(JSON.parse(buffered!))).toBeUndefined();
+    });
+  });
+
+  it("onboarding logo is migrated when continuing a recovered local buffer (Fix #8)", async () => {
+    uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-2", url: "https://cdn/logo2.png" } });
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
+    renderWithProviders(
+      <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Let's go" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your vibe" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Add your branding" });
+
+    const fileInput = document.querySelector(
+      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+    ) as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["logo"], "logo2.png", { type: "image/png" })] } });
+    await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo2.png"]')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your page is ready to shine" });
+    fireEvent.click(screen.getByRole("button", { name: "I'll explore myself" }));
+    await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
+
+    fireEvent.click(await screen.findByRole("button", { name: /Continue where you left off/ }));
+    await waitFor(() => {
+      expect(navLogoAssetIdFromZone(__capturedPuckSeed as { content?: unknown[] })).toBe("logo-2");
+    });
+  });
+
+  describe("draft buffer lifecycle (Fix #9)", () => {
+    it("the local buffer is not auto-applied on mount, only via explicit Continue", async () => {
+      const distinctBuffer = {
+        version: 2,
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "buf-hero", headline: "BUFFER_MARKER" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        draftId: "d1",
+        draftName: "Test Draft",
+      };
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(distinctBuffer));
+      renderWithProviders(<EditorShell {...baseProps} />);
+
+      await screen.findByRole("button", { name: /Continue where you left off/ });
+      expect(JSON.stringify(__capturedPuckSeed)).not.toContain("BUFFER_MARKER");
+
+      fireEvent.click(screen.getByRole("button", { name: /Continue where you left off/ }));
+      await waitFor(() => {
+        expect(JSON.stringify(__capturedPuckSeed)).toContain("BUFFER_MARKER");
+      });
+    });
+
+    it("Save changes clears the local buffer for a real draft", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      expect(window.localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+
+      // Save is disabled while clean (activeDraftId set + !isDirty) — dirty
+      // the canvas first, same as the existing debounce test does.
+      fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+      await waitFor(() => expect(updateDraftAction).toHaveBeenCalled());
+      expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
+    });
+
+    it("applyDraft clears the local buffer", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      expect(window.localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+
+      fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+      await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+      await waitFor(() => expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull());
     });
   });
 
@@ -1595,13 +1686,19 @@ describe("EditorShell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
     await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    // applyDraft intentionally clears the local buffer (a freshly-loaded
+    // clean draft must not manufacture a recoverable-edits buffer), so
+    // assert on the rendered seed directly rather than localStorage.
     await waitFor(() => {
-      const buffered = window.localStorage.getItem(DRAFT_KEY);
-      expect(buffered).toBeTruthy();
-      const buffer = JSON.parse(buffered!);
-      expect(navLogoAssetId(buffer)).toBe("asset-99");
-      expect(navHeadingText(buffer)).toBe("Acme Studio");
+      const zone = __capturedPuckSeed as { content?: unknown[] };
+      expect(navLogoAssetIdFromZone(zone)).toBe("asset-99");
+      const nav = zone.content?.find(
+        (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
+      ) as { props?: { content?: unknown[] } } | undefined;
+      const heading = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Heading") as
+        | { props?: { text?: string } }
+        | undefined;
+      expect(heading?.props?.text).toBe("Acme Studio");
     });
   });
 

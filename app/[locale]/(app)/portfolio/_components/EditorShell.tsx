@@ -1137,8 +1137,12 @@ export function EditorShell({
   // to the seeded Navigation block's slot immediately — patching it in this
   // early would get written into the localStorage draft buffer by the
   // persistLocalDraft effect below, making a brand-new visitor look like they
-  // already have a recoverable draft. Applied once, into the new draft's
-  // Navigation block, when a template is actually picked (applyTemplate).
+  // already have a recoverable draft. Applied once, into whichever zone data
+  // actually reaches the canvas next — applyTemplate, applyDraft, or
+  // restoreLocalDraft — since a brand-new workspace's first-ever visit can
+  // land on any of those three entry actions (page.tsx auto-seeds one draft
+  // before the owner ever sees the editor, so "an existing draft" doesn't
+  // imply "not onboarding").
   const pendingOnboardingLogoRef = useRef<{ logoUrl: string; logoAssetId: string } | null>(null);
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
@@ -1254,10 +1258,21 @@ export function EditorShell({
       const draft = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
       if (draft.version !== LOCAL_DRAFT_VERSION || !draft.data) return;
       queueMicrotask(() => {
+        // A still-pending onboarding logo (captured by the story prompt — see
+        // pendingOnboardingLogoRef's declaration) is patched into whichever
+        // zone data actually ends up on the canvas next, same as applyTemplate.
+        const pendingLogo = pendingOnboardingLogoRef.current;
+        pendingOnboardingLogoRef.current = null;
         // prepareForEditor both zones so zoneDataRef, renderDraftData, and the
         // Puck seed are all in the same shape — mismatched shapes cause isDirty=true.
-        const home = prepareForEditor(draft.data?.home ?? zoneDataRef.current.home, initialHeaderConfig) as unknown as PuckData;
-        const gallery = prepareForEditor(draft.data?.gallery ?? zoneDataRef.current.gallery, initialHeaderConfig) as unknown as PuckData;
+        const home = withPendingLogo(
+          prepareForEditor(draft.data?.home ?? zoneDataRef.current.home, initialHeaderConfig) as unknown as PuckData,
+          pendingLogo,
+        );
+        const gallery = withPendingLogo(
+          prepareForEditor(draft.data?.gallery ?? zoneDataRef.current.gallery, initialHeaderConfig) as unknown as PuckData,
+          pendingLogo,
+        );
         zoneDataRef.current = { home, gallery };
         setRenderDraftData({ home, gallery });
         if (draft.brandKit) setBrandKit(draft.brandKit);
@@ -1289,8 +1304,18 @@ export function EditorShell({
     restoreLocalDraft();
   }, [demoMode, guideMode, restoreLocalDraft]);
 
+  // Skip the very first run (mount): persisting zoneDataRef's initial
+  // (server) state here — before the owner has chosen "Continue"/"Load
+  // existing"/"Start scratch" — would silently overwrite a genuine
+  // recoverable buffer from a previous session with clean server state,
+  // defeating "Continue where you left off" before it's ever clicked.
+  const skipInitialLocalDraftPersist = useRef(true);
   useEffect(() => {
     if (guideMode) return;
+    if (skipInitialLocalDraftPersist.current) {
+      skipInitialLocalDraftPersist.current = false;
+      return;
+    }
     persistLocalDraft();
   }, [activeDraftId, collectionsPopup, contact, draftName, formDir, formLocale, guideMode, persistLocalDraft]);
 
@@ -1655,8 +1680,12 @@ export function EditorShell({
   }
 
   async function applyDraftInner(id: string) {
-    // A real draft already has its own header — never let a still-pending onboarding
-    // logo (not yet applied to any draft) leak into it or a later template switch.
+    // A still-pending onboarding logo (captured by the story prompt) is
+    // consumed here too, same as applyTemplate — a brand-new workspace's
+    // very first visit reaches this exact path (page.tsx auto-seeds one
+    // draft before the owner ever sees the editor), so "an existing draft
+    // was loaded" does not mean "this isn't the onboarding flow".
+    const pendingLogo = pendingOnboardingLogoRef.current;
     pendingOnboardingLogoRef.current = null;
     const res = await getDraftAction(id);
     if ("error" in res) {
@@ -1673,8 +1702,14 @@ export function EditorShell({
     // prepareForEditor must be applied here so zoneDataRef, renderDraftData, and
     // savedSnapshot all carry the same shape — without it the gallery zone stays
     // raw while the snapshot holds the prepared version → isDirty=true on load.
-    const homeData = prepareForEditor((d.data.home as PuckData) ?? EMPTY_ZONE, resolvedHeader) as unknown as PuckData;
-    const galleryData = prepareForEditor((d.data.gallery as PuckData) ?? EMPTY_ZONE, resolvedHeader) as unknown as PuckData;
+    const homeData = withPendingLogo(
+      prepareForEditor((d.data.home as PuckData) ?? EMPTY_ZONE, resolvedHeader) as unknown as PuckData,
+      pendingLogo,
+    );
+    const galleryData = withPendingLogo(
+      prepareForEditor((d.data.gallery as PuckData) ?? EMPTY_ZONE, resolvedHeader) as unknown as PuckData,
+      pendingLogo,
+    );
     // Resolve each field to the value that will be committed to state, so the
     // saved snapshot always matches post-apply render state.
     const resolvedBrandKit = (d.brandKit as PortfolioBrandKit) ?? DEFAULT_BRAND_KIT;
@@ -3008,12 +3043,10 @@ export function EditorShell({
           canContinue={hasRecoverableBuffer || initialActiveDraftId !== null}
           hasDrafts={drafts.length > 0}
           onContinue={() => {
-            // Resuming the existing buffer as-is — never inject a still-pending
-            // onboarding logo into it or a later template switch. Applying the
-            // buffer only NOW (not on mount) is what keeps "Load an existing
-            // draft"/"Start from scratch" from ever seeing it — restoreLocalDraft
-            // no-ops when there is nothing to restore.
-            pendingOnboardingLogoRef.current = null;
+            // restoreLocalDraft itself now consumes a still-pending onboarding
+            // logo (see its declaration) when there is a buffer to restore
+            // into; it no-ops (and leaves the ref alone) when there is nothing
+            // to restore, e.g. continuing an already-loaded active draft.
             restoreLocalDraft();
             setEntryOpen(false);
           }}
