@@ -69,10 +69,22 @@ await page.mouse.up();
 ```
 This both adds a block and satisfies the `drag-block` gate (verified: `2 of 19 → 3 of 19`).
 
-## Canvas (iframe) assertions
-Puck renders the preview in an iframe → reach it with `page.frameLocator(...)`. To prove a
-style took effect, assert computed style, e.g. `getComputedStyle(grid).gridTemplateColumns`
-has N tracks for Columns. Avoid asserting from source alone — observe the real DOM.
+## Canvas assertions — the editor canvas is NOT an iframe
+EditorShell mounts `<Puck iframe={{ enabled: false }}>` (EditorShell.tsx:2892), so the editing
+canvas renders **directly in the main document**. Use ordinary `page.locator(...)`. A
+`frameLocator` against the canvas matches nothing and burns a run on a phantom timeout.
+
+The *only* iframe is the standalone **Preview tab** (`/portfolio-preview`, a separate
+chrome-less route loaded in an `<iframe>`) — that one does need `frameLocator`. Two different
+surfaces; don't confuse them.
+
+To prove a style took effect, assert computed style, e.g.
+`getComputedStyle(grid).gridTemplateColumns` has N tracks for Columns. Avoid asserting from
+source alone — observe the real DOM. Two traps that make assertions pass vacuously:
+- Tailwind v4 `translate-*` writes the `translate` property, not `transform` — read
+  `.translate`, or you will see `"none"` and invent a bug.
+- `getComputedStyle` returns `oklab(...)`, not `rgb(...)`. A naive `rgb()` regex returns null
+  and the assertion silently passes. Rasterize via a 1x1 canvas instead.
 
 ## Breakpoints
 Public-facing surfaces (contact form, public portfolio pages) cover all three: mobile 375,
