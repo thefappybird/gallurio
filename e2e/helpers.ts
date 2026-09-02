@@ -132,7 +132,7 @@ export async function publishCurrent(page: Page): Promise<string> {
   await page.getByRole("button", { name: /^Publish$/ }).first().click();
   const dialog = page.getByRole("dialog").filter({ hasText: "Publish your portfolio?" });
   await expect(dialog).toBeVisible();
-  const url = (await dialog.locator("span.truncate").first().innerText()).trim();
+  const url = (await dialog.getByText(/^https?:\/\//).first().innerText()).trim();
   await dialog.getByRole("button", { name: "Publish now" }).click();
   await expect(dialog).toBeHidden({ timeout: 30_000 });
   return url;

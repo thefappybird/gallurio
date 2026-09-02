@@ -692,12 +692,27 @@ function ensureNavigation(data: PuckData, header: PortfolioHeaderConfig): PuckDa
  * guarantee the zone's chrome invariants: exactly one Navigation, seeded from
  * `headerFallback` when the zone has none (migrates a legacy header value —
  * see call sites — falling back to the template default), pinned to index 0.
+ *
+ * Same pipeline as `prepareForEditor`, plus a `repaired` flag: true when
+ * `ensureNavigation`/`rescueNestedChrome`/`normalizeChrome` actually changed
+ * something (a chrome block was injected, rescued, or reordered) rather than
+ * passing their input straight through. Those three are the only steps whose
+ * no-op case is "return the same reference" — `fillBlockDefaults`/`ensureIds`/
+ * the container/masonry reconcilers always build a new object, so they're
+ * deliberately excluded: including them would flag routine normalisation
+ * (which runs on every draft, every load) as a meaningful repair.
+ *
+ * Used only where a load must tell "this draft's canvas now differs from
+ * what's actually stored" apart from "this draft always looks slightly
+ * different after routine normalisation" — see the `savedSnapshot` seeding
+ * call sites.
  */
-function prepareForEditor(
+function prepareForEditorWithMeta(
   data: PuckData,
   headerFallback: PortfolioHeaderConfig = DEFAULT_HEADER_CONFIG
-): Data {
+): { data: Data; repaired: boolean } {
   const seeded = ensureNavigation(data, headerFallback);
+  const navInjected = seeded !== data;
   const withDefaults = fillBlockDefaults(seeded as unknown as PuckDataLike) as unknown as PuckData;
   // Normalize legacy/restored ContainerAnchor data before the first canvas
   // render, then keep it normalized live with ContainerAnchorReconciler.
@@ -705,10 +720,22 @@ function prepareForEditor(
   // Self-heals a zone saved/buffered before the nested-chrome rescue existed
   // in handleChange — see that call site's comment for the drop-target
   // ambiguity that produces this shape.
+  let rescued = false;
   for (const kind of CHROME_KINDS) {
-    prepared = rescueNestedChrome(prepared, kind);
+    const next = rescueNestedChrome(prepared, kind);
+    if (next !== prepared) rescued = true;
+    prepared = next;
   }
-  return normalizeChrome(prepared);
+  const normalized = normalizeChrome(prepared);
+  const reordered = normalized !== prepared;
+  return { data: normalized, repaired: navInjected || rescued || reordered };
+}
+
+function prepareForEditor(
+  data: PuckData,
+  headerFallback: PortfolioHeaderConfig = DEFAULT_HEADER_CONFIG
+): Data {
+  return prepareForEditorWithMeta(data, headerFallback).data;
 }
 
 /**
@@ -1100,12 +1127,21 @@ export function EditorShell({
   // Stored as state so it can be read during render for the derived isDirty check.
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(() => {
     if (initialActiveDraftId === null) return null;
+    const homeMeta = prepareForEditorWithMeta(initialData.home ?? EMPTY_ZONE, initialHeaderConfig);
+    const galleryMeta = prepareForEditorWithMeta(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig);
+    // A meaningful repair (e.g. a legacy header migrated into a missing
+    // Navigation block) happened on load: the stored draft genuinely lacks
+    // what the canvas now shows, so there is no valid "last saved" baseline
+    // to seed — null reads as always-dirty (same convention as "never
+    // saved"), which forces the save-before-publish guard and a real Save
+    // writes the repaired zones back to the draft.
+    if (homeMeta.repaired || galleryMeta.repaired) return null;
     return JSON.stringify({
       name: initialActiveDraftName || DEFAULT_DRAFT_NAME,
       templateId: currentTemplateId,
       data: {
-        home: prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig),
-        gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig),
+        home: homeMeta.data,
+        gallery: galleryMeta.data,
       },
       brandKit: initialBrandKit,
       contact: initialContact,
@@ -1763,14 +1799,10 @@ export function EditorShell({
     // prepareForEditor must be applied here so zoneDataRef, renderDraftData, and
     // savedSnapshot all carry the same shape — without it the gallery zone stays
     // raw while the snapshot holds the prepared version → isDirty=true on load.
-    const homeData = withPendingLogo(
-      prepareForEditor((d.data.home as PuckData) ?? EMPTY_ZONE, resolvedHeader) as unknown as PuckData,
-      pendingLogo,
-    );
-    const galleryData = withPendingLogo(
-      prepareForEditor((d.data.gallery as PuckData) ?? EMPTY_ZONE, resolvedHeader) as unknown as PuckData,
-      pendingLogo,
-    );
+    const homeMeta = prepareForEditorWithMeta((d.data.home as PuckData) ?? EMPTY_ZONE, resolvedHeader);
+    const galleryMeta = prepareForEditorWithMeta((d.data.gallery as PuckData) ?? EMPTY_ZONE, resolvedHeader);
+    const homeData = withPendingLogo(homeMeta.data as unknown as PuckData, pendingLogo);
+    const galleryData = withPendingLogo(galleryMeta.data as unknown as PuckData, pendingLogo);
     // Resolve each field to the value that will be committed to state, so the
     // saved snapshot always matches post-apply render state.
     const resolvedBrandKit = (d.brandKit as PortfolioBrandKit) ?? DEFAULT_BRAND_KIT;
@@ -1794,17 +1826,24 @@ export function EditorShell({
     seedPuck(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setActiveZone("home");
-    setSavedSnapshot(JSON.stringify({
-      name: d.name,
-      templateId: resolvedTemplateId,
-      data: { home: homeData, gallery: galleryData },
-      brandKit: resolvedBrandKit,
-      contact: resolvedContact,
-      header: {},
-      collectionsPopup: resolvedCollectionsPopup,
-      formLocale: resolvedFormLocale,
-      formDir: resolvedFormDir,
-    }));
+    // See the initial-mount savedSnapshot seeding for why a meaningful repair
+    // (homeMeta/galleryMeta.repaired) forces null instead of a matching
+    // baseline — the stored draft doesn't actually have what's now on canvas.
+    setSavedSnapshot(
+      homeMeta.repaired || galleryMeta.repaired
+        ? null
+        : JSON.stringify({
+            name: d.name,
+            templateId: resolvedTemplateId,
+            data: { home: homeData, gallery: galleryData },
+            brandKit: resolvedBrandKit,
+            contact: resolvedContact,
+            header: {},
+            collectionsPopup: resolvedCollectionsPopup,
+            formLocale: resolvedFormLocale,
+            formDir: resolvedFormDir,
+          })
+    );
     // A freshly-loaded clean draft must not manufacture a "Continue where you
     // left off" buffer for edits that never happened.
     clearLocalDraft();

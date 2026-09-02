@@ -260,8 +260,22 @@ const baseProps = {
   slug: "studio-aurora",
   workspaceName: "Studio Aurora",
   initialData: {
-    home: { content: [{ type: "Hero", props: { headline: "Hi" } }], root: {} },
-    gallery: { content: [], root: {} },
+    // Nav explicitly present (id matches what ensureIds would assign anyway —
+    // see ensureIds) so this fixture represents an already-migrated draft:
+    // ensureNavigation is a no-op and the editor loads NOT dirty. Tests that
+    // specifically exercise the legacy-header migration override this with
+    // nav-less content instead (see e.g. "migrates a legacy header's...").
+    home: {
+      content: [
+        { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+        { type: "Hero", props: { headline: "Hi" } },
+      ],
+      root: {},
+    },
+    gallery: {
+      content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }],
+      root: {},
+    },
   },
   initialBrandKit: DEFAULT_BRAND_KIT,
   initialContact: { title: "Hi" },
@@ -1465,7 +1479,10 @@ describe("EditorShell", () => {
         updatedAt: new Date().toISOString(),
         data: {
           home: { content: [{ type: "Navigation", props: { id: "nav-1", _chrome: "nav", content: [] } }], root: {} },
-          gallery: { content: [], root: {} },
+          // Nav present here too — a nav-less gallery would read as a
+          // migration repair and dirty the draft, blocking this test's later
+          // "Use this template" step behind the unsaved-changes guard.
+          gallery: { content: [{ type: "Navigation", props: { id: "nav-2", _chrome: "nav" } }], root: {} },
         },
         brandKit: null,
         contact: null,
@@ -1479,7 +1496,13 @@ describe("EditorShell", () => {
         {...baseProps}
         storyPromptCompleted={false}
         guideDismissed={false}
-        initialData={{ home: { content: [], root: {} }, gallery: { content: [], root: {} } }}
+        // Nav present in both zones (mirrors baseProps) so the editor loads
+        // NOT dirty — the onboarding flow below only exercises the logo
+        // migration, not the missing-Navigation repair.
+        initialData={{
+          home: { content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }], root: {} },
+          gallery: { content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }], root: {} },
+        }}
       />
     );
     expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
@@ -2035,6 +2058,124 @@ describe("EditorShell", () => {
         | undefined;
       expect(heading?.props?.text).toBe("Acme Studio");
     });
+  });
+
+  it("loads a draft missing its Navigation as dirty, and Save persists the migrated zones (Fix #10)", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "hero-1", headline: "Hi" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    // The canvas now shows a migrated Navigation the stored draft never had —
+    // that's a real, savable difference, so Save must be enabled without any
+    // further edit.
+    const saveBtn = await screen.findByRole("button", { name: "Save changes" });
+    expect(saveBtn).not.toBeDisabled();
+
+    fireEvent.click(saveBtn);
+    await waitFor(() => expect(updateDraftAction).toHaveBeenCalled());
+    const payload = updateDraftAction.mock.calls[0][0] as {
+      data: { home: { content: { props?: { _chrome?: string } }[] } };
+    };
+    expect(payload.data.home.content.some((b) => b.props?._chrome === "nav")).toBe(true);
+  });
+
+  it("loads a draft that already has its Navigation as NOT dirty (regression guard)", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: {
+            content: [
+              { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+              { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } },
+            ],
+            root: {},
+          },
+          gallery: {
+            content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }],
+            root: {},
+          },
+        },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    // Nothing needed repairing — routine normalisation must never itself be
+    // mistaken for a meaningful change.
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled());
+  });
+
+  it("publishing a draft missing its Navigation saves the migrated zones first, then publishes them", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "hero-1", headline: "Hi" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled());
+
+    // Dirty from the migration alone (no manual edit) → Publish must route
+    // through the save-before-publish guard rather than publishing directly.
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(updateDraftAction).toHaveBeenCalled());
+    const payload = updateDraftAction.mock.calls[0][0] as {
+      data: { home: { content: { props?: { _chrome?: string } }[] } };
+    };
+    expect(payload.data.home.content.some((b) => b.props?._chrome === "nav")).toBe(true);
+
+    expect(await screen.findByText("Publish your portfolio?")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
+    await waitFor(() => expect(publishDraftAction).toHaveBeenCalledWith("d1"));
   });
 
   it("explore-self exit closes the guide synchronously — no flicker before the dismiss call settles", async () => {
