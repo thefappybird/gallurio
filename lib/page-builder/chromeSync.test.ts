@@ -6,6 +6,7 @@ import {
   reanchorChrome,
   normalizeChrome,
   canDetach,
+  rescueNestedChrome,
   type Zones,
   type IdFactory,
 } from "./chromeSync";
@@ -396,5 +397,68 @@ describe("normalizeChrome", () => {
       zoneWith([block("Hero", "hero-1"), navBlock("nav-1"), navBlock("nav-2"), footerBlock("footer-1"), footerBlock("footer-2")]),
     );
     expect(() => normalizeChrome(zone)).not.toThrow();
+  });
+});
+
+describe("rescueNestedChrome", () => {
+  it("promotes a footer dropped inside a Columns column's slot back to the zone's top level", () => {
+    // Mirrors the real dnd-kit trap: a drop aimed at "the bottom of the
+    // page" lands on an existing block's own nested slot (a Columns column)
+    // instead of the zone's own end-of-list dropzone.
+    const nestedFooter = footerBlock("footer-1");
+    const zone = zoneWith([
+      navBlock("nav-1"),
+      block("HeroPreset", "hero-1"),
+      block("Columns", "cols-1", {
+        content: [block("Container", "col-1", { content: [block("Text", "t-1"), nestedFooter] })],
+      }),
+    ]);
+
+    const result = rescueNestedChrome(zone, "footer");
+
+    const topLevelKinds = (result.content as ComponentData[]).map(
+      (b) => (b.props as { _chrome?: string })._chrome,
+    );
+    expect(topLevelKinds).toContain("footer");
+
+    const cols = result.content?.find((b) => b.type === "Columns");
+    const col = ((cols?.props as unknown as { content: ComponentData[] }).content)[0];
+    const colContentTypes = ((col.props as unknown as { content: ComponentData[] }).content).map((b) => b.type);
+    expect(colContentTypes).not.toContain("FooterSimple");
+  });
+
+  it("promotes a nested nav the same way", () => {
+    const zone = zoneWith([
+      block("HeroPreset", "hero-1"),
+      block("Container", "col-1", { content: [navBlock("nav-1")] }),
+    ]);
+    const result = rescueNestedChrome(zone, "nav");
+    const kinds = (result.content as ComponentData[]).map((b) => (b.props as { _chrome?: string })._chrome);
+    expect(kinds).toContain("nav");
+  });
+
+  it("is a no-op (same reference) when no block of that kind is nested anywhere", () => {
+    const zone = zoneWith([
+      navBlock("nav-1"),
+      block("Columns", "cols-1", { content: [block("Container", "col-1", { content: [block("Text", "t-1")] })] }),
+    ]);
+    expect(rescueNestedChrome(zone, "footer")).toBe(zone);
+  });
+
+  it("is a no-op when the chrome block is already at the top level, not nested", () => {
+    const zone = zoneWith([navBlock("nav-1"), footerBlock("footer-1")]);
+    expect(rescueNestedChrome(zone, "footer")).toBe(zone);
+  });
+
+  it("does not mutate frozen input", () => {
+    const zone = deepFreeze(
+      zoneWith([
+        navBlock("nav-1"),
+        block("Columns", "cols-1", {
+          content: [block("Container", "col-1", { content: [footerBlock("footer-1")] })],
+        }),
+      ]),
+    );
+    expect(() => rescueNestedChrome(zone, "footer")).not.toThrow();
   });
 });

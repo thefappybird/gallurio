@@ -1784,6 +1784,185 @@ describe("EditorShell", () => {
       expect(seed.content[seed.content.length - 1].props._chrome).toBe("footer");
     });
 
+    it("a footer dropped mid-list survives into zoneDataRef/the persisted buffer and mirrors to the other zone", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      // Dropped ABOVE existing content — lands mid-list, not already last,
+      // forcing normalizeChrome's remount-to-re-pin path.
+      const droppedFooter = {
+        type: "FooterStatementPreset",
+        props: { id: "footer-1", _chrome: "footer", detached: false },
+      };
+
+      __capturedPuckOnChange?.({ content: [homeNav, droppedFooter, homeHero], root: {} });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { props?: { _chrome?: string } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("a footer dropped into a Columns column's nested slot (drop-target ambiguity) is rescued to the top level, survives into the buffer, and mirrors", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "HeroPreset", props: { id: "c-Hero-1", headline: "Hi" } };
+      // Reproduces the real dnd-kit trap live QA hit: the footer preset
+      // landed inside an existing Columns block's own column slot instead
+      // of the zone's top-level end-of-list target.
+      const nestedFooter = {
+        type: "FooterStatementPreset",
+        props: { id: "footer-1", _chrome: "footer", detached: false },
+      };
+      const columns = {
+        type: "Columns",
+        props: {
+          id: "c-Columns-1",
+          content: [
+            {
+              type: "Container",
+              props: { id: "c-Container-1", content: [nestedFooter] },
+            },
+          ],
+        },
+      };
+
+      const mountCountBeforeDrop = __puckMountCount;
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero, columns], root: {} });
+
+      // The canvas re-syncs to the corrected (promoted) data right away —
+      // it must not keep showing the footer sitting in its original nested
+      // spot until some unrelated later remount.
+      await waitFor(() => expect(__puckMountCount).toBeGreaterThan(mountCountBeforeDrop));
+      const seed = __capturedPuckSeed as {
+        content: { type?: string; props: { _chrome?: string; content?: unknown[] } }[];
+      };
+      expect(seed.content.some((b) => b.props._chrome === "footer")).toBe(true);
+      const seedCols = seed.content.find((b) => b.type === "Columns");
+      const seedCol = (seedCols?.props.content as { props?: { content?: unknown[] } }[] | undefined)?.[0];
+      expect(
+        (seedCol?.props?.content as { props?: { _chrome?: string } }[] | undefined)?.some(
+          (b) => b.props?._chrome === "footer",
+        ),
+      ).toBe(false);
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { type?: string; props?: { _chrome?: string; content?: unknown[] } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        const homeContent = data.home.content ?? [];
+        expect(homeContent.some((b) => b.props?._chrome === "footer")).toBe(true);
+        // ...and it's gone from the Columns column it was nested in.
+        const cols = homeContent.find((b) => b.type === "Columns");
+        const col = (cols?.props?.content as { props?: { content?: unknown[] } }[] | undefined)?.[0];
+        expect(
+          (col?.props?.content as { props?: { _chrome?: string } }[] | undefined)?.some(
+            (b) => b.props?._chrome === "footer",
+          ),
+        ).toBe(false);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("an ordinary (non-chrome) block dropped into a Columns column's nested slot is left alone", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const columns = {
+        type: "Columns",
+        props: {
+          id: "c-Columns-1",
+          content: [
+            {
+              type: "Container",
+              props: { id: "c-Container-1", content: [{ type: "Text", props: { id: "c-Text-1", text: "Hi" } }] },
+            },
+          ],
+        },
+      };
+
+      __capturedPuckOnChange?.({ content: [homeNav, columns], root: {} });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = JSON.parse(buffered!).data.home.content as {
+          type: string;
+          props: { content?: { type: string; props: { content?: { type: string }[] } }[] };
+        }[];
+        const cols = homeContent.find((b) => b.type === "Columns");
+        expect(cols?.props.content?.[0]?.props.content?.[0]?.type).toBe("Text");
+      });
+    });
+
+    it("a footer dropped already-last (no reorder needed) survives into the buffer", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const droppedFooter = {
+        type: "FooterStatementPreset",
+        props: { id: "footer-1", _chrome: "footer", detached: false },
+      };
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero, droppedFooter], root: {} });
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { props?: { _chrome?: string } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("a further genuine edit after a successful footer drop keeps the footer", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const droppedFooter = {
+        type: "FooterStatementPreset",
+        props: { id: "footer-1", _chrome: "footer", detached: false },
+      };
+      // Step 1: drop footer mid-list (forces reorder + remount).
+      __capturedPuckOnChange?.({ content: [homeNav, droppedFooter, homeHero], root: {} });
+      // Step 2: a further genuine edit — e.g. editing the hero headline —
+      // fired against whatever Puck's canvas now looks like post-remount
+      // (i.e. footer already re-pinned last).
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          { ...homeHero, props: { ...homeHero.props, headline: "Edited" } },
+          droppedFooter,
+        ],
+        root: {},
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { props?: { _chrome?: string } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
     it("re-pins Navigation displaced from index 0 and remounts the canvas to match", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 

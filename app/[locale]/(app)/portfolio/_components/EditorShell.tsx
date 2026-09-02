@@ -47,6 +47,7 @@ import {
   normalizeChrome,
   reanchorChrome,
   canDetach,
+  rescueNestedChrome,
   type ChromeKind,
   type Zones,
 } from "@/lib/page-builder/chromeSync";
@@ -700,7 +701,13 @@ function prepareForEditor(
   const withDefaults = fillBlockDefaults(seeded as unknown as PuckDataLike) as unknown as PuckData;
   // Normalize legacy/restored ContainerAnchor data before the first canvas
   // render, then keep it normalized live with ContainerAnchorReconciler.
-  const prepared = reconcileMasonryClones(reconcileContainerAnchors(ensureIds(withDefaults)));
+  let prepared = reconcileMasonryClones(reconcileContainerAnchors(ensureIds(withDefaults)));
+  // Self-heals a zone saved/buffered before the nested-chrome rescue existed
+  // in handleChange — see that call site's comment for the drop-target
+  // ambiguity that produces this shape.
+  for (const kind of CHROME_KINDS) {
+    prepared = rescueNestedChrome(prepared, kind);
+  }
   return normalizeChrome(prepared);
 }
 
@@ -1401,6 +1408,29 @@ export function EditorShell({
         return;
       }
 
+      // A drop aimed at "the bottom of the page" can land on an existing
+      // block's own nested slot (e.g. a Columns column) instead of the
+      // zone's own end-of-list target, when that block fills the visible
+      // drop area and leaves no accessible "outside" gap — a real dnd-kit
+      // drop-target ambiguity, not a data bug. `_chrome` only means anything
+      // at the zone's top level (findChrome/syncChrome/normalizeChrome never
+      // look inside slots), so a chrome preset left nested there renders
+      // fine but is permanently invisible to every chrome invariant: never
+      // mirrored, never pinned, and no later edit ever surfaces it again.
+      // Promote it back to the top level before anything below relies on
+      // finding chrome blocks there. <Puck> is uncontrolled, so this alone
+      // doesn't move anything on screen — the canvas still shows the block
+      // sitting in its original (wrong) nested spot until a remount, same as
+      // the chromeOrderCorrected reseed below; `rescued` folds into that same
+      // gate so it fires here too instead of leaving a stale-looking canvas
+      // until the next unrelated remount.
+      let rescued = false;
+      for (const kind of CHROME_KINDS) {
+        const beforeRescue = next;
+        next = rescueNestedChrome(next as unknown as Data, kind) as unknown as PuckData;
+        if (next !== beforeRescue) rescued = true;
+      }
+
       // Dropping a preset Navigation (e.g. from the drawer) REPLACES the
       // pinned one at index 0, rather than being collapsed away as a
       // duplicate by normalizeChrome below. Detected as a genuine growth in
@@ -1480,7 +1510,7 @@ export function EditorShell({
       // reseed path here.
       const preNormalize = zones[activeZone];
       const normalizedActive = normalizeChrome(preNormalize);
-      const chromeOrderCorrected = normalizedActive !== preNormalize;
+      const chromeOrderCorrected = normalizedActive !== preNormalize || rescued;
       zones = { ...zones, [activeZone]: normalizedActive };
       const updated = zones as unknown as Record<Zone, PuckData>;
 

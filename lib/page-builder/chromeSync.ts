@@ -197,6 +197,68 @@ export function canDetach(zones: Zones, zone: ZoneKey, kind: ChromeKind): boolea
 }
 
 /**
+ * Recursively strips any `kind` chrome block found nested inside `block`'s
+ * own slot-shaped props (not `block` itself — top-level chrome is handled
+ * by the caller), collecting each into `found` in encounter order. Returns
+ * the SAME reference when nothing changed anywhere in the subtree.
+ */
+function collectNestedChrome(
+  block: ComponentData,
+  kind: ChromeKind,
+  found: ComponentData[],
+): ComponentData {
+  const props = block.props as Record<string, unknown>;
+  const newProps: Record<string, unknown> = { ...props };
+  let changed = false;
+  for (const key of Object.keys(props)) {
+    const value = props[key];
+    if (!isComponentDataArray(value)) continue;
+    let arrChanged = false;
+    const walked: ComponentData[] = [];
+    for (const child of value) {
+      if (chromeKindOf(child) === kind) {
+        found.push(child);
+        arrChanged = true;
+        continue;
+      }
+      const walkedChild = collectNestedChrome(child, kind, found);
+      if (walkedChild !== child) arrChanged = true;
+      walked.push(walkedChild);
+    }
+    if (arrChanged) {
+      newProps[key] = walked;
+      changed = true;
+    }
+  }
+  return changed ? ({ ...block, props: newProps } as ComponentData) : block;
+}
+
+/**
+ * Promotes a `kind` chrome block found nested inside another block's slot
+ * (e.g. a Footer preset dropped into a Columns column instead of the zone's
+ * own end-of-list target — a real drop-target ambiguity: a block that fills
+ * the visible canvas leaves no accessible "outside" gap to aim for) back up
+ * to the zone's top level, appended after the existing content. `_chrome`
+ * only means anything at the top level — `findChrome`/`syncChrome`/
+ * `normalizeChrome` never look inside slots, so a block left nested there is
+ * permanently invisible to every chrome invariant: never mirrored, never
+ * pinned, and no later edit ever surfaces it again.
+ *
+ * No-op (same reference) when no nested block of that kind exists anywhere
+ * in the zone — including when the zone already has a top-level one; a
+ * pre-existing top-level chrome block is untouched here, and any duplicate
+ * this rescue produces is left for `normalizeChrome`'s existing collapse-to-
+ * first rule to resolve.
+ */
+export function rescueNestedChrome(zone: Data, kind: ChromeKind): Data {
+  const content = zone.content ?? [];
+  const found: ComponentData[] = [];
+  const walked = content.map((block) => collectNestedChrome(block, kind, found));
+  if (found.length === 0) return zone;
+  return { ...zone, content: [...walked, ...found] };
+}
+
+/**
  * Guarantees two chrome invariants at once: exactly one `_chrome === "nav"`
  * block at index 0, and at most one `_chrome === "footer"` block at the LAST
  * index. Displaced blocks move back to their pinned slot (the rest of the
