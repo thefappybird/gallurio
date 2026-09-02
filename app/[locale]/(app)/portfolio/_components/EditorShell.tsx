@@ -1325,7 +1325,7 @@ export function EditorShell({
 
   const handleChange = useCallback(
     (data: Data) => {
-      const next = data as unknown as PuckData;
+      let next = data as unknown as PuckData;
       if (demoMode) {
         const prevLen = demoBlockCount(zoneDataRef.current[activeZone]);
         const nextLen = demoBlockCount(next);
@@ -1355,6 +1355,33 @@ export function EditorShell({
         setRenderDraftData((current) => ({ ...current, [activeZone]: next }));
         ignoreNextChange.current = false;
         return;
+      }
+
+      // Dropping a preset Navigation (e.g. from the drawer) REPLACES the
+      // pinned one at index 0, rather than being collapsed away as a
+      // duplicate by normalizeChrome below. Detected as a genuine growth in
+      // nav-block count carrying an id not present before — an ordinary
+      // reorder never changes the count, and the mount echo already
+      // returned above, so this can't misfire on either.
+      {
+        const prevNavBlocks = (zoneDataRef.current[activeZone].content ?? []).filter(
+          (b) => (b.props as { _chrome?: string })._chrome === "nav",
+        );
+        const nextNavBlocks = (next.content ?? []).filter(
+          (b) => (b.props as { _chrome?: string })._chrome === "nav",
+        );
+        if (nextNavBlocks.length > prevNavBlocks.length && prevNavBlocks.length >= 1) {
+          const prevIds = new Set(prevNavBlocks.map((b) => b.props.id as string));
+          const inserted = nextNavBlocks.find((b) => !prevIds.has(b.props.id as string));
+          if (inserted) {
+            const pinnedId = prevNavBlocks[0].props.id as string;
+            const replacement = { ...inserted, props: { ...inserted.props, id: pinnedId } };
+            const withoutNavs = (next.content ?? []).filter(
+              (b) => (b.props as { _chrome?: string })._chrome !== "nav",
+            );
+            next = { ...next, content: [replacement, ...withoutNavs] };
+          }
+        }
       }
 
       // Chrome detach toggling — react before committing anything else, since

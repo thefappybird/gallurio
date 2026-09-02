@@ -1410,6 +1410,33 @@ describe("EditorShell", () => {
   });
 
   describe("chrome sync wiring", () => {
+    it("dragging a second nav preset in replaces the pinned Navigation, keeping its id (Fix #1)", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      __capturedPuckOnChange?.({
+        content: [
+          { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav", brandText: "Studio" } },
+          { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } },
+          { type: "NavBorderedPreset", props: { id: "preset-nav-1", _chrome: "nav", brandText: "Bordered" } },
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = JSON.parse(buffered!).data.home.content as {
+          type: string;
+          props: { id: string; _chrome?: string };
+        }[];
+        const navs = homeContent.filter((b) => b.props._chrome === "nav");
+        expect(navs).toHaveLength(1);
+        expect(navs[0].type).toBe("NavBorderedPreset");
+        expect(navs[0].props.id).toBe("c-Navigation-0");
+      });
+    });
+
     it("deleting a detached footer does not open the reanchor confirm or revert the deletion (Fix #3)", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
