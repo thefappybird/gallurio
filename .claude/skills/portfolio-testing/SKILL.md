@@ -7,6 +7,27 @@ description: Playwright recipes and gotchas for driving the Gallurio portfolio e
 
 Use the **Playwright CLI** (`pnpm exec playwright test`), not the MCP plugin (token-heavy).
 
+## Budget first — read before writing a spec
+
+Browser runs are the single most expensive thing in this repo. A session once burned
+nearly a full day on them. Rules, not suggestions:
+
+1. **Plan the runs before writing any spec.** For a multi-item task, write down a small
+   numbered set of runs (typically 2–3 for a whole wave) and which items each one covers.
+   A new run must justify itself against that list or fold into an existing one.
+2. **One run covers many items.** Never one spec per item. Before adding a run, ask which
+   other pending items it can absorb.
+3. **A run must answer a question unit tests cannot.** Provable by a unit test → no browser.
+4. **One session, one login, no re-navigation.** Open the editor once and walk every
+   assertion in that session. No reload / re-navigate / re-poll between assertions.
+5. **Editor-internal surfaces: 1280px only.** The 375/768/1280 × 5 locales × light+dark
+   sweep is for **public-facing** surfaces — the public portfolio page, contact form,
+   marketing pages. Do not run it against in-app editor chrome.
+6. **Subagents never run Playwright.** Only the orchestrating session does, serialized the
+   same way builds are. Subagents verify with scoped `pnpm test --run <fragment>` + eslint.
+7. **Defer to a final wave.** Land static implementation + unit tests across every item
+   first, then do one batched runtime pass.
+
 ## Setup (already wired)
 - `playwright.config.ts` loads `.env.local` via dotenv (seed creds never hit source/logs).
   A worktree needs `.env.local` copied from the canonical `dev` checkout to boot.
@@ -54,9 +75,11 @@ style took effect, assert computed style, e.g. `getComputedStyle(grid).gridTempl
 has N tracks for Columns. Avoid asserting from source alone — observe the real DOM.
 
 ## Breakpoints
-Verify at three: mobile 375, tablet 768, desktop 1280 (`test.use({ viewport })`). The editor
-is a desktop-only surface — tablet 768 + desktop 1280 is acceptable there; public-facing
-surfaces (contact form, public pages) cover all three.
+Public-facing surfaces (contact form, public portfolio pages) cover all three: mobile 375,
+tablet 768, desktop 1280 (`test.use({ viewport })`), and carry the 5-locale × light/dark
+sweep. **The editor itself is 1280px only** — it is desktop-only in-app chrome, and
+multiplying editor assertions across breakpoints, locales and themes is exactly the waste
+the budget section forbids. Verify editor behaviour once, at 1280.
 
 ## Hygiene
 Delete throwaway diagnostic specs and `test-results/` when done. Don't leave a spec whose

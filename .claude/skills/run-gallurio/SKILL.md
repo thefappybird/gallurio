@@ -76,6 +76,15 @@ Screenshots land in `./.driver-shots/` (gitignored) as `<route>-<width>.png`
 
 ## Run (human / CI path) — Playwright e2e
 
+**Budget it.** Browser runs are the most expensive thing here — a session once
+burned nearly a full day on them. Plan a multi-item task's runs up front as a
+small numbered set (typically 2-3 for a whole wave); one run covers many items,
+never one run per item; a run must answer a question unit tests cannot; one
+session, one login, no re-navigation between assertions; in-app chrome is 1280px
+only, while the 375/768/1280 x 5-locale x light/dark sweep is for public-facing
+surfaces and happens inside the batched run. Only the orchestrating session runs
+Playwright — subagents never do. Full rules: `portfolio-testing` skill.
+
 The repo ships a Playwright harness: `e2e/auth.setup.ts` logs in once and saves
 `storageState`, specs reuse it, and `playwright.config.ts` **reuses an already
 running** `pnpm dev` (only spawns one if nothing is on `:3000`).
