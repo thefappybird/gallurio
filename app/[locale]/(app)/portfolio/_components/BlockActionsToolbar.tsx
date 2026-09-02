@@ -189,6 +189,7 @@ export function BlockActionsToolbar() {
   const rootLen = usePuckSel((s) => s.appState?.data?.content?.length ?? 0);
   const dispatch = usePuckSel((s) => s.dispatch);
   const getPermissions = usePuckSel((s) => s.getPermissions);
+  const getSelectorForId = usePuckSel((s) => s.getSelectorForId);
 
   const blockId: string | undefined =
     selectedItem && "props" in selectedItem ? (selectedItem as { props?: { id?: string } }).props?.id : undefined;
@@ -197,7 +198,10 @@ export function BlockActionsToolbar() {
 
   if (!selectedItem || !itemSelector) return null;
 
-  const actions: BlockActions | null = selectedBlockActions(itemSelector, rootLen);
+  const actions: BlockActions | null = selectedBlockActions(itemSelector, rootLen, (parentBlockId) => {
+    const parentSelector = getSelectorForId(parentBlockId);
+    return parentSelector ? { index: parentSelector.index, zone: parentSelector.zone } : null;
+  });
   if (!actions) return null;
 
   // Blocks that declare permissions.duplicate/delete === false (e.g. the pinned

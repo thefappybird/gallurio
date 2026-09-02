@@ -22,7 +22,12 @@ type MockApi = {
   selectedItem: SelectedItem;
   dispatch: ReturnType<typeof vi.fn>;
   getPermissions: (params?: { item?: SelectedItem }) => Permissions;
+  getSelectorForId: (id: string) => { index: number; zone: string } | undefined;
 };
+
+// No parent lookups exercised by this file's toolbar-rendering tests (they use
+// root-level blocks) — moveBlockToRoot.test.ts covers resolveParent behaviour.
+const noopGetSelectorForId = () => undefined;
 
 // Mirrors Puck's own permission merge: full defaults, overridden per-type by
 // the block's declared `permissions` (the real Navigation block's here).
@@ -37,6 +42,7 @@ let mockApi: MockApi = {
   selectedItem: null,
   dispatch: vi.fn(),
   getPermissions: ({ item } = {}) => permissionsFor(item),
+  getSelectorForId: noopGetSelectorForId,
 };
 
 vi.mock("@measured/puck", () => ({
@@ -85,6 +91,7 @@ describe("BlockActionsToolbar", () => {
       selectedItem: null,
       dispatch: vi.fn(),
       getPermissions: ({ item } = {}) => permissionsFor(item),
+      getSelectorForId: noopGetSelectorForId,
     };
     const { container } = renderWithProviders(<BlockActionsToolbar />);
     expect(container.firstChild).toBeNull();
@@ -96,6 +103,7 @@ describe("BlockActionsToolbar", () => {
       selectedItem: { type: "Hero", props: { id: "hero-1" } },
       dispatch: vi.fn(),
       getPermissions: ({ item } = {}) => permissionsFor(item),
+      getSelectorForId: noopGetSelectorForId,
     };
     mount("", "canvas", { top: 100, bottom: 700, left: 0, right: 500, width: 500, height: 600 });
     mount("hero-1", "block", { top: 200, bottom: 400, left: 0, right: 500, width: 500, height: 200 });
@@ -111,6 +119,7 @@ describe("BlockActionsToolbar", () => {
       selectedItem: { type: "Hero", props: { id: "hero-2" } },
       dispatch: vi.fn(),
       getPermissions: ({ item } = {}) => permissionsFor(item),
+      getSelectorForId: noopGetSelectorForId,
     };
     mount("", "canvas", { top: 100, bottom: 700, left: 0, right: 500, width: 500, height: 600 });
     mount("hero-2", "block", { top: 200, bottom: 400, left: 0, right: 500, width: 500, height: 200 });
@@ -131,6 +140,7 @@ describe("BlockActionsToolbar", () => {
       selectedItem: { type: "Navigation", props: { id: "nav-1" } },
       dispatch: vi.fn(),
       getPermissions: ({ item } = {}) => permissionsFor(item),
+      getSelectorForId: noopGetSelectorForId,
     };
     mount("", "canvas", { top: 100, bottom: 700, left: 0, right: 500, width: 500, height: 600 });
     mount("nav-1", "block", { top: 200, bottom: 400, left: 0, right: 500, width: 500, height: 200 });
@@ -150,6 +160,7 @@ describe("BlockActionsToolbar", () => {
       selectedItem: { type: "Hero", props: { id: "hero-3" } },
       dispatch,
       getPermissions: ({ item } = {}) => permissionsFor(item),
+      getSelectorForId: noopGetSelectorForId,
     };
     mount("", "canvas", { top: 100, bottom: 700, left: 0, right: 500, width: 500, height: 600 });
     mount("hero-3", "block", { top: 200, bottom: 400, left: 0, right: 500, width: 500, height: 200 });
