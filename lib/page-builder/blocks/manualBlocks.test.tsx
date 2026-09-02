@@ -13,9 +13,15 @@ import {
   ContainerBlock,
   columnsDefaultProps,
   containerDefaultProps,
+  containerResolvePermissions,
   type HeadingBlockProps,
 } from "./manualBlocks";
-import type { SlotComponent } from "@measured/puck";
+import {
+  FOOTER_SIGNATURE_PRESET,
+  FOOTER_DIRECTORY_PRESET,
+  FOOTER_STATEMENT_PRESET,
+} from "./presets/footer";
+import type { SlotComponent, Permissions } from "@measured/puck";
 
 // ---------------------------------------------------------------------------
 // HeadingBlock
@@ -1758,5 +1764,51 @@ describe("B2a: ColumnsBlock render — fallback padding (parity)", () => {
       <ColumnsBlock columns={2} content={stubSlot} _style={{ paddingTop: "3rem" }} />,
     );
     expect(html).toContain("padding-top:3rem");
+  });
+});
+
+describe("containerResolvePermissions — footer lock", () => {
+  const basePermissions: Permissions = {
+    drag: true,
+    duplicate: true,
+    delete: true,
+    edit: true,
+    insert: true,
+  };
+  type ResolveArgs = Parameters<NonNullable<typeof containerResolvePermissions>>;
+
+  // Minimal stub for the params object resolvePermissions receives — only
+  // `permissions` is read by containerResolvePermissions.
+  const params = { permissions: basePermissions } as ResolveArgs[1];
+
+  it.each([
+    ["FOOTER_SIGNATURE_PRESET", FOOTER_SIGNATURE_PRESET],
+    ["FOOTER_DIRECTORY_PRESET", FOOTER_DIRECTORY_PRESET],
+    ["FOOTER_STATEMENT_PRESET", FOOTER_STATEMENT_PRESET],
+  ])("locks duplicate + drag for a real footer preset's own props (%s)", async (_label, presetProps) => {
+    const data = { props: { id: "block-1", ...presetProps } } as unknown as ResolveArgs[0];
+    const result = await containerResolvePermissions!(data, params);
+    expect(result.duplicate).toBe(false);
+    expect(result.drag).toBe(false);
+  });
+
+  it("leaves delete allowed for a footer — it stays deletable, unlike the pinned nav header", async () => {
+    const data = { props: { id: "block-1", ...FOOTER_SIGNATURE_PRESET } } as unknown as ResolveArgs[0];
+    const result = await containerResolvePermissions!(data, params);
+    expect(result.delete).toBe(true);
+  });
+
+  it("does not restrict an ordinary Container carrying no _chrome marker", async () => {
+    const data = { props: { id: "block-1", ...containerDefaultProps } } as unknown as ResolveArgs[0];
+    const result = await containerResolvePermissions!(data, params);
+    expect(result).toBe(basePermissions);
+  });
+
+  it("does not restrict a Container carrying an unrelated _chrome value", async () => {
+    const data = {
+      props: { id: "block-1", ...containerDefaultProps, _chrome: "nav" },
+    } as unknown as ResolveArgs[0];
+    const result = await containerResolvePermissions!(data, params);
+    expect(result).toBe(basePermissions);
   });
 });

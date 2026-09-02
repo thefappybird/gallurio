@@ -197,25 +197,43 @@ export function canDetach(zones: Zones, zone: ZoneKey, kind: ChromeKind): boolea
 }
 
 /**
- * Guarantees the nav invariant only: exactly one `_chrome === "nav"` block,
- * at index 0. Displaced navs move back to the front (rest of the order is
- * preserved); duplicate navs collapse to the first, dropping the extras.
+ * Guarantees two chrome invariants at once: exactly one `_chrome === "nav"`
+ * block at index 0, and at most one `_chrome === "footer"` block at the LAST
+ * index. Displaced blocks move back to their pinned slot (the rest of the
+ * order is preserved); duplicates of either kind collapse to the first,
+ * dropping the extras.
  *
- * A zone with NO nav is returned unchanged — this function must never
- * invent one. Injecting a default nav needs template/config data this pure
- * module does not have; a later wave (EditorShell's prepareForEditor) is
- * responsible for that at the call site.
- *
- * Footer is untouched here — it stays optional and may sit anywhere.
+ * A zone with NO nav, or NO footer, is left alone on that axis — this
+ * function must never invent either one. Injecting a default nav/footer
+ * needs template/config data this pure module does not have; a later wave
+ * (EditorShell's prepareForEditor) is responsible for that at the call site.
+ * Footer stays optional: absence is a valid, unchanged state.
  */
 export function normalizeChrome(zone: Data): Data {
   const content = zone.content ?? [];
   const navBlocks = content.filter((block) => chromeKindOf(block) === "nav");
-  if (navBlocks.length === 0) return zone;
+  const footerBlocks = content.filter((block) => chromeKindOf(block) === "footer");
+  if (navBlocks.length === 0 && footerBlocks.length === 0) return zone;
 
-  const firstNav = navBlocks[0];
-  if (content[0] === firstNav && navBlocks.length === 1) return zone;
+  const firstNav = navBlocks[0] ?? null;
+  const firstFooter = footerBlocks[0] ?? null;
 
-  const rest = content.filter((block) => block !== firstNav && chromeKindOf(block) !== "nav");
-  return { ...zone, content: [firstNav, ...rest] };
+  const navOk = !firstNav || (content[0] === firstNav && navBlocks.length === 1);
+  const footerOk =
+    !firstFooter ||
+    (content[content.length - 1] === firstFooter && footerBlocks.length === 1);
+  if (navOk && footerOk) return zone;
+
+  const rest = content.filter(
+    (block) =>
+      block !== firstNav &&
+      block !== firstFooter &&
+      chromeKindOf(block) !== "nav" &&
+      chromeKindOf(block) !== "footer",
+  );
+
+  return {
+    ...zone,
+    content: [...(firstNav ? [firstNav] : []), ...rest, ...(firstFooter ? [firstFooter] : [])],
+  };
 }

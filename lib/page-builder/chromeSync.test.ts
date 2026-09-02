@@ -329,23 +329,71 @@ describe("normalizeChrome", () => {
     expect(result).toBe(zone);
   });
 
-  it("never touches footer position or count", () => {
+  it("moves a displaced footer to the last index, preserving the rest of the order", () => {
+    const zone = zoneWith([
+      navBlock("nav-1"),
+      footerBlock("footer-1"),
+      block("Text", "text-1"),
+    ]);
+    const result = normalizeChrome(zone);
+    expect(result.content?.map((b) => b.type)).toEqual(["Navigation", "Text", "FooterSimple"]);
+  });
+
+  it("collapses duplicate footers to the first, dropping the extras, and pins the survivor last", () => {
     const zone = zoneWith([
       block("Hero", "hero-1"),
       navBlock("nav-1"),
-      footerBlock("footer-1"),
-      footerBlock("footer-2"),
+      footerBlock("footer-1", { columns: 1 }),
+      footerBlock("footer-2", { columns: 2 }),
     ]);
     const result = normalizeChrome(zone);
     const footers = (result.content as ComponentData[]).filter(
       (b) => (b.props as { _chrome?: string })._chrome === "footer",
     );
-    expect(footers).toHaveLength(2);
+    expect(footers).toHaveLength(1);
+    expect((footers[0].props as unknown as { columns: number }).columns).toBe(1);
+    expect(result.content?.map((b) => b.type)).toEqual(["Navigation", "Hero", "FooterSimple"]);
+  });
+
+  it("leaves a zone with no footer unchanged on that axis (only enforces nav)", () => {
+    const zone = zoneWith([navBlock("nav-1"), block("Hero", "hero-1")]);
+    const result = normalizeChrome(zone);
+    expect(result).toBe(zone);
+  });
+
+  it("enforces nav-at-0 and footer-at-last simultaneously in one pass", () => {
+    const zone = zoneWith([
+      footerBlock("footer-1"),
+      block("Hero", "hero-1"),
+      navBlock("nav-1"),
+    ]);
+    const result = normalizeChrome(zone);
+    expect(result.content?.map((b) => b.type)).toEqual(["Navigation", "Hero", "FooterSimple"]);
+  });
+
+  it("is idempotent: running normalizeChrome twice yields a deep-equal, reference-stable result", () => {
+    const zone = zoneWith([
+      footerBlock("footer-1"),
+      block("Hero", "hero-1"),
+      navBlock("nav-1"),
+      footerBlock("footer-2"),
+    ]);
+    const once = normalizeChrome(zone);
+    const twice = normalizeChrome(once);
+    expect(twice).toBe(once);
+    expect(twice).toEqual(once);
+  });
+
+  it("a zone with only nav and footer normalizes to [nav, footer] and is a stable fixed point", () => {
+    const zone = zoneWith([footerBlock("footer-1"), navBlock("nav-1")]);
+    const once = normalizeChrome(zone);
+    expect(once.content?.map((b) => b.type)).toEqual(["Navigation", "FooterSimple"]);
+    expect(normalizeChrome(once)).toBe(once);
   });
 
   it("does not mutate frozen input", () => {
     const zone = deepFreeze(
-      zoneWith([block("Hero", "hero-1"), navBlock("nav-1"), navBlock("nav-2")]),
+      zoneWith([block("Hero", "hero-1"), navBlock("nav-1"), navBlock("nav-2"), footerBlock("footer-1"), footerBlock("footer-2")]),
     );
     expect(() => normalizeChrome(zone)).not.toThrow();
   });

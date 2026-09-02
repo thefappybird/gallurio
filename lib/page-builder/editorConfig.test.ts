@@ -1,10 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { createElement, type ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
+import type { Permissions } from "@measured/puck";
 import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate } from "./editorConfig";
 import { puckConfig } from "./config";
 import { ChromeSyncContext, type ChromeSyncCtx } from "./chromeSyncContext";
 import { SECTION_PRESETS, SECTION_PRESET_KEYS, PRESET_GROUPS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+import {
+  FOOTER_SIGNATURE_PRESET,
+  FOOTER_DIRECTORY_PRESET,
+  FOOTER_STATEMENT_PRESET,
+} from "./blocks/presets/footer";
 import { MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
@@ -432,5 +438,41 @@ describe("Navigation _style navDetach wiring", () => {
   it("passes navDetach: undefined when no activeZone is supplied (current EditorShell call site)", () => {
     renderNavStyle(undefined, { canDetach: () => true, detachedZone: () => null });
     expect(screen.getByTestId("style-toolkit-stub").textContent).toBe("null");
+  });
+});
+
+describe("editor Container config — footer permission lock", () => {
+  const basePermissions: Permissions = {
+    drag: true,
+    duplicate: true,
+    delete: true,
+    edit: true,
+    insert: true,
+  };
+  type ResolvePermissionsFn = (
+    data: { props: Record<string, unknown> },
+    params: { permissions: Partial<Permissions> },
+  ) => Partial<Permissions>;
+
+  it.each([
+    ["FooterSignaturePreset", FOOTER_SIGNATURE_PRESET],
+    ["FooterDirectoryPreset", FOOTER_DIRECTORY_PRESET],
+    ["FooterStatementPreset", FOOTER_STATEMENT_PRESET],
+  ])("%s (editor) locks duplicate + drag, keeps delete, for its own preset props", (key, presetProps) => {
+    const cfg = editorPuckConfig.components[key as keyof typeof editorPuckConfig.components] as unknown as {
+      resolvePermissions?: ResolvePermissionsFn;
+    };
+    expect(cfg.resolvePermissions, `${key} must declare resolvePermissions`).toBeDefined();
+    const result = cfg.resolvePermissions!({ props: presetProps }, { permissions: basePermissions });
+    expect(result.duplicate).toBe(false);
+    expect(result.drag).toBe(false);
+    expect(result.delete).toBe(true);
+  });
+
+  it("the base Container type carries the same resolvePermissions and leaves an ordinary Container alone", () => {
+    const cfg = editorPuckConfig.components.Container as unknown as { resolvePermissions?: ResolvePermissionsFn };
+    expect(cfg.resolvePermissions, "Container must declare resolvePermissions").toBeDefined();
+    const result = cfg.resolvePermissions!({ props: containerDefaultProps }, { permissions: basePermissions });
+    expect(result).toBe(basePermissions);
   });
 });

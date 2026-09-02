@@ -1136,11 +1136,32 @@ export const containerFields = {
   content: { type: "slot" },
 } as unknown as ComponentConfig<ContainerBlockProps>["fields"];
 
+// Every Container-shaped registration (base Container + the 33 non-nav
+// section presets, editor and production alike) shares this one function so
+// the footer lock lives in exactly one place instead of being hand-copied at
+// each of those registration sites. Puck calls it per INSTANCE (it receives
+// that block's own `data`), so an ordinary Container (no `_chrome`, or any
+// `_chrome` other than "footer") passes `permissions` through untouched —
+// only a block actually carrying `_chrome: "footer"` gets duplicate/drag
+// locked. `delete` is deliberately left alone: unlike the pinned nav header,
+// the footer stays deletable.
+export const containerResolvePermissions: ComponentConfig<ContainerBlockProps>["resolvePermissions"] = (
+  data,
+  { permissions },
+) => {
+  const chrome = (data.props as ContainerBlockProps & { _chrome?: string })._chrome;
+  if (chrome === "footer") {
+    return { ...permissions, duplicate: false, drag: false };
+  }
+  return permissions;
+};
+
 export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
   inline: true,
   defaultProps: containerDefaultProps,
   fields: containerFields,
+  resolvePermissions: containerResolvePermissions,
   render: ContainerBlock,
 };
 

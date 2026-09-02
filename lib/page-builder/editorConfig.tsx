@@ -105,6 +105,7 @@ import {
   columnsDefaultProps,
   containerDefaultProps,
   containerAnchorDefaultProps,
+  containerResolvePermissions,
   type HeadingBlockProps,
   type TextBlockProps,
   type ImageBlockProps,
@@ -639,6 +640,7 @@ export function createEditorConfig(
         fields: editorContainerFields,
         resolveFields: resolveContainerFieldsTyped,
         defaultProps: presetEntry.defaultProps as ContainerBlockProps,
+        resolvePermissions: containerResolvePermissions,
         render: ContainerBlock,
         ...(presetEntry.metadata ? { metadata: presetEntry.metadata } : {}),
       };
@@ -1026,6 +1028,7 @@ export function createEditorConfig(
     fields: editorContainerFields,
     resolveFields: resolveContainerFieldsTyped,
     resolveData: resolveContainerDataTyped,
+    resolvePermissions: containerResolvePermissions,
     render: ContainerBlock,
   };
 

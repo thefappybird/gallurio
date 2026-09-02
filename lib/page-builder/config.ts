@@ -37,6 +37,7 @@ import {
   columnsBlockConfig,
   containerBlockConfig,
   containerAnchorBlockConfig,
+  containerResolvePermissions,
   type ContainerBlockProps,
   type ContainerAnchorProps,
 } from "./blocks/manualBlocks";
@@ -105,7 +106,13 @@ type Components = Omit<Record<SectionPresetKey, ContainerBlockProps>, NavPresetK
 // `content` slot supplied as defaultProps. `nav` group entries instead render
 // through NavigationBlock (componentType: "Navigation" in the registry).
 function presetConfig(label: string, defaultProps: ContainerBlockProps) {
-  return { label, fields: containerFields, defaultProps, render: ContainerBlock };
+  return {
+    label,
+    fields: containerFields,
+    defaultProps,
+    resolvePermissions: containerResolvePermissions,
+    render: ContainerBlock,
+  };
 }
 
 function navPresetConfig(label: string, defaultProps: NavigationBlockProps) {
