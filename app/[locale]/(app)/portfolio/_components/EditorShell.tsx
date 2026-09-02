@@ -2318,7 +2318,13 @@ export function EditorShell({
     (key, values) => tLocationPicker(key, values)
   ).form;
   const previewZone = previewZoneFor(activeSection, activeZone);
-  const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}&formLocale=${formLocale}&formDir=${formDir}`;
+  // Carries the active draft id so the preview route can read the ACTIVE
+  // draft server-side instead of relying on the (possibly-cleared) local
+  // draft buffer as its only data channel; omitted when there is no active
+  // draft (a new, never-saved draft has none to read).
+  const previewSrc =
+    `${previewBasePath}?zone=${previewZone}&v=${previewNonce}&formLocale=${formLocale}&formDir=${formDir}` +
+    (activeDraftId ? `&draftId=${encodeURIComponent(activeDraftId)}` : "");
 
   // Wraps section-preset drawer items with PresetDrawerItem, which triggers
   // the shared PresetPreviewPanel (rendered once, above) on hover/focus — the

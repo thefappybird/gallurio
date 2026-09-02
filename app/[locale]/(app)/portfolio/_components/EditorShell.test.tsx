@@ -559,6 +559,25 @@ describe("EditorShell", () => {
     expect(await screen.findByTestId("puck")).toBeInTheDocument();
   });
 
+  it("carries the active draft id in the preview iframe src, omitted when there is none", async () => {
+    // With an active draft (baseProps has one) — carried through.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    const iframe = await screen.findByTitle("Live preview");
+    expect(iframe.getAttribute("src")).toContain("draftId=d1");
+  });
+
+  it("omits draftId from the preview iframe src when there is no active draft", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} initialActiveDraftId={null} initialActiveDraftName={undefined} initialDrafts={[]} />
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Start from scratch" }));
+    await waitFor(() => expect(seedTemplateAction).toHaveBeenCalledWith("scratch"));
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    const iframe = await screen.findByTitle("Live preview");
+    expect(iframe.getAttribute("src")).not.toContain("draftId=");
+  });
+
   it("treats Contact as a tab — auto-opens the inline settings panel", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
