@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, BRAND_RADIUS_TO_PRESET, BannerSection } from "./StyleToolkitField";
+import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, NavigationDesignPanel, BRAND_RADIUS_TO_PRESET, BannerSection, blockTabsForType } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
 import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
 import { resolveEffectiveFonts } from "./fonts";
-import { SECTION_PRESET_KEYS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+import { SECTION_PRESET_KEYS, NAV_PRESET_KEYS, LEGACY_NAV_PRESET_KEYS } from "./blocks/sectionPresets";
 import { SingleCollectionControl } from "./galleryPicker/MediaField";
 import { DemoPickerContext } from "./demoPickerContext";
 
@@ -436,7 +436,7 @@ describe("CONTAINER_TYPES / FLEX_CONTAINER_BLOCKS — derived from the preset re
     expect(FLEX_CONTAINER_BLOCKS.has("VideoPreset")).toBe(true);
   });
 
-  // Regression: the nav group's 3 keys are NOT Container-shaped (they render
+  // Regression: nav preset keys are NOT Container-shaped (they render
   // through NavigationBlock and carry no `_style`) — a prior version of this
   // parity test iterated ALL of SECTION_PRESET_KEYS (nav included) and both
   // sides grew by 3 in lockstep, so the bug went undetected.
@@ -501,62 +501,32 @@ describe("DesignTab — CollectionCard", () => {
 });
 
 describe("ContentInputs — Navigation", () => {
-  // Sections are collapsible (EditorDrawerGroup, first section open by
-  // default) — open the one under test the same way a real user would.
-  function openSection(name: string) {
-    fireEvent.click(screen.getByRole("button", { name }));
-  }
-
-  it.each([...NAV_PRESET_KEYS, "Navigation"])("renders the Navigation field panel for %s", (type) => {
+  it.each(["Navigation", ...NAV_PRESET_KEYS, ...LEGACY_NAV_PRESET_KEYS])("renders only the ungrouped Content controls for %s", (type) => {
     render(<ContentInputs type={type} props={{}} setProp={vi.fn()} />);
 
-    // "Brand" is open by default.
     expect(screen.getByText("Navbar size")).toBeInTheDocument();
     expect(screen.getByText("Upload logo")).toBeInTheDocument();
-
-    openSection("Banner");
+    expect(screen.getByText(/up to 526×256px/i)).toBeInTheDocument();
     expect(screen.getByText("Background color")).toBeInTheDocument();
     expect(screen.getByText("Shadow")).toBeInTheDocument();
-
-    openSection("Links");
-    expect(screen.getByText("Font size")).toBeInTheDocument();
-    expect(screen.getByText("Scale active link")).toBeInTheDocument();
-
-    openSection("Contact button");
-    expect(screen.getByText("Fill color")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: /detach header/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Brand" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Banner" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sync" })).toBeNull();
+    expect(screen.queryByText("Scale active link")).toBeNull();
   });
 
   it("writes background color via setProp", () => {
     const setProp = vi.fn();
     render(<ContentInputs type="NavBorderedPreset" props={{}} setProp={setProp} />);
 
-    openSection("Banner");
     const bgRow = screen.getByText("Background color").closest("div") as HTMLElement;
     fireEvent.click(within(bgRow).getByRole("button", { name: "Primary" }));
     expect(setProp).toHaveBeenCalledWith("backgroundColor", "primary");
   });
 
-  it("shows the highlight color/opacity/radius controls only when activeLinkHighlight is on", () => {
-    const { rerender } = render(
-      <ContentInputs type="NavBorderedPreset" props={{}} setProp={vi.fn()} />
-    );
-    openSection("Links");
-    expect(screen.queryByText("Highlight opacity")).not.toBeInTheDocument();
-
-    rerender(
-      <ContentInputs
-        type="NavBorderedPreset"
-        props={{ activeLinkHighlight: true }}
-        setProp={vi.fn()}
-      />
-    );
-    expect(screen.getByText("Highlight opacity")).toBeInTheDocument();
-    expect(screen.getByText("Highlight radius")).toBeInTheDocument();
-  });
-
   it("shows the detach toggle enabled with no navDetach context", () => {
     render(<ContentInputs type="NavBorderedPreset" props={{}} setProp={vi.fn()} />);
-    openSection("Sync");
     const toggle = screen.getByRole("switch", { name: /detach header/i });
     expect(toggle).not.toBeDisabled();
   });
@@ -570,7 +540,6 @@ describe("ContentInputs — Navigation", () => {
         navDetach={{ zoneLabel: "Gallery", otherZoneLabel: "Home", disabled: true }}
       />
     );
-    openSection("Sync");
     const toggle = screen.getByRole("switch", { name: "Detach header on Gallery" });
     expect(toggle).toBeDisabled();
     expect(screen.getByText(/Home already has a detached header/i)).toBeInTheDocument();
@@ -586,7 +555,6 @@ describe("ContentInputs — Navigation", () => {
         navDetach={{ zoneLabel: "Home", otherZoneLabel: "Gallery", disabled: false }}
       />
     );
-    openSection("Sync");
     fireEvent.click(screen.getByRole("switch", { name: "Detach header on Home" }));
     expect(setProp).toHaveBeenCalledWith("detached", true);
   });
@@ -606,9 +574,67 @@ describe("ContentInputs — Navigation", () => {
         t={t}
       />
     );
-    openSection("Sync");
     expect(screen.getByRole("switch", { name: "TX Detach Gallery" })).toBeInTheDocument();
     expect(screen.getByText("TX Disabled Home")).toBeInTheDocument();
+  });
+});
+
+describe("Navigation Design panel", () => {
+  it("keeps Links open first and Contact button collapsed", () => {
+    render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: "Links" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Scale active link")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Contact button" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Fill opacity")).toBeNull();
+  });
+
+  it("shows Contact button controls when its dropdown opens", () => {
+    render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Contact button" }));
+    expect(screen.getByText("Fill color")).toBeInTheDocument();
+    expect(screen.getByText("Fill opacity")).toBeInTheDocument();
+  });
+
+  it("does not expose the deprecated generic Design controls", () => {
+    render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: "Typography" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Frame" })).toBeNull();
+  });
+
+  it("shows highlight controls only when active-link highlighting is on", () => {
+    const { rerender } = render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
+    expect(screen.queryByText("Highlight opacity")).not.toBeInTheDocument();
+
+    rerender(<NavigationDesignPanel config={{ activeLinkHighlight: true }} setProp={vi.fn()} />);
+    expect(screen.getByText("Highlight opacity")).toBeInTheDocument();
+    expect(screen.getByText("Highlight radius")).toBeInTheDocument();
+  });
+});
+
+describe("Navigation tabs", () => {
+  it.each(["Navigation", ...NAV_PRESET_KEYS, ...LEGACY_NAV_PRESET_KEYS])("offers only Content and Design for %s", (type) => {
+    expect(blockTabsForType(type)).toEqual(["content", "design"]);
+  });
+
+  it("keeps all three tabs for ordinary blocks", () => {
+    expect(blockTabsForType("Container")).toEqual(["content", "design", "layout"]);
+  });
+
+  it("renders the two-tab Navigation inspector without generic Design controls", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Navigation" />);
+
+    expect(screen.getByRole("button", { name: "Content" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Design" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Layout" })).toBeNull();
+    expect(screen.getByText("Navbar size")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.getByRole("button", { name: "Links" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("button", { name: "Typography" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Frame" })).toBeNull();
   });
 });
 

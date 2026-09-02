@@ -275,6 +275,7 @@ export function ImageBlock({
   return (
     <div
       ref={puck?.dragRef ?? undefined}
+      data-block="image"
       style={{
         position: "relative",
         overflow: "hidden",
@@ -304,7 +305,7 @@ export function ImageBlock({
               inset: 0,
               width: "100%",
               height: "100%",
-              objectFit: "cover",
+              objectFit: effectiveStyle?.imageFit ?? "cover",
               objectPosition: "center",
             }}
           />

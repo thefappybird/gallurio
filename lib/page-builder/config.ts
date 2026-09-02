@@ -45,8 +45,11 @@ import {
   SECTION_PRESETS,
   SECTION_PRESET_KEYS,
   NAV_PRESET_KEYS,
+  LEGACY_NAV_PRESETS,
+  LEGACY_NAV_PRESET_KEYS,
   PRESET_GROUPS,
   type SectionPresetKey,
+  type LegacyNavPresetKey,
   type PresetGroupId,
 } from "./blocks/sectionPresets";
 import {
@@ -100,7 +103,7 @@ type Components = Omit<Record<SectionPresetKey, ContainerBlockProps>, NavPresetK
     ContainerAnchor: ContainerAnchorProps;
     MasonryClone: MasonryCloneProps;
     Navigation: NavigationBlockProps;
-  };
+  } & Record<LegacyNavPresetKey, NavigationBlockProps>;
 
 // A composed-section preset is the Container render + fields, with a pre-filled
 // `content` slot supplied as defaultProps. `nav` group entries instead render
@@ -126,8 +129,8 @@ function navPresetConfig(label: string, defaultProps: NavigationBlockProps) {
 }
 
 // The drawer's 12 collapsible section-group categories, derived from the
-// registry's PRESET_GROUPS so they can't drift from the 36 preset keys. Only
-// the first group starts open — 36 items all expanded is an unusable drawer.
+// registry's PRESET_GROUPS so they can't drift from the insertable preset keys.
+// Only the first group starts open; expanding everything is an unusable drawer.
 // Object.fromEntries widens to string keys, so this one cast restores the
 // exact PresetGroupId -> Category shape (all keys/values are still built
 // straight from PRESET_GROUPS, nothing is hand-typed).
@@ -138,7 +141,7 @@ const presetCategories = Object.fromEntries(
   ])
 ) as Record<PresetGroupId, { title: string; components: SectionPresetKey[]; defaultExpanded: boolean }>;
 
-// The 36 preset components, derived from the registry. Same fromEntries-cast
+// The insertable preset components, derived from the registry. Same fromEntries-cast
 // reasoning as presetCategories above: Puck's Config generic wants the exact
 // `Record<SectionPresetKey, ...>` shape that a mapped fromEntries can't infer.
 // `nav` group entries render through NavigationBlock instead of ContainerBlock.
@@ -152,6 +155,13 @@ const presetComponents = Object.fromEntries(
 ) as unknown as Omit<Record<SectionPresetKey, ComponentConfig<ContainerBlockProps>>, NavPresetKey> &
   Record<NavPresetKey, ComponentConfig<NavigationBlockProps>>;
 
+const legacyNavComponents = Object.fromEntries(
+  LEGACY_NAV_PRESET_KEYS.map((key) => [
+    key,
+    navPresetConfig("Navigation", LEGACY_NAV_PRESETS[key]),
+  ])
+) as unknown as Record<LegacyNavPresetKey, ComponentConfig<NavigationBlockProps>>;
+
 export const puckConfig: Config<Components> = {
   categories: {
     ...presetCategories,
@@ -159,6 +169,7 @@ export const puckConfig: Config<Components> = {
   },
   components: {
     ...presetComponents,
+    ...legacyNavComponents,
     GalleryGrid: galleryGridBlockConfig,
     GalleryMasonry: galleryMasonryBlockConfig,
     FeaturedWork: featuredWorkBlockConfig,

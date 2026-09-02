@@ -2692,6 +2692,7 @@
           },
           "blocks": {
             "navigation": "Navigation",
+            "navigationPreset": "Navigation",
             "navBorderedPreset": "May Border na Navbar",
             "navUnderlinedPreset": "May Underline na Navbar",
             "navScaledPreset": "Navbar na Lumalaki",
@@ -2743,7 +2744,23 @@
             "footerDirectoryPreset": "Directory Footer",
             "footerStatementPreset": "Pangwakas na Pahayag"
           },
+          "manualDescriptions": {
+            "galleryGrid": "Ipinapakita ang mga napiling larawan ng gallery sa isang nae-edit na grid ng mga row at column.",
+            "galleryMasonry": "Ipinapakita ang mga napiling larawan sa magkakaibang taas na mga column habang pinapanatili ang proporsyon.",
+            "collectionCard": "Naglalagay ng link sa isang gallery collection na may nae-edit na cover, pamagat, at caption.",
+            "heading": "Nagdaragdag ng nae-edit na heading na may mga kontrol sa level, typography, kulay, at alignment.",
+            "text": "Nagdaragdag ng nae-edit na body copy na may mga kontrol sa typography, kulay, lapad, at alignment.",
+            "image": "Nagdaragdag ng isang nae-edit na larawan na may mga kontrol sa crop, laki, radius, at alt text.",
+            "button": "Nagdaragdag ng call-to-action button na maaaring magbukas ng Contact o lumipat sa mga portfolio page.",
+            "video": "Nag-e-embed ng YouTube o Vimeo video na may opsyonal na heading at caption.",
+            "columns": "Gumagawa ng responsive grid kung saan maaaring ilagay at baguhin ang laki ng mga block sa mga column at row.",
+            "container": "Gumagawa ng styled section na nagpapangkat ng mga block na may sariling spacing, alignment, at background.",
+            "contactDetails": "Ipinapakita ang email, telepono, at address ng workspace mula sa iyong contact settings.",
+            "spacer": "Nagdaragdag ng naa-adjust na bakanteng vertical space sa pagitan ng mga block.",
+            "divider": "Nagdaragdag ng horizontal rule na may naa-adjust na lapad, kapal, kulay, at spacing."
+          },
           "presetDescriptions": {
+            "navigationPreset": "Isang flexible na site header na may nae-edit na branding, links, at contact button. Papalitan nito ang kasalukuyang header ng page.",
             "navBorderedPreset": "Bottom border at naka-highlight na active link sa compact na bar. Papalitan nito ang kasalukuyang header ng page.",
             "navUnderlinedPreset": "Tahimik na bar na may accent underline sa ilalim ng active link. Papalitan nito ang kasalukuyang header ng page.",
             "navScaledPreset": "Lumalaki ang active link sa halip na fill o underline. Papalitan nito ang kasalukuyang header ng page.",

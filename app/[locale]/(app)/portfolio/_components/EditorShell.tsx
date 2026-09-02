@@ -29,7 +29,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { CanvasViewportControls } from "./CanvasViewportControls";
-import { PresetDrawerItem, PresetPreviewPanel } from "./PresetPreviewCard";
+import { ManualDrawerItem, PresetDrawerItem, PresetPreviewPanel } from "./PresetPreviewCard";
 import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -40,7 +40,12 @@ import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/li
 import { createEditorConfig, type PuckTranslate } from "@/lib/page-builder/editorConfig";
 import { reconcileContainerAnchors } from "@/lib/page-builder/containerAnchorReconciler";
 import { reconcileMasonryClones } from "@/lib/page-builder/masonryCloneReconciler";
-import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "@/lib/page-builder/blockCategories";
+import {
+  PRESET_BLOCK_KEYS,
+  MANUAL_BLOCK_KEYS,
+  MANUAL_BLOCK_METADATA,
+  isManualBlockKey,
+} from "@/lib/page-builder/blockCategories";
 import {
   findChrome,
   syncChrome,
@@ -2465,8 +2470,14 @@ export function EditorShell({
     () => ({
       drawerItem: ({ name, children }: { name: string; children: ReactNode }) => {
         const preset = resolveDrawerItemPreset(name);
-        if (!preset) return <>{children}</>; // manual blocks keep the plain item
-        // The row is name-only: 33 rows each carrying a description made the
+        if (!preset) {
+          return isManualBlockKey(name) ? (
+            <ManualDrawerItem blockKey={name}>{children}</ManualDrawerItem>
+          ) : (
+            <>{children}</>
+          );
+        }
+        // The preset row is name-only: every row carrying a description made the
         // drawer too verbose to scan. The description moved into the preview
         // popover, beside a live miniature of the preset itself.
         // Handlers only. The panel itself is rendered ONCE below — Puck mounts
@@ -2558,12 +2569,23 @@ export function EditorShell({
     [t, demoMode, guideMode, drawerItemOverrides.drawerItem]
   );
 
-  const describePreset = useCallback(
-    (key: SectionPresetKey) => ({
-      name: t(SECTION_PRESETS[key].labelKey),
-      description: t(SECTION_PRESETS[key].descriptionKey),
-    }),
-    [t]
+  const describeDrawerItem = useCallback(
+    (key: string) => {
+      const preset = resolveDrawerItemPreset(key);
+      if (preset) {
+        return {
+          name: t(preset.labelKey),
+          description: t(preset.descriptionKey),
+        };
+      }
+      if (!isManualBlockKey(key)) return undefined;
+      return {
+        name:
+          (editorConfig.components as Record<string, { label?: string } | undefined>)[key]?.label ?? key,
+        description: t(MANUAL_BLOCK_METADATA[key].descriptionKey),
+      };
+    },
+    [editorConfig.components, t]
   );
 
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
@@ -2840,7 +2862,7 @@ export function EditorShell({
           <PresetPreviewPanel
             config={editorConfig as unknown as Config}
             cssVars={cssVars}
-            describe={describePreset}
+            describe={describeDrawerItem}
             dragHint={t("puckConfig.dragToAddHint")}
           />
         )}

@@ -300,6 +300,7 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
 
   it("renders a real <img> (not just a CSS background) when bgImagePublicId is set", () => {
     const { container } = render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    expect(container.firstElementChild).toHaveAttribute("data-block", "image");
     const img = container.querySelector("img") as HTMLImageElement;
     expect(img).not.toBeNull();
     expect(img.src).toContain("photo.jpg");
@@ -335,6 +336,16 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     );
     const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
     expect(layer.style.opacity).toBe("0.3");
+  });
+
+  it("uses contain when a logo-style Image requests it", () => {
+    const { container } = render(
+      <ImageBlock
+        alt="Logo"
+        _style={{ bgImagePublicId: "ws/logo.png", imageFit: "contain" }}
+      />
+    );
+    expect((container.querySelector("img") as HTMLImageElement).style.objectFit).toBe("contain");
   });
 });
 

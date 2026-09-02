@@ -4,7 +4,7 @@
  * Renders `PortfolioHeader` from its OWN props — the full `PortfolioHeaderConfig`
  * shape — plus a free `content` slot (seeded with just a brand Heading; no
  * Image child by default — an empty Image renders an "unavailable" placeholder
- * on the public page, so owners add a logo Image block themselves) that the
+ * on the public page, so the logo uploader inserts one only after upload) that the
  * owner may restyle or delete. The slot is threaded through
  * `PortfolioHeader`'s `brandSlot` prop, so it occupies the SAME row as the nav
  * links (left side), not a separate row. The nav links (Home/Gallery) and the
@@ -46,7 +46,7 @@ export type NavigationBlockProps = PortfolioHeaderConfig & {
   /** Round-trip-only on the public/production path (see `navigationFields`'s
    *  `_style: productionStyleField`). The Navigation block's own render never
    *  reads this — its styling lives on the `PortfolioHeaderConfig` fields
-   *  above, edited via StyleToolkitField's NAV_PRESET_KEYS panel. */
+   *  above, edited via StyleToolkitField's Navigation Content/Design panels. */
   _style?: BlockStyle;
   /** Free slot for the logo/title — fully editable, restyleable, deletable. */
   content: Slot;
@@ -57,7 +57,7 @@ export const navigationDefaultProps: NavigationBlockProps = {
   _chrome: "nav",
   // No Image child: an empty Image renders an "Image unavailable" placeholder
   // on the public page (ImageBlock, manualBlocks.tsx) — the owner adds a logo
-  // Image block into this slot once they have one.
+  // Image block into this slot only after a logo is uploaded.
   content: slot([child("Heading", { level: "h3", text: "Studio Name" })]),
 };
 
@@ -97,7 +97,14 @@ export function NavigationBlock({
         }}
         config={config as PortfolioHeaderConfig}
         brandSlot={SlotContent?.({
-          style: { display: "flex", alignItems: "center", gap: "0.625rem" },
+          className: "pf-nav-brand-content",
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "0.625rem",
+            width: "100%",
+            minWidth: 0,
+          },
         })}
       />
     </div>
@@ -110,7 +117,7 @@ export function NavigationBlock({
 // `productionStyleField` placeholder here (mirrors `containerFields`) so the
 // key round-trips and this file never pulls the "use client" StyleToolkitField
 // into the server-rendered production config. The REAL editing UI (the
-// NAV_PRESET_KEYS panel in StyleToolkitField.tsx's ContentInputs) must be
+// Navigation panels in StyleToolkitField.tsx) must be
 // wired by an editor-only `_style` override in editorConfig.tsx — see this
 // file's header comment / the handoff note in the task report; editorConfig.tsx
 // currently reuses `navigationFields` verbatim with no such override.

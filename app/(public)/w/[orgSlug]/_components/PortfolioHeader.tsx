@@ -217,10 +217,13 @@ export function PortfolioHeader({
       >
         {brandSlot ? (
           <div
+            className="pf-nav-brand"
             style={{
               display: "flex",
               alignItems: "center",
               gap: "0.625rem",
+              width: "100%",
+              flex: "1 1 auto",
               minWidth: 0,
               overflow: "hidden",
             }}
@@ -372,6 +375,24 @@ export function PortfolioHeader({
       <style>{`
         .pf-nav-desktop { display: none; }
         .pf-nav-toggle { display: flex !important; }
+        .pf-nav-brand-content { width: 100%; min-width: 0; }
+        .pf-nav-brand-content > * { min-width: 0; max-width: 100%; }
+        .pf-nav-brand-content [data-block="image"] {
+          max-height: 75px !important;
+          max-width: 100% !important;
+          flex-shrink: 1;
+        }
+        .pf-nav-brand-content h1,
+        .pf-nav-brand-content h2,
+        .pf-nav-brand-content h3,
+        .pf-nav-brand-content h4,
+        .pf-nav-brand-content h5,
+        .pf-nav-brand-content h6 {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
         .pf-nav-link:focus-visible,
         .pf-nav-contact:focus-visible,
         .pf-nav-toggle:focus-visible {

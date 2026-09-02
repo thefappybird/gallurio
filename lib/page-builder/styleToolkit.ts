@@ -102,6 +102,9 @@ export type BlockStyle = {
   selfAlign?: SelfAlign; // horizontal placement via margin-auto (visible when width < container)
   width?: CssLength;
   height?: CssLength;
+  /** Image content fit inside its block box. Used by navigation logos to avoid
+   * cropping wide marks; ordinary Image blocks keep the legacy cover default. */
+  imageFit?: "cover" | "contain";
   // Grid placement when the block is a child of a Columns/grid container
   colSpan?: number;
   rowSpan?: number;

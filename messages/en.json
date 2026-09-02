@@ -2692,6 +2692,7 @@
           },
           "blocks": {
             "navigation": "Navigation",
+            "navigationPreset": "Navigation",
             "navBorderedPreset": "Bordered navbar",
             "navUnderlinedPreset": "Underlined navbar",
             "navScaledPreset": "Scaled navbar",
@@ -2743,7 +2744,23 @@
             "footerDirectoryPreset": "Directory footer",
             "footerStatementPreset": "Closing statement"
           },
+          "manualDescriptions": {
+            "galleryGrid": "Displays selected gallery images in an editable row-and-column grid.",
+            "galleryMasonry": "Displays selected gallery images in staggered columns that preserve their proportions.",
+            "collectionCard": "Links to one gallery collection with an editable cover, title, and caption.",
+            "heading": "Adds an editable heading with level, typography, color, and alignment controls.",
+            "text": "Adds editable body copy with typography, color, width, and alignment controls.",
+            "image": "Adds one editable image with crop, size, radius, and alt-text controls.",
+            "button": "Adds a call-to-action button that can open Contact or navigate between portfolio pages.",
+            "video": "Embeds a YouTube or Vimeo video with an optional heading and caption.",
+            "columns": "Creates a responsive grid where blocks can be placed and resized across columns and rows.",
+            "container": "Creates a styled section that groups blocks with its own spacing, alignment, and background.",
+            "contactDetails": "Shows the workspace email, phone, and address from your contact settings.",
+            "spacer": "Adds adjustable empty vertical space between blocks.",
+            "divider": "Adds a horizontal rule with adjustable width, thickness, color, and spacing."
+          },
           "presetDescriptions": {
+            "navigationPreset": "A flexible site header with editable branding, links, and contact button. Replaces the page's current header.",
             "navBorderedPreset": "A bottom border and a highlighted active link on a compact bar. Replaces the page's current header.",
             "navUnderlinedPreset": "A quiet bar with an accent underline beneath the active link. Replaces the page's current header.",
             "navScaledPreset": "The active link scales up instead of a fill or underline. Replaces the page's current header.",

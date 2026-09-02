@@ -3,17 +3,17 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * Which section preset's drawer preview is showing — at most one, ever.
+ * Which preset or manual block's drawer help is showing — at most one, ever.
  *
  * Deliberately a single module-level value rather than per-row state. Puck
  * renders every drawer item TWICE (the draggable plus a `Drawer-draggableBg`
  * ghost), so per-row state gave each preset two independent popovers whose
  * pointer handlers fought — one closing while the other opened. That was the
- * flicker. Keyed by preset name, both copies of a row resolve to the same entry
+ * flicker. Keyed by block name, both copies of a row resolve to the same entry
  * and simply agree.
  *
  * Interaction contract:
- *   - hovering a row opens its preview;
+ *   - hovering or focusing a row opens its preview/help;
  *   - clicking a row opens it too;
  *   - hovering or clicking a DIFFERENT row swaps the preview over;
  *   - clicking outside, or acting on the canvas, closes it;
@@ -34,7 +34,7 @@ function emit(): void {
 /**
  * Show `name`'s preview, anchored beside `row`.
  *
- * The anchor is captured only when the PRESET changes. Re-anchoring on every
+ * The anchor is captured only when the BLOCK changes. Re-anchoring on every
  * pointerenter would reintroduce the flicker from a third direction: Puck's two
  * mounts of one row are two different elements, so a pointer crossing between
  * the draggable and its ghost would re-anchor repeatedly and jitter the panel
@@ -64,7 +64,7 @@ export function subscribePresetPreview(listener: () => void): () => void {
   };
 }
 
-/** The active preset name, or null. */
+/** The active preset/manual block name, or null. */
 export function getActivePresetPreview(): string | null {
   return active;
 }
@@ -74,7 +74,7 @@ export function getActivePresetAnchor(): HTMLElement | null {
   return anchor;
 }
 
-/** Reactive read of the active preset name. SSR-safe. */
+/** Reactive read of the active preset/manual block name. SSR-safe. */
 export function useActivePresetPreview(): string | null {
   return useSyncExternalStore(
     subscribePresetPreview,

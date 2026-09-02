@@ -23,12 +23,16 @@ import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
 import { navigationDefaultProps } from "./blocks/NavigationBlock";
-import { SECTION_PRESETS, SECTION_PRESET_KEYS } from "./blocks/sectionPresets";
+import {
+  SECTION_PRESETS,
+  SECTION_PRESET_KEYS,
+  LEGACY_NAV_PRESET_KEYS,
+} from "./blocks/sectionPresets";
 
 // Map of block type → its defaultProps.
 // Preset blocks (HeroPreset, etc.) mostly share the ContainerBlockProps shape,
 // so every registry key falls back to containerDefaultProps for normalization
-// — EXCEPT the `nav` group's 3 keys (componentType: "Navigation"), which fall
+// — EXCEPT the insertable `nav` key (componentType: "Navigation"), which falls
 // back to navigationDefaultProps instead. Derived off the registry so a new/
 // renamed/re-typed preset can't be missed by hand.
 const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
@@ -51,6 +55,9 @@ const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
         ? navigationDefaultProps
         : containerDefaultProps) as Record<string, unknown>,
     ]),
+  ),
+  ...Object.fromEntries(
+    LEGACY_NAV_PRESET_KEYS.map((key) => [key, navigationDefaultProps as Record<string, unknown>]),
   ),
 };
 

@@ -5,7 +5,13 @@ import type { Permissions } from "@measured/puck";
 import { editorPuckConfig, createEditorConfig, englishPuckT, type PuckTranslate } from "./editorConfig";
 import { puckConfig } from "./config";
 import { ChromeSyncContext, type ChromeSyncCtx } from "./chromeSyncContext";
-import { SECTION_PRESETS, SECTION_PRESET_KEYS, PRESET_GROUPS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+import {
+  SECTION_PRESETS,
+  SECTION_PRESET_KEYS,
+  PRESET_GROUPS,
+  NAV_PRESET_KEYS,
+  LEGACY_NAV_PRESET_KEYS,
+} from "./blocks/sectionPresets";
 import {
   FOOTER_SIGNATURE_PRESET,
   FOOTER_DIRECTORY_PRESET,
@@ -60,7 +66,7 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     );
   });
 
-  it("registers every one of the 36 section presets in both configs", () => {
+  it("registers every insertable section preset in both configs", () => {
     for (const key of SECTION_PRESET_KEYS) {
       expect(componentsOf(editorPuckConfig), key).toHaveProperty(key);
       expect(componentsOf(puckConfig), key).toHaveProperty(key);
@@ -284,13 +290,26 @@ describe("PRESET_GROUPS + MANUAL_BLOCK_KEYS — the drawer's two source lists", 
     // it is registered but deliberately absent from every drawer list.
     // FeaturedWork remains registered so a saved legacy block renders, but new
     // pages compose collection cards inside Columns containers. Navigation (the
-    // base type) is likewise registered-but-undrawered — only its 3 `nav` group
-    // presets (NavBorderedPreset etc.) are drawer-insertable; the base type is
-    // auto-injected instead.
+    // base type) is likewise registered-but-undrawered. NavigationPreset is the
+    // single drawer item; retired nav variants stay registered only for old data.
     const insertable = Object.keys(editorPuckConfig.components).filter(
-      (k) => k !== "ContainerAnchor" && k !== "MasonryClone" && k !== "FeaturedWork" && k !== "Navigation",
+      (k) =>
+        k !== "ContainerAnchor" &&
+        k !== "MasonryClone" &&
+        k !== "FeaturedWork" &&
+        k !== "Navigation" &&
+        !LEGACY_NAV_PRESET_KEYS.includes(k as (typeof LEGACY_NAV_PRESET_KEYS)[number]),
     );
     expect([...seen].sort()).toEqual(insertable.sort());
+  });
+
+  it("keeps retired navigation variants renderable but out of every drawer group", () => {
+    const listed = PRESET_GROUPS.flatMap((group) => group.keys);
+    for (const key of LEGACY_NAV_PRESET_KEYS) {
+      expect(editorPuckConfig.components).toHaveProperty(key);
+      expect(puckConfig.components).toHaveProperty(key);
+      expect(listed).not.toContain(key);
+    }
   });
 
   it("keeps deprecated Highlights registered but impossible to insert, and out of both drawer lists", () => {

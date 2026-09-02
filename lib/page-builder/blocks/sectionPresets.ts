@@ -6,19 +6,20 @@
  * Text + Button…). Dragging one in inserts the whole section; every child
  * block is then selected and styled INDIVIDUALLY via its own `_style` toolkit
  * — so each piece of text is its own block, not a bundle of text-inputs on one
- * monolithic component. The `nav` group's 3 entries render through
+ * monolithic component. The `nav` group's single insertable entry renders through
  * `NavigationBlock` instead (`componentType: "Navigation"`) — see
  * `./NavigationBlock.tsx`.
  *
  * The compositions live one file per section group under `./presets/`. THIS file
- * is the registry that names them: 12 groups x 3 variants = 36 component keys,
+ * is the registry that names them: one Navigation item plus 11 groups x 3
+ * variants = 34 insertable component keys,
  * each carrying its group, its localized label/description keys, and what
  * workspace content it depends on.
  *
  * The registry is the SINGLE source those facts come from. `puckConfig`,
  * `createEditorConfig`, `PRESET_BLOCK_KEYS`, `fillBlockDefaults`, the editor's
  * drawer categories, demo-mode filtering, and the guide's preset detection all
- * derive from it rather than repeating 36 keys by hand.
+ * derive from it rather than repeating preset keys by hand.
  *
  * Client-safe (pure data + the isomorphic Container/Navigation renders), so
  * the SAME configs power the editor canvas and the public renderer. Only the
@@ -28,7 +29,12 @@
 
 import type { ContainerBlockProps } from "./manualBlocks";
 import type { NavigationBlockProps } from "./NavigationBlock";
-import { NAV_BORDERED_PRESET, NAV_UNDERLINED_PRESET, NAV_SCALED_PRESET } from "./presets/navigation";
+import {
+  NAVIGATION_PRESET,
+  NAV_BORDERED_PRESET,
+  NAV_UNDERLINED_PRESET,
+  NAV_SCALED_PRESET,
+} from "./presets/navigation";
 import { HERO_PRESET, HERO_SPLIT_PRESET, HERO_STATEMENT_PRESET } from "./presets/hero";
 import { ABOUT_PRESET, ABOUT_PORTRAIT_PRESET, ABOUT_PROFILE_PRESET } from "./presets/about";
 import { SERVICES_PRESET, SERVICES_MENU_PRESET, SERVICES_FEATURE_PRESET } from "./presets/services";
@@ -63,7 +69,7 @@ import {
 
 // Re-exported so existing importers (tests, templates) keep working unchanged.
 export {
-  NAV_BORDERED_PRESET, NAV_UNDERLINED_PRESET, NAV_SCALED_PRESET,
+  NAVIGATION_PRESET, NAV_BORDERED_PRESET, NAV_UNDERLINED_PRESET, NAV_SCALED_PRESET,
   HERO_PRESET, HERO_SPLIT_PRESET, HERO_STATEMENT_PRESET,
   ABOUT_PRESET, ABOUT_PORTRAIT_PRESET, ABOUT_PROFILE_PRESET,
   SERVICES_PRESET, SERVICES_MENU_PRESET, SERVICES_FEATURE_PRESET,
@@ -155,7 +161,7 @@ function entry(
 }
 
 // ---------------------------------------------------------------------------
-// The 36 presets, in drawer order: group by group, variant A first.
+// The 34 insertable presets, in drawer order: Navigation first, then grouped variants.
 //
 // The ten original component keys are UNCHANGED — persisted pages reference them.
 // Their LABELS changed from the old flat group name to the variant name, because
@@ -167,15 +173,9 @@ export const SECTION_PRESETS = {
   // Dragging one onto a page replaces that zone's existing Navigation (the
   // header is pinned/undeletable — there is never a second one) rather than
   // inserting alongside it.
-  NavBorderedPreset: entry("NavBorderedPreset", "nav", "Bordered navbar",
-    "A bottom border and a highlighted active link on a compact bar. Replaces the page's current header.",
-    NAV_BORDERED_PRESET, { componentType: "Navigation" }),
-  NavUnderlinedPreset: entry("NavUnderlinedPreset", "nav", "Underlined navbar",
-    "A quiet bar with an accent underline beneath the active link. Replaces the page's current header.",
-    NAV_UNDERLINED_PRESET, { componentType: "Navigation" }),
-  NavScaledPreset: entry("NavScaledPreset", "nav", "Scaled navbar",
-    "The active link scales up instead of a fill or underline. Replaces the page's current header.",
-    NAV_SCALED_PRESET, { componentType: "Navigation" }),
+  NavigationPreset: entry("NavigationPreset", "nav", "Navigation",
+    "A flexible site header with editable branding, links, and contact button. Replaces the page's current header.",
+    NAVIGATION_PRESET, { componentType: "Navigation" }),
 
   // ---- Hero ----
   HeroPreset: entry("HeroPreset", "hero", "Immersive cover",
@@ -293,7 +293,20 @@ export const SECTION_PRESETS = {
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;
 
-/** All 36 keys, in drawer order. */
+/**
+ * Render-only compatibility for drafts/pages created while the three
+ * experimental navigation variants were insertable. Keep these registered,
+ * but never list them in PRESET_GROUPS or PRESET_BLOCK_KEYS.
+ */
+export const LEGACY_NAV_PRESETS = {
+  NavBorderedPreset: NAV_BORDERED_PRESET,
+  NavUnderlinedPreset: NAV_UNDERLINED_PRESET,
+  NavScaledPreset: NAV_SCALED_PRESET,
+} as const;
+export type LegacyNavPresetKey = keyof typeof LEGACY_NAV_PRESETS;
+export const LEGACY_NAV_PRESET_KEYS = Object.keys(LEGACY_NAV_PRESETS) as LegacyNavPresetKey[];
+
+/** All insertable preset keys, in drawer order. */
 export const SECTION_PRESET_KEYS = Object.keys(SECTION_PRESETS) as SectionPresetKey[];
 
 export type PresetGroup = {
@@ -319,7 +332,7 @@ const GROUP_LABELS: Record<PresetGroupId, string> = {
   footer: "Footer",
 };
 
-/** The drawer's collapsible categories: 12 groups, each with its 3 variants. */
+/** The drawer's collapsible categories: one Navigation plus 11 three-variant groups. */
 export const PRESET_GROUPS: readonly PresetGroup[] = PRESET_GROUP_IDS.map((id) => ({
   id,
   label: GROUP_LABELS[id],
@@ -327,7 +340,7 @@ export const PRESET_GROUPS: readonly PresetGroup[] = PRESET_GROUP_IDS.map((id) =
   keys: SECTION_PRESET_KEYS.filter((key) => SECTION_PRESETS[key].group === id),
 }));
 
-/** The 3 `nav` group keys — these render through `NavigationBlock`, not
+/** The insertable `nav` group key — it renders through `NavigationBlock`, not
  *  `ContainerBlock`, so `puckConfig`/`createEditorConfig`/`fillBlockDefaults`
  *  branch on this instead of assuming every preset is a Container. */
 export const NAV_PRESET_KEYS: readonly SectionPresetKey[] = SECTION_PRESET_KEYS.filter(

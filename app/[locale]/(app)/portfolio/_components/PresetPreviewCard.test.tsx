@@ -17,6 +17,7 @@ vi.mock("@measured/puck", async (importOriginal) => ({
 
 const {
   PresetDrawerItem,
+  ManualDrawerItem,
   PresetPreviewCanvas,
   PresetPreviewPanel,
   buildPresetPreviewData,
@@ -73,6 +74,11 @@ describe("PresetDrawerItem", () => {
     renderItem();
     fireEvent.pointerEnter(screen.getByTestId("row-label"));
     await waitFor(() => expect(screen.getByText(DESCRIPTION)).toBeInTheDocument());
+  });
+
+  it("makes Puck's otherwise non-focusable drawer row keyboard reachable", () => {
+    renderItem();
+    expect(screen.getByTestId("row-label").parentElement).toHaveAttribute("tabindex", "0");
   });
 
   it("opens on click", async () => {
@@ -195,6 +201,40 @@ describe("PresetPreviewCanvas", () => {
 
     expect(height).toBeGreaterThanOrEqual(PREVIEW_MIN_HEIGHT);
     expect(height).toBeLessThanOrEqual(PREVIEW_MAX_HEIGHT);
+  });
+});
+
+describe("ManualDrawerItem", () => {
+  it("opens a text-only description on hover and focus", async () => {
+    const describe = (key: string) =>
+      key === "Heading"
+        ? { name: "Heading", description: "Adds an editable heading." }
+        : undefined;
+
+    renderWithProviders(
+      <>
+        <ManualDrawerItem blockKey={"Heading" as never}>
+          <button type="button">Heading row</button>
+        </ManualDrawerItem>
+        <PresetPreviewPanel
+          config={CONFIG}
+          cssVars={CSS_VARS}
+          describe={describe}
+          dragHint="Drag this block to add it to your page."
+        />
+      </>
+    );
+
+    const row = screen.getByRole("button", { name: "Heading row" });
+    fireEvent.pointerEnter(row);
+    expect(await screen.findByText("Adds an editable heading.")).toBeInTheDocument();
+    expect(screen.queryByTestId("mini-render")).not.toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+    fireEvent.focus(row);
+    expect(await screen.findByText("Adds an editable heading.")).toBeInTheDocument();
+    expect(screen.queryByTestId("mini-render")).not.toBeInTheDocument();
   });
 });
 

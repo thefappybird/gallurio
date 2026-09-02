@@ -193,6 +193,22 @@ describe("NavigationBlock — isomorphic render", () => {
     expect(within(nav).getByRole("link", { name: "Home" })).toBeInTheDocument();
   });
 
+  it("gives the logo and company-title slot the full available width", () => {
+    const { container } = render(NavigationBlock({ ...navigationDefaultProps, content: stubSlot }));
+    const slot = screen.getByTestId("nav-slot");
+    expect(slot).toHaveClass("pf-nav-brand-content");
+    expect(slot).toHaveStyle({ width: "100%", minWidth: 0 });
+    expect(slot.parentElement).toHaveStyle({ width: "100%", minWidth: 0 });
+    expect(container.querySelector("style")?.textContent).toContain("white-space: nowrap");
+  });
+
+  it("caps a nested Image block at 75px high inside the navigation", () => {
+    const { container } = render(NavigationBlock({ ...navigationDefaultProps, content: stubSlot }));
+    const css = container.querySelector("style")?.textContent ?? "";
+    expect(css).toContain('.pf-nav-brand-content [data-block="image"]');
+    expect(css).toContain("max-height: 75px !important");
+  });
+
   it("calls the content slot function and renders its output", () => {
     render(NavigationBlock({ ...navigationDefaultProps, content: stubSlot }));
     expect(screen.getByTestId("nav-slot")).toBeInTheDocument();

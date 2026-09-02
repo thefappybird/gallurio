@@ -2692,6 +2692,7 @@
           },
           "blocks": {
             "navigation": "Navigasi",
+            "navigationPreset": "Navigasi",
             "navBorderedPreset": "Navbar Berbingkai",
             "navUnderlinedPreset": "Navbar Bergaris Bawah",
             "navScaledPreset": "Navbar Membesar",
@@ -2743,7 +2744,23 @@
             "footerDirectoryPreset": "Footer Direktori",
             "footerStatementPreset": "Pernyataan Penutup"
           },
+          "manualDescriptions": {
+            "galleryGrid": "Menampilkan gambar galeri terpilih dalam kisi baris dan kolom yang dapat diedit.",
+            "galleryMasonry": "Menampilkan gambar galeri terpilih dalam kolom bertingkat yang mempertahankan proporsinya.",
+            "collectionCard": "Menautkan satu koleksi galeri dengan sampul, judul, dan keterangan yang dapat diedit.",
+            "heading": "Menambahkan judul yang dapat diedit dengan kontrol tingkat, tipografi, warna, dan perataan.",
+            "text": "Menambahkan teks isi yang dapat diedit dengan kontrol tipografi, warna, lebar, dan perataan.",
+            "image": "Menambahkan satu gambar yang dapat diedit dengan kontrol potongan, ukuran, radius, dan teks alt.",
+            "button": "Menambahkan tombol ajakan bertindak yang dapat membuka Kontak atau berpindah antarhalaman portofolio.",
+            "video": "Menyematkan video YouTube atau Vimeo dengan judul dan keterangan opsional.",
+            "columns": "Membuat kisi responsif tempat blok dapat ditempatkan dan diubah ukurannya di seluruh kolom dan baris.",
+            "container": "Membuat bagian bergaya yang mengelompokkan blok dengan spasi, perataan, dan latarnya sendiri.",
+            "contactDetails": "Menampilkan email, telepon, dan alamat ruang kerja dari pengaturan kontak Anda.",
+            "spacer": "Menambahkan ruang vertikal kosong yang dapat disesuaikan di antara blok.",
+            "divider": "Menambahkan garis horizontal dengan lebar, ketebalan, warna, dan spasi yang dapat disesuaikan."
+          },
           "presetDescriptions": {
+            "navigationPreset": "Header situs fleksibel dengan merek, tautan, dan tombol kontak yang dapat diedit. Menggantikan header halaman saat ini.",
             "navBorderedPreset": "Garis bawah bawah dan tautan aktif yang disorot pada bilah ringkas. Menggantikan header halaman saat ini.",
             "navUnderlinedPreset": "Bilah tenang dengan garis bawah aksen di bawah tautan aktif. Menggantikan header halaman saat ini.",
             "navScaledPreset": "Tautan aktif membesar alih-alih isian atau garis bawah. Menggantikan header halaman saat ini.",

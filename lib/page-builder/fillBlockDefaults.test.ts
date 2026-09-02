@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { fillBlockDefaults, type BlockEntry } from "./fillBlockDefaults";
-import { SECTION_PRESETS, SECTION_PRESET_KEYS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+import {
+  SECTION_PRESETS,
+  SECTION_PRESET_KEYS,
+  NAV_PRESET_KEYS,
+  LEGACY_NAV_PRESET_KEYS,
+} from "./blocks/sectionPresets";
 
 const CONTAINER_PRESET_KEYS = SECTION_PRESET_KEYS.filter((key) => !NAV_PRESET_KEYS.includes(key));
 
@@ -38,6 +43,15 @@ describe("fillBlockDefaults", () => {
     expect(result.content[0].props._chrome).toBe("nav");
     expect(result.content[0].props.bgAnimation).toBeUndefined();
   });
+
+  it.each(LEGACY_NAV_PRESET_KEYS)(
+    "keeps retired nav preset data render-compatible (%s)",
+    (presetKey) => {
+      const result = fillBlockDefaults({ content: [{ type: presetKey, props: { id: "legacy-nav" } }] });
+      expect(result.content[0].props._chrome).toBe("nav");
+      expect(result.content[0].props.bgAnimation).toBeUndefined();
+    },
+  );
 
   it("every SECTION_PRESET_KEYS entry's componentType agrees with its BLOCK_DEFAULTS fallback", () => {
     for (const key of SECTION_PRESET_KEYS) {

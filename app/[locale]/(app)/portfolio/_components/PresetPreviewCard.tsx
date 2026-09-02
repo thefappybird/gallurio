@@ -3,9 +3,10 @@
 /**
  * The drawer's section-preset preview.
  *
- * The drawer lists 33 presets in 11 groups. Carrying a one-line description on
- * every row made the list too verbose to scan, so the row is name-only and the
- * description moved here, next to a picture of what the block actually is.
+ * Carrying a one-line description on every preset row made the list too verbose
+ * to scan, so the row is name-only and the description moved here, next to a
+ * picture of what the block actually is. Manual blocks reuse the same panel but
+ * intentionally show only concise explanatory text.
  *
  * The picture is a LIVE mini-render, not a screenshot: the same preset data and
  * the same Puck config the canvas uses, laid out at desktop width and scaled
@@ -26,6 +27,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Render, type Config, type Data } from "@measured/puck";
 import { SECTION_PRESETS, type SectionPresetKey } from "@/lib/page-builder/blocks/sectionPresets";
+import type { ManualBlockKey } from "@/lib/page-builder/blockCategories";
 import { mapBlocks } from "@/lib/page-builder/blockTree";
 import type { PuckData } from "@/lib/page-builder/types";
 import { PF_CONTAINER_NAME } from "@/lib/page-builder/responsive";
@@ -190,15 +192,32 @@ export function PresetDrawerItem({
   presetKey: SectionPresetKey;
   children: ReactNode;
 }) {
+  return <DrawerPreviewTarget itemKey={presetKey}>{children}</DrawerPreviewTarget>;
+}
+
+/** Manual rows share the preset interaction contract, but the shared panel
+ * intentionally omits the live miniature for these small primitives. */
+export function ManualDrawerItem({
+  blockKey,
+  children,
+}: {
+  blockKey: ManualBlockKey;
+  children: ReactNode;
+}) {
+  return <DrawerPreviewTarget itemKey={blockKey}>{children}</DrawerPreviewTarget>;
+}
+
+function DrawerPreviewTarget({ itemKey, children }: { itemKey: string; children: ReactNode }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
 
   const show = useCallback(() => {
-    if (rowRef.current) openPresetPreview(presetKey, rowRef.current);
-  }, [presetKey]);
+    if (rowRef.current) openPresetPreview(itemKey, rowRef.current);
+  }, [itemKey]);
 
   return (
     <div
       ref={rowRef}
+      tabIndex={0}
       onPointerEnter={show}
       onClick={show}
       onFocus={show}
@@ -229,11 +248,11 @@ export function PresetPreviewPanel({
 }: {
   config: Config;
   cssVars: Record<string, string>;
-  /** Resolves a preset key to its localized name + description. */
-  describe: (key: SectionPresetKey) => { name: string; description: string };
+  /** Resolves a preset or manual block key to localized drawer help. */
+  describe: (key: string) => { name: string; description: string } | undefined;
   dragHint: string;
 }) {
-  const activeKey = useActivePresetPreview() as SectionPresetKey | null;
+  const activeKey = useActivePresetPreview();
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Derived during render, not in an effect: the anchor rect is available
@@ -271,8 +290,11 @@ export function PresetPreviewPanel({
     };
   }, [activeKey]);
 
-  if (!activeKey || !SECTION_PRESETS[activeKey]) return null;
-  const { name, description } = describe(activeKey);
+  if (!activeKey) return null;
+  const copy = describe(activeKey);
+  if (!copy) return null;
+  const { name, description } = copy;
+  const isPreset = activeKey in SECTION_PRESETS;
 
   return (
     <div
@@ -292,12 +314,14 @@ export function PresetPreviewPanel({
       // Flat per DESIGN.md — hairline ring and a tonal shift, no shadow.
       className="border border-border bg-popover text-popover-foreground"
     >
-      <PresetPreviewCanvas
-        presetKey={activeKey}
-        config={config}
-        cssVars={cssVars}
-        className="border-b border-border"
-      />
+      {isPreset && (
+        <PresetPreviewCanvas
+          presetKey={activeKey as SectionPresetKey}
+          config={config}
+          cssVars={cssVars}
+          className="border-b border-border"
+        />
+      )}
       <div className="flex flex-col gap-1 p-2.5">
         <span className="text-xs font-medium text-foreground">{name}</span>
         <span className="text-xs text-muted-foreground">{description}</span>

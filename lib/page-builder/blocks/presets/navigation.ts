@@ -1,5 +1,7 @@
 /**
- * Navigation section presets — three distinct header looks, seeded from the
+ * Navigation section presets — one neutral insertable header plus three legacy
+ * looks retained only so already-saved draft/page data keeps rendering. The
+ * legacy looks were seeded from the
  * looks previously baked into the `bold`/`editorial`/`luxury` templates'
  * `defaultHeader` values (before those moved onto this block). `minimal` and
  * `scratch` used the generic `DEFAULT_HEADER_CONFIG` look, so they contribute
@@ -12,12 +14,17 @@
  */
 
 import type { NavigationBlockProps } from "../NavigationBlock";
+import { DEFAULT_HEADER_CONFIG } from "../../types";
 import { child, slot } from "./_helpers";
 
-const NAV_CONTENT = slot([
-  child("Image", { alt: "Logo" }),
-  child("Heading", { level: "h3", text: "Studio Name" }),
-]);
+const NAV_CONTENT = slot([child("Heading", { level: "h3", text: "Studio Name" })]);
+
+/** The sole insertable navigation preset. Owners build its logo from the uploader. */
+export const NAVIGATION_PRESET: NavigationBlockProps = {
+  ...DEFAULT_HEADER_CONFIG,
+  _chrome: "nav",
+  content: NAV_CONTENT,
+};
 
 /** Bordered navbar — from the `bold` template's former defaultHeader. */
 export const NAV_BORDERED_PRESET: NavigationBlockProps = {

@@ -66,10 +66,8 @@ describe("componentType", () => {
     }
   });
 
-  it("is 'Navigation' for exactly the 3 nav presets", () => {
-    expect([...NAV_PRESET_KEYS].sort()).toEqual(
-      ["NavBorderedPreset", "NavScaledPreset", "NavUnderlinedPreset"].sort()
-    );
+  it("is 'Navigation' for the single insertable nav preset", () => {
+    expect(NAV_PRESET_KEYS).toEqual(["NavigationPreset"]);
     for (const key of NAV_PRESET_KEYS) {
       expect(SECTION_PRESETS[key].componentType).toBe("Navigation");
     }
@@ -85,6 +83,13 @@ describe("nav group", () => {
     for (const key of NAV_PRESET_KEYS) {
       expect((SECTION_PRESETS[key].defaultProps as { _chrome?: string })._chrome).toBe("nav");
     }
+  });
+
+  it("contains a single neutral Navigation item", () => {
+    const navEntries = Object.entries(SECTION_PRESETS).filter(([, preset]) => preset.group === "nav");
+    expect(navEntries).toHaveLength(1);
+    expect(navEntries[0]?.[0]).toBe("NavigationPreset");
+    expect(navEntries[0]?.[1].label).toBe("Navigation");
   });
 });
 

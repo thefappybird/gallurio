@@ -46,7 +46,7 @@ describe("production root render applies root style", () => {
 });
 
 describe("puckConfig categories", () => {
-  it("has the 11 registry group ids plus 'manual'", () => {
+  it("has the 12 registry group ids plus 'manual'", () => {
     const categoryIds = Object.keys(puckConfig.categories ?? {});
     expect(categoryIds.sort()).toEqual([...PRESET_GROUP_IDS, "manual"].sort());
   });

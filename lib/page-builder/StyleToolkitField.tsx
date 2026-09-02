@@ -14,7 +14,11 @@
  */
 
 import { useRef, useState } from "react";
-import { SECTION_PRESET_KEYS, NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+import {
+  SECTION_PRESET_KEYS,
+  NAV_PRESET_KEYS,
+  LEGACY_NAV_PRESET_KEYS,
+} from "./blocks/sectionPresets";
 import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
 import { BlockIdContext } from "./drawerOpenStore";
 import type { LucideIcon } from "lucide-react";
@@ -81,6 +85,7 @@ import {
   type BorderSide,
   type StyleColorToken,
   effectiveButtonTextToken,
+  bgImageUrl,
 } from "./styleToolkit";
 import { GALLERY_EFFECTIVE_PAD } from "./responsive";
 import { CountControl } from "./CountControl";
@@ -90,6 +95,12 @@ import {
   gallerySlotSelections,
   galleryZonesWithPatch,
 } from "./gallerySlotImages";
+import {
+  navigationLogoAssetId,
+  navigationLogoPatch,
+  navigationPropsWithZones,
+  navigationZonesWithPatch,
+} from "./navigationLogo";
 import { useEffectiveBrandRadius, useEffectiveBrandFont, useBrandRadius } from "./brandColors";
 import {
   BUTTON_SIZE_FONT_PX,
@@ -110,18 +121,31 @@ import {
 // Derived from the section-preset registry (33 keys) rather than hand-listed —
 // every preset is a Container under the hood, so this also newly picks up
 // VideoPreset, which the old hand-list omitted (a live bug: Video presets got
-// the wrong toolkit tab set). The 3 `nav` group keys are excluded — they render
+// the wrong toolkit tab set). Navigation preset keys are excluded — they render
 // through NavigationBlock, are not Container-shaped, and carry no `_style`.
 const CONTAINER_SECTION_KEYS = SECTION_PRESET_KEYS.filter(
   (key) => !(NAV_PRESET_KEYS as readonly string[]).includes(key)
 );
 export const CONTAINER_TYPES = new Set<string>(["Container", ...CONTAINER_SECTION_KEYS]);
 
-// The actual Puck block type ("Navigation") plus its 3 legacy preset-key
-// aliases — the ContentInputs dispatch below must match on this set, not on
+// The actual Puck block type ("Navigation"), the insertable preset, and its
+// render-only legacy aliases. ContentInputs must match on this set, not on
 // NAV_PRESET_KEYS alone, since "Navigation" is never a SectionPresetKey (it's
 // a separate registered block, not a section preset).
-const NAV_CONFIG_TYPES = new Set<string>(["Navigation", ...(NAV_PRESET_KEYS as readonly string[])]);
+const NAV_CONFIG_TYPES = new Set<string>([
+  "Navigation",
+  ...(NAV_PRESET_KEYS as readonly string[]),
+  ...(LEGACY_NAV_PRESET_KEYS as readonly string[]),
+]);
+
+const CONTENT_DESIGN_TABS: readonly BlockTab[] = ["content", "design"];
+const ALL_BLOCK_TABS: readonly BlockTab[] = ["content", "design", "layout"];
+
+export function blockTabsForType(type: string): readonly BlockTab[] {
+  return type === "ContactDetails" || NAV_CONFIG_TYPES.has(type)
+    ? CONTENT_DESIGN_TABS
+    : ALL_BLOCK_TABS;
+}
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
 // Frame (border/radius/shadow) is hidden for text/spacer/button leaf blocks.
@@ -504,10 +528,9 @@ export function BannerSection({
 }
 
 // ---------------------------------------------------------------------------
-// Navigation block field panel — the full `PortfolioHeaderConfig` shape,
-// ported from the retired HeaderPanelDialog into the ordinary Content tab
-// (the config lives on the block's OWN props, not `_style`, so it is wired
-// through ContentInputs's setProp — same mechanism as CollectionCard/Image).
+// Navigation block field panels — the full `PortfolioHeaderConfig` shape,
+// split between Content and Design. The config lives on the block's OWN props,
+// not `_style`, so both panels write through ContentInputs's setProp mechanism.
 // ---------------------------------------------------------------------------
 
 const NAV_SHADOW_LABELS: Record<string, string> = { none: "None", sm: "Small", md: "Medium", lg: "Large" };
@@ -516,7 +539,7 @@ const NAV_NAVBAR_SIZE_LABELS: Record<string, string> = { sleek: "Sleek", balance
 const NAV_RADIUS_LABELS: Record<BrandKitRadius, string> = { sharp: "Sharp", subtle: "Subtle", rounded: "Rounded" };
 
 const LOGO_MAX_BYTES = 250 * 1024;
-const LOGO_MAX_WIDTH = 512;
+const LOGO_MAX_WIDTH = 526;
 const LOGO_MAX_HEIGHT = 256;
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
@@ -644,13 +667,13 @@ function NavigationLogoUpload({
           maxWidth: LOGO_MAX_WIDTH,
           maxHeight: LOGO_MAX_HEIGHT,
         },
-        { subfolder: "portfolio_header", delivery: { width: 512, height: 256, fit: "scale-down" } },
+        { subfolder: "portfolio_header", delivery: { width: 526, height: 256, fit: "scale-down" } },
       );
       if ("error" in result) {
         switch (result.error) {
           case "type_not_accepted": setError("PNG, JPEG, or WEBP only."); break;
           case "file_too_large": setError("Logo must be under 250KB."); break;
-          case "dimensions_too_large": setError("Logo must be at most 512×256px."); break;
+          case "dimensions_too_large": setError("Logo must be at most 526×256px."); break;
           case "invalid_image": setError("Could not read that image."); break;
         }
         return;
@@ -691,7 +714,7 @@ function NavigationLogoUpload({
         >
           <Upload className="size-3.5" aria-hidden />
           <span>{uploading ? "Uploading…" : "Upload logo"}</span>
-          <span>PNG, JPEG, or WEBP · under 250KB · up to 512×256px</span>
+          <span>PNG, JPEG, or WEBP · under 250KB · up to 526×256px</span>
         </button>
       )}
       {error && (
@@ -715,26 +738,28 @@ function NavigationLogoUpload({
   );
 }
 
-function NavigationConfigPanel({
+export function NavigationContentPanel({
   config,
   setProp,
+  setProps,
   navDetach,
   detached,
   t = navDetachFallbackT,
 }: {
   config: PortfolioHeaderConfig;
   setProp: (key: string, val: unknown) => void;
+  setProps?: (patch: Record<string, unknown>) => void;
   navDetach?: NavDetachContext;
   detached: boolean;
   t?: NavDetachTranslate;
 }) {
-  const effectiveRadius = useBrandRadius();
   const set = <K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) =>
     setProp(key, value);
 
   return (
-    <EditorDrawerGroup>
-      <EditorDrawerSection title="Brand">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
+        <span className="text-xs font-medium uppercase tracking-wide text-foreground">Brand</span>
         <ChoiceRow
           label="Navbar size"
           value={config.navbarSize || "balanced"}
@@ -742,15 +767,15 @@ function NavigationConfigPanel({
           onChange={(v) => set("navbarSize", v === "balanced" ? "" : v)}
         />
         <NavigationLogoUpload
-          logoUrl={config.logoUrl}
-          onChange={({ logoUrl, logoAssetId }) => {
-            setProp("logoUrl", logoUrl);
-            setProp("logoAssetId", logoAssetId);
+          logoUrl={bgImageUrl(navigationLogoAssetId(config as Record<string, unknown>)) ?? undefined}
+          onChange={({ logoAssetId }) => {
+            setProps?.(navigationLogoPatch(config as Record<string, unknown>, logoAssetId));
           }}
         />
-      </EditorDrawerSection>
+      </div>
 
-      <EditorDrawerSection title="Banner">
+      <div className="flex flex-col gap-3 border-t border-border pt-4">
+        <span className="text-xs font-medium uppercase tracking-wide text-foreground">Banner</span>
         <NavColorRow label="Background color" value={config.backgroundColor} onChange={(v) => set("backgroundColor", v)} effectiveValue="background" />
         <NumberInputRow label="Background opacity" value={config.backgroundOpacity} min={0} max={100} suffix="%" effectiveValue={100} onChange={(v) => set("backgroundOpacity", v)} />
         <NumberInputRow label="Bottom border" value={config.borderBottomWidth} min={0} max={8} effectiveValue={1} onChange={(v) => set("borderBottomWidth", v)} />
@@ -763,8 +788,39 @@ function NavigationConfigPanel({
           options={HEADER_SHADOW_SIZES.map((v) => ({ value: v, label: NAV_SHADOW_LABELS[v] }))}
           onChange={(v) => set("shadowSize", v === "none" ? "" : v)}
         />
-      </EditorDrawerSection>
+      </div>
 
+      <div className="flex flex-col gap-3 border-t border-border pt-4">
+        <span className="text-xs font-medium uppercase tracking-wide text-foreground">Sync</span>
+        <HighlightToggle
+          label={t("chromeDetachToggleLabel", { page: navDetach?.zoneLabel ?? "this page" })}
+          on={detached}
+          onToggle={() => setProp("detached", !detached)}
+          disabled={navDetach?.disabled}
+        />
+        <p className="text-xs text-muted-foreground">
+          {navDetach?.disabled
+            ? t("chromeDetachDisabledHint", { page: navDetach.otherZoneLabel })
+            : t("chromeDetachHint")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function NavigationDesignPanel({
+  config,
+  setProp,
+}: {
+  config: PortfolioHeaderConfig;
+  setProp: (key: string, val: unknown) => void;
+}) {
+  const effectiveRadius = useBrandRadius();
+  const set = <K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) =>
+    setProp(key, value);
+
+  return (
+    <EditorDrawerGroup>
       <EditorDrawerSection title="Links">
         <ChoiceRow
           label="Font size"
@@ -810,20 +866,6 @@ function NavigationConfigPanel({
         <NumberInputRow label="Fill opacity" value={config.contactButtonOpacity} min={0} max={100} suffix="%" effectiveValue={100} onChange={(v) => set("contactButtonOpacity", v)} />
         <NavColorRow label="Text color" value={config.contactButtonTextColor} onChange={(v) => set("contactButtonTextColor", v)} effectiveValue="background" />
         <NavRadiusRow label="Corner radius" value={config.contactButtonRadius} onChange={(v) => set("contactButtonRadius", v)} effectiveValue={effectiveRadius} />
-      </EditorDrawerSection>
-
-      <EditorDrawerSection title="Sync">
-        <HighlightToggle
-          label={t("chromeDetachToggleLabel", { page: navDetach?.zoneLabel ?? "this page" })}
-          on={detached}
-          onToggle={() => setProp("detached", !detached)}
-          disabled={navDetach?.disabled}
-        />
-        <p className="text-xs text-muted-foreground">
-          {navDetach?.disabled
-            ? t("chromeDetachDisabledHint", { page: navDetach.otherZoneLabel })
-            : t("chromeDetachHint")}
-        </p>
       </EditorDrawerSection>
     </EditorDrawerGroup>
   );
@@ -998,9 +1040,10 @@ export function ContentInputs({
   }
   if (NAV_CONFIG_TYPES.has(type)) {
     return (
-      <NavigationConfigPanel
+      <NavigationContentPanel
         config={props as PortfolioHeaderConfig}
         setProp={setProp}
+        setProps={setProps}
         navDetach={navDetach}
         detached={!!(props as { detached?: boolean }).detached}
         t={t}
@@ -2685,13 +2728,14 @@ function BlockAwarePanel({
   // field render on every value change). Using blockId as key means selecting a
   // different block starts at "content" while edits on the same block preserve
   // whichever tab the user navigated to.
-  const [activeTab, setActiveTabState] = useState<BlockTab>(() => getBlockTab(blockId));
+  const [storedTab, setActiveTabState] = useState<BlockTab>(() => getBlockTab(blockId));
   function setActiveTab(t: BlockTab) {
     setActiveTabState(t);
     if (blockId) setBlockTab(blockId, t);
   }
 
   const type = (selectedItem?.type ?? "") as string;
+  const isNavigation = NAV_CONFIG_TYPES.has(type);
   const isGallery = GALLERY_BLOCKS.has(type);
   const isContainer = CONTAINER_TYPES.has(type);
   // Gallery container blocks (GalleryGrid, GalleryMasonry, FeaturedWork) get the same
@@ -2700,9 +2744,8 @@ function BlockAwarePanel({
   const isGalleryContainer = GALLERY_CONTAINER_BLOCKS.has(type);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(type);
 
-  const availableTabs = type === "ContactDetails"
-    ? (["content", "design"] as const)
-    : (["content", "design", "layout"] as const);
+  const availableTabs = blockTabsForType(type);
+  const activeTab = availableTabs.includes(storedTab) ? storedTab : "content";
 
   const isGridChild = (() => {
     if (!selectedItem) return false;
@@ -2749,6 +2792,13 @@ function BlockAwarePanel({
         return;
       }
     }
+    if (NAV_CONFIG_TYPES.has(type)) {
+      const nextZones = navigationZonesWithPatch(current.props, patch, data.zones);
+      if (nextZones) {
+        dispatch({ type: "setData", data: { ...data, zones: nextZones } });
+        return;
+      }
+    }
     dispatch({
       type: "replace",
       destinationZone: sel.zone,
@@ -2767,7 +2817,9 @@ function BlockAwarePanel({
   const selectedProps = selectedItem?.props as Record<string, unknown> | undefined;
   const p = selectedProps && SLOT_GALLERY_PICKER_BLOCKS.has(type)
     ? galleryPropsWithZones(selectedProps, data.zones)
-    : selectedProps;
+    : selectedProps && NAV_CONFIG_TYPES.has(type)
+      ? navigationPropsWithZones(selectedProps, data.zones)
+      : selectedProps;
 
   // Simplified blocks bypass the tab system entirely. Image (F1) no longer
   // bypasses — it uses the full Content/Design/Layout tabs (Banner for the
@@ -2793,7 +2845,11 @@ function BlockAwarePanel({
             t={t}
           />
         )}
-        {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} p={p} />}
+        {activeTab === "design" && (
+          isNavigation && p
+            ? <NavigationDesignPanel config={p as PortfolioHeaderConfig} setProp={setProp} />
+            : <DesignTab s={s} set={set} blockType={type} p={p} />
+        )}
         {activeTab === "layout" && (
           <LayoutTabBody
             s={s}
@@ -2843,18 +2899,20 @@ export function StyleToolkitField({
     return <BlockAwarePanel s={s} set={set} tab={tab} onTabChange={setTab} navDetach={navDetach} t={t} />;
   }
 
-  // Standalone render (tests — no Puck provider): show full 3-tab panel
-  const allTabs = ["content", "design", "layout"] as const;
+  // Standalone render (tests — no Puck provider).
+  const allTabs = blockTabsForType(blockType);
+  const standaloneTab = allTabs.includes(tab) ? tab : "content";
+  const standaloneIsNavigation = NAV_CONFIG_TYPES.has(blockType);
   const standaloneIsContainer = CONTAINER_TYPES.has(blockType) || GALLERY_CONTAINER_BLOCKS.has(blockType);
   return (
     <div className="flex flex-col">
-      <TabHeader tab={tab} tabs={allTabs} onTabChange={setTab} />
-      {tab === "content" && (
+      <TabHeader tab={standaloneTab} tabs={allTabs} onTabChange={setTab} />
+      {standaloneTab === "content" && (
         <ContentTabBody
           s={s}
           set={set}
           type={blockType}
-          p={undefined}
+          p={standaloneIsNavigation ? {} : undefined}
           setProp={() => {}}
           showBanner={standaloneIsContainer || !GALLERY_BLOCKS.has(blockType)}
           isContainer={standaloneIsContainer}
@@ -2862,8 +2920,12 @@ export function StyleToolkitField({
           t={t}
         />
       )}
-      {tab === "design" && <DesignTab s={s} set={set} blockType={blockType} />}
-      {tab === "layout" && (
+      {standaloneTab === "design" && (
+        standaloneIsNavigation
+          ? <NavigationDesignPanel config={{}} setProp={() => {}} />
+          : <DesignTab s={s} set={set} blockType={blockType} />
+      )}
+      {standaloneTab === "layout" && (
         <LayoutTabBody s={s} set={set} isGridChild={false} showJustify={true} blockType={blockType} />
       )}
     </div>

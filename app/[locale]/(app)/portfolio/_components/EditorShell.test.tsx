@@ -1652,7 +1652,7 @@ describe("EditorShell", () => {
         content: [
           { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav", brandText: "Studio" } },
           { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } },
-          { type: "NavBorderedPreset", props: { id: "preset-nav-1", _chrome: "nav", brandText: "Bordered" } },
+          { type: "NavigationPreset", props: { id: "preset-nav-1", _chrome: "nav" } },
         ],
         root: {},
       });
@@ -1667,7 +1667,7 @@ describe("EditorShell", () => {
         }[];
         const navs = homeContent.filter((b) => b.props._chrome === "nav");
         expect(navs).toHaveLength(1);
-        expect(navs[0].type).toBe("NavBorderedPreset");
+        expect(navs[0].type).toBe("NavigationPreset");
         expect(navs[0].props.id).toBe("c-Navigation-0");
       });
     });
@@ -1680,7 +1680,7 @@ describe("EditorShell", () => {
           { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
           { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } },
           {
-            type: "NavBorderedPreset",
+            type: "NavigationPreset",
             props: {
               id: "preset-nav-1",
               _chrome: "nav",
@@ -2733,9 +2733,10 @@ describe("EditorShell — two-level preset drawer", () => {
       expect(screen.getByRole("button", { name: englishPuckT(group.labelKey) })).toBeInTheDocument();
     }
 
-    // nav is open by default — its 3 variants are visible with no click.
+    // nav is open by default, with its single neutral preset visible immediately.
+    expect(screen.getByTestId("drawer-item:NavigationPreset")).toBeInTheDocument();
     for (const key of ["NavBorderedPreset", "NavUnderlinedPreset", "NavScaledPreset"]) {
-      expect(screen.getByTestId(`drawer-item:${key}`)).toBeInTheDocument();
+      expect(screen.queryByTestId(`drawer-item:${key}`)).not.toBeInTheDocument();
     }
 
     // hero starts closed — its variants aren't in the DOM until opened.
@@ -2768,6 +2769,17 @@ describe("EditorShell — two-level preset drawer", () => {
       openPresetPreview("HeroPreset", screen.getByTestId("drawer-item:HeroPreset"));
     });
     expect(await screen.findAllByRole("tooltip")).toHaveLength(1);
+  });
+
+  it("shows localized text-only help for manual blocks on hover", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.manual") }));
+    fireEvent.pointerEnter(screen.getByTestId("drawer-item:Heading"));
+
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip).toHaveTextContent(englishPuckT("puckConfig.manualDescriptions.heading"));
+    expect(tooltip.querySelector('[aria-hidden="true"]')).not.toBeInTheDocument();
   });
 });
 
