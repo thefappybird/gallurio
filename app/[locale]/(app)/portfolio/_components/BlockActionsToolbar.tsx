@@ -188,6 +188,7 @@ export function BlockActionsToolbar() {
   const itemSelector = usePuckSel((s) => s.appState?.ui?.itemSelector ?? null);
   const rootLen = usePuckSel((s) => s.appState?.data?.content?.length ?? 0);
   const dispatch = usePuckSel((s) => s.dispatch);
+  const getPermissions = usePuckSel((s) => s.getPermissions);
 
   const blockId: string | undefined =
     selectedItem && "props" in selectedItem ? (selectedItem as { props?: { id?: string } }).props?.id : undefined;
@@ -198,6 +199,14 @@ export function BlockActionsToolbar() {
 
   const actions: BlockActions | null = selectedBlockActions(itemSelector, rootLen);
   if (!actions) return null;
+
+  // Blocks that declare permissions.duplicate/delete === false (e.g. the pinned
+  // Navigation block) must never expose those controls here — Puck's own action
+  // bar is suppressed app-wide (SuppressedActionBar), so this toolbar is the only
+  // place those permissions are enforced in the UI.
+  const permissions = getPermissions({ item: selectedItem });
+  const canDuplicate = permissions.duplicate !== false;
+  const canDelete = permissions.delete !== false;
 
   // No rect yet (avoids a flash at 0,0) or an editor panel is open → hide.
   if (!anchor || anchor.overlayOpen) return null;
@@ -256,12 +265,14 @@ export function BlockActionsToolbar() {
       </ToolbarButton>
       <ToolbarButton
         label={t("blockActions.duplicate")}
+        hidden={!canDuplicate}
         onClick={() => dispatch(actions.duplicate)}
       >
         <Copy size={14} aria-hidden />
       </ToolbarButton>
       <ToolbarButton
         label={t("blockActions.delete")}
+        hidden={!canDelete}
         onClick={() => dispatch(actions.remove)}
       >
         <Trash2 size={14} aria-hidden />
