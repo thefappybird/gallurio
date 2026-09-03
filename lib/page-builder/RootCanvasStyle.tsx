@@ -105,16 +105,11 @@ const CANVAS_ROOT_SELECTOR =
 // exact-match attribute selector below is root-exclusive and does NOT touch nested
 // slots.
 //
-// Two rules on this droppable element:
-//   min-height: 100dvh — droppable region never shrinks below the viewport height.
-//   padding-bottom: 10rem — always adds a droppable tail below the last block so
-//     users can drop into the empty space without hunting for a thin target.
-//
-// Together the effective droppable height is max(100dvh, contentHeight) + 10rem.
-// Padding is part of the droppable element's box, so the 10rem tail is a real
-// drop target (dnd-kit / Puck pick up pointer events within the padding box).
+// The top-level zone mirrors the public sticky-footer grid: pinned Navigation,
+// a flexible PageBody row, then pinned Footer. The PageBody slot supplies the
+// large empty drop target instead of an artificial tail below the footer.
 const CANVAS_ROOT_DROPZONE_CSS =
-  `[data-puck-dropzone="root:default-zone"] { min-height: 100dvh; padding-bottom: 10rem; }`;
+  `[data-puck-dropzone="root:default-zone"] { display: grid; grid-template-rows: auto minmax(auto, 1fr) auto; min-height: 100dvh; }`;
 
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet

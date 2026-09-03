@@ -13,6 +13,7 @@ import { draftCapForPlan } from "@/lib/page-builder/drafts";
 import type { PuckData } from "@/lib/page-builder/types";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { normalizeChrome, findChrome } from "@/lib/page-builder/chromeSync";
+import { normalizePageBody } from "@/lib/page-builder/pageBody";
 import type { Data } from "@measured/puck";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { getTemplate } from "@/lib/page-builder/templates";
@@ -318,13 +319,13 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   // and rejecting publish outright would strand an owner on a state they
   // have no in-app way to fix yet.
   if (home) {
-    home = normalizeChrome(home as unknown as Data) as unknown as PuckData;
+    home = normalizePageBody(normalizeChrome(home as unknown as Data)) as unknown as PuckData;
     if (!findChrome(home as unknown as Data, "nav")) {
       console.warn("[portfolio] publish: home zone has no Navigation block", wsIdStr);
     }
   }
   if (gallery) {
-    gallery = normalizeChrome(gallery as unknown as Data) as unknown as PuckData;
+    gallery = normalizePageBody(normalizeChrome(gallery as unknown as Data)) as unknown as PuckData;
     if (!findChrome(gallery as unknown as Data, "nav")) {
       console.warn("[portfolio] publish: gallery zone has no Navigation block", wsIdStr);
     }

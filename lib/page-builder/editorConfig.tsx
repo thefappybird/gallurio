@@ -36,7 +36,7 @@ import { useChromeSync } from "./chromeSyncContext";
 import type { ZoneKey } from "./chromeSync";
 import { RootStyleField } from "./RootStyleField";
 import type { RootPageStyle } from "./rootStyle";
-import { NumberInputRow } from "./toolbarPrimitives";
+import { DimensionInput, NumberInputRow } from "./toolbarPrimitives";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -92,6 +92,12 @@ import { EditorContainerAnchor } from "./blocks/EditorContainerAnchor";
 import { reconcileContainerSlot } from "./containerAnchorReconciler";
 import { masonryCloneBlockConfig, type MasonryCloneProps } from "./blocks/MasonryCloneBlock";
 import {
+  PageBodyBlock,
+  pageBodyDefaultProps,
+  pageBodyPermissions,
+  type PageBodyBlockProps,
+} from "./blocks/PageBodyBlock";
+import {
   HeadingBlock,
   TextBlock,
   ImageBlock,
@@ -146,6 +152,7 @@ type EditorComponents = Omit<Record<SectionPresetKey, ContainerBlockProps>, NavP
     Divider: DividerBlockProps;
     Columns: ColumnsBlockProps;
     Container: ContainerBlockProps;
+    PageBody: PageBodyBlockProps;
     ContainerAnchor: ContainerAnchorProps;
     MasonryClone: MasonryCloneProps;
     Navigation: NavigationBlockProps;
@@ -315,9 +322,11 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.blocks.divider": "Divider",
   "puckConfig.blocks.columns": "Columns",
   "puckConfig.blocks.container": "Container",
+  "puckConfig.blocks.pageBody": "Page body",
   "puckConfig.blocks.navigation": "Navigation",
   "puckConfig.fields.style": "Style",
   "puckConfig.fields.pageStyle": "Page style",
+  "puckConfig.fields.pageBodyMargin": "Horizontal page margin",
   "puckConfig.fields.bgAnimation": "Background animation",
   "puckConfig.fields.bgAnimationShort": "BG animation",
   "puckConfig.fields.bgSpeed": "Animation speed",
@@ -492,6 +501,20 @@ export function createEditorConfig(
     ),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as unknown as Field<any>;
+
+  const pageBodyMarginField = {
+    type: "custom",
+    label: t("puckConfig.fields.pageBodyMargin"),
+    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+      <div className="p-3">
+        <DimensionInput
+          label={t("puckConfig.fields.pageBodyMargin")}
+          value={value as PageBodyBlockProps["marginX"]}
+          onChange={onChange as (value: PageBodyBlockProps["marginX"]) => void}
+        />
+      </div>
+    ),
+  } as unknown as Field<PageBodyBlockProps["marginX"]>;
 
   // ---- Navigation fields (editor-only `_style` override) ------------------
   // Mirrors `editorContainerFields` below: `navigationFields`'s own `_style` is
@@ -1043,6 +1066,18 @@ export function createEditorConfig(
     render: NavigationBlock,
   };
 
+  const pageBody: ComponentConfig<PageBodyBlockProps> = {
+    label: t("puckConfig.blocks.pageBody"),
+    inline: true,
+    defaultProps: pageBodyDefaultProps,
+    fields: {
+      marginX: pageBodyMarginField,
+      content: { type: "slot" },
+    },
+    permissions: pageBodyPermissions,
+    render: PageBodyBlock,
+  };
+
   // ---- Final config --------------------------------------------------------
 
   // No `categories` key: the editor drawer is a hand-built two-level tree
@@ -1067,6 +1102,7 @@ export function createEditorConfig(
       Divider: divider,
       Columns: columns,
       Container: container,
+      PageBody: pageBody,
       Navigation: navigation,
       ContainerAnchor: {
         label: "ContainerAnchor",

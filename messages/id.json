@@ -2719,6 +2719,7 @@
             "divider": "Pemisah",
             "columns": "Kolom",
             "container": "Container",
+            "pageBody": "Isi halaman",
             "collectionCard": "Kartu koleksi",
             "heroSplitPreset": "Perkenalan Terbagi",
             "heroStatementPreset": "Pernyataan Tipografis",
@@ -2801,6 +2802,7 @@
           "fields": {
             "style": "Gaya",
             "pageStyle": "Gaya halaman",
+            "pageBodyMargin": "Margin horizontal halaman",
             "bgAnimation": "Animasi latar belakang",
             "bgAnimationShort": "Animasi BG",
             "bgSpeed": "Kecepatan animasi",

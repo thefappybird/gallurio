@@ -13,7 +13,9 @@ describe("CollapsibleDrawer", () => {
 
     expect(screen.queryByText("Drawer body")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: /session 1/i }));
+    const header = screen.getByRole("button", { name: /session 1/i });
+    expect(header.className).toContain("cursor-pointer");
+    fireEvent.click(header);
     expect(screen.getByText("Drawer body")).toBeInTheDocument();
   });
 

@@ -2719,6 +2719,7 @@
             "divider": "Divider",
             "columns": "Columns",
             "container": "Container",
+            "pageBody": "Page body",
             "collectionCard": "Collection card",
             "heroSplitPreset": "Split introduction",
             "heroStatementPreset": "Typographic statement",
@@ -2801,6 +2802,7 @@
           "fields": {
             "style": "Style",
             "pageStyle": "Page style",
+            "pageBodyMargin": "Horizontal page margin",
             "bgAnimation": "Background animation",
             "bgAnimationShort": "BG animation",
             "bgSpeed": "Animation speed",

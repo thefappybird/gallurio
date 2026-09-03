@@ -246,6 +246,17 @@ function navLogoAssetIdFromZone(zone: { content?: unknown[] } | undefined): stri
   return image?.props?._style?.bgImagePublicId;
 }
 
+type RawTestBlock = {
+  type?: string;
+  props?: { _chrome?: string; content?: RawTestBlock[]; [key: string]: unknown };
+};
+
+function pageBodyChildrenFromZone(zone: { content?: unknown[] } | undefined): RawTestBlock[] {
+  const content = (zone?.content ?? []) as RawTestBlock[];
+  const body = content.find((block) => block.type === "PageBody");
+  return body?.props?.content ?? [];
+}
+
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
 // Buffer matches baseProps initial data (including its already-present,
 // content-less Navigation block) so restoring it keeps isDirty=false. A
@@ -1776,7 +1787,11 @@ describe("EditorShell", () => {
     });
 
     it("applyDraft clears the local buffer", async () => {
-      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      await renderAndDismissEntry(
+        <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+        undefined,
+        { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+      );
       expect(window.localStorage.getItem(DRAFT_KEY)).not.toBeNull();
 
       fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
@@ -1786,12 +1801,6 @@ describe("EditorShell", () => {
     });
   });
 
-  // syncChrome withholds a footer mirror into a zone whose only block is the
-  // pinned nav (see chromeSync.ts's hasRealContent guard) — a full-width
-  // footer pinned to the bottom of an otherwise-empty canvas leaves almost no
-  // room to aim a first drop at. The footer-mirroring tests below are about
-  // the mirror mechanic itself (survival, drop-target rescue, replace-in-
-  // place), not that withholding rule, so they give gallery a real block too.
   // renderAndDismissEntry restores the LOCAL_DRAFT_V2 buffer over
   // initialData (a "Continue where you left off" reload), so the override
   // has to live in the buffer, not just baseProps.initialData.
@@ -1994,10 +2003,7 @@ describe("EditorShell", () => {
       });
     });
 
-    it("withholds a footer mirror from a zone whose only block is the pinned nav", async () => {
-      // A full-width footer pinned to the bottom of an otherwise-empty canvas
-      // leaves almost no room to aim a first drop at — see chromeSync.ts's
-      // hasRealContent guard. baseProps.gallery is nav-only by default.
+    it("mirrors a footer into an otherwise-empty PageBody zone", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
       const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
@@ -2020,16 +2026,16 @@ describe("EditorShell", () => {
           gallery: { content?: { props?: { _chrome?: string } }[] };
         };
         expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
-        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
       });
     });
 
-    it("pulls a withheld footer into a zone the moment it gains its first real block", async () => {
+    it("keeps the mirrored footer when an empty PageBody gains its first real block", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
       const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
       const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
-      // Step 1: footer lands on home while gallery is nav-only — withheld.
+      // Step 1: footer lands on home and mirrors into gallery.
       __capturedPuckOnChange?.({
         content: [
           homeNav,
@@ -2048,8 +2054,20 @@ describe("EditorShell", () => {
       fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
       await waitFor(() => expect(window.localStorage.getItem(DRAFT_KEY)).toBeTruthy());
       const galleryNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const galleryFooter = { type: "FooterSimple", props: { id: "gallery-footer", _chrome: "footer", detached: false } };
       __capturedPuckOnChange?.({
-        content: [galleryNav, { type: "Hero", props: { id: "g-Hero-1", headline: "Gallery" } }],
+        content: [
+          galleryNav,
+          {
+            type: "PageBody",
+            props: {
+              id: "page-body",
+              marginX: "1.5rem",
+              content: [{ type: "Hero", props: { id: "g-Hero-1", headline: "Gallery" } }],
+            },
+          },
+          galleryFooter,
+        ],
         root: {},
       });
 
@@ -2194,8 +2212,8 @@ describe("EditorShell", () => {
         content: { type?: string; props: { _chrome?: string; content?: unknown[] } }[];
       };
       expect(seed.content.some((b) => b.props._chrome === "footer")).toBe(true);
-      const seedCols = seed.content.find((b) => b.type === "Columns");
-      const seedCol = (seedCols?.props.content as { props?: { content?: unknown[] } }[] | undefined)?.[0];
+      const seedCols = pageBodyChildrenFromZone(seed).find((b) => b.type === "Columns");
+      const seedCol = (seedCols?.props?.content as { props?: { content?: unknown[] } }[] | undefined)?.[0];
       expect(
         (seedCol?.props?.content as { props?: { _chrome?: string } }[] | undefined)?.some(
           (b) => b.props?._chrome === "footer",
@@ -2213,7 +2231,7 @@ describe("EditorShell", () => {
         const homeContent = data.home.content ?? [];
         expect(homeContent.some((b) => b.props?._chrome === "footer")).toBe(true);
         // ...and it's gone from the Columns column it was nested in.
-        const cols = homeContent.find((b) => b.type === "Columns");
+        const cols = pageBodyChildrenFromZone({ content: homeContent }).find((b) => b.type === "Columns");
         const col = (cols?.props?.content as { props?: { content?: unknown[] } }[] | undefined)?.[0];
         expect(
           (col?.props?.content as { props?: { _chrome?: string } }[] | undefined)?.some(
@@ -2251,8 +2269,8 @@ describe("EditorShell", () => {
           type: string;
           props: { content?: { type: string; props: { content?: { type: string }[] } }[] };
         }[];
-        const cols = homeContent.find((b) => b.type === "Columns");
-        expect(cols?.props.content?.[0]?.props.content?.[0]?.type).toBe("Text");
+        const cols = pageBodyChildrenFromZone({ content: homeContent }).find((b) => b.type === "Columns");
+        expect(cols?.props?.content?.[0]?.props?.content?.[0]?.type).toBe("Text");
       });
     });
 
@@ -2334,7 +2352,17 @@ describe("EditorShell", () => {
 
       // Nav stays at index 0 — no chrome-order correction needed, must not remount.
       __capturedPuckOnChange?.({
-        content: [homeNav, { type: "Hero", props: { id: "c-Hero-1", headline: "Edited" } }],
+        content: [
+          homeNav,
+          {
+            type: "PageBody",
+            props: {
+              id: "page-body",
+              marginX: "1.5rem",
+              content: [{ type: "Hero", props: { id: "c-Hero-1", headline: "Edited" } }],
+            },
+          },
+        ],
         root: {},
       });
 
@@ -2363,7 +2391,11 @@ describe("EditorShell", () => {
         formLocale: "",
       },
     });
-    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
     await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
@@ -2403,7 +2435,11 @@ describe("EditorShell", () => {
         formLocale: "",
       },
     });
-    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
     await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
@@ -2439,7 +2475,11 @@ describe("EditorShell", () => {
         formLocale: "",
       },
     });
-    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
     await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
@@ -2486,7 +2526,11 @@ describe("EditorShell", () => {
         formLocale: "",
       },
     });
-    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
     await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
@@ -2515,7 +2559,11 @@ describe("EditorShell", () => {
         formLocale: "",
       },
     });
-    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
     await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));

@@ -24,6 +24,7 @@ import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
 import { videoDefaultProps } from "./blocks/VideoBlock";
 import { contactDetailsDefaultProps } from "./blocks/ContactDetailsBlock";
 import { navigationDefaultProps } from "./blocks/NavigationBlock";
+import { pageBodyDefaultProps } from "./blocks/PageBodyBlock";
 import {
   headingDefaultProps,
   textDefaultProps,
@@ -105,6 +106,7 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     Divider: dividerDefaultProps,
     Columns: columnsDefaultProps,
     Container: containerDefaultProps,
+    PageBody: pageBodyDefaultProps,
     Navigation: navigationDefaultProps,
   };
 
@@ -298,6 +300,7 @@ describe("PRESET_GROUPS + MANUAL_BLOCK_KEYS — the drawer's two source lists", 
       (k) =>
         k !== "ContainerAnchor" &&
         k !== "MasonryClone" &&
+        k !== "PageBody" &&
         k !== "FeaturedWork" &&
         k !== "Navigation" &&
         !LEGACY_NAV_PRESET_KEYS.includes(k as (typeof LEGACY_NAV_PRESET_KEYS)[number]),

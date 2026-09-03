@@ -76,6 +76,14 @@ describe("buildCanvasCss", () => {
     expect(css).not.toMatch(/(?<![-\w])height: (?!auto)[^;]+;/);
   });
 
+  it("lays out navigation, page body, and footer as sticky-footer grid rows", () => {
+    const css = buildCanvasCss(undefined);
+    expect(css).toContain('[data-puck-dropzone="root:default-zone"]');
+    expect(css).toContain("display: grid");
+    expect(css).toContain("grid-template-rows: auto minmax(auto, 1fr) auto");
+    expect(css).not.toContain("padding-bottom: 10rem");
+  });
+
   it("overrides PuckPreview wrapper height so tall content is not clipped by the grid row", () => {
     const css = buildCanvasCss(undefined);
     // Puck's _PuckPreview_ element has `height: 100%` which pins it to the fixed

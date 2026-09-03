@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Render } from "@measured/puck";
+import { useEffect, useMemo, useState } from "react";
+import { Render, type Data } from "@measured/puck";
 import { puckConfig } from "@/lib/page-builder/config";
 import type { PuckData } from "@/lib/page-builder/types";
 import type { RenderWorkspace } from "@/lib/page-builder/serverContext";
+import { normalizePageBody } from "@/lib/page-builder/pageBody";
 
 const LOCAL_DRAFT_VERSION = 2;
 
@@ -29,7 +30,9 @@ function readDraftZone(
     // missing/null on either side means "the unsaved/new draft" and is a match.
     if ((draft.draftId ?? null) !== (draftId ?? null)) return null;
     const zoneData = draft.version === LOCAL_DRAFT_VERSION ? draft.data?.[zone] : undefined;
-    return zoneData && Array.isArray(zoneData.content) ? zoneData : null;
+    return zoneData && Array.isArray(zoneData.content)
+      ? (normalizePageBody(zoneData as unknown as Data) as unknown as PuckData)
+      : null;
   } catch {
     return null;
   }
@@ -48,15 +51,21 @@ export function PreviewClient({
   fallbackData: PuckData;
   draftId: string | null;
 }) {
+  const normalizedFallback = useMemo(
+    () => normalizePageBody(fallbackData as unknown as Data) as unknown as PuckData,
+    [fallbackData],
+  );
   // PreviewBrandShell does not mount its children until localStorage has been
   // read, so this lazy state is the first visible render rather than an update
   // from the published server fallback.
-  const [data, setData] = useState<PuckData>(() => readDraftZone(slug, zone, draftId) ?? fallbackData);
+  const [data, setData] = useState<PuckData>(
+    () => readDraftZone(slug, zone, draftId) ?? normalizedFallback,
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs the localStorage draft (external store) when the preview zone changes
-    setData(readDraftZone(slug, zone, draftId) ?? fallbackData);
-  }, [fallbackData, slug, zone, draftId]);
+    setData(readDraftZone(slug, zone, draftId) ?? normalizedFallback);
+  }, [normalizedFallback, slug, zone, draftId]);
 
   return (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

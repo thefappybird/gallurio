@@ -2719,6 +2719,7 @@
             "divider": "فاصل",
             "columns": "أعمدة",
             "container": "حاوية",
+            "pageBody": "محتوى الصفحة",
             "collectionCard": "بطاقة مجموعة",
             "heroSplitPreset": "مقدمة مقسَّمة",
             "heroStatementPreset": "بيان طباعي",
@@ -2801,6 +2802,7 @@
           "fields": {
             "style": "النمط",
             "pageStyle": "نمط الصفحة",
+            "pageBodyMargin": "الهامش الأفقي للصفحة",
             "bgAnimation": "حركة الخلفية",
             "bgAnimationShort": "حركة BG",
             "bgSpeed": "سرعة الحركة",

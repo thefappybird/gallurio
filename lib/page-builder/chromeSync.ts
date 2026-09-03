@@ -81,11 +81,6 @@ function remapIds(node: ComponentData, idFactory: IdFactory): ComponentData {
   return cloneChromeBlock(node, idFactory(), idFactory);
 }
 
-/** True when the zone holds at least one block that is not chrome. */
-export function hasRealContent(zone: Data): boolean {
-  return (zone.content ?? []).some((block) => chromeKindOf(block) === undefined);
-}
-
 /** First block in `zone.content` whose `props._chrome === kind`, else null. */
 export function findChrome(zone: Data, kind: ChromeKind): ComponentData | null {
   const content = zone.content ?? [];
@@ -140,13 +135,6 @@ export function syncChrome(
     const newContent = otherContent.map((block) => (block === target ? mirrored : block));
     return { ...zones, [otherZone]: { ...zones[otherZone], content: newContent } };
   }
-
-  // A zone whose blocks are ALL chrome (in practice: just the pinned nav) is
-  // left footer-free. A full-width footer pinned to the bottom of an otherwise
-  // empty canvas leaves almost no gap to aim a first drop at. The footer is
-  // mirrored in as soon as that zone gains a real block — EditorShell runs the
-  // mirror in the reverse direction once for exactly that transition.
-  if (kind === "footer" && !hasRealContent(zones[otherZone])) return zones;
 
   const mirrored = remapIds(source, idFactory);
   const newContent =

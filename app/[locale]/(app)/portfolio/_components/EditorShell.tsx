@@ -54,8 +54,6 @@ import {
   reanchorChrome,
   canDetach,
   rescueNestedChrome,
-  hasRealContent,
-  otherZoneOf,
   type ChromeKind,
   type Zones,
 } from "@/lib/page-builder/chromeSync";
@@ -81,6 +79,7 @@ import type {
 import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
+import { getPageBodyContent, normalizePageBody } from "@/lib/page-builder/pageBody";
 import {
   dismissPortfolioGuideAction,
   updatePortfolioSlugAction,
@@ -577,7 +576,8 @@ function PuckGateReader({
 }: {
   onState: (state: { contentCount: number; hasPresetBlock: boolean }) => void;
 }) {
-  const content = usePuckStore((s) => s.appState.data.content ?? []);
+  const data = usePuckStore((s) => s.appState.data);
+  const content = getPageBodyContent(data);
   const contentCount = content.length;
   const hasPresetBlock = content.some((block) =>
     (PRESET_BLOCK_KEYS as readonly string[]).includes(block.type)
@@ -661,7 +661,7 @@ function isChromeDetached(zone: PuckData, kind: ChromeKind): boolean {
  * actually added, not the always-present, undeletable Navigation seed.
  */
 function demoBlockCount(zone: PuckData): number {
-  return (zone.content ?? []).filter((b) => !(b.props as { _chrome?: string })._chrome).length;
+  return getPageBodyContent(zone as unknown as Data).length;
 }
 
 /**
@@ -759,7 +759,8 @@ function prepareForEditorWithMeta(
 ): { data: Data; repaired: boolean } {
   const seeded = ensureNavigation(data, headerFallback, workspaceName);
   const navInjected = seeded !== data;
-  const withDefaults = fillBlockDefaults(seeded as unknown as PuckDataLike) as unknown as PuckData;
+  const withBody = normalizePageBody(seeded as unknown as Data) as unknown as PuckData;
+  const withDefaults = fillBlockDefaults(withBody as unknown as PuckDataLike) as unknown as PuckData;
   // Normalize legacy/restored ContainerAnchor data before the first canvas
   // render, then keep it normalized live with ContainerAnchorReconciler.
   let prepared = reconcileMasonryClones(reconcileContainerAnchors(ensureIds(withDefaults)));
@@ -772,7 +773,8 @@ function prepareForEditorWithMeta(
     if (next !== prepared) rescued = true;
     prepared = next;
   }
-  const normalized = normalizeChrome(prepared);
+  const chromeNormalized = normalizeChrome(prepared);
+  const normalized = normalizePageBody(chromeNormalized);
   const reordered = normalized !== prepared;
   return { data: normalized, repaired: navInjected || rescued || reordered };
 }
@@ -1102,6 +1104,7 @@ export function EditorShell({
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingChanges, setSavingChanges] = useState(false);
   const [draftsOpen, setDraftsOpen] = useState(false);
+  const [draftsSelectionMode, setDraftsSelectionMode] = useState(false);
 
   // Entry dialog shown on load; deferred until after the guide when guide is not dismissed.
   // When guideDismissed=true, open the entry immediately — but brand-new users (no saved
@@ -1246,6 +1249,7 @@ export function EditorShell({
   // before the owner ever sees the editor, so "an existing draft" doesn't
   // imply "not onboarding").
   const pendingOnboardingLogoRef = useRef<{ logoUrl: string; logoAssetId: string } | null>(null);
+  const skipMetadataDraftPersistSnapshot = useRef<string | null>(null);
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
   // event handler, from the ref) and initialized from props — never read the ref
@@ -1327,18 +1331,23 @@ export function EditorShell({
 
   // Saving any draft retires the local buffer — there is one buffer per
   // workspace, and a save means the server now has the freshest copy.
-  const clearLocalDraft = useCallback(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.removeItem(draftKey);
-  }, [draftKey]);
-
   // Typing emits a Puck onChange per keystroke; persisting to localStorage on
   // every one makes text blocks laggy. Debounce the local write (trailing) and
   // flush it at every commit point (zone switch, save, blur, unload, unmount).
-  const { debounced: debouncedPersistLocalDraft, flush: flushLocalDraft } = useDebounce<void>(
+  const {
+    debounced: debouncedPersistLocalDraft,
+    flush: flushLocalDraft,
+    cancel: cancelLocalDraft,
+  } = useDebounce<void>(
     () => persistLocalDraft(),
     350,
   );
+
+  const clearLocalDraft = useCallback(() => {
+    cancelLocalDraft();
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(draftKey);
+  }, [cancelLocalDraft, draftKey]);
 
   // Compute on mount whether a recoverable localStorage buffer exists.
   const [hasRecoverableBuffer] = useState<boolean>(() => {
@@ -1424,6 +1433,19 @@ export function EditorShell({
       skipInitialLocalDraftPersist.current = false;
       return;
     }
+    const metadataSnapshot = JSON.stringify({
+      activeDraftId,
+      collectionsPopup,
+      contact,
+      draftName,
+      formDir,
+      formLocale,
+    });
+    if (skipMetadataDraftPersistSnapshot.current === metadataSnapshot) {
+      skipMetadataDraftPersistSnapshot.current = null;
+      return;
+    }
+    skipMetadataDraftPersistSnapshot.current = null;
     persistLocalDraft();
   }, [activeDraftId, collectionsPopup, contact, draftName, formDir, formLocale, guideMode, persistLocalDraft]);
 
@@ -1588,16 +1610,6 @@ export function EditorShell({
       const previousActiveZone = zoneDataRef.current[activeZone] as unknown as Data;
       let zones = { ...zoneDataRef.current, [activeZone]: next } as unknown as Zones;
       zones = syncChrome(zones, activeZone, "nav", undefined, previousActiveZone);
-      // A footer withheld from the active zone (chrome-only — see syncChrome's
-      // hasRealContent guard) is pulled in from the other zone the moment the
-      // active zone gains its first real block: that transition is a
-      // same-zone edit, so the ordinary forward mirror (other zone's footer
-      // never changed) never fires for it — pull once, in reverse, here.
-      const gainedFirstRealBlock =
-        hasRealContent(next as unknown as Data) && !hasRealContent(previousActiveZone);
-      if (gainedFirstRealBlock && !findChrome(zones[activeZone], "footer")) {
-        zones = syncChrome(zones, otherZoneOf(activeZone), "footer", undefined, zones[otherZoneOf(activeZone)]);
-      }
       zones = syncChrome(zones, activeZone, "footer", undefined, previousActiveZone);
       // normalizeChrome returns the SAME reference when the zone already
       // satisfies both invariants (nav at 0, footer last) — an identity check
@@ -1609,7 +1621,7 @@ export function EditorShell({
       // does. Canvas selection is lost on that remount, same as every other
       // reseed path here.
       const preNormalize = zones[activeZone];
-      const normalizedActive = normalizeChrome(preNormalize);
+      const normalizedActive = normalizePageBody(normalizeChrome(preNormalize));
       const chromeOrderCorrected = normalizedActive !== preNormalize || rescued;
       zones = { ...zones, [activeZone]: normalizedActive };
       const updated = zones as unknown as Record<Zone, PuckData>;
@@ -1875,6 +1887,16 @@ export function EditorShell({
     const resolvedFormLocale = typeof d.formLocale === "string" ? d.formLocale : formLocale;
     const resolvedFormDir = typeof d.formDir === "string" ? (d.formDir as "ltr" | "rtl" | "") : formDir;
     const resolvedTemplateId = d.templateId || templateId;
+    // The state updates below intentionally describe freshly loaded server data.
+    // Do not let the metadata persistence effect recreate the buffer we clear.
+    skipMetadataDraftPersistSnapshot.current = JSON.stringify({
+      activeDraftId: d.id,
+      collectionsPopup: resolvedCollectionsPopup,
+      contact: resolvedContact,
+      draftName: d.name,
+      formDir: resolvedFormDir,
+      formLocale: resolvedFormLocale,
+    });
     zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setBrandKit(resolvedBrandKit);
@@ -2729,7 +2751,13 @@ export function EditorShell({
           aria-label={demoMode ? tDemo("createNewDesign.button") : t("drafts")}
           title={demoMode ? tDemo("createNewDesign.button") : t("drafts")}
           data-tour-id="drafts"
-          onClick={() => (demoMode ? setDemoTemplatesOpen(true) : setDraftsOpen(true))}
+          onClick={() => {
+            if (demoMode) setDemoTemplatesOpen(true);
+            else {
+              setDraftsSelectionMode(false);
+              setDraftsOpen(true);
+            }
+          }}
         >
           <Files className="size-3.5" aria-hidden />
         </Button>
@@ -3202,7 +3230,10 @@ export function EditorShell({
       {/* Draft system dialogs */}
       <DraftsDialog
         open={draftsOpen}
-        onOpenChange={setDraftsOpen}
+        onOpenChange={(next) => {
+          setDraftsOpen(next);
+          if (!next) setDraftsSelectionMode(false);
+        }}
         drafts={drafts}
         activeDraftId={activeDraftId}
         onApply={(id) => guardThenRun(() => void applyDraft(id), true)}
@@ -3211,6 +3242,7 @@ export function EditorShell({
         deletingId={deletingDraftId}
         applyingId={applyingDraftId}
         unsavedDraftName={isNewUnsavedDraft && activeDraftId === null ? draftName : null}
+        allowActiveApply={draftsSelectionMode}
       />
       {!demoMode && (
         <PortfolioEntryDialog
@@ -3230,7 +3262,11 @@ export function EditorShell({
             restoreLocalDraft();
             setEntryOpen(false);
           }}
-          onLoadExisting={() => { setEntryOpen(false); setDraftsOpen(true); }}
+          onLoadExisting={() => {
+            setEntryOpen(false);
+            setDraftsSelectionMode(true);
+            setDraftsOpen(true);
+          }}
           onStartScratch={() => { setEntryOpen(false); setTemplatesOpen(true); }}
         />
       )}

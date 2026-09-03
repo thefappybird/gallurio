@@ -2719,6 +2719,7 @@
             "divider": "เส้นแบ่ง",
             "columns": "คอลัมน์",
             "container": "คอนเทนเนอร์",
+            "pageBody": "เนื้อหาหน้าเว็บ",
             "collectionCard": "การ์ดคอลเลกชัน",
             "heroSplitPreset": "บทนำแบบแบ่งครึ่ง",
             "heroStatementPreset": "พาดหัวตัวอักษรเด่น",
@@ -2801,6 +2802,7 @@
           "fields": {
             "style": "สไตล์",
             "pageStyle": "สไตล์หน้าเว็บ",
+            "pageBodyMargin": "ระยะขอบแนวนอนของหน้า",
             "bgAnimation": "แอนิเมชันพื้นหลัง",
             "bgAnimationShort": "แอนิเมชัน BG",
             "bgSpeed": "ความเร็วแอนิเมชัน",

@@ -440,7 +440,12 @@ describe("publishDraftAction", () => {
 
     const ws = await Workspace.findById(mockCtx.workspace._id).lean();
     const home = ws!.publicPage!.data!.home as { content: unknown[] };
-    expect(home.content).toEqual([{ type: "HeroPreset", props: { id: "h" } }]);
+    expect(home.content).toEqual([
+      {
+        type: "PageBody",
+        props: { id: "page-body", content: [{ type: "HeroPreset", props: { id: "h" } }] },
+      },
+    ]);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("no Navigation block"),
       expect.any(String)

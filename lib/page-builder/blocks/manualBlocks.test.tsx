@@ -24,6 +24,7 @@ import {
   FOOTER_DIRECTORY_PRESET,
   FOOTER_STATEMENT_PRESET,
 } from "./presets/footer";
+import { GALLERY_LANDING_SPLIT_PRESET } from "./presets/galleryLanding";
 import type { SlotComponent, Permissions } from "@measured/puck";
 
 // ---------------------------------------------------------------------------
@@ -1463,6 +1464,23 @@ describe("Item 1: ContainerBlock overallWidth prop", () => {
     const section = container.querySelector("section");
     expect(section?.style.width).toBe("100%");
     expect(section?.style.marginLeft).toBe("0px");
+  });
+
+  it.each([
+    ["Directory footer", FOOTER_DIRECTORY_PRESET],
+    ["Closing statement", FOOTER_STATEMENT_PRESET],
+    ["Split gallery intro", GALLERY_LANDING_SPLIT_PRESET],
+  ])("%s fits inside its drawer preview instead of using the browser viewport", (_name, preset) => {
+    const { container } = render(
+      <ContainerBlock
+        {...preset}
+        content={stubSlot}
+        puck={{ isEditing: false, metadata: { presetPreview: true } } as never}
+      />
+    );
+    const section = container.querySelector("section") as HTMLElement;
+    expect(section.style.width).toBe("100%");
+    expect(section.style.width).not.toBe("100vw");
   });
 
   it("_chrome='footer' defaults to full even when overallWidth is absent (fixes pre-existing narrow footers with no stored-data rewrite)", () => {

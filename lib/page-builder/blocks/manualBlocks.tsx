@@ -1055,7 +1055,7 @@ export function ContainerBlock({
         // in that case, so sectionStyle's fit-content width stands). Editor canvas
         // caps to 100% (not 100vw) so it never overflows the narrow preview.
         ...(applyFullBleed
-          ? puck?.isEditing
+          ? puck?.isEditing || puck?.metadata?.presetPreview === true
             ? { width: "100%", marginLeft: 0 }
             : { width: "100vw", marginLeft: "calc(50% - 50vw)" }
           : {}),

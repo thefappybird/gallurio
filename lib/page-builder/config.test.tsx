@@ -39,6 +39,9 @@ describe("production root render applies root style", () => {
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper.style.containerType).toBe("inline-size");
     expect(wrapper.style.containerName).toBe("pfpage");
+    expect(wrapper.style.display).toBe("grid");
+    expect(wrapper.style.gridTemplateRows).toBe("auto minmax(auto, 1fr) auto");
+    expect(wrapper.style.minHeight).toBe("100dvh");
     const style = wrapper.querySelector("style");
     expect(style?.innerHTML).toContain("@container pfpage");
     expect(style?.innerHTML).toContain("--pf-pad");

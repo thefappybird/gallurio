@@ -2719,6 +2719,7 @@
             "divider": "Divider",
             "columns": "Mga Kolum",
             "container": "Container",
+            "pageBody": "Katawan ng pahina",
             "collectionCard": "Card ng koleksyon",
             "heroSplitPreset": "Split na Panimula",
             "heroStatementPreset": "Typographic na Pahayag",
@@ -2801,6 +2802,7 @@
           "fields": {
             "style": "Estilo",
             "pageStyle": "Estilo ng pahina",
+            "pageBodyMargin": "Pahalang na margin ng pahina",
             "bgAnimation": "Animasyon ng background",
             "bgAnimationShort": "BG animation",
             "bgSpeed": "Bilis ng animasyon",

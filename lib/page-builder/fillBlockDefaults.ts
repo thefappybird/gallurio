@@ -23,6 +23,7 @@ import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
 import { navigationDefaultProps } from "./blocks/NavigationBlock";
+import { pageBodyDefaultProps } from "./blocks/PageBodyBlock";
 import {
   SECTION_PRESETS,
   SECTION_PRESET_KEYS,
@@ -45,6 +46,7 @@ const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
   Columns: columnsDefaultProps as Record<string, unknown>,
   Container: containerDefaultProps as Record<string, unknown>,
   Navigation: navigationDefaultProps as Record<string, unknown>,
+  PageBody: pageBodyDefaultProps as unknown as Record<string, unknown>,
   GalleryGrid: galleryGridDefaultProps as Record<string, unknown>,
   GalleryMasonry: galleryMasonryDefaultProps as Record<string, unknown>,
   FeaturedWork: featuredWorkDefaultProps as Record<string, unknown>,
@@ -217,6 +219,9 @@ function fillEntry(block: BlockEntry): BlockEntry {
   if (!defaults) return migrated;
   const props = { ...migrated.props };
   deepFillMissing(props, defaults);
+  if (migrated.type === "PageBody" && Array.isArray(props.content)) {
+    props.content = fillItems(props.content as BlockEntry[]);
+  }
   return { ...migrated, props };
 }
 

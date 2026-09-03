@@ -44,6 +44,21 @@ describe("fillBlockDefaults", () => {
     expect(result.content[0].props.bgAnimation).toBeUndefined();
   });
 
+  it("fills the PageBody margin and defaults for its nested slot children", () => {
+    const result = fillBlockDefaults({
+      content: [
+        {
+          type: "PageBody",
+          props: { id: "page-body", content: [{ type: "Heading", props: { id: "h1" } }] },
+        },
+      ],
+    });
+    expect(result.content[0].props.marginX).toBe("1.5rem");
+    const children = result.content[0].props.content as BlockEntry[];
+    expect(children[0].props.text).toBe("Heading");
+    expect(children[0].props.level).toBe("h2");
+  });
+
   it.each(LEGACY_NAV_PRESET_KEYS)(
     "keeps retired nav preset data render-compatible (%s)",
     (presetKey) => {

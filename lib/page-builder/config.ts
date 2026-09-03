@@ -42,6 +42,10 @@ import {
   type ContainerAnchorProps,
 } from "./blocks/manualBlocks";
 import {
+  pageBodyBlockConfig,
+  type PageBodyBlockProps,
+} from "./blocks/PageBodyBlock";
+import {
   SECTION_PRESETS,
   SECTION_PRESET_KEYS,
   NAV_PRESET_KEYS,
@@ -100,6 +104,7 @@ type Components = Omit<Record<SectionPresetKey, ContainerBlockProps>, NavPresetK
     Divider: DividerBlockProps;
     Columns: ColumnsBlockProps;
     Container: ContainerBlockProps;
+    PageBody: PageBodyBlockProps;
     ContainerAnchor: ContainerAnchorProps;
     MasonryClone: MasonryCloneProps;
     Navigation: NavigationBlockProps;
@@ -184,6 +189,7 @@ export const puckConfig: Config<Components> = {
     Divider: dividerBlockConfig,
     Columns: columnsBlockConfig,
     Container: containerBlockConfig,
+    PageBody: pageBodyBlockConfig,
     ContainerAnchor: containerAnchorBlockConfig,
     MasonryClone: masonryCloneBlockConfig,
     Navigation: navigationBlockConfig,
@@ -196,7 +202,15 @@ export const puckConfig: Config<Components> = {
         // The root wrapper is the `pfpage` container: all blocks are descendants,
         // so PF_RESPONSIVE_CSS's `@container pfpage` rules respond to the page
         // width (== viewport here, == clamped canvas in the editor).
-        { style: { ...resolveRootStyle(_rootStyle), minHeight: "100%", ...PF_PAGE_CONTAINER } },
+        {
+          style: {
+            ...resolveRootStyle(_rootStyle),
+            display: "grid",
+            gridTemplateRows: "auto minmax(auto, 1fr) auto",
+            minHeight: "100dvh",
+            ...PF_PAGE_CONTAINER,
+          },
+        },
         React.createElement("style", { dangerouslySetInnerHTML: { __html: PF_RESPONSIVE_CSS } }),
         children,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
