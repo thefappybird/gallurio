@@ -89,7 +89,14 @@ export const SERVICES_MENU_PRESET: ContainerBlockProps = {
         content: slot([
           child("Heading", { level: "h3", text: service.title }),
           child("Text", { text: service.description, _style: { colSpan: 1 } }),
-          child("Text", { text: service.price, _style: { textColorToken: "foreground", bold: true } }),
+          // Right-aligned: the price is short, so left-aligning it inside the
+          // last third of a 3-track row strands it mid-section with dead space
+          // out to the edge. A price list reads as a price list only when the
+          // figures line up on the right.
+          child("Text", {
+            text: service.price,
+            _style: { textColorToken: "foreground", bold: true, align: "right" },
+          }),
         ]),
       }),
     ]),
