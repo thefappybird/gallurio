@@ -344,9 +344,10 @@ describe("previewZoneFor", () => {
  */
 async function renderAndDismissEntry(
   ui: ReactElement,
-  options?: Parameters<typeof renderWithProviders>[1]
+  options?: Parameters<typeof renderWithProviders>[1],
+  localDraft: Record<string, unknown> = LOCAL_DRAFT_V2
 ) {
-  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
+  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(localDraft));
   const result = renderWithProviders(ui, options);
 
   // If the guide is open, skip it first so the entry dialog becomes visible.
@@ -1785,6 +1786,29 @@ describe("EditorShell", () => {
     });
   });
 
+  // syncChrome withholds a footer mirror into a zone whose only block is the
+  // pinned nav (see chromeSync.ts's hasRealContent guard) — a full-width
+  // footer pinned to the bottom of an otherwise-empty canvas leaves almost no
+  // room to aim a first drop at. The footer-mirroring tests below are about
+  // the mirror mechanic itself (survival, drop-target rescue, replace-in-
+  // place), not that withholding rule, so they give gallery a real block too.
+  // renderAndDismissEntry restores the LOCAL_DRAFT_V2 buffer over
+  // initialData (a "Continue where you left off" reload), so the override
+  // has to live in the buffer, not just baseProps.initialData.
+  const LOCAL_DRAFT_V2_WITH_GALLERY_HERO = {
+    ...LOCAL_DRAFT_V2,
+    data: {
+      ...LOCAL_DRAFT_V2.data,
+      gallery: {
+        content: [
+          { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+          { type: "Hero", props: { id: "c-Hero-gallery", headline: "Gallery" } },
+        ],
+        root: {},
+      },
+    },
+  };
+
   describe("chrome sync wiring", () => {
     it("dragging a second nav preset in replaces the pinned Navigation, keeping its id (Fix #1)", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
@@ -1970,6 +1994,76 @@ describe("EditorShell", () => {
       });
     });
 
+    it("withholds a footer mirror from a zone whose only block is the pinned nav", async () => {
+      // A full-width footer pinned to the bottom of an otherwise-empty canvas
+      // leaves almost no room to aim a first drop at — see chromeSync.ts's
+      // hasRealContent guard. baseProps.gallery is nav-only by default.
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } },
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { props?: { _chrome?: string } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+      });
+    });
+
+    it("pulls a withheld footer into a zone the moment it gains its first real block", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      // Step 1: footer lands on home while gallery is nav-only — withheld.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } },
+        ],
+        root: {},
+      });
+
+      // Step 2: switch to Gallery and give it its first real block — a
+      // genuine same-zone edit, not a mirror from home. The zone switch
+      // remounts Puck onto the gallery zone's own handleChange closure;
+      // wait for that before firing the next onChange, same as every other
+      // switch-then-edit test in this file (a synchronous click alone
+      // leaves __capturedPuckOnChange pointing at the outgoing zone).
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => expect(window.localStorage.getItem(DRAFT_KEY)).toBeTruthy());
+      const galleryNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      __capturedPuckOnChange?.({
+        content: [galleryNav, { type: "Hero", props: { id: "g-Hero-1", headline: "Gallery" } }],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Home" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as {
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
     it("re-pins a footer dropped below another block and remounts the canvas to match", async () => {
       await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
@@ -2038,7 +2132,7 @@ describe("EditorShell", () => {
     });
 
     it("a footer dropped mid-list survives into zoneDataRef/the persisted buffer and mirrors to the other zone", async () => {
-      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, LOCAL_DRAFT_V2_WITH_GALLERY_HERO);
 
       const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
       const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
@@ -2065,7 +2159,7 @@ describe("EditorShell", () => {
     });
 
     it("a footer dropped into a Columns column's nested slot (drop-target ambiguity) is rescued to the top level, survives into the buffer, and mirrors", async () => {
-      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, LOCAL_DRAFT_V2_WITH_GALLERY_HERO);
 
       const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
       const homeHero = { type: "HeroPreset", props: { id: "c-Hero-1", headline: "Hi" } };
@@ -2163,7 +2257,7 @@ describe("EditorShell", () => {
     });
 
     it("a footer dropped already-last (no reorder needed) survives into the buffer", async () => {
-      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, LOCAL_DRAFT_V2_WITH_GALLERY_HERO);
       const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
       const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
       const droppedFooter = {
@@ -2184,7 +2278,7 @@ describe("EditorShell", () => {
     });
 
     it("a further genuine edit after a successful footer drop keeps the footer", async () => {
-      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, LOCAL_DRAFT_V2_WITH_GALLERY_HERO);
       const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
       const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
       const droppedFooter = {

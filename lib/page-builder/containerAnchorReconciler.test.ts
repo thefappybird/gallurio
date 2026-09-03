@@ -9,7 +9,7 @@ const anchor = (id = "container--anchor") => ({
 const heading = { type: "Heading", props: { id: "heading", text: "Hello" } };
 
 describe("reconcileContainerAnchors", () => {
-  it("moves the anchor to the end (not removed) once a container has ordinary content", () => {
+  it("strips the anchor once a container holds an ordinary (non-container) child", () => {
     const data = {
       content: [{
         type: "Container",
@@ -17,7 +17,7 @@ describe("reconcileContainerAnchors", () => {
       }],
     };
 
-    expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([heading, anchor()]);
+    expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([heading]);
   });
 
   it("adds an anchor as soon as the final real child is deleted", () => {
@@ -44,7 +44,7 @@ describe("reconcileContainerAnchors", () => {
 
     const normalized = reconcileContainerAnchors(data);
     const columnsContent = normalized.content?.[0].props.content as Array<{ props: { content: unknown } }>;
-    expect(columnsContent[0].props.content).toEqual([heading, anchor("nested--anchor")]);
+    expect(columnsContent[0].props.content).toEqual([heading]);
     expect(normalized.zones?.footer[0].props.content).toEqual([anchor("footer--anchor")]);
   });
 
@@ -52,7 +52,7 @@ describe("reconcileContainerAnchors", () => {
     const data = {
       content: [
         { type: "Container", props: { id: "empty", content: [anchor("empty--anchor")] } },
-        { type: "Container", props: { id: "full", content: [heading, anchor("full--anchor")] } },
+        { type: "Container", props: { id: "full", content: [heading] } },
       ],
     };
 
@@ -61,7 +61,7 @@ describe("reconcileContainerAnchors", () => {
 
   it("is idempotent for a container with ordinary content: a second pass returns the same reference", () => {
     const data = {
-      content: [{ type: "Container", props: { id: "container", content: [heading, anchor()] } }],
+      content: [{ type: "Container", props: { id: "container", content: [heading] } }],
     };
 
     const first = reconcileContainerAnchors(data);
@@ -98,13 +98,13 @@ describe("reconcileContainerAnchors", () => {
     expect(result[result.length - 1].type).toBe("ContainerAnchor");
   });
 
-  it("keeps the anchor (appended last) when a Columns child sits alongside a non-container child", () => {
+  it("strips the anchor when a Columns child sits alongside a non-container child", () => {
     const columns = { type: "Columns", props: { id: "cols", content: [] } };
     const data = {
-      content: [{ type: "Container", props: { id: "container", content: [columns, heading] } }],
+      content: [{ type: "Container", props: { id: "container", content: [columns, heading, anchor()] } }],
     };
 
-    expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([columns, heading, anchor()]);
+    expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([columns, heading]);
   });
 
   it("leaves preset sections untouched even when they nest only container-class children", () => {

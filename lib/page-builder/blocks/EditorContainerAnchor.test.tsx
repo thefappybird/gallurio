@@ -76,23 +76,20 @@ describe("EditorContainerAnchor height — container-class bridge case", () => {
 
 });
 
-describe("EditorContainerAnchor height — ordinary-content fill case (Item 11)", () => {
-  it("renders a flex-fill anchor (no fixed height) when the only real child is ordinary content", async () => {
+describe("EditorContainerAnchor — ordinary content renders nothing", () => {
+  // A container holding any ordinary child carries no anchor in its data at
+  // all (see shouldKeepAnchor). A stale one left by an older draft renders
+  // nothing rather than reserving space, until the reconciler strips it.
+  it("renders nothing when the only real child is ordinary content", async () => {
     mountStore(null, [{ type: "Heading" }]);
     const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
-    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
-    expect(el).not.toBeNull();
-    expect(el.style.flex).toBe("1 1 auto");
-    expect(el.style.minHeight).toBe("0");
-    expect(el.style.height).toBe("");
+    expect(container.querySelector(".pf-container-anchor")).toBeNull();
   });
 
-  it("renders a flex-fill anchor when ordinary content sits alongside a container-class child", async () => {
+  it("renders nothing when ordinary content sits alongside a container-class child", async () => {
     mountStore(null, [{ type: "Columns" }, { type: "Text" }]);
     const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
-    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
-    expect(el).not.toBeNull();
-    expect(el.style.flex).toBe("1 1 auto");
+    expect(container.querySelector(".pf-container-anchor")).toBeNull();
   });
 });
 

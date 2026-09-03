@@ -89,6 +89,7 @@ import {
   type VideoBlockProps,
 } from "./blocks/VideoBlock";
 import { EditorContainerAnchor } from "./blocks/EditorContainerAnchor";
+import { reconcileContainerSlot } from "./containerAnchorReconciler";
 import { masonryCloneBlockConfig, type MasonryCloneProps } from "./blocks/MasonryCloneBlock";
 import {
   HeadingBlock,
@@ -256,13 +257,15 @@ function resolveContainerFields(_data: unknown, { fields }: { fields: Record<str
 const resolveContainerFieldsTyped = resolveContainerFields as unknown as ComponentConfig<ContainerBlockProps>["resolveFields"];
 
 // ---------------------------------------------------------------------------
-// Anchor presence: resolveData gives an empty Container one editor-only anchor.
-// Once the slot has real children, it removes every anchor so the canvas and
-// public renderer distribute exactly the same flex children. Puck calls this
-// resolver on insert/load/replace/force; the slot's native minEmptyHeight keeps
-// a container droppable after its final real child is deleted.
-// IDEMPOTENCY: an empty container with the correctly formed anchor retains its
-// data reference, avoiding a spurious resolve → change → resolve loop.
+// Anchor presence: every Container keeps exactly one editor-only anchor as the
+// LAST child of its slot — the same shape the live ContainerAnchorReconciler
+// maintains, via the shared reconcileContainerSlot helper. Both writers MUST
+// agree: while this resolver stripped anchors from a container with real
+// children, it and the reconciler undid each other on every store tick, which
+// spammed Puck's "setData is expensive" warning and relaid the canvas out
+// continuously. Puck calls this resolver on insert/load/replace/force.
+// IDEMPOTENCY: a container whose slot is already correct retains its data
+// reference, avoiding a spurious resolve → change → resolve loop.
 // ---------------------------------------------------------------------------
 
 type _SlotItem = { type: string; props: Record<string, unknown> };
@@ -272,46 +275,9 @@ function resolveContainerData(data: unknown) {
     props: { id: string; content: _SlotItem[] };
   };
   const content: _SlotItem[] = d.props.content ?? [];
-
-  const isAnchor = (item: _SlotItem) => item.type === "ContainerAnchor";
-  const realChildren = content.filter((item) => !isAnchor(item));
-
-  // The anchor is empty-state editor plumbing only. Once actual content exists,
-  // remove it before Puck lays out the flex slot: the public renderer omits
-  // anchors, so keeping one here makes canvas distribution disagree with preview.
-  if (realChildren.length > 0) {
-    if (content.length === realChildren.length) return data;
-    return {
-      ...d,
-      props: { ...d.props, content: realChildren },
-    };
-  }
-
-  // Idempotency: if a correctly-formed anchor already leads the slot, nothing to do.
-  // The id check is required: drafts saved before the --anchor convention was
-  // introduced may carry an anchor whose id matches the container id (no suffix).
-  // Passing those through unchanged causes a selection-bounce useEffect loop
-  // (parentId === id → selectedItem never escapes the guard → infinite setState).
-  const first = content[0];
-  if (
-    first !== undefined &&
-    isAnchor(first) &&
-    content.length === 1 &&
-    (first.props as { id?: string }).id === `${d.props.id}--anchor`
-  ) {
-    return data;
-  }
-
-  // Height is intentionally 0 — EditorContainerAnchor computes it reactively.
-  const anchor: _SlotItem = {
-    type: "ContainerAnchor",
-    props: {
-      id: `${d.props.id}--anchor`,
-      height: 0,
-    },
-  };
-
-  return { ...d, props: { ...d.props, content: [anchor] } };
+  const next = reconcileContainerSlot(d.props.id, content);
+  if (next === content) return data;
+  return { ...d, props: { ...d.props, content: next } };
 }
 const resolveContainerDataTyped =
   resolveContainerData as unknown as ComponentConfig<ContainerBlockProps>["resolveData"];

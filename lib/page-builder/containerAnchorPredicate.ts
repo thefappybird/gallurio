@@ -1,18 +1,20 @@
 /**
- * Shared predicate for container-anchor logic. A Container always keeps its
- * editor drop anchor now (appended as the slot's last child), regardless of
- * what its real children are:
+ * Shared predicate for container-anchor logic. A Container's editor drop
+ * anchor is present ONLY when every real child is itself container-class
+ * (Container or Columns) — including zero children, the empty-container
+ * bootstrap case:
  *  - empty: the anchor IS the drop target (full editor footprint).
- *  - every real child is container-class (Container or Columns): the anchor
- *    is a thin "bridge" so a sibling can land next to the nested
- *    container/columns instead of inside it.
- *  - one or more ordinary (non-container) children: the anchor absorbs any
- *    leftover flex space when the slot is stretched taller than its own
- *    content (e.g. a shorter Columns cell next to a taller sibling), so the
- *    whole highlighted area is droppable, not just the strip under the
- *    existing children.
+ *  - every real child is container-class: the anchor is a thin "bridge" so a
+ *    sibling can land next to the nested container/columns instead of
+ *    inside it.
+ *  - ANY ordinary (non-container) child is present: no anchor at all — an
+ *    absorb-leftover-space "fill" anchor here made the anchor's presence and
+ *    rendered mode fight each other on every edit (a real block dropped
+ *    beside/removed near an ordinary child churned the anchor in and out),
+ *    which is exactly the class of resolveData/reconciler thrash that broke
+ *    the canvas earlier. Dropping this case entirely removes that surface.
  *
- * The anchor's RENDERED height for each case is decided in
+ * The anchor's RENDERED height for the two remaining cases is decided in
  * EditorContainerAnchor (data has no measured geometry) — this module only
  * decides whether the anchor exists in the data, and stays a pure function
  * of the data so containerAnchorReconciler.ts remains idempotent by
@@ -23,6 +25,6 @@ export function isContainerClass(type: string): boolean {
   return type === "Container" || type === "Columns";
 }
 
-export function shouldKeepAnchor(): boolean {
-  return true;
+export function shouldKeepAnchor(realChildren: readonly { type: string }[]): boolean {
+  return realChildren.every((child) => isContainerClass(child.type));
 }

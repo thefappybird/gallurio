@@ -462,3 +462,19 @@ describe("rescueNestedChrome", () => {
     expect(() => rescueNestedChrome(zone, "footer")).not.toThrow();
   });
 });
+
+describe("syncChrome — footer withheld from a chrome-only zone", () => {
+  it("does not mirror a footer into a zone whose only block is the pinned nav", () => {
+    // A full-width footer pinned to the bottom of an otherwise empty canvas
+    // leaves almost no room to aim a first drop at, so the mirror is withheld
+    // until that zone gains a real block.
+    const zones: Zones = {
+      home: zoneWith([navBlock("nav-home"), block("Heading", "h1"), footerBlock("footer-home")]),
+      gallery: zoneWith([navBlock("nav-gallery")]),
+    };
+
+    const next = syncChrome(zones, "home", "footer", makeIdFactory("new"));
+
+    expect(findChrome(next.gallery, "footer")).toBeNull();
+  });
+});

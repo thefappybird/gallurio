@@ -66,13 +66,16 @@ export const FEATURED_WORK_INDEX_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   _style: { ...primaryBandSection, gap: 24, paddingTop: "3rem", paddingBottom: "3rem" },
   content: slot([
-    child("Columns", {
-      columns: 2,
-      minHeight: "0px",
-      _style: { gap: 16 },
+    // A plain row Container, not Columns: a 2-col grid splits 50/50 regardless
+    // of content length, so short strings like these left the heading and
+    // subtitle squeezed together against the grid's own left column edge with
+    // a large dead gap after. space-between spreads them across the FULL
+    // preset width using their natural (short) size instead.
+    child("Container", {
+      _style: { flexDirection: "row", contentVerticalDistribution: "between", gap: 16 },
       content: slot([
         child("Heading", { level: "h2", text: "Featured work" }),
-        child("Text", { text: "Four collections", _style: { align: "right" } }),
+        child("Text", { text: "Four collections" }),
       ]),
     }),
     child("Columns", {

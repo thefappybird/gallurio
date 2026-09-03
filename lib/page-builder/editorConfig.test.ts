@@ -228,7 +228,7 @@ describe("Container resolveData — anchor id idempotency", () => {
     expect(anchor.props.id).toBe(`${containerId}--anchor`);
   });
 
-  it("removes the editor-only anchor when real children exist", () => {
+  it("strips the editor-only anchor when an ordinary child exists", () => {
     type ResolveDataFn = (data: unknown) => unknown;
     const container = (editorPuckConfig.components as Record<string, { resolveData?: ResolveDataFn }>).Container;
     const resolveData = container.resolveData!;
@@ -244,6 +244,8 @@ describe("Container resolveData — anchor id idempotency", () => {
       },
     }) as { props: { content: Array<{ type: string; props: { id?: string } }> } };
 
+    // An ordinary child means no anchor at all, matching
+    // reconcileContainerAnchors — see shouldKeepAnchor.
     expect(result.props.content).toEqual([heading]);
   });
 });
@@ -493,5 +495,27 @@ describe("editor Container config — footer permission lock", () => {
     expect(cfg.resolvePermissions, "Container must declare resolvePermissions").toBeDefined();
     const result = cfg.resolvePermissions!({ props: containerDefaultProps }, { permissions: basePermissions });
     expect(result).toBe(basePermissions);
+  });
+});
+
+describe("Container resolveData vs the live anchor reconciler", () => {
+  type ResolveDataFn = (data: {
+    props: { id: string; content: Array<{ type: string; props: Record<string, unknown> }> };
+  }) => { props: { content: Array<{ type: string; props: Record<string, unknown> }> } };
+
+  it("agrees with the reconciler on a container-class-only slot (no setData ping-pong)", () => {
+    // Puck's resolver and ContainerAnchorReconciler must produce identical
+    // slots. They used to disagree and undid each other on every store tick,
+    // spamming Puck's "setData is expensive" warning and thrashing canvas
+    // layout on every selection.
+    const resolveData = (
+      editorPuckConfig.components.Container as unknown as { resolveData: ResolveDataFn }
+    ).resolveData;
+    const columns = { type: "Columns", props: { id: "cols" } };
+    const anchor = { type: "ContainerAnchor", props: { id: "c1--anchor", height: 0 } };
+
+    const resolved = resolveData({ props: { id: "c1", content: [columns, anchor] } });
+
+    expect(resolved.props.content).toEqual([columns, anchor]);
   });
 });

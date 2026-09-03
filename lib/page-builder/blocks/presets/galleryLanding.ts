@@ -27,39 +27,39 @@ export const GALLERY_LANDING_PRESET: ContainerBlockProps = {
   ]),
 };
 
+// A full-bleed, edge-to-edge split (no Columns, no page-fit clamp): the copy
+// panel and the image sit directly in the outer Container's own slot as two
+// row children, each pinned to 50% width. align-items:stretch (the slot's
+// fixed layout — see ContainerBlock) then matches the shorter copy panel's
+// height to the image's, so the color band runs the image's full height
+// instead of hugging its own short content.
 export const GALLERY_LANDING_SPLIT_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
-  _style: { ...pageSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
+  overallWidth: "full",
+  _style: { ...pageSection, flexDirection: "row", gap: 0 },
   content: slot([
-    child("Columns", {
-      columns: 2,
-      minHeight: "0px",
-      _style: { gap: 40 },
+    child("Container", {
+      backgroundImages: [],
+      _style: {
+        ...primaryBandSection,
+        width: "50%",
+        gap: 16,
+        paddingTop: "2rem",
+        paddingRight: "2rem",
+        paddingBottom: "2rem",
+        paddingLeft: "2rem",
+      },
       content: slot([
-        child("Container", {
-          backgroundImages: [],
-          _style: {
-            ...primaryBandSection,
-            gap: 16,
-            paddingTop: "2rem",
-            paddingRight: "2rem",
-            paddingBottom: "2rem",
-            paddingLeft: "2rem",
-            contentVerticalDistribution: "center",
-          },
-          content: slot([
-            child("Heading", { level: "h2", text: "Our gallery" }),
-            child("Text", { text: "A curated look at our work." }),
-            child("Divider", {
-              thickness: 1,
-              _style: { width: "3rem", paddingLeft: "0px", paddingRight: "0px" },
-            }),
-          ]),
+        child("Heading", { level: "h2", text: "Our gallery" }),
+        child("Text", { text: "A curated look at our work." }),
+        child("Divider", {
+          thickness: 1,
+          _style: { width: "3rem", paddingLeft: "0px", paddingRight: "0px" },
         }),
-        child("Image", { alt: "Signature photograph" }),
       ]),
     }),
+    child("Image", { alt: "Signature photograph", _style: { width: "50%" } }),
   ]),
 };
 

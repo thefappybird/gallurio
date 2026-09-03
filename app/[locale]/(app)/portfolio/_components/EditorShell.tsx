@@ -54,6 +54,8 @@ import {
   reanchorChrome,
   canDetach,
   rescueNestedChrome,
+  hasRealContent,
+  otherZoneOf,
   type ChromeKind,
   type Zones,
 } from "@/lib/page-builder/chromeSync";
@@ -1586,6 +1588,16 @@ export function EditorShell({
       const previousActiveZone = zoneDataRef.current[activeZone] as unknown as Data;
       let zones = { ...zoneDataRef.current, [activeZone]: next } as unknown as Zones;
       zones = syncChrome(zones, activeZone, "nav", undefined, previousActiveZone);
+      // A footer withheld from the active zone (chrome-only — see syncChrome's
+      // hasRealContent guard) is pulled in from the other zone the moment the
+      // active zone gains its first real block: that transition is a
+      // same-zone edit, so the ordinary forward mirror (other zone's footer
+      // never changed) never fires for it — pull once, in reverse, here.
+      const gainedFirstRealBlock =
+        hasRealContent(next as unknown as Data) && !hasRealContent(previousActiveZone);
+      if (gainedFirstRealBlock && !findChrome(zones[activeZone], "footer")) {
+        zones = syncChrome(zones, otherZoneOf(activeZone), "footer", undefined, zones[otherZoneOf(activeZone)]);
+      }
       zones = syncChrome(zones, activeZone, "footer", undefined, previousActiveZone);
       // normalizeChrome returns the SAME reference when the zone already
       // satisfies both invariants (nav at 0, footer last) — an identity check

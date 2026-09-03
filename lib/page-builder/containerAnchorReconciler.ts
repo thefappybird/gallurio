@@ -3,9 +3,9 @@
  * resolveData after every remove/move, so this reconciler is invoked from the
  * live editor store as well as from Container.resolveData.
  *
- * The anchor is now always kept (appended as the LAST child) — see
- * shouldKeepAnchor. Its rendered height (full footprint / 4px bridge / flex-
- * fill leftover space / 0) is decided by EditorContainerAnchor from live
+ * Whether the anchor is kept at all (appended as the LAST child) depends on
+ * the slot's real children — see shouldKeepAnchor. Its rendered height (full
+ * footprint / 4px bridge) is decided by EditorContainerAnchor from live
  * layout data, not here; this reconciler only maintains the anchor's
  * PRESENCE and stays a pure, idempotent function of the data.
  */
@@ -24,6 +24,45 @@ type PuckTreeData = {
 };
 
 const isAnchor = (item: SlotItem) => item.type === "ContainerAnchor";
+
+/**
+ * Canonical anchor layout for ONE Container slot: every real child in its
+ * existing order, followed by exactly one anchor with the id `${id}--anchor`.
+ * Returns the SAME array reference when `content` already matches.
+ *
+ * Both anchor writers go through this — the live store reconciler below and
+ * the Container `resolveData` resolver in editorConfig. They used to disagree:
+ * the resolver stripped every anchor as soon as a container had real children,
+ * while the reconciler appended one straight back on the next store tick, so
+ * Puck and the editor store ping-ponged `setData` forever (Puck's "setData is
+ * expensive" warning on repeat, plus continuous canvas relayout).
+ */
+export function reconcileContainerSlot(id: unknown, content: SlotItem[]): SlotItem[] {
+  const realChildren = content.filter((child) => !isAnchor(child));
+
+  // Puck supplies a stable id for every editor item. Without one, do not
+  // invent a transient anchor that would churn on the next reconciliation —
+  // just strip any stray anchor instead.
+  if (!shouldKeepAnchor(realChildren) || typeof id !== "string" || !id) {
+    return content.length === realChildren.length ? content : realChildren;
+  }
+
+  const anchorId = `${id}--anchor`;
+  const desiredContent = [
+    ...realChildren,
+    { type: "ContainerAnchor", props: { id: anchorId, height: 0 } } satisfies SlotItem,
+  ];
+
+  const alreadyCorrect =
+    content.length === desiredContent.length &&
+    content.every((child, i) => {
+      const want = desiredContent[i];
+      if (isAnchor(want)) return isAnchor(child) && child.props.id === anchorId;
+      return child === want;
+    });
+
+  return alreadyCorrect ? content : desiredContent;
+}
 
 function reconcileItems(items: SlotItem[]): { items: SlotItem[]; changed: boolean } {
   let changed = false;
@@ -49,31 +88,8 @@ function reconcileItems(items: SlotItem[]): { items: SlotItem[]; changed: boolea
     const content = Array.isArray(nextItem.props.content)
       ? nextItem.props.content as SlotItem[]
       : [];
-    const realChildren = content.filter((child) => !isAnchor(child));
-    const id = nextItem.props.id;
-    const keepAnchor = shouldKeepAnchor();
-
-    // Puck supplies a stable id for every editor item. Without one, do not
-    // invent a transient anchor that would churn on the next reconciliation —
-    // just strip any stray anchor instead.
-    if (!keepAnchor || typeof id !== "string" || !id) {
-      if (content.length === realChildren.length) return nextItem;
-      changed = true;
-      return { ...nextItem, props: { ...nextItem.props, content: realChildren } };
-    }
-
-    const anchorId = `${id}--anchor`;
-    const anchorItem: SlotItem = { type: "ContainerAnchor", props: { id: anchorId, height: 0 } };
-    const desiredContent = [...realChildren, anchorItem];
-
-    const alreadyCorrect =
-      content.length === desiredContent.length &&
-      content.every((child, i) => {
-        const want = desiredContent[i];
-        if (isAnchor(want)) return isAnchor(child) && child.props.id === anchorId;
-        return child === want;
-      });
-    if (alreadyCorrect) return nextItem;
+    const desiredContent = reconcileContainerSlot(nextItem.props.id, content);
+    if (desiredContent === content) return nextItem;
 
     changed = true;
     return { ...nextItem, props: { ...nextItem.props, content: desiredContent } };
