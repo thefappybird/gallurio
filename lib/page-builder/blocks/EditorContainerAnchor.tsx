@@ -48,9 +48,16 @@ export function EditorContainerAnchor({ id }: { id: string }) {
   // array. This selector re-evaluates whenever the parent container's
   // children or minHeight change (add/remove/reorder triggers a store
   // update → re-render).
-  const mode = usePuckStore((s): AnchorMode => {
+  //
+  // The selector MUST return a primitive. usePuckStore is a zustand store read
+  // through useSyncExternalStore, which compares successive snapshots with
+  // Object.is; a fresh `{ kind: ... }` object makes every snapshot look new →
+  // "The result of getSnapshot should be cached" → infinite re-render.
+  // Encoding: null = none, -1 = fill, >= 0 = fixed pixel height (every
+  // CONTAINER_EDITOR_HEIGHT_PX value is positive, so -1 is unambiguous).
+  const encoded = usePuckStore((s): number | null => {
     const parent = s.getItemById(parentId);
-    if (!parent) return { kind: "none" };
+    if (!parent) return null;
 
     const minHeight =
       (parent.props?.minHeight as ContainerHeight | undefined) ?? "auto";
@@ -60,19 +67,26 @@ export function EditorContainerAnchor({ id }: { id: string }) {
 
     if (realChildren.length === 0) {
       // Empty container — show full editor footprint so it's droppable.
-      return { kind: "fixed", height: CONTAINER_EDITOR_HEIGHT_PX[minHeight] };
+      return CONTAINER_EDITOR_HEIGHT_PX[minHeight];
     }
     if (realChildren.every((child) => isContainerClass(child.type))) {
       // Bridge case: every real child is container-class (Container or
       // Columns, any count) — keep a 4px footprint so another sibling can
       // still be dropped here instead of nested inside an existing child.
-      return { kind: "fixed", height: 4 };
+      return 4;
     }
     // Container has ordinary content: no fixed height (not derivable from
     // data) — let flex-grow absorb whatever leftover space a stretched
     // sibling creates. Collapses to 0 on its own when there's none.
-    return { kind: "fill" };
+    return -1;
   });
+
+  const mode: AnchorMode =
+    encoded === null
+      ? { kind: "none" }
+      : encoded < 0
+        ? { kind: "fill" }
+        : { kind: "fixed", height: encoded };
 
   // Selection bounce: if Puck selects this anchor (e.g. user clicks the tiny
   // 4px footprint or keyboard-navigates into it), immediately redirect selection

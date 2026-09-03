@@ -95,3 +95,31 @@ describe("EditorContainerAnchor height — ordinary-content fill case (Item 11)"
     expect(el.style.flex).toBe("1 1 auto");
   });
 });
+
+describe("EditorContainerAnchor store-selector stability", () => {
+  it("returns a reference-stable snapshot from every selector (getSnapshot must be cached)", async () => {
+    // Regression: the mode selector used to build a fresh `{ kind, height }`
+    // object on every call. usePuckStore reads through useSyncExternalStore,
+    // which compares snapshots with Object.is → every read looked like a new
+    // value → "The result of getSnapshot should be cached to avoid an
+    // infinite loop" → "Maximum update depth exceeded" on /portfolio.
+    const selectors: Array<(s: never) => unknown> = [];
+    const state: StoreLike = {
+      getItemById: () => ({ props: { minHeight: "auto", content: [{ type: "Heading" }] } }),
+      selectedItem: null,
+      dispatch: vi.fn(),
+      getSelectorForId: vi.fn(),
+    };
+    vi.mocked(usePuckStore).mockImplementation((selector) => {
+      selectors.push(selector as (s: never) => unknown);
+      return selector(state as never);
+    });
+
+    await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+
+    expect(selectors.length).toBeGreaterThan(0);
+    for (const selector of selectors) {
+      expect(Object.is(selector(state as never), selector(state as never))).toBe(true);
+    }
+  });
+});
