@@ -38,9 +38,14 @@ export function PageBodyBlock({
       {Content({
         style: {
           boxSizing: "border-box",
-          display: "flex",
+          // Block flow, NOT flex: the slot stretches to fill the body row (so the
+          // whole gap between Navigation and Footer stays droppable), but its
+          // children lay out like the page canvas -- each block keeps its own
+          // height. As a flex column this wrapper turned every child into a flex
+          // item, and Container's `flexGrow: 1` then stretched a single dropped
+          // section (and its background) over the entire vacant row.
+          display: "block",
           flex: "1 1 auto",
-          flexDirection: "column",
           width: "100%",
           minWidth: 0,
           minHeight: 0,

@@ -28,6 +28,16 @@ describe("PageBodyBlock", () => {
     );
   });
 
+  it("lays its slot children out in block flow so a child cannot stretch the row", () => {
+    const Content = vi.fn(() => <div />) as unknown as SlotComponent;
+    render(<PageBodyBlock content={Content} />);
+
+    const [{ style }] = (Content as unknown as { mock: { calls: [{ style: Record<string, unknown> }][] } }).mock.calls[0];
+    expect(style.display).toBe("block");
+    expect(style.flexDirection).toBeUndefined();
+    expect(style.flex).toBe("1 1 auto");
+  });
+
   it("uses an explicitly selected horizontal margin", () => {
     const Content = vi.fn(() => <div />) as unknown as SlotComponent;
     render(<PageBodyBlock content={Content} marginX="4rem" />);
