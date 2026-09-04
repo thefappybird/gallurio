@@ -60,11 +60,33 @@ export type BlockButtonStyle = (typeof BLOCK_BUTTON_STYLES)[number];
 /** Horizontal text alignment for popup title. */
 export type PopupTitleAlign = "left" | "center" | "right";
 
+export const POPUP_LAYOUTS = ["contact-sheet", "justified", "split-index", "immersive"] as const;
+export type PopupLayout = (typeof POPUP_LAYOUTS)[number];
+
+export const IMAGE_MODAL_LAYOUTS = ["caption", "sidebar", "cinema", "sheet"] as const;
+export type ImageModalLayout = (typeof IMAGE_MODAL_LAYOUTS)[number];
+
+/** Resolves the unset "" popup layout to its default. */
+export function resolvePopupLayout(v: PopupLayout | "" | undefined): PopupLayout {
+  return v || "contact-sheet";
+}
+
+/** Resolves the unset "" image modal layout to its default. */
+export function resolveImageModalLayout(v: ImageModalLayout | "" | undefined): ImageModalLayout {
+  return v || "caption";
+}
+
 export type PortfolioCollectionsPopupConfig = {
   backgroundColor?: string; // token name or hex
   borderColor?: string;     // token name or hex
   borderWidth?: number;     // px, 0 = none
   radius?: BrandKitRadius | "";
+  /** Overall popup layout. "" resolves to "contact-sheet" at render time. */
+  popupLayout?: PopupLayout | "";
+  /** Layout of the enlarged single-image modal. "" resolves to "caption" at
+   *  render time. Inert when popupLayout is "immersive" — that layout
+   *  subsumes the image modal entirely. */
+  imageModalLayout?: ImageModalLayout | "";
   // Title styles (global override + typography). Empty titleText -> collection name.
   titleText?: string;
   titleFontFamily?: PortfolioFontKey | "";

@@ -8,6 +8,8 @@ import {
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
   HEADER_NAVBAR_SIZES,
+  POPUP_LAYOUTS,
+  IMAGE_MODAL_LAYOUTS,
 } from "@/lib/page-builder/types";
 import { PORTFOLIO_FONT_KEYS, isPortfolioFontKey, type PortfolioFontSelection } from "@/lib/page-builder/fonts";
 
@@ -79,6 +81,8 @@ export const portfolioCollectionsPopupConfigSchema = z.object({
   borderColor: z.string().max(32).optional().or(z.literal("")),
   borderWidth: z.number().int().min(0).max(12).optional(),
   radius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  popupLayout: z.enum(POPUP_LAYOUTS).optional().or(z.literal("")),
+  imageModalLayout: z.enum(IMAGE_MODAL_LAYOUTS).optional().or(z.literal("")),
   // Title styling
   titleText: z.string().optional(),
   titleFontFamily: z.enum(PORTFOLIO_FONT_KEYS).optional().or(z.literal("")),

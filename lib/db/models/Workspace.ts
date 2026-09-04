@@ -8,6 +8,8 @@ import {
   SAVED_THEMES_MAX,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
+  POPUP_LAYOUTS,
+  IMAGE_MODAL_LAYOUTS,
 } from "@/lib/page-builder/types";
 import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
@@ -216,6 +218,8 @@ const workspaceSchema = new Schema(
         borderColor: { type: String, default: "" },
         borderWidth: { type: Number, default: 0 },
         radius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        popupLayout: { type: String, enum: [...POPUP_LAYOUTS, ""], default: "" },
+        imageModalLayout: { type: String, enum: [...IMAGE_MODAL_LAYOUTS, ""], default: "" },
         // Title styling
         titleText: { type: String, default: "" },
         titleFontFamily: { type: String, enum: [...PORTFOLIO_FONT_KEYS, ""], default: "" },
