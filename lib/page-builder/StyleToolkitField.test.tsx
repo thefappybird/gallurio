@@ -1068,11 +1068,14 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     meta: [{ label: "Photographer", value: "Juan" }],
   };
 
-  function patchCallsFor(id: string) {
+  // The section PATCHes by-asset (not by item id): an assetId can back several
+  // GalleryItem docs, and the route fans a write out to every copy, returning
+  // `matched` alongside the updated representative.
+  function patchCallsFor(assetId: string) {
     return mockFetch.mock.calls.filter(
       ([url, opts]) =>
         typeof url === "string" &&
-        url === `/api/portfolio/gallery/items/${id}` &&
+        url === `/api/portfolio/gallery/items/by-asset/${assetId}` &&
         (opts as RequestInit | undefined)?.method === "PATCH"
     );
   }
@@ -1124,10 +1127,10 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
 
   it("loads the gallery item's values and PATCHes on blur with parsed tags/meta", async () => {
     mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
-      if (url.includes("/by-asset/")) {
-        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 1 }) } as Response);
       }
-      if (url === "/api/portfolio/gallery/items/item1" && opts?.method === "PATCH") {
+      if (url.includes("/by-asset/")) {
         return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
       }
       return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
@@ -1143,23 +1146,48 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     fireEvent.change(titleInput, { target: { value: "New title" } });
     fireEvent.blur(titleInput);
 
-    await waitFor(() => expect(patchCallsFor("item1").length).toBe(1));
-    const body = JSON.parse((patchCallsFor("item1")[0][1] as RequestInit).body as string);
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(1));
+    const body = JSON.parse((patchCallsFor("asset123")[0][1] as RequestInit).body as string);
     expect(body.title).toBe("New title");
     expect(body.tags).toEqual(["outdoor", "sunset"]);
     expect(body.meta).toEqual([{ label: "Photographer", value: "Juan" }]);
     await waitFor(() => expect(screen.getByText("saved")).toBeTruthy());
   });
 
-  it("shows a save error with retry when the PATCH fails, and retry resubmits", async () => {
-    let patchAttempts = 0;
+  it("says so when the save updated more than one copy of the photo", async () => {
     mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 3 }) } as Response);
+      }
       if (url.includes("/by-asset/")) {
         return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
       }
-      if (url === "/api/portfolio/gallery/items/item1" && opts?.method === "PATCH") {
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    const titleInput = await screen.findByDisplayValue("Golden hour");
+    fireEvent.change(titleInput, { target: { value: "New title" } });
+    fireEvent.blur(titleInput);
+
+    await waitFor(() => expect(screen.getByText("savedInPlaces")).toBeTruthy());
+    expect(screen.queryByText("saved")).toBeNull();
+  });
+
+  it("shows a save error with retry when the PATCH fails, and retry resubmits", async () => {
+    let patchAttempts = 0;
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
         patchAttempts += 1;
         if (patchAttempts === 1) return Promise.resolve({ ok: false, status: 500, json: async () => ({}) } as Response);
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 1 }) } as Response);
+      }
+      if (url.includes("/by-asset/")) {
         return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
       }
       return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
@@ -1183,10 +1211,10 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
 
   it("adds and removes custom meta rows, capping at 20 and saving immediately on remove", async () => {
     mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
-      if (url.includes("/by-asset/")) {
-        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 1 }) } as Response);
       }
-      if (url === "/api/portfolio/gallery/items/item1" && opts?.method === "PATCH") {
+      if (url.includes("/by-asset/")) {
         return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
       }
       return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
@@ -1214,7 +1242,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
 
     fireEvent.click(screen.getAllByRole("button", { name: "metaRemove" })[0]);
     expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(19);
-    await waitFor(() => expect(patchCallsFor("item1").length).toBeGreaterThan(0));
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBeGreaterThan(0));
   });
 });
 

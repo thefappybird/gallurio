@@ -2529,6 +2529,7 @@
           "metaLimitReached": "يمكنك إضافة حتى 20 تفصيلًا مخصصًا.",
           "saving": "جارٍ الحفظ…",
           "saved": "تم الحفظ",
+          "savedInPlaces": "تم التحديث في {count} أماكن",
           "saveError": "تعذّر حفظ تغييراتك."
         },
         "imageWizard": {

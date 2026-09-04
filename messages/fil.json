@@ -2529,6 +2529,7 @@
           "metaLimitReached": "Puwede kang magdagdag ng hanggang 20 custom na detalye.",
           "saving": "Sine-save…",
           "saved": "Na-save",
+          "savedInPlaces": "Na-update sa {count} na lugar",
           "saveError": "Hindi na-save ang iyong mga pagbabago."
         },
         "imageWizard": {

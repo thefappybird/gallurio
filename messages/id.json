@@ -2529,6 +2529,7 @@
           "metaLimitReached": "Anda dapat menambahkan hingga 20 detail khusus.",
           "saving": "Menyimpan…",
           "saved": "Tersimpan",
+          "savedInPlaces": "Diperbarui di {count} tempat",
           "saveError": "Perubahan Anda gagal disimpan."
         },
         "imageWizard": {

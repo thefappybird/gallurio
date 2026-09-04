@@ -125,6 +125,7 @@ export function ImageBlockMetaSection({ assetId }: { assetId: string | undefined
   );
   const [form, setForm] = useState<FormState | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [matchedCount, setMatchedCount] = useState<number | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   const pendingRef = useRef(false);
@@ -171,22 +172,31 @@ export function ImageBlockMetaSection({ assetId }: { assetId: string | undefined
 
   // Plain (hoisted) function, not useCallback: it recurses to drain the save
   // queue, and a function declaration can safely reference itself by name.
+  //
+  // PATCHes by-asset (not by item id): an assetId can back several GalleryItem
+  // docs (adding the same photo to a second collection copies the row), and
+  // the section tells the owner these details live on the photo and update
+  // everywhere it appears — writing only the representative row would make
+  // that false. The route fans the write out to every copy in the workspace
+  // and reports how many it touched via `matched`.
   function save(next: FormState) {
-    if (!item) return;
+    if (!item || !assetId) return;
     if (pendingRef.current) {
       queuedRef.current = next;
       return;
     }
     pendingRef.current = true;
     setSaveStatus("saving");
-    fetch(`/api/portfolio/gallery/items/${item.id}`, {
+    fetch(`/api/portfolio/gallery/items/by-asset/${encodeURIComponent(assetId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(buildPayload(next)),
     })
-      .then((res) => {
+      .then(async (res) => {
         if (!res.ok) throw new Error("save_failed");
+        const data = (await res.json()) as GalleryItemMeta & { matched: number };
         lastFailedRef.current = null;
+        setMatchedCount(data.matched);
         setSaveStatus("saved");
       })
       .catch(() => {
@@ -285,7 +295,9 @@ export function ImageBlockMetaSection({ assetId }: { assetId: string | undefined
         <SaveIndicator
           status={saveStatus}
           savingLabel={t("saving")}
-          savedLabel={t("saved")}
+          savedLabel={
+            matchedCount !== null && matchedCount > 1 ? t("savedInPlaces", { count: matchedCount }) : t("saved")
+          }
           errorLabel={t("saveError")}
           retryLabel={t("retry")}
           onRetry={() => lastFailedRef.current && save(lastFailedRef.current)}
