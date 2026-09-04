@@ -455,9 +455,11 @@ export function ImageMetaWizard({
 
           <DialogFooter className="items-center sm:justify-between">
             <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => void goTo(index - 1)} disabled={index === 0 || saving}>
-                {labels.previous}
-              </Button>
+              {items.length > 1 && (
+                <Button type="button" variant="outline" onClick={() => void goTo(index - 1)} disabled={index === 0 || saving}>
+                  {labels.previous}
+                </Button>
+              )}
               {isLast ? (
                 <Button type="button" onClick={handleFinish} loading={saving} disabled={saving}>
                   {labels.finish}

@@ -539,7 +539,7 @@ describe("MediaPicker", () => {
       return routeFetch(url);
     }
 
-    it("(a) single mode: uploading auto-selects the photo and closes the picker", async () => {
+    it("(a) single mode: uploading auto-selects the photo but offers the metadata wizard instead of closing immediately", async () => {
       vi.mocked(uploadImage).mockResolvedValue({
         assetId: "new-asset-id",
         url: "https://x/new.jpg",
@@ -565,9 +565,72 @@ describe("MediaPicker", () => {
       const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
       fireEvent.change(fileInput, { target: { files: [file] } });
 
-      // After the upload pipeline completes: onChange(publicId) + onOpenChange(false).
+      // Uploading still auto-selects immediately...
       await waitFor(() => expect(onChange).toHaveBeenCalledWith("new-asset-id"));
+      // ...but offers the wizard rather than closing right away (an upload —
+      // unlike picking an existing photo — is the one moment with no metadata yet).
+      expect(await screen.findByText("1 photo uploaded")).toBeTruthy();
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+
+    it("single mode: 'Skip for now' after an upload still closes the picker (photo already selected)", async () => {
+      vi.mocked(uploadImage).mockResolvedValue({
+        assetId: "new-asset-id",
+        url: "https://x/new.jpg",
+        width: 800,
+        height: 600,
+        format: "jpeg",
+        sizeBytes: 10000,
+      });
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => routeWithCreate(u, init));
+
+      const onChange = vi.fn();
+      const onOpenChange = vi.fn();
+      renderWithProviders(
+        <MediaPicker mode="single" value="" onChange={onChange} open onOpenChange={onOpenChange} />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await screen.findByText("1 photo uploaded");
+      fireEvent.click(screen.getByRole("button", { name: /^skip for now$/i }));
+
+      expect(onChange).toHaveBeenCalledWith("new-asset-id");
       expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("single mode: 'Add details' opens the wizard collapsed to one photo (no filmstrip/Previous)", async () => {
+      vi.mocked(uploadImage).mockResolvedValue({
+        assetId: "new-asset-id",
+        url: "https://x/new.jpg",
+        width: 800,
+        height: 600,
+        format: "jpeg",
+        sizeBytes: 10000,
+      });
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => routeWithCreate(u, init));
+
+      renderWithProviders(
+        <MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await screen.findByText("1 photo uploaded");
+      fireEvent.click(screen.getByRole("button", { name: /^add details$/i }));
+
+      expect(await screen.findByText("Photo 1 of 1")).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /^previous$/i })).toBeNull();
+      expect(screen.queryByRole("button", { name: /^next$/i })).toBeNull();
+      expect(screen.getByRole("button", { name: /^done$/i })).toBeTruthy();
     });
 
     it("multi mode: uploading appends the photo to the current selection, picker stays open", async () => {

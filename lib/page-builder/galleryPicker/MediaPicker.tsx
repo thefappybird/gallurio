@@ -617,14 +617,19 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     }
     retry(); // refresh collection covers/counts
 
-    // Auto-select successfully uploaded item(s).
-    // • single: pick the first and close — "no extra click" UX.
-    // • multi: append all to the current selection (cap respected).
-    // The standalone Photos manager uses EditCollectionDialog directly and never
-    // reaches this path, so no explicit mode exclusion is needed here.
+    // Auto-select successfully uploaded item(s), then offer the metadata
+    // wizard — additive only, never blocking; the item(s) already exist and
+    // are selected either way. Uploading (vs. selecting an existing photo)
+    // is the one moment the owner is looking right at a photo with no
+    // metadata yet, so both single and multi mode see the offer here.
+    // Single mode's "no extra click" auto-close only happens for the SELECT
+    // path (pickSingle, used when clicking an existing photo in the grid) —
+    // an upload instead selects but leaves the picker open on the offer;
+    // "Skip for now" (or finishing the wizard) is what closes it.
     if (createdItems.length > 0) {
       if (mode === "single") {
-        pickSingle(createdItems[0]);
+        onChange(createdItems[0].publicId);
+        setUploadedBatch(createdItems);
       } else if (mode === "multi") {
         const cap = resolveCap(max);
         const slots = Math.max(0, cap - selection.length);
@@ -641,9 +646,6 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
             })),
           ]);
         }
-        // Offer the metadata wizard — additive only, never blocking; the items
-        // already exist and are selected either way. Single mode already closed
-        // the picker above, so it never sees this offer.
         setUploadedBatch(createdItems);
       }
     }
@@ -763,7 +765,17 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           <div className="flex flex-col gap-2 border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm">{tWizard("offerHeading", { count: uploadedBatch.length })}</p>
             <div className="flex shrink-0 gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => setUploadedBatch(null)}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setUploadedBatch(null);
+                  // Single mode's upload already auto-selected the photo above —
+                  // skipping the offer just finishes that "no extra click" flow.
+                  if (mode === "single") onOpenChange(false);
+                }}
+              >
                 {tWizard("offerSkip")}
               </Button>
               <Button type="button" size="sm" onClick={() => setWizardOpen(true)}>
@@ -900,7 +912,12 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         open={wizardOpen}
         onOpenChange={(next) => {
           setWizardOpen(next);
-          if (!next) setUploadedBatch(null);
+          if (!next) {
+            setUploadedBatch(null);
+            // Single mode's upload flow ends with the picker closing, whether
+            // the owner finishes the wizard or backs out of it mid-edit.
+            if (mode === "single") onOpenChange(false);
+          }
         }}
         onSaved={handleMetaSaved}
         labels={wizardLabels}
