@@ -32,6 +32,7 @@ import {
   type StyleColorToken,
 } from "@/lib/page-builder/styleToolkit";
 import { PF_COLUMN_STACK_CLASS } from "@/lib/page-builder/responsive";
+import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 
 // Highlight (marker band) appearance — mirrors GalleryText.tsx so all blocks
 // use the same visual output without a shared import cycle.
@@ -316,21 +317,37 @@ export function ImageBlock({
             opacity,
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src as string}
-            alt={alt || ""}
-            loading="lazy"
-            decoding="async"
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: effectiveStyle?.imageFit ?? "cover",
-              objectPosition: "center",
-            }}
-          />
+          {(() => {
+            const picture = (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={src as string}
+                alt={alt || ""}
+                loading="lazy"
+                decoding="async"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: effectiveStyle?.imageFit ?? "cover",
+                  objectPosition: "center",
+                }}
+              />
+            );
+            // Clicking opens the view-image modal, except while the editor
+            // would otherwise treat the click as a block-select, and never in
+            // the drawer's decorative preset preview.
+            if (isEditing || presetPreview) return picture;
+            return (
+              <GalleryLightboxTrigger
+                image={{ id: effectiveStyle?.bgImagePublicId ?? "image", publicId: effectiveStyle?.bgImagePublicId ?? "", alt: alt || "" }}
+                buttonStyle={{ position: "absolute", inset: 0, height: "100%" }}
+              >
+                {picture}
+              </GalleryLightboxTrigger>
+            );
+          })()}
         </div>
       ) : presetPreview ? (
         <PresetMediaPlaceholder kind="image" />

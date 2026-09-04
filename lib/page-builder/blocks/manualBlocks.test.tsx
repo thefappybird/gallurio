@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import {
@@ -351,6 +351,33 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
       />
     );
     expect((container.querySelector("img") as HTMLImageElement).style.objectFit).toBe("contain");
+  });
+
+  it("opens the view-image modal when clicked outside the editor", () => {
+    render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("is not clickable while the editor canvas has it selected for editing", () => {
+    const { container } = render(
+      <ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} puck={{ isEditing: true }} />
+    );
+    expect(container.querySelector("button")).toBeNull();
+    expect(container.querySelector("img")).not.toBeNull();
+  });
+
+  it("is not clickable in the preset-drawer preview", () => {
+    const { container } = render(
+      <ImageBlock
+        alt="A photo"
+        _style={{ bgImagePublicId: "ws/photo.jpg" }}
+        puck={{ metadata: { presetPreview: true } }}
+      />
+    );
+    expect(container.querySelector("button")).toBeNull();
+    expect(container.querySelector("img")).not.toBeNull();
   });
 });
 

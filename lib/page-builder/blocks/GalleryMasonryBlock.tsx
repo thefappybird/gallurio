@@ -124,6 +124,15 @@ export function GalleryMasonryBlock({
   );
   const labels = getGalleryChromeLabelsFrom(puck);
   const list = Array.isArray(images) ? images : [];
+  // Full-array LightboxImage view for the legacy (pre-slot) render path, so
+  // opening any thumbnail can page through every image in the masonry.
+  const legacyLightboxImages = list.map((img) => ({
+    id: img.id,
+    publicId: img.publicId,
+    alt: img.alt ?? "",
+    width: img.width,
+    height: img.height,
+  }));
 
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
@@ -196,7 +205,7 @@ export function GalleryMasonryBlock({
             className="pf-masonry"
             style={{ columnCount: responsiveColumns as unknown as number, columnGap: gapValue }}
           >
-            {list.map((img) => {
+            {list.map((img, i) => {
             const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth * 2,
@@ -216,7 +225,11 @@ export function GalleryMasonryBlock({
                   breakInside: "avoid",
                 }}
               >
-                <GalleryLightboxTrigger image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}>
+                <GalleryLightboxTrigger
+                  image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}
+                  images={legacyLightboxImages}
+                  index={i}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}

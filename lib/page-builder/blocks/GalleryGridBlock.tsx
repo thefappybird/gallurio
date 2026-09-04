@@ -91,6 +91,15 @@ export function GalleryGridBlock({
   const gapValue = GAP_MAP[gap] ?? "8px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const list = Array.isArray(images) ? images : [];
+  // Full-array LightboxImage view for the legacy (pre-slot) render path, so
+  // opening any thumbnail can page through every image in the grid.
+  const legacyLightboxImages = list.map((img) => ({
+    id: img.id,
+    publicId: img.publicId,
+    alt: img.alt ?? "",
+    width: img.width,
+    height: img.height,
+  }));
 
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
@@ -168,7 +177,7 @@ export function GalleryGridBlock({
               gap: gapValue,
             }}
           >
-            {list.map((img) => {
+            {list.map((img, i) => {
             const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth,
@@ -178,7 +187,11 @@ export function GalleryGridBlock({
             if (!src) return null;
             return (
               <figure key={img.id} style={{ margin: 0, padding: 0 }}>
-                <GalleryLightboxTrigger image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}>
+                <GalleryLightboxTrigger
+                  image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}
+                  images={legacyLightboxImages}
+                  index={i}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
