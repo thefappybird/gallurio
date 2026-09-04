@@ -24,7 +24,7 @@ const items = [
 
 function defaultRoute(url: string, init?: RequestInit) {
   if (url === "/api/portfolio/gallery") return Promise.resolve({ ok: true, json: async () => ({ collections: [collection], items }) } as Response);
-  if (url.startsWith("/api/portfolio/gallery/collections/col1?")) return Promise.resolve({ ok: true, json: async () => ({ items, nextCursor: null }) } as Response);
+  if (url.startsWith("/api/portfolio/gallery/collections/col1?")) return Promise.resolve({ ok: true, json: async () => ({ items, nextCursor: null, description: "Full-day coverage." }) } as Response);
   if (url === "/api/portfolio/gallery/collections/col1" && init?.method === "PATCH")
     return Promise.resolve({ ok: true, json: async () => ({ id: "col1", name: "Renamed", coverItemId: "a" }) } as Response);
   if (url.includes("/items/remove")) return Promise.resolve({ ok: true, json: async () => ({ removed: 1 }) } as Response);
@@ -79,6 +79,30 @@ describe("EditCollectionDialog", () => {
     await waitFor(() =>
       expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/collections/col1" && (i as RequestInit)?.method === "PATCH")).toBe(true)
     );
+  });
+
+  it("prefills the description from the collection fetch and saves it via PATCH", async () => {
+    open();
+    const field = await screen.findByLabelText(/description/i);
+    await waitFor(() => expect(field).toHaveValue("Full-day coverage."));
+
+    fireEvent.change(field, { target: { value: "Updated description." } });
+    fireEvent.click(screen.getByRole("button", { name: /save description/i }));
+
+    await waitFor(() => {
+      const call = mockFetch.mock.calls.find(
+        ([u, i]) => String(u) === "/api/portfolio/gallery/collections/col1" && (i as RequestInit)?.method === "PATCH"
+      );
+      expect(call).toBeTruthy();
+      expect(JSON.parse((call![1] as RequestInit).body as string)).toEqual({ description: "Updated description." });
+    });
+  });
+
+  it("disables Save description until the description actually changes", async () => {
+    open();
+    const field = await screen.findByLabelText(/description/i);
+    await waitFor(() => expect(field).toHaveValue("Full-day coverage."));
+    expect(screen.getByRole("button", { name: /save description/i })).toBeDisabled();
   });
 
   it("blocks rename when the name is empty", async () => {

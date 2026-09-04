@@ -31,6 +31,7 @@ import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
+import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
 import type { PickerCollection, PickerItem } from "./types";
 
 // Plain strings — the Puck field panel IS wrapped in context (Puck portals into the
@@ -147,6 +148,7 @@ function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPi
 export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: Props) {
   const errMsg = useActionError();
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
+  const tWizard = useTranslations("app.pageBuilder.editor.imageWizard");
   const { state, retry } = usePickerData();
   const cache = useGalleryPickerCache();
   const [nav, setNav] = useState<Nav>({ kind: "collections" });
@@ -168,6 +170,51 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     savedToast: tMeta("savedToast"),
     errorMessage: (code) => errMsg(code),
   };
+
+  const wizardLabels: ImageWizardLabels = {
+    heading: tWizard("heading"),
+    position: (current, total) => tWizard("position", { current, total }),
+    fieldTitle: tWizard("fieldTitle"),
+    fieldTitlePlaceholder: tWizard("fieldTitlePlaceholder"),
+    fieldCaption: tWizard("fieldCaption"),
+    fieldCaptionPlaceholder: tWizard("fieldCaptionPlaceholder"),
+    fieldAlt: tWizard("fieldAlt"),
+    fieldAltHelp: tWizard("fieldAltHelp"),
+    fieldAltPlaceholder: tWizard("fieldAltPlaceholder"),
+    altCounter: (count, max) => tWizard("altCounter", { count, max }),
+    fieldDate: tWizard("fieldDate"),
+    fieldLocation: tWizard("fieldLocation"),
+    fieldLocationPlaceholder: tWizard("fieldLocationPlaceholder"),
+    fieldClient: tWizard("fieldClient"),
+    fieldClientPlaceholder: tWizard("fieldClientPlaceholder"),
+    fieldTags: tWizard("fieldTags"),
+    fieldTagsPlaceholder: tWizard("fieldTagsPlaceholder"),
+    fieldTagsHint: tWizard("fieldTagsHint"),
+    removeTag: (tag) => tWizard("removeTag", { tag }),
+    fieldMeta: tWizard("fieldMeta"),
+    fieldMetaHint: tWizard("fieldMetaHint"),
+    metaLabelPlaceholder: tWizard("metaLabelPlaceholder"),
+    metaValuePlaceholder: tWizard("metaValuePlaceholder"),
+    addMetaRow: tWizard("addMetaRow"),
+    removeMetaRow: (n) => tWizard("removeMetaRow", { n }),
+    savedBadge: tWizard("savedBadge"),
+    unsavedBadge: tWizard("unsavedBadge"),
+    jumpToPhoto: (n) => tWizard("jumpToPhoto", { n }),
+    previous: tWizard("previous"),
+    next: tWizard("next"),
+    finish: tWizard("finish"),
+    close: tWizard("close"),
+    closeConfirmTitle: tWizard("closeConfirmTitle"),
+    closeConfirmBody: tWizard("closeConfirmBody"),
+    closeConfirmDiscard: tWizard("closeConfirmDiscard"),
+    closeConfirmCancel: tWizard("closeConfirmCancel"),
+    errorMessage: (code) => errMsg(code),
+  };
+
+  // Post-upload "add details" offer (multi mode only — single mode auto-selects
+  // and closes the picker immediately, its established "no extra click" flow).
+  const [uploadedBatch, setUploadedBatch] = useState<PickerItem[] | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   // Upload state (scoped to the open collection / all feed).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -218,6 +265,8 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       setFeed(EMPTY_FEED);
       setFileErrors([]);
       setBulkError(null);
+      setUploadedBatch(null);
+      setWizardOpen(false);
       fetchToken.current++; // invalidate any in-flight feed fetch from a prior open
     }
   }, [open]);
@@ -272,6 +321,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     setNav({ kind: "photos", id, name });
     setFeed(EMPTY_FEED);
     setFileErrors([]);
+    setUploadedBatch(null);
     void fetchFeed(id, null);
   }
 
@@ -279,6 +329,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     fetchToken.current++; // invalidate any in-flight fetch from the collection we left
     setNav({ kind: "collections" });
     setFeed(EMPTY_FEED);
+    setUploadedBatch(null);
   }
 
   // -------------------------------------------------------------------------
@@ -590,6 +641,10 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
             })),
           ]);
         }
+        // Offer the metadata wizard — additive only, never blocking; the items
+        // already exist and are selected either way. Single mode already closed
+        // the picker above, so it never sees this offer.
+        setUploadedBatch(createdItems);
       }
     }
   }
@@ -702,6 +757,20 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           <p role="alert" className="text-xs text-destructive">
             {bulkError}
           </p>
+        )}
+
+        {uploadedBatch && uploadedBatch.length > 0 && !wizardOpen && (
+          <div className="flex flex-col gap-2 border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">{tWizard("offerHeading", { count: uploadedBatch.length })}</p>
+            <div className="flex shrink-0 gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={() => setUploadedBatch(null)}>
+                {tWizard("offerSkip")}
+              </Button>
+              <Button type="button" size="sm" onClick={() => setWizardOpen(true)}>
+                {tWizard("offerAddDetails")}
+              </Button>
+            </div>
+          </div>
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -824,6 +893,17 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         onSaved={handleMetaSaved}
         labels={metaLabels}
         triggerRef={metaTriggerRef}
+      />
+
+      <ImageMetaWizard
+        items={uploadedBatch ?? []}
+        open={wizardOpen}
+        onOpenChange={(next) => {
+          setWizardOpen(next);
+          if (!next) setUploadedBatch(null);
+        }}
+        onSaved={handleMetaSaved}
+        labels={wizardLabels}
       />
     </Dialog>
   );

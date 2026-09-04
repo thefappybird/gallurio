@@ -37,6 +37,24 @@ describe("CreateCollectionDialog required fields", () => {
   });
 });
 
+describe("CreateCollectionDialog description", () => {
+  it("sends the typed description in the create POST", async () => {
+    renderWithProviders(<CreateCollectionDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/collection title/i), { target: { value: "My collection" } });
+    fireEvent.change(screen.getByLabelText(/description/i), { target: { value: "Full-day wedding coverage." } });
+    fireEvent.click(screen.getByRole("button", { name: /create/i }));
+
+    await waitFor(() => {
+      const call = mockFetch.mock.calls.find(
+        ([u, i]) => u === "/api/portfolio/gallery/collections" && (i as RequestInit)?.method === "POST"
+      );
+      expect(call).toBeTruthy();
+      const body = JSON.parse((call![1] as RequestInit).body as string);
+      expect(body.description).toBe("Full-day wedding coverage.");
+    });
+  });
+});
+
 describe("CreateCollectionDialog pick-existing", () => {
   it("copies picked existing photos into the new collection after creation", async () => {
     const onCreated = vi.fn();

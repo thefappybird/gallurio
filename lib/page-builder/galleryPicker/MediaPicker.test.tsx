@@ -604,6 +604,60 @@ describe("MediaPicker", () => {
       );
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
+
+    it("multi mode: offers the metadata wizard after upload, and opens it on 'Add details'", async () => {
+      vi.mocked(uploadImage).mockResolvedValue({
+        assetId: "new-asset-id",
+        url: "https://x/new.jpg",
+        width: 800,
+        height: 600,
+        format: "jpeg",
+        sizeBytes: 10000,
+      });
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => routeWithCreate(u, init));
+
+      renderWithProviders(
+        <MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      expect(await screen.findByText("1 photo uploaded")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: /^add details$/i }));
+      expect(await screen.findByText("Add photo details")).toBeTruthy();
+      expect(screen.getByText("Photo 1 of 1")).toBeTruthy();
+    });
+
+    it("multi mode: 'Skip for now' dismisses the offer without opening the wizard", async () => {
+      vi.mocked(uploadImage).mockResolvedValue({
+        assetId: "new-asset-id",
+        url: "https://x/new.jpg",
+        width: 800,
+        height: 600,
+        format: "jpeg",
+        sizeBytes: 10000,
+      });
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => routeWithCreate(u, init));
+
+      renderWithProviders(
+        <MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await screen.findByText("1 photo uploaded");
+      fireEvent.click(screen.getByRole("button", { name: /^skip for now$/i }));
+      expect(screen.queryByText("1 photo uploaded")).toBeNull();
+      expect(screen.queryByText("Add photo details")).toBeNull();
+    });
   });
 
   describe("upload errors (per-file)", () => {

@@ -10,7 +10,9 @@ import {
   AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { COLLECTION_DESCRIPTION_MAX } from "./CreateCollectionDialog";
 import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { UploadError, uploadErrorTranslation, type UploadErrorDetail } from "@/lib/uploads/uploadError";
@@ -35,6 +37,12 @@ export function EditCollectionDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
+  // The collection's `description` isn't in the picker overview list — it only
+  // comes back from the paginated collection fetch (loadAll below) — so it
+  // starts blank and fills in once that first page resolves.
+  const [description, setDescription] = useState("");
+  const [descriptionBaseline, setDescriptionBaseline] = useState("");
+  const [savingDescription, setSavingDescription] = useState(false);
   const [items, setItems] = useState<PickerItem[]>([]);
   const [coverPublicId, setCoverPublicId] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -78,17 +86,21 @@ export function EditCollectionDialog({
     try {
       const acc: PickerItem[] = [];
       let cursor: string | null = null;
+      let desc = "";
       for (let guard = 0; guard < 50; guard++) {
         const q = new URLSearchParams({ limit: String(PAGE) });
         if (cursor) q.set("cursor", cursor);
         const res = await fetch(`/api/portfolio/gallery/collections/${id}?${q.toString()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as { items: PickerItem[]; nextCursor: string | null };
+        const data = (await res.json()) as { items: PickerItem[]; nextCursor: string | null; description?: string };
         acc.push(...data.items);
+        if (data.description !== undefined) desc = data.description;
         cursor = data.nextCursor;
         if (!cursor) break;
       }
       setItems(acc);
+      setDescription(desc);
+      setDescriptionBaseline(desc);
     } catch {
       setError(errMsg("collection_load_failed"));
     } finally {
@@ -101,6 +113,8 @@ export function EditCollectionDialog({
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: resets local state when the dialog opens for a new collection
       setName(collection.name);
       setCoverPublicId(collection.coverPublicId);
+      setDescription("");
+      setDescriptionBaseline("");
       setSelected(new Set());
       setError(null);
       setFileErrors([]);
@@ -120,6 +134,7 @@ export function EditCollectionDialog({
 
   const nameInvalid = name.trim().length === 0;
   const nameUnchanged = name.trim() === collection.name;
+  const descriptionUnchanged = description === descriptionBaseline;
 
   async function saveName() {
     if (nameInvalid || nameUnchanged || !colId) return;
@@ -134,6 +149,23 @@ export function EditCollectionDialog({
       setError(errMsg("collection_rename_failed"));
     } finally {
       setSavingName(false);
+    }
+  }
+
+  async function saveDescription() {
+    if (descriptionUnchanged || !colId) return;
+    setSavingDescription(true);
+    try {
+      const res = await fetch(`/api/portfolio/gallery/collections/${colId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ description }),
+      });
+      if (!res.ok) throw new Error();
+      setDescriptionBaseline(description);
+      onChanged();
+    } catch {
+      setError(errMsg("collection_description_failed"));
+    } finally {
+      setSavingDescription(false);
     }
   }
 
@@ -350,6 +382,29 @@ export function EditCollectionDialog({
               />
               <Button type="button" size="sm" variant="brand" disabled={nameInvalid || nameUnchanged || savingName} loading={savingName} onClick={saveName}>Save name</Button>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="edit-col-description" className="text-xs font-medium">Description (optional)</label>
+            <Textarea
+              id="edit-col-description"
+              value={description}
+              placeholder="A line or two shown above the photos on your public page."
+              maxLength={COLLECTION_DESCRIPTION_MAX}
+              disabled={savingDescription}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="self-start"
+              disabled={descriptionUnchanged || savingDescription}
+              loading={savingDescription}
+              onClick={saveDescription}
+            >
+              Save description
+            </Button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

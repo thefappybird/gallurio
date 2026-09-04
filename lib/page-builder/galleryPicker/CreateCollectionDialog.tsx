@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
@@ -26,6 +27,8 @@ const L = {
   title: "New collection",
   nameLabel: "Collection title",
   namePlaceholder: "e.g. Weddings 2024",
+  descriptionLabel: "Description (optional)",
+  descriptionPlaceholder: "A line or two shown above the photos on your public page.",
   dropZone: "Drag photos here or click to select",
   dropZoneActive: "Drop to upload",
   hint: "JPEG, PNG, WebP or AVIF · max 15 MB · min 600 px",
@@ -37,6 +40,9 @@ const L = {
   errCreate: "Could not create the collection. Please try again.",
   removePhoto: "Remove photo",
 };
+
+/** Matches the PATCH/POST collection route's `description` cap. */
+export const COLLECTION_DESCRIPTION_MAX = 2000;
 
 type LocalImage = {
   assetId: string;
@@ -66,6 +72,7 @@ export function CreateCollectionDialog({
   // "copy existing photos" step re-runs only the copy (never re-creates).
   const createdIdRef = useRef<string | null>(null);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [images, setImages] = useState<LocalImage[]>([]);
   const [picked, setPicked] = useState<PickerItem[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -78,6 +85,7 @@ export function CreateCollectionDialog({
 
   function reset() {
     setName("");
+    setDescription("");
     setImages([]);
     setPicked([]);
     setError(null);
@@ -147,7 +155,7 @@ export function CreateCollectionDialog({
         const res = await fetch("/api/portfolio/gallery/collections", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: name.trim(), items: images }),
+          body: JSON.stringify({ name: name.trim(), description: description.trim(), items: images }),
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as { detail?: UploadErrorDetail };
@@ -204,6 +212,17 @@ export function CreateCollectionDialog({
               autoFocus
               onChange={(e) => setName(e.target.value)}
               className="min-h-11 w-full border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span>{L.descriptionLabel}</span>
+            <Textarea
+              value={description}
+              placeholder={L.descriptionPlaceholder}
+              maxLength={COLLECTION_DESCRIPTION_MAX}
+              disabled={saving}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </label>
 
