@@ -1011,12 +1011,12 @@ describe("GalleryLayoutControls — writes _style.galleryColumns on click", () =
 });
 
 describe("StyleToolkitField — Image block (F1 redesign)", () => {
-  it("ContentInputs for Image shows an Alt text input wired to setProp", () => {
-    const setProp = vi.fn();
-    render(<ContentInputs type="Image" props={{ alt: "" }} setProp={setProp} />);
-    const input = screen.getByLabelText("Alt text") as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "A nice photo" } });
-    expect(setProp).toHaveBeenCalledWith("alt", "A nice photo");
+  // Item 10c: the block is styles/layout only now — no per-placement Alt
+  // text input, no inline Photo-details form. A single [title] / Edit row
+  // replaces both (covered in the "Item 10c" describe block below).
+  it("ContentInputs for Image no longer shows an Alt text input", () => {
+    render(<ContentInputs type="Image" props={{ alt: "" }} setProp={vi.fn()} />);
+    expect(screen.queryByLabelText("Alt text")).not.toBeInTheDocument();
   });
 
   it("LayoutTabBody for Image shows Width and Height resize controls", () => {
@@ -1055,6 +1055,93 @@ describe("StyleToolkitField — Image block (F1 redesign)", () => {
   });
 });
 
+describe("StyleToolkitField — Image block [title] / Edit row (Item 10c)", () => {
+  it("shows 'No photo selected' and a disabled Edit button when the block has no image yet, and never fetches", () => {
+    render(<ContentInputs type="Image" props={{ alt: "", _style: {} }} setProp={vi.fn()} />);
+    expect(screen.getByText("No photo selected")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("shows 'Untitled photo' once an image is picked but has no baked title yet", () => {
+    render(
+      <ContentInputs type="Image" props={{ alt: "", _style: { bgImagePublicId: "asset123" } }} setProp={vi.fn()} />
+    );
+    expect(screen.getByText("Untitled photo")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeEnabled();
+  });
+
+  it("shows the baked photo title on the row once meta.title is set", () => {
+    render(
+      <ContentInputs
+        type="Image"
+        props={{
+          alt: "",
+          _style: { bgImagePublicId: "asset123" },
+          meta: { title: "Golden Hour", sourceAssetId: "asset123" },
+        }}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Golden Hour")).toBeTruthy();
+  });
+
+  it("bakes the picked photo's GalleryItem metadata onto the block once, keyed by sourceAssetId", async () => {
+    mockFetch.mockImplementation((url: string) =>
+      url.includes("/by-asset/")
+        ? Promise.resolve({
+            ok: true,
+            json: async () => ({
+              title: "Golden Hour",
+              caption: "Reception at dusk",
+              altText: "Bride and groom",
+              date: "2026-06-01",
+              location: "Manila",
+              client: "Cruz Wedding",
+              tags: ["wedding"],
+              meta: [{ label: "Camera", value: "GFX100" }],
+            }),
+          } as Response)
+        : Promise.resolve({ ok: true, json: async () => ({}) } as Response)
+    );
+    const setProp = vi.fn();
+    render(
+      <ContentInputs type="Image" props={{ alt: "", _style: { bgImagePublicId: "asset123" } }} setProp={setProp} />
+    );
+
+    await waitFor(() =>
+      expect(setProp).toHaveBeenCalledWith(
+        "meta",
+        expect.objectContaining({ title: "Golden Hour", sourceAssetId: "asset123" })
+      )
+    );
+  });
+
+  it("does not refetch once meta.sourceAssetId already matches the picked photo", () => {
+    render(
+      <ContentInputs
+        type="Image"
+        props={{
+          alt: "",
+          _style: { bgImagePublicId: "asset123" },
+          meta: { title: "Golden Hour", sourceAssetId: "asset123" },
+        }}
+        setProp={vi.fn()}
+      />
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("Edit opens a dialog with the same Photo-details editing UI (ImageBlockMetaSection)", async () => {
+    render(
+      <ContentInputs type="Image" props={{ alt: "", _style: { bgImagePublicId: "asset123" } }} setProp={vi.fn()} />
+    );
+    expect(screen.queryByText("chooseImagePrompt")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+  });
+});
+
 describe("StyleToolkitField — Image block metadata section (shared GalleryItem fields)", () => {
   const fullItem = {
     id: "item1",
@@ -1080,11 +1167,11 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     );
   }
 
-  it("shows a prompt to choose a photo when the block has no image yet, and never fetches", () => {
-    render(<ContentInputs type="Image" props={{ alt: "", _style: {} }} setProp={vi.fn()} />);
-    expect(screen.getByText("chooseImagePrompt")).toBeTruthy();
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
+  // The "no image yet" (chooseImagePrompt) phase of ImageBlockMetaSection is
+  // now unreachable through this panel — Edit stays disabled until a photo is
+  // picked (see the "Item 10c" describe block above), so the dialog never
+  // opens into that phase. ImageBlockMetaSection itself is unchanged/still
+  // used for every other phase (loading/ready/not-found/load-error) below.
 
   it("shows a loading state while resolving the picked photo's gallery item", () => {
     mockFetch.mockImplementation(() => new Promise(() => {}));
@@ -1095,6 +1182,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
         setProp={vi.fn()}
       />
     );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(screen.getByText("loading")).toBeTruthy();
   });
 
@@ -1107,6 +1195,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
         setProp={vi.fn()}
       />
     );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     await waitFor(() => expect(screen.getByText("notFound")).toBeTruthy());
   });
 
@@ -1119,6 +1208,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
         setProp={vi.fn()}
       />
     );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     await waitFor(() => expect(screen.getByText("loadError")).toBeTruthy());
     const callsBeforeRetry = mockFetch.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "retry" }));
@@ -1142,6 +1232,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
         setProp={vi.fn()}
       />
     );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     const titleInput = await screen.findByDisplayValue("Golden hour");
     fireEvent.change(titleInput, { target: { value: "New title" } });
     fireEvent.blur(titleInput);
@@ -1171,6 +1262,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
         setProp={vi.fn()}
       />
     );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     const titleInput = await screen.findByDisplayValue("Golden hour");
     fireEvent.change(titleInput, { target: { value: "New title" } });
     fireEvent.blur(titleInput);
@@ -1199,6 +1291,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
         setProp={vi.fn()}
       />
     );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     const titleInput = await screen.findByDisplayValue("Golden hour");
     fireEvent.change(titleInput, { target: { value: "New title" } });
     fireEvent.blur(titleInput);
@@ -1226,6 +1319,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
         setProp={vi.fn()}
       />
     );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     await screen.findByDisplayValue("Golden hour");
     expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(1);
 

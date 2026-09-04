@@ -347,7 +347,6 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.fields.headingLevel": "Level",
   "puckConfig.fields.textContent": "Text",
   "puckConfig.fields.videoUrl": "YouTube or Vimeo URL",
-  "puckConfig.fields.imageAlt": "Alt text",
   "puckConfig.fields.buttonLabel": "Button label",
   "puckConfig.fields.buttonSize": "Size",
   "puckConfig.fields.buttonAction": "Action",
@@ -923,15 +922,13 @@ export function createEditorConfig(
     inline: true,
     defaultProps: imageDefaultProps,
     fields: {
-      _style: styleField,
-      alt: { type: "text", label: t("puckConfig.fields.imageAlt") },
-    },
-    resolveFields: (_data, { fields }) => {
-      // alt is managed by the Content tab; the background image lives in _style
+      // No `alt` field: a photo's alt text (and the rest of its metadata) now
+      // lives on the GalleryItem and is entered once at upload, then baked
+      // onto the block when the photo is picked — the block itself only
+      // carries styles and layout. The background image lives in _style
       // (bgImagePublicId, via the Banner picker) and resize/colSpan/rowSpan in
       // the Layout tab — see StyleToolkitField.tsx.
-      const { alt: _a, ...rest } = fields as Record<string, unknown>;
-      return rest as typeof fields;
+      _style: styleField,
     },
     render: ImageBlock,
   };

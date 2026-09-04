@@ -248,9 +248,37 @@ export const textBlockConfig: ComponentConfig<TextBlockProps> = {
 // (F4) fades only the image layer, never the placeholder.
 // ---------------------------------------------------------------------------
 
+/**
+ * GalleryItem metadata baked onto the block at pick time (Item 10c) — the
+ * block is no longer a per-placement metadata form; the picked photo's own
+ * title/caption/altText/date/location/client/tags/meta are copied here so the
+ * renderer and every image modal have them with no per-placement editing.
+ * `sourceAssetId` is the asset this bundle was baked from, so the Content
+ * tab's Edit row can tell a re-pick apart from an already-baked photo and
+ * refetch/rebake instead of leaving stale metadata attached.
+ */
+export type ImageBlockBakedMeta = {
+  title?: string;
+  caption?: string;
+  altText?: string;
+  date?: string;
+  location?: string;
+  client?: string;
+  tags?: string[];
+  meta?: { label: string; value: string }[];
+  sourceAssetId?: string;
+};
+
 export type ImageBlockProps = {
   _style?: BlockStyle;
-  alt: string;
+  /** Legacy per-placement alt override (pre-Item 10c). No longer editable —
+   *  the Content tab now only bakes `meta.altText` from the picked photo —
+   *  but still read here so drafts saved before this change keep their alt
+   *  text. New picks leave this empty and rely on `meta.altText` instead.
+   *  Optional because it no longer has an editor field: Puck derives a config's
+   *  required `fields` keys from the required props. */
+  alt?: string;
+  meta?: ImageBlockBakedMeta;
 };
 
 // Back-compat only: the pre-redesign Image block (before commit ee5084d)
@@ -263,11 +291,12 @@ type LegacyImageBlockProps = {
   imageUrl?: string;
 };
 
-export const imageDefaultProps: ImageBlockProps = { alt: "" };
+export const imageDefaultProps: ImageBlockProps = {};
 
 export function ImageBlock({
   _style,
   alt,
+  meta,
   puck,
   imagePublicId,
   imageUrl,
@@ -352,7 +381,20 @@ export function ImageBlock({
             };
             return (
               <GalleryLightboxTrigger
-                image={{ id: effectiveStyle?.bgImagePublicId ?? "image", publicId: effectiveStyle?.bgImagePublicId ?? "", alt: alt || "" }}
+                image={{
+                  id: effectiveStyle?.bgImagePublicId ?? "image",
+                  publicId: effectiveStyle?.bgImagePublicId ?? "",
+                  // Legacy per-block `alt` (if this draft still has one) wins over
+                  // the baked GalleryItem's altText — see ImageBlockProps.alt.
+                  alt: alt || meta?.altText || "",
+                  title: meta?.title || undefined,
+                  caption: meta?.caption || undefined,
+                  date: meta?.date || undefined,
+                  location: meta?.location || undefined,
+                  client: meta?.client || undefined,
+                  meta: meta?.meta,
+                  tags: meta?.tags,
+                }}
                 buttonStyle={{ position: "absolute", inset: 0, height: "100%" }}
                 labels={lightboxLabels}
                 brandVars={puck?.metadata?.workspace?.brandVars}
@@ -393,9 +435,11 @@ export const imageBlockConfig: ComponentConfig<ImageBlockProps> = {
   label: "Image",
   inline: true,
   defaultProps: imageDefaultProps,
+  // `alt` is deliberately absent (Item 10c): it's no longer editable per
+  // placement, only baked from the picked photo's GalleryItem (`meta`) —
+  // see StyleToolkitField.tsx's Image content branch.
   fields: {
     _style: productionStyleField,
-    alt: { type: "text", label: "Alt text" },
   },
   render: ImageBlock,
 };

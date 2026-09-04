@@ -114,10 +114,6 @@ export function EditCollectionDialog({
     next: tWizard("next"),
     finish: tWizard("finish"),
     close: tWizard("close"),
-    closeConfirmTitle: tWizard("closeConfirmTitle"),
-    closeConfirmBody: tWizard("closeConfirmBody"),
-    closeConfirmDiscard: tWizard("closeConfirmDiscard"),
-    closeConfirmCancel: tWizard("closeConfirmCancel"),
     errorMessage: (code) => errMsg(code),
   };
 

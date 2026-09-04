@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from "@testing-library/react";
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./GalleryMasonryBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
+import { ImageBlock } from "./manualBlocks";
 import type { SlotComponent } from "@measured/puck";
 import { puckConfig } from "@/lib/page-builder/config";
 
@@ -284,5 +285,37 @@ describe("GalleryMasonryBlock — lightbox", () => {
     fireEvent.click(screen.getByRole("button", { name: "Alt 0" }));
 
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
+});
+
+// Item 11 — same gap as GalleryGridBlock (see its test file's matching
+// describe): a slot-built masonry's Image children each only know their own
+// photo, so nav must come from the block-scoped GallerySlotLightboxContext.
+describe("GalleryMasonryBlock — nav across slot-composed Image children (Item 11)", () => {
+  const imageSlot: SlotComponent = () => (
+    <>
+      {Array.from({ length: 5 }, (_, i) => (
+        <ImageBlock key={i} alt={`Photo ${i}`} _style={{ bgImagePublicId: `pid${i}` }} />
+      ))}
+    </>
+  );
+
+  it("clicking the 2nd of 5 photos in a slot-built masonry opens at index 1 with working prev/next and a 2/5 counter", () => {
+    render(GalleryMasonryBlock({ ...base, images: [], content: imageSlot }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Photo 1" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByAltText("Photo 1")).toBeInTheDocument();
+    expect(within(dialog).getByText("2 / 5")).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /next image/i }));
+    expect(within(dialog).getByAltText("Photo 2")).toBeInTheDocument();
+    expect(within(dialog).getByText("3 / 5")).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /previous image/i }));
+    fireEvent.click(within(dialog).getByRole("button", { name: /previous image/i }));
+    expect(within(dialog).getByAltText("Photo 0")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: /previous image/i })).toBeDisabled();
   });
 });

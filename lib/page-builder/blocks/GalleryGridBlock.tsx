@@ -28,6 +28,7 @@ import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/r
 import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import { GallerySlotLightboxProvider } from "./GallerySlotLightboxContext";
 import type { LightboxLabels } from "./Lightbox";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
@@ -224,14 +225,18 @@ export function GalleryGridBlock({
             })}
           </div>
         ) : (
-          SlotContent?.({
-            className: "pf-gallery-grid-slot",
-            style: {
-              display: "grid",
-              gridTemplateColumns: editorGridColumns,
-              gap: gapValue,
-            },
-          })
+          // Item 11: every Image block this slot renders registers itself here,
+          // so opening one pages through the others in THIS grid only.
+          <GallerySlotLightboxProvider>
+            {SlotContent?.({
+              className: "pf-gallery-grid-slot",
+              style: {
+                display: "grid",
+                gridTemplateColumns: editorGridColumns,
+                gap: gapValue,
+              },
+            })}
+          </GallerySlotLightboxProvider>
         )}
       </div>
     </section>

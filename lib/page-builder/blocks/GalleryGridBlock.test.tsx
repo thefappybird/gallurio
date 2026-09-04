@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { GalleryGridBlock, galleryGridDefaultProps } from "./GalleryGridBlock";
 import type { GalleryGridProps, GalleryImage } from "./GalleryGridBlock";
+import { ImageBlock } from "./manualBlocks";
 import { puckConfig } from "@/lib/page-builder/config";
+import type { SlotComponent } from "@measured/puck";
 
 const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 beforeEach(() => {
@@ -206,5 +208,47 @@ describe("GalleryGridBlock — lightbox", () => {
     fireEvent.click(screen.getByRole("button", { name: "Alt 0" }));
 
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
+});
+
+// Item 11 — a slot-built grid (content: [ImageBlock, ImageBlock, ...], the
+// current composition model) has no `images[]` array for GalleryGridBlock to
+// hand the Lightbox itself; each ImageBlock only knows its own single photo.
+// Nav must come from the block-scoped registry (GallerySlotLightboxContext).
+describe("GalleryGridBlock — nav across slot-composed Image children (Item 11)", () => {
+  function imageSlot(n: number): SlotComponent {
+    function ImageSlotStub() {
+      return (
+        <>
+          {Array.from({ length: n }, (_, i) => (
+            <ImageBlock key={i} alt={`Photo ${i}`} _style={{ bgImagePublicId: `pid${i}` }} />
+          ))}
+        </>
+      );
+    }
+    return ImageSlotStub;
+  }
+
+  it("clicking the 2nd of 5 photos opens at index 1 with working prev/next and a 2/5 counter", () => {
+    render(GalleryGridBlock({ ...base, images: [], content: imageSlot(5) }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Photo 1" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByAltText("Photo 1")).toBeInTheDocument();
+    expect(within(dialog).getByText("2 / 5")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: /previous image/i })).not.toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: /next image/i })).not.toBeDisabled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /next image/i }));
+    expect(within(dialog).getByAltText("Photo 2")).toBeInTheDocument();
+    expect(within(dialog).getByText("3 / 5")).toBeInTheDocument();
+  });
+
+  it("a standalone Image block outside a gallery block still opens without nav", () => {
+    render(<ImageBlock alt="Solo" _style={{ bgImagePublicId: "solo-pid" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Solo" }));
+    expect(screen.queryByRole("button", { name: /next image/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /previous image/i })).not.toBeInTheDocument();
   });
 });

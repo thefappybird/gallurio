@@ -26,6 +26,8 @@ import {
 } from "./presets/footer";
 import { GALLERY_LANDING_SPLIT_PRESET } from "./presets/galleryLanding";
 import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "../responsive";
+import { Render } from "@measured/puck";
+import { puckConfig } from "../config";
 import type { SlotComponent, Permissions } from "@measured/puck";
 
 // ---------------------------------------------------------------------------
@@ -378,6 +380,88 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     );
     fireEvent.click(screen.getByRole("button", { name: "A photo" }));
     expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
+
+  // Item 12, hypothesis 1: does puck.metadata reach an ImageBlock nested
+  // inside a Container's slot? Rendered through the REAL Puck pipeline (not
+  // a hand-built puck prop) — @measured/puck's SlotRender explicitly forwards
+  // the same top-level `metadata` to every slot-nested item, so this is
+  // expected to already pass; the sidebar leaf's panel (SidebarLayout.tsx)
+  // renders unconditionally, making it a reliable non-caption probe.
+  it("Item 12 hyp.1: an ImageBlock nested inside a Container slot still gets the workspace's imageModalLayout", () => {
+    render(
+      <Render
+        config={puckConfig}
+        data={{
+          root: {},
+          content: [
+            {
+              type: "Container",
+              props: {
+                id: "container-1",
+                content: [
+                  {
+                    type: "Image",
+                    props: { id: "img-1", alt: "A photo", _style: { bgImagePublicId: "ws/photo.jpg" } },
+                  },
+                ],
+              },
+            },
+          ],
+        }}
+        metadata={{
+          workspace: {
+            _id: "ws1",
+            name: "Workspace",
+            publicPage: { collectionsPopup: { imageModalLayout: "sidebar" } },
+          },
+        }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
+
+  it("carries baked meta (title/caption/etc) into the view-image modal (Item 10c)", () => {
+    render(
+      <ImageBlock
+        alt=""
+        _style={{ bgImagePublicId: "ws/photo.jpg" }}
+        meta={{
+          title: "Golden Hour",
+          caption: "Reception at dusk",
+          date: "2026-06-01",
+          location: "Manila",
+          client: "Cruz Wedding",
+          sourceAssetId: "ws/photo.jpg",
+        }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open photo" }));
+    expect(screen.getByText("Golden Hour")).toBeInTheDocument();
+    expect(screen.getByText("Reception at dusk")).toBeInTheDocument();
+  });
+
+  it("modal image alt falls back to baked meta.altText once the legacy per-block alt is empty (Item 10c)", () => {
+    render(
+      <ImageBlock alt="" _style={{ bgImagePublicId: "ws/photo.jpg" }} meta={{ altText: "Baked alt text" }} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Baked alt text" }));
+    expect(screen.getAllByAltText("Baked alt text").length).toBeGreaterThan(0);
+  });
+
+  it("the legacy per-block alt still wins over baked meta.altText when both are present (Item 10c back-compat)", () => {
+    render(
+      <ImageBlock
+        alt="Legacy alt"
+        _style={{ bgImagePublicId: "ws/photo.jpg" }}
+        meta={{ altText: "Baked alt text" }}
+      />
+    );
+    // The on-page <img> keeps using the legacy alt directly (unaffected by meta).
+    expect((screen.getByRole("img") as HTMLImageElement).alt).toBe("Legacy alt");
+    fireEvent.click(screen.getByRole("button", { name: "Legacy alt" }));
+    expect(screen.getAllByAltText("Legacy alt").length).toBeGreaterThan(0);
   });
 
   it("is not clickable while the editor canvas has it selected for editing", () => {

@@ -37,12 +37,8 @@ const labels: ImageWizardLabels = {
   jumpToPhoto: (n) => `Go to photo ${n}`,
   previous: "Previous",
   next: "Next",
-  finish: "Done",
+  finish: "Save and exit",
   close: "Close",
-  closeConfirmTitle: "Discard unsaved details?",
-  closeConfirmBody: "Unsaved changes will be lost.",
-  closeConfirmDiscard: "Discard",
-  closeConfirmCancel: "Keep editing",
   errorMessage: (code) => (code === "not_found" ? "Not found." : "Something went wrong."),
 };
 
@@ -119,7 +115,7 @@ describe("ImageMetaWizard", () => {
 
     mockFetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: "not_found" }) });
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "B title" } });
-    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
     await screen.findByRole("alert");
 
     // Photo A's earlier successful save is untouched — onSaved for "a" was only ever called once.
@@ -132,27 +128,37 @@ describe("ImageMetaWizard", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("closing with unsaved edits warns before discarding", async () => {
-    const { onOpenChange } = open();
+  // The wizard is skippable, so a half-filled photo is a valid outcome and
+  // there is nothing to discard: leaving saves, exactly like Next or the
+  // finish button.
+  it("closing with unsaved edits saves them, then closes", async () => {
+    const { onOpenChange, onSaved } = open();
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ...itemA, title: "Unsaved" }) });
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Unsaved" } });
     fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
 
-    expect(await screen.findByText("Discard unsaved details?")).toBeTruthy();
-    expect(onOpenChange).not.toHaveBeenCalledWith(false);
-
-    fireEvent.click(screen.getByRole("button", { name: /^keep editing$/i }));
-    expect(screen.getByLabelText("Title")).toHaveValue("Unsaved");
-
-    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /^discard$/i }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    const [, init] = mockFetch.mock.calls[0];
+    expect(JSON.parse(String(init?.body)).title).toBe("Unsaved");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("Done on the last photo saves it, then closes", async () => {
+  it("keeps the wizard open with its error when the save on exit fails", async () => {
+    const { onOpenChange } = open();
+    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: "not_found" }) });
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Unsaved" } });
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
+
+    await screen.findByRole("alert");
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(screen.getByLabelText("Title")).toHaveValue("Unsaved");
+  });
+
+  it("the finish button on the last photo saves it, then closes", async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ ...itemB, title: "B title" }) });
     const { onOpenChange, onSaved } = open([itemB]);
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "B title" } });
-    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));

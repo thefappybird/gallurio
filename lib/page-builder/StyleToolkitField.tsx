@@ -13,7 +13,9 @@
  * Editor chrome is intentionally English-only.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   SECTION_PRESET_KEYS,
   NAV_PRESET_KEYS,
@@ -108,6 +110,7 @@ import {
   CONTAINER_EFFECTIVE_PAD,
   COLUMNS_EFFECTIVE_PAD,
   TEXT_EFFECTIVE_PAD,
+  type ImageBlockBakedMeta,
 } from "./blocks/manualBlocks";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import {
@@ -901,6 +904,96 @@ export function NavigationDesignPanel({
   );
 }
 
+// Shape returned by GET /api/portfolio/gallery/items/by-asset/:assetId — see
+// ImageBlockMetaSection.tsx's identical (private) GalleryItemMeta type, which
+// this mirrors just enough of to bake fields onto the block.
+type BakeableGalleryItem = {
+  title?: string | null;
+  caption?: string | null;
+  altText?: string | null;
+  date?: string | null;
+  location?: string | null;
+  client?: string | null;
+  tags?: string[] | null;
+  meta?: { label: string; value: string }[] | null;
+};
+
+/**
+ * Item 10c — the Image block's Content tab is styles/layout only now: no
+ * per-placement Alt text input, no inline Photo-details form. Instead:
+ *  - on every pick/drop of a new photo, this bakes the GalleryItem's own
+ *    metadata onto the block (`meta`) so the renderer and every image modal
+ *    have it with no per-placement form (see ImageBlock in manualBlocks.tsx);
+ *  - a single `[title] ... [Edit]` row opens the same Photo-details editing
+ *    UI (ImageBlockMetaSection) in a dialog, instead of showing it inline.
+ */
+function ImageContentPanel({
+  props,
+  setProp,
+}: {
+  props: Record<string, unknown>;
+  setProp: (key: string, val: unknown) => void;
+}) {
+  const imageStyle = props._style as BlockStyle | undefined;
+  const assetId = imageStyle?.bgImagePublicId;
+  const bakedMeta = props.meta as ImageBlockBakedMeta | undefined;
+  const [editOpen, setEditOpen] = useState(false);
+
+  useEffect(() => {
+    // Already baked for the currently-picked photo — nothing to do. This is
+    // what makes the effect idempotent (no refetch loop) once it lands.
+    if (!assetId || bakedMeta?.sourceAssetId === assetId) return;
+    let cancelled = false;
+    fetch(`/api/portfolio/gallery/items/by-asset/${encodeURIComponent(assetId)}`)
+      .then((res) => (res.ok ? (res.json() as Promise<BakeableGalleryItem>) : null))
+      .then((item) => {
+        if (cancelled || !item) return;
+        const baked: ImageBlockBakedMeta = {
+          title: item.title || undefined,
+          caption: item.caption || undefined,
+          altText: item.altText || undefined,
+          date: item.date || undefined,
+          location: item.location || undefined,
+          client: item.client || undefined,
+          tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
+          meta: item.meta && item.meta.length > 0 ? item.meta : undefined,
+          sourceAssetId: assetId,
+        };
+        setProp("meta", baked);
+      })
+      .catch(() => {
+        // A failed bake just leaves the block without metadata for now — the
+        // Edit dialog (ImageBlockMetaSection) can still load/save it directly,
+        // and the next pick/mount retries since sourceAssetId never got set.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [assetId, bakedMeta?.sourceAssetId, setProp]);
+
+  const title = bakedMeta?.title?.trim();
+  const label = !assetId ? "No photo selected" : title || "Untitled photo";
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2 border border-border px-3 py-2 text-sm">
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        <Button type="button" variant="outline" size="xs" disabled={!assetId} onClick={() => setEditOpen(true)}>
+          Edit
+        </Button>
+      </div>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Photo details</DialogTitle>
+          </DialogHeader>
+          <ImageBlockMetaSection assetId={assetId} />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export function ContentInputs({
   type,
   props,
@@ -939,21 +1032,7 @@ export function ContentInputs({
     );
   }
   if (type === "Image") {
-    const imageStyle = props._style as BlockStyle | undefined;
-    return (
-      <div className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Alt text</span>
-          <input
-            type="text"
-            value={(props.alt as string) ?? ""}
-            onChange={(e) => setProp("alt", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-        </label>
-        <ImageBlockMetaSection assetId={imageStyle?.bgImagePublicId} />
-      </div>
-    );
+    return <ImageContentPanel props={props} setProp={setProp} />;
   }
   if (type === "Text") {
     return (

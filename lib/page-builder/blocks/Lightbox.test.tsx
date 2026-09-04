@@ -22,6 +22,21 @@ describe("Lightbox — legacy single-image call", () => {
     expect(screen.queryByRole("button", { name: /next image/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /previous image/i })).not.toBeInTheDocument();
   });
+
+  it("defaults to caption when no layout is passed", () => {
+    render(<Lightbox image={img("a")} onClose={() => {}} />);
+    expect(document.querySelector(".pf-modal-sidebar")).not.toBeInTheDocument();
+  });
+
+  // Item 12, "genuine second bug": Lightbox.tsx:279-281 used to hardcode
+  // layout="caption" for the legacy `image=` call shape, ignoring any passed
+  // `layout` outright. No production caller currently exercises this (both
+  // real callers already use the `images=` shape), but the signature itself
+  // must honor it now that LightboxLegacyProps carries `layout`.
+  it("honors a passed layout on the legacy image= call shape (Item 12)", () => {
+    render(<Lightbox image={img("full", { title: "T" })} layout="sidebar" onClose={() => {}} />);
+    expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
 });
 
 describe("Lightbox — navigation gated by images.length", () => {

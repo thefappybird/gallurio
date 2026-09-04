@@ -9,16 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,10 +61,6 @@ export type ImageWizardLabels = {
   next: string;
   finish: string;
   close: string;
-  closeConfirmTitle: string;
-  closeConfirmBody: string;
-  closeConfirmDiscard: string;
-  closeConfirmCancel: string;
   /** Maps a server error code (or null for a network/unknown failure) to a display string. */
   errorMessage: (code: string | null) => string;
 };
@@ -142,7 +128,6 @@ export function ImageMetaWizard({
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [errorById, setErrorById] = useState<Record<string, string | null>>({});
   const [saving, setSaving] = useState(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -154,7 +139,6 @@ export function ImageMetaWizard({
       setSavedIds(new Set());
       setErrorById({});
       setIndex(0);
-      setConfirmDiscard(false);
     }
     // `items` is a fixed snapshot handed to the wizard on open; re-running on
     // every identity change would wipe in-progress edits mid-session.
@@ -171,7 +155,7 @@ export function ImageMetaWizard({
     function onWindowKeyDown(e: KeyboardEvent) {
       if (e.key !== "Escape" || saving) return;
       e.stopPropagation();
-      requestClose();
+      handleFinish();
     }
     window.addEventListener("keydown", onWindowKeyDown, true);
     return () => window.removeEventListener("keydown", onWindowKeyDown, true);
@@ -243,6 +227,11 @@ export function ImageMetaWizard({
     setIndex(target);
   }
 
+  // The only exit path, shared by the finish button, Escape and the dialog's
+  // own close: leaving SAVES, exactly like moving between photos. The wizard is
+  // skippable, so a half-filled photo is a valid outcome and there is nothing
+  // to "discard"; a failed save keeps the wizard open with its error rather
+  // than dropping the edits on the floor.
   async function handleFinish() {
     if (isDirty(current.id)) {
       const ok = await saveItem(current.id);
@@ -251,17 +240,10 @@ export function ImageMetaWizard({
     onOpenChange(false);
   }
 
-  function requestClose() {
-    if (isDirty(current.id)) {
-      setConfirmDiscard(true);
-      return;
-    }
-    onOpenChange(false);
-  }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(next) => (next ? undefined : requestClose())}>
+      <Dialog open={open} onOpenChange={(next) => (next ? undefined : handleFinish())}>
         <DialogContent
           showCloseButton={false}
           className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-xl"
@@ -470,39 +452,13 @@ export function ImageMetaWizard({
                 </Button>
               )}
             </div>
-            <Button type="button" variant="ghost" onClick={requestClose} disabled={saving}>
+            <Button type="button" variant="ghost" onClick={handleFinish} disabled={saving}>
               {labels.close}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
-        open={confirmDiscard}
-        onOpenChange={(next) => {
-          if (!next) setConfirmDiscard(false);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{labels.closeConfirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{labels.closeConfirmBody}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmDiscard(false)}>
-              {labels.closeConfirmCancel}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmDiscard(false);
-                onOpenChange(false);
-              }}
-            >
-              {labels.closeConfirmDiscard}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

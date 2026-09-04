@@ -27,6 +27,7 @@ import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GALLERY_PAD_SHORTHAND, padVar, masonryColsVar } from "@/lib/page-builder/responsive";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import { GallerySlotLightboxProvider } from "./GallerySlotLightboxContext";
 import type { LightboxLabels } from "./Lightbox";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
@@ -270,44 +271,51 @@ export function GalleryMasonryBlock({
             );
             })}
           </div>
-        ) : useColumnLanes ? (
-          <>
-            <style>{`${explicitSlots.map((_, index) => {
-              const columnClassName = `${blockClassName}-column-${index + 1}`;
-              const columnOddHeight = index % 2 === 0 ? oddHeight : evenColumnOddHeight;
-              const columnEvenHeight = index % 2 === 0 ? evenHeight : evenColumnEvenHeight;
-              return `.${columnClassName}{display:flex;min-width:0;flex-direction:column;}.${columnClassName}>*{width:100%;}.${columnClassName}>*:not(:last-child){margin-bottom:${gapValue};}${alternatingHeights ? `.${columnClassName}>*:nth-child(odd){height:${columnOddHeight}px !important;aspect-ratio:auto !important;}.${columnClassName}>*:nth-child(even){height:${columnEvenHeight}px !important;aspect-ratio:auto !important;}` : ""}`;
-            }).join("")}`}</style>
-            <div
-              className={`${blockClassName}-columns`}
-              style={{
-                display: "grid",
-                gridTemplateColumns: `repeat(${responsiveColumns}, minmax(0, 1fr))`,
-                gap: gapValue,
-              }}
-            >
-              {explicitSlots.slice(0, columns).map((ColumnSlot, index) => {
-                const columnClassName = `${blockClassName}-column-${index + 1}`;
-                return (
-                  <div key={columnClassName} data-masonry-column={index + 1}>
-                    {ColumnSlot?.({ className: columnClassName })}
-                  </div>
-                );
-              })}
-            </div>
-          </>
         ) : (
-          <>
-            {/* New masonry slots use CSS columns so Image blocks remain direct,
-                movable Puck children. The scoped rule prevents a single image
-                from splitting across columns while keeping the editor drop zone
-                in the same visual flow as the public page. */}
-            <style>{`.${slotClassName}>*{display:inline-block;width:100%;vertical-align:top;break-inside:avoid;margin-bottom:${gapValue};}${alternatingHeights ? `.${slotClassName}>*:nth-child(odd){height:${oddHeight}px !important;aspect-ratio:auto !important;}.${slotClassName}>*:nth-child(even){height:${evenHeight}px !important;aspect-ratio:auto !important;}` : ""}`}</style>
-            {SlotContent?.({
-              className: slotClassName,
-              style: { columnCount: responsiveColumns as unknown as number, columnGap: gapValue },
-            })}
-          </>
+          // Item 11: every Image block either slot mode renders registers
+          // itself here, so opening one pages through the others in THIS
+          // masonry only (spans column lanes too — one shared registry).
+          <GallerySlotLightboxProvider>
+            {useColumnLanes ? (
+              <>
+                <style>{`${explicitSlots.map((_, index) => {
+                  const columnClassName = `${blockClassName}-column-${index + 1}`;
+                  const columnOddHeight = index % 2 === 0 ? oddHeight : evenColumnOddHeight;
+                  const columnEvenHeight = index % 2 === 0 ? evenHeight : evenColumnEvenHeight;
+                  return `.${columnClassName}{display:flex;min-width:0;flex-direction:column;}.${columnClassName}>*{width:100%;}.${columnClassName}>*:not(:last-child){margin-bottom:${gapValue};}${alternatingHeights ? `.${columnClassName}>*:nth-child(odd){height:${columnOddHeight}px !important;aspect-ratio:auto !important;}.${columnClassName}>*:nth-child(even){height:${columnEvenHeight}px !important;aspect-ratio:auto !important;}` : ""}`;
+                }).join("")}`}</style>
+                <div
+                  className={`${blockClassName}-columns`}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${responsiveColumns}, minmax(0, 1fr))`,
+                    gap: gapValue,
+                  }}
+                >
+                  {explicitSlots.slice(0, columns).map((ColumnSlot, index) => {
+                    const columnClassName = `${blockClassName}-column-${index + 1}`;
+                    return (
+                      <div key={columnClassName} data-masonry-column={index + 1}>
+                        {ColumnSlot?.({ className: columnClassName })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* New masonry slots use CSS columns so Image blocks remain direct,
+                    movable Puck children. The scoped rule prevents a single image
+                    from splitting across columns while keeping the editor drop zone
+                    in the same visual flow as the public page. */}
+                <style>{`.${slotClassName}>*{display:inline-block;width:100%;vertical-align:top;break-inside:avoid;margin-bottom:${gapValue};}${alternatingHeights ? `.${slotClassName}>*:nth-child(odd){height:${oddHeight}px !important;aspect-ratio:auto !important;}.${slotClassName}>*:nth-child(even){height:${evenHeight}px !important;aspect-ratio:auto !important;}` : ""}`}</style>
+                {SlotContent?.({
+                  className: slotClassName,
+                  style: { columnCount: responsiveColumns as unknown as number, columnGap: gapValue },
+                })}
+              </>
+            )}
+          </GallerySlotLightboxProvider>
         )}
       </div>
     </section>

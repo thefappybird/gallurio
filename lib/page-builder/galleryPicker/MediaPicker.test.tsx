@@ -630,7 +630,7 @@ describe("MediaPicker", () => {
       expect(await screen.findByText("Photo 1 of 1")).toBeTruthy();
       expect(screen.queryByRole("button", { name: /^previous$/i })).toBeNull();
       expect(screen.queryByRole("button", { name: /^next$/i })).toBeNull();
-      expect(screen.getByRole("button", { name: /^done$/i })).toBeTruthy();
+      expect(screen.getByRole("button", { name: /^save and exit$/i })).toBeTruthy();
     });
 
     it("multi mode: uploading appends the photo to the current selection, picker stays open", async () => {

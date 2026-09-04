@@ -372,7 +372,7 @@ describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata war
     fireEvent.click(await screen.findByRole("button", { name: /add details/i }));
     const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
     fireEvent.change(altField, { target: { value: "New photo" } });
-    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() =>
       expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/up-id" && (i as RequestInit)?.method === "PATCH")).toBe(true)

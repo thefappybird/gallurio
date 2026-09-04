@@ -219,7 +219,7 @@ describe("CreateCollectionDialog metadata wizard (10a)", () => {
     fireEvent.click(await screen.findByRole("button", { name: /add details/i }));
     const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
     fireEvent.change(altField, { target: { value: "A bride and groom" } });
-    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() =>
       expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/up-new" && (i as RequestInit)?.method === "PATCH")).toBe(true)
@@ -251,7 +251,7 @@ describe("CreateCollectionDialog incomplete-metadata warning", () => {
     fireEvent.click(screen.getByRole("button", { name: /add details/i }));
     const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
     fireEvent.change(altField, { target: { value: "A bride and groom" } });
-    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() => expect(screen.queryByRole("button", { name: /missing alt text/i })).toBeNull());
   });

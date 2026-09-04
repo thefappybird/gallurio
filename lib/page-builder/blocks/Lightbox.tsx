@@ -97,6 +97,7 @@ type LightboxNewProps = {
 type LightboxLegacyProps = {
   image: LightboxImage;
   onClose: () => void;
+  layout?: ImageModalLayout;
   closeLabel?: string;
   fullSizeAlt?: string;
   brandVars?: Record<string, string>;
@@ -277,7 +278,9 @@ export function modalImageSrc(publicId: string): string {
 export function Lightbox(props: LightboxProps) {
   const legacy = isLegacyProps(props);
   const images = legacy ? [props.image] : props.images;
-  const layout = legacy ? "caption" : resolveImageModalLayout(props.layout);
+  // A passed `layout` is honored either way now (Item 12) — `caption` is
+  // only the resolved default when none is given, on both call shapes.
+  const layout = resolveImageModalLayout(props.layout);
   const total = legacy ? images.length : props.total ?? images.length;
   const hasMoreProp = legacy ? false : props.hasMore ?? false;
   const onRequestMore = legacy ? undefined : props.onRequestMore;
