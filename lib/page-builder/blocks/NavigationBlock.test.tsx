@@ -224,10 +224,11 @@ describe("NavigationBlock — isomorphic render", () => {
 });
 
 describe("NavigationBlock — overallWidth (Item 1)", () => {
-  it("passes overallWidth='full' through to PortfolioHeader's inner nav row by default", () => {
+  it("navigationDefaultProps now default to overallWidth: 'page-fit' (item 8)", () => {
+    expect(navigationDefaultProps.overallWidth).toBe("page-fit");
     render(NavigationBlock({ ...navigationDefaultProps, content: stubSlot }));
     const nav = screen.getByRole("navigation", { name: "Portfolio" });
-    expect(nav.style.maxWidth).toBe("");
+    expect(nav.style.maxWidth).toBe("80rem");
   });
 
   it("a pre-existing Navigation block with no overallWidth key still resolves to full (no stored-data rewrite needed)", () => {

@@ -31,7 +31,7 @@ import {
   type HighlightSize,
   type StyleColorToken,
 } from "@/lib/page-builder/styleToolkit";
-import { PF_COLUMN_STACK_CLASS } from "@/lib/page-builder/responsive";
+import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "@/lib/page-builder/responsive";
 import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { getGalleryChromeLabelsFrom } from "@/lib/page-builder/blockContext";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
@@ -1138,7 +1138,13 @@ export function ContainerBlock({
         // vertical-distribution control a no-op. A row stack keeps the growth:
         // there it shares the WIDTH between siblings (load-bearing for the split
         // presets). See PF_COLUMN_STACK_CSS for why this is a stylesheet rule.
-        ...(s.flexDirection === "row" ? {} : { className: PF_COLUMN_STACK_CLASS }),
+        // A row stack additionally opts into wrap-to-stack on narrow pages when
+        // it asks for it — see PF_ROW_WRAP_CSS.
+        ...(s.flexDirection === "row"
+          ? s.flexWrap === "wrap"
+            ? { className: PF_ROW_WRAP_CLASS }
+            : {}
+          : { className: PF_COLUMN_STACK_CLASS }),
         style: {
           position: "relative",
           zIndex: 1,

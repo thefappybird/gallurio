@@ -27,16 +27,15 @@ export const GALLERY_LANDING_PRESET: ContainerBlockProps = {
   ]),
 };
 
-// A full-bleed, edge-to-edge split (no Columns, no page-fit clamp): the copy
-// panel and the image sit directly in the outer Container's own slot as two
-// row children, each pinned to 50% width. align-items:stretch (the slot's
-// fixed layout — see ContainerBlock) then matches the shorter copy panel's
-// height to the image's, so the color band runs the image's full height
-// instead of hugging its own short content.
+// A page-fit split (no Columns): the copy panel and the image sit directly
+// in the outer Container's own slot as two row children, each pinned to 50%
+// width. align-items:stretch (the slot's fixed layout — see ContainerBlock)
+// then matches the shorter copy panel's height to the image's, so the color
+// band runs the image's full height instead of hugging its own short content.
 export const GALLERY_LANDING_SPLIT_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
-  overallWidth: "full",
+  overallWidth: "page-fit",
   _style: { ...pageSection, flexDirection: "row", gap: 0 },
   content: slot([
     child("Container", {

@@ -59,21 +59,32 @@ describe("EditorContainerAnchor selection-bounce guard", () => {
   });
 });
 
-describe("EditorContainerAnchor height — container-class bridge case", () => {
-  it("renders the 4px bridge footprint when the only real child is a Columns block", async () => {
+describe("EditorContainerAnchor — container-class bridge case (item 5: out of flow)", () => {
+  it("renders the 16px bridge footprint out of flow when the only real child is a Columns block", async () => {
     mountStore(null, [{ type: "Columns" }]);
     const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
     const el = container.querySelector(".pf-container-anchor") as HTMLElement;
-    expect(el.style.height).toBe("4px");
+    expect(el.style.height).toBe("16px");
+    expect(el.style.position).toBe("absolute");
   });
 
-  it("renders the 4px bridge footprint when there are two container-class children", async () => {
+  it("renders the 16px bridge footprint out of flow when there are two container-class children", async () => {
     mountStore(null, [{ type: "Columns" }, { type: "Container" }]);
     const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
     const el = container.querySelector(".pf-container-anchor") as HTMLElement;
-    expect(el.style.height).toBe("4px");
+    expect(el.style.height).toBe("16px");
+    expect(el.style.position).toBe("absolute");
   });
+});
 
+describe("EditorContainerAnchor — empty container case (item 5: stays in flow)", () => {
+  it("renders the full editor footprint in flow (no position: absolute) when the slot is empty", async () => {
+    mountStore(null, []);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
+    expect(el.style.height).toBe("128px");
+    expect(el.style.position).toBe("");
+  });
 });
 
 describe("EditorContainerAnchor — ordinary content renders nothing", () => {

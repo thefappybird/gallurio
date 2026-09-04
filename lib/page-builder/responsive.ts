@@ -115,6 +115,31 @@ export const PF_COLUMN_STACK_CSS = `
 .${PF_COLUMN_STACK_CLASS} > [data-block="container"] { flex-grow: 0 !important; }
 `.trim();
 
+/** Marks a Container's ROW stack as wrap-to-stack on narrow pages. */
+export const PF_ROW_WRAP_CLASS = "pf-row-wrap";
+
+/**
+ * Turns an opted-in row stack into a single-column stack on narrow pages.
+ *
+ * A three-item row like the compact contact bar (heading block, contact
+ * details, button) has nowhere useful to go at 375px: `justify-content:
+ * between` keeps all three on one line and each one compresses until the copy
+ * wraps mid-phrase. Wrapping alone is not enough either — `flex-wrap: wrap`
+ * without a basis leaves an uneven two-then-one line. Pinning the children to
+ * `flex-basis: 100%` under the same breakpoint gives one item per line.
+ *
+ * Gated on the page container (not a viewport media query) for the same reason
+ * every other rule in this file is: the editor canvas is a narrow surface at a
+ * wide viewport, so only the container width tells the truth. Opt-in per
+ * Container via `_style.flexWrap: "wrap"` — an unmarked row is untouched.
+ */
+export const PF_ROW_WRAP_CSS = `
+@container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_COMPACT}px) {
+  .${PF_ROW_WRAP_CLASS} { flex-wrap: wrap; }
+  .${PF_ROW_WRAP_CLASS} > * { flex-basis: 100%; }
+}
+`.trim();
+
 /**
  * The sticky-footer frame: Navigation pinned on top, PageBody taking whatever is
  * left, Footer closing the page.
@@ -135,6 +160,7 @@ export const PF_PAGE_FRAME_CSS = `
 export const PF_RESPONSIVE_CSS = `
 ${PF_PAGE_FRAME_CSS}
 ${PF_COLUMN_STACK_CSS}
+${PF_ROW_WRAP_CSS}
 @container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_TABLET_MAX}px) {
   [data-block] {
     --pf-pad: 2.5rem 1.25rem;

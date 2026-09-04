@@ -133,6 +133,45 @@ describe("hero group — reading order and heading levels", () => {
   });
 });
 
+describe("CONTACT_BAR_PRESET — horizontal row, no Columns (item 4)", () => {
+  it("drops the Columns layer and lays its 3 children out as a row", () => {
+    const root: Node = { type: "Container", props: CONTACT_BAR_PRESET as unknown as Record<string, unknown> };
+    expect(collectColumnsNodes(root)).toHaveLength(0);
+
+    const style = (CONTACT_BAR_PRESET as unknown as { _style: Record<string, unknown> })._style;
+    expect(style.flexDirection).toBe("row");
+    expect(style.justifyContent).toBe("between");
+
+    const children = childrenOf(root);
+    expect(children.map((c) => c.type)).toEqual(["Container", "ContactDetails", "Button"]);
+  });
+
+  it("opts the row into wrapping so it stacks instead of compressing at 375px", () => {
+    const style = (CONTACT_BAR_PRESET as unknown as { _style: Record<string, unknown> })._style;
+    expect(style.flexWrap).toBe("wrap");
+  });
+});
+
+describe("FOOTER_DIRECTORY_PRESET — page-fit credits wrapper (item 9)", () => {
+  it("wraps only the trailing credits Text in a page-fit, start-aligned Container", () => {
+    const root: Node = { type: "Container", props: FOOTER_DIRECTORY_PRESET as unknown as Record<string, unknown> };
+    const top = childrenOf(root);
+    const credits = top[top.length - 1];
+    expect(credits.type).toBe("Container");
+    expect(credits.props.overallWidth).toBe("page-fit");
+    const style = credits.props._style as Record<string, unknown>;
+    expect(style.contentHorizontalAlign).toBe("start");
+    const inner = childrenOf(credits);
+    expect(inner).toHaveLength(1);
+    expect(inner[0].type).toBe("Text");
+    expect(inner[0].props.text).toBe("© 2026 Lumen Studio");
+
+    // The two Dividers stay full-bleed (untouched).
+    const dividers = top.filter((n) => n.type === "Divider");
+    expect(dividers).toHaveLength(2);
+  });
+});
+
 describe("footer statement — contrast-safe button", () => {
   it("pins buttonStyle: outline and buttonColorToken: foreground", () => {
     const root: Node = { type: "Container", props: FOOTER_STATEMENT_PRESET as unknown as Record<string, unknown> };

@@ -110,6 +110,12 @@ export type BlockStyle = {
   rowSpan?: number;
   // Flex container layout — for Container/Flex/preset sections
   flexDirection?: "row" | "column";
+  /** Lets a Container's ROW stack wrap to one child per line on narrow pages
+   *  instead of compressing. Unset keeps the existing no-wrap behavior, so
+   *  every row already in saved data is unaffected. Consumed by ContainerBlock
+   *  as a class, not as a resolved CSS property — the wrap is breakpoint-gated
+   *  (see PF_ROW_WRAP_CSS in responsive.ts). */
+  flexWrap?: "nowrap" | "wrap";
   /** Horizontal arrangement of a Container's child stack. New writes only. */
   contentHorizontalAlign?: "start" | "center" | "end" | "stretch";
   /** Vertical distribution of a Container's real children. New writes only. */

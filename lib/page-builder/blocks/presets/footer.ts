@@ -81,7 +81,11 @@ export const FOOTER_DIRECTORY_PRESET: FooterPresetProps = {
       ]),
     }),
     child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
-    child("Text", { text: "© 2026 Lumen Studio" }),
+    child("Container", {
+      overallWidth: "page-fit",
+      _style: { contentHorizontalAlign: "start" },
+      content: slot([child("Text", { text: "© 2026 Lumen Studio" })]),
+    }),
   ]),
 };
 

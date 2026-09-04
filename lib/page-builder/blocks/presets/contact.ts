@@ -84,34 +84,40 @@ export const CONTACT_SPLIT_PRESET: ContainerBlockProps = {
 export const CONTACT_BAR_PRESET: ContainerBlockProps = {
   backgroundImages: [],
   minHeight: "auto",
-  _style: { ...accentBandSection, gap: 0, paddingTop: "2.25rem", paddingBottom: "2.25rem" },
+  _style: {
+    ...accentBandSection,
+    flexDirection: "row",
+    // Wraps to one item per line on narrow pages — three items compressing
+    // side by side at 375px breaks the copy mid-phrase. See PF_ROW_WRAP_CSS.
+    flexWrap: "wrap",
+    justifyContent: "between",
+    gap: 32,
+    paddingTop: "2.25rem",
+    paddingBottom: "2.25rem",
+  },
   content: slot([
-    child("Columns", {
-      columns: 3,
-      minHeight: "0px",
-      _style: { gap: 32 },
+    child("Container", {
+      // Hugging Container: cancels the row's default flexGrow:1 so it sizes
+      // to its own content instead of sharing the row width evenly with
+      // ContactDetails/Button (see manualBlocks.tsx isHugWidth).
+      _style: { gap: 8, width: "fit-content" },
       content: slot([
-        child("Container", {
-          _style: { gap: 8 },
-          content: slot([
-            child("Heading", { level: "h3", text: "Get in Touch" }),
-            child("Text", { text: "Available for 2026 dates." }),
-          ]),
-        }),
-        child("ContactDetails", {
-          _style: {
-            labelColorToken: "foreground",
-            valueColorToken: "foreground",
-            iconColorToken: "foreground",
-          },
-        }),
-        child("Button", {
-          label: "Send a Message",
-          action: "open-contact",
-          align: "right",
-          _style: { ...onAccentBand, cellVerticalAlign: "center" },
-        }),
+        child("Heading", { level: "h3", text: "Get in Touch" }),
+        child("Text", { text: "Available for 2026 dates." }),
       ]),
+    }),
+    child("ContactDetails", {
+      _style: {
+        labelColorToken: "foreground",
+        valueColorToken: "foreground",
+        iconColorToken: "foreground",
+      },
+    }),
+    child("Button", {
+      label: "Send a Message",
+      action: "open-contact",
+      align: "right",
+      _style: onAccentBand,
     }),
   ]),
 };

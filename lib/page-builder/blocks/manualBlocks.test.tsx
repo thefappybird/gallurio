@@ -25,7 +25,7 @@ import {
   FOOTER_STATEMENT_PRESET,
 } from "./presets/footer";
 import { GALLERY_LANDING_SPLIT_PRESET } from "./presets/galleryLanding";
-import { PF_COLUMN_STACK_CLASS } from "../responsive";
+import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "../responsive";
 import type { SlotComponent, Permissions } from "@measured/puck";
 
 // ---------------------------------------------------------------------------
@@ -1347,6 +1347,25 @@ describe("ContainerBlock flex defaults", () => {
     expect(screen.getByTestId("slot-inner")).not.toHaveClass(PF_COLUMN_STACK_CLASS);
   });
 
+  it("marks a row stack that opted into wrapping, so it stacks on narrow pages", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexDirection: "row", flexWrap: "wrap" }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner).toHaveClass(PF_ROW_WRAP_CLASS);
+    expect(inner).not.toHaveClass(PF_COLUMN_STACK_CLASS);
+  });
+
+  it("leaves an unmarked row unwrapped, so existing rows are unaffected", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexDirection: "row" }} />);
+    expect(screen.getByTestId("slot-inner")).not.toHaveClass(PF_ROW_WRAP_CLASS);
+  });
+
+  it("does not wrap a COLUMN stack that carries flexWrap — the class is row-only", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexWrap: "wrap" }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner).not.toHaveClass(PF_ROW_WRAP_CLASS);
+    expect(inner).toHaveClass(PF_COLUMN_STACK_CLASS);
+  });
+
   it("editor mode: empty drop zone gets Puck's native minEmptyHeight so the whole area is droppable", () => {
     render(<ContainerBlock content={MockSlot} minHeight="short" puck={{ isEditing: true }} />);
     const inner = screen.getByTestId("slot-inner");
@@ -1534,7 +1553,6 @@ describe("Item 1: ContainerBlock overallWidth prop", () => {
   it.each([
     ["Directory footer", FOOTER_DIRECTORY_PRESET],
     ["Closing statement", FOOTER_STATEMENT_PRESET],
-    ["Split gallery intro", GALLERY_LANDING_SPLIT_PRESET],
   ])("%s fits inside its drawer preview instead of using the browser viewport", (_name, preset) => {
     const { container } = render(
       <ContainerBlock
@@ -1545,6 +1563,18 @@ describe("Item 1: ContainerBlock overallWidth prop", () => {
     );
     const section = container.querySelector("section") as HTMLElement;
     expect(section.style.width).toBe("100%");
+    expect(section.style.width).not.toBe("100vw");
+  });
+
+  it("Split gallery intro (now page-fit, item 6) never applies the full-bleed 100vw breakout in its drawer preview", () => {
+    const { container } = render(
+      <ContainerBlock
+        {...GALLERY_LANDING_SPLIT_PRESET}
+        content={stubSlot}
+        puck={{ isEditing: false, metadata: { presetPreview: true } } as never}
+      />
+    );
+    const section = container.querySelector("section") as HTMLElement;
     expect(section.style.width).not.toBe("100vw");
   });
 

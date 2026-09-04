@@ -225,6 +225,12 @@ describe("gallery/featured/video preset compositions", () => {
     expect(cards.every((node) => node.type === "CollectionCard")).toBe(true);
   });
 
+  it("GALLERY_LANDING_SPLIT_PRESET is page-fit, not full-bleed (item 6)", () => {
+    expect((GALLERY_LANDING_SPLIT_PRESET as unknown as Record<string, unknown>).overallWidth).toBe(
+      "page-fit",
+    );
+  });
+
   it("GALLERY_LANDING_PRESET sets overlayColorToken: 'primary' and no landing variant has a Button", () => {
     expect((GALLERY_LANDING_PRESET as unknown as Record<string, unknown>).overlayColorToken).toBe("primary");
 
