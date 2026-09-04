@@ -193,6 +193,16 @@ export default async function PortfolioHomePage({ params }: PageProps) {
       retry: tPopup("retry"),
       empty: tPopup("empty"),
       fullSizeAlt: tPopup("fullSizeAlt"),
+      openPhoto: tPopup("openPhoto"),
+      photo: tPopup("photo"),
+      loadMore: tPopup("loadMore"),
+      loadingMore: tPopup("loadingMore"),
+      loadMoreFailed: tPopup("loadMoreFailed"),
+      photoCountOne: tPopup("photoCountOne"),
+      photoCountOther: tPopup("photoCountOther"),
+      previousPhoto: tPopup("previousPhoto"),
+      nextPhoto: tPopup("nextPhoto"),
+      filmstripLabel: tPopup("filmstripLabel"),
     },
   };
 

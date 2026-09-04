@@ -3665,7 +3665,17 @@
       "failed": "Nabigong mag-load ng mga larawan.",
       "retry": "Subukang muli",
       "empty": "Wala pang mga larawan sa koleksyong ito.",
-      "fullSizeAlt": "Larawan sa buong sukat"
+      "fullSizeAlt": "Larawan sa buong sukat",
+      "openPhoto": "Buksan ang larawan",
+      "photo": "Larawan",
+      "loadMore": "Mag-load pa",
+      "loadingMore": "Naglo-load pa...",
+      "loadMoreFailed": "Nabigong mag-load ng karagdagang mga larawan.",
+      "photoCountOne": "1 larawan",
+      "photoCountOther": "{count} na larawan",
+      "previousPhoto": "Nakaraang larawan",
+      "nextPhoto": "Susunod na larawan",
+      "filmstripLabel": "Filmstrip ng mga larawan"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. Tingnan ang mga bagong gawa at mag-book agad.",

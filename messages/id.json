@@ -3665,7 +3665,17 @@
       "failed": "Gagal memuat foto.",
       "retry": "Coba lagi",
       "empty": "Belum ada foto di koleksi ini.",
-      "fullSizeAlt": "Foto ukuran penuh"
+      "fullSizeAlt": "Foto ukuran penuh",
+      "openPhoto": "Buka foto",
+      "photo": "Foto",
+      "loadMore": "Muat lebih banyak",
+      "loadingMore": "Memuat lebih banyak...",
+      "loadMoreFailed": "Gagal memuat foto tambahan.",
+      "photoCountOne": "1 foto",
+      "photoCountOther": "{count} foto",
+      "previousPhoto": "Foto sebelumnya",
+      "nextPhoto": "Foto berikutnya",
+      "filmstripLabel": "Filmstrip foto"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. Lihat karya terbaru dan hubungi kami untuk memesan.",

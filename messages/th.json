@@ -3665,7 +3665,17 @@
       "failed": "โหลดรูปภาพไม่สำเร็จ",
       "retry": "ลองอีกครั้ง",
       "empty": "ยังไม่มีรูปภาพในคอลเลกชันนี้",
-      "fullSizeAlt": "รูปภาพขนาดเต็ม"
+      "fullSizeAlt": "รูปภาพขนาดเต็ม",
+      "openPhoto": "เปิดรูปภาพ",
+      "photo": "รูปภาพ",
+      "loadMore": "โหลดเพิ่มเติม",
+      "loadingMore": "กำลังโหลดเพิ่มเติม...",
+      "loadMoreFailed": "โหลดรูปภาพเพิ่มเติมไม่สำเร็จ",
+      "photoCountOne": "1 รูปภาพ",
+      "photoCountOther": "{count} รูปภาพ",
+      "previousPhoto": "รูปภาพก่อนหน้า",
+      "nextPhoto": "รูปภาพถัดไป",
+      "filmstripLabel": "แถบฟิล์มรูปภาพ"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType} รับชมผลงานล่าสุดและติดต่อเพื่อจองคิวได้เลย",

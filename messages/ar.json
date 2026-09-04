@@ -3665,7 +3665,17 @@
       "failed": "فشل تحميل الصور.",
       "retry": "إعادة المحاولة",
       "empty": "لا توجد صور في هذه المجموعة بعد.",
-      "fullSizeAlt": "صورة بالحجم الكامل"
+      "fullSizeAlt": "صورة بالحجم الكامل",
+      "openPhoto": "فتح الصورة",
+      "photo": "صورة",
+      "loadMore": "تحميل المزيد",
+      "loadingMore": "جارٍ تحميل المزيد...",
+      "loadMoreFailed": "فشل تحميل مزيد من الصور.",
+      "photoCountOne": "صورة واحدة",
+      "photoCountOther": "{count} صور",
+      "previousPhoto": "الصورة السابقة",
+      "nextPhoto": "الصورة التالية",
+      "filmstripLabel": "شريط الصور"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. تصفح آخر الأعمال وتواصل معنا للحجز.",
