@@ -2671,6 +2671,23 @@
             "sharp": "Matalim",
             "subtle": "Banayad",
             "rounded": "Bilugan"
+          },
+          "layout": "Layout",
+          "popupLayoutLabel": "Layout ng popup",
+          "imageModalLayoutLabel": "Layout ng larawan",
+          "immersiveDisablesModal": "Isang larawan lang ang ipinapakita ng Immersive nang sabay — pinapalitan nito ang image modal.",
+          "notUsedByLayout": "Hindi ginagamit ng layout na ito",
+          "popupLayouts": {
+            "contactSheet": { "label": "Contact sheet", "description": "Pantay na grid ng mga thumbnail, may opsyonal na header para sa koleksyon." },
+            "justified": { "label": "Justified", "description": "Mga larawang naka-pack sa hanay na iba't ibang lapad ngunit iisang taas." },
+            "splitIndex": { "label": "Split index", "description": "Matangkad na pangunahing larawan sa tabi ng dalawang-kolumnang index ng iba." },
+            "immersive": { "label": "Immersive", "description": "Isang malaking larawan paisa-isa, buong-viewport, may filmstrip sa ibaba." }
+          },
+          "imageModalLayouts": {
+            "caption": { "label": "Caption", "description": "Ang larawan na may caption bar sa ibaba." },
+            "sidebar": { "label": "Sidebar", "description": "Ang larawan sa tabi ng sidebar ng metadata." },
+            "cinema": { "label": "Cinema", "description": "Full-bleed na larawan na may minimal na chrome." },
+            "sheet": { "label": "Sheet", "description": "Ang larawan na may metadata sheet na dumudulas paitaas." }
           }
         },
         "puckConfig": {

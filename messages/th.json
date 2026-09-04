@@ -2671,6 +2671,23 @@
             "sharp": "คม",
             "subtle": "เล็กน้อย",
             "rounded": "โค้งมน"
+          },
+          "layout": "เลย์เอาต์",
+          "popupLayoutLabel": "เลย์เอาต์ป็อปอัป",
+          "imageModalLayoutLabel": "เลย์เอาต์มุมมองภาพ",
+          "immersiveDisablesModal": "Immersive แสดงภาพทีละภาพเต็มจอ — และแทนที่หน้าต่างดูภาพ",
+          "notUsedByLayout": "ไม่ได้ใช้ในเลย์เอาต์นี้",
+          "popupLayouts": {
+            "contactSheet": { "label": "Contact sheet", "description": "กริดภาพขนาดย่อที่เท่ากัน พร้อมหัวข้อคอลเลกชันแบบเลือกได้" },
+            "justified": { "label": "Justified", "description": "ภาพเรียงเป็นแถวความกว้างต่างกันแต่ความสูงแถวเท่ากัน" },
+            "splitIndex": { "label": "Split index", "description": "ภาพหลักแนวตั้งอยู่ข้างดัชนีสองคอลัมน์ของภาพที่เหลือ" },
+            "immersive": { "label": "Immersive", "description": "ภาพใหญ่ทีละภาพเต็มจอ พร้อมแถบภาพขนาดเล็กด้านล่าง" }
+          },
+          "imageModalLayouts": {
+            "caption": { "label": "Caption", "description": "ภาพพร้อมแถบคำบรรยายด้านล่าง" },
+            "sidebar": { "label": "Sidebar", "description": "ภาพพร้อมแถบข้อมูลด้านข้าง" },
+            "cinema": { "label": "Cinema", "description": "ภาพเต็มขอบพร้อมองค์ประกอบน้อยที่สุด" },
+            "sheet": { "label": "Sheet", "description": "ภาพพร้อมแผ่นข้อมูลที่เลื่อนขึ้นมา" }
           }
         },
         "puckConfig": {

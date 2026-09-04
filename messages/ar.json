@@ -2671,6 +2671,23 @@
             "sharp": "حاد",
             "subtle": "خفيف",
             "rounded": "مستدير"
+          },
+          "layout": "التخطيط",
+          "popupLayoutLabel": "تخطيط النافذة المنبثقة",
+          "imageModalLayoutLabel": "تخطيط عرض الصورة",
+          "immersiveDisablesModal": "يعرض التخطيط الغامر صورة واحدة في كل مرة — ويحل محل نافذة عرض الصورة.",
+          "notUsedByLayout": "غير مستخدم في هذا التخطيط",
+          "popupLayouts": {
+            "contactSheet": { "label": "لوحة تلامس", "description": "شبكة متساوية من الصور المصغّرة، مع رأس اختياري للمجموعة." },
+            "justified": { "label": "مسطّر", "description": "صور مرصوفة في صفوف بعروض مختلفة وارتفاع صف واحد مشترك." },
+            "splitIndex": { "label": "فهرس مقسّم", "description": "صورة رئيسية طويلة بجانب فهرس من عمودين لبقية الصور." },
+            "immersive": { "label": "غامر", "description": "صورة كبيرة واحدة في كل مرة، بملء الشاشة، مع شريط صور أسفلها." }
+          },
+          "imageModalLayouts": {
+            "caption": { "label": "تعليق", "description": "الصورة مع شريط تعليق أسفلها." },
+            "sidebar": { "label": "شريط جانبي", "description": "الصورة بجانب شريط جانبي للبيانات الوصفية." },
+            "cinema": { "label": "سينما", "description": "صورة ملء الشاشة بحواف دنيا." },
+            "sheet": { "label": "ورقة", "description": "الصورة مع ورقة بيانات وصفية تنزلق للأعلى." }
           }
         },
         "puckConfig": {

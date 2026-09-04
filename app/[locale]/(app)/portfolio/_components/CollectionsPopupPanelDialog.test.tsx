@@ -328,3 +328,151 @@ describe("CollectionsPopupPanelDialog header styles", () => {
     expect(screen.getByText(/button size/i)).toBeInTheDocument();
   });
 });
+
+describe("CollectionsPopupPanelDialog layout pickers", () => {
+  it("renders a Layout section with a popup-layout and an image-modal-layout radiogroup", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    expect(screen.getByText(/^layout$/i)).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: /popup layout/i })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: /image view layout/i })).toBeInTheDocument();
+  });
+
+  it("defaults to contact-sheet / caption as checked when the config fields are unset", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    expect(screen.getByRole("radio", { name: /^contact sheet$/i })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: /^caption$/i })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("writes only popupLayout when a popup layout tile is clicked, leaving every other field untouched", () => {
+    const onChange = vi.fn();
+    const configWithExtras: PortfolioCollectionsPopupConfig = {
+      ...baseConfig,
+      titleText: "My Gallery",
+      closeButtonSize: 48,
+      imageModalLayout: "sidebar",
+    };
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={configWithExtras}
+        onChange={onChange}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: /^justified$/i }));
+    expect(onChange).toHaveBeenCalledWith({ ...configWithExtras, popupLayout: "justified" });
+  });
+
+  it("writes only imageModalLayout when an image-modal tile is clicked", () => {
+    const onChange = vi.fn();
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={onChange}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: /^sidebar$/i }));
+    expect(onChange).toHaveBeenCalledWith({ ...baseConfig, imageModalLayout: "sidebar" });
+  });
+
+  it("disables the image-modal picker with an inline explanation when popupLayout is immersive, and does not clear the stored imageModalLayout", () => {
+    const onChange = vi.fn();
+    const configImmersive: PortfolioCollectionsPopupConfig = {
+      ...baseConfig,
+      popupLayout: "immersive",
+      imageModalLayout: "sidebar",
+    };
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={configImmersive}
+        onChange={onChange}
+        brandKit={stubBrandKit}
+      />,
+    );
+
+    // Every image-modal tile is disabled, including the previously-chosen one.
+    const sidebarRadio = screen.getByRole("radio", { name: /^sidebar$/i });
+    expect(sidebarRadio).toBeDisabled();
+    expect(sidebarRadio).toHaveAttribute("aria-checked", "true");
+
+    // Inline explanation is visible.
+    expect(
+      screen.getByText(/immersive shows one image at a time/i),
+    ).toBeInTheDocument();
+
+    // Clicking a disabled tile never fires onChange — the stored value survives untouched.
+    fireEvent.click(screen.getByRole("radio", { name: /^caption$/i }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("restores the previous imageModalLayout selection (still 'sidebar') when switching back from immersive to a non-immersive popup layout", () => {
+    const onChange = vi.fn();
+    const configImmersive: PortfolioCollectionsPopupConfig = {
+      ...baseConfig,
+      popupLayout: "immersive",
+      imageModalLayout: "sidebar",
+    };
+    const { rerender } = renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={configImmersive}
+        onChange={onChange}
+        brandKit={stubBrandKit}
+      />,
+    );
+    expect(screen.getByRole("radio", { name: /^sidebar$/i })).toBeDisabled();
+
+    // Simulate the owner switching the popup layout away from immersive —
+    // imageModalLayout in config is untouched by this component the whole time.
+    rerender(
+      <CollectionsPopupPanelDialog
+        config={{ ...configImmersive, popupLayout: "contact-sheet" }}
+        onChange={onChange}
+        brandKit={stubBrandKit}
+      />,
+    );
+
+    const sidebarRadio = screen.getByRole("radio", { name: /^sidebar$/i });
+    expect(sidebarRadio).not.toBeDisabled();
+    expect(sidebarRadio).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("annotates Popup, Title styles, and Button styles as not used by the current layout when popupLayout is immersive", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={{ ...baseConfig, popupLayout: "immersive" }}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^popup$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
+    fireEvent.click(screen.getByRole("button", { name: /button styles/i }));
+    expect(screen.getAllByText(/not used by this layout/i)).toHaveLength(3);
+  });
+
+  it("does not show the 'not used' annotation for contact-sheet (every section applies)", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={{ ...baseConfig, popupLayout: "contact-sheet" }}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^popup$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
+    fireEvent.click(screen.getByRole("button", { name: /button styles/i }));
+    expect(screen.queryByText(/not used by this layout/i)).not.toBeInTheDocument();
+  });
+});

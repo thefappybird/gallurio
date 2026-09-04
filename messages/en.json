@@ -2671,6 +2671,23 @@
             "sharp": "Sharp",
             "subtle": "Subtle",
             "rounded": "Rounded"
+          },
+          "layout": "Layout",
+          "popupLayoutLabel": "Popup layout",
+          "imageModalLayoutLabel": "Image view layout",
+          "immersiveDisablesModal": "Immersive shows one image at a time — it replaces the image modal.",
+          "notUsedByLayout": "Not used by this layout",
+          "popupLayouts": {
+            "contactSheet": { "label": "Contact sheet", "description": "An even grid of thumbnails, with an optional header for the collection." },
+            "justified": { "label": "Justified", "description": "Photos packed into rows of varied width sharing one row height." },
+            "splitIndex": { "label": "Split index", "description": "A tall lead photo beside a two-column index of the rest." },
+            "immersive": { "label": "Immersive", "description": "One large photo at a time, full-viewport, with a filmstrip below." }
+          },
+          "imageModalLayouts": {
+            "caption": { "label": "Caption", "description": "The photo with a caption bar underneath." },
+            "sidebar": { "label": "Sidebar", "description": "The photo beside a metadata sidebar." },
+            "cinema": { "label": "Cinema", "description": "Full-bleed photo with minimal chrome." },
+            "sheet": { "label": "Sheet", "description": "The photo with a metadata sheet that slides up." }
           }
         },
         "puckConfig": {
