@@ -271,13 +271,16 @@ export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   fontPair: "merriweather-only",
   headingFont: "merriweather",
   bodyFont: "merriweather",
-  primaryColor: "#dde7e4",
-  secondaryColor: "#f0ede7",
-  accentColor: "#b7d2ca", // Gallurio brand teal surface
-  // Kept identical to the Minimal preset so the Theme panel marks that tile as
-  // the active one for a workspace that has never picked a theme.
-  backgroundColor: "#fcfcfb",
-  foregroundColor: "#18201f",
+  // MUST stay byte-identical to THEME_PRESET_DEFINITIONS.minimal.brandKit, or
+  // the Theme panel marks no tile active for a workspace that has never picked
+  // one — and the default portfolio renders a palette that exists nowhere in
+  // the picker. It cannot import that module (it imports this one), so the
+  // pairing is enforced by a test in themePresetDefinitions.test.ts instead.
+  primaryColor: "#ece5d8",
+  secondaryColor: "#f5f1e8",
+  accentColor: "#ddd0ba",
+  backgroundColor: "#fcfaf6",
+  foregroundColor: "#1f1c16",
   radius: "sharp",
   buttonStyle: "solid",
 };

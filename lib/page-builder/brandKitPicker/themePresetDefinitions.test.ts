@@ -4,6 +4,7 @@ import {
   BRAND_KIT_THEME_PRESETS,
   BRAND_KIT_RADII,
   BRAND_KIT_BUTTON_STYLES,
+  DEFAULT_BRAND_KIT,
 } from "@/lib/page-builder/types";
 import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 
@@ -52,6 +53,15 @@ describe("THEME_PRESET_DEFINITIONS", () => {
       });
     });
   }
+
+  // DEFAULT_BRAND_KIT hand-copies the Minimal palette because types.ts cannot
+  // import this module (this module imports types.ts). When the two drift, a
+  // workspace that never picked a theme matches no tile in the Theme panel and
+  // renders a palette that exists nowhere in the picker — which is exactly what
+  // happened when the presets were re-coloured and the copy was left behind.
+  it("keeps DEFAULT_BRAND_KIT identical to the Minimal preset", () => {
+    expect(DEFAULT_BRAND_KIT).toEqual(THEME_PRESET_DEFINITIONS.minimal.brandKit);
+  });
 
   // DESIGN.md -> the presets carry the app's Never-Pure discipline outward:
   // near-black rather than black, near-white rather than white.
