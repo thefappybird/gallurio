@@ -26,7 +26,7 @@ export function Justified({
   onOpen,
   labels,
 }: PopupLayoutBodyProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLUListElement>(null);
   const [width, setWidth] = useState<number | null>(null);
 
   useEffect(() => {
