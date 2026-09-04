@@ -55,6 +55,7 @@ import {
 import type { ComponentData } from "@measured/puck";
 import { usePuckStore } from "./puckHooks";
 import { SingleImageControl, MultiImageControl, MultiCollectionControl, SingleCollectionControl } from "./galleryPicker/MediaField";
+import { ImageBlockMetaSection } from "./ImageBlockMetaSection";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import type { CollectionRef } from "./galleryPicker/MediaField";
 import { useDemoPicker } from "./demoPickerContext";
@@ -938,16 +939,20 @@ export function ContentInputs({
     );
   }
   if (type === "Image") {
+    const imageStyle = props._style as BlockStyle | undefined;
     return (
-      <label className="flex flex-col gap-1 text-sm">
-        <span>Alt text</span>
-        <input
-          type="text"
-          value={(props.alt as string) ?? ""}
-          onChange={(e) => setProp("alt", e.target.value)}
-          className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
-      </label>
+      <div className="flex flex-col gap-3">
+        <label className="flex flex-col gap-1 text-sm">
+          <span>Alt text</span>
+          <input
+            type="text"
+            value={(props.alt as string) ?? ""}
+            onChange={(e) => setProp("alt", e.target.value)}
+            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </label>
+        <ImageBlockMetaSection assetId={imageStyle?.bgImagePublicId} />
+      </div>
     );
   }
   if (type === "Text") {

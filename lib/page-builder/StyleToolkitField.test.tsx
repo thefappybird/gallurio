@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import React from "react";
 import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, NavigationDesignPanel, BRAND_RADIUS_TO_PRESET, BannerSection, blockTabsForType } from "./StyleToolkitField";
@@ -1052,6 +1052,169 @@ describe("StyleToolkitField — Image block (F1 redesign)", () => {
   it("DesignTab for Image hides the Typography section (no on-page text)", () => {
     render(<DesignTab s={{}} set={vi.fn()} blockType="Image" />);
     expect(screen.queryByText("Typography")).toBeNull();
+  });
+});
+
+describe("StyleToolkitField — Image block metadata section (shared GalleryItem fields)", () => {
+  const fullItem = {
+    id: "item1",
+    caption: "A caption",
+    altText: "Alt describing photo",
+    title: "Golden hour",
+    date: "2026-05-01",
+    location: "Manila",
+    client: "Dela Cruz Wedding",
+    tags: ["outdoor", "sunset"],
+    meta: [{ label: "Photographer", value: "Juan" }],
+  };
+
+  function patchCallsFor(id: string) {
+    return mockFetch.mock.calls.filter(
+      ([url, opts]) =>
+        typeof url === "string" &&
+        url === `/api/portfolio/gallery/items/${id}` &&
+        (opts as RequestInit | undefined)?.method === "PATCH"
+    );
+  }
+
+  it("shows a prompt to choose a photo when the block has no image yet, and never fetches", () => {
+    render(<ContentInputs type="Image" props={{ alt: "", _style: {} }} setProp={vi.fn()} />);
+    expect(screen.getByText("chooseImagePrompt")).toBeTruthy();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("shows a loading state while resolving the picked photo's gallery item", () => {
+    mockFetch.mockImplementation(() => new Promise(() => {}));
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText("loading")).toBeTruthy();
+  });
+
+  it("shows an explicit message when the asset has no matching gallery item (404)", async () => {
+    mockFetch.mockImplementation(() => Promise.resolve({ ok: false, status: 404, json: async () => ({}) } as Response));
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("notFound")).toBeTruthy());
+  });
+
+  it("shows a load error with a retry action, and retry re-fetches", async () => {
+    mockFetch.mockImplementation(() => Promise.reject(new Error("network down")));
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("loadError")).toBeTruthy());
+    const callsBeforeRetry = mockFetch.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    await waitFor(() => expect(mockFetch.mock.calls.length).toBeGreaterThan(callsBeforeRetry));
+  });
+
+  it("loads the gallery item's values and PATCHes on blur with parsed tags/meta", async () => {
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      if (url === "/api/portfolio/gallery/items/item1" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    const titleInput = await screen.findByDisplayValue("Golden hour");
+    fireEvent.change(titleInput, { target: { value: "New title" } });
+    fireEvent.blur(titleInput);
+
+    await waitFor(() => expect(patchCallsFor("item1").length).toBe(1));
+    const body = JSON.parse((patchCallsFor("item1")[0][1] as RequestInit).body as string);
+    expect(body.title).toBe("New title");
+    expect(body.tags).toEqual(["outdoor", "sunset"]);
+    expect(body.meta).toEqual([{ label: "Photographer", value: "Juan" }]);
+    await waitFor(() => expect(screen.getByText("saved")).toBeTruthy());
+  });
+
+  it("shows a save error with retry when the PATCH fails, and retry resubmits", async () => {
+    let patchAttempts = 0;
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      if (url === "/api/portfolio/gallery/items/item1" && opts?.method === "PATCH") {
+        patchAttempts += 1;
+        if (patchAttempts === 1) return Promise.resolve({ ok: false, status: 500, json: async () => ({}) } as Response);
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    const titleInput = await screen.findByDisplayValue("Golden hour");
+    fireEvent.change(titleInput, { target: { value: "New title" } });
+    fireEvent.blur(titleInput);
+
+    await waitFor(() => expect(screen.getByText("saveError")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    await waitFor(() => expect(patchAttempts).toBe(2));
+    await waitFor(() => expect(screen.getByText("saved")).toBeTruthy());
+  });
+
+  it("adds and removes custom meta rows, capping at 20 and saving immediately on remove", async () => {
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      if (url === "/api/portfolio/gallery/items/item1" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    await screen.findByDisplayValue("Golden hour");
+    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /metaAdd/ }));
+    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(2);
+
+    // Fill remaining slots up to the 20-row cap.
+    for (let i = 0; i < 18; i++) {
+      fireEvent.click(screen.getByRole("button", { name: /metaAdd/ }));
+    }
+    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(20);
+    expect(screen.getByRole("button", { name: /metaAdd/ })).toBeDisabled();
+    expect(screen.getByText("metaLimitReached")).toBeTruthy();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "metaRemove" })[0]);
+    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(19);
+    await waitFor(() => expect(patchCallsFor("item1").length).toBeGreaterThan(0));
   });
 });
 
