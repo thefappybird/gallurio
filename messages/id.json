@@ -3601,7 +3601,10 @@
         "featuredEmpty": "Belum ada foto unggulan yang dipilih.",
         "carouselHint": "Geser atau gunakan panah untuk menjelajah",
         "carouselPrev": "Gambar sebelumnya",
-        "carouselNext": "Gambar berikutnya"
+        "carouselNext": "Gambar berikutnya",
+        "lightboxClose": "Tutup",
+        "lightboxCounter": "{current} dari {total}",
+        "lightboxFilmstrip": "Filmstrip foto"
       }
     },
     "nav": {

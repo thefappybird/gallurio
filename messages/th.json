@@ -3601,7 +3601,10 @@
         "featuredEmpty": "ยังไม่ได้เลือกภาพเด่น",
         "carouselHint": "ปัดหรือใช้ลูกศรเพื่อดูภาพ",
         "carouselPrev": "ภาพก่อนหน้า",
-        "carouselNext": "ภาพถัดไป"
+        "carouselNext": "ภาพถัดไป",
+        "lightboxClose": "ปิด",
+        "lightboxCounter": "{current} จาก {total}",
+        "lightboxFilmstrip": "แถบภาพขนาดย่อ"
       }
     },
     "nav": {

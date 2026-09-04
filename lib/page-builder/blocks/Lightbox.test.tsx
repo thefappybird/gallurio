@@ -136,7 +136,7 @@ describe("Lightbox — layouts degrade gracefully with only alt", () => {
 describe("Lightbox — cinema filmstrip", () => {
   it("exposes the filmstrip as a listbox with the current frame marked, never color-only", () => {
     render(<Lightbox images={[img("a"), img("b")]} layout="cinema" onClose={() => {}} />);
-    const listbox = screen.getByRole("listbox", { name: /photos in this set/i });
+    const listbox = screen.getByRole("listbox", { name: /photo filmstrip/i });
     const options = within(listbox).getAllByRole("option");
     expect(options).toHaveLength(2);
     expect(options[0]).toHaveAttribute("aria-selected", "true");
@@ -150,5 +150,43 @@ describe("Lightbox — close", () => {
     render(<Lightbox images={[img("a")]} onClose={onClose} />);
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe("Lightbox — brandVars", () => {
+  it("re-applies brandVars as custom properties on the portaled root, no inference from focus", () => {
+    render(
+      <Lightbox
+        images={[img("full", { title: "T" })]}
+        layout="sidebar"
+        brandVars={{ "--pf-color-bg": "#123456" }}
+        onClose={() => {}}
+      />
+    );
+    const dialog = screen.getByRole("dialog");
+    expect((dialog as HTMLElement).style.getPropertyValue("--pf-color-bg")).toBe("#123456");
+  });
+
+  it("degrades to the literal var() fallbacks when brandVars is absent — no wrong-color guess", () => {
+    render(<Lightbox images={[img("full", { title: "T" })]} layout="sidebar" onClose={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+    expect((dialog as HTMLElement).style.getPropertyValue("--pf-color-bg")).toBe("");
+  });
+});
+
+describe("Lightbox — labels", () => {
+  it("uses real localized strings when provided, instead of the English defaults", () => {
+    render(
+      <Lightbox
+        images={[img("a"), img("b")]}
+        labels={{ previous: "Nakaraan", next: "Susunod", counter: "{current} sa {total}", filmstrip: "Filmstrip" }}
+        layout="cinema"
+        onClose={() => {}}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Nakaraan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Susunod" })).toBeInTheDocument();
+    expect(screen.getByText("1 sa 2")).toBeInTheDocument();
+    expect(screen.getByRole("listbox", { name: "Filmstrip" })).toBeInTheDocument();
   });
 });

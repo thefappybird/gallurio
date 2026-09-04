@@ -172,6 +172,9 @@ export default async function PortfolioHomePage({ params }: PageProps) {
         carouselHint: t("gallery.carouselHint"),
         carouselPrev: t("gallery.carouselPrev"),
         carouselNext: t("gallery.carouselNext"),
+        lightboxClose: t("gallery.lightboxClose"),
+        lightboxCounter: t("gallery.lightboxCounter", { current: "{current}", total: "{total}" }),
+        lightboxFilmstrip: t("gallery.lightboxFilmstrip"),
       },
       nav: {
         navLandmark: tNav("navLandmark"),

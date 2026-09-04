@@ -90,6 +90,12 @@ export type GalleryChromeLabels = {
   carouselHint?: string;
   carouselPrev?: string;
   carouselNext?: string;
+  /** View-image modal (Lightbox) close button. */
+  lightboxClose?: string;
+  /** View-image modal position counter. Template with literal "{current}"/"{total}" tokens. */
+  lightboxCounter?: string;
+  /** aria-label for the cinema layout's filmstrip listbox. */
+  lightboxFilmstrip?: string;
 };
 
 /** Localized strings consumed by the Navigation block (resolved at the page boundary). */
@@ -197,6 +203,9 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
     carouselHint: g.carouselHint ?? "Swipe or use the arrows to browse",
     carouselPrev: g.carouselPrev ?? "Previous image",
     carouselNext: g.carouselNext ?? "Next image",
+    lightboxClose: g.lightboxClose ?? "Close",
+    lightboxCounter: g.lightboxCounter ?? "{current} / {total}",
+    lightboxFilmstrip: g.lightboxFilmstrip ?? "Photo filmstrip",
   };
 }
 

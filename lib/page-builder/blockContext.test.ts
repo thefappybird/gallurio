@@ -21,6 +21,9 @@ const DEFAULTS = {
   carouselHint: "Swipe or use the arrows to browse",
   carouselPrev: "Previous image",
   carouselNext: "Next image",
+  lightboxClose: "Close",
+  lightboxCounter: "{current} / {total}",
+  lightboxFilmstrip: "Photo filmstrip",
 };
 
 // ---------------------------------------------------------------------------
@@ -28,11 +31,11 @@ const DEFAULTS = {
 // ---------------------------------------------------------------------------
 
 describe("applyGalleryChromeDefaults", () => {
-  it("returns all 8 defaults when called with an empty object", () => {
+  it("returns all 11 defaults when called with an empty object", () => {
     expect(applyGalleryChromeDefaults({})).toEqual(DEFAULTS);
   });
 
-  it("returns all 8 defaults when called with no argument", () => {
+  it("returns all 11 defaults when called with no argument", () => {
     expect(applyGalleryChromeDefaults()).toEqual(DEFAULTS);
   });
 
@@ -46,6 +49,9 @@ describe("applyGalleryChromeDefaults", () => {
     expect(result.carouselHint).toBe(DEFAULTS.carouselHint);
     expect(result.carouselPrev).toBe(DEFAULTS.carouselPrev);
     expect(result.carouselNext).toBe(DEFAULTS.carouselNext);
+    expect(result.lightboxClose).toBe(DEFAULTS.lightboxClose);
+    expect(result.lightboxCounter).toBe(DEFAULTS.lightboxCounter);
+    expect(result.lightboxFilmstrip).toBe(DEFAULTS.lightboxFilmstrip);
   });
 });
 
@@ -91,9 +97,12 @@ describe("getGalleryChromeLabelsFrom", () => {
     expect(result.carouselHint).toBe(DEFAULTS.carouselHint);
     expect(result.carouselPrev).toBe(DEFAULTS.carouselPrev);
     expect(result.carouselNext).toBe(DEFAULTS.carouselNext);
+    expect(result.lightboxClose).toBe(DEFAULTS.lightboxClose);
+    expect(result.lightboxCounter).toBe(DEFAULTS.lightboxCounter);
+    expect(result.lightboxFilmstrip).toBe(DEFAULTS.lightboxFilmstrip);
   });
 
-  it("passes through all 8 keys when fully provided via puck metadata", () => {
+  it("passes through all 11 keys when fully provided via puck metadata", () => {
     const chrome = {
       empty: "E",
       noCollection: "NC",
@@ -103,6 +112,9 @@ describe("getGalleryChromeLabelsFrom", () => {
       carouselHint: "CH",
       carouselPrev: "CP",
       carouselNext: "CN",
+      lightboxClose: "LC",
+      lightboxCounter: "LCT",
+      lightboxFilmstrip: "LF",
     };
     const puck = { metadata: { workspace: { _id: "ws-3", name: "X", chrome: { gallery: chrome } } } };
     expect(getGalleryChromeLabelsFrom(puck)).toEqual(chrome);

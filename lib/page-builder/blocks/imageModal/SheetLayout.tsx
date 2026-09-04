@@ -31,8 +31,6 @@ const SHEET_STYLES = `
  */
 export function SheetLayout({
   image,
-  index,
-  total,
   hasNav,
   canGoPrev,
   canGoNext,
@@ -40,6 +38,9 @@ export function SheetLayout({
   onPrev,
   onNext,
   fullSizeAlt,
+  prevLabel,
+  nextLabel,
+  counterText,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const rows: { label: string; value: string }[] = [];
@@ -131,11 +132,11 @@ export function SheetLayout({
         )}
         {hasNav && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginTop: "4px" }}>
-            <NavArrowButton direction="prev" variant="brand" onClick={onPrev} disabled={!canGoPrev} pending={false} label="Previous image" />
+            <NavArrowButton direction="prev" variant="brand" onClick={onPrev} disabled={!canGoPrev} pending={false} label={prevLabel} />
             <span style={{ fontSize: "0.8125rem", opacity: 0.65 }}>
-              {index + 1} / {total}
+              {counterText}
             </span>
-            <NavArrowButton direction="next" variant="brand" onClick={onNext} disabled={!canGoNext} pending={isPendingMore} label="Next image" />
+            <NavArrowButton direction="next" variant="brand" onClick={onNext} disabled={!canGoNext} pending={isPendingMore} label={nextLabel} />
           </div>
         )}
       </div>

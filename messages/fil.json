@@ -3601,7 +3601,10 @@
         "featuredEmpty": "Wala pang piniling itinatampok na larawan.",
         "carouselHint": "Mag-swipe o gamitin ang mga arrow para mag-browse",
         "carouselPrev": "Nakaraang larawan",
-        "carouselNext": "Susunod na larawan"
+        "carouselNext": "Susunod na larawan",
+        "lightboxClose": "Isara",
+        "lightboxCounter": "{current} ng {total}",
+        "lightboxFilmstrip": "Filmstrip ng mga larawan"
       }
     },
     "nav": {

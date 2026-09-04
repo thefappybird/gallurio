@@ -8,7 +8,7 @@
  */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Lightbox, type LightboxImage } from "./Lightbox";
+import { Lightbox, type LightboxImage, type LightboxLabels } from "./Lightbox";
 import type { ImageModalLayout } from "@/lib/page-builder/types";
 
 export function GalleryLightboxTrigger({
@@ -21,6 +21,8 @@ export function GalleryLightboxTrigger({
   layout,
   closeLabel,
   fullSizeAlt,
+  labels,
+  brandVars,
   children,
   buttonStyle,
 }: {
@@ -35,6 +37,11 @@ export function GalleryLightboxTrigger({
   layout?: ImageModalLayout;
   closeLabel?: string;
   fullSizeAlt?: string;
+  /** Localized prev/next/counter/filmstrip copy — see Lightbox's LightboxLabels. */
+  labels?: LightboxLabels;
+  /** Forwarded straight to Lightbox — see the comment there for why it's
+   *  needed. Typically `puck.metadata.workspace.brandVars`. */
+  brandVars?: Record<string, string>;
   children: ReactNode;
   /** Merged onto the trigger button's base style — e.g. absolute-fill it when
    *  its picture is itself absolutely positioned inside the caller's frame. */
@@ -71,6 +78,8 @@ export function GalleryLightboxTrigger({
           onClose={() => setOpen(false)}
           closeLabel={closeLabel}
           fullSizeAlt={fullSizeAlt}
+          labels={labels}
+          brandVars={brandVars}
         />
       )}
     </>

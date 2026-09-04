@@ -53,6 +53,25 @@ export type ImageModalLeafProps = {
   onClose: () => void;
   closeLabel: string;
   fullSizeAlt: string;
+  /** Pre-resolved, localized. Already formatted — leaves render it verbatim. */
+  prevLabel: string;
+  nextLabel: string;
+  counterText: string;
+  filmstripLabel: string;
+};
+
+/** Every string this modal introduces beyond the pre-existing closeLabel/
+ *  fullSizeAlt. All optional, defaulting to the current English so no call
+ *  site breaks; callers resolve real translations at the page boundary (see
+ *  GalleryChromeLabels in blockContext.ts) and thread them down. */
+export type LightboxLabels = {
+  close?: string;
+  previous?: string;
+  next?: string;
+  /** Template with literal "{current}"/"{total}" tokens, e.g. "{current} / {total}". */
+  counter?: string;
+  /** aria-label for the cinema layout's filmstrip listbox. */
+  filmstrip?: string;
 };
 
 type LightboxNewProps = {
@@ -65,6 +84,10 @@ type LightboxNewProps = {
   onRequestMore?: () => Promise<void> | void;
   closeLabel?: string;
   fullSizeAlt?: string;
+  labels?: LightboxLabels;
+  /** Re-applied on the portaled root — see the comment above where it's
+   *  consumed for why this can't be inferred instead. */
+  brandVars?: Record<string, string>;
 };
 
 /** Legacy single-image call signature (CollectionPopup and other pre-refactor
@@ -76,6 +99,7 @@ type LightboxLegacyProps = {
   onClose: () => void;
   closeLabel?: string;
   fullSizeAlt?: string;
+  brandVars?: Record<string, string>;
 };
 
 export type LightboxProps = LightboxNewProps | LightboxLegacyProps;
@@ -102,43 +126,6 @@ const LAYOUT_COMPONENTS: Record<ImageModalLayout, (props: ImageModalLeafProps) =
   cinema: CinemaLayout,
   sheet: SheetLayout,
 };
-
-/** CSS custom property names the brand-token leaves (sidebar/sheet) read. */
-const BRAND_VAR_NAMES = [
-  "--pf-color-primary",
-  "--pf-color-secondary",
-  "--pf-color-accent",
-  "--pf-color-bg",
-  "--pf-color-fg",
-  "--pf-font-heading",
-  "--pf-font-body",
-  "--pf-radius",
-] as const;
-
-/**
- * DialogPrimitive.Portal renders into document.body, escaping the public-page
- * wrapper div that declares `--pf-*` brand tokens and `dir` (see
- * app/(public)/w/[orgSlug]/layout.tsx) — same reason CollectionPopup has to
- * re-apply `brandVars` on its own portaled root. This component has no
- * puck/brandVars prop in its contract, so it snapshots the live values off
- * whatever element has focus at mount time (still inside that wrapper, since
- * this only ever mounts from a click inside it) and re-applies them as an
- * inline style on its own portaled root. Runs once per mount; safe because
- * Lightbox is always freshly mounted per open (never kept alive while closed).
- */
-function snapshotPortalStyle(): CSSProperties {
-  if (typeof document === "undefined") return {};
-  const source = document.activeElement instanceof HTMLElement ? document.activeElement : document.body;
-  const computed = window.getComputedStyle(source);
-  const style: Record<string, string> = {};
-  for (const name of BRAND_VAR_NAMES) {
-    const value = computed.getPropertyValue(name).trim();
-    if (value) style[name] = value;
-  }
-  const direction = computed.direction;
-  if (direction === "rtl" || direction === "ltr") style.direction = direction;
-  return style as CSSProperties;
-}
 
 const MODAL_STYLES = `
 [data-lightbox-close]:focus-visible,
@@ -294,12 +281,16 @@ export function Lightbox(props: LightboxProps) {
   const total = legacy ? images.length : props.total ?? images.length;
   const hasMoreProp = legacy ? false : props.hasMore ?? false;
   const onRequestMore = legacy ? undefined : props.onRequestMore;
-  const { onClose } = props;
-  const closeLabel = props.closeLabel ?? "Close";
+  const { onClose, brandVars } = props;
+  const labels = legacy ? undefined : props.labels;
+  const closeLabel = props.closeLabel ?? labels?.close ?? "Close";
   const fullSizeAlt = props.fullSizeAlt ?? "Full size photo";
+  const prevLabel = labels?.previous ?? "Previous image";
+  const nextLabel = labels?.next ?? "Next image";
+  const counterTemplate = labels?.counter ?? "{current} / {total}";
+  const filmstripLabel = labels?.filmstrip ?? "Photo filmstrip";
   const initialIndexRaw = legacy ? 0 : props.initialIndex ?? 0;
 
-  const [portalStyle] = useState<CSSProperties>(snapshotPortalStyle);
   const [currentIndex, setCurrentIndex] = useState(() =>
     Math.min(Math.max(initialIndexRaw, 0), Math.max(images.length - 1, 0))
   );
@@ -367,6 +358,9 @@ export function Lightbox(props: LightboxProps) {
   const currentImage = images[currentIndex] ?? images[0];
   const LeafComponent = LAYOUT_COMPONENTS[layout];
   const closeVariant: "scrim" | "brand" = SCRIM_LAYOUTS.has(layout) ? "scrim" : "brand";
+  const counterText = counterTemplate
+    .replace("{current}", String(currentIndex + 1))
+    .replace("{total}", String(total));
 
   return (
     <DialogPrimitive.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -387,7 +381,12 @@ export function Lightbox(props: LightboxProps) {
             inset: 0,
             zIndex: 201,
             display: "flex",
-            ...portalStyle,
+            // Re-apply brand vars: the Portal escapes the page wrapper that sets
+            // them (same reason ContactModal does this). No brandVars means no
+            // per-tenant color here — the var(--pf-color-*, <literal>) fallbacks
+            // already on every leaf are the correct degradation, not a second
+            // inferred source of truth.
+            ...(brandVars as CSSProperties),
           }}
         >
           <style>{MODAL_STYLES}</style>
@@ -408,6 +407,10 @@ export function Lightbox(props: LightboxProps) {
               onClose={onClose}
               closeLabel={closeLabel}
               fullSizeAlt={fullSizeAlt}
+              prevLabel={prevLabel}
+              nextLabel={nextLabel}
+              counterText={counterText}
+              filmstripLabel={filmstripLabel}
             />
           ) : null}
         </DialogPrimitive.Popup>

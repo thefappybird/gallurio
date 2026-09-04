@@ -36,8 +36,6 @@ const SIDEBAR_STYLES = `
  */
 export function SidebarLayout({
   image,
-  index,
-  total,
   hasNav,
   canGoPrev,
   canGoNext,
@@ -45,6 +43,9 @@ export function SidebarLayout({
   onPrev,
   onNext,
   fullSizeAlt,
+  prevLabel,
+  nextLabel,
+  counterText,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const facts: { label: string; value: string }[] = [];
@@ -117,10 +118,10 @@ export function SidebarLayout({
               onClick={onPrev}
               disabled={!canGoPrev}
               pending={false}
-              label="Previous image"
+              label={prevLabel}
             />
             <span style={{ fontSize: "0.8125rem", opacity: 0.65 }}>
-              {index + 1} / {total}
+              {counterText}
             </span>
             <NavArrowButton
               direction="next"
@@ -128,7 +129,7 @@ export function SidebarLayout({
               onClick={onNext}
               disabled={!canGoNext}
               pending={isPendingMore}
-              label="Next image"
+              label={nextLabel}
             />
           </div>
         )}

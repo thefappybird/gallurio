@@ -15,8 +15,6 @@ import { NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Ligh
  */
 export function CaptionLayout({
   image,
-  index,
-  total,
   hasNav,
   canGoPrev,
   canGoNext,
@@ -24,6 +22,9 @@ export function CaptionLayout({
   onPrev,
   onNext,
   fullSizeAlt,
+  prevLabel,
+  nextLabel,
+  counterText,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const hasCaptionText = Boolean(image.title || image.caption);
@@ -61,7 +62,7 @@ export function CaptionLayout({
             onClick={onPrev}
             disabled={!canGoPrev}
             pending={false}
-            label="Previous image"
+            label={prevLabel}
           />
         )}
         {src ? (
@@ -81,7 +82,7 @@ export function CaptionLayout({
             onClick={onNext}
             disabled={!canGoNext}
             pending={isPendingMore}
-            label="Next image"
+            label={nextLabel}
           />
         )}
       </div>
@@ -97,7 +98,7 @@ export function CaptionLayout({
           )}
           {hasNav && (
             <p style={{ margin: "8px 0 0", color: "rgba(242,242,242,0.66)", fontSize: "0.75rem" }}>
-              {index + 1} / {total}
+              {counterText}
             </p>
           )}
         </div>

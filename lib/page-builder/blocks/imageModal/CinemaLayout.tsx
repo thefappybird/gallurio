@@ -64,7 +64,6 @@ export function CinemaLayout({
   image,
   images,
   index,
-  total,
   hasNav,
   canGoPrev,
   canGoNext,
@@ -73,6 +72,10 @@ export function CinemaLayout({
   onNext,
   onSelect,
   fullSizeAlt,
+  prevLabel,
+  nextLabel,
+  counterText,
+  filmstripLabel,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const [chromeVisible, setChromeVisible] = useState(true);
@@ -127,10 +130,10 @@ export function CinemaLayout({
             style={{ position: "absolute", inset: "0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", pointerEvents: "none" }}
           >
             <span style={{ pointerEvents: "auto" }}>
-              <NavArrowButton direction="prev" variant="scrim" onClick={onPrev} disabled={!canGoPrev} pending={false} label="Previous image" />
+              <NavArrowButton direction="prev" variant="scrim" onClick={onPrev} disabled={!canGoPrev} pending={false} label={prevLabel} />
             </span>
             <span style={{ pointerEvents: "auto" }}>
-              <NavArrowButton direction="next" variant="scrim" onClick={onNext} disabled={!canGoNext} pending={isPendingMore} label="Next image" />
+              <NavArrowButton direction="next" variant="scrim" onClick={onNext} disabled={!canGoNext} pending={isPendingMore} label={nextLabel} />
             </span>
           </div>
         )}
@@ -156,12 +159,12 @@ export function CinemaLayout({
             </div>
             {hasNav && (
               <span style={{ fontSize: "0.75rem", color: "rgba(242,242,242,0.66)", flex: "0 0 auto" }}>
-                {index + 1} / {total}
+                {counterText}
               </span>
             )}
           </div>
           {hasNav && (
-            <div className="pf-modal-cinema-filmstrip" role="listbox" aria-label="Photos in this set" aria-orientation="horizontal">
+            <div className="pf-modal-cinema-filmstrip" role="listbox" aria-label={filmstripLabel} aria-orientation="horizontal">
               {images.map((frame, i) => {
                 const thumbSrc = imageDeliveryUrl(frame.publicId, { width: 160, height: 120, fit: "cover" });
                 const selected = i === index;

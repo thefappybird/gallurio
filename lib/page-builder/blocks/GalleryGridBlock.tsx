@@ -27,6 +27,7 @@ import {
 import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/responsive";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import type { LightboxLabels } from "./Lightbox";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
 
@@ -112,6 +113,15 @@ export function GalleryGridBlock({
   // the Puck slot of regular Image blocks instead.
   const useLegacyImages = list.length > 0;
   const SlotContent = typeof Content === "function" ? Content : undefined;
+  const chromeLabels = getGalleryChromeLabelsFrom(puck);
+  const lightboxLabels: LightboxLabels = {
+    close: chromeLabels.lightboxClose,
+    previous: chromeLabels.carouselPrev,
+    next: chromeLabels.carouselNext,
+    counter: chromeLabels.lightboxCounter,
+    filmstrip: chromeLabels.lightboxFilmstrip,
+  };
+  const brandVars = puck?.metadata?.workspace?.brandVars;
 
   if (!useLegacyImages && !SlotContent) {
     return (
@@ -146,7 +156,7 @@ export function GalleryGridBlock({
               margin: 0,
             }}
           >
-            {getGalleryChromeLabelsFrom(puck).empty}
+            {chromeLabels.empty}
           </p>
         )}
       </section>
@@ -191,6 +201,8 @@ export function GalleryGridBlock({
                   image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}
                   images={legacyLightboxImages}
                   index={i}
+                  labels={lightboxLabels}
+                  brandVars={brandVars}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

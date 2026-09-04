@@ -3601,7 +3601,10 @@
         "featuredEmpty": "لم تُحدَّد صور مميَّزة بعد.",
         "carouselHint": "اسحب أو استخدم الأسهم للتصفّح",
         "carouselPrev": "الصورة السابقة",
-        "carouselNext": "الصورة التالية"
+        "carouselNext": "الصورة التالية",
+        "lightboxClose": "إغلاق",
+        "lightboxCounter": "{current} من {total}",
+        "lightboxFilmstrip": "شريط الصور المصغّرة"
       }
     },
     "nav": {

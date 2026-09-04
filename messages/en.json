@@ -3601,7 +3601,10 @@
         "featuredEmpty": "No featured photos selected yet.",
         "carouselHint": "Swipe or use the arrows to browse",
         "carouselPrev": "Previous image",
-        "carouselNext": "Next image"
+        "carouselNext": "Next image",
+        "lightboxClose": "Close",
+        "lightboxCounter": "{current} / {total}",
+        "lightboxFilmstrip": "Photo filmstrip"
       }
     },
     "nav": {

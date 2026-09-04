@@ -26,6 +26,7 @@ import type { GalleryImage } from "./GalleryGridBlock";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GALLERY_PAD_SHORTHAND, padVar, masonryColsVar } from "@/lib/page-builder/responsive";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import type { LightboxLabels } from "./Lightbox";
 import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
 
@@ -133,6 +134,14 @@ export function GalleryMasonryBlock({
     width: img.width,
     height: img.height,
   }));
+  const lightboxLabels: LightboxLabels = {
+    close: labels.lightboxClose,
+    previous: labels.carouselPrev,
+    next: labels.carouselNext,
+    counter: labels.lightboxCounter,
+    filmstrip: labels.lightboxFilmstrip,
+  };
+  const brandVars = puck?.metadata?.workspace?.brandVars;
 
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
@@ -229,6 +238,8 @@ export function GalleryMasonryBlock({
                   image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}
                   images={legacyLightboxImages}
                   index={i}
+                  labels={lightboxLabels}
+                  brandVars={brandVars}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

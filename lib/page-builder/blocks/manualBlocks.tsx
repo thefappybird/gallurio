@@ -32,7 +32,9 @@ import {
   type StyleColorToken,
 } from "@/lib/page-builder/styleToolkit";
 import { PF_COLUMN_STACK_CLASS } from "@/lib/page-builder/responsive";
+import { getGalleryChromeLabelsFrom } from "@/lib/page-builder/blockContext";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import type { LightboxLabels } from "./Lightbox";
 
 // Highlight (marker band) appearance — mirrors GalleryText.tsx so all blocks
 // use the same visual output without a shared import cycle.
@@ -339,10 +341,20 @@ export function ImageBlock({
             // would otherwise treat the click as a block-select, and never in
             // the drawer's decorative preset preview.
             if (isEditing || presetPreview) return picture;
+            const chromeLabels = getGalleryChromeLabelsFrom(puck);
+            const lightboxLabels: LightboxLabels = {
+              close: chromeLabels.lightboxClose,
+              previous: chromeLabels.carouselPrev,
+              next: chromeLabels.carouselNext,
+              counter: chromeLabels.lightboxCounter,
+              filmstrip: chromeLabels.lightboxFilmstrip,
+            };
             return (
               <GalleryLightboxTrigger
                 image={{ id: effectiveStyle?.bgImagePublicId ?? "image", publicId: effectiveStyle?.bgImagePublicId ?? "", alt: alt || "" }}
                 buttonStyle={{ position: "absolute", inset: 0, height: "100%" }}
+                labels={lightboxLabels}
+                brandVars={puck?.metadata?.workspace?.brandVars}
               >
                 {picture}
               </GalleryLightboxTrigger>
