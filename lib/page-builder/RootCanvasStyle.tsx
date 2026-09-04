@@ -105,11 +105,11 @@ const CANVAS_ROOT_SELECTOR =
 // exact-match attribute selector below is root-exclusive and does NOT touch nested
 // slots.
 //
-// The top-level zone mirrors the public sticky-footer grid: pinned Navigation,
-// a flexible PageBody row, then pinned Footer. The PageBody slot supplies the
+// The sticky-footer frame for this zone comes from PF_PAGE_FRAME_CSS (emitted
+// below with the rest of the shared sheet), which matches the drop zone by the
+// PageBody it contains — the same rule the public page and the draft preview
+// use, so the three surfaces cannot drift apart. The PageBody slot supplies the
 // large empty drop target instead of an artificial tail below the footer.
-const CANVAS_ROOT_DROPZONE_CSS =
-  `[data-puck-dropzone="root:default-zone"] { display: grid; grid-template-rows: auto minmax(auto, 1fr) auto; min-height: 100dvh; }`;
 
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet
@@ -157,7 +157,7 @@ export function buildCanvasCss(
     : "";
   // Emitted last so it layers over the base width rules in the cascade.
   const viewportRule = viewport ? buildCanvasViewportCss(viewport.deviceWidth, viewport.zoom) : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}\n${viewportRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}\n${viewportRule}`;
 }
 
 /**

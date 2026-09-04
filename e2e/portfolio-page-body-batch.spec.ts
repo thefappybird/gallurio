@@ -47,13 +47,17 @@ test("page body, component drawer, preset previews, and drafts stay coherent", a
     return {
       bodyWidth: body.getBoundingClientRect().width,
       previewWidth: (body.closest("[data-puck-preview]") as HTMLElement).getBoundingClientRect().width,
-      grid: root ? getComputedStyle(root).display : "",
+      frameDisplay: root ? getComputedStyle(root).display : "",
+      frameDirection: root ? getComputedStyle(root).flexDirection : "",
       rootMinHeight: root ? parseFloat(getComputedStyle(root).minHeight) : 0,
       slotPaddingInline: slot ? [getComputedStyle(slot).paddingLeft, getComputedStyle(slot).paddingRight] : [],
     };
   });
   expect(bodyGeometry.bodyWidth).toBeCloseTo(bodyGeometry.previewWidth, 0);
-  expect(bodyGeometry.grid).toBe("grid");
+  // Sticky-footer frame, now from the shared sheet (PF_PAGE_FRAME_CSS) so the
+  // canvas, the preview and the public page all use one rule.
+  expect(bodyGeometry.frameDisplay).toBe("flex");
+  expect(bodyGeometry.frameDirection).toBe("column");
   expect(bodyGeometry.rootMinHeight).toBeGreaterThanOrEqual(899);
   expect(bodyGeometry.slotPaddingInline).toEqual(["24px", "24px"]);
 

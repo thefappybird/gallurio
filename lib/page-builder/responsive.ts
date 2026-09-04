@@ -115,7 +115,25 @@ export const PF_COLUMN_STACK_CSS = `
 .${PF_COLUMN_STACK_CLASS} > [data-block="container"] { flex-grow: 0 !important; }
 `.trim();
 
+/**
+ * The sticky-footer frame: Navigation pinned on top, PageBody taking whatever is
+ * left, Footer closing the page.
+ *
+ * It has to key on the PageBody's own marker because the element that actually
+ * parents the three chrome blocks differs per surface and neither side can style
+ * it directly: in the editor it is Puck's root drop zone, on the public page and
+ * in the draft preview it is the anonymous wrapper `<Render>` puts around the
+ * zone. Declaring the frame on the root wrapper instead (which IS ours) does
+ * nothing — that wrapper's only child is this element, so its rows never see the
+ * three blocks at all. `:has(> …)` matches exactly the one element that holds
+ * them, on both surfaces, from a single rule.
+ */
+export const PF_PAGE_FRAME_CSS = `
+:has(> [data-block="page-body"]) { display: flex; flex-direction: column; min-height: 100dvh; }
+`.trim();
+
 export const PF_RESPONSIVE_CSS = `
+${PF_PAGE_FRAME_CSS}
 ${PF_COLUMN_STACK_CSS}
 @container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_TABLET_MAX}px) {
   [data-block] {

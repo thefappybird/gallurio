@@ -10,6 +10,7 @@ import {
   FOOTER_STATEMENT_PRESET,
 } from "./blocks/presets/footer";
 import { containerDefaultProps } from "./blocks/manualBlocks";
+import { PF_PAGE_FRAME_CSS } from "./responsive";
 
 describe("production root render applies root style", () => {
   it("wraps children with the resolved root style", () => {
@@ -39,12 +40,27 @@ describe("production root render applies root style", () => {
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper.style.containerType).toBe("inline-size");
     expect(wrapper.style.containerName).toBe("pfpage");
-    expect(wrapper.style.display).toBe("grid");
-    expect(wrapper.style.gridTemplateRows).toBe("auto minmax(auto, 1fr) auto");
     expect(wrapper.style.minHeight).toBe("100dvh");
     const style = wrapper.querySelector("style");
     expect(style?.innerHTML).toContain("@container pfpage");
     expect(style?.innerHTML).toContain("--pf-pad");
+  });
+
+  // The sticky-footer frame cannot live on this wrapper: its only child is the
+  // element <Render> wraps the zone in, so rows declared here would size that
+  // one child, never Navigation / PageBody / Footer.
+  it("leaves the sticky-footer frame to the sheet rather than declaring rows itself", () => {
+    const RootRender = puckConfig.root!.render!;
+    const { container } = render(
+      React.createElement(
+        RootRender as React.FC<{ _rootStyle?: unknown; children?: React.ReactNode }>,
+        {},
+        React.createElement("div", { "data-testid": "child" }),
+      ),
+    );
+    const wrapper = container.firstElementChild as HTMLElement;
+    expect(wrapper.style.gridTemplateRows).toBe("");
+    expect(wrapper.querySelector("style")?.innerHTML).toContain(PF_PAGE_FRAME_CSS);
   });
 });
 

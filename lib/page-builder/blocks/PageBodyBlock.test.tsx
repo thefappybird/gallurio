@@ -9,7 +9,7 @@ import {
 } from "./PageBodyBlock";
 
 describe("PageBodyBlock", () => {
-  it("fills its grid row and gives the slot the default horizontal page margin", () => {
+  it("takes the leftover page height and gives the slot the default horizontal page margin", () => {
     const Content = vi.fn(() => <div data-testid="body-slot" />) as unknown as SlotComponent;
     const { container } = render(
       <PageBodyBlock content={Content} puck={{ isEditing: false } as never} />,
@@ -17,7 +17,11 @@ describe("PageBodyBlock", () => {
     const section = container.querySelector('[data-block="page-body"]') as HTMLElement;
 
     expect(section.style.width).toBe("100%");
-    expect(section.style.height).toBe("100%");
+    // Grows into what Navigation and Footer leave. A percentage height would
+    // resolve against the element holding all three, so the body would claim the
+    // whole page and push the footer down by the height of the chrome.
+    expect(section.style.height).toBe("");
+    expect(section.style.flex).toBe("1 1 auto");
     expect(Content).toHaveBeenCalledWith(
       expect.objectContaining({
         style: expect.objectContaining({

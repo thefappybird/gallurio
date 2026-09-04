@@ -30,7 +30,13 @@ export function PageBodyBlock({
         display: "flex",
         flexDirection: "column",
         width: "100%",
-        height: "100%",
+        // Take the space Navigation and Footer leave, never a fixed share of the
+        // page. `height: 100%` looked equivalent but resolved against the element
+        // holding all THREE blocks, so the body claimed the full page height and
+        // pushed the footer down by the height of the chrome — dead space above
+        // the footer on every page whose content did not happen to fill it.
+        // PF_PAGE_FRAME_CSS makes that holder the flex column this grows inside.
+        flex: "1 1 auto",
         minWidth: 0,
         minHeight: 0,
       }}

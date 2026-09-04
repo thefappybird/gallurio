@@ -205,8 +205,11 @@ export const puckConfig: Config<Components> = {
         {
           style: {
             ...resolveRootStyle(_rootStyle),
-            display: "grid",
-            gridTemplateRows: "auto minmax(auto, 1fr) auto",
+            // The sticky-footer frame itself lives in PF_PAGE_FRAME_CSS, on the
+            // wrapper `<Render>` puts around the zone: THAT is what parents
+            // Navigation / PageBody / Footer. Declaring rows here would size this
+            // wrapper's single child, never the three blocks. `min-height` stays
+            // so the page background always covers the viewport.
             minHeight: "100dvh",
             ...PF_PAGE_CONTAINER,
           },
