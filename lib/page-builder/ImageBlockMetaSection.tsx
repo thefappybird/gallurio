@@ -134,13 +134,14 @@ export function ImageBlockMetaSection({ assetId }: { assetId: string | undefined
 
   const item = load.kind === "ready" && load.forAssetId === assetId ? load.item : null;
 
+  // `idle` carries forAssetId: null, so once assetId is a string and
+  // load.forAssetId matches it, the idle variant is already excluded — no
+  // separate check for it is reachable here.
   const phase: Phase = !assetId
     ? "no-asset"
     : load.forAssetId !== assetId
       ? "loading"
-      : load.kind === "idle"
-        ? "loading"
-        : load.kind;
+      : load.kind;
 
   useEffect(() => {
     if (!assetId) return;
