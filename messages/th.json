@@ -2501,7 +2501,8 @@
           "cancel": "ยกเลิก",
           "savedToast": "บันทึกข้อความอธิบายภาพแล้ว",
           "editTrigger": "แก้ไขข้อความอธิบายภาพสำหรับ {name}",
-          "photoFallback": "ภาพ"
+          "photoFallback": "ภาพ",
+          "incompleteWarning": "ไม่มีข้อความอธิบายภาพ — ภาพนี้อาจแสดงผลไม่ตรงตามที่ตั้งใจไว้"
         },
         "imageBlockDetails": {
           "heading": "รายละเอียดภาพ",

@@ -2501,7 +2501,8 @@
           "cancel": "Batal",
           "savedToast": "Teks alternatif disimpan.",
           "editTrigger": "Edit teks alternatif untuk {name}",
-          "photoFallback": "foto"
+          "photoFallback": "foto",
+          "incompleteWarning": "Teks alternatif belum diisi — foto ini mungkin tidak tampil sesuai rencana."
         },
         "imageBlockDetails": {
           "heading": "Detail foto",

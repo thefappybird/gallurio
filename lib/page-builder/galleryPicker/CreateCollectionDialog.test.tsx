@@ -124,6 +124,13 @@ describe("CreateCollectionDialog upload errors", () => {
       if (file.name === "big.png") throw new UploadError({ code: "file_too_large", actualBytes: 20 * 1024 * 1024, maxBytes: 15 * 1024 * 1024 });
       return { assetId: `a-${file.name}`, url: `https://x/${file.name}`, width: 900, height: 600, format: "jpeg", sizeBytes: 20000 };
     });
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/portfolio/gallery") return Promise.resolve({ ok: true, json: async () => ({ collections, items: photos }) } as Response);
+      if (url === "/api/portfolio/gallery/items" && init?.method === "POST")
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-good.jpg", thumbUrl: "https://x/thumb-good.jpg", caption: null }) } as Response);
+      if (url.includes("/items/copy")) return Promise.resolve({ ok: true, json: async () => ({ items: [] }) } as Response);
+      return Promise.resolve({ ok: true, json: async () => ({ items: photos, nextCursor: null }) } as Response);
+    });
     renderWithProviders(<CreateCollectionDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />);
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, {
@@ -137,8 +144,9 @@ describe("CreateCollectionDialog upload errors", () => {
 
     const line = await screen.findByText(/big\.png/i);
     expect(line.closest("li")?.textContent).toMatch(/20\.0 MB/);
-    // The successful upload still lands in the preview grid.
-    await waitFor(() => expect(document.querySelector('img[src*="good.jpg"]')).toBeTruthy());
+    // The successful upload still lands in the preview grid (created as a
+    // standalone item so the wizard has a real id to PATCH).
+    await waitFor(() => expect(document.querySelector('img[src*="thumb-good.jpg"]')).toBeTruthy());
   });
 
   it("shows the server's specific reason when creating the collection fails validation, instead of the generic errCreate copy", async () => {
@@ -162,5 +170,89 @@ describe("CreateCollectionDialog upload errors", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toMatch(/20\.0 MB/);
     expect(alert.textContent).not.toMatch(/Could not create the collection/i);
+  });
+});
+
+describe("CreateCollectionDialog metadata wizard (10a)", () => {
+  function mockItemsUpload() {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "a-new.jpg", url: "https://x/new.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/portfolio/gallery") return Promise.resolve({ ok: true, json: async () => ({ collections, items: photos }) } as Response);
+      if (url === "/api/portfolio/gallery/items" && init?.method === "POST")
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", thumbUrl: "https://x/thumb-new.jpg", caption: null }) } as Response);
+      if (url === "/api/portfolio/gallery/items/up-new" && init?.method === "PATCH")
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", publicId: "a-new.jpg", thumbUrl: "https://x/thumb-new.jpg", caption: null, altText: "A bride and groom" }) } as Response);
+      if (url === "/api/portfolio/gallery/collections" && init?.method === "POST")
+        return Promise.resolve({ ok: true, json: async () => ({ id: "newCol", name: "X", slug: "x" }) } as Response);
+      if (url.includes("/items/copy")) return Promise.resolve({ ok: true, json: async () => ({ items: [] }) } as Response);
+      return Promise.resolve({ ok: true, json: async () => ({ items: photos, nextCursor: null }) } as Response);
+    });
+  }
+
+  it("offers the metadata wizard after an upload, dismissable without blocking collection creation", async () => {
+    mockItemsUpload();
+    const onCreated = vi.fn();
+    renderWithProviders(<CreateCollectionDialog open onOpenChange={vi.fn()} onCreated={onCreated} />);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["d"], "new.jpg", { type: "image/jpeg" })] } });
+
+    expect(await screen.findByText(/add details/i)).toBeTruthy();
+    // Dismiss the offer — never a gate on creating the collection.
+    fireEvent.click(screen.getByRole("button", { name: /skip/i }));
+    expect(screen.queryByText(/add details/i)).toBeNull();
+
+    fireEvent.change(screen.getByLabelText(/collection title/i), { target: { value: "My collection" } });
+    fireEvent.click(screen.getByRole("button", { name: /^create collection$/i }));
+    await waitFor(() => expect(onCreated).toHaveBeenCalled());
+    // The uploaded (but not-detailed) photo still attaches via the copy step.
+    expect(mockFetch.mock.calls.some(([u]) => String(u).includes("/collections/newCol/items/copy"))).toBe(true);
+  });
+
+  it("saves wizard edits by PATCHing the uploaded item's real id", async () => {
+    mockItemsUpload();
+    renderWithProviders(<CreateCollectionDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["d"], "new.jpg", { type: "image/jpeg" })] } });
+
+    fireEvent.click(await screen.findByRole("button", { name: /add details/i }));
+    const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
+    fireEvent.change(altField, { target: { value: "A bride and groom" } });
+    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+
+    await waitFor(() =>
+      expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/up-new" && (i as RequestInit)?.method === "PATCH")).toBe(true)
+    );
+  });
+});
+
+describe("CreateCollectionDialog incomplete-metadata warning", () => {
+  it("shows the warning badge for an upload with no alt text, hides it once one is saved", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "a-new.jpg", url: "https://x/new.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/portfolio/gallery") return Promise.resolve({ ok: true, json: async () => ({ collections, items: photos }) } as Response);
+      if (url === "/api/portfolio/gallery/items" && init?.method === "POST")
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", thumbUrl: "https://x/thumb-new.jpg", caption: null }) } as Response);
+      if (url === "/api/portfolio/gallery/items/up-new" && init?.method === "PATCH")
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-new", publicId: "a-new.jpg", thumbUrl: "https://x/thumb-new.jpg", caption: null, altText: "A bride and groom" }) } as Response);
+      if (url.includes("/items/copy")) return Promise.resolve({ ok: true, json: async () => ({ items: [] }) } as Response);
+      return Promise.resolve({ ok: true, json: async () => ({ items: photos, nextCursor: null }) } as Response);
+    });
+    renderWithProviders(<CreateCollectionDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["d"], "new.jpg", { type: "image/jpeg" })] } });
+    await waitFor(() => expect(document.querySelector('img[src*="thumb-new.jpg"]')).toBeTruthy());
+
+    expect(screen.getByRole("button", { name: /missing alt text/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /add details/i }));
+    const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
+    fireEvent.change(altField, { target: { value: "A bride and groom" } });
+    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: /missing alt text/i })).toBeNull());
   });
 });

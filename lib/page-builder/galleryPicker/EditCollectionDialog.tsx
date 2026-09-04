@@ -18,6 +18,8 @@ import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { UploadError, uploadErrorTranslation, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
+import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
+import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import type { PickerCollection, PickerItem } from "./types";
 
@@ -33,6 +35,7 @@ export function EditCollectionDialog({
 }) {
   const errMsg = useActionError();
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
+  const tWizard = useTranslations("app.pageBuilder.editor.imageWizard");
   const cache = useGalleryPickerCache();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
@@ -59,6 +62,9 @@ export function EditCollectionDialog({
   const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
   // The pencil button that opened the alt-text dialog — restores focus there on close.
   const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // Post-upload "add details" offer — dismissable, never a gate (spec 10a).
+  const [uploadedBatch, setUploadedBatch] = useState<PickerItem[] | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const colId = collection?.id ?? null;
 
@@ -72,6 +78,46 @@ export function EditCollectionDialog({
     saving: tMeta("saving"),
     cancel: tMeta("cancel"),
     savedToast: tMeta("savedToast"),
+    errorMessage: (code) => errMsg(code),
+  };
+
+  const wizardLabels: ImageWizardLabels = {
+    heading: tWizard("heading"),
+    position: (current, total) => tWizard("position", { current, total }),
+    fieldTitle: tWizard("fieldTitle"),
+    fieldTitlePlaceholder: tWizard("fieldTitlePlaceholder"),
+    fieldCaption: tWizard("fieldCaption"),
+    fieldCaptionPlaceholder: tWizard("fieldCaptionPlaceholder"),
+    fieldAlt: tWizard("fieldAlt"),
+    fieldAltHelp: tWizard("fieldAltHelp"),
+    fieldAltPlaceholder: tWizard("fieldAltPlaceholder"),
+    altCounter: (count, max) => tWizard("altCounter", { count, max }),
+    fieldDate: tWizard("fieldDate"),
+    fieldLocation: tWizard("fieldLocation"),
+    fieldLocationPlaceholder: tWizard("fieldLocationPlaceholder"),
+    fieldClient: tWizard("fieldClient"),
+    fieldClientPlaceholder: tWizard("fieldClientPlaceholder"),
+    fieldTags: tWizard("fieldTags"),
+    fieldTagsPlaceholder: tWizard("fieldTagsPlaceholder"),
+    fieldTagsHint: tWizard("fieldTagsHint"),
+    removeTag: (tag) => tWizard("removeTag", { tag }),
+    fieldMeta: tWizard("fieldMeta"),
+    fieldMetaHint: tWizard("fieldMetaHint"),
+    metaLabelPlaceholder: tWizard("metaLabelPlaceholder"),
+    metaValuePlaceholder: tWizard("metaValuePlaceholder"),
+    addMetaRow: tWizard("addMetaRow"),
+    removeMetaRow: (n) => tWizard("removeMetaRow", { n }),
+    savedBadge: tWizard("savedBadge"),
+    unsavedBadge: tWizard("unsavedBadge"),
+    jumpToPhoto: (n) => tWizard("jumpToPhoto", { n }),
+    previous: tWizard("previous"),
+    next: tWizard("next"),
+    finish: tWizard("finish"),
+    close: tWizard("close"),
+    closeConfirmTitle: tWizard("closeConfirmTitle"),
+    closeConfirmBody: tWizard("closeConfirmBody"),
+    closeConfirmDiscard: tWizard("closeConfirmDiscard"),
+    closeConfirmCancel: tWizard("closeConfirmCancel"),
     errorMessage: (code) => errMsg(code),
   };
 
@@ -118,6 +164,8 @@ export function EditCollectionDialog({
       setSelected(new Set());
       setError(null);
       setFileErrors([]);
+      setUploadedBatch(null);
+      setWizardOpen(false);
       void loadAll(collection.id);
     }
     // Collection identity drives re-runs; loadAll only changes with the error translator.
@@ -309,6 +357,7 @@ export function EditCollectionDialog({
       valid.map((f) => uploadImage(f, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES }))
     ).then(async (results) => {
       const newErrors: { fileName: string; message: string }[] = [];
+      const createdItems: PickerItem[] = [];
       for (let i = 0; i < results.length; i++) {
         const r = results[i];
         const fileName = valid[i].name;
@@ -323,7 +372,18 @@ export function EditCollectionDialog({
           });
           if (res.ok) {
             const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
-            setItems((prev) => [...prev, { id: created.id, publicId: r.value.assetId, thumbUrl: created.thumbUrl, caption: created.caption, altText: null }]);
+            const item: PickerItem = {
+              id: created.id,
+              publicId: r.value.assetId,
+              thumbUrl: created.thumbUrl,
+              caption: created.caption,
+              altText: null,
+              ...(r.value.width != null && r.value.height != null
+                ? { width: r.value.width, height: r.value.height }
+                : {}),
+            };
+            setItems((prev) => [...prev, item]);
+            createdItems.push(item);
           } else {
             newErrors.push({ fileName, message: await describeApiFailure(res) });
           }
@@ -335,6 +395,7 @@ export function EditCollectionDialog({
       setUploading(false);
       onChanged();
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (createdItems.length > 0) setUploadedBatch(createdItems);
     });
   }
 
@@ -415,6 +476,20 @@ export function EditCollectionDialog({
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple className="sr-only" tabIndex={-1} onChange={(e) => handleFiles(e.target.files)} />
           </div>
 
+          {uploadedBatch && uploadedBatch.length > 0 && !wizardOpen && (
+            <div className="flex flex-col gap-2 border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm">{tWizard("offerHeading", { count: uploadedBatch.length })}</p>
+              <div className="flex shrink-0 gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => setUploadedBatch(null)}>
+                  {tWizard("offerSkip")}
+                </Button>
+                <Button type="button" size="sm" onClick={() => setWizardOpen(true)}>
+                  {tWizard("offerAddDetails")}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
           {fileErrors.length > 0 && (
             <ul role="alert" className="flex flex-col gap-0.5 text-xs text-destructive">
@@ -493,17 +568,22 @@ export function EditCollectionDialog({
                     >
                       <StarIcon className="size-3" aria-hidden /> Cover
                     </button>
-                    <button
-                      type="button"
-                      aria-label={tMeta("editTrigger", { name: item.caption || tMeta("photoFallback") })}
-                      onClick={(e) => {
-                        metaTriggerRef.current = e.currentTarget;
-                        setMetaItem(item);
-                      }}
-                      className="absolute bottom-0.5 right-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                      <PencilIcon className="size-3" aria-hidden />
-                    </button>
+                    <div className="absolute bottom-0.5 end-0.5 flex items-center gap-0.5">
+                      {hasIncompleteMetadata(item) && (
+                        <IncompleteMetadataBadge label={tMeta("incompleteWarning")} />
+                      )}
+                      <button
+                        type="button"
+                        aria-label={tMeta("editTrigger", { name: item.caption || tMeta("photoFallback") })}
+                        onClick={(e) => {
+                          metaTriggerRef.current = e.currentTarget;
+                          setMetaItem(item);
+                        }}
+                        className="inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <PencilIcon className="size-3" aria-hidden />
+                      </button>
+                    </div>
                   </li>
                 );
               })}
@@ -542,6 +622,17 @@ export function EditCollectionDialog({
         onSaved={handleMetaSaved}
         labels={metaLabels}
         triggerRef={metaTriggerRef}
+      />
+
+      <ImageMetaWizard
+        items={uploadedBatch ?? []}
+        open={wizardOpen}
+        onOpenChange={(next) => {
+          setWizardOpen(next);
+          if (!next) setUploadedBatch(null);
+        }}
+        onSaved={handleMetaSaved}
+        labels={wizardLabels}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={(n) => { if (!n && !busy) setConfirmDelete(false); }}>

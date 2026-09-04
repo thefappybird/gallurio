@@ -32,6 +32,7 @@ import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
 import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
+import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import type { PickerCollection, PickerItem } from "./types";
 
 // Plain strings — the Puck field panel IS wrapped in context (Puck portals into the
@@ -723,6 +724,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
                   id={id}
                   item={item}
                   removeLabel={L.removePhoto}
+                  incompleteWarningLabel={tMeta("incompleteWarning")}
                   onReorder={reorder}
                   onRemove={() => onChange(selection.filter((s) => s.id !== id))}
                 />
@@ -835,6 +837,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
                 setMetaItem(item);
               }}
               editLabelFor={(name) => tMeta("editTrigger", { name: name || tMeta("photoFallback") })}
+              incompleteWarningLabel={tMeta("incompleteWarning")}
               onLoadMore={() => nav.kind === "photos" && feed.nextCursor && fetchFeed(nav.id, feed.nextCursor)}
               onRetry={() => nav.kind === "photos" && fetchFeed(nav.id, null)}
               emptyLabel={nav.id === ALL_PHOTOS_ID ? L.emptyWorkspace : L.emptyCollection}
@@ -1072,6 +1075,7 @@ function PhotoGrid({
   onToggleMulti,
   onEditItem,
   editLabelFor,
+  incompleteWarningLabel,
   onLoadMore,
   onRetry,
   emptyLabel,
@@ -1085,6 +1089,7 @@ function PhotoGrid({
   onToggleMulti: (item: PickerItem) => void;
   onEditItem: (item: PickerItem, triggerEl: HTMLButtonElement) => void;
   editLabelFor: (name: string | null) => string;
+  incompleteWarningLabel: string;
   onLoadMore: () => void;
   onRetry: () => void;
   emptyLabel: string;
@@ -1141,17 +1146,22 @@ function PhotoGrid({
                     </span>
                   )}
                 </button>
-                <button
-                  type="button"
-                  aria-label={editLabelFor(item.caption)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditItem(item, e.currentTarget);
-                  }}
-                  className="absolute bottom-1 left-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <PencilIcon className="size-3" aria-hidden />
-                </button>
+                <div className="absolute bottom-1 start-1 flex items-center gap-1">
+                  {hasIncompleteMetadata(item) && (
+                    <IncompleteMetadataBadge label={incompleteWarningLabel} />
+                  )}
+                  <button
+                    type="button"
+                    aria-label={editLabelFor(item.caption)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditItem(item, e.currentTarget);
+                    }}
+                    className="inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <PencilIcon className="size-3" aria-hidden />
+                  </button>
+                </div>
               </li>
             );
           })}
@@ -1246,12 +1256,14 @@ function ReorderChip({
   id,
   item,
   removeLabel,
+  incompleteWarningLabel,
   onReorder,
   onRemove,
 }: {
   id: string;
   item: PickerItem | null;
   removeLabel: string;
+  incompleteWarningLabel: string;
   onReorder: (fromId: string, toId: string) => void;
   onRemove: () => void;
 }) {
@@ -1276,6 +1288,12 @@ function ReorderChip({
       <span aria-hidden className="absolute left-0.5 top-0.5 flex size-5 items-center justify-center bg-background/80">
         <GripVerticalIcon className="size-3.5 text-muted-foreground" />
       </span>
+      {item && hasIncompleteMetadata(item) && (
+        <IncompleteMetadataBadge
+          label={incompleteWarningLabel}
+          className="absolute bottom-0.5 start-0.5 size-5"
+        />
+      )}
       <button
         type="button"
         aria-label={removeLabel}

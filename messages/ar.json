@@ -2501,7 +2501,8 @@
           "cancel": "إلغاء",
           "savedToast": "تم حفظ النص البديل.",
           "editTrigger": "تعديل النص البديل لـ {name}",
-          "photoFallback": "الصورة"
+          "photoFallback": "الصورة",
+          "incompleteWarning": "النص البديل مفقود — قد لا تظهر هذه الصورة كما هو متوقع."
         },
         "imageBlockDetails": {
           "heading": "تفاصيل الصورة",

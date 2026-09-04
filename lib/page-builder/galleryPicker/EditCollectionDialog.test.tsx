@@ -322,3 +322,60 @@ describe("EditCollectionDialog", () => {
     expect(line.closest("li")?.textContent).toMatch(/300/);
   });
 });
+
+describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata warning", () => {
+  it("shows an incomplete-metadata warning badge for a photo with no alt text", async () => {
+    open();
+    // Both seeded items (A, B) have altText: null, so both get the badge.
+    await screen.findByRole("checkbox", { name: /select A/i });
+    expect(await screen.findAllByRole("button", { name: /missing alt text/i })).toHaveLength(2);
+  });
+
+  it("offers the metadata wizard after an upload, dismissable without gating anything", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "up-asset", url: "https://x/up.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", thumbUrl: "https://x/up-thumb.jpg", caption: null }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["data"], "new.jpg", { type: "image/jpeg" })] } });
+
+    expect(await screen.findByText(/add details/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /skip/i }));
+    expect(screen.queryByText(/add details/i)).toBeNull();
+  });
+
+  it("wizard save PATCHes the uploaded item and clears its warning badge", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "up-asset", url: "https://x/up.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", thumbUrl: "https://x/up-thumb.jpg", caption: null }) } as Response);
+      }
+      if (u === "/api/portfolio/gallery/items/up-id" && init?.method === "PATCH") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", publicId: "up-asset", thumbUrl: "https://x/up-thumb.jpg", caption: null, altText: "New photo" }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["data"], "new.jpg", { type: "image/jpeg" })] } });
+
+    fireEvent.click(await screen.findByRole("button", { name: /add details/i }));
+    const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
+    fireEvent.change(altField, { target: { value: "New photo" } });
+    fireEvent.click(screen.getByRole("button", { name: /^done$/i }));
+
+    await waitFor(() =>
+      expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/up-id" && (i as RequestInit)?.method === "PATCH")).toBe(true)
+    );
+  });
+});
