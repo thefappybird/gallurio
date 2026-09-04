@@ -36,8 +36,8 @@ type FetchState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "populated"; images: PopupImage[]; nextCursor: string | null; loadMoreError: boolean; total?: number }
-  | { status: "loadingMore"; images: PopupImage[]; nextCursor: string; total?: number }
+  | { status: "populated"; images: PopupImage[]; nextCursor: string | null; loadMoreError: boolean; total?: number; description?: string }
+  | { status: "loadingMore"; images: PopupImage[]; nextCursor: string; total?: number; description?: string }
   | { status: "empty" };
 
 // ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ export function CollectionPopup({
   // ---------------------------------------------------------------------------
 
   const fetchPage = useCallback(
-    async (cursor: string | null, appendTo?: PopupImage[], priorTotal?: number) => {
+    async (cursor: string | null, appendTo?: PopupImage[], priorTotal?: number, priorDescription?: string) => {
       const url = buildUrl(mode, collectionId, slug, cursor);
       const isAppending = appendTo !== undefined;
 
@@ -196,6 +196,7 @@ export function CollectionPopup({
           images: appendTo,
           nextCursor: cursor as string,
           total: priorTotal,
+          description: priorDescription,
         });
       }
 
@@ -221,10 +222,13 @@ export function CollectionPopup({
           }>;
           nextCursor: string | null;
           total?: number;
+          description?: string;
         };
         const normalized = data.items.map(normalizeItem);
         const merged = appendTo ? [...appendTo, ...normalized] : normalized;
         const resolvedTotal = data.total ?? priorTotal;
+        // Only the first page carries it; later pages inherit rather than blank it.
+        const resolvedDescription = data.description ?? priorDescription;
         if (merged.length === 0 && !data.nextCursor) {
           setState({ status: "empty" });
         } else {
@@ -234,6 +238,7 @@ export function CollectionPopup({
             nextCursor: data.nextCursor,
             loadMoreError: false,
             total: resolvedTotal,
+            description: resolvedDescription,
           });
         }
       } catch (err) {
@@ -250,6 +255,7 @@ export function CollectionPopup({
                 nextCursor: prev.nextCursor,
                 loadMoreError: true,
                 total: prev.total,
+                description: prev.description,
               };
             }
             return {
@@ -258,6 +264,7 @@ export function CollectionPopup({
               nextCursor: cursor as string,
               loadMoreError: true,
               total: priorTotal,
+              description: priorDescription,
             };
           });
         } else {
@@ -278,7 +285,7 @@ export function CollectionPopup({
 
   const handleLoadMore = useCallback(() => {
     if (state.status === "populated" && state.nextCursor) {
-      void fetchPage(state.nextCursor, state.images, state.total);
+      void fetchPage(state.nextCursor, state.images, state.total, state.description);
     }
   }, [state, fetchPage]);
 
@@ -289,6 +296,8 @@ export function CollectionPopup({
   const loadedImages =
     state.status === "populated" || state.status === "loadingMore" ? state.images : [];
   const total = state.status === "populated" || state.status === "loadingMore" ? state.total : undefined;
+  const collectionDescription =
+    state.status === "populated" || state.status === "loadingMore" ? state.description : undefined;
   const hasMore = state.status === "populated" && state.nextCursor != null;
   const isLoadingMore = state.status === "loadingMore";
   const loadMoreError = state.status === "populated" && state.loadMoreError;
@@ -296,11 +305,7 @@ export function CollectionPopup({
   const bodyProps: PopupLayoutBodyProps = {
     images: loadedImages,
     collectionName,
-    // TODO(collection-description): thread the collection's `description`
-    // once GET /api/portfolio/gallery/collections/[id] and
-    // GET /api/public/w/[slug]/collections/[id] return it at the top level
-    // (currently only PATCH echoes it back) — see Backend handoff.
-    collectionDescription: undefined,
+    collectionDescription,
     total,
     hasMore,
     isLoadingMore,

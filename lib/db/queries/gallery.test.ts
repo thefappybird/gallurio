@@ -99,9 +99,23 @@ describe("getItemsByIds", () => {
 describe("listCollectionItemsPage", () => {
   it("returns {items:[], nextCursor:null, total:0} for empty workspace or bad collectionId", async () => {
     expect(await listCollectionItemsPage({ workspaceId: "", collectionId: new Types.ObjectId().toString() }))
-      .toEqual({ items: [], nextCursor: null, total: 0 });
+      .toEqual({ items: [], nextCursor: null, total: 0, description: "" });
     expect(await listCollectionItemsPage({ workspaceId: new Types.ObjectId().toString(), collectionId: "nope" }))
-      .toEqual({ items: [], nextCursor: null, total: 0 });
+      .toEqual({ items: [], nextCursor: null, total: 0, description: "" });
+  });
+
+  // Owner mode feeds the editor preview, which shows the same header as the
+  // published page — so it has to carry the description too.
+  it("returns the collection's own description alongside the page", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({
+      workspaceId: ws, name: "C", slug: "desc-owner",
+      description: "Photographed in full, from the first fitting to the last of the night.",
+    });
+    await seedItems(ws, col._id, 2);
+    const page = await listCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.description).toBe("Photographed in full, from the first fitting to the last of the night.");
+    expect(page.items).toHaveLength(2);
   });
 
   it("paginates by (order,_id) ascending and walks the cursor to the end", async () => {
@@ -474,18 +488,36 @@ describe("listPublicCollectionItemsPage", () => {
     const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: false });
     await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "p", url: "u", order: 0 });
     const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
-    expect(page).toEqual({ items: [], nextCursor: null, total: 0 });
+    expect(page).toEqual({ items: [], nextCursor: null, total: 0, description: "" });
   });
   it("tenant isolation: foreign workspace id yields empty", async () => {
     const wsA = new Types.ObjectId(); const wsB = new Types.ObjectId();
     const colB = await GalleryCollection.create({ workspaceId: wsB, name: "B", slug: "b", isPublic: true });
     await GalleryItem.create({ workspaceId: wsB, collectionId: colB._id, assetId: "p", url: "u", order: 0 });
     const page = await listPublicCollectionItemsPage({ workspaceId: wsA.toString(), collectionId: colB._id.toString() });
-    expect(page).toEqual({ items: [], nextCursor: null, total: 0 });
+    expect(page).toEqual({ items: [], nextCursor: null, total: 0, description: "" });
   });
   it("invalid collectionId yields empty (no throw)", async () => {
     const page = await listPublicCollectionItemsPage({ workspaceId: new Types.ObjectId().toString(), collectionId: "not-an-id" });
-    expect(page).toEqual({ items: [], nextCursor: null, total: 0 });
+    expect(page).toEqual({ items: [], nextCursor: null, total: 0, description: "" });
+  });
+  // The contact-sheet and split-index popup layouts print this above the grid.
+  it("returns the collection's own description alongside the page", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({
+      workspaceId: ws, name: "C", slug: "c", isPublic: true,
+      description: "A wedding across two days at the Villa Estella.",
+    });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "p", url: "u", order: 0 });
+    const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.description).toBe("A wedding across two days at the Villa Estella.");
+  });
+  it("returns an empty description when the collection has none", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: true });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "p", url: "u", order: 0 });
+    const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.description).toBe("");
   });
 });
 

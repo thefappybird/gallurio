@@ -315,9 +315,10 @@ export async function listCollectionItemsPage(opts: {
   collectionId: string;
   cursor?: string | null;
   limit?: number;
-}): Promise<{ items: CollectionPageItem[]; nextCursor: string | null; total: number }> {
+}): Promise<{ items: CollectionPageItem[]; nextCursor: string | null; total: number; description: string }> {
   const { workspaceId, collectionId } = opts;
-  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null, total: 0 };
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId))
+    return { items: [], nextCursor: null, total: 0, description: "" };
 
   const limit = clampLimit(opts.limit);
   await connectDB();
@@ -336,7 +337,7 @@ export async function listCollectionItemsPage(opts: {
     }
   }
 
-  const [docs, total] = await Promise.all([
+  const [docs, total, col] = await Promise.all([
     GalleryItem.find(filter)
       .sort({ order: 1, _id: 1 })
       .limit(limit + 1)
@@ -356,13 +357,24 @@ export async function listCollectionItemsPage(opts: {
       })
       .lean(),
     GalleryItem.countDocuments({ workspaceId, collectionId }),
+    // The contact-sheet and split-index popup layouts print the collection's
+    // own description above the photographs. Fetched alongside the page rather
+    // than in a second round trip.
+    GalleryCollection.findOne({ _id: collectionId, workspaceId })
+      .select({ description: 1 })
+      .lean(),
   ]);
 
   const hasMore = docs.length > limit;
   const page = hasMore ? docs.slice(0, limit) : docs;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? encodeCursor(last.order as number, String(last._id)) : null;
-  return { items: page.map(toCollectionPageItem), nextCursor, total };
+  return {
+    items: page.map(toCollectionPageItem),
+    nextCursor,
+    total,
+    description: (col?.description as string) ?? "",
+  };
 }
 
 /**
@@ -477,16 +489,17 @@ export async function listPublicCollectionItemsPage(opts: {
   collectionId: string;
   cursor?: string | null;
   limit?: number;
-}): Promise<{ items: PublicCollectionImage[]; nextCursor: string | null; total: number }> {
+}): Promise<{ items: PublicCollectionImage[]; nextCursor: string | null; total: number; description: string }> {
   const { workspaceId, collectionId } = opts;
-  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null, total: 0 };
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId))
+    return { items: [], nextCursor: null, total: 0, description: "" };
 
   await connectDB();
 
   const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId, isPublic: true })
-    .select({ _id: 1 })
+    .select({ _id: 1, description: 1 })
     .lean();
-  if (!col) return { items: [], nextCursor: null, total: 0 };
+  if (!col) return { items: [], nextCursor: null, total: 0, description: "" };
 
   const limit = clampLimit(opts.limit);
   const filter: Record<string, unknown> = { workspaceId, collectionId };
@@ -546,6 +559,7 @@ export async function listPublicCollectionItemsPage(opts: {
     })),
     nextCursor,
     total,
+    description: (col.description as string) ?? "",
   };
 }
 
