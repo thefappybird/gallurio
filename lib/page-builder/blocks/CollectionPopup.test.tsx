@@ -643,3 +643,56 @@ describe("CollectionPopup title override", () => {
     expect(heading).toHaveTextContent("Portraits");
   });
 });
+
+// ---------------------------------------------------------------------------
+// popupLayout routing
+// ---------------------------------------------------------------------------
+
+describe("CollectionPopup popupLayout routing", () => {
+  it("uses the contact-sheet list markup when popupLayout is unset", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps({ popupConfig: {} })} />);
+
+    await screen.findByRole("list");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("renders the split-index narrative column when popupLayout is split-index", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup {...defaultProps({ popupConfig: { popupLayout: "split-index" } })} />
+    );
+    await screen.findAllByRole("img");
+    // Heading appears twice: the chrome title + SplitIndex's own nav heading.
+    expect(screen.getAllByRole("heading", { name: /wedding 2024/i }).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders the immersive full-viewport surface without CollectionPopupChrome", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup {...defaultProps({ popupConfig: { popupLayout: "immersive" } })} />
+    );
+    const dialog = await screen.findByRole("dialog", { name: /wedding 2024/i });
+    expect(dialog).toBeInTheDocument();
+    // No CollectionPopupChrome title <h2>, no data-popup-shell padded grid list.
+    expect(screen.queryByRole("heading", { level: 2 })).not.toBeInTheDocument();
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+  });
+
+  it("immersive: clicking a filmstrip frame swaps the main image in place — no second modal", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup {...defaultProps({ popupConfig: { popupLayout: "immersive" } })} />
+    );
+    await screen.findByRole("listbox");
+    const options = screen.getAllByRole("option");
+    fireEvent.click(options[1]);
+    // Exactly one full-size (w=2000) main-viewer image before and after the
+    // click — a second modal would add a second one.
+    const allImgs = screen.getAllByRole("img") as HTMLImageElement[];
+    expect(allImgs.filter((img) => img.src.includes("w=2000"))).toHaveLength(1);
+    // Still a single dialog landmark — Immersive itself carries no separate
+    // role="dialog" (it would duplicate the outer one's accessible name).
+    expect(screen.getAllByRole("dialog", { name: /wedding 2024/i })).toHaveLength(1);
+  });
+});

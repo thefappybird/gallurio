@@ -239,7 +239,7 @@ describe("getPreviewNavFrom", () => {
   });
 });
 
-it("applyCollectionPopupDefaults returns all 6 English defaults when called empty", () => {
+it("applyCollectionPopupDefaults returns all English defaults when called empty", () => {
   expect(applyCollectionPopupDefaults({})).toEqual({
     close: "Close",
     loading: "Loading...",
@@ -247,5 +247,15 @@ it("applyCollectionPopupDefaults returns all 6 English defaults when called empt
     retry: "Retry",
     empty: "No photos in this collection yet.",
     fullSizeAlt: "Full size photo",
+    openPhoto: "Open photo",
+    photo: "Photo",
+    loadMore: "Load more",
+    loadingMore: "Loading more...",
+    loadMoreFailed: "Failed to load more photos.",
+    photoCountOne: "1 photo",
+    photoCountOther: "{count} photos",
+    previousPhoto: "Previous photo",
+    nextPhoto: "Next photo",
+    filmstripLabel: "Photo filmstrip",
   });
 });

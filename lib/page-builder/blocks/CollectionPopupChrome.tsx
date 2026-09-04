@@ -38,6 +38,7 @@ export function CollectionPopupChrome({
   preview = false,
   closeDataAttr,
   noShell = false,
+  maxWidth = 900,
 }: {
   collectionName: string;
   config: PortfolioCollectionsPopupConfig;
@@ -48,6 +49,11 @@ export function CollectionPopupChrome({
   noShell?: boolean;
   /** When provided, spread as a data-attribute (e.g. "data-popup-close") on the close button. */
   closeDataAttr?: string;
+  /** Shell max-width in px. 900 (contact-sheet default) unless the caller
+   *  widens it — justified/split-index use 1080. Only affects the non-noShell,
+   *  non-preview (real dialog) shell; CollectionPopup.tsx computes its own
+   *  shell separately (noShell path) and must pass the same value through. */
+  maxWidth?: number;
 }) {
   const bg = resolvePopupBackground(config.backgroundColor);
   const borderWidth = config.borderWidth ?? 0;
@@ -92,7 +98,7 @@ export function CollectionPopupChrome({
         zIndex: 100,
         maxHeight: "90vh",
         minWidth: "90vw",
-        maxWidth: "900px",
+        maxWidth: `${maxWidth}px`,
         width: "90vw",
         ...commonShell,
       };

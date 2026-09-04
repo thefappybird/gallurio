@@ -18,4 +18,19 @@ describe("CollectionsPopupPreview", () => {
     );
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("My Galleries");
   });
+
+  it("renders the immersive layout without the chrome (no title heading/close button)", () => {
+    renderWithProviders(
+      <CollectionsPopupPreview config={{ popupLayout: "immersive" }} brandKit={DEFAULT_BRAND_KIT} />,
+    );
+    expect(screen.queryByRole("heading", { level: 2 })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument();
+  });
+
+  it("still renders the chrome for the justified layout", () => {
+    renderWithProviders(
+      <CollectionsPopupPreview config={{ popupLayout: "justified" }} brandKit={DEFAULT_BRAND_KIT} />,
+    );
+    expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
+  });
 });

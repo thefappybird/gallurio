@@ -21,6 +21,54 @@
         "rule": "design-system-font",
         "value": "cormorant",
         "createdAt": "2026-09-02T00:37:19.896Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#888",
+        "createdAt": "2026-09-04T09:36:02.895Z",
+        "reason": "verbatim carry-over from pre-existing contact-sheet back-compat code (CollectionPopup.tsx), not new drift"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(0,0,0,0.5)",
+        "createdAt": "2026-09-04T09:44:08.316Z",
+        "reason": "immersive popup layout deliberately ignores brand kit (fixed near-black scrim), per template-ideas.md contrast rules"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(0,0,0,0.55)",
+        "createdAt": "2026-09-04T09:44:08.538Z",
+        "reason": "immersive popup layout deliberately ignores brand kit (fixed near-black scrim), per template-ideas.md contrast rules"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#000",
+        "createdAt": "2026-09-04T09:44:08.736Z",
+        "reason": "immersive popup layout deliberately ignores brand kit (fixed near-black scrim), per template-ideas.md contrast rules"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#0a0a0a",
+        "createdAt": "2026-09-04T09:44:08.924Z",
+        "reason": "immersive popup layout deliberately ignores brand kit (fixed near-black scrim), per template-ideas.md contrast rules"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#f2f2f2",
+        "createdAt": "2026-09-04T09:44:09.106Z",
+        "reason": "immersive popup layout deliberately ignores brand kit (fixed near-white scrim text), per template-ideas.md contrast rules"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#333",
+        "createdAt": "2026-09-04T09:44:09.275Z",
+        "reason": "immersive popup layout deliberately ignores brand kit (fixed near-black scrim placeholder), per template-ideas.md contrast rules"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#fff",
+        "createdAt": "2026-09-04T09:44:09.704Z",
+        "reason": "immersive filmstrip selection outline sits on a fixed dark scrim, not a brand token"
       }
     ]
   }

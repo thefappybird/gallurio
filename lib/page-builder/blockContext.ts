@@ -110,6 +110,19 @@ export type CollectionPopupLabels = {
   retry?: string;
   empty?: string;
   fullSizeAlt?: string;
+  /** Aria-label fallback for a thumbnail button whose image has no alt text. */
+  openPhoto?: string;
+  /** Fallback word for a missing alt/placeholder ("Photo"). */
+  photo?: string;
+  loadMore?: string;
+  loadingMore?: string;
+  loadMoreFailed?: string;
+  photoCountOne?: string;
+  /** Contains the literal placeholder "{count}", swapped in by the caller. */
+  photoCountOther?: string;
+  previousPhoto?: string;
+  nextPhoto?: string;
+  filmstripLabel?: string;
 };
 
 /**
@@ -124,6 +137,16 @@ export function applyCollectionPopupDefaults(l: CollectionPopupLabels = {}): Req
     retry: l.retry ?? "Retry",
     empty: l.empty ?? "No photos in this collection yet.",
     fullSizeAlt: l.fullSizeAlt ?? "Full size photo",
+    openPhoto: l.openPhoto ?? "Open photo",
+    photo: l.photo ?? "Photo",
+    loadMore: l.loadMore ?? "Load more",
+    loadingMore: l.loadingMore ?? "Loading more...",
+    loadMoreFailed: l.loadMoreFailed ?? "Failed to load more photos.",
+    photoCountOne: l.photoCountOne ?? "1 photo",
+    photoCountOther: l.photoCountOther ?? "{count} photos",
+    previousPhoto: l.previousPhoto ?? "Previous photo",
+    nextPhoto: l.nextPhoto ?? "Next photo",
+    filmstripLabel: l.filmstripLabel ?? "Photo filmstrip",
   };
 }
 
