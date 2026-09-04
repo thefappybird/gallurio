@@ -2745,7 +2745,7 @@
           "layout": "Layout",
           "popupLayoutLabel": "Layout featured work",
           "imageModalLayoutLabel": "Layout preview gambar",
-          "immersiveDisablesModal": "Immersive menampilkan satu gambar dalam satu waktu — ini menggantikan modal gambar.",
+          "immersiveModalScopeNote": "Immersive menampilkan gambar secara inline, jadi pengaturan ini berlaku untuk blok gambar, galeri foto, dan masonry.",
           "notUsedByLayout": "Tidak digunakan oleh layout ini",
           "popupLayouts": {
             "contactSheet": { "label": "Contact sheet", "description": "Grid thumbnail yang rata, dengan header opsional untuk koleksi." },

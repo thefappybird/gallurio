@@ -23,6 +23,7 @@ import {
   STYLE_LIMITS,
 } from "@/lib/page-builder/styleToolkit";
 import type { GalleryImage } from "./GalleryGridBlock";
+import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GALLERY_PAD_SHORTHAND, padVar, masonryColsVar } from "@/lib/page-builder/responsive";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
@@ -142,6 +143,9 @@ export function GalleryMasonryBlock({
     filmstrip: labels.lightboxFilmstrip,
   };
   const brandVars = puck?.metadata?.workspace?.brandVars;
+  const imageModalLayout = resolveImageModalLayout(
+    puck?.metadata?.workspace?.publicPage?.collectionsPopup?.imageModalLayout,
+  );
 
   const sectionStyle = resolveBlockStyle(_style);
   const presetPreview = puck?.metadata?.presetPreview === true;
@@ -240,6 +244,7 @@ export function GalleryMasonryBlock({
                   index={i}
                   labels={lightboxLabels}
                   brandVars={brandVars}
+                  layout={imageModalLayout}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

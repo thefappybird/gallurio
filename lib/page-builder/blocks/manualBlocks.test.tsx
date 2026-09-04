@@ -360,6 +360,24 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+    render(
+      <ImageBlock
+        alt="A photo"
+        _style={{ bgImagePublicId: "ws/photo.jpg" }}
+        puck={{
+          metadata: {
+            workspace: {
+              publicPage: { collectionsPopup: { imageModalLayout: "sidebar" } },
+            },
+          },
+        }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
+
   it("is not clickable while the editor canvas has it selected for editing", () => {
     const { container } = render(
       <ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} puck={{ isEditing: true }} />

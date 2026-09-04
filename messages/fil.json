@@ -2745,7 +2745,7 @@
           "layout": "Layout",
           "popupLayoutLabel": "Layout ng featured work",
           "imageModalLayoutLabel": "Layout ng preview ng larawan",
-          "immersiveDisablesModal": "Isang larawan lang ang ipinapakita ng Immersive nang sabay — pinapalitan nito ang image modal.",
+          "immersiveModalScopeNote": "Ipinapakita ng Immersive ang mga larawan nang direkta sa loob ng pahina, kaya nalalapat ito sa mga image block, photo grid, at masonry.",
           "notUsedByLayout": "Hindi ginagamit ng layout na ito",
           "popupLayouts": {
             "contactSheet": { "label": "Contact sheet", "description": "Pantay na grid ng mga thumbnail, may opsyonal na header para sa koleksyon." },

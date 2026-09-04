@@ -2745,7 +2745,7 @@
           "layout": "Layout",
           "popupLayoutLabel": "Featured work layout",
           "imageModalLayoutLabel": "Image preview layout",
-          "immersiveDisablesModal": "Immersive shows one image at a time — it replaces the image modal.",
+          "immersiveModalScopeNote": "Immersive shows images inline, so this applies to image blocks, photo grids and masonry.",
           "notUsedByLayout": "Not used by this layout",
           "popupLayouts": {
             "contactSheet": { "label": "Contact sheet", "description": "An even grid of thumbnails, with an optional header for the collection." },

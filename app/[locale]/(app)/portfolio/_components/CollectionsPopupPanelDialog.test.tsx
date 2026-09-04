@@ -402,7 +402,7 @@ describe("CollectionsPopupPanelDialog layout pickers", () => {
     expect(onChange).toHaveBeenCalledWith({ ...baseConfig, imageModalLayout: "sidebar" });
   });
 
-  it("disables the image-modal picker with an inline explanation when popupLayout is immersive, and does not clear the stored imageModalLayout", () => {
+  it("keeps the image-modal picker enabled with an inline scope note when popupLayout is immersive, and still writes on click", () => {
     const onChange = vi.fn();
     const configImmersive: PortfolioCollectionsPopupConfig = {
       ...baseConfig,
@@ -417,50 +417,20 @@ describe("CollectionsPopupPanelDialog layout pickers", () => {
       />,
     );
 
-    // Every image-modal tile is disabled, including the previously-chosen one.
-    const sidebarRadio = screen.getByRole("radio", { name: /^sidebar$/i });
-    expect(sidebarRadio).toBeDisabled();
-    expect(sidebarRadio).toHaveAttribute("aria-checked", "true");
-
-    // Inline explanation is visible.
-    expect(
-      screen.getByText(/immersive shows one image at a time/i),
-    ).toBeInTheDocument();
-
-    // Clicking a disabled tile never fires onChange — the stored value survives untouched.
-    fireEvent.click(screen.getByRole("radio", { name: /^caption$/i }));
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it("restores the previous imageModalLayout selection (still 'sidebar') when switching back from immersive to a non-immersive popup layout", () => {
-    const onChange = vi.fn();
-    const configImmersive: PortfolioCollectionsPopupConfig = {
-      ...baseConfig,
-      popupLayout: "immersive",
-      imageModalLayout: "sidebar",
-    };
-    const { rerender } = renderWithProviders(
-      <CollectionsPopupPanelDialog
-        config={configImmersive}
-        onChange={onChange}
-        brandKit={stubBrandKit}
-      />,
-    );
-    expect(screen.getByRole("radio", { name: /^sidebar$/i })).toBeDisabled();
-
-    // Simulate the owner switching the popup layout away from immersive —
-    // imageModalLayout in config is untouched by this component the whole time.
-    rerender(
-      <CollectionsPopupPanelDialog
-        config={{ ...configImmersive, popupLayout: "contact-sheet" }}
-        onChange={onChange}
-        brandKit={stubBrandKit}
-      />,
-    );
-
+    // Every image-modal tile stays enabled — immersive only replaces the
+    // featured-popup's own modal, not grid/masonry/Image-block modals.
     const sidebarRadio = screen.getByRole("radio", { name: /^sidebar$/i });
     expect(sidebarRadio).not.toBeDisabled();
     expect(sidebarRadio).toHaveAttribute("aria-checked", "true");
+
+    // Inline scope note is visible.
+    expect(
+      screen.getByText(/applies to image blocks, photo grids and masonry/i),
+    ).toBeInTheDocument();
+
+    // Clicking a tile still fires onChange normally.
+    fireEvent.click(screen.getByRole("radio", { name: /^caption$/i }));
+    expect(onChange).toHaveBeenCalledWith({ ...configImmersive, imageModalLayout: "caption" });
   });
 
   it("annotates Popup, Title styles, and Button styles as not used by the current layout when popupLayout is immersive", () => {

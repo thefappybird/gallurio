@@ -25,6 +25,7 @@ import {
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/responsive";
+import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import type { LightboxLabels } from "./Lightbox";
@@ -122,6 +123,9 @@ export function GalleryGridBlock({
     filmstrip: chromeLabels.lightboxFilmstrip,
   };
   const brandVars = puck?.metadata?.workspace?.brandVars;
+  const imageModalLayout = resolveImageModalLayout(
+    puck?.metadata?.workspace?.publicPage?.collectionsPopup?.imageModalLayout,
+  );
 
   if (!useLegacyImages && !SlotContent) {
     return (
@@ -203,6 +207,7 @@ export function GalleryGridBlock({
                   index={i}
                   labels={lightboxLabels}
                   brandVars={brandVars}
+                  layout={imageModalLayout}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

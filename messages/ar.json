@@ -2745,7 +2745,7 @@
           "layout": "التخطيط",
           "popupLayoutLabel": "تخطيط الأعمال المميزة",
           "imageModalLayoutLabel": "تخطيط معاينة الصورة",
-          "immersiveDisablesModal": "يعرض التخطيط الغامر صورة واحدة في كل مرة — ويحل محل نافذة عرض الصورة.",
+          "immersiveModalScopeNote": "يعرض التخطيط الغامر الصور ضمن الصفحة مباشرة، لذا ينطبق هذا الإعداد على كتل الصور وشبكات الصور وتخطيط Masonry.",
           "notUsedByLayout": "غير مستخدم في هذا التخطيط",
           "popupLayouts": {
             "contactSheet": { "label": "لوحة تلامس", "description": "شبكة متساوية من الصور المصغّرة، مع رأس اختياري للمجموعة." },

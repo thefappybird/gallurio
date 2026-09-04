@@ -32,6 +32,7 @@ import {
   type StyleColorToken,
 } from "@/lib/page-builder/styleToolkit";
 import { PF_COLUMN_STACK_CLASS } from "@/lib/page-builder/responsive";
+import { resolveImageModalLayout } from "@/lib/page-builder/types";
 import { getGalleryChromeLabelsFrom } from "@/lib/page-builder/blockContext";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import type { LightboxLabels } from "./Lightbox";
@@ -355,6 +356,9 @@ export function ImageBlock({
                 buttonStyle={{ position: "absolute", inset: 0, height: "100%" }}
                 labels={lightboxLabels}
                 brandVars={puck?.metadata?.workspace?.brandVars}
+                layout={resolveImageModalLayout(
+                  puck?.metadata?.workspace?.publicPage?.collectionsPopup?.imageModalLayout,
+                )}
               >
                 {picture}
               </GalleryLightboxTrigger>

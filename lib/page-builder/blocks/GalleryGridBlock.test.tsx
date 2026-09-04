@@ -185,4 +185,24 @@ describe("GalleryGridBlock — lightbox", () => {
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
+
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+    render(
+      GalleryGridBlock({
+        ...base,
+        images: imgs(1),
+        puck: {
+          metadata: {
+            workspace: {
+              publicPage: { collectionsPopup: { imageModalLayout: "sidebar" } },
+            },
+          },
+        },
+      })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Alt 0" }));
+
+    expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
 });

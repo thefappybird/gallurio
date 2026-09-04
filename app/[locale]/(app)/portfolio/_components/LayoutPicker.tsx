@@ -31,10 +31,6 @@ type LayoutPickerProps = {
   options: readonly LayoutPickerOption[];
   value: string;
   onChange: (id: string) => void;
-  /** Renders the whole picker (tiles + preview) inert without unmounting it. */
-  disabled?: boolean;
-  /** Shown under the tiles when disabled, explaining why. */
-  disabledNote?: string;
   /**
    * Small schematic for a tile / the enlarged preview card. `images` is only
    * ever passed by `LayoutPreviewCard` (real workspace photos, once loaded)
@@ -59,8 +55,6 @@ export function LayoutPicker({
   options,
   value,
   onChange,
-  disabled = false,
-  disabledNote,
   renderThumb,
 }: LayoutPickerProps) {
   const groupRef = useRef<HTMLDivElement>(null);
@@ -73,7 +67,6 @@ export function LayoutPicker({
   }
 
   function openTilePreview(option: LayoutPickerOption, anchorEl: HTMLElement) {
-    if (disabled) return;
     openLayoutPreview(`${reactId}:${option.id}`, anchorEl, {
       label: option.label,
       description: option.description,
@@ -82,7 +75,7 @@ export function LayoutPicker({
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
-    if (disabled || options.length === 0) return;
+    if (options.length === 0) return;
     let nextIndex: number | null = null;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") nextIndex = (index + 1) % options.length;
     else if (e.key === "ArrowLeft" || e.key === "ArrowUp")
@@ -108,7 +101,6 @@ export function LayoutPicker({
         ref={groupRef}
         role="radiogroup"
         aria-label={ariaLabel}
-        aria-disabled={disabled || undefined}
         className="grid grid-cols-2 gap-2"
       >
         {options.map((option, index) => {
@@ -121,7 +113,6 @@ export function LayoutPicker({
               aria-checked={selected}
               aria-label={option.label}
               data-tile-id={option.id}
-              disabled={disabled}
               tabIndex={selected ? 0 : -1}
               onClick={(e) => {
                 onChange(option.id);
@@ -134,7 +125,6 @@ export function LayoutPicker({
                 "flex flex-col items-center gap-1.5 border bg-background p-2 text-center transition-colors",
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 selected ? "border-brand ring-1 ring-brand" : "border-border hover:bg-accent/40",
-                disabled && "cursor-not-allowed opacity-50 hover:bg-background",
               )}
             >
               <span aria-hidden className="flex h-[76px] w-full items-center justify-center text-muted-foreground">
@@ -145,10 +135,6 @@ export function LayoutPicker({
           );
         })}
       </div>
-
-      {disabled && disabledNote && (
-        <p className="text-xs text-muted-foreground">{disabledNote}</p>
-      )}
     </div>
   );
 }

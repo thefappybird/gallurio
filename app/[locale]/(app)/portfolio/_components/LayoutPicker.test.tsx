@@ -138,19 +138,6 @@ describe("LayoutPicker", () => {
 
     await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
   });
-
-  it("disables every tile, shows the note, and never opens the preview when disabled", () => {
-    const onChange = vi.fn();
-    renderPicker({ onChange, disabled: true, disabledNote: "Not available right now" });
-
-    const radios = screen.getAllByRole("radio");
-    radios.forEach((r) => expect(r).toBeDisabled());
-    expect(screen.getByText("Not available right now")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("radio", { name: "Option B" }));
-    expect(onChange).not.toHaveBeenCalled();
-    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
-  });
 });
 
 describe("LayoutPreviewCard", () => {

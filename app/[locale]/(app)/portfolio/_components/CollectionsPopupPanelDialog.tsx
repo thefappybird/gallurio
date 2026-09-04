@@ -261,12 +261,13 @@ export function CollectionsPopupPanelDialog({
                 options={imageModalLayoutOptions}
                 value={imageModalLayout}
                 onChange={(id) => set("imageModalLayout", id as ImageModalLayout)}
-                disabled={immersiveSelected}
-                disabledNote={
-                  immersiveSelected ? t("collectionsDialog.immersiveDisablesModal") : undefined
-                }
                 renderThumb={renderImageModalLayoutThumb}
               />
+              {immersiveSelected && (
+                <p className="text-xs text-muted-foreground">
+                  {t("collectionsDialog.immersiveModalScopeNote")}
+                </p>
+              )}
             </div>
           </EditorDrawerSection>
         </EditorDrawerGroup>

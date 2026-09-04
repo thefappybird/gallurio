@@ -2745,7 +2745,7 @@
           "layout": "เลย์เอาต์",
           "popupLayoutLabel": "เลย์เอาต์ผลงานเด่น",
           "imageModalLayoutLabel": "เลย์เอาต์ตัวอย่างภาพ",
-          "immersiveDisablesModal": "Immersive แสดงภาพทีละภาพเต็มจอ — และแทนที่หน้าต่างดูภาพ",
+          "immersiveModalScopeNote": "Immersive แสดงภาพแบบฝังในหน้า ดังนั้นการตั้งค่านี้จึงมีผลกับบล็อกภาพ ตารางภาพ และเลย์เอาต์ Masonry",
           "notUsedByLayout": "ไม่ได้ใช้ในเลย์เอาต์นี้",
           "popupLayouts": {
             "contactSheet": { "label": "Contact sheet", "description": "กริดภาพขนาดย่อที่เท่ากัน พร้อมหัวข้อคอลเลกชันแบบเลือกได้" },
