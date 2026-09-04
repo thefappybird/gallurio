@@ -622,6 +622,93 @@ export type UpdateItemMetaResult = PickerItem & {
   tags: string[];
 };
 
+/**
+ * Read the representative GalleryItem for a Cloudflare asset.
+ *
+ * An Image block stores only `_style.bgImagePublicId` — the asset id — and one
+ * asset can back several GalleryItem docs, because adding the same photo to a
+ * second collection copies the row (that is what the {workspaceId, assetId}
+ * index is for). The newest is the representative for reading; writes go to
+ * every copy, see updateItemMetaByAsset.
+ *
+ * Owner-scoped: an asset belonging to another workspace resolves to null, so
+ * existence is never leaked cross-tenant.
+ */
+export async function findItemByAsset(opts: {
+  workspaceId: string;
+  assetId: string;
+}): Promise<UpdateItemMetaResult | null> {
+  const { workspaceId, assetId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(workspaceId) || !assetId) return null;
+
+  await connectDB();
+
+  const doc = await GalleryItem.findOne({ workspaceId, assetId })
+    .sort({ createdAt: -1, _id: -1 })
+    .select({ assetId: 1, caption: 1, altText: 1, title: 1, date: 1, location: 1, client: 1, meta: 1, tags: 1 })
+    .lean();
+  if (!doc) return null;
+
+  return {
+    ...toPickerItem(doc),
+    title: (doc.title as string) ?? "",
+    date: (doc.date as string) ?? "",
+    location: (doc.location as string) ?? "",
+    client: (doc.client as string) ?? "",
+    meta: ((doc.meta as GalleryMetaRow[]) ?? []).map((m) => ({ label: m.label, value: m.value })),
+    tags: (doc.tags as string[]) ?? [],
+  };
+}
+
+/**
+ * Write metadata to EVERY GalleryItem in the workspace backing this asset.
+ *
+ * The editor tells the owner that these details "live on the photo itself" and
+ * that editing them "updates every place this photo appears". With copy
+ * semantics that promise is only true if all copies are written — updating the
+ * representative alone would leave the same photograph titled differently in
+ * two collections, which is exactly the surprise the wording rules out.
+ *
+ * Returns the representative's post-write state, plus how many rows changed so
+ * the caller can tell the difference between "no such asset" and "nothing to
+ * write".
+ */
+export async function updateItemMetaByAsset(opts: {
+  workspaceId: string;
+  assetId: string;
+  altText?: string;
+  caption?: string;
+  title?: string;
+  date?: string;
+  location?: string;
+  client?: string;
+  tags?: string[];
+  meta?: GalleryMetaRow[];
+}): Promise<{ item: UpdateItemMetaResult; matched: number } | null> {
+  const { workspaceId, assetId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(workspaceId) || !assetId) return null;
+
+  const set: Record<string, unknown> = {};
+  if (opts.altText !== undefined) set.altText = opts.altText;
+  if (opts.caption !== undefined) set.caption = opts.caption;
+  if (opts.title !== undefined) set.title = opts.title;
+  if (opts.date !== undefined) set.date = opts.date;
+  if (opts.location !== undefined) set.location = opts.location;
+  if (opts.client !== undefined) set.client = opts.client;
+  if (opts.tags !== undefined) set.tags = opts.tags;
+  if (opts.meta !== undefined) set.meta = opts.meta;
+  if (Object.keys(set).length === 0) return null;
+
+  await connectDB();
+
+  const res = await GalleryItem.updateMany({ workspaceId, assetId }, { $set: set });
+  if (!res.matchedCount) return null;
+
+  const item = await findItemByAsset({ workspaceId, assetId });
+  if (!item) return null;
+  return { item, matched: res.matchedCount };
+}
+
 export async function updateItemMeta(opts: {
   workspaceId: string;
   itemId: string;
