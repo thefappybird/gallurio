@@ -272,6 +272,8 @@ describe("GalleryMasonryBlock — lightbox", () => {
         puck: {
           metadata: {
             workspace: {
+              _id: "ws1",
+              name: "Workspace",
               publicPage: { collectionsPopup: { imageModalLayout: "sidebar" } },
             },
           },

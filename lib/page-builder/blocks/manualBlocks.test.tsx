@@ -368,6 +368,8 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
         puck={{
           metadata: {
             workspace: {
+              _id: "ws1",
+              name: "Workspace",
               publicPage: { collectionsPopup: { imageModalLayout: "sidebar" } },
             },
           },
