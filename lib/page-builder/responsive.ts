@@ -90,7 +90,33 @@ export function masonryColsVar(defaultValue: string | number): string {
  * queries match (e.g. 380px matches 900/600/400), the last matching rule wins,
  * which is the narrowest — exactly the intended step-down.
  */
+/**
+ * Class a Container puts on its content slot when that slot stacks its children
+ * DOWN a column (the default direction).
+ */
+export const PF_COLUMN_STACK_CLASS = "pf-stack-column";
+
+/**
+ * Cancels a nested Container's `flexGrow: 1` inside a column stack.
+ *
+ * Container declares `flex-grow: 1` so that siblings in a ROW stack share the
+ * width (the split presets rely on it). Down a COLUMN the same declaration means
+ * one nested section absorbs all the free height — its background bleeds over the
+ * parent's whole empty area and the parent's vertical-distribution control stops
+ * doing anything. Only the PARENT knows the axis, so the parent cancels it here.
+ *
+ * `!important` is required, not stylistic: `flex-grow` is written as an INLINE
+ * style by the child, and an author `!important` declaration is the only thing
+ * that outranks one (the custom-property indirection used elsewhere in this file
+ * is unavailable — jsdom drops `var()` on a typed property, which would blind the
+ * unit tests that pin this value).
+ */
+export const PF_COLUMN_STACK_CSS = `
+.${PF_COLUMN_STACK_CLASS} > [data-block="container"] { flex-grow: 0 !important; }
+`.trim();
+
 export const PF_RESPONSIVE_CSS = `
+${PF_COLUMN_STACK_CSS}
 @container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_TABLET_MAX}px) {
   [data-block] {
     --pf-pad: 2.5rem 1.25rem;

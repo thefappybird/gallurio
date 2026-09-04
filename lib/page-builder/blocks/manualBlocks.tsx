@@ -31,6 +31,7 @@ import {
   type HighlightSize,
   type StyleColorToken,
 } from "@/lib/page-builder/styleToolkit";
+import { PF_COLUMN_STACK_CLASS } from "@/lib/page-builder/responsive";
 
 // Highlight (marker band) appearance — mirrors GalleryText.tsx so all blocks
 // use the same visual output without a shared import cycle.
@@ -1035,6 +1036,8 @@ export function ContainerBlock({
         flexDirection: "column",
         // A hugging Container (Width=Hug, s.width==="fit-content") must not also
         // grow to fill its flex parent's main axis — that would defeat the hug.
+        // Growing is only wanted along a ROW (siblings share the width); a COLUMN
+        // parent cancels it via PF_COLUMN_STACK_CLASS — see the content slot below.
         flexGrow: isHugWidth ? 0 : 1,
         minHeight: puck?.isEditing
           ? minHeight === "custom"
@@ -1096,6 +1099,13 @@ export function ContainerBlock({
         </div>
       )}
       {Content({
+        // A column stack cancels its child Containers' `flexGrow: 1`, which would
+        // otherwise let one nested section swallow all the free vertical space —
+        // the parent's background bleeding down with it — and would make the
+        // vertical-distribution control a no-op. A row stack keeps the growth:
+        // there it shares the WIDTH between siblings (load-bearing for the split
+        // presets). See PF_COLUMN_STACK_CSS for why this is a stylesheet rule.
+        ...(s.flexDirection === "row" ? {} : { className: PF_COLUMN_STACK_CLASS }),
         style: {
           position: "relative",
           zIndex: 1,

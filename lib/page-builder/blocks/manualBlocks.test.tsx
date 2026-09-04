@@ -25,6 +25,7 @@ import {
   FOOTER_STATEMENT_PRESET,
 } from "./presets/footer";
 import { GALLERY_LANDING_SPLIT_PRESET } from "./presets/galleryLanding";
+import { PF_COLUMN_STACK_CLASS } from "../responsive";
 import type { SlotComponent, Permissions } from "@measured/puck";
 
 // ---------------------------------------------------------------------------
@@ -1273,13 +1274,30 @@ describe("ContainerBlock", () => {
 
 describe("ContainerBlock flex defaults", () => {
   const MockSlot: SlotComponent = (props) => (
-    <div data-testid="slot-inner" data-min-empty={String(props?.minEmptyHeight ?? "")} style={props?.style} />
+    <div
+      data-testid="slot-inner"
+      data-min-empty={String(props?.minEmptyHeight ?? "")}
+      className={props?.className}
+      style={props?.style}
+    />
   );
 
   it("renders the outer section with flexGrow: 1", () => {
     const { container } = render(<ContainerBlock content={MockSlot} />);
     const section = container.querySelector("section");
     expect(section?.style.flexGrow).toBe("1");
+  });
+
+  // A column stack cancels that flexGrow via PF_COLUMN_STACK_CSS, so a nested
+  // Container keeps its own height instead of eating the parent's free space.
+  it("marks a column stack so nested Containers do not grow into the free height", () => {
+    render(<ContainerBlock content={MockSlot} />);
+    expect(screen.getByTestId("slot-inner")).toHaveClass(PF_COLUMN_STACK_CLASS);
+  });
+
+  it("does NOT mark a row stack — there growing shares the width between siblings", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexDirection: "row" }} />);
+    expect(screen.getByTestId("slot-inner")).not.toHaveClass(PF_COLUMN_STACK_CLASS);
   });
 
   it("editor mode: empty drop zone gets Puck's native minEmptyHeight so the whole area is droppable", () => {
