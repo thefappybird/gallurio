@@ -22,6 +22,7 @@ import {
 import type { StyleColorToken } from "@/lib/page-builder/styleToolkit";
 import {
   LayoutPicker,
+  LayoutPreviewCard,
   renderPopupLayoutThumb,
   renderImageModalLayoutThumb,
   type LayoutPickerOption,
@@ -229,6 +230,10 @@ export function CollectionsPopupPanelDialog({
           {t("collectionsDialog.featuredPopup")}
         </span>
       </div>
+
+      {/* One shared, anchored preview card for both layout pickers below —
+          never one per picker instance. See LayoutPicker.tsx. */}
+      <LayoutPreviewCard />
 
       {/* Scrollable controls */}
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3">

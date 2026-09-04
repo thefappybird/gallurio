@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { createAnchoredPreviewStore } from "./anchoredPreviewStore";
 
 /**
  * Which preset or manual block's drawer help is showing — at most one, ever.
@@ -18,18 +18,12 @@ import { useSyncExternalStore } from "react";
  *   - hovering or clicking a DIFFERENT row swaps the preview over;
  *   - clicking outside, or acting on the canvas, closes it;
  *   - merely moving the pointer off a row does NOT close it.
+ *
+ * Built on the generic `createAnchoredPreviewStore` factory (see that module
+ * for the "single active item + anchor" mechanics this wraps).
  */
 
-let active: string | null = null;
-// The row the single panel positions against. The panel is rendered ONCE,
-// outside the rows: Puck mounts each row twice, so a per-row panel produced two
-// stacked copies of the same card even after both agreed on what to show.
-let anchor: HTMLElement | null = null;
-const listeners = new Set<() => void>();
-
-function emit(): void {
-  for (const l of listeners) l();
-}
+const store = createAnchoredPreviewStore();
 
 /**
  * Show `name`'s preview, anchored beside `row`.
@@ -42,50 +36,35 @@ function emit(): void {
  * not move while the pointer is on it.
  */
 export function openPresetPreview(name: string, row: HTMLElement): void {
-  if (active === name) return;
-  active = name;
-  anchor = row;
-  emit();
+  store.open(name, row);
 }
 
 /** Close whatever is open. No-op when nothing is. */
 export function closePresetPreview(): void {
-  if (active === null) return;
-  active = null;
-  anchor = null;
-  emit();
+  store.close();
 }
 
 /** Subscribe to changes; returns an unsubscribe. */
 export function subscribePresetPreview(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+  return store.subscribe(listener);
 }
 
 /** The active preset/manual block name, or null. */
 export function getActivePresetPreview(): string | null {
-  return active;
+  return store.getActiveKey();
 }
 
 /** The row the active preview is anchored to, or null. */
 export function getActivePresetAnchor(): HTMLElement | null {
-  return anchor;
+  return store.getAnchor();
 }
 
 /** Reactive read of the active preset/manual block name. SSR-safe. */
 export function useActivePresetPreview(): string | null {
-  return useSyncExternalStore(
-    subscribePresetPreview,
-    getActivePresetPreview,
-    getActivePresetPreview
-  );
+  return store.useActiveKey();
 }
 
 /** Test-only: reset module state between runs. */
 export function __resetPresetPreview(): void {
-  active = null;
-  anchor = null;
-  listeners.clear();
+  store.reset();
 }

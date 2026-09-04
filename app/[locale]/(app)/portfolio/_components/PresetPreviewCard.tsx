@@ -37,6 +37,7 @@ import {
   openPresetPreview,
   useActivePresetPreview,
 } from "@/lib/page-builder/presetPreviewStore";
+import { computeAnchoredPanelPosition } from "@/lib/page-builder/anchoredPanelPosition";
 
 /** Breathing room between the anchor row and the panel, and off the viewport edge. */
 const PANEL_GAP = 8;
@@ -257,20 +258,24 @@ export function PresetPreviewPanel({
 
   // Derived during render, not in an effect: the anchor rect is available
   // synchronously and the clamp uses a known worst-case height, so there is
-  // nothing to measure after mount. Flips to the anchor's left when the right
-  // side cannot fit, and keeps the card inside the viewport near the end of a
-  // long drawer.
+  // nothing to measure after mount. Prefers the anchor's end side (right in
+  // LTR — the drawer sits on the left), flipping to the start side when that
+  // cannot fit, and keeps the card inside the viewport near the end of a
+  // long drawer. Math lives in `anchoredPanelPosition.ts`, shared with the
+  // portfolio layout picker's preview card.
   const pos = useMemo(() => {
     if (!activeKey) return null;
     const anchor = getActivePresetAnchor();
     if (!anchor) return null;
-    const r = anchor.getBoundingClientRect();
-    const panelW = FRAME_WIDTH + 2;
-    const fitsRight = window.innerWidth - r.right - PANEL_GAP >= panelW;
-    return {
-      left: fitsRight ? r.right + PANEL_GAP : Math.max(PANEL_GAP, r.left - panelW - PANEL_GAP),
-      top: Math.min(Math.max(PANEL_GAP, r.top), window.innerHeight - PANEL_MAX_HEIGHT - PANEL_GAP),
-    };
+    const dir = typeof document !== "undefined" && document.documentElement.dir === "rtl" ? "rtl" : "ltr";
+    return computeAnchoredPanelPosition({
+      anchorRect: anchor.getBoundingClientRect(),
+      panelWidth: FRAME_WIDTH + 2,
+      panelMaxHeight: PANEL_MAX_HEIGHT,
+      gap: PANEL_GAP,
+      preferredSide: "end",
+      dir,
+    });
   }, [activeKey]);
 
   useEffect(() => {

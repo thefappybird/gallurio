@@ -2673,8 +2673,8 @@
             "rounded": "مستدير"
           },
           "layout": "التخطيط",
-          "popupLayoutLabel": "تخطيط النافذة المنبثقة",
-          "imageModalLayoutLabel": "تخطيط عرض الصورة",
+          "popupLayoutLabel": "تخطيط الأعمال المميزة",
+          "imageModalLayoutLabel": "تخطيط معاينة الصورة",
           "immersiveDisablesModal": "يعرض التخطيط الغامر صورة واحدة في كل مرة — ويحل محل نافذة عرض الصورة.",
           "notUsedByLayout": "غير مستخدم في هذا التخطيط",
           "popupLayouts": {

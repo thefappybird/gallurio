@@ -1,12 +1,27 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import React from "react";
 import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
+import { __resetLayoutPreview } from "@/lib/page-builder/layoutPreviewStore";
 import type {
   PortfolioCollectionsPopupConfig,
   PortfolioBrandKit,
 } from "@/lib/page-builder/types";
+
+// The dialog also mounts the single shared LayoutPreviewCard, which fetches
+// the workspace's gallery photos on mount regardless of whether a preview is
+// open. Stub fetch so every test here stays deterministic/offline, and reset
+// the (module-level) preview store so an opened tile from one test can't
+// leak into the next.
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
+
+beforeEach(() => {
+  __resetLayoutPreview();
+  mockFetch.mockReset();
+  mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+});
 
 const stubBrandKit: PortfolioBrandKit = {
   themePreset: "minimal",
@@ -339,8 +354,8 @@ describe("CollectionsPopupPanelDialog layout pickers", () => {
       />,
     );
     expect(screen.getByText(/^layout$/i)).toBeInTheDocument();
-    expect(screen.getByRole("radiogroup", { name: /popup layout/i })).toBeInTheDocument();
-    expect(screen.getByRole("radiogroup", { name: /image view layout/i })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: /featured work layout/i })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: /image preview layout/i })).toBeInTheDocument();
   });
 
   it("defaults to contact-sheet / caption as checked when the config fields are unset", () => {

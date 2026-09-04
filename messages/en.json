@@ -2673,8 +2673,8 @@
             "rounded": "Rounded"
           },
           "layout": "Layout",
-          "popupLayoutLabel": "Popup layout",
-          "imageModalLayoutLabel": "Image view layout",
+          "popupLayoutLabel": "Featured work layout",
+          "imageModalLayoutLabel": "Image preview layout",
           "immersiveDisablesModal": "Immersive shows one image at a time — it replaces the image modal.",
           "notUsedByLayout": "Not used by this layout",
           "popupLayouts": {

@@ -2673,8 +2673,8 @@
             "rounded": "โค้งมน"
           },
           "layout": "เลย์เอาต์",
-          "popupLayoutLabel": "เลย์เอาต์ป็อปอัป",
-          "imageModalLayoutLabel": "เลย์เอาต์มุมมองภาพ",
+          "popupLayoutLabel": "เลย์เอาต์ผลงานเด่น",
+          "imageModalLayoutLabel": "เลย์เอาต์ตัวอย่างภาพ",
           "immersiveDisablesModal": "Immersive แสดงภาพทีละภาพเต็มจอ — และแทนที่หน้าต่างดูภาพ",
           "notUsedByLayout": "ไม่ได้ใช้ในเลย์เอาต์นี้",
           "popupLayouts": {

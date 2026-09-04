@@ -2673,8 +2673,8 @@
             "rounded": "Bilugan"
           },
           "layout": "Layout",
-          "popupLayoutLabel": "Layout ng popup",
-          "imageModalLayoutLabel": "Layout ng larawan",
+          "popupLayoutLabel": "Layout ng featured work",
+          "imageModalLayoutLabel": "Layout ng preview ng larawan",
           "immersiveDisablesModal": "Isang larawan lang ang ipinapakita ng Immersive nang sabay — pinapalitan nito ang image modal.",
           "notUsedByLayout": "Hindi ginagamit ng layout na ito",
           "popupLayouts": {

@@ -2673,8 +2673,8 @@
             "rounded": "Membulat"
           },
           "layout": "Layout",
-          "popupLayoutLabel": "Layout popup",
-          "imageModalLayoutLabel": "Layout tampilan gambar",
+          "popupLayoutLabel": "Layout featured work",
+          "imageModalLayoutLabel": "Layout preview gambar",
           "immersiveDisablesModal": "Immersive menampilkan satu gambar dalam satu waktu — ini menggantikan modal gambar.",
           "notUsedByLayout": "Tidak digunakan oleh layout ini",
           "popupLayouts": {
