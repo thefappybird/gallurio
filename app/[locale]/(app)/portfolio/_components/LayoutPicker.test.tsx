@@ -138,6 +138,41 @@ describe("LayoutPicker", () => {
 
     await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
   });
+
+  // Opt-in variant: a right-column tile's card can land on top of a
+  // left-column tile, blocking it — closeOnPointerLeave lets the pointer
+  // leaving the tile dismiss the card instead of sitting there stuck.
+  it("closeOnPointerLeave: mouseLeave on a tile closes the card", async () => {
+    renderPicker({ closeOnPointerLeave: true });
+    const tile = screen.getByRole("radio", { name: "Option A" });
+    fireEvent.mouseEnter(tile);
+    await waitFor(() => expect(screen.getByText("Description A")).toBeInTheDocument());
+
+    fireEvent.mouseLeave(tile);
+
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+  });
+
+  it("without closeOnPointerLeave, mouseLeave does not close the card", async () => {
+    renderPicker();
+    const tile = screen.getByRole("radio", { name: "Option A" });
+    fireEvent.mouseEnter(tile);
+    await waitFor(() => expect(screen.getByText("Description A")).toBeInTheDocument());
+
+    fireEvent.mouseLeave(tile);
+
+    expect(screen.getByText("Description A")).toBeInTheDocument();
+  });
+
+  it("closeOnPointerLeave: moving the pointer onto the card itself also closes it", async () => {
+    renderPicker({ closeOnPointerLeave: true });
+    fireEvent.mouseEnter(screen.getByRole("radio", { name: "Option A" }));
+    const card = await screen.findByRole("tooltip");
+
+    fireEvent.mouseEnter(card);
+
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+  });
 });
 
 describe("LayoutPreviewCard", () => {

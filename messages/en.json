@@ -2744,7 +2744,9 @@
           },
           "layout": "Layout",
           "popupLayoutLabel": "Featured work layout",
+          "popupLayoutHint": "This is what visitors see when they open a featured collection.",
           "imageModalLayoutLabel": "Image preview layout",
+          "imageModalLayoutHint": "This is what visitors see when they click an image on your page.",
           "immersiveModalScopeNote": "Immersive shows images inline, so this applies to image blocks, photo grids and masonry.",
           "notUsedByLayout": "Not used by this layout",
           "popupLayouts": {

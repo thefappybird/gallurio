@@ -2744,7 +2744,9 @@
           },
           "layout": "Layout",
           "popupLayoutLabel": "Layout featured work",
+          "popupLayoutHint": "Inilah yang dilihat pengunjung saat membuka koleksi unggulan.",
           "imageModalLayoutLabel": "Layout preview gambar",
+          "imageModalLayoutHint": "Inilah yang dilihat pengunjung saat mengeklik gambar di halaman Anda.",
           "immersiveModalScopeNote": "Immersive menampilkan gambar secara inline, jadi pengaturan ini berlaku untuk blok gambar, galeri foto, dan masonry.",
           "notUsedByLayout": "Tidak digunakan oleh layout ini",
           "popupLayouts": {

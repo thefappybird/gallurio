@@ -2744,7 +2744,9 @@
           },
           "layout": "Layout",
           "popupLayoutLabel": "Layout ng featured work",
+          "popupLayoutHint": "Ito ang makikita ng mga bisita kapag binuksan nila ang isang featured collection.",
           "imageModalLayoutLabel": "Layout ng preview ng larawan",
+          "imageModalLayoutHint": "Ito ang makikita ng mga bisita kapag na-click nila ang isang larawan sa iyong pahina.",
           "immersiveModalScopeNote": "Ipinapakita ng Immersive ang mga larawan nang direkta sa loob ng pahina, kaya nalalapat ito sa mga image block, photo grid, at masonry.",
           "notUsedByLayout": "Hindi ginagamit ng layout na ito",
           "popupLayouts": {

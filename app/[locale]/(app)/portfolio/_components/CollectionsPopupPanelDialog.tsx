@@ -238,17 +238,21 @@ export function CollectionsPopupPanelDialog({
       {/* Scrollable controls */}
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3">
         <EditorDrawerGroup plain>
-          <EditorDrawerSection title={t("collectionsDialog.layout")} flat>
+          <EditorDrawerSection title={t("collectionsDialog.layout")} defaultOpen>
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground">
                 {t("collectionsDialog.popupLayoutLabel")}
               </span>
+              <p className="text-xs text-muted-foreground">
+                {t("collectionsDialog.popupLayoutHint")}
+              </p>
               <LayoutPicker
                 ariaLabel={t("collectionsDialog.popupLayoutLabel")}
                 options={popupLayoutOptions}
                 value={popupLayout}
                 onChange={(id) => set("popupLayout", id as PopupLayout)}
                 renderThumb={renderPopupLayoutThumb}
+                closeOnPointerLeave
               />
             </div>
 
@@ -256,12 +260,16 @@ export function CollectionsPopupPanelDialog({
               <span className="text-xs text-muted-foreground">
                 {t("collectionsDialog.imageModalLayoutLabel")}
               </span>
+              <p className="text-xs text-muted-foreground">
+                {t("collectionsDialog.imageModalLayoutHint")}
+              </p>
               <LayoutPicker
                 ariaLabel={t("collectionsDialog.imageModalLayoutLabel")}
                 options={imageModalLayoutOptions}
                 value={imageModalLayout}
                 onChange={(id) => set("imageModalLayout", id as ImageModalLayout)}
                 renderThumb={renderImageModalLayoutThumb}
+                closeOnPointerLeave
               />
               {immersiveSelected && (
                 <p className="text-xs text-muted-foreground">

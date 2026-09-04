@@ -2744,7 +2744,9 @@
           },
           "layout": "التخطيط",
           "popupLayoutLabel": "تخطيط الأعمال المميزة",
+          "popupLayoutHint": "هذا ما يراه الزوار عند فتح مجموعة مميزة.",
           "imageModalLayoutLabel": "تخطيط معاينة الصورة",
+          "imageModalLayoutHint": "هذا ما يراه الزوار عند النقر على صورة في صفحتك.",
           "immersiveModalScopeNote": "يعرض التخطيط الغامر الصور ضمن الصفحة مباشرة، لذا ينطبق هذا الإعداد على كتل الصور وشبكات الصور وتخطيط Masonry.",
           "notUsedByLayout": "غير مستخدم في هذا التخطيط",
           "popupLayouts": {

@@ -2744,7 +2744,9 @@
           },
           "layout": "เลย์เอาต์",
           "popupLayoutLabel": "เลย์เอาต์ผลงานเด่น",
+          "popupLayoutHint": "นี่คือสิ่งที่ผู้เยี่ยมชมเห็นเมื่อเปิดคอลเลกชันเด่น",
           "imageModalLayoutLabel": "เลย์เอาต์ตัวอย่างภาพ",
+          "imageModalLayoutHint": "นี่คือสิ่งที่ผู้เยี่ยมชมเห็นเมื่อคลิกภาพบนหน้าเพจของคุณ",
           "immersiveModalScopeNote": "Immersive แสดงภาพแบบฝังในหน้า ดังนั้นการตั้งค่านี้จึงมีผลกับบล็อกภาพ ตารางภาพ และเลย์เอาต์ Masonry",
           "notUsedByLayout": "ไม่ได้ใช้ในเลย์เอาต์นี้",
           "popupLayouts": {

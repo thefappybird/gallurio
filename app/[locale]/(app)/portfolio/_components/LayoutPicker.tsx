@@ -38,7 +38,23 @@ type LayoutPickerProps = {
    * schematics.
    */
   renderThumb: (id: string, images?: string[]) => ReactNode;
+  /**
+   * Opt-in: close the shared preview card as soon as the pointer leaves a
+   * tile — including when it moves onto the card itself (the card can
+   * overlap a neighboring tile since it anchors `preferredSide: "start"`).
+   * Off by default so the sidebar preset pickers keep their sticky behavior
+   * (`presetPreviewStore` / `PresetPreviewCard`, untouched by this prop).
+   */
+  closeOnPointerLeave?: boolean;
 };
+
+// Tags the tile's anchor element with whether its preview opted into
+// close-on-leave — read back by `LayoutPreviewCard` via
+// `getActiveLayoutPreviewAnchor()` (already tracked by the store) so the one
+// shared card, which has no per-instance prop of its own, knows whether to
+// also close itself when the pointer enters the card. A DOM attribute, not
+// module-level React state, so this stays outside `layoutPreviewStore.ts`.
+const CLOSE_ON_LEAVE_ATTR = "closeOnLeave";
 
 /**
  * A row of selectable schematic tiles (`role="radiogroup"` of `role="radio"`).
@@ -56,6 +72,7 @@ export function LayoutPicker({
   value,
   onChange,
   renderThumb,
+  closeOnPointerLeave = false,
 }: LayoutPickerProps) {
   const groupRef = useRef<HTMLDivElement>(null);
   const reactId = useId();
@@ -67,6 +84,7 @@ export function LayoutPicker({
   }
 
   function openTilePreview(option: LayoutPickerOption, anchorEl: HTMLElement) {
+    anchorEl.dataset[CLOSE_ON_LEAVE_ATTR] = closeOnPointerLeave ? "true" : "false";
     openLayoutPreview(`${reactId}:${option.id}`, anchorEl, {
       label: option.label,
       description: option.description,
@@ -121,6 +139,9 @@ export function LayoutPicker({
               onKeyDown={(e) => handleKeyDown(e, index)}
               onMouseEnter={(e) => openTilePreview(option, e.currentTarget)}
               onFocus={(e) => openTilePreview(option, e.currentTarget)}
+              onMouseLeave={() => {
+                if (closeOnPointerLeave) closeLayoutPreview();
+              }}
               className={cn(
                 "flex flex-col items-center gap-1.5 border bg-background p-2 text-center transition-colors",
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -250,6 +271,10 @@ export function LayoutPreviewCard() {
       }}
       // Flat per DESIGN.md — hairline ring and a tonal shift, no shadow.
       className="border border-border bg-popover text-popover-foreground"
+      onMouseEnter={() => {
+        const anchor = getActiveLayoutPreviewAnchor();
+        if (anchor?.dataset[CLOSE_ON_LEAVE_ATTR] === "true") closeLayoutPreview();
+      }}
     >
       <div className="flex h-24 w-full items-center justify-center overflow-hidden bg-muted p-3 text-muted-foreground ring-1 ring-foreground/10">
         {payload.renderThumb(urls)}

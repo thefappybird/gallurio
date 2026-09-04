@@ -358,6 +358,42 @@ describe("CollectionsPopupPanelDialog layout pickers", () => {
     expect(screen.getByRole("radiogroup", { name: /image preview layout/i })).toBeInTheDocument();
   });
 
+  it("renders the Layout section as a collapsible, default-open button (not a flat static title)", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    const header = screen.getByRole("button", { name: /^layout$/i });
+    expect(header).toHaveAttribute("aria-expanded", "true");
+
+    // Content starts visible (default open)...
+    expect(screen.getByRole("radiogroup", { name: /featured work layout/i })).toBeInTheDocument();
+
+    // ...and collapses on click, like the Popup / Title styles / Button styles sections.
+    fireEvent.click(header);
+    expect(header).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("radiogroup", { name: /featured work layout/i })).not.toBeInTheDocument();
+  });
+
+  it("shows a one-line description under each layout picker's label", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    expect(
+      screen.getByText("This is what visitors see when they open a featured collection."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("This is what visitors see when they click an image on your page."),
+    ).toBeInTheDocument();
+  });
+
   it("defaults to contact-sheet / caption as checked when the config fields are unset", () => {
     renderWithProviders(
       <CollectionsPopupPanelDialog
