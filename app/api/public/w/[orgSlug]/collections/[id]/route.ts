@@ -14,7 +14,8 @@ type Params = { params: Promise<{ orgSlug: string; id: string }> };
  * images, for the Featured Work popup. Resolves orgSlug→workspaceId (publish-gated;
  * 404 before any item read). workspaceId is NEVER client-supplied. The collection's
  * isPublic gates visibility (items have no isPublic field). Response:
- * { items: { id, publicId, alt }[]; nextCursor }.
+ * { items: { id, publicId, alt, width, height, title, caption, date,
+ * location, client, meta, tags }[]; nextCursor; total }.
  */
 export async function GET(req: Request, { params }: Params) {
   const { orgSlug, id } = await params;

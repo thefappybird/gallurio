@@ -95,6 +95,40 @@ describe("POST /api/portfolio/gallery/collections", () => {
     expect(items[0].workspaceId.toString()).toBe(workspaceId.toString());
   });
 
+  it("persists an optional description and starter-item metadata", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Weddings 2024",
+        description: "Full-day wedding coverage.",
+        items: [{
+          assetId: "img_rich", url: "https://imagedelivery.net/hash/img_rich/public", width: 1200, height: 800,
+          title: "Ceremony", date: "2026-06-15", location: "Manila", client: "Reyes Family",
+          tags: ["wedding"], meta: [{ label: "Photographer", value: "J. Cruz" }],
+        }],
+      })
+    )) as unknown as MockResp;
+    expect(res.status).toBe(201);
+    expect((res.body as { description: string }).description).toBe("Full-day wedding coverage.");
+
+    const body = res.body as { id: string };
+    const col = await GalleryCollection.findById(body.id).lean();
+    expect(col?.description).toBe("Full-day wedding coverage.");
+
+    const item = await GalleryItem.findOne({ collectionId: body.id }).lean();
+    expect(item?.title).toBe("Ceremony");
+    expect(item?.tags).toEqual(["wedding"]);
+  });
+
+  it("rejects a malformed date on a starter item with 400", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Bad Date",
+        items: [{ assetId: "img_bd", url: "https://imagedelivery.net/hash/img_bd/public", date: "15-06-2026" }],
+      })
+    )) as unknown as MockResp;
+    expect(res.status).toBe(400);
+  });
+
   it("creates a collection with no starter items", async () => {
     const res = (await POST(makeReq({ name: "Empty Gallery" }))) as unknown as MockResp;
     expect(res.status).toBe(201);

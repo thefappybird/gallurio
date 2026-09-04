@@ -248,6 +248,63 @@ function toPickerItem(it: {
   };
 }
 
+export type GalleryMetaRow = { label: string; value: string };
+
+// Legacy docs (pre-dating these fields) miss the key entirely on a `.lean()`
+// read (Mongoose only backfills schema defaults through document hydration,
+// which `.lean()` skips) — every reader here falls back explicitly so no
+// migration is required.
+function requiredDim(n: number | null | undefined): number {
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : 1;
+}
+
+/**
+ * A collection-page item enriched with the Featured Work popup's fields
+ * (alt/title/date/location/client/meta/tags/width/height) on top of the
+ * existing PickerItem contract (id/publicId/thumbUrl/caption/altText) that
+ * the MediaPicker's "browse into a collection" view still reads from this
+ * same endpoint. Additive only — MediaPicker ignores the extra keys.
+ */
+type CollectionPageItem = PickerItem & {
+  alt: string;
+  width: number;
+  height: number;
+  title: string;
+  date: string;
+  location: string;
+  client: string;
+  meta: GalleryMetaRow[];
+  tags: string[];
+};
+
+function toCollectionPageItem(it: {
+  _id: unknown;
+  assetId?: unknown;
+  caption?: unknown;
+  altText?: unknown;
+  width?: unknown;
+  height?: unknown;
+  title?: unknown;
+  date?: unknown;
+  location?: unknown;
+  client?: unknown;
+  meta?: unknown;
+  tags?: unknown;
+}): CollectionPageItem {
+  return {
+    ...toPickerItem(it),
+    alt: (it.altText as string) || (it.caption as string) || "",
+    width: requiredDim(it.width as number | null | undefined),
+    height: requiredDim(it.height as number | null | undefined),
+    title: (it.title as string) ?? "",
+    date: (it.date as string) ?? "",
+    location: (it.location as string) ?? "",
+    client: (it.client as string) ?? "",
+    meta: ((it.meta as GalleryMetaRow[]) ?? []).map((m) => ({ label: m.label, value: m.value })),
+    tags: (it.tags as string[]) ?? [],
+  };
+}
+
 /**
  * One page of a collection's items, ordered by the existing
  * { workspaceId, collectionId, order } index. Cursor pagination on (order,_id)
@@ -258,9 +315,9 @@ export async function listCollectionItemsPage(opts: {
   collectionId: string;
   cursor?: string | null;
   limit?: number;
-}): Promise<{ items: PickerItem[]; nextCursor: string | null }> {
+}): Promise<{ items: CollectionPageItem[]; nextCursor: string | null; total: number }> {
   const { workspaceId, collectionId } = opts;
-  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null };
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null, total: 0 };
 
   const limit = clampLimit(opts.limit);
   await connectDB();
@@ -279,17 +336,33 @@ export async function listCollectionItemsPage(opts: {
     }
   }
 
-  const docs = await GalleryItem.find(filter)
-    .sort({ order: 1, _id: 1 })
-    .limit(limit + 1)
-    .select({ assetId: 1, caption: 1, altText: 1, order: 1 })
-    .lean();
+  const [docs, total] = await Promise.all([
+    GalleryItem.find(filter)
+      .sort({ order: 1, _id: 1 })
+      .limit(limit + 1)
+      .select({
+        assetId: 1,
+        caption: 1,
+        altText: 1,
+        order: 1,
+        width: 1,
+        height: 1,
+        title: 1,
+        date: 1,
+        location: 1,
+        client: 1,
+        meta: 1,
+        tags: 1,
+      })
+      .lean(),
+    GalleryItem.countDocuments({ workspaceId, collectionId }),
+  ]);
 
   const hasMore = docs.length > limit;
   const page = hasMore ? docs.slice(0, limit) : docs;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? encodeCursor(last.order as number, String(last._id)) : null;
-  return { items: page.map(toPickerItem), nextCursor };
+  return { items: page.map(toCollectionPageItem), nextCursor, total };
 }
 
 /**
@@ -374,29 +447,46 @@ export async function listAllItemsPage(opts: {
 // Public read helpers — gated on GalleryCollection.isPublic
 // ---------------------------------------------------------------------------
 
-export type PublicCollectionImage = { id: string; publicId: string; alt: string };
+export type PublicCollectionImage = {
+  id: string;
+  publicId: string;
+  alt: string;
+  width: number;
+  height: number;
+  title: string;
+  caption: string;
+  date: string;
+  location: string;
+  client: string;
+  meta: GalleryMetaRow[];
+  tags: string[];
+};
 
 /**
  * One page of a PUBLIC collection's images for the live portfolio page.
- * Gates on the collection's `isPublic` flag (tenant-scoped). Returns
- * `{ id, publicId, alt }` where alt = altText || caption || "".
- * Foreign workspace, private, or missing collection → empty page (never throws).
+ * Gates on the collection's `isPublic` flag (tenant-scoped). `alt` = altText
+ * || caption || "" (a11y string); `caption`/`title`/`date`/`location`/
+ * `client`/`meta`/`tags` pass through separately for the popup layouts.
+ * `width`/`height` are always a positive number (defaulted to 1 for the rare
+ * legacy item with no recorded dimensions) — a downstream row packer treats
+ * them as required. Foreign workspace, private, or missing collection →
+ * empty page with total 0 (never throws).
  */
 export async function listPublicCollectionItemsPage(opts: {
   workspaceId: string;
   collectionId: string;
   cursor?: string | null;
   limit?: number;
-}): Promise<{ items: PublicCollectionImage[]; nextCursor: string | null }> {
+}): Promise<{ items: PublicCollectionImage[]; nextCursor: string | null; total: number }> {
   const { workspaceId, collectionId } = opts;
-  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null };
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null, total: 0 };
 
   await connectDB();
 
   const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId, isPublic: true })
     .select({ _id: 1 })
     .lean();
-  if (!col) return { items: [], nextCursor: null };
+  if (!col) return { items: [], nextCursor: null, total: 0 };
 
   const limit = clampLimit(opts.limit);
   const filter: Record<string, unknown> = { workspaceId, collectionId };
@@ -413,11 +503,27 @@ export async function listPublicCollectionItemsPage(opts: {
     }
   }
 
-  const docs = await GalleryItem.find(filter)
-    .sort({ order: 1, _id: 1 })
-    .limit(limit + 1)
-    .select({ assetId: 1, altText: 1, caption: 1, order: 1 })
-    .lean();
+  const [docs, total] = await Promise.all([
+    GalleryItem.find(filter)
+      .sort({ order: 1, _id: 1 })
+      .limit(limit + 1)
+      .select({
+        assetId: 1,
+        altText: 1,
+        caption: 1,
+        order: 1,
+        width: 1,
+        height: 1,
+        title: 1,
+        date: 1,
+        location: 1,
+        client: 1,
+        meta: 1,
+        tags: 1,
+      })
+      .lean(),
+    GalleryItem.countDocuments({ workspaceId, collectionId }),
+  ]);
 
   const hasMore = docs.length > limit;
   const page = hasMore ? docs.slice(0, limit) : docs;
@@ -428,8 +534,18 @@ export async function listPublicCollectionItemsPage(opts: {
       id: String(d._id),
       publicId: (d.assetId as string) ?? "",
       alt: (d.altText as string) || (d.caption as string) || "",
+      width: requiredDim(d.width as number | null | undefined),
+      height: requiredDim(d.height as number | null | undefined),
+      title: (d.title as string) ?? "",
+      caption: (d.caption as string) ?? "",
+      date: (d.date as string) ?? "",
+      location: (d.location as string) ?? "",
+      client: (d.client as string) ?? "",
+      meta: ((d.meta as GalleryMetaRow[]) ?? []).map((m) => ({ label: m.label, value: m.value })),
+      tags: (d.tags as string[]) ?? [],
     })),
     nextCursor,
+    total,
   };
 }
 
@@ -483,18 +599,39 @@ export async function listCollectionNewest(opts: {
  * Filters by `{ _id: itemId, workspaceId }` always (tenant-safe); a foreign,
  * missing, or malformed `itemId` returns `null`.
  */
+export type UpdateItemMetaResult = PickerItem & {
+  title: string;
+  date: string;
+  location: string;
+  client: string;
+  meta: GalleryMetaRow[];
+  tags: string[];
+};
+
 export async function updateItemMeta(opts: {
   workspaceId: string;
   itemId: string;
   altText?: string;
   caption?: string;
-}): Promise<PickerItem | null> {
+  title?: string;
+  date?: string;
+  location?: string;
+  client?: string;
+  tags?: string[];
+  meta?: GalleryMetaRow[];
+}): Promise<UpdateItemMetaResult | null> {
   const { workspaceId, itemId } = opts;
   if (!workspaceId || !Types.ObjectId.isValid(itemId)) return null;
 
-  const set: Record<string, string> = {};
+  const set: Record<string, unknown> = {};
   if (opts.altText !== undefined) set.altText = opts.altText;
   if (opts.caption !== undefined) set.caption = opts.caption;
+  if (opts.title !== undefined) set.title = opts.title;
+  if (opts.date !== undefined) set.date = opts.date;
+  if (opts.location !== undefined) set.location = opts.location;
+  if (opts.client !== undefined) set.client = opts.client;
+  if (opts.tags !== undefined) set.tags = opts.tags;
+  if (opts.meta !== undefined) set.meta = opts.meta;
   if (Object.keys(set).length === 0) return null;
 
   await connectDB();
@@ -504,11 +641,19 @@ export async function updateItemMeta(opts: {
     { $set: set },
     { new: true }
   )
-    .select({ assetId: 1, caption: 1, altText: 1 })
+    .select({ assetId: 1, caption: 1, altText: 1, title: 1, date: 1, location: 1, client: 1, meta: 1, tags: 1 })
     .lean();
   if (!doc) return null;
 
-  return toPickerItem(doc);
+  return {
+    ...toPickerItem(doc),
+    title: (doc.title as string) ?? "",
+    date: (doc.date as string) ?? "",
+    location: (doc.location as string) ?? "",
+    client: (doc.client as string) ?? "",
+    meta: ((doc.meta as GalleryMetaRow[]) ?? []).map((m) => ({ label: m.label, value: m.value })),
+    tags: (doc.tags as string[]) ?? [],
+  };
 }
 
 /** Prop keys that may hold GalleryImage-shaped `{ id, alt }` entries on a block. */

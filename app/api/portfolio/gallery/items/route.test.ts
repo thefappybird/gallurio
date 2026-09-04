@@ -230,6 +230,37 @@ describe("POST /api/portfolio/gallery/items", () => {
     expect(res.status).toBe(201);
   });
 
+  it("persists title/date/location/client/tags/meta when supplied at creation", async () => {
+    const res = (await POST(
+      makeReq(
+        validPayload({
+          title: "Ceremony",
+          date: "2026-06-15",
+          location: "Manila",
+          client: "Reyes Family",
+          tags: ["wedding"],
+          meta: [{ label: "Photographer", value: "J. Cruz" }],
+        })
+      )
+    )) as unknown as MockResp;
+    expect(res.status).toBe(201);
+    const body = res.body as { id: string };
+    const saved = await GalleryItem.findById(body.id).lean();
+    expect(saved?.title).toBe("Ceremony");
+    expect(saved?.date).toBe("2026-06-15");
+    expect(saved?.location).toBe("Manila");
+    expect(saved?.client).toBe("Reyes Family");
+    expect(saved?.tags).toEqual(["wedding"]);
+    expect(saved?.meta?.map((m) => ({ label: m.label, value: m.value }))).toEqual([
+      { label: "Photographer", value: "J. Cruz" },
+    ]);
+  });
+
+  it("rejects a malformed date at creation with 400", async () => {
+    const res = (await POST(makeReq(validPayload({ date: "not-a-date" })))) as unknown as MockResp;
+    expect(res.status).toBe(400);
+  });
+
   it("tenant isolation: org B cannot see org A items after org A creates one", async () => {
     await POST(makeReq(validPayload()));
 

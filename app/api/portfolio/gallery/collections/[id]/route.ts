@@ -149,8 +149,9 @@ const patchSchema = z
   .object({
     name: z.string().trim().min(1).max(100).optional(),
     coverItemId: z.string().min(1).max(64).optional(),
+    description: z.string().trim().max(2000).optional(),
   })
-  .refine((d) => d.name !== undefined || d.coverItemId !== undefined, { message: "no_fields" });
+  .refine((d) => Object.keys(d).length > 0, { message: "no_fields" });
 
 export async function PATCH(req: Request, { params }: Params) {
   const auth = await requireApiOrg();
@@ -183,10 +184,16 @@ export async function PATCH(req: Request, { params }: Params) {
     collection.coverItemId = coverItem._id;
   }
   if (parsed.data.name !== undefined) collection.name = parsed.data.name;
+  if (parsed.data.description !== undefined) collection.description = parsed.data.description;
   await collection.save();
 
   return NextResponse.json(
-    { id: String(collection._id), name: collection.name, coverItemId: collection.coverItemId ? String(collection.coverItemId) : null },
+    {
+      id: String(collection._id),
+      name: collection.name,
+      description: collection.description,
+      coverItemId: collection.coverItemId ? String(collection.coverItemId) : null,
+    },
     { status: 200 }
   );
 }

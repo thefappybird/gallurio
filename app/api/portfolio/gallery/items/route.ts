@@ -7,6 +7,7 @@ import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { verifyImageOwnership, imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
 import { validatePhotoMeta, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { photoCheckDetail } from "@/lib/uploads/photoCheckDetail";
+import { galleryItemMetaFields } from "@/lib/validators/galleryItemMeta";
 
 export const runtime = "nodejs";
 
@@ -17,9 +18,10 @@ const bodySchema = z.object({
   height: z.number().int().positive().max(20000).optional(),
   format: z.string().max(20).optional(),
   sizeBytes: z.number().int().nonnegative().optional(),
-  caption: z.string().max(300).optional(),
+  caption: z.string().max(2000).optional(),
   altText: z.string().max(300).optional(),
   collectionId: z.string().min(1).max(64).optional(),
+  ...galleryItemMetaFields,
 });
 
 /**
@@ -103,6 +105,12 @@ export async function POST(req: Request) {
     sizeBytes: parsed.data.sizeBytes ?? 0,
     caption: parsed.data.caption ?? "",
     altText: parsed.data.altText ?? "",
+    title: parsed.data.title ?? "",
+    date: parsed.data.date ?? "",
+    location: parsed.data.location ?? "",
+    client: parsed.data.client ?? "",
+    tags: parsed.data.tags ?? [],
+    meta: parsed.data.meta ?? [],
     order: existingCount,
   });
 

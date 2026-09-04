@@ -94,19 +94,38 @@ function buildUrl(
 
 // ---------------------------------------------------------------------------
 // Normalize API response items → PopupImage
-// Owner items may have `caption` instead of `alt`.
+// `alt` is the a11y string only — the server always resolves it
+// (altText || caption || ""); it is never backfilled from `caption` here,
+// since `caption` is now a distinct, separately-rendered description field.
 // ---------------------------------------------------------------------------
 
 function normalizeItem(item: {
   id: string;
   publicId: string;
   alt?: string;
+  title?: string;
   caption?: string;
+  date?: string;
+  location?: string;
+  client?: string;
+  meta?: { label: string; value: string }[];
+  tags?: string[];
+  width?: number;
+  height?: number;
 }): PopupImage {
   return {
     id: item.id,
     publicId: item.publicId,
-    alt: item.alt ?? item.caption ?? "",
+    alt: item.alt ?? "",
+    title: item.title,
+    caption: item.caption,
+    date: item.date,
+    location: item.location,
+    client: item.client,
+    meta: item.meta,
+    tags: item.tags,
+    width: item.width,
+    height: item.height,
   };
 }
 
@@ -177,8 +196,22 @@ export function CollectionPopup({
           throw new Error(`HTTP ${res.status}`);
         }
         const data = (await res.json()) as {
-          items: Array<{ id: string; publicId: string; alt?: string; caption?: string }>;
+          items: Array<{
+            id: string;
+            publicId: string;
+            alt?: string;
+            title?: string;
+            caption?: string;
+            date?: string;
+            location?: string;
+            client?: string;
+            meta?: { label: string; value: string }[];
+            tags?: string[];
+            width?: number;
+            height?: number;
+          }>;
           nextCursor: string | null;
+          total?: number;
         };
         const normalized = data.items.map(normalizeItem);
         const merged = appendTo ? [...appendTo, ...normalized] : normalized;

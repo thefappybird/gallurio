@@ -32,12 +32,15 @@ beforeAll(startInMemoryMongo); afterAll(stopInMemoryMongo);
 beforeEach(async () => { await clearCollections(); await seed(); });
 
 describe("GET /api/public/w/[orgSlug]/collections/[id]", () => {
-  it("returns paginated items for a published workspace's public collection", async () => {
+  it("returns paginated items for a published workspace's public collection, plus total", async () => {
     const res = await call("studio", publicCol.toString(), "?limit=2");
     expect(res.status).toBe(200);
-    const body = res.body as { items: { publicId: string }[]; nextCursor: string | null };
+    const body = res.body as { items: { publicId: string; width: number; height: number }[]; nextCursor: string | null; total: number };
     expect(body.items.map((i) => i.publicId)).toEqual(["p0", "p1"]);
     expect(body.nextCursor).toBeTruthy();
+    expect(body.total).toBe(3);
+    // No dimensions recorded on the seeded items — required-non-null default.
+    expect(body.items[0]).toMatchObject({ width: 1, height: 1 });
   });
   it("404 for an unpublished slug", async () => {
     await Workspace.updateOne({ _id: ws._id }, { $set: { "publicPage.publishedAt": null } });

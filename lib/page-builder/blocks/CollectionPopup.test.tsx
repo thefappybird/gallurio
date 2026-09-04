@@ -324,10 +324,10 @@ describe("CollectionPopup", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Owner-mode normalization: caption -> alt
+  // normalizeItem no longer backfills alt from caption
   // ---------------------------------------------------------------------------
 
-  it("normalizes owner-mode items with caption (no alt) into PopupImage.alt", async () => {
+  it("does not fall back a missing alt to caption text — caption is a separate field", async () => {
     const captionItems = [
       { id: "img1", publicId: "workspace/photo1", caption: "My Caption", alt: undefined },
     ];
@@ -342,8 +342,11 @@ describe("CollectionPopup", () => {
     );
     render(<CollectionPopup {...defaultProps({ mode: "owner" })} />);
 
-    const img = await screen.findByRole("img", { name: /my caption/i });
-    expect(img).toBeInTheDocument();
+    // alt stays "" (decorative image, no accessible name from caption) —
+    // the thumbnail is still reachable via its button's fallback label.
+    const button = await screen.findByRole("button", { name: "Open photo" });
+    expect(button).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /my caption/i })).not.toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------

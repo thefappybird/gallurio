@@ -20,6 +20,13 @@ const galleryItemSchema = new Schema(
     altText: { type: String, default: "" },
     order: { type: Number, default: 0 },
     tags: { type: [String], default: [] },
+    title: { type: String, default: "" },
+    // ISO "YYYY-MM-DD" or "" — kept a String (never coerced to Date) so ""
+    // round-trips and no timezone shifting occurs. See lib/validators/galleryItemMeta.ts.
+    date: { type: String, default: "" },
+    location: { type: String, default: "" },
+    client: { type: String, default: "" },
+    meta: { type: [{ label: String, value: String, _id: false }], default: [] },
   },
   { timestamps: true }
 );

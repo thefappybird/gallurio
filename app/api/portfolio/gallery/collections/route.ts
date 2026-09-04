@@ -7,11 +7,13 @@ import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { verifyImageOwnership } from "@/lib/storage/cloudflareImages";
 import { validatePhotoMeta, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { photoCheckDetail } from "@/lib/uploads/photoCheckDetail";
+import { galleryItemMetaFields } from "@/lib/validators/galleryItemMeta";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
   name: z.string().min(1, "Name is required").max(100).trim(),
+  description: z.string().trim().max(2000).optional(),
   items: z
     .array(
       z.object({
@@ -21,8 +23,9 @@ const bodySchema = z.object({
         height: z.number().int().positive().max(20000).optional(),
         format: z.string().max(20).optional(),
         sizeBytes: z.number().int().nonnegative().optional(),
-        caption: z.string().max(300).optional(),
+        caption: z.string().max(2000).optional(),
         altText: z.string().max(300).optional(),
+        ...galleryItemMetaFields,
       })
     )
     .max(50)
@@ -43,7 +46,7 @@ function makeSlug(name: string): string {
  * Creates a new GalleryCollection with optional starter items.
  * Owner-only; non-owners receive 403.
  *
- * Response: { id: string, name: string, slug: string }
+ * Response: { id: string, name: string, slug: string, description: string }
  */
 export async function POST(req: Request) {
   const auth = await requireApiOrg();
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { name, items } = parsed.data;
+  const { name, description, items } = parsed.data;
   const workspaceId = ctx.workspace._id;
 
   if (items.length > 0) {
@@ -105,7 +108,7 @@ export async function POST(req: Request) {
   try {
     await session.withTransaction(async () => {
       const [collection] = await GalleryCollection.create(
-        [{ workspaceId, name, slug, isPublic: true, order: 0 }],
+        [{ workspaceId, name, slug, isPublic: true, order: 0, description: description ?? "" }],
         { session }
       );
 
@@ -121,6 +124,12 @@ export async function POST(req: Request) {
           sizeBytes: img.sizeBytes ?? 0,
           caption: img.caption ?? "",
           altText: img.altText ?? "",
+          title: img.title ?? "",
+          date: img.date ?? "",
+          location: img.location ?? "",
+          client: img.client ?? "",
+          tags: img.tags ?? [],
+          meta: img.meta ?? [],
           order: i,
         }));
         const createdItems = await GalleryItem.create(docs, { session, ordered: true });
@@ -144,5 +153,5 @@ export async function POST(req: Request) {
     await session.endSession();
   }
 
-  return NextResponse.json({ id: collectionId!, name, slug }, { status: 201 });
+  return NextResponse.json({ id: collectionId!, name, slug, description: description ?? "" }, { status: 201 });
 }

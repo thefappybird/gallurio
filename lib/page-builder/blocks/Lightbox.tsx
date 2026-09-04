@@ -10,7 +10,20 @@ import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 // canvas (isomorphic, no server-only imports).
 // ---------------------------------------------------------------------------
 
-export type LightboxImage = { id: string; publicId: string; alt: string };
+export type LightboxImage = {
+  id: string;
+  publicId: string;
+  alt: string;
+  title?: string;
+  caption?: string;
+  date?: string;
+  location?: string;
+  client?: string;
+  meta?: { label: string; value: string }[];
+  tags?: string[];
+  width?: number;
+  height?: number;
+};
 
 const FOCUS_VISIBLE_STYLES = `
 [data-lightbox-close]:focus-visible {

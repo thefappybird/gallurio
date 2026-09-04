@@ -151,6 +151,74 @@ describe("PATCH /api/portfolio/gallery/items/[id]", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects a malformed date with 400", async () => {
+    const res = (await PATCH(
+      makeReq({ date: "06/15/2026" }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts an empty-string date (unset)", async () => {
+    const res = (await PATCH(makeReq({ date: "" }), makeParams(itemId.toString()))) as unknown as MockResp;
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects more than 20 meta rows with 400", async () => {
+    const meta = Array.from({ length: 21 }, (_, i) => ({ label: `L${i}`, value: `V${i}` }));
+    const res = (await PATCH(makeReq({ meta }), makeParams(itemId.toString()))) as unknown as MockResp;
+    expect(res.status).toBe(400);
+  });
+
+  it("sets title/date/location/client/tags/meta and returns them on the response", async () => {
+    const res = (await PATCH(
+      makeReq({
+        title: "Ceremony",
+        date: "2026-06-15",
+        location: "Manila",
+        client: "Reyes Family",
+        tags: ["wedding", "outdoor"],
+        meta: [{ label: "Photographer", value: "J. Cruz" }],
+      }),
+      makeParams(itemId.toString())
+    )) as unknown as MockResp;
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      title: "Ceremony",
+      date: "2026-06-15",
+      location: "Manila",
+      client: "Reyes Family",
+      tags: ["wedding", "outdoor"],
+      meta: [{ label: "Photographer", value: "J. Cruz" }],
+    });
+
+    const saved = await GalleryItem.findById(itemId).lean();
+    expect(saved?.title).toBe("Ceremony");
+    expect(saved?.tags).toEqual(["wedding", "outdoor"]);
+  });
+
+  it("returns 404 (tenant isolation) when patching title on another workspace's item", async () => {
+    const otherWs = await Workspace.create({
+      slug: "ws-item-meta-c",
+      name: "C",
+      ownerUserId: "user_c",
+      currency: "PHP",
+    });
+    const foreignItem = await GalleryItem.create({
+      workspaceId: otherWs._id,
+      assetId: "img_foreign2",
+      url: "https://imagedelivery.net/hash/img_foreign2/public",
+      order: 0,
+    });
+    const res = (await PATCH(
+      makeReq({ title: "Hijacked" }),
+      makeParams(foreignItem._id.toString())
+    )) as unknown as MockResp;
+    expect(res.status).toBe(404);
+    const saved = await GalleryItem.findById(foreignItem._id).lean();
+    expect(saved?.title).toBe("");
+  });
+
   it("sets altText and returns the updated PickerItem", async () => {
     const res = (await PATCH(
       makeReq({ altText: "A bride and groom at sunset" }),

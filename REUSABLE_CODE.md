@@ -126,6 +126,11 @@ Composed, app-specific shared components.
 | `lib/utils/iso-week.ts` | `addDaysStr`, `weekStartMonday`, `isoWeekStartDate`, `isoWeekOf` | `("YYYY-MM-DD", n) => str`; `(str) => Monday str`; `(isoYear, isoWeek) => Monday str`; `(str) => {isoYear, isoWeek}` | Pure ISO-8601 week-string arithmetic, no tz — safe for both server and client (`"use client"`) files |
 | `lib/pagination.ts` | `PAGE_SIZE_OPTIONS` | `[10,20,30,50]` | Shared page sizes (client + server) |
 
+### `lib/validators/`
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/validators/galleryItemMeta.ts` | `galleryItemMetaFields` (spread into a `z.object`), `galleryMetaRowSchema`, `GALLERY_DATE_RE` | Shared optional Zod fields for GalleryItem metadata (`title`/`date`/`location`/`client`/`tags`/`meta`) — used by POST items, POST collections (starter items), and PATCH items/[id] so the three write paths can't drift on caps/regex. `date` is `""` or `YYYY-MM-DD` (string, never coerced to Date); `meta` rows capped at 20, label/value at 120 chars each; `tags` capped at 20 entries of 40 chars |
+
 ### `lib/bookings/`
 | Import | Export | Purpose |
 |--------|--------|---------|
