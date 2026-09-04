@@ -507,6 +507,11 @@ export function CollectionPopup({
           onRequestMore={handleLoadMore}
           closeLabel={L.close}
           fullSizeAlt={L.fullSizeAlt}
+          // The lightbox portals to document.body, escaping the wrapper that
+          // declares --pf-*; without these it renders in the default palette
+          // rather than the tenant's. Same reason this component re-applies
+          // them to its own popup above.
+          brandVars={brandVars}
         />
       )}
     </>
