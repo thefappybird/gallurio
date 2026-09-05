@@ -2063,7 +2063,7 @@
         "phonePlaceholder": "+62 812 555 0142",
         "source": "Sumber",
         "tags": "Tag",
-        "tagsPlaceholder": "Tambahkan tag dan tekan Enter",
+        "tagsPlaceholder": "Tambahkan tag",
         "removeTag": "Hapus tag {tag}",
         "notes": "Catatan",
         "notesPlaceholder": "Catatan apa pun tentang klien ini…",

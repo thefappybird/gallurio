@@ -2063,7 +2063,7 @@
         "phonePlaceholder": "+66 81 234 5678",
         "source": "แหล่งที่มา",
         "tags": "แท็ก",
-        "tagsPlaceholder": "เพิ่มแท็กแล้วกด Enter",
+        "tagsPlaceholder": "เพิ่มแท็ก",
         "removeTag": "ลบแท็ก {tag}",
         "notes": "หมายเหตุ",
         "notesPlaceholder": "หมายเหตุใด ๆ เกี่ยวกับลูกค้ารายนี้…",

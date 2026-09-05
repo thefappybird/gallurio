@@ -6,12 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { XIcon } from "lucide-react";
-import { tagBorderClass } from "@/components/app/tag-pill";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { TagsInput } from "@/components/ui/tags-input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { fieldMessage } from "@/lib/utils/fieldMessage";
@@ -64,12 +64,9 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
 
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [viewAfterDiscard, setViewAfterDiscard] = useState(false);
-  const [tagInput, setTagInput] = useState("");
   const [matchState, setMatchState] = useState<{ matches: ClientMatchCard[]; data: ClientFormInput } | null>(null);
 
-  // Reset form (and the in-progress tag draft) when modal opens/closes or
-  // initialData changes so a partial tag typed in one session can't survive
-  // into the next.
+  // Reset form when modal opens/closes or initialData changes.
   useEffect(() => {
     if (open) {
       form.reset({
@@ -80,7 +77,6 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
         tags: initialData?.tags ?? [],
         notes: initialData?.notes ?? "",
       });
-      setTagInput("");
     }
   }, [open, initialData]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -95,7 +91,6 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
   function handleDiscard() {
     setUnsavedOpen(false);
     form.reset();
-    setTagInput("");
     onOpenChange(false);
     if (viewAfterDiscard) {
       setViewAfterDiscard(false);
@@ -112,21 +107,6 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
     }
     onOpenChange(false);
     onView();
-  }
-
-  function addTag(raw: string) {
-    const tag = raw.trim().slice(0, 40);
-    if (!tag) return;
-    const current = form.getValues("tags");
-    if (!current.includes(tag)) {
-      form.setValue("tags", [...current, tag], { shouldDirty: true });
-    }
-    setTagInput("");
-  }
-
-  function removeTag(tag: string) {
-    const current = form.getValues("tags");
-    form.setValue("tags", current.filter((t) => t !== tag), { shouldDirty: true });
   }
 
   async function finishCreate(data: ClientFormInput) {
@@ -317,37 +297,14 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
               {/* Row 4: Tags */}
               <div className="flex flex-col gap-1.5">
                 <Label>{t("form.tags")}</Label>
-                <Input
+                <TagsInput
+                  tags={tags}
+                  onChange={(next) => form.setValue("tags", next, { shouldDirty: true })}
                   placeholder={t("form.tagsPlaceholder")}
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === ",") {
-                      e.preventDefault();
-                      addTag(tagInput);
-                    }
-                  }}
+                  maxTagLength={40}
+                  colorize
+                  removeLabel={(tag) => t("form.removeTag", { tag })}
                 />
-                {tags.length > 0 && (
-                  <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto">
-                    {tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className={`inline-flex items-center gap-1 border bg-muted px-1.5 py-0.5 text-xs text-muted-foreground ${tagBorderClass(tag)}`}
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="inline-flex min-h-11 min-w-11 items-center justify-center hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-0 sm:min-w-0"
-                          aria-label={t("form.removeTag", { tag })}
-                        >
-                          <XIcon className="size-2.5" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Row 5: Notes */}

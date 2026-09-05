@@ -2063,7 +2063,7 @@
         "phonePlaceholder": "+63 917 555 0142",
         "source": "Source",
         "tags": "Tags",
-        "tagsPlaceholder": "Add tag and press Enter",
+        "tagsPlaceholder": "Add a tag",
         "removeTag": "Remove tag {tag}",
         "notes": "Notes",
         "notesPlaceholder": "Any notes about this client…",
