@@ -3,6 +3,21 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Photo lightbox layouts now offer a "see more" panel showing date, location, client, custom details, and tags — previously only visible on the Sidebar and Sheet layouts, now also on Caption and Cinema.
+- Photo galleries with 8 or fewer photos now show clickable position dots instead of a numeric counter, on the Caption, Cinema, and Featured Work (immersive) lightbox layouts.
+- Photo tag entry is now consistent everywhere it appears — the photo details editor, the post-upload wizard, SEO keywords, and CRM client tags all use the same pill-style input, committing a tag on space, comma, Enter, or a pasted list.
+
+### Changed
+- The Sidebar and Sheet lightbox layouts now keep their navigation controls reachable at the bottom of the panel while scrolling through a photo's details, instead of scrolling out of view.
+
+### Fixed
+- The photo details editor's tags field no longer silently ignores the Enter key — it was a plain text box despite its own placeholder telling you to press Enter.
+- The "Photos & collections" manager could stop responding to Close and Escape after editing a second collection, requiring the Back button to get out. It now closes reliably every time.
+- The Sidebar lightbox layout no longer shows a faint duplicate close button when opened from a Featured Work collection popup.
+
 ## [1.4.0] - 2026-08-31
 
 Release commits through `56b6ece5`.
