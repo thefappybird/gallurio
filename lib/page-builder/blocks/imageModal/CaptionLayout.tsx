@@ -58,6 +58,7 @@ export function CaptionLayout({
   counterText,
   seeMoreLabel,
   seeLessLabel,
+  dotLabelTemplate,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const hasCaptionText = Boolean(image.title || image.caption);
@@ -149,7 +150,9 @@ export function CaptionLayout({
                     type="button"
                     className="pf-modal-caption-dot"
                     aria-current={i === index ? "true" : undefined}
-                    aria-label={`Photo ${i + 1} of ${total}`}
+                    aria-label={dotLabelTemplate
+                      .replace("{current}", String(i + 1))
+                      .replace("{total}", String(total))}
                     onClick={() => onSelect(i)}
                   />
                 ))}

@@ -3677,7 +3677,8 @@
         "lightboxCounter": "{current} dari {total}",
         "lightboxFilmstrip": "Filmstrip foto",
         "lightboxSeeMore": "Lihat selengkapnya",
-        "lightboxSeeLess": "Lihat lebih sedikit"
+        "lightboxSeeLess": "Lihat lebih sedikit",
+        "lightboxPhotoOf": "Foto {current} dari {total}"
       }
     },
     "nav": {

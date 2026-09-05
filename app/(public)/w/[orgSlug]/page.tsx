@@ -177,6 +177,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
         lightboxFilmstrip: t("gallery.lightboxFilmstrip"),
         lightboxSeeMore: t("gallery.lightboxSeeMore"),
         lightboxSeeLess: t("gallery.lightboxSeeLess"),
+        lightboxPhotoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
       },
       nav: {
         navLandmark: tNav("navLandmark"),

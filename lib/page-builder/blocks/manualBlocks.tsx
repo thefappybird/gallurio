@@ -400,6 +400,7 @@ export function ImageBlock({
               filmstrip: chromeLabels.lightboxFilmstrip,
               seeMore: chromeLabels.lightboxSeeMore,
               seeLess: chromeLabels.lightboxSeeLess,
+              photoOf: chromeLabels.lightboxPhotoOf,
             };
             return (
               <GalleryLightboxTrigger

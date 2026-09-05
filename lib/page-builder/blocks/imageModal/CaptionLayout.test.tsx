@@ -39,6 +39,7 @@ function baseProps(overrides: Partial<ImageModalLeafProps> = {}): ImageModalLeaf
     filmstripLabel: "Photo filmstrip",
     seeMoreLabel: "See more",
     seeLessLabel: "See less",
+    dotLabelTemplate: "Photo {current} of {total}",
     ...overrides,
   };
 }

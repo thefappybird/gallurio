@@ -3677,7 +3677,8 @@
         "lightboxCounter": "{current} จาก {total}",
         "lightboxFilmstrip": "แถบภาพขนาดย่อ",
         "lightboxSeeMore": "ดูเพิ่มเติม",
-        "lightboxSeeLess": "ดูน้อยลง"
+        "lightboxSeeLess": "ดูน้อยลง",
+        "lightboxPhotoOf": "ภาพที่ {current} จาก {total}"
       }
     },
     "nav": {

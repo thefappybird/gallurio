@@ -62,6 +62,11 @@ export type ImageModalLeafProps = {
    *  disclosure (SeeMoreMetaPanel) inside caption/cinema layouts. */
   seeMoreLabel: string;
   seeLessLabel: string;
+  /** aria-label template for a pagination dot (caption layout, total<=8).
+   *  Contains literal "{current}"/"{total}" tokens — unlike counterText
+   *  (pre-formatted for currentIndex), leaves interpolate this once per dot
+   *  using that dot's own index. */
+  dotLabelTemplate: string;
 };
 
 /** Every string this modal introduces beyond the pre-existing closeLabel/
@@ -80,6 +85,8 @@ export type LightboxLabels = {
   seeMore?: string;
   /** "See less" — same toggle, expanded state. */
   seeLess?: string;
+  /** aria-label for a pagination dot. Template with literal "{current}"/"{total}" tokens. */
+  photoOf?: string;
 };
 
 type LightboxNewProps = {
@@ -302,6 +309,7 @@ export function Lightbox(props: LightboxProps) {
   const filmstripLabel = labels?.filmstrip ?? "Photo filmstrip";
   const seeMoreLabel = labels?.seeMore ?? "See more";
   const seeLessLabel = labels?.seeLess ?? "See less";
+  const dotLabelTemplate = labels?.photoOf ?? "Photo {current} of {total}";
   const initialIndexRaw = legacy ? 0 : props.initialIndex ?? 0;
 
   const [currentIndex, setCurrentIndex] = useState(() =>
@@ -426,6 +434,7 @@ export function Lightbox(props: LightboxProps) {
               filmstripLabel={filmstripLabel}
               seeMoreLabel={seeMoreLabel}
               seeLessLabel={seeLessLabel}
+              dotLabelTemplate={dotLabelTemplate}
             />
           ) : null}
         </DialogPrimitive.Popup>

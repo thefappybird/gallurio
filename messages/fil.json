@@ -3677,7 +3677,8 @@
         "lightboxCounter": "{current} ng {total}",
         "lightboxFilmstrip": "Filmstrip ng mga larawan",
         "lightboxSeeMore": "Tingnan pa",
-        "lightboxSeeLess": "Ipakita nang mas kaunti"
+        "lightboxSeeLess": "Ipakita nang mas kaunti",
+        "lightboxPhotoOf": "Larawan {current} ng {total}"
       }
     },
     "nav": {

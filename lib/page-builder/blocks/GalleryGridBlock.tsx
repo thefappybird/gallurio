@@ -124,6 +124,7 @@ export function GalleryGridBlock({
     filmstrip: chromeLabels.lightboxFilmstrip,
     seeMore: chromeLabels.lightboxSeeMore,
     seeLess: chromeLabels.lightboxSeeLess,
+    photoOf: chromeLabels.lightboxPhotoOf,
   };
   const brandVars = puck?.metadata?.workspace?.brandVars;
   const imageModalLayout = resolveImageModalLayout(

@@ -3677,7 +3677,8 @@
         "lightboxCounter": "{current} من {total}",
         "lightboxFilmstrip": "شريط الصور المصغّرة",
         "lightboxSeeMore": "عرض المزيد",
-        "lightboxSeeLess": "عرض أقل"
+        "lightboxSeeLess": "عرض أقل",
+        "lightboxPhotoOf": "الصورة {current} من {total}"
       }
     },
     "nav": {

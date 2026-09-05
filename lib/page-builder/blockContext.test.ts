@@ -26,6 +26,7 @@ const DEFAULTS = {
   lightboxFilmstrip: "Photo filmstrip",
   lightboxSeeMore: "See more",
   lightboxSeeLess: "See less",
+  lightboxPhotoOf: "Photo {current} of {total}",
 };
 
 // ---------------------------------------------------------------------------
@@ -33,11 +34,11 @@ const DEFAULTS = {
 // ---------------------------------------------------------------------------
 
 describe("applyGalleryChromeDefaults", () => {
-  it("returns all 13 defaults when called with an empty object", () => {
+  it("returns all 14 defaults when called with an empty object", () => {
     expect(applyGalleryChromeDefaults({})).toEqual(DEFAULTS);
   });
 
-  it("returns all 13 defaults when called with no argument", () => {
+  it("returns all 14 defaults when called with no argument", () => {
     expect(applyGalleryChromeDefaults()).toEqual(DEFAULTS);
   });
 
@@ -56,6 +57,7 @@ describe("applyGalleryChromeDefaults", () => {
     expect(result.lightboxFilmstrip).toBe(DEFAULTS.lightboxFilmstrip);
     expect(result.lightboxSeeMore).toBe(DEFAULTS.lightboxSeeMore);
     expect(result.lightboxSeeLess).toBe(DEFAULTS.lightboxSeeLess);
+    expect(result.lightboxPhotoOf).toBe(DEFAULTS.lightboxPhotoOf);
   });
 });
 
@@ -106,9 +108,10 @@ describe("getGalleryChromeLabelsFrom", () => {
     expect(result.lightboxFilmstrip).toBe(DEFAULTS.lightboxFilmstrip);
     expect(result.lightboxSeeMore).toBe(DEFAULTS.lightboxSeeMore);
     expect(result.lightboxSeeLess).toBe(DEFAULTS.lightboxSeeLess);
+    expect(result.lightboxPhotoOf).toBe(DEFAULTS.lightboxPhotoOf);
   });
 
-  it("passes through all 13 keys when fully provided via puck metadata", () => {
+  it("passes through all 14 keys when fully provided via puck metadata", () => {
     const chrome = {
       empty: "E",
       noCollection: "NC",
@@ -123,6 +126,7 @@ describe("getGalleryChromeLabelsFrom", () => {
       lightboxFilmstrip: "LF",
       lightboxSeeMore: "SM",
       lightboxSeeLess: "SL",
+      lightboxPhotoOf: "LPO",
     };
     const puck = { metadata: { workspace: { _id: "ws-3", name: "X", chrome: { gallery: chrome } } } };
     expect(getGalleryChromeLabelsFrom(puck)).toEqual(chrome);

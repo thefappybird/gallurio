@@ -144,6 +144,7 @@ export function GalleryMasonryBlock({
     filmstrip: labels.lightboxFilmstrip,
     seeMore: labels.lightboxSeeMore,
     seeLess: labels.lightboxSeeLess,
+    photoOf: labels.lightboxPhotoOf,
   };
   const brandVars = puck?.metadata?.workspace?.brandVars;
   const imageModalLayout = resolveImageModalLayout(

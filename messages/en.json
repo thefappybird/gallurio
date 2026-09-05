@@ -3677,7 +3677,8 @@
         "lightboxCounter": "{current} / {total}",
         "lightboxFilmstrip": "Photo filmstrip",
         "lightboxSeeMore": "See more",
-        "lightboxSeeLess": "See less"
+        "lightboxSeeLess": "See less",
+        "lightboxPhotoOf": "Photo {current} of {total}"
       }
     },
     "nav": {

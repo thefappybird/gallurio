@@ -100,6 +100,8 @@ export type GalleryChromeLabels = {
   lightboxSeeMore?: string;
   /** "See less" — same toggle, expanded state. */
   lightboxSeeLess?: string;
+  /** aria-label for a caption-layout pagination dot. Template with literal "{current}"/"{total}" tokens. */
+  lightboxPhotoOf?: string;
 };
 
 /** Localized strings consumed by the Navigation block (resolved at the page boundary). */
@@ -212,6 +214,7 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
     lightboxFilmstrip: g.lightboxFilmstrip ?? "Photo filmstrip",
     lightboxSeeMore: g.lightboxSeeMore ?? "See more",
     lightboxSeeLess: g.lightboxSeeLess ?? "See less",
+    lightboxPhotoOf: g.lightboxPhotoOf ?? "Photo {current} of {total}",
   };
 }
 
