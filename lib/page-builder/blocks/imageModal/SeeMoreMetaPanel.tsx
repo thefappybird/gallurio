@@ -43,6 +43,8 @@ export function SeeMoreMetaPanel({
         aria-controls={panelId}
         onClick={() => setExpanded((prev) => !prev)}
         style={{
+          position: "relative",
+          zIndex: 1,
           background: "transparent",
           border: "none",
           padding: 0,

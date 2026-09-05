@@ -74,7 +74,7 @@
         "rule": "design-system-font-size",
         "value": "0.8125rem",
         "createdAt": "2026-09-05T13:50:43.536Z",
-        "reason": "matches existing counterText/tag-pill font-size convention already used in SidebarLayout.tsx/CaptionLayout.tsx; task brief mandates reusing that exact pattern"
+        "reason": "matches existing counter-text font-size convention already used in SidebarLayout.tsx:123/SheetLayout.tsx:136; task brief mandates reusing that exact pattern"
       },
       {
         "rule": "design-system-radius",
