@@ -55,13 +55,18 @@ export function CollectionPopupChrome({
    *  non-preview (real dialog) shell; CollectionPopup.tsx computes its own
    *  shell separately (noShell path) and must pass the same value through. */
   maxWidth?: number;
-  /** When true, omits this shell's own close button entirely (not just visually
-   *  — removed from the DOM, so it's also out of tab order and the a11y tree).
-   *  CollectionPopup passes this while its nested Lightbox is open: that Lightbox
-   *  is a sibling Dialog.Root, not a React-tree child of this chrome's Dialog.Root,
-   *  so base-ui's automatic nested-dialog inerting never applies between them —
-   *  without this, the outer close button stays focusable and partially visible
-   *  through the Lightbox's translucent backdrop. */
+  /** When true, omits this shell's own close button entirely. The button was
+   *  already outside tab order and hidden from the a11y tree while the nested
+   *  Lightbox was open (base-ui's FloatingFocusManager traps focus inside the
+   *  topmost Popup and aria-hides everything else via floating-ui-react's
+   *  markOthers()) — base-ui has no dialog-inerting mechanism, for siblings or
+   *  true nesting, that hides/unmounts a parent dialog's controls. The real bug
+   *  this prop fixes is purely visual: this outer shell renders at z-index 100,
+   *  and the Lightbox's Sidebar-layout backdrop sits at z-index 200 with only
+   *  rgba(0,0,0,0.85) — 85% opaque — so this close button bled through visibly
+   *  underneath it. CollectionPopup passes this while its Lightbox (a sibling
+   *  Dialog.Root, not a React-tree child of this chrome's Dialog.Root) is open,
+   *  to eliminate that bleed-through. */
   hideCloseButton?: boolean;
 }) {
   const bg = resolvePopupBackground(config.backgroundColor);

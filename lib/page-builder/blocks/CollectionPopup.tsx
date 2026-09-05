@@ -302,6 +302,12 @@ export function CollectionPopup({
   const isLoadingMore = state.status === "loadingMore";
   const loadMoreError = state.status === "populated" && state.loadMoreError;
 
+  // Single source of truth for "is the nested Lightbox actually rendered" —
+  // shared by its own render condition below and by hideCloseButton, so the
+  // two can never drift apart (e.g. a stale non-null openIndex during the
+  // brief refetch-loading window after a reopen, when loadedImages is still []).
+  const lightboxOpen = open && !isImmersive && openIndex != null && loadedImages.length > 0;
+
   const bodyProps: PopupLayoutBodyProps = {
     images: loadedImages,
     collectionName,
@@ -401,7 +407,7 @@ export function CollectionPopup({
                 closeDataAttr="data-popup-close"
                 noShell
                 maxWidth={shellMaxWidth}
-                hideCloseButton={openIndex != null}
+                hideCloseButton={lightboxOpen}
               >
               {/* Scrollable body */}
               <div
@@ -497,7 +503,7 @@ export function CollectionPopup({
        *  `openIndex` is a position within the currently loaded `images` array;
        *  `onRequestMore` bridges into the same cursor-paging fetch as the
        *  body's "Load more" so navigating past the loaded end still pages. */}
-      {open && !isImmersive && openIndex != null && loadedImages.length > 0 && (
+      {lightboxOpen && (
         <Lightbox
           images={loadedImages}
           initialIndex={openIndex}

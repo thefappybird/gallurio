@@ -426,11 +426,16 @@ describe("CollectionPopup", () => {
   // Task 13: only one close button reachable while the nested lightbox is open
   // — the outer CollectionPopupChrome shell stays mounted (not unmounted) once
   // its Lightbox sibling opens, and the two are independent Dialog.Root/Portal
-  // instances (Lightbox is NOT a React-tree child of the outer Dialog.Root), so
-  // base-ui's automatic nested-dialog inert/stacking never engages between
-  // them. Without an explicit suppression, the outer chrome's own close button
-  // (CollectionPopupChrome, [data-popup-close]) stays mounted, focusable, and
-  // partially visible through the lightbox's translucent backdrop while nested.
+  // instances (Lightbox is NOT a React-tree child of the outer Dialog.Root).
+  // base-ui has no dialog-inerting mechanism at all — for siblings or true
+  // nesting — that hides/unmounts a parent dialog's controls; the outer close
+  // button was already outside tab order and hidden from the a11y tree via
+  // FloatingFocusManager's focus trap + floating-ui-react's markOthers(). The
+  // actual bug is purely visual: the outer shell is z-index 100 and the
+  // lightbox's Sidebar-layout backdrop is z-index 200 at only 85% opacity
+  // (rgba(0,0,0,0.85)), so the outer close button bled through visibly
+  // underneath it. Without the explicit hideCloseButton suppression, that
+  // bleed-through is visible while the lightbox is open.
   // ---------------------------------------------------------------------------
 
   it("hides the outer popup close button while the nested lightbox is open, and restores it on close", async () => {
