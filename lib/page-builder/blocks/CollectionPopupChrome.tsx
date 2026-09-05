@@ -39,6 +39,7 @@ export function CollectionPopupChrome({
   closeDataAttr,
   noShell = false,
   maxWidth = 900,
+  hideCloseButton = false,
 }: {
   collectionName: string;
   config: PortfolioCollectionsPopupConfig;
@@ -54,6 +55,14 @@ export function CollectionPopupChrome({
    *  non-preview (real dialog) shell; CollectionPopup.tsx computes its own
    *  shell separately (noShell path) and must pass the same value through. */
   maxWidth?: number;
+  /** When true, omits this shell's own close button entirely (not just visually
+   *  — removed from the DOM, so it's also out of tab order and the a11y tree).
+   *  CollectionPopup passes this while its nested Lightbox is open: that Lightbox
+   *  is a sibling Dialog.Root, not a React-tree child of this chrome's Dialog.Root,
+   *  so base-ui's automatic nested-dialog inerting never applies between them —
+   *  without this, the outer close button stays focusable and partially visible
+   *  through the Lightbox's translucent backdrop. */
+  hideCloseButton?: boolean;
 }) {
   const bg = resolvePopupBackground(config.backgroundColor);
   const borderWidth = config.borderWidth ?? 0;
@@ -107,33 +116,35 @@ export function CollectionPopupChrome({
 
   const chromeContent = (
     <>
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={onClose}
-        {...closeDataProps}
-        style={{
-          position: "absolute",
-          top: "10px",
-          right: "10px",
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: `${closeSize}px`,
-          height: `${closeSize}px`,
-          borderRadius: closeRadius,
-          borderWidth: `${closeBorderW}px`,
-          borderStyle: "solid",
-          borderColor: closeBorderColor,
-          background: closeBg,
-          color: "var(--pf-color-fg, #111)",
-          opacity: (config.closeButtonOpacity ?? 100) / 100,
-          cursor: "pointer",
-        }}
-      >
-        <XIcon aria-hidden style={{ width: "16px", height: "16px" }} />
-      </button>
+      {!hideCloseButton && (
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          {...closeDataProps}
+          style={{
+            position: "absolute",
+            top: "10px",
+            right: "10px",
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: `${closeSize}px`,
+            height: `${closeSize}px`,
+            borderRadius: closeRadius,
+            borderWidth: `${closeBorderW}px`,
+            borderStyle: "solid",
+            borderColor: closeBorderColor,
+            background: closeBg,
+            color: "var(--pf-color-fg, #111)",
+            opacity: (config.closeButtonOpacity ?? 100) / 100,
+            cursor: "pointer",
+          }}
+        >
+          <XIcon aria-hidden style={{ width: "16px", height: "16px" }} />
+        </button>
+      )}
 
       <div
         style={{

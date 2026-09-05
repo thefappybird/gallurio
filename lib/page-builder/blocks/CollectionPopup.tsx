@@ -401,6 +401,7 @@ export function CollectionPopup({
                 closeDataAttr="data-popup-close"
                 noShell
                 maxWidth={shellMaxWidth}
+                hideCloseButton={openIndex != null}
               >
               {/* Scrollable body */}
               <div

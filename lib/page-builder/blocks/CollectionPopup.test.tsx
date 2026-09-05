@@ -417,16 +417,47 @@ describe("CollectionPopup", () => {
       expect(allImgs.some((img) => (img as HTMLImageElement).src.includes("w=2000"))).toBe(true);
     });
 
-    // The lightbox has its own close button (the popup's close is inerted by base-ui
-    // when a nested dialog is open — this is correct a11y behavior).
-    // Verify the lightbox close button is present in the document (may be in inerted region
-    // or active region depending on nesting strategy).
+    const lightboxClose = document.querySelector("[data-lightbox-close]");
+    expect(lightboxClose).not.toBeNull();
+    expect(lightboxClose).toHaveAttribute("aria-label", "Close");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Task 13: only one close button reachable while the nested lightbox is open
+  // — the outer CollectionPopupChrome shell stays mounted (not unmounted) once
+  // its Lightbox sibling opens, and the two are independent Dialog.Root/Portal
+  // instances (Lightbox is NOT a React-tree child of the outer Dialog.Root), so
+  // base-ui's automatic nested-dialog inert/stacking never engages between
+  // them. Without an explicit suppression, the outer chrome's own close button
+  // (CollectionPopupChrome, [data-popup-close]) stays mounted, focusable, and
+  // partially visible through the lightbox's translucent backdrop while nested.
+  // ---------------------------------------------------------------------------
+
+  it("hides the outer popup close button while the nested lightbox is open, and restores it on close", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    expect(document.querySelector("[data-popup-close]")).not.toBeNull();
+
+    const thumbs = await screen.findAllByRole("img");
+    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w=400"))!;
+    fireEvent.click(thumb.closest("button") ?? thumb);
+
+    // Lightbox opens
     await waitFor(() => {
-      // Query all close buttons in the entire document (including aria-hidden regions)
-      const allCloseBtns = Array.from(
-        document.querySelectorAll("button[aria-label='Close']")
-      );
-      expect(allCloseBtns.length).toBeGreaterThanOrEqual(2);
+      expect(document.querySelector("[data-lightbox-close]")).not.toBeNull();
+    });
+
+    // Outer popup's own close button is gone from the document while nested —
+    // exactly one close button reachable at a time.
+    expect(document.querySelector("[data-popup-close]")).toBeNull();
+    expect(document.querySelectorAll("button[aria-label='Close']").length).toBe(1);
+
+    // Close the lightbox — outer close button comes back
+    fireEvent.click(document.querySelector("[data-lightbox-close]")!);
+    await waitFor(() => {
+      expect(document.querySelector("[data-popup-close]")).not.toBeNull();
     });
   });
 
