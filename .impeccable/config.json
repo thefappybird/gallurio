@@ -69,6 +69,18 @@
         "value": "#fff",
         "createdAt": "2026-09-04T09:44:09.704Z",
         "reason": "immersive filmstrip selection outline sits on a fixed dark scrim, not a brand token"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.8125rem",
+        "createdAt": "2026-09-05T13:50:43.536Z",
+        "reason": "matches existing counterText/tag-pill font-size convention already used in SidebarLayout.tsx/CaptionLayout.tsx; task brief mandates reusing that exact pattern"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "4px)",
+        "createdAt": "2026-09-05T13:50:43.662Z",
+        "reason": "var(--pf-radius, 4px) tag-pill fallback copied verbatim from SidebarLayout.tsx/SheetLayout.tsx per task brief instruction to reuse that exact markup"
       }
     ]
   }
