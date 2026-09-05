@@ -10,7 +10,7 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig, Field, Fields } from "@measured/puck";
+import type { ComponentConfig, Field, Fields, Slot, SlotComponent } from "@measured/puck";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   resolveBlockStyle,
@@ -24,9 +24,13 @@ import {
   getGalleryChromeLabelsFrom,
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
-import { padVar, gridColsVar } from "@/lib/page-builder/responsive";
-import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { GALLERY_PAD_SHORTHAND, padVar, gridColsVar } from "@/lib/page-builder/responsive";
+import { resolveImageModalLayout } from "@/lib/page-builder/types";
+import { resolveGalleryMinHeight } from "./bannerLayers";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
+import { GallerySlotLightboxProvider } from "./GallerySlotLightboxContext";
+import type { LightboxLabels } from "./Lightbox";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 import type { ContainerHeight } from "./manualBlocks";
 
 // ---------------------------------------------------------------------------
@@ -45,22 +49,20 @@ export type GalleryImage = {
 
 export type GalleryGridProps = {
   _style?: BlockStyle;
+  /** New composition path: individual Image blocks live in this slot, so they
+   * can be selected, styled, and reordered by Puck. */
+  content?: Slot;
+  /** @deprecated Read-only compatibility for pages saved before gallery slots.
+   * New grids use `content` Image blocks instead. */
   images: GalleryImage[];
-  // Banner / container props (same as ContainerBlock)
-  backgroundImages?: GalleryImage[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayOpacity?: number;
   minHeight?: ContainerHeight;
   /** CSS length value when minHeight === "custom", e.g. "400px" or "50vh". */
   minHeightValue?: string;
 };
 
 export const galleryGridDefaultProps: GalleryGridProps = {
+  content: [],
   images: [],
-  backgroundImages: [],
-  bgAnimation: "crossfade",
-  bgSpeed: "medium",
 };
 
 const GAP_MAP: Record<GalleryGap, string> = {
@@ -75,79 +77,6 @@ const THUMB_WIDTH_MAP: Record<GalleryColumns, number> = {
   4: 400,
 };
 
-export const GALLERY_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
-  auto: undefined,
-  short: "40vh",
-  medium: "60vh",
-  tall: "80vh",
-  custom: undefined,
-};
-
-/** Resolve the CSS min-height value for a gallery block.
- *  When minHeight is "custom", uses minHeightValue (undefined = no constraint). */
-export function resolveGalleryMinHeight(
-  minHeight: ContainerHeight | undefined,
-  minHeightValue?: string
-): string | undefined {
-  if ((minHeight ?? "auto") === "custom") return minHeightValue || undefined;
-  return GALLERY_MIN_HEIGHT[minHeight ?? "auto"];
-}
-
-/** Resolve a background image public ID to a full-bleed cover URL (client-safe). */
-function bgImageUrl(publicId: string): string | null {
-  return imageDeliveryUrl(publicId, { width: 2000, height: 8000, fit: "scale-down" });
-}
-
-/** Shared banner layer resolution — filters out blank/unresolvable entries. */
-export function resolveBannerLayers(backgroundImages: GalleryImage[] | undefined): { id: string; src: string }[] {
-  return (Array.isArray(backgroundImages) ? backgroundImages : [])
-    .map((img) => ({ id: img.id, src: bgImageUrl(img.publicId) }))
-    .filter((l): l is { id: string; src: string } => Boolean(l.src));
-}
-
-// ---------------------------------------------------------------------------
-// Banner background sub-render (same pattern as ContainerBlock)
-// ---------------------------------------------------------------------------
-
-function GalleryBannerLayers({
-  layers,
-  bgAnimation,
-  bgSpeed,
-  overlayAlpha,
-}: {
-  layers: { id: string; src: string }[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayAlpha: number;
-}) {
-  return (
-    <>
-      {overlayAlpha > 0 && (
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }}
-        />
-      )}
-      {layers.length === 1 && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={layers[0].src}
-          alt=""
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      )}
-      {layers.length >= 2 && (
-        <ContainerBackgroundSlideshow
-          images={layers}
-          animation={bgAnimation ?? "crossfade"}
-          speed={bgSpeed ?? "medium"}
-        />
-      )}
-    </>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -155,26 +84,54 @@ function GalleryBannerLayers({
 export function GalleryGridBlock({
   _style,
   images,
-  backgroundImages,
-  bgAnimation,
-  bgSpeed,
-  overlayOpacity,
   minHeight,
   minHeightValue,
+  content: Content,
   puck,
-}: GalleryGridProps & { puck?: BlockPuck }) {
+}: Omit<GalleryGridProps, "content"> & { content?: Slot | SlotComponent; puck?: BlockPuck }) {
   const columns = _style?.galleryColumns ?? 3;
   const gap = _style?.galleryGap ?? "normal";
   const gapValue = GAP_MAP[gap] ?? "8px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const list = Array.isArray(images) ? images : [];
+  // Full-array LightboxImage view for the legacy (pre-slot) render path, so
+  // opening any thumbnail can page through every image in the grid.
+  const legacyLightboxImages = list.map((img) => ({
+    id: img.id,
+    publicId: img.publicId,
+    alt: img.alt ?? "",
+    width: img.width,
+    height: img.height,
+  }));
 
-  const layers = resolveBannerLayers(backgroundImages);
-  const hasBg = layers.length > 0;
-  const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
+  const presetPreview = puck?.metadata?.presetPreview === true;
+  const editorGridColumns = puck?.isEditing
+    ? `repeat(${columns}, minmax(0, 1fr))`
+    : gridColsVar(`repeat(${columns}, 1fr)`);
 
-  if (list.length === 0) {
+  // Legacy image arrays remain authoritative when present so old published
+  // pages keep their exact visuals. New blocks have an empty array and render
+  // the Puck slot of regular Image blocks instead.
+  const useLegacyImages = list.length > 0;
+  const SlotContent = typeof Content === "function" ? Content : undefined;
+  const chromeLabels = getGalleryChromeLabelsFrom(puck);
+  const lightboxLabels: LightboxLabels = {
+    close: chromeLabels.lightboxClose,
+    previous: chromeLabels.carouselPrev,
+    next: chromeLabels.carouselNext,
+    counter: chromeLabels.lightboxCounter,
+    filmstrip: chromeLabels.lightboxFilmstrip,
+    seeMore: chromeLabels.lightboxSeeMore,
+    seeLess: chromeLabels.lightboxSeeLess,
+    photoOf: chromeLabels.lightboxPhotoOf,
+  };
+  const brandVars = puck?.metadata?.workspace?.brandVars;
+  const imageModalLayout = resolveImageModalLayout(
+    puck?.metadata?.workspace?.publicPage?.collectionsPopup?.imageModalLayout,
+  );
+
+  if (!useLegacyImages && !SlotContent) {
     return (
       <section
         ref={puck?.dragRef ?? undefined}
@@ -183,9 +140,9 @@ export function GalleryGridBlock({
         style={{
           position: "relative",
           overflow: "hidden",
-          backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
+          backgroundColor: "var(--pf-color-bg)",
           minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
-          padding: padVar("4rem 1.5rem"),
+          padding: padVar(GALLERY_PAD_SHORTHAND),
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -193,22 +150,23 @@ export function GalleryGridBlock({
         }}
         {...resolveBlockAttrs(_style)}
       >
-        {hasBg && (
-          <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
+        {presetPreview ? (
+          <PresetMediaPlaceholder kind="grid" columns={columns} gap={gap} />
+        ) : (
+          <p
+            style={{
+              position: "relative",
+              zIndex: 1,
+              fontFamily: "var(--pf-font-body)",
+              color: "var(--pf-color-fg)",
+              opacity: 0.45,
+              fontSize: "0.9375rem",
+              margin: 0,
+            }}
+          >
+            {chromeLabels.empty}
+          </p>
         )}
-        <p
-          style={{
-            position: "relative",
-            zIndex: 1,
-            fontFamily: "var(--pf-font-body)",
-            color: "var(--pf-color-fg)",
-            opacity: 0.45,
-            fontSize: "0.9375rem",
-            margin: 0,
-          }}
-        >
-          {getGalleryChromeLabelsFrom(puck).empty}
-        </p>
       </section>
     );
   }
@@ -220,26 +178,24 @@ export function GalleryGridBlock({
       style={{
         position: "relative",
         overflow: "hidden",
-        backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
+        backgroundColor: "var(--pf-color-bg)",
         minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
-        padding: padVar("4rem 1.5rem"),
+        padding: padVar(GALLERY_PAD_SHORTHAND),
         fontFamily: "var(--pf-font-body)",
         ...sectionStyle,
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {hasBg && (
-        <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
-      )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "80rem", margin: "0 auto" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: gridColsVar(`repeat(${columns}, 1fr)`),
-            gap: gapValue,
-          }}
-        >
-          {list.map((img) => {
+        {useLegacyImages ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: editorGridColumns,
+              gap: gapValue,
+            }}
+          >
+            {list.map((img, i) => {
             const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth,
@@ -249,7 +205,14 @@ export function GalleryGridBlock({
             if (!src) return null;
             return (
               <figure key={img.id} style={{ margin: 0, padding: 0 }}>
-                <GalleryLightboxTrigger image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}>
+                <GalleryLightboxTrigger
+                  image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}
+                  images={legacyLightboxImages}
+                  index={i}
+                  labels={lightboxLabels}
+                  brandVars={brandVars}
+                  layout={imageModalLayout}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
@@ -262,8 +225,22 @@ export function GalleryGridBlock({
                 </GalleryLightboxTrigger>
               </figure>
             );
-          })}
-        </div>
+            })}
+          </div>
+        ) : (
+          // Item 11: every Image block this slot renders registers itself here,
+          // so opening one pages through the others in THIS grid only.
+          <GallerySlotLightboxProvider>
+            {SlotContent?.({
+              className: "pf-gallery-grid-slot",
+              style: {
+                display: "grid",
+                gridTemplateColumns: editorGridColumns,
+                gap: gapValue,
+              },
+            })}
+          </GallerySlotLightboxProvider>
+        )}
       </div>
     </section>
   );
@@ -281,35 +258,7 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   // Banner fields are managed by StyleToolkitField and stripped by resolveFields in editorConfig.
   fields: {
     _style: productionStyleField,
-    backgroundImages: {
-      type: "array",
-      label: "Background images",
-      arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } },
-    } as unknown as Field<GalleryImage[] | undefined>,
-    bgAnimation: {
-      type: "select",
-      label: "BG animation",
-      options: [
-        { label: "Crossfade", value: "crossfade" },
-        { label: "Ken Burns", value: "kenburns" },
-        { label: "Slide", value: "slide" },
-      ],
-    } as Field<GalleryGridProps["bgAnimation"]>,
-    bgSpeed: {
-      type: "select",
-      label: "BG speed",
-      options: [
-        { label: "Slow", value: "slow" },
-        { label: "Medium", value: "medium" },
-        { label: "Fast", value: "fast" },
-      ],
-    } as Field<GalleryGridProps["bgSpeed"]>,
-    overlayOpacity: {
-      type: "number",
-      label: "Overlay opacity",
-      min: 0,
-      max: 100,
-    } as Field<number | undefined>,
+    content: { type: "slot", allow: ["Image"] },
     minHeight: {
       type: "select",
       label: "Min height",

@@ -5,9 +5,11 @@ import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
 import {
   ArrowLeftIcon,
+  CheckIcon,
   GripVerticalIcon,
   ImagePlusIcon,
   Loader2Icon,
+  MinusIcon,
   PencilIcon,
   PlusIcon,
   XIcon,
@@ -21,12 +23,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { UploadError, describeUploadErrorEnglish, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { usePickerData } from "./usePickerData";
+import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
-import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
+import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
+import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import type { PickerCollection, PickerItem } from "./types";
 
 // Plain strings — the Puck field panel IS wrapped in context (Puck portals into the
@@ -44,27 +49,36 @@ const L = {
   retry: "Retry",
   emptyWorkspace: "No photos yet — upload below.",
   emptyCollection: "This collection is empty — upload below.",
+  emptyCollectionsList: "No collections yet — create one below.",
   selectAllPage: "Select all on page",
   selectAllCollection: "Select all in collection",
+  selectAllInTile: (name: string) => `Select all photos in ${name}`,
+  deselectAllInTile: (name: string) => `Deselect all photos in ${name}`,
+  errBulkSelect: "Could not load that collection's photos.",
+  errBulkTruncated: "This collection has more than 2000 photos — showing the first 2000.",
   clearAll: "Clear selection",
   done: "Done",
   photos: (n: number) => `${n} photo${n === 1 ? "" : "s"}`,
-  selectedCount: (n: number, max?: number) => (max ? `${n}/${max} selected` : `${n} selected`),
+  selectedCount: (n: number, max?: number | null) => (max ? `${n}/${max} selected` : `${n} selected`),
   dragHint: "Drag to reorder",
   removePhoto: "Remove photo",
   removeCollection: "Remove collection",
   uploadHere: "Upload photo",
   uploading: "Uploading…",
   dropActive: "Drop to upload",
-  errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errSize: "Each photo must be under 15 MB.",
-  errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
-  errUpload: "Some photos failed to upload.",
 };
 
 const ALL_PHOTOS_ID = "all";
 const PAGE_SIZE = 16;
 const SAFETY_CAP = 60;
+
+/**
+ * Resolves the `max` prop to a concrete selection limit. `null` is an explicit
+ * owner opt-in to unbounded selection; `undefined` keeps today's default cap.
+ */
+function resolveCap(max: number | null | undefined): number {
+  return max === null ? Infinity : max ?? SAFETY_CAP;
+}
 
 export type MediaPickerSelection = {
   id: string;
@@ -97,8 +111,8 @@ type Props =
       /** multi: ordered [{id,publicId}]. */
       value: MediaPickerSelection[];
       onChange: (next: MediaPickerSelection[]) => void;
-      /** hard cap on selections. */
-      max?: number;
+      /** cap on selections; omit for the default 60, `null` for unbounded. */
+      max?: number | null;
       open: boolean;
       onOpenChange: (open: boolean) => void;
     }
@@ -107,7 +121,7 @@ type Props =
       /** collections: ordered [{id,name,coverPublicId,itemCount}]. */
       value: MediaPickerCollectionSelection[];
       onChange: (next: MediaPickerCollectionSelection[]) => void;
-      max?: number;
+      max?: number | null;
       open: boolean;
       onOpenChange: (open: boolean) => void;
     };
@@ -134,6 +148,7 @@ function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPi
 export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: Props) {
   const errMsg = useActionError();
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
+  const tWizard = useTranslations("app.pageBuilder.editor.imageWizard");
   const { state, retry } = usePickerData();
   const cache = useGalleryPickerCache();
   const [nav, setNav] = useState<Nav>({ kind: "collections" });
@@ -143,23 +158,57 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // The pencil button that opened the alt-text dialog — restores focus there on close.
   const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  const metaLabels: ImageMetaLabels = {
-    title: tMeta("title"),
-    altLabel: tMeta("altLabel"),
-    altHelp: tMeta("altHelp"),
-    altPlaceholder: tMeta("altPlaceholder"),
-    counter: (count, max) => tMeta("counter", { count, max }),
-    save: tMeta("save"),
-    saving: tMeta("saving"),
-    cancel: tMeta("cancel"),
-    savedToast: tMeta("savedToast"),
+  const wizardLabels: ImageWizardLabels = {
+    heading: tWizard("heading"),
+    position: (current, total) => tWizard("position", { current, total }),
+    fieldTitle: tWizard("fieldTitle"),
+    fieldTitlePlaceholder: tWizard("fieldTitlePlaceholder"),
+    fieldCaption: tWizard("fieldCaption"),
+    fieldCaptionPlaceholder: tWizard("fieldCaptionPlaceholder"),
+    fieldAlt: tWizard("fieldAlt"),
+    fieldAltHelp: tWizard("fieldAltHelp"),
+    fieldAltPlaceholder: tWizard("fieldAltPlaceholder"),
+    altCounter: (count, max) => tWizard("altCounter", { count, max }),
+    fieldDate: tWizard("fieldDate"),
+    fieldLocation: tWizard("fieldLocation"),
+    fieldLocationPlaceholder: tWizard("fieldLocationPlaceholder"),
+    fieldClient: tWizard("fieldClient"),
+    fieldClientPlaceholder: tWizard("fieldClientPlaceholder"),
+    fieldTags: tWizard("fieldTags"),
+    fieldTagsPlaceholder: tWizard("fieldTagsPlaceholder"),
+    fieldTagsHint: tWizard("fieldTagsHint"),
+    removeTag: (tag) => tWizard("removeTag", { tag }),
+    fieldMeta: tWizard("fieldMeta"),
+    fieldMetaHint: tWizard("fieldMetaHint"),
+    metaLabelPlaceholder: tWizard("metaLabelPlaceholder"),
+    metaValuePlaceholder: tWizard("metaValuePlaceholder"),
+    addMetaRow: tWizard("addMetaRow"),
+    removeMetaRow: (n) => tWizard("removeMetaRow", { n }),
+    savedBadge: tWizard("savedBadge"),
+    unsavedBadge: tWizard("unsavedBadge"),
+    jumpToPhoto: (n) => tWizard("jumpToPhoto", { n }),
+    previous: tWizard("previous"),
+    next: tWizard("next"),
+    finish: tWizard("finish"),
+    close: tWizard("close"),
     errorMessage: (code) => errMsg(code),
   };
+
+  // Post-upload "add details" offer (multi mode only — single mode auto-selects
+  // and closes the picker immediately, its established "no extra click" flow).
+  const [uploadedBatch, setUploadedBatch] = useState<PickerItem[] | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   // Upload state (scoped to the open collection / all feed).
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  // Per-file upload failures — never collapsed into one message. Cleared on
+  // every new upload attempt and whenever the view (open/collection) changes.
+  const [fileErrors, setFileErrors] = useState<{ fileName: string; message: string }[]>([]);
+
+  // Bulk "select all from collection" state (footer button + tile checkmark).
+  const [bulkLoadingId, setBulkLoadingId] = useState<string | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   // Monotonic token invalidating in-flight feed fetches when the view changes,
   // so a slow response from a prior collection cannot bleed into the current one.
@@ -197,7 +246,10 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs the `open` prop (external state) back to a fresh collections view on each open
       setNav({ kind: "collections" });
       setFeed(EMPTY_FEED);
-      setUploadError(null);
+      setFileErrors([]);
+      setBulkError(null);
+      setUploadedBatch(null);
+      setWizardOpen(false);
       fetchToken.current++; // invalidate any in-flight feed fetch from a prior open
     }
   }, [open]);
@@ -251,7 +303,8 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     fetchToken.current++; // invalidate any in-flight fetch from the prior view
     setNav({ kind: "photos", id, name });
     setFeed(EMPTY_FEED);
-    setUploadError(null);
+    setFileErrors([]);
+    setUploadedBatch(null);
     void fetchFeed(id, null);
   }
 
@@ -259,6 +312,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     fetchToken.current++; // invalidate any in-flight fetch from the collection we left
     setNav({ kind: "collections" });
     setFeed(EMPTY_FEED);
+    setUploadedBatch(null);
   }
 
   // -------------------------------------------------------------------------
@@ -278,7 +332,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       onChange(selection.filter((s) => s.id !== item.id));
       return;
     }
-    if (max != null && selection.length >= max) return;
+    if (selection.length >= resolveCap(max)) return;
     onChange([
       ...selection,
       {
@@ -293,7 +347,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
 
   function selectAllOnPage() {
     if (mode !== "multi") return;
-    const cap = max ?? SAFETY_CAP;
+    const cap = resolveCap(max);
     const next = [...selection];
     for (const it of feed.items) {
       if (next.length >= cap) break;
@@ -312,23 +366,85 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // "Select all in collection" — the newest `cap` items across ALL pages,
   // fetched server-side (newest-first). Display order stays collection-`order`;
   // bulk-select is intentionally newest-first (owner wants the latest N).
-  const [bulkLoading, setBulkLoading] = useState(false);
-  async function selectAllInCollection() {
+  // Appends into the EXISTING selection (dedup by id, cap on the combined
+  // total) rather than replacing it — matches the append+dedupe idiom used
+  // by `toggleMulti`/`selectAllOnPage` above. Callable for any collection id,
+  // not just the currently-open one, so the collection-tile checkmark control
+  // can bulk-select without navigating in first.
+  async function selectAllFromCollection(colId: string) {
     if (mode !== "multi") return;
-    if (nav.kind !== "photos" || nav.id === ALL_PHOTOS_ID) return;
-    const cap = max ?? SAFETY_CAP;
-    setBulkLoading(true);
+    const cap = resolveCap(max);
+    // The server treats a non-finite `newest` as 1, not "no limit" — so an
+    // unbounded cap here must still send a finite request. Send a large
+    // sentinel rather than SAFETY_CAP(60): the server clamps to its own
+    // BULK_SELECT_CAP (2000) regardless, so this doesn't need to track that
+    // number — it only needs to not itself be the bottleneck.
+    const networkLimit = Number.isFinite(cap) ? cap : Number.MAX_SAFE_INTEGER;
+    setBulkLoadingId(colId);
+    setBulkError(null);
     try {
-      const res = await fetch(`/api/portfolio/gallery/collections/${nav.id}?newest=${cap}`);
+      const res = await fetch(`/api/portfolio/gallery/collections/${colId}?newest=${networkLimit}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { items: PickerItem[] };
+      const data = (await res.json()) as { items: PickerItem[]; truncated?: boolean };
       remember(data.items);
-      onChange(data.items.slice(0, cap).map((it) => ({ id: it.id, publicId: it.publicId })));
+      // Cache this collection's fetched ids so the tile checkbox can derive
+      // its checked/mixed/unchecked state without a dedicated request.
+      cache?.addPage(colId, { items: data.items, nextCursor: null });
+      const next = [...selection];
+      for (const it of data.items) {
+        if (next.length >= cap) break;
+        if (!next.some((s) => s.id === it.id))
+          next.push({
+            id: it.id,
+            publicId: it.publicId,
+            ...(it.width != null && it.height != null ? { width: it.width, height: it.height } : {}),
+          });
+      }
+      onChange(next);
+      // The server caps its own response (BULK_SELECT_CAP) — never let the
+      // owner believe an oversized collection was selected in full when it
+      // wasn't; surface it the same way a fetch failure would be.
+      if (data.truncated) setBulkError(L.errBulkTruncated);
     } catch {
-      // Non-fatal: leave the current selection untouched.
+      setBulkError(L.errBulkSelect);
     } finally {
-      setBulkLoading(false);
+      setBulkLoadingId(null);
     }
+  }
+
+  function selectAllInCollection() {
+    if (nav.kind !== "photos" || nav.id === ALL_PHOTOS_ID) return;
+    void selectAllFromCollection(nav.id);
+  }
+
+  // Tri-state for a collection tile's checkbox. A tile only knows its own
+  // `itemCount`, not which photos are selected — membership is derived from
+  // the picker cache, which is populated the first time the collection is
+  // opened or bulk-selected. Only trust that cache as *complete* membership
+  // when the cached id count matches `itemCount` exactly; a partially-paged
+  // collection can't safely claim "checked" or "mixed", so it renders
+  // unchecked (the same default as a collection never fetched at all).
+  const collectionCheckState = useCallback(
+    (col: PickerCollection): "checked" | "mixed" | "unchecked" => {
+      const pages = cache?.getPages(col.id);
+      if (!pages || pages.length === 0) return "unchecked";
+      const ids = new Set(pages.flatMap((p) => p.items.map((it) => it.id)));
+      if (ids.size !== col.itemCount) return "unchecked";
+      const selectedIds = new Set(selection.map((s) => s.id));
+      let selectedInCol = 0;
+      for (const id of ids) if (selectedIds.has(id)) selectedInCol++;
+      if (selectedInCol === 0) return "unchecked";
+      return selectedInCol === ids.size ? "checked" : "mixed";
+    },
+    [cache, selection]
+  );
+
+  function deselectAllFromCollection(colId: string) {
+    if (mode !== "multi") return;
+    const pages = cache?.getPages(colId);
+    if (!pages) return;
+    const ids = new Set(pages.flatMap((p) => p.items.map((it) => it.id)));
+    onChange(selection.filter((s) => !ids.has(s.id)));
   }
 
   function clearSelection() {
@@ -359,7 +475,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       onChange(collectionSelection.filter((s) => s.id !== col.id));
       return;
     }
-    const cap = max ?? SAFETY_CAP;
+    const cap = resolveCap(max);
     if (collectionSelection.length >= cap) return;
     onChange([
       ...collectionSelection,
@@ -383,20 +499,38 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // Upload (into the open collection, or standalone when on "All photos")
   // -------------------------------------------------------------------------
 
+  // Maps a caught upload/API failure to a per-file display message. Never
+  // collapses to a bare "couldn't add photo" when a specific reason exists.
+  function describeFailure(err: unknown): string {
+    const detail: UploadErrorDetail = err instanceof UploadError ? err.detail : { code: "network_error" };
+    return describeUploadErrorEnglish(detail);
+  }
+
+  async function describeApiFailure(res: Response): Promise<string> {
+    const body = (await res.json().catch(() => ({}))) as { detail?: UploadErrorDetail };
+    const detail: UploadErrorDetail = body.detail ?? { code: "unknown" };
+    return describeUploadErrorEnglish(detail);
+  }
+
   async function handleFiles(files: FileList | null) {
     if (!files || nav.kind !== "photos") return;
     const valid: File[] = [];
-    let typeErr = false;
-    let sizeErr = false;
+    const preErrors: { fileName: string; message: string }[] = [];
     Array.from(files).forEach((f) => {
       const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
-      if (!check.ok) {
-        if (check.reason === "type_not_accepted") typeErr = true;
-        else sizeErr = true;
-      } else valid.push(f);
+      if (check.ok) {
+        valid.push(f);
+        return;
+      }
+      const detail: UploadErrorDetail =
+        check.reason === "type_not_accepted"
+          ? { code: "type_not_accepted", mimeType: f.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+          : { code: "file_too_large", actualBytes: f.size, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES };
+      preErrors.push({ fileName: f.name, message: describeUploadErrorEnglish(detail) });
     });
+    setFileErrors(preErrors);
     if (valid.length === 0) {
-      setUploadError(typeErr ? L.errType : sizeErr ? L.errSize : null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
@@ -404,22 +538,21 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     // owner navigates away does not prepend the new item into the wrong feed.
     const token = fetchToken.current;
     setUploading(true);
-    setUploadError(null);
     const results = await Promise.allSettled(
       valid.map((file) =>
         uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
       )
     );
 
-    let dimErr = false;
-    let generalErr = false;
+    const newErrors: { fileName: string; message: string }[] = [];
     const targetCollection = nav.id === ALL_PHOTOS_ID ? undefined : nav.id;
     const createdItems: PickerItem[] = [];
 
-    for (const r of results) {
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      const fileName = valid[i].name;
       if (r.status === "rejected") {
-        if ((r.reason instanceof Error ? r.reason.message : "") === "dimension_too_small") dimErr = true;
-        else generalErr = true;
+        newErrors.push({ fileName, message: describeFailure(r.reason) });
         continue;
       }
       try {
@@ -428,7 +561,10 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...r.value, collectionId: targetCollection }),
         });
-        if (!createRes.ok) throw new Error(`HTTP ${createRes.status}`);
+        if (!createRes.ok) {
+          newErrors.push({ fileName, message: await describeApiFailure(createRes) });
+          continue;
+        }
         const created = (await createRes.json()) as { id: string; thumbUrl: string; caption: string | null };
         const item: PickerItem = {
           id: created.id,
@@ -449,13 +585,12 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         }
         createdItems.push(item);
       } catch {
-        generalErr = true;
+        newErrors.push({ fileName, message: describeUploadErrorEnglish({ code: "network_error" }) });
       }
     }
 
     setUploading(false);
-    if (dimErr) setUploadError(L.errDim);
-    else if (generalErr) setUploadError(L.errUpload);
+    setFileErrors((prev) => [...prev, ...newErrors]);
     if (fileInputRef.current) fileInputRef.current.value = "";
     // Bust the cache for the affected collection so re-opening it fetches fresh data.
     if (targetCollection) {
@@ -465,16 +600,20 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     }
     retry(); // refresh collection covers/counts
 
-    // Auto-select successfully uploaded item(s).
-    // • single: pick the first and close — "no extra click" UX.
-    // • multi: append all to the current selection (cap respected).
-    // The standalone Photos manager uses EditCollectionDialog directly and never
-    // reaches this path, so no explicit mode exclusion is needed here.
+    // Auto-select successfully uploaded item(s), then offer the metadata
+    // wizard — additive only, never blocking; the item(s) already exist and
+    // are selected either way. Uploading (vs. selecting an existing photo)
+    // is the one moment the owner is looking right at a photo with no
+    // metadata yet, so both single and multi mode see the offer here.
+    // Single mode's "no extra click" auto-close only happens for the SELECT
+    // path (pickSingle, used when clicking an existing photo in the grid) —
+    // an upload instead selects but leaves the picker open on the offer;
+    // "Skip for now" (or finishing the wizard) is what closes it.
     if (createdItems.length > 0) {
       if (mode === "single") {
-        pickSingle(createdItems[0]);
+        onChange(createdItems[0].publicId);
       } else if (mode === "multi") {
-        const cap = max ?? SAFETY_CAP;
+        const cap = resolveCap(max);
         const slots = Math.max(0, cap - selection.length);
         const toAdd = createdItems.slice(0, slots);
         if (toAdd.length > 0) {
@@ -490,6 +629,8 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           ]);
         }
       }
+      setUploadedBatch(createdItems);
+      setWizardOpen(true);
     }
   }
 
@@ -565,6 +706,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
                   id={id}
                   item={item}
                   removeLabel={L.removePhoto}
+                  incompleteWarningLabel={tMeta("incompleteWarning")}
                   onReorder={reorder}
                   onRemove={() => onChange(selection.filter((s) => s.id !== id))}
                 />
@@ -597,16 +739,36 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           </div>
         )}
 
+        {bulkError && (
+          <p role="alert" className="text-xs text-destructive">
+            {bulkError}
+          </p>
+        )}
+
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {state.status === "loading" && <CenterSpinner label={L.loading} />}
+          {state.status === "loading" && (
+            <GridSkeleton
+              gridClassName={
+                nav.kind === "photos"
+                  ? "grid grid-cols-3 gap-1.5 p-1 sm:grid-cols-4"
+                  : "grid grid-cols-2 gap-2 p-1 sm:grid-cols-4"
+              }
+              label={L.loading}
+            />
+          )}
           {state.status === "error" && <ErrorRetry onRetry={retry} />}
 
           {state.status === "ok" && nav.kind === "collections" && mode !== "collections" && (
             <CollectionGrid
               collections={collections}
               hasAnyPhotos={state.data.items.length > 0 || collections.some((c) => c.itemCount > 0)}
+              mode={mode}
+              bulkLoadingId={bulkLoadingId}
+              checkState={collectionCheckState}
               onOpen={openCollection}
               onCreate={() => setCreateOpen(true)}
+              onSelectAllFromCollection={selectAllFromCollection}
+              onDeselectAllFromCollection={deselectAllFromCollection}
             />
           )}
 
@@ -631,15 +793,17 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               onEditItem={(item, triggerEl) => {
                 metaTriggerRef.current = triggerEl;
                 setMetaItem(item);
+                setWizardOpen(true);
               }}
               editLabelFor={(name) => tMeta("editTrigger", { name: name || tMeta("photoFallback") })}
+              incompleteWarningLabel={tMeta("incompleteWarning")}
               onLoadMore={() => nav.kind === "photos" && feed.nextCursor && fetchFeed(nav.id, feed.nextCursor)}
               onRetry={() => nav.kind === "photos" && fetchFeed(nav.id, null)}
               emptyLabel={nav.id === ALL_PHOTOS_ID ? L.emptyWorkspace : L.emptyCollection}
               uploadSlot={
                 <UploadZone
                   uploading={uploading}
-                  error={uploadError}
+                  errors={fileErrors}
                   inputRef={fileInputRef}
                   onFiles={handleFiles}
                 />
@@ -661,8 +825,8 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
                   variant="outline"
                   size="sm"
                   onClick={selectAllInCollection}
-                  loading={bulkLoading}
-                  disabled={bulkLoading || feed.items.length === 0}
+                  loading={bulkLoadingId === nav.id}
+                  disabled={bulkLoadingId !== null || feed.items.length === 0}
                 >
                   {L.selectAllCollection}
                 </Button>
@@ -694,15 +858,22 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         }}
       />
 
-      <ImageMetaDialog
-        item={metaItem}
-        open={metaItem !== null}
+      <ImageMetaWizard
+        items={metaItem ? [metaItem] : (uploadedBatch ?? [])}
+        open={wizardOpen}
         onOpenChange={(next) => {
-          if (!next) setMetaItem(null);
+          setWizardOpen(next);
+          if (!next) {
+            const completedUpload = uploadedBatch !== null;
+            setUploadedBatch(null);
+            setMetaItem(null);
+            // Single mode's upload flow ends with the picker closing, whether
+            // the owner finishes the wizard or backs out of it mid-edit.
+            if (completedUpload && mode === "single") onOpenChange(false);
+          }
         }}
         onSaved={handleMetaSaved}
-        labels={metaLabels}
-        triggerRef={metaTriggerRef}
+        labels={wizardLabels}
       />
     </Dialog>
   );
@@ -739,13 +910,23 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
 function CollectionGrid({
   collections,
   hasAnyPhotos,
+  mode,
+  bulkLoadingId,
+  checkState,
   onOpen,
   onCreate,
+  onSelectAllFromCollection,
+  onDeselectAllFromCollection,
 }: {
   collections: PickerCollection[];
   hasAnyPhotos: boolean;
+  mode: "single" | "multi";
+  bulkLoadingId: string | null;
+  checkState: (col: PickerCollection) => "checked" | "mixed" | "unchecked";
   onOpen: (id: string, name: string) => void;
   onCreate: () => void;
+  onSelectAllFromCollection: (colId: string) => void;
+  onDeselectAllFromCollection: (colId: string) => void;
 }) {
   return (
     <ul className="grid grid-cols-2 gap-2 p-1 sm:grid-cols-4" role="listbox" aria-label="Collections">
@@ -764,7 +945,7 @@ function CollectionGrid({
       </li>
 
       {collections.map((col) => (
-        <li key={col.id} role="option" aria-selected={false}>
+        <li key={col.id} role="option" aria-selected={false} className="relative">
           <button
             type="button"
             onClick={() => onOpen(col.id, col.name)}
@@ -786,6 +967,33 @@ function CollectionGrid({
               <span className="text-xs text-muted-foreground">{L.photos(col.itemCount)}</span>
             </span>
           </button>
+          {mode === "multi" &&
+            (() => {
+              const state = checkState(col);
+              return (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={state === "checked" ? true : state === "mixed" ? "mixed" : false}
+                  aria-label={state === "checked" ? L.deselectAllInTile(col.name) : L.selectAllInTile(col.name)}
+                  disabled={bulkLoadingId !== null}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (state === "checked") onDeselectAllFromCollection(col.id);
+                    else onSelectAllFromCollection(col.id);
+                  }}
+                  className="absolute right-1 top-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                >
+                  {bulkLoadingId === col.id ? (
+                    <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
+                  ) : state === "checked" ? (
+                    <CheckIcon className="size-3.5" aria-hidden />
+                  ) : state === "mixed" ? (
+                    <MinusIcon className="size-3.5" aria-hidden />
+                  ) : null}
+                </button>
+              );
+            })()}
         </li>
       ))}
 
@@ -817,6 +1025,7 @@ function PhotoGrid({
   onToggleMulti,
   onEditItem,
   editLabelFor,
+  incompleteWarningLabel,
   onLoadMore,
   onRetry,
   emptyLabel,
@@ -830,6 +1039,7 @@ function PhotoGrid({
   onToggleMulti: (item: PickerItem) => void;
   onEditItem: (item: PickerItem, triggerEl: HTMLButtonElement) => void;
   editLabelFor: (name: string | null) => string;
+  incompleteWarningLabel: string;
   onLoadMore: () => void;
   onRetry: () => void;
   emptyLabel: string;
@@ -837,10 +1047,25 @@ function PhotoGrid({
 }) {
   if (feed.error) return <ErrorRetry onRetry={onRetry} />;
 
+  // Initial load / just-switched-collection: no items yet, feed already
+  // fetching. A skeleton (not a bare spinner) holds the grid's shape so the
+  // dialog body doesn't collapse to near-nothing while it resolves.
+  if (feed.items.length === 0 && feed.loading) {
+    return (
+      <div className="flex flex-col gap-3 p-1">
+        <GridSkeleton gridClassName="grid grid-cols-3 gap-1.5 sm:grid-cols-4" label={L.loading} />
+        {uploadSlot}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 p-1">
-      {feed.items.length === 0 && !feed.loading ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">{emptyLabel}</p>
+      {feed.items.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 border border-dashed border-border p-6 text-center">
+          <ImagePlusIcon className="size-7 text-muted-foreground" aria-hidden />
+          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        </div>
       ) : (
         <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4" role="listbox" aria-label="Photos">
           {feed.items.map((item) => {
@@ -871,17 +1096,22 @@ function PhotoGrid({
                     </span>
                   )}
                 </button>
-                <button
-                  type="button"
-                  aria-label={editLabelFor(item.caption)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditItem(item, e.currentTarget);
-                  }}
-                  className="absolute bottom-1 left-1 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <PencilIcon className="size-3" aria-hidden />
-                </button>
+                <div className="absolute bottom-1 start-1 flex items-center gap-1">
+                  {hasIncompleteMetadata(item) && (
+                    <IncompleteMetadataBadge label={incompleteWarningLabel} />
+                  )}
+                  <button
+                    type="button"
+                    aria-label={editLabelFor(item.caption)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditItem(item, e.currentTarget);
+                    }}
+                    className="inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <PencilIcon className="size-3" aria-hidden />
+                  </button>
+                </div>
               </li>
             );
           })}
@@ -903,12 +1133,12 @@ function PhotoGrid({
 
 function UploadZone({
   uploading,
-  error,
+  errors,
   inputRef,
   onFiles,
 }: {
   uploading: boolean;
-  error: string | null;
+  errors: { fileName: string; message: string }[];
   inputRef: React.RefObject<HTMLInputElement | null>;
   onFiles: (files: FileList | null) => void;
 }) {
@@ -917,24 +1147,28 @@ function UploadZone({
     <div>
       <div
         role="button"
-        tabIndex={0}
+        tabIndex={uploading ? -1 : 0}
+        aria-disabled={uploading}
         aria-label={dragOver ? L.dropActive : L.uploadHere}
         onDragOver={(e) => {
           e.preventDefault();
+          if (uploading) return;
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
+          if (uploading) return;
           onFiles(e.dataTransfer.files);
         }}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => { if (!uploading) inputRef.current?.click(); }}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+          if (!uploading && (e.key === "Enter" || e.key === " ")) inputRef.current?.click();
         }}
         className={cn(
           "flex min-h-14 cursor-pointer items-center justify-center gap-2 border border-dashed p-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          uploading && "cursor-wait opacity-60",
           dragOver ? "border-foreground bg-accent/30" : "border-border text-muted-foreground hover:bg-accent/20"
         )}
       >
@@ -955,14 +1189,19 @@ function UploadZone({
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
         multiple
+        disabled={uploading}
         className="sr-only"
         tabIndex={-1}
         onChange={(e) => onFiles(e.target.files)}
       />
-      {error && (
-        <p role="alert" className="mt-1 text-xs text-destructive">
-          {error}
-        </p>
+      {errors.length > 0 && (
+        <ul role="alert" className="mt-1 flex flex-col gap-0.5 text-xs text-destructive">
+          {errors.map((fe, i) => (
+            <li key={`${fe.fileName}-${i}`}>
+              <span className="font-medium">{fe.fileName}:</span> {fe.message}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
@@ -972,12 +1211,14 @@ function ReorderChip({
   id,
   item,
   removeLabel,
+  incompleteWarningLabel,
   onReorder,
   onRemove,
 }: {
   id: string;
   item: PickerItem | null;
   removeLabel: string;
+  incompleteWarningLabel: string;
   onReorder: (fromId: string, toId: string) => void;
   onRemove: () => void;
 }) {
@@ -1002,6 +1243,12 @@ function ReorderChip({
       <span aria-hidden className="absolute left-0.5 top-0.5 flex size-5 items-center justify-center bg-background/80">
         <GripVerticalIcon className="size-3.5 text-muted-foreground" />
       </span>
+      {item && hasIncompleteMetadata(item) && (
+        <IncompleteMetadataBadge
+          label={incompleteWarningLabel}
+          className="absolute bottom-0.5 start-0.5 size-5"
+        />
+      )}
       <button
         type="button"
         aria-label={removeLabel}
@@ -1132,7 +1379,7 @@ function CollectionSelectGrid({
       </li>
 
       {collections.length === 0 && (
-        <li className="col-span-full py-4 text-center text-sm text-muted-foreground">{L.emptyWorkspace}</li>
+        <li className="col-span-full py-4 text-center text-sm text-muted-foreground">{L.emptyCollectionsList}</li>
       )}
     </ul>
   );

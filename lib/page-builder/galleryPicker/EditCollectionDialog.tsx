@@ -3,62 +3,105 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
-import { GripVerticalIcon, ImagePlusIcon, Loader2Icon, PencilIcon, StarIcon, Trash2Icon } from "lucide-react";
+import { ArrowLeftIcon, GripVerticalIcon, ImagePlusIcon, Loader2Icon, PencilIcon, StarIcon, Trash2Icon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
   AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { COLLECTION_DESCRIPTION_MAX } from "./CreateCollectionDialog";
+import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { UploadError, uploadErrorTranslation, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
-import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
+import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
+import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import type { PickerCollection, PickerItem } from "./types";
 
 const PAGE = 48;
 
 export function EditCollectionDialog({
-  open, onOpenChange, collection, onChanged,
+  open, onOpenChange, collection, onChanged, embedded = false, onBack,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   collection: PickerCollection | null;
   onChanged: () => void;
+  embedded?: boolean;
+  onBack?: () => void;
 }) {
   const errMsg = useActionError();
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
+  const tWizard = useTranslations("app.pageBuilder.editor.imageWizard");
   const cache = useGalleryPickerCache();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
+  // The collection's `description` isn't in the picker overview list — it only
+  // comes back from the paginated collection fetch (loadAll below) — so it
+  // starts blank and fills in once that first page resolves.
+  const [description, setDescription] = useState("");
+  const [descriptionBaseline, setDescriptionBaseline] = useState("");
+  const [savingDescription, setSavingDescription] = useState(false);
   const [items, setItems] = useState<PickerItem[]>([]);
   const [coverPublicId, setCoverPublicId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Per-file upload failures — never collapsed into one message. Cleared on
+  // every new upload attempt and on dialog reopen.
+  const [fileErrors, setFileErrors] = useState<{ fileName: string; message: string }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dragOverUpload, setDragOverUpload] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
   // The pencil button that opened the alt-text dialog — restores focus there on close.
   const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // Post-upload "add details" offer — dismissable, never a gate (spec 10a).
+  const [uploadedBatch, setUploadedBatch] = useState<PickerItem[] | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const colId = collection?.id ?? null;
 
-  const metaLabels: ImageMetaLabels = {
-    title: tMeta("title"),
-    altLabel: tMeta("altLabel"),
-    altHelp: tMeta("altHelp"),
-    altPlaceholder: tMeta("altPlaceholder"),
-    counter: (count, max) => tMeta("counter", { count, max }),
-    save: tMeta("save"),
-    saving: tMeta("saving"),
-    cancel: tMeta("cancel"),
-    savedToast: tMeta("savedToast"),
+  const wizardLabels: ImageWizardLabels = {
+    heading: tWizard("heading"),
+    position: (current, total) => tWizard("position", { current, total }),
+    fieldTitle: tWizard("fieldTitle"),
+    fieldTitlePlaceholder: tWizard("fieldTitlePlaceholder"),
+    fieldCaption: tWizard("fieldCaption"),
+    fieldCaptionPlaceholder: tWizard("fieldCaptionPlaceholder"),
+    fieldAlt: tWizard("fieldAlt"),
+    fieldAltHelp: tWizard("fieldAltHelp"),
+    fieldAltPlaceholder: tWizard("fieldAltPlaceholder"),
+    altCounter: (count, max) => tWizard("altCounter", { count, max }),
+    fieldDate: tWizard("fieldDate"),
+    fieldLocation: tWizard("fieldLocation"),
+    fieldLocationPlaceholder: tWizard("fieldLocationPlaceholder"),
+    fieldClient: tWizard("fieldClient"),
+    fieldClientPlaceholder: tWizard("fieldClientPlaceholder"),
+    fieldTags: tWizard("fieldTags"),
+    fieldTagsPlaceholder: tWizard("fieldTagsPlaceholder"),
+    fieldTagsHint: tWizard("fieldTagsHint"),
+    removeTag: (tag) => tWizard("removeTag", { tag }),
+    fieldMeta: tWizard("fieldMeta"),
+    fieldMetaHint: tWizard("fieldMetaHint"),
+    metaLabelPlaceholder: tWizard("metaLabelPlaceholder"),
+    metaValuePlaceholder: tWizard("metaValuePlaceholder"),
+    addMetaRow: tWizard("addMetaRow"),
+    removeMetaRow: (n) => tWizard("removeMetaRow", { n }),
+    savedBadge: tWizard("savedBadge"),
+    unsavedBadge: tWizard("unsavedBadge"),
+    jumpToPhoto: (n) => tWizard("jumpToPhoto", { n }),
+    previous: tWizard("previous"),
+    next: tWizard("next"),
+    finish: tWizard("finish"),
+    close: tWizard("close"),
     errorMessage: (code) => errMsg(code),
   };
 
@@ -73,17 +116,21 @@ export function EditCollectionDialog({
     try {
       const acc: PickerItem[] = [];
       let cursor: string | null = null;
+      let desc = "";
       for (let guard = 0; guard < 50; guard++) {
         const q = new URLSearchParams({ limit: String(PAGE) });
         if (cursor) q.set("cursor", cursor);
         const res = await fetch(`/api/portfolio/gallery/collections/${id}?${q.toString()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as { items: PickerItem[]; nextCursor: string | null };
+        const data = (await res.json()) as { items: PickerItem[]; nextCursor: string | null; description?: string };
         acc.push(...data.items);
+        if (data.description !== undefined) desc = data.description;
         cursor = data.nextCursor;
         if (!cursor) break;
       }
       setItems(acc);
+      setDescription(desc);
+      setDescriptionBaseline(desc);
     } catch {
       setError(errMsg("collection_load_failed"));
     } finally {
@@ -96,8 +143,13 @@ export function EditCollectionDialog({
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: resets local state when the dialog opens for a new collection
       setName(collection.name);
       setCoverPublicId(collection.coverPublicId);
+      setDescription("");
+      setDescriptionBaseline("");
       setSelected(new Set());
       setError(null);
+      setFileErrors([]);
+      setUploadedBatch(null);
+      setWizardOpen(false);
       void loadAll(collection.id);
     }
     // Collection identity drives re-runs; loadAll only changes with the error translator.
@@ -114,6 +166,7 @@ export function EditCollectionDialog({
 
   const nameInvalid = name.trim().length === 0;
   const nameUnchanged = name.trim() === collection.name;
+  const descriptionUnchanged = description === descriptionBaseline;
 
   async function saveName() {
     if (nameInvalid || nameUnchanged || !colId) return;
@@ -128,6 +181,23 @@ export function EditCollectionDialog({
       setError(errMsg("collection_rename_failed"));
     } finally {
       setSavingName(false);
+    }
+  }
+
+  async function saveDescription() {
+    if (descriptionUnchanged || !colId) return;
+    setSavingDescription(true);
+    try {
+      const res = await fetch(`/api/portfolio/gallery/collections/${colId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ description }),
+      });
+      if (!res.ok) throw new Error();
+      setDescriptionBaseline(description);
+      onChanged();
+    } catch {
+      setError(errMsg("collection_description_failed"));
+    } finally {
+      setSavingDescription(false);
     }
   }
 
@@ -227,34 +297,92 @@ export function EditCollectionDialog({
     }
   }
 
+  // Maps a caught upload/API failure to a per-file display message. Never
+  // collapses to a bare "couldn't add photo" when a specific reason exists.
+  function describeFailure(err: unknown): string {
+    const detail: UploadErrorDetail = err instanceof UploadError ? err.detail : { code: "network_error" };
+    const { code, params } = uploadErrorTranslation(detail);
+    return errMsg(code, params);
+  }
+
+  async function describeApiFailure(res: Response): Promise<string> {
+    const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: UploadErrorDetail };
+    if (body.detail) {
+      const { code, params } = uploadErrorTranslation(body.detail);
+      return errMsg(code, params);
+    }
+    return errMsg(body.error ?? "photo_add_failed");
+  }
+
   function handleFiles(files: FileList | null) {
     if (!files || !colId) return;
-    const valid = Array.from(files).filter((f) => validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES).ok);
-    if (valid.length === 0) return;
+    const valid: File[] = [];
+    const preErrors: { fileName: string; message: string }[] = [];
+    Array.from(files).forEach((f) => {
+      const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
+      if (check.ok) {
+        valid.push(f);
+        return;
+      }
+      const detail: UploadErrorDetail =
+        check.reason === "type_not_accepted"
+          ? { code: "type_not_accepted", mimeType: f.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+          : { code: "file_too_large", actualBytes: f.size, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES };
+      const { code, params } = uploadErrorTranslation(detail);
+      preErrors.push({ fileName: f.name, message: errMsg(code, params) });
+    });
+    setFileErrors(preErrors);
+    if (valid.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     setUploading(true);
     Promise.allSettled(
       valid.map((f) => uploadImage(f, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES }))
     ).then(async (results) => {
-      const ok = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
-      for (const up of ok) {
+      const newErrors: { fileName: string; message: string }[] = [];
+      const createdItems: PickerItem[] = [];
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        const fileName = valid[i].name;
+        if (r.status === "rejected") {
+          newErrors.push({ fileName, message: describeFailure(r.reason) });
+          continue;
+        }
         try {
           const res = await fetch(`/api/portfolio/gallery/items`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...up, collectionId: colId }),
+            body: JSON.stringify({ ...r.value, collectionId: colId }),
           });
           if (res.ok) {
             const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
-            setItems((prev) => [...prev, { id: created.id, publicId: up.assetId, thumbUrl: created.thumbUrl, caption: created.caption, altText: null }]);
+            const item: PickerItem = {
+              id: created.id,
+              publicId: r.value.assetId,
+              thumbUrl: created.thumbUrl,
+              caption: created.caption,
+              altText: null,
+              ...(r.value.width != null && r.value.height != null
+                ? { width: r.value.width, height: r.value.height }
+                : {}),
+            };
+            setItems((prev) => [...prev, item]);
+            createdItems.push(item);
           } else {
-            setError(errMsg("photo_add_failed"));
+            newErrors.push({ fileName, message: await describeApiFailure(res) });
           }
         } catch {
-          setError(errMsg("photo_add_failed"));
+          newErrors.push({ fileName, message: errMsg("upload_network_error") });
         }
       }
+      setFileErrors((prev) => [...prev, ...newErrors]);
       setUploading(false);
       onChanged();
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (createdItems.length > 0) {
+        setUploadedBatch(createdItems);
+        setWizardOpen(true);
+      }
     });
   }
 
@@ -265,32 +393,52 @@ export function EditCollectionDialog({
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceItemIds: picked.map((p) => p.id) }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error(await describeApiFailure(res));
       const data = (await res.json()) as { items: PickerItem[] };
       setItems((prev) => [...prev, ...data.items]);
       onChanged();
-    } catch {
-      setError(errMsg("photo_add_failed"));
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : errMsg("photo_add_failed"));
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
-        <DialogHeader>
-          {/* This chrome is still English while the surrounding app may be RTL.
-              Left unisolated, the neutral quotes reorder around the LTR "Edit"
-              under `ar` and the title renders as `"Weddings" Edit`. `dir="ltr"`
-              makes the whole title one isolate; the inner <bdi> keeps an
-              Arabic-named collection from breaking the quotes back out. */}
-          <DialogTitle className="truncate">
-            <span dir="ltr" className="inline-block max-w-full truncate align-bottom">
-              Edit &quot;<bdi>{collection.name}</bdi>&quot;
-            </span>
-          </DialogTitle>
-        </DialogHeader>
+  // Split into header/body/footer/extras so `embedded` mode can hand these
+  // back to CollectionsManagerDialog to slot into ITS OWN single, stable
+  // DialogContent (one Popup instance) instead of mounting a second one —
+  // see CollectionsManagerDialog.tsx for why that second Popup instance was
+  // the bug.
+  const header = (
+    <DialogHeader>
+      {/* This chrome is still English while the surrounding app may be RTL.
+          Left unisolated, the neutral quotes reorder around the LTR "Edit"
+          under `ar` and the title renders as `"Weddings" Edit`. `dir="ltr"`
+          makes the whole title one isolate; the inner <bdi> keeps an
+          Arabic-named collection from breaking the quotes back out. */}
+      <div className="flex min-w-0 items-center gap-2">
+        {embedded && (
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Back to photos and collections"
+            onClick={onBack}
+            className="shrink-0"
+          >
+            <ArrowLeftIcon className="size-4 rtl:rotate-180" aria-hidden />
+          </Button>
+        )}
+        <DialogTitle className="truncate">
+          <span dir="ltr" className="inline-block max-w-full truncate align-bottom">
+            Edit &quot;<bdi>{collection.name}</bdi>&quot;
+          </span>
+        </DialogTitle>
+      </div>
+    </DialogHeader>
+  );
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-1">
+  const body = (
+    <>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-1">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="edit-col-name" className="text-xs font-medium">Collection name</label>
             <div className="flex items-center gap-2">
@@ -304,22 +452,84 @@ export function EditCollectionDialog({
             </div>
           </div>
 
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="edit-col-description" className="text-xs font-medium">Description (optional)</label>
+            <Textarea
+              id="edit-col-description"
+              value={description}
+              placeholder="A line or two shown above the photos on your public page."
+              maxLength={COLLECTION_DESCRIPTION_MAX}
+              disabled={savingDescription}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="self-start"
+              disabled={descriptionUnchanged || savingDescription}
+              loading={savingDescription}
+              onClick={saveDescription}
+            >
+              Save description
+            </Button>
+          </div>
+
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" size="sm" variant="outline" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
               {uploading ? <Loader2Icon className="size-4 animate-spin" aria-hidden /> : <ImagePlusIcon className="size-4" aria-hidden />} Upload photos
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={() => setPickerOpen(true)}>Select existing photos</Button>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple className="sr-only" tabIndex={-1} onChange={(e) => handleFiles(e.target.files)} />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={uploading} className="sr-only" tabIndex={-1} onChange={(e) => handleFiles(e.target.files)} />
           </div>
 
           {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+          {fileErrors.length > 0 && (
+            <ul role="alert" className="flex flex-col gap-0.5 text-xs text-destructive">
+              {fileErrors.map((fe, i) => (
+                <li key={`${fe.fileName}-${i}`}>
+                  <span className="font-medium">{fe.fileName}:</span> {fe.message}
+                </li>
+              ))}
+            </ul>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground"><Loader2Icon className="size-4 animate-spin" aria-hidden /> Loading…</div>
-          ) : items.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No photos in this collection yet.</p>
           ) : (
             <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+              <li className="aspect-square">
+                <button
+                  type="button"
+                  data-testid="collection-upload-drop-card"
+                  aria-label={dragOverUpload ? "Drop to upload" : "Upload photos"}
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (uploading) return;
+                    e.dataTransfer.dropEffect = "copy";
+                    setDragOverUpload(true);
+                  }}
+                  onDragLeave={() => setDragOverUpload(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverUpload(false);
+                    if (uploading) return;
+                    handleFiles(e.dataTransfer.files);
+                  }}
+                  className={cn(
+                    "flex size-full flex-col items-center justify-center gap-1 border border-dashed px-2 text-center text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60",
+                    dragOverUpload
+                      ? "border-foreground bg-accent text-accent-foreground"
+                      : "border-border bg-muted/40 text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                  )}
+                >
+                  {uploading ? <Loader2Icon className="size-5 animate-spin" aria-hidden /> : <ImagePlusIcon className="size-5" aria-hidden />}
+                  <span>{uploading ? "Uploading…" : "Drop to upload"}</span>
+                  {!uploading && <span className="text-[10px] font-normal">or click to browse</span>}
+                </button>
+              </li>
               {items.map((item, idx) => {
                 const isCover = item.publicId === coverPublicId;
                 const isSel = selected.has(item.id);
@@ -353,17 +563,23 @@ export function EditCollectionDialog({
                     >
                       <StarIcon className="size-3" aria-hidden /> Cover
                     </button>
-                    <button
-                      type="button"
-                      aria-label={tMeta("editTrigger", { name: item.caption || tMeta("photoFallback") })}
-                      onClick={(e) => {
-                        metaTriggerRef.current = e.currentTarget;
-                        setMetaItem(item);
-                      }}
-                      className="absolute bottom-0.5 right-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                      <PencilIcon className="size-3" aria-hidden />
-                    </button>
+                    <div className="absolute bottom-0.5 end-0.5 flex items-center gap-0.5">
+                      {hasIncompleteMetadata(item) && (
+                        <IncompleteMetadataBadge label={tMeta("incompleteWarning")} />
+                      )}
+                      <button
+                        type="button"
+                        aria-label={tMeta("editTrigger", { name: item.caption || tMeta("photoFallback") })}
+                        onClick={(e) => {
+                          metaTriggerRef.current = e.currentTarget;
+                          setMetaItem(item);
+                          setWizardOpen(true);
+                        }}
+                        className="inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <PencilIcon className="size-3" aria-hidden />
+                      </button>
+                    </div>
                   </li>
                 );
               })}
@@ -371,21 +587,26 @@ export function EditCollectionDialog({
           )}
         </div>
 
-        {selected.size > 0 && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
-            <span className="text-xs text-muted-foreground">{selected.size} selected</span>
-            <Button type="button" size="sm" variant="outline" disabled={busy} onClick={removeSelected}>Remove from collection</Button>
-            <Button type="button" size="sm" variant="destructive" disabled={busy} onClick={() => setConfirmDelete(true)}>
-              <Trash2Icon className="size-4" aria-hidden /> Delete image
-            </Button>
-          </div>
-        )}
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
+          <span className="text-xs text-muted-foreground">{selected.size} selected</span>
+          <Button type="button" size="sm" variant="outline" disabled={busy} onClick={removeSelected}>Remove from collection</Button>
+          <Button type="button" size="sm" variant="destructive" disabled={busy} onClick={() => setConfirmDelete(true)}>
+            <Trash2Icon className="size-4" aria-hidden /> Delete image
+          </Button>
+        </div>
+      )}
+    </>
+  );
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Done</Button>
-        </DialogFooter>
-      </DialogContent>
+  const footer = (
+    <DialogFooter>
+      <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Done</Button>
+    </DialogFooter>
+  );
 
+  const extras = (
+    <>
       <ExistingPhotosPicker
         open={pickerOpen}
         onOpenChange={setPickerOpen}
@@ -393,15 +614,18 @@ export function EditCollectionDialog({
         onAdd={addExisting}
       />
 
-      <ImageMetaDialog
-        item={metaItem}
-        open={metaItem !== null}
+      <ImageMetaWizard
+        items={metaItem ? [metaItem] : (uploadedBatch ?? [])}
+        open={wizardOpen}
         onOpenChange={(next) => {
-          if (!next) setMetaItem(null);
+          setWizardOpen(next);
+          if (!next) {
+            setUploadedBatch(null);
+            setMetaItem(null);
+          }
         }}
         onSaved={handleMetaSaved}
-        labels={metaLabels}
-        triggerRef={metaTriggerRef}
+        labels={wizardLabels}
       />
 
       <AlertDialog open={confirmDelete} onOpenChange={(n) => { if (!n && !busy) setConfirmDelete(false); }}>
@@ -418,6 +642,31 @@ export function EditCollectionDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  // Embedded mode: hand header/body/footer/extras back as plain JSX so
+  // CollectionsManagerDialog can place them inside ITS OWN single
+  // <DialogContent> — never mount a second Popup instance here.
+  if (embedded) {
+    return (
+      <>
+        {header}
+        {body}
+        {footer}
+        {extras}
+      </>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
+        {header}
+        {body}
+        {footer}
+      </DialogContent>
+      {extras}
     </Dialog>
   );
 }

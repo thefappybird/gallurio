@@ -446,12 +446,15 @@ describe("publicPageSettingsSchema", () => {
     }
   });
 
-  it("defaults logoUrl and logoAssetId to empty string when omitted", () => {
-    const result = publicPageSettingsSchema.safeParse({});
+  it("ignores unknown logoUrl/logoAssetId keys (dropped from public-page schema; the business logo is a separate live field)", () => {
+    const result = publicPageSettingsSchema.safeParse({
+      logoUrl: "https://cdn.example.com/logo.png",
+      logoAssetId: "logo_abc",
+    });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect((result.data as { logoUrl?: string }).logoUrl).toBe("");
-      expect((result.data as { logoAssetId?: string }).logoAssetId).toBe("");
+      expect((result.data as { logoUrl?: string }).logoUrl).toBeUndefined();
+      expect((result.data as { logoAssetId?: string }).logoAssetId).toBeUndefined();
     }
   });
 });

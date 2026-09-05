@@ -15,13 +15,16 @@ type StoreLike = {
 };
 
 // StoreLike is a partial stub; referenced in mountStore via `as never` below.
-function mountStore(selectedItemId: string | null): { dispatch: ReturnType<typeof vi.fn> } {
+function mountStore(
+  selectedItemId: string | null,
+  content: Array<{ type: string }> = [],
+): { dispatch: ReturnType<typeof vi.fn> } {
   const dispatch = vi.fn();
   const getSelectorForId = vi.fn().mockReturnValue({ zone: "default-zone", index: 0 });
 
   const state: StoreLike = {
     // Return a non-null parent so height > 0 (anchor renders, not null).
-    getItemById: () => ({ props: { minHeight: "auto", content: [] } }),
+    getItemById: () => ({ props: { minHeight: "auto", content } }),
     selectedItem: selectedItemId != null ? { props: { id: selectedItemId } } : null,
     dispatch,
     getSelectorForId,
@@ -53,5 +56,78 @@ describe("EditorContainerAnchor selection-bounce guard", () => {
 
     // dispatch must NOT have been called: the guard must prevent the loop.
     expect(dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe("EditorContainerAnchor — container-class bridge case (item 5: out of flow)", () => {
+  it("renders the 16px bridge footprint out of flow when the only real child is a Columns block", async () => {
+    mountStore(null, [{ type: "Columns" }]);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
+    expect(el.style.height).toBe("16px");
+    expect(el.style.position).toBe("absolute");
+  });
+
+  it("renders the 16px bridge footprint out of flow when there are two container-class children", async () => {
+    mountStore(null, [{ type: "Columns" }, { type: "Container" }]);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
+    expect(el.style.height).toBe("16px");
+    expect(el.style.position).toBe("absolute");
+  });
+});
+
+describe("EditorContainerAnchor — empty container case (item 5: stays in flow)", () => {
+  it("renders the full editor footprint in flow (no position: absolute) when the slot is empty", async () => {
+    mountStore(null, []);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    const el = container.querySelector(".pf-container-anchor") as HTMLElement;
+    expect(el.style.height).toBe("128px");
+    expect(el.style.position).toBe("");
+  });
+});
+
+describe("EditorContainerAnchor — ordinary content renders nothing", () => {
+  // A container holding any ordinary child carries no anchor in its data at
+  // all (see shouldKeepAnchor). A stale one left by an older draft renders
+  // nothing rather than reserving space, until the reconciler strips it.
+  it("renders nothing when the only real child is ordinary content", async () => {
+    mountStore(null, [{ type: "Heading" }]);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    expect(container.querySelector(".pf-container-anchor")).toBeNull();
+  });
+
+  it("renders nothing when ordinary content sits alongside a container-class child", async () => {
+    mountStore(null, [{ type: "Columns" }, { type: "Text" }]);
+    const { container } = await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+    expect(container.querySelector(".pf-container-anchor")).toBeNull();
+  });
+});
+
+describe("EditorContainerAnchor store-selector stability", () => {
+  it("returns a reference-stable snapshot from every selector (getSnapshot must be cached)", async () => {
+    // Regression: the mode selector used to build a fresh `{ kind, height }`
+    // object on every call. usePuckStore reads through useSyncExternalStore,
+    // which compares snapshots with Object.is → every read looked like a new
+    // value → "The result of getSnapshot should be cached to avoid an
+    // infinite loop" → "Maximum update depth exceeded" on /portfolio.
+    const selectors: Array<(s: never) => unknown> = [];
+    const state: StoreLike = {
+      getItemById: () => ({ props: { minHeight: "auto", content: [{ type: "Heading" }] } }),
+      selectedItem: null,
+      dispatch: vi.fn(),
+      getSelectorForId: vi.fn(),
+    };
+    vi.mocked(usePuckStore).mockImplementation((selector) => {
+      selectors.push(selector as (s: never) => unknown);
+      return selector(state as never);
+    });
+
+    await act(async () => render(<EditorContainerAnchor id="container--anchor" />));
+
+    expect(selectors.length).toBeGreaterThan(0);
+    for (const selector of selectors) {
+      expect(Object.is(selector(state as never), selector(state as never))).toBe(true);
+    }
   });
 });

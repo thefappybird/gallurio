@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requestDirectUpload } from "@/lib/storage/cloudflareImages";
+import { requestDirectUpload, DEMO_UPLOAD_SUBFOLDER } from "@/lib/storage/cloudflareImages";
 import { rateLimit } from "@/lib/server/rateLimit";
 import { getClientIp } from "@/lib/server/getClientIp";
 
@@ -20,7 +20,10 @@ const IP_RATE_LIMIT = { limit: 30, windowMs: 15 * 60_000 };
 const DEMO_IMAGE_CAP = { limit: 10, windowMs: 24 * 60 * 60_000 };
 
 const bodySchema = z.object({
-  demoSessionId: z.string().min(1).max(100),
+  // UUID-only, matching lib/validators/demoImport.ts. The id is written into
+  // the asset's `workspaceId` metadata, so allowing an arbitrary string would
+  // let a caller mint assets tagged with a real workspace's ObjectId.
+  demoSessionId: z.string().uuid(),
 });
 
 export async function POST(req: Request) {
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { imageId, uploadURL } = await requestDirectUpload(demoSessionId, "portfolio-maker-demo");
+    const { imageId, uploadURL } = await requestDirectUpload(demoSessionId, DEMO_UPLOAD_SUBFOLDER);
     return NextResponse.json({ imageId, uploadURL });
   } catch (err) {
     console.error("[portfolio-maker-demo/upload] requestDirectUpload failed", err);

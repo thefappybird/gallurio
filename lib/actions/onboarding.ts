@@ -12,6 +12,7 @@ import {
 import { ensureDefaultTeam } from "@/lib/db/models/team";
 import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
+import { consumeDemoImportMarker } from "@/lib/auth/demoImportMarker";
 import { persistUserTimeFormat } from "@/lib/auth/persistTimeFormat";
 import { grantPlan } from "@/lib/billing/grantPlan";
 import { isBetaProgramClosed } from "@/lib/billing/betaProgram";
@@ -440,6 +441,14 @@ export async function completeOnboardingAction(): Promise<ActionResult> {
     ),
   ]);
 
+  // A visitor who signed up from the Portfolio Maker demo carries a marker
+  // cookie through the auth + onboarding round trip (see
+  // lib/auth/demoImportMarker.ts) — send them to the real editor instead of
+  // the dashboard so they can claim their demo work. Consuming (clearing) it
+  // here, at the one real onboarding-completion transition, means it can
+  // never re-fire on a later visit.
+  const cameFromDemo = await consumeDemoImportMarker();
+
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  redirect(cameFromDemo ? "/portfolio" : "/dashboard");
 }

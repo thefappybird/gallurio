@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ImagePlusIcon, Loader2Icon, XIcon } from "lucide-react";
 import {
   Dialog,
@@ -10,17 +11,28 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { useActionError } from "@/lib/i18n/actionError";
+import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { UploadError, describeUploadErrorEnglish, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
+import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
+import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import type { PickerItem } from "./types";
+
+/** Marks a message as already curated (safe to show verbatim), distinguishing
+ *  it from an arbitrary network/fetch error whose raw text should not reach the UI. */
+class DisplayError extends Error {}
 
 // Plain strings: Puck editor chrome is intentionally English-only.
 const L = {
   title: "New collection",
   nameLabel: "Collection title",
   namePlaceholder: "e.g. Weddings 2024",
+  descriptionLabel: "Description (optional)",
+  descriptionPlaceholder: "A line or two shown above the photos on your public page.",
   dropZone: "Drag photos here or click to select",
   dropZoneActive: "Drop to upload",
   hint: "JPEG, PNG, WebP or AVIF · max 15 MB · min 600 px",
@@ -28,22 +40,13 @@ const L = {
   create: "Create collection",
   creating: "Creating…",
   cancel: "Cancel",
-  errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errSize: "Each photo must be under 15 MB.",
-  errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
   errCreate: "Could not create the collection. Please try again.",
   removePhoto: "Remove photo",
 };
 
-type LocalImage = {
-  assetId: string;
-  url: string;
-  width?: number;
-  height?: number;
-  format?: string;
-  sizeBytes?: number;
-};
+/** Matches the PATCH/POST collection route's `description` cap. */
+export const COLLECTION_DESCRIPTION_MAX = 2000;
 
 /**
  * Nested dialog for creating one collection. Opened from the Photos &
@@ -59,24 +62,83 @@ export function CreateCollectionDialog({
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }) {
+  const errMsg = useActionError();
+  const tWizard = useTranslations("app.pageBuilder.editor.imageWizard");
+  const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Holds the new collection's id once created, so a retry after a failed
   // "copy existing photos" step re-runs only the copy (never re-creates).
   const createdIdRef = useRef<string | null>(null);
   const [name, setName] = useState("");
-  const [images, setImages] = useState<LocalImage[]>([]);
+  const [description, setDescription] = useState("");
+  // Each upload is created as a standalone GalleryItem immediately (same
+  // model as MediaPicker's "All photos" upload) so the post-upload metadata
+  // wizard has a real id to PATCH — the collection doesn't exist yet at
+  // upload time, so these start unattached and get copied in on create.
+  const [uploaded, setUploaded] = useState<PickerItem[]>([]);
   const [picked, setPicked] = useState<PickerItem[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Per-file upload failures — never collapsed into one message.
+  const [fileErrors, setFileErrors] = useState<{ fileName: string; message: string }[]>([]);
+  // Post-upload "add details" offer — dismissable, never a gate on creating
+  // the collection (owner's explicit choice; see spec item 10a).
+  const [uploadedBatch, setUploadedBatch] = useState<PickerItem[] | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+
+  const wizardLabels: ImageWizardLabels = {
+    heading: tWizard("heading"),
+    position: (current, total) => tWizard("position", { current, total }),
+    fieldTitle: tWizard("fieldTitle"),
+    fieldTitlePlaceholder: tWizard("fieldTitlePlaceholder"),
+    fieldCaption: tWizard("fieldCaption"),
+    fieldCaptionPlaceholder: tWizard("fieldCaptionPlaceholder"),
+    fieldAlt: tWizard("fieldAlt"),
+    fieldAltHelp: tWizard("fieldAltHelp"),
+    fieldAltPlaceholder: tWizard("fieldAltPlaceholder"),
+    altCounter: (count, max) => tWizard("altCounter", { count, max }),
+    fieldDate: tWizard("fieldDate"),
+    fieldLocation: tWizard("fieldLocation"),
+    fieldLocationPlaceholder: tWizard("fieldLocationPlaceholder"),
+    fieldClient: tWizard("fieldClient"),
+    fieldClientPlaceholder: tWizard("fieldClientPlaceholder"),
+    fieldTags: tWizard("fieldTags"),
+    fieldTagsPlaceholder: tWizard("fieldTagsPlaceholder"),
+    fieldTagsHint: tWizard("fieldTagsHint"),
+    removeTag: (tag) => tWizard("removeTag", { tag }),
+    fieldMeta: tWizard("fieldMeta"),
+    fieldMetaHint: tWizard("fieldMetaHint"),
+    metaLabelPlaceholder: tWizard("metaLabelPlaceholder"),
+    metaValuePlaceholder: tWizard("metaValuePlaceholder"),
+    addMetaRow: tWizard("addMetaRow"),
+    removeMetaRow: (n) => tWizard("removeMetaRow", { n }),
+    savedBadge: tWizard("savedBadge"),
+    unsavedBadge: tWizard("unsavedBadge"),
+    jumpToPhoto: (n) => tWizard("jumpToPhoto", { n }),
+    previous: tWizard("previous"),
+    next: tWizard("next"),
+    finish: tWizard("finish"),
+    close: tWizard("close"),
+    errorMessage: (code) => errMsg(code),
+  };
+
+  function handleMetaSaved(updated: PickerItem) {
+    setUploaded((prev) => prev.map((it) => (it.id === updated.id ? updated : it)));
+    setPicked((prev) => prev.map((it) => (it.id === updated.id ? updated : it)));
+  }
 
   function reset() {
     setName("");
-    setImages([]);
+    setDescription("");
+    setUploaded([]);
     setPicked([]);
     setError(null);
+    setFileErrors([]);
+    setUploadedBatch(null);
+    setWizardOpen(false);
     createdIdRef.current = null;
   }
 
@@ -86,41 +148,87 @@ export function CreateCollectionDialog({
     onOpenChange(false);
   }
 
-  function handleFiles(files: FileList | null) {
+  async function describeApiFailure(res: Response): Promise<string> {
+    const body = (await res.json().catch(() => ({}))) as { detail?: UploadErrorDetail };
+    const detail: UploadErrorDetail = body.detail ?? { code: "unknown" };
+    return describeUploadErrorEnglish(detail);
+  }
+
+  async function handleFiles(files: FileList | null) {
     if (!files) return;
     const valid: File[] = [];
-    let typeErr = false;
-    let sizeErr = false;
+    const preErrors: { fileName: string; message: string }[] = [];
     Array.from(files).forEach((f) => {
       const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
-      if (!check.ok) {
-        if (check.reason === "type_not_accepted") typeErr = true;
-        else sizeErr = true;
-      } else valid.push(f);
+      if (check.ok) {
+        valid.push(f);
+        return;
+      }
+      const detail: UploadErrorDetail =
+        check.reason === "type_not_accepted"
+          ? { code: "type_not_accepted", mimeType: f.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+          : { code: "file_too_large", actualBytes: f.size, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES };
+      preErrors.push({ fileName: f.name, message: describeUploadErrorEnglish(detail) });
     });
-    const topError = typeErr ? L.errType : sizeErr ? L.errSize : null;
+    setFileErrors(preErrors);
     if (valid.length === 0) {
-      if (topError) setError(topError);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     setUploading(true);
-    setError(topError);
-    Promise.allSettled(
+    const results = await Promise.allSettled(
       valid.map((file) =>
         uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
       )
-    ).then((results) => {
-      const ok: LocalImage[] = [];
-      let dimErr = false;
-      for (const r of results) {
-        if (r.status === "fulfilled") ok.push(r.value);
-        else if ((r.reason instanceof Error ? r.reason.message : "") === "dimension_too_small") dimErr = true;
+    );
+
+    const newErrors: { fileName: string; message: string }[] = [];
+    const createdItems: PickerItem[] = [];
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      const fileName = valid[i].name;
+      if (r.status === "rejected") {
+        const detail: UploadErrorDetail = r.reason instanceof UploadError ? r.reason.detail : { code: "network_error" };
+        newErrors.push({ fileName, message: describeUploadErrorEnglish(detail) });
+        continue;
       }
-      setImages((prev) => [...prev, ...ok]);
-      setUploading(false);
-      setError(dimErr ? L.errDim : ok.length === 0 ? L.errUpload : null);
-    });
+      // Created as a standalone item (no collectionId — the collection
+      // doesn't exist yet) so the metadata wizard has a real id to PATCH.
+      try {
+        const createRes = await fetch("/api/portfolio/gallery/items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...r.value }),
+        });
+        if (!createRes.ok) {
+          newErrors.push({ fileName, message: await describeApiFailure(createRes) });
+          continue;
+        }
+        const created = (await createRes.json()) as { id: string; thumbUrl: string; caption: string | null };
+        const item: PickerItem = {
+          id: created.id,
+          publicId: r.value.assetId,
+          thumbUrl: created.thumbUrl,
+          caption: created.caption,
+          altText: null,
+          ...(r.value.width != null && r.value.height != null
+            ? { width: r.value.width, height: r.value.height }
+            : {}),
+        };
+        createdItems.push(item);
+      } catch {
+        newErrors.push({ fileName, message: describeUploadErrorEnglish({ code: "network_error" }) });
+      }
+    }
+
+    setUploaded((prev) => [...prev, ...createdItems]);
+    setUploading(false);
+    setFileErrors((prev) => [...prev, ...newErrors]);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (createdItems.length > 0) {
+      setUploadedBatch(createdItems);
+      setWizardOpen(true);
+    }
   }
 
   async function createCollection() {
@@ -135,20 +243,27 @@ export function CreateCollectionDialog({
         const res = await fetch("/api/portfolio/gallery/collections", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: name.trim(), items: images }),
+          body: JSON.stringify({ name: name.trim(), description: description.trim() }),
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { detail?: UploadErrorDetail };
+          throw new DisplayError(body.detail ? describeUploadErrorEnglish(body.detail) : L.errCreate);
+        }
         const created = await res.json();
         newId = created.id as string;
         createdIdRef.current = newId;
       }
-      if (picked.length > 0) {
+      // Uploaded-here photos and hand-picked existing photos both attach the
+      // same way: the collection was created empty above, so every source
+      // item — whichever list it came from — goes through the copy step.
+      const sourceItemIds = [...uploaded, ...picked].map((p) => p.id);
+      if (sourceItemIds.length > 0) {
         const copyRes = await fetch(
           `/api/portfolio/gallery/collections/${newId}/items/copy`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sourceItemIds: picked.map((p) => p.id) }),
+            body: JSON.stringify({ sourceItemIds }),
           }
         );
         // Collection exists but copying existing photos failed — keep the dialog
@@ -161,8 +276,8 @@ export function CreateCollectionDialog({
       }
       reset();
       onCreated();
-    } catch {
-      setError(L.errCreate);
+    } catch (err) {
+      setError(err instanceof DisplayError ? err.message : L.errCreate);
     } finally {
       setSaving(false);
     }
@@ -192,26 +307,41 @@ export function CreateCollectionDialog({
             />
           </label>
 
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span>{L.descriptionLabel}</span>
+            <Textarea
+              value={description}
+              placeholder={L.descriptionPlaceholder}
+              maxLength={COLLECTION_DESCRIPTION_MAX}
+              disabled={saving}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+
           <div
             role="button"
-            tabIndex={0}
+            tabIndex={uploading ? -1 : 0}
+            aria-disabled={uploading}
             aria-label={dragOver ? L.dropZoneActive : L.dropZone}
             onDragOver={(e) => {
               e.preventDefault();
+              if (uploading) return;
               setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => {
               e.preventDefault();
               setDragOver(false);
+              if (uploading) return;
               handleFiles(e.dataTransfer.files);
             }}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => { if (!uploading) fileInputRef.current?.click(); }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+              if (!uploading && (e.key === "Enter" || e.key === " ")) fileInputRef.current?.click();
             }}
             className={cn(
               "flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed p-4 text-center text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              uploading && "cursor-wait opacity-60",
               dragOver
                 ? "border-foreground bg-accent/30"
                 : "border-border text-muted-foreground hover:bg-accent/20 focus-visible:bg-accent/20"
@@ -235,6 +365,7 @@ export function CreateCollectionDialog({
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif"
             multiple
+            disabled={uploading}
             className="sr-only"
             tabIndex={-1}
             onChange={(e) => handleFiles(e.target.files)}
@@ -250,33 +381,45 @@ export function CreateCollectionDialog({
             Select existing photos
           </Button>
 
-          {(images.length > 0 || picked.length > 0) && (
+          {(uploaded.length > 0 || picked.length > 0) && (
             <ul className="grid grid-cols-4 gap-1.5 sm:grid-cols-6" aria-label="Uploaded photos">
-              {images.map((img, i) => (
+              {uploaded.map((item) => (
                 <li
-                  key={img.assetId}
+                  key={item.id}
                   className="relative aspect-square overflow-hidden border border-border"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt="" className="size-full object-cover" />
+                  <img src={item.thumbUrl} alt="" className="size-full object-cover" />
+                  {hasIncompleteMetadata(item) && (
+                    <IncompleteMetadataBadge
+                      label={tMeta("incompleteWarning")}
+                      className="absolute start-0.5 top-0.5"
+                    />
+                  )}
                   <button
                     type="button"
                     aria-label={L.removePhoto}
-                    onClick={() => setImages((p) => p.filter((_, j) => j !== i))}
+                    onClick={() => setUploaded((prev) => prev.filter((it) => it.id !== item.id))}
                     className="absolute right-0.5 top-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <XIcon className="size-3.5" aria-hidden />
                   </button>
                 </li>
               ))}
-              {picked.map((p, i) => (
+              {picked.map((p) => (
                 <li key={`picked-${p.id}`} className="relative aspect-square overflow-hidden border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.thumbUrl} alt="" className="size-full object-cover" />
+                  {hasIncompleteMetadata(p) && (
+                    <IncompleteMetadataBadge
+                      label={tMeta("incompleteWarning")}
+                      className="absolute start-0.5 top-0.5"
+                    />
+                  )}
                   <button
                     type="button"
                     aria-label={L.removePhoto}
-                    onClick={() => setPicked((prev) => prev.filter((_, j) => j !== i))}
+                    onClick={() => setPicked((prev) => prev.filter((it) => it.id !== p.id))}
                     className="absolute right-0.5 top-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <XIcon className="size-3.5" aria-hidden />
@@ -290,6 +433,15 @@ export function CreateCollectionDialog({
             <p role="alert" className="text-xs text-destructive">
               {error}
             </p>
+          )}
+          {fileErrors.length > 0 && (
+            <ul role="alert" className="flex flex-col gap-0.5 text-xs text-destructive">
+              {fileErrors.map((fe, i) => (
+                <li key={`${fe.fileName}-${i}`}>
+                  <span className="font-medium">{fe.fileName}:</span> {fe.message}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
@@ -312,7 +464,7 @@ export function CreateCollectionDialog({
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         excludePublicIds={[
-          ...images.map((i) => i.assetId),
+          ...uploaded.map((i) => i.publicId),
           ...picked.map((p) => p.publicId),
         ]}
         onAdd={(items) =>
@@ -321,6 +473,17 @@ export function CreateCollectionDialog({
             return [...prev, ...items.filter((it) => !seen.has(it.publicId))];
           })
         }
+      />
+
+      <ImageMetaWizard
+        items={uploadedBatch ?? []}
+        open={wizardOpen}
+        onOpenChange={(next) => {
+          setWizardOpen(next);
+          if (!next) setUploadedBatch(null);
+        }}
+        onSaved={handleMetaSaved}
+        labels={wizardLabels}
       />
     </Dialog>
   );

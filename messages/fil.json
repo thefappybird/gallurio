@@ -69,12 +69,12 @@
       "portfolioBuilder": {
         "title": "Drag-and-drop na portfolio builder",
         "panelHeadline": "Gawin ang unang impresyon na parang ikaw talaga.",
-        "description": "Isang drag-and-drop, walang-code na website builder — walang blangkong screen, walang kailangang developer. Ayusin ang mga gallery, serbisyo, at section sa paraang gusto mo talagang makita ang iyong trabaho — pagkatapos gawin itong tunay na sa iyo.",
-        "feature1": "Drag-and-drop na page section — walang code na kailangan",
-        "feature2": "Mga image gallery at collection",
-        "feature3": "Custom na kulay, font, at branding — walang kailangang developer",
-        "feature4": "Ginawa para gawing inquiry ang mga bisita",
-        "cta": "Subukan ang portfolio builder"
+        "description": "Isang block-based, walang-code na page builder — mag-browse ng library ng mga handa nang section na may live preview, walang blangkong screen na simulan. I-style ang kulay, espasyo, at font ng bawat block, piliin ang layout ng iyong gallery, at ilapat ang brand kit sa buong site mo.",
+        "feature1": "Mga handa nang section na may live preview",
+        "feature2": "Grid, masonry, at carousel na gallery layout",
+        "feature3": "Kontrol sa kulay, espasyo, at font kada block",
+        "feature4": "Brand kit at theme preset, ilapat sa buong site",
+        "cta": "Buksan ang portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",
@@ -1722,20 +1722,6 @@
           "image": "Hindi mabasa ang larawan. Subukan ang ibang file.",
           "upload": "Nabigo ang pag-upload. Subukan muli."
         },
-        "logoSection": "Logo",
-        "logoHint": "Ipinapakita sa header ng iyong pampublikong pahina.",
-        "logoRequirements": "PNG, JPEG, o WebP. Hanggang 512x256px, max 250KB.",
-        "logoLabel": "Mag-upload ng logo",
-        "logoReplace": "Palitan",
-        "logoRemove": "Alisin",
-        "logoUploading": "Ina-upload...",
-        "logoErrors": {
-          "type": "Gumamit ng PNG, JPEG, o WebP na larawan.",
-          "size": "Panatilihin ang file sa ibaba ng 250KB.",
-          "dimensions": "Panatilihin ang logo sa loob ng 512x256px.",
-          "image": "Hindi wastong larawan ang file na iyon.",
-          "upload": "Nabigo ang pag-upload. Subukan muli."
-        },
         "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
         "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
         "seoTitleAutoHint": "Wala pang title — gagamitin na lang ang pangalan ng iyong workspace.",
@@ -1743,6 +1729,7 @@
         "seoKeywords": "Mga tag ng SEO",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, metro manila",
         "seoKeywordsHint": "Opsyonal na mga tag na pinaghihiwalay ng kuwit — mananatili ang espasyo sa loob ng bawat parirala. Ginagamit sa structured data ng pahina. Hanggang 10 tag.",
+        "seoKeywordsRemoveTag": "Alisin ang tag na {tag}",
         "galleryDescriptionLabel": "Paglalarawan ng Gallery page",
         "galleryDescriptionPlaceholder": "Isang showcase ng aming pinakamahusay na wedding at portrait work…",
         "galleryDescriptionHint": "Hiwalay na paglalarawan para sa iyong Gallery page upang hindi ito magkatulad ng iyong home page. Target: ~155 karakter.",
@@ -1960,11 +1947,31 @@
           "confirm": "Alisin ang miyembro"
         },
         "details": {
-          "tabsLabel": "Mga detalye ng miyembro", "tabs": { "details": "Mga detalye", "history": "Kasaysayan" },
-          "teams": "Mga koponan", "noTeams": "Walang koponan", "completed": "Natapos", "workingNow": "Kasalukuyang ginagawa", "future": "Hinaharap",
-          "fromDate": "Mula petsa", "toDate": "Hanggang petsa", "action": "Aksyon", "allActions": "Lahat ng aksyon",
-          "actions": { "created": "Ginawa", "updated": "Na-update", "deleted": "Tinanggal", "statusChanged": "Binago ang status", "paymentAdded": "Idinagdag ang bayad" },
-          "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad", "loading": "Naglo-load…", "loadMore": "Mag-load pa", "noActivity": "Walang nakitang aktibidad."
+          "tabsLabel": "Mga detalye ng miyembro",
+          "tabs": {
+            "details": "Mga detalye",
+            "history": "Kasaysayan"
+          },
+          "teams": "Mga koponan",
+          "noTeams": "Walang koponan",
+          "completed": "Natapos",
+          "workingNow": "Kasalukuyang ginagawa",
+          "future": "Hinaharap",
+          "fromDate": "Mula petsa",
+          "toDate": "Hanggang petsa",
+          "action": "Aksyon",
+          "allActions": "Lahat ng aksyon",
+          "actions": {
+            "created": "Ginawa",
+            "updated": "Na-update",
+            "deleted": "Tinanggal",
+            "statusChanged": "Binago ang status",
+            "paymentAdded": "Idinagdag ang bayad"
+          },
+          "loadingHistory": "Naglo-load ng kasaysayan ng aktibidad",
+          "loading": "Naglo-load…",
+          "loadMore": "Mag-load pa",
+          "noActivity": "Walang nakitang aktibidad."
         },
         "errors": {
           "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace.",
@@ -2056,7 +2063,7 @@
         "phonePlaceholder": "+63 917 555 0142",
         "source": "Pinagmulan",
         "tags": "Mga Tatak",
-        "tagsPlaceholder": "Magdagdag ng tatak at pindutin ang Enter",
+        "tagsPlaceholder": "Magdagdag ng tatak",
         "removeTag": "Tanggalin ang tatak {tag}",
         "notes": "Mga Tala",
         "notesPlaceholder": "Anumang tala tungkol sa kliyenteng ito…",
@@ -2479,78 +2486,6 @@
           "tabHighlightOpacityLabel": "Opacity ng highlight",
           "tabUnderlineColorLabel": "Kulay ng salungguhit"
         },
-        "headerDialog": {
-          "title": "Navigation",
-          "close": "Isara",
-          "save": "I-save",
-          "saving": "Sine-save…",
-          "tabs": {
-            "setup": "Setup",
-            "design": "Disenyo"
-          },
-          "brandTextLabel": "Heading",
-          "brandTextHelp": "Nagsisimula sa pangalan ng workspace. Burahin ito para logo lang ang ipakita.",
-          "logoLabel": "Logo",
-          "logoHelp": "I-upload ang logo ng iyong negosyo para ipakita sa tabi ng iyong pangalan sa header.",
-          "logoUpload": "Mag-upload ng logo",
-          "logoUploading": "Ina-upload…",
-          "logoRemove": "Alisin ang logo",
-          "logoRequirements": "PNG, JPEG o WEBP · maks. 250 KB · hanggang 512×256",
-          "logoErrors": {
-            "type": "Ang logo ay dapat na larawang PNG, JPEG, o WEBP. Hindi suportado ang SVG.",
-            "size": "Logo must be 250 KB or smaller.",
-            "dimensions": "Logo must be 512 x 256 px or smaller.",
-            "image": "This logo image could not be read.",
-            "upload": "Logo upload failed. Please try again."
-          },
-          "sectionBanner": "Banner",
-          "sectionLinks": "Mga link",
-          "sectionInactiveLinks": "Mga hindi aktibong link",
-          "sectionActiveStyle": "Estilo ng aktibong link",
-          "sectionContactButton": "Contact button",
-          "bgColorLabel": "Kulay ng background",
-          "bgOpacityLabel": "Opacity ng background",
-          "linkColorLabel": "Kulay ng teksto ng link",
-          "brandTextColorLabel": "Kulay ng heading",
-          "activeLinkColorLabel": "Kulay ng teksto ng aktibong link",
-          "borderBottomLabel": "Border sa ibaba",
-          "borderColorLabel": "Kulay ng border",
-          "shadowLabel": "Drop shadow",
-          "navbarSizeLabel": "Navbar size",
-          "fontSizeLabel": "Laki ng link",
-          "activeStyleLabel": "Estilo",
-          "activeStyleScale": "Palakihin",
-          "activeStyleHighlight": "I-highlight",
-          "activeStyleUnderline": "Salungguhit",
-          "highlightColorLabel": "Kulay ng highlight",
-          "highlightOpacityLabel": "Highlight opacity",
-          "cornerRadiusLabel": "Corner radius",
-          "underlineColorLabel": "Kulay ng salungguhit",
-          "contactButtonColorLabel": "Button color",
-          "contactButtonOpacityLabel": "Button opacity",
-          "contactButtonTextColorLabel": "Button text color",
-          "radius": {
-            "sharp": "Sharp",
-            "subtle": "Subtle",
-            "rounded": "Rounded"
-          },
-          "shadow": {
-            "none": "Wala",
-            "sm": "Maliit",
-            "md": "Katamtaman",
-            "lg": "Malaki"
-          },
-          "navbarSize": {
-            "sleek": "Sleek",
-            "balanced": "Balanced",
-            "flashy": "Flashy"
-          },
-          "fontSize": {
-            "sm": "S",
-            "md": "M",
-            "lg": "L"
-          }
-        },
         "contactPreview": {
           "title": "Magtulungan tayo",
           "description": "Sabihin sa amin ang tungkol sa iyong event.",
@@ -2566,8 +2501,76 @@
           "saving": "Sine-save…",
           "cancel": "Kanselahin",
           "savedToast": "Na-save ang alt text.",
-          "editTrigger": "I-edit ang alt text para sa {name}",
-          "photoFallback": "larawan"
+          "editTrigger": "I-edit ang mga detalye ng larawan para sa {name}",
+          "photoFallback": "larawan",
+          "incompleteWarning": "Walang alt text — maaaring hindi maipakita nang tama ang larawang ito."
+        },
+        "imageBlockDetails": {
+          "heading": "Mga detalye ng larawan",
+          "sharedNotice": "Nakatira ang mga detalyeng ito sa mismong larawan, hindi sa block na ito — ang pag-edit dito ay nag-a-update sa bawat lugar kung saan lumalabas ang larawang ito.",
+          "chooseImagePrompt": "Pumili ng larawan sa itaas para i-edit ang mga detalye nito.",
+          "loading": "Nilo-load ang mga detalye ng larawan…",
+          "notFound": "Hindi naka-save sa iyong gallery library ang larawang ito, kaya hindi maaaring i-edit dito ang mga detalye.",
+          "loadError": "Hindi ma-load ang mga detalye ng larawang ito.",
+          "retry": "Subukan ulit",
+          "titleLabel": "Pamagat",
+          "descriptionLabel": "Paglalarawan",
+          "altLabel": "Default na alt text",
+          "altHint": "Ginagamit sa bawat lugar kung saan lumalabas ang larawang ito.",
+          "dateLabel": "Petsa",
+          "locationLabel": "Lokasyon",
+          "clientLabel": "Kliyente",
+          "tagsLabel": "Mga tag",
+          "tagsHint": "Paghiwalayin ang mga tag gamit ang kuwit, space, o Enter.",
+          "tagsPlaceholder": "hal. outdoor, sunset, first dance",
+          "removeTag": "Alisin ang tag na {tag}",
+          "metaLabel": "Mga custom na detalye",
+          "metaLabelPlaceholder": "Label",
+          "metaValuePlaceholder": "Value",
+          "metaAdd": "Magdagdag ng detalye",
+          "metaRemove": "Alisin ang detalye {index}",
+          "metaLimitReached": "Puwede kang magdagdag ng hanggang 20 custom na detalye.",
+          "saving": "Sine-save…",
+          "saved": "Na-save",
+          "savedInPlaces": "Na-update sa {count} na lugar",
+          "saveError": "Hindi na-save ang iyong mga pagbabago."
+        },
+        "imageWizard": {
+          "heading": "Magdagdag ng mga detalye ng larawan",
+          "position": "Larawan {current} ng {total}",
+          "fieldTitle": "Pamagat",
+          "fieldTitlePlaceholder": "hal. Kasal nina Sarah at Miguel",
+          "fieldCaption": "Paglalarawan",
+          "fieldCaptionPlaceholder": "Ano ang nangyayari sa larawang ito?",
+          "fieldAlt": "Alt text",
+          "fieldAltHelp": "Ilarawan kung ano ang ipinapakita ng larawan. Binabasa nang malakas ng mga screen reader at ginagamit ng mga search engine para maunawaan ang larawan.",
+          "fieldAltPlaceholder": "hal. Nobyo at nobya na sumasayaw sa ilalim ng mga ilaw",
+          "altCounter": "{count}/{max} na character",
+          "fieldDate": "Petsa",
+          "fieldLocation": "Lokasyon",
+          "fieldLocationPlaceholder": "hal. Tagaytay, Pilipinas",
+          "fieldClient": "Kliyente",
+          "fieldClientPlaceholder": "hal. Sarah at Miguel",
+          "fieldTags": "Mga tag",
+          "fieldTagsPlaceholder": "Magdagdag ng tag at pindutin ang Enter",
+          "fieldTagsHint": "Hanggang 20 tag.",
+          "removeTag": "Alisin ang tag na {tag}",
+          "fieldMeta": "Mga custom na detalye",
+          "fieldMetaHint": "Magdagdag ng karagdagang detalyeng may label, tulad ng \"Venue\" o \"Photographer\".",
+          "metaLabelPlaceholder": "Label",
+          "metaValuePlaceholder": "Value",
+          "addMetaRow": "Magdagdag ng detalye",
+          "removeMetaRow": "Alisin ang detalye {n}",
+          "savedBadge": "Na-save",
+          "unsavedBadge": "Hindi pa na-save",
+          "jumpToPhoto": "Pumunta sa larawan {n}",
+          "previous": "Bumalik",
+          "next": "Susunod",
+          "finish": "I-save at lumabas",
+          "close": "Isara",
+          "offerHeading": "{count, plural, one {# larawan ang na-upload} other {# na larawan ang na-upload}}",
+          "offerAddDetails": "Magdagdag ng detalye",
+          "offerSkip": "Laktawan muna"
         },
         "mobileBanner": {
           "title": "Mas maganda ang editor sa mas malaking screen",
@@ -2577,7 +2580,13 @@
         },
         "contactSettings": "I-edit ang setting ng kontak",
         "contactSettingsShort": "Contact Form",
-        "headerSettings": "Navigation",
+        "chromeDetachToggleLabel": "I-detach ang header sa {page}",
+        "chromeDetachHint": "Ang mga naka-detach na header ay may sariling istilo at hindi na sumusunod sa kabilang page.",
+        "chromeDetachDisabledHint": "May naka-detach na header na ang {page} — isang page lang ang puwedeng mag-detach nang sabay.",
+        "chromeReanchorConfirmTitle": "Itugma sa istilo ng {page}?",
+        "chromeReanchorConfirmBody": "Papalitan ng istilo ng {page} ang sariling istilo ng header ng page na ito. Hindi na ito maaaring bawiin.",
+        "chromeReanchorConfirmCancel": "Kanselahin",
+        "chromeReanchorConfirmProceed": "Itugma sa {page}",
         "preview": {
           "show": "Preview",
           "edit": "I-edit",
@@ -2668,6 +2677,15 @@
           "discard": "Itapon",
           "save": "I-save ang mga pagbabago"
         },
+        "demoImportDialog": {
+          "title": "May nakitang naka-save na demo portfolio",
+          "body": "Ilapat ang portfolio setup na naka-save sa browser na ito sa bago mong workspace, o i-discard ito at magsimula ulit.",
+          "yes": "Ilapat ang naka-save na setup",
+          "discard": "I-discard ang naka-save na setup",
+          "importedToast": "Handa nang i-edit ang iyong demo portfolio.",
+          "partialFailureToast": "Na-import, ngunit {count, plural, one {# larawan} other {# na larawan}} ang hindi nailipat.",
+          "errorToast": "Hindi na-import ang iyong demo portfolio. Pakisubukang muli."
+        },
         "blockActions": {
           "fallbackLabel": "Block",
           "actionsAria": "Mga aksyon ng {label}",
@@ -2722,24 +2740,60 @@
             "sharp": "Matalim",
             "subtle": "Banayad",
             "rounded": "Bilugan"
+          },
+          "layout": "Layout",
+          "popupLayoutLabel": "Layout ng featured work",
+          "popupLayoutHint": "Ito ang makikita ng mga bisita kapag binuksan nila ang isang featured collection.",
+          "imageModalLayoutLabel": "Layout ng preview ng larawan",
+          "imageModalLayoutHint": "Ito ang makikita ng mga bisita kapag na-click nila ang isang larawan sa iyong pahina.",
+          "immersiveModalScopeNote": "Ipinapakita ng Immersive ang mga larawan nang direkta sa loob ng pahina, kaya nalalapat ito sa mga image block, photo grid, at masonry.",
+          "notUsedByLayout": "Hindi ginagamit ng layout na ito",
+          "popupLayouts": {
+            "contactSheet": { "label": "Contact sheet", "description": "Pantay na grid ng mga thumbnail, may opsyonal na header para sa koleksyon." },
+            "justified": { "label": "Justified", "description": "Mga larawang naka-pack sa hanay na iba't ibang lapad ngunit iisang taas." },
+            "splitIndex": { "label": "Split index", "description": "Matangkad na pangunahing larawan sa tabi ng dalawang-kolumnang index ng iba." },
+            "immersive": { "label": "Immersive", "description": "Isang malaking larawan paisa-isa, buong-viewport, may filmstrip sa ibaba." }
+          },
+          "imageModalLayouts": {
+            "caption": { "label": "Caption", "description": "Ang larawan na may caption bar sa ibaba." },
+            "sidebar": { "label": "Sidebar", "description": "Ang larawan sa tabi ng sidebar ng metadata." },
+            "cinema": { "label": "Cinema", "description": "Full-bleed na larawan na may minimal na chrome." },
+            "sheet": { "label": "Sheet", "description": "Ang larawan na may metadata sheet na dumudulas paitaas." }
           }
         },
         "puckConfig": {
           "categories": {
             "presets": "Mga preset na bloke",
-            "manual": "Mga manuwal na bloke"
+            "manual": "Mga manuwal na bloke",
+            "nav": "Navigation",
+            "hero": "Hero",
+            "about": "Tungkol sa Akin",
+            "services": "Mga Serbisyo",
+            "cta": "Call to action",
+            "contact": "Makipag-ugnayan",
+            "galleryGrid": "Gallery Grid",
+            "galleryMasonry": "Gallery Masonry",
+            "featuredWork": "Mga Itinatampok na Gawa",
+            "galleryLanding": "Gallery landing",
+            "video": "Video",
+            "footer": "Footer"
           },
           "blocks": {
-            "heroPreset": "Hero",
-            "aboutPreset": "Tungkol sa Akin",
-            "servicesPreset": "Mga Serbisyo",
-            "ctaPreset": "Call to action",
-            "contactPreset": "Makipag-ugnayan",
-            "galleryGridPreset": "Gallery Grid",
-            "galleryMasonryPreset": "Gallery Masonry",
-            "featuredWorkPreset": "Mga Itinatampok na Gawa",
-            "galleryLandingPreset": "Gallery landing",
-            "videoPreset": "Video Highlight",
+            "navigation": "Navigation",
+            "navigationPreset": "Navigation",
+            "navBorderedPreset": "May Border na Navbar",
+            "navUnderlinedPreset": "May Underline na Navbar",
+            "navScaledPreset": "Navbar na Lumalaki",
+            "heroPreset": "Immersive Cover",
+            "aboutPreset": "Editorial na Talambuhay",
+            "servicesPreset": "Mga Card ng Serbisyo",
+            "ctaPreset": "Makulay na Banda",
+            "contactPreset": "Nakasentrong Pakikipag-ugnayan",
+            "galleryGridPreset": "Klasikong Grid",
+            "galleryMasonryPreset": "Editorial na Kwento",
+            "featuredWorkPreset": "Overview ng Koleksyon",
+            "galleryLandingPreset": "Slideshow Cover",
+            "videoPreset": "Nakasentrong Video",
             "galleryGrid": "Photo Grid",
             "galleryMasonry": "Masonry",
             "featuredWork": "Mga Highlight",
@@ -2752,11 +2806,91 @@
             "spacer": "Spacer",
             "divider": "Divider",
             "columns": "Mga Kolum",
-            "container": "Container"
+            "container": "Container",
+            "pageBody": "Katawan ng pahina",
+            "collectionCard": "Card ng koleksyon",
+            "heroSplitPreset": "Split na Panimula",
+            "heroStatementPreset": "Typographic na Pahayag",
+            "aboutPortraitPreset": "Portrait at Kwento",
+            "aboutProfilePreset": "Profile ng Studio",
+            "servicesMenuPreset": "Editorial na Menu",
+            "servicesFeaturePreset": "Itinatampok na Serbisyo",
+            "ctaImagePreset": "Larawang Paanyaya",
+            "ctaMinimalPreset": "Minimal na Pangwakas",
+            "contactSplitPreset": "Split na Inquiry",
+            "contactBarPreset": "Compact na Contact Bar",
+            "galleryGridFullPreset": "Full-Width na Grid",
+            "galleryGridFramedPreset": "Framed na Seleksyon",
+            "galleryMasonryWallPreset": "Edge-to-Edge na Pader",
+            "galleryMasonryJournalPreset": "Journal Spread",
+            "featuredWorkLeadPreset": "Mga Nangungunang Koleksyon",
+            "featuredWorkIndexPreset": "Compact na Project Index",
+            "galleryLandingSplitPreset": "Split na Panimula ng Gallery",
+            "galleryLandingMastheadPreset": "Minimal na Masthead",
+            "videoSplitPreset": "Video at Kwento",
+            "videoCinemaPreset": "Cinema na Banda",
+            "footerSignaturePreset": "Signature Footer",
+            "footerDirectoryPreset": "Directory Footer",
+            "footerStatementPreset": "Pangwakas na Pahayag"
+          },
+          "manualDescriptions": {
+            "galleryGrid": "Ipinapakita ang mga napiling larawan ng gallery sa isang nae-edit na grid ng mga row at column.",
+            "galleryMasonry": "Ipinapakita ang mga napiling larawan sa magkakaibang taas na mga column habang pinapanatili ang proporsyon.",
+            "collectionCard": "Naglalagay ng link sa isang gallery collection na may nae-edit na cover, pamagat, at caption.",
+            "heading": "Nagdaragdag ng nae-edit na heading na may mga kontrol sa level, typography, kulay, at alignment.",
+            "text": "Nagdaragdag ng nae-edit na body copy na may mga kontrol sa typography, kulay, lapad, at alignment.",
+            "image": "Nagdaragdag ng isang nae-edit na larawan na may mga kontrol sa crop, laki, radius, at alt text.",
+            "button": "Nagdaragdag ng call-to-action button na maaaring magbukas ng Contact o lumipat sa mga portfolio page.",
+            "video": "Nag-e-embed ng YouTube o Vimeo video na may opsyonal na heading at caption.",
+            "columns": "Gumagawa ng responsive grid kung saan maaaring ilagay at baguhin ang laki ng mga block sa mga column at row.",
+            "container": "Gumagawa ng styled section na nagpapangkat ng mga block na may sariling spacing, alignment, at background.",
+            "contactDetails": "Ipinapakita ang email, telepono, at address ng workspace mula sa iyong contact settings.",
+            "spacer": "Nagdaragdag ng naa-adjust na bakanteng vertical space sa pagitan ng mga block.",
+            "divider": "Nagdaragdag ng horizontal rule na may naa-adjust na lapad, kapal, kulay, at spacing."
+          },
+          "presetDescriptions": {
+            "navigationPreset": "Isang flexible na site header na may nae-edit na branding, links, at contact button. Papalitan nito ang kasalukuyang header ng page.",
+            "navBorderedPreset": "Bottom border at naka-highlight na active link sa compact na bar. Papalitan nito ang kasalukuyang header ng page.",
+            "navUnderlinedPreset": "Tahimik na bar na may accent underline sa ilalim ng active link. Papalitan nito ang kasalukuyang header ng page.",
+            "navScaledPreset": "Lumalaki ang active link sa halip na fill o underline. Papalitan nito ang kasalukuyang header ng page.",
+            "heroPreset": "Mataas na larawan o slideshow background na may nakasentrong text sa ibabaw ng scrim.",
+            "heroSplitPreset": "Text at CTA sa tabi ng larawang may sariling proportions.",
+            "heroStatementPreset": "Malaking headline, divider, at maigsing CTA — walang kailangang larawan.",
+            "aboutPreset": "Heading at mahabang talambuhay sa readable na sukat.",
+            "aboutPortraitPreset": "Portrait sa tabi ng kwento, bawat isa ay editable nang hiwalay.",
+            "aboutProfilePreset": "Dalawang track ang kwento; kasama ang location, experience, at specialty.",
+            "servicesPreset": "Tatlong magkapantay na bordered package na may presyong nakahanay.",
+            "servicesMenuPreset": "Mga stacked row na hinati sa title, description, at presyo, walang card frame.",
+            "servicesFeaturePreset": "Isang prominenteng split service ang nangunguna, may dalawa pang tahimik sa ibaba.",
+            "ctaPreset": "Nakasentrong makulay na banda na may closing CTA para sa contact.",
+            "ctaImagePreset": "Closing copy at CTA sa tabi ng nae-edit na larawan.",
+            "ctaMinimalPreset": "Divider at headline sa tabi ng button sa contrasting na banda.",
+            "contactPreset": "Heading, panimula, contact details, at CTA — nakasentro.",
+            "contactSplitPreset": "Kwento at CTA sa tabi ng contact details sa restrained na frame.",
+            "contactBarPreset": "Malapad na closing row na nagsta-stack ayon sa reading order sa phone.",
+            "galleryGridPreset": "Heading at description sa itaas ng three-column grid.",
+            "galleryGridFullPreset": "Minimal na header sa itaas ng edge-to-edge na four-column grid.",
+            "galleryGridFramedPreset": "Padded at bordered na seksyon sa paligid ng maliit na curated set.",
+            "galleryMasonryPreset": "Heading at description sa itaas ng masonry flow.",
+            "galleryMasonryWallPreset": "Full width na may tight gutters — nagiging isang pader ang mga larawan.",
+            "galleryMasonryJournalPreset": "Isang track ang panimula habang ang masonry ay umaabot sa natitira.",
+            "featuredWorkPreset": "Panimula sa itaas ng tatlong clickable na collection tile.",
+            "featuredWorkLeadPreset": "Dalawang malaking koleksyon sa landscape crop sa ilalim ng mas malakas na panimula.",
+            "featuredWorkIndexPreset": "Compact na square collection tile sa contrasting na banda.",
+            "galleryLandingPreset": "Medium-height na larawan o slideshow landing na may nakasentrong text.",
+            "galleryLandingSplitPreset": "Text sa tabi ng isang signature na larawan, editable nang hiwalay.",
+            "galleryLandingMastheadPreset": "Type-led na title at divider para direktang magsimula ang gallery.",
+            "videoPreset": "Nakasentrong heading, description, at naka-embed na video.",
+            "videoSplitPreset": "Mas malaking bahagi ng split ang video, may context sa tabi.",
+            "videoCinemaPreset": "Full-width na video sa contrasting na banda na may caption sa ibaba.",
+            "footerSignaturePreset": "Divider, pangalan ng studio, at maigsing Home, Gallery, at Contact links.",
+            "footerDirectoryPreset": "Tatlong column para sa identity, navigation, at contact details.",
+            "footerStatementPreset": "Contrasting na banda na may final statement, CTA, at tahimik na copyright line."
           },
           "fields": {
             "style": "Estilo",
             "pageStyle": "Estilo ng pahina",
+            "pageBodyMargin": "Pahalang na margin ng pahina",
             "bgAnimation": "Animasyon ng background",
             "bgAnimationShort": "BG animation",
             "bgSpeed": "Bilis ng animasyon",
@@ -2772,7 +2906,6 @@
             "videoUrl": "URL ng YouTube o Vimeo",
             "imageField": "Larawan",
             "imageUrl": "URL ng larawan (fallback)",
-            "imageAlt": "Alt na teksto",
             "imageFit": "Fit",
             "buttonLabel": "Label ng pindutan",
             "buttonSize": "Sukat",
@@ -2781,7 +2914,10 @@
             "spacerHeight": "Taas",
             "dividerThickness": "Kapal (px)",
             "columnsCount": "Mga kolum",
-            "rowsCount": "Mga hilera"
+            "rowsCount": "Mga hilera",
+            "collectionCrop": "Crop",
+            "collectionCaption": "Caption",
+            "overlayColor": "Kulay ng overlay"
           },
           "options": {
             "bgAnimation": {
@@ -2840,14 +2976,28 @@
             },
             "buttonAction": {
               "openContact": "Buksan ang form ng pakikipag-ugnayan",
-              "goToGallery": "Pumunta sa pahina ng Gallery"
+              "goToGallery": "Pumunta sa pahina ng Gallery",
+              "goToHome": "Pumunta sa pahina ng Home"
             },
             "buttonAlign": {
               "left": "Kaliwa",
               "center": "Gitna",
               "right": "Kanan"
+            },
+            "collectionCaption": {
+              "show": "Ipakita",
+              "hide": "Itago"
+            },
+            "overlayColor": {
+              "none": "Wala (itim)",
+              "primary": "Pangunahin",
+              "secondary": "Pangalawa",
+              "accent": "Accent",
+              "background": "Background",
+              "foreground": "Foreground"
             }
-          }
+          },
+          "dragToAddHint": "I-drag ang block na ito para idagdag sa iyong pahina."
         },
         "tour": {
           "next": "Susunod",
@@ -2893,22 +3043,6 @@
             "switchPages": {
               "title": "Lumipat sa pagitan ng mga pahina",
               "body": "Lumipat sa pagitan ng iba't ibang bahagi ng iyong portfolio website."
-            },
-            "openNav": {
-              "title": "Buksan ang Navigation",
-              "body": "I-click ang Navigation para i-set up ang header ng iyong site — brand, logo, mga link ng menu, at styling."
-            },
-            "navSetup": {
-              "title": "Navigation · Setup",
-              "body": "Ang tab na Setup ang lugar kung saan mo itatakda ang iyong brand text, laki ng navbar, logo, at mga link ng menu."
-            },
-            "logo": {
-              "title": "Nandito ang iyong logo",
-              "body": "Ito ang iyong logo uploader — ang PNG, JPEG, o WEBP na idinagdag dito ay lilitaw sa header ng iyong live na pahina."
-            },
-            "navDesign": {
-              "title": "Navigation · Design",
-              "body": "Kinokontrol ng tab na Design ang mga kulay ng header, mga border, at typography para sa iyong mga nav link."
             },
             "contactForm": {
               "title": "Ang iyong inquiry form",
@@ -3134,6 +3268,7 @@
         "publish": "Handa nang mag-live? Isang Gallurio Pro feature ang pag-publish. Mag-sign up para sa isang libreng buwan at ilagay ang site mo sa internet ngayon.",
         "theme": "Gusto mong lubusang i-customize ang mga kulay at font mo? Pro feature iyon. Mag-sign up para sa isang libreng buwan para ma-unlock ang buong theme editing.",
         "cta": "Mag-sign up para makapag-build nang walang restriction",
+        "signInCta": "Mag-sign in sa halip",
         "dismiss": "Magpatuloy sa pag-explore",
         "promoReveal": "Ang galing mong mag-explore sa editor! Narito ang bonus code para sa dagdag na libreng buwan, idinagdag sa libreng buwan mula sa sign up mo: {code}"
       },
@@ -3307,10 +3442,18 @@
       "payload_too_large": "Masyadong malaki para i-save. Bawasan ang laki at subukan muli.",
       "collection_load_failed": "Hindi ma-load ang koleksyon. Pakisubukan muli.",
       "collection_rename_failed": "Hindi mabago ang pangalan ng koleksyon. Pakisubukan muli.",
+      "collection_description_failed": "Hindi ma-save ang paglalarawan. Pakisubukan muli.",
       "cover_set_failed": "Hindi matakda ang cover. Pakisubukan muli.",
       "order_save_failed": "Hindi ma-save ang bagong order. Pakisubukan muli.",
       "photo_remove_failed": "Hindi maalis ang larawan. Pakisubukan muli.",
-      "photo_add_failed": "Hindi maidagdag ang larawan. Pakisubukan muli."
+      "photo_add_failed": "Hindi maidagdag ang larawan. Pakisubukan muli.",
+      "upload_type_not_accepted": "Hindi suportado ang \"{type}\". Mag-upload ng {accepted} sa halip.",
+      "upload_file_too_large": "{actual} MB ang file na iyon. Ang limitasyon ay {limit} MB.",
+      "upload_dimension_too_small": "{width}×{height}px ang larawang iyon. Dapat itong hindi bababa sa {min}px sa mas maikling gilid.",
+      "upload_invalid_image": "Hindi mabasa ang file na iyon bilang larawan. Subukan ang ibang file.",
+      "upload_quota_exceeded": "Naabot mo na ang limitasyon ng larawan. Mag-alis ng ilang larawan at subukan muli.",
+      "upload_rate_limited": "Sobrang dami ng pag-upload — maghintay sandali at subukan muli.",
+      "upload_network_error": "Hindi maabot ang server. Suriin ang iyong koneksyon at subukan muli."
     }
   },
   "common": {
@@ -3427,6 +3570,7 @@
       "settingUp": "Sine-set up ang iyong dashboard…",
       "settingUpCompact": "Inihahanda…",
       "goToDashboard": "Pumunta sa iyong dashboard",
+      "goToPortfolio": "Magpatuloy sa iyong portfolio",
       "footer": {
         "everything": "Lahat nasa iisang lugar",
         "grow": "Ginawa para lumago kasama ka",
@@ -3528,7 +3672,13 @@
         "featuredEmpty": "Wala pang piniling itinatampok na larawan.",
         "carouselHint": "Mag-swipe o gamitin ang mga arrow para mag-browse",
         "carouselPrev": "Nakaraang larawan",
-        "carouselNext": "Susunod na larawan"
+        "carouselNext": "Susunod na larawan",
+        "lightboxClose": "Isara",
+        "lightboxCounter": "{current} ng {total}",
+        "lightboxFilmstrip": "Filmstrip ng mga larawan",
+        "lightboxSeeMore": "Tingnan pa",
+        "lightboxSeeLess": "Ipakita nang mas kaunti",
+        "lightboxPhotoOf": "Larawan {current} ng {total}"
       }
     },
     "nav": {
@@ -3592,7 +3742,17 @@
       "failed": "Nabigong mag-load ng mga larawan.",
       "retry": "Subukang muli",
       "empty": "Wala pang mga larawan sa koleksyong ito.",
-      "fullSizeAlt": "Larawan sa buong sukat"
+      "fullSizeAlt": "Larawan sa buong sukat",
+      "openPhoto": "Buksan ang larawan",
+      "photo": "Larawan",
+      "loadMore": "Mag-load pa",
+      "loadingMore": "Naglo-load pa...",
+      "loadMoreFailed": "Nabigong mag-load ng karagdagang mga larawan.",
+      "photoCountOne": "1 larawan",
+      "photoCountOther": "{count} na larawan",
+      "previousPhoto": "Nakaraang larawan",
+      "nextPhoto": "Susunod na larawan",
+      "filmstripLabel": "Filmstrip ng mga larawan"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. Tingnan ang mga bagong gawa at mag-book agad.",

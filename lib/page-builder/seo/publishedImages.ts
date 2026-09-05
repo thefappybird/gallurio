@@ -13,10 +13,15 @@ export type PublishedImage = { url: string; alt: string };
 
 export const PUBLISHED_IMAGE_CAP = 100;
 
-/** Gallery block types whose `images[]` are real published photos. */
+/** Legacy gallery block types whose `images[]` are real published photos. */
 const GALLERY_IMAGE_BLOCK_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
 
 type StoredImage = { publicId?: unknown; alt?: unknown };
+type StoredImageBlock = {
+  alt?: unknown;
+  imagePublicId?: unknown;
+  _style?: { bgImagePublicId?: unknown };
+};
 type StoredCollectionRef = { id?: unknown };
 
 function isPuckData(data: unknown): data is PuckData {
@@ -81,11 +86,19 @@ export function collectPublishedGalleryImages(
   if (!isPuckData(data)) return [];
   const raw: PublishedImage[] = [];
   for (const block of collectBlocks(data)) {
-    if (!GALLERY_IMAGE_BLOCK_TYPES.has(block.type)) continue;
-    const images = block.props?.images;
-    if (!Array.isArray(images)) continue;
-    for (const img of images as StoredImage[]) {
-      const pub = toPublishedImage(img.publicId, img.alt);
+    if (GALLERY_IMAGE_BLOCK_TYPES.has(block.type)) {
+      const images = block.props?.images;
+      if (!Array.isArray(images)) continue;
+      for (const img of images as StoredImage[]) {
+        const pub = toPublishedImage(img.publicId, img.alt);
+        if (pub) raw.push(pub);
+      }
+      continue;
+    }
+    if (block.type === "Image") {
+      const image = block.props as StoredImageBlock | undefined;
+      const publicId = image?._style?.bgImagePublicId ?? image?.imagePublicId;
+      const pub = toPublishedImage(publicId, image?.alt);
       if (pub) raw.push(pub);
     }
   }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ImagePlusIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
+import { ImagePlusIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { usePickerData } from "./usePickerData";
+import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { EditCollectionDialog } from "./EditCollectionDialog";
 import type { PickerCollection } from "./types";
@@ -61,9 +62,40 @@ export function CollectionsManagerDialog({
 
   const collections: PickerCollection[] = state.status === "ok" ? state.data.collections : [];
 
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      setEditing(null);
+      setCreateOpen(false);
+      setPendingDelete(null);
+      setDeleteError(null);
+    }
+    onOpenChange(next);
+  }
+
+  // One stable <Dialog>/<DialogContent> pair for the whole list <-> embedded
+  // edit toggle — swapping DialogContent itself (rather than its children)
+  // desyncs Base UI's open/escape/focus tracking between two Popup
+  // instances, which is what caused Done/X/Escape to stop working after the
+  // first collection edit. See EditCollectionDialog's `embedded` mode: it
+  // hands back header/body/footer/extras JSX instead of its own DialogContent.
+  const editContentClass =
+    "flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl";
+  const listContentClass = "flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-4xl";
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-4xl">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className={editing ? editContentClass : listContentClass}>
+        {editing ? (
+          <EditCollectionDialog
+            open
+            embedded
+            onBack={() => setEditing(null)}
+            onOpenChange={handleOpenChange}
+            collection={editing}
+            onChanged={retry}
+          />
+        ) : (
+          <>
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
@@ -83,10 +115,10 @@ export function CollectionsManagerDialog({
           </div>
 
           {state.status === "loading" ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2Icon className="size-4 animate-spin" aria-hidden />
-              {t("loading")}
-            </div>
+            <GridSkeleton
+              gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+              label={t("loading")}
+            />
           ) : state.status === "error" ? (
             <div className="flex flex-col gap-2">
               <p role="alert" className="text-sm text-destructive">{t("error")}</p>
@@ -151,10 +183,12 @@ export function CollectionsManagerDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
             {t("done")}
           </Button>
         </DialogFooter>
+          </>
+        )}
       </DialogContent>
 
       {/* Nested: create a new collection */}
@@ -165,14 +199,6 @@ export function CollectionsManagerDialog({
           setCreateOpen(false);
           retry();
         }}
-      />
-
-      {/* Nested: edit an existing collection */}
-      <EditCollectionDialog
-        open={editing !== null}
-        onOpenChange={(n) => { if (!n) setEditing(null); }}
-        collection={editing}
-        onChanged={retry}
       />
 
       {/* Nested: confirm hard delete */}

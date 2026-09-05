@@ -93,7 +93,6 @@ vi.mock("../_actions", () => ({
 }));
 
 import { uploadImage } from "@/lib/storage/uploadImage.client";
-import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { publishDraftAction } from "../../portfolio/_draftActions";
 import {
   togglePublicPagePublishedAction,
@@ -110,66 +109,13 @@ vi.mock("sonner", () => ({
 
 // ── Component import (after mocks) ──────────────────────────────────────────
 
-import { PublicPageSettingsForm, parseSeoKeywords } from "./_form";
+import { PublicPageSettingsForm } from "./_form";
 import type { PublicPageSettingsInput } from "@/lib/validators/workspace";
-
-describe("parseSeoKeywords", () => {
-  it("splits comma-separated phrases and preserves internal spaces", () => {
-    expect(parseSeoKeywords("wedding photographer, editorial, bay area")).toEqual([
-      "wedding photographer",
-      "editorial",
-      "bay area",
-    ]);
-  });
-
-  it("splits on newlines", () => {
-    expect(parseSeoKeywords("wedding photographer\neditorial\nbay area")).toEqual([
-      "wedding photographer",
-      "editorial",
-      "bay area",
-    ]);
-  });
-
-  it("splits on a mix of commas and newlines", () => {
-    expect(parseSeoKeywords("wedding photographer,\neditorial\n, bay area")).toEqual([
-      "wedding photographer",
-      "editorial",
-      "bay area",
-    ]);
-  });
-
-  it("collapses leading, trailing, and duplicate separators", () => {
-    expect(parseSeoKeywords(",, wedding photographer ,,, editorial ,,")).toEqual([
-      "wedding photographer",
-      "editorial",
-    ]);
-  });
-
-  it("dedupes case-insensitively, keeping the first occurrence's casing", () => {
-    expect(parseSeoKeywords("Wedding Photographer, wedding photographer, EDITORIAL")).toEqual([
-      "Wedding Photographer",
-      "EDITORIAL",
-    ]);
-  });
-
-  it("returns an empty array for an empty string", () => {
-    expect(parseSeoKeywords("")).toEqual([]);
-  });
-
-  it("preserves multiple internal spaces within a phrase after trimming", () => {
-    expect(parseSeoKeywords("bay   area, wedding photographer")).toEqual([
-      "bay   area",
-      "wedding photographer",
-    ]);
-  });
-});
 
 const baseDefaults: PublicPageSettingsInput = {
   seoTitle: "",
   seoDescription: "",
   inquiryRecipientEmail: "",
-  logoUrl: "",
-  logoAssetId: "",
   siteIconUrl: "",
   siteIconAssetId: "",
   seo: {
@@ -372,8 +318,8 @@ describe("PublicPageSettingsForm — site icon section", () => {
   });
 });
 
-describe("PublicPageSettingsForm — header logo section", () => {
-  it("renders the logo upload area when logoUrl is empty", () => {
+describe("PublicPageSettingsForm — header logo upload removed", () => {
+  it("does not render a header-logo upload control (persistence was dropped; Navigation block owns the logo now)", () => {
     render(
       <PublicPageSettingsForm
         slug="luna-studio"
@@ -382,228 +328,10 @@ describe("PublicPageSettingsForm — header logo section", () => {
         locale="en"
       />
     );
-    expect(screen.getByText("logoLabel")).toBeInTheDocument();
-  });
-
-  it("does not use the bare 'logoFile' id (collides with the workspace panel mounted alongside it)", () => {
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={baseDefaults}
-        locale="en"
-      />
-    );
-    expect(document.getElementById("logoFile")).not.toBeInTheDocument();
-    expect(document.getElementById("public-page-logoFile")).toBeInTheDocument();
-  });
-
-  it("shows logo preview when logoUrl is set in defaults", () => {
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={{ ...baseDefaults, logoUrl: "https://cdn.example.com/logo.png" }}
-        locale="en"
-      />
-    );
-    const img = screen.getByRole("img", { name: "logoLabel" });
-    expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute(
-      "src",
-      expect.stringContaining("https://cdn.example.com/logo.png"),
-    );
-  });
-
-  it("sets the hidden logo inputs after a successful upload", async () => {
-    vi.mocked(uploadAsset).mockResolvedValueOnce({
-      asset: { assetId: "logo-asset-1", url: "https://cdn.cf.net/logo-new.png" },
-    } as Awaited<ReturnType<typeof uploadAsset>>);
-
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={baseDefaults}
-        locale="en"
-      />
-    );
-
-    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
-    const file = new File(["data"], "logo.png", { type: "image/png" });
-
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-    });
-
-    expect(document.querySelector('input[name="logoUrl"]')).toHaveValue(
-      "https://cdn.cf.net/logo-new.png",
-    );
-    expect(document.querySelector('input[name="logoAssetId"]')).toHaveValue(
-      "logo-asset-1",
-    );
-  });
-
-  it("clears the hidden logo inputs when Remove is clicked", async () => {
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={{
-          ...baseDefaults,
-          logoUrl: "https://cdn.example.com/logo.png",
-          logoAssetId: "asset-x",
-        }}
-        locale="en"
-      />
-    );
-
-    const removeBtn = screen.getByRole("button", { name: "logoRemove" });
-    await act(async () => {
-      fireEvent.click(removeBtn);
-    });
-
-    expect(document.querySelector('input[name="logoUrl"]')).toHaveValue("");
-    expect(document.querySelector('input[name="logoAssetId"]')).toHaveValue("");
-    expect(screen.getByText("logoLabel")).toBeInTheDocument();
-  });
-
-  it("clicking Replace opens the file dialog for the hidden logo input", async () => {
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={{ ...baseDefaults, logoUrl: "https://cdn.example.com/logo.png" }}
-        locale="en"
-      />
-    );
-
-    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
-    const clickSpy = vi.spyOn(fileInput, "click");
-
-    const replaceBtn = screen.getByRole("button", { name: "logoReplace" });
-    await act(async () => {
-      fireEvent.click(replaceBtn);
-    });
-
-    expect(clickSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows an error alert when the logo upload fails", async () => {
-    vi.mocked(uploadAsset).mockResolvedValueOnce({
-      error: "file_too_large",
-    } as Awaited<ReturnType<typeof uploadAsset>>);
-
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={baseDefaults}
-        locale="en"
-      />
-    );
-
-    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
-    const file = new File(["data"], "logo.png", { type: "image/png" });
-
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-    });
-
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-  });
-
-  it("shows the uploading state while a logo upload is in flight", async () => {
-    let resolveUpload!: (v: Awaited<ReturnType<typeof uploadAsset>>) => void;
-    vi.mocked(uploadAsset).mockReturnValueOnce(
-      new Promise((res) => {
-        resolveUpload = res;
-      }),
-    );
-
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={baseDefaults}
-        locale="en"
-      />
-    );
-
-    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
-    const file = new File(["data"], "logo.png", { type: "image/png" });
-
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-    });
-
-    expect(screen.getByText("logoUploading")).toBeInTheDocument();
-
-    await act(async () => {
-      resolveUpload({
-        asset: { assetId: "a", url: "https://cdn.cf.net/x.png" },
-      } as Awaited<ReturnType<typeof uploadAsset>>);
-    });
-  });
-
-  it("shows an error alert when the logo upload throws", async () => {
-    vi.mocked(uploadAsset).mockRejectedValueOnce(new Error("upload_failed"));
-
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={baseDefaults}
-        locale="en"
-      />
-    );
-
-    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
-    const file = new File(["data"], "logo.png", { type: "image/png" });
-
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-    });
-
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-  });
-
-  it("flags pending changes after saving a newly uploaded logo", async () => {
-    vi.mocked(uploadAsset).mockResolvedValueOnce({
-      asset: { assetId: "logo-a", url: "https://cdn.cf.net/logo.png" },
-    } as Awaited<ReturnType<typeof uploadAsset>>);
-    vi.mocked(updatePublicPageSettingsAction).mockResolvedValueOnce({
-      ok: true,
-    } as Awaited<ReturnType<typeof updatePublicPageSettingsAction>>);
-
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={new Date("2026-01-01")}
-        defaults={baseDefaults}
-        locale="en"
-        targetDraftId="draft-1"
-        initialHasPendingChanges={false}
-        publishedDefaults={baseDefaults}
-      />
-    );
-
-    const fileInput = document.querySelector("#public-page-logoFile") as HTMLInputElement;
-    const file = new File(["data"], "logo.png", { type: "image/png" });
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-    });
-
-    const saveBtn = screen.getByText("save").closest("button")!;
-    await act(async () => {
-      fireEvent.click(saveBtn);
-    });
-
-    expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
-
-    // These mocks have no shared reset; clear our call so the later
-    // absolute-call-count assertion in the keywords suite stays accurate.
-    vi.mocked(updatePublicPageSettingsAction).mockClear();
+    expect(screen.queryByText("logoLabel")).not.toBeInTheDocument();
+    expect(document.getElementById("public-page-logoFile")).not.toBeInTheDocument();
+    expect(document.querySelector('input[name="logoUrl"]')).not.toBeInTheDocument();
+    expect(document.querySelector('input[name="logoAssetId"]')).not.toBeInTheDocument();
   });
 });
 
@@ -810,9 +538,10 @@ describe("PublicPageSettingsForm — SEO keywords pending recompute after Save",
     );
 
     const keywordsInput = screen.getByLabelText("seoKeywords");
-    fireEvent.change(keywordsInput, {
-      target: { value: "wedding photographer, editorial" },
-    });
+    fireEvent.change(keywordsInput, { target: { value: "wedding photographer" } });
+    fireEvent.keyDown(keywordsInput, { key: "," });
+    fireEvent.change(keywordsInput, { target: { value: "editorial" } });
+    fireEvent.blur(keywordsInput);
 
     const saveBtn = screen.getByText("save").closest("button")!;
     await act(async () => {
@@ -830,53 +559,28 @@ describe("PublicPageSettingsForm — SEO keywords pending recompute after Save",
     expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "publish" })).toBeEnabled();
   });
-});
 
-describe("PublicPageSettingsForm — SEO keywords typing round-trip", () => {
-  it("does not eat a trailing separator while typing, but the form value holds only the parsed phrase", () => {
+  it("keeps a multi-word phrase as one tag when typed with space keydowns, comma-committed", async () => {
     render(
       <PublicPageSettingsForm
         slug="luna-studio"
-        publishedAt={null}
+        publishedAt={new Date("2026-01-01")}
         defaults={baseDefaults}
         locale="en"
+        targetDraftId="draft-1"
       />
     );
 
-    const keywordsInput = screen.getByLabelText("seoKeywords") as HTMLInputElement;
-    fireEvent.change(keywordsInput, {
-      target: { value: "wedding photographer, " },
-    });
+    const keywordsInput = screen.getByLabelText("seoKeywords");
+    // Simulate real typing: each character change followed by the actual
+    // keydown for spaces inside the phrase — space must NOT commit here.
+    fireEvent.change(keywordsInput, { target: { value: "wedding" } });
+    fireEvent.keyDown(keywordsInput, { key: " " });
+    fireEvent.change(keywordsInput, { target: { value: "wedding photographer" } });
+    expect(screen.queryByText("wedding")).not.toBeInTheDocument();
+    fireEvent.keyDown(keywordsInput, { key: "," });
 
-    expect(keywordsInput.value).toBe("wedding photographer, ");
-  });
-
-  it("re-seeds the raw input from new defaults", () => {
-    const { rerender } = render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={baseDefaults}
-        locale="en"
-      />
-    );
-
-    const keywordsInput = screen.getByLabelText("seoKeywords") as HTMLInputElement;
-    expect(keywordsInput.value).toBe("");
-
-    rerender(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={{
-          ...baseDefaults,
-          seo: { ...baseDefaults.seo!, keywords: ["wedding photographer", "editorial"] },
-        }}
-        locale="en"
-      />
-    );
-
-    expect(keywordsInput.value).toBe("wedding photographer, editorial");
+    expect(screen.getByText("wedding photographer")).toBeInTheDocument();
   });
 });
 

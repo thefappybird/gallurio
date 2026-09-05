@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Types } from "mongoose";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { buildRenderWorkspace } from "@/lib/page-builder/serverContext";
@@ -7,11 +8,12 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { routing } from "@/lib/i18n/routing";
+import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
+import { PortfolioDraft } from "@/lib/db/models";
 import {
   DEFAULT_BRAND_KIT,
   type PortfolioContactConfig,
   type PortfolioCollectionsPopupConfig,
-  type PortfolioHeaderConfig,
   type PuckData,
 } from "@/lib/page-builder/types";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
@@ -23,7 +25,6 @@ import { PreviewContactCard } from "./_components/PreviewContactCard";
 import { PreviewContactModal } from "./_components/PreviewContactModal";
 import { PreviewClient } from "./_components/PreviewClient";
 import { PreviewBrandShell } from "./_components/PreviewBrandShell";
-import { PreviewHeaderShell } from "./_components/PreviewHeaderShell";
 import { PreviewPopupShell } from "./_components/PreviewPopupShell";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
@@ -54,10 +55,12 @@ function parseZone(value: string | string[] | undefined): PreviewZone {
  *   editor's CollectionsPopupPreview; driven by the localStorage draft config
  *   (via PreviewBrandShell → PreviewDraftContext) with DB fallback.
  *
- * Brand-kit CSS vars, header config, contact config, and collectionsPopup config
- * are initially sourced from DB; PreviewBrandShell and the Preview*Shell client
- * components override each with the localStorage draft on mount, so unsaved
- * edits are visible in preview without saving.
+ * Brand-kit CSS vars, contact config, and collectionsPopup config are initially
+ * sourced from DB; PreviewBrandShell and the Preview*Shell client components
+ * override each with the localStorage draft on mount, so unsaved edits are
+ * visible in preview without saving. The header is no longer a separate
+ * shell — it renders inline as the page's own Navigation block, same as the
+ * public site.
  */
 export default async function PortfolioPreviewPage({
   params,
@@ -68,6 +71,7 @@ export default async function PortfolioPreviewPage({
     zone?: string | string[];
     formLocale?: string | string[];
     formDir?: string | string[];
+    draftId?: string | string[];
   }>;
 }) {
   const { locale } = await params;
@@ -96,17 +100,8 @@ export default async function PortfolioPreviewPage({
     chromeLocale,
   );
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
-  // DB fallback — PreviewHeaderShell overrides with the localStorage draft on mount.
-  const headerConfig = (pp?.header ?? null) as PortfolioHeaderConfig | null;
   // DB fallback — PreviewPopupShell overrides with the localStorage draft on mount.
   const collectionsPopupConfig = (pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
-  const activePath = zone === "gallery" ? `/w/${workspace.slug}/gallery` : `/w/${workspace.slug}`;
-  // Keep the logo + Home link within the preview iframe; do not navigate to the
-  // published public site.
-  const previewHomeHref = `/${locale}/portfolio-preview`;
-  // Keep the Gallery link within the preview iframe; do not navigate to the
-  // published public site.
-  const previewGalleryHref = `/${locale}/portfolio-preview?zone=gallery`;
 
   // Built unconditionally so PreviewContactModal can mount in home/gallery zones,
   // enabling the navbar Contact button to open the modal (mirrors public layout).
@@ -137,10 +132,51 @@ export default async function PortfolioPreviewPage({
     body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} />;
   } else {
     const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
+    let fallbackData: PuckData =
+      ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
+      { content: [], root: {} };
+    let resolvedCollectionsPopup = collectionsPopupConfig;
+    const draftIdParam = typeof sp.draftId === "string" ? sp.draftId : undefined;
+    let resolvedDraftId: string | null = null;
+    if (draftIdParam && Types.ObjectId.isValid(draftIdParam)) {
+      const draftDoc = await PortfolioDraft.findOne(
+        { _id: draftIdParam, workspaceId: workspace._id },
+        { data: 1, collectionsPopup: 1 },
+      ).lean();
+      const draftZoneData = draftDoc?.data?.[zone] as PuckData | undefined;
+      if (draftDoc && draftZoneData) {
+        fallbackData = draftZoneData;
+        resolvedDraftId = draftIdParam;
+        resolvedCollectionsPopup =
+          (draftDoc.collectionsPopup as PortfolioCollectionsPopupConfig | null | undefined) ??
+          collectionsPopupConfig;
+      }
+    }
+    // Preview-scoped nav override — keeps the Navigation block's Home/Gallery
+    // links inside this iframe instead of navigating to the live public site
+    // (see blockContext.ts's `RenderWorkspace.previewNav`). formLocale/formDir
+    // are re-appended so an in-editor language switch survives a Home<->Gallery
+    // click inside the preview.
+    const previewBasePath = `/${locale}/portfolio-preview`;
+    const previewQuery =
+      `formLocale=${chromeLocale}&formDir=${effectiveDir}` +
+      (resolvedDraftId ? `&draftId=${encodeURIComponent(resolvedDraftId)}` : "");
+    const previewHomeHref = `${previewBasePath}?zone=home&${previewQuery}`;
+    const previewGalleryHref = `${previewBasePath}?zone=gallery&${previewQuery}`;
+    const baseRenderWorkspace = buildRenderWorkspace(workspace);
     const renderWorkspace = {
-      ...buildRenderWorkspace(workspace),
+      ...baseRenderWorkspace,
+      publicPage: {
+        ...(baseRenderWorkspace.publicPage ?? {}),
+        collectionsPopup: resolvedCollectionsPopup,
+      },
       locale: chromeLocale,
       brandVars: cssVars,
+      previewNav: {
+        homeHref: previewHomeHref,
+        galleryHref: previewGalleryHref,
+        activePath: zone === "gallery" ? previewGalleryHref : previewHomeHref,
+      },
       chrome: {
         startingFrom: t("startingFrom", { price: "{price}" }),
         socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),
@@ -154,12 +190,29 @@ export default async function PortfolioPreviewPage({
           carouselPrev: t("gallery.carouselPrev"),
           carouselNext: t("gallery.carouselNext"),
         },
+        nav: {
+          navLandmark: tNav("navLandmark"),
+          home: tNav("home"),
+          gallery: tNav("gallery"),
+          contact: tNav("contact"),
+          openMenu: tNav("openMenu"),
+          closeMenu: tNav("closeMenu"),
+        },
       },
     };
 
-    const fallbackData: PuckData =
-      ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
-      { content: [], root: {} };
+    // Tracks which draft fallbackData actually corresponds to, so the client
+    // only applies its localStorage buffer when it matches — otherwise a
+    // stale buffer for a different draft would render instead of the
+    // requested one.
+    // Same rebuild the editor canvas applies (see app/[locale]/(app)/portfolio/page.tsx's
+    // reconcileZone) — keeps the preview's image cache/collections in sync with live
+    // GalleryItems/GalleryCollections instead of showing what was baked at save time.
+    const workspaceId = String(workspace._id);
+    fallbackData = await reconcileFeaturedCollections(
+      workspaceId,
+      await reconcileGalleryImages(workspaceId, fallbackData),
+    );
 
     body = (
       <PreviewClient
@@ -167,6 +220,7 @@ export default async function PortfolioPreviewPage({
         zone={zone}
         workspace={renderWorkspace}
         fallbackData={fallbackData}
+        draftId={resolvedDraftId}
       />
     );
   }
@@ -181,24 +235,8 @@ export default async function PortfolioPreviewPage({
         fallbackCssVars={cssVars}
         fallbackClassName={className}
       >
-        {showHeader && (
-          <PreviewHeaderShell
-            slug={workspace.slug}
-            fallbackConfig={headerConfig}
-            activePath={activePath}
-            homeHref={previewHomeHref}
-            galleryHref={previewGalleryHref}
-            labels={{
-              brand: workspace.name,
-              navLandmark: tNav("navLandmark"),
-              home: tNav("home"),
-              gallery: tNav("gallery"),
-              contact: tNav("contact"),
-              openMenu: tNav("openMenu"),
-              closeMenu: tNav("closeMenu"),
-            }}
-          />
-        )}
+        {/* The header now renders inline as the page's own Navigation block —
+            see PreviewClient's <Render> — not as a separate shell here. */}
         {body}
         {/* Mount contact modal only when the header is visible (home/gallery zones).
             The contact zone shows PreviewContactCard instead; popup zone has no header.

@@ -62,6 +62,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 
   const ogImageUrl = seo.ogImageUrl || undefined;
+  // Legacy `publicPage.header` logo is read only as a back-compat favicon
+  // fallback for pages published before the Navigation block existed.
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   // Use the resolved DB slug (always lowercase), never the raw route param —
@@ -125,6 +127,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   // at the page boundary so blocks stay synchronous and unit-testable.
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
+  const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
   const tPopup = await getTranslations({ locale, namespace: "publicPage.collectionPopup" });
 
   // Build JSON-LD once — injected in both the ComingSoon branch and the main render.
@@ -169,6 +172,20 @@ export default async function PortfolioHomePage({ params }: PageProps) {
         carouselHint: t("gallery.carouselHint"),
         carouselPrev: t("gallery.carouselPrev"),
         carouselNext: t("gallery.carouselNext"),
+        lightboxClose: t("gallery.lightboxClose"),
+        lightboxCounter: t("gallery.lightboxCounter", { current: "{current}", total: "{total}" }),
+        lightboxFilmstrip: t("gallery.lightboxFilmstrip"),
+        lightboxSeeMore: t("gallery.lightboxSeeMore"),
+        lightboxSeeLess: t("gallery.lightboxSeeLess"),
+        lightboxPhotoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+      },
+      nav: {
+        navLandmark: tNav("navLandmark"),
+        home: tNav("home"),
+        gallery: tNav("gallery"),
+        contact: tNav("contact"),
+        openMenu: tNav("openMenu"),
+        closeMenu: tNav("closeMenu"),
       },
     },
   };
@@ -182,6 +199,17 @@ export default async function PortfolioHomePage({ params }: PageProps) {
       retry: tPopup("retry"),
       empty: tPopup("empty"),
       fullSizeAlt: tPopup("fullSizeAlt"),
+      openPhoto: tPopup("openPhoto"),
+      photo: tPopup("photo"),
+      loadMore: tPopup("loadMore"),
+      loadingMore: tPopup("loadingMore"),
+      loadMoreFailed: tPopup("loadMoreFailed"),
+      photoCountOne: tPopup("photoCountOne"),
+      photoCountOther: tPopup("photoCountOther"),
+      previousPhoto: tPopup("previousPhoto"),
+      nextPhoto: tPopup("nextPhoto"),
+      filmstripLabel: tPopup("filmstripLabel"),
+      photoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
     },
   };
 

@@ -59,8 +59,24 @@ export type RenderWorkspace = {
   chrome?: {
     startingFrom?: string;
     gallery?: GalleryChromeLabels;
+    /** Localized strings consumed by the Navigation block (resolved at the page boundary). */
+    nav?: NavChromeLabels;
     /** External-link confirm template. Contains literal "{url}" for per-link substitution. */
     socialLinkConfirm?: string;
+  } | null;
+  /**
+   * Preview-scoped nav overrides — set ONLY by `app/[locale]/portfolio-preview/page.tsx`
+   * so the Navigation block's Home/Gallery links stay inside the preview iframe instead
+   * of navigating to the live public site, and active-link highlighting resolves against
+   * the iframe's own zone param (there is no real per-zone pathname there). Absent on the
+   * live public page and the editor canvas — NavigationBlock falls back to
+   * `portfolioHomePath`/`portfolioGalleryPath` and `usePathname()` in both cases.
+   */
+  previewNav?: {
+    homeHref?: string;
+    galleryHref?: string;
+    /** Which of homeHref/galleryHref is "current" for this preview render. */
+    activePath?: string;
   } | null;
 };
 
@@ -74,6 +90,28 @@ export type GalleryChromeLabels = {
   carouselHint?: string;
   carouselPrev?: string;
   carouselNext?: string;
+  /** View-image modal (Lightbox) close button. */
+  lightboxClose?: string;
+  /** View-image modal position counter. Template with literal "{current}"/"{total}" tokens. */
+  lightboxCounter?: string;
+  /** aria-label for the cinema layout's filmstrip listbox. */
+  lightboxFilmstrip?: string;
+  /** "See more" toggle for the collapsed facts/meta/tags panel inside the lightbox. */
+  lightboxSeeMore?: string;
+  /** "See less" — same toggle, expanded state. */
+  lightboxSeeLess?: string;
+  /** aria-label for a caption-layout pagination dot. Template with literal "{current}"/"{total}" tokens. */
+  lightboxPhotoOf?: string;
+};
+
+/** Localized strings consumed by the Navigation block (resolved at the page boundary). */
+export type NavChromeLabels = {
+  navLandmark?: string;
+  home?: string;
+  gallery?: string;
+  contact?: string;
+  openMenu?: string;
+  closeMenu?: string;
 };
 
 /** Localized strings consumed by the collection popup (resolved at the page boundary). */
@@ -84,6 +122,21 @@ export type CollectionPopupLabels = {
   retry?: string;
   empty?: string;
   fullSizeAlt?: string;
+  /** Aria-label fallback for a thumbnail button whose image has no alt text. */
+  openPhoto?: string;
+  /** Fallback word for a missing alt/placeholder ("Photo"). */
+  photo?: string;
+  loadMore?: string;
+  loadingMore?: string;
+  loadMoreFailed?: string;
+  photoCountOne?: string;
+  /** Contains the literal placeholder "{count}", swapped in by the caller. */
+  photoCountOther?: string;
+  previousPhoto?: string;
+  nextPhoto?: string;
+  filmstripLabel?: string;
+  /** Dot-pagination aria-label template. Contains literal "{current}"/"{total}" tokens. */
+  photoOf?: string;
 };
 
 /**
@@ -98,6 +151,17 @@ export function applyCollectionPopupDefaults(l: CollectionPopupLabels = {}): Req
     retry: l.retry ?? "Retry",
     empty: l.empty ?? "No photos in this collection yet.",
     fullSizeAlt: l.fullSizeAlt ?? "Full size photo",
+    openPhoto: l.openPhoto ?? "Open photo",
+    photo: l.photo ?? "Photo",
+    loadMore: l.loadMore ?? "Load more",
+    loadingMore: l.loadingMore ?? "Loading more...",
+    loadMoreFailed: l.loadMoreFailed ?? "Failed to load more photos.",
+    photoCountOne: l.photoCountOne ?? "1 photo",
+    photoCountOther: l.photoCountOther ?? "{count} photos",
+    previousPhoto: l.previousPhoto ?? "Previous photo",
+    nextPhoto: l.nextPhoto ?? "Next photo",
+    filmstripLabel: l.filmstripLabel ?? "Photo filmstrip",
+    photoOf: l.photoOf ?? "Photo {current} of {total}",
   };
 }
 
@@ -112,6 +176,9 @@ export function applyCollectionPopupDefaults(l: CollectionPopupLabels = {}): Req
 export type PortfolioRenderMetadata = {
   workspace?: RenderWorkspace;
   collectionPopupLabels?: CollectionPopupLabels;
+  /** Decorative sample media may replace empty states inside the drawer's
+   * insertion preview. Never set on the editor canvas or public renderer. */
+  presetPreview?: boolean;
 };
 
 /** The `puck` prop Puck injects into every rendered component. */
@@ -145,6 +212,12 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
     carouselHint: g.carouselHint ?? "Swipe or use the arrows to browse",
     carouselPrev: g.carouselPrev ?? "Previous image",
     carouselNext: g.carouselNext ?? "Next image",
+    lightboxClose: g.lightboxClose ?? "Close",
+    lightboxCounter: g.lightboxCounter ?? "{current} / {total}",
+    lightboxFilmstrip: g.lightboxFilmstrip ?? "Photo filmstrip",
+    lightboxSeeMore: g.lightboxSeeMore ?? "See more",
+    lightboxSeeLess: g.lightboxSeeLess ?? "See less",
+    lightboxPhotoOf: g.lightboxPhotoOf ?? "Photo {current} of {total}",
   };
 }
 
@@ -160,6 +233,32 @@ export function getGalleryChromeLabelsFrom(puck?: BlockPuck | null): Required<Ga
 }
 
 /**
+ * Applies the English fallback for every nav chrome label.
+ * Pure function — no ALS, no server-only imports.
+ */
+export function applyNavChromeDefaults(n: NavChromeLabels = {}): Required<NavChromeLabels> {
+  return {
+    navLandmark: n.navLandmark ?? "Portfolio",
+    home: n.home ?? "Home",
+    gallery: n.gallery ?? "Gallery",
+    contact: n.contact ?? "Contact",
+    openMenu: n.openMenu ?? "Open menu",
+    closeMenu: n.closeMenu ?? "Close menu",
+  };
+}
+
+/**
+ * Client-safe: localized nav chrome labels from Puck `metadata` (no ALS).
+ *
+ * Reads `puck.metadata.workspace.chrome.nav` and fills every missing key
+ * with an English default. Safe to import in client components because it never
+ * touches AsyncLocalStorage.
+ */
+export function getNavChromeLabelsFrom(puck?: BlockPuck | null): Required<NavChromeLabels> {
+  return applyNavChromeDefaults(puck?.metadata?.workspace?.chrome?.nav ?? {});
+}
+
+/**
  * Client-safe: the active workspace from Puck `metadata` (no ALS).
  *
  * Every real render path threads the workspace through Puck `metadata.workspace`
@@ -170,4 +269,15 @@ export function getGalleryChromeLabelsFrom(puck?: BlockPuck | null): Required<Ga
  */
 export function getRenderWorkspaceFrom(puck?: BlockPuck | null): RenderWorkspace | null {
   return puck?.metadata?.workspace ?? null;
+}
+
+/**
+ * Client-safe: the preview-scoped nav override from Puck `metadata` (no ALS).
+ *
+ * Reads `puck.metadata.workspace.previewNav`. Returns null everywhere the
+ * override is absent (live public page, editor canvas) — callers fall back
+ * to the live public paths in that case.
+ */
+export function getPreviewNavFrom(puck?: BlockPuck | null): RenderWorkspace["previewNav"] | null {
+  return puck?.metadata?.workspace?.previewNav ?? null;
 }

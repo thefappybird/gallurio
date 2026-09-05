@@ -7,9 +7,11 @@ import type { SpotlightStep } from "./SpotlightGuide";
  * Gate ids used by EditorShell to compute `gateSatisfied` (actionable steps —
  * Next is hidden until the action is performed):
  *   "drag-block"   — a block was dropped (content count increased)
- *   "header-tab"   — Navigation panel is open (headerOpen === true)
  *   "contact-tab"  — contact panel is open (contactOpen === true)
- * All other steps are passive (advance with Next).
+ * All other steps are passive (advance with Next). Navigation/Footer are
+ * ordinary in-canvas Puck blocks now (no dedicated side panel), so they have
+ * no gated tour step of their own — editing them is covered by the generic
+ * Content/Design/Layout tab steps above.
  *
  * Panels (blocks list, properties) are open by default, so there is no
  * "open the panel" step. Dropping a block auto-selects it and reveals its
@@ -95,47 +97,6 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     anchorId: "section-tabs",
     title: "Switch between pages",
     body: "Switch between the different parts of your portfolio website.",
-    placement: "bottom",
-  },
-
-  // Navigation tab (actionable: open the Navigation panel)
-  {
-    id: "header-tab",
-    slug: "openNav",
-    anchorId: "header-tab",
-    title: "Open Navigation",
-    body: "Click Navigation to set up your site's header — brand, logo, menu links, and styling.",
-    placement: "bottom",
-    gated: true,
-  },
-
-  // Navigation · Setup tab
-  {
-    id: "header-setup-tab",
-    slug: "navSetup",
-    anchorId: "header-setup-tab",
-    title: "Navigation · Setup",
-    body: "The Setup tab is where you set your brand text, navbar size, logo, and menu links.",
-    placement: "bottom",
-  },
-
-  // Logo uploader (passive detail)
-  {
-    id: "logo-uploader",
-    slug: "logo",
-    anchorId: "logo-uploader",
-    title: "Your logo lives here",
-    body: "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page.",
-    placement: "left",
-  },
-
-  // Navigation · Design tab
-  {
-    id: "header-design-tab",
-    slug: "navDesign",
-    anchorId: "header-design-tab",
-    title: "Navigation · Design",
-    body: "The Design tab controls header colors, borders, and typography for your nav links.",
     placement: "bottom",
   },
 
@@ -266,9 +227,8 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
 ];
 
 /** Which side panel must be open for a given tour step id. */
-export type GuidePanel = "nav" | "contact" | "none";
+export type GuidePanel = "contact" | "none";
 
-const NAV_STEPS = new Set(["header-setup-tab", "logo-uploader", "header-design-tab"]);
 const CONTACT_STEPS = new Set(["contact-setup-tab", "contact-design-tab"]);
 
 /**
@@ -278,38 +238,31 @@ const CONTACT_STEPS = new Set(["contact-setup-tab", "contact-design-tab"]);
  */
 export function guideStepPanel(stepId: string | undefined): GuidePanel {
   if (!stepId) return "none";
-  if (NAV_STEPS.has(stepId)) return "nav";
   if (CONTACT_STEPS.has(stepId)) return "contact";
   return "none";
 }
 
 /** Computed open/close flags for EditorShell panel state on each guide step. */
 export type GuidePanelActions = {
-  openHeader: boolean;
   openContact: boolean;
-  closeHeader: boolean;
   closeContact: boolean;
 };
 
 /**
- * Given the current step id and the current open/close state of both side
- * panels, returns which panels need to be opened or closed so the step's
- * anchor is present. openHeader/openContact each close the other internally,
- * so only the relevant open flag is set; closeHeader/closeContact are only
- * set for the "none" bucket when a panel is actually open.
+ * Given the current step id and the contact panel's current open state,
+ * returns whether it needs to be opened or closed so the step's anchor is
+ * present. closeContact is only set for the "none" bucket when the panel is
+ * actually open.
  */
 export function guidePanelActions(
   stepId: string | undefined,
-  state: { headerOpen: boolean; contactOpen: boolean }
+  state: { contactOpen: boolean }
 ): GuidePanelActions {
   const panel = guideStepPanel(stepId);
-  if (panel === "nav") {
-    return { openHeader: !state.headerOpen, openContact: false, closeHeader: false, closeContact: false };
-  }
   if (panel === "contact") {
-    return { openHeader: false, openContact: !state.contactOpen, closeHeader: false, closeContact: false };
+    return { openContact: !state.contactOpen, closeContact: false };
   }
-  return { openHeader: false, openContact: false, closeHeader: state.headerOpen, closeContact: state.contactOpen };
+  return { openContact: false, closeContact: state.contactOpen };
 }
 
 /**
@@ -330,14 +283,10 @@ export function shouldResetGuideCanvasOnStep(nextStepId: string, hasContent: boo
 export function applyGuidePanelActions(
   actions: GuidePanelActions,
   cb: {
-    openHeader: () => void;
     openContact: () => void;
-    closeHeader: () => void;
     closeContact: () => void;
   },
 ): void {
-  if (actions.openHeader) cb.openHeader();
   if (actions.openContact) cb.openContact();
-  if (actions.closeHeader) cb.closeHeader();
   if (actions.closeContact) cb.closeContact();
 }

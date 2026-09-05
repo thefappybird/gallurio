@@ -69,12 +69,12 @@
       "portfolioBuilder": {
         "title": "Pembuat portfolio drag-and-drop",
         "panelHeadline": "Buat kesan pertama terasa seperti diri Anda.",
-        "description": "Website builder drag-and-drop tanpa kode — tanpa layar kosong, tanpa developer. Susun galeri, layanan, dan bagian sesuai cara Anda ingin karya Anda dilihat — lalu jadikan benar-benar milik Anda.",
-        "feature1": "Bagian halaman drag-and-drop — tanpa kode",
-        "feature2": "Galeri gambar dan koleksi",
-        "feature3": "Warna, font, dan branding kustom — tanpa perlu developer",
-        "feature4": "Dirancang untuk mengubah pengunjung jadi permintaan",
-        "cta": "Coba portfolio builder-nya"
+        "description": "Page builder berbasis blok tanpa kode — jelajahi pustaka bagian siap pakai dengan pratinjau langsung, tanpa layar kosong untuk memulai. Atur warna, jarak, dan tipografi tiap blok, pilih tata letak galeri Anda, dan terapkan brand kit ke seluruh situs.",
+        "feature1": "Bagian siap pakai dengan pratinjau langsung",
+        "feature2": "Tata letak galeri grid, masonry, dan carousel",
+        "feature3": "Kontrol warna, jarak, dan tipografi per blok",
+        "feature4": "Brand kit dan preset tema untuk seluruh situs",
+        "cta": "Buka portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Permintaan booking",
@@ -1722,20 +1722,6 @@
           "image": "Tidak dapat membaca gambar. Coba file lain.",
           "upload": "Pengunggahan gagal. Coba lagi."
         },
-        "logoSection": "Logo",
-        "logoHint": "Ditampilkan di header halaman publik Anda.",
-        "logoRequirements": "PNG, JPEG, atau WebP. Hingga 512x256px, maks 250KB.",
-        "logoLabel": "Unggah logo",
-        "logoReplace": "Ganti",
-        "logoRemove": "Hapus",
-        "logoUploading": "Mengunggah...",
-        "logoErrors": {
-          "type": "Gunakan gambar PNG, JPEG, atau WebP.",
-          "size": "Jaga ukuran file di bawah 250KB.",
-          "dimensions": "Jaga logo dalam 512x256px.",
-          "image": "File itu bukan gambar yang valid.",
-          "upload": "Pengunggahan gagal. Coba lagi."
-        },
         "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
         "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
         "seoTitleAutoHint": "Belum ada judul — nama workspace Anda akan digunakan sebagai gantinya.",
@@ -1743,6 +1729,7 @@
         "seoKeywords": "Tag SEO",
         "seoKeywordsPlaceholder": "fotografer pernikahan, editorial, jakarta",
         "seoKeywordsHint": "Tag opsional, dipisahkan koma — spasi di dalam satu frasa tetap dipertahankan. Digunakan dalam data terstruktur halaman. Tambahkan hingga 10 tag.",
+        "seoKeywordsRemoveTag": "Hapus tag {tag}",
         "galleryDescriptionLabel": "Deskripsi halaman Gallery",
         "galleryDescriptionPlaceholder": "Pameran karya terbaik pernikahan dan potret kami…",
         "galleryDescriptionHint": "Deskripsi terpisah untuk halaman Gallery agar tidak menduplikasi halaman beranda. Target: ~155 karakter.",
@@ -1960,11 +1947,31 @@
           "confirm": "Hapus anggota"
         },
         "details": {
-          "tabsLabel": "Detail anggota", "tabs": { "details": "Detail", "history": "Riwayat" },
-          "teams": "Tim", "noTeams": "Tidak ada tim", "completed": "Selesai", "workingNow": "Sedang berjalan", "future": "Mendatang",
-          "fromDate": "Dari tanggal", "toDate": "Sampai tanggal", "action": "Tindakan", "allActions": "Semua tindakan",
-          "actions": { "created": "Dibuat", "updated": "Diperbarui", "deleted": "Dihapus", "statusChanged": "Status diubah", "paymentAdded": "Pembayaran ditambahkan" },
-          "loadingHistory": "Memuat riwayat aktivitas", "loading": "Memuat…", "loadMore": "Muat lebih banyak", "noActivity": "Tidak ada aktivitas ditemukan."
+          "tabsLabel": "Detail anggota",
+          "tabs": {
+            "details": "Detail",
+            "history": "Riwayat"
+          },
+          "teams": "Tim",
+          "noTeams": "Tidak ada tim",
+          "completed": "Selesai",
+          "workingNow": "Sedang berjalan",
+          "future": "Mendatang",
+          "fromDate": "Dari tanggal",
+          "toDate": "Sampai tanggal",
+          "action": "Tindakan",
+          "allActions": "Semua tindakan",
+          "actions": {
+            "created": "Dibuat",
+            "updated": "Diperbarui",
+            "deleted": "Dihapus",
+            "statusChanged": "Status diubah",
+            "paymentAdded": "Pembayaran ditambahkan"
+          },
+          "loadingHistory": "Memuat riwayat aktivitas",
+          "loading": "Memuat…",
+          "loadMore": "Muat lebih banyak",
+          "noActivity": "Tidak ada aktivitas ditemukan."
         },
         "errors": {
           "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus.",
@@ -2056,7 +2063,7 @@
         "phonePlaceholder": "+62 812 555 0142",
         "source": "Sumber",
         "tags": "Tag",
-        "tagsPlaceholder": "Tambahkan tag dan tekan Enter",
+        "tagsPlaceholder": "Tambahkan tag",
         "removeTag": "Hapus tag {tag}",
         "notes": "Catatan",
         "notesPlaceholder": "Catatan apa pun tentang klien ini…",
@@ -2479,78 +2486,6 @@
           "tabHighlightOpacityLabel": "Opacity sorotan",
           "tabUnderlineColorLabel": "Warna garis bawah"
         },
-        "headerDialog": {
-          "title": "Navigasi",
-          "close": "Tutup",
-          "save": "Simpan",
-          "saving": "Menyimpan…",
-          "tabs": {
-            "setup": "Pengaturan",
-            "design": "Desain"
-          },
-          "brandTextLabel": "Heading",
-          "brandTextHelp": "Awalnya memakai nama ruang kerja. Kosongkan untuk hanya menampilkan logo.",
-          "logoLabel": "Logo",
-          "logoHelp": "Unggah logo bisnis Anda untuk ditampilkan di sebelah nama Anda di header.",
-          "logoUpload": "Unggah logo",
-          "logoUploading": "Mengunggah…",
-          "logoRemove": "Hapus logo",
-          "logoRequirements": "PNG, JPEG atau WEBP · maks. 250 KB · hingga 512×256",
-          "logoErrors": {
-            "type": "Logo harus berupa gambar PNG, JPEG, atau WEBP. SVG tidak didukung.",
-            "size": "Logo must be 250 KB or smaller.",
-            "dimensions": "Logo must be 512 x 256 px or smaller.",
-            "image": "This logo image could not be read.",
-            "upload": "Logo upload failed. Please try again."
-          },
-          "sectionBanner": "Spanduk",
-          "sectionLinks": "Tautan",
-          "sectionInactiveLinks": "Tautan tidak aktif",
-          "sectionActiveStyle": "Gaya tautan aktif",
-          "sectionContactButton": "Contact button",
-          "bgColorLabel": "Warna latar belakang",
-          "bgOpacityLabel": "Opasitas latar belakang",
-          "linkColorLabel": "Warna teks tautan",
-          "brandTextColorLabel": "Warna heading",
-          "activeLinkColorLabel": "Warna teks tautan aktif",
-          "borderBottomLabel": "Batas bawah",
-          "borderColorLabel": "Warna batas",
-          "shadowLabel": "Bayangan",
-          "navbarSizeLabel": "Ukuran navbar",
-          "fontSizeLabel": "Ukuran tautan",
-          "activeStyleLabel": "Gaya",
-          "activeStyleScale": "Skala",
-          "activeStyleHighlight": "Sorot",
-          "activeStyleUnderline": "Garis bawah",
-          "highlightColorLabel": "Warna sorotan",
-          "highlightOpacityLabel": "Highlight opacity",
-          "cornerRadiusLabel": "Corner radius",
-          "underlineColorLabel": "Warna garis bawah",
-          "contactButtonColorLabel": "Button color",
-          "contactButtonOpacityLabel": "Button opacity",
-          "contactButtonTextColorLabel": "Button text color",
-          "radius": {
-            "sharp": "Sharp",
-            "subtle": "Subtle",
-            "rounded": "Rounded"
-          },
-          "shadow": {
-            "none": "Tidak ada",
-            "sm": "Kecil",
-            "md": "Sedang",
-            "lg": "Besar"
-          },
-          "navbarSize": {
-            "sleek": "Sleek",
-            "balanced": "Balanced",
-            "flashy": "Flashy"
-          },
-          "fontSize": {
-            "sm": "S",
-            "md": "M",
-            "lg": "L"
-          }
-        },
         "contactPreview": {
           "title": "Mari bekerja sama",
           "description": "Ceritakan tentang acara Anda.",
@@ -2566,8 +2501,76 @@
           "saving": "Menyimpan…",
           "cancel": "Batal",
           "savedToast": "Teks alternatif disimpan.",
-          "editTrigger": "Edit teks alternatif untuk {name}",
-          "photoFallback": "foto"
+          "editTrigger": "Edit detail foto untuk {name}",
+          "photoFallback": "foto",
+          "incompleteWarning": "Teks alternatif belum diisi — foto ini mungkin tidak tampil sesuai rencana."
+        },
+        "imageBlockDetails": {
+          "heading": "Detail foto",
+          "sharedNotice": "Detail ini tersimpan pada foto itu sendiri, bukan pada blok ini — mengeditnya akan memperbarui setiap tempat foto ini muncul.",
+          "chooseImagePrompt": "Pilih foto di atas untuk mengedit detailnya.",
+          "loading": "Memuat detail foto…",
+          "notFound": "Foto ini tidak tersimpan di pustaka galeri Anda, sehingga detailnya tidak dapat diedit di sini.",
+          "loadError": "Detail foto ini gagal dimuat.",
+          "retry": "Coba lagi",
+          "titleLabel": "Judul",
+          "descriptionLabel": "Deskripsi",
+          "altLabel": "Teks alternatif default",
+          "altHint": "Digunakan di setiap tempat foto ini muncul.",
+          "dateLabel": "Tanggal",
+          "locationLabel": "Lokasi",
+          "clientLabel": "Klien",
+          "tagsLabel": "Tag",
+          "tagsHint": "Pisahkan tag dengan koma, spasi, atau Enter.",
+          "tagsPlaceholder": "mis. luar ruangan, matahari terbenam, tarian pertama",
+          "removeTag": "Hapus tag {tag}",
+          "metaLabel": "Detail khusus",
+          "metaLabelPlaceholder": "Label",
+          "metaValuePlaceholder": "Nilai",
+          "metaAdd": "Tambah detail",
+          "metaRemove": "Hapus detail {index}",
+          "metaLimitReached": "Anda dapat menambahkan hingga 20 detail khusus.",
+          "saving": "Menyimpan…",
+          "saved": "Tersimpan",
+          "savedInPlaces": "Diperbarui di {count} tempat",
+          "saveError": "Perubahan Anda gagal disimpan."
+        },
+        "imageWizard": {
+          "heading": "Tambahkan detail foto",
+          "position": "Foto {current} dari {total}",
+          "fieldTitle": "Judul",
+          "fieldTitlePlaceholder": "mis. Pernikahan Sarah & Miguel",
+          "fieldCaption": "Deskripsi",
+          "fieldCaptionPlaceholder": "Apa yang terjadi di foto ini?",
+          "fieldAlt": "Teks alternatif",
+          "fieldAltHelp": "Jelaskan apa yang ditampilkan foto ini. Dibacakan oleh pembaca layar dan digunakan mesin pencari untuk memahami gambar.",
+          "fieldAltPlaceholder": "mis. Pengantin pria dan wanita menari di bawah lampu",
+          "altCounter": "{count}/{max} karakter",
+          "fieldDate": "Tanggal",
+          "fieldLocation": "Lokasi",
+          "fieldLocationPlaceholder": "mis. Tagaytay, Filipina",
+          "fieldClient": "Klien",
+          "fieldClientPlaceholder": "mis. Sarah & Miguel",
+          "fieldTags": "Tag",
+          "fieldTagsPlaceholder": "Tambahkan tag lalu tekan Enter",
+          "fieldTagsHint": "Hingga 20 tag.",
+          "removeTag": "Hapus tag {tag}",
+          "fieldMeta": "Detail khusus",
+          "fieldMetaHint": "Tambahkan detail berlabel lainnya, seperti \"Venue\" atau \"Fotografer\".",
+          "metaLabelPlaceholder": "Label",
+          "metaValuePlaceholder": "Nilai",
+          "addMetaRow": "Tambah detail",
+          "removeMetaRow": "Hapus detail {n}",
+          "savedBadge": "Tersimpan",
+          "unsavedBadge": "Belum disimpan",
+          "jumpToPhoto": "Ke foto {n}",
+          "previous": "Sebelumnya",
+          "next": "Berikutnya",
+          "finish": "Simpan dan keluar",
+          "close": "Tutup",
+          "offerHeading": "{count, plural, one {# foto diunggah} other {# foto diunggah}}",
+          "offerAddDetails": "Tambahkan detail",
+          "offerSkip": "Lewati dulu"
         },
         "mobileBanner": {
           "title": "Editor bekerja paling baik di layar yang lebih besar",
@@ -2577,7 +2580,13 @@
         },
         "contactSettings": "Edit pengaturan kontak",
         "contactSettingsShort": "Contact Form",
-        "headerSettings": "Navigasi",
+        "chromeDetachToggleLabel": "Lepaskan header di {page}",
+        "chromeDetachHint": "Header yang dilepaskan bergaya independen dan berhenti mengikuti halaman lainnya.",
+        "chromeDetachDisabledHint": "{page} sudah memiliki header yang dilepaskan — hanya satu halaman yang bisa dilepaskan sekaligus.",
+        "chromeReanchorConfirmTitle": "Samakan dengan gaya {page}?",
+        "chromeReanchorConfirmBody": "Gaya header independen halaman ini akan diganti dengan gaya {page}. Ini tidak bisa dibatalkan.",
+        "chromeReanchorConfirmCancel": "Batal",
+        "chromeReanchorConfirmProceed": "Samakan dengan {page}",
         "preview": {
           "show": "Pratinjau",
           "edit": "Edit",
@@ -2668,6 +2677,15 @@
           "discard": "Buang",
           "save": "Simpan perubahan"
         },
+        "demoImportDialog": {
+          "title": "Kami menemukan portofolio demo yang tersimpan",
+          "body": "Terapkan pengaturan portofolio yang tersimpan di browser ini ke ruang kerja baru Anda, atau hapus dan mulai dari awal.",
+          "yes": "Terapkan pengaturan tersimpan",
+          "discard": "Hapus pengaturan tersimpan",
+          "importedToast": "Portofolio demo Anda siap untuk diedit.",
+          "partialFailureToast": "Diimpor, tetapi {count, plural, other {# foto}} tidak dapat dipindahkan.",
+          "errorToast": "Tidak dapat mengimpor portofolio demo Anda. Silakan coba lagi."
+        },
         "blockActions": {
           "fallbackLabel": "Blok",
           "actionsAria": "Tindakan {label}",
@@ -2722,24 +2740,60 @@
             "sharp": "Tajam",
             "subtle": "Halus",
             "rounded": "Membulat"
+          },
+          "layout": "Layout",
+          "popupLayoutLabel": "Layout featured work",
+          "popupLayoutHint": "Inilah yang dilihat pengunjung saat membuka koleksi unggulan.",
+          "imageModalLayoutLabel": "Layout preview gambar",
+          "imageModalLayoutHint": "Inilah yang dilihat pengunjung saat mengeklik gambar di halaman Anda.",
+          "immersiveModalScopeNote": "Immersive menampilkan gambar secara inline, jadi pengaturan ini berlaku untuk blok gambar, galeri foto, dan masonry.",
+          "notUsedByLayout": "Tidak digunakan oleh layout ini",
+          "popupLayouts": {
+            "contactSheet": { "label": "Contact sheet", "description": "Grid thumbnail yang rata, dengan header opsional untuk koleksi." },
+            "justified": { "label": "Justified", "description": "Foto disusun dalam baris dengan lebar berbeda tapi tinggi baris sama." },
+            "splitIndex": { "label": "Split index", "description": "Foto utama yang tinggi di samping indeks dua kolom untuk sisanya." },
+            "immersive": { "label": "Immersive", "description": "Satu foto besar dalam satu waktu, layar penuh, dengan filmstrip di bawah." }
+          },
+          "imageModalLayouts": {
+            "caption": { "label": "Caption", "description": "Foto dengan bilah caption di bawahnya." },
+            "sidebar": { "label": "Sidebar", "description": "Foto di samping sidebar metadata." },
+            "cinema": { "label": "Cinema", "description": "Foto full-bleed dengan chrome minimal." },
+            "sheet": { "label": "Sheet", "description": "Foto dengan sheet metadata yang meluncur naik." }
           }
         },
         "puckConfig": {
           "categories": {
             "presets": "Blok prasetel",
-            "manual": "Blok manual"
+            "manual": "Blok manual",
+            "nav": "Navigasi",
+            "hero": "Hero",
+            "about": "Tentang",
+            "services": "Layanan",
+            "cta": "Ajakan bertindak",
+            "contact": "Hubungi",
+            "galleryGrid": "Gallery Grid",
+            "galleryMasonry": "Gallery Masonry",
+            "featuredWork": "Karya Unggulan",
+            "galleryLanding": "Gallery landing",
+            "video": "Video",
+            "footer": "Footer"
           },
           "blocks": {
-            "heroPreset": "Hero",
-            "aboutPreset": "Tentang",
-            "servicesPreset": "Layanan",
-            "ctaPreset": "Ajakan bertindak",
-            "contactPreset": "Hubungi",
-            "galleryGridPreset": "Gallery Grid",
-            "galleryMasonryPreset": "Gallery Masonry",
-            "featuredWorkPreset": "Karya Unggulan",
-            "galleryLandingPreset": "Gallery landing",
-            "videoPreset": "Video Highlight",
+            "navigation": "Navigasi",
+            "navigationPreset": "Navigasi",
+            "navBorderedPreset": "Navbar Berbingkai",
+            "navUnderlinedPreset": "Navbar Bergaris Bawah",
+            "navScaledPreset": "Navbar Membesar",
+            "heroPreset": "Sampul Imersif",
+            "aboutPreset": "Biografi Editorial",
+            "servicesPreset": "Kartu Layanan",
+            "ctaPreset": "Pita Aksen",
+            "contactPreset": "Kontak Terpusat",
+            "galleryGridPreset": "Grid Klasik",
+            "galleryMasonryPreset": "Cerita Editorial",
+            "featuredWorkPreset": "Ringkasan Koleksi",
+            "galleryLandingPreset": "Sampul Slideshow",
+            "videoPreset": "Video Terpusat",
             "galleryGrid": "Photo Grid",
             "galleryMasonry": "Masonry",
             "featuredWork": "Sorotan",
@@ -2752,11 +2806,91 @@
             "spacer": "Spasi",
             "divider": "Pemisah",
             "columns": "Kolom",
-            "container": "Container"
+            "container": "Container",
+            "pageBody": "Isi halaman",
+            "collectionCard": "Kartu koleksi",
+            "heroSplitPreset": "Perkenalan Terbagi",
+            "heroStatementPreset": "Pernyataan Tipografis",
+            "aboutPortraitPreset": "Potret dan Cerita",
+            "aboutProfilePreset": "Profil Studio",
+            "servicesMenuPreset": "Menu Editorial",
+            "servicesFeaturePreset": "Layanan Unggulan",
+            "ctaImagePreset": "Undangan Bergambar",
+            "ctaMinimalPreset": "Penutup Minimal",
+            "contactSplitPreset": "Pertanyaan Terbagi",
+            "contactBarPreset": "Bilah Kontak Ringkas",
+            "galleryGridFullPreset": "Grid Lebar Penuh",
+            "galleryGridFramedPreset": "Seleksi Berbingkai",
+            "galleryMasonryWallPreset": "Dinding Tepi-ke-Tepi",
+            "galleryMasonryJournalPreset": "Sebaran Jurnal",
+            "featuredWorkLeadPreset": "Koleksi Utama",
+            "featuredWorkIndexPreset": "Indeks Proyek Ringkas",
+            "galleryLandingSplitPreset": "Pengantar Galeri Terbagi",
+            "galleryLandingMastheadPreset": "Masthead Minimal",
+            "videoSplitPreset": "Video dan Cerita",
+            "videoCinemaPreset": "Pita Sinema",
+            "footerSignaturePreset": "Footer Tanda Tangan",
+            "footerDirectoryPreset": "Footer Direktori",
+            "footerStatementPreset": "Pernyataan Penutup"
+          },
+          "manualDescriptions": {
+            "galleryGrid": "Menampilkan gambar galeri terpilih dalam kisi baris dan kolom yang dapat diedit.",
+            "galleryMasonry": "Menampilkan gambar galeri terpilih dalam kolom bertingkat yang mempertahankan proporsinya.",
+            "collectionCard": "Menautkan satu koleksi galeri dengan sampul, judul, dan keterangan yang dapat diedit.",
+            "heading": "Menambahkan judul yang dapat diedit dengan kontrol tingkat, tipografi, warna, dan perataan.",
+            "text": "Menambahkan teks isi yang dapat diedit dengan kontrol tipografi, warna, lebar, dan perataan.",
+            "image": "Menambahkan satu gambar yang dapat diedit dengan kontrol potongan, ukuran, radius, dan teks alt.",
+            "button": "Menambahkan tombol ajakan bertindak yang dapat membuka Kontak atau berpindah antarhalaman portofolio.",
+            "video": "Menyematkan video YouTube atau Vimeo dengan judul dan keterangan opsional.",
+            "columns": "Membuat kisi responsif tempat blok dapat ditempatkan dan diubah ukurannya di seluruh kolom dan baris.",
+            "container": "Membuat bagian bergaya yang mengelompokkan blok dengan spasi, perataan, dan latarnya sendiri.",
+            "contactDetails": "Menampilkan email, telepon, dan alamat ruang kerja dari pengaturan kontak Anda.",
+            "spacer": "Menambahkan ruang vertikal kosong yang dapat disesuaikan di antara blok.",
+            "divider": "Menambahkan garis horizontal dengan lebar, ketebalan, warna, dan spasi yang dapat disesuaikan."
+          },
+          "presetDescriptions": {
+            "navigationPreset": "Header situs fleksibel dengan merek, tautan, dan tombol kontak yang dapat diedit. Menggantikan header halaman saat ini.",
+            "navBorderedPreset": "Garis bawah bawah dan tautan aktif yang disorot pada bilah ringkas. Menggantikan header halaman saat ini.",
+            "navUnderlinedPreset": "Bilah tenang dengan garis bawah aksen di bawah tautan aktif. Menggantikan header halaman saat ini.",
+            "navScaledPreset": "Tautan aktif membesar alih-alih isian atau garis bawah. Menggantikan header halaman saat ini.",
+            "heroPreset": "Gambar tinggi atau latar slideshow dengan teks tersentral di atas overlay gelap.",
+            "heroSplitPreset": "Teks dan CTA di samping gambar yang menjaga proporsinya sendiri.",
+            "heroStatementPreset": "Judul besar, pemisah, dan CTA ringkas — tanpa gambar.",
+            "aboutPreset": "Judul dan biografi panjang pada lebar teks yang mudah dibaca.",
+            "aboutPortraitPreset": "Potret di samping cerita, masing-masing dapat diedit sendiri.",
+            "aboutProfilePreset": "Cerita terbentang dua kolom; lokasi, pengalaman, dan spesialisasi di sampingnya.",
+            "servicesPreset": "Tiga paket berbingkai setara dengan harga yang tetap sejajar.",
+            "servicesMenuPreset": "Baris bertumpuk terbagi judul, deskripsi, dan harga, tanpa bingkai kartu.",
+            "servicesFeaturePreset": "Satu layanan terbagi menonjol di depan, dua lainnya lebih tenang di bawah.",
+            "ctaPreset": "Pita warna tersentral yang ditutup dengan CTA kontak.",
+            "ctaImagePreset": "Teks penutup dan CTA di samping gambar yang dapat diedit.",
+            "ctaMinimalPreset": "Pemisah dan judul di samping tombol pada pita kontras.",
+            "contactPreset": "Judul, pengantar, detail kontak, dan CTA, tersentral.",
+            "contactSplitPreset": "Narasi dan CTA di samping detail kontak dalam bingkai sederhana.",
+            "contactBarPreset": "Baris penutup lebar yang bertumpuk sesuai urutan baca di ponsel.",
+            "galleryGridPreset": "Judul dan deskripsi di atas grid tiga kolom.",
+            "galleryGridFullPreset": "Header minimal di atas grid empat kolom tepi-ke-tepi.",
+            "galleryGridFramedPreset": "Bagian berbantalan dan berbingkai di sekitar set kecil pilihan.",
+            "galleryMasonryPreset": "Judul dan deskripsi di atas alur masonry.",
+            "galleryMasonryWallPreset": "Lebar penuh dan celah rapat — foto membentuk satu dinding.",
+            "galleryMasonryJournalPreset": "Pengantar mengambil satu kolom sementara masonry mengisi sisanya.",
+            "featuredWorkPreset": "Pengantar di atas tiga ubin koleksi yang dapat diklik.",
+            "featuredWorkLeadPreset": "Dua koleksi besar dalam potongan lanskap di bawah pengantar yang lebih kuat.",
+            "featuredWorkIndexPreset": "Ubin koleksi persegi ringkas pada pita kontras.",
+            "galleryLandingPreset": "Gambar atau slideshow landing berketinggian sedang dengan teks tersentral.",
+            "galleryLandingSplitPreset": "Teks di samping satu gambar khas, dapat diedit sendiri.",
+            "galleryLandingMastheadPreset": "Judul berbasis tipografi dan pemisah agar galeri langsung dimulai.",
+            "videoPreset": "Judul tersentral, deskripsi, dan video tertanam.",
+            "videoSplitPreset": "Video mengambil sisi lebih besar dari tata terbagi, dengan konteks di sampingnya.",
+            "videoCinemaPreset": "Video lebar penuh pada pita kontras dengan keterangan di bawah.",
+            "footerSignaturePreset": "Pemisah, nama studio, dan tautan Home, Gallery, dan Contact yang ringkas.",
+            "footerDirectoryPreset": "Tiga kolom untuk identitas, navigasi, dan detail kontak.",
+            "footerStatementPreset": "Pita kontras dengan pernyataan akhir, CTA, dan baris hak cipta yang tenang."
           },
           "fields": {
             "style": "Gaya",
             "pageStyle": "Gaya halaman",
+            "pageBodyMargin": "Margin horizontal halaman",
             "bgAnimation": "Animasi latar belakang",
             "bgAnimationShort": "Animasi BG",
             "bgSpeed": "Kecepatan animasi",
@@ -2772,7 +2906,6 @@
             "videoUrl": "URL YouTube atau Vimeo",
             "imageField": "Gambar",
             "imageUrl": "URL gambar (cadangan)",
-            "imageAlt": "Teks alt",
             "imageFit": "Kesesuaian",
             "buttonLabel": "Label tombol",
             "buttonSize": "Ukuran",
@@ -2781,7 +2914,10 @@
             "spacerHeight": "Tinggi",
             "dividerThickness": "Ketebalan (px)",
             "columnsCount": "Kolom",
-            "rowsCount": "Baris"
+            "rowsCount": "Baris",
+            "collectionCrop": "Pangkas",
+            "collectionCaption": "Keterangan",
+            "overlayColor": "Warna overlay"
           },
           "options": {
             "bgAnimation": {
@@ -2840,14 +2976,28 @@
             },
             "buttonAction": {
               "openContact": "Buka formulir kontak",
-              "goToGallery": "Ke halaman Gallery"
+              "goToGallery": "Ke halaman Gallery",
+              "goToHome": "Ke halaman Home"
             },
             "buttonAlign": {
               "left": "Kiri",
               "center": "Tengah",
               "right": "Kanan"
+            },
+            "collectionCaption": {
+              "show": "Tampilkan",
+              "hide": "Sembunyikan"
+            },
+            "overlayColor": {
+              "none": "Tidak ada (hitam)",
+              "primary": "Utama",
+              "secondary": "Sekunder",
+              "accent": "Aksen",
+              "background": "Latar belakang",
+              "foreground": "Latar depan"
             }
-          }
+          },
+          "dragToAddHint": "Seret blok ini untuk menambahkannya ke halaman Anda."
         },
         "tour": {
           "next": "Berikutnya",
@@ -2893,22 +3043,6 @@
             "switchPages": {
               "title": "Beralih antar halaman",
               "body": "Beralih antar bagian berbeda dari situs web portofolio Anda."
-            },
-            "openNav": {
-              "title": "Buka Navigasi",
-              "body": "Klik Navigasi untuk mengatur header situs Anda — merek, logo, tautan menu, dan gaya."
-            },
-            "navSetup": {
-              "title": "Navigasi · Pengaturan",
-              "body": "Tab Pengaturan adalah tempat Anda mengatur teks merek, ukuran navbar, logo, dan tautan menu."
-            },
-            "logo": {
-              "title": "Logo Anda ada di sini",
-              "body": "Ini adalah pengunggah logo Anda — PNG, JPEG, atau WEBP yang diunggah di sini akan tampil di header halaman live Anda."
-            },
-            "navDesign": {
-              "title": "Navigasi · Desain",
-              "body": "Tab Desain mengontrol warna header, batas, dan tipografi untuk tautan navigasi Anda."
             },
             "contactForm": {
               "title": "Formulir pertanyaan Anda",
@@ -3134,6 +3268,7 @@
         "publish": "Siap untuk go live? Publishing adalah fitur Gallurio Pro. Daftar untuk satu bulan gratis dan tayangkan situs Anda hari ini.",
         "theme": "Ingin menyesuaikan sepenuhnya warna dan font Anda? Itu fitur Pro. Daftar untuk satu bulan gratis guna membuka edit tema penuh.",
         "cta": "Daftar untuk membangun tanpa batasan",
+        "signInCta": "Masuk sebagai gantinya",
         "dismiss": "Terus jelajahi",
         "promoReveal": "Kerja bagus menjelajahi editor! Ini kode bonus untuk tambahan satu bulan gratis, ditumpuk dengan bulan gratis pendaftaran Anda: {code}"
       },
@@ -3307,10 +3442,18 @@
       "payload_too_large": "Ukurannya terlalu besar untuk disimpan. Kurangi ukurannya dan coba lagi.",
       "collection_load_failed": "Gagal memuat koleksi. Silakan coba lagi.",
       "collection_rename_failed": "Gagal mengganti nama koleksi. Silakan coba lagi.",
+      "collection_description_failed": "Deskripsi gagal disimpan. Silakan coba lagi.",
       "cover_set_failed": "Gagal mengatur sampul. Silakan coba lagi.",
       "order_save_failed": "Gagal menyimpan urutan baru. Silakan coba lagi.",
       "photo_remove_failed": "Gagal menghapus foto. Silakan coba lagi.",
-      "photo_add_failed": "Gagal menambahkan foto. Silakan coba lagi."
+      "photo_add_failed": "Gagal menambahkan foto. Silakan coba lagi.",
+      "upload_type_not_accepted": "\"{type}\" bukan format yang didukung. Unggah {accepted} sebagai gantinya.",
+      "upload_file_too_large": "File itu berukuran {actual} MB. Batasnya adalah {limit} MB.",
+      "upload_dimension_too_small": "Gambar itu berukuran {width}×{height}px. Ukuran minimal adalah {min}px pada sisi yang lebih pendek.",
+      "upload_invalid_image": "File itu tidak dapat dibaca sebagai gambar. Coba file lain.",
+      "upload_quota_exceeded": "Anda telah mencapai batas foto. Hapus beberapa foto dan coba lagi.",
+      "upload_rate_limited": "Terlalu banyak unggahan — tunggu sebentar dan coba lagi.",
+      "upload_network_error": "Tidak dapat terhubung ke server. Periksa koneksi Anda dan coba lagi."
     }
   },
   "common": {
@@ -3427,6 +3570,7 @@
       "settingUp": "Menyiapkan dasbor Anda…",
       "settingUpCompact": "Menyiapkan…",
       "goToDashboard": "Pergi ke dasbor Anda",
+      "goToPortfolio": "Lanjutkan ke portofolio Anda",
       "footer": {
         "everything": "Semuanya di satu tempat",
         "grow": "Dibangun untuk tumbuh bersama Anda",
@@ -3528,7 +3672,13 @@
         "featuredEmpty": "Belum ada foto unggulan yang dipilih.",
         "carouselHint": "Geser atau gunakan panah untuk menjelajah",
         "carouselPrev": "Gambar sebelumnya",
-        "carouselNext": "Gambar berikutnya"
+        "carouselNext": "Gambar berikutnya",
+        "lightboxClose": "Tutup",
+        "lightboxCounter": "{current} dari {total}",
+        "lightboxFilmstrip": "Filmstrip foto",
+        "lightboxSeeMore": "Lihat selengkapnya",
+        "lightboxSeeLess": "Lihat lebih sedikit",
+        "lightboxPhotoOf": "Foto {current} dari {total}"
       }
     },
     "nav": {
@@ -3592,7 +3742,17 @@
       "failed": "Gagal memuat foto.",
       "retry": "Coba lagi",
       "empty": "Belum ada foto di koleksi ini.",
-      "fullSizeAlt": "Foto ukuran penuh"
+      "fullSizeAlt": "Foto ukuran penuh",
+      "openPhoto": "Buka foto",
+      "photo": "Foto",
+      "loadMore": "Muat lebih banyak",
+      "loadingMore": "Memuat lebih banyak...",
+      "loadMoreFailed": "Gagal memuat foto tambahan.",
+      "photoCountOne": "1 foto",
+      "photoCountOther": "{count} foto",
+      "previousPhoto": "Foto sebelumnya",
+      "nextPhoto": "Foto berikutnya",
+      "filmstripLabel": "Filmstrip foto"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. Lihat karya terbaru dan hubungi kami untuk memesan.",

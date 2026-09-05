@@ -8,6 +8,7 @@ import {
   GALLERY_LANDING_PRESET,
   GALLERY_MASONRY_PRESET,
   HERO_PRESET,
+  SECTION_PRESET_KEYS,
   SECTION_PRESETS,
   SERVICES_PRESET,
   VIDEO_PRESET,
@@ -44,7 +45,7 @@ describe("gallery section presets", () => {
   it.each([
     ["GalleryGridPreset", GALLERY_GRID_PRESET, "GalleryGrid"],
     ["GalleryMasonryPreset", GALLERY_MASONRY_PRESET, "GalleryMasonry"],
-    ["FeaturedWorkPreset", FEATURED_WORK_PRESET, "FeaturedWork"],
+    ["FeaturedWorkPreset", FEATURED_WORK_PRESET, "Columns"],
   ] as const)("%s composes Container -> Heading -> Text -> %s", (_label, preset, leafType) => {
     const children = preset.content as Array<{ type: string }>;
     expect(children.map((child) => child.type)).toEqual(["Heading", "Text", leafType]);
@@ -53,10 +54,14 @@ describe("gallery section presets", () => {
 
 describe("section preset background shape", () => {
   it("every preset uses backgroundImages: [] (not the legacy backgroundImagePublicId)", () => {
+    // Photo Grid / Masonry presets stopped seeding backgroundImages — the
+    // wrapping Container's own defaultProps already supplies it, so the key is
+    // legitimately absent for those; everywhere it IS present, it must be an array.
     for (const [key, preset] of Object.entries(SECTION_PRESETS)) {
       const props = preset.defaultProps as Record<string, unknown>;
-      expect(props, `${key} should expose backgroundImages`).toHaveProperty("backgroundImages");
-      expect(Array.isArray(props.backgroundImages), `${key}.backgroundImages is an array`).toBe(true);
+      if ("backgroundImages" in props) {
+        expect(Array.isArray(props.backgroundImages), `${key}.backgroundImages is an array`).toBe(true);
+      }
       expect(props, `${key} should drop backgroundImagePublicId`).not.toHaveProperty("backgroundImagePublicId");
     }
   });
@@ -92,5 +97,20 @@ describe("VideoPreset (F3 composite block)", () => {
   it("composes Container -> Heading -> Text -> Video, same shape as other presets", () => {
     const children = VIDEO_PRESET.content as Array<{ type: string }>;
     expect(children.map((child) => child.type)).toEqual(["Heading", "Text", "Video"]);
+  });
+});
+
+describe("every registered preset renders through Puck", () => {
+  it.each(SECTION_PRESET_KEYS)("%s mounts with non-empty content", (key) => {
+    const { container } = render(
+      <Render
+        config={puckConfig}
+        data={{
+          root: {},
+          content: [{ type: key, props: { id: `${key}-1`, ...SECTION_PRESETS[key].defaultProps } }],
+        }}
+      />
+    );
+    expect(container.textContent?.length).toBeGreaterThan(0);
   });
 });

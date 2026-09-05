@@ -5,7 +5,6 @@ import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import type {
   PortfolioBrandKit,
-  PortfolioHeaderConfig,
   PortfolioContactConfig,
   PortfolioCollectionsPopupConfig,
 } from "@/lib/page-builder/types";
@@ -19,13 +18,11 @@ const LOCAL_DRAFT_VERSION = 2;
 type DraftShape = {
   version?: number;
   brandKit?: PortfolioBrandKit;
-  headerConfig?: PortfolioHeaderConfig;
   contact?: PortfolioContactConfig;
   collectionsPopup?: PortfolioCollectionsPopupConfig;
 };
 
 const EMPTY_DRAFT_CONFIGS: PreviewDraftConfigs = {
-  headerConfig: null,
   contact: null,
   collectionsPopup: null,
   cssVars: {},
@@ -35,10 +32,10 @@ const EMPTY_DRAFT_CONFIGS: PreviewDraftConfigs = {
  * Client shell that wraps the portfolio preview with the unsaved (localStorage)
  * brand kit when present, falling back to the DB-resolved CSS vars otherwise.
  *
- * Also reads headerConfig, contact, and collectionsPopup from the draft and
- * provides them via PreviewDraftContext so child components can override
- * DB-resolved fallbacks. A brief flash of the DB fallback before the effect
- * runs is acceptable: this is an owner-only preview surface.
+ * Also reads contact and collectionsPopup from the draft and provides them
+ * via PreviewDraftContext so child components can override DB-resolved
+ * fallbacks. Children remain unmounted until this local draft read completes,
+ * so preview never visibly flashes a stale published page.
  *
  * Blocks consume `var(--pf-*)` CSS variables — no React brand context is needed.
  *
@@ -62,6 +59,7 @@ export function PreviewBrandShell({
   const [cssVars, setCssVars] = useState<Record<string, string>>(fallbackCssVars);
   const [className, setClassName] = useState<string>(fallbackClassName);
   const [draftConfigs, setDraftConfigs] = useState<PreviewDraftConfigs>(EMPTY_DRAFT_CONFIGS);
+  const [draftReady, setDraftReady] = useState(false);
 
   useEffect(() => {
     try {
@@ -99,10 +97,6 @@ export function PreviewBrandShell({
         }
       }
 
-      // --- headerConfig ---
-      if (draft.headerConfig != null && typeof draft.headerConfig === "object") {
-        setDraftConfigs((prev) => ({ ...prev, headerConfig: draft.headerConfig! }));
-      }
       // --- contact ---
       if (draft.contact != null && typeof draft.contact === "object") {
         setDraftConfigs((prev) => ({ ...prev, contact: draft.contact! }));
@@ -112,7 +106,9 @@ export function PreviewBrandShell({
         setDraftConfigs((prev) => ({ ...prev, collectionsPopup: draft.collectionsPopup! }));
       }
     } catch {
-      // ignore malformed draft; keep DB fallback
+      // Ignore malformed drafts; the ready state still renders the DB fallback.
+    } finally {
+      setDraftReady(true);
     }
   }, [slug]);
 
@@ -123,12 +119,17 @@ export function PreviewBrandShell({
         style={{
           ...(cssVars as React.CSSProperties),
           minHeight: "100dvh",
+          backgroundColor: "var(--pf-color-bg)",
           color: "var(--pf-color-fg)",
         }}
         className={className}
       >
-        {children}
-        <MotionObserver />
+        {draftReady ? children : (
+          <div role="status" aria-label="Loading preview" className="grid min-h-dvh place-items-center text-sm text-muted-foreground">
+            Loading preview…
+          </div>
+        )}
+        {draftReady && <MotionObserver />}
       </div>
     </PreviewDraftContext>
   );

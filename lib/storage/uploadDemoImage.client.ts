@@ -4,13 +4,18 @@
 // portfolio-maker-demo upload route instead of /api/images/direct-upload. Never
 // used by the real (authenticated) editor.
 
-import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
+import { PHOTO_SPEC, PORTFOLIO_PHOTO_MAX_BYTES, validatePhotoFile } from "@/lib/page-builder/photoSpec";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import type { UploadedImage } from "@/lib/storage/uploadImage.client";
+import type { UploadErrorDetail } from "@/lib/uploads/uploadError";
 
 export type UploadDemoImageResult =
   | { ok: true; image: UploadedImage }
-  | { ok: false; error: "image_cap_reached" | "rate_limited" | "upload_failed" | "invalid_file" };
+  | {
+      ok: false;
+      error: "image_cap_reached" | "rate_limited" | "upload_failed" | "invalid_file";
+      detail?: UploadErrorDetail;
+    };
 
 type DirectUploadResponse = { imageId: string; uploadURL: string };
 
@@ -32,7 +37,13 @@ function getFileDimensions(file: File): Promise<{ width: number; height: number 
 
 export async function uploadDemoImage(file: File, demoSessionId: string): Promise<UploadDemoImageResult> {
   const fileCheck = validatePhotoFile(file, PORTFOLIO_PHOTO_MAX_BYTES);
-  if (!fileCheck.ok) return { ok: false, error: "invalid_file" };
+  if (!fileCheck.ok) {
+    const detail: UploadErrorDetail =
+      fileCheck.reason === "type_not_accepted"
+        ? { code: "type_not_accepted", mimeType: file.type, acceptedTypes: PHOTO_SPEC.acceptedTypes }
+        : { code: "file_too_large", actualBytes: file.size, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES };
+    return { ok: false, error: "invalid_file", detail };
+  }
 
   try {
     const dims = await getFileDimensions(file);

@@ -5,15 +5,22 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { PortfolioDraft, Workspace, type PortfolioDraftDoc } from "@/lib/db/models";
+import { PortfolioDraft, Workspace, GalleryItem, type PortfolioDraftDoc } from "@/lib/db/models";
 import type { PlanTier } from "@/lib/db/models/Workspace";
 import { createDraftSchema, updateDraftSchema } from "@/lib/validators/portfolioDraft";
+import { demoImportSchema } from "@/lib/validators/demoImport";
 import { draftCapForPlan } from "@/lib/page-builder/drafts";
 import type { PuckData } from "@/lib/page-builder/types";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
+import { normalizeChrome, findChrome } from "@/lib/page-builder/chromeSync";
+import { normalizePageBody } from "@/lib/page-builder/pageBody";
+import type { Data } from "@measured/puck";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { getTemplate } from "@/lib/page-builder/templates";
-import { deleteImage } from "@/lib/storage/cloudflareImages";
+import { deleteImage, verifyImageOwnership, updateImageMetadata, imageDeliveryUrl, DEMO_UPLOAD_SUBFOLDER } from "@/lib/storage/cloudflareImages";
+
+/** Auto-name for a draft created from an imported Portfolio Maker demo. */
+const DEMO_IMPORT_DRAFT_NAME = "Demo portfolio";
 
 export type DraftSummary = {
   id: string;
@@ -232,7 +239,10 @@ export type SeedTemplateResult =
         data: { home: PuckData; gallery: PuckData };
         brandKit: unknown;
         contact: unknown;
-        header: unknown;
+        // Optional: template.defaultHeader no longer exists (header now seeds
+        // as a Navigation block inside seedData()). Kept optional, not deleted,
+        // so callers still migrating off header-based state keep compiling.
+        header?: unknown;
         collectionsPopup: unknown;
       };
     }
@@ -266,7 +276,6 @@ export async function seedTemplateAction(templateId: unknown): Promise<SeedTempl
       },
       brandKit: template.defaultBrandKit,
       contact: template.defaultContact,
-      header: template.defaultHeader,
       collectionsPopup: template.defaultCollectionsPopup,
     },
   };
@@ -287,22 +296,40 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
         "publicPage.settingsDraft": 1,
         "publicPage.seo.ogImageAssetId": 1,
         "publicPage.siteIcon.assetId": 1,
-        "publicPage.header.logoAssetId": 1,
       })
       .lean(),
   ]);
   if (!doc) return { error: "draft_not_found" };
 
-  // Captured before the promote-write below, so we can delete a live
-  // og/icon/logo image that publish is about to supersede — but only if it
-  // was actually live.
+  // Captured before the write below, so we can delete a live og/icon image
+  // that publish is about to supersede — but only if it was actually live.
   const liveOgAssetId = workspace?.publicPage?.seo?.ogImageAssetId || undefined;
   const liveSiteIconAssetId = workspace?.publicPage?.siteIcon?.assetId || undefined;
-  const liveLogoAssetId = workspace?.publicPage?.header?.logoAssetId || undefined;
 
   const wsIdStr = String(workspaceId);
-  const home = (doc.data?.home as PuckData | null) ?? null;
-  const gallery = (doc.data?.gallery as PuckData | null) ?? null;
+  let home = (doc.data?.home as PuckData | null) ?? null;
+  let gallery = (doc.data?.gallery as PuckData | null) ?? null;
+  // Guarantee the nav invariant (one Navigation block, at index 0) on both
+  // zones before they ever reach the live public page — belt-and-suspenders
+  // against a client posting a zone with a displaced/duplicated nav.
+  // normalizeChrome cannot invent a Navigation out of a zone that has none
+  // (that requires template/config data it doesn't have); a zone that
+  // genuinely has none is logged and published as-is rather than blocked —
+  // this can only happen from a pre-migration/legacy draft or a client bug,
+  // and rejecting publish outright would strand an owner on a state they
+  // have no in-app way to fix yet.
+  if (home) {
+    home = normalizePageBody(normalizeChrome(home as unknown as Data)) as unknown as PuckData;
+    if (!findChrome(home as unknown as Data, "nav")) {
+      console.warn("[portfolio] publish: home zone has no Navigation block", wsIdStr);
+    }
+  }
+  if (gallery) {
+    gallery = normalizePageBody(normalizeChrome(gallery as unknown as Data)) as unknown as PuckData;
+    if (!findChrome(gallery as unknown as Data, "nav")) {
+      console.warn("[portfolio] publish: gallery zone has no Navigation block", wsIdStr);
+    }
+  }
 
   const set: Record<string, unknown> = {};
   set["publicPage.data.home"] = home
@@ -316,22 +343,10 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   // never overwrite live published config with null.
   if (doc.brandKit) set["publicPage.brandKit"] = doc.brandKit;
   if (doc.contact) set["publicPage.contact"] = doc.contact;
-  // The staged settings-page logo (if any) is the source of truth for the
-  // published header logo, independent of whether the draft snapshot itself
-  // carries a header object — a null/migrated draft.header must not cause
-  // publish to skip promoting a staged logo (or clearing a removed one), and
-  // must not leave the leak-safe delete below computing against a value that
-  // was never actually written.
-  const settingsDraftLogo = workspace?.publicPage?.settingsDraft?.logo;
-  if (doc.header || settingsDraftLogo) {
-    set["publicPage.header"] = settingsDraftLogo
-      ? {
-          ...(doc.header ?? {}),
-          logoUrl: settingsDraftLogo.assetId ? settingsDraftLogo.url ?? "" : "",
-          logoAssetId: settingsDraftLogo.assetId ?? "",
-        }
-      : doc.header;
-  }
+  // publicPage.header is DEPRECATED (read-only legacy migration source — see
+  // Workspace.ts). Publish no longer writes it; the header now lives inside
+  // the zone data above as a Navigation block, and the settings-page logo
+  // control that used to feed this promotion is gone.
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
   set["publicPage.formLocale"] = doc.formLocale ?? "";
   set["publicPage.formDir"] = doc.formDir ?? "";
@@ -386,19 +401,145 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
       console.warn("[portfolio] failed to delete superseded live site icon asset", err);
     }
   }
-  const newLogoAssetId =
-    (set["publicPage.header"] as { logoAssetId?: string } | undefined)?.logoAssetId || undefined;
-  if (liveLogoAssetId && liveLogoAssetId !== newLogoAssetId) {
-    try {
-      await deleteImage(liveLogoAssetId);
-    } catch (err) {
-      console.warn("[portfolio] failed to delete superseded live logo asset", err);
-    }
-  }
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
   revalidatePath("/sitemap.xml");
   return { ok: true };
+}
+
+export type DemoImportResult =
+  | { ok: true; draft: DraftSummary; failedAssetIds: string[] }
+  | { error: string };
+
+/**
+ * Claims a Portfolio Maker demo session's content into a brand-new draft for
+ * the caller's own workspace: verifies + re-parents each demo-uploaded
+ * Cloudflare asset (creating a GalleryItem for it), then creates a draft
+ * seeded from the demo's blocks/brandKit/contact/header/collectionsPopup.
+ *
+ * Trust boundary: `workspaceId` is never taken from the client — it is always
+ * resolved from the caller's own session via requireOrg(). Each image is only
+ * re-parented after verifyImageOwnership confirms its CURRENT Cloudflare
+ * metadata marks it as belonging to the claimed demoSessionId (demo uploads
+ * are tagged with the demo session id in that field — see
+ * app/api/portfolio-maker-demo/upload/route.ts) — a caller cannot hand in an
+ * arbitrary publicId and adopt another workspace's (or another demo
+ * session's) asset.
+ *
+ * Idempotent for the GalleryItem side: an asset already re-parented into this
+ * workspace (existing GalleryItem row for the same workspaceId+assetId) is
+ * left alone on a retried import rather than duplicated. A single asset
+ * failure never aborts the rest — failures are collected into
+ * `failedAssetIds` and the draft is still created from whatever succeeded.
+ */
+export async function importDemoPortfolioAction(input: unknown): Promise<DemoImportResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = demoImportSchema.safeParse(input);
+  if (!parsed.success) return { error: "invalid_data" };
+
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+  const wsIdStr = String(workspaceId);
+  const { demoSessionId, draft, images } = parsed.data;
+
+  const failedAssetIds: string[] = [];
+  for (const img of images) {
+    try {
+      const owned = await verifyImageOwnership(
+        img.publicId,
+        demoSessionId,
+        DEMO_UPLOAD_SUBFOLDER
+      );
+      if (!owned) {
+        failedAssetIds.push(img.publicId);
+        continue;
+      }
+      await updateImageMetadata(img.publicId, { workspaceId: wsIdStr, subfolder: "gallery" });
+      const existing = await GalleryItem.findOne({ workspaceId, assetId: img.publicId })
+        .select({ _id: 1 })
+        .lean();
+      if (!existing) {
+        const order = await GalleryItem.countDocuments({ workspaceId, collectionId: null });
+        await GalleryItem.create({
+          workspaceId,
+          assetId: img.publicId,
+          // Never the client-supplied url — img is untrusted (it comes
+          // straight out of localStorage) and demoImportImageSchema does not
+          // even accept a url field. Always derive from the ownership-verified
+          // publicId, same as every other read path (lib/db/queries/gallery.ts).
+          url: imageDeliveryUrl(img.publicId),
+          width: img.width ?? null,
+          height: img.height ?? null,
+          order,
+        });
+      }
+    } catch (err) {
+      console.error("[portfolio] demo import: failed to claim asset", img.publicId, err);
+      failedAssetIds.push(img.publicId);
+    }
+  }
+
+  // Retried imports (dropped response after a server-side success, double-submit
+  // that beats the UI's busy flag) are keyed on demoSessionId, not name — the
+  // GalleryItem re-parenting above already reran idempotently, so returning the
+  // existing draft here is correct rather than minting a second "Demo portfolio
+  // (2)" draft.
+  const existingDemoDraft = await PortfolioDraft.findOne({ workspaceId, demoSessionId });
+  if (existingDemoDraft) {
+    revalidatePath("/portfolio");
+    return { ok: true, draft: toSummary(existingDemoDraft), failedAssetIds };
+  }
+
+  const cap = draftCapForPlan(ctx.workspace.plan as PlanTier);
+  if (Number.isFinite(cap)) {
+    const count = await PortfolioDraft.countDocuments({ workspaceId });
+    if (count >= cap) return { error: `draft_limit_reached:${cap}` };
+  }
+
+  let name = DEMO_IMPORT_DRAFT_NAME;
+  let doc: PortfolioDraftDoc | null = null;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    try {
+      const [created] = await PortfolioDraft.create([
+        {
+          workspaceId,
+          name,
+          demoSessionId,
+          templateId: draft.templateId || "scratch",
+          data: draft.data,
+          brandKit: draft.brandKit,
+          contact: draft.contact,
+          header: draft.header,
+          collectionsPopup: draft.collectionsPopup,
+          formLocale: draft.formLocale || "",
+          formDir: draft.formDir || "",
+        },
+      ]);
+      doc = created;
+      break;
+    } catch (err) {
+      if (!isDuplicateKeyError(err)) throw err;
+      // A conflict on demoSessionId means a concurrent request won the create
+      // race, not a genuine name collision — fetch and return its draft
+      // instead of renaming (renaming would spin all 20 attempts and wrongly
+      // report name_taken).
+      const keyPattern = (err as { keyPattern?: Record<string, unknown> } | null)?.keyPattern;
+      if (keyPattern && "demoSessionId" in keyPattern) {
+        const winner = await PortfolioDraft.findOne({ workspaceId, demoSessionId });
+        if (winner) {
+          doc = winner;
+          break;
+        }
+      }
+      name = `${DEMO_IMPORT_DRAFT_NAME} (${attempt + 2})`;
+    }
+  }
+  if (!doc) return { error: "name_taken" };
+
+  revalidatePath("/portfolio");
+  return { ok: true, draft: toSummary(doc), failedAssetIds };
 }
 

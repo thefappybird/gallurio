@@ -25,11 +25,11 @@ import {
 } from "@/lib/page-builder/blockContext";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
-import { padVar } from "@/lib/page-builder/responsive";
+import { GALLERY_PAD_SHORTHAND, padVar } from "@/lib/page-builder/responsive";
 import type { GalleryImage } from "./GalleryGridBlock";
-import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
-import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { resolveGalleryMinHeight, resolveBannerLayers, GalleryBannerLayers } from "./bannerLayers";
 import type { ContainerHeight } from "./manualBlocks";
+import { PresetMediaPlaceholder } from "./PresetMediaPlaceholder";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -62,49 +62,6 @@ export const featuredWorkDefaultProps: FeaturedWorkProps = {
   bgSpeed: "medium",
   minHeight: "medium",
 };
-
-// ---------------------------------------------------------------------------
-// Banner background sub-render (same pattern as ContainerBlock)
-// ---------------------------------------------------------------------------
-
-function GalleryBannerLayers({
-  layers,
-  bgAnimation,
-  bgSpeed,
-  overlayAlpha,
-}: {
-  layers: { id: string; src: string }[];
-  bgAnimation?: "crossfade" | "kenburns" | "slide";
-  bgSpeed?: "slow" | "medium" | "fast";
-  overlayAlpha: number;
-}) {
-  return (
-    <>
-      {overlayAlpha > 0 && (
-        <div
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }}
-        />
-      )}
-      {layers.length === 1 && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={layers[0].src}
-          alt=""
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      )}
-      {layers.length >= 2 && (
-        <ContainerBackgroundSlideshow
-          images={layers}
-          animation={bgAnimation ?? "crossfade"}
-          speed={bgSpeed ?? "medium"}
-        />
-      )}
-    </>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Component (sync — isomorphic)
@@ -144,6 +101,7 @@ export function FeaturedWorkBlock({
   const hasBg = layers.length > 0;
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
   const sectionStyle = resolveBlockStyle(_style);
+  const presetPreview = puck?.metadata?.presetPreview === true;
 
   return (
     <section
@@ -155,7 +113,7 @@ export function FeaturedWorkBlock({
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
         minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
-        padding: padVar("4rem 1.5rem"),
+        padding: padVar(GALLERY_PAD_SHORTHAND),
         fontFamily: "var(--pf-font-body)",
         ...sectionStyle,
       }}
@@ -165,7 +123,9 @@ export function FeaturedWorkBlock({
         <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: "72rem", margin: "0 auto" }}>
-        {list.length === 0 ? (
+        {list.length === 0 && presetPreview ? (
+          <PresetMediaPlaceholder kind="collections" columns={columns} gap="normal" />
+        ) : list.length === 0 ? (
           <p
             style={{
               color: "var(--pf-color-fg)",

@@ -62,7 +62,7 @@ export function CollapsibleDrawer({
               setExpanded(!expanded);
             }
           }}
-          className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-start focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 px-3 py-3 text-start focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <ChevronDownIcon
             className={cn("size-4 shrink-0 transition-transform", expanded && "rotate-180")}

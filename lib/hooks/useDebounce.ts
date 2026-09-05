@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 export type DebouncedFn<T> = {
   debounced: (value: T) => void;
   flush: () => void;
+  cancel: () => void;
 };
 
 export function useDebounce<T>(
@@ -28,6 +29,15 @@ export function useDebounce<T>(
     }
   }, []);
 
+  const cancel = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    hasPendingRef.current = false;
+    pendingRef.current = undefined;
+  }, []);
+
   const debounced = useCallback(
     (value: T) => {
       pendingRef.current = value;
@@ -50,5 +60,5 @@ export function useDebounce<T>(
     };
   }, []);
 
-  return { debounced, flush };
+  return { debounced, flush, cancel };
 }

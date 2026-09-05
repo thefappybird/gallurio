@@ -35,6 +35,7 @@ export function DraftsDialog({
   deletingId = null,
   applyingId = null,
   unsavedDraftName = null,
+  allowActiveApply = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -49,6 +50,8 @@ export function DraftsDialog({
   applyingId?: string | null;
   /** When non-null, an unsaved draft with this name is shown at the top of the list. */
   unsavedDraftName?: string | null;
+  /** Entry-flow selection can re-load the highlighted draft; the normal toolbar dialog cannot. */
+  allowActiveApply?: boolean;
 }) {
   const t = useTranslations("app.pageBuilder.editor");
   const [pendingDelete, setPendingDelete] = useState<DraftSummary | null>(null);
@@ -87,7 +90,7 @@ export function DraftsDialog({
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {/* Unsaved draft entry — shown at the top when the active draft has no DB record yet */}
               {hasUnsaved && (
-                <li className="border-2 border-dashed border-muted-foreground/40 p-3">
+                <li className="border-2 border-dashed border-foreground p-3">
                   <div className="flex min-w-0 items-center justify-between gap-3">
                     <div className="flex min-w-0 flex-1 items-center gap-2 truncate">
                       <span className="min-w-0 flex-1 truncate font-semibold" title={unsavedDraftName!}>
@@ -95,11 +98,6 @@ export function DraftsDialog({
                       </span>
                       <span className="shrink-0 border border-border px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
                         {t("draftsDialog.unsaved")}
-                      </span>
-                    </div>
-                    <div className="flex shrink-0 items-center justify-end gap-1">
-                      <span className="border border-foreground px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                        {t("draftsDialog.active")}
                       </span>
                     </div>
                   </div>
@@ -115,20 +113,15 @@ export function DraftsDialog({
                     key={d.id}
                     className={cn(
                       "border p-3",
-                      isActive ? "border-foreground" : "border-border"
+                      isActive ? "border-2 border-foreground" : "border-border"
                     )}
                   >
                     <div className="flex min-w-0 items-center justify-between gap-3">
                       <span className="min-w-0 flex-1 truncate font-semibold" title={d.name}>
                         {d.name}
                       </span>
-                      <div className="flex w-[7.5rem] shrink-0 items-center justify-end gap-1">
-                        {isActive && (
-                          <span className="border border-border px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                            {t("draftsDialog.active")}
-                          </span>
-                        )}
-                        {isBeingApplied ? (
+                      <div className="flex shrink-0 items-center justify-end gap-1">
+                        {(!isActive || allowActiveApply) && (isBeingApplied ? (
                           <Button
                             type="button"
                             size="icon-sm"
@@ -151,7 +144,7 @@ export function DraftsDialog({
                           >
                             <Check />
                           </Button>
-                        )}
+                        ))}
                         {isBeingDeleted ? (
                           <Button
                             type="button"

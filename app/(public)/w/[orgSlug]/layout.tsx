@@ -12,14 +12,12 @@ import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { notFound } from "next/navigation";
-import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
 import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { PageViewBeacon } from "./_components/PageViewBeacon";
 import { buildContactLabels } from "./_components/buildContactLabels";
 import ContactTriggerDelegate from "@/lib/page-builder/contactTrigger.client";
-import type { PortfolioContactConfig, PortfolioHeaderConfig } from "@/lib/page-builder/types";
-import { portfolioGalleryPath, portfolioHomePath } from "@/lib/portfolio/publicUrl";
+import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 
 /**
  * Layout for the public portfolio page (`/w/[orgSlug]`).
@@ -51,7 +49,6 @@ export default async function PublicPortfolioLayout({
   const { cssVars, className } = resolveBrandKit(brandKit);
 
   const locale = resolvePublicChromeLocale(workspace);
-  const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
   const tContact = await getTranslations({ locale, namespace: "publicPage.inquiryForm" });
   const tLocationPicker = await getTranslations({
     locale,
@@ -62,7 +59,6 @@ export default async function PublicPortfolioLayout({
   const ownerUserId = await resolveWorkspaceOwnerBySlug(orgSlug);
   const timeMode = ownerUserId ? await getOwnerTimeFormat(ownerUserId) : undefined;
   const contactConfig = (workspace.publicPage?.contact ?? null) as PortfolioContactConfig | null;
-  const headerConfig = (workspace.publicPage?.header ?? null) as PortfolioHeaderConfig | null;
 
   const storedDir = workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined;
   const effectiveDir = resolveEffectiveDir(storedDir, locale);
@@ -71,7 +67,7 @@ export default async function PublicPortfolioLayout({
     <div
       lang={locale}
       dir={effectiveDir}
-      style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
+      style={{ ...cssVars, backgroundColor: "var(--pf-color-bg)", color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={`${className} min-h-svh`}
     >
       {/* Brand kit heading/body may be a Google Font (see fonts.ts) — next/font/google
@@ -79,21 +75,6 @@ export default async function PublicPortfolioLayout({
           build time. Loads via a dynamically-injected CSS2 <link>; per-block Google
           Font overrides are loaded by the page (page.tsx / gallery/page.tsx). */}
       <GoogleFontLoader families={collectGoogleFontFamilies(brandKit)} />
-      <PortfolioHeader
-        slug={workspace.slug}
-        homeHref={portfolioHomePath(workspace.slug)}
-        galleryHref={portfolioGalleryPath(workspace.slug)}
-        labels={{
-          brand: workspace.name,
-          navLandmark: tNav("navLandmark"),
-          home: tNav("home"),
-          gallery: tNav("gallery"),
-          contact: tNav("contact"),
-          openMenu: tNav("openMenu"),
-          closeMenu: tNav("closeMenu"),
-        }}
-        config={headerConfig}
-      />
       {children}
       <PageViewBeacon orgSlug={workspace.slug} />
       <MotionObserver />

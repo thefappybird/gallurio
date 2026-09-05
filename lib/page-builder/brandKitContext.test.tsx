@@ -86,8 +86,12 @@ describe("BrandKitProvider — rendering", () => {
     expect(wrapper?.className).toBe("pf-theme-minimal pf-button-solid");
     // Inline CSS vars should be present
     const style = (wrapper as HTMLElement).style;
-    expect(style.getPropertyValue("--pf-color-primary")).toBe("#111111");
-    expect(style.getPropertyValue("--pf-color-bg")).toBe("#ffffff");
+    expect(style.getPropertyValue("--pf-color-primary")).toBe(
+      DEFAULT_BRAND_KIT.primaryColor
+    );
+    expect(style.getPropertyValue("--pf-color-bg")).toBe(
+      DEFAULT_BRAND_KIT.backgroundColor
+    );
     expect(style.getPropertyValue("--pf-radius")).toBe("0");
   });
 });

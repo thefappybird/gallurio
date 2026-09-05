@@ -1,6 +1,7 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
+import { onAccentBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
-import { zone } from "./_blocks";
+import { zone, navigationBlock } from "./_blocks";
 
 /**
  * Luxury — Warm gold accent, editorial split-panel hero, refined typographic hierarchy.
@@ -30,20 +31,20 @@ export const luxuryTemplate: PortfolioTemplate = {
     activeTabUnderline: true,
     tabUnderlineColor: "accent",
   },
-  defaultHeader: {
-    fontSize: "sm",
-    activeLinkScale: true,
-    activeLinkHighlight: false,
-    highlightOpacity: 100,
-    contactButtonColor: "accent",
-    contactButtonTextColor: "secondary",
-    contactButtonOpacity: 100,
-    contactButtonRadius: "",
-  },
   defaultCollectionsPopup: {},
-  seedData: () => ({
+  seedData: (ctx) => ({
     home: zone(
       [
+        navigationBlock("Navigation-luxury-home-0", {
+          fontSize: "sm",
+          activeLinkScale: true,
+          activeLinkHighlight: false,
+          highlightOpacity: 100,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "secondary",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "",
+        }, ctx.workspace.name),
         {
           type: "HeroPreset",
           props: {
@@ -56,7 +57,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                   level: "h1",
                   text: "Capturing moments that last forever",
                   _style: {
-                    textColorToken: "background",
+                    textColorToken: "foreground",
                     bold: true,
                   },
                 },
@@ -67,7 +68,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                   id: "Text-luxury-home-3",
                   text: "Fine art photography for weddings, portraits, and events.",
                   _style: {
-                    textColorToken: "background",
+                    textColorToken: "foreground",
                   },
                 },
               },
@@ -78,6 +79,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                   label: "Get in Touch",
                   action: "open-contact",
                   align: "center",
+                  _style: onAccentBand,
                 },
               },
             ],
@@ -142,7 +144,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                               id: "Text-luxury-home-12",
                               text: "From ₱30,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -189,7 +191,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                               id: "Text-luxury-home-17",
                               text: "From ₱8,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -236,7 +238,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                               id: "Text-luxury-home-22",
                               text: "From ₱15,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -274,6 +276,16 @@ export const luxuryTemplate: PortfolioTemplate = {
     ),
     gallery: zone(
       [
+        navigationBlock("Navigation-luxury-gal-0", {
+          fontSize: "sm",
+          activeLinkScale: true,
+          activeLinkHighlight: false,
+          highlightOpacity: 100,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "secondary",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "",
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {
@@ -314,7 +326,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                         level: "h2",
                         text: "Our gallery",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                           bold: true,
                         },
                       },
@@ -325,7 +337,7 @@ export const luxuryTemplate: PortfolioTemplate = {
                         id: "Text-luxury-gal-6",
                         text: "A curated look at our work.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -402,11 +414,17 @@ export const luxuryTemplate: PortfolioTemplate = {
                 },
               },
               {
-                type: "FeaturedWork",
+                type: "Columns",
                 props: {
-                  id: "FeaturedWork-luxury-gal-12",
-                  collections: [],
+                  id: "Columns-luxury-gal-12",
                   columns: 3,
+                  minHeight: "0px",
+                  _style: { gap: 16 },
+                  content: [
+                    { type: "CollectionCard", props: { id: "CollectionCard-luxury-gal-12a", aspectRatio: "7 / 9", showCaption: true } },
+                    { type: "CollectionCard", props: { id: "CollectionCard-luxury-gal-12b", aspectRatio: "7 / 9", showCaption: true } },
+                    { type: "CollectionCard", props: { id: "CollectionCard-luxury-gal-12c", aspectRatio: "7 / 9", showCaption: true } },
+                  ],
                 },
               },
             ],

@@ -69,12 +69,12 @@
       "portfolioBuilder": {
         "title": "Drag-and-drop portfolio builder",
         "panelHeadline": "Make your first impression feel like you.",
-        "description": "A drag-and-drop, no-code website builder — no blank screen, no developer needed. Arrange galleries, services, and sections the way you actually want your work seen, then make it unmistakably yours.",
-        "feature1": "Drag-and-drop page sections — no code needed",
-        "feature2": "Image galleries and collections",
-        "feature3": "Custom colors, fonts, and branding — no developer required",
-        "feature4": "Built to turn visitors into inquiries",
-        "cta": "Try the portfolio builder"
+        "description": "A block-based, no-code page builder — browse a library of ready-made sections with live previews, no blank screen to start from. Style every block's color, spacing, and type, choose your gallery layout, and apply a brand kit across your whole site.",
+        "feature1": "Ready-made sections with live previews",
+        "feature2": "Grid, masonry, and carousel gallery layouts",
+        "feature3": "Per-block color, spacing, and type controls",
+        "feature4": "Brand kit and theme presets, applied sitewide",
+        "cta": "Open the portfolio builder"
       },
       "bookingInquiryForms": {
         "title": "Booking inquiries",
@@ -1722,20 +1722,6 @@
           "image": "Could not read the image. Please try another file.",
           "upload": "Upload failed. Please try again."
         },
-        "logoSection": "Logo",
-        "logoHint": "Shown in your public page header.",
-        "logoRequirements": "PNG, JPEG, or WebP. Up to 512x256px, max 250KB.",
-        "logoLabel": "Upload logo",
-        "logoReplace": "Replace",
-        "logoRemove": "Remove",
-        "logoUploading": "Uploading...",
-        "logoErrors": {
-          "type": "Use a PNG, JPEG, or WebP image.",
-          "size": "Keep the file under 250KB.",
-          "dimensions": "Keep the logo within 512x256px.",
-          "image": "That file isn't a valid image.",
-          "upload": "Upload failed. Please try again."
-        },
         "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
         "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
         "seoTitleAutoHint": "No title yet — your workspace name will be used instead.",
@@ -1743,6 +1729,7 @@
         "seoKeywords": "SEO tags",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, bay area",
         "seoKeywordsHint": "Optional tags, separated by commas — spaces inside a phrase are kept. Used in the page's structured data. Add up to 10.",
+        "seoKeywordsRemoveTag": "Remove tag {tag}",
         "galleryDescriptionLabel": "Gallery page description",
         "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
         "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",
@@ -1966,11 +1953,30 @@
         },
         "details": {
           "tabsLabel": "Member details",
-          "tabs": { "details": "Details", "history": "History" },
-          "teams": "Teams", "noTeams": "No teams", "completed": "Completed", "workingNow": "Working now", "future": "Future",
-          "fromDate": "From date", "toDate": "To date", "action": "Action", "allActions": "All actions",
-          "actions": { "created": "Created", "updated": "Updated", "deleted": "Deleted", "statusChanged": "Status changed", "paymentAdded": "Payment added" },
-          "loadingHistory": "Loading activity history", "loading": "Loading…", "loadMore": "Load more", "noActivity": "No activity found."
+          "tabs": {
+            "details": "Details",
+            "history": "History"
+          },
+          "teams": "Teams",
+          "noTeams": "No teams",
+          "completed": "Completed",
+          "workingNow": "Working now",
+          "future": "Future",
+          "fromDate": "From date",
+          "toDate": "To date",
+          "action": "Action",
+          "allActions": "All actions",
+          "actions": {
+            "created": "Created",
+            "updated": "Updated",
+            "deleted": "Deleted",
+            "statusChanged": "Status changed",
+            "paymentAdded": "Payment added"
+          },
+          "loadingHistory": "Loading activity history",
+          "loading": "Loading…",
+          "loadMore": "Load more",
+          "noActivity": "No activity found."
         },
         "errors": {
           "cannotRemoveOwner": "The workspace owner can't be removed.",
@@ -2057,7 +2063,7 @@
         "phonePlaceholder": "+63 917 555 0142",
         "source": "Source",
         "tags": "Tags",
-        "tagsPlaceholder": "Add tag and press Enter",
+        "tagsPlaceholder": "Add a tag",
         "removeTag": "Remove tag {tag}",
         "notes": "Notes",
         "notesPlaceholder": "Any notes about this client…",
@@ -2480,78 +2486,6 @@
           "tabHighlightOpacityLabel": "Highlight opacity",
           "tabUnderlineColorLabel": "Underline color"
         },
-        "headerDialog": {
-          "title": "Navigation",
-          "close": "Close",
-          "save": "Save",
-          "saving": "Saving…",
-          "tabs": {
-            "setup": "Setup",
-            "design": "Design"
-          },
-          "brandTextLabel": "Heading",
-          "brandTextHelp": "Displayed next to your logo in the navigation bar. Leave empty to show the logo only.",
-          "logoLabel": "Logo",
-          "logoHelp": "Upload your business logo to display beside your name in the header.",
-          "logoUpload": "Upload logo",
-          "logoUploading": "Uploading…",
-          "logoRemove": "Remove logo",
-          "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · up to 512×256",
-          "logoErrors": {
-            "type": "Logo must be a PNG, JPEG, or WEBP image. SVG is not supported.",
-            "size": "Logo must be 250 KB or smaller.",
-            "dimensions": "Logo must be 512 x 256 px or smaller.",
-            "image": "This logo image could not be read.",
-            "upload": "Logo upload failed. Please try again."
-          },
-          "sectionBanner": "Banner",
-          "sectionLinks": "Links",
-          "sectionInactiveLinks": "Inactive links",
-          "sectionActiveStyle": "Active link style",
-          "sectionContactButton": "Contact button",
-          "bgColorLabel": "Background color",
-          "bgOpacityLabel": "Background opacity",
-          "linkColorLabel": "Link text color",
-          "brandTextColorLabel": "Heading color",
-          "activeLinkColorLabel": "Active link text color",
-          "borderBottomLabel": "Border bottom",
-          "borderColorLabel": "Border color",
-          "shadowLabel": "Drop shadow",
-          "navbarSizeLabel": "Navbar size",
-          "fontSizeLabel": "Link size",
-          "activeStyleLabel": "Style",
-          "activeStyleScale": "Scale",
-          "activeStyleHighlight": "Highlight",
-          "activeStyleUnderline": "Underline",
-          "highlightColorLabel": "Highlight color",
-          "highlightOpacityLabel": "Highlight opacity",
-          "cornerRadiusLabel": "Corner radius",
-          "underlineColorLabel": "Underline color",
-          "contactButtonColorLabel": "Button color",
-          "contactButtonOpacityLabel": "Button opacity",
-          "contactButtonTextColorLabel": "Button text color",
-          "radius": {
-            "sharp": "Sharp",
-            "subtle": "Subtle",
-            "rounded": "Rounded"
-          },
-          "shadow": {
-            "none": "None",
-            "sm": "Small",
-            "md": "Medium",
-            "lg": "Large"
-          },
-          "navbarSize": {
-            "sleek": "Sleek",
-            "balanced": "Balanced",
-            "flashy": "Flashy"
-          },
-          "fontSize": {
-            "sm": "S",
-            "md": "M",
-            "lg": "L"
-          }
-        },
         "contactPreview": {
           "title": "Let's work together",
           "description": "Tell us about your event.",
@@ -2573,12 +2507,86 @@
           "saving": "Saving…",
           "cancel": "Cancel",
           "savedToast": "Alt text saved.",
-          "editTrigger": "Edit alt text for {name}",
-          "photoFallback": "photo"
+          "editTrigger": "Edit photo details for {name}",
+          "photoFallback": "photo",
+          "incompleteWarning": "Missing alt text — this photo may not display as intended."
+        },
+        "imageBlockDetails": {
+          "heading": "Photo details",
+          "sharedNotice": "These details live on the photo itself, not this block — editing them updates every place this photo appears.",
+          "chooseImagePrompt": "Choose a photo above to edit its details.",
+          "loading": "Loading photo details…",
+          "notFound": "This photo isn't saved in your gallery library, so these details can't be edited here.",
+          "loadError": "Couldn't load this photo's details.",
+          "retry": "Retry",
+          "titleLabel": "Title",
+          "descriptionLabel": "Description",
+          "altLabel": "Default alt text",
+          "altHint": "Used everywhere this photo appears.",
+          "dateLabel": "Date",
+          "locationLabel": "Location",
+          "clientLabel": "Client",
+          "tagsLabel": "Tags",
+          "tagsHint": "Separate tags with commas, spaces, or Enter.",
+          "tagsPlaceholder": "e.g. outdoor, sunset, first dance",
+          "removeTag": "Remove tag {tag}",
+          "metaLabel": "Custom details",
+          "metaLabelPlaceholder": "Label",
+          "metaValuePlaceholder": "Value",
+          "metaAdd": "Add detail",
+          "metaRemove": "Remove detail {index}",
+          "metaLimitReached": "You can add up to 20 custom details.",
+          "saving": "Saving…",
+          "saved": "Saved",
+          "savedInPlaces": "Updated in {count} places",
+          "saveError": "Couldn't save your changes."
+        },
+        "imageWizard": {
+          "heading": "Add photo details",
+          "position": "Photo {current} of {total}",
+          "fieldTitle": "Title",
+          "fieldTitlePlaceholder": "e.g. Sarah & Miguel's wedding",
+          "fieldCaption": "Description",
+          "fieldCaptionPlaceholder": "What's happening in this photo?",
+          "fieldAlt": "Alt text",
+          "fieldAltHelp": "Describe what the photo shows. Read aloud by screen readers and used by search engines to understand the image.",
+          "fieldAltPlaceholder": "e.g. Bride and groom dancing under string lights",
+          "altCounter": "{count}/{max} characters",
+          "fieldDate": "Date",
+          "fieldLocation": "Location",
+          "fieldLocationPlaceholder": "e.g. Tagaytay, Philippines",
+          "fieldClient": "Client",
+          "fieldClientPlaceholder": "e.g. Sarah & Miguel",
+          "fieldTags": "Tags",
+          "fieldTagsPlaceholder": "Add a tag and press Enter",
+          "fieldTagsHint": "Up to 20 tags.",
+          "removeTag": "Remove tag {tag}",
+          "fieldMeta": "Custom details",
+          "fieldMetaHint": "Add extra labeled details, like \"Venue\" or \"Photographer\".",
+          "metaLabelPlaceholder": "Label",
+          "metaValuePlaceholder": "Value",
+          "addMetaRow": "Add detail",
+          "removeMetaRow": "Remove detail {n}",
+          "savedBadge": "Saved",
+          "unsavedBadge": "Unsaved",
+          "jumpToPhoto": "Go to photo {n}",
+          "previous": "Previous",
+          "next": "Next",
+          "finish": "Save and exit",
+          "close": "Close",
+          "offerHeading": "{count, plural, one {# photo uploaded} other {# photos uploaded}}",
+          "offerAddDetails": "Add details",
+          "offerSkip": "Skip for now"
         },
         "contactSettings": "Edit contact settings",
         "contactSettingsShort": "Contact Form",
-        "headerSettings": "Navigation",
+        "chromeDetachToggleLabel": "Detach header on {page}",
+        "chromeDetachHint": "Detached headers style independently and stop mirroring the other page.",
+        "chromeDetachDisabledHint": "{page} already has a detached header — only one page can detach at a time.",
+        "chromeReanchorConfirmTitle": "Match {page}'s styling?",
+        "chromeReanchorConfirmBody": "This page's independent header styling will be replaced with {page}'s. This can't be undone.",
+        "chromeReanchorConfirmCancel": "Cancel",
+        "chromeReanchorConfirmProceed": "Match {page}",
         "preview": {
           "show": "Preview",
           "edit": "Edit",
@@ -2669,6 +2677,15 @@
           "discard": "Discard",
           "save": "Save changes"
         },
+        "demoImportDialog": {
+          "title": "We detected a saved demo portfolio",
+          "body": "Apply the portfolio setup saved in this browser to your new workspace, or discard it and start fresh.",
+          "yes": "Apply saved setup",
+          "discard": "Discard saved setup",
+          "importedToast": "Your demo portfolio is ready to edit.",
+          "partialFailureToast": "Imported, but {count, plural, one {# photo} other {# photos}} could not be transferred.",
+          "errorToast": "Could not import your demo portfolio. Please try again."
+        },
         "blockActions": {
           "fallbackLabel": "Block",
           "actionsAria": "{label} actions",
@@ -2723,24 +2740,60 @@
             "sharp": "Sharp",
             "subtle": "Subtle",
             "rounded": "Rounded"
+          },
+          "layout": "Layout",
+          "popupLayoutLabel": "Featured work layout",
+          "popupLayoutHint": "This is what visitors see when they open a featured collection.",
+          "imageModalLayoutLabel": "Image preview layout",
+          "imageModalLayoutHint": "This is what visitors see when they click an image on your page.",
+          "immersiveModalScopeNote": "Immersive shows images inline, so this applies to image blocks, photo grids and masonry.",
+          "notUsedByLayout": "Not used by this layout",
+          "popupLayouts": {
+            "contactSheet": { "label": "Contact sheet", "description": "An even grid of thumbnails, with an optional header for the collection." },
+            "justified": { "label": "Justified", "description": "Photos packed into rows of varied width sharing one row height." },
+            "splitIndex": { "label": "Split index", "description": "A tall lead photo beside a two-column index of the rest." },
+            "immersive": { "label": "Immersive", "description": "One large photo at a time, full-viewport, with a filmstrip below." }
+          },
+          "imageModalLayouts": {
+            "caption": { "label": "Caption", "description": "The photo with a caption bar underneath." },
+            "sidebar": { "label": "Sidebar", "description": "The photo beside a metadata sidebar." },
+            "cinema": { "label": "Cinema", "description": "Full-bleed photo with minimal chrome." },
+            "sheet": { "label": "Sheet", "description": "The photo with a metadata sheet that slides up." }
           }
         },
         "puckConfig": {
           "categories": {
             "presets": "Preset blocks",
-            "manual": "Manual blocks"
+            "manual": "Manual blocks",
+            "nav": "Navigation",
+            "hero": "Hero",
+            "about": "About",
+            "services": "Services",
+            "cta": "Call to action",
+            "contact": "Contact",
+            "galleryGrid": "Gallery grid",
+            "galleryMasonry": "Gallery masonry",
+            "featuredWork": "Featured work",
+            "galleryLanding": "Gallery landing",
+            "video": "Video",
+            "footer": "Footer"
           },
           "blocks": {
-            "heroPreset": "Hero",
-            "aboutPreset": "About",
-            "servicesPreset": "Services",
-            "ctaPreset": "Call to action",
-            "contactPreset": "Contact",
-            "galleryGridPreset": "Gallery Grid",
-            "galleryMasonryPreset": "Gallery Masonry",
-            "featuredWorkPreset": "Featured Work",
-            "galleryLandingPreset": "Gallery landing",
-            "videoPreset": "Video Highlight",
+            "navigation": "Navigation",
+            "navigationPreset": "Navigation",
+            "navBorderedPreset": "Bordered navbar",
+            "navUnderlinedPreset": "Underlined navbar",
+            "navScaledPreset": "Scaled navbar",
+            "heroPreset": "Immersive cover",
+            "aboutPreset": "Editorial biography",
+            "servicesPreset": "Service cards",
+            "ctaPreset": "Accent band",
+            "contactPreset": "Centered contact",
+            "galleryGridPreset": "Classic grid",
+            "galleryMasonryPreset": "Editorial story",
+            "featuredWorkPreset": "Collection overview",
+            "galleryLandingPreset": "Slideshow cover",
+            "videoPreset": "Centered film",
             "galleryGrid": "Photo Grid",
             "galleryMasonry": "Masonry",
             "featuredWork": "Highlights",
@@ -2753,11 +2806,91 @@
             "spacer": "Spacer",
             "divider": "Divider",
             "columns": "Columns",
-            "container": "Container"
+            "container": "Container",
+            "pageBody": "Page body",
+            "collectionCard": "Collection card",
+            "heroSplitPreset": "Split introduction",
+            "heroStatementPreset": "Typographic statement",
+            "aboutPortraitPreset": "Portrait and story",
+            "aboutProfilePreset": "Studio profile",
+            "servicesMenuPreset": "Editorial menu",
+            "servicesFeaturePreset": "Featured service",
+            "ctaImagePreset": "Image invitation",
+            "ctaMinimalPreset": "Minimal closing",
+            "contactSplitPreset": "Split inquiry",
+            "contactBarPreset": "Compact contact bar",
+            "galleryGridFullPreset": "Full-width grid",
+            "galleryGridFramedPreset": "Framed selection",
+            "galleryMasonryWallPreset": "Edge-to-edge wall",
+            "galleryMasonryJournalPreset": "Journal spread",
+            "featuredWorkLeadPreset": "Lead collections",
+            "featuredWorkIndexPreset": "Compact project index",
+            "galleryLandingSplitPreset": "Split gallery intro",
+            "galleryLandingMastheadPreset": "Minimal masthead",
+            "videoSplitPreset": "Film and story",
+            "videoCinemaPreset": "Cinema band",
+            "footerSignaturePreset": "Signature footer",
+            "footerDirectoryPreset": "Directory footer",
+            "footerStatementPreset": "Closing statement"
+          },
+          "manualDescriptions": {
+            "galleryGrid": "Displays selected gallery images in an editable row-and-column grid.",
+            "galleryMasonry": "Displays selected gallery images in staggered columns that preserve their proportions.",
+            "collectionCard": "Links to one gallery collection with an editable cover, title, and caption.",
+            "heading": "Adds an editable heading with level, typography, color, and alignment controls.",
+            "text": "Adds editable body copy with typography, color, width, and alignment controls.",
+            "image": "Adds one editable image with crop, size, radius, and alt-text controls.",
+            "button": "Adds a call-to-action button that can open Contact or navigate between portfolio pages.",
+            "video": "Embeds a YouTube or Vimeo video with an optional heading and caption.",
+            "columns": "Creates a responsive grid where blocks can be placed and resized across columns and rows.",
+            "container": "Creates a styled section that groups blocks with its own spacing, alignment, and background.",
+            "contactDetails": "Shows the workspace email, phone, and address from your contact settings.",
+            "spacer": "Adds adjustable empty vertical space between blocks.",
+            "divider": "Adds a horizontal rule with adjustable width, thickness, color, and spacing."
+          },
+          "presetDescriptions": {
+            "navigationPreset": "A flexible site header with editable branding, links, and contact button. Replaces the page's current header.",
+            "navBorderedPreset": "A bottom border and a highlighted active link on a compact bar. Replaces the page's current header.",
+            "navUnderlinedPreset": "A quiet bar with an accent underline beneath the active link. Replaces the page's current header.",
+            "navScaledPreset": "The active link scales up instead of a fill or underline. Replaces the page's current header.",
+            "heroPreset": "Tall image or slideshow background with centered copy over a scrim.",
+            "heroSplitPreset": "Copy and CTA beside an editable image that keeps its own proportions.",
+            "heroStatementPreset": "An oversized headline, a divider and a compact CTA — no image needed.",
+            "aboutPreset": "A heading and long-form biography at a readable measure.",
+            "aboutPortraitPreset": "A portrait beside the story, each editable on its own.",
+            "aboutProfilePreset": "The story spans two tracks; location, experience and specialty sit beside it.",
+            "servicesPreset": "Three equal bordered packages with prices that stay aligned.",
+            "servicesMenuPreset": "Stacked rows split into title, description and price, with no card frames.",
+            "servicesFeaturePreset": "One prominent split service leads, with two quieter ones beneath.",
+            "ctaPreset": "A centered color band closing with a contact CTA.",
+            "ctaImagePreset": "Closing copy and a CTA beside an editable image.",
+            "ctaMinimalPreset": "A divider and headline beside a button on a contrasting band.",
+            "contactPreset": "Heading, introduction, contact details and a CTA, centered.",
+            "contactSplitPreset": "A narrative and CTA beside contact details in a restrained frame.",
+            "contactBarPreset": "A wide closing row that stacks in reading order on a phone.",
+            "galleryGridPreset": "A heading and description above a three-column grid.",
+            "galleryGridFullPreset": "A minimal header over an edge-to-edge four-column grid.",
+            "galleryGridFramedPreset": "A padded, bordered section around a small curated set.",
+            "galleryMasonryPreset": "A heading and description above a masonry flow.",
+            "galleryMasonryWallPreset": "Full width and tight gutters — the photographs form one wall.",
+            "galleryMasonryJournalPreset": "The introduction takes one track while the masonry spans the rest.",
+            "featuredWorkPreset": "An introduction above three clickable collection tiles.",
+            "featuredWorkLeadPreset": "Two large collections in a landscape crop under a stronger introduction.",
+            "featuredWorkIndexPreset": "Compact square collection tiles on a contrasting band.",
+            "galleryLandingPreset": "A medium-height image or slideshow landing with centered copy.",
+            "galleryLandingSplitPreset": "Copy beside one signature image, editable on its own.",
+            "galleryLandingMastheadPreset": "A type-led title and divider so the gallery starts right below.",
+            "videoPreset": "A centered heading, description and embedded film.",
+            "videoSplitPreset": "The film takes the larger side of a split, with context beside it.",
+            "videoCinemaPreset": "A full-width film on a contrasting band with a caption below.",
+            "footerSignaturePreset": "A divider, the studio name and compact Home, Gallery and Contact links.",
+            "footerDirectoryPreset": "Three columns for identity, navigation and contact details.",
+            "footerStatementPreset": "A contrasting band with a final statement, CTA and quiet copyright line."
           },
           "fields": {
             "style": "Style",
             "pageStyle": "Page style",
+            "pageBodyMargin": "Horizontal page margin",
             "bgAnimation": "Background animation",
             "bgAnimationShort": "BG animation",
             "bgSpeed": "Animation speed",
@@ -2773,7 +2906,6 @@
             "videoUrl": "YouTube or Vimeo URL",
             "imageField": "Image",
             "imageUrl": "Image URL (fallback)",
-            "imageAlt": "Alt text",
             "imageFit": "Fit",
             "buttonLabel": "Button label",
             "buttonSize": "Size",
@@ -2782,7 +2914,10 @@
             "spacerHeight": "Height",
             "dividerThickness": "Thickness (px)",
             "columnsCount": "Columns",
-            "rowsCount": "Rows"
+            "rowsCount": "Rows",
+            "collectionCrop": "Crop",
+            "collectionCaption": "Caption",
+            "overlayColor": "Overlay color"
           },
           "options": {
             "bgAnimation": {
@@ -2841,14 +2976,28 @@
             },
             "buttonAction": {
               "openContact": "Open contact form",
-              "goToGallery": "Go to Gallery page"
+              "goToGallery": "Go to Gallery page",
+              "goToHome": "Go to Home page"
             },
             "buttonAlign": {
               "left": "Left",
               "center": "Center",
               "right": "Right"
+            },
+            "collectionCaption": {
+              "show": "Show",
+              "hide": "Hide"
+            },
+            "overlayColor": {
+              "none": "None (black)",
+              "primary": "Primary",
+              "secondary": "Secondary",
+              "accent": "Accent",
+              "background": "Background",
+              "foreground": "Foreground"
             }
-          }
+          },
+          "dragToAddHint": "Drag this block to add it to your page."
         },
         "tour": {
           "next": "Next",
@@ -2882,22 +3031,6 @@
             "switchPages": {
               "title": "Switch between pages",
               "body": "Switch between the different parts of your portfolio website."
-            },
-            "openNav": {
-              "title": "Open Navigation",
-              "body": "Click Navigation to set up your site's header — brand, logo, menu links, and styling."
-            },
-            "navSetup": {
-              "title": "Navigation · Setup",
-              "body": "The Setup tab is where you set your brand text, navbar size, logo, and menu links."
-            },
-            "logo": {
-              "title": "Your logo lives here",
-              "body": "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page."
-            },
-            "navDesign": {
-              "title": "Navigation · Design",
-              "body": "The Design tab controls header colors, borders, and typography for your nav links."
             },
             "contactForm": {
               "title": "Your inquiry form",
@@ -3135,6 +3268,7 @@
         "publish": "Ready to go live? Publishing is a Gallurio Pro feature. Sign up for a free month and put your site on the internet today.",
         "theme": "Want to fully customize your colors and fonts? That's a Pro feature. Sign up for a free month to unlock full theme editing.",
         "cta": "Sign up to build without restrictions",
+        "signInCta": "Sign in instead",
         "dismiss": "Keep exploring",
         "promoReveal": "Nice work exploring the editor! Here's a bonus code for an extra free month, stacked on top of your signup free month: {code}"
       },
@@ -3308,10 +3442,18 @@
       "payload_too_large": "That's too large to save. Please reduce the size and try again.",
       "collection_load_failed": "Couldn't load the collection. Please try again.",
       "collection_rename_failed": "Couldn't rename the collection. Please try again.",
+      "collection_description_failed": "Couldn't save the description. Please try again.",
       "cover_set_failed": "Couldn't set the cover. Please try again.",
       "order_save_failed": "Couldn't save the new order. Please try again.",
       "photo_remove_failed": "Couldn't remove the photo. Please try again.",
-      "photo_add_failed": "Couldn't add the photo. Please try again."
+      "photo_add_failed": "Couldn't add the photo. Please try again.",
+      "upload_type_not_accepted": "\"{type}\" isn't a supported format. Upload {accepted} instead.",
+      "upload_file_too_large": "That file is {actual} MB. The limit is {limit} MB.",
+      "upload_dimension_too_small": "That image is {width}×{height}px. It needs to be at least {min}px on the shorter side.",
+      "upload_invalid_image": "That file couldn't be read as an image. Try a different file.",
+      "upload_quota_exceeded": "You've reached your photo limit. Remove some photos and try again.",
+      "upload_rate_limited": "Too many uploads — wait a moment and try again.",
+      "upload_network_error": "Couldn't reach the server. Check your connection and try again."
     }
   },
   "common": {
@@ -3428,6 +3570,7 @@
       "settingUp": "Setting up your dashboard…",
       "settingUpCompact": "Preparing…",
       "goToDashboard": "Go to your dashboard",
+      "goToPortfolio": "Continue to your portfolio",
       "footer": {
         "everything": "Everything in one place",
         "grow": "Built to grow with you",
@@ -3529,7 +3672,13 @@
         "featuredEmpty": "No featured photos selected yet.",
         "carouselHint": "Swipe or use the arrows to browse",
         "carouselPrev": "Previous image",
-        "carouselNext": "Next image"
+        "carouselNext": "Next image",
+        "lightboxClose": "Close",
+        "lightboxCounter": "{current} / {total}",
+        "lightboxFilmstrip": "Photo filmstrip",
+        "lightboxSeeMore": "See more",
+        "lightboxSeeLess": "See less",
+        "lightboxPhotoOf": "Photo {current} of {total}"
       }
     },
     "nav": {
@@ -3593,7 +3742,17 @@
       "failed": "Failed to load photos.",
       "retry": "Retry",
       "empty": "No photos in this collection yet.",
-      "fullSizeAlt": "Full size photo"
+      "fullSizeAlt": "Full size photo",
+      "openPhoto": "Open photo",
+      "photo": "Photo",
+      "loadMore": "Load more",
+      "loadingMore": "Loading more...",
+      "loadMoreFailed": "Failed to load more photos.",
+      "photoCountOne": "1 photo",
+      "photoCountOther": "{count} photos",
+      "previousPhoto": "Previous photo",
+      "nextPhoto": "Next photo",
+      "filmstripLabel": "Photo filmstrip"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. Browse recent work and get in touch to book.",

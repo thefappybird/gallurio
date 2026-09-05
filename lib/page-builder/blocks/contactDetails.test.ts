@@ -32,9 +32,9 @@ describe("buildContactLabelStyle", () => {
 });
 
 describe("buildContactValueStyle", () => {
-  it("returns accent color by default", () => {
+  it("returns surface-safe foreground color by default", () => {
     const css = buildContactValueStyle();
-    expect(css.color).toBe("var(--pf-color-accent)");
+    expect(css.color).toBe("var(--pf-color-fg)");
     expect(css.margin).toBe(0);
   });
 });
@@ -48,8 +48,8 @@ describe("normalizeSocialUrl — instagram", () => {
 });
 
 describe("buildContactIconColor", () => {
-  it("returns accent by default", () => {
-    expect(buildContactIconColor()).toBe("var(--pf-color-accent)");
+  it("returns surface-safe foreground by default", () => {
+    expect(buildContactIconColor()).toBe("var(--pf-color-fg)");
   });
 });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import type { UploadErrorDetail } from "@/lib/uploads/uploadError";
 
 export type UploadedAsset = {
   assetId: string;
@@ -64,19 +65,25 @@ export async function uploadAsset(
     subfolder?: string;
     delivery?: { width?: number; height?: number; fit?: "scale-down" | "contain" | "cover" | "crop" | "pad" };
   } = {},
-): Promise<{ error: AssetValidationError } | { asset: UploadedAsset }> {
+): Promise<{ error: AssetValidationError; detail: UploadErrorDetail } | { asset: UploadedAsset }> {
   if (!constraints.acceptedTypes.includes(file.type)) {
-    return { error: "type_not_accepted" };
+    return {
+      error: "type_not_accepted",
+      detail: { code: "type_not_accepted", mimeType: file.type, acceptedTypes: constraints.acceptedTypes },
+    };
   }
   if (file.size > constraints.maxBytes) {
-    return { error: "file_too_large" };
+    return {
+      error: "file_too_large",
+      detail: { code: "file_too_large", actualBytes: file.size, maxBytes: constraints.maxBytes },
+    };
   }
 
   let dims: { width: number; height: number };
   try {
     dims = await getImageDimensions(file);
   } catch {
-    return { error: "invalid_image" };
+    return { error: "invalid_image", detail: { code: "invalid_image" } };
   }
 
   const directRes = await fetch("/api/images/direct-upload", {

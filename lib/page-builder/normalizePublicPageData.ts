@@ -15,6 +15,9 @@
  * upstream producer of bad data is observable in logs.
  */
 
+import type { Data } from "@measured/puck";
+import { normalizePageBody } from "./pageBody";
+
 export type NormalizedBlock = { type: string; props: Record<string, unknown> } & Record<
   string,
   unknown
@@ -96,5 +99,5 @@ export function normalizePublicPageData(
 
   const result: NormalizedPuckData = { root, content };
   if (zones) result.zones = zones;
-  return result;
+  return normalizePageBody(result as unknown as Data) as unknown as NormalizedPuckData;
 }

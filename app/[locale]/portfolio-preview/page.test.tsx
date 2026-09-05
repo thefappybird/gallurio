@@ -1,6 +1,9 @@
 import React from "react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, beforeAll, afterAll } from "vitest";
 import { render, screen } from "@testing-library/react";
+import mongoose from "mongoose";
+import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
+import { PortfolioDraft, GalleryItem } from "@/lib/db/models";
 
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => {
@@ -34,7 +37,12 @@ vi.mock("@/lib/i18n/localeForCountry", () => ({
 }));
 
 vi.mock("@/lib/page-builder/serverContext", () => ({
-  buildRenderWorkspace: vi.fn((workspace) => ({ slug: workspace.slug })),
+  buildRenderWorkspace: vi.fn((workspace) => ({
+    slug: workspace.slug,
+    publicPage: workspace.publicPage
+      ? { collectionsPopup: workspace.publicPage.collectionsPopup ?? null }
+      : null,
+  })),
 }));
 
 vi.mock("@/app/(public)/w/[orgSlug]/_components/buildContactLabels", () => ({
@@ -47,24 +55,6 @@ vi.mock("@/app/(public)/w/[orgSlug]/_components/buildContactLabels", () => ({
     confirmClose: t("confirmClose"),
     form: { name: t("name") },
   })),
-}));
-
-vi.mock("@/app/(public)/w/[orgSlug]/_components/PortfolioHeader", () => ({
-  PortfolioHeader: ({
-    labels,
-    config,
-    activePath,
-  }: {
-    labels: { home: string };
-    config: { brandText?: string } | null;
-    activePath?: string;
-  }) => (
-    <div>
-      <div data-testid="header-home">{labels.home}</div>
-      <div data-testid="header-brand">{config?.brandText ?? ""}</div>
-      <div data-testid="header-active-path">{activePath ?? ""}</div>
-    </div>
-  ),
 }));
 
 vi.mock("./_components/PreviewContactCard", () => ({
@@ -86,19 +76,58 @@ vi.mock("./_components/PreviewContactCard", () => ({
 }));
 
 vi.mock("./_components/PreviewClient", () => ({
-  PreviewClient: ({ zone, slug }: { zone: string; slug: string }) => (
-    <div data-testid="preview-client">{zone}:{slug}</div>
+  PreviewClient: ({
+    zone,
+    slug,
+    workspace,
+    fallbackData,
+    draftId,
+  }: {
+    zone: string;
+    slug: string;
+    workspace: {
+      chrome?: { nav?: { home?: string } };
+      previewNav?: { homeHref?: string; galleryHref?: string; activePath?: string };
+      publicPage?: { collectionsPopup?: { imageModalLayout?: string } | null } | null;
+    };
+    fallbackData: unknown;
+    draftId: string | null;
+  }) => (
+    <div data-testid="preview-client">
+      {zone}:{slug}
+      <div data-testid="preview-client-nav-home">{workspace.chrome?.nav?.home ?? ""}</div>
+      <div data-testid="preview-client-nav-home-href">{workspace.previewNav?.homeHref ?? ""}</div>
+      <div data-testid="preview-client-nav-gallery-href">{workspace.previewNav?.galleryHref ?? ""}</div>
+      <div data-testid="preview-client-nav-active-path">{workspace.previewNav?.activePath ?? ""}</div>
+      <div data-testid="preview-client-fallback-data">{JSON.stringify(fallbackData)}</div>
+      <div data-testid="preview-client-draft-id">{draftId ?? ""}</div>
+      <div data-testid="preview-client-image-modal-layout">
+        {workspace.publicPage?.collectionsPopup?.imageModalLayout ?? ""}
+      </div>
+    </div>
   ),
 }));
 
 import PortfolioPreviewPage from "./page";
 
+const WORKSPACE_ID = new mongoose.Types.ObjectId();
+
 describe("PortfolioPreviewPage", () => {
-  beforeEach(() => {
+  beforeAll(async () => {
+    await startInMemoryMongo();
+    await PortfolioDraft.createIndexes();
+  });
+  afterAll(async () => {
+    await stopInMemoryMongo();
+  });
+
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await clearCollections();
     requireOrg.mockResolvedValue({
       role: "owner",
       workspace: {
+        _id: WORKSPACE_ID,
         slug: "studio-aurora",
         name: "Studio Aurora",
         publicPage: {
@@ -124,10 +153,9 @@ describe("PortfolioPreviewPage", () => {
 
     const client = screen.getByTestId("preview-client");
     expect(client).toHaveTextContent("home:studio-aurora");
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora");
   });
 
-  it("renders PreviewClient for gallery zone with correct active path", async () => {
+  it("renders PreviewClient for gallery zone with workspace slug", async () => {
     const page = await PortfolioPreviewPage({
       params: Promise.resolve({ locale: "en" }),
       searchParams: Promise.resolve({ zone: "gallery" }),
@@ -137,7 +165,6 @@ describe("PortfolioPreviewPage", () => {
 
     const client = screen.getByTestId("preview-client");
     expect(client).toHaveTextContent("gallery:studio-aurora");
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora/gallery");
   });
 
   it("renders contact zone from DB values (no draft param)", async () => {
@@ -151,11 +178,9 @@ describe("PortfolioPreviewPage", () => {
     expect(screen.getByText("DB title")).toBeInTheDocument();
     expect(screen.getByText("DB description")).toBeInTheDocument();
     expect(screen.getByTestId("contact-label")).toHaveTextContent("en:publicPage.inquiryForm:name");
-    expect(screen.getByTestId("header-home")).toHaveTextContent("en:publicPage.nav:home");
-    expect(screen.getByTestId("header-brand")).toHaveTextContent("DB brand");
   });
 
-  it("maps gallery preview tabs to the gallery active nav path", async () => {
+  it("wires chrome.nav labels into the workspace passed to PreviewClient", async () => {
     const page = await PortfolioPreviewPage({
       params: Promise.resolve({ locale: "en" }),
       searchParams: Promise.resolve({ zone: "gallery" }),
@@ -163,6 +188,149 @@ describe("PortfolioPreviewPage", () => {
 
     render(page);
 
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora/gallery");
+    expect(screen.getByTestId("preview-client-nav-home")).toHaveTextContent("en:publicPage.nav:home");
+  });
+
+  it("wires preview-scoped nav hrefs (stay inside the iframe, not the live public site)", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-nav-home-href")).toHaveTextContent(
+      "/en/portfolio-preview?zone=home&formLocale=en&formDir=ltr"
+    );
+    expect(screen.getByTestId("preview-client-nav-gallery-href")).toHaveTextContent(
+      "/en/portfolio-preview?zone=gallery&formLocale=en&formDir=ltr"
+    );
+  });
+
+  it("sets activePath to the home href on the home zone", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-nav-active-path")).toHaveTextContent(
+      "/en/portfolio-preview?zone=home&formLocale=en&formDir=ltr"
+    );
+  });
+
+  it("sets activePath to the gallery href on the gallery zone", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "gallery" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-nav-active-path")).toHaveTextContent(
+      "/en/portfolio-preview?zone=gallery&formLocale=en&formDir=ltr"
+    );
+  });
+
+  it("uses the active draft's zone data as fallback when draftId belongs to this workspace", async () => {
+    const draft = await PortfolioDraft.create({
+      workspaceId: WORKSPACE_ID,
+      name: "Draft One",
+      data: {
+        home: { content: [{ type: "Hero", props: { headline: "Draft Hero" } }], root: {} },
+      },
+      collectionsPopup: { imageModalLayout: "sidebar" },
+    });
+
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home", draftId: String(draft._id) }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-fallback-data")).toHaveTextContent("Draft Hero");
+    expect(screen.getByTestId("preview-client-draft-id")).toHaveTextContent(String(draft._id));
+    expect(screen.getByTestId("preview-client-image-modal-layout")).toHaveTextContent("sidebar");
+    expect(screen.getByTestId("preview-client-nav-home-href")).toHaveTextContent(
+      `draftId=${String(draft._id)}`,
+    );
+    expect(screen.getByTestId("preview-client-nav-gallery-href")).toHaveTextContent(
+      `draftId=${String(draft._id)}`,
+    );
+  });
+
+  it("falls back to published data when draftId belongs to another workspace (tenant isolation)", async () => {
+    const otherWorkspaceId = new mongoose.Types.ObjectId();
+    const foreignDraft = await PortfolioDraft.create({
+      workspaceId: otherWorkspaceId,
+      name: "Foreign Draft",
+      data: {
+        home: { content: [{ type: "Hero", props: { headline: "Foreign Secret" } }], root: {} },
+      },
+    });
+
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home", draftId: String(foreignDraft._id) }),
+    });
+
+    render(page);
+
+    const fallback = screen.getByTestId("preview-client-fallback-data");
+    expect(fallback).toHaveTextContent("DB Hero");
+    expect(fallback).not.toHaveTextContent("Foreign Secret");
+    expect(screen.getByTestId("preview-client-draft-id")).toHaveTextContent("");
+  });
+
+  it("ignores a malformed draftId and falls back to published data without throwing", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home", draftId: "not-a-valid-object-id" }),
+    });
+
+    render(page);
+
+    expect(screen.getByTestId("preview-client-fallback-data")).toHaveTextContent("DB Hero");
+    expect(screen.getByTestId("preview-client-draft-id")).toHaveTextContent("");
+  });
+
+  it("reconciles the draft's gallery image cache against live GalleryItems (parity with the editor canvas)", async () => {
+    const item = await GalleryItem.create({
+      workspaceId: WORKSPACE_ID,
+      assetId: "live-asset-id",
+      url: "https://example.com/live.jpg",
+      altText: "Live Alt",
+    });
+    const draft = await PortfolioDraft.create({
+      workspaceId: WORKSPACE_ID,
+      name: "Draft Two",
+      data: {
+        home: {
+          content: [
+            {
+              type: "GalleryGrid",
+              props: {
+                id: "g1",
+                images: [{ id: String(item._id), publicId: "stale-asset-id", alt: "Stale Alt" }],
+              },
+            },
+          ],
+          root: {},
+        },
+      },
+    });
+
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home", draftId: String(draft._id) }),
+    });
+
+    render(page);
+
+    const fallback = screen.getByTestId("preview-client-fallback-data");
+    expect(fallback).toHaveTextContent("live-asset-id");
+    expect(fallback).not.toHaveTextContent("stale-asset-id");
   });
 });

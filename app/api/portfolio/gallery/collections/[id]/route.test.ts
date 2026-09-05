@@ -227,12 +227,18 @@ describe("GET /api/portfolio/gallery/collections/[id]", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns a collection's items, paginated by cursor", async () => {
+  it("returns a collection's items, paginated by cursor, plus alt/title/date/meta/width/height and total", async () => {
     const col = await seedCollectionWithItems(workspaceId, 5);
     const r1 = (await GET(new Request("http://t/?limit=2"), makeParams(String(col._id)))) as unknown as MockResp;
-    const b1 = r1.body as { items: { id: string }[]; nextCursor: string | null };
+    const b1 = r1.body as {
+      items: { id: string; alt: string; title: string; date: string; meta: unknown[]; width: number; height: number }[];
+      nextCursor: string | null;
+      total: number;
+    };
     expect(b1.items).toHaveLength(2);
     expect(b1.nextCursor).toBeTruthy();
+    expect(b1.total).toBe(5);
+    expect(b1.items[0]).toMatchObject({ title: "", date: "", meta: [], width: 1, height: 1 });
 
     const r2 = (await GET(
       new Request(`http://t/?limit=2&cursor=${encodeURIComponent(b1.nextCursor!)}`),
@@ -269,8 +275,27 @@ describe("GET /api/portfolio/gallery/collections/[id]", () => {
     const col = await seedCollectionWithItems(workspaceId, 5);
     const res = (await GET(new Request("http://t/?newest=2"), makeParams(String(col._id)))) as unknown as MockResp;
     expect(res.status).toBe(200);
-    const body = res.body as { items: unknown[]; nextCursor: string | null };
+    const body = res.body as { items: unknown[]; nextCursor: string | null; truncated: boolean };
     expect(body.items).toHaveLength(2);
     expect(body.nextCursor).toBeNull();
+    expect(body.truncated).toBe(false);
+  });
+
+  it("?newest= on a collection bigger than the old 60-item cap returns every item, untruncated", async () => {
+    const col = await seedCollectionWithItems(workspaceId, 75);
+    const res = (await GET(new Request("http://t/?newest=75"), makeParams(String(col._id)))) as unknown as MockResp;
+    expect(res.status).toBe(200);
+    const body = res.body as { items: unknown[]; truncated: boolean };
+    expect(body.items).toHaveLength(75);
+    expect(body.truncated).toBe(false);
+  });
+
+  it("?newest= on a collection past the safety ceiling caps at it and reports truncated:true", async () => {
+    const col = await seedCollectionWithItems(workspaceId, 2005);
+    const res = (await GET(new Request("http://t/?newest=2005"), makeParams(String(col._id)))) as unknown as MockResp;
+    expect(res.status).toBe(200);
+    const body = res.body as { items: unknown[]; truncated: boolean };
+    expect(body.items).toHaveLength(2000);
+    expect(body.truncated).toBe(true);
   });
 });

@@ -17,7 +17,7 @@
 import type { Field } from "@measured/puck";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { FONT_PAIR_MAP } from "./resolveBrandKit";
-import type { BrandKitFontPair, BrandKitButtonStyle } from "./types";
+import type { BrandKitFontPair, BlockButtonStyle } from "./types";
 import { fontFamilyValue, type PortfolioFontSelection } from "./fonts";
 export { fontFamilyValue };
 
@@ -38,6 +38,15 @@ export type StyleColorToken = (typeof STYLE_COLOR_TOKENS)[number];
 export const SHADOW_SIZES = ["none", "sm", "md", "lg"] as const;
 export type ShadowSize = (typeof SHADOW_SIZES)[number];
 
+/** A physical border edge a block can render. */
+export type BorderSide = "top" | "right" | "bottom" | "left";
+
+/**
+ * Legacy, single-choice border setting. Keep reading it so existing local drafts
+ * retain their appearance; new edits write `borderSides` instead.
+ */
+export type BorderPreset = "all" | BorderSide;
+
 /** Gallery-specific column counts — stored in `_style.galleryColumns` (not a top-level prop). */
 export const GALLERY_COLUMN_OPTIONS = [2, 3, 4] as const;
 export type GalleryColumns = (typeof GALLERY_COLUMN_OPTIONS)[number];
@@ -45,6 +54,10 @@ export type GalleryColumns = (typeof GALLERY_COLUMN_OPTIONS)[number];
 /** Gallery image spacing tokens — stored in `_style.galleryGap` (not a top-level prop). */
 export const GALLERY_GAP_OPTIONS = ["tight", "normal", "loose"] as const;
 export type GalleryGap = (typeof GALLERY_GAP_OPTIONS)[number];
+
+/** Optional automatic tile-height rhythm for editable Masonry image slots. */
+export const MASONRY_HEIGHT_PATTERNS = ["none", "alternating"] as const;
+export type MasonryHeightPattern = (typeof MASONRY_HEIGHT_PATTERNS)[number];
 
 export type TextAlign = "left" | "center" | "right";
 
@@ -66,6 +79,10 @@ export type BlockStyle = {
   // Border + frame
   borderWidth?: number; // px
   borderColorToken?: StyleColorToken | string;
+  /** Selected border edges. Undefined preserves the legacy full-frame border. */
+  borderSides?: BorderSide[];
+  /** @deprecated Replaced by the independently-toggleable `borderSides`. */
+  borderPreset?: BorderPreset;
   radius?: number; // px
   shadow?: ShadowSize;
   // Spacing — legacy px numbers (kept for back-compat reads of old drafts)
@@ -85,11 +102,30 @@ export type BlockStyle = {
   selfAlign?: SelfAlign; // horizontal placement via margin-auto (visible when width < container)
   width?: CssLength;
   height?: CssLength;
+  /** Image content fit inside its block box. Used by navigation logos to avoid
+   * cropping wide marks; ordinary Image blocks keep the legacy cover default. */
+  imageFit?: "cover" | "contain";
   // Grid placement when the block is a child of a Columns/grid container
   colSpan?: number;
   rowSpan?: number;
   // Flex container layout — for Container/Flex/preset sections
   flexDirection?: "row" | "column";
+  /** Lets a Container's ROW stack wrap to one child per line on narrow pages
+   *  instead of compressing. Unset keeps the existing no-wrap behavior, so
+   *  every row already in saved data is unaffected. Consumed by ContainerBlock
+   *  as a class, not as a resolved CSS property — the wrap is breakpoint-gated
+   *  (see PF_ROW_WRAP_CSS in responsive.ts). */
+  flexWrap?: "nowrap" | "wrap";
+  /** Horizontal arrangement of a Container's child stack. New writes only. */
+  contentHorizontalAlign?: "start" | "center" | "end" | "stretch";
+  /** Vertical distribution of a Container's real children. New writes only. */
+  contentVerticalDistribution?: "start" | "center" | "end" | "between" | "around";
+  /** Inline-axis placement of this block inside a Columns grid cell. New writes only. */
+  cellHorizontalAlign?: "stretch" | "start" | "center" | "end";
+  /** Block-axis placement of this block inside a Columns grid cell. New writes only. */
+  cellVerticalAlign?: "stretch" | "start" | "center" | "end";
+  // Legacy overloaded layout fields. Preserve them as read fallbacks only; new
+  // controls use the explicit content and cell fields above.
   alignItems?: "start" | "center" | "end" | "stretch";
   justifyContent?: "start" | "center" | "end" | "between" | "around";
   gap?: number; // px, gap between children (0–96)
@@ -111,7 +147,7 @@ export type BlockStyle = {
   // buildColorWithOpacity so it composes with each style variant (see manualBlocks.tsx).
   buttonOpacity?: number;
   // Button visual style (solid/outline/soft) — overrides brand-kit default for this button.
-  buttonStyle?: BrandKitButtonStyle;
+  buttonStyle?: BlockButtonStyle;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -159,6 +195,32 @@ export type BlockStyle = {
   // used by flex/grid containers.
   galleryColumns?: GalleryColumns; // 2 | 3 | 4; effective default 3
   galleryGap?: GalleryGap; // "tight" | "normal" | "loose"; effective default "normal"
+  masonryHeightPattern?: MasonryHeightPattern;
+  /** Odd-column tile sequence. Kept on the original keys for saved-style compatibility. */
+  masonryOddHeight?: number;
+  masonryEvenHeight?: number;
+  /** Even-column tile sequence; defaults to the inverse of the odd columns. */
+  masonryEvenColumnOddHeight?: number;
+  masonryEvenColumnEvenHeight?: number;
+  /** @deprecated GalleryMasonry now always uses independent CSS columns. Existing values are ignored. */
+  galleryStagger?: boolean;
+  // CollectionCard â€” independent caption typography. The card shell still uses
+  // the shared frame/background controls above; these target its two visible
+  // text nodes rather than applying an opaque, section-wide typography style.
+  collectionTitleBold?: boolean;
+  collectionTitleItalic?: boolean;
+  collectionTitleUnderline?: boolean;
+  collectionTitleAlign?: TextAlign;
+  collectionTitleFontFamily?: PortfolioFontSelection;
+  collectionTitleFontSize?: number;
+  collectionTitleColorToken?: StyleColorToken | string;
+  collectionSubtitleBold?: boolean;
+  collectionSubtitleItalic?: boolean;
+  collectionSubtitleUnderline?: boolean;
+  collectionSubtitleAlign?: TextAlign;
+  collectionSubtitleFontFamily?: PortfolioFontSelection;
+  collectionSubtitleFontSize?: number;
+  collectionSubtitleColorToken?: StyleColorToken | string;
   // Motion
   animation?: AnimationType; // entrance (plays when scrolled into view)
   animationDuration?: number; // ms
@@ -181,6 +243,9 @@ export type BlockStyle = {
   // ContactDetails — social icon controls
   iconSize?: number; // px (default 20)
   iconColorToken?: StyleColorToken | string;
+  /** Icon-row alignment, independent of valueAlign. Unset -> falls back to
+   *  valueAlign, then center. See buildContactIconAlign. */
+  contactIconAlign?: TextAlign;
 };
 
 export const ANIMATION_TYPES = ["none", "fade", "slide-up", "slide-down", "slide-left", "slide-right", "zoom"] as const;
@@ -253,6 +318,7 @@ export const STYLE_LIMITS = {
   marginY: { min: 0, max: 200 },
   fontSize: { min: 10, max: 120 },
   gap: { min: 0, max: 96 },
+  masonryPatternHeight: { min: 80, max: 1200 },
 } as const;
 
 // Map a palette token to its CSS custom property.
@@ -307,8 +373,26 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   if (style.borderWidth && style.borderWidth > 0) {
     const w = clamp(style.borderWidth, STYLE_LIMITS.borderWidth.min, STYLE_LIMITS.borderWidth.max);
     css.borderStyle = "solid";
-    css.borderWidth = `${w}px`;
     css.borderColor = colorTokenToVar(style.borderColorToken) ?? "var(--pf-color-fg)";
+    const sides: BorderSide[] = style.borderSides ?? (
+      style.borderPreset && style.borderPreset !== "all"
+        ? [style.borderPreset]
+        : ["top", "right", "bottom", "left"]
+    );
+    if (sides.length === 4) {
+      css.borderWidth = `${w}px`;
+    } else {
+      // Set every edge to zero first so changing from a full border has an
+      // immediate, visible result on precisely the selected sides.
+      css.borderWidth = "0px";
+      const sideWidth: Record<BorderSide, string> = {
+        top: "borderTopWidth",
+        right: "borderRightWidth",
+        bottom: "borderBottomWidth",
+        left: "borderLeftWidth",
+      };
+      for (const side of sides) css[sideWidth[side]] = `${w}px`;
+    }
   }
   if (style.radius !== undefined) {
     css.borderRadius = `${clamp(style.radius, STYLE_LIMITS.radius.min, STYLE_LIMITS.radius.max)}px`;
@@ -396,6 +480,12 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
     if (js) css.justifySelf = js;
   }
 
+  // Explicit grid-cell placement. These deliberately layer after the legacy
+  // overloaded fields above so new data wins while old drafts retain their
+  // established rendering until a user changes the new controls.
+  if (style.cellVerticalAlign) css.alignSelf = style.cellVerticalAlign;
+  if (style.cellHorizontalAlign) css.justifySelf = style.cellHorizontalAlign;
+
   // Gap between children — emitted here so it applies on any flex/grid container.
   // justifyContent is intentionally excluded: flex container blocks apply it to
   // their inner content wrappers; it has no useful meaning on a leaf block root.
@@ -470,6 +560,54 @@ export function resolveBlockAttrs(style?: BlockStyle | null): { "data-anim"?: An
   return attrs;
 }
 
+/** Styles the two text nodes rendered inside a CollectionCard's clickable tile.
+ * They intentionally use dedicated fields: the normal block typography applies
+ * to the card shell, while title and photo-count need independent overrides. */
+export function buildCollectionCardCaptionStyle(
+  style: BlockStyle | null | undefined,
+  target: "title" | "subtitle",
+): React.CSSProperties {
+  const title = target === "title";
+  const base: React.CSSProperties = title
+    ? {
+        margin: 0,
+        fontSize: "1rem",
+        fontWeight: 600,
+        lineHeight: 1.3,
+        color: "var(--pf-color-fg)",
+      }
+    : {
+        margin: "0.25rem 0 0",
+        fontSize: "0.875rem",
+        lineHeight: 1.4,
+        color: "color-mix(in srgb, var(--pf-color-fg) 70%, transparent)",
+        opacity: 0.75,
+      };
+  if (!style) return base;
+
+  const fontFamily = title ? style.collectionTitleFontFamily : style.collectionSubtitleFontFamily;
+  const fontSize = title ? style.collectionTitleFontSize : style.collectionSubtitleFontSize;
+  const colorToken = title ? style.collectionTitleColorToken : style.collectionSubtitleColorToken;
+  const bold = title ? style.collectionTitleBold : style.collectionSubtitleBold;
+  const italic = title ? style.collectionTitleItalic : style.collectionSubtitleItalic;
+  const underline = title ? style.collectionTitleUnderline : style.collectionSubtitleUnderline;
+  const align = title ? style.collectionTitleAlign : style.collectionSubtitleAlign;
+  const overrides: React.CSSProperties = {};
+
+  const resolvedFamily = fontFamilyValue(fontFamily);
+  if (resolvedFamily) overrides.fontFamily = resolvedFamily;
+  if (fontSize !== undefined) {
+    overrides.fontSize = `${clamp(fontSize, STYLE_LIMITS.fontSize.min, STYLE_LIMITS.fontSize.max)}px`;
+  }
+  if (colorToken) overrides.color = colorTokenToVar(colorToken) ?? undefined;
+  if (bold) overrides.fontWeight = 700;
+  if (italic) overrides.fontStyle = "italic";
+  if (underline) overrides.textDecoration = "underline";
+  if (align) overrides.textAlign = align;
+
+  return { ...base, ...overrides };
+}
+
 /**
  * Build the CSSProperties for a ContactDetails label (`<dt>`).
  * Applies sensible defaults (uppercase, muted) then layers the label* BlockStyle props on top.
@@ -505,14 +643,14 @@ export function buildContactLabelStyle(style?: BlockStyle | null): React.CSSProp
 
 /**
  * Build the CSSProperties for a ContactDetails value (`<dd>`).
- * Default color is accent so email/phone/socials show in the brand accent color.
+ * Default color is foreground so contact copy stays readable on every theme surface.
  * The value* BlockStyle props layer on top to override.
  */
 export function buildContactValueStyle(style?: BlockStyle | null): React.CSSProperties {
   const base: React.CSSProperties = {
     margin: 0,
     fontSize: "0.9375rem",
-    color: "var(--pf-color-accent)",
+    color: "var(--pf-color-fg)",
   };
   if (!style) return base;
   const overrides: React.CSSProperties = {};
@@ -536,13 +674,26 @@ export function buildContactValueStyle(style?: BlockStyle | null): React.CSSProp
 
 /**
  * Resolve the CSS color for social icons in a ContactDetails block.
- * Default: accent. Overridden by `_style.iconColorToken`.
+ * Default: foreground. Overridden by `_style.iconColorToken`.
  */
 export function buildContactIconColor(style?: BlockStyle | null): string {
   if (style?.iconColorToken) {
-    return colorTokenToVar(style.iconColorToken) ?? "var(--pf-color-accent)";
+    return colorTokenToVar(style.iconColorToken) ?? "var(--pf-color-fg)";
   }
-  return "var(--pf-color-accent)";
+  return "var(--pf-color-fg)";
+}
+
+/**
+ * Resolve the flex `justify-content` for a ContactDetails social-icon row.
+ * Prefers the explicit `contactIconAlign`; falls back to `valueAlign` (the
+ * icon row used to follow the value/text alignment, so unset stays put on
+ * saved pages) and defaults to center when both are unset.
+ */
+export function buildContactIconAlign(style?: BlockStyle | null): "flex-start" | "center" | "flex-end" {
+  const align = style?.contactIconAlign ?? style?.valueAlign;
+  if (align === "left") return "flex-start";
+  if (align === "right") return "flex-end";
+  return "center";
 }
 
 /** Resolve the pixel size for ContactDetails social icons. Default 20px. */
@@ -560,13 +711,11 @@ export function contactGridTemplate(columns: number | undefined): string {
 }
 
 /** The text-color token a Button actually renders when textColorToken is unset.
- *  Mirrors ButtonBlock's per-variant fallback so the editor control can show the
- *  same effective value. Display-only. */
+ *  Every variant uses the universal foreground so labels remain readable over
+ *  every built-in surface. Display-only. */
 export function effectiveButtonTextToken(
-  style: BlockStyle | undefined,
+  _style: BlockStyle | undefined,
 ): StyleColorToken | string {
-  if (style?.buttonStyle === "solid") return "background";
-  if (style?.buttonStyle === "soft" || style?.buttonStyle === "outline")
-    return style.buttonColorToken ?? "primary";
-  return "foreground"; // unset / legacy branch
+  void _style;
+  return "foreground";
 }

@@ -3,6 +3,13 @@ import { normalizePublicPageData, hasRenderableBlocks } from "./normalizePublicP
 
 const known = new Set(["Heading", "Text"]);
 
+function bodyContent(data: ReturnType<typeof normalizePublicPageData>) {
+  return (data!.content[0].props.content ?? []) as Array<{
+    type: string;
+    props: Record<string, unknown>;
+  }>;
+}
+
 describe("normalizePublicPageData", () => {
   it("returns null for null / undefined / non-object input", () => {
     expect(normalizePublicPageData(null, known)).toBeNull();
@@ -37,8 +44,8 @@ describe("normalizePublicPageData", () => {
       { root: {}, content: [null, { type: "Heading", props: {} }, undefined, 5] },
       known
     );
-    expect(out!.content).toHaveLength(1);
-    expect(out!.content[0].type).toBe("Heading");
+    expect(bodyContent(out)).toHaveLength(1);
+    expect(bodyContent(out)[0].type).toBe("Heading");
   });
 
   it("drops blocks whose type is not registered in the config", () => {
@@ -46,12 +53,12 @@ describe("normalizePublicPageData", () => {
       { root: {}, content: [{ type: "Ghost", props: {} }, { type: "Text", props: {} }] },
       known
     );
-    expect(out!.content.map((b) => b.type)).toEqual(["Text"]);
+    expect(bodyContent(out).map((b) => b.type)).toEqual(["Text"]);
   });
 
   it("defaults a missing block `props` to an object", () => {
     const out = normalizePublicPageData({ root: {}, content: [{ type: "Heading" }] }, known);
-    expect(out!.content[0].props).toEqual({});
+    expect(bodyContent(out)[0].props).toEqual({});
   });
 
   it("returns null when nothing is renderable (so the caller shows its fallback)", () => {
@@ -67,7 +74,7 @@ describe("normalizePublicPageData", () => {
     };
     const out = normalizePublicPageData(data, known);
     expect(out!.root).toEqual({ props: { title: "T" } });
-    expect(out!.content).toEqual([{ type: "Heading", props: { text: "H" } }]);
+    expect(bodyContent(out)).toEqual([{ type: "Heading", props: { text: "H" } }]);
   });
 
   it("keeps a page whose blocks live only in zones even if top-level content is empty", () => {
@@ -103,7 +110,7 @@ describe("normalizePublicPageData", () => {
       },
       imageKnown
     );
-    expect(out!.content[0].props).toEqual({
+    expect(bodyContent(out)[0].props).toEqual({
       imagePublicId: "ws/legacy.jpg",
       imageUrl: "",
       alt: "Legacy photo",

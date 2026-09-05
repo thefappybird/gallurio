@@ -5,6 +5,7 @@ const galleryCollectionSchema = new Schema(
     workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", required: true, index: true },
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, lowercase: true, trim: true },
+    description: { type: String, default: "" },
     coverItemId: { type: Schema.Types.ObjectId, ref: "GalleryItem", default: null },
     isPublic: { type: Boolean, default: true },
     order: { type: Number, default: 0 },

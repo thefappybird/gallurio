@@ -97,11 +97,25 @@ describe("getItemsByIds", () => {
 });
 
 describe("listCollectionItemsPage", () => {
-  it("returns {items:[], nextCursor:null} for empty workspace or bad collectionId", async () => {
+  it("returns {items:[], nextCursor:null, total:0} for empty workspace or bad collectionId", async () => {
     expect(await listCollectionItemsPage({ workspaceId: "", collectionId: new Types.ObjectId().toString() }))
-      .toEqual({ items: [], nextCursor: null });
+      .toEqual({ items: [], nextCursor: null, total: 0, description: "" });
     expect(await listCollectionItemsPage({ workspaceId: new Types.ObjectId().toString(), collectionId: "nope" }))
-      .toEqual({ items: [], nextCursor: null });
+      .toEqual({ items: [], nextCursor: null, total: 0, description: "" });
+  });
+
+  // Owner mode feeds the editor preview, which shows the same header as the
+  // published page — so it has to carry the description too.
+  it("returns the collection's own description alongside the page", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({
+      workspaceId: ws, name: "C", slug: "desc-owner",
+      description: "Photographed in full, from the first fitting to the last of the night.",
+    });
+    await seedItems(ws, col._id, 2);
+    const page = await listCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.description).toBe("Photographed in full, from the first fitting to the last of the night.");
+    expect(page.items).toHaveLength(2);
   });
 
   it("paginates by (order,_id) ascending and walks the cursor to the end", async () => {
@@ -153,6 +167,47 @@ describe("listCollectionItemsPage", () => {
     await seedItems(ws, col._id, 1);
     const page = await listCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
     expect(page.items[0].altText).toBe("Alt 1");
+  });
+
+  it("returns total = the full collection count, independent of the page limit", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 5);
+    const page = await listCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 2 });
+    expect(page.items).toHaveLength(2);
+    expect(page.total).toBe(5);
+  });
+
+  it("exposes alt/title/date/location/client/meta/tags/width/height, defaulting missing dims to 1", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await GalleryItem.create({
+      workspaceId: ws,
+      collectionId: col._id,
+      assetId: "rich",
+      url: "u",
+      order: 0,
+      caption: "A caption",
+      altText: "",
+      title: "Ceremony",
+      date: "2026-06-15",
+      location: "Manila",
+      client: "Reyes Family",
+      meta: [{ label: "Photographer", value: "J. Cruz" }],
+      tags: ["wedding"],
+    });
+    const page = await listCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.items[0]).toMatchObject({
+      alt: "A caption", // falls back to caption since altText is ""
+      title: "Ceremony",
+      date: "2026-06-15",
+      location: "Manila",
+      client: "Reyes Family",
+      meta: [{ label: "Photographer", value: "J. Cruz" }],
+      tags: ["wedding"],
+      width: 1, // no width/height recorded on this doc — required-non-null default
+      height: 1,
+    });
   });
 });
 
@@ -213,13 +268,54 @@ describe("listCollectionNewest", () => {
         caption: `N${i}`, order: i,
       });
     }
-    const items = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 3 });
+    const { items, truncated } = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 3 });
     expect(items.map((i) => i.caption)).toEqual(["N4", "N3", "N2"]);
+    expect(truncated).toBe(false);
   });
 
-  it("clamps limit to the safety cap and returns [] for bad input", async () => {
-    expect(await listCollectionNewest({ workspaceId: "", collectionId: new Types.ObjectId().toString(), limit: 5 })).toEqual([]);
-    expect(await listCollectionNewest({ workspaceId: new Types.ObjectId().toString(), collectionId: "nope", limit: 5 })).toEqual([]);
+  it("returns every item of a collection larger than the old 60 cap", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 75);
+    const { items, truncated } = await listCollectionNewest({
+      workspaceId: ws.toString(),
+      collectionId: col._id.toString(),
+      limit: 75,
+    });
+    expect(items).toHaveLength(75);
+    expect(truncated).toBe(false);
+  });
+
+  it("returns [] and truncated:false for bad input (empty workspace / invalid collection id)", async () => {
+    expect(
+      await listCollectionNewest({ workspaceId: "", collectionId: new Types.ObjectId().toString(), limit: 5 })
+    ).toEqual({ items: [], truncated: false });
+    expect(
+      await listCollectionNewest({ workspaceId: new Types.ObjectId().toString(), collectionId: "nope", limit: 5 })
+    ).toEqual({ items: [], truncated: false });
+  });
+
+  it("treats a non-finite, missing, or negative limit as 'everything', never as 1", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 5);
+    for (const limit of [NaN, Infinity, -3, 0, undefined as unknown as number]) {
+      const { items } = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit });
+      expect(items).toHaveLength(5);
+    }
+  });
+
+  it("sets truncated:true and clamps at the safety ceiling for an oversized collection", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seedItems(ws, col._id, 2005);
+    const { items, truncated } = await listCollectionNewest({
+      workspaceId: ws.toString(),
+      collectionId: col._id.toString(),
+      limit: 2005,
+    });
+    expect(items).toHaveLength(2000);
+    expect(truncated).toBe(true);
   });
 
   it("does not return another workspace's items (tenant isolation)", async () => {
@@ -227,7 +323,9 @@ describe("listCollectionNewest", () => {
     const wsB = new Types.ObjectId();
     const colB = await makeCollection(wsB);
     await seedItems(wsB, colB._id, 3);
-    expect(await listCollectionNewest({ workspaceId: wsA.toString(), collectionId: colB._id.toString(), limit: 10 })).toEqual([]);
+    expect(
+      await listCollectionNewest({ workspaceId: wsA.toString(), collectionId: colB._id.toString(), limit: 10 })
+    ).toEqual({ items: [], truncated: false });
   });
 
   it("exposes altText on every item", async () => {
@@ -238,7 +336,7 @@ describe("listCollectionNewest", () => {
       assetId: `ws/${ws}/n0`, url: "https://imagedelivery.net/hash/n0/public",
       caption: "N0", altText: "Alt N0", order: 0,
     });
-    const items = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 1 });
+    const { items } = await listCollectionNewest({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 1 });
     expect(items[0].altText).toBe("Alt N0");
   });
 });
@@ -250,10 +348,62 @@ describe("updateItemMeta", () => {
       workspaceId: ws, assetId: "pid", url: "u", caption: "Original caption", altText: "Original alt", order: 0,
     });
     const result = await updateItemMeta({ workspaceId: ws.toString(), itemId: item._id.toString(), altText: "New alt" });
-    expect(result).toEqual({ id: item._id.toString(), publicId: "pid", thumbUrl: expect.any(String), caption: "Original caption", altText: "New alt" });
+    expect(result).toEqual({
+      id: item._id.toString(),
+      publicId: "pid",
+      thumbUrl: expect.any(String),
+      caption: "Original caption",
+      altText: "New alt",
+      title: "",
+      date: "",
+      location: "",
+      client: "",
+      meta: [],
+      tags: [],
+    });
     const saved = await GalleryItem.findById(item._id).lean();
     expect(saved?.caption).toBe("Original caption");
     expect(saved?.altText).toBe("New alt");
+  });
+
+  it("sets title/date/location/client/meta/tags without disturbing altText/caption", async () => {
+    const ws = new Types.ObjectId();
+    const item = await GalleryItem.create({
+      workspaceId: ws, assetId: "pid", url: "u", caption: "Original caption", altText: "Original alt", order: 0,
+    });
+    const result = await updateItemMeta({
+      workspaceId: ws.toString(),
+      itemId: item._id.toString(),
+      title: "Ceremony",
+      date: "2026-06-15",
+      location: "Manila",
+      client: "Reyes Family",
+      meta: [{ label: "Photographer", value: "J. Cruz" }],
+      tags: ["wedding"],
+    });
+    expect(result).toMatchObject({
+      title: "Ceremony",
+      date: "2026-06-15",
+      location: "Manila",
+      client: "Reyes Family",
+      meta: [{ label: "Photographer", value: "J. Cruz" }],
+      tags: ["wedding"],
+      caption: "Original caption",
+      altText: "Original alt",
+    });
+    const saved = await GalleryItem.findById(item._id).lean();
+    expect(saved?.title).toBe("Ceremony");
+    expect(saved?.caption).toBe("Original caption");
+  });
+
+  it("tenant isolation: cannot patch title/meta on another workspace's item", async () => {
+    const wsA = new Types.ObjectId();
+    const wsB = new Types.ObjectId();
+    const item = await GalleryItem.create({ workspaceId: wsB, assetId: "pid", url: "u", order: 0 });
+    const result = await updateItemMeta({ workspaceId: wsA.toString(), itemId: item._id.toString(), title: "Hijacked" });
+    expect(result).toBeNull();
+    const saved = await GalleryItem.findById(item._id).lean();
+    expect(saved?.title).toBe("");
   });
 
   it("sets caption only, leaving altText untouched", async () => {
@@ -305,30 +455,69 @@ describe("listPublicCollectionItemsPage", () => {
     );
     const p1 = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 2 });
     expect(p1.items.map((i) => i.publicId)).toEqual(["p0", "p1"]);
-    expect(p1.items[0]).toEqual({ id: expect.any(String), publicId: "p0", alt: "Alt0" });
+    expect(p1.items[0]).toMatchObject({ id: expect.any(String), publicId: "p0", alt: "Alt0" });
     expect(p1.items[1].alt).toBe("Cap1"); // alt falls back to caption
     expect(p1.nextCursor).toBeTruthy();
+    expect(p1.total).toBe(3);
     const p2 = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 2, cursor: p1.nextCursor });
     expect(p2.items.map((i) => i.publicId)).toEqual(["p2"]);
     expect(p2.nextCursor).toBeNull();
+  });
+  it("exposes title/date/location/client/meta/tags, and defaults missing width/height to 1", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: true });
+    await GalleryItem.create({
+      workspaceId: ws, collectionId: col._id, assetId: "rich", url: "u", order: 0,
+      title: "Ceremony", date: "2026-06-15", location: "Manila", client: "Reyes Family",
+      meta: [{ label: "Photographer", value: "J. Cruz" }], tags: ["wedding"],
+    });
+    const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.items[0]).toMatchObject({
+      title: "Ceremony",
+      date: "2026-06-15",
+      location: "Manila",
+      client: "Reyes Family",
+      meta: [{ label: "Photographer", value: "J. Cruz" }],
+      tags: ["wedding"],
+      width: 1,
+      height: 1,
+    });
   });
   it("returns empty for a PRIVATE collection", async () => {
     const ws = new Types.ObjectId();
     const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: false });
     await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "p", url: "u", order: 0 });
     const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
-    expect(page).toEqual({ items: [], nextCursor: null });
+    expect(page).toEqual({ items: [], nextCursor: null, total: 0, description: "" });
   });
   it("tenant isolation: foreign workspace id yields empty", async () => {
     const wsA = new Types.ObjectId(); const wsB = new Types.ObjectId();
     const colB = await GalleryCollection.create({ workspaceId: wsB, name: "B", slug: "b", isPublic: true });
     await GalleryItem.create({ workspaceId: wsB, collectionId: colB._id, assetId: "p", url: "u", order: 0 });
     const page = await listPublicCollectionItemsPage({ workspaceId: wsA.toString(), collectionId: colB._id.toString() });
-    expect(page).toEqual({ items: [], nextCursor: null });
+    expect(page).toEqual({ items: [], nextCursor: null, total: 0, description: "" });
   });
   it("invalid collectionId yields empty (no throw)", async () => {
     const page = await listPublicCollectionItemsPage({ workspaceId: new Types.ObjectId().toString(), collectionId: "not-an-id" });
-    expect(page).toEqual({ items: [], nextCursor: null });
+    expect(page).toEqual({ items: [], nextCursor: null, total: 0, description: "" });
+  });
+  // The contact-sheet and split-index popup layouts print this above the grid.
+  it("returns the collection's own description alongside the page", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({
+      workspaceId: ws, name: "C", slug: "c", isPublic: true,
+      description: "A wedding across two days at the Villa Estella.",
+    });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "p", url: "u", order: 0 });
+    const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.description).toBe("A wedding across two days at the Villa Estella.");
+  });
+  it("returns an empty description when the collection has none", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: true });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "p", url: "u", order: 0 });
+    const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page.description).toBe("");
   });
 });
 

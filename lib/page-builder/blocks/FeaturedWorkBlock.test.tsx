@@ -62,6 +62,20 @@ describe("FeaturedWorkBlock — empty state", () => {
     render(<FeaturedWorkBlock {...featuredWorkDefaultProps} collections={[]} />);
     expect(screen.getByText(/no featured photos selected yet/i)).toBeTruthy();
   });
+
+  it("shows collection-card shapes in an empty preset hover preview", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[]}
+        puck={{ metadata: { presetPreview: true } }}
+      />
+    );
+
+    expect(screen.queryByText(/no featured photos selected yet/i)).not.toBeInTheDocument();
+    expect(container.querySelector("[data-preset-media-placeholder='collections']")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-preset-media-tile]")).toHaveLength(3);
+  });
 });
 
 describe("FeaturedWorkBlock — tiles render", () => {

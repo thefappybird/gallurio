@@ -49,6 +49,22 @@ export const PF_PAGE_CONTAINER: CSSProperties = {
 /** CSS declaration establishing the page container — for injected `<style>` seams. */
 export const PF_PAGE_CONTAINER_CSS = `container-type: inline-size; container-name: ${PF_CONTAINER_NAME};`;
 
+/**
+ * Section padding the gallery container blocks (GalleryGrid, GalleryMasonry,
+ * FeaturedWork) paint when `_style` sets none. Lives here as ONE value so the
+ * editor's padding controls can float exactly what the blocks apply — the two
+ * drifting apart is what left those controls blank while the page had 64/24px.
+ */
+export const GALLERY_EFFECTIVE_PAD = {
+  top: "4rem",
+  right: "1.5rem",
+  bottom: "4rem",
+  left: "1.5rem",
+} as const;
+
+/** `GALLERY_EFFECTIVE_PAD` as the CSS shorthand the blocks hand to `padVar`. */
+export const GALLERY_PAD_SHORTHAND = `${GALLERY_EFFECTIVE_PAD.top} ${GALLERY_EFFECTIVE_PAD.right}`;
+
 /** Wrap a default value in the responsive padding custom property. */
 export function padVar(defaultValue: string): string {
   return `var(--pf-pad, ${defaultValue})`;
@@ -74,7 +90,77 @@ export function masonryColsVar(defaultValue: string | number): string {
  * queries match (e.g. 380px matches 900/600/400), the last matching rule wins,
  * which is the narrowest — exactly the intended step-down.
  */
+/**
+ * Class a Container puts on its content slot when that slot stacks its children
+ * DOWN a column (the default direction).
+ */
+export const PF_COLUMN_STACK_CLASS = "pf-stack-column";
+
+/**
+ * Cancels a nested Container's `flexGrow: 1` inside a column stack.
+ *
+ * Container declares `flex-grow: 1` so that siblings in a ROW stack share the
+ * width (the split presets rely on it). Down a COLUMN the same declaration means
+ * one nested section absorbs all the free height — its background bleeds over the
+ * parent's whole empty area and the parent's vertical-distribution control stops
+ * doing anything. Only the PARENT knows the axis, so the parent cancels it here.
+ *
+ * `!important` is required, not stylistic: `flex-grow` is written as an INLINE
+ * style by the child, and an author `!important` declaration is the only thing
+ * that outranks one (the custom-property indirection used elsewhere in this file
+ * is unavailable — jsdom drops `var()` on a typed property, which would blind the
+ * unit tests that pin this value).
+ */
+export const PF_COLUMN_STACK_CSS = `
+.${PF_COLUMN_STACK_CLASS} > [data-block="container"] { flex-grow: 0 !important; }
+`.trim();
+
+/** Marks a Container's ROW stack as wrap-to-stack on narrow pages. */
+export const PF_ROW_WRAP_CLASS = "pf-row-wrap";
+
+/**
+ * Turns an opted-in row stack into a single-column stack on narrow pages.
+ *
+ * A three-item row like the compact contact bar (heading block, contact
+ * details, button) has nowhere useful to go at 375px: `justify-content:
+ * between` keeps all three on one line and each one compresses until the copy
+ * wraps mid-phrase. Wrapping alone is not enough either — `flex-wrap: wrap`
+ * without a basis leaves an uneven two-then-one line. Pinning the children to
+ * `flex-basis: 100%` under the same breakpoint gives one item per line.
+ *
+ * Gated on the page container (not a viewport media query) for the same reason
+ * every other rule in this file is: the editor canvas is a narrow surface at a
+ * wide viewport, so only the container width tells the truth. Opt-in per
+ * Container via `_style.flexWrap: "wrap"` — an unmarked row is untouched.
+ */
+export const PF_ROW_WRAP_CSS = `
+@container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_COMPACT}px) {
+  .${PF_ROW_WRAP_CLASS} { flex-wrap: wrap; }
+  .${PF_ROW_WRAP_CLASS} > * { flex-basis: 100%; }
+}
+`.trim();
+
+/**
+ * The sticky-footer frame: Navigation pinned on top, PageBody taking whatever is
+ * left, Footer closing the page.
+ *
+ * It has to key on the PageBody's own marker because the element that actually
+ * parents the three chrome blocks differs per surface and neither side can style
+ * it directly: in the editor it is Puck's root drop zone, on the public page and
+ * in the draft preview it is the anonymous wrapper `<Render>` puts around the
+ * zone. Declaring the frame on the root wrapper instead (which IS ours) does
+ * nothing — that wrapper's only child is this element, so its rows never see the
+ * three blocks at all. `:has(> …)` matches exactly the one element that holds
+ * them, on both surfaces, from a single rule.
+ */
+export const PF_PAGE_FRAME_CSS = `
+:has(> [data-block="page-body"]) { display: flex; flex-direction: column; min-height: 100dvh; }
+`.trim();
+
 export const PF_RESPONSIVE_CSS = `
+${PF_PAGE_FRAME_CSS}
+${PF_COLUMN_STACK_CSS}
+${PF_ROW_WRAP_CSS}
 @container ${PF_CONTAINER_NAME} (max-width: ${PF_BP_TABLET_MAX}px) {
   [data-block] {
     --pf-pad: 2.5rem 1.25rem;

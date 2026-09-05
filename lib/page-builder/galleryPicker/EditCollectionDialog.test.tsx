@@ -3,6 +3,8 @@ import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { EditCollectionDialog } from "./EditCollectionDialog";
 import { __clearPickerDataCache } from "./usePickerData";
+import { UploadError } from "@/lib/uploads/uploadError";
+import { PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 
 vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
@@ -22,7 +24,7 @@ const items = [
 
 function defaultRoute(url: string, init?: RequestInit) {
   if (url === "/api/portfolio/gallery") return Promise.resolve({ ok: true, json: async () => ({ collections: [collection], items }) } as Response);
-  if (url.startsWith("/api/portfolio/gallery/collections/col1?")) return Promise.resolve({ ok: true, json: async () => ({ items, nextCursor: null }) } as Response);
+  if (url.startsWith("/api/portfolio/gallery/collections/col1?")) return Promise.resolve({ ok: true, json: async () => ({ items, nextCursor: null, description: "Full-day coverage." }) } as Response);
   if (url === "/api/portfolio/gallery/collections/col1" && init?.method === "PATCH")
     return Promise.resolve({ ok: true, json: async () => ({ id: "col1", name: "Renamed", coverItemId: "a" }) } as Response);
   if (url.includes("/items/remove")) return Promise.resolve({ ok: true, json: async () => ({ removed: 1 }) } as Response);
@@ -51,6 +53,24 @@ describe("EditCollectionDialog", () => {
     expect(await screen.findByRole("checkbox", { name: /select A/i })).toBeTruthy();
   });
 
+  it("places a same-size upload drop card before the collection photos", async () => {
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    const card = screen.getByTestId("collection-upload-drop-card");
+    const grid = card.closest("ul");
+    expect(grid?.firstElementChild).toContainElement(card);
+    expect(card.closest("li")?.className).toContain("aspect-square");
+  });
+
+  it("opens the file picker when the upload card is clicked", async () => {
+    const click = vi.spyOn(HTMLInputElement.prototype, "click");
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    fireEvent.click(screen.getByTestId("collection-upload-drop-card"));
+    expect(click).toHaveBeenCalled();
+    click.mockRestore();
+  });
+
   it("renames via PATCH", async () => {
     open();
     const input = await screen.findByLabelText(/collection name/i);
@@ -59,6 +79,30 @@ describe("EditCollectionDialog", () => {
     await waitFor(() =>
       expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/collections/col1" && (i as RequestInit)?.method === "PATCH")).toBe(true)
     );
+  });
+
+  it("prefills the description from the collection fetch and saves it via PATCH", async () => {
+    open();
+    const field = await screen.findByLabelText(/description/i);
+    await waitFor(() => expect(field).toHaveValue("Full-day coverage."));
+
+    fireEvent.change(field, { target: { value: "Updated description." } });
+    fireEvent.click(screen.getByRole("button", { name: /save description/i }));
+
+    await waitFor(() => {
+      const call = mockFetch.mock.calls.find(
+        ([u, i]) => String(u) === "/api/portfolio/gallery/collections/col1" && (i as RequestInit)?.method === "PATCH"
+      );
+      expect(call).toBeTruthy();
+      expect(JSON.parse((call![1] as RequestInit).body as string)).toEqual({ description: "Updated description." });
+    });
+  });
+
+  it("disables Save description until the description actually changes", async () => {
+    open();
+    const field = await screen.findByLabelText(/description/i);
+    await waitFor(() => expect(field).toHaveValue("Full-day coverage."));
+    expect(screen.getByRole("button", { name: /save description/i })).toBeDisabled();
   });
 
   it("blocks rename when the name is empty", async () => {
@@ -130,6 +174,8 @@ describe("EditCollectionDialog", () => {
     )).toBe(true));
     // onChanged is called for cache refresh — that's the only side-effect.
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    expect(await screen.findByText(/add photo details/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     // No "selection" callback is called — EditCollectionDialog has no such API.
     // Verify the uploaded photo checkbox is NOT pre-checked (no auto-select).
     const allCheckboxes = screen.getAllByRole("checkbox");
@@ -138,19 +184,47 @@ describe("EditCollectionDialog", () => {
     }
   });
 
-  it("renders a per-photo edit-alt-text trigger with an accessible name", async () => {
+  it("uploads files dropped on the first grid card", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "drop-asset",
+      url: "https://x/drop.jpg",
+      width: 900,
+      height: 600,
+      format: "jpeg",
+      sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "drop-id", thumbUrl: "https://x/drop-thumb.jpg", caption: null }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+
     open();
-    expect(await screen.findByRole("button", { name: /edit alt text for A/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /edit alt text for B/i })).toBeTruthy();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    fireEvent.drop(screen.getByTestId("collection-upload-drop-card"), {
+      dataTransfer: { files: [new File(["data"], "dropped.jpg", { type: "image/jpeg" })] },
+    });
+
+    await waitFor(() => expect(vi.mocked(uploadImage)).toHaveBeenCalled());
+    await waitFor(() => expect(mockFetch.mock.calls.some(([u, i]) =>
+      String(u) === "/api/portfolio/gallery/items" && (i as RequestInit)?.method === "POST"
+    )).toBe(true));
+  });
+
+  it("renders a per-photo edit-details trigger with an accessible name", async () => {
+    open();
+    expect(await screen.findByRole("button", { name: /edit photo details for A/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /edit photo details for B/i })).toBeTruthy();
   });
 
   it("meets the 24x24 minimum target size (WCAG 2.2 SC 2.5.8)", async () => {
     open();
-    const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
+    const editTrigger = await screen.findByRole("button", { name: /edit photo details for A/i });
     expect(editTrigger.className).toMatch(/\bsize-6\b/);
   });
 
-  it("editing alt text PATCHes the item and the tile reflects it when reopened", async () => {
+  it("editing photo details PATCHes the item and the tile reflects it when reopened", async () => {
     mockFetch.mockImplementation((u: string, init?: RequestInit) => {
       if (u === "/api/portfolio/gallery/items/a" && init?.method === "PATCH") {
         return Promise.resolve({ ok: true, json: async () => ({ ...items[0], altText: "Bride and groom" }) } as Response);
@@ -158,18 +232,152 @@ describe("EditCollectionDialog", () => {
       return defaultRoute(u, init);
     });
     open();
-    fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /edit photo details for A/i }));
     const field = await screen.findByLabelText("Alt text");
     expect(field).toHaveValue("");
     fireEvent.change(field, { target: { value: "Bride and groom" } });
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() =>
       expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/a" && (i as RequestInit)?.method === "PATCH")).toBe(true)
     );
     await waitFor(() => expect(screen.queryByLabelText("Alt text")).toBeNull());
 
-    fireEvent.click(screen.getByRole("button", { name: /edit alt text for A/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit photo details for A/i }));
     expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
+  });
+
+  it("reports a per-file error for a file rejected before upload (unsupported type), instead of silently dropping it", async () => {
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const badFile = new File(["data"], "clip.gif", { type: "image/gif" });
+    fireEvent.change(fileInput, { target: { files: [badFile] } });
+
+    const alert = await screen.findByText(/clip\.gif/i);
+    expect(alert.closest("li")?.textContent).toMatch(/gif/i);
+    // Never uploaded — pre-validation rejected it before hitting the network.
+    expect(uploadImage).not.toHaveBeenCalled();
+  });
+
+  it("reports per-file errors on a mixed batch — some files succeed, one fails at upload, one fails type validation", async () => {
+    vi.mocked(uploadImage).mockImplementation(async (file: File) => {
+      if (file.name === "bad.png") throw new UploadError({ code: "file_too_large", actualBytes: 20_000_000, maxBytes: PORTFOLIO_PHOTO_MAX_BYTES });
+      return { assetId: `asset-${file.name}`, url: `https://x/${file.name}`, width: 900, height: 600, format: "jpeg", sizeBytes: 20000 };
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", thumbUrl: "https://x/up-thumb.jpg", caption: null }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const good = new File(["data"], "good.jpg", { type: "image/jpeg" });
+    const tooBig = new File(["data"], "bad.png", { type: "image/png" });
+    const wrongType = new File(["data"], "clip.gif", { type: "image/gif" });
+    fireEvent.change(fileInput, { target: { files: [good, tooBig, wrongType] } });
+
+    // The one that fails validation reports immediately.
+    await screen.findByText(/clip\.gif/i);
+    // The one that fails upload reports once the batch settles.
+    const badLine = await screen.findByText(/bad\.png/i);
+    expect(badLine.closest("li")?.textContent).toMatch(/20\.0 MB|too large|15/i);
+    // Both are visible together — not collapsed into one message.
+    expect(screen.getByText(/clip\.gif/i)).toBeTruthy();
+    expect(screen.getByText(/bad\.png/i)).toBeTruthy();
+    // The good file still succeeded despite the other two failing.
+    await waitFor(() => expect(mockFetch.mock.calls.some(([u, i]) =>
+      String(u) === "/api/portfolio/gallery/items" && (i as RequestInit)?.method === "POST"
+    )).toBe(true));
+  });
+
+  it("shows the server's specific reason (dimension_too_small) when the create-item API rejects an uploaded photo", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "small-asset", url: "https://x/small.jpg", width: 300, height: 300, format: "jpeg", sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({
+            error: "dimension_too_small",
+            detail: { code: "dimension_too_small", actualWidth: 300, actualHeight: 300, minShortSide: 600 },
+          }),
+        } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["data"], "small.jpg", { type: "image/jpeg" })] } });
+
+    const line = await screen.findByText(/small\.jpg/i);
+    // The rendered message must contain the actual dimensions, not a generic fallback.
+    expect(line.closest("li")?.textContent).toMatch(/300/);
+  });
+});
+
+describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata warning", () => {
+  it("shows an incomplete-metadata warning badge for a photo with no alt text", async () => {
+    open();
+    // Both seeded items (A, B) have altText: null, so both get the badge.
+    await screen.findByRole("checkbox", { name: /select A/i });
+    expect(await screen.findAllByRole("button", { name: /missing alt text/i })).toHaveLength(2);
+  });
+
+  it("opens the metadata wizard immediately after an upload", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "up-asset", url: "https://x/up.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", thumbUrl: "https://x/up-thumb.jpg", caption: null }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["data"], "new.jpg", { type: "image/jpeg" })] } });
+
+    expect(await screen.findByText(/add photo details/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
+    expect(screen.queryByText(/add photo details/i)).toBeNull();
+  });
+
+  it("wizard save PATCHes the uploaded item and clears its warning badge", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "up-asset", url: "https://x/up.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
+    });
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", thumbUrl: "https://x/up-thumb.jpg", caption: null }) } as Response);
+      }
+      if (u === "/api/portfolio/gallery/items/up-id" && init?.method === "PATCH") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", publicId: "up-asset", thumbUrl: "https://x/up-thumb.jpg", caption: null, altText: "New photo" }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+    open();
+    await screen.findByRole("checkbox", { name: /select A/i });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["data"], "new.jpg", { type: "image/jpeg" })] } });
+
+    await screen.findByText(/add photo details/i);
+    const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
+    fireEvent.change(altField, { target: { value: "New photo" } });
+    fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
+
+    await waitFor(() =>
+      expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/up-id" && (i as RequestInit)?.method === "PATCH")).toBe(true)
+    );
   });
 });

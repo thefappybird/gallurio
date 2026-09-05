@@ -47,6 +47,12 @@ export type BrandKitRadius = (typeof BRAND_KIT_RADII)[number];
 export const BRAND_KIT_BUTTON_STYLES = ["solid", "outline", "soft"] as const;
 export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 
+/** Per-block button style union. Adds "link" (hairline underline, no fill/frame)
+ *  on top of the brand-kit-wide styles — "link" is not a sensible kit-wide
+ *  default, so it is intentionally excluded from BRAND_KIT_BUTTON_STYLES. */
+export const BLOCK_BUTTON_STYLES = [...BRAND_KIT_BUTTON_STYLES, "link"] as const;
+export type BlockButtonStyle = (typeof BLOCK_BUTTON_STYLES)[number];
+
 // ---------------------------------------------------------------------------
 // PortfolioCollectionsPopupConfig
 // ---------------------------------------------------------------------------
@@ -54,11 +60,33 @@ export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 /** Horizontal text alignment for popup title. */
 export type PopupTitleAlign = "left" | "center" | "right";
 
+export const POPUP_LAYOUTS = ["contact-sheet", "justified", "split-index", "immersive"] as const;
+export type PopupLayout = (typeof POPUP_LAYOUTS)[number];
+
+export const IMAGE_MODAL_LAYOUTS = ["caption", "sidebar", "cinema", "sheet"] as const;
+export type ImageModalLayout = (typeof IMAGE_MODAL_LAYOUTS)[number];
+
+/** Resolves the unset "" popup layout to its default. */
+export function resolvePopupLayout(v: PopupLayout | "" | undefined): PopupLayout {
+  return v || "contact-sheet";
+}
+
+/** Resolves the unset "" image modal layout to its default. */
+export function resolveImageModalLayout(v: ImageModalLayout | "" | undefined): ImageModalLayout {
+  return v || "caption";
+}
+
 export type PortfolioCollectionsPopupConfig = {
   backgroundColor?: string; // token name or hex
   borderColor?: string;     // token name or hex
   borderWidth?: number;     // px, 0 = none
   radius?: BrandKitRadius | "";
+  /** Overall popup layout. "" resolves to "contact-sheet" at render time. */
+  popupLayout?: PopupLayout | "";
+  /** Layout of the enlarged single-image modal. "" resolves to "caption" at
+   *  render time. Inert when popupLayout is "immersive" — that layout
+   *  subsumes the image modal entirely. */
+  imageModalLayout?: ImageModalLayout | "";
   // Title styles (global override + typography). Empty titleText -> collection name.
   titleText?: string;
   titleFontFamily?: PortfolioFontKey | "";
@@ -243,11 +271,16 @@ export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   fontPair: "merriweather-only",
   headingFont: "merriweather",
   bodyFont: "merriweather",
-  primaryColor: "#111111",
-  secondaryColor: "#f5f5f5",
-  accentColor: "#2f5d56", // Gallurio brand teal
-  backgroundColor: "#ffffff",
-  foregroundColor: "#111111",
+  // MUST stay byte-identical to THEME_PRESET_DEFINITIONS.minimal.brandKit, or
+  // the Theme panel marks no tile active for a workspace that has never picked
+  // one — and the default portfolio renders a palette that exists nowhere in
+  // the picker. It cannot import that module (it imports this one), so the
+  // pairing is enforced by a test in themePresetDefinitions.test.ts instead.
+  primaryColor: "#ece5d8",
+  secondaryColor: "#f5f1e8",
+  accentColor: "#ddd0ba",
+  backgroundColor: "#fcfaf6",
+  foregroundColor: "#1f1c16",
   radius: "sharp",
   buttonStyle: "solid",
 };

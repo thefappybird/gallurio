@@ -3,6 +3,48 @@
 All notable changes to this project are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Photo lightbox layouts now offer a "see more" panel showing date, location, client, custom details, and tags — previously only visible on the Sidebar and Sheet layouts, now also on Caption and Cinema.
+- Photo galleries with 8 or fewer photos now show clickable position dots instead of a numeric counter, on the Caption, Cinema, and Featured Work (immersive) lightbox layouts.
+- Photo tag entry is now consistent everywhere it appears — the photo details editor, the post-upload wizard, SEO keywords, and CRM client tags all use the same pill-style input, committing a tag on space, comma, Enter, or a pasted list.
+
+### Changed
+- The Sidebar and Sheet lightbox layouts now keep their navigation controls reachable at the bottom of the panel while scrolling through a photo's details, instead of scrolling out of view.
+
+### Fixed
+- The photo details editor's tags field no longer silently ignores the Enter key — it was a plain text box despite its own placeholder telling you to press Enter.
+- The "Photos & collections" manager could stop responding to Close and Escape after editing a second collection, requiring the Back button to get out. It now closes reliably every time.
+- The Sidebar lightbox layout no longer shows a faint duplicate close button when opened from a Featured Work collection popup.
+
+## [1.4.0] - 2026-08-31
+
+Release commits through `56b6ece5`.
+
+### Added
+- The portfolio editor now offers a 33-variant section preset library across eleven groups (Hero, About, Services, CTA, Contact, Gallery Grid, Gallery Masonry, Featured Work, Gallery Landing, Video, and Footer), presented in a grouped, collapsed block drawer.
+- Preset and video rows now open a hover-and-focus preview showing a live miniature of the section alongside its description, so same-group variants are distinguishable before insertion.
+- A Collection Card block, a scrim color token, and a go-to-home button action are now available to portfolio layouts.
+- A portfolio built in the public Portfolio Builder demo now carries into the real editor after signup, with its demo images re-parented into the workspace gallery.
+
+### Changed
+- Upload failures now report the actual reason a file was rejected instead of a generic message.
+- Gallery image selection now supports clearer bulk selection and more reliable picker behavior.
+
+### Fixed
+- Editor layout is now stable across container propagation, Columns row and cell behavior, and border toggles, and no longer flashes while a draft loads.
+- Published brand backgrounds are now painted, and every brand kit meets the preset contrast bar; Romantic, Modern, Minimal, and Bold were corrected.
+- The ContactDetails block's editor canvas now renders identically to the published page, including icon alignment.
+- Buttons now follow the section text cascade, link and legacy buttons no longer override a section's text color token, and preset buttons stay legible on accent bands.
+- Gallery blocks now show their effective padding instead of a blank control, and template seed values no longer drift from the shared contrast recipes.
+- Only one drawer preview opens at a time, anchored so that crossing a row's two mounts cannot make it jitter.
+- A retried demo-portfolio import now returns the draft it already created for that demo session instead of adding a duplicate.
+
+### Security
+- Claiming a demo image now verifies the demo subfolder in addition to the session, closing a path by which one tenant could adopt another's asset.
+- Imported gallery items derive their URL from the ownership-verified asset id rather than a client-supplied URL, closing a stored cross-site-scripting path.
+
 ## [1.3.0] - 2026-08-23
 
 Release commits through `b9ac48a3`.

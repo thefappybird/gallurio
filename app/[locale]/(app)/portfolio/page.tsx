@@ -81,27 +81,6 @@ export default async function PageBuilderEntry({
   const workspaceId = String(workspace._id);
   const reconcileZone = async (raw: unknown) =>
     reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, toPlain<PuckData>(raw, EMPTY_ZONE)));
-  const initialData = {
-    home: await reconcileZone(homeData),
-    gallery: await reconcileZone(galleryData),
-  };
-  const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
-  const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
-  const rawInitialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
-  const initialHeaderConfig = {
-    ...rawInitialHeaderConfig,
-    logoUrl: portfolioHeaderLogoUrl({
-      url: rawInitialHeaderConfig.logoUrl,
-      assetId: rawInitialHeaderConfig.logoAssetId,
-    }),
-  };
-  const initialCollectionsPopup = toPlain<PortfolioCollectionsPopupConfig>(pp?.collectionsPopup ?? null, {});
-  const initialFormLocale = toPlain<string>(pp?.formLocale, "");
-  const initialFormDir = toPlain<string>(pp?.formDir, "");
-  const guideDismissed = Boolean(pp?.guideDismissedAt);
-  const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
-  const storyPromptCompleted = Boolean(pp?.storyPromptCompletedAt);
-  const workspaceBusinessType = workspace.businessType ?? "";
 
   // Migrate legacy publicPage.data into a draft if this workspace has no drafts yet.
   await ensureLegacyDraftMigrated(workspace._id);
@@ -112,17 +91,65 @@ export default async function PageBuilderEntry({
   const initialActiveDraftId = activeDraft?.id ?? null;
   const initialActiveDraftName = activeDraft?.name ?? DEFAULT_DRAFT_NAME;
 
+  // The canvas must render what the label says: the active draft, not the
+  // published publicPage (those can diverge — a draft is unpublished work).
+  // Tenant-scoped by _id AND workspaceId even though initialActiveDraftId is
+  // already workspace-scoped via listDraftsAction() above — never trust an id
+  // alone. Per-field fallback to the publicPage-derived values below covers
+  // both a draft missing a field and the no-draft-at-all case.
+  const activeDraftDoc = initialActiveDraftId
+    ? await PortfolioDraft.findOne(
+        { _id: initialActiveDraftId, workspaceId: workspace._id },
+        {
+          data: 1,
+          brandKit: 1,
+          contact: 1,
+          header: 1,
+          collectionsPopup: 1,
+          formLocale: 1,
+          formDir: 1,
+          templateId: 1,
+          seoDescription: 1,
+          "seo.keywords": 1,
+        },
+      ).lean()
+    : null;
+
+  templateId = activeDraftDoc?.templateId || templateId;
+
+  const initialData = {
+    home: await reconcileZone(activeDraftDoc?.data?.home ?? homeData),
+    gallery: await reconcileZone(activeDraftDoc?.data?.gallery ?? galleryData),
+  };
+  const initialBrandKit = toPlain<PortfolioBrandKit>(activeDraftDoc?.brandKit ?? brandKitData, DEFAULT_BRAND_KIT);
+  const initialContact = toPlain<PortfolioContactConfig>(activeDraftDoc?.contact ?? contactData, {});
+  const rawInitialHeaderConfig = toPlain<PortfolioHeaderConfig>(
+    activeDraftDoc?.header ?? pp?.header ?? null,
+    DEFAULT_HEADER_CONFIG,
+  );
+  const initialHeaderConfig = {
+    ...rawInitialHeaderConfig,
+    logoUrl: portfolioHeaderLogoUrl({
+      url: rawInitialHeaderConfig.logoUrl,
+      assetId: rawInitialHeaderConfig.logoAssetId,
+    }),
+  };
+  const initialCollectionsPopup = toPlain<PortfolioCollectionsPopupConfig>(
+    activeDraftDoc?.collectionsPopup ?? pp?.collectionsPopup ?? null,
+    {},
+  );
+  const initialFormLocale = toPlain<string>(activeDraftDoc?.formLocale || pp?.formLocale, "");
+  const initialFormDir = toPlain<string>(activeDraftDoc?.formDir || pp?.formDir, "");
+  const guideDismissed = Boolean(pp?.guideDismissedAt);
+  const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
+  const storyPromptCompleted = Boolean(pp?.storyPromptCompletedAt);
+  const workspaceBusinessType = workspace.businessType ?? "";
+
   // Bundled SEO fields (description/keywords) now live on the active draft, not
   // the stale published publicPage — read from the resolved active draft so a
   // page reload reflects the last save instead of reverting to live values.
-  const activeDraftSeo = initialActiveDraftId
-    ? await PortfolioDraft.findOne(
-        { _id: initialActiveDraftId },
-        { seoDescription: 1, "seo.keywords": 1 },
-      ).lean()
-    : null;
-  const initialSeoDescription = activeDraftSeo?.seoDescription ?? "";
-  const initialSeoKeywords = toPlain<string[]>(activeDraftSeo?.seo?.keywords, []);
+  const initialSeoDescription = activeDraftDoc?.seoDescription ?? "";
+  const initialSeoKeywords = toPlain<string[]>(activeDraftDoc?.seo?.keywords, []);
 
   // Serializable starter-template summaries for the in-editor switcher.
   const templates: EditorTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({

@@ -78,7 +78,11 @@ function signedState(extra: Record<string, unknown> = {}): string {
 
 function makeReq(
   url: string,
-  opts: { inviteCookieValue?: string; csrfCookieValue?: string | null } = {},
+  opts: {
+    inviteCookieValue?: string;
+    csrfCookieValue?: string | null;
+    demoImport?: boolean;
+  } = {},
 ): NextRequest {
   const req = new NextRequest(url);
   // happy-dom does not propagate the Cookie header into NextRequest.cookies, so
@@ -91,6 +95,9 @@ function makeReq(
   const csrf = opts.csrfCookieValue === undefined ? NONCE : opts.csrfCookieValue;
   if (csrf != null) {
     req.cookies.set("oauth_csrf", csrf);
+  }
+  if (opts.demoImport) {
+    req.cookies.set("gw_demo_import", "1");
   }
   return req;
 }
@@ -177,6 +184,21 @@ describe("GET /api/auth/callback — invite cookie forwarding", () => {
 
     expect(res.status).toBe(307);
     expect(res.headers.get("location") ?? "").toContain("/dashboard");
+  });
+
+  it("sends a completed owner with demo intent to Portfolio and expires the marker", async () => {
+    mockEnsureUser.mockResolvedValueOnce({
+      memberships: [{ role: "owner" }],
+      onboardingCompletedAt: new Date(),
+    });
+    const { GET } = await loadRoute();
+    const url = buildCallbackUrl({ code: "code_demo_owner", state: signedState() });
+
+    const res = await GET(makeReq(url, { demoImport: true }));
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location") ?? "").toContain("/portfolio");
+    expect(res.cookies.get("gw_demo_import")?.value ?? "").toBe("");
   });
 
   it("respects returnTo over dashboard when no invite cookie and returnTo is valid", async () => {

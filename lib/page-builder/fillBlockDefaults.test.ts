@@ -1,7 +1,80 @@
 import { describe, it, expect } from "vitest";
-import { fillBlockDefaults } from "./fillBlockDefaults";
+import { fillBlockDefaults, type BlockEntry } from "./fillBlockDefaults";
+import {
+  SECTION_PRESETS,
+  SECTION_PRESET_KEYS,
+  NAV_PRESET_KEYS,
+  LEGACY_NAV_PRESET_KEYS,
+} from "./blocks/sectionPresets";
+
+const CONTAINER_PRESET_KEYS = SECTION_PRESET_KEYS.filter((key) => !NAV_PRESET_KEYS.includes(key));
 
 describe("fillBlockDefaults", () => {
+  it.each(CONTAINER_PRESET_KEYS)(
+    "normalizes every Container-shaped registry preset (%s) with container defaults (bgAnimation, bgSpeed)",
+    (presetKey) => {
+      const data = {
+        content: [{ type: presetKey, props: { id: "p1", content: [] } }],
+      };
+      const result = fillBlockDefaults(data);
+      expect(result.content[0].props.bgAnimation).toBe("crossfade");
+      expect(result.content[0].props.bgSpeed).toBe("medium");
+    },
+  );
+
+  it.each(NAV_PRESET_KEYS)(
+    "normalizes every nav registry preset (%s) with Navigation defaults (_chrome, highlightOpacity)",
+    (presetKey) => {
+      const data = {
+        content: [{ type: presetKey, props: { id: "p1", content: [] } }],
+      };
+      const result = fillBlockDefaults(data);
+      expect(result.content[0].props._chrome).toBe("nav");
+      expect(result.content[0].props.highlightOpacity).toBe(100);
+      expect(result.content[0].props.bgAnimation).toBeUndefined();
+    },
+  );
+
+  it("Navigation (base type) falls back to navigationDefaultProps, not containerDefaultProps", () => {
+    const data = {
+      content: [{ type: "Navigation", props: { id: "n1" } }],
+    };
+    const result = fillBlockDefaults(data);
+    expect(result.content[0].props._chrome).toBe("nav");
+    expect(result.content[0].props.bgAnimation).toBeUndefined();
+  });
+
+  it("fills the PageBody margin and defaults for its nested slot children", () => {
+    const result = fillBlockDefaults({
+      content: [
+        {
+          type: "PageBody",
+          props: { id: "page-body", content: [{ type: "Heading", props: { id: "h1" } }] },
+        },
+      ],
+    });
+    expect(result.content[0].props.marginX).toBe("1.5rem");
+    const children = result.content[0].props.content as BlockEntry[];
+    expect(children[0].props.text).toBe("Heading");
+    expect(children[0].props.level).toBe("h2");
+  });
+
+  it.each(LEGACY_NAV_PRESET_KEYS)(
+    "keeps retired nav preset data render-compatible (%s)",
+    (presetKey) => {
+      const result = fillBlockDefaults({ content: [{ type: presetKey, props: { id: "legacy-nav" } }] });
+      expect(result.content[0].props._chrome).toBe("nav");
+      expect(result.content[0].props.bgAnimation).toBeUndefined();
+    },
+  );
+
+  it("every SECTION_PRESET_KEYS entry's componentType agrees with its BLOCK_DEFAULTS fallback", () => {
+    for (const key of SECTION_PRESET_KEYS) {
+      const isNav = SECTION_PRESETS[key].componentType === "Navigation";
+      expect(isNav).toBe(NAV_PRESET_KEYS.includes(key));
+    }
+  });
+
   it("fills missing gap in Columns _style from defaultProps", () => {
     const data = {
       content: [{ type: "Columns", props: { id: "c1", columns: 2, _style: {} } }],
@@ -80,5 +153,58 @@ describe("fillBlockDefaults", () => {
     expect(props.imagePublicId).toBeUndefined();
     expect(props.fit).toBeUndefined();
     expect(props.alt).toBe("A photo");
+  });
+
+  it("migrates a saved Masonry flow zone into ordered column lanes", () => {
+    const images = Array.from({ length: 7 }, (_, index) => ({
+      type: "Image",
+      props: { id: `img-${index + 1}`, alt: `Image ${index + 1}` },
+    }));
+    const data = {
+      content: [{
+        type: "GalleryMasonry",
+        props: { id: "masonry-1", masonryLayout: "flow", _style: { galleryColumns: 3 } },
+      }],
+      zones: { "masonry-1:content": images },
+    };
+
+    const result = fillBlockDefaults(data);
+
+    expect(result.content[0].props.masonryLayout).toBe("columns");
+    expect(result.zones?.["masonry-1:content"]).toBeUndefined();
+    expect(result.zones?.["masonry-1:column1"].map((item) => item.props.id)).toEqual(["img-1", "img-4", "img-7"]);
+    expect(result.zones?.["masonry-1:column2"].map((item) => item.props.id)).toEqual(["img-2", "img-5"]);
+    expect(result.zones?.["masonry-1:column3"].map((item) => item.props.id)).toEqual(["img-3", "img-6"]);
+    expect(data.zones["masonry-1:content"]).toHaveLength(7);
+  });
+
+  it("migrates nested inline Masonry preset children before Puck expands their slots", () => {
+    const data = {
+      content: [{
+        type: "Container",
+        props: {
+          id: "section-1",
+          content: [{
+            type: "GalleryMasonry",
+            props: {
+              id: "masonry-2",
+              content: Array.from({ length: 4 }, (_, index) => ({
+                type: "Image",
+                props: { id: `inline-${index + 1}` },
+              })),
+              _style: { galleryColumns: 2 },
+            },
+          }],
+        },
+      }],
+    };
+
+    const result = fillBlockDefaults(data);
+    const masonry = (result.content[0].props.content as BlockEntry[])[0];
+
+    expect(masonry.props.masonryLayout).toBe("columns");
+    expect((masonry.props.column1 as BlockEntry[]).map((item) => item.props.id)).toEqual(["inline-1", "inline-3"]);
+    expect((masonry.props.column2 as BlockEntry[]).map((item) => item.props.id)).toEqual(["inline-2", "inline-4"]);
+    expect(masonry.props.content).toEqual([]);
   });
 });

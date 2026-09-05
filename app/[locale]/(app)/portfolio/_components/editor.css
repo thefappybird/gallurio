@@ -280,3 +280,29 @@
  * interior text is var(--puck-color-white) = var(--card) ≈ near-black in dark,
  * which contrasts the brighter teal. Contrast is maintained in both modes.
  */
+
+/* ─── Drawer row cursor affordance ────────────────────────────────────────── */
+/*
+ * Left-panel section-preset / manual-block rows are Puck's own Drawer.Item
+ * chrome. Our wrappers PresetDrawerItem / ManualDrawerItem
+ * (PresetPreviewCard.tsx) attach hover/click/focus handlers around that
+ * chrome but render no element of their own, so there is no React className
+ * hook — the affordance has to be a CSS override here.
+ *
+ * The visible card is `._DrawerItem-draggable_<hash>` (Drawer css-module,
+ * node_modules/@measured/puck/dist/index.css). [class*=] substring match
+ * survives Puck's per-build hash rotation. isDragDisabled is never passed by
+ * PresetBlocksDrawer, so Puck's own disabled/not-allowed cursor rule is dead
+ * code in this app and cannot collide with the rule below.
+ *
+ * These rows are drag sources into the canvas, not click targets (the
+ * click/hover only opens the preset preview panel) — `grab` is the honest
+ * affordance. If product instead wants a plain click affordance, flip this
+ * one declaration to `pointer`; nothing else needs to change.
+ */
+.gallurio-editor [class*="DrawerItem-draggable"] {
+  cursor: grab;
+}
+.gallurio-editor [class*="DrawerItem-draggable"]:active {
+  cursor: grabbing;
+}

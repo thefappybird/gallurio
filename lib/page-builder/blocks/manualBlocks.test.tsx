@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import {
@@ -13,9 +13,22 @@ import {
   ContainerBlock,
   columnsDefaultProps,
   containerDefaultProps,
+  containerResolvePermissions,
+  headingDefaultProps,
+  textDefaultProps,
+  TEXT_EFFECTIVE_PAD,
   type HeadingBlockProps,
 } from "./manualBlocks";
-import type { SlotComponent } from "@measured/puck";
+import {
+  FOOTER_SIGNATURE_PRESET,
+  FOOTER_DIRECTORY_PRESET,
+  FOOTER_STATEMENT_PRESET,
+} from "./presets/footer";
+import { GALLERY_LANDING_SPLIT_PRESET } from "./presets/galleryLanding";
+import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "../responsive";
+import { Render } from "@measured/puck";
+import { puckConfig } from "../config";
+import type { SlotComponent, Permissions } from "@measured/puck";
 
 // ---------------------------------------------------------------------------
 // HeadingBlock
@@ -25,6 +38,14 @@ describe("HeadingBlock", () => {
   it("renders without crashing with default props", () => {
     const { container } = render(<HeadingBlock text="Hello" level="h2" />);
     expect(container).toBeTruthy();
+  });
+
+  it("hugs its content by default and keeps a small selectable margin", () => {
+    const { container } = render(<HeadingBlock text="Hello" level="h2" />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.width).toBe("fit-content");
+    expect(root.style.marginTop).toBe("4px");
+    expect(root.style.marginBottom).toBe("4px");
   });
 
   it("renders the text content", () => {
@@ -100,10 +121,10 @@ describe("HeadingBlock", () => {
     expect(container).toBeTruthy();
   });
 
-  it("wrapper div has no default padding", () => {
+  it("wrapper div has the 4px effective-default padding (grabbable drag strip)", () => {
     const { container } = render(<HeadingBlock text="Test" level="h2" />);
     const div = container.firstChild as HTMLElement;
-    expect(div.style.padding).toBe("");
+    expect(div.style.padding).toBe("4px");
   });
 
   it("renders text without a <mark> when highlight is not set", () => {
@@ -194,10 +215,10 @@ describe("TextBlock", () => {
     expect(container).toBeTruthy();
   });
 
-  it("wrapper div has no default padding", () => {
+  it("wrapper div has the 4px effective-default padding (grabbable drag strip)", () => {
     const { container } = render(<TextBlock text="Test" />);
     const div = container.firstChild as HTMLElement;
-    expect(div.style.padding).toBe("");
+    expect(div.style.padding).toBe("4px");
   });
 
   it("renders text without a <mark> when highlight is not set", () => {
@@ -249,9 +270,15 @@ describe("ImageBlock — no image", () => {
     vi.unstubAllEnvs();
   });
 
-  it("renders the 'Pick an image' placeholder when no background image is set", () => {
-    render(<ImageBlock alt="" />);
+  it("renders the 'Pick an image' prompt only in the editor canvas", () => {
+    render(<ImageBlock alt="" puck={{ isEditing: true }} />);
     expect(screen.getByText(/Pick an image/i)).toBeTruthy();
+  });
+
+  it("uses a visitor-safe empty state in preview and published output", () => {
+    render(<ImageBlock alt="" puck={{ isEditing: false }} />);
+    expect(screen.queryByText(/Pick an image/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Image unavailable/i)).toBeInTheDocument();
   });
 
   it("does NOT render a background-image layer when no background image is set", () => {
@@ -259,11 +286,22 @@ describe("ImageBlock — no image", () => {
     expect(container.querySelector("[data-bg-opacity-layer]")).toBeNull();
   });
 
+  it("uses a visible sample photograph in a preset hover preview", () => {
+    const { container } = render(
+      <ImageBlock alt="Portrait" puck={{ metadata: { presetPreview: true } }} />
+    );
+
+    expect(screen.queryByText(/Pick an image/i)).not.toBeInTheDocument();
+    expect(
+      container.querySelector("[data-preset-media-placeholder='image']")
+    ).toBeInTheDocument();
+  });
+
   it("falls back to the placeholder when bgImagePublicId is set but cloud name is unset (test env)", () => {
     // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is unset → bgImageUrl returns null,
     // so resolveBlockStyle never sets backgroundImage and hasImage stays false.
     render(<ImageBlock alt="" _style={{ bgImagePublicId: "gallurio/ws/img.jpg" }} />);
-    expect(screen.getByText(/Pick an image/i)).toBeTruthy();
+    expect(screen.getByText(/Image unavailable/i)).toBeTruthy();
   });
 });
 
@@ -277,6 +315,7 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
 
   it("renders a real <img> (not just a CSS background) when bgImagePublicId is set", () => {
     const { container } = render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    expect(container.firstElementChild).toHaveAttribute("data-block", "image");
     const img = container.querySelector("img") as HTMLImageElement;
     expect(img).not.toBeNull();
     expect(img.src).toContain("photo.jpg");
@@ -312,6 +351,145 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
     );
     const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
     expect(layer.style.opacity).toBe("0.3");
+  });
+
+  it("uses contain when a logo-style Image requests it", () => {
+    const { container } = render(
+      <ImageBlock
+        alt="Logo"
+        _style={{ bgImagePublicId: "ws/logo.png", imageFit: "contain" }}
+      />
+    );
+    expect((container.querySelector("img") as HTMLImageElement).style.objectFit).toBe("contain");
+  });
+
+  it("opens the view-image modal when clicked outside the editor", () => {
+    render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("forwards the workspace's configured imageModalLayout to the Lightbox", () => {
+    render(
+      <ImageBlock
+        alt="A photo"
+        _style={{ bgImagePublicId: "ws/photo.jpg" }}
+        puck={{
+          metadata: {
+            workspace: {
+              _id: "ws1",
+              name: "Workspace",
+              publicPage: { collectionsPopup: { imageModalLayout: "sidebar" } },
+            },
+          },
+        }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
+
+  // Item 12, hypothesis 1: does puck.metadata reach an ImageBlock nested
+  // inside a Container's slot? Rendered through the REAL Puck pipeline (not
+  // a hand-built puck prop) — @measured/puck's SlotRender explicitly forwards
+  // the same top-level `metadata` to every slot-nested item, so this is
+  // expected to already pass; the sidebar leaf's panel (SidebarLayout.tsx)
+  // renders unconditionally, making it a reliable non-caption probe.
+  it("Item 12 hyp.1: an ImageBlock nested inside a Container slot still gets the workspace's imageModalLayout", () => {
+    render(
+      <Render
+        config={puckConfig}
+        data={{
+          root: {},
+          content: [
+            {
+              type: "Container",
+              props: {
+                id: "container-1",
+                content: [
+                  {
+                    type: "Image",
+                    props: { id: "img-1", alt: "A photo", _style: { bgImagePublicId: "ws/photo.jpg" } },
+                  },
+                ],
+              },
+            },
+          ],
+        }}
+        metadata={{
+          workspace: {
+            _id: "ws1",
+            name: "Workspace",
+            publicPage: { collectionsPopup: { imageModalLayout: "sidebar" } },
+          },
+        }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "A photo" }));
+    expect(document.querySelector(".pf-modal-sidebar")).toBeInTheDocument();
+  });
+
+  it("carries baked meta (title/caption/etc) into the view-image modal (Item 10c)", () => {
+    render(
+      <ImageBlock
+        alt=""
+        _style={{ bgImagePublicId: "ws/photo.jpg" }}
+        meta={{
+          title: "Golden Hour",
+          caption: "Reception at dusk",
+          date: "2026-06-01",
+          location: "Manila",
+          client: "Cruz Wedding",
+          sourceAssetId: "ws/photo.jpg",
+        }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open photo" }));
+    expect(screen.getByText("Golden Hour")).toBeInTheDocument();
+    expect(screen.getByText("Reception at dusk")).toBeInTheDocument();
+  });
+
+  it("modal image alt falls back to baked meta.altText once the legacy per-block alt is empty (Item 10c)", () => {
+    render(
+      <ImageBlock alt="" _style={{ bgImagePublicId: "ws/photo.jpg" }} meta={{ altText: "Baked alt text" }} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Baked alt text" }));
+    expect(screen.getAllByAltText("Baked alt text").length).toBeGreaterThan(0);
+  });
+
+  it("the legacy per-block alt still wins over baked meta.altText when both are present (Item 10c back-compat)", () => {
+    render(
+      <ImageBlock
+        alt="Legacy alt"
+        _style={{ bgImagePublicId: "ws/photo.jpg" }}
+        meta={{ altText: "Baked alt text" }}
+      />
+    );
+    // The on-page <img> keeps using the legacy alt directly (unaffected by meta).
+    expect((screen.getByRole("img") as HTMLImageElement).alt).toBe("Legacy alt");
+    fireEvent.click(screen.getByRole("button", { name: "Legacy alt" }));
+    expect(screen.getAllByAltText("Legacy alt").length).toBeGreaterThan(0);
+  });
+
+  it("is not clickable while the editor canvas has it selected for editing", () => {
+    const { container } = render(
+      <ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} puck={{ isEditing: true }} />
+    );
+    expect(container.querySelector("button")).toBeNull();
+    expect(container.querySelector("img")).not.toBeNull();
+  });
+
+  it("is not clickable in the preset-drawer preview", () => {
+    const { container } = render(
+      <ImageBlock
+        alt="A photo"
+        _style={{ bgImagePublicId: "ws/photo.jpg" }}
+        puck={{ metadata: { presetPreview: true } }}
+      />
+    );
+    expect(container.querySelector("button")).toBeNull();
+    expect(container.querySelector("img")).not.toBeNull();
   });
 });
 
@@ -450,6 +628,57 @@ describe("ButtonBlock", () => {
     }
   });
 
+  it("sets href='#' for go-to-home when no puck metadata is given", () => {
+    render(<ButtonBlock label="Home" action="go-to-home" align="center" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.getAttribute("href")).toBe("#");
+  });
+
+  it("uses the workspace slug in href for go-to-home when puck metadata provides it", () => {
+    const mockPuck = {
+      metadata: { workspace: { slug: "my-studio" } },
+    } as Parameters<typeof ButtonBlock>[0]["puck"];
+    render(
+      <ButtonBlock label="Home" action="go-to-home" align="center" puck={mockPuck} />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.getAttribute("href")).toBe("/w/my-studio");
+  });
+
+  it("uses preview-scoped hrefs for page navigation buttons inside preview mode", () => {
+    const mockPuck = {
+      metadata: {
+        workspace: {
+          slug: "my-studio",
+          previewNav: {
+            homeHref: "/en/portfolio-preview?zone=home&draftId=draft-1",
+            galleryHref: "/en/portfolio-preview?zone=gallery&draftId=draft-1",
+          },
+        },
+      },
+    } as Parameters<typeof ButtonBlock>[0]["puck"];
+
+    const { rerender } = render(
+      <ButtonBlock label="Home" action="go-to-home" align="center" puck={mockPuck} />,
+    );
+    expect((document.querySelector("a") as HTMLAnchorElement).getAttribute("href")).toBe(
+      "/en/portfolio-preview?zone=home&draftId=draft-1",
+    );
+
+    rerender(
+      <ButtonBlock label="Gallery" action="go-to-gallery" align="center" puck={mockPuck} />,
+    );
+    expect((document.querySelector("a") as HTMLAnchorElement).getAttribute("href")).toBe(
+      "/en/portfolio-preview?zone=gallery&draftId=draft-1",
+    );
+  });
+
+  it("does NOT set data-cta for go-to-home action", () => {
+    render(<ButtonBlock label="Home" action="go-to-home" align="center" />);
+    const a = document.querySelector("a");
+    expect(a?.getAttribute("data-cta")).toBeNull();
+  });
+
   it("wrapper has width fit-content so it shrinks to the button size", () => {
     const { container } = render(
       <ButtonBlock label="Left" action="open-contact" align="left" />
@@ -485,6 +714,20 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.marginRight).toBe("auto");
   });
 
+  it("_style.cellVerticalAlign='center' reaches the wrapper as alignSelf (Columns grid-cell centering)", () => {
+    const { container } = render(
+      <ButtonBlock label="Btn" action="open-contact" align="right" _style={{ cellVerticalAlign: "center" }} />
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.alignSelf).toBe("center");
+  });
+
+  it("with no cellVerticalAlign set, the wrapper has no alignSelf override", () => {
+    const { container } = render(<ButtonBlock label="Btn" action="open-contact" align="right" />);
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.alignSelf).toBe("");
+  });
+
   it("_style.selfAlign center overrides legacy align=left prop", () => {
     const { container } = render(
       <ButtonBlock label="Btn" action="open-contact" align="left" _style={{ selfAlign: "center" }} />
@@ -512,11 +755,12 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.marginRight).toBe("auto");
   });
 
-  it("defaults to transparent fill and pf-color-fg border when no buttonColorToken is set", () => {
-    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
-    const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.backgroundColor).toBe("transparent");
-    expect(a.style.borderColor).toBe("var(--pf-color-fg)");
+  it("defaults to a transparent fill and a cascade-following border when no buttonColorToken is set", () => {
+    const html = renderToStaticMarkup(
+      <ButtonBlock label="Btn" action="open-contact" align="center" />
+    );
+    expect(html).toContain("background-color:transparent");
+    expect(html).toContain("border-color:var(--pf-block-text-color, var(--pf-color-fg))");
   });
 
   it("_style.buttonColorToken sets the button fill color", () => {
@@ -665,7 +909,7 @@ describe("ButtonBlock", () => {
     expect(a.style.borderColor).toBe("var(--pf-color-primary)");
   });
 
-  it("buttonStyle='soft' uses colorVar for text and sets border transparent", () => {
+  it("buttonStyle='soft' uses surface-safe foreground text and sets border transparent", () => {
     render(
       <ButtonBlock
         label="Btn"
@@ -675,7 +919,7 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.color).toBe("var(--pf-color-accent)");
+    expect(a.style.color).toBe("var(--pf-color-fg)");
     expect(a.style.borderColor).toBe("transparent");
   });
 
@@ -809,6 +1053,72 @@ describe("ButtonBlock", () => {
     );
     expect(html).toContain("color-mix(in srgb, var(--pf-color-accent) 15%, transparent)");
   });
+
+  it("buttonStyle='link' renders a bottom edge only, no fill or frame", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("transparent");
+    expect(a.style.borderTopWidth).toBe("0px");
+    expect(a.style.borderBottomWidth).toBe("1px");
+    expect(a.style.borderBottom).toBe("1px solid currentcolor");
+    expect(a.style.borderRadius).toBe("0px");
+    expect(a.style.padding).toBe("0.25rem 0px");
+  });
+
+  it("buttonStyle='link' with no textColorToken follows the section text cascade", () => {
+    // jsdom's cssstyle drops a nested var() fallback, so assert on the emitted
+    // markup the way the Heading/Text cascade tests below do.
+    const html = renderToStaticMarkup(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />
+    );
+    expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
+  });
+
+  it("no buttonStyle (legacy) follows the section text cascade for label and border", () => {
+    const html = renderToStaticMarkup(
+      <ButtonBlock label="Btn" action="open-contact" align="center" />
+    );
+    expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
+  });
+
+  it("buttonStyle='link' with textColorToken overrides currentColor with the explicit token", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "link", textColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-accent)");
+  });
+
+  it("buttonStyle='link' ignores buttonColorToken/borderWidth/radius (deprecated fields for this variant)", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "link", buttonColorToken: "primary", borderWidth: 5, radius: 20 }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("transparent");
+    expect(a.style.borderRadius).toBe("0px");
+  });
+
+  it("buttonStyle='link' with _style.bold applies fontWeight 700 instead of the default 500", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link", bold: true }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.fontWeight).toBe("700");
+  });
+
+  it("buttonStyle='link' without bold uses fontWeight 500", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "link" }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.fontWeight).toBe("500");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -838,16 +1148,17 @@ describe("TextBlock and HeadingBlock color parity", () => {
     expect(div.style.color).toBe("var(--pf-color-primary)");
   });
 
-  it("ButtonBlock with no _style uses var(--pf-color-fg) for text (legacy fallback)", () => {
-    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
-    const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.color).toBe("var(--pf-color-fg)");
+  it("ButtonBlock with no _style follows the same text cascade Heading/Text do", () => {
+    const html = renderToStaticMarkup(
+      <ButtonBlock label="Btn" action="open-contact" align="center" />
+    );
+    expect(html).toContain("color:var(--pf-block-text-color, var(--pf-color-fg))");
   });
 
-  it("ButtonBlock solid style with no textColorToken uses var(--pf-color-bg) for text", () => {
+  it("ButtonBlock solid style with no textColorToken uses surface-safe foreground text", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "solid" }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.color).toBe("var(--pf-color-bg)");
+    expect(a.style.color).toBe("var(--pf-color-fg)");
   });
 });
 
@@ -903,6 +1214,13 @@ describe("SpacerBlock", () => {
 // ---------------------------------------------------------------------------
 
 describe("DividerBlock", () => {
+  it("uses the current section text color for its hairline", () => {
+    const { container } = render(<DividerBlock thickness={1} />);
+    expect(container.querySelector("hr")).toHaveStyle({
+      borderTopColor:
+        "color-mix(in srgb, var(--pf-block-text-color, var(--pf-color-fg)) 20%, transparent)",
+    });
+  });
   it("renders without crashing", () => {
     const { container } = render(<DividerBlock thickness={1} />);
     expect(container).toBeTruthy();
@@ -1123,13 +1441,49 @@ describe("ContainerBlock", () => {
 
 describe("ContainerBlock flex defaults", () => {
   const MockSlot: SlotComponent = (props) => (
-    <div data-testid="slot-inner" data-min-empty={String(props?.minEmptyHeight ?? "")} style={props?.style} />
+    <div
+      data-testid="slot-inner"
+      data-min-empty={String(props?.minEmptyHeight ?? "")}
+      className={props?.className}
+      style={props?.style}
+    />
   );
 
   it("renders the outer section with flexGrow: 1", () => {
     const { container } = render(<ContainerBlock content={MockSlot} />);
     const section = container.querySelector("section");
     expect(section?.style.flexGrow).toBe("1");
+  });
+
+  // A column stack cancels that flexGrow via PF_COLUMN_STACK_CSS, so a nested
+  // Container keeps its own height instead of eating the parent's free space.
+  it("marks a column stack so nested Containers do not grow into the free height", () => {
+    render(<ContainerBlock content={MockSlot} />);
+    expect(screen.getByTestId("slot-inner")).toHaveClass(PF_COLUMN_STACK_CLASS);
+  });
+
+  it("does NOT mark a row stack — there growing shares the width between siblings", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexDirection: "row" }} />);
+    expect(screen.getByTestId("slot-inner")).not.toHaveClass(PF_COLUMN_STACK_CLASS);
+  });
+
+  it("marks a row stack that opted into wrapping, so it stacks on narrow pages", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexDirection: "row", flexWrap: "wrap" }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner).toHaveClass(PF_ROW_WRAP_CLASS);
+    expect(inner).not.toHaveClass(PF_COLUMN_STACK_CLASS);
+  });
+
+  it("leaves an unmarked row unwrapped, so existing rows are unaffected", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexDirection: "row" }} />);
+    expect(screen.getByTestId("slot-inner")).not.toHaveClass(PF_ROW_WRAP_CLASS);
+  });
+
+  it("does not wrap a COLUMN stack that carries flexWrap — the class is row-only", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexWrap: "wrap" }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner).not.toHaveClass(PF_ROW_WRAP_CLASS);
+    expect(inner).toHaveClass(PF_COLUMN_STACK_CLASS);
   });
 
   it("editor mode: empty drop zone gets Puck's native minEmptyHeight so the whole area is droppable", () => {
@@ -1170,24 +1524,76 @@ describe("ContainerBlock flex defaults", () => {
     expect(section?.style.minHeight).toBe("640px");
   });
 
-  it("uses _style.justifyContent over legacy alignY on the outer section", () => {
+  it("applies legacy vertical distribution to the filling content slot", () => {
     const { container } = render(
       <ContainerBlock content={MockSlot} alignY="top" _style={{ justifyContent: "center" }} />
     );
     const section = container.querySelector("section");
-    expect(section?.style.justifyContent).toBe("center");
+    const inner = screen.getByTestId("slot-inner");
+    expect(section?.style.justifyContent).toBe("");
+    expect(inner.style.justifyContent).toBe("center");
   });
 
-  it("falls back to alignY when _style.justifyContent is absent", () => {
-    const { container } = render(<ContainerBlock content={MockSlot} alignY="bottom" />);
-    const section = container.querySelector("section");
-    expect(section?.style.justifyContent).toBe("flex-end");
+  it("falls back to legacy alignY when no style distribution is present", () => {
+    render(<ContainerBlock content={MockSlot} alignY="bottom" />);
+    expect(screen.getByTestId("slot-inner").style.justifyContent).toBe("flex-end");
   });
 
-  it("inner content wrapper always has alignItems: stretch (children fill full width)", () => {
+  it("gives the content slot the available height so distribution reaches its real children", () => {
+    render(<ContainerBlock content={MockSlot} minHeight="medium" />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.flex).toBe("1 1 auto");
+    expect(inner.style.minHeight).toBe("0");
+  });
+
+  it("does not inject an anchor CSS workaround into the container", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={MockSlot} puck={{ isEditing: true }} />
+    );
+    expect(html).not.toContain("pf-container-anchor");
+  });
+
+  it("uses editable bottom margin instead of a ContainerAnchor drop spacer", () => {
+    const { container, rerender } = render(<ContainerBlock content={MockSlot} />);
+    expect((container.querySelector("section") as HTMLElement).style.marginBottom).toBe("8px");
+
+    rerender(<ContainerBlock content={MockSlot} _style={{ marginBottom: "20px" }} />);
+    expect((container.querySelector("section") as HTMLElement).style.marginBottom).toBe("20px");
+  });
+
+  it("uses dedicated content fields over legacy style and legacy props", () => {
+    render(
+      <ContainerBlock
+        content={MockSlot}
+        alignX="left"
+        alignY="top"
+        _style={{
+          contentHorizontalAlign: "end",
+          contentVerticalDistribution: "between",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      />
+    );
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.textAlign).toBe("end");
+    expect(inner.style.justifyContent).toBe("space-between");
+  });
+
+  it("inner content wrapper defaults to alignItems: stretch", () => {
     render(<ContainerBlock content={MockSlot} alignX="left" />);
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.alignItems).toBe("stretch");
+  });
+
+  it("centers child blocks on the cross axis in a horizontal container", () => {
+    render(
+      <ContainerBlock
+        content={MockSlot}
+        _style={{ flexDirection: "row", contentHorizontalAlign: "center" }}
+      />,
+    );
+    expect(screen.getByTestId("slot-inner").style.alignItems).toBe("center");
   });
 
   it("maps _style.alignItems to textAlign on the inner content wrapper", () => {
@@ -1239,6 +1645,131 @@ describe("ContainerBlock flex defaults", () => {
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.gap).toBe("32px");
   });
+
+  it("defaults to flexDirection:column when _style.flexDirection is unset", () => {
+    render(<ContainerBlock content={MockSlot} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.flexDirection).toBe("column");
+  });
+
+  it("_style.flexDirection='row' lays the slot out as a row (bundled button groups)", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ flexDirection: "row" }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.flexDirection).toBe("row");
+  });
+});
+
+describe("Item 1: ContainerBlock overallWidth prop", () => {
+  it("defaults to page-fit (80rem clamp) when overallWidth and _chrome are both unset", () => {
+    const { container } = render(<ContainerBlock content={stubSlot} />);
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("");
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.maxWidth).toBe("80rem");
+  });
+
+  it("overallWidth='full' breaks the section out to 100vw on the public page and drops the slot's 80rem clamp", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} overallWidth="full" puck={{ isEditing: false }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("100vw");
+    expect(section?.style.marginLeft).toBe("calc(50% - 50vw)");
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.maxWidth).toBe("");
+  });
+
+  it("overallWidth='full' in the editor canvas caps to 100% (not 100vw) so it never overflows the narrow preview", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} overallWidth="full" puck={{ isEditing: true }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("100%");
+    expect(section?.style.marginLeft).toBe("0px");
+  });
+
+  it.each([
+    ["Directory footer", FOOTER_DIRECTORY_PRESET],
+    ["Closing statement", FOOTER_STATEMENT_PRESET],
+  ])("%s fits inside its drawer preview instead of using the browser viewport", (_name, preset) => {
+    const { container } = render(
+      <ContainerBlock
+        {...preset}
+        content={stubSlot}
+        puck={{ isEditing: false, metadata: { presetPreview: true } } as never}
+      />
+    );
+    const section = container.querySelector("section") as HTMLElement;
+    expect(section.style.width).toBe("100%");
+    expect(section.style.width).not.toBe("100vw");
+  });
+
+  it("Split gallery intro (now page-fit, item 6) never applies the full-bleed 100vw breakout in its drawer preview", () => {
+    const { container } = render(
+      <ContainerBlock
+        {...GALLERY_LANDING_SPLIT_PRESET}
+        content={stubSlot}
+        puck={{ isEditing: false, metadata: { presetPreview: true } } as never}
+      />
+    );
+    const section = container.querySelector("section") as HTMLElement;
+    expect(section.style.width).not.toBe("100vw");
+  });
+
+  it("_chrome='footer' defaults to full even when overallWidth is absent (fixes pre-existing narrow footers with no stored-data rewrite)", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} _chrome="footer" puck={{ isEditing: false }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("100vw");
+  });
+
+  it("an explicit overallWidth='page-fit' on a footer container overrides the chrome default", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} overallWidth="page-fit" _chrome="footer" />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("");
+  });
+});
+
+describe("Item 4: ContainerBlock width (Fill / Hug / Fixed)", () => {
+  it("Hug (_style.width: fit-content) wins over overallWidth='full' — the section is not full-bleed", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={stubSlot}
+        overallWidth="full"
+        _style={{ width: "fit-content" }}
+        puck={{ isEditing: false }}
+      />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("fit-content");
+    expect(section?.style.marginLeft).toBe("");
+  });
+
+  it("a hugging Container does not apply flexGrow: 1 (would defeat the hug in a flex-row parent)", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} _style={{ width: "fit-content" }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.flexGrow).toBe("0");
+  });
+
+  it("a Fill-width Container (no _style.width) keeps flexGrow: 1 (unchanged default)", () => {
+    const { container } = render(<ContainerBlock content={stubSlot} />);
+    const section = container.querySelector("section");
+    expect(section?.style.flexGrow).toBe("1");
+  });
+
+  it("a fixed width (e.g. 320px) applies to the section via the existing resolveBlockStyle mechanism", () => {
+    const { container } = render(
+      <ContainerBlock content={stubSlot} _style={{ width: "320px" }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.width).toBe("320px");
+    expect(section?.style.flexGrow).toBe("1");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1261,6 +1792,21 @@ describe("ContainerBlock background images", () => {
     // No background <img> either (no opacity layer, no <img>).
     expect(container.querySelector("[data-bg-opacity-layer]")).toBeNull();
     expect(container.querySelector('section img')).toBeNull();
+  });
+
+  it("shows a sample background only for scrimmed preset hover previews", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[]}
+        overlayOpacity={40}
+        puck={{ metadata: { presetPreview: true } }}
+      />
+    );
+
+    expect(
+      container.querySelector("[data-preset-media-placeholder='background']")
+    ).toBeInTheDocument();
   });
 
   it("renders a single static <img> (no slideshow island) for exactly one image", () => {
@@ -1301,6 +1847,35 @@ describe("ContainerBlock background images", () => {
     const scrim = container.querySelector('section > div[aria-hidden="true"]:not([data-bg-slideshow])') as HTMLElement | null;
     expect(scrim).not.toBeNull();
     expect(scrim!.style.backgroundColor).toBe("rgba(0, 0, 0, 0.5)");
+  });
+
+  it("tints the scrim with the palette token via color-mix when overlayColorToken is set", () => {
+    // jsdom silently drops color-mix() from inline style; use server markup to assert the raw CSS.
+    const html = renderToStaticMarkup(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+        overlayOpacity={50}
+        overlayColorToken="primary"
+      />
+    );
+    expect(html).toContain(
+      "background-color:color-mix(in srgb, var(--pf-color-primary) 50%, transparent)"
+    );
+  });
+
+  it("renders no scrim when overlayColorToken is set but overlayOpacity is 0", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+        overlayOpacity={0}
+        overlayColorToken="primary"
+      />
+    );
+    expect(
+      container.querySelector('section > div[aria-hidden="true"]:not([data-bg-slideshow]):not([data-bg-opacity-layer])')
+    ).toBeNull();
   });
 
   it("keeps the content slot rendered above the background (z-index 1)", () => {
@@ -1355,6 +1930,10 @@ describe("ContainerBlock — dragRef forwarding", () => {
 // ---------------------------------------------------------------------------
 
 describe("defaultProps gap default (Item 4)", () => {
+  it("gives new Columns a 320px drop surface by default", () => {
+    expect(columnsDefaultProps.minHeight).toBe("320px");
+  });
+
   it("columnsDefaultProps._style.gap is 16 (16px = 1rem, matches fallback)", () => {
     expect(columnsDefaultProps._style?.gap).toBe(16);
   });
@@ -1443,6 +2022,59 @@ describe("B2a: ContainerBlock render — fallback padding (parity)", () => {
   });
 });
 
+describe("HeadingBlock/TextBlock render — 4px effective-default padding (grabbable drag strip)", () => {
+  it("TEXT_EFFECTIVE_PAD is 4px on all four sides", () => {
+    expect(TEXT_EFFECTIVE_PAD).toEqual({ top: "4px", right: "4px", bottom: "4px", left: "4px" });
+  });
+
+  it("headingDefaultProps._style has no padding (effective default is display-only, not materialized)", () => {
+    expect(headingDefaultProps._style?.paddingTop).toBeUndefined();
+  });
+
+  it("textDefaultProps._style has no padding (effective default is display-only, not materialized)", () => {
+    expect(textDefaultProps._style?.paddingTop).toBeUndefined();
+  });
+
+  it("HeadingBlock renders all four sides at 4px when _style is undefined", () => {
+    const html = renderToStaticMarkup(<HeadingBlock text="Hi" level="h2" />);
+    expect(html).toContain("padding-top:4px");
+    expect(html).toContain("padding-right:4px");
+    expect(html).toContain("padding-bottom:4px");
+    expect(html).toContain("padding-left:4px");
+  });
+
+  it("TextBlock renders all four sides at 4px when _style is undefined", () => {
+    const html = renderToStaticMarkup(<TextBlock text="Hi" />);
+    expect(html).toContain("padding-top:4px");
+    expect(html).toContain("padding-right:4px");
+    expect(html).toContain("padding-bottom:4px");
+    expect(html).toContain("padding-left:4px");
+  });
+
+  it("HeadingBlock: explicit _style.paddingTop overrides the 4px fallback", () => {
+    const html = renderToStaticMarkup(
+      <HeadingBlock text="Hi" level="h2" _style={{ paddingTop: "0px" }} />,
+    );
+    expect(html).toContain("padding-top:0px");
+  });
+
+  it("TextBlock: explicit _style.paddingTop overrides the 4px fallback", () => {
+    const html = renderToStaticMarkup(<TextBlock text="Hi" _style={{ paddingTop: "0px" }} />);
+    expect(html).toContain("padding-top:0px");
+  });
+
+  it("HeadingBlock: same render used for canvas (puck.isEditing) and public page renders identical padding (parity)", () => {
+    const editingHtml = renderToStaticMarkup(
+      <HeadingBlock text="Hi" level="h2" puck={{ isEditing: true }} />,
+    );
+    const publicHtml = renderToStaticMarkup(
+      <HeadingBlock text="Hi" level="h2" puck={{ isEditing: false }} />,
+    );
+    expect(editingHtml).toContain("padding-top:4px");
+    expect(publicHtml).toContain("padding-top:4px");
+  });
+});
+
 describe("A5: ContainerBlock custom min-height", () => {
   it("public page: minHeight=custom + minHeightValue=250px renders min-height:250px (A5)", () => {
     const html = renderToStaticMarkup(
@@ -1451,11 +2083,13 @@ describe("A5: ContainerBlock custom min-height", () => {
     expect(html).toContain("min-height:250px");
   });
 
-  it("public page: minHeight=custom without minHeightValue has no min-height constraint (A5)", () => {
+  it("public page: minHeight=custom without minHeightValue has no section min-height constraint (A5)", () => {
     const html = renderToStaticMarkup(
       <ContainerBlock content={stubSlot} minHeight="custom" puck={{ isEditing: false }} />
     );
-    expect(html).not.toContain("min-height");
+    expect(html).not.toContain("min-height:250px");
+    // The filling slot has min-height:0 by design; it is not a section height.
+    expect(html).toContain("min-height:0");
   });
 });
 
@@ -1469,11 +2103,13 @@ describe("A7: ColumnsBlock overallWidth prop", () => {
 });
 
 describe("A5: ColumnsBlock min-height prop", () => {
-  it("renders min-height when minHeight prop is set (A5)", () => {
+  it("makes the inner grid fill its min-height rather than leaving a content-sized grid", () => {
     const html = renderToStaticMarkup(
       <ColumnsBlock columns={2} minHeight="200px" content={stubSlot} />
     );
     expect(html).toContain("min-height:200px");
+    expect(html).toContain("display:flex");
+    expect(html).toContain("flex:1 1 auto");
   });
 });
 
@@ -1531,5 +2167,51 @@ describe("B2a: ColumnsBlock render — fallback padding (parity)", () => {
       <ColumnsBlock columns={2} content={stubSlot} _style={{ paddingTop: "3rem" }} />,
     );
     expect(html).toContain("padding-top:3rem");
+  });
+});
+
+describe("containerResolvePermissions — footer lock", () => {
+  const basePermissions: Permissions = {
+    drag: true,
+    duplicate: true,
+    delete: true,
+    edit: true,
+    insert: true,
+  };
+  type ResolveArgs = Parameters<NonNullable<typeof containerResolvePermissions>>;
+
+  // Minimal stub for the params object resolvePermissions receives — only
+  // `permissions` is read by containerResolvePermissions.
+  const params = { permissions: basePermissions } as ResolveArgs[1];
+
+  it.each([
+    ["FOOTER_SIGNATURE_PRESET", FOOTER_SIGNATURE_PRESET],
+    ["FOOTER_DIRECTORY_PRESET", FOOTER_DIRECTORY_PRESET],
+    ["FOOTER_STATEMENT_PRESET", FOOTER_STATEMENT_PRESET],
+  ])("locks duplicate + drag for a real footer preset's own props (%s)", async (_label, presetProps) => {
+    const data = { props: { id: "block-1", ...presetProps } } as unknown as ResolveArgs[0];
+    const result = await containerResolvePermissions!(data, params);
+    expect(result.duplicate).toBe(false);
+    expect(result.drag).toBe(false);
+  });
+
+  it("leaves delete allowed for a footer — it stays deletable, unlike the pinned nav header", async () => {
+    const data = { props: { id: "block-1", ...FOOTER_SIGNATURE_PRESET } } as unknown as ResolveArgs[0];
+    const result = await containerResolvePermissions!(data, params);
+    expect(result.delete).toBe(true);
+  });
+
+  it("does not restrict an ordinary Container carrying no _chrome marker", async () => {
+    const data = { props: { id: "block-1", ...containerDefaultProps } } as unknown as ResolveArgs[0];
+    const result = await containerResolvePermissions!(data, params);
+    expect(result).toBe(basePermissions);
+  });
+
+  it("does not restrict a Container carrying an unrelated _chrome value", async () => {
+    const data = {
+      props: { id: "block-1", ...containerDefaultProps, _chrome: "nav" },
+    } as unknown as ResolveArgs[0];
+    const result = await containerResolvePermissions!(data, params);
+    expect(result).toBe(basePermissions);
   });
 });

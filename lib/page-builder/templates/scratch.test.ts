@@ -3,20 +3,20 @@ import { scratchTemplate } from "./scratch";
 import { getTemplate, PORTFOLIO_TEMPLATES } from "./index";
 
 describe("scratchTemplate", () => {
-  it("seeds empty home and gallery zones", () => {
+  it("seeds home and gallery zones with only a pinned Navigation block — no longer header-less", () => {
     const data = scratchTemplate.seedData({ workspace: { name: "X" } });
-    const emptyThemedZone = {
-      content: [],
-      root: {
+    for (const zoneData of [data.home, data.gallery]) {
+      expect(zoneData?.content).toHaveLength(1);
+      expect(zoneData?.content[0].type).toBe("Navigation");
+      expect((zoneData?.content[0].props as { _chrome?: string })._chrome).toBe("nav");
+      expect(zoneData?.root).toEqual({
         props: {
           _rootStyle: {
             bgColorToken: "background",
           },
         },
-      },
-    };
-    expect(data.home).toEqual(emptyThemedZone);
-    expect(data.gallery).toEqual(emptyThemedZone);
+      });
+    }
   });
 
   it("is registered and resolvable by id, in the reserved last slot", () => {

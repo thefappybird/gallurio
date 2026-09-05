@@ -187,6 +187,19 @@ describe("Workspace.pendingPromoGrant defaults", () => {
   });
 });
 
+describe("Workspace.publicPage.collectionsPopup popupLayout / imageModalLayout defaults", () => {
+  it("new workspace defaults both fields to ''", async () => {
+    const ws = await Workspace.create({
+      slug: "popup-layout-studio",
+      name: "Popup Layout Studio",
+      ownerUserId: "user_popup_layout_1",
+    });
+    const popup = ws.publicPage?.collectionsPopup as unknown as { popupLayout?: string; imageModalLayout?: string };
+    expect(popup?.popupLayout).toBe("");
+    expect(popup?.imageModalLayout).toBe("");
+  });
+});
+
 describe("Workspace.invoiceTheme defaults", () => {
   it("new workspace has invoiceTheme defaulting to the classic preset", async () => {
     const ws = await Workspace.create({

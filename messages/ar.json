@@ -69,12 +69,12 @@
       "portfolioBuilder": {
         "title": "أداة بناء المعرض بالسحب والإفلات",
         "panelHeadline": "اجعل انطباعك الأول يعبّر عنك تمامًا.",
-        "description": "أداة بناء مواقع بالسحب والإفلات دون كتابة كود — بلا شاشة فارغة، وبلا حاجة لمطوّر. رتّب المعارض والخدمات والأقسام بالطريقة التي تريد أن يُرى بها عملك حقًا — ثم اجعلها لك بلا شك.",
-        "feature1": "أقسام صفحة بالسحب والإفلات — دون كتابة كود",
-        "feature2": "معارض صور ومجموعات",
-        "feature3": "ألوان وخطوط وهوية تجارية مخصصة — دون حاجة لمطوّر",
-        "feature4": "مصممة لتحويل الزوار إلى استفسارات",
-        "cta": "جرّب أداة بناء المعرض"
+        "description": "أداة بناء صفحات قائمة على الكتل ودون كتابة كود — تصفّح مكتبة أقسام جاهزة بمعاينة حيّة، بلا شاشة فارغة تبدأ منها. صمّم لون ومسافات وخط كل كتلة، اختر تخطيط معرضك، وطبّق طقم الهوية التجارية على موقعك بالكامل.",
+        "feature1": "أقسام جاهزة بمعاينة حيّة",
+        "feature2": "تخطيطات معرض بالشبكة، المتداخل، أو العرض الدائري",
+        "feature3": "تحكم بلون ومسافات وخط كل كتلة",
+        "feature4": "طقم الهوية التجارية وقوالب جاهزة لكامل الموقع",
+        "cta": "افتح أداة بناء المعرض"
       },
       "bookingInquiryForms": {
         "title": "طلبات الحجز",
@@ -1722,20 +1722,6 @@
           "image": "تعذّر قراءة الصورة. يرجى تجربة ملف آخر.",
           "upload": "فشل الرفع. يرجى المحاولة مرة أخرى."
         },
-        "logoSection": "الشعار",
-        "logoHint": "يظهر في ترويسة صفحتك العامة.",
-        "logoRequirements": "PNG أو JPEG أو WebP. حتى 512x256px، بحد أقصى 250KB.",
-        "logoLabel": "رفع الشعار",
-        "logoReplace": "استبدال",
-        "logoRemove": "إزالة",
-        "logoUploading": "جارٍ الرفع...",
-        "logoErrors": {
-          "type": "استخدم صورة PNG أو JPEG أو WebP.",
-          "size": "أبقِ حجم الملف أقل من 250KB.",
-          "dimensions": "أبقِ الشعار ضمن 512x256px.",
-          "image": "هذا الملف ليس صورة صالحة.",
-          "upload": "فشل الرفع. يرجى المحاولة مرة أخرى."
-        },
         "seoTitleHint": "العنوان القابل للنقر في Google وتبويب المتصفّح. استهدف ~60 حرفًا. اسم الاستوديو + ما تصوّره.",
         "seoDescriptionHint": "المقتطف الرمادي تحت عنوانك في نتائج البحث. استهدف ~155 حرفًا. روّج لصفحتك الرئيسية.",
         "seoTitleAutoHint": "لا يوجد عنوان بعد — سيُستخدم اسم مساحة العمل بدلًا منه.",
@@ -1743,6 +1729,7 @@
         "seoKeywords": "وسوم SEO",
         "seoKeywordsPlaceholder": "مصور زفاف, تحريري, دبي",
         "seoKeywordsHint": "وسوم اختيارية، مفصولة بفواصل — تُحفظ المسافات داخل العبارة كما هي. تُستخدم في البيانات المنظمة للصفحة. أضف حتى 10 وسوم.",
+        "seoKeywordsRemoveTag": "إزالة الوسم {tag}",
         "galleryDescriptionLabel": "وصف صفحة المعرض",
         "galleryDescriptionPlaceholder": "عرض لأجمل أعمالنا في تصوير حفلات الزفاف والبورتريه…",
         "galleryDescriptionHint": "وصف منفصل لصفحة المعرض حتى لا يتكرر مع وصف الصفحة الرئيسية. استهدف ~155 حرفًا.",
@@ -1965,11 +1952,31 @@
           "confirm": "إزالة العضو"
         },
         "details": {
-          "tabsLabel": "تفاصيل العضو", "tabs": { "details": "التفاصيل", "history": "السجل" },
-          "teams": "الفِرق", "noTeams": "لا توجد فِرق", "completed": "مكتمل", "workingNow": "قيد التنفيذ", "future": "مستقبلية",
-          "fromDate": "من تاريخ", "toDate": "إلى تاريخ", "action": "الإجراء", "allActions": "كل الإجراءات",
-          "actions": { "created": "تم الإنشاء", "updated": "تم التحديث", "deleted": "تم الحذف", "statusChanged": "تم تغيير الحالة", "paymentAdded": "تمت إضافة دفعة" },
-          "loadingHistory": "جارٍ تحميل سجل النشاط", "loading": "جارٍ التحميل…", "loadMore": "تحميل المزيد", "noActivity": "لم يتم العثور على نشاط."
+          "tabsLabel": "تفاصيل العضو",
+          "tabs": {
+            "details": "التفاصيل",
+            "history": "السجل"
+          },
+          "teams": "الفِرق",
+          "noTeams": "لا توجد فِرق",
+          "completed": "مكتمل",
+          "workingNow": "قيد التنفيذ",
+          "future": "مستقبلية",
+          "fromDate": "من تاريخ",
+          "toDate": "إلى تاريخ",
+          "action": "الإجراء",
+          "allActions": "كل الإجراءات",
+          "actions": {
+            "created": "تم الإنشاء",
+            "updated": "تم التحديث",
+            "deleted": "تم الحذف",
+            "statusChanged": "تم تغيير الحالة",
+            "paymentAdded": "تمت إضافة دفعة"
+          },
+          "loadingHistory": "جارٍ تحميل سجل النشاط",
+          "loading": "جارٍ التحميل…",
+          "loadMore": "تحميل المزيد",
+          "noActivity": "لم يتم العثور على نشاط."
         },
         "errors": {
           "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل.",
@@ -2056,7 +2063,7 @@
         "phonePlaceholder": "+63 917 555 0142",
         "source": "المصدر",
         "tags": "الوسوم",
-        "tagsPlaceholder": "أضِف وسمًا واضغط Enter",
+        "tagsPlaceholder": "أضِف وسمًا",
         "removeTag": "إزالة الوسم {tag}",
         "notes": "ملاحظات",
         "notesPlaceholder": "أي ملاحظات عن هذا العميل…",
@@ -2479,78 +2486,6 @@
           "tabHighlightOpacityLabel": "شفافية التمييز",
           "tabUnderlineColorLabel": "لون التسطير"
         },
-        "headerDialog": {
-          "title": "التنقّل",
-          "close": "إغلاق",
-          "save": "حفظ",
-          "saving": "جارٍ الحفظ…",
-          "tabs": {
-            "setup": "الإعداد",
-            "design": "التصميم"
-          },
-          "brandTextLabel": "العنوان",
-          "brandTextHelp": "يظهر بجوار شعارك في شريط التنقّل. اتركه فارغًا لإظهار الشعار فقط.",
-          "logoLabel": "الشعار",
-          "logoHelp": "ارفع شعار عملك ليظهر بجوار اسمك في رأس الصفحة.",
-          "logoUpload": "رفع الشعار",
-          "logoUploading": "جارٍ الرفع…",
-          "logoRemove": "إزالة الشعار",
-          "logoRequirements": "PNG أو JPEG أو WEBP · 250 كيلوبايت كحد أقصى · حتى 512×256",
-          "logoErrors": {
-            "type": "يجب أن يكون الشعار صورة PNG أو JPEG أو WEBP. صيغة SVG غير مدعومة.",
-            "size": "يجب ألا يتجاوز حجم الشعار 250 كيلوبايت.",
-            "dimensions": "يجب ألا تتجاوز أبعاد الشعار 512 × 256 بكسل.",
-            "image": "تعذّرت قراءة صورة الشعار هذه.",
-            "upload": "فشل رفع الشعار. يرجى المحاولة مرة أخرى."
-          },
-          "sectionBanner": "اللافتة",
-          "sectionLinks": "الروابط",
-          "sectionInactiveLinks": "الروابط غير النشطة",
-          "sectionActiveStyle": "نمط الرابط النشط",
-          "sectionContactButton": "زر التواصل",
-          "bgColorLabel": "لون الخلفية",
-          "bgOpacityLabel": "شفافية الخلفية",
-          "linkColorLabel": "لون نص الرابط",
-          "brandTextColorLabel": "لون العنوان",
-          "activeLinkColorLabel": "لون نص الرابط النشط",
-          "borderBottomLabel": "الحد السفلي",
-          "borderColorLabel": "لون الحدود",
-          "shadowLabel": "الظل المسقط",
-          "navbarSizeLabel": "حجم شريط التنقّل",
-          "fontSizeLabel": "حجم الرابط",
-          "activeStyleLabel": "النمط",
-          "activeStyleScale": "تكبير",
-          "activeStyleHighlight": "تمييز",
-          "activeStyleUnderline": "تسطير",
-          "highlightColorLabel": "لون التمييز",
-          "highlightOpacityLabel": "شفافية التمييز",
-          "cornerRadiusLabel": "استدارة الزوايا",
-          "underlineColorLabel": "لون التسطير",
-          "contactButtonColorLabel": "لون الزر",
-          "contactButtonOpacityLabel": "شفافية الزر",
-          "contactButtonTextColorLabel": "لون نص الزر",
-          "radius": {
-            "sharp": "حاد",
-            "subtle": "خفيف",
-            "rounded": "مستدير"
-          },
-          "shadow": {
-            "none": "بلا",
-            "sm": "صغير",
-            "md": "متوسط",
-            "lg": "كبير"
-          },
-          "navbarSize": {
-            "sleek": "أنيق",
-            "balanced": "متوازن",
-            "flashy": "لافت"
-          },
-          "fontSize": {
-            "sm": "ص",
-            "md": "م",
-            "lg": "ك"
-          }
-        },
         "contactPreview": {
           "title": "لنعمل معًا",
           "description": "أخبرنا عن مناسبتك.",
@@ -2566,8 +2501,76 @@
           "saving": "جارٍ الحفظ…",
           "cancel": "إلغاء",
           "savedToast": "تم حفظ النص البديل.",
-          "editTrigger": "تعديل النص البديل لـ {name}",
-          "photoFallback": "الصورة"
+          "editTrigger": "تعديل تفاصيل الصورة لـ {name}",
+          "photoFallback": "الصورة",
+          "incompleteWarning": "النص البديل مفقود — قد لا تظهر هذه الصورة كما هو متوقع."
+        },
+        "imageBlockDetails": {
+          "heading": "تفاصيل الصورة",
+          "sharedNotice": "هذه التفاصيل محفوظة على الصورة نفسها، وليس على هذا العنصر — تعديلها يُحدّث كل مكان تظهر فيه هذه الصورة.",
+          "chooseImagePrompt": "اختر صورة أعلاه لتعديل تفاصيلها.",
+          "loading": "جارٍ تحميل تفاصيل الصورة…",
+          "notFound": "هذه الصورة غير محفوظة في مكتبة معرضك، لذا لا يمكن تعديل تفاصيلها هنا.",
+          "loadError": "تعذّر تحميل تفاصيل هذه الصورة.",
+          "retry": "إعادة المحاولة",
+          "titleLabel": "العنوان",
+          "descriptionLabel": "الوصف",
+          "altLabel": "النص البديل الافتراضي",
+          "altHint": "يُستخدم في كل مكان تظهر فيه هذه الصورة.",
+          "dateLabel": "التاريخ",
+          "locationLabel": "الموقع",
+          "clientLabel": "العميل",
+          "tagsLabel": "الوسوم",
+          "tagsHint": "افصل بين الوسوم بفواصل أو مسافات أو Enter.",
+          "tagsPlaceholder": "مثال: في الهواء الطلق، غروب الشمس، الرقصة الأولى",
+          "removeTag": "إزالة الوسم {tag}",
+          "metaLabel": "تفاصيل مخصصة",
+          "metaLabelPlaceholder": "التسمية",
+          "metaValuePlaceholder": "القيمة",
+          "metaAdd": "إضافة تفصيل",
+          "metaRemove": "إزالة التفصيل {index}",
+          "metaLimitReached": "يمكنك إضافة حتى 20 تفصيلًا مخصصًا.",
+          "saving": "جارٍ الحفظ…",
+          "saved": "تم الحفظ",
+          "savedInPlaces": "تم التحديث في {count} أماكن",
+          "saveError": "تعذّر حفظ تغييراتك."
+        },
+        "imageWizard": {
+          "heading": "إضافة تفاصيل الصورة",
+          "position": "الصورة {current} من {total}",
+          "fieldTitle": "العنوان",
+          "fieldTitlePlaceholder": "مثال: حفل زفاف سارة وميغيل",
+          "fieldCaption": "الوصف",
+          "fieldCaptionPlaceholder": "ما الذي يحدث في هذه الصورة؟",
+          "fieldAlt": "النص البديل",
+          "fieldAltHelp": "صف ما تُظهره الصورة. يُقرأ بصوت عالٍ لمستخدمي قارئ الشاشة، وتستخدمه محركات البحث لفهم الصورة.",
+          "fieldAltPlaceholder": "مثال: عروسان يرقصان تحت الأضواء",
+          "altCounter": "{count}/{max} حرفًا",
+          "fieldDate": "التاريخ",
+          "fieldLocation": "الموقع",
+          "fieldLocationPlaceholder": "مثال: تاغايتاي، الفلبين",
+          "fieldClient": "العميل",
+          "fieldClientPlaceholder": "مثال: سارة وميغيل",
+          "fieldTags": "الوسوم",
+          "fieldTagsPlaceholder": "أضف وسمًا واضغط Enter",
+          "fieldTagsHint": "حتى 20 وسمًا.",
+          "removeTag": "إزالة الوسم {tag}",
+          "fieldMeta": "تفاصيل مخصصة",
+          "fieldMetaHint": "أضف تفاصيل إضافية موسومة، مثل \"المكان\" أو \"المصوّر\".",
+          "metaLabelPlaceholder": "التسمية",
+          "metaValuePlaceholder": "القيمة",
+          "addMetaRow": "إضافة تفصيل",
+          "removeMetaRow": "إزالة التفصيل {n}",
+          "savedBadge": "تم الحفظ",
+          "unsavedBadge": "لم يُحفظ",
+          "jumpToPhoto": "الانتقال إلى الصورة {n}",
+          "previous": "السابق",
+          "next": "التالي",
+          "finish": "حفظ وخروج",
+          "close": "إغلاق",
+          "offerHeading": "{count, plural, zero {لم يتم رفع صور} one {تم رفع صورة واحدة} two {تم رفع صورتين} few {تم رفع # صور} many {تم رفع # صورة} other {تم رفع # صورة}}",
+          "offerAddDetails": "إضافة تفاصيل",
+          "offerSkip": "تخطي الآن"
         },
         "mobileBanner": {
           "title": "يعمل المحرّر بأفضل صورة على شاشة أكبر",
@@ -2577,7 +2580,13 @@
         },
         "contactSettings": "تعديل إعدادات التواصل",
         "contactSettingsShort": "نموذج التواصل",
-        "headerSettings": "التنقّل",
+        "chromeDetachToggleLabel": "فصل الترويسة في {page}",
+        "chromeDetachHint": "الترويسات المفصولة تُصمَّم بشكل مستقل ولا تعود متطابقة مع الصفحة الأخرى.",
+        "chromeDetachDisabledHint": "لدى {page} بالفعل ترويسة مفصولة — يمكن فصل صفحة واحدة فقط في كل مرة.",
+        "chromeReanchorConfirmTitle": "مطابقة تصميم {page}؟",
+        "chromeReanchorConfirmBody": "سيتم استبدال تصميم الترويسة المستقل لهذه الصفحة بتصميم {page}. لا يمكن التراجع عن هذا.",
+        "chromeReanchorConfirmCancel": "إلغاء",
+        "chromeReanchorConfirmProceed": "مطابقة {page}",
         "preview": {
           "show": "معاينة",
           "edit": "تعديل",
@@ -2668,6 +2677,15 @@
           "discard": "تجاهل",
           "save": "حفظ التغييرات"
         },
+        "demoImportDialog": {
+          "title": "اكتشفنا نموذج معرض أعمال تجريبي محفوظ",
+          "body": "طبّق إعداد المحفظة المحفوظ في هذا المتصفح على مساحة عملك الجديدة، أو تجاهله وابدأ من جديد.",
+          "yes": "تطبيق الإعداد المحفوظ",
+          "discard": "تجاهل الإعداد المحفوظ",
+          "importedToast": "معرض أعمالك التجريبي جاهز للتعديل.",
+          "partialFailureToast": "{count, plural, one {تم الاستيراد، لكن تعذر نقل صورة واحدة.} other {تم الاستيراد، لكن تعذر نقل # صور.}}",
+          "errorToast": "تعذر استيراد معرض أعمالك التجريبي. يرجى المحاولة مرة أخرى."
+        },
         "blockActions": {
           "fallbackLabel": "قسم",
           "actionsAria": "إجراءات {label}",
@@ -2722,24 +2740,60 @@
             "sharp": "حاد",
             "subtle": "خفيف",
             "rounded": "مستدير"
+          },
+          "layout": "التخطيط",
+          "popupLayoutLabel": "تخطيط الأعمال المميزة",
+          "popupLayoutHint": "هذا ما يراه الزوار عند فتح مجموعة مميزة.",
+          "imageModalLayoutLabel": "تخطيط معاينة الصورة",
+          "imageModalLayoutHint": "هذا ما يراه الزوار عند النقر على صورة في صفحتك.",
+          "immersiveModalScopeNote": "يعرض التخطيط الغامر الصور ضمن الصفحة مباشرة، لذا ينطبق هذا الإعداد على كتل الصور وشبكات الصور وتخطيط Masonry.",
+          "notUsedByLayout": "غير مستخدم في هذا التخطيط",
+          "popupLayouts": {
+            "contactSheet": { "label": "لوحة تلامس", "description": "شبكة متساوية من الصور المصغّرة، مع رأس اختياري للمجموعة." },
+            "justified": { "label": "مسطّر", "description": "صور مرصوفة في صفوف بعروض مختلفة وارتفاع صف واحد مشترك." },
+            "splitIndex": { "label": "فهرس مقسّم", "description": "صورة رئيسية طويلة بجانب فهرس من عمودين لبقية الصور." },
+            "immersive": { "label": "غامر", "description": "صورة كبيرة واحدة في كل مرة، بملء الشاشة، مع شريط صور أسفلها." }
+          },
+          "imageModalLayouts": {
+            "caption": { "label": "تعليق", "description": "الصورة مع شريط تعليق أسفلها." },
+            "sidebar": { "label": "شريط جانبي", "description": "الصورة بجانب شريط جانبي للبيانات الوصفية." },
+            "cinema": { "label": "سينما", "description": "صورة ملء الشاشة بحواف دنيا." },
+            "sheet": { "label": "ورقة", "description": "الصورة مع ورقة بيانات وصفية تنزلق للأعلى." }
           }
         },
         "puckConfig": {
           "categories": {
             "presets": "أقسام جاهزة",
-            "manual": "أقسام يدوية"
+            "manual": "أقسام يدوية",
+            "nav": "التنقل",
+            "hero": "رئيسي",
+            "about": "نبذة عني",
+            "services": "الخدمات",
+            "cta": "دعوة للتصرُّف",
+            "contact": "تواصل",
+            "galleryGrid": "شبكة المعرض",
+            "galleryMasonry": "معرض متداخل",
+            "featuredWork": "أعمال مميَّزة",
+            "galleryLanding": "صفحة المعرض",
+            "video": "فيديو",
+            "footer": "التذييل"
           },
           "blocks": {
-            "heroPreset": "رئيسي",
-            "aboutPreset": "نبذة عني",
-            "servicesPreset": "الخدمات",
-            "ctaPreset": "دعوة للتصرّف",
-            "contactPreset": "تواصل",
-            "galleryGridPreset": "شبكة المعرض",
-            "galleryMasonryPreset": "معرض متداخل",
-            "featuredWorkPreset": "أعمال مميَّزة",
-            "galleryLandingPreset": "صفحة المعرض",
-            "videoPreset": "فيديو مميز",
+            "navigation": "التنقل",
+            "navigationPreset": "التنقل",
+            "navBorderedPreset": "شريط تنقل بحدود",
+            "navUnderlinedPreset": "شريط تنقل بخط سفلي",
+            "navScaledPreset": "شريط تنقل متكبِّر",
+            "heroPreset": "غلاف غامر",
+            "aboutPreset": "سيرة تحريرية",
+            "servicesPreset": "بطاقات الخدمات",
+            "ctaPreset": "شريط بارز",
+            "contactPreset": "تواصل متمركز",
+            "galleryGridPreset": "شبكة كلاسيكية",
+            "galleryMasonryPreset": "سرد تحريري",
+            "featuredWorkPreset": "نظرة على المجموعات",
+            "galleryLandingPreset": "غلاف عرض شرائح",
+            "videoPreset": "فيلم متمركز",
             "galleryGrid": "شبكة الصور",
             "galleryMasonry": "تخطيط متداخل",
             "featuredWork": "أبرز الأعمال",
@@ -2752,11 +2806,91 @@
             "spacer": "فراغ",
             "divider": "فاصل",
             "columns": "أعمدة",
-            "container": "حاوية"
+            "container": "حاوية",
+            "pageBody": "محتوى الصفحة",
+            "collectionCard": "بطاقة مجموعة",
+            "heroSplitPreset": "مقدمة مقسَّمة",
+            "heroStatementPreset": "بيان طباعي",
+            "aboutPortraitPreset": "صورة شخصية وقصة",
+            "aboutProfilePreset": "ملف الاستوديو",
+            "servicesMenuPreset": "قائمة تحريرية",
+            "servicesFeaturePreset": "خدمة مميّزة",
+            "ctaImagePreset": "دعوة بصورة",
+            "ctaMinimalPreset": "ختام بسيط",
+            "contactSplitPreset": "استفسار مقسَّم",
+            "contactBarPreset": "شريط تواصل مدمج",
+            "galleryGridFullPreset": "شبكة بعرض كامل",
+            "galleryGridFramedPreset": "مجموعة مؤطَّرة",
+            "galleryMasonryWallPreset": "جدار بلا حواف",
+            "galleryMasonryJournalPreset": "امتداد صحفي",
+            "featuredWorkLeadPreset": "مجموعات رئيسية",
+            "featuredWorkIndexPreset": "فهرس مشاريع مدمج",
+            "galleryLandingSplitPreset": "مقدمة معرض مقسَّمة",
+            "galleryLandingMastheadPreset": "ترويسة بسيطة",
+            "videoSplitPreset": "فيلم وقصة",
+            "videoCinemaPreset": "شريط سينمائي",
+            "footerSignaturePreset": "تذييل بتوقيع",
+            "footerDirectoryPreset": "تذييل بدليل",
+            "footerStatementPreset": "بيان ختامي"
+          },
+          "manualDescriptions": {
+            "galleryGrid": "يعرض صور المعرض المحددة في شبكة صفوف وأعمدة قابلة للتحرير.",
+            "galleryMasonry": "يعرض صور المعرض المحددة في أعمدة متدرجة تحافظ على نسبها.",
+            "collectionCard": "يربط بمجموعة معرض واحدة مع غلاف وعنوان ووصف قابل للتحرير.",
+            "heading": "يضيف عنوانًا قابلًا للتحرير مع عناصر تحكم في المستوى والخط واللون والمحاذاة.",
+            "text": "يضيف نصًا قابلًا للتحرير مع عناصر تحكم في الخط واللون والعرض والمحاذاة.",
+            "image": "يضيف صورة واحدة قابلة للتحرير مع عناصر تحكم في الاقتصاص والحجم والاستدارة والنص البديل.",
+            "button": "يضيف زر دعوة لاتخاذ إجراء يمكنه فتح صفحة الاتصال أو التنقل بين صفحات ملف الأعمال.",
+            "video": "يضمّن فيديو من YouTube أو Vimeo مع عنوان ووصف اختياريين.",
+            "columns": "ينشئ شبكة متجاوبة يمكن وضع الكتل وتغيير حجمها عبر أعمدتها وصفوفها.",
+            "container": "ينشئ قسمًا منسقًا يجمع الكتل مع تباعد ومحاذاة وخلفية خاصة به.",
+            "contactDetails": "يعرض البريد الإلكتروني والهاتف والعنوان لمساحة العمل من إعدادات الاتصال.",
+            "spacer": "يضيف مساحة رأسية فارغة قابلة للتعديل بين الكتل.",
+            "divider": "يضيف خطًا أفقيًا بعرض وسُمك ولون وتباعد قابل للتعديل."
+          },
+          "presetDescriptions": {
+            "navigationPreset": "ترويسة موقع مرنة بعلامة تجارية وروابط وزر تواصل قابلة للتحرير. تستبدل ترويسة الصفحة الحالية.",
+            "navBorderedPreset": "حد سفلي ورابط نشط مميَّز على شريط مضغوط. يستبدل ترويسة الصفحة الحالية.",
+            "navUnderlinedPreset": "شريط هادئ بخط سفلي بلون مميّز أسفل الرابط النشط. يستبدل ترويسة الصفحة الحالية.",
+            "navScaledPreset": "يكبر الرابط النشط بدل التعبئة أو الخط السفلي. يستبدل ترويسة الصفحة الحالية.",
+            "heroPreset": "صورة طويلة أو عرض شرائح خلفي مع نص في المنتصف فوق طبقة تعتيم.",
+            "heroSplitPreset": "نص وزر دعوة بجانب صورة قابلة للتعديل تحافظ على أبعادها.",
+            "heroStatementPreset": "عنوان كبير وفاصل وزر دعوة مضغوط — دون الحاجة لصورة.",
+            "aboutPreset": "عنوان وسيرة ذاتية طويلة بعرض نص مريح للقراءة.",
+            "aboutPortraitPreset": "صورة شخصية بجانب القصة، وكل عنصر قابل للتعديل بمفرده.",
+            "aboutProfilePreset": "تمتد القصة على عمودين؛ الموقع والخبرة والتخصص بجانبها.",
+            "servicesPreset": "ثلاث باقات متساوية بإطارات وأسعار تبقى متراصفة.",
+            "servicesMenuPreset": "صفوف متراصة مقسَّمة إلى عنوان ووصف وسعر، دون إطارات بطاقات.",
+            "servicesFeaturePreset": "خدمة مقسَّمة بارزة تتصدر، مع خدمتين أهدأ أسفلها.",
+            "ctaPreset": "شريط لوني في المنتصف ينتهي بزر دعوة للتواصل.",
+            "ctaImagePreset": "نص ختامي وزر دعوة بجانب صورة قابلة للتحرير.",
+            "ctaMinimalPreset": "فاصل وعنوان بجانب زر على شريط متباين.",
+            "contactPreset": "عنوان ومقدمة وبيانات تواصل وزر دعوة، في المنتصف.",
+            "contactSplitPreset": "سرد وزر دعوة بجانب بيانات التواصل ضمن إطار هادئ.",
+            "contactBarPreset": "صف ختامي عريض يترتب حسب اتجاه القراءة على الهاتف.",
+            "galleryGridPreset": "عنوان ووصف فوق شبكة من ثلاثة أعمدة.",
+            "galleryGridFullPreset": "ترويسة بسيطة فوق شبكة بأربعة أعمدة بلا حواف.",
+            "galleryGridFramedPreset": "قسم مبطَّن ومؤطَّر حول مجموعة صغيرة مختارة.",
+            "galleryMasonryPreset": "عنوان ووصف فوق تدفق متداخل.",
+            "galleryMasonryWallPreset": "عرض كامل وفواصل ضيقة — تشكّل الصور جدارًا واحدًا.",
+            "galleryMasonryJournalPreset": "تأخذ المقدمة عمودًا واحدًا بينما يمتد المعرض المتداخل على الباقي.",
+            "featuredWorkPreset": "مقدمة فوق ثلاث بطاقات مجموعات قابلة للنقر.",
+            "featuredWorkLeadPreset": "مجموعتان كبيرتان بقصّ أفقي تحت مقدمة أقوى.",
+            "featuredWorkIndexPreset": "بطاقات مجموعات مربَّعة مدمجة على شريط متباين.",
+            "galleryLandingPreset": "صورة أو عرض شرائح متوسّط الارتفاع مع نص في المنتصف.",
+            "galleryLandingSplitPreset": "نص بجانب صورة مميزة واحدة، قابلة للتعديل بمفردها.",
+            "galleryLandingMastheadPreset": "عنوان يقوده الخط وفاصل ليبدأ المعرض مباشرة أسفله.",
+            "videoPreset": "عنوان ووصف في المنتصف مع فيلم مضمَّن.",
+            "videoSplitPreset": "يأخذ الفيلم الجانب الأكبر من التقسيم، مع سياق بجانبه.",
+            "videoCinemaPreset": "فيلم بعرض كامل على شريط متباين مع تسمية توضيحية أسفله.",
+            "footerSignaturePreset": "فاصل واسم الاستوديو وروابط مضغوطة للرئيسية والمعرض والتواصل.",
+            "footerDirectoryPreset": "ثلاثة أعمدة للهوية والتنقل وبيانات التواصل.",
+            "footerStatementPreset": "شريط متباين ببيان ختامي وزر دعوة وسطر حقوق نشر هادئ."
           },
           "fields": {
             "style": "النمط",
             "pageStyle": "نمط الصفحة",
+            "pageBodyMargin": "الهامش الأفقي للصفحة",
             "bgAnimation": "حركة الخلفية",
             "bgAnimationShort": "حركة BG",
             "bgSpeed": "سرعة الحركة",
@@ -2772,7 +2906,6 @@
             "videoUrl": "رابط YouTube أو Vimeo",
             "imageField": "صورة",
             "imageUrl": "رابط الصورة (بديل)",
-            "imageAlt": "النص البديل",
             "imageFit": "الملاءمة",
             "buttonLabel": "نص الزر",
             "buttonSize": "الحجم",
@@ -2781,7 +2914,10 @@
             "spacerHeight": "الارتفاع",
             "dividerThickness": "السُّمك (px)",
             "columnsCount": "الأعمدة",
-            "rowsCount": "الصفوف"
+            "rowsCount": "الصفوف",
+            "collectionCrop": "الاقتصاص",
+            "collectionCaption": "التسمية",
+            "overlayColor": "لون الطبقة العلوية"
           },
           "options": {
             "bgAnimation": {
@@ -2840,14 +2976,28 @@
             },
             "buttonAction": {
               "openContact": "فتح نموذج التواصل",
-              "goToGallery": "الذهاب إلى صفحة المعرض"
+              "goToGallery": "الذهاب إلى صفحة المعرض",
+              "goToHome": "الذهاب إلى الصفحة الرئيسية"
             },
             "buttonAlign": {
               "left": "يسار",
               "center": "وسط",
               "right": "يمين"
+            },
+            "collectionCaption": {
+              "show": "إظهار",
+              "hide": "إخفاء"
+            },
+            "overlayColor": {
+              "none": "بلا (أسود)",
+              "primary": "أساسي",
+              "secondary": "ثانوي",
+              "accent": "مميِّز",
+              "background": "الخلفية",
+              "foreground": "المقدمة"
             }
-          }
+          },
+          "dragToAddHint": "اسحب هذا القسم لإضافته إلى صفحتك."
         },
         "tour": {
           "next": "التالي",
@@ -2893,22 +3043,6 @@
             "switchPages": {
               "title": "التنقّل بين الصفحات",
               "body": "تنقّل بين الأجزاء المختلفة لموقع معرض أعمالك."
-            },
-            "openNav": {
-              "title": "فتح التنقّل",
-              "body": "انقر على التنقّل لإعداد رأس موقعك — العلامة التجارية والشعار وروابط القائمة والنمط."
-            },
-            "navSetup": {
-              "title": "التنقّل · الإعداد",
-              "body": "تبويب الإعداد هو المكان الذي تضبط فيه نص علامتك التجارية وحجم شريط التنقّل والشعار وروابط القائمة."
-            },
-            "logo": {
-              "title": "شعارك هنا",
-              "body": "هذا هو رافع الشعار — يظهر ملف PNG أو JPEG أو WEBP المضاف هنا في رأس صفحتك المباشرة."
-            },
-            "navDesign": {
-              "title": "التنقّل · التصميم",
-              "body": "يتحكّم تبويب التصميم في ألوان الرأس والحدود والطباعة لروابط التنقّل."
             },
             "contactForm": {
               "title": "نموذج استفساراتك",
@@ -3134,6 +3268,7 @@
         "publish": "مستعد للنشر؟ النشر ميزة حصرية لخطة Gallurio Pro. سجّل للحصول على شهر مجاني وانشر موقعك على الإنترنت اليوم.",
         "theme": "تريد تخصيص ألوانك وخطوطك بالكامل؟ هذه ميزة Pro. سجّل للحصول على شهر مجاني لفتح تحرير التصميم الكامل.",
         "cta": "سجّل للبناء دون قيود",
+        "signInCta": "تسجيل الدخول بدلاً من ذلك",
         "dismiss": "واصل الاستكشاف",
         "promoReveal": "أحسنت في استكشاف المحرر! إليك رمز مكافأة لشهر مجاني إضافي، يُضاف فوق شهرك المجاني من التسجيل: {code}"
       },
@@ -3307,10 +3442,18 @@
       "payload_too_large": "الحجم كبير جدًا للحفظ. قلّص الحجم وحاول مجددًا.",
       "collection_load_failed": "تعذّر تحميل المجموعة. يرجى المحاولة مرة أخرى.",
       "collection_rename_failed": "تعذّر إعادة تسمية المجموعة. يرجى المحاولة مرة أخرى.",
+      "collection_description_failed": "تعذّر حفظ الوصف. يرجى المحاولة مرة أخرى.",
       "cover_set_failed": "تعذّر تعيين الغلاف. يرجى المحاولة مرة أخرى.",
       "order_save_failed": "تعذّر حفظ الترتيب الجديد. يرجى المحاولة مرة أخرى.",
       "photo_remove_failed": "تعذّر حذف الصورة. يرجى المحاولة مرة أخرى.",
-      "photo_add_failed": "تعذّر إضافة الصورة. يرجى المحاولة مرة أخرى."
+      "photo_add_failed": "تعذّر إضافة الصورة. يرجى المحاولة مرة أخرى.",
+      "upload_type_not_accepted": "\"{type}\" ليست صيغة مدعومة. يرجى رفع {accepted} بدلاً من ذلك.",
+      "upload_file_too_large": "حجم هذا الملف {actual} ميغابايت. الحد الأقصى هو {limit} ميغابايت.",
+      "upload_dimension_too_small": "أبعاد هذه الصورة {width}×{height}px. يجب ألا يقل الجانب الأقصر عن {min}px.",
+      "upload_invalid_image": "تعذّرت قراءة هذا الملف كصورة. جرّب ملفًا آخر.",
+      "upload_quota_exceeded": "لقد بلغت الحد الأقصى لعدد الصور. احذف بعض الصور وحاول مرة أخرى.",
+      "upload_rate_limited": "عمليات رفع كثيرة جدًا — انتظر لحظة وحاول مرة أخرى.",
+      "upload_network_error": "تعذّر الوصول إلى الخادم. تحقّق من اتصالك وحاول مرة أخرى."
     }
   },
   "common": {
@@ -3427,6 +3570,7 @@
       "settingUp": "جارٍ إعداد لوحة التحكّم…",
       "settingUpCompact": "جارٍ التحضير…",
       "goToDashboard": "الانتقال إلى لوحة التحكّم",
+      "goToPortfolio": "المتابعة إلى محفظتك",
       "footer": {
         "everything": "كل شيء في مكان واحد",
         "grow": "مُصمَّم لينمو معك",
@@ -3528,7 +3672,13 @@
         "featuredEmpty": "لم تُحدَّد صور مميَّزة بعد.",
         "carouselHint": "اسحب أو استخدم الأسهم للتصفّح",
         "carouselPrev": "الصورة السابقة",
-        "carouselNext": "الصورة التالية"
+        "carouselNext": "الصورة التالية",
+        "lightboxClose": "إغلاق",
+        "lightboxCounter": "{current} من {total}",
+        "lightboxFilmstrip": "شريط الصور المصغّرة",
+        "lightboxSeeMore": "عرض المزيد",
+        "lightboxSeeLess": "عرض أقل",
+        "lightboxPhotoOf": "الصورة {current} من {total}"
       }
     },
     "nav": {
@@ -3592,7 +3742,17 @@
       "failed": "فشل تحميل الصور.",
       "retry": "إعادة المحاولة",
       "empty": "لا توجد صور في هذه المجموعة بعد.",
-      "fullSizeAlt": "صورة بالحجم الكامل"
+      "fullSizeAlt": "صورة بالحجم الكامل",
+      "openPhoto": "فتح الصورة",
+      "photo": "صورة",
+      "loadMore": "تحميل المزيد",
+      "loadingMore": "جارٍ تحميل المزيد...",
+      "loadMoreFailed": "فشل تحميل مزيد من الصور.",
+      "photoCountOne": "صورة واحدة",
+      "photoCountOther": "{count} صور",
+      "previousPhoto": "الصورة السابقة",
+      "nextPhoto": "الصورة التالية",
+      "filmstripLabel": "شريط الصور"
     },
     "seoDefaults": {
       "homeDescription": "{name} — {businessType}. تصفح آخر الأعمال وتواصل معنا للحجز.",

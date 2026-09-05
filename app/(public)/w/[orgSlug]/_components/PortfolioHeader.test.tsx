@@ -6,6 +6,16 @@ import {
   type PortfolioHeaderLabels,
 } from "./PortfolioHeader";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
+import type { PortfolioHeaderConfig } from "@/lib/page-builder/types";
+import type { PortfolioTemplate } from "@/lib/page-builder/templates/types";
+
+/** Each template no longer carries `defaultHeader` — its header look now lives
+ *  on the Navigation block seeded first into the home zone. */
+function templateNavConfig(template: PortfolioTemplate): PortfolioHeaderConfig {
+  const data = template.seedData({ workspace: { name: "Test Studio" } });
+  const nav = data.home?.content.find((b) => b.type === "Navigation");
+  return (nav?.props ?? {}) as PortfolioHeaderConfig;
+}
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/w/luna-studio",
@@ -25,6 +35,20 @@ describe("PortfolioHeader", () => {
   it("renders a labelled Portfolio nav", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     expect(screen.getByRole("navigation", { name: "Portfolio" })).toBeInTheDocument();
+  });
+
+  it("clamps the inner nav row to 80rem by default (preserves today's rendering for callers that omit overallWidth)", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("80rem");
+    expect(nav.style.margin).toBe("0px auto");
+  });
+
+  it("overallWidth='full' drops the inner nav row's 80rem clamp", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} overallWidth="full" />);
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(nav.style.maxWidth).toBe("");
+    expect(nav.style.margin).toBe("");
   });
 
   it("links Home and Gallery to the correct workspace URLs", () => {
@@ -285,6 +309,35 @@ describe("PortfolioHeader", () => {
     // Gallery is inactive so it uses linkColor, not activeLinkColor
     expect(screen.getByRole("link", { name: "Gallery" }).style.color).toBe("var(--pf-color-accent)");
   });
+  it("renders brandSlot content in place of the default logo/text link when provided", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        brandSlot={<div data-testid="brand-slot">Custom brand</div>}
+      />,
+    );
+    expect(screen.getByTestId("brand-slot")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Luna Studio" })).not.toBeInTheDocument();
+  });
+
+  it("keeps brandSlot content in the same row (same nav) as the Home/Gallery links", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        brandSlot={<div data-testid="brand-slot">Custom brand</div>}
+      />,
+    );
+    const nav = screen.getByRole("navigation", { name: "Portfolio" });
+    expect(within(nav).getByTestId("brand-slot")).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "Home" })).toBeInTheDocument();
+  });
+
+  it("without brandSlot renders the default logo/brand-text link exactly as before", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    expect(screen.getByRole("link", { name: "Luna Studio" })).toBeInTheDocument();
+  });
 });
 
 describe("PortfolioHeader template render contract", () => {
@@ -294,7 +347,7 @@ describe("PortfolioHeader template render contract", () => {
   it.each(PORTFOLIO_TEMPLATES)(
     "$id renders every seeded header value and effective fallback",
     (template) => {
-      const config = template.defaultHeader;
+      const config = templateNavConfig(template);
       render(
         <PortfolioHeader
           slug="luna-studio"

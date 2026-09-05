@@ -14,6 +14,15 @@ describe("EditorDrawerSection", () => {
     expect(screen.getByText("child content")).toBeTruthy();
   });
 
+  it("(h) header button carries a pointer-cursor affordance", () => {
+    render(
+      <EditorDrawerSection title="Effects">
+        <span>effect controls</span>
+      </EditorDrawerSection>,
+    );
+    expect(screen.getByRole("button").className).toContain("cursor-pointer");
+  });
+
   it("(b) toggles open/closed via header — aria-expanded and children visibility", () => {
     render(
       <EditorDrawerSection title="Effects">

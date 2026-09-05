@@ -8,6 +8,8 @@ import {
   SAVED_THEMES_MAX,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
+  POPUP_LAYOUTS,
+  IMAGE_MODAL_LAYOUTS,
 } from "@/lib/page-builder/types";
 import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
@@ -42,7 +44,7 @@ const brandKitFields = {
   primaryColor: { type: String, default: "#111111" },
   secondaryColor: { type: String, default: "#f5f5f5" },
   accentColor: { type: String, default: "#2f5d56" },
-  backgroundColor: { type: String, default: "#ffffff" },
+  backgroundColor: { type: String, default: "#fcfcfb" },
   foregroundColor: { type: String, default: "#111111" },
   radius: { type: String, enum: BRAND_KIT_RADII, default: "sharp" },
   buttonStyle: { type: String, enum: BRAND_KIT_BUTTON_STYLES, default: "solid" },
@@ -52,8 +54,11 @@ const publicPageSettingsDraftSchema = new Schema(
   {
     seoTitle: { type: String, default: "" },
     seoDescription: { type: String, default: "" },
-    // Portfolio header logo, staged here by the story-prompt wizard / future
-    // settings UI until Publish promotes it into live publicPage.header.
+    // DEPRECATED: no code path writes this anymore (the settings-page logo
+    // control and its publish-time promotion into publicPage.header were
+    // removed). Read-only legacy, kept only as a migration source for
+    // load-time auto-migration into the Navigation block. Remove once that
+    // migration has run for every workspace.
     logo: {
       url: { type: String, default: "" },
       assetId: { type: String, default: "" },
@@ -213,6 +218,8 @@ const workspaceSchema = new Schema(
         borderColor: { type: String, default: "" },
         borderWidth: { type: Number, default: 0 },
         radius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        popupLayout: { type: String, enum: [...POPUP_LAYOUTS, ""], default: "" },
+        imageModalLayout: { type: String, enum: [...IMAGE_MODAL_LAYOUTS, ""], default: "" },
         // Title styling
         titleText: { type: String, default: "" },
         titleFontFamily: { type: String, enum: [...PORTFOLIO_FONT_KEYS, ""], default: "" },
@@ -230,8 +237,11 @@ const workspaceSchema = new Schema(
         closeButtonOpacity: { type: Number, default: 0 },
         closeButtonBgColorToken: { type: String, default: "" },
       },
-      // Configurable chrome for the public portfolio navigation header.
-      // All fields optional — header falls back to brand-kit values.
+      // DEPRECATED: the header now lives as a Navigation block inside
+      // publicPage.data (home/gallery zones). No code path writes this
+      // subdocument anymore — read-only legacy, kept only as the source
+      // load-time auto-migration reads into the new Navigation block on
+      // editor open. Remove once that migration has run for every workspace.
       header: {
         brandText: { type: String },
         logoUrl: { type: String, default: "" },

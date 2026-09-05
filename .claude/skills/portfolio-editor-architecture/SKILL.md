@@ -18,13 +18,15 @@ load the focused sub-skill for your actual task.
 - **The editor heart is `EditorShell`**
   (`app/[locale]/(app)/portfolio/_components/EditorShell.tsx`): hosts Puck, the left
   blocks panel, the right properties panel (`StyleToolkitField`), the top tab strip
-  (`navCluster`: Home / Gallery / Collections Popup / Navigation / Contact Form / Preview),
+  (`navCluster`: Home / Gallery / Collections Popup / Contact Form / Preview),
   drafts, theme, photos, publish/save. The edit header also hosts the canvas viewport/zoom
   controls and a **page-wide language/RTL control** (`PortfolioLanguageControl`, globe icon)
   that sets `publicPage.formLocale` + `formDir` for the whole public site at once.
-- **Zones & sub-panels:** `EDITOR_SECTIONS = ["home","gallery","collectionsPopup","header","contact"]`.
-  Home/Gallery are Puck zones; header/contact/collectionsPopup are side panels opened via
-  `openHeader()` / `openContact()` / `openCollectionsPopup()`.
+- **Zones & sub-panels:** `EDITOR_SECTIONS = ["home","gallery","collectionsPopup","contact"]`.
+  Home/Gallery are Puck zones; contact/collectionsPopup are side panels opened via
+  `openContact()` / `openCollectionsPopup()`. There is no header panel: the site header is a
+  `Navigation` block inside the zone data, mirrored across zones by `lib/page-builder/chromeSync.ts`
+  (nav pinned first, footer pinned last, both undeletable). See `docs/modules/portfolio-and-media.md`.
 - **Chrome localization.** Block labels, category titles, field labels, option labels, and
   the draft-saved toast are translated via `createEditorConfig(t)` in EditorShell and
   `useTranslations` in dialog components. All 5 locales: `en`, `fil`, `id`, `ar`, `th`.

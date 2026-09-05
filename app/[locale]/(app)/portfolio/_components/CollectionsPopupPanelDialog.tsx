@@ -9,11 +9,48 @@ import type { PortfolioFontKey } from "@/lib/page-builder/fonts";
 import { useBrandRadius } from "@/lib/page-builder/brandColors";
 import {
   BRAND_KIT_RADII,
+  POPUP_LAYOUTS,
+  IMAGE_MODAL_LAYOUTS,
+  resolvePopupLayout,
+  resolveImageModalLayout,
   type BrandKitRadius,
+  type PopupLayout,
+  type ImageModalLayout,
   type PortfolioBrandKit,
   type PortfolioCollectionsPopupConfig,
 } from "@/lib/page-builder/types";
 import type { StyleColorToken } from "@/lib/page-builder/styleToolkit";
+import {
+  LayoutPicker,
+  LayoutPreviewCard,
+  renderPopupLayoutThumb,
+  renderImageModalLayoutThumb,
+  type LayoutPickerOption,
+} from "./LayoutPicker";
+
+// Maps a PopupLayout id (kebab-case) to its camelCase locale-key segment —
+// JSON object keys avoid hyphens elsewhere in this catalog, so keep that rule.
+const POPUP_LAYOUT_MESSAGE_KEY: Record<PopupLayout, string> = {
+  "contact-sheet": "contactSheet",
+  justified: "justified",
+  "split-index": "splitIndex",
+  immersive: "immersive",
+};
+
+// Which of this dialog's three control sections apply to a given popup
+// layout. `immersive` renders full-viewport instead of the popup chrome, so
+// none of the chrome's own style controls (background/border/corners, title,
+// close button) affect it. Annotate only — never hide or disable these.
+const LAYOUT_RELEVANCE: Record<PopupLayout, { popup: boolean; titleStyles: boolean; buttonStyles: boolean }> = {
+  "contact-sheet": { popup: true, titleStyles: true, buttonStyles: true },
+  justified: { popup: true, titleStyles: true, buttonStyles: true },
+  "split-index": { popup: true, titleStyles: true, buttonStyles: true },
+  immersive: { popup: false, titleStyles: false, buttonStyles: false },
+};
+
+function NotUsedNote({ text }: { text: string }) {
+  return <p className="text-xs italic text-muted-foreground">{text}</p>;
+}
 
 // ---------------------------------------------------------------------------
 // Local sub-components
@@ -164,6 +201,23 @@ export function CollectionsPopupPanelDialog({
     onChange({ ...config, [key]: value });
   }
 
+  const popupLayout = resolvePopupLayout(config.popupLayout);
+  const imageModalLayout = resolveImageModalLayout(config.imageModalLayout);
+  const relevance = LAYOUT_RELEVANCE[popupLayout];
+  const immersiveSelected = popupLayout === "immersive";
+
+  const popupLayoutOptions: LayoutPickerOption[] = POPUP_LAYOUTS.map((id) => ({
+    id,
+    label: t(`collectionsDialog.popupLayouts.${POPUP_LAYOUT_MESSAGE_KEY[id]}.label`),
+    description: t(`collectionsDialog.popupLayouts.${POPUP_LAYOUT_MESSAGE_KEY[id]}.description`),
+  }));
+
+  const imageModalLayoutOptions: LayoutPickerOption[] = IMAGE_MODAL_LAYOUTS.map((id) => ({
+    id,
+    label: t(`collectionsDialog.imageModalLayouts.${id}.label`),
+    description: t(`collectionsDialog.imageModalLayouts.${id}.description`),
+  }));
+
   return (
     <div
       className="flex w-[360px] flex-col border-s border-border bg-card"
@@ -177,11 +231,59 @@ export function CollectionsPopupPanelDialog({
         </span>
       </div>
 
+      {/* One shared, anchored preview card for both layout pickers below —
+          never one per picker instance. See LayoutPicker.tsx. */}
+      <LayoutPreviewCard />
+
       {/* Scrollable controls */}
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3">
         <EditorDrawerGroup plain>
+          <EditorDrawerSection title={t("collectionsDialog.layout")} defaultOpen>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">
+                {t("collectionsDialog.popupLayoutLabel")}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {t("collectionsDialog.popupLayoutHint")}
+              </p>
+              <LayoutPicker
+                ariaLabel={t("collectionsDialog.popupLayoutLabel")}
+                options={popupLayoutOptions}
+                value={popupLayout}
+                onChange={(id) => set("popupLayout", id as PopupLayout)}
+                renderThumb={renderPopupLayoutThumb}
+                closeOnPointerLeave
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">
+                {t("collectionsDialog.imageModalLayoutLabel")}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {t("collectionsDialog.imageModalLayoutHint")}
+              </p>
+              <LayoutPicker
+                ariaLabel={t("collectionsDialog.imageModalLayoutLabel")}
+                options={imageModalLayoutOptions}
+                value={imageModalLayout}
+                onChange={(id) => set("imageModalLayout", id as ImageModalLayout)}
+                renderThumb={renderImageModalLayoutThumb}
+                closeOnPointerLeave
+              />
+              {immersiveSelected && (
+                <p className="text-xs text-muted-foreground">
+                  {t("collectionsDialog.immersiveModalScopeNote")}
+                </p>
+              )}
+            </div>
+          </EditorDrawerSection>
+        </EditorDrawerGroup>
+
+        <EditorDrawerGroup plain>
           {/* ── Popup ────────────────────────────── */}
           <EditorDrawerSection title={t("collectionsDialog.popup")}>
+            {!relevance.popup && <NotUsedNote text={t("collectionsDialog.notUsedByLayout")} />}
             {/* backgroundColor: unset → var(--pf-color-bg); effective = "background" token */}
             <LabeledSwatchRow
               label={t("collectionsDialog.background")}
@@ -210,6 +312,7 @@ export function CollectionsPopupPanelDialog({
 
           {/* ── Title styles ──────────────────────── */}
           <EditorDrawerSection title={t("collectionsDialog.titleStyles")}>
+            {!relevance.titleStyles && <NotUsedNote text={t("collectionsDialog.notUsedByLayout")} />}
             <div className="flex flex-col gap-1.5">
               <label
                 className="text-xs text-muted-foreground"
@@ -326,6 +429,7 @@ export function CollectionsPopupPanelDialog({
 
           {/* ── Button styles ─────────────────────── */}
           <EditorDrawerSection title={t("collectionsDialog.buttonStyles")}>
+            {!relevance.buttonStyles && <NotUsedNote text={t("collectionsDialog.notUsedByLayout")} />}
             {/* closeButtonSize: fallback = 36px */}
             <NumberInputRow
               label={t("collectionsDialog.buttonSize")}

@@ -9,7 +9,7 @@ import { portfolioPuckDataSchema } from "@/lib/validators/publicPage";
 import { brandKitSchema, portfolioContactConfigSchema } from "@/lib/validators/publicPage";
 import { puckConfig } from "@/lib/page-builder/config";
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
-import { columns } from "./_blocks";
+import { columns, navigationBlock } from "./_blocks";
 
 const REGISTERED_BLOCKS = new Set(Object.keys(puckConfig.components));
 
@@ -41,10 +41,23 @@ describe("portfolio template registry", () => {
       });
 
       it("seeds non-empty home and gallery zones", () => {
-        // scratch is an intentionally empty canvas — exempt from this check.
-        if (template.id === "scratch") return;
+        // scratch's canvas is otherwise empty, but it still seeds the pinned
+        // Navigation block — no template opens header-less anymore.
         expect(data.home?.content.length ?? 0).toBeGreaterThan(0);
         expect(data.gallery?.content.length ?? 0).toBeGreaterThan(0);
+      });
+
+      it("seeds the pinned Navigation's brand Heading with the real workspace name in both zones", () => {
+        for (const zone of [data.home, data.gallery]) {
+          const nav = zone?.content.find(
+            (b) => (b.props as { _chrome?: string })._chrome === "nav"
+          ) as { props: { content?: unknown[] } } | undefined;
+          expect(nav, `Template '${template.id}' has no pinned Navigation block`).toBeDefined();
+          const heading = nav?.props.content?.find(
+            (c) => (c as { type?: string }).type === "Heading"
+          ) as { props?: { text?: string } } | undefined;
+          expect(heading?.props?.text).toBe("Studio Aurora");
+        }
       });
 
       it("only references blocks that exist in the Puck registry", () => {
@@ -81,7 +94,7 @@ describe("portfolio template registry", () => {
         // Preset blocks (e.g. GalleryLandingPreset) are Container-based and have
         // no images prop — only data gallery blocks (GalleryGrid, GalleryMasonry)
         // carry images[]. The type check excludes the *Preset suffix.
-        const GALLERY_DATA_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork"]);
+        const GALLERY_DATA_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
         for (const block of data.gallery?.content ?? []) {
           if (GALLERY_DATA_TYPES.has(block.type)) {
             expect(block.props.images).toEqual([]);
@@ -98,9 +111,12 @@ describe("portfolio template registry", () => {
         expect(portfolioContactConfigSchema.safeParse(template.defaultContact).success).toBe(true);
       });
 
-      it("has a defaultHeader field", () => {
-        expect(template.defaultHeader).toBeDefined();
-        expect(typeof template.defaultHeader).toBe("object");
+      it("seeds a Navigation block first in both zones, carrying _chrome: 'nav'", () => {
+        for (const zoneData of [data.home, data.gallery]) {
+          const first = zoneData?.content[0];
+          expect(first?.type, `${template.id}: first block must be Navigation`).toBe("Navigation");
+          expect((first?.props as { _chrome?: string })._chrome).toBe("nav");
+        }
       });
 
       it("has a defaultCollectionsPopup field", () => {
@@ -150,14 +166,14 @@ describe("portfolio template registry", () => {
         walk([...(data.home?.content ?? []), ...(data.gallery?.content ?? [])]);
       });
 
-      it("starts the home zone with a HeroPreset or Columns block", () => {
-        // scratch is an intentionally empty canvas — exempt from this check.
+      it("follows the pinned Navigation with a HeroPreset or Columns block", () => {
+        // scratch is an intentionally empty canvas (Navigation only) — exempt.
         if (template.id === "scratch") return;
-        const firstBlock = data.home?.content[0];
+        const secondBlock = data.home?.content[1];
         // bold/luxury/editorial open with a Columns mosaic that embeds HeroPreset;
         // minimal/romantic-style templates open directly with HeroPreset.
-        expect(["HeroPreset", "Columns"], `Expected first home block to be HeroPreset or Columns, got '${firstBlock?.type}'`)
-          .toContain(firstBlock?.type);
+        expect(["HeroPreset", "Columns"], `Expected second home block to be HeroPreset or Columns, got '${secondBlock?.type}'`)
+          .toContain(secondBlock?.type);
       });
 
       it("every top-level home and gallery block has a stable id", () => {
@@ -252,6 +268,30 @@ describe("_blocks factory helpers", () => {
     expect(block.props.id).toBe("c-1");
     expect(block.props.columns).toBe(3);
     expect(block.props.content).toEqual([]);
+  });
+
+  it("navigationBlock() produces a Navigation block entry with defaults + _chrome + the given id", () => {
+    const block = navigationBlock("nav-1");
+    expect(block.type).toBe("Navigation");
+    expect(block.props.id).toBe("nav-1");
+    expect(block.props._chrome).toBe("nav");
+    expect(block.props.highlightOpacity).toBe(100);
+    expect(block.props.content).toBeDefined();
+  });
+
+  it("navigationBlock() overrides config fields while keeping the id + _chrome", () => {
+    const block = navigationBlock("nav-2", { fontSize: "sm", contactButtonColor: "accent" });
+    expect(block.props.id).toBe("nav-2");
+    expect(block.props._chrome).toBe("nav");
+    expect(block.props.fontSize).toBe("sm");
+    expect(block.props.contactButtonColor).toBe("accent");
+  });
+
+  it("navigationBlock() seeds the content Heading from the given workspace name", () => {
+    const block = navigationBlock("nav-3", {}, "Studio Aurora");
+    expect(block.props.content).toEqual([
+      { type: "Heading", props: { level: "h3", text: "Studio Aurora" } },
+    ]);
   });
 });
 

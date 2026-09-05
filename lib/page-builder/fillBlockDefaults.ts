@@ -22,10 +22,20 @@ import {
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
+import { navigationDefaultProps } from "./blocks/NavigationBlock";
+import { pageBodyDefaultProps } from "./blocks/PageBodyBlock";
+import {
+  SECTION_PRESETS,
+  SECTION_PRESET_KEYS,
+  LEGACY_NAV_PRESET_KEYS,
+} from "./blocks/sectionPresets";
 
 // Map of block type → its defaultProps.
-// Preset blocks (HeroPreset, etc.) share the ContainerBlockProps shape, so
-// they fall back to containerDefaultProps for normalization.
+// Preset blocks (HeroPreset, etc.) mostly share the ContainerBlockProps shape,
+// so every registry key falls back to containerDefaultProps for normalization
+// — EXCEPT the insertable `nav` key (componentType: "Navigation"), which falls
+// back to navigationDefaultProps instead. Derived off the registry so a new/
+// renamed/re-typed preset can't be missed by hand.
 const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
   Heading: headingDefaultProps as Record<string, unknown>,
   Text: textDefaultProps as Record<string, unknown>,
@@ -35,19 +45,22 @@ const BLOCK_DEFAULTS: Record<string, Record<string, unknown>> = {
   Divider: dividerDefaultProps as Record<string, unknown>,
   Columns: columnsDefaultProps as Record<string, unknown>,
   Container: containerDefaultProps as Record<string, unknown>,
+  Navigation: navigationDefaultProps as Record<string, unknown>,
+  PageBody: pageBodyDefaultProps as unknown as Record<string, unknown>,
   GalleryGrid: galleryGridDefaultProps as Record<string, unknown>,
   GalleryMasonry: galleryMasonryDefaultProps as Record<string, unknown>,
   FeaturedWork: featuredWorkDefaultProps as Record<string, unknown>,
-  // Preset blocks share ContainerBlockProps shape
-  HeroPreset: containerDefaultProps as Record<string, unknown>,
-  AboutPreset: containerDefaultProps as Record<string, unknown>,
-  ServicesPreset: containerDefaultProps as Record<string, unknown>,
-  CtaPreset: containerDefaultProps as Record<string, unknown>,
-  ContactPreset: containerDefaultProps as Record<string, unknown>,
-  GalleryGridPreset: containerDefaultProps as Record<string, unknown>,
-  GalleryMasonryPreset: containerDefaultProps as Record<string, unknown>,
-  FeaturedWorkPreset: containerDefaultProps as Record<string, unknown>,
-  GalleryLandingPreset: containerDefaultProps as Record<string, unknown>,
+  ...Object.fromEntries(
+    SECTION_PRESET_KEYS.map((key) => [
+      key,
+      (SECTION_PRESETS[key].componentType === "Navigation"
+        ? navigationDefaultProps
+        : containerDefaultProps) as Record<string, unknown>,
+    ]),
+  ),
+  ...Object.fromEntries(
+    LEGACY_NAV_PRESET_KEYS.map((key) => [key, navigationDefaultProps as Record<string, unknown>]),
+  ),
 };
 
 /**
@@ -90,6 +103,85 @@ function deepFillMissing(
 
 export type BlockEntry = { type: string; props: Record<string, unknown> };
 
+const MASONRY_SLOT_KEYS = ["content", "column1", "column2", "column3", "column4"] as const;
+
+function masonryColumnCount(props: Record<string, unknown>): 2 | 3 | 4 {
+  const style = props._style as Record<string, unknown> | undefined;
+  const columns = style?.galleryColumns;
+  return columns === 2 || columns === 4 ? columns : 3;
+}
+
+function distributeMasonryItems(items: BlockEntry[], columns: 2 | 3 | 4): BlockEntry[][] {
+  const lanes = Array.from({ length: columns }, () => [] as BlockEntry[]);
+  items.forEach((item, index) => lanes[index % columns].push(item));
+  return lanes;
+}
+
+/**
+ * Upgrades the retired single-flow Masonry slot to independent column lanes.
+ * Puck stores an established slot in `zones`, while freshly composed preset
+ * data can still carry the same children inline in props, so both shapes must
+ * migrate. This is editor-load-only and becomes persistent on the next save;
+ * the renderer keeps its legacy fallback for pages that have not been edited.
+ */
+function migrateMasonryLanes(data: PuckDataLike): PuckDataLike {
+  const sourceZones = data.zones
+    ? Object.fromEntries(Object.entries(data.zones).map(([key, items]) => [key, [...items]]))
+    : undefined;
+  const zoneMigrations: Array<{ id: string; columns: 2 | 3 | 4 }> = [];
+
+  const migrateEntry = (block: BlockEntry): BlockEntry => {
+    let props = { ...block.props };
+
+    // Preset data may contain nested slots inline before Puck expands them into
+    // zones. Walk all Masonry slot shapes so nested blocks are upgraded too.
+    for (const key of MASONRY_SLOT_KEYS) {
+      const items = props[key];
+      if (Array.isArray(items)) props[key] = items.map((item) => migrateEntry(item as BlockEntry));
+    }
+
+    if (block.type !== "GalleryMasonry" || props.masonryLayout === "columns") {
+      return { ...block, props };
+    }
+
+    const columns = masonryColumnCount(props);
+    const id = typeof props.id === "string" ? props.id : undefined;
+    const flowZoneKey = id ? `${id}:content` : undefined;
+    const flowZoneItems = flowZoneKey && sourceZones ? sourceZones[flowZoneKey] ?? [] : [];
+    const inlineItems = Array.isArray(props.content) ? (props.content as BlockEntry[]) : [];
+    const sourceItems = flowZoneItems.length > 0 ? flowZoneItems : inlineItems;
+    const lanes = distributeMasonryItems(sourceItems, columns);
+
+    props = { ...props, masonryLayout: "columns", content: [] };
+    if (flowZoneItems.length > 0 && id && sourceZones) {
+      zoneMigrations.push({ id, columns });
+    } else {
+      lanes.forEach((items, index) => {
+        props[`column${index + 1}`] = items;
+      });
+    }
+
+    return { ...block, props };
+  };
+
+  const content = (data.content ?? []).map(migrateEntry);
+  const zones = sourceZones
+    ? Object.fromEntries(Object.entries(sourceZones).map(([key, items]) => [key, items.map(migrateEntry)]))
+    : undefined;
+  if (zones) {
+    for (const { id, columns } of zoneMigrations) {
+      const flowZoneKey = `${id}:content`;
+      const lanes = distributeMasonryItems(zones[flowZoneKey] ?? [], columns);
+      lanes.forEach((items, index) => {
+        zones[`${id}:column${index + 1}`] = items;
+      });
+      delete zones[flowZoneKey];
+    }
+  }
+
+  return { root: data.root, content, zones };
+}
+
 /**
  * Back-compat: an Image block saved before the background-image redesign
  * (commit ee5084d) stored the picture as top-level `imagePublicId`/`imageUrl`
@@ -127,6 +219,9 @@ function fillEntry(block: BlockEntry): BlockEntry {
   if (!defaults) return migrated;
   const props = { ...migrated.props };
   deepFillMissing(props, defaults);
+  if (migrated.type === "PageBody" && Array.isArray(props.content)) {
+    props.content = fillItems(props.content as BlockEntry[]);
+  }
   return { ...migrated, props };
 }
 
@@ -148,13 +243,14 @@ export type PuckDataLike = {
  * The input is NOT mutated.
  */
 export function fillBlockDefaults(data: PuckDataLike): PuckDataLike {
+  const migrated = migrateMasonryLanes(data);
   return {
-    root: data.root,
-    content: fillItems(data.content ?? []),
-    zones: data.zones
+    root: migrated.root,
+    content: fillItems(migrated.content ?? []),
+    zones: migrated.zones
       ? Object.fromEntries(
-          Object.entries(data.zones).map(([k, v]) => [k, fillItems(v)]),
+          Object.entries(migrated.zones).map(([k, v]) => [k, fillItems(v)]),
         )
-      : data.zones,
+      : migrated.zones,
   };
 }

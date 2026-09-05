@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { CollectionPopup } from "./CollectionPopup";
 import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
@@ -19,7 +20,12 @@ export type FeaturedTile = {
 
 export type FeaturedCollectionsClientProps = {
   tiles: FeaturedTile[];
-  columns: 2 | 3 | 4;
+  /** 1 is the single-tile case used by the CollectionCard block. */
+  columns: 1 | 2 | 3 | 4;
+  /** Cover crop. Defaults to the grid's own 7/9 tile. */
+  aspectRatio?: string;
+  /** Whether the name/count chrome renders under the cover. Defaults to true. */
+  showCaption?: boolean;
   mode: "owner" | "public";
   slug?: string;
   popupConfig: PortfolioCollectionsPopupConfig;
@@ -27,6 +33,12 @@ export type FeaturedCollectionsClientProps = {
   popupLabels?: CollectionPopupLabels;
   /** Brand-kit CSS vars, re-applied on the popup's portaled root (see CollectionPopup). */
   brandVars?: Record<string, string>;
+  /** CollectionCard passes its frame/background here so the clickable tile, not
+   * merely its wrapper, owns clipping and the visible corner radius. */
+  tileStyle?: CSSProperties;
+  /** Optional per-target caption styles for CollectionCard. */
+  titleStyle?: CSSProperties;
+  subtitleStyle?: CSSProperties;
 };
 
 // ---------------------------------------------------------------------------
@@ -50,6 +62,22 @@ const TILE_FOCUS_STYLES = `
 }
 `;
 
+const DEFAULT_TITLE_STYLE: CSSProperties = {
+  margin: 0,
+  fontSize: "1rem",
+  fontWeight: 600,
+  lineHeight: 1.3,
+  color: "var(--pf-color-fg, #111)",
+};
+
+const DEFAULT_SUBTITLE_STYLE: CSSProperties = {
+  margin: "0.25rem 0 0",
+  fontSize: "0.875rem",
+  lineHeight: 1.4,
+  color: "color-mix(in srgb, var(--pf-color-fg, #111) 70%, transparent)",
+  opacity: 0.75,
+};
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -57,11 +85,16 @@ const TILE_FOCUS_STYLES = `
 export function FeaturedCollectionsClient({
   tiles,
   columns,
+  aspectRatio = "7 / 9",
+  showCaption = true,
   mode,
   slug,
   popupConfig,
   popupLabels,
   brandVars,
+  tileStyle,
+  titleStyle,
+  subtitleStyle,
 }: FeaturedCollectionsClientProps) {
   const [active, setActive] = useState<FeaturedTile | null>(null);
 
@@ -97,6 +130,11 @@ export function FeaturedCollectionsClient({
               fontFamily: "var(--pf-font-body, inherit)",
               color: "var(--pf-color-fg, #111)",
               transition: "border-color 0.15s, background 0.15s",
+              // A radius must clip the cover even when the border is 0px. The
+              // old radius lived on CollectionCard's outer wrapper, while this
+              // button painted the cover without clipping it.
+              overflow: "hidden",
+              ...tileStyle,
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.borderColor =
@@ -130,7 +168,7 @@ export function FeaturedCollectionsClient({
                 decoding="async"
                 style={{
                   width: "100%",
-                  aspectRatio: "7 / 9",
+                  aspectRatio,
                   objectFit: "cover",
                   display: "block",
                 }}
@@ -141,7 +179,7 @@ export function FeaturedCollectionsClient({
                 data-cover-placeholder=""
                 style={{
                   width: "100%",
-                  aspectRatio: "7 / 9",
+                  aspectRatio,
                   background: "var(--pf-color-muted, #ebebeb)",
                   display: "block",
                 }}
@@ -149,6 +187,7 @@ export function FeaturedCollectionsClient({
             )}
 
             {/* Text chrome */}
+            {showCaption && (
             <div
               style={{
                 padding: "0.75rem 1rem",
@@ -156,27 +195,22 @@ export function FeaturedCollectionsClient({
             >
               <p
                 style={{
-                  margin: 0,
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  lineHeight: 1.3,
-                  color: "var(--pf-color-fg, #111)",
+                  ...DEFAULT_TITLE_STYLE,
+                  ...titleStyle,
                 }}
               >
                 {tile.name}
               </p>
               <p
                 style={{
-                  margin: "0.25rem 0 0",
-                  fontSize: "0.875rem",
-                  lineHeight: 1.4,
-                  color: "color-mix(in srgb, var(--pf-color-fg, #111) 70%, transparent)",
-                  opacity: 0.75,
+                  ...DEFAULT_SUBTITLE_STYLE,
+                  ...subtitleStyle,
                 }}
               >
                 {formatCount(tile.count)}
               </p>
             </div>
+            )}
           </button>
         ))}
       </div>

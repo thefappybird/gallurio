@@ -85,13 +85,32 @@ describe("uploadDemoImage", () => {
     expect(result).toEqual({ ok: false, error: "upload_failed" });
   });
 
-  it("rejects an invalid file (unsupported MIME type) without calling fetch", async () => {
+  it("rejects an invalid file (unsupported MIME type) without calling fetch, attaching the rejected type as detail", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await uploadDemoImage(makeFile("image/gif"), "session-1");
 
-    expect(result).toEqual({ ok: false, error: "invalid_file" });
+    expect(result).toEqual({
+      ok: false,
+      error: "invalid_file",
+      detail: { code: "type_not_accepted", mimeType: "image/gif", acceptedTypes: expect.arrayContaining(["image/jpeg"]) },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized file, attaching actual and max bytes as detail", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const big = makeFile("image/png", 16 * 1024 * 1024);
+
+    const result = await uploadDemoImage(big, "session-1");
+
+    expect(result).toEqual({
+      ok: false,
+      error: "invalid_file",
+      detail: { code: "file_too_large", actualBytes: 16 * 1024 * 1024, maxBytes: 15 * 1024 * 1024 },
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -12,6 +12,11 @@ vi.mock("@/lib/page-builder/reconcile", () => ({
 vi.mock("@/lib/storage/cloudflareImages", () => ({
   deleteImage: vi.fn().mockResolvedValue(undefined),
   verifyImageOwnership: vi.fn().mockResolvedValue(true),
+  updateImageMetadata: vi.fn().mockResolvedValue(undefined),
+  imageDeliveryUrl: (id: string) => `https://imagedelivery.net/hash/${id}/public`,
+  // Mirror the real constant — the demo-import path passes it to
+  // verifyImageOwnership to demand the asset be a DEMO upload, not a tenant's.
+  DEMO_UPLOAD_SUBFOLDER: "portfolio-maker-demo",
 }));
 
 let mockCtx: {
@@ -29,8 +34,8 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { deleteImage } from "@/lib/storage/cloudflareImages";
-import { PortfolioDraft, Workspace } from "@/lib/db/models";
+import { deleteImage, verifyImageOwnership, updateImageMetadata } from "@/lib/storage/cloudflareImages";
+import { PortfolioDraft, Workspace, GalleryItem } from "@/lib/db/models";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import {
   createDraftAction,
@@ -39,6 +44,7 @@ import {
   listDraftsAction,
   getDraftAction,
   publishDraftAction,
+  importDemoPortfolioAction,
 } from "./_draftActions";
 
 const snapshot = {
@@ -70,6 +76,8 @@ beforeEach(async () => {
   await clearCollections();
   revalidatePath.mockClear();
   vi.mocked(deleteImage).mockClear();
+  vi.mocked(verifyImageOwnership).mockClear();
+  vi.mocked(updateImageMetadata).mockClear();
   setWorkspace();
 });
 
@@ -275,38 +283,6 @@ describe("publishDraftAction", () => {
     expect(ws!.publicPage!.seo?.keywords).toEqual(["settings", "override"]);
   });
 
-  it("settingsDraft.logo overrides the draft's header logo when publishing", async () => {
-    await Workspace.create({
-      _id: mockCtx.workspace._id,
-      slug: "studio-aurora",
-      name: "Studio Aurora",
-      ownerUserId: "user_owner",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
-      currency: "PHP",
-      plan: "free",
-      publicPage: {
-        data: { home: null, gallery: null },
-        latestVersion: 0,
-        settingsDraft: {
-          logo: { url: "https://imagedelivery.net/h/settings-logo/public", assetId: "settings-logo-1" },
-        },
-      },
-    });
-    const draft = await PortfolioDraft.create({
-      workspaceId: mockCtx.workspace._id,
-      name: "Logo Draft",
-      ...snapshot,
-      header: { logoUrl: "https://imagedelivery.net/h/draft-logo/public", logoAssetId: "draft-logo-1" },
-    });
-
-    const res = await publishDraftAction(String(draft._id));
-    expect(res).toEqual({ ok: true });
-
-    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
-    expect(ws!.publicPage!.header?.logoUrl).toBe("https://imagedelivery.net/h/settings-logo/public");
-    expect(ws!.publicPage!.header?.logoAssetId).toBe("settings-logo-1");
-  });
-
   it("deletes the superseded live OG image when publish promotes a different one", async () => {
     await Workspace.create({
       _id: mockCtx.workspace._id,
@@ -365,7 +341,7 @@ describe("publishDraftAction", () => {
     expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-icon-1");
   });
 
-  it("propagates the staged header logo on publish even when the draft's own header is null, without wrongly deleting the still-referenced live logo", async () => {
+  it("no longer promotes settingsDraft.logo into publicPage.header (write path removed)", async () => {
     await Workspace.create({
       _id: mockCtx.workspace._id,
       slug: "studio-aurora",
@@ -377,48 +353,14 @@ describe("publishDraftAction", () => {
       publicPage: {
         data: { home: null, gallery: null },
         latestVersion: 0,
-        header: { logoUrl: "https://imagedelivery.net/h/live-logo/public", logoAssetId: "live-logo-1" },
         settingsDraft: {
-          logo: { url: "https://imagedelivery.net/h/live-logo/public", assetId: "live-logo-1" },
+          logo: { url: "https://imagedelivery.net/h/settings-logo/public", assetId: "settings-logo-1" },
         },
       },
     });
     const draft = await PortfolioDraft.create({
       workspaceId: mockCtx.workspace._id,
-      name: "Null Header Draft",
-      ...snapshot,
-      header: null,
-    });
-
-    const res = await publishDraftAction(String(draft._id));
-    expect(res).toEqual({ ok: true });
-
-    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
-    expect(ws!.publicPage!.header?.logoAssetId).toBe("live-logo-1");
-    expect(vi.mocked(deleteImage)).not.toHaveBeenCalledWith("live-logo-1");
-  });
-
-  it("clears the header logo on publish when settingsDraft.logo was explicitly removed (assetId cleared to empty)", async () => {
-    await Workspace.create({
-      _id: mockCtx.workspace._id,
-      slug: "studio-aurora",
-      name: "Studio Aurora",
-      ownerUserId: "user_owner",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
-      currency: "PHP",
-      plan: "free",
-      publicPage: {
-        data: { home: null, gallery: null },
-        latestVersion: 0,
-        header: { logoUrl: "https://imagedelivery.net/h/live-logo/public", logoAssetId: "live-logo-1" },
-        settingsDraft: {
-          logo: { url: "", assetId: "" },
-        },
-      },
-    });
-    const draft = await PortfolioDraft.create({
-      workspaceId: mockCtx.workspace._id,
-      name: "Removed Logo Draft",
+      name: "Logo Draft",
       ...snapshot,
       header: { logoUrl: "https://imagedelivery.net/h/draft-logo/public", logoAssetId: "draft-logo-1" },
     });
@@ -427,12 +369,12 @@ describe("publishDraftAction", () => {
     expect(res).toEqual({ ok: true });
 
     const ws = await Workspace.findById(mockCtx.workspace._id).lean();
-    expect(ws!.publicPage!.header?.logoUrl).toBe("");
-    expect(ws!.publicPage!.header?.logoAssetId).toBe("");
-    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-logo-1");
+    // publicPage.header is deprecated/read-only now — publish must leave it untouched.
+    expect(ws!.publicPage!.header?.logoAssetId ?? "").toBe("");
+    expect(vi.mocked(deleteImage)).not.toHaveBeenCalled();
   });
 
-  it("deletes the superseded live logo when settingsDraft.logo promotes a different one", async () => {
+  it("normalizes a displaced Navigation block back to index 0 in both zones before writing", async () => {
     await Workspace.create({
       _id: mockCtx.workspace._id,
       slug: "studio-aurora",
@@ -441,24 +383,203 @@ describe("publishDraftAction", () => {
       clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
       currency: "PHP",
       plan: "free",
-      publicPage: {
-        data: { home: null, gallery: null },
-        latestVersion: 0,
-        header: { logoAssetId: "live-logo-1" },
-        settingsDraft: {
-          logo: { url: "https://imagedelivery.net/h/new-logo/public", assetId: "new-logo-1" },
-        },
-      },
+      publicPage: { data: { home: null, gallery: null }, latestVersion: 0 },
     });
     const draft = await PortfolioDraft.create({
       workspaceId: mockCtx.workspace._id,
-      name: "Logo Draft 2",
+      name: "Displaced Nav Draft",
       ...snapshot,
-      header: { logoUrl: "https://imagedelivery.net/h/draft-logo/public", logoAssetId: "draft-logo-1" },
+      data: {
+        home: {
+          content: [
+            { type: "HeroPreset", props: { id: "h" } },
+            { type: "Navigation", props: { id: "n", _chrome: "nav" } },
+          ],
+          root: {},
+        },
+        gallery: {
+          content: [{ type: "Navigation", props: { id: "n2", _chrome: "nav" } }],
+          root: {},
+        },
+      },
     });
 
     const res = await publishDraftAction(String(draft._id));
     expect(res).toEqual({ ok: true });
-    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("live-logo-1");
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    const home = ws!.publicPage!.data!.home as { content: { type: string; props: { id: string } }[] };
+    expect(home.content[0].type).toBe("Navigation");
+    expect(home.content[0].props.id).toBe("n");
+  });
+
+  it("publishes a zone with no Navigation block at all rather than blocking (logged, not silent)", async () => {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: { data: { home: null, gallery: null }, latestVersion: 0 },
+    });
+    const draft = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "No Nav Draft",
+      ...snapshot,
+      data: {
+        home: { content: [{ type: "HeroPreset", props: { id: "h" } }], root: {} },
+        gallery: { content: [], root: {} },
+      },
+    });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const res = await publishDraftAction(String(draft._id));
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    const home = ws!.publicPage!.data!.home as { content: unknown[] };
+    expect(home.content).toEqual([
+      {
+        type: "PageBody",
+        props: { id: "page-body", content: [{ type: "HeroPreset", props: { id: "h" } }] },
+      },
+    ]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("no Navigation block"),
+      expect.any(String)
+    );
+    warnSpy.mockRestore();
+  });
+});
+
+describe("importDemoPortfolioAction", () => {
+  // Demo sessions are crypto.randomUUID() (lib/page-builder/demoSession.ts).
+  const DEMO_SESSION = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
+  const demoInput = {
+    demoSessionId: DEMO_SESSION,
+    draft: snapshot,
+    images: [{ publicId: "demo-img-1", width: 800, height: 600 }],
+  };
+
+  it("re-parents a verified demo asset, creates a GalleryItem, and lands a new named draft", async () => {
+    const res = await importDemoPortfolioAction(demoInput);
+    expect("ok" in res && res.ok).toBe(true);
+    if (!("ok" in res)) throw new Error("expected ok");
+    expect(res.draft.name).toBe("Demo portfolio");
+    expect(res.failedAssetIds).toEqual([]);
+
+    expect(vi.mocked(verifyImageOwnership)).toHaveBeenCalledWith(
+      "demo-img-1",
+      DEMO_SESSION,
+      "portfolio-maker-demo"
+    );
+    expect(vi.mocked(updateImageMetadata)).toHaveBeenCalledWith("demo-img-1", {
+      workspaceId: String(mockCtx.workspace._id),
+      subfolder: "gallery",
+    });
+
+    const item = await GalleryItem.findOne({ workspaceId: mockCtx.workspace._id, assetId: "demo-img-1" }).lean();
+    expect(item).not.toBeNull();
+    expect(item!.width).toBe(800);
+  });
+
+  // The demoSessionId is client-supplied and is compared against the asset's
+  // Cloudflare `workspaceId` metadata. If any string were accepted, a caller
+  // could pass a VICTIM WORKSPACE's ObjectId plus a publicId harvested from
+  // that workspace's public portfolio, pass the ownership check, and have the
+  // asset re-parented into their own workspace. Constraining the shape to a
+  // UUID makes a 24-hex ObjectId unrepresentable.
+  it("rejects a demoSessionId shaped like a workspace id, before any Cloudflare call", async () => {
+    const res = await importDemoPortfolioAction({
+      ...demoInput,
+      demoSessionId: String(mockCtx.workspace._id),
+    });
+
+    expect(res).toEqual({ error: "invalid_data" });
+    expect(vi.mocked(verifyImageOwnership)).not.toHaveBeenCalled();
+    expect(vi.mocked(updateImageMetadata)).not.toHaveBeenCalled();
+  });
+
+  it("refuses to adopt an asset that does not belong to the claimed demo session (tenancy attack), but still lands the page", async () => {
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+
+    const res = await importDemoPortfolioAction(demoInput);
+    expect("ok" in res && res.ok).toBe(true);
+    if (!("ok" in res)) throw new Error("expected ok");
+    expect(res.failedAssetIds).toEqual(["demo-img-1"]);
+
+    expect(vi.mocked(updateImageMetadata)).not.toHaveBeenCalled();
+    const item = await GalleryItem.findOne({ workspaceId: mockCtx.workspace._id, assetId: "demo-img-1" }).lean();
+    expect(item).toBeNull();
+  });
+
+  it("is idempotent: retrying the same claim does not duplicate the GalleryItem row", async () => {
+    await importDemoPortfolioAction(demoInput);
+    await importDemoPortfolioAction({ ...demoInput, draft: { ...snapshot } });
+
+    const items = await GalleryItem.find({ workspaceId: mockCtx.workspace._id, assetId: "demo-img-1" }).lean();
+    expect(items).toHaveLength(1);
+  });
+
+  it("blocks staff (owner_only)", async () => {
+    mockCtx.role = "staff";
+    const res = await importDemoPortfolioAction(demoInput);
+    expect(res).toEqual({ error: "owner_only" });
+  });
+
+  it("never persists a client-supplied url — the stored URL is always derived from the verified publicId", async () => {
+    const hostileInput = {
+      ...demoInput,
+      images: [
+        {
+          publicId: "demo-img-1",
+          url: "javascript:alert(1)//https://evil.example/x",
+          width: 800,
+          height: 600,
+        },
+      ],
+    };
+
+    const res = await importDemoPortfolioAction(hostileInput);
+    expect("ok" in res && res.ok).toBe(true);
+
+    const item = await GalleryItem.findOne({ workspaceId: mockCtx.workspace._id, assetId: "demo-img-1" }).lean();
+    expect(item!.url).toBe("https://imagedelivery.net/hash/demo-img-1/public");
+  });
+
+  it("auto-dedupes the draft name when 'Demo portfolio' already exists", async () => {
+    await createDraftAction({ name: "Demo portfolio", ...snapshot });
+    const res = await importDemoPortfolioAction(demoInput);
+    expect("ok" in res && res.ok).toBe(true);
+    if ("ok" in res) expect(res.draft.name).toBe("Demo portfolio (2)");
+  });
+
+  it("is idempotent on the draft: retrying the same demoSessionId returns the same draft instead of a second one", async () => {
+    const first = await importDemoPortfolioAction(demoInput);
+    const second = await importDemoPortfolioAction(demoInput);
+    if (!("ok" in first) || !("ok" in second)) throw new Error("expected ok");
+
+    expect(second.draft.id).toBe(first.draft.id);
+    await expect(PortfolioDraft.countDocuments({ workspaceId: mockCtx.workspace._id })).resolves.toBe(1);
+  });
+
+  it("treats a demoSessionId collision on create as a concurrent win, not a name collision", async () => {
+    // Simulates a race: a concurrent request already landed a draft for this
+    // demoSessionId (under a different auto-deduped name) between this call's
+    // idempotency lookup and its create attempt.
+    const winner = await PortfolioDraft.create({
+      workspaceId: mockCtx.workspace._id,
+      name: "Demo portfolio (already imported)",
+      demoSessionId: DEMO_SESSION,
+      ...snapshot,
+    });
+    vi.spyOn(PortfolioDraft, "findOne").mockImplementationOnce(() => null as unknown as ReturnType<typeof PortfolioDraft.findOne>);
+
+    const res = await importDemoPortfolioAction(demoInput);
+    if (!("ok" in res)) throw new Error("expected ok, got " + JSON.stringify(res));
+
+    expect(res.draft.id).toBe(String(winner._id));
   });
 });

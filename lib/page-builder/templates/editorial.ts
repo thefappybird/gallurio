@@ -1,6 +1,7 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
+import { onPrimaryBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
-import { zone } from "./_blocks";
+import { zone, navigationBlock } from "./_blocks";
 
 /**
  * Editorial — Asymmetric mosaic hero, editorial type, suitable for photographers and planners.
@@ -31,21 +32,21 @@ export const editorialTemplate: PortfolioTemplate = {
     activeTabUnderline: true,
     tabUnderlineColor: "accent",
   },
-  defaultHeader: {
-    fontSize: "sm",
-    navbarSize: "sleek",
-    activeLinkHighlight: false,
-    highlightOpacity: 100,
-    activeLinkUnderline: true,
-    underlineColor: "accent",
-    contactButtonColor: "accent",
-    contactButtonOpacity: 100,
-    contactButtonRadius: "subtle",
-  },
   defaultCollectionsPopup: {},
-  seedData: () => ({
+  seedData: (ctx) => ({
     home: zone(
       [
+        navigationBlock("Navigation-editorial-home-0", {
+          fontSize: "sm",
+          navbarSize: "sleek",
+          activeLinkHighlight: false,
+          highlightOpacity: 100,
+          activeLinkUnderline: true,
+          underlineColor: "accent",
+          contactButtonColor: "accent",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "subtle",
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {
@@ -519,7 +520,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-editorial-home-40",
                               text: "From ₱30,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -566,7 +567,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-editorial-home-45",
                               text: "From ₱8,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -613,7 +614,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                               id: "Text-editorial-home-50",
                               text: "From ₱15,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -693,6 +694,17 @@ With over a decade of experience, I bring artistry and technical expertise to ev
     ),
     gallery: zone(
       [
+        navigationBlock("Navigation-editorial-gal-0", {
+          fontSize: "sm",
+          navbarSize: "sleek",
+          activeLinkHighlight: false,
+          highlightOpacity: 100,
+          activeLinkUnderline: true,
+          underlineColor: "accent",
+          contactButtonColor: "accent",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "subtle",
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {
@@ -708,7 +720,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         level: "h2",
                         text: "Our gallery",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                           bold: true,
                         },
                       },
@@ -719,7 +731,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         id: "Text-editorial-gal-4",
                         text: "A curated look at our work.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -748,7 +760,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         level: "h2",
                         text: "Ready to book your session?",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -758,7 +770,7 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         id: "Text-editorial-gal-7",
                         text: "Let's create something beautiful together.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -770,10 +782,8 @@ With over a decade of experience, I bring artistry and technical expertise to ev
                         action: "open-contact",
                         align: "center",
                         _style: {
-                          textColorToken: "secondary",
-                          buttonStyle: "solid",
-                          buttonColorToken: "accent",
                           radius: 4,
+                          ...onPrimaryBand,
                         },
                       },
                     },

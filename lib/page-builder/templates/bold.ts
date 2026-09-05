@@ -1,6 +1,7 @@
 import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
+import { onAccentBand } from "@/lib/page-builder/blocks/presets/_helpers";
 import type { PortfolioTemplate } from "./types";
-import { zone } from "./_blocks";
+import { zone, navigationBlock } from "./_blocks";
 
 /**
  * Bold — High-contrast navy accent, grid mosaic hero, strong typographic presence.
@@ -29,24 +30,24 @@ export const boldTemplate: PortfolioTemplate = {
     activeTabUnderline: true,
     tabUnderlineColor: "accent",
   },
-  defaultHeader: {
-    borderBottomWidth: 2,
-    borderBottomColor: "foreground",
-    navbarSize: "sleek",
-    activeLinkScale: false,
-    activeLinkHighlight: true,
-    highlightOpacity: 40,
-    activeLinkRadius: "subtle",
-    activeLinkUnderline: false,
-    contactButtonColor: "accent",
-    contactButtonTextColor: "background",
-    contactButtonOpacity: 100,
-    contactButtonRadius: "subtle",
-  },
   defaultCollectionsPopup: {},
-  seedData: () => ({
+  seedData: (ctx) => ({
     home: zone(
       [
+        navigationBlock("Navigation-bold-home-0", {
+          borderBottomWidth: 2,
+          borderBottomColor: "foreground",
+          navbarSize: "sleek",
+          activeLinkScale: false,
+          activeLinkHighlight: true,
+          highlightOpacity: 40,
+          activeLinkRadius: "subtle",
+          activeLinkUnderline: false,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "background",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "subtle",
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {
@@ -62,7 +63,7 @@ export const boldTemplate: PortfolioTemplate = {
                         level: "h1",
                         text: "Capturing moments that last forever",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                           bold: true,
                         },
                       },
@@ -73,7 +74,7 @@ export const boldTemplate: PortfolioTemplate = {
                         id: "Text-bold-home-4",
                         text: "Fine art photography for weddings, portraits, and events.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },
@@ -84,6 +85,7 @@ export const boldTemplate: PortfolioTemplate = {
                         label: "Get in Touch",
                         action: "open-contact",
                         align: "center",
+                        _style: onAccentBand,
                       },
                     },
                   ],
@@ -211,7 +213,7 @@ export const boldTemplate: PortfolioTemplate = {
                               id: "Text-bold-home-17",
                               text: "From ₱30,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -258,7 +260,7 @@ export const boldTemplate: PortfolioTemplate = {
                               id: "Text-bold-home-22",
                               text: "From ₱8,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -305,7 +307,7 @@ export const boldTemplate: PortfolioTemplate = {
                               id: "Text-bold-home-27",
                               text: "From ₱15,000",
                               _style: {
-                                textColorToken: "accent",
+                                textColorToken: "foreground",
                                 bold: true,
                               },
                             },
@@ -340,6 +342,20 @@ export const boldTemplate: PortfolioTemplate = {
     ),
     gallery: zone(
       [
+        navigationBlock("Navigation-bold-gal-0", {
+          borderBottomWidth: 2,
+          borderBottomColor: "foreground",
+          navbarSize: "sleek",
+          activeLinkScale: false,
+          activeLinkHighlight: true,
+          highlightOpacity: 40,
+          activeLinkRadius: "subtle",
+          activeLinkUnderline: false,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "background",
+          contactButtonOpacity: 100,
+          contactButtonRadius: "subtle",
+        }, ctx.workspace.name),
         {
           type: "Columns",
           props: {
@@ -405,7 +421,7 @@ export const boldTemplate: PortfolioTemplate = {
                         level: "h2",
                         text: "Our gallery",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                           bold: true,
                         },
                       },
@@ -416,7 +432,7 @@ export const boldTemplate: PortfolioTemplate = {
                         id: "Text-bold-gal-8",
                         text: "A curated look at our work.",
                         _style: {
-                          textColorToken: "background",
+                          textColorToken: "foreground",
                         },
                       },
                     },

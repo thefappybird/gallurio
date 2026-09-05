@@ -52,18 +52,24 @@ describe("uploadAsset", () => {
 
     const result = await uploadAsset(makeFile("image/gif"), BASE_CONSTRAINTS);
 
-    expect(result).toEqual({ error: "type_not_accepted" });
+    expect(result).toEqual({
+      error: "type_not_accepted",
+      detail: { code: "type_not_accepted", mimeType: "image/gif", acceptedTypes: BASE_CONSTRAINTS.acceptedTypes },
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("rejects file over maxBytes", async () => {
+  it("rejects file over maxBytes, attaching the actual and max byte counts", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     const bigFile = makeFile("image/png", 600 * 1024); // 600KB > 512KB limit
     const result = await uploadAsset(bigFile, BASE_CONSTRAINTS);
 
-    expect(result).toEqual({ error: "file_too_large" });
+    expect(result).toEqual({
+      error: "file_too_large",
+      detail: { code: "file_too_large", actualBytes: 600 * 1024, maxBytes: BASE_CONSTRAINTS.maxBytes },
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

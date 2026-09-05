@@ -60,6 +60,7 @@ import {
   type SeedIdentity,
 } from "./seed-fixtures";
 import { getTemplate } from "@/lib/page-builder/templates";
+import { E2E_FIXTURE_DRAFT_NAME, buildE2eFixtureData } from "./seedE2eDraft";
 
 type SessionRange = { startAt: Date; endAt: Date };
 type TeamRef = { _id: mongoose.Types.ObjectId; name: string; color: string };
@@ -603,7 +604,6 @@ async function createPublishedPortfolio(workspace: {
       data: minimalTemplate.seedData({ workspace: { name: workspace.name } }),
       brandKit: minimalTemplate.defaultBrandKit,
       contact: minimalTemplate.defaultContact,
-      header: minimalTemplate.defaultHeader,
       collectionsPopup: minimalTemplate.defaultCollectionsPopup,
       ...draftMetadata,
       createdAt: dayOffset(-9),
@@ -616,7 +616,6 @@ async function createPublishedPortfolio(workspace: {
       data: boldTemplate.seedData({ workspace: { name: workspace.name } }),
       brandKit: boldTemplate.defaultBrandKit,
       contact: boldTemplate.defaultContact,
-      header: boldTemplate.defaultHeader,
       collectionsPopup: boldTemplate.defaultCollectionsPopup,
       ...draftMetadata,
       createdAt: dayOffset(-4),
@@ -629,11 +628,27 @@ async function createPublishedPortfolio(workspace: {
       data: seed,
       brandKit: editorialTemplate.defaultBrandKit,
       contact: editorialTemplate.defaultContact,
-      header: editorialTemplate.defaultHeader,
       collectionsPopup: editorialTemplate.defaultCollectionsPopup,
       ...draftMetadata,
       createdAt: dayOffset(-1),
       updatedAt: dayOffset(-1),
+    },
+    {
+      // Owned by the editor e2e specs, not by design. Its structural contract
+      // lives in seedE2eDraft.ts — read it before changing this entry.
+      workspaceId: workspace._id,
+      name: E2E_FIXTURE_DRAFT_NAME,
+      // A real template id, like every other seeded draft. An empty templateId
+      // is the "no template chosen yet" signal and sends the editor into the
+      // template picker on load, which leaves a dialog over the canvas.
+      templateId: minimalTemplate.id,
+      data: buildE2eFixtureData(),
+      brandKit: minimalTemplate.defaultBrandKit,
+      contact: minimalTemplate.defaultContact,
+      collectionsPopup: minimalTemplate.defaultCollectionsPopup,
+      ...draftMetadata,
+      createdAt: dayOffset(-12),
+      updatedAt: dayOffset(-12),
     },
   ]);
 
@@ -646,7 +661,6 @@ async function createPublishedPortfolio(workspace: {
           data: seed,
           brandKit: editorialTemplate.defaultBrandKit,
           contact: editorialTemplate.defaultContact,
-          header: editorialTemplate.defaultHeader,
           collectionsPopup: editorialTemplate.defaultCollectionsPopup,
           seoTitle: `${workspace.name} | Event Photography Portfolio`,
           seoDescription: "Documentary wedding, portrait, and brand photography in Metro Manila.",

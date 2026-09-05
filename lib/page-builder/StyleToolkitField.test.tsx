@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, BRAND_RADIUS_TO_PRESET, BannerSection } from "./StyleToolkitField";
+import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, NavigationDesignPanel, BRAND_RADIUS_TO_PRESET, BannerSection, blockTabsForType } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
 import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
 import { resolveEffectiveFonts } from "./fonts";
+import { SECTION_PRESET_KEYS, NAV_PRESET_KEYS, LEGACY_NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+import { SingleCollectionControl } from "./galleryPicker/MediaField";
+import { DemoPickerContext } from "./demoPickerContext";
 
 vi.mock("next-intl", () => ({
   useTranslations: () =>
@@ -14,6 +17,40 @@ vi.mock("next-intl", () => ({
       has: () => true,
     }),
 }));
+
+// Replaces the real dialog-based collections picker with two buttons that fire
+// onChange directly — this suite tests the mapping/trim logic (Multi/Single
+// CollectionControl + the CollectionCard Content-tab branch), not the picker's
+// own dialog UI (covered by galleryPicker/MediaField.test.tsx and friends).
+vi.mock("./galleryPicker/MediaPicker", async () => {
+  const React = await import("react");
+  return {
+    MediaPicker: (props: {
+      mode: string;
+      open: boolean;
+      onChange: (next: unknown) => void;
+    }) => {
+      if (!props.open || props.mode !== "collections") return null;
+      return React.createElement(
+        "div",
+        null,
+        React.createElement("button", { type: "button", onClick: () => props.onChange([]) }, "mock-select-none"),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () =>
+              props.onChange([
+                { id: "1", name: "One", coverPublicId: "c1", itemCount: 2 },
+                { id: "2", name: "Two", coverPublicId: "c2", itemCount: 5 },
+              ]),
+          },
+          "mock-select-many"
+        )
+      );
+    },
+  };
+});
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -84,12 +121,12 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.queryByText("Padding")).toBeNull();
   });
 
-  it("Layout tab shows Align and Justify when no fieldId (no Puck provider)", () => {
+  it("Layout tab hides unsupported alignment controls when no block is selected", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
-    expect(screen.getByText("Align")).toBeTruthy();
-    expect(screen.getByText("Justify")).toBeTruthy();
+    expect(screen.queryByText("Content alignment")).toBeNull();
+    expect(screen.queryByText("Content distribution")).toBeNull();
   });
 
   it("Content tab shows Banner section without fieldId", () => {
@@ -187,6 +224,10 @@ describe("ContainerBackgroundControls — animation gating", () => {
         speed="medium"
         onAnimationChange={noop}
         onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
       />
     );
     expect(screen.getByText("Background images")).toBeTruthy();
@@ -203,6 +244,10 @@ describe("ContainerBackgroundControls — animation gating", () => {
         speed="medium"
         onAnimationChange={noop}
         onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
       />
     );
     expect(screen.getByLabelText("Background animation")).toBeTruthy();
@@ -219,10 +264,100 @@ describe("ContainerBackgroundControls — animation gating", () => {
         speed="medium"
         onAnimationChange={onAnimationChange}
         onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
       />
     );
     fireEvent.change(screen.getByLabelText("Background animation"), { target: { value: "slide" } });
     expect(onAnimationChange).toHaveBeenCalledWith("slide");
+  });
+});
+
+describe("ContainerBackgroundControls — scrim gating", () => {
+  const noop = () => {};
+
+  it("hides Overlay opacity + color controls with zero background images", () => {
+    render(
+      <ContainerBackgroundControls
+        images={[]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
+      />
+    );
+    expect(screen.queryByText("Overlay opacity")).toBeNull();
+    expect(screen.queryByText("Overlay color")).toBeNull();
+  });
+
+  it("shows Overlay opacity + color controls with one background image", () => {
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+        overlayOpacity={undefined}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={noop}
+      />
+    );
+    expect(screen.getByText("Overlay opacity")).toBeTruthy();
+    expect(screen.getByText("Overlay color")).toBeTruthy();
+  });
+
+  it("changing the overlay color swatch calls onOverlayColorChange with the token", () => {
+    const onOverlayColorChange = vi.fn();
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+        overlayOpacity={0}
+        overlayColorToken={undefined}
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={onOverlayColorChange}
+      />
+    );
+    const overlayColorLabel = screen.getByText("Overlay color");
+    const overlaySection = overlayColorLabel.parentElement!;
+    fireEvent.click(within(overlaySection).getByRole("button", { name: "Accent" }));
+    expect(onOverlayColorChange).toHaveBeenCalledWith("accent");
+  });
+
+  it("clearing the overlay color swatch calls onOverlayColorChange with undefined", () => {
+    const onOverlayColorChange = vi.fn();
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+        overlayOpacity={0}
+        overlayColorToken="accent"
+        onOverlayOpacityChange={noop}
+        onOverlayColorChange={onOverlayColorChange}
+      />
+    );
+    const overlayColorLabel = screen.getByText("Overlay color");
+    const overlaySection = overlayColorLabel.parentElement!;
+    fireEvent.click(within(overlaySection).getByRole("button", { name: "Reset color" }));
+    expect(onOverlayColorChange).toHaveBeenCalledWith(undefined);
   });
 });
 
@@ -265,6 +400,41 @@ describe("padding lives in the Layout tab", () => {
   });
 });
 
+describe("margin and leaf-width layout controls", () => {
+  it("shows editable container margins with an effective 8px bottom margin", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    expect(screen.getByText("Margin")).toBeTruthy();
+    const bottom = screen.getByLabelText("Bottom unit").previousElementSibling;
+    expect(bottom).toHaveAttribute("placeholder", "8");
+  });
+
+  it.each(["Heading", "Text", "Button"])("keeps %s width hug-only in the inspector", (blockType) => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify
+        blockType={blockType}
+        p={blockType === "Button" ? {} : undefined}
+        setProp={blockType === "Button" ? () => {} : undefined}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.queryByText("Width")).toBeNull();
+  });
+});
+
 describe("gallery section presets are container-typed", () => {
   for (const t of ["GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset"]) {
     it(`${t} is a CONTAINER_TYPE`, () => {
@@ -280,6 +450,319 @@ describe("gallery section presets are container-typed", () => {
   it("GalleryLandingPreset is a CONTAINER_TYPE and FLEX_CONTAINER_BLOCK", () => {
     expect(CONTAINER_TYPES.has("GalleryLandingPreset")).toBe(true);
     expect(FLEX_CONTAINER_BLOCKS.has("GalleryLandingPreset")).toBe(true);
+  });
+});
+
+describe("CONTAINER_TYPES / FLEX_CONTAINER_BLOCKS — derived from the preset registry", () => {
+  it("contains every Container-shaped registry key plus Container, nothing hand-listed", () => {
+    for (const key of SECTION_PRESET_KEYS) {
+      const isNav = (NAV_PRESET_KEYS as readonly string[]).includes(key);
+      expect(CONTAINER_TYPES.has(key)).toBe(!isNav);
+      expect(FLEX_CONTAINER_BLOCKS.has(key)).toBe(!isNav);
+    }
+    expect(CONTAINER_TYPES.has("Container")).toBe(true);
+    expect(FLEX_CONTAINER_BLOCKS.has("Container")).toBe(true);
+    expect(CONTAINER_TYPES.size).toBe(SECTION_PRESET_KEYS.length - NAV_PRESET_KEYS.length + 1);
+    expect(FLEX_CONTAINER_BLOCKS.size).toBe(SECTION_PRESET_KEYS.length - NAV_PRESET_KEYS.length + 1);
+  });
+
+  it("includes VideoPreset — the hand-listed sets omitted it (live bug)", () => {
+    expect(CONTAINER_TYPES.has("VideoPreset")).toBe(true);
+    expect(FLEX_CONTAINER_BLOCKS.has("VideoPreset")).toBe(true);
+  });
+
+  // Regression: nav preset keys are NOT Container-shaped (they render
+  // through NavigationBlock and carry no `_style`) — a prior version of this
+  // parity test iterated ALL of SECTION_PRESET_KEYS (nav included) and both
+  // sides grew by 3 in lockstep, so the bug went undetected.
+  it("excludes every NAV_PRESET_KEYS entry — Navigation blocks are not containers", () => {
+    for (const key of NAV_PRESET_KEYS) {
+      expect(CONTAINER_TYPES.has(key)).toBe(false);
+      expect(FLEX_CONTAINER_BLOCKS.has(key)).toBe(false);
+    }
+  });
+});
+
+describe("ContentInputs — CollectionCard", () => {
+  it("renders a collection picker control on the Content tab", () => {
+    render(<ContentInputs type="CollectionCard" props={{}} setProp={vi.fn()} />);
+    expect(screen.getByText("Collection")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /choose collection/i })).toBeTruthy();
+  });
+
+  it("picking a collection writes the collection prop", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="CollectionCard" props={{}} setProp={setProp} />);
+    fireEvent.click(screen.getByRole("button", { name: /choose collection/i }));
+    fireEvent.click(screen.getByText("mock-select-many"));
+    expect(setProp).toHaveBeenCalledWith("collection", {
+      id: "1",
+      name: "One",
+      coverPublicId: "c1",
+      itemCount: 2,
+    });
+  });
+
+  it("keeps crop and caption settings in the Content tab", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="CollectionCard" props={{}} setProp={setProp} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "3/2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide" }));
+
+    expect(setProp).toHaveBeenCalledWith("aspectRatio", "3 / 2");
+    expect(setProp).toHaveBeenCalledWith("showCaption", false);
+  });
+
+  it("shows the demo explanation instead of the picker in demo mode", () => {
+    render(
+      <DemoPickerContext.Provider value={{ demoSessionId: "s", onImageCapHit: vi.fn() }}>
+        <ContentInputs type="CollectionCard" props={{}} setProp={vi.fn()} />
+      </DemoPickerContext.Provider>
+    );
+    expect(screen.getByText(/collections aren.t available in this demo/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /choose collection/i })).toBeNull();
+  });
+});
+
+describe("DesignTab — CollectionCard", () => {
+  it("uses its dedicated caption drawers without a disconnected Typography drawer", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="CollectionCard" />);
+
+    expect(screen.getByRole("button", { name: "Collection title" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo count" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Typography" })).toBeNull();
+  });
+});
+
+describe("ContentInputs — Navigation", () => {
+  it.each(["Navigation", ...NAV_PRESET_KEYS, ...LEGACY_NAV_PRESET_KEYS])("renders only the ungrouped Content controls for %s", (type) => {
+    render(<ContentInputs type={type} props={{}} setProp={vi.fn()} />);
+
+    expect(screen.getByText("Navbar size")).toBeInTheDocument();
+    expect(screen.getByText("Upload logo")).toBeInTheDocument();
+    expect(screen.getByText(/up to 526×256px/i)).toBeInTheDocument();
+    expect(screen.getByText("Background color")).toBeInTheDocument();
+    expect(screen.getByText("Shadow")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: /detach header/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Brand" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Banner" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sync" })).toBeNull();
+    expect(screen.queryByText("Scale active link")).toBeNull();
+  });
+
+  it("writes background color via setProp", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="NavBorderedPreset" props={{}} setProp={setProp} />);
+
+    const bgRow = screen.getByText("Background color").closest("div") as HTMLElement;
+    fireEvent.click(within(bgRow).getByRole("button", { name: "Primary" }));
+    expect(setProp).toHaveBeenCalledWith("backgroundColor", "primary");
+  });
+
+  it("shows the detach toggle enabled with no navDetach context", () => {
+    render(<ContentInputs type="NavBorderedPreset" props={{}} setProp={vi.fn()} />);
+    const toggle = screen.getByRole("switch", { name: /detach header/i });
+    expect(toggle).not.toBeDisabled();
+  });
+
+  it("disables the detach toggle and shows the hint naming the other page when navDetach.disabled is true", () => {
+    render(
+      <ContentInputs
+        type="NavBorderedPreset"
+        props={{}}
+        setProp={vi.fn()}
+        navDetach={{ zoneLabel: "Gallery", otherZoneLabel: "Home", disabled: true }}
+      />
+    );
+    const toggle = screen.getByRole("switch", { name: "Detach header on Gallery" });
+    expect(toggle).toBeDisabled();
+    expect(screen.getByText(/Home already has a detached header/i)).toBeInTheDocument();
+  });
+
+  it("toggling the detach switch calls setProp('detached', ...)", () => {
+    const setProp = vi.fn();
+    render(
+      <ContentInputs
+        type="NavBorderedPreset"
+        props={{ detached: false }}
+        setProp={setProp}
+        navDetach={{ zoneLabel: "Home", otherZoneLabel: "Gallery", disabled: false }}
+      />
+    );
+    fireEvent.click(screen.getByRole("switch", { name: "Detach header on Home" }));
+    expect(setProp).toHaveBeenCalledWith("detached", true);
+  });
+
+  it("uses a provided translate function for the detach toggle copy instead of the hardcoded English", () => {
+    const t = (key: string, values?: Record<string, string | number>) => {
+      if (key === "chromeDetachToggleLabel") return `TX Detach ${values?.page}`;
+      if (key === "chromeDetachDisabledHint") return `TX Disabled ${values?.page}`;
+      return key;
+    };
+    render(
+      <ContentInputs
+        type="NavBorderedPreset"
+        props={{}}
+        setProp={vi.fn()}
+        navDetach={{ zoneLabel: "Gallery", otherZoneLabel: "Home", disabled: true }}
+        t={t}
+      />
+    );
+    expect(screen.getByRole("switch", { name: "TX Detach Gallery" })).toBeInTheDocument();
+    expect(screen.getByText("TX Disabled Home")).toBeInTheDocument();
+  });
+});
+
+describe("Item 1: ContentInputs — Navigation Overall width control", () => {
+  it("shows Page fit and Full buttons, with Full active by default (unset prop)", () => {
+    render(<ContentInputs type="Navigation" props={{}} setProp={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("reflects an explicit overallWidth='page-fit' as active", () => {
+    render(<ContentInputs type="Navigation" props={{ overallWidth: "page-fit" }} setProp={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking Page fit calls setProp('overallWidth', 'page-fit')", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Navigation" props={{}} setProp={setProp} />);
+    fireEvent.click(screen.getByRole("button", { name: "Page fit" }));
+    expect(setProp).toHaveBeenCalledWith("overallWidth", "page-fit");
+  });
+});
+
+describe("Navigation Design panel", () => {
+  it("keeps Links open first and Contact button collapsed", () => {
+    render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: "Links" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Scale active link")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Contact button" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Fill opacity")).toBeNull();
+  });
+
+  it("shows Contact button controls when its dropdown opens", () => {
+    render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Contact button" }));
+    expect(screen.getByText("Fill color")).toBeInTheDocument();
+    expect(screen.getByText("Fill opacity")).toBeInTheDocument();
+  });
+
+  it("does not expose the deprecated generic Design controls", () => {
+    render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: "Typography" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Frame" })).toBeNull();
+  });
+
+  it("shows highlight controls only when active-link highlighting is on", () => {
+    const { rerender } = render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
+    expect(screen.queryByText("Highlight opacity")).not.toBeInTheDocument();
+
+    rerender(<NavigationDesignPanel config={{ activeLinkHighlight: true }} setProp={vi.fn()} />);
+    expect(screen.getByText("Highlight opacity")).toBeInTheDocument();
+    expect(screen.getByText("Highlight radius")).toBeInTheDocument();
+  });
+});
+
+describe("Navigation tabs", () => {
+  it.each(["Navigation", ...NAV_PRESET_KEYS, ...LEGACY_NAV_PRESET_KEYS])("offers only Content and Design for %s", (type) => {
+    expect(blockTabsForType(type)).toEqual(["content", "design"]);
+  });
+
+  it("keeps all three tabs for ordinary blocks", () => {
+    expect(blockTabsForType("Container")).toEqual(["content", "design", "layout"]);
+  });
+
+  it("renders the two-tab Navigation inspector without generic Design controls", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Navigation" />);
+
+    expect(screen.getByRole("button", { name: "Content" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Design" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Layout" })).toBeNull();
+    expect(screen.getByText("Navbar size")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.getByRole("button", { name: "Links" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("button", { name: "Typography" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Frame" })).toBeNull();
+  });
+});
+
+describe("ContentInputs — Button", () => {
+  it("offers Home, Gallery, and Contact actions", () => {
+    render(<ContentInputs type="Button" props={{ action: "open-contact" }} setProp={vi.fn()} />);
+
+    const options = within(screen.getByRole("combobox", { name: "Action" }))
+      .getAllByRole("option")
+      .map((option) => (option as HTMLOptionElement).value);
+
+    expect(options).toEqual(["open-contact", "go-to-gallery", "go-to-home"]);
+  });
+
+  it("writes the go-to-home action", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Button" props={{ action: "open-contact" }} setProp={setProp} />);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Action" }), {
+      target: { value: "go-to-home" },
+    });
+
+    expect(setProp).toHaveBeenCalledWith("action", "go-to-home");
+  });
+});
+
+describe("ContentInputs slot galleries", () => {
+  it.each(["GalleryGrid", "GalleryMasonry"])("shows one parent photo picker for %s", (type) => {
+    render(
+      <ContentInputs
+        type={type}
+        props={{ id: `${type}-1`, images: [], masonryLayout: "columns", _style: { galleryColumns: 3 }, content: [], column1: [], column2: [], column3: [] }}
+        setProp={vi.fn()}
+        setProps={vi.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Choose photos" })).toBeInTheDocument();
+  });
+
+  it("keeps legacy image-array galleries read-only", () => {
+    const { container } = render(
+      <ContentInputs
+        type="GalleryGrid"
+        props={{ images: [{ id: "legacy", publicId: "asset/legacy" }] }}
+        setProp={vi.fn()}
+        setProps={vi.fn()}
+      />
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("SingleCollectionControl", () => {
+  it("clears to undefined on an empty selection", () => {
+    const onChange = vi.fn();
+    render(
+      <SingleCollectionControl
+        value={{ id: "1", name: "One", coverPublicId: "c1", itemCount: 2 }}
+        onChange={onChange}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: /change collection/i }));
+    fireEvent.click(screen.getByText("mock-select-none"));
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it("keeps only the first entry when the picker returns several", () => {
+    const onChange = vi.fn();
+    render(<SingleCollectionControl value={undefined} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /choose collection/i }));
+    fireEvent.click(screen.getByText("mock-select-many"));
+    expect(onChange).toHaveBeenCalledWith({ id: "1", name: "One", coverPublicId: "c1", itemCount: 2 });
   });
 });
 
@@ -391,7 +874,7 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
   });
 
   it("DesignTab for Button shows a 'Button opacity' input in the expanded Button section", () => {
-    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    render(<DesignTab s={{ buttonStyle: "solid" }} set={vi.fn()} blockType="Button" />);
     fireEvent.click(screen.getByRole("button", { name: "Button" }));
     expect(screen.getByText("Button opacity")).toBeTruthy();
   });
@@ -441,6 +924,32 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
       "true",
     );
   });
+
+  it("link style hides controls that its renderer ignores", () => {
+    render(<DesignTab s={{ buttonStyle: "link" }} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+
+    expect(screen.queryByText("Button color")).toBeNull();
+    expect(screen.queryByText("Button opacity")).toBeNull();
+    expect(screen.queryByText("Corner radius")).toBeNull();
+    expect(screen.getByText("Button text color")).toBeTruthy();
+    expect(screen.getByText("Button style")).toBeTruthy();
+  });
+
+  it.each(["outline", "soft"] as const)("%s style hides solid-only opacity", (buttonStyle) => {
+    render(<DesignTab s={{ buttonStyle }} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.queryByText("Button opacity")).toBeNull();
+  });
+
+  it("does not float Outline when legacy buttonColorToken data uses the filled render branch", () => {
+    render(<DesignTab s={{ buttonColorToken: "accent" }} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByRole("button", { name: "Outline" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
 });
 
 describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMasonry/FeaturedWork)", () => {
@@ -488,6 +997,25 @@ describe("Sub-part 2 — gallery blocks hide bg-image picker, keep banner Color"
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
     // Content tab is default; "Background images" label from ContainerBackgroundControls must be absent
     expect(screen.queryByText("Background images")).toBeNull();
+    // Photo Grid dropped background images entirely — the compact "Choose photo"
+    // single-image picker (BannerSection's fallback branch) must be absent too.
+    expect(screen.queryByRole("button", { name: /choose photo/i })).toBeNull();
+  });
+
+  it("GalleryMasonry Content tab does NOT render the background-image picker", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryMasonry" />);
+    expect(screen.queryByText("Background images")).toBeNull();
+    expect(screen.queryByRole("button", { name: /choose photo/i })).toBeNull();
+  });
+
+  it("Container Content tab still renders the background-image picker", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Container" />);
+    expect(screen.getByRole("button", { name: /choose photo/i })).toBeInTheDocument();
+  });
+
+  it("FeaturedWork Content tab still renders the background-image picker", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="FeaturedWork" />);
+    expect(screen.getByRole("button", { name: /choose photo/i })).toBeInTheDocument();
   });
 
   it("BannerSection with hideBgImage=true does NOT render Image picker", () => {
@@ -518,12 +1046,12 @@ describe("GalleryLayoutControls — writes _style.galleryColumns on click", () =
 });
 
 describe("StyleToolkitField — Image block (F1 redesign)", () => {
-  it("ContentInputs for Image shows an Alt text input wired to setProp", () => {
-    const setProp = vi.fn();
-    render(<ContentInputs type="Image" props={{ alt: "" }} setProp={setProp} />);
-    const input = screen.getByLabelText("Alt text") as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "A nice photo" } });
-    expect(setProp).toHaveBeenCalledWith("alt", "A nice photo");
+  // Item 10c: the block is styles/layout only now — no per-placement Alt
+  // text input, no inline Photo-details form. A single [title] / Edit row
+  // replaces both (covered in the "Item 10c" describe block below).
+  it("ContentInputs for Image no longer shows an Alt text input", () => {
+    render(<ContentInputs type="Image" props={{ alt: "" }} setProp={vi.fn()} />);
+    expect(screen.queryByLabelText("Alt text")).not.toBeInTheDocument();
   });
 
   it("LayoutTabBody for Image shows Width and Height resize controls", () => {
@@ -559,6 +1087,337 @@ describe("StyleToolkitField — Image block (F1 redesign)", () => {
   it("DesignTab for Image hides the Typography section (no on-page text)", () => {
     render(<DesignTab s={{}} set={vi.fn()} blockType="Image" />);
     expect(screen.queryByText("Typography")).toBeNull();
+  });
+});
+
+describe("StyleToolkitField — Image block [title] / Edit row (Item 10c)", () => {
+  it("shows 'No photo selected' and a disabled Edit button when the block has no image yet, and never fetches", () => {
+    render(<ContentInputs type="Image" props={{ alt: "", _style: {} }} setProp={vi.fn()} />);
+    expect(screen.getByText("No photo selected")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("shows 'Untitled photo' once an image is picked but has no baked title yet", () => {
+    render(
+      <ContentInputs type="Image" props={{ alt: "", _style: { bgImagePublicId: "asset123" } }} setProp={vi.fn()} />
+    );
+    expect(screen.getByText("Untitled photo")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeEnabled();
+  });
+
+  it("shows the baked photo title on the row once meta.title is set", () => {
+    render(
+      <ContentInputs
+        type="Image"
+        props={{
+          alt: "",
+          _style: { bgImagePublicId: "asset123" },
+          meta: { title: "Golden Hour", sourceAssetId: "asset123" },
+        }}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Golden Hour")).toBeTruthy();
+  });
+
+  it("bakes the picked photo's GalleryItem metadata onto the block once, keyed by sourceAssetId", async () => {
+    mockFetch.mockImplementation((url: string) =>
+      url.includes("/by-asset/")
+        ? Promise.resolve({
+            ok: true,
+            json: async () => ({
+              title: "Golden Hour",
+              caption: "Reception at dusk",
+              altText: "Bride and groom",
+              date: "2026-06-01",
+              location: "Manila",
+              client: "Cruz Wedding",
+              tags: ["wedding"],
+              meta: [{ label: "Camera", value: "GFX100" }],
+            }),
+          } as Response)
+        : Promise.resolve({ ok: true, json: async () => ({}) } as Response)
+    );
+    const setProp = vi.fn();
+    render(
+      <ContentInputs type="Image" props={{ alt: "", _style: { bgImagePublicId: "asset123" } }} setProp={setProp} />
+    );
+
+    await waitFor(() =>
+      expect(setProp).toHaveBeenCalledWith(
+        "meta",
+        expect.objectContaining({ title: "Golden Hour", sourceAssetId: "asset123" })
+      )
+    );
+  });
+
+  it("does not refetch once meta.sourceAssetId already matches the picked photo", () => {
+    render(
+      <ContentInputs
+        type="Image"
+        props={{
+          alt: "",
+          _style: { bgImagePublicId: "asset123" },
+          meta: { title: "Golden Hour", sourceAssetId: "asset123" },
+        }}
+        setProp={vi.fn()}
+      />
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("Edit opens a dialog with the same Photo-details editing UI (ImageBlockMetaSection)", async () => {
+    render(
+      <ContentInputs type="Image" props={{ alt: "", _style: { bgImagePublicId: "asset123" } }} setProp={vi.fn()} />
+    );
+    expect(screen.queryByText("chooseImagePrompt")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+  });
+});
+
+describe("StyleToolkitField — Image block metadata section (shared GalleryItem fields)", () => {
+  const fullItem = {
+    id: "item1",
+    caption: "A caption",
+    altText: "Alt describing photo",
+    title: "Golden hour",
+    date: "2026-05-01",
+    location: "Manila",
+    client: "Dela Cruz Wedding",
+    tags: ["outdoor", "sunset"],
+    meta: [{ label: "Photographer", value: "Juan" }],
+  };
+
+  // The section PATCHes by-asset (not by item id): an assetId can back several
+  // GalleryItem docs, and the route fans a write out to every copy, returning
+  // `matched` alongside the updated representative.
+  function patchCallsFor(assetId: string) {
+    return mockFetch.mock.calls.filter(
+      ([url, opts]) =>
+        typeof url === "string" &&
+        url === `/api/portfolio/gallery/items/by-asset/${assetId}` &&
+        (opts as RequestInit | undefined)?.method === "PATCH"
+    );
+  }
+
+  // The "no image yet" (chooseImagePrompt) phase of ImageBlockMetaSection is
+  // now unreachable through this panel — Edit stays disabled until a photo is
+  // picked (see the "Item 10c" describe block above), so the dialog never
+  // opens into that phase. ImageBlockMetaSection itself is unchanged/still
+  // used for every other phase (loading/ready/not-found/load-error) below.
+
+  it("shows a loading state while resolving the picked photo's gallery item", () => {
+    mockFetch.mockImplementation(() => new Promise(() => {}));
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByText("loading")).toBeTruthy();
+  });
+
+  it("shows an explicit message when the asset has no matching gallery item (404)", async () => {
+    mockFetch.mockImplementation(() => Promise.resolve({ ok: false, status: 404, json: async () => ({}) } as Response));
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await waitFor(() => expect(screen.getByText("notFound")).toBeTruthy());
+  });
+
+  it("shows a load error with a retry action, and retry re-fetches", async () => {
+    mockFetch.mockImplementation(() => Promise.reject(new Error("network down")));
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await waitFor(() => expect(screen.getByText("loadError")).toBeTruthy());
+    const callsBeforeRetry = mockFetch.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    await waitFor(() => expect(mockFetch.mock.calls.length).toBeGreaterThan(callsBeforeRetry));
+  });
+
+  it("loads the gallery item's values and PATCHes on blur with parsed tags/meta", async () => {
+    const setProp = vi.fn();
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, title: "New title", matched: 1 }) } as Response);
+      }
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={setProp}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const titleInput = await screen.findByDisplayValue("Golden hour");
+    fireEvent.change(titleInput, { target: { value: "New title" } });
+    fireEvent.blur(titleInput);
+
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(1));
+    const body = JSON.parse((patchCallsFor("asset123")[0][1] as RequestInit).body as string);
+    expect(body.title).toBe("New title");
+    expect(body.tags).toEqual(["outdoor", "sunset"]);
+    expect(body.meta).toEqual([{ label: "Photographer", value: "Juan" }]);
+    await waitFor(() => expect(screen.getByText("saved")).toBeTruthy());
+    expect(setProp).toHaveBeenCalledWith("meta", expect.objectContaining({
+      title: "New title",
+      altText: "Alt describing photo",
+      sourceAssetId: "asset123",
+    }));
+  });
+
+  it("says so when the save updated more than one copy of the photo", async () => {
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 3 }) } as Response);
+      }
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const titleInput = await screen.findByDisplayValue("Golden hour");
+    fireEvent.change(titleInput, { target: { value: "New title" } });
+    fireEvent.blur(titleInput);
+
+    await waitFor(() => expect(screen.getByText("savedInPlaces")).toBeTruthy());
+    expect(screen.queryByText("saved")).toBeNull();
+  });
+
+  it("shows a save error with retry when the PATCH fails, and retry resubmits", async () => {
+    let patchAttempts = 0;
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        patchAttempts += 1;
+        if (patchAttempts === 1) return Promise.resolve({ ok: false, status: 500, json: async () => ({}) } as Response);
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 1 }) } as Response);
+      }
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const titleInput = await screen.findByDisplayValue("Golden hour");
+    fireEvent.change(titleInput, { target: { value: "New title" } });
+    fireEvent.blur(titleInput);
+
+    await waitFor(() => expect(screen.getByText("saveError")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    await waitFor(() => expect(patchAttempts).toBe(2));
+    await waitFor(() => expect(screen.getByText("saved")).toBeTruthy());
+  });
+
+  it("adds and removes custom meta rows, capping at 20 and saving immediately on remove", async () => {
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 1 }) } as Response);
+      }
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByDisplayValue("Golden hour");
+    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /metaAdd/ }));
+    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(2);
+
+    // Fill remaining slots up to the 20-row cap.
+    for (let i = 0; i < 18; i++) {
+      fireEvent.click(screen.getByRole("button", { name: /metaAdd/ }));
+    }
+    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(20);
+    expect(screen.getByRole("button", { name: /metaAdd/ })).toBeDisabled();
+    expect(screen.getByText("metaLimitReached")).toBeTruthy();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "metaRemove" })[0]);
+    expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(19);
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBeGreaterThan(0));
+  });
+
+  it("renders tags as pills and saves immediately on add/remove (no blur needed)", async () => {
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 1 }) } as Response);
+      }
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByDisplayValue("Golden hour");
+
+    expect(screen.getByText("outdoor")).toBeTruthy();
+    expect(screen.getByText("sunset")).toBeTruthy();
+
+    const tagInput = screen.getByPlaceholderText("tagsPlaceholder");
+    fireEvent.change(tagInput, { target: { value: "sunrise" } });
+    fireEvent.keyDown(tagInput, { key: "Enter" });
+    expect(screen.getByText("sunrise")).toBeTruthy();
+
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(1));
+    const addBody = JSON.parse((patchCallsFor("asset123")[0][1] as RequestInit).body as string);
+    expect(addBody.tags).toEqual(["outdoor", "sunset", "sunrise"]);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "removeTag" })[0]);
+    expect(screen.queryByText("outdoor")).toBeNull();
+
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(2));
+    const removeBody = JSON.parse((patchCallsFor("asset123")[1][1] as RequestInit).body as string);
+    expect(removeBody.tags).toEqual(["sunset", "sunrise"]);
   });
 });
 
@@ -838,10 +1697,42 @@ describe("DesignTab — Border width input shows effective default 0 as placehol
     const input = within(row).getByRole("spinbutton");
     expect(input).toHaveAttribute("placeholder", "0");
   });
+
+  it("choosing a border side makes a 1px border visible when width is unset", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{}} set={set} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Left border" }));
+    expect(set).toHaveBeenCalledWith({ borderSides: ["left"], borderPreset: undefined, borderWidth: 1 });
+  });
+
+  it("adds another side without replacing the current selection", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{ borderWidth: 4, borderSides: ["left"] }} set={set} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bottom border" }));
+    expect(set).toHaveBeenCalledWith({ borderSides: ["left", "bottom"], borderPreset: undefined });
+  });
+
+  it("replaces a full border with the first explicitly selected side", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{ borderWidth: 4 }} set={set} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bottom border" }));
+    expect(set).toHaveBeenCalledWith({ borderSides: ["bottom"], borderPreset: undefined });
+  });
+
+  it("full border overwrites an existing partial selection", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{ borderWidth: 4, borderSides: ["left", "bottom"] }} set={set} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Full border" }));
+    expect(set).toHaveBeenCalledWith({ borderSides: ["top", "right", "bottom", "left"], borderPreset: undefined });
+  });
 });
 
-describe("LayoutTabBody — Align icon row shows effective default 'stretch' when alignItems is unset", () => {
-  it("Stretch to fill icon is marked active (aria-pressed=true) when alignItems is unset", () => {
+describe("LayoutTabBody — content controls preserve legacy effective values", () => {
+  it("Content start is active when the container has no explicit or legacy alignment", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -855,8 +1746,8 @@ describe("LayoutTabBody — Align icon row shows effective default 'stretch' whe
     );
     // Open the Layout drawer.
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
-    expect(screen.getByRole("button", { name: "Stretch to fill" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Left" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Content start" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Content center" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("reflects legacy container alignment props until the style controls are edited", () => {
@@ -872,8 +1763,26 @@ describe("LayoutTabBody — Align icon row shows effective default 'stretch' whe
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
-    expect(screen.getByRole("button", { name: "Center" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Bottom" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Content center" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Content bottom" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("writes only dedicated content fields when an option is selected", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={set}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Content middle" }));
+    expect(set).toHaveBeenCalledWith({ contentVerticalDistribution: "center" });
   });
 });
 
@@ -956,21 +1865,207 @@ describe("A7: LayoutTabBody — Columns Overall Width control", () => {
   });
 });
 
-describe("A6: LayoutTabBody — Align/Justify IconRow shows Reset button when value set", () => {
-  it("Align Reset button appears when alignItems is explicitly set (A6)", () => {
+describe("Item 1: LayoutTabBody — Container/preset Overall Width control", () => {
+  it("shows Page fit and Full for a plain Container, with Page fit active by default (unset prop, no chrome)", () => {
     render(
       <LayoutTabBody
-        s={{ alignItems: "center" }}
-        set={vi.fn()}
+        s={{}}
+        set={() => {}}
         isGridChild={false}
-        showJustify={true}
+        showJustify={false}
         blockType="Container"
         p={{}}
         setProp={() => {}}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
-    expect(screen.getByRole("button", { name: "Reset Align" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("shows Full active by default for a footer-chrome Container (unset prop, _chrome: footer)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{ _chrome: "footer" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("an explicit overallWidth wins over the footer chrome default", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{ _chrome: "footer", overallWidth: "page-fit" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Page fit" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("clicking Full calls setProp('overallWidth', 'full')", () => {
+    const setProp = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{}}
+        setProp={setProp}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Full" }));
+    expect(setProp).toHaveBeenCalledWith("overallWidth", "full");
+  });
+});
+
+describe("Item 4: LayoutTabBody — Width control (Fill / Hug / Fixed)", () => {
+  it("shows Fill active by default for a Container with no _style.width", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Fill" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Hug" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Fixed" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking Hug calls set({ width: 'fit-content' })", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Hug" }));
+    expect(set).toHaveBeenCalledWith({ width: "fit-content" });
+  });
+
+  it("clicking Fixed from Fill writes a starting numeric width and reveals the DimensionInput", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Fixed" }));
+    expect(set).toHaveBeenCalledWith({ width: "200px" });
+  });
+
+  it("shows the Fixed width DimensionInput when _style.width is an explicit CSS length", () => {
+    render(
+      <LayoutTabBody
+        s={{ width: "320px" }}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Fixed" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Fixed width")).toBeInTheDocument();
+  });
+
+  it("is also offered for Columns", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={false} blockType="Columns" p={{}} setProp={() => {}} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Hug" })).toBeInTheDocument();
+  });
+
+  it("disables the Overall width control while Width is Hug (the two are contradictory — Hug wins)", () => {
+    render(
+      <LayoutTabBody
+        s={{ width: "fit-content" }}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Page fit" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Full" })).toBeDisabled();
+  });
+});
+
+describe("Item 5: LayoutTabBody — Direction control (Container only)", () => {
+  it("shows Vertical active by default when _style.flexDirection is unset", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "↓ Vertical" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "→ Horizontal" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("shows Horizontal active when _style.flexDirection is 'row' (existing presets that already set it by hand)", () => {
+    render(
+      <LayoutTabBody
+        s={{ flexDirection: "row" }}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "→ Horizontal" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("clicking Horizontal calls set({ flexDirection: 'row' })", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={false} blockType="Container" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "→ Horizontal" }));
+    expect(set).toHaveBeenCalledWith({ flexDirection: "row" });
+  });
+
+  it("is NOT shown for Columns (flexDirection is not consumed by ColumnsBlock)", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={false} blockType="Columns" p={{}} setProp={() => {}} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.queryByRole("button", { name: "↓ Vertical" })).toBeNull();
+  });
+});
+
+describe("LayoutTabBody — cell placement controls", () => {
+  it("writes only dedicated cell fields when a Columns child is placed", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={set}
+        isGridChild
+        showJustify={true}
+        blockType="Image"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Cell middle" }));
+    expect(set).toHaveBeenCalledWith({ cellVerticalAlign: "center" });
   });
 });
 
@@ -1069,7 +2164,7 @@ describe("DesignTab — button text color swatch effective state", () => {
     expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("Button buttonStyle='solid' → background swatch is aria-pressed as effective text color", () => {
+  it("Button buttonStyle='solid' → foreground swatch is aria-pressed as effective text color", () => {
     render(
       <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
         <DesignTab s={{ buttonStyle: "solid" }} set={vi.fn()} blockType="Button" />
@@ -1078,11 +2173,11 @@ describe("DesignTab — button text color swatch effective state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Button" }));
     const btnTextLabel = screen.getByText("Button text color");
     const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
-    const backgroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Background" });
-    expect(backgroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
+    const foregroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("Button soft with buttonColorToken='accent' → accent swatch is aria-pressed as effective text color", () => {
+  it("Button soft with buttonColorToken='accent' → foreground swatch is aria-pressed as effective text color", () => {
     render(
       <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
         <DesignTab s={{ buttonStyle: "soft", buttonColorToken: "accent" }} set={vi.fn()} blockType="Button" />
@@ -1091,8 +2186,8 @@ describe("DesignTab — button text color swatch effective state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Button" }));
     const btnTextLabel = screen.getByText("Button text color");
     const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
-    const accentSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Accent" });
-    expect(accentSwatches[0]).toHaveAttribute("aria-pressed", "true");
+    const foregroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
   });
 });
 
@@ -1185,6 +2280,60 @@ describe("B2a: Container padding — effective-default display (placeholder)", (
     const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     expect(spinbuttons[0].placeholder).toBe("24");
   });
+
+  it("shows the gallery blocks' own effective 64px top padding, not a blank control", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="GalleryGrid"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    // "Gallery" is the first drawer here, so Spacing starts collapsed and its
+    // children are unmounted — open it before reaching the padding inputs.
+    fireEvent.click(screen.getByRole("button", { name: "Spacing", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    expect(spinbuttons[0].placeholder).toBe("64");
+  });
+});
+
+describe("Heading/Text padding — grabbable drag strip, effective-default display", () => {
+  it("LayoutTabBody for Heading shows a Spacing drawer with Padding placeholder '4' when _style has no padding", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={true} blockType="Heading" />,
+    );
+    // Spacing is the first drawer for Heading and auto-opens.
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    expect(spinbuttons[0].placeholder).toBe("4");
+  });
+
+  it("LayoutTabBody for Text shows a Spacing drawer with Padding placeholder '4' when _style has no padding", () => {
+    render(
+      <LayoutTabBody s={{}} set={() => {}} isGridChild={false} showJustify={true} blockType="Text" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    expect(spinbuttons[0].placeholder).toBe("4");
+  });
+
+  it("LayoutTabBody for Heading: typing an explicit padding value calls the setter with the real value (not the effective default)", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody s={{}} set={set} isGridChild={false} showJustify={true} blockType="Heading" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    fireEvent.change(spinbuttons[0], { target: { value: "0" } });
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.paddingTop).toBe("0px");
+  });
 });
 
 describe("Font select — Google Fonts", () => {
@@ -1247,5 +2396,92 @@ describe("DesignTab — ContactDetails", () => {
     );
     expect(screen.getByText("Labels")).toBeTruthy();
     expect(screen.getByText("Inputs")).toBeTruthy();
+  });
+});
+
+describe("DesignTab — ContactDetails Icon align (Icons section)", () => {
+  // The Icons drawer is the 2nd section under ContactDetails' Design tab, so
+  // (per EditorDrawerGroup) it starts collapsed — only the 1st (Typography)
+  // auto-opens. Open it before asserting its contents.
+  function openIconsDrawer() {
+    fireEvent.click(screen.getByRole("button", { name: "Icons" }));
+  }
+
+  it("both unset: floats center as the effective (following-theme) value", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="ContactDetails" />);
+    openIconsDrawer();
+    expect(screen.getByRole("button", { name: "Align icons left" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Align icons center" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Align icons right" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("contactIconAlign unset, valueAlign='left': floats left as effective (legacy fallback)", () => {
+    render(<DesignTab s={{ valueAlign: "left" }} set={vi.fn()} blockType="ContactDetails" />);
+    openIconsDrawer();
+    expect(screen.getByRole("button", { name: "Align icons left" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Align icons center" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("explicit contactIconAlign wins over valueAlign and reads as pressed", () => {
+    render(<DesignTab s={{ contactIconAlign: "right", valueAlign: "left" }} set={vi.fn()} blockType="ContactDetails" />);
+    openIconsDrawer();
+    expect(screen.getByRole("button", { name: "Align icons right" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Align icons left" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking Align icons right calls set with contactIconAlign:'right'", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{}} set={set} blockType="ContactDetails" />);
+    openIconsDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Align icons right" }));
+    expect(set).toHaveBeenCalledWith({ contactIconAlign: "right" });
+  });
+
+  it("clicking the already-explicit option again clears it back to undefined", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{ contactIconAlign: "right" }} set={set} blockType="ContactDetails" />);
+    openIconsDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Align icons right" }));
+    expect(set).toHaveBeenCalledWith({ contactIconAlign: undefined });
+  });
+});
+
+describe("StyleToolkitField — GalleryMasonry flow", () => {
+  it("does not offer the obsolete Masonry stagger toggle", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryMasonry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.queryByText("Masonry stagger")).toBeNull();
+  });
+
+  it("does not show the obsolete control for GalleryGrid", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.queryByText("Masonry stagger")).toBeNull();
+  });
+
+  it("enables the configurable alternating tile-height rhythm", () => {
+    const onChange = vi.fn();
+    render(<StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryMasonry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Alternate" }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ masonryHeightPattern: "alternating" }));
+  });
+
+  it("uses column lanes without exposing the retired flow choice and offers odd/even column rhythms", () => {
+    render(<StyleToolkitField value={{ masonryHeightPattern: "alternating" }} onChange={vi.fn()} blockType="GalleryMasonry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.queryByRole("button", { name: "Flow" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Column lanes" })).toBeNull();
+    expect(screen.getByText("Odd columns")).toBeInTheDocument();
+    expect(screen.getByText("Even columns")).toBeInTheDocument();
+    expect(screen.getAllByText("Odd tile")).toHaveLength(2);
+    expect(screen.getAllByText("Even tile")).toHaveLength(2);
+  });
+
+  it("explains that the loop needs three images in every column", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryMasonry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.getByText(/add at least 3 images to each active column/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "On" })).toBeDisabled();
   });
 });

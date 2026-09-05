@@ -111,6 +111,8 @@ export function PortfolioHeader({
   activePath,
   homeHref: homeHrefProp,
   galleryHref: galleryHrefProp,
+  brandSlot,
+  overallWidth = "page-fit",
 }: {
   slug: string;
   labels: PortfolioHeaderLabels;
@@ -124,6 +126,15 @@ export function PortfolioHeader({
    * rendering inside the editor preview iframe so the link stays within the
    * draft-aware preview instead of navigating to the published public site. */
   galleryHref?: string;
+  /** Custom brand-region content (the Navigation block's editable logo/title
+   * slot) — replaces the default logo+brand-text link in the SAME row as the
+   * nav links when provided. Absent = today's default rendering, unchanged. */
+  brandSlot?: React.ReactNode;
+  /** Layout: "page-fit" (default) clamps the inner nav row to 80rem, matching
+   * today's rendering for any caller that omits this prop. "full" lets the row
+   * span the header's full width (NavigationBlock passes this, defaulting to
+   * "full" itself). */
+  overallWidth?: "page-fit" | "full";
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const logo = useImageRetry(config?.logoUrl);
@@ -201,8 +212,8 @@ export function PortfolioHeader({
       <nav
         aria-label={labels.navLandmark}
         style={{
-          maxWidth: "80rem",
-          margin: "0 auto",
+          maxWidth: overallWidth === "full" ? undefined : "80rem",
+          margin: overallWidth === "full" ? undefined : "0 auto",
           padding: navbarSize.navPadding,
           display: "flex",
           alignItems: "center",
@@ -210,42 +221,59 @@ export function PortfolioHeader({
           gap: "1rem",
         }}
       >
-        <Link
-          href={homeHref}
-          style={{
-            fontFamily: "var(--pf-font-heading)",
-            color: brandTextColor,
-            fontSize: navbarSize.brandFontSize,
-            fontWeight: 700,
-            textDecoration: "none",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.625rem",
-            minWidth: 0,
-            overflow: "hidden",
-          }}
-        >
-          {config?.logoUrl && !logo.failed && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logo.src}
-              alt=""
-              aria-hidden="true"
-              onError={logo.onError}
-              style={{ height: navbarSize.logoHeight, maxWidth: "40vw", width: "auto", objectFit: "contain", flexShrink: 0 }}
-            />
-          )}
-          <span
+        {brandSlot ? (
+          <div
+            className="pf-nav-brand"
             style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.625rem",
+              width: "100%",
+              flex: "1 1 auto",
               minWidth: 0,
+              overflow: "hidden",
             }}
           >
-            {brandText}
-          </span>
-        </Link>
+            {brandSlot}
+          </div>
+        ) : (
+          <Link
+            href={homeHref}
+            style={{
+              fontFamily: "var(--pf-font-heading)",
+              color: brandTextColor,
+              fontSize: navbarSize.brandFontSize,
+              fontWeight: 700,
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.625rem",
+              minWidth: 0,
+              overflow: "hidden",
+            }}
+          >
+            {config?.logoUrl && !logo.failed && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logo.src}
+                alt=""
+                aria-hidden="true"
+                onError={logo.onError}
+                style={{ height: navbarSize.logoHeight, maxWidth: "40vw", width: "auto", objectFit: "contain", flexShrink: 0 }}
+              />
+            )}
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                minWidth: 0,
+              }}
+            >
+              {brandText}
+            </span>
+          </Link>
+        )}
 
         <div className="pf-nav-desktop" style={{ alignItems: "center", gap: `clamp(0.25rem, 1.5vw, ${navbarSize.navGap})` }}>
           <HeaderLink
@@ -353,6 +381,24 @@ export function PortfolioHeader({
       <style>{`
         .pf-nav-desktop { display: none; }
         .pf-nav-toggle { display: flex !important; }
+        .pf-nav-brand-content { width: 100%; min-width: 0; }
+        .pf-nav-brand-content > * { min-width: 0; max-width: 100%; }
+        .pf-nav-brand-content [data-block="image"] {
+          max-height: 75px !important;
+          max-width: 100% !important;
+          flex-shrink: 1;
+        }
+        .pf-nav-brand-content h1,
+        .pf-nav-brand-content h2,
+        .pf-nav-brand-content h3,
+        .pf-nav-brand-content h4,
+        .pf-nav-brand-content h5,
+        .pf-nav-brand-content h6 {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
         .pf-nav-link:focus-visible,
         .pf-nav-contact:focus-visible,
         .pf-nav-toggle:focus-visible {

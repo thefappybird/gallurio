@@ -367,7 +367,7 @@ describe("generateMetadata", () => {
     });
   });
 
-  it("falls back to header.logoUrl when siteIcon.url is empty", async () => {
+  it("falls back to header.logoUrl when siteIcon.url is empty (back-compat favicon for pre-Navigation-block pages)", async () => {
     const workspace = makePublishedWorkspace({
       publicPage: {
         templateId: "minimal",

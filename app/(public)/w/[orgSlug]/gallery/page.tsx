@@ -43,6 +43,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     galleryTitle,
   });
 
+  // Legacy `publicPage.header` logo is read only as a back-compat favicon
+  // fallback for pages published before the Navigation block existed.
   const headerLogoUrl = portfolioHeaderLogoUrl(publicPage?.header);
   const iconUrl = portfolioSiteIconUrl(publicPage?.siteIcon, headerLogoUrl) || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
@@ -93,6 +95,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
 
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
+  const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
 
   // Published-image collection only makes sense once real gallery content
   // exists — the ComingSoon branch has no images by definition.
@@ -141,6 +144,20 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
         carouselHint: t("gallery.carouselHint"),
         carouselPrev: t("gallery.carouselPrev"),
         carouselNext: t("gallery.carouselNext"),
+        lightboxClose: t("gallery.lightboxClose"),
+        lightboxCounter: t("gallery.lightboxCounter", { current: "{current}", total: "{total}" }),
+        lightboxFilmstrip: t("gallery.lightboxFilmstrip"),
+        lightboxSeeMore: t("gallery.lightboxSeeMore"),
+        lightboxSeeLess: t("gallery.lightboxSeeLess"),
+        lightboxPhotoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+      },
+      nav: {
+        navLandmark: tNav("navLandmark"),
+        home: tNav("home"),
+        gallery: tNav("gallery"),
+        contact: tNav("contact"),
+        openMenu: tNav("openMenu"),
+        closeMenu: tNav("closeMenu"),
       },
     },
   };

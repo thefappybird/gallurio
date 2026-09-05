@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useEffect, useState, type ReactNode, type ReactElement } from "react";
+import { act, useEffect, useState, type ReactNode, type ReactElement } from "react";
 import { screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { toast } from "sonner";
@@ -20,10 +20,15 @@ let __puckMountCount = 0;
 // data directly (the "Simulate Puck change" button only emits a fixed
 // 1-block payload, not enough to exercise the demo block cap).
 let __capturedPuckOnChange: ((data: unknown) => void) | undefined;
-// Captures the `config` prop passed to Puck so tests can assert on the
-// demo-mode category filtering (FeaturedWork/FeaturedWorkPreset hidden from
-// the drawer) without needing to render Puck's real sidebar.
-let __capturedPuckConfig: { categories?: Record<string, { components?: readonly string[] }> } | undefined;
+// Captures the live `metadata` prop so tests can assert on what EditorShell
+// threads into Puck's canvas context (e.g. the nav chrome labels — see
+// getNavChromeLabelsFrom).
+let __capturedPuckMetadata: unknown;
+// Captures the seed actually mounted into Puck (post-prepareForEditor,
+// post-withPendingLogo) on every mount/remount — more direct than round-
+// tripping through the debounced localStorage buffer, which may not have
+// flushed yet when the assertion runs.
+let __capturedPuckSeed: unknown;
 
 // Mock PuckApi shape used by createUsePuck selectors in EditCanvasControls.
 const mockPuckApi = {
@@ -32,13 +37,15 @@ const mockPuckApi = {
       leftSideBarVisible: true,
       rightSideBarVisible: true,
       viewports: { current: { width: 1280, height: "auto" }, controlsVisible: true, options: [] },
+      itemSelector: null as { index: number; zone?: string } | null,
     },
     data: { content: [], root: {} },
   },
   dispatch: vi.fn(),
-  selectedItem: undefined,
+  selectedItem: undefined as unknown,
   getSelectorForId: vi.fn(),
   getItemById: vi.fn(),
+  getPermissions: vi.fn(() => ({}) as { delete?: boolean; duplicate?: boolean }),
   history: {
     back: vi.fn(),
     forward: vi.fn(),
@@ -54,29 +61,56 @@ const mockPuckApi = {
 vi.mock("@measured/puck", () => ({
   createUsePuck: () => (selector?: (api: typeof mockPuckApi) => unknown) =>
     selector ? selector(mockPuckApi) : mockPuckApi,
+  // Minimal stand-ins for the exported `Drawer`/`Drawer.Item` primitives (the
+  // EditorShell drawer override builds the nested tree straight from these,
+  // not from Puck's own default categorized list). `Drawer.Item`'s `children`
+  // is a render-prop — invoke it with a stub row so PresetDrawerItem (real,
+  // unmocked) still wraps it, same as production. Declared inside the factory
+  // (not at module scope): vi.mock factories cannot close over top-level
+  // variables, since the mock call is hoisted above them.
+  Drawer: Object.assign(
+    ({ children }: { children: ReactNode }) => <div data-testid="drawer-root">{children}</div>,
+    {
+      Item: ({
+        name,
+        children,
+      }: {
+        name: string;
+        children?: (p: { children: ReactNode; name: string }) => ReactElement;
+      }) => {
+        const row = <div data-testid={`drawer-item:${name}`}>{name}</div>;
+        return children ? children({ name, children: row }) : row;
+      },
+    }
+  ),
+  // Stub for PresetPreviewCard.tsx's live mini-render — the preview panel test
+  // only asserts the panel itself mounts once, not the mini-render's content.
+  Render: () => null,
   Puck: ({
     headerTitle,
     overrides,
     onChange,
     data,
-    config,
+    metadata,
   }: {
     headerTitle?: string;
     overrides?: {
       header?: (p: { children: ReactNode }) => ReactNode;
       puck?: (p: { children: ReactNode }) => ReactNode;
+      drawer?: (p: { children: ReactNode }) => ReactNode;
     };
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
     data?: unknown;
-    config?: typeof __capturedPuckConfig;
+    metadata?: unknown;
   }) => {
     // Simulate uncontrolled: capture data only on mount (via useState initializer).
     // Subsequent `data` prop changes are ignored — same as real Puck after mount.
     // Only a key change (remount) will re-initialize this seed.
     const [seed] = useState(() => data);
     __capturedPuckOnChange = onChange as ((data: unknown) => void) | undefined;
-    __capturedPuckConfig = config;
+    __capturedPuckMetadata = metadata;
+    __capturedPuckSeed = seed;
 
     // Count mounts — a new key forces a remount, incrementing this counter.
     useEffect(() => { __puckMountCount++; }, []);
@@ -113,6 +147,7 @@ vi.mock("@measured/puck", () => ({
           children: null,
         })}
         {overrides?.puck?.({ children: <div data-testid="puck-canvas-content" /> })}
+        {overrides?.drawer?.({ children: null })}
       </div>
     );
   },
@@ -138,6 +173,11 @@ const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
 const listDraftsAction = vi.fn().mockResolvedValue([]);
 const publishDraftAction = vi.fn().mockResolvedValue({ ok: true });
+const importDemoPortfolioAction = vi.fn().mockResolvedValue({
+  ok: true,
+  draft: { id: "demo-d1", name: "Demo portfolio", templateId: "scratch", updatedAt: new Date().toISOString() },
+  failedAssetIds: [],
+});
 const seedTemplateAction = vi.fn((templateId = "minimal") =>
   Promise.resolve({
     ok: true,
@@ -159,6 +199,7 @@ vi.mock("../_draftActions", () => ({
   listDraftsAction: (...a: unknown[]) => listDraftsAction(...a),
   publishDraftAction: (...a: unknown[]) => publishDraftAction(...a),
   seedTemplateAction: (...a: unknown[]) => seedTemplateAction(...a),
+  importDemoPortfolioAction: (...a: unknown[]) => importDemoPortfolioAction(...a),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -176,14 +217,67 @@ vi.mock("@/lib/actions/slug", () => ({
 
 import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { PRESET_GROUPS } from "@/lib/page-builder/blocks/sectionPresets";
+import { englishPuckT } from "@/lib/page-builder/editorConfig";
+import { openPresetPreview, __resetPresetPreview } from "@/lib/page-builder/presetPreviewStore";
+import { enMessages } from "@/test-utils/render";
+
+/** Reads the onboarding logo's asset id off a persisted buffer's home-zone
+ *  Navigation block's slot Image (the block is always seeded first). */
+function navLogoAssetId(buffer: { data?: { home?: { content?: unknown[] } } }): string | undefined {
+  const nav = buffer.data?.home?.content?.find(
+    (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
+  ) as { props?: { content?: unknown[] } } | undefined;
+  const image = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Image") as
+    | { props?: { _style?: { bgImagePublicId?: string } } }
+    | undefined;
+  return image?.props?._style?.bgImagePublicId;
+}
+
+/** Same as `navLogoAssetId` but reads a raw `{content}` zone shape directly
+ *  (e.g. `__capturedPuckSeed`) instead of a persisted buffer's `data.home`. */
+function navLogoAssetIdFromZone(zone: { content?: unknown[] } | undefined): string | undefined {
+  const nav = zone?.content?.find(
+    (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
+  ) as { props?: { content?: unknown[] } } | undefined;
+  const image = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Image") as
+    | { props?: { _style?: { bgImagePublicId?: string } } }
+    | undefined;
+  return image?.props?._style?.bgImagePublicId;
+}
+
+type RawTestBlock = {
+  type?: string;
+  props?: { _chrome?: string; content?: RawTestBlock[]; [key: string]: unknown };
+};
+
+function pageBodyChildrenFromZone(zone: { content?: unknown[] } | undefined): RawTestBlock[] {
+  const content = (zone?.content ?? []) as RawTestBlock[];
+  const body = content.find((block) => block.type === "PageBody");
+  return body?.props?.content ?? [];
+}
 
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
-// Buffer matches baseProps initial data so restoring it keeps isDirty=false.
+// Buffer matches baseProps initial data (including its already-present,
+// content-less Navigation block) so restoring it keeps isDirty=false. A
+// buffer with NO Navigation at all would instead take the migration path
+// (ensureNavigation), which now seeds the real workspace name onto a
+// freshly-injected block — a different, dirtying outcome from a Navigation
+// that was already on the canvas.
 const LOCAL_DRAFT_V2 = {
   version: 2,
   data: {
-    home: { content: [{ type: "Hero", props: { headline: "Hi" } }], root: {} },
-    gallery: { content: [], root: {} },
+    home: {
+      content: [
+        { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+        { type: "Hero", props: { headline: "Hi" } },
+      ],
+      root: {},
+    },
+    gallery: {
+      content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }],
+      root: {},
+    },
   },
   draftId: "d1",
   draftName: "Test Draft",
@@ -193,8 +287,22 @@ const baseProps = {
   slug: "studio-aurora",
   workspaceName: "Studio Aurora",
   initialData: {
-    home: { content: [{ type: "Hero", props: { headline: "Hi" } }], root: {} },
-    gallery: { content: [], root: {} },
+    // Nav explicitly present (id matches what ensureIds would assign anyway —
+    // see ensureIds) so this fixture represents an already-migrated draft:
+    // ensureNavigation is a no-op and the editor loads NOT dirty. Tests that
+    // specifically exercise the legacy-header migration override this with
+    // nav-less content instead (see e.g. "migrates a legacy header's...").
+    home: {
+      content: [
+        { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+        { type: "Hero", props: { headline: "Hi" } },
+      ],
+      root: {},
+    },
+    gallery: {
+      content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }],
+      root: {},
+    },
   },
   initialBrandKit: DEFAULT_BRAND_KIT,
   initialContact: { title: "Hi" },
@@ -245,9 +353,13 @@ describe("previewZoneFor", () => {
  * When the SpotlightGuide is open (guideDismissed=false), it gates the entry
  * dialog. This helper skips the guide first so the entry dialog then appears.
  */
-async function renderAndDismissEntry(ui: ReactElement) {
-  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
-  const result = renderWithProviders(ui);
+async function renderAndDismissEntry(
+  ui: ReactElement,
+  options?: Parameters<typeof renderWithProviders>[1],
+  localDraft: Record<string, unknown> = LOCAL_DRAFT_V2
+) {
+  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(localDraft));
+  const result = renderWithProviders(ui, options);
 
   // If the guide is open, skip it first so the entry dialog becomes visible.
   // "Skip Guide" now opens a confirm modal; confirm via the modal's own
@@ -263,15 +375,26 @@ async function renderAndDismissEntry(ui: ReactElement) {
   // without opening any secondary dialog, keeping the test environment clean.
   const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
   fireEvent.click(continueBtn);
+  // onContinue restores the local buffer via a queueMicrotask-deferred update
+  // (see restoreLocalDraft) that forces a Puck remount — wait for the dialog
+  // to close, then flush a real macrotask so the remount's own effects (and
+  // its mount-echo onChange) settle before the caller interacts further.
+  await waitFor(() => expect(screen.queryByText("Welcome back")).not.toBeInTheDocument());
+  await new Promise((resolve) => setTimeout(resolve, 0));
   return result;
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPuckApi.selectedItem = undefined;
+  mockPuckApi.appState.ui.itemSelector = null;
+  mockPuckApi.getPermissions.mockImplementation(() => ({}));
   window.localStorage.clear();
   __puckMountCount = 0;
   __capturedPuckOnChange = undefined;
-  __capturedPuckConfig = undefined;
+  __capturedPuckMetadata = undefined;
+  __capturedPuckSeed = undefined;
+  __resetPresetPreview();
   listDraftsAction.mockResolvedValue([]);
   seedTemplateAction.mockImplementation((templateId = "minimal") =>
     Promise.resolve({
@@ -302,6 +425,25 @@ describe("EditorShell", () => {
     expect(await screen.findByText("Studio Aurora · Gallery")).toBeInTheDocument();
   });
 
+  it("passes the current activeZone to createEditorConfig, recomputing it on zone switch", async () => {
+    // createEditorConfig's second parameter feeds the Navigation field panel's
+    // detach-toggle zone context (label + disabled state) — see editorConfig.tsx
+    // and chromeSyncContext.ts. Real module, not mocked elsewhere in this file;
+    // spy on it to assert EditorShell threads its own activeZone state through
+    // and recomputes when the zone changes, without depending on Puck's real
+    // sidebar (which the top-of-file mock never renders).
+    const editorConfigModule = await import("@/lib/page-builder/editorConfig");
+    const spy = vi.spyOn(editorConfigModule, "createEditorConfig");
+
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    expect(spy).toHaveBeenLastCalledWith(expect.any(Function), "home");
+
+    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    await waitFor(() => expect(spy).toHaveBeenLastCalledWith(expect.any(Function), "gallery"));
+
+    spy.mockRestore();
+  });
+
   it("debounces the local draft write on a Puck change and flushes it on zone switch (Fix #1)", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
@@ -319,14 +461,16 @@ describe("EditorShell", () => {
     );
   });
 
-  it("places Navigation and Contact Form beside the page tabs", async () => {
+  it("places Contact Form and Featured Popup beside the page tabs", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const controls = screen.getByRole("group", { name: "Portfolio sections" });
     expect(within(controls).getByRole("button", { name: "Home" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Gallery" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Featured Popup" })).toBeInTheDocument();
-    expect(within(controls).getByRole("button", { name: "Navigation" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Contact Form" })).toBeInTheDocument();
+    // Navigation is no longer a side-panel tab — it's an ordinary, always-
+    // present Puck block edited in the canvas via its own Content/Design tabs.
+    expect(within(controls).queryByRole("button", { name: "Navigation" })).not.toBeInTheDocument();
   });
 
   it("opens the Featured Popup panel when the Featured Popup tab is clicked", async () => {
@@ -339,34 +483,93 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: "Featured Popup" }).getAttribute("aria-pressed")).toBe("true");
   });
 
-  it.each([
-    { tab: "Contact Form", panel: "Contact form" },
-    { tab: "Navigation", panel: "Navigation" },
-  ])("keeps $tab open while the Featured Popup warning is shown", async ({ tab, panel }) => {
+  it("keeps Contact Form open while the Featured Popup warning is shown", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: tab }));
-    expect(await screen.findByLabelText(panel)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
 
     expect(await screen.findByRole("button", { name: "Open anyway" })).toBeInTheDocument();
-    expect(screen.getByLabelText(panel)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: tab, hidden: true })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Contact form")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Contact Form", hidden: true })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Featured Popup", hidden: true })).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
+  it("shows a preview and hides the canvas while the Contact Form settings panel is open", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Navigation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
     expect(screen.queryByLabelText("Contact form")).not.toBeInTheDocument();
-    expect(await screen.findByLabelText("Navigation")).toBeInTheDocument();
-    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
-    expect(screen.getByText("Studio Aurora")).toBeInTheDocument();
+    expect(await screen.findByTestId("puck")).toBeInTheDocument();
+  });
+
+  it("does not drop the first genuine edit after closing a side panel by re-selecting the already-active zone", async () => {
+    // Opening Contact Form while on Home, then clicking Home again to return
+    // to the canvas, re-selects the zone you're already on while a side panel
+    // is open. That path used to arm the mount-echo guard without a matching
+    // Puck remount to consume it, so the very next real edit was discarded.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    expect(await screen.findByTestId("puck")).toBeInTheDocument();
+
+    // A genuine edit taken through the (buggy) mount-echo branch still lands
+    // in in-memory state — the observable loss is that it never schedules the
+    // debounced localStorage autosave (that call sits after the echo guard's
+    // early return), so it vanishes from "Continue where you left off".
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(window.localStorage.getItem(DRAFT_KEY) ?? "").toContain("Changed");
+  });
+
+  // Note: there is no reachable "raw mount, before any entry action" edit —
+  // PortfolioEntryDialog is a non-dismissible modal, so the first click a real
+  // user can make on Puck always follows some entry choice (Continue / Load
+  // existing / Start scratch). "Continue" (restoreLocalDraft) is exercised as
+  // the mount-adjacent reseed by every renderAndDismissEntry-based test that
+  // fires "Simulate Puck change" right after, e.g. "keeps Puck edits local"
+  // above and the zone-switch regression test below.
+
+  it("does not drop the first genuine edit after applyDraft loads a different draft", async () => {
+    const props = {
+      ...baseProps,
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d2",
+        name: "Summer",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Summer" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Applying Summer" })).not.toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled();
   });
 
   it("keeps the sidebar toggles in the edit-mode header", async () => {
@@ -436,6 +639,142 @@ describe("EditorShell", () => {
     expect(propagated).toBe(true);
   });
 
+  // useEditorCanvasHotkeys — own Ctrl/Cmd+Z (undo), Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y
+  // (redo), and Delete/Backspace (remove selected block) instead of relying on
+  // Puck's fragile global hotkey matcher. jsdom has no real cross-document
+  // (canvas iframe) focus to exercise, and Puck itself is mocked here with no
+  // real hotkey listener of its own — so these assert the mechanics that make
+  // double-firing structurally impossible (capture-phase stopImmediatePropagation)
+  // and the guard logic (editable-target skip, permission gate), not an actual
+  // race against Puck's real listener.
+  describe("useEditorCanvasHotkeys", () => {
+    it("Ctrl+Z calls history.back exactly once and consumes the event", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const event = new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true });
+      const preventDefaultSpy = vi.spyOn(event, "preventDefault");
+      const stopSpy = vi.spyOn(event, "stopImmediatePropagation");
+
+      document.body.dispatchEvent(event);
+
+      expect(mockPuckApi.history.back).toHaveBeenCalledTimes(1);
+      expect(mockPuckApi.history.forward).not.toHaveBeenCalled();
+      expect(preventDefaultSpy).toHaveBeenCalledTimes(1);
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("Cmd+Z (metaKey) also calls history.back", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "z", metaKey: true, bubbles: true, cancelable: true })
+      );
+      expect(mockPuckApi.history.back).toHaveBeenCalledTimes(1);
+    });
+
+    it("Ctrl+Shift+Z calls history.forward, not back", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "z", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+      );
+      expect(mockPuckApi.history.forward).toHaveBeenCalledTimes(1);
+      expect(mockPuckApi.history.back).not.toHaveBeenCalled();
+    });
+
+    it("Ctrl+Y calls history.forward", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "y", ctrlKey: true, bubbles: true, cancelable: true })
+      );
+      expect(mockPuckApi.history.forward).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not undo when Ctrl+Z is pressed while focus is in a text field", async () => {
+      const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;
+      const input = document.createElement("input");
+      editorRoot.appendChild(input);
+
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true })
+      );
+
+      expect(mockPuckApi.history.back).not.toHaveBeenCalled();
+    });
+
+    it("Delete removes the selected block via a `remove` dispatch when permitted", async () => {
+      mockPuckApi.selectedItem = { type: "Hero", props: { id: "b1" } };
+      mockPuckApi.appState.ui.itemSelector = { index: 2, zone: "root:default-zone" };
+      mockPuckApi.getPermissions.mockImplementation(() => ({ delete: true }));
+
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })
+      );
+
+      expect(mockPuckApi.dispatch).toHaveBeenCalledWith({ type: "remove", index: 2, zone: "root:default-zone" });
+    });
+
+    it("Backspace also removes the selected block", async () => {
+      mockPuckApi.selectedItem = { type: "Hero", props: { id: "b1" } };
+      mockPuckApi.appState.ui.itemSelector = { index: 0, zone: "root:default-zone" };
+      mockPuckApi.getPermissions.mockImplementation(() => ({ delete: true }));
+
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Backspace", bubbles: true, cancelable: true })
+      );
+
+      expect(mockPuckApi.dispatch).toHaveBeenCalledWith({ type: "remove", index: 0, zone: "root:default-zone" });
+    });
+
+    it("does nothing when Delete is pressed on the pinned Navigation block (permissions.delete === false)", async () => {
+      mockPuckApi.selectedItem = { type: "Navigation", props: { id: "nav-1" } };
+      mockPuckApi.appState.ui.itemSelector = { index: 0, zone: "root:default-zone" };
+      mockPuckApi.getPermissions.mockImplementation(() => ({ delete: false }));
+
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })
+      );
+
+      const removeCalls = mockPuckApi.dispatch.mock.calls.filter(
+        ([action]) => (action as { type?: string })?.type === "remove"
+      );
+      expect(removeCalls).toHaveLength(0);
+    });
+
+    it("does nothing when Delete is pressed with no block selected", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })
+      );
+
+      const removeCalls = mockPuckApi.dispatch.mock.calls.filter(
+        ([action]) => (action as { type?: string })?.type === "remove"
+      );
+      expect(removeCalls).toHaveLength(0);
+    });
+
+    it("does not remove the block when Delete is pressed while focus is in a text field", async () => {
+      mockPuckApi.selectedItem = { type: "Hero", props: { id: "b1" } };
+      mockPuckApi.appState.ui.itemSelector = { index: 0, zone: "root:default-zone" };
+      mockPuckApi.getPermissions.mockImplementation(() => ({ delete: true }));
+
+      const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;
+      const input = document.createElement("input");
+      editorRoot.appendChild(input);
+
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Delete", bubbles: true, cancelable: true })
+      );
+
+      const removeCalls = mockPuckApi.dispatch.mock.calls.filter(
+        ([action]) => (action as { type?: string })?.type === "remove"
+      );
+      expect(removeCalls).toHaveLength(0);
+    });
+  });
+
   it("opens the publish dialog when the Publish button in the editor header is clicked", async () => {
     await renderAndDismissEntry(<EditorShell {...basePro} />);
     expect(screen.queryByText("Publish your portfolio?")).not.toBeInTheDocument();
@@ -463,6 +802,25 @@ describe("EditorShell", () => {
     // Back to editing.
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(await screen.findByTestId("puck")).toBeInTheDocument();
+  });
+
+  it("carries the active draft id in the preview iframe src, omitted when there is none", async () => {
+    // With an active draft (baseProps has one) — carried through.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    const iframe = await screen.findByTitle("Live preview");
+    expect(iframe.getAttribute("src")).toContain("draftId=d1");
+  });
+
+  it("omits draftId from the preview iframe src when there is no active draft", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} initialActiveDraftId={null} initialActiveDraftName={undefined} initialDrafts={[]} />
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Start from scratch" }));
+    await waitFor(() => expect(seedTemplateAction).toHaveBeenCalledWith("scratch"));
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    const iframe = await screen.findByTitle("Live preview");
+    expect(iframe.getAttribute("src")).not.toContain("draftId=");
   });
 
   it("treats Contact as a tab — auto-opens the inline settings panel", async () => {
@@ -1011,6 +1369,18 @@ describe("EditorShell", () => {
     });
   });
 
+  it("does not drop the first genuine edit made right after applyTemplate re-seeds the canvas", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Minimal/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Use this template" }));
+    await screen.findByTestId("puck", {}, { timeout: 3000 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled();
+  });
+
   it("unsaved-changes modal shows the draft name input and blocks Save when name is a duplicate", async () => {
     const props = {
       ...baseProps,
@@ -1248,19 +1618,972 @@ describe("EditorShell", () => {
     // draft on their next visit (and skip straight past the template picker).
     const bufferBeforeTemplate = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
     if (bufferBeforeTemplate) {
-      expect(JSON.parse(bufferBeforeTemplate).headerConfig?.logoUrl).toBeUndefined();
+      expect(navLogoAssetId(JSON.parse(bufferBeforeTemplate))).toBeUndefined();
     }
 
     fireEvent.click(screen.getByRole("button", { name: "Start from scratch" }));
     await waitFor(() => expect(seedTemplateAction).toHaveBeenCalledWith("scratch"));
     await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
 
-    // Applied once a template — including "start from scratch" — is actually picked.
+    // Applied once a template — including "start from scratch" — is actually
+    // picked: patched into the seeded Navigation block's slot Image, not a
+    // separate header field.
     await waitFor(() => {
       const buffered = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
       expect(buffered).toBeTruthy();
-      expect(JSON.parse(buffered!).headerConfig?.logoUrl).toBe("https://cdn/logo.png");
+      expect(navLogoAssetId(JSON.parse(buffered!))).toBe("logo-1");
     });
+  });
+
+  it("onboarding logo is migrated onto a draft loaded via applyDraft, then cleared (Fix #8)", async () => {
+    uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-1", url: "https://cdn/logo.png" } });
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Navigation", props: { id: "nav-1", _chrome: "nav", content: [] } }], root: {} },
+          // Nav present here too — a nav-less gallery would read as a
+          // migration repair and dirty the draft, blocking this test's later
+          // "Use this template" step behind the unsaved-changes guard.
+          gallery: { content: [{ type: "Navigation", props: { id: "nav-2", _chrome: "nav" } }], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        storyPromptCompleted={false}
+        guideDismissed={false}
+        // Nav present in both zones (mirrors baseProps) so the editor loads
+        // NOT dirty — the onboarding flow below only exercises the logo
+        // migration, not the missing-Navigation repair.
+        initialData={{
+          home: { content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }], root: {} },
+          gallery: { content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }], root: {} },
+        }}
+      />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Let's go" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your vibe" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Add your branding" });
+
+    const fileInput = document.querySelector(
+      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+    ) as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["logo"], "logo.png", { type: "image/png" })] } });
+    await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo.png"]')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your page is ready to shine" });
+    fireEvent.click(screen.getByRole("button", { name: "I'll explore myself" }));
+    await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
+
+    // Returning user (baseProps has a draft) lands on the normal entry
+    // dialog, not the template picker — load the existing draft instead.
+    // A brand-new workspace's first-ever visit also reaches this exact path
+    // (page.tsx auto-seeds one draft before the owner ever sees the editor,
+    // so drafts.length===1 here does not mean "real returning user"), so the
+    // captured logo is migrated onto whatever draft gets loaded (Fix #8).
+    fireEvent.click(await screen.findByRole("button", { name: /Load an existing draft/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    await waitFor(() => {
+      expect(navLogoAssetIdFromZone(__capturedPuckSeed as { content?: unknown[] })).toBe("logo-1");
+    });
+
+    // Prove the ref was actually cleared after being consumed once (not
+    // reapplied indefinitely): a fresh template afterward with no new
+    // upload carries no logo.
+    fireEvent.click(await screen.findByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+
+    await waitFor(() => {
+      const buffered = window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora");
+      expect(buffered).toBeTruthy();
+      expect(navLogoAssetId(JSON.parse(buffered!))).toBeUndefined();
+    });
+  });
+
+  it("onboarding logo is migrated when continuing a recovered local buffer (Fix #8)", async () => {
+    uploadAsset.mockResolvedValueOnce({ asset: { assetId: "logo-2", url: "https://cdn/logo2.png" } });
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
+    renderWithProviders(
+      <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Let's go" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your vibe" });
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Add your branding" });
+
+    const fileInput = document.querySelector(
+      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+    ) as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(["logo"], "logo2.png", { type: "image/png" })] } });
+    await waitFor(() => expect(document.querySelector('img[src="https://cdn/logo2.png"]')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    await screen.findByRole("heading", { name: "Your page is ready to shine" });
+    fireEvent.click(screen.getByRole("button", { name: "I'll explore myself" }));
+    await waitFor(() => expect(dismissPortfolioGuideAction).toHaveBeenCalled());
+
+    fireEvent.click(await screen.findByRole("button", { name: /Continue where you left off/ }));
+    await waitFor(() => {
+      expect(navLogoAssetIdFromZone(__capturedPuckSeed as { content?: unknown[] })).toBe("logo-2");
+    });
+  });
+
+  describe("draft buffer lifecycle (Fix #9)", () => {
+    it("the local buffer is not auto-applied on mount, only via explicit Continue", async () => {
+      const distinctBuffer = {
+        version: 2,
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "buf-hero", headline: "BUFFER_MARKER" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        draftId: "d1",
+        draftName: "Test Draft",
+      };
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(distinctBuffer));
+      renderWithProviders(<EditorShell {...baseProps} />);
+
+      await screen.findByRole("button", { name: /Continue where you left off/ });
+      expect(JSON.stringify(__capturedPuckSeed)).not.toContain("BUFFER_MARKER");
+
+      fireEvent.click(screen.getByRole("button", { name: /Continue where you left off/ }));
+      await waitFor(() => {
+        expect(JSON.stringify(__capturedPuckSeed)).toContain("BUFFER_MARKER");
+      });
+    });
+
+    it("Save changes clears the local buffer for a real draft", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+      expect(window.localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+
+      // Save is disabled while clean (activeDraftId set + !isDirty) — dirty
+      // the canvas first, same as the existing debounce test does.
+      fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+      await waitFor(() => expect(updateDraftAction).toHaveBeenCalled());
+      expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
+    });
+
+    it("applyDraft clears the local buffer", async () => {
+      await renderAndDismissEntry(
+        <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+        undefined,
+        { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+      );
+      expect(window.localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+
+      fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+      await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+      await waitFor(() => expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull());
+    });
+  });
+
+  // renderAndDismissEntry restores the LOCAL_DRAFT_V2 buffer over
+  // initialData (a "Continue where you left off" reload), so the override
+  // has to live in the buffer, not just baseProps.initialData.
+  const LOCAL_DRAFT_V2_WITH_GALLERY_HERO = {
+    ...LOCAL_DRAFT_V2,
+    data: {
+      ...LOCAL_DRAFT_V2.data,
+      gallery: {
+        content: [
+          { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+          { type: "Hero", props: { id: "c-Hero-gallery", headline: "Gallery" } },
+        ],
+        root: {},
+      },
+    },
+  };
+
+  describe("chrome sync wiring", () => {
+    it("dragging a second nav preset in replaces the pinned Navigation, keeping its id (Fix #1)", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      __capturedPuckOnChange?.({
+        content: [
+          { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav", brandText: "Studio" } },
+          { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } },
+          { type: "NavigationPreset", props: { id: "preset-nav-1", _chrome: "nav" } },
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = JSON.parse(buffered!).data.home.content as {
+          type: string;
+          props: { id: string; _chrome?: string };
+        }[];
+        const navs = homeContent.filter((b) => b.props._chrome === "nav");
+        expect(navs).toHaveLength(1);
+        expect(navs[0].type).toBe("NavigationPreset");
+        expect(navs[0].props.id).toBe("c-Navigation-0");
+      });
+    });
+
+    it("dropping a nav preset variant seeds its brand Heading with the real workspace name, not the preset's placeholder", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      __capturedPuckOnChange?.({
+        content: [
+          { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+          { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } },
+          {
+            type: "NavigationPreset",
+            props: {
+              id: "preset-nav-1",
+              _chrome: "nav",
+              content: [
+                { type: "Image", props: { alt: "Logo" } },
+                { type: "Heading", props: { level: "h3", text: "Studio Name" } },
+              ],
+            },
+          },
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = JSON.parse(buffered!).data.home.content as {
+          type: string;
+          props: { id: string; _chrome?: string; content?: { type: string; props?: { text?: string } }[] };
+        }[];
+        const nav = homeContent.find((b) => b.props._chrome === "nav");
+        const heading = nav?.props.content?.find((c) => c.type === "Heading");
+        expect(heading?.props?.text).toBe("Studio Aurora");
+      });
+    });
+
+    it("deleting a detached footer does not open the reanchor confirm or revert the deletion (Fix #3)", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+
+      // Step 1: add a footer to home, already detached, so the other zone
+      // (which has none) never receives a mirrored copy.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: true } },
+        ],
+        root: {},
+      });
+
+      // Step 2: delete that same detached footer.
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero], root: {} });
+
+      expect(screen.queryByText("Match Gallery's styling?")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = (JSON.parse(buffered!).data.home.content ?? []) as { props?: { _chrome?: string } }[];
+        expect(homeContent.some((b) => b.props?._chrome === "footer")).toBe(false);
+      });
+    });
+
+    it("discarding to a scratch canvas seeds Navigation in the gallery zone too, not just home (Fix #5)", async () => {
+      renderWithProviders(
+        <EditorShell
+          {...baseProps}
+          initialActiveDraftId={null}
+          initialActiveDraftName={undefined}
+          initialDrafts={[]}
+        />
+      );
+      // Brand-new (no drafts, no buffer) — welcome template picker, not the
+      // normal entry dialog.
+      fireEvent.click(await screen.findByRole("button", { name: "Start from scratch" }));
+      await waitFor(() => expect(seedTemplateAction).toHaveBeenCalledWith("scratch"));
+      await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
+
+      // activeDraftId is still null right after applying — Publish routes
+      // through the unsaved-changes guard.
+      fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Discard" }));
+      await waitFor(() => expect(listDraftsAction).toHaveBeenCalled());
+      // Discard's pending action re-opens the publish dialog — close it so
+      // the toolbar underneath is reachable again.
+      fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+
+      // Save WITHOUT ever visiting the Gallery tab — this is what ships to
+      // the server; zoneDataRef.current.gallery must already carry
+      // Navigation, not rely on selectZone's own repair-on-visit.
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+      await waitFor(() => expect(createDraftAction).toHaveBeenCalled());
+      const payload = createDraftAction.mock.calls[0][0] as {
+        data: { gallery: { content?: { props?: { _chrome?: string } }[] } };
+      };
+      expect((payload.data.gallery.content ?? []).some((b) => b.props?._chrome === "nav")).toBe(true);
+    });
+
+    it("threads localized nav chrome labels into the editor canvas's Puck metadata (Fix #7)", async () => {
+      const messages = structuredClone(enMessages);
+      messages.publicPage.nav.home = "TRANSLATED_HOME_LABEL";
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, { messages });
+
+      const metadata = __capturedPuckMetadata as {
+        workspace?: { chrome?: { nav?: { home?: string } } };
+      };
+      expect(metadata?.workspace?.chrome?.nav?.home).toBe("TRANSLATED_HOME_LABEL");
+    });
+
+    it("deleting an attached footer mirrors the removal onto the other zone, and it does not come back on a later edit (Fix #4)", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+
+      // Step 1: add an (attached) footer to home — mirrors onto gallery.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } },
+        ],
+        root: {},
+      });
+
+      // Step 2: delete it from home.
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero], root: {} });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as { home: { content?: { props?: { _chrome?: string } }[] }; gallery: { content?: { props?: { _chrome?: string } }[] } };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+      });
+
+      // Step 3: an unrelated edit on gallery (now footer-less) must not
+      // resurrect a footer on either zone.
+      __capturedPuckOnChange?.({
+        content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }, { type: "Hero", props: { id: "g-Hero-1", headline: "Gallery edit" } }],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Home" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        const data = JSON.parse(buffered!).data as { home: { content?: { props?: { _chrome?: string } }[] }; gallery: { content?: { props?: { _chrome?: string } }[] } };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(false);
+      });
+    });
+
+    it("mirrors a footer into an otherwise-empty PageBody zone", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } },
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { props?: { _chrome?: string } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("keeps the mirrored footer when an empty PageBody gains its first real block", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      // Step 1: footer lands on home and mirrors into gallery.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } },
+        ],
+        root: {},
+      });
+
+      // Step 2: switch to Gallery and give it its first real block — a
+      // genuine same-zone edit, not a mirror from home. The zone switch
+      // remounts Puck onto the gallery zone's own handleChange closure;
+      // wait for that before firing the next onChange, same as every other
+      // switch-then-edit test in this file (a synchronous click alone
+      // leaves __capturedPuckOnChange pointing at the outgoing zone).
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => expect(window.localStorage.getItem(DRAFT_KEY)).toBeTruthy());
+      const galleryNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const galleryFooter = { type: "FooterSimple", props: { id: "gallery-footer", _chrome: "footer", detached: false } };
+      __capturedPuckOnChange?.({
+        content: [
+          galleryNav,
+          {
+            type: "PageBody",
+            props: {
+              id: "page-body",
+              marginX: "1.5rem",
+              content: [{ type: "Hero", props: { id: "g-Hero-1", headline: "Gallery" } }],
+            },
+          },
+          galleryFooter,
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Home" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as {
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("re-pins a footer dropped below another block and remounts the canvas to match", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const homeFooter = { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } };
+
+      // Establish an attached footer already at the end — no order violation yet.
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero, homeFooter], root: {} });
+      const mountCountAfterAdd = __puckMountCount;
+
+      // Drop a new block BELOW the footer — displaces it from last.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          homeFooter,
+          { type: "Hero", props: { id: "c-Hero-2", headline: "After footer" } },
+        ],
+        root: {},
+      });
+
+      await waitFor(() => expect(__puckMountCount).toBeGreaterThan(mountCountAfterAdd));
+
+      const seed = __capturedPuckSeed as { content: { props: { _chrome?: string } }[] };
+      expect(seed.content[seed.content.length - 1].props._chrome).toBe("footer");
+    });
+
+    it("dragging a second footer preset in replaces the pinned Footer in place, keeping its id, staying last, and taking the preset's content", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const homeFooter = { type: "FooterSimple", props: { id: "home-footer", _chrome: "footer", detached: false } };
+
+      // Step 1: establish a pinned footer.
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero, homeFooter], root: {} });
+
+      // Step 2: drop a footer preset alongside it — should replace the
+      // pinned footer in place, not be collapsed away as a duplicate.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          homeHero,
+          homeFooter,
+          { type: "FooterStatementPreset", props: { id: "preset-footer-1", _chrome: "footer", columns: 3 } },
+        ],
+        root: {},
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = JSON.parse(buffered!).data.home.content as {
+          type: string;
+          props: { id: string; _chrome?: string; columns?: number };
+        }[];
+        const footers = homeContent.filter((b) => b.props._chrome === "footer");
+        expect(footers).toHaveLength(1);
+        expect(footers[0].type).toBe("FooterStatementPreset");
+        expect(footers[0].props.id).toBe("home-footer");
+        expect(footers[0].props.columns).toBe(3);
+        expect(homeContent[homeContent.length - 1]).toBe(footers[0]);
+      });
+    });
+
+    it("a footer dropped mid-list survives into zoneDataRef/the persisted buffer and mirrors to the other zone", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, LOCAL_DRAFT_V2_WITH_GALLERY_HERO);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      // Dropped ABOVE existing content — lands mid-list, not already last,
+      // forcing normalizeChrome's remount-to-re-pin path.
+      const droppedFooter = {
+        type: "FooterStatementPreset",
+        props: { id: "footer-1", _chrome: "footer", detached: false },
+      };
+
+      __capturedPuckOnChange?.({ content: [homeNav, droppedFooter, homeHero], root: {} });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { props?: { _chrome?: string } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("a footer dropped into a Columns column's nested slot (drop-target ambiguity) is rescued to the top level, survives into the buffer, and mirrors", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, LOCAL_DRAFT_V2_WITH_GALLERY_HERO);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "HeroPreset", props: { id: "c-Hero-1", headline: "Hi" } };
+      // Reproduces the real dnd-kit trap live QA hit: the footer preset
+      // landed inside an existing Columns block's own column slot instead
+      // of the zone's top-level end-of-list target.
+      const nestedFooter = {
+        type: "FooterStatementPreset",
+        props: { id: "footer-1", _chrome: "footer", detached: false },
+      };
+      const columns = {
+        type: "Columns",
+        props: {
+          id: "c-Columns-1",
+          content: [
+            {
+              type: "Container",
+              props: { id: "c-Container-1", content: [nestedFooter] },
+            },
+          ],
+        },
+      };
+
+      const mountCountBeforeDrop = __puckMountCount;
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero, columns], root: {} });
+
+      // The canvas re-syncs to the corrected (promoted) data right away —
+      // it must not keep showing the footer sitting in its original nested
+      // spot until some unrelated later remount.
+      await waitFor(() => expect(__puckMountCount).toBeGreaterThan(mountCountBeforeDrop));
+      const seed = __capturedPuckSeed as {
+        content: { type?: string; props: { _chrome?: string; content?: unknown[] } }[];
+      };
+      expect(seed.content.some((b) => b.props._chrome === "footer")).toBe(true);
+      const seedCols = pageBodyChildrenFromZone(seed).find((b) => b.type === "Columns");
+      const seedCol = (seedCols?.props?.content as { props?: { content?: unknown[] } }[] | undefined)?.[0];
+      expect(
+        (seedCol?.props?.content as { props?: { _chrome?: string } }[] | undefined)?.some(
+          (b) => b.props?._chrome === "footer",
+        ),
+      ).toBe(false);
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { type?: string; props?: { _chrome?: string; content?: unknown[] } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        const homeContent = data.home.content ?? [];
+        expect(homeContent.some((b) => b.props?._chrome === "footer")).toBe(true);
+        // ...and it's gone from the Columns column it was nested in.
+        const cols = pageBodyChildrenFromZone({ content: homeContent }).find((b) => b.type === "Columns");
+        const col = (cols?.props?.content as { props?: { content?: unknown[] } }[] | undefined)?.[0];
+        expect(
+          (col?.props?.content as { props?: { _chrome?: string } }[] | undefined)?.some(
+            (b) => b.props?._chrome === "footer",
+          ),
+        ).toBe(false);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("an ordinary (non-chrome) block dropped into a Columns column's nested slot is left alone", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const columns = {
+        type: "Columns",
+        props: {
+          id: "c-Columns-1",
+          content: [
+            {
+              type: "Container",
+              props: { id: "c-Container-1", content: [{ type: "Text", props: { id: "c-Text-1", text: "Hi" } }] },
+            },
+          ],
+        },
+      };
+
+      __capturedPuckOnChange?.({ content: [homeNav, columns], root: {} });
+
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        expect(buffered).toBeTruthy();
+        const homeContent = JSON.parse(buffered!).data.home.content as {
+          type: string;
+          props: { content?: { type: string; props: { content?: { type: string }[] } }[] };
+        }[];
+        const cols = pageBodyChildrenFromZone({ content: homeContent }).find((b) => b.type === "Columns");
+        expect(cols?.props?.content?.[0]?.props?.content?.[0]?.type).toBe("Text");
+      });
+    });
+
+    it("a footer dropped already-last (no reorder needed) survives into the buffer", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, LOCAL_DRAFT_V2_WITH_GALLERY_HERO);
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const droppedFooter = {
+        type: "FooterStatementPreset",
+        props: { id: "footer-1", _chrome: "footer", detached: false },
+      };
+      __capturedPuckOnChange?.({ content: [homeNav, homeHero, droppedFooter], root: {} });
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { props?: { _chrome?: string } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("a further genuine edit after a successful footer drop keeps the footer", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />, undefined, LOCAL_DRAFT_V2_WITH_GALLERY_HERO);
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const droppedFooter = {
+        type: "FooterStatementPreset",
+        props: { id: "footer-1", _chrome: "footer", detached: false },
+      };
+      // Step 1: drop footer mid-list (forces reorder + remount).
+      __capturedPuckOnChange?.({ content: [homeNav, droppedFooter, homeHero], root: {} });
+      // Step 2: a further genuine edit — e.g. editing the hero headline —
+      // fired against whatever Puck's canvas now looks like post-remount
+      // (i.e. footer already re-pinned last).
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          { ...homeHero, props: { ...homeHero.props, headline: "Edited" } },
+          droppedFooter,
+        ],
+        root: {},
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+      await waitFor(() => {
+        const buffered = window.localStorage.getItem(DRAFT_KEY);
+        const data = JSON.parse(buffered!).data as {
+          home: { content?: { props?: { _chrome?: string } }[] };
+          gallery: { content?: { props?: { _chrome?: string } }[] };
+        };
+        expect((data.home.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+        expect((data.gallery.content ?? []).some((b) => b.props?._chrome === "footer")).toBe(true);
+      });
+    });
+
+    it("re-pins Navigation displaced from index 0 and remounts the canvas to match", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const homeHero = { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } };
+      const mountCountBefore = __puckMountCount;
+
+      // Drop a block ABOVE Navigation — displaces it from index 0.
+      __capturedPuckOnChange?.({ content: [homeHero, homeNav], root: {} });
+
+      await waitFor(() => expect(__puckMountCount).toBeGreaterThan(mountCountBefore));
+
+      const seed = __capturedPuckSeed as { content: { props: { _chrome?: string } }[] };
+      expect(seed.content[0].props._chrome).toBe("nav");
+    });
+
+    it("does not remount the canvas for an ordinary edit that does not disturb chrome order", async () => {
+      await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+      const homeNav = { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } };
+      const mountCountBefore = __puckMountCount;
+
+      // Nav stays at index 0 — no chrome-order correction needed, must not remount.
+      __capturedPuckOnChange?.({
+        content: [
+          homeNav,
+          {
+            type: "PageBody",
+            props: {
+              id: "page-body",
+              marginX: "1.5rem",
+              content: [{ type: "Hero", props: { id: "c-Hero-1", headline: "Edited" } }],
+            },
+          },
+        ],
+        root: {},
+      });
+
+      // Flush any pending effects, then confirm no remount was scheduled.
+      await act(async () => {});
+      expect(__puckMountCount).toBe(mountCountBefore);
+    });
+  });
+
+  it("migrates a legacy header's logo + brand text onto the seeded Navigation's slot (Fix #2)", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "hero-1", headline: "Hi" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: { brandText: "Acme Studio", logoUrl: "https://cdn/logo.png", logoAssetId: "asset-99" },
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    // applyDraft intentionally clears the local buffer (a freshly-loaded
+    // clean draft must not manufacture a recoverable-edits buffer), so
+    // assert on the rendered seed directly rather than localStorage.
+    await waitFor(() => {
+      const zone = __capturedPuckSeed as { content?: unknown[] };
+      expect(navLogoAssetIdFromZone(zone)).toBe("asset-99");
+      const nav = zone.content?.find(
+        (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
+      ) as { props?: { content?: unknown[] } } | undefined;
+      const heading = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Heading") as
+        | { props?: { text?: string } }
+        | undefined;
+      expect(heading?.props?.text).toBe("Acme Studio");
+    });
+  });
+
+  it("migrates a legacy header with no brand text onto the seeded Navigation using the workspace name", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "hero-1", headline: "Hi" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: { logoUrl: "https://cdn/logo.png", logoAssetId: "asset-99" },
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    await waitFor(() => {
+      const zone = __capturedPuckSeed as { content?: unknown[] };
+      const nav = zone.content?.find(
+        (b) => (b as { props?: { _chrome?: string } }).props?._chrome === "nav"
+      ) as { props?: { content?: unknown[] } } | undefined;
+      const heading = nav?.props?.content?.find((c) => (c as { type?: string }).type === "Heading") as
+        | { props?: { text?: string } }
+        | undefined;
+      expect(heading?.props?.text).toBe("Studio Aurora");
+    });
+  });
+
+  it("loads a draft missing its Navigation as dirty, and Save persists the migrated zones (Fix #10)", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "hero-1", headline: "Hi" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    // The canvas now shows a migrated Navigation the stored draft never had —
+    // that's a real, savable difference, so Save must be enabled without any
+    // further edit.
+    const saveBtn = await screen.findByRole("button", { name: "Save changes" });
+    expect(saveBtn).not.toBeDisabled();
+
+    fireEvent.click(saveBtn);
+    await waitFor(() => expect(updateDraftAction).toHaveBeenCalled());
+    const payload = updateDraftAction.mock.calls[0][0] as {
+      data: { home: { content: { props?: { _chrome?: string } }[] } };
+    };
+    expect(payload.data.home.content.some((b) => b.props?._chrome === "nav")).toBe(true);
+  });
+
+  it("loads a draft that already has its Navigation as NOT dirty (regression guard)", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: {
+            content: [
+              { type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } },
+              { type: "Hero", props: { id: "c-Hero-1", headline: "Hi" } },
+            ],
+            root: {},
+          },
+          gallery: {
+            content: [{ type: "Navigation", props: { id: "c-Navigation-0", _chrome: "nav" } }],
+            root: {},
+          },
+        },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+
+    // Nothing needed repairing — routine normalisation must never itself be
+    // mistaken for a meaningful change.
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled());
+  });
+
+  it("publishing a draft missing its Navigation saves the migrated zones first, then publishes them", async () => {
+    getDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: {
+        id: "d1",
+        name: "Test Draft",
+        templateId: "minimal",
+        updatedAt: new Date().toISOString(),
+        data: {
+          home: { content: [{ type: "Hero", props: { id: "hero-1", headline: "Hi" } }], root: {} },
+          gallery: { content: [], root: {} },
+        },
+        brandKit: null,
+        contact: null,
+        header: null,
+        collectionsPopup: null,
+        formLocale: "",
+      },
+    });
+    await renderAndDismissEntry(
+      <EditorShell {...baseProps} initialActiveDraftId="loaded-draft" initialActiveDraftName="Loaded Draft" />,
+      undefined,
+      { ...LOCAL_DRAFT_V2, draftId: "loaded-draft", draftName: "Loaded Draft" },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Test Draft" }));
+    await waitFor(() => expect(getDraftAction).toHaveBeenCalledWith("d1"));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save changes" })).not.toBeDisabled());
+
+    // Dirty from the migration alone (no manual edit) → Publish must route
+    // through the save-before-publish guard rather than publishing directly.
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(updateDraftAction).toHaveBeenCalled());
+    const payload = updateDraftAction.mock.calls[0][0] as {
+      data: { home: { content: { props?: { _chrome?: string } }[] } };
+    };
+    expect(payload.data.home.content.some((b) => b.props?._chrome === "nav")).toBe(true);
+
+    expect(await screen.findByText("Publish your portfolio?")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
+    await waitFor(() => expect(publishDraftAction).toHaveBeenCalledWith("d1"));
   });
 
   it("explore-self exit closes the guide synchronously — no flicker before the dismiss call settles", async () => {
@@ -1424,9 +2747,9 @@ describe("EditorShell", () => {
     fireEvent.click(within(welcomeCard).getByRole("button", { name: "Next" }));
     const dragCard = await screen.findByRole("dialog", { name: "Drag a block onto your page" });
 
-    // The blocks-panel anchor is a Puck `drawer` override, which the mocked Puck
-    // does not render — so the loading gate shows its spinner until the safety
-    // timeout. Wait for the step body to reveal before asserting footer state.
+    // jsdom returns an all-zero rect for the blocks-panel anchor (no real
+    // layout), so the loading gate shows its spinner until the safety timeout.
+    // Wait for the step body to reveal before asserting footer state.
     await within(dragCard).findByText(/Try it/i);
 
     // Unsatisfied gated step: no Skip-this-step, no Next escape hatch, but the
@@ -1567,13 +2890,24 @@ describe("EditorShell demoMode", () => {
     expect(screen.queryByText(/bonus code/)).not.toBeInTheDocument();
   });
 
-  it("hides FeaturedWork/FeaturedWorkPreset from the block drawer (no demo collections picker exists)", async () => {
+  it("hides every collection-dependent block from the drawer (no demo collections picker exists)", async () => {
     renderWithProviders(<EditorShell {...demoProps} />);
     fireEvent.click(await screen.findByRole("button", { name: /Start from scratch/ }));
     await screen.findByTestId("puck");
 
-    expect(__capturedPuckConfig?.categories?.manual?.components).not.toContain("FeaturedWork");
-    expect(__capturedPuckConfig?.categories?.presets?.components).not.toContain("FeaturedWorkPreset");
+    // ALL THREE Featured work preset variants depend on collections, so the
+    // whole group is empty and never rendered at all — not just its items.
+    expect(screen.queryByRole("button", { name: "Featured work" })).not.toBeInTheDocument();
+
+    // The manual primitives that need the auth-gated collections picker are
+    // filtered too (CollectionCard); FeaturedWork was never manual-listed.
+    fireEvent.click(screen.getByRole("button", { name: "Manual blocks" }));
+    expect(screen.queryByTestId("drawer-item:CollectionCard")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("drawer-item:FeaturedWork")).not.toBeInTheDocument();
+
+    // Nothing else was swept up: a preset with no collection dependency stays.
+    fireEvent.click(screen.getByRole("button", { name: "Hero" }));
+    expect(screen.getByTestId("drawer-item:HeroPreset")).toBeInTheDocument();
   });
 
   it("disables the Preview toggle (no real preview route exists for demo data)", async () => {
@@ -1648,12 +2982,17 @@ describe("EditorShell demoMode — opt-in intro gates the guide", () => {
 });
 
 describe("EditorShell real (non-demo) editor — unaffected by the demo picker swap", () => {
-  it("keeps FeaturedWork/FeaturedWorkPreset in the block drawer", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
-    await screen.findByTestId("puck");
+  it("keeps collection cards and presets insertable while hiding deprecated Highlights", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
-    expect(__capturedPuckConfig?.categories?.manual?.components).toContain("FeaturedWork");
-    expect(__capturedPuckConfig?.categories?.presets?.components).toContain("FeaturedWorkPreset");
+    fireEvent.click(screen.getByRole("button", { name: "Manual blocks" }));
+    expect(screen.queryByTestId("drawer-item:FeaturedWork")).not.toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:CollectionCard")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Featured work" }));
+    expect(screen.getByTestId("drawer-item:FeaturedWorkPreset")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:FeaturedWorkLeadPreset")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:FeaturedWorkIndexPreset")).toBeInTheDocument();
   });
 
   it("keeps the Preview toggle enabled and functional (regression guard for the demo-only disable)", async () => {
@@ -1664,5 +3003,170 @@ describe("EditorShell real (non-demo) editor — unaffected by the demo picker s
 
     const openInTab = screen.getByRole("button", { name: "Open in new tab" });
     expect(openInTab).not.toBeDisabled();
+  });
+});
+
+describe("EditorShell — two-level preset drawer", () => {
+  it("renders Preset blocks containing all 12 groups, each containing its variants, plus a flat Manual blocks sibling", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    expect(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.presets") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.manual") })).toBeInTheDocument();
+    for (const group of PRESET_GROUPS) {
+      expect(screen.getByRole("button", { name: englishPuckT(group.labelKey) })).toBeInTheDocument();
+    }
+
+    // nav is open by default, with its single neutral preset visible immediately.
+    expect(screen.getByTestId("drawer-item:NavigationPreset")).toBeInTheDocument();
+    for (const key of ["NavBorderedPreset", "NavUnderlinedPreset", "NavScaledPreset"]) {
+      expect(screen.queryByTestId(`drawer-item:${key}`)).not.toBeInTheDocument();
+    }
+
+    // hero starts closed — its variants aren't in the DOM until opened.
+    expect(screen.queryByTestId("drawer-item:HeroPreset")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.hero") }));
+    expect(screen.getByTestId("drawer-item:HeroPreset")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:HeroSplitPreset")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-item:HeroStatementPreset")).toBeInTheDocument();
+
+    // Manual blocks starts closed and sits alongside Preset blocks, not nested
+    // under it.
+    expect(screen.queryByTestId("drawer-item:Heading")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.manual") }));
+    expect(screen.getByTestId("drawer-item:Heading")).toBeInTheDocument();
+  });
+
+  it("keeps the tour anchor on the drawer wrapper", async () => {
+    const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    expect(container.querySelector('[data-tour-id="blocks-panel"]')).toBeInTheDocument();
+  });
+
+  it("mounts exactly one preset preview (not one per drawer row's duplicate mount)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.hero") }));
+    // Drive the shared store directly (same mechanism PresetDrawerItem's
+    // hover/focus handlers use) rather than simulating a real pointer hover,
+    // which React only recognizes via the bubbling pointerover event.
+    act(() => {
+      openPresetPreview("HeroPreset", screen.getByTestId("drawer-item:HeroPreset"));
+    });
+    expect(await screen.findAllByRole("tooltip")).toHaveLength(1);
+  });
+
+  it("shows localized text-only help for manual blocks on hover", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: englishPuckT("puckConfig.categories.manual") }));
+    fireEvent.pointerEnter(screen.getByTestId("drawer-item:Heading"));
+
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip).toHaveTextContent(englishPuckT("puckConfig.manualDescriptions.heading"));
+    expect(tooltip.querySelector('[aria-hidden="true"]')).not.toBeInTheDocument();
+  });
+});
+
+describe("EditorShell — demo import detection", () => {
+  const DEMO_SESSION_KEY = "gallurio:portfolio-maker-demo:session";
+  const demoDraftKey = (id: string) => `gallurio:portfolio-maker-demo:draft:${id}`;
+  const demoBuffer = {
+    version: 2,
+    data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+    brandKit: {},
+    contact: {},
+    formLocale: "",
+    formDir: "",
+    headerConfig: {},
+    collectionsPopup: {},
+    draftId: null,
+    draftName: "New Draft",
+  };
+
+  function seedDemoBuffer(sessionId = "demo-sess-1") {
+    window.localStorage.setItem(DEMO_SESSION_KEY, sessionId);
+    window.localStorage.setItem(demoDraftKey(sessionId), JSON.stringify(demoBuffer));
+  }
+
+  it("shows the demo-import dialog instead of the entry dialog when a demo buffer is detected", async () => {
+    seedDemoBuffer();
+    renderWithProviders(<EditorShell {...baseProps} />);
+
+    expect(
+      await screen.findByText("We detected a saved demo portfolio")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+  });
+
+  it("prioritizes the saved-demo decision over a new owner's story prompt and guide", async () => {
+    seedDemoBuffer("demo-sess-first-run");
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        guideDismissed={false}
+        storyPromptCompleted={false}
+      />
+    );
+
+    expect(await screen.findByText("We detected a saved demo portfolio")).toBeInTheDocument();
+    expect(screen.queryByText("Let's tell your story")).not.toBeInTheDocument();
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard saved setup" }));
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+    expect(screen.queryByText("We detected a saved demo portfolio")).not.toBeInTheDocument();
+  });
+
+  it("'Discard saved setup' wipes the demo localStorage and closes the dialog without importing", async () => {
+    seedDemoBuffer("demo-sess-2");
+    renderWithProviders(<EditorShell {...baseProps} />);
+    await screen.findByText("We detected a saved demo portfolio");
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard saved setup" }));
+
+    await waitFor(() =>
+      expect(screen.queryByText("We detected a saved demo portfolio")).not.toBeInTheDocument()
+    );
+    expect(window.localStorage.getItem(DEMO_SESSION_KEY)).toBeNull();
+    expect(window.localStorage.getItem(demoDraftKey("demo-sess-2"))).toBeNull();
+    expect(importDemoPortfolioAction).not.toHaveBeenCalled();
+  });
+
+  it("'Apply saved setup' imports the demo session, wipes localStorage, and loads the new draft — skipping the template picker", async () => {
+    seedDemoBuffer("demo-sess-3");
+    renderWithProviders(<EditorShell {...baseProps} />);
+    await screen.findByText("We detected a saved demo portfolio");
+
+    fireEvent.click(screen.getByRole("button", { name: "Apply saved setup" }));
+
+    await waitFor(() => expect(importDemoPortfolioAction).toHaveBeenCalledTimes(1));
+    expect(importDemoPortfolioAction).toHaveBeenCalledWith(
+      expect.objectContaining({ demoSessionId: "demo-sess-3" })
+    );
+    await waitFor(() =>
+      expect(screen.queryByText("We detected a saved demo portfolio")).not.toBeInTheDocument()
+    );
+    expect(window.localStorage.getItem(DEMO_SESSION_KEY)).toBeNull();
+    expect(window.localStorage.getItem(demoDraftKey("demo-sess-3"))).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Choose a template" })).not.toBeInTheDocument();
+    expect(getDraftAction).toHaveBeenCalledWith("demo-d1");
+  });
+
+  it("shows the unsaved-changes guard first when the loaded draft is dirty, then imports on Discard", async () => {
+    seedDemoBuffer("demo-sess-4");
+    renderWithProviders(<EditorShell {...baseProps} />);
+    await screen.findByText("We detected a saved demo portfolio");
+
+    // Dirty the currently-loaded draft underneath the modal (aria-hidden while
+    // the dialog traps focus, so it must be queried with hidden:true).
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change", hidden: true }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Apply saved setup" }));
+
+    expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+    expect(importDemoPortfolioAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+
+    await waitFor(() => expect(importDemoPortfolioAction).toHaveBeenCalledTimes(1));
   });
 });
