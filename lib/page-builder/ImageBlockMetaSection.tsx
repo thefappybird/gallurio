@@ -18,14 +18,13 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TagsInput } from "@/components/ui/tags-input";
 
 const TITLE_MAX = 300;
 const LOCATION_MAX = 300;
 const CLIENT_MAX = 300;
 const CAPTION_MAX = 2000;
 const ALT_MAX = 300;
-const TAG_MAX_LEN = 40;
-const TAGS_MAX_COUNT = 20;
 const META_MAX_ROWS = 20;
 const META_LABEL_MAX = 120;
 const META_VALUE_MAX = 120;
@@ -51,7 +50,7 @@ type FormState = {
   date: string;
   location: string;
   client: string;
-  tagsText: string;
+  tags: string[];
   meta: MetaRow[];
 };
 
@@ -63,18 +62,9 @@ function toFormState(item: GalleryItemMeta): FormState {
     date: item.date ?? "",
     location: item.location ?? "",
     client: item.client ?? "",
-    tagsText: (item.tags ?? []).join(", "),
+    tags: item.tags ?? [],
     meta: item.meta ?? [],
   };
-}
-
-function parseTags(text: string): string[] {
-  return text
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean)
-    .slice(0, TAGS_MAX_COUNT)
-    .map((tag) => tag.slice(0, TAG_MAX_LEN));
 }
 
 function buildPayload(f: FormState) {
@@ -85,7 +75,7 @@ function buildPayload(f: FormState) {
     date: f.date,
     location: f.location,
     client: f.client,
-    tags: parseTags(f.tagsText),
+    tags: f.tags,
     meta: f.meta
       .filter((row) => row.label.trim() || row.value.trim())
       .map((row) => ({
@@ -387,13 +377,17 @@ export function ImageBlockMetaSection({
 
       <label className="flex flex-col gap-1 text-sm">
         <span>{t("tagsLabel")}</span>
-        <input
-          type="text"
-          value={form.tagsText}
+        <TagsInput
+          tags={form.tags}
+          onChange={(tags) => {
+            const next = { ...form, tags };
+            setForm(next);
+            save(next);
+          }}
           placeholder={t("tagsPlaceholder")}
-          onChange={(e) => updateField("tagsText", e.target.value)}
-          onBlur={handleBlurSave}
-          className={inputClass}
+          maxTags={20}
+          maxTagLength={40}
+          removeLabel={(tag) => t("removeTag", { tag })}
         />
         <span className="text-xs text-muted-foreground">{t("tagsHint")}</span>
       </label>

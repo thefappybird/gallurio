@@ -2528,6 +2528,7 @@
           "tagsLabel": "Tags",
           "tagsHint": "Separate tags with commas.",
           "tagsPlaceholder": "e.g. outdoor, sunset, first dance",
+          "removeTag": "Remove tag {tag}",
           "metaLabel": "Custom details",
           "metaLabelPlaceholder": "Label",
           "metaValuePlaceholder": "Value",

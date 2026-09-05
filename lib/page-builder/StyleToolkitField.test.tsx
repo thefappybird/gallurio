@@ -1379,6 +1379,46 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     expect(screen.getAllByLabelText("metaLabelPlaceholder")).toHaveLength(19);
     await waitFor(() => expect(patchCallsFor("asset123").length).toBeGreaterThan(0));
   });
+
+  it("renders tags as pills and saves immediately on add/remove (no blur needed)", async () => {
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 1 }) } as Response);
+      }
+      if (url.includes("/by-asset/")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+    });
+    render(
+      <ContentInputs
+        type="Image"
+        props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
+        setProp={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await screen.findByDisplayValue("Golden hour");
+
+    expect(screen.getByText("outdoor")).toBeTruthy();
+    expect(screen.getByText("sunset")).toBeTruthy();
+
+    const tagInput = screen.getByPlaceholderText("tagsPlaceholder");
+    fireEvent.change(tagInput, { target: { value: "sunrise" } });
+    fireEvent.keyDown(tagInput, { key: "Enter" });
+    expect(screen.getByText("sunrise")).toBeTruthy();
+
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(1));
+    const addBody = JSON.parse((patchCallsFor("asset123")[0][1] as RequestInit).body as string);
+    expect(addBody.tags).toEqual(["outdoor", "sunset", "sunrise"]);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "removeTag" })[0]);
+    expect(screen.queryByText("outdoor")).toBeNull();
+
+    await waitFor(() => expect(patchCallsFor("asset123").length).toBe(2));
+    const removeBody = JSON.parse((patchCallsFor("asset123")[1][1] as RequestInit).body as string);
+    expect(removeBody.tags).toEqual(["sunset", "sunrise"]);
+  });
 });
 
 describe("StyleToolkitField — Container background image opacity (F4)", () => {
