@@ -110,29 +110,6 @@ export function SidebarLayout({
           gap: "16px",
         }}
       >
-        {hasNav && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <NavArrowButton
-              direction="prev"
-              variant="brand"
-              onClick={onPrev}
-              disabled={!canGoPrev}
-              pending={false}
-              label={prevLabel}
-            />
-            <span style={{ fontSize: "0.8125rem", opacity: 0.65 }}>
-              {counterText}
-            </span>
-            <NavArrowButton
-              direction="next"
-              variant="brand"
-              onClick={onNext}
-              disabled={!canGoNext}
-              pending={isPendingMore}
-              label={nextLabel}
-            />
-          </div>
-        )}
         {image.title && (
           <h2 style={{ margin: 0, fontFamily: "var(--pf-font-heading)", fontSize: "1.125rem", fontWeight: 600 }}>
             {image.title}
@@ -173,7 +150,43 @@ export function SidebarLayout({
           </div>
         )}
         {technical && (
-          <p style={{ margin: 0, marginTop: "auto", fontSize: "0.75rem", opacity: 0.6 }}>{technical}</p>
+          <p style={{ margin: 0, fontSize: "0.75rem", opacity: 0.6 }}>{technical}</p>
+        )}
+        {hasNav && (
+          <div
+            style={{
+              position: "sticky",
+              bottom: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 0 0",
+              marginTop: "auto",
+              borderTop: "1px solid color-mix(in srgb, var(--pf-color-fg, #111) 12%, transparent)",
+              background: "linear-gradient(to top, var(--pf-color-bg, #fff) 60%, transparent)",
+              backdropFilter: "blur(6px)",
+            }}
+          >
+            <NavArrowButton
+              direction="prev"
+              variant="brand"
+              onClick={onPrev}
+              disabled={!canGoPrev}
+              pending={false}
+              label={prevLabel}
+            />
+            <span style={{ fontSize: "0.8125rem", opacity: 0.65 }}>
+              {counterText}
+            </span>
+            <NavArrowButton
+              direction="next"
+              variant="brand"
+              onClick={onNext}
+              disabled={!canGoNext}
+              pending={isPendingMore}
+              label={nextLabel}
+            />
+          </div>
         )}
       </div>
     </div>
