@@ -91,7 +91,7 @@ export function TagsInput({
           {tags.map((tag, i) => (
             <li
               key={`${tag}-${i}`}
-              className={cn("inline-flex items-center gap-1 border px-2 py-1 text-xs", colorize ? tagBorderClass(tag) : "border-border")}
+              className={cn("inline-flex items-center gap-1 border bg-muted/40 px-2 py-1 text-xs", colorize ? tagBorderClass(tag) : "border-border")}
             >
               <span>{tag}</span>
               <button

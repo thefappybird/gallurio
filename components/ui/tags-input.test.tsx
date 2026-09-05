@@ -51,9 +51,7 @@ describe("TagsInput", () => {
     const input = screen.getByRole("textbox");
     const clipboardData = { getData: () => "a, b c" };
     fireEvent.paste(input, { clipboardData });
-    expect(screen.getByText("a")).toBeInTheDocument();
-    expect(screen.getByText("b")).toBeInTheDocument();
-    expect(screen.getByText("c")).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem").map((li) => li.querySelector("span")?.textContent)).toEqual(["a", "b", "c"]);
   });
 
   it("dedupes: committing an existing tag is a no-op", () => {
@@ -102,5 +100,6 @@ describe("TagsInput", () => {
     render(<Controlled tags={["beach"]} colorize={true} />);
     const pill = screen.getByText("beach").closest("li")!;
     expect(pill.className).toContain(tagBorderClass("beach"));
+    expect(pill.className).not.toContain("border-border");
   });
 });
