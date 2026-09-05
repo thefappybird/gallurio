@@ -1,34 +1,8 @@
 "use client";
 
 import { NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
+import { DotPagination } from "./DotPagination";
 import { SeeMoreMetaPanel } from "./SeeMoreMetaPanel";
-
-const CAPTION_STYLES = `
-.pf-modal-caption-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(242,242,242,0.55);
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-}
-.pf-modal-caption-dot:hover {
-  border-color: #f2f2f2;
-}
-.pf-modal-caption-dot:focus-visible {
-  outline: 2px solid var(--pf-color-accent, #f2f2f2);
-  outline-offset: 2px;
-}
-.pf-modal-caption-dot:active {
-  transform: scale(0.85);
-}
-.pf-modal-caption-dot[aria-current="true"] {
-  background: #f2f2f2;
-  border-color: #f2f2f2;
-}
-`;
 
 /**
  * `caption` — the original single-photo lightbox, finished: still one photo
@@ -84,7 +58,6 @@ export function CaptionLayout({
         boxSizing: "border-box",
       }}
     >
-      <style>{CAPTION_STYLES}</style>
       <div
         style={{
           position: "relative",
@@ -144,18 +117,12 @@ export function CaptionLayout({
                 className="pf-modal-caption-dots"
                 style={{ marginTop: "8px", display: "flex", justifyContent: "center", gap: "8px" }}
               >
-                {Array.from({ length: total }, (_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="pf-modal-caption-dot"
-                    aria-current={i === index ? "true" : undefined}
-                    aria-label={dotLabelTemplate
-                      .replace("{current}", String(i + 1))
-                      .replace("{total}", String(total))}
-                    onClick={() => onSelect(i)}
-                  />
-                ))}
+                <DotPagination
+                  total={total}
+                  currentIndex={index}
+                  dotLabelTemplate={dotLabelTemplate}
+                  onSelect={onSelect}
+                />
               </div>
             ) : (
               <p style={{ margin: "8px 0 0", color: "rgba(242,242,242,0.66)", fontSize: "0.75rem" }}>

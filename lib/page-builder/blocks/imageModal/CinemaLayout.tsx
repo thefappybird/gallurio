@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
+import { DotPagination } from "./DotPagination";
 import { SeeMoreMetaPanel } from "./SeeMoreMetaPanel";
 
 const CINEMA_STYLES = `
@@ -13,30 +14,6 @@ const CINEMA_STYLES = `
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
-}
-.pf-modal-cinema-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(242,242,242,0.55);
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-}
-.pf-modal-cinema-dot:hover {
-  border-color: #f2f2f2;
-}
-.pf-modal-cinema-dot:focus-visible {
-  outline: 2px solid var(--pf-color-accent, #f2f2f2);
-  outline-offset: 2px;
-}
-.pf-modal-cinema-dot:active {
-  transform: scale(0.85);
-}
-.pf-modal-cinema-dot[aria-current="true"] {
-  background: #f2f2f2;
-  border-color: #f2f2f2;
 }
 .pf-modal-cinema-filmstrip {
   display: flex;
@@ -199,18 +176,12 @@ export function CinemaLayout({
                   className="pf-modal-cinema-dots"
                   style={{ display: "flex", gap: "8px", flex: "0 0 auto" }}
                 >
-                  {Array.from({ length: total }, (_, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className="pf-modal-cinema-dot"
-                      aria-current={i === index ? "true" : undefined}
-                      aria-label={dotLabelTemplate
-                        .replace("{current}", String(i + 1))
-                        .replace("{total}", String(total))}
-                      onClick={() => onSelect(i)}
-                    />
-                  ))}
+                  <DotPagination
+                    total={total}
+                    currentIndex={index}
+                    dotLabelTemplate={dotLabelTemplate}
+                    onSelect={onSelect}
+                  />
                 </div>
               ) : (
                 <span style={{ fontSize: "0.75rem", color: "rgba(242,242,242,0.66)", flex: "0 0 auto" }}>

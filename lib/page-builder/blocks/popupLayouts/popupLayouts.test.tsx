@@ -209,7 +209,7 @@ describe("Immersive", () => {
         labels={L}
       />
     );
-    const dots = document.querySelectorAll(".pf-popup-immersive-dot");
+    const dots = document.querySelectorAll(".pf-modal-dot");
     expect(dots).toHaveLength(3);
     fireEvent.click(dots[1]);
     expect(dots[1]).toHaveAttribute("aria-current", "true");
@@ -228,7 +228,7 @@ describe("Immersive", () => {
         labels={L}
       />
     );
-    expect(document.querySelectorAll(".pf-popup-immersive-dot")).toHaveLength(0);
+    expect(document.querySelectorAll(".pf-modal-dot")).toHaveLength(0);
   });
 
   it("renders no dot row when images.length > 8", () => {
@@ -251,7 +251,7 @@ describe("Immersive", () => {
         labels={L}
       />
     );
-    expect(document.querySelectorAll(".pf-popup-immersive-dot")).toHaveLength(0);
+    expect(document.querySelectorAll(".pf-modal-dot")).toHaveLength(0);
   });
 
   it("Escape calls onClose and ArrowRight/ArrowLeft move the selected frame", () => {

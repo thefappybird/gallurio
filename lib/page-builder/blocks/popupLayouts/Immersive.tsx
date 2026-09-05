@@ -3,34 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, Loader2Icon, RefreshCwIcon, XIcon } from "lucide-react";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
+import { DotPagination } from "../imageModal/DotPagination";
 import type { ImmersiveProps } from "./types";
-
-const IMMERSIVE_DOT_STYLES = `
-.pf-popup-immersive-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(242,242,242,0.55);
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-}
-.pf-popup-immersive-dot:hover {
-  border-color: #f2f2f2;
-}
-.pf-popup-immersive-dot:focus-visible {
-  outline: 2px solid var(--pf-color-accent, #f2f2f2);
-  outline-offset: 2px;
-}
-.pf-popup-immersive-dot:active {
-  transform: scale(0.85);
-}
-.pf-popup-immersive-dot[aria-current="true"] {
-  background: #f2f2f2;
-  border-color: #f2f2f2;
-}
-`;
 
 /**
  * `immersive` — full-viewport, one photograph at a time with a filmstrip
@@ -178,7 +152,6 @@ export function Immersive({ status, images, collectionName, hasMore, onLoadMore,
         </div>
       ) : (
         <>
-          <style>{IMMERSIVE_DOT_STYLES}</style>
           {/* Main viewer */}
           <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
             <button
@@ -272,16 +245,12 @@ export function Immersive({ status, images, collectionName, hasMore, onLoadMore,
               data-popup-immersive-dots=""
               style={{ display: "flex", justifyContent: "center", gap: "8px", padding: "10px 0 0", flexShrink: 0 }}
             >
-              {images.map((img, i) => (
-                <button
-                  key={img.id}
-                  type="button"
-                  className="pf-popup-immersive-dot"
-                  aria-current={i === index ? "true" : undefined}
-                  aria-label={labels.photoOf.replace("{current}", String(i + 1)).replace("{total}", String(images.length))}
-                  onClick={() => setIndex(i)}
-                />
-              ))}
+              <DotPagination
+                total={images.length}
+                currentIndex={index}
+                dotLabelTemplate={labels.photoOf}
+                onSelect={setIndex}
+              />
             </div>
           ) : null}
 
