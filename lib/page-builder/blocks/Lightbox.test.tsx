@@ -191,9 +191,12 @@ describe("Lightbox — brandVars", () => {
 
 describe("Lightbox — labels", () => {
   it("uses real localized strings when provided, instead of the English defaults", () => {
+    // total > 8 so the numeric counter text renders instead of dot pagination
+    // (dots use the separate `photoOf` label, not `counter` — see Lightbox.tsx).
+    const nineImages = Array.from({ length: 9 }, (_, i) => img(String(i)));
     render(
       <Lightbox
-        images={[img("a"), img("b")]}
+        images={nineImages}
         labels={{ previous: "Nakaraan", next: "Susunod", counter: "{current} sa {total}", filmstrip: "Filmstrip" }}
         layout="cinema"
         onClose={() => {}}
@@ -201,7 +204,7 @@ describe("Lightbox — labels", () => {
     );
     expect(screen.getByRole("button", { name: "Nakaraan" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Susunod" })).toBeInTheDocument();
-    expect(screen.getByText("1 sa 2")).toBeInTheDocument();
+    expect(screen.getByText("1 sa 9")).toBeInTheDocument();
     expect(screen.getByRole("listbox", { name: "Filmstrip" })).toBeInTheDocument();
   });
 });
