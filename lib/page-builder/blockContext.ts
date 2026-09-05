@@ -135,6 +135,8 @@ export type CollectionPopupLabels = {
   previousPhoto?: string;
   nextPhoto?: string;
   filmstripLabel?: string;
+  /** Dot-pagination aria-label template. Contains literal "{current}"/"{total}" tokens. */
+  photoOf?: string;
 };
 
 /**
@@ -159,6 +161,7 @@ export function applyCollectionPopupDefaults(l: CollectionPopupLabels = {}): Req
     previousPhoto: l.previousPhoto ?? "Previous photo",
     nextPhoto: l.nextPhoto ?? "Next photo",
     filmstripLabel: l.filmstripLabel ?? "Photo filmstrip",
+    photoOf: l.photoOf ?? "Photo {current} of {total}",
   };
 }
 

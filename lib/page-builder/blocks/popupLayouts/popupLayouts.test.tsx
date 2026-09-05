@@ -196,6 +196,64 @@ describe("Immersive", () => {
     expect(allImgs.filter((img) => img.src.includes("w=2000"))).toHaveLength(1);
   });
 
+  it("renders a dot row when hasMore is false and images.length <= 8, and clicking a dot selects it", () => {
+    render(
+      <Immersive
+        status="populated"
+        images={images}
+        collectionName="Wedding 2024"
+        hasMore={false}
+        onLoadMore={vi.fn()}
+        onRetry={vi.fn()}
+        onClose={vi.fn()}
+        labels={L}
+      />
+    );
+    const dots = document.querySelectorAll(".pf-popup-immersive-dot");
+    expect(dots).toHaveLength(3);
+    fireEvent.click(dots[1]);
+    expect(dots[1]).toHaveAttribute("aria-current", "true");
+  });
+
+  it("renders no dot row when hasMore is true", () => {
+    render(
+      <Immersive
+        status="populated"
+        images={images}
+        collectionName="Wedding 2024"
+        hasMore={true}
+        onLoadMore={vi.fn()}
+        onRetry={vi.fn()}
+        onClose={vi.fn()}
+        labels={L}
+      />
+    );
+    expect(document.querySelectorAll(".pf-popup-immersive-dot")).toHaveLength(0);
+  });
+
+  it("renders no dot row when images.length > 8", () => {
+    const manyImages: PopupImage[] = Array.from({ length: 9 }, (_, i) => ({
+      id: `img${i}`,
+      publicId: `workspace/photo${i}`,
+      alt: `Photo ${i}`,
+      width: 800,
+      height: 600,
+    }));
+    render(
+      <Immersive
+        status="populated"
+        images={manyImages}
+        collectionName="Wedding 2024"
+        hasMore={false}
+        onLoadMore={vi.fn()}
+        onRetry={vi.fn()}
+        onClose={vi.fn()}
+        labels={L}
+      />
+    );
+    expect(document.querySelectorAll(".pf-popup-immersive-dot")).toHaveLength(0);
+  });
+
   it("Escape calls onClose and ArrowRight/ArrowLeft move the selected frame", () => {
     const onClose = vi.fn();
     const { container } = render(

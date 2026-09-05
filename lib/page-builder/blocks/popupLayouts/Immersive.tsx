@@ -5,6 +5,33 @@ import { ChevronLeftIcon, ChevronRightIcon, Loader2Icon, RefreshCwIcon, XIcon } 
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import type { ImmersiveProps } from "./types";
 
+const IMMERSIVE_DOT_STYLES = `
+.pf-popup-immersive-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(242,242,242,0.55);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.pf-popup-immersive-dot:hover {
+  border-color: #f2f2f2;
+}
+.pf-popup-immersive-dot:focus-visible {
+  outline: 2px solid var(--pf-color-accent, #f2f2f2);
+  outline-offset: 2px;
+}
+.pf-popup-immersive-dot:active {
+  transform: scale(0.85);
+}
+.pf-popup-immersive-dot[aria-current="true"] {
+  background: #f2f2f2;
+  border-color: #f2f2f2;
+}
+`;
+
 /**
  * `immersive` — full-viewport, one photograph at a time with a filmstrip
  * rail. Renders INSTEAD of CollectionPopupChrome (CollectionPopup mounts this
@@ -151,6 +178,7 @@ export function Immersive({ status, images, collectionName, hasMore, onLoadMore,
         </div>
       ) : (
         <>
+          <style>{IMMERSIVE_DOT_STYLES}</style>
           {/* Main viewer */}
           <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
             <button
@@ -234,6 +262,28 @@ export function Immersive({ status, images, collectionName, hasMore, onLoadMore,
               )}
             </button>
           </div>
+
+          {/* Dot pagination — only when the full set is known (no more pages
+              to fetch) and small enough that dots stay legible; otherwise
+              this layout has never had a position indicator and none is
+              added here (no numeric counter for the hasMore/>8 cases). */}
+          {!hasMore && images.length <= 8 ? (
+            <div
+              data-popup-immersive-dots=""
+              style={{ display: "flex", justifyContent: "center", gap: "8px", padding: "10px 0 0", flexShrink: 0 }}
+            >
+              {images.map((img, i) => (
+                <button
+                  key={img.id}
+                  type="button"
+                  className="pf-popup-immersive-dot"
+                  aria-current={i === index ? "true" : undefined}
+                  aria-label={labels.photoOf.replace("{current}", String(i + 1)).replace("{total}", String(images.length))}
+                  onClick={() => setIndex(i)}
+                />
+              ))}
+            </div>
+          ) : null}
 
           {/* Filmstrip */}
           <div

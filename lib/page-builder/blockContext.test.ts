@@ -281,5 +281,6 @@ it("applyCollectionPopupDefaults returns all English defaults when called empty"
     previousPhoto: "Previous photo",
     nextPhoto: "Next photo",
     filmstripLabel: "Photo filmstrip",
+    photoOf: "Photo {current} of {total}",
   });
 });

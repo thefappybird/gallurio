@@ -209,6 +209,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
       previousPhoto: tPopup("previousPhoto"),
       nextPhoto: tPopup("nextPhoto"),
       filmstripLabel: tPopup("filmstripLabel"),
+      photoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
     },
   };
 
