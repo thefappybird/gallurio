@@ -109,59 +109,8 @@ vi.mock("sonner", () => ({
 
 // ── Component import (after mocks) ──────────────────────────────────────────
 
-import { PublicPageSettingsForm, parseSeoKeywords } from "./_form";
+import { PublicPageSettingsForm } from "./_form";
 import type { PublicPageSettingsInput } from "@/lib/validators/workspace";
-
-describe("parseSeoKeywords", () => {
-  it("splits comma-separated phrases and preserves internal spaces", () => {
-    expect(parseSeoKeywords("wedding photographer, editorial, bay area")).toEqual([
-      "wedding photographer",
-      "editorial",
-      "bay area",
-    ]);
-  });
-
-  it("splits on newlines", () => {
-    expect(parseSeoKeywords("wedding photographer\neditorial\nbay area")).toEqual([
-      "wedding photographer",
-      "editorial",
-      "bay area",
-    ]);
-  });
-
-  it("splits on a mix of commas and newlines", () => {
-    expect(parseSeoKeywords("wedding photographer,\neditorial\n, bay area")).toEqual([
-      "wedding photographer",
-      "editorial",
-      "bay area",
-    ]);
-  });
-
-  it("collapses leading, trailing, and duplicate separators", () => {
-    expect(parseSeoKeywords(",, wedding photographer ,,, editorial ,,")).toEqual([
-      "wedding photographer",
-      "editorial",
-    ]);
-  });
-
-  it("dedupes case-insensitively, keeping the first occurrence's casing", () => {
-    expect(parseSeoKeywords("Wedding Photographer, wedding photographer, EDITORIAL")).toEqual([
-      "Wedding Photographer",
-      "EDITORIAL",
-    ]);
-  });
-
-  it("returns an empty array for an empty string", () => {
-    expect(parseSeoKeywords("")).toEqual([]);
-  });
-
-  it("preserves multiple internal spaces within a phrase after trimming", () => {
-    expect(parseSeoKeywords("bay   area, wedding photographer")).toEqual([
-      "bay   area",
-      "wedding photographer",
-    ]);
-  });
-});
 
 const baseDefaults: PublicPageSettingsInput = {
   seoTitle: "",
@@ -589,9 +538,10 @@ describe("PublicPageSettingsForm — SEO keywords pending recompute after Save",
     );
 
     const keywordsInput = screen.getByLabelText("seoKeywords");
-    fireEvent.change(keywordsInput, {
-      target: { value: "wedding photographer, editorial" },
-    });
+    fireEvent.change(keywordsInput, { target: { value: "wedding photographer" } });
+    fireEvent.keyDown(keywordsInput, { key: "," });
+    fireEvent.change(keywordsInput, { target: { value: "editorial" } });
+    fireEvent.blur(keywordsInput);
 
     const saveBtn = screen.getByText("save").closest("button")!;
     await act(async () => {
@@ -608,54 +558,6 @@ describe("PublicPageSettingsForm — SEO keywords pending recompute after Save",
     );
     expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "publish" })).toBeEnabled();
-  });
-});
-
-describe("PublicPageSettingsForm — SEO keywords typing round-trip", () => {
-  it("does not eat a trailing separator while typing, but the form value holds only the parsed phrase", () => {
-    render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={baseDefaults}
-        locale="en"
-      />
-    );
-
-    const keywordsInput = screen.getByLabelText("seoKeywords") as HTMLInputElement;
-    fireEvent.change(keywordsInput, {
-      target: { value: "wedding photographer, " },
-    });
-
-    expect(keywordsInput.value).toBe("wedding photographer, ");
-  });
-
-  it("re-seeds the raw input from new defaults", () => {
-    const { rerender } = render(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={baseDefaults}
-        locale="en"
-      />
-    );
-
-    const keywordsInput = screen.getByLabelText("seoKeywords") as HTMLInputElement;
-    expect(keywordsInput.value).toBe("");
-
-    rerender(
-      <PublicPageSettingsForm
-        slug="luna-studio"
-        publishedAt={null}
-        defaults={{
-          ...baseDefaults,
-          seo: { ...baseDefaults.seo!, keywords: ["wedding photographer", "editorial"] },
-        }}
-        locale="en"
-      />
-    );
-
-    expect(keywordsInput.value).toBe("wedding photographer, editorial");
   });
 });
 

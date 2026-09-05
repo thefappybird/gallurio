@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, useTransition, useOptimistic } from "react";
+import { useId, useRef, useState, useTransition, useOptimistic } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -21,6 +21,7 @@ import { publishDraftAction } from "../../portfolio/_draftActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TagsInput } from "@/components/ui/tags-input";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
@@ -31,24 +32,6 @@ import { fieldMessage } from "@/lib/utils/fieldMessage";
 const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
 const SITE_ICON_MAX_DIM = 512;
-
-// Phrases are separated by commas (or newlines, if pasted from a list) only —
-// spaces inside a phrase are significant, so "wedding photographer" stays one tag.
-export function parseSeoKeywords(raw: string): string[] {
-  const seen = new Set<string>();
-  const keywords: string[] = [];
-
-  for (const part of raw.split(/[,\n\r]+/)) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    const key = trimmed.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    keywords.push(trimmed);
-  }
-
-  return keywords;
-}
 
 /** True if any of the published-page-affecting fields differ from the published snapshot. */
 function computeHasPendingChanges(
@@ -134,17 +117,6 @@ export function PublicPageSettingsForm({
   const ogImageUrl = watch("seo.ogImageUrl");
   const siteIcon = useImageRetry(siteIconUrl);
 
-  // Raw text typed into the keywords input, kept separate from the parsed
-  // form value so a trailing comma/space the owner just typed isn't eaten
-  // by re-deriving the input from the parsed array on every keystroke.
-  const [seoKeywordsRaw, setSeoKeywordsRaw] = useState(
-    () => (defaults.seo?.keywords ?? []).join(", "),
-  );
-  const seoKeywordsDefaultsKey = JSON.stringify(defaults.seo?.keywords ?? []);
-  useEffect(() => {
-    setSeoKeywordsRaw(JSON.parse(seoKeywordsDefaultsKey).join(", "));
-  }, [seoKeywordsDefaultsKey]);
-
   const seoTitleError = fieldMessage(errors.seoTitle);
   const seoKeywordsError = fieldMessage(errors.seo?.keywords);
   const seoDescriptionError = fieldMessage(errors.seoDescription);
@@ -214,7 +186,6 @@ export function PublicPageSettingsForm({
     }
     toast.success(t("savedToast"));
     reset(data);
-    setSeoKeywordsRaw((data.seo?.keywords ?? []).join(", "));
     setHasPendingChanges(computeHasPendingChanges(data, publishedDefaults));
   }
 
@@ -491,20 +462,20 @@ export function PublicPageSettingsForm({
                 control={control}
                 name="seo.keywords"
                 render={({ field }) => (
-                  <Input
+                  <TagsInput
                     id="seoKeywords"
+                    tags={field.value ?? []}
+                    onChange={field.onChange}
                     placeholder={t("seoKeywordsPlaceholder")}
-                    value={seoKeywordsRaw}
+                    maxTags={10}
+                    maxTagLength={40}
+                    removeLabel={(tag) => t("seoKeywordsRemoveTag", { tag })}
                     aria-invalid={seoKeywordsError ? true : undefined}
                     aria-describedby={
                       [seoKeywordsError ? "seoKeywords-error" : null, "seoKeywordsHint"]
                         .filter(Boolean)
                         .join(" ") || undefined
                     }
-                    onChange={(e) => {
-                      setSeoKeywordsRaw(e.target.value);
-                      field.onChange(parseSeoKeywords(e.target.value));
-                    }}
                   />
                 )}
               />

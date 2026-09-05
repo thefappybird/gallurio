@@ -1729,6 +1729,7 @@
         "seoKeywords": "Mga tag ng SEO",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, metro manila",
         "seoKeywordsHint": "Opsyonal na mga tag na pinaghihiwalay ng kuwit — mananatili ang espasyo sa loob ng bawat parirala. Ginagamit sa structured data ng pahina. Hanggang 10 tag.",
+        "seoKeywordsRemoveTag": "Alisin ang tag na {tag}",
         "galleryDescriptionLabel": "Paglalarawan ng Gallery page",
         "galleryDescriptionPlaceholder": "Isang showcase ng aming pinakamahusay na wedding at portrait work…",
         "galleryDescriptionHint": "Hiwalay na paglalarawan para sa iyong Gallery page upang hindi ito magkatulad ng iyong home page. Target: ~155 karakter.",

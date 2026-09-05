@@ -1729,6 +1729,7 @@
         "seoKeywords": "Tag SEO",
         "seoKeywordsPlaceholder": "fotografer pernikahan, editorial, jakarta",
         "seoKeywordsHint": "Tag opsional, dipisahkan koma — spasi di dalam satu frasa tetap dipertahankan. Digunakan dalam data terstruktur halaman. Tambahkan hingga 10 tag.",
+        "seoKeywordsRemoveTag": "Hapus tag {tag}",
         "galleryDescriptionLabel": "Deskripsi halaman Gallery",
         "galleryDescriptionPlaceholder": "Pameran karya terbaik pernikahan dan potret kami…",
         "galleryDescriptionHint": "Deskripsi terpisah untuk halaman Gallery agar tidak menduplikasi halaman beranda. Target: ~155 karakter.",

@@ -1729,6 +1729,7 @@
         "seoKeywords": "SEO tags",
         "seoKeywordsPlaceholder": "wedding photographer, editorial, bay area",
         "seoKeywordsHint": "Optional tags, separated by commas — spaces inside a phrase are kept. Used in the page's structured data. Add up to 10.",
+        "seoKeywordsRemoveTag": "Remove tag {tag}",
         "galleryDescriptionLabel": "Gallery page description",
         "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
         "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",

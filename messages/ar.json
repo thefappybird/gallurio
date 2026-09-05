@@ -1729,6 +1729,7 @@
         "seoKeywords": "وسوم SEO",
         "seoKeywordsPlaceholder": "مصور زفاف, تحريري, دبي",
         "seoKeywordsHint": "وسوم اختيارية، مفصولة بفواصل — تُحفظ المسافات داخل العبارة كما هي. تُستخدم في البيانات المنظمة للصفحة. أضف حتى 10 وسوم.",
+        "seoKeywordsRemoveTag": "إزالة الوسم {tag}",
         "galleryDescriptionLabel": "وصف صفحة المعرض",
         "galleryDescriptionPlaceholder": "عرض لأجمل أعمالنا في تصوير حفلات الزفاف والبورتريه…",
         "galleryDescriptionHint": "وصف منفصل لصفحة المعرض حتى لا يتكرر مع وصف الصفحة الرئيسية. استهدف ~155 حرفًا.",
