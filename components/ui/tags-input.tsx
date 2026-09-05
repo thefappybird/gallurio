@@ -26,6 +26,7 @@ export function TagsInput({
   colorize = false,
   disabled,
   removeLabel,
+  commitOnSpace = true,
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedby,
 }: {
@@ -41,6 +42,10 @@ export function TagsInput({
   colorize?: boolean;
   disabled?: boolean;
   removeLabel: (tag: string) => string;
+  /** false = space no longer commits a tag, and pasted text splits only on comma/newline
+   *  (preserves multi-word phrases, e.g. SEO keywords). Default true keeps space-commit
+   *  for single-word tag fields (photo tags, CRM tags). */
+  commitOnSpace?: boolean;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
 }) {
@@ -54,7 +59,7 @@ export function TagsInput({
   }
 
   function commitPaste(text: string) {
-    const parts = text.split(/[,\s]+/).map((p) => p.trim()).filter(Boolean);
+    const parts = text.split(commitOnSpace ? /[,\s]+/ : /[,\n\r]+/).map((p) => p.trim()).filter(Boolean);
     let next = tags;
     for (const part of parts) {
       next = commitToken(next, part, maxTagLength, maxTags);
@@ -75,7 +80,7 @@ export function TagsInput({
         aria-describedby={ariaDescribedby}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === "," || e.key === " ") {
+          if (e.key === "Enter" || e.key === "," || (commitOnSpace && e.key === " ")) {
             e.preventDefault();
             commitDraft();
           }

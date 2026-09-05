@@ -111,4 +111,26 @@ describe("TagsInput", () => {
     expect(pill.className).toContain(tagBorderClass("beach"));
     expect(pill.className).not.toContain("border-border");
   });
+
+  it("does not commit a tag on space when commitOnSpace is false", () => {
+    render(<Controlled tags={[]} commitOnSpace={false} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "wedding photographer" } });
+    fireEvent.keyDown(input, { key: " " });
+    expect(screen.queryByText("wedding")).not.toBeInTheDocument();
+    expect(input).toHaveValue("wedding photographer");
+    fireEvent.keyDown(input, { key: "," });
+    expect(screen.getByText("wedding photographer")).toBeInTheDocument();
+  });
+
+  it("preserves multi-word phrases when pasting with commitOnSpace false", () => {
+    render(<Controlled tags={[]} commitOnSpace={false} />);
+    const input = screen.getByRole("textbox");
+    const clipboardData = { getData: () => "wedding photographer, editorial" };
+    fireEvent.paste(input, { clipboardData });
+    expect(screen.getAllByRole("listitem").map((li) => li.querySelector("span")?.textContent)).toEqual([
+      "wedding photographer",
+      "editorial",
+    ]);
+  });
 });

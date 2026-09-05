@@ -469,6 +469,7 @@ export function PublicPageSettingsForm({
                     placeholder={t("seoKeywordsPlaceholder")}
                     maxTags={10}
                     maxTagLength={40}
+                    commitOnSpace={false}
                     removeLabel={(tag) => t("seoKeywordsRemoveTag", { tag })}
                     aria-invalid={seoKeywordsError ? true : undefined}
                     aria-describedby={

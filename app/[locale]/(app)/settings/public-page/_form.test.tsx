@@ -559,6 +559,29 @@ describe("PublicPageSettingsForm — SEO keywords pending recompute after Save",
     expect(screen.getByText("pendingChangesBannerTitle")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "publish" })).toBeEnabled();
   });
+
+  it("keeps a multi-word phrase as one tag when typed with space keydowns, comma-committed", async () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={new Date("2026-01-01")}
+        defaults={baseDefaults}
+        locale="en"
+        targetDraftId="draft-1"
+      />
+    );
+
+    const keywordsInput = screen.getByLabelText("seoKeywords");
+    // Simulate real typing: each character change followed by the actual
+    // keydown for spaces inside the phrase — space must NOT commit here.
+    fireEvent.change(keywordsInput, { target: { value: "wedding" } });
+    fireEvent.keyDown(keywordsInput, { key: " " });
+    fireEvent.change(keywordsInput, { target: { value: "wedding photographer" } });
+    expect(screen.queryByText("wedding")).not.toBeInTheDocument();
+    fireEvent.keyDown(keywordsInput, { key: "," });
+
+    expect(screen.getByText("wedding photographer")).toBeInTheDocument();
+  });
 });
 
 describe("PublicPageSettingsForm — automatic SEO status hints", () => {
