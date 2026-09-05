@@ -72,19 +72,30 @@ export function CollectionsManagerDialog({
     onOpenChange(next);
   }
 
+  // One stable <Dialog>/<DialogContent> pair for the whole list <-> embedded
+  // edit toggle — swapping DialogContent itself (rather than its children)
+  // desyncs Base UI's open/escape/focus tracking between two Popup
+  // instances, which is what caused Done/X/Escape to stop working after the
+  // first collection edit. See EditCollectionDialog's `embedded` mode: it
+  // hands back header/body/footer/extras JSX instead of its own DialogContent.
+  const editContentClass =
+    "flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl";
+  const listContentClass = "flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-4xl";
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      {editing ? (
-        <EditCollectionDialog
-          open
-          embedded
-          onBack={() => setEditing(null)}
-          onOpenChange={handleOpenChange}
-          collection={editing}
-          onChanged={retry}
-        />
-      ) : (
-        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-4xl">
+      <DialogContent className={editing ? editContentClass : listContentClass}>
+        {editing ? (
+          <EditCollectionDialog
+            open
+            embedded
+            onBack={() => setEditing(null)}
+            onOpenChange={handleOpenChange}
+            collection={editing}
+            onChanged={retry}
+          />
+        ) : (
+          <>
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
@@ -176,8 +187,9 @@ export function CollectionsManagerDialog({
             {t("done")}
           </Button>
         </DialogFooter>
-        </DialogContent>
-      )}
+          </>
+        )}
+      </DialogContent>
 
       {/* Nested: create a new collection */}
       <CreateCollectionDialog

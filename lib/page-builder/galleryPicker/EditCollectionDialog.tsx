@@ -402,37 +402,43 @@ export function EditCollectionDialog({
     }
   }
 
-  const contents = (
-    <>
-      <DialogContent className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
-        <DialogHeader>
-          {/* This chrome is still English while the surrounding app may be RTL.
-              Left unisolated, the neutral quotes reorder around the LTR "Edit"
-              under `ar` and the title renders as `"Weddings" Edit`. `dir="ltr"`
-              makes the whole title one isolate; the inner <bdi> keeps an
-              Arabic-named collection from breaking the quotes back out. */}
-          <div className="flex min-w-0 items-center gap-2">
-            {embedded && (
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label="Back to photos and collections"
-                onClick={onBack}
-                className="shrink-0"
-              >
-                <ArrowLeftIcon className="size-4 rtl:rotate-180" aria-hidden />
-              </Button>
-            )}
-            <DialogTitle className="truncate">
-              <span dir="ltr" className="inline-block max-w-full truncate align-bottom">
-                Edit &quot;<bdi>{collection.name}</bdi>&quot;
-              </span>
-            </DialogTitle>
-          </div>
-        </DialogHeader>
+  // Split into header/body/footer/extras so `embedded` mode can hand these
+  // back to CollectionsManagerDialog to slot into ITS OWN single, stable
+  // DialogContent (one Popup instance) instead of mounting a second one —
+  // see CollectionsManagerDialog.tsx for why that second Popup instance was
+  // the bug.
+  const header = (
+    <DialogHeader>
+      {/* This chrome is still English while the surrounding app may be RTL.
+          Left unisolated, the neutral quotes reorder around the LTR "Edit"
+          under `ar` and the title renders as `"Weddings" Edit`. `dir="ltr"`
+          makes the whole title one isolate; the inner <bdi> keeps an
+          Arabic-named collection from breaking the quotes back out. */}
+      <div className="flex min-w-0 items-center gap-2">
+        {embedded && (
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Back to photos and collections"
+            onClick={onBack}
+            className="shrink-0"
+          >
+            <ArrowLeftIcon className="size-4 rtl:rotate-180" aria-hidden />
+          </Button>
+        )}
+        <DialogTitle className="truncate">
+          <span dir="ltr" className="inline-block max-w-full truncate align-bottom">
+            Edit &quot;<bdi>{collection.name}</bdi>&quot;
+          </span>
+        </DialogTitle>
+      </div>
+    </DialogHeader>
+  );
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-1">
+  const body = (
+    <>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-1">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="edit-col-name" className="text-xs font-medium">Collection name</label>
             <div className="flex items-center gap-2">
@@ -581,21 +587,26 @@ export function EditCollectionDialog({
           )}
         </div>
 
-        {selected.size > 0 && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
-            <span className="text-xs text-muted-foreground">{selected.size} selected</span>
-            <Button type="button" size="sm" variant="outline" disabled={busy} onClick={removeSelected}>Remove from collection</Button>
-            <Button type="button" size="sm" variant="destructive" disabled={busy} onClick={() => setConfirmDelete(true)}>
-              <Trash2Icon className="size-4" aria-hidden /> Delete image
-            </Button>
-          </div>
-        )}
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
+          <span className="text-xs text-muted-foreground">{selected.size} selected</span>
+          <Button type="button" size="sm" variant="outline" disabled={busy} onClick={removeSelected}>Remove from collection</Button>
+          <Button type="button" size="sm" variant="destructive" disabled={busy} onClick={() => setConfirmDelete(true)}>
+            <Trash2Icon className="size-4" aria-hidden /> Delete image
+          </Button>
+        </div>
+      )}
+    </>
+  );
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Done</Button>
-        </DialogFooter>
-      </DialogContent>
+  const footer = (
+    <DialogFooter>
+      <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Done</Button>
+    </DialogFooter>
+  );
 
+  const extras = (
+    <>
       <ExistingPhotosPicker
         open={pickerOpen}
         onOpenChange={setPickerOpen}
@@ -633,6 +644,29 @@ export function EditCollectionDialog({
       </AlertDialog>
     </>
   );
-  if (embedded) return contents;
-  return <Dialog open={open} onOpenChange={onOpenChange}>{contents}</Dialog>;
+
+  // Embedded mode: hand header/body/footer/extras back as plain JSX so
+  // CollectionsManagerDialog can place them inside ITS OWN single
+  // <DialogContent> — never mount a second Popup instance here.
+  if (embedded) {
+    return (
+      <>
+        {header}
+        {body}
+        {footer}
+        {extras}
+      </>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
+        {header}
+        {body}
+        {footer}
+      </DialogContent>
+      {extras}
+    </Dialog>
+  );
 }

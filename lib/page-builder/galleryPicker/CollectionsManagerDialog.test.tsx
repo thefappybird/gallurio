@@ -190,5 +190,59 @@ describe("CollectionsManagerDialog edit", () => {
     dismiss();
 
     await waitFor(() => expect(screen.getByTestId("manager-open-state")).toHaveTextContent("false"));
+    // Fully closed — not just `editing` reset back to the list view.
+    expect(screen.queryByText("Photos & collections")).toBeNull();
   });
+
+  it.each([
+    ["Done", () => fireEvent.click(screen.getByRole("button", { name: /done/i }))],
+    ["Close", () => fireEvent.click(screen.getByRole("button", { name: /close/i }))],
+    ["Escape", () => fireEvent.keyDown(document, { key: "Escape", code: "Escape" })],
+  ])(
+    "still fully closes with %s after editing a second collection (Back, then edit another) — this case was completely dead before the single-Popup fix",
+    async (_name, dismiss) => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url === "/api/portfolio/gallery") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              collections: [
+                { id: "col1", name: "Weddings", coverUrl: null, itemCount: 0 },
+                { id: "col2", name: "Portraits", coverUrl: null, itemCount: 0 },
+              ],
+              items: [],
+            }),
+          } as unknown as Response);
+        }
+        if (url.startsWith("/api/portfolio/gallery/collections/")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ items: [], nextCursor: null }),
+          } as unknown as Response);
+        }
+        return Promise.resolve({ ok: true, json: async () => ({}) } as unknown as Response);
+      });
+
+      renderWithProviders(<ControlledCollectionsManagerDialog />);
+
+      // Open the first collection, then go Back to the list — mounts and
+      // unmounts one embedded-edit view without ever closing the outer
+      // manager Dialog.
+      fireEvent.click(await screen.findByRole("button", { name: /edit weddings/i }));
+      await screen.findByLabelText(/collection name/i);
+      fireEvent.click(screen.getByRole("button", { name: /back to photos and collections/i }));
+      await screen.findByText("Photos & collections");
+
+      // Open a second collection — this swap was the case that left
+      // Done/Close/Escape completely dead before the fix.
+      fireEvent.click(await screen.findByRole("button", { name: /edit portraits/i }));
+      await screen.findByLabelText(/collection name/i);
+
+      dismiss();
+
+      await waitFor(() => expect(screen.getByTestId("manager-open-state")).toHaveTextContent("false"));
+      expect(screen.queryByText("Photos & collections")).toBeNull();
+      expect(screen.queryByLabelText(/collection name/i)).toBeNull();
+    }
+  );
 });
