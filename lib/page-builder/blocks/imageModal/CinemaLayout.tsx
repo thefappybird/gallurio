@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
+import { SeeMoreMetaPanel } from "./SeeMoreMetaPanel";
 
 const CINEMA_STYLES = `
 .pf-modal-cinema-chrome {
@@ -12,6 +13,30 @@ const CINEMA_STYLES = `
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
+}
+.pf-modal-cinema-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(242,242,242,0.55);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.pf-modal-cinema-dot:hover {
+  border-color: #f2f2f2;
+}
+.pf-modal-cinema-dot:focus-visible {
+  outline: 2px solid var(--pf-color-accent, #f2f2f2);
+  outline-offset: 2px;
+}
+.pf-modal-cinema-dot:active {
+  transform: scale(0.85);
+}
+.pf-modal-cinema-dot[aria-current="true"] {
+  background: #f2f2f2;
+  border-color: #f2f2f2;
 }
 .pf-modal-cinema-filmstrip {
   display: flex;
@@ -64,6 +89,7 @@ export function CinemaLayout({
   image,
   images,
   index,
+  total,
   hasNav,
   canGoPrev,
   canGoNext,
@@ -76,6 +102,9 @@ export function CinemaLayout({
   nextLabel,
   counterText,
   filmstripLabel,
+  seeMoreLabel,
+  seeLessLabel,
+  dotLabelTemplate,
 }: ImageModalLeafProps) {
   const src = modalImageSrc(image.publicId);
   const [chromeVisible, setChromeVisible] = useState(true);
@@ -97,7 +126,14 @@ export function CinemaLayout({
     };
   }, []);
 
-  const hasMeta = Boolean(image.title || image.caption);
+  const facts: { label: string; value: string }[] = [];
+  if (image.date) facts.push({ label: "Date", value: image.date });
+  if (image.location) facts.push({ label: "Location", value: image.location });
+  if (image.client) facts.push({ label: "Client", value: image.client });
+  const meta = image.meta?.filter((row) => row.label && row.value) ?? [];
+  const tags = image.tags?.filter(Boolean) ?? [];
+  const hasMetaExtra = facts.length > 0 || meta.length > 0 || tags.length > 0;
+  const hasMeta = Boolean(image.title || image.caption) || hasMetaExtra;
 
   return (
     <div
@@ -158,11 +194,39 @@ export function CinemaLayout({
               )}
             </div>
             {hasNav && (
-              <span style={{ fontSize: "0.75rem", color: "rgba(242,242,242,0.66)", flex: "0 0 auto" }}>
-                {counterText}
-              </span>
+              total <= 8 ? (
+                <div
+                  className="pf-modal-cinema-dots"
+                  style={{ display: "flex", gap: "8px", flex: "0 0 auto" }}
+                >
+                  {Array.from({ length: total }, (_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="pf-modal-cinema-dot"
+                      aria-current={i === index ? "true" : undefined}
+                      aria-label={dotLabelTemplate
+                        .replace("{current}", String(i + 1))
+                        .replace("{total}", String(total))}
+                      onClick={() => onSelect(i)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <span style={{ fontSize: "0.75rem", color: "rgba(242,242,242,0.66)", flex: "0 0 auto" }}>
+                  {counterText}
+                </span>
+              )
             )}
           </div>
+          <SeeMoreMetaPanel
+            key={image.id}
+            facts={facts}
+            meta={meta}
+            tags={tags}
+            seeMoreLabel={seeMoreLabel}
+            seeLessLabel={seeLessLabel}
+          />
           {hasNav && (
             <div className="pf-modal-cinema-filmstrip" role="listbox" aria-label={filmstripLabel} aria-orientation="horizontal">
               {images.map((frame, i) => {
