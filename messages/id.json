@@ -2520,7 +2520,7 @@
           "locationLabel": "Lokasi",
           "clientLabel": "Klien",
           "tagsLabel": "Tag",
-          "tagsHint": "Pisahkan tag dengan koma.",
+          "tagsHint": "Pisahkan tag dengan koma, spasi, atau Enter.",
           "tagsPlaceholder": "mis. luar ruangan, matahari terbenam, tarian pertama",
           "removeTag": "Hapus tag {tag}",
           "metaLabel": "Detail khusus",

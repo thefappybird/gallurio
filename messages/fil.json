@@ -2520,7 +2520,7 @@
           "locationLabel": "Lokasyon",
           "clientLabel": "Kliyente",
           "tagsLabel": "Mga tag",
-          "tagsHint": "Paghiwalayin ang mga tag gamit ang kuwit.",
+          "tagsHint": "Paghiwalayin ang mga tag gamit ang kuwit, space, o Enter.",
           "tagsPlaceholder": "hal. outdoor, sunset, first dance",
           "removeTag": "Alisin ang tag na {tag}",
           "metaLabel": "Mga custom na detalye",

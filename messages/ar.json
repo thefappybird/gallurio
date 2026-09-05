@@ -2520,7 +2520,7 @@
           "locationLabel": "الموقع",
           "clientLabel": "العميل",
           "tagsLabel": "الوسوم",
-          "tagsHint": "افصل بين الوسوم بفواصل.",
+          "tagsHint": "افصل بين الوسوم بفواصل أو مسافات أو Enter.",
           "tagsPlaceholder": "مثال: في الهواء الطلق، غروب الشمس، الرقصة الأولى",
           "removeTag": "إزالة الوسم {tag}",
           "metaLabel": "تفاصيل مخصصة",

@@ -2526,7 +2526,7 @@
           "locationLabel": "Location",
           "clientLabel": "Client",
           "tagsLabel": "Tags",
-          "tagsHint": "Separate tags with commas.",
+          "tagsHint": "Separate tags with commas, spaces, or Enter.",
           "tagsPlaceholder": "e.g. outdoor, sunset, first dance",
           "removeTag": "Remove tag {tag}",
           "metaLabel": "Custom details",
