@@ -99,7 +99,7 @@ export function TagsInput({
                 aria-label={removeLabel(tag)}
                 disabled={disabled}
                 onClick={() => onChange(tags.filter((_, j) => j !== i))}
-                className="inline-flex size-4 items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 sm:size-4 sm:min-h-0 sm:min-w-0"
               >
                 <XIcon className="size-3" aria-hidden />
               </button>

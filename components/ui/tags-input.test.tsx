@@ -89,6 +89,15 @@ describe("TagsInput", () => {
     expect(onChange).toHaveBeenCalledWith(["b"]);
   });
 
+  it("gives the remove button a 44px mobile touch target that shrinks at sm:", () => {
+    render(<Controlled tags={["beach"]} />);
+    const removeButton = screen.getByRole("button", { name: "Remove beach" });
+    expect(removeButton.className).toContain("min-h-11");
+    expect(removeButton.className).toContain("min-w-11");
+    expect(removeButton.className).toContain("sm:min-h-0");
+    expect(removeButton.className).toContain("sm:min-w-0");
+  });
+
   it("renders border-border when colorize is false", () => {
     render(<Controlled tags={["beach"]} colorize={false} />);
     const pill = screen.getByText("beach").closest("li")!;
