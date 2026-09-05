@@ -144,7 +144,7 @@ export default async function PortfolioPreviewPage({
         { data: 1, collectionsPopup: 1 },
       ).lean();
       const draftZoneData = draftDoc?.data?.[zone] as PuckData | undefined;
-      if (draftZoneData) {
+      if (draftDoc && draftZoneData) {
         fallbackData = draftZoneData;
         resolvedDraftId = draftIdParam;
         resolvedCollectionsPopup =

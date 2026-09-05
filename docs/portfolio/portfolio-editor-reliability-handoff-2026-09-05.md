@@ -15,7 +15,7 @@
 3. **Image popup ignores configured layout and metadata** — implemented propagation of the selected preview layout and current metadata into the lightbox. Saving photo metadata from the Image inspector also updates the block's baked metadata immediately. Browser verification is still required for Sidebar and at least one other layout.
 4. **Uploads should open photo details immediately** — implemented for single and multiple uploads in the media picker, edit-collection flow, create-collection flow, and collection picker. Successful uploads enter the full `ImageMetaWizard` instead of presenting an extra Add details/Skip prompt.
 5. **Collection image edit opens alt-only UI** — replaced with the full metadata wizard.
-6. **Too many nested collection modals** — implemented a single Photos & collections shell. Selecting a collection swaps the shell body to embedded Edit collection content; a Back button beside the title restores the manager. The photo metadata wizard is the only second modal layer.
+6. **Too many nested collection modals** — implemented a single Photos & collections shell. Selecting a collection swaps the shell body to embedded Edit collection content; a Back button beside the title restores the manager. The photo metadata wizard is the only second modal layer. A follow-up fixed dismissal after the same-shell refactor: Done, Close, and Escape now close the outer manager from both the manager and embedded editor, and closing clears nested manager state.
 7. **Busy upload zones remain interactive** — implemented `aria-disabled`, disabled file inputs, removed keyboard focus, and click/key/drop guards while an upload is active.
 8. **Duplicate Image-block alt field** — the current inspector did not render a second editable Alt field. Tests now lock that behavior; the full Photo details section is the sole editor. Backward-compatible alt data reading remains.
 9. **Dropping into PageBody scrolls the canvas to the top** — no explicit application scroll call was found. Legacy `ContainerAnchor` injection was removed because the invisible anchor block was the strongest application-side suspect. This item is not considered runtime-verified: reproduce it in the batched browser pass and instrument Puck drag/drop only if the jump persists.
@@ -48,32 +48,28 @@ Focused Vitest command:
 pnpm vitest run --silent=true --reporter=dot "lib/page-builder/galleryPicker/MediaPicker.test.tsx" "lib/page-builder/galleryPicker/EditCollectionDialog.test.tsx" "lib/page-builder/galleryPicker/CreateCollectionDialog.test.tsx" "lib/page-builder/galleryPicker/CollectionsManagerDialog.test.tsx" "lib/page-builder/blocks/manualBlocks.test.tsx" "lib/page-builder/StyleToolkitField.test.tsx" "lib/page-builder/containerAnchorReconciler.test.ts" "lib/page-builder/editorConfig.test.ts" "app/[locale]/portfolio-preview/page.test.tsx" "app/[locale]/portfolio-preview/_components/PreviewClient.test.tsx"
 ```
 
-Result: **10 test files, 738 tests passed**.
+Result: **10 test files, 738 tests passed**. After the checkpoint, the preview page's focused file was rerun independently and all **11 tests passed**. The Photos & collections dismissal matrix was then expanded and all **15 manager-dialog tests passed**.
 
-Affected-file ESLint completed with exit code 0. `git diff --check` completed with no whitespace errors (Git emitted only the repository's LF-to-CRLF working-copy warnings).
+Affected-file ESLint completed with exit code 0. `pnpm typecheck` completed with exit code 0 after the preview draft nullability fix described below. `git diff --check` completed with no whitespace errors (Git emitted only the repository's LF-to-CRLF working-copy warnings).
 
-## Known validation blocker
+## Resolved build/typecheck follow-up
 
-`pnpm typecheck` currently fails before reaching project diagnostics because the active development output contains malformed/in-flight generated files:
+The production build subsequently exposed a valid source diagnostic in `app/[locale]/portfolio-preview/page.tsx`: `draftDoc` could be null when its `collectionsPopup` was read. The branch now requires both `draftDoc` and `draftZoneData` before using the draft. This preserves the published fallback and tenant-isolation behavior when no matching draft exists.
 
-- `.next/dev/types/routes.d.ts`: syntax errors around lines 150–184
-- `.next/dev/types/validator.ts`: syntax errors around lines 791, 796, 824, and 829
-
-This looks like a dev-server generation race/corruption, not a reported source diagnostic. Do not delete generated output while a dev server is writing it. At the next checkpoint, first determine whether a dev server is active; after it is stopped, safely clear only the affected generated `.next/dev/types` output if needed, then rerun `pnpm typecheck`.
+Validation after the fix: the preview page's 11 tests passed and `pnpm typecheck` passed. The earlier malformed `.next/dev/types` output was transient and is no longer an active blocker. A full Next.js build has not been rerun at this checkpoint.
 
 ## Recommended continuation order
 
 1. Review `git status --short` and this diff before making additional edits. Do not include `docs/demo-scripts/`.
-2. Resolve the generated `.next/dev/types` issue and rerun `pnpm typecheck`.
-3. Perform **one batched 1280px authenticated Playwright/editor session** (per repository policy) covering all runtime-only assertions:
+2. Perform **one batched 1280px authenticated Playwright/editor session** (per repository policy) covering all runtime-only assertions:
    - Preview Navigation, Footer, and Button Home/Gallery links remain in preview, preserve the selected draft, keep the header stable, and keep the footer visible.
    - Image lightbox shows the configured Sidebar layout and saved title/description/alt; verify one additional layout.
    - Single and multi-upload immediately open Photo details; the busy drop target cannot be clicked, keyed, or dropped into.
    - Photos & collections swaps to Edit collection in the same dialog, Back restores the list, and image edit opens full metadata as the only nested dialog.
    - Record `scrollTop` before and after dropping a block into PageBody. If it still jumps to zero, diagnose that concrete event before patching.
    - A Button in a horizontal Container is vertically centered, leaf margins leave a usable selection area, and the 8px container bottom margin leaves a reachable drop zone.
-4. If browser findings require fixes, add focused regression tests first and rerun the consolidated focused suite.
-5. Run final affected/full lint as appropriate, `pnpm typecheck`, and `git diff --check`. Do not commit or push unless the user explicitly requests it.
+3. If browser findings require fixes, add focused regression tests first and rerun the consolidated focused suite.
+4. Run final affected/full lint as appropriate, `pnpm typecheck`, `git diff --check`, and the production build when appropriate. Do not commit or push unless the user explicitly requests it.
 
 ## Worktree inventory at checkpoint
 

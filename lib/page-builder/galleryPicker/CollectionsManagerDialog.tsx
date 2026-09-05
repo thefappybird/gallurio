@@ -63,7 +63,12 @@ export function CollectionsManagerDialog({
   const collections: PickerCollection[] = state.status === "ok" ? state.data.collections : [];
 
   function handleOpenChange(next: boolean) {
-    if (!next) setEditing(null);
+    if (!next) {
+      setEditing(null);
+      setCreateOpen(false);
+      setPendingDelete(null);
+      setDeleteError(null);
+    }
     onOpenChange(next);
   }
 
@@ -74,7 +79,7 @@ export function CollectionsManagerDialog({
           open
           embedded
           onBack={() => setEditing(null)}
-          onOpenChange={(next) => { if (!next) setEditing(null); }}
+          onOpenChange={handleOpenChange}
           collection={editing}
           onChanged={retry}
         />
@@ -167,7 +172,7 @@ export function CollectionsManagerDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
             {t("done")}
           </Button>
         </DialogFooter>
