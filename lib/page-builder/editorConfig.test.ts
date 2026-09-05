@@ -203,7 +203,7 @@ describe("Container resolveData — anchor id idempotency", () => {
   // carries the wrong id (missing --anchor suffix) must have the anchor
   // replaced — not passed through — so the selection-bounce useEffect never
   // sees parentId === id and loops.
-  it("replaces a draft anchor with the wrong id (no --anchor suffix) instead of leaving it as-is", () => {
+  it("removes a draft anchor regardless of its legacy id", () => {
     type ResolveDataFn = (data: unknown) => unknown;
     const container = (editorPuckConfig.components as Record<string, { resolveData?: ResolveDataFn }>).Container;
     expect(container?.resolveData, "Container.resolveData must exist").toBeDefined();
@@ -224,10 +224,7 @@ describe("Container resolveData — anchor id idempotency", () => {
     const result = resolveData(data) as {
       props: { content: Array<{ type: string; props: { id?: string } }> };
     };
-    const anchor = result.props.content[0];
-    expect(anchor.type).toBe("ContainerAnchor");
-    // The anchor id MUST be "myblock--anchor", not "myblock".
-    expect(anchor.props.id).toBe(`${containerId}--anchor`);
+    expect(result.props.content).toEqual([]);
   });
 
   it("strips the editor-only anchor when an ordinary child exists", () => {
@@ -506,7 +503,7 @@ describe("Container resolveData vs the live anchor reconciler", () => {
     props: { id: string; content: Array<{ type: string; props: Record<string, unknown> }> };
   }) => { props: { content: Array<{ type: string; props: Record<string, unknown> }> } };
 
-  it("agrees with the reconciler on a container-class-only slot (no setData ping-pong)", () => {
+  it("agrees with the reconciler by stripping an anchor beside container children", () => {
     // Puck's resolver and ContainerAnchorReconciler must produce identical
     // slots. They used to disagree and undid each other on every store tick,
     // spamming Puck's "setData is expensive" warning and thrashing canvas
@@ -519,6 +516,6 @@ describe("Container resolveData vs the live anchor reconciler", () => {
 
     const resolved = resolveData({ props: { id: "c1", content: [columns, anchor] } });
 
-    expect(resolved.props.content).toEqual([columns, anchor]);
+    expect(resolved.props.content).toEqual([columns]);
   });
 });

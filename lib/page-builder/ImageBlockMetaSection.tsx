@@ -5,11 +5,9 @@
  * GalleryItem record (title/description/alt text/date/location/client/tags/
  * custom meta rows) for the photo currently picked into this Image block.
  *
- * This is deliberately NOT the same field as the block's own `alt` prop
- * (edited just above this section in ContentInputs): `alt` is a per-instance
- * override for this one placement, while everything here lives on the
- * GalleryItem itself and is shared by every placement of this photo. The
- * `sharedNotice` line makes that explicit at the point of editing.
+ * Everything here lives on the GalleryItem itself and is shared by every
+ * placement of this photo. There is intentionally no separate per-instance
+ * alt-text field on the Image block.
  *
  * Resolving the block's `_style.bgImagePublicId` (a Cloudflare asset id) to
  * the GalleryItem that owns it, and persisting edits back, both go through
@@ -34,7 +32,7 @@ const META_VALUE_MAX = 120;
 
 type MetaRow = { label: string; value: string };
 
-type GalleryItemMeta = {
+export type GalleryItemMeta = {
   id: string;
   caption: string | null;
   altText: string | null;
@@ -117,7 +115,13 @@ type LoadState =
   | { kind: "not-found"; forAssetId: string }
   | { kind: "load-error"; forAssetId: string };
 
-export function ImageBlockMetaSection({ assetId }: { assetId: string | undefined }) {
+export function ImageBlockMetaSection({
+  assetId,
+  onSaved,
+}: {
+  assetId: string | undefined;
+  onSaved?: (item: GalleryItemMeta) => void;
+}) {
   const t = useTranslations("app.pageBuilder.editor.imageBlockDetails");
 
   const [load, setLoad] = useState<LoadState>(
@@ -199,6 +203,8 @@ export function ImageBlockMetaSection({ assetId }: { assetId: string | undefined
         lastFailedRef.current = null;
         setMatchedCount(data.matched);
         setSaveStatus("saved");
+        setLoad({ kind: "ready", forAssetId: assetId, item: data });
+        onSaved?.(data);
       })
       .catch(() => {
         lastFailedRef.current = next;

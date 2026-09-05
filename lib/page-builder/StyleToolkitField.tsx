@@ -107,8 +107,10 @@ import {
 import { useEffectiveBrandRadius, useEffectiveBrandFont, useBrandRadius } from "./brandColors";
 import {
   BUTTON_SIZE_FONT_PX,
+  CONTAINER_EFFECTIVE_MARGIN_BOTTOM,
   CONTAINER_EFFECTIVE_PAD,
   COLUMNS_EFFECTIVE_PAD,
+  LEAF_EFFECTIVE_MARGIN,
   TEXT_EFFECTIVE_PAD,
   type ImageBlockBakedMeta,
 } from "./blocks/manualBlocks";
@@ -987,7 +989,22 @@ function ImageContentPanel({
           <DialogHeader>
             <DialogTitle>Photo details</DialogTitle>
           </DialogHeader>
-          <ImageBlockMetaSection assetId={assetId} />
+          <ImageBlockMetaSection
+            assetId={assetId}
+            onSaved={(item) => {
+              setProp("meta", {
+                title: item.title || undefined,
+                caption: item.caption || undefined,
+                altText: item.altText || undefined,
+                date: item.date || undefined,
+                location: item.location || undefined,
+                client: item.client || undefined,
+                tags: item.tags.length > 0 ? item.tags : undefined,
+                meta: item.meta.length > 0 ? item.meta : undefined,
+                sourceAssetId: assetId,
+              } satisfies ImageBlockBakedMeta);
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>
@@ -1617,6 +1634,30 @@ function PaddingControls({
           />
         </div>
       )}
+    </div>
+  );
+}
+
+type EffectiveMargin = { top: string; right: string; bottom: string; left: string };
+
+function MarginControls({
+  s,
+  set,
+  effectiveMargin,
+}: {
+  s: BlockStyle;
+  set: (p: Partial<BlockStyle>) => void;
+  effectiveMargin?: EffectiveMargin;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Margin</span>
+      <div className="grid grid-cols-2 gap-2">
+        <DimensionInput label="Top" value={s.marginTop} effectiveValue={effectiveMargin?.top} onChange={(v) => set({ marginTop: v })} />
+        <DimensionInput label="Right" value={s.marginRight} effectiveValue={effectiveMargin?.right} onChange={(v) => set({ marginRight: v })} />
+        <DimensionInput label="Bottom" value={s.marginBottom} effectiveValue={effectiveMargin?.bottom} onChange={(v) => set({ marginBottom: v })} />
+        <DimensionInput label="Left" value={s.marginLeft} effectiveValue={effectiveMargin?.left} onChange={(v) => set({ marginLeft: v })} />
+      </div>
     </div>
   );
 }
@@ -2450,6 +2491,12 @@ export function LayoutTabBody({
   // Columns is a grid container (not flex), but it shares the same spacing
   // (padding) + gap controls as Container.
   const isColumns = blockType === "Columns";
+  const containerMargin: EffectiveMargin = {
+    top: "0px",
+    right: "0px",
+    bottom: CONTAINER_EFFECTIVE_MARGIN_BOTTOM,
+    left: "0px",
+  };
 
   // Every preset renders through ContainerBlock, so it has the same 1.5rem
   // fallback as a plain Container. Keep Columns on its own asymmetric fallback.
@@ -2469,6 +2516,7 @@ export function LayoutTabBody({
           </EditorDrawerSection>
           <EditorDrawerSection title="Spacing">
             <PaddingControls s={s} set={set} effectivePad={effectivePad} />
+            <MarginControls s={s} set={set} effectiveMargin={containerMargin} />
           </EditorDrawerSection>
           <EditorDrawerSection title="Layout">
             {p !== undefined && setProp !== undefined && (
@@ -2534,6 +2582,7 @@ export function LayoutTabBody({
       <EditorDrawerGroup>
         <EditorDrawerSection title="Spacing">
           <PaddingControls s={s} set={set} />
+          <MarginControls s={s} set={set} effectiveMargin={LEAF_EFFECTIVE_MARGIN} />
         </EditorDrawerSection>
         <EditorDrawerSection title="Layout">
           <IconRow
@@ -2561,6 +2610,7 @@ export function LayoutTabBody({
     return (
       <EditorDrawerGroup>
         <EditorDrawerSection title="Layout">
+          <MarginControls s={s} set={set} effectiveMargin={LEAF_EFFECTIVE_MARGIN} />
           <IconRow
             label="Block position"
             value={s.selfAlign}
@@ -2602,11 +2652,12 @@ export function LayoutTabBody({
     const isHeadingOrText = blockType === "Heading" || blockType === "Text";
     return (
       <EditorDrawerGroup>
-        {isHeadingOrText && (
-          <EditorDrawerSection title="Spacing">
+        <EditorDrawerSection title="Spacing">
+          {isHeadingOrText && (
             <PaddingControls s={s} set={set} effectivePad={TEXT_EFFECTIVE_PAD} />
-          </EditorDrawerSection>
-        )}
+          )}
+          <MarginControls s={s} set={set} effectiveMargin={LEAF_EFFECTIVE_MARGIN} />
+        </EditorDrawerSection>
         {isButton && p && setProp && (
           <EditorDrawerSection title="Layout">
             {/* Button style and Corner radius moved to Design tab → Button section (Pass 2). */}
@@ -2636,7 +2687,6 @@ export function LayoutTabBody({
               options={BLOCK_POSITION_OPTIONS}
               onChange={(v) => set({ selfAlign: v })}
             />
-            <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
             {isGridChild && (
               <CellLayoutControls
                 s={s}
@@ -2655,8 +2705,12 @@ export function LayoutTabBody({
               options={BLOCK_POSITION_OPTIONS}
               onChange={(v) => set({ selfAlign: v })}
             />
-            <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
-            <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
+            {!isHeadingOrText && (
+              <>
+                <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
+                <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
+              </>
+            )}
             {isGridChild && (
               <CellLayoutControls
                 s={s}
@@ -2676,6 +2730,11 @@ export function LayoutTabBody({
     <EditorDrawerGroup>
       <EditorDrawerSection title="Spacing">
         {(isFlexContainer || isColumns) && <PaddingControls s={s} set={set} effectivePad={effectivePad} />}
+        <MarginControls
+          s={s}
+          set={set}
+          effectiveMargin={isFlexContainer || isColumns ? containerMargin : undefined}
+        />
       </EditorDrawerSection>
       <EditorDrawerSection title="Layout">
         <NumberInputRow

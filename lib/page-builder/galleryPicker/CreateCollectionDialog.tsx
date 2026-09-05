@@ -225,7 +225,10 @@ export function CreateCollectionDialog({
     setUploading(false);
     setFileErrors((prev) => [...prev, ...newErrors]);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    if (createdItems.length > 0) setUploadedBatch(createdItems);
+    if (createdItems.length > 0) {
+      setUploadedBatch(createdItems);
+      setWizardOpen(true);
+    }
   }
 
   async function createCollection() {
@@ -317,24 +320,28 @@ export function CreateCollectionDialog({
 
           <div
             role="button"
-            tabIndex={0}
+            tabIndex={uploading ? -1 : 0}
+            aria-disabled={uploading}
             aria-label={dragOver ? L.dropZoneActive : L.dropZone}
             onDragOver={(e) => {
               e.preventDefault();
+              if (uploading) return;
               setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => {
               e.preventDefault();
               setDragOver(false);
+              if (uploading) return;
               handleFiles(e.dataTransfer.files);
             }}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => { if (!uploading) fileInputRef.current?.click(); }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+              if (!uploading && (e.key === "Enter" || e.key === " ")) fileInputRef.current?.click();
             }}
             className={cn(
               "flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed p-4 text-center text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              uploading && "cursor-wait opacity-60",
               dragOver
                 ? "border-foreground bg-accent/30"
                 : "border-border text-muted-foreground hover:bg-accent/20 focus-visible:bg-accent/20"
@@ -358,6 +365,7 @@ export function CreateCollectionDialog({
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif"
             multiple
+            disabled={uploading}
             className="sr-only"
             tabIndex={-1}
             onChange={(e) => handleFiles(e.target.files)}
@@ -419,25 +427,6 @@ export function CreateCollectionDialog({
                 </li>
               ))}
             </ul>
-          )}
-
-          {uploadedBatch && uploadedBatch.length > 0 && !wizardOpen && (
-            <div className="flex flex-col gap-2 border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm">{tWizard("offerHeading", { count: uploadedBatch.length })}</p>
-              <div className="flex shrink-0 gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setUploadedBatch(null)}
-                >
-                  {tWizard("offerSkip")}
-                </Button>
-                <Button type="button" size="sm" onClick={() => setWizardOpen(true)}>
-                  {tWizard("offerAddDetails")}
-                </Button>
-              </div>
-            </div>
           )}
 
           {error && (

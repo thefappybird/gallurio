@@ -30,7 +30,6 @@ import { usePickerData } from "./usePickerData";
 import { GridSkeleton } from "./GridSkeleton";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
-import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
 import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
 import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import type { PickerCollection, PickerItem } from "./types";
@@ -158,19 +157,6 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const [metaItem, setMetaItem] = useState<PickerItem | null>(null);
   // The pencil button that opened the alt-text dialog — restores focus there on close.
   const metaTriggerRef = useRef<HTMLButtonElement | null>(null);
-
-  const metaLabels: ImageMetaLabels = {
-    title: tMeta("title"),
-    altLabel: tMeta("altLabel"),
-    altHelp: tMeta("altHelp"),
-    altPlaceholder: tMeta("altPlaceholder"),
-    counter: (count, max) => tMeta("counter", { count, max }),
-    save: tMeta("save"),
-    saving: tMeta("saving"),
-    cancel: tMeta("cancel"),
-    savedToast: tMeta("savedToast"),
-    errorMessage: (code) => errMsg(code),
-  };
 
   const wizardLabels: ImageWizardLabels = {
     heading: tWizard("heading"),
@@ -626,7 +612,6 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     if (createdItems.length > 0) {
       if (mode === "single") {
         onChange(createdItems[0].publicId);
-        setUploadedBatch(createdItems);
       } else if (mode === "multi") {
         const cap = resolveCap(max);
         const slots = Math.max(0, cap - selection.length);
@@ -643,8 +628,9 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
             })),
           ]);
         }
-        setUploadedBatch(createdItems);
       }
+      setUploadedBatch(createdItems);
+      setWizardOpen(true);
     }
   }
 
@@ -759,30 +745,6 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           </p>
         )}
 
-        {uploadedBatch && uploadedBatch.length > 0 && !wizardOpen && (
-          <div className="flex flex-col gap-2 border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm">{tWizard("offerHeading", { count: uploadedBatch.length })}</p>
-            <div className="flex shrink-0 gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setUploadedBatch(null);
-                  // Single mode's upload already auto-selected the photo above —
-                  // skipping the offer just finishes that "no extra click" flow.
-                  if (mode === "single") onOpenChange(false);
-                }}
-              >
-                {tWizard("offerSkip")}
-              </Button>
-              <Button type="button" size="sm" onClick={() => setWizardOpen(true)}>
-                {tWizard("offerAddDetails")}
-              </Button>
-            </div>
-          </div>
-        )}
-
         <div className="min-h-0 flex-1 overflow-y-auto">
           {state.status === "loading" && (
             <GridSkeleton
@@ -831,6 +793,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               onEditItem={(item, triggerEl) => {
                 metaTriggerRef.current = triggerEl;
                 setMetaItem(item);
+                setWizardOpen(true);
               }}
               editLabelFor={(name) => tMeta("editTrigger", { name: name || tMeta("photoFallback") })}
               incompleteWarningLabel={tMeta("incompleteWarning")}
@@ -895,27 +858,18 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         }}
       />
 
-      <ImageMetaDialog
-        item={metaItem}
-        open={metaItem !== null}
-        onOpenChange={(next) => {
-          if (!next) setMetaItem(null);
-        }}
-        onSaved={handleMetaSaved}
-        labels={metaLabels}
-        triggerRef={metaTriggerRef}
-      />
-
       <ImageMetaWizard
-        items={uploadedBatch ?? []}
+        items={metaItem ? [metaItem] : (uploadedBatch ?? [])}
         open={wizardOpen}
         onOpenChange={(next) => {
           setWizardOpen(next);
           if (!next) {
+            const completedUpload = uploadedBatch !== null;
             setUploadedBatch(null);
+            setMetaItem(null);
             // Single mode's upload flow ends with the picker closing, whether
             // the owner finishes the wizard or backs out of it mid-edit.
-            if (mode === "single") onOpenChange(false);
+            if (completedUpload && mode === "single") onOpenChange(false);
           }
         }}
         onSaved={handleMetaSaved}
@@ -1193,24 +1147,28 @@ function UploadZone({
     <div>
       <div
         role="button"
-        tabIndex={0}
+        tabIndex={uploading ? -1 : 0}
+        aria-disabled={uploading}
         aria-label={dragOver ? L.dropActive : L.uploadHere}
         onDragOver={(e) => {
           e.preventDefault();
+          if (uploading) return;
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
+          if (uploading) return;
           onFiles(e.dataTransfer.files);
         }}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => { if (!uploading) inputRef.current?.click(); }}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+          if (!uploading && (e.key === "Enter" || e.key === " ")) inputRef.current?.click();
         }}
         className={cn(
           "flex min-h-14 cursor-pointer items-center justify-center gap-2 border border-dashed p-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          uploading && "cursor-wait opacity-60",
           dragOver ? "border-foreground bg-accent/30" : "border-border text-muted-foreground hover:bg-accent/20"
         )}
       >
@@ -1231,6 +1189,7 @@ function UploadZone({
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif"
         multiple
+        disabled={uploading}
         className="sr-only"
         tabIndex={-1}
         onChange={(e) => onFiles(e.target.files)}

@@ -3,13 +3,17 @@ import { render, screen } from "@testing-library/react";
 import React from "react";
 
 vi.mock("@measured/puck", () => ({
-  Render: ({ data }: { data: unknown }) => (
-    <pre data-testid="render-data">{JSON.stringify(data)}</pre>
+  Render: ({ data, metadata }: { data: unknown; metadata?: unknown }) => (
+    <>
+      <pre data-testid="render-data">{JSON.stringify(data)}</pre>
+      <pre data-testid="render-metadata">{JSON.stringify(metadata)}</pre>
+    </>
   ),
   createUsePuck: () => () => undefined,
 }));
 
 import { PreviewClient } from "./PreviewClient";
+import { PreviewDraftContext } from "./PreviewDraftContext";
 
 const KEY = "gallurio:portfolio-draft:studio-aurora";
 
@@ -122,5 +126,31 @@ describe("PreviewClient", () => {
       />,
     );
     expect(screen.getByTestId("render-data").textContent).toContain("Unsaved content");
+  });
+
+  it("passes the unsaved collections-popup image layout into image block render metadata", () => {
+    render(
+      <PreviewDraftContext
+        value={{
+          contact: null,
+          collectionsPopup: { imageModalLayout: "sidebar" },
+          cssVars: {},
+        }}
+      >
+        <PreviewClient
+          slug="studio-aurora"
+          zone="home"
+          workspace={{
+            slug: "studio-aurora",
+            publicPage: { collectionsPopup: { imageModalLayout: "caption" } },
+          } as never}
+          fallbackData={{ content: [], root: {} }}
+          draftId={null}
+        />
+      </PreviewDraftContext>,
+    );
+
+    expect(screen.getByTestId("render-metadata").textContent).toContain('"imageModalLayout":"sidebar"');
+    expect(screen.getByTestId("render-metadata").textContent).not.toContain('"imageModalLayout":"caption"');
   });
 });

@@ -37,7 +37,12 @@ vi.mock("@/lib/i18n/localeForCountry", () => ({
 }));
 
 vi.mock("@/lib/page-builder/serverContext", () => ({
-  buildRenderWorkspace: vi.fn((workspace) => ({ slug: workspace.slug })),
+  buildRenderWorkspace: vi.fn((workspace) => ({
+    slug: workspace.slug,
+    publicPage: workspace.publicPage
+      ? { collectionsPopup: workspace.publicPage.collectionsPopup ?? null }
+      : null,
+  })),
 }));
 
 vi.mock("@/app/(public)/w/[orgSlug]/_components/buildContactLabels", () => ({
@@ -83,6 +88,7 @@ vi.mock("./_components/PreviewClient", () => ({
     workspace: {
       chrome?: { nav?: { home?: string } };
       previewNav?: { homeHref?: string; galleryHref?: string; activePath?: string };
+      publicPage?: { collectionsPopup?: { imageModalLayout?: string } | null } | null;
     };
     fallbackData: unknown;
     draftId: string | null;
@@ -95,6 +101,9 @@ vi.mock("./_components/PreviewClient", () => ({
       <div data-testid="preview-client-nav-active-path">{workspace.previewNav?.activePath ?? ""}</div>
       <div data-testid="preview-client-fallback-data">{JSON.stringify(fallbackData)}</div>
       <div data-testid="preview-client-draft-id">{draftId ?? ""}</div>
+      <div data-testid="preview-client-image-modal-layout">
+        {workspace.publicPage?.collectionsPopup?.imageModalLayout ?? ""}
+      </div>
     </div>
   ),
 }));
@@ -231,6 +240,7 @@ describe("PortfolioPreviewPage", () => {
       data: {
         home: { content: [{ type: "Hero", props: { headline: "Draft Hero" } }], root: {} },
       },
+      collectionsPopup: { imageModalLayout: "sidebar" },
     });
 
     const page = await PortfolioPreviewPage({
@@ -242,6 +252,13 @@ describe("PortfolioPreviewPage", () => {
 
     expect(screen.getByTestId("preview-client-fallback-data")).toHaveTextContent("Draft Hero");
     expect(screen.getByTestId("preview-client-draft-id")).toHaveTextContent(String(draft._id));
+    expect(screen.getByTestId("preview-client-image-modal-layout")).toHaveTextContent("sidebar");
+    expect(screen.getByTestId("preview-client-nav-home-href")).toHaveTextContent(
+      `draftId=${String(draft._id)}`,
+    );
+    expect(screen.getByTestId("preview-client-nav-gallery-href")).toHaveTextContent(
+      `draftId=${String(draft._id)}`,
+    );
   });
 
   it("falls back to published data when draftId belongs to another workspace (tenant isolation)", async () => {

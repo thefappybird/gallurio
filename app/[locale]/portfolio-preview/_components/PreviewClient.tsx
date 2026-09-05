@@ -6,6 +6,7 @@ import { puckConfig } from "@/lib/page-builder/config";
 import type { PuckData } from "@/lib/page-builder/types";
 import type { RenderWorkspace } from "@/lib/page-builder/serverContext";
 import { normalizePageBody } from "@/lib/page-builder/pageBody";
+import { usePreviewDraft } from "./PreviewDraftContext";
 
 const LOCAL_DRAFT_VERSION = 2;
 
@@ -51,6 +52,7 @@ export function PreviewClient({
   fallbackData: PuckData;
   draftId: string | null;
 }) {
+  const { collectionsPopup } = usePreviewDraft();
   const normalizedFallback = useMemo(
     () => normalizePageBody(fallbackData as unknown as Data) as unknown as PuckData,
     [fallbackData],
@@ -67,8 +69,19 @@ export function PreviewClient({
     setData(readDraftZone(slug, zone, draftId) ?? normalizedFallback);
   }, [normalizedFallback, slug, zone, draftId]);
 
+  const renderWorkspace = useMemo<RenderWorkspace>(() => {
+    if (!collectionsPopup) return workspace;
+    return {
+      ...workspace,
+      publicPage: {
+        ...(workspace.publicPage ?? {}),
+        collectionsPopup,
+      },
+    };
+  }, [collectionsPopup, workspace]);
+
   return (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Render data={data as any} config={puckConfig as any} metadata={{ workspace }} />
+    <Render data={data as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
   );
 }

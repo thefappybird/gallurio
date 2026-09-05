@@ -2500,7 +2500,7 @@
           "saving": "جارٍ الحفظ…",
           "cancel": "إلغاء",
           "savedToast": "تم حفظ النص البديل.",
-          "editTrigger": "تعديل النص البديل لـ {name}",
+          "editTrigger": "تعديل تفاصيل الصورة لـ {name}",
           "photoFallback": "الصورة",
           "incompleteWarning": "النص البديل مفقود — قد لا تظهر هذه الصورة كما هو متوقع."
         },

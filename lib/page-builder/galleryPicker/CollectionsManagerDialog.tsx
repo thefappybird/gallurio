@@ -62,9 +62,24 @@ export function CollectionsManagerDialog({
 
   const collections: PickerCollection[] = state.status === "ok" ? state.data.collections : [];
 
+  function handleOpenChange(next: boolean) {
+    if (!next) setEditing(null);
+    onOpenChange(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-4xl">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {editing ? (
+        <EditCollectionDialog
+          open
+          embedded
+          onBack={() => setEditing(null)}
+          onOpenChange={(next) => { if (!next) setEditing(null); }}
+          collection={editing}
+          onChanged={retry}
+        />
+      ) : (
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-4xl">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
@@ -156,7 +171,8 @@ export function CollectionsManagerDialog({
             {t("done")}
           </Button>
         </DialogFooter>
-      </DialogContent>
+        </DialogContent>
+      )}
 
       {/* Nested: create a new collection */}
       <CreateCollectionDialog
@@ -166,14 +182,6 @@ export function CollectionsManagerDialog({
           setCreateOpen(false);
           retry();
         }}
-      />
-
-      {/* Nested: edit an existing collection */}
-      <EditCollectionDialog
-        open={editing !== null}
-        onOpenChange={(n) => { if (!n) setEditing(null); }}
-        collection={editing}
-        onChanged={retry}
       />
 
       {/* Nested: confirm hard delete */}

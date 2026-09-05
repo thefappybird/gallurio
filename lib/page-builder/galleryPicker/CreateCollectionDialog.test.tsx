@@ -191,17 +191,17 @@ describe("CreateCollectionDialog metadata wizard (10a)", () => {
     });
   }
 
-  it("offers the metadata wizard after an upload, dismissable without blocking collection creation", async () => {
+  it("opens the metadata wizard immediately after an upload without blocking collection creation", async () => {
     mockItemsUpload();
     const onCreated = vi.fn();
     renderWithProviders(<CreateCollectionDialog open onOpenChange={vi.fn()} onCreated={onCreated} />);
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [new File(["d"], "new.jpg", { type: "image/jpeg" })] } });
 
-    expect(await screen.findByText(/add details/i)).toBeTruthy();
+    expect(await screen.findByText(/add photo details/i)).toBeTruthy();
     // Dismiss the offer — never a gate on creating the collection.
-    fireEvent.click(screen.getByRole("button", { name: /skip/i }));
-    expect(screen.queryByText(/add details/i)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
+    expect(screen.queryByText(/add photo details/i)).toBeNull();
 
     fireEvent.change(screen.getByLabelText(/collection title/i), { target: { value: "My collection" } });
     fireEvent.click(screen.getByRole("button", { name: /^create collection$/i }));
@@ -216,7 +216,7 @@ describe("CreateCollectionDialog metadata wizard (10a)", () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [new File(["d"], "new.jpg", { type: "image/jpeg" })] } });
 
-    fireEvent.click(await screen.findByRole("button", { name: /add details/i }));
+    await screen.findByText(/add photo details/i);
     const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
     fireEvent.change(altField, { target: { value: "A bride and groom" } });
     fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
@@ -228,7 +228,7 @@ describe("CreateCollectionDialog metadata wizard (10a)", () => {
 });
 
 describe("CreateCollectionDialog incomplete-metadata warning", () => {
-  it("shows the warning badge for an upload with no alt text, hides it once one is saved", async () => {
+  it("does not show the warning badge once alt text is saved from the immediate wizard", async () => {
     vi.mocked(uploadImage).mockResolvedValue({
       assetId: "a-new.jpg", url: "https://x/new.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
     });
@@ -246,9 +246,7 @@ describe("CreateCollectionDialog incomplete-metadata warning", () => {
     fireEvent.change(fileInput, { target: { files: [new File(["d"], "new.jpg", { type: "image/jpeg" })] } });
     await waitFor(() => expect(document.querySelector('img[src*="thumb-new.jpg"]')).toBeTruthy());
 
-    expect(screen.getByRole("button", { name: /missing alt text/i })).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: /add details/i }));
+    expect(await screen.findByText(/add photo details/i)).toBeTruthy();
     const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
     fireEvent.change(altField, { target: { value: "A bride and groom" } });
     fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));

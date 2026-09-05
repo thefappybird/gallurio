@@ -2506,7 +2506,7 @@
           "saving": "Saving…",
           "cancel": "Cancel",
           "savedToast": "Alt text saved.",
-          "editTrigger": "Edit alt text for {name}",
+          "editTrigger": "Edit photo details for {name}",
           "photoFallback": "photo",
           "incompleteWarning": "Missing alt text — this photo may not display as intended."
         },

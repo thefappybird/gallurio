@@ -164,6 +164,7 @@ export function CollectionPicker({ value, onChange }: Props) {
 
   function onDragOver(e: React.DragEvent) {
     e.preventDefault();
+    if (!form.open || form.uploading) return;
     setDragOver(true);
   }
   function onDragLeave() {
@@ -172,6 +173,7 @@ export function CollectionPicker({ value, onChange }: Props) {
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragOver(false);
+    if (!form.open || form.uploading) return;
     handleFiles(e.dataTransfer.files);
   }
 
@@ -290,17 +292,19 @@ export function CollectionPicker({ value, onChange }: Props) {
           <div>
             <div
               role="button"
-              tabIndex={0}
+              tabIndex={form.uploading ? -1 : 0}
+              aria-disabled={form.uploading}
               aria-label={dragOver ? L.dropZoneActive : L.dropZone}
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
               onDrop={onDrop}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => { if (!form.uploading) fileInputRef.current?.click(); }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+                if (!form.uploading && (e.key === "Enter" || e.key === " ")) fileInputRef.current?.click();
               }}
               className={cn(
                 "flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed p-4 text-center text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                form.uploading && "cursor-wait opacity-60",
                 dragOver ? "border-foreground bg-accent/30" : "border-border text-muted-foreground hover:bg-accent/20 focus-visible:bg-accent/20"
               )}
             >
@@ -323,6 +327,7 @@ export function CollectionPicker({ value, onChange }: Props) {
               type="file"
               accept="image/jpeg,image/png,image/webp,image/avif"
               multiple
+              disabled={form.uploading}
               className="sr-only"
               onChange={(e) => handleFiles(e.target.files)}
               tabIndex={-1}

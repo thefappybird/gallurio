@@ -106,7 +106,7 @@ describe("CollectionsManagerDialog", () => {
 });
 
 describe("CollectionsManagerDialog edit", () => {
-  it("opens the edit dialog when a collection is clicked", async () => {
+  it("replaces the manager contents with collection editing in the same shell and supports Back", async () => {
     mockFetch.mockImplementation((url: string) => {
       if (url === "/api/portfolio/gallery")
         return Promise.resolve({
@@ -127,5 +127,11 @@ describe("CollectionsManagerDialog edit", () => {
     renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /edit weddings/i }));
     expect(await screen.findByLabelText(/collection name/i)).toBeTruthy();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.queryByText("Photos & collections")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /back to photos and collections/i }));
+    expect(await screen.findByText("Photos & collections")).toBeTruthy();
+    expect(screen.queryByLabelText(/collection name/i)).toBeNull();
   });
 });

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useActionError } from "@/lib/i18n/actionError";
-import { GripVerticalIcon, ImagePlusIcon, Loader2Icon, PencilIcon, StarIcon, Trash2Icon } from "lucide-react";
+import { ArrowLeftIcon, GripVerticalIcon, ImagePlusIcon, Loader2Icon, PencilIcon, StarIcon, Trash2Icon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
@@ -17,7 +17,6 @@ import { PHOTO_SPEC, validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { UploadError, uploadErrorTranslation, type UploadErrorDetail } from "@/lib/uploads/uploadError";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
-import { ImageMetaDialog, type ImageMetaLabels } from "./ImageMetaDialog";
 import { ImageMetaWizard, type ImageWizardLabels } from "./ImageMetaWizard";
 import { hasIncompleteMetadata, IncompleteMetadataBadge } from "./imageMetaCompleteness";
 import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
@@ -26,12 +25,14 @@ import type { PickerCollection, PickerItem } from "./types";
 const PAGE = 48;
 
 export function EditCollectionDialog({
-  open, onOpenChange, collection, onChanged,
+  open, onOpenChange, collection, onChanged, embedded = false, onBack,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   collection: PickerCollection | null;
   onChanged: () => void;
+  embedded?: boolean;
+  onBack?: () => void;
 }) {
   const errMsg = useActionError();
   const tMeta = useTranslations("app.pageBuilder.editor.imageMeta");
@@ -67,19 +68,6 @@ export function EditCollectionDialog({
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const colId = collection?.id ?? null;
-
-  const metaLabels: ImageMetaLabels = {
-    title: tMeta("title"),
-    altLabel: tMeta("altLabel"),
-    altHelp: tMeta("altHelp"),
-    altPlaceholder: tMeta("altPlaceholder"),
-    counter: (count, max) => tMeta("counter", { count, max }),
-    save: tMeta("save"),
-    saving: tMeta("saving"),
-    cancel: tMeta("cancel"),
-    savedToast: tMeta("savedToast"),
-    errorMessage: (code) => errMsg(code),
-  };
 
   const wizardLabels: ImageWizardLabels = {
     heading: tWizard("heading"),
@@ -391,7 +379,10 @@ export function EditCollectionDialog({
       setUploading(false);
       onChanged();
       if (fileInputRef.current) fileInputRef.current.value = "";
-      if (createdItems.length > 0) setUploadedBatch(createdItems);
+      if (createdItems.length > 0) {
+        setUploadedBatch(createdItems);
+        setWizardOpen(true);
+      }
     });
   }
 
@@ -411,8 +402,8 @@ export function EditCollectionDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+  const contents = (
+    <>
       <DialogContent className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
         <DialogHeader>
           {/* This chrome is still English while the surrounding app may be RTL.
@@ -420,11 +411,25 @@ export function EditCollectionDialog({
               under `ar` and the title renders as `"Weddings" Edit`. `dir="ltr"`
               makes the whole title one isolate; the inner <bdi> keeps an
               Arabic-named collection from breaking the quotes back out. */}
-          <DialogTitle className="truncate">
-            <span dir="ltr" className="inline-block max-w-full truncate align-bottom">
-              Edit &quot;<bdi>{collection.name}</bdi>&quot;
-            </span>
-          </DialogTitle>
+          <div className="flex min-w-0 items-center gap-2">
+            {embedded && (
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                aria-label="Back to photos and collections"
+                onClick={onBack}
+                className="shrink-0"
+              >
+                <ArrowLeftIcon className="size-4 rtl:rotate-180" aria-hidden />
+              </Button>
+            )}
+            <DialogTitle className="truncate">
+              <span dir="ltr" className="inline-block max-w-full truncate align-bottom">
+                Edit &quot;<bdi>{collection.name}</bdi>&quot;
+              </span>
+            </DialogTitle>
+          </div>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-1">
@@ -469,22 +474,8 @@ export function EditCollectionDialog({
               {uploading ? <Loader2Icon className="size-4 animate-spin" aria-hidden /> : <ImagePlusIcon className="size-4" aria-hidden />} Upload photos
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={() => setPickerOpen(true)}>Select existing photos</Button>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple className="sr-only" tabIndex={-1} onChange={(e) => handleFiles(e.target.files)} />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={uploading} className="sr-only" tabIndex={-1} onChange={(e) => handleFiles(e.target.files)} />
           </div>
-
-          {uploadedBatch && uploadedBatch.length > 0 && !wizardOpen && (
-            <div className="flex flex-col gap-2 border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm">{tWizard("offerHeading", { count: uploadedBatch.length })}</p>
-              <div className="flex shrink-0 gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => setUploadedBatch(null)}>
-                  {tWizard("offerSkip")}
-                </Button>
-                <Button type="button" size="sm" onClick={() => setWizardOpen(true)}>
-                  {tWizard("offerAddDetails")}
-                </Button>
-              </div>
-            </div>
-          )}
 
           {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
           {fileErrors.length > 0 && (
@@ -510,6 +501,7 @@ export function EditCollectionDialog({
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={(e) => {
                     e.preventDefault();
+                    if (uploading) return;
                     e.dataTransfer.dropEffect = "copy";
                     setDragOverUpload(true);
                   }}
@@ -517,6 +509,7 @@ export function EditCollectionDialog({
                   onDrop={(e) => {
                     e.preventDefault();
                     setDragOverUpload(false);
+                    if (uploading) return;
                     handleFiles(e.dataTransfer.files);
                   }}
                   className={cn(
@@ -574,6 +567,7 @@ export function EditCollectionDialog({
                         onClick={(e) => {
                           metaTriggerRef.current = e.currentTarget;
                           setMetaItem(item);
+                          setWizardOpen(true);
                         }}
                         className="inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                       >
@@ -609,23 +603,15 @@ export function EditCollectionDialog({
         onAdd={addExisting}
       />
 
-      <ImageMetaDialog
-        item={metaItem}
-        open={metaItem !== null}
-        onOpenChange={(next) => {
-          if (!next) setMetaItem(null);
-        }}
-        onSaved={handleMetaSaved}
-        labels={metaLabels}
-        triggerRef={metaTriggerRef}
-      />
-
       <ImageMetaWizard
-        items={uploadedBatch ?? []}
+        items={metaItem ? [metaItem] : (uploadedBatch ?? [])}
         open={wizardOpen}
         onOpenChange={(next) => {
           setWizardOpen(next);
-          if (!next) setUploadedBatch(null);
+          if (!next) {
+            setUploadedBatch(null);
+            setMetaItem(null);
+          }
         }}
         onSaved={handleMetaSaved}
         labels={wizardLabels}
@@ -645,6 +631,8 @@ export function EditCollectionDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
+    </>
   );
+  if (embedded) return contents;
+  return <Dialog open={open} onOpenChange={onOpenChange}>{contents}</Dialog>;
 }

@@ -2500,7 +2500,7 @@
           "saving": "Sine-save…",
           "cancel": "Kanselahin",
           "savedToast": "Na-save ang alt text.",
-          "editTrigger": "I-edit ang alt text para sa {name}",
+          "editTrigger": "I-edit ang mga detalye ng larawan para sa {name}",
           "photoFallback": "larawan",
           "incompleteWarning": "Walang alt text — maaaring hindi maipakita nang tama ang larawang ito."
         },

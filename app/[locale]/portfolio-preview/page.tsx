@@ -132,17 +132,44 @@ export default async function PortfolioPreviewPage({
     body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} />;
   } else {
     const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
+    let fallbackData: PuckData =
+      ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
+      { content: [], root: {} };
+    let resolvedCollectionsPopup = collectionsPopupConfig;
+    const draftIdParam = typeof sp.draftId === "string" ? sp.draftId : undefined;
+    let resolvedDraftId: string | null = null;
+    if (draftIdParam && Types.ObjectId.isValid(draftIdParam)) {
+      const draftDoc = await PortfolioDraft.findOne(
+        { _id: draftIdParam, workspaceId: workspace._id },
+        { data: 1, collectionsPopup: 1 },
+      ).lean();
+      const draftZoneData = draftDoc?.data?.[zone] as PuckData | undefined;
+      if (draftZoneData) {
+        fallbackData = draftZoneData;
+        resolvedDraftId = draftIdParam;
+        resolvedCollectionsPopup =
+          (draftDoc.collectionsPopup as PortfolioCollectionsPopupConfig | null | undefined) ??
+          collectionsPopupConfig;
+      }
+    }
     // Preview-scoped nav override — keeps the Navigation block's Home/Gallery
     // links inside this iframe instead of navigating to the live public site
     // (see blockContext.ts's `RenderWorkspace.previewNav`). formLocale/formDir
     // are re-appended so an in-editor language switch survives a Home<->Gallery
     // click inside the preview.
     const previewBasePath = `/${locale}/portfolio-preview`;
-    const previewQuery = `formLocale=${chromeLocale}&formDir=${effectiveDir}`;
+    const previewQuery =
+      `formLocale=${chromeLocale}&formDir=${effectiveDir}` +
+      (resolvedDraftId ? `&draftId=${encodeURIComponent(resolvedDraftId)}` : "");
     const previewHomeHref = `${previewBasePath}?zone=home&${previewQuery}`;
     const previewGalleryHref = `${previewBasePath}?zone=gallery&${previewQuery}`;
+    const baseRenderWorkspace = buildRenderWorkspace(workspace);
     const renderWorkspace = {
-      ...buildRenderWorkspace(workspace),
+      ...baseRenderWorkspace,
+      publicPage: {
+        ...(baseRenderWorkspace.publicPage ?? {}),
+        collectionsPopup: resolvedCollectionsPopup,
+      },
       locale: chromeLocale,
       brandVars: cssVars,
       previewNav: {
@@ -174,28 +201,10 @@ export default async function PortfolioPreviewPage({
       },
     };
 
-    let fallbackData: PuckData =
-      ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
-      { content: [], root: {} };
-
-    const draftIdParam = typeof sp.draftId === "string" ? sp.draftId : undefined;
     // Tracks which draft fallbackData actually corresponds to, so the client
     // only applies its localStorage buffer when it matches — otherwise a
     // stale buffer for a different draft would render instead of the
     // requested one.
-    let resolvedDraftId: string | null = null;
-    if (draftIdParam && Types.ObjectId.isValid(draftIdParam)) {
-      const draftDoc = await PortfolioDraft.findOne(
-        { _id: draftIdParam, workspaceId: workspace._id },
-        { data: 1 },
-      ).lean();
-      const draftZoneData = draftDoc?.data?.[zone] as PuckData | undefined;
-      if (draftZoneData) {
-        fallbackData = draftZoneData;
-        resolvedDraftId = draftIdParam;
-      }
-    }
-
     // Same rebuild the editor canvas applies (see app/[locale]/(app)/portfolio/page.tsx's
     // reconcileZone) — keeps the preview's image cache/collections in sync with live
     // GalleryItems/GalleryCollections instead of showing what was baked at save time.

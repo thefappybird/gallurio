@@ -174,6 +174,8 @@ describe("EditCollectionDialog", () => {
     )).toBe(true));
     // onChanged is called for cache refresh — that's the only side-effect.
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    expect(await screen.findByText(/add photo details/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     // No "selection" callback is called — EditCollectionDialog has no such API.
     // Verify the uploaded photo checkbox is NOT pre-checked (no auto-select).
     const allCheckboxes = screen.getAllByRole("checkbox");
@@ -210,19 +212,19 @@ describe("EditCollectionDialog", () => {
     )).toBe(true));
   });
 
-  it("renders a per-photo edit-alt-text trigger with an accessible name", async () => {
+  it("renders a per-photo edit-details trigger with an accessible name", async () => {
     open();
-    expect(await screen.findByRole("button", { name: /edit alt text for A/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /edit alt text for B/i })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: /edit photo details for A/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /edit photo details for B/i })).toBeTruthy();
   });
 
   it("meets the 24x24 minimum target size (WCAG 2.2 SC 2.5.8)", async () => {
     open();
-    const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
+    const editTrigger = await screen.findByRole("button", { name: /edit photo details for A/i });
     expect(editTrigger.className).toMatch(/\bsize-6\b/);
   });
 
-  it("editing alt text PATCHes the item and the tile reflects it when reopened", async () => {
+  it("editing photo details PATCHes the item and the tile reflects it when reopened", async () => {
     mockFetch.mockImplementation((u: string, init?: RequestInit) => {
       if (u === "/api/portfolio/gallery/items/a" && init?.method === "PATCH") {
         return Promise.resolve({ ok: true, json: async () => ({ ...items[0], altText: "Bride and groom" }) } as Response);
@@ -230,18 +232,18 @@ describe("EditCollectionDialog", () => {
       return defaultRoute(u, init);
     });
     open();
-    fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /edit photo details for A/i }));
     const field = await screen.findByLabelText("Alt text");
     expect(field).toHaveValue("");
     fireEvent.change(field, { target: { value: "Bride and groom" } });
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
     await waitFor(() =>
       expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/a" && (i as RequestInit)?.method === "PATCH")).toBe(true)
     );
     await waitFor(() => expect(screen.queryByLabelText("Alt text")).toBeNull());
 
-    fireEvent.click(screen.getByRole("button", { name: /edit alt text for A/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit photo details for A/i }));
     expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
   });
 
@@ -331,7 +333,7 @@ describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata war
     expect(await screen.findAllByRole("button", { name: /missing alt text/i })).toHaveLength(2);
   });
 
-  it("offers the metadata wizard after an upload, dismissable without gating anything", async () => {
+  it("opens the metadata wizard immediately after an upload", async () => {
     vi.mocked(uploadImage).mockResolvedValue({
       assetId: "up-asset", url: "https://x/up.jpg", width: 900, height: 600, format: "jpeg", sizeBytes: 20000,
     });
@@ -346,9 +348,9 @@ describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata war
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [new File(["data"], "new.jpg", { type: "image/jpeg" })] } });
 
-    expect(await screen.findByText(/add details/i)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /skip/i }));
-    expect(screen.queryByText(/add details/i)).toBeNull();
+    expect(await screen.findByText(/add photo details/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
+    expect(screen.queryByText(/add photo details/i)).toBeNull();
   });
 
   it("wizard save PATCHes the uploaded item and clears its warning badge", async () => {
@@ -369,7 +371,7 @@ describe("EditCollectionDialog metadata wizard (10a) and incomplete-metadata war
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [new File(["data"], "new.jpg", { type: "image/jpeg" })] } });
 
-    fireEvent.click(await screen.findByRole("button", { name: /add details/i }));
+    await screen.findByText(/add photo details/i);
     const altField = await screen.findByRole("textbox", { name: /^alt text$/i });
     fireEvent.change(altField, { target: { value: "New photo" } });
     fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));

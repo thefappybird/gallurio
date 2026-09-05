@@ -539,7 +539,38 @@ describe("MediaPicker", () => {
       return routeFetch(url);
     }
 
-    it("(a) single mode: uploading auto-selects the photo but offers the metadata wizard instead of closing immediately", async () => {
+    it("disables the upload drop zone and file input while an upload is running", async () => {
+      let finishUpload!: (value: Awaited<ReturnType<typeof uploadImage>>) => void;
+      vi.mocked(uploadImage).mockReturnValue(new Promise((resolve) => { finishUpload = resolve; }));
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => routeWithCreate(u, init));
+
+      renderWithProviders(
+        <MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(fileInput, {
+        target: { files: [new File(["data"], "photo.jpg", { type: "image/jpeg" })] },
+      });
+
+      const dropZone = await screen.findByRole("button", { name: /upload photo/i });
+      expect(dropZone).toHaveAttribute("aria-disabled", "true");
+      expect(dropZone).toHaveAttribute("tabindex", "-1");
+      expect(fileInput).toBeDisabled();
+
+      finishUpload({
+        assetId: "new-asset-id",
+        url: "https://x/new.jpg",
+        width: 800,
+        height: 600,
+        format: "jpeg",
+        sizeBytes: 10000,
+      });
+      expect(await screen.findByText("Add photo details")).toBeTruthy();
+    });
+
+    it("(a) single mode: uploading auto-selects the photo and opens the metadata wizard immediately", async () => {
       vi.mocked(uploadImage).mockResolvedValue({
         assetId: "new-asset-id",
         url: "https://x/new.jpg",
@@ -569,11 +600,12 @@ describe("MediaPicker", () => {
       await waitFor(() => expect(onChange).toHaveBeenCalledWith("new-asset-id"));
       // ...but offers the wizard rather than closing right away (an upload —
       // unlike picking an existing photo — is the one moment with no metadata yet).
-      expect(await screen.findByText("1 photo uploaded")).toBeTruthy();
+      expect(await screen.findByText("Add photo details")).toBeTruthy();
+      expect(screen.getByText("Photo 1 of 1")).toBeTruthy();
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
 
-    it("single mode: 'Skip for now' after an upload still closes the picker (photo already selected)", async () => {
+    it("single mode: closing photo details closes the picker after the photo was selected", async () => {
       vi.mocked(uploadImage).mockResolvedValue({
         assetId: "new-asset-id",
         url: "https://x/new.jpg",
@@ -596,14 +628,14 @@ describe("MediaPicker", () => {
       const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
       fireEvent.change(fileInput, { target: { files: [file] } });
 
-      await screen.findByText("1 photo uploaded");
-      fireEvent.click(screen.getByRole("button", { name: /^skip for now$/i }));
+      await screen.findByText("Add photo details");
+      fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
 
       expect(onChange).toHaveBeenCalledWith("new-asset-id");
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it("single mode: 'Add details' opens the wizard collapsed to one photo (no filmstrip/Previous)", async () => {
+    it("single mode: opens the wizard collapsed to one photo (no filmstrip/Previous)", async () => {
       vi.mocked(uploadImage).mockResolvedValue({
         assetId: "new-asset-id",
         url: "https://x/new.jpg",
@@ -624,9 +656,7 @@ describe("MediaPicker", () => {
       const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
       fireEvent.change(fileInput, { target: { files: [file] } });
 
-      await screen.findByText("1 photo uploaded");
-      fireEvent.click(screen.getByRole("button", { name: /^add details$/i }));
-
+      await screen.findByText("Add photo details");
       expect(await screen.findByText("Photo 1 of 1")).toBeTruthy();
       expect(screen.queryByRole("button", { name: /^previous$/i })).toBeNull();
       expect(screen.queryByRole("button", { name: /^next$/i })).toBeNull();
@@ -668,7 +698,7 @@ describe("MediaPicker", () => {
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
 
-    it("multi mode: offers the metadata wizard after upload, and opens it on 'Add details'", async () => {
+    it("multi mode: opens the metadata wizard immediately after upload", async () => {
       vi.mocked(uploadImage).mockResolvedValue({
         assetId: "new-asset-id",
         url: "https://x/new.jpg",
@@ -689,13 +719,11 @@ describe("MediaPicker", () => {
       const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
       fireEvent.change(fileInput, { target: { files: [file] } });
 
-      expect(await screen.findByText("1 photo uploaded")).toBeTruthy();
-      fireEvent.click(screen.getByRole("button", { name: /^add details$/i }));
       expect(await screen.findByText("Add photo details")).toBeTruthy();
       expect(screen.getByText("Photo 1 of 1")).toBeTruthy();
     });
 
-    it("multi mode: 'Skip for now' dismisses the offer without opening the wizard", async () => {
+    it("multi mode: closing photo details returns to the picker", async () => {
       vi.mocked(uploadImage).mockResolvedValue({
         assetId: "new-asset-id",
         url: "https://x/new.jpg",
@@ -716,10 +744,10 @@ describe("MediaPicker", () => {
       const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
       fireEvent.change(fileInput, { target: { files: [file] } });
 
-      await screen.findByText("1 photo uploaded");
-      fireEvent.click(screen.getByRole("button", { name: /^skip for now$/i }));
-      expect(screen.queryByText("1 photo uploaded")).toBeNull();
+      await screen.findByText("Add photo details");
+      fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
       expect(screen.queryByText("Add photo details")).toBeNull();
+      expect(screen.getByRole("listbox", { name: /photos/i })).toBeTruthy();
     });
   });
 
@@ -832,27 +860,29 @@ describe("MediaPicker", () => {
     });
   });
 
-  describe("edit alt text trigger", () => {
-    it("renders with an accessible name and opens the dialog without toggling selection", async () => {
+  describe("edit photo details trigger", () => {
+    it("renders with an accessible name and opens the full metadata form without toggling selection", async () => {
       const onChange = vi.fn();
       renderWithProviders(<MediaPicker mode="single" value="" onChange={onChange} open onOpenChange={vi.fn()} />);
       fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
-      fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /edit photo details for A/i }));
       expect(onChange).not.toHaveBeenCalled();
       expect(await screen.findByLabelText("Alt text")).toBeTruthy();
+      expect(screen.getByLabelText("Title")).toBeTruthy();
+      expect(screen.getByLabelText("Description")).toBeTruthy();
     });
 
     it("meets the 24x24 minimum target size (WCAG 2.2 SC 2.5.8)", async () => {
       renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
       fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
-      const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
+      const editTrigger = await screen.findByRole("button", { name: /edit photo details for A/i });
       expect(editTrigger.className).toMatch(/\bsize-6\b/);
     });
 
     it("does not nest the edit trigger inside role=option (ARIA forbids interactive descendants of option)", async () => {
       renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
       fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
-      const editTrigger = await screen.findByRole("button", { name: /edit alt text for A/i });
+      const editTrigger = await screen.findByRole("button", { name: /edit photo details for A/i });
       expect(editTrigger.closest('[role="option"]')).toBeNull();
     });
 
@@ -865,16 +895,16 @@ describe("MediaPicker", () => {
       });
       renderWithProviders(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
       fireEvent.click(await screen.findByRole("button", { name: /^weddings$/i }));
-      fireEvent.click(await screen.findByRole("button", { name: /edit alt text for A/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /edit photo details for A/i }));
       fireEvent.change(await screen.findByLabelText("Alt text"), { target: { value: "Bride and groom" } });
-      fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+      fireEvent.click(screen.getByRole("button", { name: /^save and exit$/i }));
 
       await waitFor(() =>
         expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/items/a" && (i as RequestInit)?.method === "PATCH")).toBe(true)
       );
       await waitFor(() => expect(screen.queryByLabelText("Alt text")).toBeNull());
 
-      fireEvent.click(screen.getByRole("button", { name: /edit alt text for A/i }));
+      fireEvent.click(screen.getByRole("button", { name: /edit photo details for A/i }));
       expect(await screen.findByLabelText("Alt text")).toHaveValue("Bride and groom");
     });
   });

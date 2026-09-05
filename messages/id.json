@@ -2500,7 +2500,7 @@
           "saving": "Menyimpan…",
           "cancel": "Batal",
           "savedToast": "Teks alternatif disimpan.",
-          "editTrigger": "Edit teks alternatif untuk {name}",
+          "editTrigger": "Edit detail foto untuk {name}",
           "photoFallback": "foto",
           "incompleteWarning": "Teks alternatif belum diisi — foto ini mungkin tidak tampil sesuai rencana."
         },

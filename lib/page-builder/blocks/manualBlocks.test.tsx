@@ -40,6 +40,14 @@ describe("HeadingBlock", () => {
     expect(container).toBeTruthy();
   });
 
+  it("hugs its content by default and keeps a small selectable margin", () => {
+    const { container } = render(<HeadingBlock text="Hello" level="h2" />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.width).toBe("fit-content");
+    expect(root.style.marginTop).toBe("4px");
+    expect(root.style.marginBottom).toBe("4px");
+  });
+
   it("renders the text content", () => {
     render(<HeadingBlock text="My Heading" level="h2" />);
     expect(screen.getByText("My Heading")).toBeTruthy();
@@ -635,6 +643,34 @@ describe("ButtonBlock", () => {
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.getAttribute("href")).toBe("/w/my-studio");
+  });
+
+  it("uses preview-scoped hrefs for page navigation buttons inside preview mode", () => {
+    const mockPuck = {
+      metadata: {
+        workspace: {
+          slug: "my-studio",
+          previewNav: {
+            homeHref: "/en/portfolio-preview?zone=home&draftId=draft-1",
+            galleryHref: "/en/portfolio-preview?zone=gallery&draftId=draft-1",
+          },
+        },
+      },
+    } as Parameters<typeof ButtonBlock>[0]["puck"];
+
+    const { rerender } = render(
+      <ButtonBlock label="Home" action="go-to-home" align="center" puck={mockPuck} />,
+    );
+    expect((document.querySelector("a") as HTMLAnchorElement).getAttribute("href")).toBe(
+      "/en/portfolio-preview?zone=home&draftId=draft-1",
+    );
+
+    rerender(
+      <ButtonBlock label="Gallery" action="go-to-gallery" align="center" puck={mockPuck} />,
+    );
+    expect((document.querySelector("a") as HTMLAnchorElement).getAttribute("href")).toBe(
+      "/en/portfolio-preview?zone=gallery&draftId=draft-1",
+    );
   });
 
   it("does NOT set data-cta for go-to-home action", () => {
@@ -1517,6 +1553,14 @@ describe("ContainerBlock flex defaults", () => {
     expect(html).not.toContain("pf-container-anchor");
   });
 
+  it("uses editable bottom margin instead of a ContainerAnchor drop spacer", () => {
+    const { container, rerender } = render(<ContainerBlock content={MockSlot} />);
+    expect((container.querySelector("section") as HTMLElement).style.marginBottom).toBe("8px");
+
+    rerender(<ContainerBlock content={MockSlot} _style={{ marginBottom: "20px" }} />);
+    expect((container.querySelector("section") as HTMLElement).style.marginBottom).toBe("20px");
+  });
+
   it("uses dedicated content fields over legacy style and legacy props", () => {
     render(
       <ContainerBlock
@@ -1536,10 +1580,20 @@ describe("ContainerBlock flex defaults", () => {
     expect(inner.style.justifyContent).toBe("space-between");
   });
 
-  it("inner content wrapper always has alignItems: stretch (children fill full width)", () => {
+  it("inner content wrapper defaults to alignItems: stretch", () => {
     render(<ContainerBlock content={MockSlot} alignX="left" />);
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.alignItems).toBe("stretch");
+  });
+
+  it("centers child blocks on the cross axis in a horizontal container", () => {
+    render(
+      <ContainerBlock
+        content={MockSlot}
+        _style={{ flexDirection: "row", contentHorizontalAlign: "center" }}
+      />,
+    );
+    expect(screen.getByTestId("slot-inner").style.alignItems).toBe("center");
   });
 
   it("maps _style.alignItems to textAlign on the inner content wrapper", () => {

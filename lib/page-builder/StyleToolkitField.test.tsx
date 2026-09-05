@@ -400,6 +400,41 @@ describe("padding lives in the Layout tab", () => {
   });
 });
 
+describe("margin and leaf-width layout controls", () => {
+  it("shows editable container margins with an effective 8px bottom margin", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    expect(screen.getByText("Margin")).toBeTruthy();
+    const bottom = screen.getByLabelText("Bottom unit").previousElementSibling;
+    expect(bottom).toHaveAttribute("placeholder", "8");
+  });
+
+  it.each(["Heading", "Text", "Button"])("keeps %s width hug-only in the inspector", (blockType) => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify
+        blockType={blockType}
+        p={blockType === "Button" ? {} : undefined}
+        setProp={blockType === "Button" ? () => {} : undefined}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.queryByText("Width")).toBeNull();
+  });
+});
+
 describe("gallery section presets are container-typed", () => {
   for (const t of ["GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset"]) {
     it(`${t} is a CONTAINER_TYPE`, () => {
@@ -1216,9 +1251,10 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
   });
 
   it("loads the gallery item's values and PATCHes on blur with parsed tags/meta", async () => {
+    const setProp = vi.fn();
     mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
       if (url === "/api/portfolio/gallery/items/by-asset/asset123" && opts?.method === "PATCH") {
-        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, matched: 1 }) } as Response);
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fullItem, title: "New title", matched: 1 }) } as Response);
       }
       if (url.includes("/by-asset/")) {
         return Promise.resolve({ ok: true, status: 200, json: async () => fullItem } as Response);
@@ -1229,7 +1265,7 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
       <ContentInputs
         type="Image"
         props={{ alt: "", _style: { bgImagePublicId: "asset123" } }}
-        setProp={vi.fn()}
+        setProp={setProp}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -1243,6 +1279,11 @@ describe("StyleToolkitField — Image block metadata section (shared GalleryItem
     expect(body.tags).toEqual(["outdoor", "sunset"]);
     expect(body.meta).toEqual([{ label: "Photographer", value: "Juan" }]);
     await waitFor(() => expect(screen.getByText("saved")).toBeTruthy());
+    expect(setProp).toHaveBeenCalledWith("meta", expect.objectContaining({
+      title: "New title",
+      altText: "Alt describing photo",
+      sourceAssetId: "asset123",
+    }));
   });
 
   it("says so when the save updated more than one copy of the photo", async () => {

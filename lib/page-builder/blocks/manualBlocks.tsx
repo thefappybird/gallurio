@@ -33,7 +33,7 @@ import {
 } from "@/lib/page-builder/styleToolkit";
 import { PF_COLUMN_STACK_CLASS, PF_ROW_WRAP_CLASS } from "@/lib/page-builder/responsive";
 import { resolveImageModalLayout } from "@/lib/page-builder/types";
-import { getGalleryChromeLabelsFrom } from "@/lib/page-builder/blockContext";
+import { getGalleryChromeLabelsFrom, getPreviewNavFrom } from "@/lib/page-builder/blockContext";
 import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import type { LightboxLabels } from "./Lightbox";
 
@@ -111,6 +111,14 @@ export const TEXT_EFFECTIVE_PAD = {
   left: "4px",
 } as const;
 
+/** Small outer breathing room keeps ordinary leaf blocks easy to select. */
+export const LEAF_EFFECTIVE_MARGIN = {
+  top: "4px",
+  right: "4px",
+  bottom: "4px",
+  left: "4px",
+} as const;
+
 /** Fluid clamp font sizes for headings. `cqi` resolves against the `pfpage` container. */
 const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
   h1: "clamp(2rem, 1.4rem + 4cqi, 3rem)",
@@ -137,6 +145,12 @@ export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & 
         paddingRight: _style?.paddingRight ?? TEXT_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? TEXT_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? TEXT_EFFECTIVE_PAD.left,
+        marginTop: _style?.marginTop ?? LEAF_EFFECTIVE_MARGIN.top,
+        marginRight: _style?.marginRight ?? LEAF_EFFECTIVE_MARGIN.right,
+        marginBottom: _style?.marginBottom ?? LEAF_EFFECTIVE_MARGIN.bottom,
+        marginLeft: _style?.marginLeft ?? LEAF_EFFECTIVE_MARGIN.left,
+        width: _style?.width ?? "fit-content",
+        maxWidth: "100%",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -211,6 +225,12 @@ export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: Bloc
         paddingRight: _style?.paddingRight ?? TEXT_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? TEXT_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? TEXT_EFFECTIVE_PAD.left,
+        marginTop: _style?.marginTop ?? LEAF_EFFECTIVE_MARGIN.top,
+        marginRight: _style?.marginRight ?? LEAF_EFFECTIVE_MARGIN.right,
+        marginBottom: _style?.marginBottom ?? LEAF_EFFECTIVE_MARGIN.bottom,
+        marginLeft: _style?.marginLeft ?? LEAF_EFFECTIVE_MARGIN.left,
+        width: _style?.width ?? "fit-content",
+        maxWidth: "100%",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -484,11 +504,12 @@ export const buttonDefaultProps: ButtonBlockProps = {
 
 export function ButtonBlock({ _style, label, action, align, size, puck }: ButtonBlockProps & { puck?: BlockPuck }) {
   const slug = gallerySlugFrom(puck);
+  const previewNav = getPreviewNavFrom(puck);
   const href = slug
     ? action === "go-to-gallery"
-      ? portfolioGalleryPath(slug)
+      ? previewNav?.galleryHref ?? portfolioGalleryPath(slug)
       : action === "go-to-home"
-        ? portfolioHomePath(slug)
+        ? previewNav?.homeHref ?? portfolioHomePath(slug)
         : "#"
     : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
@@ -559,6 +580,8 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
 
   const wrapperStyle: React.CSSProperties = {
     width: "fit-content",
+    marginTop: LEAF_EFFECTIVE_MARGIN.top,
+    marginBottom: LEAF_EFFECTIVE_MARGIN.bottom,
     ...legacyMargin,
   };
   if (resolved.marginLeft !== undefined) wrapperStyle.marginLeft = resolved.marginLeft as string;
@@ -741,6 +764,8 @@ export const COLUMNS_EFFECTIVE_PAD = {
   left: "1.5rem",
 } as const;
 
+export const CONTAINER_EFFECTIVE_MARGIN_BOTTOM = "8px";
+
 export const columnsDefaultProps: ColumnsBlockProps = {
   columns: 2,
   rows: undefined,
@@ -859,6 +884,7 @@ export function ColumnsBlock({
         paddingRight: _style?.paddingRight ?? COLUMNS_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
+        marginBottom: _style?.marginBottom ?? CONTAINER_EFFECTIVE_MARGIN_BOTTOM,
         minHeight: minHeight ?? undefined,
         ...outerStyle,
         // A7: full-bleed breaks out of any max-width parent container.
@@ -1011,6 +1037,9 @@ const ALIGN_TO_TEXT: Record<string, string | undefined> = {
 const CONTENT_ALIGN_TO_TEXT: Record<NonNullable<BlockStyle["contentHorizontalAlign"]>, React.CSSProperties["textAlign"]> = {
   start: "start", center: "center", end: "end", stretch: undefined,
 };
+const CONTENT_ALIGN_TO_ITEMS: Record<NonNullable<BlockStyle["contentHorizontalAlign"]>, React.CSSProperties["alignItems"]> = {
+  start: "flex-start", center: "center", end: "flex-end", stretch: "stretch",
+};
 
 export function ContainerBlock({
   _style,
@@ -1127,6 +1156,8 @@ export function ContainerBlock({
         paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? CONTAINER_EFFECTIVE_PAD.left,
+        marginBottom:
+          _style?.marginBottom ?? (_chrome === "footer" ? undefined : CONTAINER_EFFECTIVE_MARGIN_BOTTOM),
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...sectionStyle,
@@ -1207,7 +1238,9 @@ export function ContainerBlock({
           // children rather than a single wrapper sibling.
           flex: "1 1 auto",
           minHeight: 0,
-          alignItems: "stretch",
+          alignItems: s.contentHorizontalAlign
+            ? CONTENT_ALIGN_TO_ITEMS[s.contentHorizontalAlign]
+            : "stretch",
           justifyContent: effectiveJustify,
           textAlign: effectiveTextAlign as React.CSSProperties["textAlign"],
           gap: effectiveGap,

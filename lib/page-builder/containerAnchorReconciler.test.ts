@@ -9,26 +9,23 @@ const anchor = (id = "container--anchor") => ({
 const heading = { type: "Heading", props: { id: "heading", text: "Hello" } };
 
 describe("reconcileContainerAnchors", () => {
-  it("strips the anchor once a container holds an ordinary (non-container) child", () => {
+  it("strips legacy anchors without changing real-child order", () => {
     const data = {
       content: [{
         type: "Container",
-        props: { id: "container", content: [anchor(), heading] },
+        props: { id: "container", content: [anchor(), heading, anchor("old")] },
       }],
     };
 
     expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([heading]);
   });
 
-  it("adds an anchor as soon as the final real child is deleted", () => {
-    const data = {
-      content: [{ type: "Container", props: { id: "container", content: [] } }],
-    };
-
-    expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([anchor()]);
+  it("does not add an anchor to an empty container", () => {
+    const data = { content: [{ type: "Container", props: { id: "container", content: [] } }] };
+    expect(reconcileContainerAnchors(data)).toBe(data);
   });
 
-  it("normalizes restored nested containers and dynamic zones", () => {
+  it("strips anchors from nested containers and dynamic zones", () => {
     const data = {
       content: [{
         type: "Columns",
@@ -38,111 +35,28 @@ describe("reconcileContainerAnchors", () => {
         },
       }],
       zones: {
-        footer: [{ type: "Container", props: { id: "footer", content: [] } }],
+        footer: [{ type: "Container", props: { id: "footer", content: [anchor("footer--anchor")] } }],
       },
     };
 
     const normalized = reconcileContainerAnchors(data);
     const columnsContent = normalized.content?.[0].props.content as Array<{ props: { content: unknown } }>;
     expect(columnsContent[0].props.content).toEqual([heading]);
-    expect(normalized.zones?.footer[0].props.content).toEqual([anchor("footer--anchor")]);
+    expect(normalized.zones?.footer[0].props.content).toEqual([]);
   });
 
-  it("is referentially stable when all anchors already match their container state", () => {
-    const data = {
-      content: [
-        { type: "Container", props: { id: "empty", content: [anchor("empty--anchor")] } },
-        { type: "Container", props: { id: "full", content: [heading] } },
-      ],
-    };
-
+  it("is referentially stable and idempotent once anchors are gone", () => {
+    const data = { content: [{ type: "Container", props: { id: "container", content: [heading] } }] };
     expect(reconcileContainerAnchors(data)).toBe(data);
+
+    const first = reconcileContainerAnchors({
+      content: [{ type: "Container", props: { id: "container", content: [anchor(), heading] } }],
+    });
+    expect(reconcileContainerAnchors(first)).toBe(first);
   });
 
-  it("is idempotent for a container with ordinary content: a second pass returns the same reference", () => {
-    const data = {
-      content: [{ type: "Container", props: { id: "container", content: [heading] } }],
-    };
-
-    const first = reconcileContainerAnchors(data);
-    const second = reconcileContainerAnchors(first);
-    expect(second).toBe(first);
-  });
-
-  it("keeps the anchor (appended last) when the only child is a Columns block", () => {
-    const columns = { type: "Columns", props: { id: "cols", content: [] } };
-    const data = { content: [{ type: "Container", props: { id: "container", content: [columns] } }] };
-
-    expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([
-      columns,
-      anchor(),
-    ]);
-  });
-
-  it("keeps the anchor (appended last) when the only child is a Container block", () => {
-    const inner = { type: "Container", props: { id: "inner", content: [] } };
-    const data = { content: [{ type: "Container", props: { id: "container", content: [inner] } }] };
-
-    const result = reconcileContainerAnchors(data).content?.[0].props.content as Array<{ props: { id: string } }>;
-    expect(result[0].props.id).toBe("inner");
-    expect(result[1]).toEqual(anchor());
-  });
-
-  it("keeps the anchor when there are two container-class children", () => {
-    const cols = { type: "Columns", props: { id: "cols", content: [] } };
-    const inner = { type: "Container", props: { id: "inner", content: [] } };
-    const data = { content: [{ type: "Container", props: { id: "container", content: [cols, inner] } }] };
-
-    const result = reconcileContainerAnchors(data).content?.[0].props.content as SlotItemLike[];
-    expect(result).toHaveLength(3);
-    expect(result[result.length - 1].type).toBe("ContainerAnchor");
-  });
-
-  it("strips the anchor when a Columns child sits alongside a non-container child", () => {
-    const columns = { type: "Columns", props: { id: "cols", content: [] } };
-    const data = {
-      content: [{ type: "Container", props: { id: "container", content: [columns, heading, anchor()] } }],
-    };
-
-    expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([columns, heading]);
-  });
-
-  it("leaves preset sections untouched even when they nest only container-class children", () => {
-    const columns = { type: "Columns", props: { id: "cols", content: [] } };
-    const data = { content: [{ type: "HeroSection", props: { id: "hero", content: [columns] } }] };
-
+  it("leaves non-Container preset sections untouched", () => {
+    const data = { content: [{ type: "HeroSection", props: { id: "hero", content: [anchor()] } }] };
     expect(reconcileContainerAnchors(data)).toBe(data);
-  });
-
-  it("reconciles a Container nested inside a Container inside a zone", () => {
-    const data = {
-      zones: {
-        footer: [{
-          type: "Container",
-          props: {
-            id: "outer",
-            content: [{ type: "Container", props: { id: "inner", content: [] } }],
-          },
-        }],
-      },
-    };
-
-    const normalized = reconcileContainerAnchors(data);
-    const outerContent = normalized.zones?.footer[0].props.content as SlotItemLike[];
-    expect(outerContent).toHaveLength(2);
-    expect(outerContent[1].type).toBe("ContainerAnchor");
-    const innerContent = outerContent[0].props.content as SlotItemLike[];
-    expect(innerContent).toEqual([anchor("inner--anchor")]);
-  });
-
-  it("is idempotent for the container-class bridge case: a second pass returns the same reference", () => {
-    const columns = { type: "Columns", props: { id: "cols", content: [] } };
-    const data = { content: [{ type: "Container", props: { id: "container", content: [columns] } }] };
-
-    const first = reconcileContainerAnchors(data);
-    const second = reconcileContainerAnchors(first);
-    expect(second).toBe(first);
   });
 });
-
-type SlotItemLike = { type: string; props: Record<string, unknown> };
