@@ -131,7 +131,20 @@ export function SheetLayout({
           </div>
         )}
         {hasNav && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginTop: "4px" }}>
+          <div
+            style={{
+              position: "sticky",
+              bottom: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "16px",
+              padding: "12px 0 0",
+              borderTop: "1px solid color-mix(in srgb, var(--pf-color-fg, #111) 12%, transparent)",
+              background: "linear-gradient(to top, var(--pf-color-bg, #fff) 60%, transparent)",
+              backdropFilter: "blur(6px)",
+            }}
+          >
             <NavArrowButton direction="prev" variant="brand" onClick={onPrev} disabled={!canGoPrev} pending={false} label={prevLabel} />
             <span style={{ fontSize: "0.8125rem", opacity: 0.65 }}>
               {counterText}
