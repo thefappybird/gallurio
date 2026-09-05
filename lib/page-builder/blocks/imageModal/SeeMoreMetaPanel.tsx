@@ -14,6 +14,16 @@ import { useId, useState } from "react";
  * upward. Also: keying this component on `image.id` (or unmounting/
  * remounting per image) is the caller's job for resetting expanded state on
  * image change — no internal effect does that here.
+ *
+ * Stacking: the expanded panel carries its own scrim background (sized to
+ * whatever height its own content actually is, since real metadata can be
+ * several times taller than the caller's chrome bar) and sits at z-index 0 —
+ * a plain absolute-positioned element with no explicit z-index would still
+ * paint above any non-positioned sibling in the caller (dots row, counter,
+ * filmstrip), regardless of DOM order. Callers with controls that must stay
+ * visible/clickable while the panel is expanded (dot pagination, counter,
+ * filmstrip) MUST give those controls `position: relative` + an explicit
+ * `zIndex` of at least 1 so they paint above this panel.
  */
 export function SeeMoreMetaPanel({
   facts,
@@ -57,71 +67,63 @@ export function SeeMoreMetaPanel({
         {expanded ? seeLessLabel : seeMoreLabel}
       </button>
       {expanded && (
-        <>
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(0,0,0,0.5)",
-              backdropFilter: "blur(6px)",
-            }}
-          />
-          <div
-            id={panelId}
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              maxHeight: "min(320px, 60vh)",
-              overflowY: "auto",
-              boxSizing: "border-box",
-              padding: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              color: "#f2f2f2",
-            }}
-          >
-            {(facts.length > 0 || meta.length > 0) && (
-              <dl
-                style={{
-                  margin: 0,
-                  display: "grid",
-                  gridTemplateColumns: "auto 1fr",
-                  columnGap: "12px",
-                  rowGap: "6px",
-                  fontSize: "0.875rem",
-                }}
-              >
-                {facts.map((fact) => (
-                  <FactRow key={fact.label} label={fact.label} value={fact.value} />
-                ))}
-                {meta.map((row, i) => (
-                  <FactRow key={`${row.label}-${i}`} label={row.label} value={row.value} />
-                ))}
-              </dl>
-            )}
-            {tags.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    style={{
-                      fontSize: "0.75rem",
-                      padding: "2px 8px",
-                      borderRadius: "var(--pf-radius, 4px)",
-                      border: "1px solid rgba(242,242,242,0.33)",
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
+        <div
+          id={panelId}
+          style={{
+            position: "absolute",
+            zIndex: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            maxHeight: "min(320px, 60vh)",
+            overflowY: "auto",
+            boxSizing: "border-box",
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            color: "#f2f2f2",
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          {(facts.length > 0 || meta.length > 0) && (
+            <dl
+              style={{
+                margin: 0,
+                display: "grid",
+                gridTemplateColumns: "auto 1fr",
+                columnGap: "12px",
+                rowGap: "6px",
+                fontSize: "0.875rem",
+              }}
+            >
+              {facts.map((fact) => (
+                <FactRow key={fact.label} label={fact.label} value={fact.value} />
+              ))}
+              {meta.map((row, i) => (
+                <FactRow key={`${row.label}-${i}`} label={row.label} value={row.value} />
+              ))}
+            </dl>
+          )}
+          {tags.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "2px 8px",
+                    borderRadius: "var(--pf-radius, 4px)",
+                    border: "1px solid rgba(242,242,242,0.33)",
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

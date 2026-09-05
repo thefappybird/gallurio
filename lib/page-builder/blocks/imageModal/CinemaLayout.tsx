@@ -16,6 +16,8 @@ const CINEMA_STYLES = `
   transform: translateY(8px);
 }
 .pf-modal-cinema-filmstrip {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: 6px;
   overflow-x: auto;
@@ -174,7 +176,7 @@ export function CinemaLayout({
               total <= 8 ? (
                 <div
                   className="pf-modal-cinema-dots"
-                  style={{ display: "flex", gap: "8px", flex: "0 0 auto" }}
+                  style={{ position: "relative", zIndex: 1, display: "flex", gap: "0", flex: "0 0 auto" }}
                 >
                   <DotPagination
                     total={total}
@@ -184,7 +186,15 @@ export function CinemaLayout({
                   />
                 </div>
               ) : (
-                <span style={{ fontSize: "0.75rem", color: "rgba(242,242,242,0.66)", flex: "0 0 auto" }}>
+                <span
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    fontSize: "0.75rem",
+                    color: "rgba(242,242,242,0.66)",
+                    flex: "0 0 auto",
+                  }}
+                >
                   {counterText}
                 </span>
               )

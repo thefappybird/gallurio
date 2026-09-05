@@ -115,7 +115,14 @@ export function CaptionLayout({
             total <= 8 ? (
               <div
                 className="pf-modal-caption-dots"
-                style={{ marginTop: "8px", display: "flex", justifyContent: "center", gap: "8px" }}
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  marginTop: "8px",
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "0",
+                }}
               >
                 <DotPagination
                   total={total}
@@ -125,7 +132,15 @@ export function CaptionLayout({
                 />
               </div>
             ) : (
-              <p style={{ margin: "8px 0 0", color: "rgba(242,242,242,0.66)", fontSize: "0.75rem" }}>
+              <p
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  margin: "8px 0 0",
+                  color: "rgba(242,242,242,0.66)",
+                  fontSize: "0.75rem",
+                }}
+              >
                 {counterText}
               </p>
             )

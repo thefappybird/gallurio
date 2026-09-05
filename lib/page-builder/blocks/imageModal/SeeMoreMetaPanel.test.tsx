@@ -76,6 +76,26 @@ describe("SeeMoreMetaPanel", () => {
     expect(panel!.style.overflowY).toBe("auto");
   });
 
+  it("gives the panel itself the scrim background, with no separate backing layer", () => {
+    render(
+      <SeeMoreMetaPanel
+        facts={[{ label: "Date", value: "2024-01-01" }]}
+        meta={[]}
+        tags={[]}
+        {...labels}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+
+    const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
+    const panel = document.getElementById(panelId!);
+    expect(panel).not.toBeNull();
+    expect(panel!.style.background).toContain("rgba(0, 0, 0, 0.5)");
+    expect(panel!.style.backdropFilter).toBe("blur(6px)");
+    // No separate aria-hidden scrim sibling — the panel carries its own background.
+    expect(document.querySelectorAll('[aria-hidden="true"]')).toHaveLength(0);
+  });
+
   it("wires aria-controls to the panel id and aria-expanded reflects collapsed state", () => {
     render(
       <SeeMoreMetaPanel

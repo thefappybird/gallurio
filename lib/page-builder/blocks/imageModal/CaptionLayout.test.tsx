@@ -81,6 +81,42 @@ describe("CaptionLayout — see-more metadata panel", () => {
   });
 });
 
+describe("CaptionLayout — expanded panel stays under the dots/counter", () => {
+  it("keeps the dot-pagination row's z-index above the expanded see-more panel's", () => {
+    const images = [img("a", { location: "Manila" }), img("b"), img("c")];
+    render(
+      <CaptionLayout
+        {...baseProps({ image: images[0], images, index: 0, total: 3, hasNav: true })}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+
+    const dotsRow = document.querySelector(".pf-modal-caption-dots") as HTMLElement;
+    const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
+    const panel = document.getElementById(panelId!)!;
+
+    expect(dotsRow.style.position).toBe("relative");
+    expect(Number(dotsRow.style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
+  });
+
+  it("keeps the numeric counter's z-index above the expanded see-more panel's when total > 8", () => {
+    const images = Array.from({ length: 9 }, (_, i) => img(`p${i}`, i === 0 ? { location: "Manila" } : {}));
+    render(
+      <CaptionLayout
+        {...baseProps({ image: images[0], images, index: 0, total: 9, hasNav: true, counterText: "1 / 9" })}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+
+    const counter = screen.getByText("1 / 9");
+    const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
+    const panel = document.getElementById(panelId!)!;
+
+    expect(counter.style.position).toBe("relative");
+    expect(Number(counter.style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
+  });
+});
+
 describe("CaptionLayout — dot pagination", () => {
   it("renders one clickable dot per photo when total <= 8, marking the current one", () => {
     const images = [img("a"), img("b"), img("c")];

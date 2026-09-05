@@ -81,6 +81,45 @@ describe("CinemaLayout — see-more metadata panel", () => {
   });
 });
 
+describe("CinemaLayout — expanded panel stays under dots/counter/filmstrip", () => {
+  it("keeps the dot-pagination row's and filmstrip's z-index above the expanded see-more panel's", () => {
+    const images = [img("a", { location: "Manila" }), img("b"), img("c")];
+    render(
+      <CinemaLayout
+        {...baseProps({ image: images[0], images, index: 0, total: 3, hasNav: true })}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+
+    const dotsRow = document.querySelector(".pf-modal-cinema-dots") as HTMLElement;
+    const filmstrip = screen.getByRole("listbox", { name: "Photo filmstrip" });
+    const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
+    const panel = document.getElementById(panelId!)!;
+
+    expect(dotsRow.style.position).toBe("relative");
+    expect(Number(dotsRow.style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
+    expect(getComputedStyle(filmstrip).position).toBe("relative");
+    expect(Number(getComputedStyle(filmstrip).zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
+  });
+
+  it("keeps the numeric counter's z-index above the expanded see-more panel's when total > 8", () => {
+    const images = Array.from({ length: 9 }, (_, i) => img(`p${i}`, i === 0 ? { location: "Manila" } : {}));
+    render(
+      <CinemaLayout
+        {...baseProps({ image: images[0], images, index: 0, total: 9, hasNav: true, counterText: "1 / 9" })}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+
+    const counter = screen.getByText("1 / 9");
+    const panelId = screen.getByRole("button", { name: "See less" }).getAttribute("aria-controls");
+    const panel = document.getElementById(panelId!)!;
+
+    expect(counter.style.position).toBe("relative");
+    expect(Number(counter.style.zIndex)).toBeGreaterThan(Number(panel.style.zIndex));
+  });
+});
+
 describe("CinemaLayout — dot pagination", () => {
   it("renders one clickable dot per photo when total <= 8, marking the current one", () => {
     const images = [img("a"), img("b"), img("c")];
