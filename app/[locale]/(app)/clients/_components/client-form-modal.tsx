@@ -296,8 +296,9 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
 
               {/* Row 4: Tags */}
               <div className="flex flex-col gap-1.5">
-                <Label>{t("form.tags")}</Label>
+                <Label htmlFor="clientTags">{t("form.tags")}</Label>
                 <TagsInput
+                  id="clientTags"
                   tags={tags}
                   onChange={(next) => form.setValue("tags", next, { shouldDirty: true })}
                   placeholder={t("form.tagsPlaceholder")}

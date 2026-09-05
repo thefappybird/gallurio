@@ -14,7 +14,7 @@
  * server endpoints — see the inline fetch calls below for the exact contract.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -113,6 +113,7 @@ export function ImageBlockMetaSection({
   onSaved?: (item: GalleryItemMeta) => void;
 }) {
   const t = useTranslations("app.pageBuilder.editor.imageBlockDetails");
+  const tagsInputId = useId();
 
   const [load, setLoad] = useState<LoadState>(
     assetId ? { kind: "loading", forAssetId: assetId } : { kind: "idle", forAssetId: null }
@@ -375,9 +376,10 @@ export function ImageBlockMetaSection({
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{t("tagsLabel")}</span>
+      <div className="flex flex-col gap-1 text-sm">
+        <label htmlFor={tagsInputId}>{t("tagsLabel")}</label>
         <TagsInput
+          id={tagsInputId}
           tags={form.tags}
           onChange={(tags) => {
             const next = { ...form, tags };
@@ -390,7 +392,7 @@ export function ImageBlockMetaSection({
           removeLabel={(tag) => t("removeTag", { tag })}
         />
         <span className="text-xs text-muted-foreground">{t("tagsHint")}</span>
-      </label>
+      </div>
 
       <div className="flex flex-col gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
