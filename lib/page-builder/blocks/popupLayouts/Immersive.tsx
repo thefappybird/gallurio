@@ -243,7 +243,7 @@ export function Immersive({ status, images, collectionName, hasMore, onLoadMore,
           {!hasMore && images.length <= 8 ? (
             <div
               data-popup-immersive-dots=""
-              style={{ display: "flex", justifyContent: "center", gap: "8px", padding: "10px 0 0", flexShrink: 0 }}
+              style={{ display: "flex", justifyContent: "center", gap: "0", padding: "10px 0 0", flexShrink: 0 }}
             >
               <DotPagination
                 total={images.length}
