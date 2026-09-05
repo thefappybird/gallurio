@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
+import { TagsInput } from "@/components/ui/tags-input";
 import { cn } from "@/lib/utils";
 import type { GalleryMetaRow, PickerItem } from "./types";
 
@@ -406,15 +407,20 @@ export function ImageMetaWizard({
               )}
             </FormField>
 
-            <TagsField
-              tags={form.tags}
-              onChange={(tags) => updateForm({ tags })}
-              label={labels.fieldTags}
-              placeholder={labels.fieldTagsPlaceholder}
-              hint={labels.fieldTagsHint}
-              removeLabel={labels.removeTag}
-              disabled={saving}
-            />
+            <FormField label={labels.fieldTags} hint={labels.fieldTagsHint}>
+              {({ id }) => (
+                <TagsInput
+                  id={id}
+                  tags={form.tags}
+                  onChange={(tags) => updateForm({ tags })}
+                  placeholder={labels.fieldTagsPlaceholder}
+                  maxTags={WIZARD_TAGS_CAP}
+                  maxTagLength={WIZARD_TAG_MAX}
+                  disabled={saving}
+                  removeLabel={labels.removeTag}
+                />
+              )}
+            </FormField>
 
             <MetaRowsField
               rows={form.meta}
@@ -460,82 +466,6 @@ export function ImageMetaWizard({
       </Dialog>
 
     </>
-  );
-}
-
-function TagsField({
-  tags,
-  onChange,
-  label,
-  placeholder,
-  hint,
-  removeLabel,
-  disabled,
-}: {
-  tags: string[];
-  onChange: (tags: string[]) => void;
-  label: string;
-  placeholder: string;
-  hint: string;
-  removeLabel: (tag: string) => string;
-  disabled: boolean;
-}) {
-  const [draft, setDraft] = useState("");
-
-  function commit() {
-    const val = draft.trim();
-    setDraft("");
-    if (!val) return;
-    const parts = val.split(",").map((p) => p.trim()).filter(Boolean);
-    const next = [...tags];
-    for (const p of parts) {
-      if (next.length >= WIZARD_TAGS_CAP) break;
-      const clipped = p.slice(0, WIZARD_TAG_MAX);
-      if (!next.includes(clipped)) next.push(clipped);
-    }
-    onChange(next);
-  }
-
-  return (
-    <FormField label={label} hint={hint}>
-      {({ id }) => (
-        <div className="flex flex-col gap-1.5">
-          <Input
-            id={id}
-            value={draft}
-            placeholder={placeholder}
-            maxLength={WIZARD_TAG_MAX}
-            disabled={disabled || tags.length >= WIZARD_TAGS_CAP}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === ",") {
-                e.preventDefault();
-                commit();
-              }
-            }}
-            onBlur={commit}
-          />
-          {tags.length > 0 && (
-            <ul className="flex flex-wrap gap-1.5">
-              {tags.map((tag, i) => (
-                <li key={`${tag}-${i}`} className="inline-flex items-center gap-1 border border-border bg-muted/40 px-2 py-1 text-xs">
-                  <span>{tag}</span>
-                  <button
-                    type="button"
-                    aria-label={removeLabel(tag)}
-                    disabled={disabled}
-                    onClick={() => onChange(tags.filter((_, j) => j !== i))}
-                    className="inline-flex size-4 items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-                  >
-                    <XIcon className="size-3" aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </FormField>
   );
 }
 
