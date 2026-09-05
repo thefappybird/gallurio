@@ -3675,7 +3675,9 @@
         "carouselNext": "الصورة التالية",
         "lightboxClose": "إغلاق",
         "lightboxCounter": "{current} من {total}",
-        "lightboxFilmstrip": "شريط الصور المصغّرة"
+        "lightboxFilmstrip": "شريط الصور المصغّرة",
+        "lightboxSeeMore": "عرض المزيد",
+        "lightboxSeeLess": "عرض أقل"
       }
     },
     "nav": {

@@ -122,6 +122,8 @@ export function GalleryGridBlock({
     next: chromeLabels.carouselNext,
     counter: chromeLabels.lightboxCounter,
     filmstrip: chromeLabels.lightboxFilmstrip,
+    seeMore: chromeLabels.lightboxSeeMore,
+    seeLess: chromeLabels.lightboxSeeLess,
   };
   const brandVars = puck?.metadata?.workspace?.brandVars;
   const imageModalLayout = resolveImageModalLayout(

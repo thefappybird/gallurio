@@ -96,6 +96,10 @@ export type GalleryChromeLabels = {
   lightboxCounter?: string;
   /** aria-label for the cinema layout's filmstrip listbox. */
   lightboxFilmstrip?: string;
+  /** "See more" toggle for the collapsed facts/meta/tags panel inside the lightbox. */
+  lightboxSeeMore?: string;
+  /** "See less" — same toggle, expanded state. */
+  lightboxSeeLess?: string;
 };
 
 /** Localized strings consumed by the Navigation block (resolved at the page boundary). */
@@ -206,6 +210,8 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
     lightboxClose: g.lightboxClose ?? "Close",
     lightboxCounter: g.lightboxCounter ?? "{current} / {total}",
     lightboxFilmstrip: g.lightboxFilmstrip ?? "Photo filmstrip",
+    lightboxSeeMore: g.lightboxSeeMore ?? "See more",
+    lightboxSeeLess: g.lightboxSeeLess ?? "See less",
   };
 }
 

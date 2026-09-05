@@ -142,6 +142,8 @@ export function GalleryMasonryBlock({
     next: labels.carouselNext,
     counter: labels.lightboxCounter,
     filmstrip: labels.lightboxFilmstrip,
+    seeMore: labels.lightboxSeeMore,
+    seeLess: labels.lightboxSeeLess,
   };
   const brandVars = puck?.metadata?.workspace?.brandVars;
   const imageModalLayout = resolveImageModalLayout(

@@ -58,6 +58,10 @@ export type ImageModalLeafProps = {
   nextLabel: string;
   counterText: string;
   filmstripLabel: string;
+  /** "See more"/"See less" toggle copy for the collapsed facts/meta/tags
+   *  disclosure (SeeMoreMetaPanel) inside caption/cinema layouts. */
+  seeMoreLabel: string;
+  seeLessLabel: string;
 };
 
 /** Every string this modal introduces beyond the pre-existing closeLabel/
@@ -72,6 +76,10 @@ export type LightboxLabels = {
   counter?: string;
   /** aria-label for the cinema layout's filmstrip listbox. */
   filmstrip?: string;
+  /** "See more" disclosure toggle for the facts/meta/tags panel. */
+  seeMore?: string;
+  /** "See less" — same toggle, expanded state. */
+  seeLess?: string;
 };
 
 type LightboxNewProps = {
@@ -292,6 +300,8 @@ export function Lightbox(props: LightboxProps) {
   const nextLabel = labels?.next ?? "Next image";
   const counterTemplate = labels?.counter ?? "{current} / {total}";
   const filmstripLabel = labels?.filmstrip ?? "Photo filmstrip";
+  const seeMoreLabel = labels?.seeMore ?? "See more";
+  const seeLessLabel = labels?.seeLess ?? "See less";
   const initialIndexRaw = legacy ? 0 : props.initialIndex ?? 0;
 
   const [currentIndex, setCurrentIndex] = useState(() =>
@@ -414,6 +424,8 @@ export function Lightbox(props: LightboxProps) {
               nextLabel={nextLabel}
               counterText={counterText}
               filmstripLabel={filmstripLabel}
+              seeMoreLabel={seeMoreLabel}
+              seeLessLabel={seeLessLabel}
             />
           ) : null}
         </DialogPrimitive.Popup>

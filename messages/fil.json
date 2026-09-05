@@ -3675,7 +3675,9 @@
         "carouselNext": "Susunod na larawan",
         "lightboxClose": "Isara",
         "lightboxCounter": "{current} ng {total}",
-        "lightboxFilmstrip": "Filmstrip ng mga larawan"
+        "lightboxFilmstrip": "Filmstrip ng mga larawan",
+        "lightboxSeeMore": "Tingnan pa",
+        "lightboxSeeLess": "Ipakita nang mas kaunti"
       }
     },
     "nav": {

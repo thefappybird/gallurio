@@ -398,6 +398,8 @@ export function ImageBlock({
               next: chromeLabels.carouselNext,
               counter: chromeLabels.lightboxCounter,
               filmstrip: chromeLabels.lightboxFilmstrip,
+              seeMore: chromeLabels.lightboxSeeMore,
+              seeLess: chromeLabels.lightboxSeeLess,
             };
             return (
               <GalleryLightboxTrigger

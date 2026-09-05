@@ -3675,7 +3675,9 @@
         "carouselNext": "Next image",
         "lightboxClose": "Close",
         "lightboxCounter": "{current} / {total}",
-        "lightboxFilmstrip": "Photo filmstrip"
+        "lightboxFilmstrip": "Photo filmstrip",
+        "lightboxSeeMore": "See more",
+        "lightboxSeeLess": "See less"
       }
     },
     "nav": {

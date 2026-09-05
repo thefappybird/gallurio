@@ -236,13 +236,13 @@ describe("GalleryGridBlock — nav across slot-composed Image children (Item 11)
 
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByAltText("Photo 1")).toBeInTheDocument();
-    expect(within(dialog).getByText("2 / 5")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Photo 2 of 5" })).toHaveAttribute("aria-current", "true");
     expect(within(dialog).getByRole("button", { name: /previous image/i })).not.toBeDisabled();
     expect(within(dialog).getByRole("button", { name: /next image/i })).not.toBeDisabled();
 
     fireEvent.click(within(dialog).getByRole("button", { name: /next image/i }));
     expect(within(dialog).getByAltText("Photo 2")).toBeInTheDocument();
-    expect(within(dialog).getByText("3 / 5")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Photo 3 of 5" })).toHaveAttribute("aria-current", "true");
   });
 
   it("a standalone Image block outside a gallery block still opens without nav", () => {

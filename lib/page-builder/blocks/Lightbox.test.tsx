@@ -47,23 +47,23 @@ describe("Lightbox — navigation gated by images.length", () => {
     expect(screen.queryByText(/\d+ \/ \d+/)).not.toBeInTheDocument();
   });
 
-  it("shows prev/next and a counter once there is more than one image", () => {
+  it("shows prev/next and dot pagination (total <= 8) once there is more than one image", () => {
     render(<Lightbox images={[img("a"), img("b"), img("c")]} onClose={() => {}} />);
     expect(screen.getByRole("button", { name: /next image/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /previous image/i })).toBeInTheDocument();
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 1 of 3" })).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: /previous image/i })).toBeDisabled();
   });
 
-  it("arrow keys move the current image and update the counter", () => {
+  it("arrow keys move the current image and update the marked dot", () => {
     render(<Lightbox images={[img("a"), img("b")]} onClose={() => {}} />);
     const dialog = screen.getByRole("dialog");
-    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 1 of 2" })).toHaveAttribute("aria-current", "true");
     fireEvent.keyDown(dialog, { key: "ArrowRight" });
-    expect(screen.getByText("2 / 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 2 of 2" })).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: /next image/i })).toBeDisabled();
     fireEvent.keyDown(dialog, { key: "ArrowLeft" });
-    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 1 of 2" })).toHaveAttribute("aria-current", "true");
   });
 });
 
@@ -96,7 +96,7 @@ describe("Lightbox — paging at the loaded end", () => {
         />
       );
     });
-    expect(screen.getByText("3 / 4")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Photo 3 of 4" })).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: /next image/i })).not.toHaveAttribute("aria-busy");
   });
 

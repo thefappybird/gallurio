@@ -3675,7 +3675,9 @@
         "carouselNext": "Gambar berikutnya",
         "lightboxClose": "Tutup",
         "lightboxCounter": "{current} dari {total}",
-        "lightboxFilmstrip": "Filmstrip foto"
+        "lightboxFilmstrip": "Filmstrip foto",
+        "lightboxSeeMore": "Lihat selengkapnya",
+        "lightboxSeeLess": "Lihat lebih sedikit"
       }
     },
     "nav": {

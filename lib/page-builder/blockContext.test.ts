@@ -24,6 +24,8 @@ const DEFAULTS = {
   lightboxClose: "Close",
   lightboxCounter: "{current} / {total}",
   lightboxFilmstrip: "Photo filmstrip",
+  lightboxSeeMore: "See more",
+  lightboxSeeLess: "See less",
 };
 
 // ---------------------------------------------------------------------------
@@ -31,11 +33,11 @@ const DEFAULTS = {
 // ---------------------------------------------------------------------------
 
 describe("applyGalleryChromeDefaults", () => {
-  it("returns all 11 defaults when called with an empty object", () => {
+  it("returns all 13 defaults when called with an empty object", () => {
     expect(applyGalleryChromeDefaults({})).toEqual(DEFAULTS);
   });
 
-  it("returns all 11 defaults when called with no argument", () => {
+  it("returns all 13 defaults when called with no argument", () => {
     expect(applyGalleryChromeDefaults()).toEqual(DEFAULTS);
   });
 
@@ -52,6 +54,8 @@ describe("applyGalleryChromeDefaults", () => {
     expect(result.lightboxClose).toBe(DEFAULTS.lightboxClose);
     expect(result.lightboxCounter).toBe(DEFAULTS.lightboxCounter);
     expect(result.lightboxFilmstrip).toBe(DEFAULTS.lightboxFilmstrip);
+    expect(result.lightboxSeeMore).toBe(DEFAULTS.lightboxSeeMore);
+    expect(result.lightboxSeeLess).toBe(DEFAULTS.lightboxSeeLess);
   });
 });
 
@@ -100,9 +104,11 @@ describe("getGalleryChromeLabelsFrom", () => {
     expect(result.lightboxClose).toBe(DEFAULTS.lightboxClose);
     expect(result.lightboxCounter).toBe(DEFAULTS.lightboxCounter);
     expect(result.lightboxFilmstrip).toBe(DEFAULTS.lightboxFilmstrip);
+    expect(result.lightboxSeeMore).toBe(DEFAULTS.lightboxSeeMore);
+    expect(result.lightboxSeeLess).toBe(DEFAULTS.lightboxSeeLess);
   });
 
-  it("passes through all 11 keys when fully provided via puck metadata", () => {
+  it("passes through all 13 keys when fully provided via puck metadata", () => {
     const chrome = {
       empty: "E",
       noCollection: "NC",
@@ -115,6 +121,8 @@ describe("getGalleryChromeLabelsFrom", () => {
       lightboxClose: "LC",
       lightboxCounter: "LCT",
       lightboxFilmstrip: "LF",
+      lightboxSeeMore: "SM",
+      lightboxSeeLess: "SL",
     };
     const puck = { metadata: { workspace: { _id: "ws-3", name: "X", chrome: { gallery: chrome } } } };
     expect(getGalleryChromeLabelsFrom(puck)).toEqual(chrome);
