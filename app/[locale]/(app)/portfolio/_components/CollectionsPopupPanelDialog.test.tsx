@@ -406,7 +406,7 @@ describe("CollectionsPopupPanelDialog layout pickers", () => {
     expect(screen.getByRole("radio", { name: /^caption$/i })).toHaveAttribute("aria-checked", "true");
   });
 
-  it("writes only popupLayout when a popup layout tile is clicked, leaving every other field untouched", () => {
+  it("writes popupLayout with that layout's default column count, preserving every other field", () => {
     const onChange = vi.fn();
     const configWithExtras: PortfolioCollectionsPopupConfig = {
       ...baseConfig,
@@ -422,7 +422,7 @@ describe("CollectionsPopupPanelDialog layout pickers", () => {
       />,
     );
     fireEvent.click(screen.getByRole("radio", { name: /^justified$/i }));
-    expect(onChange).toHaveBeenCalledWith({ ...configWithExtras, popupLayout: "justified" });
+    expect(onChange).toHaveBeenCalledWith({ ...configWithExtras, popupLayout: "justified", popupColumns: 3 });
   });
 
   it("writes only imageModalLayout when an image-modal tile is clicked", () => {

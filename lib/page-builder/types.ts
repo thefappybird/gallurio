@@ -47,10 +47,10 @@ export type BrandKitRadius = (typeof BRAND_KIT_RADII)[number];
 export const BRAND_KIT_BUTTON_STYLES = ["solid", "outline", "soft"] as const;
 export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 
-/** Per-block button style union. Adds "link" (hairline underline, no fill/frame)
- *  on top of the brand-kit-wide styles — "link" is not a sensible kit-wide
- *  default, so it is intentionally excluded from BRAND_KIT_BUTTON_STYLES. */
-export const BLOCK_BUTTON_STYLES = [...BRAND_KIT_BUTTON_STYLES, "link"] as const;
+/** Per-block button style union. Adds "naked" (transparent fill/frame) and
+ *  "link" (hairline underline) on top of the brand-kit-wide styles. Neither
+ *  is a sensible kit-wide default, so both stay out of BRAND_KIT_BUTTON_STYLES. */
+export const BLOCK_BUTTON_STYLES = [...BRAND_KIT_BUTTON_STYLES, "naked", "link"] as const;
 export type BlockButtonStyle = (typeof BLOCK_BUTTON_STYLES)[number];
 
 // ---------------------------------------------------------------------------
@@ -75,8 +75,18 @@ export function resolvePopupLayout(v: PopupLayout | "" | undefined): PopupLayout
 }
 
 /** Resolves unset or invalid legacy popup column counts to the WYSIWYG default. */
-export function resolvePopupColumns(value: number | undefined): PopupColumns {
-  return POPUP_COLUMN_OPTIONS.includes(value as PopupColumns) ? (value as PopupColumns) : 3;
+export const POPUP_LAYOUT_DEFAULT_COLUMNS: Record<PopupLayout, PopupColumns> = {
+  "contact-sheet": 3,
+  justified: 3,
+  "split-index": 2,
+  immersive: 3,
+};
+
+/** Resolves per-layout defaults so an unset Split index opens as its 2×2 card grid. */
+export function resolvePopupColumns(value: number | undefined, layout: PopupLayout = "contact-sheet"): PopupColumns {
+  return POPUP_COLUMN_OPTIONS.includes(value as PopupColumns)
+    ? (value as PopupColumns)
+    : POPUP_LAYOUT_DEFAULT_COLUMNS[layout];
 }
 
 /** Resolves the unset "" image modal layout to its default. */
@@ -213,6 +223,8 @@ export function resolveNavOrder(order: unknown): NavItemKey[] {
 }
 
 export type PortfolioHeaderConfig = {
+  /** Visual direction for the complete navigation row. */
+  navDirection?: "ltr" | "rtl";
   /** Override for the workspace name shown in the navigation. Undefined = workspace name; empty = logo only. */
   brandText?: string;
   /** URL for the logo image. */
@@ -225,10 +237,28 @@ export type PortfolioHeaderConfig = {
   backgroundOpacity?: number;
   /** Nav link text color. Token or hex. */
   linkColor?: string;
+  /** Inactive link fill color. Unset keeps the transparent link treatment. */
+  inactiveLinkBackgroundColor?: string;
+  /** 0-100 opacity applied to the inactive link fill. */
+  inactiveLinkOpacity?: number;
+  /** Inactive link frame width in px. */
+  inactiveLinkBorderWidth?: number;
+  /** Inactive link frame color. */
+  inactiveLinkBorderColor?: string;
+  /** Inactive link corner radius. */
+  inactiveLinkRadius?: BrandKitRadius | "";
   /** Brand heading color. Token or hex. */
   brandTextColor?: string;
   /** Active nav link text color. Token or hex. */
   activeLinkColor?: string;
+  /** Active link fill color. Supersedes the legacy highlight toggle when set. */
+  activeLinkBackgroundColor?: string;
+  /** 0-100 opacity applied to the active link fill. */
+  activeLinkOpacity?: number;
+  /** Active link frame width in px. */
+  activeLinkBorderWidth?: number;
+  /** Active link frame color. */
+  activeLinkBorderColor?: string;
   /** Bottom border width in px (0 = none). */
   borderBottomWidth?: number;
   /** Bottom border color. Token or hex. */

@@ -39,6 +39,7 @@ import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/li
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
 import { createEditorConfig, type PuckTranslate } from "@/lib/page-builder/editorConfig";
+import { ContactDetailsDefaultsContext, type WorkspaceContactDefaults } from "@/lib/page-builder/StyleToolkitField";
 import { reconcileContainerAnchors } from "@/lib/page-builder/containerAnchorReconciler";
 import { reconcileMasonryClones } from "@/lib/page-builder/masonryCloneReconciler";
 import {
@@ -80,6 +81,7 @@ import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/typ
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
 import { getPageBodyContent, normalizePageBody } from "@/lib/page-builder/pageBody";
+import { applyPageBodyContainerDefaults } from "@/lib/page-builder/pageBodyContainerDefaults";
 import {
   dismissPortfolioGuideAction,
   updatePortfolioSlugAction,
@@ -87,6 +89,7 @@ import {
 import {
   createDraftAction,
   updateDraftAction,
+  refreshCollectionReferencesAction,
   deleteDraftAction,
   getDraftAction,
   listDraftsAction,
@@ -189,6 +192,8 @@ type Props = {
   initialData: { home: PuckData; gallery: PuckData };
   initialBrandKit: PortfolioBrandKit;
   initialContact: PortfolioContactConfig;
+  /** Live Business details, kept separate from the draft-owned contact-modal config. */
+  workspaceContact?: WorkspaceContactDefaults | null;
   initialHeaderConfig: PortfolioHeaderConfig;
   initialCollectionsPopup: PortfolioCollectionsPopupConfig;
   /** Per-page public chrome language ("" = auto from workspace country). */
@@ -934,6 +939,7 @@ export function EditorShell({
   initialData,
   initialBrandKit,
   initialContact,
+  workspaceContact = null,
   initialFormLocale,
   initialFormDir,
   initialHeaderConfig,
@@ -1217,6 +1223,10 @@ export function EditorShell({
     home: prepareForEditor(initialData.home ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
     gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE, initialHeaderConfig, workspaceName) as unknown as PuckData,
   });
+  // Multiple files may complete out of order. Only the newest reconciliation
+  // response is allowed to replace the canvas, so an earlier request cannot
+  // overwrite a newer collection count/cover.
+  const collectionRefreshRequestRef = useRef(0);
   // Puck emits an onChange echo on mount/remount that just replays the seed it
   // was handed — merely loading a zone must not autosave/bump the version, only
   // genuine edits should. A single "ignore the next change" boolean can't track
@@ -1347,6 +1357,45 @@ export function EditorShell({
     () => persistLocalDraft(),
     350,
   );
+
+  const refreshCollectionReferences = useCallback(async () => {
+    if (guideMode) return;
+    const request = ++collectionRefreshRequestRef.current;
+    const result = await refreshCollectionReferencesAction({ data: zoneDataRef.current });
+    if (!("ok" in result) || request !== collectionRefreshRequestRef.current) return;
+
+    const refreshed = {
+      home: prepareForEditor(result.data.home, initialHeaderConfig, workspaceName) as unknown as PuckData,
+      gallery: prepareForEditor(result.data.gallery, initialHeaderConfig, workspaceName) as unknown as PuckData,
+    };
+    zoneDataRef.current = refreshed;
+    setRenderDraftData(refreshed);
+    // Puck is uncontrolled, so updating its backing ref/state is not enough to
+    // repaint a visible CollectionCard. Re-seed the active zone immediately.
+    seedPuck(prepareForEditor(refreshed[activeZone], initialHeaderConfig, workspaceName));
+    setSeedNonce((n) => n + 1);
+    debouncedPersistLocalDraft();
+  }, [activeZone, debouncedPersistLocalDraft, guideMode, initialHeaderConfig, seedPuck, workspaceName]);
+
+  /**
+   * Puck's canvas is uncontrolled while preview and publish consume serialized
+   * drafts. Rebuild that transfer snapshot from the live canvas at every
+   * outbound handoff so they cannot use earlier copy or theme settings.
+   */
+  function reconcileCanvasForTransfer(): string {
+    const reconciled = {
+      home: prepareForEditor(zoneDataRef.current.home, initialHeaderConfig, workspaceName) as unknown as PuckData,
+      gallery: prepareForEditor(zoneDataRef.current.gallery, initialHeaderConfig, workspaceName) as unknown as PuckData,
+    };
+    zoneDataRef.current = reconciled;
+    setRenderDraftData(reconciled);
+    // Clear an older debounced write first, then write this exact transfer
+    // snapshot synchronously. This also keeps a new-tab preview in the
+    // originating click activation.
+    flushLocalDraft();
+    persistLocalDraft();
+    return JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
+  }
 
   const clearLocalDraft = useCallback(() => {
     cancelLocalDraft();
@@ -1606,6 +1655,16 @@ export function EditorShell({
         }
       }
 
+      // PageBody defaults are intentionally insertion-time only. Apply them
+      // before chrome sync/normalization so the generated Puck data, canvas,
+      // preview, and eventual publish all share the same newly-added styles.
+      const withPageBodyDefaults = applyPageBodyContainerDefaults(
+        zoneDataRef.current[activeZone],
+        next,
+      );
+      const pageBodyDefaultsApplied = withPageBodyDefaults !== next;
+      next = withPageBodyDefaults;
+
       // Navigation/Footer mirror across zones: sync the changed zone's chrome
       // into the other zone (no-op when detached), then re-pin the active
       // zone's Navigation to index 0 in case another block landed above it.
@@ -1627,7 +1686,7 @@ export function EditorShell({
       // reseed path here.
       const preNormalize = zones[activeZone];
       const normalizedActive = normalizePageBody(normalizeChrome(preNormalize));
-      const chromeOrderCorrected = normalizedActive !== preNormalize || rescued;
+      const chromeOrderCorrected = normalizedActive !== preNormalize || rescued || pageBodyDefaultsApplied;
       zones = { ...zones, [activeZone]: normalizedActive };
       const updated = zones as unknown as Record<Zone, PuckData>;
 
@@ -1681,6 +1740,7 @@ export function EditorShell({
   // ---- Save changes ----
   async function handleSaveChanges(): Promise<boolean> {
     if (guideMode) return false;
+    reconcileCanvasForTransfer();
     // Flush any in-progress rename so the name used for validation/save is current.
     const flushed = nameEditorRef.current?.commit();
     const nameToSave = flushed ?? draftName;
@@ -2075,7 +2135,7 @@ export function EditorShell({
         return;
       }
       // Entering preview — guarantee the iframe shows the latest edits.
-      await flushPendingSave(activeZone);
+      reconcileCanvasForTransfer();
       if (sidePanelOpen) {
         hideEditorPanels();
         seedPuck(prepareForEditor(zoneDataRef.current.home, initialHeaderConfig, workspaceName));
@@ -2093,7 +2153,7 @@ export function EditorShell({
     // The draft buffer is browser-local and flushLocalDraft writes it
     // synchronously. Keep window.open in the original click activation so
     // popup blockers cannot discard the preview after an awaited promise.
-    flushLocalDraft();
+    reconcileCanvasForTransfer();
     const params = new URLSearchParams({
       zone: previewZone,
       formLocale,
@@ -2115,6 +2175,13 @@ export function EditorShell({
       return;
     }
     if (!activeDraftId) return;
+    // Re-check at the final boundary too: a side-panel field can change while
+    // the confirmation dialog is open, and publishing must still save it first.
+    if (savedSnapshot === null || reconcileCanvasForTransfer() !== savedSnapshot) {
+      setPublishOpen(false);
+      setPendingAction({ run: () => setPublishOpen(true), reseeds: false });
+      return;
+    }
     setSavingChanges(true);
     try {
       const res = await publishDraftAction(activeDraftId);
@@ -2136,7 +2203,8 @@ export function EditorShell({
       setActiveDemoGate("publish");
       return;
     }
-    if (activeDraftId === null || isDirty) {
+    const outgoingSnapshot = reconcileCanvasForTransfer();
+    if (activeDraftId === null || savedSnapshot === null || outgoingSnapshot !== savedSnapshot) {
       // Must save first — route through the unsaved-changes guard so the user
       // saves before we publish.
       setPendingAction({ run: () => setPublishOpen(true), reseeds: false });
@@ -2634,7 +2702,7 @@ export function EditorShell({
       // SuppressedActionBar is module-level — stable reference, no remount risk.
       actionBar: SuppressedActionBar,
     }),
-    [t, demoMode, guideMode, drawerItemOverrides.drawerItem]
+    [t, demoMode, guideMode, drawerItemOverrides.drawerItem, editorConfig.components]
   );
 
   const describeDrawerItem = useCallback(
@@ -2944,6 +3012,7 @@ export function EditorShell({
           />
         )}
         {showPuck ? (
+          <ContactDetailsDefaultsContext.Provider value={workspaceContact}>
           <Puck
             key={`${activeZone}-${seedNonce}`}
             // Cast to the base Config so Puck's deep generic inference doesn't blow
@@ -3034,6 +3103,7 @@ export function EditorShell({
               ...drawerItemOverrides,
             }}
           />
+          </ContactDetailsDefaultsContext.Provider>
         ) : (
           <div className="flex h-full flex-col">
             <div className="border-b border-border bg-card px-3 py-2">
@@ -3138,7 +3208,11 @@ export function EditorShell({
         onSavedThemesChange={setSavedThemes}
         onCustomizeGate={demoMode ? () => setActiveDemoGate("theme") : undefined}
       />
-      <CollectionsManagerDialog open={photosOpen} onOpenChange={setPhotosOpen} />
+      <CollectionsManagerDialog
+        open={photosOpen}
+        onOpenChange={setPhotosOpen}
+        onCollectionItemAdded={() => void refreshCollectionReferences()}
+      />
       <TemplatePickerDialog
         open={templatesOpen}
         onOpenChange={(next) => {

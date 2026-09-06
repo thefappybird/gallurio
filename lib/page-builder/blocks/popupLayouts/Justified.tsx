@@ -6,6 +6,12 @@ import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { packRows, DEFAULT_GUTTER, DEFAULT_TARGET_HEIGHT } from "./packRows";
 import { formatPhotoCount, type PopupLayoutBodyProps } from "./types";
 
+/** The editor's justified-layout swatch is intentionally a fixed visual
+ * rhythm, not a promise about the uploaded files' dimensions. Keep the live
+ * popup on the same rhythm so square images and older images without metadata
+ * do not silently turn the selected justified layout into a regular grid. */
+export const JUSTIFIED_LAYOUT_WEIGHTS = [1.5, 1, 0.8, 1.25, 0.9, 1.2, 0.7] as const;
+
 /**
  * `justified` — rows scaled to a common height so every photograph keeps its
  * own aspect ratio; no crop. Container width is measured with a
@@ -42,17 +48,21 @@ export function Justified({
   }, []);
 
   const indexById = useMemo(() => new Map(images.map((img, i) => [img.id, i])), [images]);
+  const layoutImages = useMemo(
+    () => images.map((image, index) => ({ ...image, width: JUSTIFIED_LAYOUT_WEIGHTS[index % JUSTIFIED_LAYOUT_WEIGHTS.length], height: 1 })),
+    [images]
+  );
   const rows = useMemo(
     () =>
       width
-        ? packRows(images, {
+        ? packRows(layoutImages, {
             containerWidth: width,
             targetHeight: DEFAULT_TARGET_HEIGHT,
             gutter: DEFAULT_GUTTER,
             itemsPerRow: popupColumns,
           })
         : [],
-    [images, popupColumns, width]
+    [layoutImages, popupColumns, width]
   );
   const countLabel = formatPhotoCount(total, labels);
 

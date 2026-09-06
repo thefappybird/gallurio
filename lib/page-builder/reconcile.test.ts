@@ -310,6 +310,24 @@ describe("reconcileFeaturedCollections", () => {
     expect((out.content[0].props.collections as Array<{ itemCount: number }>)[0].itemCount).toBe(0);
   });
 
+  it("refreshes the current CollectionCard primitive alongside legacy FeaturedWork", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "Fresh work", slug: "fresh", isPublic: true });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "new-cover", url: "u", order: 0 });
+    const data: PuckData = {
+      root: {},
+      content: [
+        fwBlock([{ id: String(col._id), name: "Old", coverPublicId: "old", itemCount: 0 }]),
+        { type: "CollectionCard", props: { id: "card", collection: { id: String(col._id), name: "Old", coverPublicId: "old", itemCount: 0 } } },
+      ],
+    };
+
+    const out = await reconcileFeaturedCollections(ws.toString(), data);
+    const expected = { id: String(col._id), name: "Fresh work", coverPublicId: "new-cover", itemCount: 1 };
+    expect(out.content[0].props.collections).toEqual([expected]);
+    expect(out.content[1].props.collection).toEqual(expected);
+  });
+
   it("falls back coverPublicId to newest item when no coverItemId; '' for empty collection", async () => {
     const ws = new Types.ObjectId();
     const withItems = await GalleryCollection.create({ workspaceId: ws, name: "A", slug: "a", isPublic: true });

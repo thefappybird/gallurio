@@ -156,8 +156,9 @@ describe("EditCollectionDialog", () => {
     });
 
     const onChanged = vi.fn();
+    const onItemAdded = vi.fn();
     renderWithProviders(
-      <EditCollectionDialog open onOpenChange={vi.fn()} collection={collection} onChanged={onChanged} />
+      <EditCollectionDialog open onOpenChange={vi.fn()} collection={collection} onChanged={onChanged} onItemAdded={onItemAdded} />
     );
 
     // Wait for the dialog to load existing items.
@@ -174,6 +175,9 @@ describe("EditCollectionDialog", () => {
     )).toBe(true));
     // onChanged is called for cache refresh — that's the only side-effect.
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    // The editor can reconcile an already-linked card as soon as this one
+    // GalleryItem exists; it does not wait for a multi-file batch to finish.
+    expect(onItemAdded).toHaveBeenCalledTimes(1);
     expect(await screen.findByText(/add photo details/i)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     // No "selection" callback is called — EditCollectionDialog has no such API.

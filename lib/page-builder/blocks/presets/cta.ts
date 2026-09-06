@@ -9,6 +9,7 @@ import {
   onDark,
   onAccentBand,
   onPrimaryBand,
+  pageFitColumns,
   pageSection,
   primaryBandSection,
 } from "./_helpers";
@@ -32,7 +33,7 @@ export const CTA_IMAGE_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   _style: { ...pageSection, gap: 0 },
   content: slot([
-    child("Columns", {
+    pageFitColumns({
       columns: 2,
       minHeight: "0px",
       _style: { gap: 32 },
@@ -71,7 +72,7 @@ export const CTA_MINIMAL_PRESET: ContainerBlockProps = {
   _style: { ...primaryBandSection, gap: 28, paddingTop: "3rem", paddingBottom: "3rem" },
   content: slot([
     child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
-    child("Columns", {
+    pageFitColumns({
       columns: 2,
       minHeight: "0px",
       _style: { gap: 32 },

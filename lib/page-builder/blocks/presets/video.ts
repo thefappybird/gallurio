@@ -7,6 +7,7 @@ import {
   accentBandSection,
   child,
   onAccentBand,
+  pageFitColumns,
   pageSection,
   primaryBandSection,
   slot,
@@ -38,7 +39,7 @@ export const VIDEO_SPLIT_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   _style: { ...pageSection, gap: 0 },
   content: slot([
-    child("Columns", {
+    pageFitColumns({
       columns: 3,
       minHeight: "0px",
       _style: { gap: 40 },
@@ -84,7 +85,7 @@ export const VIDEO_CINEMA_PRESET: ContainerBlockProps = {
     paddingBottom: "2.5rem",
   },
   content: slot([
-    child("Columns", {
+    pageFitColumns({
       columns: 1,
       overallWidth: "full",
       minHeight: "0px",

@@ -14,6 +14,7 @@ import {
   POPUP_LAYOUTS,
   IMAGE_MODAL_LAYOUTS,
   resolvePopupLayout,
+  POPUP_LAYOUT_DEFAULT_COLUMNS,
   resolveImageModalLayout,
   type BrandKitRadius,
   type PopupLayout,
@@ -253,7 +254,12 @@ export function CollectionsPopupPanelDialog({
                 ariaLabel={t("collectionsDialog.popupLayoutLabel")}
                 options={popupLayoutOptions}
                 value={popupLayout}
-                onChange={(id) => set("popupLayout", id as PopupLayout)}
+                onChange={(id) => {
+                  const layout = id as PopupLayout;
+                  // Each layout starts with the card count its own preview depicts.
+                  // Owners can still override this with the count control below.
+                  onChange({ ...config, popupLayout: layout, popupColumns: POPUP_LAYOUT_DEFAULT_COLUMNS[layout] });
+                }}
                 renderThumb={renderPopupLayoutThumb}
                 closeOnPointerLeave
               />

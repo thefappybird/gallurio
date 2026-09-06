@@ -93,6 +93,29 @@ describe("nav group", () => {
   });
 });
 
+describe("preset width structure", () => {
+  it("gives every Container preset a full outer surface and one zero-padding page-fit child", () => {
+    for (const [key, preset] of Object.entries(SECTION_PRESETS)) {
+      if (preset.componentType === "Navigation") continue;
+      const props = preset.defaultProps as {
+        overallWidth?: string;
+        content?: Array<{ type: string; props: Record<string, unknown> }>;
+      };
+      expect(props.overallWidth, `${key} outer width`).toBe("full");
+      expect(props.content, `${key} outer content`).toHaveLength(1);
+      const inner = props.content?.[0];
+      expect(inner?.type, `${key} inner type`).toBe("Container");
+      expect(inner?.props.overallWidth, `${key} inner width`).toBe("page-fit");
+      expect(inner?.props._style).toMatchObject({
+        paddingTop: "0px",
+        paddingRight: "0px",
+        paddingBottom: "0px",
+        paddingLeft: "0px",
+      });
+    }
+  });
+});
+
 describe("section preset stale props", () => {
   it("GALLERY_GRID_PRESET nested GalleryGrid child has no collectionId or maxItems", () => {
     // Find the nested GalleryGrid child in the content slot

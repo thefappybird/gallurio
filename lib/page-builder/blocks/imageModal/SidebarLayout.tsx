@@ -1,6 +1,6 @@
 "use client";
 
-import { NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
+import { ModalImage, NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
 
 const SIDEBAR_STYLES = `
 .pf-modal-sidebar {
@@ -85,12 +85,7 @@ export function SidebarLayout({
         }}
       >
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={src}
-            alt={image.alt}
-            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }}
-          />
+          <ModalImage src={src} alt={image.alt} style={{ width: "100%", height: "100%", color: "var(--pf-color-fg, #111)" }} />
         ) : (
           <div style={{ color: "var(--pf-color-fg, #111)", padding: "2rem", textAlign: "center" }}>
             {image.alt || fullSizeAlt}

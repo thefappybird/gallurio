@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2Icon, RefreshCwIcon, XIcon } from "lucide-react";
+import { RefreshCwIcon, XIcon } from "lucide-react";
 import { ImmersiveViewer } from "../ImmersiveViewer";
 import { formatPhotoCount, type ImmersiveProps } from "./types";
 
@@ -106,19 +106,17 @@ export function Immersive({
 
       {status === "idle" || status === "loading" ? (
         <div
+          aria-busy="true"
+          aria-label={labels.loading}
           style={{
             flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
+            display: "flex", flexDirection: "column", padding: "12px", gap: "10px",
           }}
         >
-          <Loader2Icon
-            aria-hidden
-            style={{ width: "20px", height: "20px", animation: "spin 1s linear infinite" }}
-          />
-          <span>{labels.loading}</span>
+          <style>{`@keyframes pf-immersive-popup-pulse{50%{opacity:.45}}`}</style>
+          <span className="sr-only">{labels.loading}</span>
+          <div aria-hidden style={{ flex: 1, width: "100%", background: "#222", animation: "pf-immersive-popup-pulse 1.1s ease-in-out infinite" }} />
+          <div aria-hidden style={{ display: "flex", width: "100%", gap: "6px" }}>{Array.from({ length: 5 }, (_, i) => <div key={i} style={{ width: "56px", height: "56px", background: "#333", animation: "pf-immersive-popup-pulse 1.1s ease-in-out infinite" }} />)}</div>
         </div>
       ) : status === "error" ? (
         <div

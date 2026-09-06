@@ -9,7 +9,7 @@ const anchor = (id = "container--anchor") => ({
 const heading = { type: "Heading", props: { id: "heading", text: "Hello" } };
 
 describe("reconcileContainerAnchors", () => {
-  it("strips legacy anchors without changing real-child order", () => {
+  it("removes an anchor from a mixed-content container", () => {
     const data = {
       content: [{
         type: "Container",
@@ -20,12 +20,12 @@ describe("reconcileContainerAnchors", () => {
     expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([heading]);
   });
 
-  it("does not add an anchor to an empty container", () => {
+  it("adds an anchor to an empty container", () => {
     const data = { content: [{ type: "Container", props: { id: "container", content: [] } }] };
-    expect(reconcileContainerAnchors(data)).toBe(data);
+    expect(reconcileContainerAnchors(data).content?.[0].props.content).toEqual([anchor()]);
   });
 
-  it("strips anchors from nested containers and dynamic zones", () => {
+  it("keeps anchors for nested containers and dynamic zones", () => {
     const data = {
       content: [{
         type: "Columns",
@@ -42,17 +42,18 @@ describe("reconcileContainerAnchors", () => {
     const normalized = reconcileContainerAnchors(data);
     const columnsContent = normalized.content?.[0].props.content as Array<{ props: { content: unknown } }>;
     expect(columnsContent[0].props.content).toEqual([heading]);
-    expect(normalized.zones?.footer[0].props.content).toEqual([]);
+    expect(normalized.zones?.footer[0].props.content).toEqual([anchor("footer--anchor")]);
   });
 
-  it("is referentially stable and idempotent once anchors are gone", () => {
+  it("is referentially stable and idempotent once anchors are canonical", () => {
     const data = { content: [{ type: "Container", props: { id: "container", content: [heading] } }] };
-    expect(reconcileContainerAnchors(data)).toBe(data);
+    const first = reconcileContainerAnchors(data);
+    expect(reconcileContainerAnchors(first)).toBe(first);
 
-    const first = reconcileContainerAnchors({
+    const fromLegacy = reconcileContainerAnchors({
       content: [{ type: "Container", props: { id: "container", content: [anchor(), heading] } }],
     });
-    expect(reconcileContainerAnchors(first)).toBe(first);
+    expect(reconcileContainerAnchors(fromLegacy)).toBe(fromLegacy);
   });
 
   it("leaves non-Container preset sections untouched", () => {

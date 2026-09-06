@@ -170,21 +170,28 @@ export function CollectionCardBlock({
           )}
         </div>
       ) : (
-        <div
-          data-cover-placeholder=""
-          style={{
-            width: "100%",
-            aspectRatio: aspectRatio ?? "7 / 9",
-            background: "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
-            display: "grid",
-            placeItems: "center",
-            textAlign: "center",
-            padding: "1rem",
-            ...emptyTitleStyle,
-          }}
-        >
-          {labels.featuredEmpty}
+        <div style={{ width: "100%", overflow: "hidden", ...tileStyle }}>
+          <div
+            data-cover-placeholder=""
+            style={{
+              width: "100%",
+              aspectRatio: aspectRatio ?? "7 / 9",
+              background: "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
+              display: "grid",
+              placeItems: "center",
+              textAlign: "center",
+              padding: "1rem",
+              ...emptyTitleStyle,
+            }}
+          >
+            {labels.featuredSelect}
+          </div>
+          {showCaption !== false && (
+            <div data-empty-collection-caption="" style={{ padding: "0.75rem 1rem", ...emptyTitleStyle }}>
+              {labels.featuredEmpty}
+            </div>
+          )}
         </div>
       )}
     </div>

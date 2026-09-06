@@ -171,6 +171,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
         unavailable: t("gallery.unavailable"),
         error: t("gallery.error"),
         featuredEmpty: t("gallery.featuredEmpty"),
+        featuredSelect: t("gallery.featuredSelect"),
         carouselHint: t("gallery.carouselHint"),
         carouselPrev: t("gallery.carouselPrev"),
         carouselNext: t("gallery.carouselNext"),

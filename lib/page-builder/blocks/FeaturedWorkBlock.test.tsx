@@ -60,7 +60,7 @@ describe("FeaturedWorkBlock — empty state", () => {
 
   it("renders the empty label (English default)", () => {
     render(<FeaturedWorkBlock {...featuredWorkDefaultProps} collections={[]} />);
-    expect(screen.getByText(/no featured photos selected yet/i)).toBeTruthy();
+    expect(screen.getAllByText(/no featured photos selected yet/i)).toHaveLength(3);
   });
 
   it("shows collection-card shapes in an empty preset hover preview", () => {

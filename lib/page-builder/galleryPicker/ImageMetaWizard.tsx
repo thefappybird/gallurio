@@ -229,12 +229,15 @@ export function ImageMetaWizard({
   const [linksError, setLinksError] = useState(false);
   const [linkLoadAttempt, setLinkLoadAttempt] = useState(0);
   const linkLoadStarted = useRef(false);
+  const openRef = useRef(false);
 
   useEffect(() => {
-    if (open) {
+    // A batch can grow while its direct uploads are still finishing. Reset only
+    // on the closed -> open transition; re-running this for each newly-created
+    // item used to erase edits the owner had already entered for the first one.
+    if (open && !openRef.current) {
       const initial: Record<string, WizardForm> = {};
       for (const it of items) initial[it.id] = baselineForm(it);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: resets the wizard for a fresh batch each time it opens
       setForms(initial);
       setSavedSnapshots({});
       setSavedIds(new Set());
@@ -246,6 +249,7 @@ export function ImageMetaWizard({
         linkLoadStarted.current = false;
       }
     }
+    openRef.current = open;
     // `items` is a fixed snapshot handed to the wizard on open; re-running on
     // every identity change would wipe in-progress edits mid-session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -311,13 +315,12 @@ export function ImageMetaWizard({
   }
 
   async function saveItem(id: string): Promise<boolean> {
-    const toSave = forms[id];
-    if (!toSave) return true;
+    const item = items.find((candidate) => candidate.id === id);
+    if (!item) return false;
+    const toSave = forms[id] ?? baselineForm(item);
     setSaving(true);
     setErrorById((e) => ({ ...e, [id]: null }));
     try {
-      const item = items.find((candidate) => candidate.id === id);
-      if (!item) return false;
       const res = await fetch(saveUrl(item), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

@@ -124,26 +124,18 @@ describe("gallery/featured/video preset compositions", () => {
     }
   });
 
-  it("full-bleed variants contain a Columns with overallWidth: 'full'; page-fit variants do not", () => {
-    const fullVariants = [GALLERY_GRID_FULL_PRESET, GALLERY_MASONRY_WALL_PRESET, VIDEO_CINEMA_PRESET];
-    for (const preset of fullVariants) {
-      const nodes = allNodes(preset as unknown as Record<string, unknown>);
-      const hasFull = nodes.some((n) => n.type === "Columns" && n.props.overallWidth === "full");
-      expect(hasFull).toBe(true);
-    }
+  it("wraps every root-level Columns grid in a page-fit Container and makes the grid fill it", () => {
+    for (const [name, preset] of Object.entries(ALL_PRESETS)) {
+      const root = preset as Record<string, unknown>;
+      const topLevel = root.content as PresetNode[];
+      expect(topLevel.some((node) => node.type === "Columns"), `${name} exposes Columns directly`).toBe(false);
 
-    const pageFitVariants = [
-      GALLERY_GRID_PRESET,
-      GALLERY_GRID_FRAMED_PRESET,
-      GALLERY_MASONRY_PRESET,
-      GALLERY_MASONRY_JOURNAL_PRESET,
-      VIDEO_PRESET,
-      VIDEO_SPLIT_PRESET,
-    ];
-    for (const preset of pageFitVariants) {
-      const nodes = allNodes(preset as unknown as Record<string, unknown>);
-      const hasFull = nodes.some((n) => n.type === "Columns" && n.props.overallWidth === "full");
-      expect(hasFull).toBe(false);
+      for (const wrapper of topLevel) {
+        const content = wrapper.props.content as PresetNode[] | undefined;
+        if (wrapper.type !== "Container" || !Array.isArray(content) || content.length !== 1 || content[0].type !== "Columns") continue;
+        expect(wrapper.props.overallWidth, `${name} Columns wrapper`).toBe("page-fit");
+        expect(content[0].props.overallWidth, `${name} wrapped Columns`).toBe("full");
+      }
     }
   });
 
@@ -223,6 +215,25 @@ describe("gallery/featured/video preset compositions", () => {
     const cards = (columns?.props.content as PresetNode[]) ?? [];
     expect(cards).toHaveLength(3);
     expect(cards.every((node) => node.type === "CollectionCard")).toBe(true);
+  });
+
+  it.each([
+    ["FEATURED_WORK_PRESET", FEATURED_WORK_PRESET],
+    ["FEATURED_WORK_LEAD_PRESET", FEATURED_WORK_LEAD_PRESET],
+    ["FEATURED_WORK_INDEX_PRESET", FEATURED_WORK_INDEX_PRESET],
+  ] as const)("%s wraps its collection Columns in a page-fit Container and fills that Container", (_name, preset) => {
+    const wrappers = allNodes(preset as unknown as Record<string, unknown>).filter((node) => {
+      const content = node.props.content as PresetNode[] | undefined;
+      return node.type === "Container"
+        && node.props.overallWidth === "page-fit"
+        && Array.isArray(content)
+        && content.length === 1
+        && content[0].type === "Columns";
+    });
+
+    expect(wrappers).toHaveLength(1);
+    const columns = (wrappers[0].props.content as PresetNode[])[0];
+    expect(columns.props.overallWidth).toBe("full");
   });
 
   it("GALLERY_LANDING_SPLIT_PRESET is page-fit, not full-bleed (item 6)", () => {

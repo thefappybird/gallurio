@@ -8,6 +8,7 @@ import {
   accentBandSection,
   child,
   onPrimaryBand,
+  pageFitColumns,
   pageSection,
   primaryBandSection,
   slot,
@@ -48,7 +49,7 @@ export const FOOTER_DIRECTORY_PRESET: FooterPresetProps = {
   _style: { ...pageSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
   content: slot([
     child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
-    child("Columns", {
+    pageFitColumns({
       columns: 3,
       minHeight: "0px",
       _style: { gap: 40 },
@@ -99,7 +100,7 @@ export const FOOTER_STATEMENT_PRESET: FooterPresetProps = {
     child("Heading", { level: "h2", text: "Let's make something worth keeping." }),
     child("Button", { label: "Get in Touch", action: "open-contact", align: "left", _style: onPrimaryBand }),
     child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
-    child("Columns", {
+    pageFitColumns({
       columns: 2,
       minHeight: "0px",
       _style: { gap: 12 },

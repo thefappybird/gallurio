@@ -1,6 +1,6 @@
 "use client";
 
-import { NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
+import { ModalImage, NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
 import { DotPagination } from "./DotPagination";
 import { SeeMoreMetaPanel } from "./SeeMoreMetaPanel";
 
@@ -85,12 +85,7 @@ export function CaptionLayout({
           />
         )}
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={src}
-            alt={image.alt}
-            style={{ maxWidth: "90vw", maxHeight: "68vh", objectFit: "contain", display: "block" }}
-          />
+          <ModalImage src={src} alt={image.alt} style={{ width: "min(90vw, 1200px)", height: "68vh", color: "#f2f2f2" }} />
         ) : (
           <div style={{ color: "#f2f2f2", padding: "2rem", textAlign: "center" }}>{image.alt || fullSizeAlt}</div>
         )}

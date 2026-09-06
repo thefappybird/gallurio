@@ -8,6 +8,13 @@ import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffecti
 import type { BrandColorMap } from "./brandColors";
 import { resolveEffectiveFonts } from "./fonts";
 import { SECTION_PRESET_KEYS, NAV_PRESET_KEYS, LEGACY_NAV_PRESET_KEYS } from "./blocks/sectionPresets";
+
+function openDrawer(title: string) {
+  const drawer = screen.getByRole("button", { name: title });
+  if (drawer.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(drawer);
+  }
+}
 import { SingleCollectionControl } from "./galleryPicker/MediaField";
 import { DemoPickerContext } from "./demoPickerContext";
 
@@ -204,10 +211,10 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.getByText("Effects")).toBeTruthy();
   });
 
-  it("shows Frame and Typography for GalleryLandingPreset (container-typed)", () => {
+  it("shows Frame but not Typography for GalleryLandingPreset (container-typed)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryLandingPreset" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.getByText("Typography")).toBeTruthy();
+    expect(screen.queryByText("Typography")).toBeNull();
     expect(screen.getByText("Frame")).toBeTruthy();
   });
 });
@@ -398,10 +405,15 @@ describe("padding lives in the Layout tab", () => {
     render(<DesignTab s={{}} set={() => {}} blockType="Container" />);
     expect(screen.queryByText("Padding")).not.toBeInTheDocument();
   });
+
+  it("DesignTab does not offer Typography for a Container", () => {
+    render(<DesignTab s={{}} set={() => {}} blockType="Container" />);
+    expect(screen.queryByText("Typography")).not.toBeInTheDocument();
+  });
 });
 
 describe("margin and leaf-width layout controls", () => {
-  it("shows editable container margins with an effective 8px bottom margin", () => {
+  it("shows editable container margins with an effective zero bottom margin", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -415,10 +427,10 @@ describe("margin and leaf-width layout controls", () => {
     );
     expect(screen.getByText("Margin")).toBeTruthy();
     const bottom = screen.getByLabelText("Bottom unit").previousElementSibling;
-    expect(bottom).toHaveAttribute("placeholder", "8");
+    expect(bottom).toHaveAttribute("placeholder", "0");
   });
 
-  it.each(["Heading", "Text", "Button"])("keeps %s width hug-only in the inspector", (blockType) => {
+  it.each(["Heading", "Text"])("keeps %s hug-only and removes its Layout drawer", (blockType) => {
     render(
       <LayoutTabBody
         s={{}}
@@ -430,8 +442,8 @@ describe("margin and leaf-width layout controls", () => {
         setProp={blockType === "Button" ? () => {} : undefined}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
     expect(screen.queryByText("Width")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Layout" })).toBeNull();
   });
 });
 
@@ -635,53 +647,23 @@ describe("Item 1: ContentInputs — Navigation Overall width control", () => {
   });
 });
 
-describe("NavOrderControl (Navigation Content panel)", () => {
-  it("default render (no navOrder) shows rows in Logo/Home/Gallery/Contact order with the correct ends disabled", () => {
-    render(<ContentInputs type="Navigation" props={{}} setProp={vi.fn()} />);
-    const upButtons = screen.getAllByRole("button", { name: /Move .* up/ });
-    expect(upButtons.map((btn) => btn.getAttribute("aria-label"))).toEqual([
-      "Move Logo up",
-      "Move Home up",
-      "Move Gallery up",
-      "Move Contact up",
-    ]);
-    expect(screen.getByRole("button", { name: "Move Logo up" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Move Contact down" })).toBeDisabled();
-  });
-
-  it("clicking Home's down-button (default order) calls setProp('navOrder', ...) with the full swapped 4-key array", () => {
+describe("Navigation direction (Navigation Content panel)", () => {
+  it("flips the complete navigation layout with one checkbox", () => {
     const setProp = vi.fn();
     render(<ContentInputs type="Navigation" props={{}} setProp={setProp} />);
-    fireEvent.click(screen.getByRole("button", { name: "Move Home down" }));
-    expect(setProp).toHaveBeenCalledWith("navOrder", ["logo", "gallery", "home", "contact"]);
-  });
-
-  it("with a custom navOrder already set, rows render in that order with the correct ends disabled", () => {
-    render(
-      <ContentInputs
-        type="Navigation"
-        props={{ navOrder: ["contact", "home", "gallery", "logo"] }}
-        setProp={vi.fn()}
-      />,
-    );
-    const upButtons = screen.getAllByRole("button", { name: /Move .* up/ });
-    expect(upButtons.map((btn) => btn.getAttribute("aria-label"))).toEqual([
-      "Move Contact up",
-      "Move Home up",
-      "Move Gallery up",
-      "Move Logo up",
-    ]);
-    expect(screen.getByRole("button", { name: "Move Contact up" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Move Logo down" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Right-to-left layout" }));
+    expect(setProp).toHaveBeenCalledWith("navDirection", "rtl");
   });
 });
 
 describe("Navigation Design panel", () => {
-  it("keeps Links open first and Contact button collapsed", () => {
+  it("keeps Links open first and the link/button design drawers collapsed", () => {
     render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: "Links" })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Scale active link")).toBeInTheDocument();
+    expect(screen.getByText("Font size")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Inactive link" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Active link" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: "Contact button" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("Fill opacity")).toBeNull();
   });
@@ -706,6 +688,7 @@ describe("Navigation Design panel", () => {
     expect(screen.queryByText("Highlight opacity")).not.toBeInTheDocument();
 
     rerender(<NavigationDesignPanel config={{ activeLinkHighlight: true }} setProp={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Active link" }));
     expect(screen.getByText("Highlight opacity")).toBeInTheDocument();
     expect(screen.getByText("Highlight radius")).toBeInTheDocument();
   });
@@ -920,10 +903,12 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
     expect(screen.getByText("Button opacity")).toBeTruthy();
   });
 
-  it("DesignTab for Button does NOT show Frame section (border/shadow)", () => {
+  it("DesignTab for Button exposes its Frame section before the Button drawer", () => {
     render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
-    expect(screen.queryByText("Frame")).toBeNull();
-    expect(screen.queryByText("Border width")).toBeNull();
+    expect(screen.getByRole("button", { name: "Frame" })).toBeTruthy();
+    expect(screen.getByText("Border width")).toBeTruthy();
+    expect(screen.getByText("Border sides")).toBeTruthy();
+    expect(screen.getByText("Border color")).toBeTruthy();
     expect(screen.queryByText("Shadow")).toBeNull();
   });
 
@@ -940,6 +925,8 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
     expect(screen.getByRole("button", { name: "Solid" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Outline" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Soft" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Naked" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Link" })).toBeTruthy();
   });
 
   it("floats the legacy outline style and foreground button color when style is unset", () => {
@@ -973,6 +960,7 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
     expect(screen.queryByText("Button color")).toBeNull();
     expect(screen.queryByText("Button opacity")).toBeNull();
     expect(screen.queryByText("Corner radius")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Frame" })).toBeNull();
     expect(screen.getByText("Button text color")).toBeTruthy();
     expect(screen.getByText("Button style")).toBeTruthy();
   });
@@ -1520,7 +1508,7 @@ describe("DesignTab — RadiusButtons shows brand theme radius when block radius
     );
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     // Open the Frame drawer to reveal RadiusButtons.
-    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    openDrawer("Frame");
     expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "false");
   });
@@ -1700,7 +1688,7 @@ describe("LayoutTabBody — gap input shows effective default 16 as placeholder 
 describe("DesignTab — Border color swatch pre-selects 'foreground' when borderColorToken is unset", () => {
   it("foreground swatch (Text) in Border color row is aria-pressed when borderColorToken is unset", () => {
     render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
-    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    openDrawer("Frame");
     // The Frame drawer contains a "Border color" label; the swatch row below it
     // should show the foreground token as effective-active. Use the label to scope.
     const borderColorLabel = screen.getByText("Border color");
@@ -1723,6 +1711,7 @@ describe("DesignTab — Font size input shows effective default 16 as placeholde
 
   it("uses the selected Button size's real rendered font size", () => {
     render(<DesignTab s={{}} set={vi.fn()} blockType="Button" p={{ size: "sm" }} />);
+    openDrawer("Typography");
     const fontSizeLabel = screen.getByText("Font size");
     const row = fontSizeLabel.closest("div")!;
     expect(within(row).getByRole("spinbutton")).toHaveAttribute("placeholder", "13");
@@ -1733,7 +1722,7 @@ describe("DesignTab — Border width input shows effective default 0 as placehol
   it("Border width input has placeholder '0' for a framed block when borderWidth is unset", () => {
     render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
     // Open Frame drawer.
-    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    openDrawer("Frame");
     const borderWidthLabel = screen.getByText("Border width");
     const row = borderWidthLabel.closest("div")!;
     const input = within(row).getByRole("spinbutton");
@@ -1743,7 +1732,7 @@ describe("DesignTab — Border width input shows effective default 0 as placehol
   it("choosing a border side makes a 1px border visible when width is unset", () => {
     const set = vi.fn();
     render(<DesignTab s={{}} set={set} blockType="Container" />);
-    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    openDrawer("Frame");
     fireEvent.click(screen.getByRole("button", { name: "Left border" }));
     expect(set).toHaveBeenCalledWith({ borderSides: ["left"], borderPreset: undefined, borderWidth: 1 });
   });
@@ -1751,7 +1740,7 @@ describe("DesignTab — Border width input shows effective default 0 as placehol
   it("adds another side without replacing the current selection", () => {
     const set = vi.fn();
     render(<DesignTab s={{ borderWidth: 4, borderSides: ["left"] }} set={set} blockType="Container" />);
-    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    openDrawer("Frame");
     fireEvent.click(screen.getByRole("button", { name: "Bottom border" }));
     expect(set).toHaveBeenCalledWith({ borderSides: ["left", "bottom"], borderPreset: undefined });
   });
@@ -1759,7 +1748,7 @@ describe("DesignTab — Border width input shows effective default 0 as placehol
   it("replaces a full border with the first explicitly selected side", () => {
     const set = vi.fn();
     render(<DesignTab s={{ borderWidth: 4 }} set={set} blockType="Container" />);
-    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    openDrawer("Frame");
     fireEvent.click(screen.getByRole("button", { name: "Bottom border" }));
     expect(set).toHaveBeenCalledWith({ borderSides: ["bottom"], borderPreset: undefined });
   });
@@ -1767,7 +1756,7 @@ describe("DesignTab — Border width input shows effective default 0 as placehol
   it("full border overwrites an existing partial selection", () => {
     const set = vi.fn();
     render(<DesignTab s={{ borderWidth: 4, borderSides: ["left", "bottom"] }} set={set} blockType="Container" />);
-    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    openDrawer("Frame");
     fireEvent.click(screen.getByRole("button", { name: "Full border" }));
     expect(set).toHaveBeenCalledWith({ borderSides: ["top", "right", "bottom", "left"], borderPreset: undefined });
   });
@@ -2144,7 +2133,7 @@ describe("resolveEffectiveFonts — legacy fontPair fallback", () => {
 describe("DesignTab — Border color swatch effective state is visually distinct", () => {
   it("effective-but-unset swatch has a lighter ring class (ring-1) but not the explicit ring-2", () => {
     render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
-    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    openDrawer("Frame");
     const borderColorLabel = screen.getByText("Border color");
     const borderColorRow = borderColorLabel.closest("div")!.querySelector("div")!;
     const textSwatches = within(borderColorRow as HTMLElement).getAllByRole("button", { name: "Text" });

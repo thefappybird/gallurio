@@ -501,56 +501,48 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     // owner navigates away does not prepend the new item into the wrong feed.
     const token = fetchToken.current;
     setUploading(true);
-    const results = await Promise.allSettled(
-      valid.map((file) =>
-        uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
-      )
-    );
-
     const newErrors: { fileName: string; message: string }[] = [];
     const targetCollection = nav.id === ALL_PHOTOS_ID ? undefined : nav.id;
-    const createdItems: PickerItem[] = [];
-
-    for (let i = 0; i < results.length; i++) {
-      const r = results[i];
-      const fileName = valid[i].name;
-      if (r.status === "rejected") {
-        newErrors.push({ fileName, message: describeFailure(r.reason) });
-        continue;
-      }
+    const results = await Promise.all(valid.map(async (file) => {
       try {
+        const uploaded = await uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES });
         const createRes = await fetch("/api/portfolio/gallery/items", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...r.value, collectionId: targetCollection }),
+          body: JSON.stringify({ ...uploaded, collectionId: targetCollection }),
         });
         if (!createRes.ok) {
-          newErrors.push({ fileName, message: await describeApiFailure(createRes) });
-          continue;
+          return { error: { fileName: file.name, message: await describeApiFailure(createRes) } };
         }
         const created = (await createRes.json()) as { id: string; thumbUrl: string; caption: string | null };
         const item: PickerItem = {
           id: created.id,
-          publicId: r.value.assetId,
+          publicId: uploaded.assetId,
           thumbUrl: created.thumbUrl,
           caption: created.caption,
           altText: null,
           // uploadImage already measured naturalWidth/Height before the upload;
           // propagate them so a freshly-uploaded image carries dims into any
           // subsequent selection, enabling the block to reserve space (CLS fix).
-          ...(r.value.width != null && r.value.height != null
-            ? { width: r.value.width, height: r.value.height }
+          ...(uploaded.width != null && uploaded.height != null
+            ? { width: uploaded.width, height: uploaded.height }
             : {}),
         };
         remember([item]);
         if (token === fetchToken.current) {
           setFeed((f) => ({ ...f, items: [item, ...f.items] }));
         }
-        createdItems.push(item);
-      } catch {
-        newErrors.push({ fileName, message: describeUploadErrorEnglish({ code: "network_error" }) });
+        // Start metadata immediately; ImageMetaWizard safely accepts the
+        // later arrivals without resetting the first image's edits.
+        setUploadedBatch((previous) => [...(previous ?? []), item]);
+        setWizardOpen(true);
+        return { item };
+      } catch (error) {
+        return { error: { fileName: file.name, message: describeFailure(error) } };
       }
-    }
+    }));
+    const createdItems = results.flatMap((result) => result.item ? [result.item] : []);
+    newErrors.push(...results.flatMap((result) => result.error ? [result.error] : []));
 
     setUploading(false);
     setFileErrors((prev) => [...prev, ...newErrors]);
@@ -592,8 +584,6 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           ]);
         }
       }
-      setUploadedBatch(createdItems);
-      setWizardOpen(true);
     }
   }
 

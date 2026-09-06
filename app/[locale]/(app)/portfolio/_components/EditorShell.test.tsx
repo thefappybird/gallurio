@@ -169,6 +169,7 @@ vi.mock("../_actions", () => ({
 
 const createDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
 const updateDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
+const refreshCollectionReferencesAction = vi.fn((input: { data: unknown }) => Promise.resolve({ ok: true, data: input.data }));
 const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
 const listDraftsAction = vi.fn().mockResolvedValue([]);
@@ -194,6 +195,7 @@ const seedTemplateAction = vi.fn((templateId = "minimal") =>
 vi.mock("../_draftActions", () => ({
   createDraftAction: (...a: unknown[]) => createDraftAction(...a),
   updateDraftAction: (...a: unknown[]) => updateDraftAction(...a),
+  refreshCollectionReferencesAction: (...a: [{ data: unknown }]) => refreshCollectionReferencesAction(...a),
   deleteDraftAction: (...a: unknown[]) => deleteDraftAction(...a),
   getDraftAction: (...a: unknown[]) => getDraftAction(...a),
   listDraftsAction: (...a: unknown[]) => listDraftsAction(...a),
@@ -811,6 +813,22 @@ describe("EditorShell", () => {
     // Back to editing.
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(await screen.findByTestId("puck")).toBeInTheDocument();
+  });
+
+  it("reconciles the live Puck canvas into the preview snapshot before mounting the iframe", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    act(() => {
+      __capturedPuckOnChange?.({
+        content: [{ type: "Hero", props: { id: "live-hero", headline: "Canvas copy" } }],
+        root: {},
+      });
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await screen.findByTitle("Live preview");
+
+    const snapshot = JSON.parse(window.localStorage.getItem("gallurio:portfolio-draft:studio-aurora") ?? "{}");
+    expect(JSON.stringify(snapshot.data.home)).toContain("Canvas copy");
   });
 
   it("carries the active draft id in the preview iframe src, omitted when there is none", async () => {

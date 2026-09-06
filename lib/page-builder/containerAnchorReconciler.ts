@@ -1,8 +1,4 @@
-/**
- * Legacy ContainerAnchor blocks are removed from editor data. Containers now
- * expose real, editable margins for separation and drop affordance, so an
- * invisible child must never take part in Puck's layout or drag calculations.
- */
+import { shouldKeepAnchor } from "./containerAnchorPredicate";
 
 type SlotItem = {
   type: string;
@@ -17,10 +13,24 @@ type PuckTreeData = {
 
 const isAnchor = (item: SlotItem) => item.type === "ContainerAnchor";
 
-/** Strip every legacy anchor while retaining real children and their order. */
-export function reconcileContainerSlot(_id: unknown, content: SlotItem[]): SlotItem[] {
+/**
+ * Keep one editor-only anchor at the end of every empty/container-only slot.
+ * It restores the durable Puck drop bridge without manufacturing visual margin.
+ */
+export function reconcileContainerSlot(id: unknown, content: SlotItem[]): SlotItem[] {
   const realChildren = content.filter((child) => !isAnchor(child));
-  return content.length === realChildren.length ? content : realChildren;
+  if (!shouldKeepAnchor(realChildren)) {
+    return content.length === realChildren.length ? content : realChildren;
+  }
+
+  const parentId = typeof id === "string" && id.length > 0 ? id : "container";
+  const anchorId = `${parentId}--anchor`;
+  const alreadyCanonical = content.length === realChildren.length + 1
+    && content.at(-1)?.type === "ContainerAnchor"
+    && content.at(-1)?.props.id === anchorId;
+  if (alreadyCanonical) return content;
+
+  return [...realChildren, { type: "ContainerAnchor", props: { id: anchorId, height: 0 } }];
 }
 
 function reconcileItems(items: SlotItem[]): { items: SlotItem[]; changed: boolean } {
@@ -48,7 +58,7 @@ function reconcileItems(items: SlotItem[]): { items: SlotItem[]; changed: boolea
   return { items: changed ? nextItems : items, changed };
 }
 
-/** Remove legacy anchors with structural sharing for Puck's setData. */
+/** Normalize editor-only anchors with structural sharing for Puck's setData. */
 export function reconcileContainerAnchors<T extends PuckTreeData>(data: T): T {
   const content = reconcileItems((data.content ?? []) as SlotItem[]);
   let zonesChanged = false;

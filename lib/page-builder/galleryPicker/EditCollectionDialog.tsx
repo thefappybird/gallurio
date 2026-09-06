@@ -25,12 +25,16 @@ import type { PickerCollection, PickerItem } from "./types";
 const PAGE = 48;
 
 export function EditCollectionDialog({
-  open, onOpenChange, collection, onChanged, embedded = false, onBack,
+  open, onOpenChange, collection, onChanged, onItemAdded, embedded = false, onBack,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   collection: PickerCollection | null;
   onChanged: () => void;
+  /** Fires for every item that reaches the collection, before the rest of a
+   * multi-file upload completes. The canvas uses it to refresh already-linked
+   * collection cards without waiting for the batch or a manual re-link. */
+  onItemAdded?: () => void;
   embedded?: boolean;
   onBack?: () => void;
 }) {
@@ -302,52 +306,43 @@ export function EditCollectionDialog({
       return;
     }
     setUploading(true);
-    Promise.allSettled(
-      valid.map((f) => uploadImage(f, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES }))
-    ).then(async (results) => {
-      const newErrors: { fileName: string; message: string }[] = [];
-      const createdItems: PickerItem[] = [];
-      for (let i = 0; i < results.length; i++) {
-        const r = results[i];
-        const fileName = valid[i].name;
-        if (r.status === "rejected") {
-          newErrors.push({ fileName, message: describeFailure(r.reason) });
-          continue;
-        }
+    // Keep every file independent. As soon as the first GalleryItem exists we
+    // open the metadata wizard; later uploads append to that same live batch
+    // instead of forcing the owner to stare at a dead upload interval.
+    Promise.all(
+      valid.map(async (f) => {
         try {
+          const uploaded = await uploadImage(f, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES });
           const res = await fetch(`/api/portfolio/gallery/items`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...r.value, collectionId: colId }),
+            body: JSON.stringify({ ...uploaded, collectionId: colId }),
           });
-          if (res.ok) {
-            const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
-            const item: PickerItem = {
-              id: created.id,
-              publicId: r.value.assetId,
-              thumbUrl: created.thumbUrl,
-              caption: created.caption,
-              altText: null,
-              ...(r.value.width != null && r.value.height != null
-                ? { width: r.value.width, height: r.value.height }
-                : {}),
-            };
-            setItems((prev) => [...prev, item]);
-            createdItems.push(item);
-          } else {
-            newErrors.push({ fileName, message: await describeApiFailure(res) });
-          }
-        } catch {
-          newErrors.push({ fileName, message: errMsg("upload_network_error") });
+          if (!res.ok) throw new Error(await describeApiFailure(res));
+          const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
+          const item: PickerItem = {
+            id: created.id,
+            publicId: uploaded.assetId,
+            thumbUrl: created.thumbUrl,
+            caption: created.caption,
+            altText: null,
+            ...(uploaded.width != null && uploaded.height != null ? { width: uploaded.width, height: uploaded.height } : {}),
+          };
+          setItems((prev) => [...prev, item]);
+          setUploadedBatch((prev) => [...(prev ?? []), item]);
+          setWizardOpen(true);
+          onItemAdded?.();
+          return null;
+        } catch (error) {
+          return { fileName: f.name, message: error instanceof UploadError ? describeFailure(error) : error instanceof Error ? error.message : errMsg("upload_network_error") };
         }
-      }
+      })
+    ).then((results) => {
+      const newErrors: { fileName: string; message: string }[] = [];
+      for (const result of results) if (result) newErrors.push(result);
       setFileErrors((prev) => [...prev, ...newErrors]);
       setUploading(false);
       onChanged();
       if (fileInputRef.current) fileInputRef.current.value = "";
-      if (createdItems.length > 0) {
-        setUploadedBatch(createdItems);
-        setWizardOpen(true);
-      }
     });
   }
 

@@ -30,9 +30,11 @@ import type { PickerCollection } from "./types";
 export function CollectionsManagerDialog({
   open,
   onOpenChange,
+  onCollectionItemAdded,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCollectionItemAdded?: () => void;
 }) {
   const t = useTranslations("app.pageBuilder.editor.photosDialog");
   const { state, retry } = usePickerData();
@@ -93,6 +95,7 @@ export function CollectionsManagerDialog({
             onOpenChange={handleOpenChange}
             collection={editing}
             onChanged={retry}
+            onItemAdded={onCollectionItemAdded}
           />
         ) : (
           <>

@@ -160,8 +160,17 @@ export const portfolioHeaderConfigSchema = z.object({
   backgroundColor: z.string().max(32).optional().or(z.literal("")),
   backgroundOpacity: z.number().int().min(0).max(100).optional(),
   linkColor: z.string().max(32).optional().or(z.literal("")),
+  inactiveLinkBackgroundColor: z.string().max(32).optional().or(z.literal("")),
+  inactiveLinkOpacity: z.number().int().min(0).max(100).optional(),
+  inactiveLinkBorderWidth: z.number().int().min(0).max(8).optional(),
+  inactiveLinkBorderColor: z.string().max(32).optional().or(z.literal("")),
+  inactiveLinkRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
   brandTextColor: z.string().max(32).optional().or(z.literal("")),
   activeLinkColor: z.string().max(32).optional().or(z.literal("")),
+  activeLinkBackgroundColor: z.string().max(32).optional().or(z.literal("")),
+  activeLinkOpacity: z.number().int().min(0).max(100).optional(),
+  activeLinkBorderWidth: z.number().int().min(0).max(8).optional(),
+  activeLinkBorderColor: z.string().max(32).optional().or(z.literal("")),
   borderBottomWidth: z.number().int().min(0).max(8).optional(),
   borderBottomColor: z.string().max(32).optional().or(z.literal("")),
   shadowSize: z.enum(HEADER_SHADOW_SIZES).optional().or(z.literal("")),
@@ -179,6 +188,7 @@ export const portfolioHeaderConfigSchema = z.object({
   contactButtonOpacity: z.number().int().min(0).max(100).optional(),
   contactButtonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
   navOrder: z.array(z.enum(NAV_ITEM_KEYS)).max(4).optional(),
+  navDirection: z.enum(["ltr", "rtl"]).optional(),
 });
 
 export type PortfolioHeaderConfigInput = z.infer<typeof portfolioHeaderConfigSchema>;

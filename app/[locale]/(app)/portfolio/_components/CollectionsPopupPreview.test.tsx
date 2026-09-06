@@ -36,14 +36,14 @@ describe("CollectionsPopupPreview", () => {
 });
 
 describe("CollectionsPopupPreview popup columns", () => {
-  it("Contact Sheet: defaults to 3 columns and grids all 5 sample swatches", () => {
+  it("Contact Sheet: defaults to 3 columns and grids its six preview cards", () => {
     const { container } = renderWithProviders(
       <CollectionsPopupPreview config={{ popupLayout: "contact-sheet" }} brandKit={DEFAULT_BRAND_KIT} />,
     );
     const grid = container.querySelector('[data-popup-preview-columns="3"]') as HTMLElement;
     expect(grid).not.toBeNull();
     expect(grid.style.gridTemplateColumns).toContain("repeat(3,");
-    expect(grid.children).toHaveLength(5);
+    expect(grid.children).toHaveLength(6);
   });
 
   it("Contact Sheet: honors an explicit popupColumns value", () => {
@@ -58,7 +58,7 @@ describe("CollectionsPopupPreview popup columns", () => {
     expect(grid.style.gridTemplateColumns).toContain("repeat(4,");
   });
 
-  it("Justified: groups the 5 samples into rows sized by popupColumns", () => {
+  it("Justified: groups its seven cards into rows sized by popupColumns", () => {
     const { container } = renderWithProviders(
       <CollectionsPopupPreview
         config={{ popupLayout: "justified", popupColumns: 3 }}
@@ -68,7 +68,7 @@ describe("CollectionsPopupPreview popup columns", () => {
     const rowsContainer = container.querySelector('[data-popup-preview-columns="3"]') as HTMLElement;
     expect(rowsContainer).not.toBeNull();
     const rowSizes = Array.from(rowsContainer.children).map((row) => row.children.length);
-    expect(rowSizes).toEqual([3, 2]);
+    expect(rowSizes).toEqual([3, 3, 1]);
   });
 
   it("Split Index: applies popupColumns to the image-index grid only", () => {
@@ -81,6 +81,6 @@ describe("CollectionsPopupPreview popup columns", () => {
     const grid = container.querySelector('[data-popup-preview-columns="2"]') as HTMLElement;
     expect(grid).not.toBeNull();
     expect(grid.style.gridTemplateColumns).toContain("repeat(2,");
-    expect(grid.children).toHaveLength(5);
+    expect(grid.children).toHaveLength(4);
   });
 });

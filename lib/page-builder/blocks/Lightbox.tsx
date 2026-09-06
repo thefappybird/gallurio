@@ -324,6 +324,23 @@ export function modalImageSrc(publicId: string): string {
   return imageDeliveryUrl(publicId, { width: 2000, fit: "scale-down" });
 }
 
+/** Never leave the previous photo visible while the next rendition downloads.
+ * The slot keeps each image-modal layout's own geometry; this only replaces the
+ * media surface with a same-sized skeleton until its current src has loaded. */
+export function ModalImage({ src, alt, style }: { src: string | null; alt: string; style: CSSProperties }) {
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  if (!src || failedSrc === src) return null;
+  const loading = loadedSrc !== src;
+  return (
+    <div data-modal-image-slot="" aria-busy={loading || undefined} style={{ position: "relative", ...style }}>
+      {loading && <div aria-hidden data-modal-image-skeleton="" style={{ position: "absolute", inset: 0, minWidth: "12rem", minHeight: "12rem", background: "color-mix(in srgb, currentColor 12%, transparent)", animation: "pf-modal-pulse 1.1s ease-in-out infinite" }} />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} onLoad={() => setLoadedSrc(src)} onError={() => setFailedSrc(src)} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", opacity: loading ? 0 : 1 }} />
+    </div>
+  );
+}
+
 export function Lightbox(props: LightboxProps) {
   const legacy = isLegacyProps(props);
   const images = legacy ? [props.image] : props.images;
@@ -459,7 +476,7 @@ export function Lightbox(props: LightboxProps) {
             ...(brandVars as CSSProperties),
           }}
         >
-          <style>{MODAL_STYLES}</style>
+          <style>{`${MODAL_STYLES}@keyframes pf-modal-pulse{50%{opacity:.45}}`}</style>
           <FloatingCloseButton onClick={onClose} label={closeLabel} variant={closeVariant} />
           {currentImage ? (
             <LeafComponent

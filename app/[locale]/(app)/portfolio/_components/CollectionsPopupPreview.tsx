@@ -9,6 +9,7 @@ import {
   type PopupColumns,
 } from "@/lib/page-builder/types";
 import { CollectionPopupChrome } from "@/lib/page-builder/blocks/CollectionPopupChrome";
+import { JUSTIFIED_LAYOUT_WEIGHTS } from "@/lib/page-builder/blocks/popupLayouts/Justified";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,12 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 // `resolvePopupLayout` so an unset "" still previews as contact-sheet).
 // ---------------------------------------------------------------------------
 
-const SAMPLE_IMAGE_COUNT = 5;
+const SAMPLE_IMAGE_COUNT: Record<ReturnType<typeof resolvePopupLayout>, number> = {
+  "contact-sheet": 6,
+  justified: 7,
+  "split-index": 4,
+  immersive: 5,
+};
 
 function ContactSheetSwatch({ columns }: { columns: PopupColumns }) {
   return (
@@ -26,7 +32,7 @@ function ContactSheetSwatch({ columns }: { columns: PopupColumns }) {
       data-popup-preview-columns={columns}
       style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "8px" }}
     >
-      {Array.from({ length: SAMPLE_IMAGE_COUNT }).map((_, i) => (
+      {Array.from({ length: SAMPLE_IMAGE_COUNT["contact-sheet"] }).map((_, i) => (
         <div key={i} style={{ aspectRatio: "1 / 1", backgroundColor: "var(--pf-color-fg)", opacity: 0.12 }} />
       ))}
     </div>
@@ -34,8 +40,8 @@ function ContactSheetSwatch({ columns }: { columns: PopupColumns }) {
 }
 
 function JustifiedSwatch({ columns }: { columns: PopupColumns }) {
-  const weights = [1.5, 1, 0.8, 1.25, 0.9];
-  const rows = Array.from({ length: Math.ceil(SAMPLE_IMAGE_COUNT / columns) }, (_, rowIndex) =>
+  const weights = JUSTIFIED_LAYOUT_WEIGHTS;
+  const rows = Array.from({ length: Math.ceil(SAMPLE_IMAGE_COUNT.justified / columns) }, (_, rowIndex) =>
     weights.slice(rowIndex * columns, (rowIndex + 1) * columns),
   );
   return (
@@ -62,7 +68,7 @@ function SplitIndexSwatch({ columns }: { columns: PopupColumns }) {
         data-popup-preview-columns={columns}
         style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "6px" }}
       >
-        {Array.from({ length: SAMPLE_IMAGE_COUNT }).map((_, i) => (
+        {Array.from({ length: SAMPLE_IMAGE_COUNT["split-index"] }).map((_, i) => (
           <div key={i} style={{ aspectRatio: "1 / 1", backgroundColor: "var(--pf-color-fg)", opacity: 0.12 }} />
         ))}
       </div>
@@ -97,7 +103,7 @@ export function CollectionsPopupPreview({
   const t = useTranslations("app.pageBuilder.editor");
   const { cssVars, className } = resolveBrandKit(brandKit);
   const layout = resolvePopupLayout(config.popupLayout);
-  const popupColumns = resolvePopupColumns(config.popupColumns);
+  const popupColumns = resolvePopupColumns(config.popupColumns, layout);
 
   return (
     <div data-testid="collections-popup-preview-root" dir={dir} className={`h-full ${className}`} style={{ ...(cssVars as React.CSSProperties) }}>

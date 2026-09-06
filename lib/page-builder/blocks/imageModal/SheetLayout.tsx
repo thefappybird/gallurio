@@ -1,6 +1,6 @@
 "use client";
 
-import { NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
+import { ModalImage, NavArrowButton, modalImageSrc, type ImageModalLeafProps } from "../Lightbox";
 
 const SHEET_STYLES = `
 .pf-modal-sheet {
@@ -94,8 +94,7 @@ export function SheetLayout({
           }}
         >
           {src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt={image.alt} style={{ maxWidth: "100%", maxHeight: "60vh", objectFit: "contain", display: "block" }} />
+            <ModalImage src={src} alt={image.alt} style={{ width: "100%", height: "min(60vh, 720px)", color: "var(--pf-color-fg, #111)" }} />
           ) : (
             <div style={{ padding: "2rem", textAlign: "center" }}>{image.alt || fullSizeAlt}</div>
           )}

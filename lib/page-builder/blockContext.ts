@@ -96,6 +96,7 @@ export type GalleryChromeLabels = {
   unavailable?: string;
   error?: string;
   featuredEmpty?: string;
+  featuredSelect?: string;
   carouselHint?: string;
   carouselPrev?: string;
   carouselNext?: string;
@@ -246,6 +247,7 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
     unavailable: g.unavailable ?? "Gallery not available.",
     error: g.error ?? "Gallery temporarily unavailable.",
     featuredEmpty: g.featuredEmpty ?? "No featured photos selected yet.",
+    featuredSelect: g.featuredSelect ?? "Select a collection to feature.",
     carouselHint: g.carouselHint ?? "Swipe or use the arrows to browse",
     carouselPrev: g.carouselPrev ?? "Previous image",
     carouselNext: g.carouselNext ?? "Next image",

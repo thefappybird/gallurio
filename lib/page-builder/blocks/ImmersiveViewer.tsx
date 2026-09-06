@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -94,6 +95,8 @@ export function ImmersiveViewer({
   const fullSrc = image
     ? imageDeliveryUrl(image.publicId, { width: 2000, fit: "scale-down" })
     : "";
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const loadingImage = Boolean(fullSrc) && loadedSrc !== fullSrc;
 
   return (
     <div
@@ -110,7 +113,7 @@ export function ImmersiveViewer({
         overflow: "hidden",
       }}
     >
-      <style>{IMMERSIVE_VIEWER_STYLES}</style>
+      <style>{`${IMMERSIVE_VIEWER_STYLES}@keyframes pf-immersive-pulse{50%{opacity:.45}}`}</style>
 
       <div
         data-immersive-main=""
@@ -132,17 +135,11 @@ export function ImmersiveViewer({
         />
 
         {image && fullSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={fullSrc}
-            alt={image.alt}
-            style={{
-              maxWidth: "90vw",
-              maxHeight: "calc(100vh - 140px)",
-              objectFit: "contain",
-              display: "block",
-            }}
-          />
+          <div data-modal-image-slot="" aria-busy={loadingImage || undefined} style={{ position: "relative", width: "90vw", height: "calc(100vh - 140px)" }}>
+            {loadingImage && <div data-modal-image-skeleton="" aria-hidden style={{ position: "absolute", inset: 0, background: "#222", animation: "pf-immersive-pulse 1.1s ease-in-out infinite" }} />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={fullSrc} alt={image.alt} onLoad={() => setLoadedSrc(fullSrc)} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", opacity: loadingImage ? 0 : 1 }} />
+          </div>
         ) : (
           <div style={{ padding: "2rem", textAlign: "center" }}>
             {image?.alt || imageFallbackLabel}

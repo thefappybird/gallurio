@@ -169,6 +169,20 @@ export function PortfolioHeader({
 
   function getActiveLinkExtraStyle(): React.CSSProperties {
     const style: React.CSSProperties = { color: activeLinkColor };
+    if (config?.activeLinkBackgroundColor) {
+      style.backgroundColor = buildColorWithOpacity(
+        resolveColor(config.activeLinkBackgroundColor, "transparent"),
+        config.activeLinkOpacity ?? 100,
+      );
+    }
+    if (config?.activeLinkBorderWidth !== undefined) {
+      style.border = config.activeLinkBorderWidth > 0
+        ? `${config.activeLinkBorderWidth}px solid ${resolveColor(config.activeLinkBorderColor, "var(--pf-color-fg)")}`
+        : "none";
+    }
+    if (config?.activeLinkRadius) {
+      style.borderRadius = RADIUS_MAP[config.activeLinkRadius] ?? "var(--pf-radius)";
+    }
     if (config?.activeLinkScale) {
       style.transform = "scale(1.08)";
       style.fontWeight = 700;
@@ -195,6 +209,22 @@ export function PortfolioHeader({
   }
 
   const activeLinkExtra = getActiveLinkExtraStyle();
+  const inactiveLinkExtra: React.CSSProperties = {
+    ...(config?.inactiveLinkBackgroundColor && {
+      backgroundColor: buildColorWithOpacity(
+        resolveColor(config.inactiveLinkBackgroundColor, "transparent"),
+        config.inactiveLinkOpacity ?? 100,
+      ),
+    }),
+    ...(config?.inactiveLinkBorderWidth !== undefined && {
+      border: config.inactiveLinkBorderWidth > 0
+        ? `${config.inactiveLinkBorderWidth}px solid ${resolveColor(config.inactiveLinkBorderColor, "var(--pf-color-fg)")}`
+        : "none",
+    }),
+    ...(config?.inactiveLinkRadius && {
+      borderRadius: RADIUS_MAP[config.inactiveLinkRadius] ?? "var(--pf-radius)",
+    }),
+  };
   const brandText = config && "brandText" in config ? config.brandText?.trim() ?? "" : labels.brand;
   const navOrder = resolveNavOrder(config?.navOrder);
 
@@ -266,6 +296,7 @@ export function PortfolioHeader({
             linkColor={linkColor}
             fontSize={fontSize}
             activeStyle={activeLinkExtra}
+            inactiveStyle={inactiveLinkExtra}
             minHeight={navbarSize.linkMinHeight}
             paddingX={navbarSize.linkPaddingX}
           >
@@ -283,6 +314,7 @@ export function PortfolioHeader({
             linkColor={linkColor}
             fontSize={fontSize}
             activeStyle={activeLinkExtra}
+            inactiveStyle={inactiveLinkExtra}
             minHeight={navbarSize.linkMinHeight}
             paddingX={navbarSize.linkPaddingX}
           >
@@ -303,7 +335,7 @@ export function PortfolioHeader({
       // Never mirrors for RTL — the owner reorders `navOrder` by hand instead
       // (see resolveNavOrder). General blocks stay LTR-structured everywhere
       // (canvas/preview/published) regardless of any ambient direction.
-      dir="ltr"
+      dir={config?.navDirection ?? "ltr"}
       style={{
         position: "sticky",
         top: 0,
@@ -381,6 +413,7 @@ export function PortfolioHeader({
                   linkColor={linkColor}
                   fontSize={fontSize}
                   activeStyle={activeLinkExtra}
+                  inactiveStyle={inactiveLinkExtra}
                   minHeight={navbarSize.linkMinHeight}
                   paddingX={navbarSize.linkPaddingX}
                 >
@@ -396,6 +429,7 @@ export function PortfolioHeader({
                   linkColor={linkColor}
                   fontSize={fontSize}
                   activeStyle={activeLinkExtra}
+                  inactiveStyle={inactiveLinkExtra}
                   minHeight={navbarSize.linkMinHeight}
                   paddingX={navbarSize.linkPaddingX}
                 >
@@ -476,6 +510,7 @@ function HeaderLink({
   linkColor,
   fontSize,
   activeStyle,
+  inactiveStyle,
   minHeight,
   paddingX,
 }: {
@@ -487,6 +522,7 @@ function HeaderLink({
   linkColor: string;
   fontSize: string;
   activeStyle: React.CSSProperties;
+  inactiveStyle: React.CSSProperties;
   minHeight: string;
   paddingX: string;
 }) {
@@ -505,7 +541,7 @@ function HeaderLink({
     transition: "background-color 0.15s",
   };
   return (
-    <Link href={href} onClick={onNavigate} className="pf-nav-link" style={isActive ? { ...baseStyle, ...activeStyle } : baseStyle}>
+    <Link href={href} onClick={onNavigate} className="pf-nav-link" style={isActive ? { ...baseStyle, ...activeStyle } : { ...baseStyle, ...inactiveStyle }}>
       {children}
     </Link>
   );

@@ -177,6 +177,7 @@ export default async function PageBuilderEntry({
         initialData={initialData}
         initialBrandKit={initialBrandKit}
         initialContact={initialContact}
+        workspaceContact={toPlain(workspace.contact, {})}
         initialFormLocale={initialFormLocale}
         initialFormDir={initialFormDir}
         initialHeaderConfig={initialHeaderConfig}

@@ -11,14 +11,7 @@
  */
 
 import type { PuckBlockEntry, PuckData } from "@/lib/page-builder/types";
-import {
-  HERO_PRESET,
-  ABOUT_PRESET,
-  SERVICES_PRESET,
-  CTA_PRESET,
-  CONTACT_PRESET,
-  GALLERY_LANDING_PRESET,
-} from "@/lib/page-builder/blocks/sectionPresets";
+import { SECTION_PRESETS } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
 import {
@@ -61,23 +54,23 @@ export function navigationBlock(
 // ---------------------------------------------------------------------------
 
 export function heroPreset(id: string): PuckBlockEntry {
-  return { type: "HeroPreset", props: { id, ...HERO_PRESET } };
+  return { type: "HeroPreset", props: { id, ...SECTION_PRESETS.HeroPreset.defaultProps } };
 }
 
 export function aboutPreset(id: string): PuckBlockEntry {
-  return { type: "AboutPreset", props: { id, ...ABOUT_PRESET } };
+  return { type: "AboutPreset", props: { id, ...SECTION_PRESETS.AboutPreset.defaultProps } };
 }
 
 export function servicesPreset(id: string): PuckBlockEntry {
-  return { type: "ServicesPreset", props: { id, ...SERVICES_PRESET } };
+  return { type: "ServicesPreset", props: { id, ...SECTION_PRESETS.ServicesPreset.defaultProps } };
 }
 
 export function ctaPreset(id: string): PuckBlockEntry {
-  return { type: "CtaPreset", props: { id, ...CTA_PRESET } };
+  return { type: "CtaPreset", props: { id, ...SECTION_PRESETS.CtaPreset.defaultProps } };
 }
 
 export function contactPreset(id: string): PuckBlockEntry {
-  return { type: "ContactPreset", props: { id, ...CONTACT_PRESET } };
+  return { type: "ContactPreset", props: { id, ...SECTION_PRESETS.ContactPreset.defaultProps } };
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +98,7 @@ export function galleryMasonry(
 }
 
 export function galleryLandingPreset(id: string): PuckBlockEntry {
-  return { type: "GalleryLandingPreset", props: { id, ...GALLERY_LANDING_PRESET } };
+  return { type: "GalleryLandingPreset", props: { id, ...SECTION_PRESETS.GalleryLandingPreset.defaultProps } };
 }
 
 // ---------------------------------------------------------------------------

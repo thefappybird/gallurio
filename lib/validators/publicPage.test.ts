@@ -83,6 +83,21 @@ describe("portfolioHeaderConfigSchema — navOrder", () => {
       portfolioHeaderConfigSchema.safeParse({ navOrder: ["logo", "home", "gallery", "contact", "home"] }).success
     ).toBe(false);
   });
+
+  it("accepts independent active and inactive link frame settings", () => {
+    const value = {
+      inactiveLinkBackgroundColor: "background",
+      inactiveLinkOpacity: 70,
+      inactiveLinkBorderWidth: 1,
+      inactiveLinkBorderColor: "foreground",
+      inactiveLinkRadius: "subtle",
+      activeLinkBackgroundColor: "accent",
+      activeLinkOpacity: 90,
+      activeLinkBorderWidth: 2,
+      activeLinkBorderColor: "primary",
+    } as const;
+    expect(portfolioHeaderConfigSchema.parse(value)).toEqual(value);
+  });
 });
 
 // ---------------------------------------------------------------------------

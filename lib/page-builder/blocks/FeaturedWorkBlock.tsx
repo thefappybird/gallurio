@@ -128,17 +128,42 @@ export function FeaturedWorkBlock({
         {list.length === 0 && presetPreview ? (
           <PresetMediaPlaceholder kind="collections" columns={columns} gap="normal" />
         ) : list.length === 0 ? (
-          <p
+          <div
+            data-empty-featured-grid=""
             style={{
-              color: "var(--pf-color-fg)",
-              opacity: 0.45,
-              textAlign: "center",
-              fontSize: "0.9375rem",
-              marginTop: "2rem",
+              display: "grid",
+              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+              gap: "1rem",
             }}
           >
-            {labels.featuredEmpty}
-          </p>
+            {Array.from({ length: columns }, (_, index) => (
+              <div
+                key={index}
+                data-empty-featured-card=""
+                style={{
+                  overflow: "hidden",
+                  backgroundColor: "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
+                  border: "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
+                }}
+              >
+                <div
+                  style={{
+                    aspectRatio: "7 / 9",
+                    display: "grid",
+                    placeItems: "center",
+                    padding: "1rem",
+                    textAlign: "center",
+                    color: "var(--pf-color-fg)",
+                  }}
+                >
+                  {labels.featuredSelect}
+                </div>
+                <p style={{ margin: 0, padding: "0.75rem 1rem", color: "var(--pf-color-fg)" }}>
+                  {labels.featuredEmpty}
+                </p>
+              </div>
+            ))}
+          </div>
         ) : (
           <FeaturedCollectionsClient
             tiles={tiles}

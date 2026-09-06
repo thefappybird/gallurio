@@ -9,6 +9,7 @@ import {
   hairlineFrame,
   onAccentBand,
   onPrimaryBand,
+  pageFitColumns,
   pageSection,
   primaryBandSection,
   slot,
@@ -34,7 +35,7 @@ export const CONTACT_SPLIT_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   _style: { ...pageSection, gap: 0 },
   content: slot([
-    child("Columns", {
+    pageFitColumns({
       columns: 2,
       minHeight: "0px",
       _style: { gap: 40 },

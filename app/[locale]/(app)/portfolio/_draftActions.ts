@@ -8,6 +8,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { PortfolioDraft, Workspace, GalleryItem, type PortfolioDraftDoc } from "@/lib/db/models";
 import type { PlanTier } from "@/lib/db/models/Workspace";
 import { createDraftSchema, updateDraftSchema } from "@/lib/validators/portfolioDraft";
+import { portfolioPuckDataSchema } from "@/lib/validators/publicPage";
 import { demoImportSchema } from "@/lib/validators/demoImport";
 import { draftCapForPlan } from "@/lib/page-builder/drafts";
 import type { PuckData } from "@/lib/page-builder/types";
@@ -42,6 +43,13 @@ export type FullDraft = DraftSummary & {
 export type DraftMutationResult = { ok: true; draft: DraftSummary } | { error: string };
 export type DraftLoadResult = { ok: true; draft: FullDraft } | { error: string };
 export type DraftActionResult = { ok: true } | { error: string };
+export type CollectionReferencesRefreshResult =
+  | { ok: true; data: { home: PuckData; gallery: PuckData } }
+  | { error: string };
+
+const collectionReferencesRefreshSchema = z.object({
+  data: portfolioPuckDataSchema,
+});
 
 function isDuplicateKeyError(err: unknown): boolean {
   return typeof err === "object" && err !== null && (err as { code?: number }).code === 11000;
@@ -53,6 +61,30 @@ function toSummary(doc: PortfolioDraftDoc): DraftSummary {
     name: doc.name,
     templateId: doc.templateId ?? "",
     updatedAt: (doc.updatedAt instanceof Date ? doc.updatedAt : new Date()).toISOString(),
+  };
+}
+
+/**
+ * Refreshes the small collection cache baked into the live editor tree after
+ * gallery media changes. This intentionally does not save or publish a draft:
+ * it returns the reconciled canvas snapshot for the editor to persist through
+ * its normal draft flow.
+ */
+export async function refreshCollectionReferencesAction(input: unknown): Promise<CollectionReferencesRefreshResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = collectionReferencesRefreshSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "invalid_data" };
+  if (!parsed.data.data.home || !parsed.data.data.gallery) return { error: "invalid_data" };
+
+  const workspaceId = String(ctx.workspace._id);
+  return {
+    ok: true,
+    data: {
+      home: await reconcileFeaturedCollections(workspaceId, parsed.data.data.home as unknown as PuckData),
+      gallery: await reconcileFeaturedCollections(workspaceId, parsed.data.data.gallery as unknown as PuckData),
+    },
   };
 }
 

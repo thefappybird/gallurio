@@ -7,6 +7,7 @@ import {
   accentBandSection,
   child,
   hairlineFrame,
+  pageFitColumns,
   pageInsetSection,
   pageSection,
   primaryBandSection,
@@ -48,7 +49,7 @@ export const GALLERY_GRID_FULL_PRESET: ContainerBlockProps = {
       text: "Gallery highlights",
       _style: { paddingLeft: "1.5rem", paddingRight: "1.5rem" },
     }),
-    child("Columns", {
+    pageFitColumns({
       columns: 1,
       overallWidth: "full",
       minHeight: "0px",

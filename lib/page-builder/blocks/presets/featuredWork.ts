@@ -17,14 +17,20 @@ export const FEATURED_WORK_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Featured work" }),
     child("Text", { text: "Spotlight a few signature images." }),
-    child("Columns", {
-      columns: 3,
-      minHeight: "0px",
-      _style: { gap: 16 },
+    child("Container", {
+      overallWidth: "page-fit",
       content: slot([
-        child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
-        child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
-        child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
+        child("Columns", {
+          columns: 3,
+          overallWidth: "full",
+          minHeight: "0px",
+          _style: { gap: 16 },
+          content: slot([
+            child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
+            child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
+            child("CollectionCard", { aspectRatio: "7 / 9", showCaption: true }),
+          ]),
+        }),
       ]),
     }),
   ]),
@@ -49,13 +55,19 @@ export const FEATURED_WORK_LEAD_PRESET: ContainerBlockProps = {
         child("Text", { text: "Two projects that say most of what I'd want to say in a first meeting." }),
       ]),
     }),
-    child("Columns", {
-      columns: 2,
-      minHeight: "0px",
-      _style: { gap: 24 },
+    child("Container", {
+      overallWidth: "page-fit",
       content: slot([
-        child("CollectionCard", { aspectRatio: "3 / 2", showCaption: true }),
-        child("CollectionCard", { aspectRatio: "3 / 2", showCaption: true }),
+        child("Columns", {
+          columns: 2,
+          overallWidth: "full",
+          minHeight: "0px",
+          _style: { gap: 24 },
+          content: slot([
+            child("CollectionCard", { aspectRatio: "3 / 2", showCaption: true }),
+            child("CollectionCard", { aspectRatio: "3 / 2", showCaption: true }),
+          ]),
+        }),
       ]),
     }),
   ]),
@@ -78,15 +90,21 @@ export const FEATURED_WORK_INDEX_PRESET: ContainerBlockProps = {
         child("Text", { text: "Four collections" }),
       ]),
     }),
-    child("Columns", {
-      columns: 4,
-      minHeight: "0px",
-      _style: { gap: 16 },
+    child("Container", {
+      overallWidth: "page-fit",
       content: slot([
-        child("CollectionCard", { aspectRatio: "1 / 1", showCaption: true }),
-        child("CollectionCard", { aspectRatio: "1 / 1", showCaption: true }),
-        child("CollectionCard", { aspectRatio: "1 / 1", showCaption: true }),
-        child("CollectionCard", { aspectRatio: "1 / 1", showCaption: true }),
+        child("Columns", {
+          columns: 4,
+          overallWidth: "full",
+          minHeight: "0px",
+          _style: { gap: 16 },
+          content: slot([
+            child("CollectionCard", { aspectRatio: "1 / 1", showCaption: true }),
+            child("CollectionCard", { aspectRatio: "1 / 1", showCaption: true }),
+            child("CollectionCard", { aspectRatio: "1 / 1", showCaption: true }),
+            child("CollectionCard", { aspectRatio: "1 / 1", showCaption: true }),
+          ]),
+        }),
       ]),
     }),
   ]),

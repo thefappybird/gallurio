@@ -4,7 +4,7 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { accentBandSection, child, pageSection, primaryBandSection, slot } from "./_helpers";
+import { accentBandSection, child, pageFitColumns, pageSection, primaryBandSection, slot } from "./_helpers";
 
 const masonryColumns = (heights: readonly string[], columns: 2 | 3 | 4) => {
   const lanes = Array.from({ length: columns }, () => [] as string[]);
@@ -50,7 +50,7 @@ export const GALLERY_MASONRY_WALL_PRESET: ContainerBlockProps = {
       text: "Story gallery",
       _style: { paddingLeft: "1.5rem", paddingRight: "1.5rem" },
     }),
-    child("Columns", {
+    pageFitColumns({
       columns: 1,
       overallWidth: "full",
       minHeight: "0px",
@@ -70,7 +70,7 @@ export const GALLERY_MASONRY_JOURNAL_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   _style: { ...pageSection, gap: 0 },
   content: slot([
-    child("Columns", {
+    pageFitColumns({
       columns: 4,
       minHeight: "0px",
       _style: { gap: 40 },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2Icon, RefreshCwIcon } from "lucide-react";
+import { RefreshCwIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import type { PortfolioCollectionsPopupConfig, BrandKitRadius } from "@/lib/page-builder/types";
 import {
@@ -151,6 +151,23 @@ const FOCUS_VISIBLE_STYLES = `
   outline-offset: 2px;
 }
 `;
+
+/** Layout-faithful first-page loading surface. It reserves the exact card
+ * count/column structure selected by the owner instead of replacing the popup
+ * with a generic spinner. */
+function PopupLayoutSkeleton({ layout, columns }: { layout: ReturnType<typeof resolvePopupLayout>; columns: number }) {
+  const cell = (key: number, ratio = "1 / 1") => (
+    <div key={key} data-popup-skeleton-card="" aria-hidden style={{ aspectRatio: ratio, background: "color-mix(in srgb, var(--pf-color-fg, #111) 12%, transparent)", animation: "pf-popup-pulse 1.1s ease-in-out infinite" }} />
+  );
+  if (layout === "split-index") {
+    return <div style={{ display: "flex", gap: "24px" }}><div style={{ flex: "0 0 35%", minHeight: "16rem", background: "color-mix(in srgb, var(--pf-color-fg, #111) 10%, transparent)" }} /><div data-popup-columns={columns} style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "8px" }}>{Array.from({ length: 4 }, (_, i) => cell(i, i % 2 ? "4 / 5" : "1 / 1"))}</div></div>;
+  }
+  if (layout === "justified") {
+    const weights = [1.5, 1, .8, 1.25, .9, 1.2, .7];
+    return <div data-popup-columns={columns} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>{Array.from({ length: Math.ceil(7 / columns) }, (_, row) => <div key={row} style={{ display: "flex", gap: "8px" }}>{weights.slice(row * columns, (row + 1) * columns).map((weight, i) => <div key={i} data-popup-skeleton-card="" style={{ flex: weight, aspectRatio: "4 / 3", background: "color-mix(in srgb, var(--pf-color-fg, #111) 12%, transparent)", animation: "pf-popup-pulse 1.1s ease-in-out infinite" }} />)}</div>)}</div>;
+  }
+  return <div data-popup-columns={columns} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: "8px" }}>{Array.from({ length: 6 }, (_, i) => cell(i))}</div>;
+}
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -306,7 +323,7 @@ export function CollectionPopup({
   const total = state.status === "populated" || state.status === "loadingMore" ? state.total : undefined;
   const collectionDescription =
     state.status === "populated" || state.status === "loadingMore" ? state.description : undefined;
-  const popupColumns = resolvePopupColumns(popupConfig.popupColumns);
+  const popupColumns = resolvePopupColumns(popupConfig.popupColumns, layout);
   const hasMore = state.status === "populated" && state.nextCursor != null;
   const isLoadingMore = state.status === "loadingMore";
   const loadMoreError = state.status === "populated" && state.loadMoreError;
@@ -431,25 +448,10 @@ export function CollectionPopup({
                 }}
               >
                 {state.status === "idle" || state.status === "loading" ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: "48px",
-                      gap: "8px",
-                      color: "var(--pf-color-fg, #111)",
-                    }}
-                  >
-                    <Loader2Icon
-                      aria-hidden
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        animation: "spin 1s linear infinite",
-                      }}
-                    />
-                    <span>{L.loading}</span>
+                  <div aria-busy="true" aria-label={L.loading}>
+                    <style>{`@keyframes pf-popup-pulse{50%{opacity:.45}}`}</style>
+                    <span className="sr-only">{L.loading}</span>
+                    <PopupLayoutSkeleton layout={layout} columns={popupColumns} />
                   </div>
                 ) : state.status === "error" ? (
                   <div

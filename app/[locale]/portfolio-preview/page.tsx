@@ -85,7 +85,18 @@ export default async function PortfolioPreviewPage({
   if (role !== "owner") notFound();
 
   const pp = workspace.publicPage;
-  const { cssVars, className } = resolveBrandKit(pp?.brandKit ?? DEFAULT_BRAND_KIT);
+  // A saved draft is the baseline for every preview surface, not only its
+  // Puck zone data. This prevents saved draft copy from rendering with a
+  // published-page brand kit after the local buffer has been retired.
+  const selectedDraft = requestedDraftId
+    ? await PortfolioDraft.findOne(
+      { _id: requestedDraftId, workspaceId: workspace._id },
+      { data: 1, brandKit: 1, contact: 1, collectionsPopup: 1, formLocale: 1, formDir: 1 },
+    ).lean()
+    : null;
+  const resolvedDraftId = selectedDraft ? requestedDraftId : null;
+  const previewBrandKit = selectedDraft?.brandKit ?? pp?.brandKit ?? DEFAULT_BRAND_KIT;
+  const { cssVars, className } = resolveBrandKit(previewBrandKit);
 
   // A live in-editor language switch overrides the DB-resolved chrome locale —
   // pure override, not a new default (falls back to the existing resolution
@@ -96,15 +107,21 @@ export default async function PortfolioPreviewPage({
     requestedFormLocale &&
     (routing.locales as readonly string[]).includes(requestedFormLocale)
       ? (requestedFormLocale as (typeof routing.locales)[number])
-      : resolvePublicChromeLocale(workspace);
+      : (
+        selectedDraft?.formLocale && (routing.locales as readonly string[]).includes(selectedDraft.formLocale)
+          ? selectedDraft.formLocale as (typeof routing.locales)[number]
+          : resolvePublicChromeLocale(workspace)
+      );
   const effectiveDir = resolveEffectiveDir(
-    typeof sp.formDir === "string" ? (sp.formDir as "ltr" | "rtl" | "") : (workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined),
+    typeof sp.formDir === "string"
+      ? (sp.formDir as "ltr" | "rtl" | "")
+      : ((selectedDraft?.formDir ?? workspace.publicPage?.formDir) as "ltr" | "rtl" | "" | undefined),
     chromeLocale,
   );
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
   const tPopup = await getTranslations({ locale: chromeLocale, namespace: "publicPage.collectionPopup" });
   // DB fallback — PreviewPopupShell overrides with the localStorage draft on mount.
-  const collectionsPopupConfig = (pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
+  const collectionsPopupConfig = (selectedDraft?.collectionsPopup ?? pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
 
   // Built unconditionally so PreviewContactModal can mount in home/gallery zones,
   // enabling the navbar Contact button to open the modal (mirrors public layout).
@@ -113,7 +130,7 @@ export default async function PortfolioPreviewPage({
     locale: chromeLocale,
     namespace: "app.bookings.locationPicker",
   });
-  const dbContact = (pp?.contact ?? null) as PortfolioContactConfig | null;
+  const dbContact = (selectedDraft?.contact ?? pp?.contact ?? null) as PortfolioContactConfig | null;
   const contactLabels = buildContactLabels(tForm, tLocationPicker);
 
   let body: React.ReactNode;
@@ -140,19 +157,10 @@ export default async function PortfolioPreviewPage({
       ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
       { content: [], root: {} };
     let resolvedCollectionsPopup = collectionsPopupConfig;
-    let resolvedDraftId: string | null = null;
-    if (requestedDraftId) {
-      const draftDoc = await PortfolioDraft.findOne(
-        { _id: requestedDraftId, workspaceId: workspace._id },
-        { data: 1, collectionsPopup: 1 },
-      ).lean();
-      const draftZoneData = draftDoc?.data?.[zone] as PuckData | undefined;
-      if (draftDoc && draftZoneData) {
+    if (selectedDraft) {
+      const draftZoneData = selectedDraft.data?.[zone] as PuckData | undefined;
+      if (draftZoneData) {
         fallbackData = draftZoneData;
-        resolvedDraftId = requestedDraftId;
-        resolvedCollectionsPopup =
-          (draftDoc.collectionsPopup as PortfolioCollectionsPopupConfig | null | undefined) ??
-          collectionsPopupConfig;
       }
     }
     // Preview-scoped nav override — keeps the Navigation block's Home/Gallery
@@ -190,6 +198,7 @@ export default async function PortfolioPreviewPage({
           unavailable: t("gallery.unavailable"),
           error: t("gallery.error"),
           featuredEmpty: t("gallery.featuredEmpty"),
+          featuredSelect: t("gallery.featuredSelect"),
           carouselHint: t("gallery.carouselHint"),
           carouselPrev: t("gallery.carouselPrev"),
           carouselNext: t("gallery.carouselNext"),
@@ -269,7 +278,7 @@ export default async function PortfolioPreviewPage({
     <div lang={chromeLocale} dir="ltr">
       <PreviewBrandShell
         slug={workspace.slug}
-        draftId={requestedDraftId}
+        draftId={resolvedDraftId}
         fallbackCssVars={cssVars}
         fallbackClassName={className}
       >

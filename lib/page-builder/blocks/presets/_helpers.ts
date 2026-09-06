@@ -21,6 +21,17 @@ export function child(type: string, props: Record<string, unknown>) {
 /** `content` literals are validated structurally by Puck at runtime; cast once. */
 export const slot = (items: ReturnType<typeof child>[]): Slot => items as unknown as Slot;
 
+/**
+ * A Columns grid in a root preset always lives inside a page-fit Container.
+ * The grid itself fills that wrapper, so its maximum width is governed by the
+ * immediate parent rather than by a separate Columns-specific clamp.
+ */
+export const pageFitColumns = (props: Record<string, unknown>) =>
+  child("Container", {
+    overallWidth: "page-fit",
+    content: slot([child("Columns", { ...props, overallWidth: "full" })]),
+  });
+
 // ---------------------------------------------------------------------------
 // Contrast-safe band recipes
 //

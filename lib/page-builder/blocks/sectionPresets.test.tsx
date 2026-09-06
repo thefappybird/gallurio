@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Render } from "@measured/puck";
 import { puckConfig } from "../config";
@@ -45,7 +45,7 @@ describe("gallery section presets", () => {
   it.each([
     ["GalleryGridPreset", GALLERY_GRID_PRESET, "GalleryGrid"],
     ["GalleryMasonryPreset", GALLERY_MASONRY_PRESET, "GalleryMasonry"],
-    ["FeaturedWorkPreset", FEATURED_WORK_PRESET, "Columns"],
+    ["FeaturedWorkPreset", FEATURED_WORK_PRESET, "Container"],
   ] as const)("%s composes Container -> Heading -> Text -> %s", (_label, preset, leafType) => {
     const children = preset.content as Array<{ type: string }>;
     expect(children.map((child) => child.type)).toEqual(["Heading", "Text", leafType]);

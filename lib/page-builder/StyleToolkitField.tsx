@@ -13,8 +13,19 @@
  * Editor chrome is intentionally English-only.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+
+export type WorkspaceContactDefaults = {
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  socials?: { instagram?: string | null; facebook?: string | null; tiktok?: string | null; website?: string | null } | null;
+};
+
+/** Canvas-only display defaults from Business details. They do not become block
+ * props until the owner intentionally edits a field. */
+export const ContactDetailsDefaultsContext = createContext<WorkspaceContactDefaults | null>(null);
 import {
   SECTION_PRESET_KEYS,
   NAV_PRESET_KEYS,
@@ -762,6 +773,9 @@ const NAV_ITEM_LABELS: Record<NavItemKey, string> = {
  * owner who wants e.g. Contact-Gallery-Home-Logo order for an RTL-language
  * site builds it here by hand.
  */
+// Legacy saved nav orders remain render-compatible; the editor now uses the
+// direction checkbox below rather than exposing this control.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function NavOrderControl({
   order,
   onChange,
@@ -855,7 +869,15 @@ export function NavigationContentPanel({
             setProps?.(navigationLogoPatch(config as Record<string, unknown>, logoAssetId));
           }}
         />
-        <NavOrderControl order={config.navOrder} onChange={(next) => set("navOrder", next)} />
+        <label className="flex items-center justify-between gap-3 border border-border bg-background px-2.5 py-2 text-xs text-foreground">
+          <span>Right-to-left layout</span>
+          <input
+            type="checkbox"
+            checked={config.navDirection === "rtl"}
+            onChange={(e) => set("navDirection", e.target.checked ? "rtl" : "ltr")}
+            className="size-4 accent-foreground"
+          />
+        </label>
       </div>
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">
@@ -936,7 +958,24 @@ export function NavigationDesignPanel({
           onChange={(v) => set("fontSize", v === "md" ? "" : v)}
         />
         <NavColorRow label="Brand text color" value={config.brandTextColor} onChange={(v) => set("brandTextColor", v)} effectiveValue="foreground" />
+      </EditorDrawerSection>
+
+      <EditorDrawerSection title="Inactive link">
         <NavColorRow label="Inactive link color" value={config.linkColor} onChange={(v) => set("linkColor", v)} effectiveValue="foreground" />
+        <NavColorRow label="Fill color" value={config.inactiveLinkBackgroundColor} onChange={(v) => set("inactiveLinkBackgroundColor", v)} effectiveValue="background" />
+        <NumberInputRow label="Fill opacity" value={config.inactiveLinkOpacity} min={0} max={100} suffix="%" effectiveValue={100} onChange={(v) => set("inactiveLinkOpacity", v)} />
+        <NumberInputRow label="Border width" value={config.inactiveLinkBorderWidth} min={0} max={8} suffix="px" effectiveValue={0} onChange={(v) => set("inactiveLinkBorderWidth", v)} />
+        {config.inactiveLinkBorderWidth ? <NavColorRow label="Border color" value={config.inactiveLinkBorderColor} onChange={(v) => set("inactiveLinkBorderColor", v)} effectiveValue="foreground" /> : null}
+        <NavRadiusRow label="Corner radius" value={config.inactiveLinkRadius} onChange={(v) => set("inactiveLinkRadius", v)} effectiveValue={effectiveRadius} />
+      </EditorDrawerSection>
+
+      <EditorDrawerSection title="Active link">
+        <NavColorRow label="Active link color" value={config.activeLinkColor} onChange={(v) => set("activeLinkColor", v)} effectiveValue="foreground" />
+        <NavColorRow label="Fill color" value={config.activeLinkBackgroundColor} onChange={(v) => set("activeLinkBackgroundColor", v)} effectiveValue="background" />
+        <NumberInputRow label="Fill opacity" value={config.activeLinkOpacity} min={0} max={100} suffix="%" effectiveValue={100} onChange={(v) => set("activeLinkOpacity", v)} />
+        <NumberInputRow label="Border width" value={config.activeLinkBorderWidth} min={0} max={8} suffix="px" effectiveValue={0} onChange={(v) => set("activeLinkBorderWidth", v)} />
+        {config.activeLinkBorderWidth ? <NavColorRow label="Border color" value={config.activeLinkBorderColor} onChange={(v) => set("activeLinkBorderColor", v)} effectiveValue="foreground" /> : null}
+        <NavRadiusRow label="Corner radius" value={config.activeLinkRadius} onChange={(v) => set("activeLinkRadius", v)} effectiveValue={effectiveRadius} />
         <ChoiceRow
           label="Scale active link"
           value={config.activeLinkScale ? "on" : "off"}
@@ -955,7 +994,6 @@ export function NavigationDesignPanel({
           options={[{ value: "on", label: "On" }, { value: "off", label: "Off" }]}
           onChange={(v) => set("activeLinkUnderline", v === "on" ? undefined : false)}
         />
-        <NavColorRow label="Active link color" value={config.activeLinkColor} onChange={(v) => set("activeLinkColor", v)} effectiveValue="foreground" />
         {config.activeLinkHighlight && (
           <>
             <NavColorRow label="Highlight color" value={config.highlightColor} onChange={(v) => set("highlightColor", v)} effectiveValue="foreground" />
@@ -1095,6 +1133,7 @@ export function ContentInputs({
   /** Only read when `type` is one of NAV_CONFIG_TYPES — the detach toggle's copy. */
   t?: NavDetachTranslate;
 }) {
+  const workspaceContact = useContext(ContactDetailsDefaultsContext);
   const demo = useDemoPicker();
   if (type === "Heading") {
     return (
@@ -1291,46 +1330,46 @@ export function ContentInputs({
             hideInput
           />
         </div>
-        <p className="text-xs text-muted-foreground">Leave blank to use your workspace contact details.</p>
+        <p className="text-xs text-muted-foreground">Business details are shown here until you override a field.</p>
         <FloatingLabelInput
           label="Email"
-          value={(props.email as string) ?? ""}
+          value={(props.email as string) ?? workspaceContact?.email ?? ""}
           onChange={(v) => setProp("email", v)}
           type="email"
         />
         <FloatingLabelInput
           label="Phone"
-          value={(props.phone as string) ?? ""}
+          value={(props.phone as string) ?? workspaceContact?.phone ?? ""}
           onChange={(v) => setProp("phone", v)}
           type="tel"
         />
         <FloatingLabelInput
           label="Address"
-          value={(props.address as string) ?? ""}
+          value={(props.address as string) ?? workspaceContact?.address ?? ""}
           onChange={(v) => setProp("address", v)}
         />
         <FloatingLabelInput
           label="Instagram username"
           placeholder="yourhandle"
-          value={(props.instagram as string) ?? ""}
+          value={(props.instagram as string) ?? workspaceContact?.socials?.instagram ?? ""}
           onChange={(v) => setProp("instagram", v)}
         />
         <FloatingLabelInput
           label="Facebook username"
           placeholder="your.page"
-          value={(props.facebook as string) ?? ""}
+          value={(props.facebook as string) ?? workspaceContact?.socials?.facebook ?? ""}
           onChange={(v) => setProp("facebook", v)}
         />
         <FloatingLabelInput
           label="TikTok username"
           placeholder="yourhandle"
-          value={(props.tiktok as string) ?? ""}
+          value={(props.tiktok as string) ?? workspaceContact?.socials?.tiktok ?? ""}
           onChange={(v) => setProp("tiktok", v)}
         />
         <FloatingLabelInput
           label="Website URL"
           placeholder="yoursite.com"
-          value={(props.website as string) ?? ""}
+          value={(props.website as string) ?? workspaceContact?.socials?.website ?? ""}
           onChange={(v) => setProp("website", v)}
           type="url"
         />
@@ -1805,6 +1844,7 @@ export function DesignTab({
 }) {
   const isButton = blockType === "Button";
   const isLinkButton = s.buttonStyle === "link";
+  const isNakedButton = s.buttonStyle === "naked";
   const isSolidButton = s.buttonStyle === "solid";
   const isContactDetails = blockType === "ContactDetails";
   const isCollectionCard = blockType === "CollectionCard";
@@ -1815,7 +1855,12 @@ export function DesignTab({
   // its generic typography drawer would edit unrelated legacy style fields.
   const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType)
     && blockType !== "Image"
-    && blockType !== "CollectionCard";
+    && blockType !== "CollectionCard"
+    // Containers arrange independently editable blocks. Inheriting their text
+    // styles would make the inspector imply a change that is neither persisted
+    // on, nor reliably applied by, each child.
+    && !FLEX_CONTAINER_BLOCKS.has(blockType)
+    && blockType !== "Columns";
   // Heading blocks follow the brand heading font; all others follow the body font.
   // ponytail: "body" covers Text, Button, Container, and all other block types since
   // only Heading maps to --pf-font-heading; everything else inherits body via CSS.
@@ -1825,6 +1870,29 @@ export function DesignTab({
 
   return (
     <EditorDrawerGroup>
+      {isButton && !isLinkButton && (
+        <EditorDrawerSection title="Frame">
+          <NumberInputRow
+            label="Border width"
+            value={s.borderWidth}
+            min={STYLE_LIMITS.borderWidth.min}
+            max={STYLE_LIMITS.borderWidth.max}
+            effectiveValue={0}
+            onChange={(v) => set({ borderWidth: v })}
+          />
+          <BorderSideControls s={s} set={set} />
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">Border color</span>
+            <ColorSwatchRow
+              value={s.borderColorToken}
+              onChange={(t) => set({ borderColorToken: t })}
+              allowNone={false}
+              effectiveValue="foreground"
+            />
+          </div>
+          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
+        </EditorDrawerSection>
+      )}
       {/* ContactDetails: per-target typography (Labels / Inputs) + Icons */}
       {isContactDetails && (
         <>
@@ -1939,22 +2007,22 @@ export function DesignTab({
             {!isButton && (
               <>
                 <ToolbarToggle
-                  active={s.align === "left"}
-                  title="Align left"
+                  active={s.selfAlign === "left"}
+                  title="Position left"
                   Icon={AlignLeft}
-                  onClick={() => set({ align: s.align === "left" ? undefined : "left" })}
+                  onClick={() => set({ selfAlign: s.selfAlign === "left" ? undefined : "left" })}
                 />
                 <ToolbarToggle
-                  active={s.align === "center"}
-                  title="Align center"
+                  active={s.selfAlign === "center"}
+                  title="Position center"
                   Icon={AlignCenter}
-                  onClick={() => set({ align: s.align === "center" ? undefined : "center" })}
+                  onClick={() => set({ selfAlign: s.selfAlign === "center" ? undefined : "center" })}
                 />
                 <ToolbarToggle
-                  active={s.align === "right"}
-                  title="Align right"
+                  active={s.selfAlign === "right"}
+                  title="Position right"
                   Icon={AlignRight}
-                  onClick={() => set({ align: s.align === "right" ? undefined : "right" })}
+                  onClick={() => set({ selfAlign: s.selfAlign === "right" ? undefined : "right" })}
                 />
               </>
             )}
@@ -2040,7 +2108,7 @@ export function DesignTab({
       {isButton && (
         <EditorDrawerSection title="Button">
           {/* 1. Button color */}
-          {!isLinkButton && <div className="flex flex-col gap-1.5">
+          {!isLinkButton && !isNakedButton && <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5">
               <PaintBucket className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
               <span className="text-xs text-muted-foreground">Button color</span>
@@ -2073,15 +2141,11 @@ export function DesignTab({
               onChange={(t) => set({ textColorToken: t })}
             />
           </div>
-          {/* 4. Corner radius */}
-          {!isLinkButton && (
-            <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
-          )}
-          {/* 5. Button style */}
+          {/* 4. Button style */}
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
             <div className="flex items-center gap-1.5">
-              {(["solid", "outline", "soft", "link"] as const).map((v) => {
+              {(["solid", "outline", "soft", "naked", "link"] as const).map((v) => {
                 const isExplicit = s.buttonStyle === v;
                 const isEffective =
                   s.buttonStyle === undefined &&
@@ -2764,7 +2828,7 @@ export function LayoutTabBody({
             )}
           </EditorDrawerSection>
         )}
-        {!isButton && (
+        {!isButton && !isHeadingOrText && (
           <EditorDrawerSection title="Layout">
             <IconRow
               label="Block position"

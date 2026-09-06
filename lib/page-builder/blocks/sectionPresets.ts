@@ -27,6 +27,7 @@
  * swaps in visual pickers) — field KEYS match, so editor/prod parity holds.
  */
 
+import type { Slot } from "@measured/puck";
 import type { ContainerBlockProps } from "./manualBlocks";
 import type { NavigationBlockProps } from "./NavigationBlock";
 import {
@@ -147,6 +148,13 @@ function entry(
   }
 ): SectionPresetEntry {
   const camel = key.charAt(0).toLowerCase() + key.slice(1);
+  // Presets own the full-bleed section surface, while one zero-padding child
+  // owns the readable page-fit measure and all editable content. Keeping this
+  // transformation at the registry boundary makes every insert, template, and
+  // preview use the same structure without rewriting existing saved pages.
+  const presetProps = extra?.componentType === "Navigation"
+    ? defaultProps
+    : pageFitPresetProps(defaultProps as ContainerBlockProps);
   return {
     label,
     labelKey: `puckConfig.blocks.${camel}`,
@@ -154,10 +162,70 @@ function entry(
     descriptionKey: `puckConfig.presetDescriptions.${camel}`,
     group,
     dependsOn: extra?.dependsOn ?? [],
-    defaultProps,
+    defaultProps: presetProps,
     componentType: extra?.componentType ?? "Container",
     ...(extra?.metadata ? { metadata: extra.metadata } : {}),
   };
+}
+
+function pageFitPresetProps(props: ContainerBlockProps): ContainerBlockProps {
+  const originalContent = unwrapLegacyPageFitColumns(props.content);
+  const style = props._style ?? {};
+  const contentLayoutStyle = {
+    ...(style.flexDirection !== undefined && { flexDirection: style.flexDirection }),
+    ...(style.flexWrap !== undefined && { flexWrap: style.flexWrap }),
+    ...(style.gap !== undefined && { gap: style.gap }),
+    ...(style.contentHorizontalAlign !== undefined && { contentHorizontalAlign: style.contentHorizontalAlign }),
+    ...(style.contentVerticalDistribution !== undefined && { contentVerticalDistribution: style.contentVerticalDistribution }),
+    ...(style.align !== undefined && { align: style.align }),
+    ...(style.alignItems !== undefined && { alignItems: style.alignItems }),
+    ...(style.justifyContent !== undefined && { justifyContent: style.justifyContent }),
+    paddingTop: "0px",
+    paddingRight: "0px",
+    paddingBottom: "0px",
+    paddingLeft: "0px",
+    marginBottom: "0px",
+  };
+  return {
+    ...props,
+    overallWidth: "full",
+    content: [{
+      type: "Container",
+      props: {
+        overallWidth: "page-fit",
+        alignX: props.alignX,
+        alignY: props.alignY,
+        _style: contentLayoutStyle,
+        content: originalContent,
+      },
+    }] as unknown as Slot,
+  };
+}
+
+/**
+ * Featured Work briefly used one page-fit Container around each Columns block.
+ * The normalized preset now owns a single page-fit child around all content,
+ * so remove that superseded one-child wrapper while preserving the Columns
+ * block and its full-width setting.
+ */
+function unwrapLegacyPageFitColumns(content: Slot): Slot {
+  if (!Array.isArray(content)) return content;
+  return content.map((item) => {
+    const props = item && typeof item === "object" ? (item as { props?: Record<string, unknown> }).props : undefined;
+    const childContent = props?.content;
+    if (
+      item && typeof item === "object"
+      && (item as { type?: string }).type === "Container"
+      && props?.overallWidth === "page-fit"
+      && Array.isArray(childContent)
+      && childContent.length === 1
+      && childContent[0]?.type === "Columns"
+      && childContent[0]?.props?.overallWidth === "full"
+    ) {
+      return childContent[0];
+    }
+    return item;
+  }) as Slot;
 }
 
 // ---------------------------------------------------------------------------

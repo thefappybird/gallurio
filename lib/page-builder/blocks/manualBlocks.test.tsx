@@ -11,6 +11,7 @@ import {
   DividerBlock,
   ColumnsBlock,
   ContainerBlock,
+  PF_FULL_WIDTH_CONTAINER_SLOT_CLASS,
   columnsDefaultProps,
   containerDefaultProps,
   containerResolvePermissions,
@@ -818,8 +819,8 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.borderWidth).toBe("0px");
-    expect(a.style.borderColor).toBe("transparent");
+    expect(a.style.borderWidth).toBe("3px");
+    expect(a.style.borderColor).toBe("var(--pf-color-primary)");
   });
 
   it("_style.radius set → button uses px borderRadius (not var(--pf-radius))", () => {
@@ -955,8 +956,8 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.borderWidth).toBe("0px");
-    expect(a.style.borderColor).toBe("transparent");
+    expect(a.style.borderWidth).toBe("2px");
+    expect(a.style.borderColor).toBe("var(--pf-color-accent)");
   });
 
   it("buttonOpacity=60 on solid: fill uses color-mix at 60%", () => {
@@ -1010,7 +1011,7 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.borderWidth).toBe("0px");
+    expect(a.style.borderWidth).toBe("5px");
   });
 
   it("borderWidth in _style is IGNORED for outline buttons — always 2px with colorVar", () => {
@@ -1023,8 +1024,8 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.borderWidth).toBe("2px");
-    expect(a.style.borderColor).toBe("var(--pf-color-primary)");
+    expect(a.style.borderWidth).toBe("10px");
+    expect(a.style.borderColor).toBe("var(--pf-color-fg)");
   });
 
   it("borderWidth in _style is IGNORED for soft buttons — always 0px/transparent", () => {
@@ -1037,8 +1038,8 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.borderWidth).toBe("0px");
-    expect(a.style.borderColor).toBe("transparent");
+    expect(a.style.borderWidth).toBe("2px");
+    expect(a.style.borderColor).toBe("var(--pf-color-accent)");
   });
 
   it("buttonOpacity on soft: soft retains its fixed 15% tint and intentionally ignores buttonOpacity", () => {
@@ -1555,7 +1556,7 @@ describe("ContainerBlock flex defaults", () => {
 
   it("uses editable bottom margin instead of a ContainerAnchor drop spacer", () => {
     const { container, rerender } = render(<ContainerBlock content={MockSlot} />);
-    expect((container.querySelector("section") as HTMLElement).style.marginBottom).toBe("8px");
+    expect((container.querySelector("section") as HTMLElement).style.marginBottom).toBe("0px");
 
     rerender(<ContainerBlock content={MockSlot} _style={{ marginBottom: "20px" }} />);
     expect((container.querySelector("section") as HTMLElement).style.marginBottom).toBe("20px");
@@ -1668,15 +1669,33 @@ describe("Item 1: ContainerBlock overallWidth prop", () => {
     expect(slot.style.maxWidth).toBe("80rem");
   });
 
-  it("overallWidth='full' breaks the section out to 100vw on the public page and drops the slot's 80rem clamp", () => {
+  it("overallWidth='full' fills only its immediate parent and drops the slot's 80rem clamp", () => {
     const { container } = render(
       <ContainerBlock content={stubSlot} overallWidth="full" puck={{ isEditing: false }} />
     );
     const section = container.querySelector("section");
-    expect(section?.style.width).toBe("100vw");
-    expect(section?.style.marginLeft).toBe("calc(50% - 50vw)");
+    expect(section?.style.width).toBe("100%");
+    expect(section?.style.marginLeft).toBe("0px");
+    expect(section).toHaveAttribute("data-pf-full-width", "");
     const slot = screen.getByTestId("slot");
     expect(slot.style.maxWidth).toBe("");
+  });
+
+  it("lets a direct full-width child fill its full-width parent's outer width without escaping that parent", () => {
+    const MockSlot: SlotComponent = (props) => (
+      <div data-testid="full-parent-slot" className={props?.className} style={props?.style} />
+    );
+    const { container } = render(
+      <ContainerBlock content={MockSlot} overallWidth="full" />,
+    );
+
+    const parent = container.querySelector("section") as HTMLElement;
+    expect(parent.style.getPropertyValue("--pf-container-padding-inline-start")).toBe("1.5rem");
+    expect(parent.style.getPropertyValue("--pf-container-padding-inline-end")).toBe("1.5rem");
+    expect(screen.getByTestId("full-parent-slot")).toHaveClass(PF_FULL_WIDTH_CONTAINER_SLOT_CLASS);
+    const css = container.querySelector("style")?.textContent ?? "";
+    expect(css).toContain(`.${PF_FULL_WIDTH_CONTAINER_SLOT_CLASS} > [data-block="container"][data-pf-full-width]`);
+    expect(css).toContain("calc(100% + var(--pf-container-padding-inline-start) + var(--pf-container-padding-inline-end))");
   });
 
   it("overallWidth='full' in the editor canvas caps to 100% (not 100vw) so it never overflows the narrow preview", () => {
@@ -1721,7 +1740,7 @@ describe("Item 1: ContainerBlock overallWidth prop", () => {
       <ContainerBlock content={stubSlot} _chrome="footer" puck={{ isEditing: false }} />
     );
     const section = container.querySelector("section");
-    expect(section?.style.width).toBe("100vw");
+    expect(section?.style.width).toBe("100%");
   });
 
   it("an explicit overallWidth='page-fit' on a footer container overrides the chrome default", () => {
@@ -1746,6 +1765,7 @@ describe("Item 4: ContainerBlock width (Fill / Hug / Fixed)", () => {
     const section = container.querySelector("section");
     expect(section?.style.width).toBe("fit-content");
     expect(section?.style.marginLeft).toBe("");
+    expect(section).not.toHaveAttribute("data-pf-full-width");
   });
 
   it("a hugging Container does not apply flexGrow: 1 (would defeat the hug in a flex-row parent)", () => {
@@ -2098,7 +2118,7 @@ describe("A7: ColumnsBlock overallWidth prop", () => {
     const html = renderToStaticMarkup(
       <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} />
     );
-    expect(html).toContain("width:100vw");
+    expect(html).toContain("width:100%");
   });
 });
 
@@ -2143,12 +2163,12 @@ describe("#9: ColumnsBlock overallWidth full — editor canvas constraint", () =
     expect(html).toContain("width:100%");
   });
 
-  it("overallWidth=full on the public page: outer wrapper uses width:100vw (true full-bleed preserved)", () => {
+  it("overallWidth=full on the public page remains bounded by its parent", () => {
     const html = renderToStaticMarkup(
       <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} puck={{ isEditing: false }} />
     );
-    expect(html).toContain("width:100vw");
-    expect(html).not.toContain("width:100%");
+    expect(html).toContain("width:100%");
+    expect(html).not.toContain("width:100vw");
   });
 });
 

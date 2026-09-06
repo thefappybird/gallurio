@@ -7,6 +7,7 @@ import {
   accentBandSection,
   child,
   onAccentBand,
+  pageFitColumns,
   pageSection,
   primaryBandSection,
   slot,
@@ -33,7 +34,7 @@ export const ABOUT_PORTRAIT_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   _style: { ...pageSection, gap: 0 },
   content: slot([
-    child("Columns", {
+    pageFitColumns({
       columns: 2,
       minHeight: "0px",
       _style: { gap: 40 },
@@ -71,7 +72,7 @@ export const ABOUT_PROFILE_PRESET: ContainerBlockProps = {
   minHeight: "auto",
   _style: { ...primaryBandSection, gap: 0 },
   content: slot([
-    child("Columns", {
+    pageFitColumns({
       columns: 3,
       minHeight: "0px",
       _style: { gap: 40 },

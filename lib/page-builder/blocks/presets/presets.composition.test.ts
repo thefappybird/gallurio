@@ -112,7 +112,11 @@ describe("preset composition — colSpan never exceeds parent columns", () => {
 describe("hero group — reading order and heading levels", () => {
   it("HERO_SPLIT_PRESET lists the copy Container before the Image", () => {
     const root: Node = { type: "Container", props: HERO_SPLIT_PRESET as unknown as Record<string, unknown> };
-    const columns = childrenOf(root).find((n) => n.type === "Columns")!;
+    const wrapper = childrenOf(root).find((n) => {
+      const content = childrenOf(n);
+      return n.type === "Container" && content.length === 1 && content[0].type === "Columns";
+    })!;
+    const columns = childrenOf(wrapper)[0];
     const cells = childrenOf(columns);
     expect(cells[0].type).toBe("Container");
     expect(cells[1].type).toBe("Image");
@@ -183,6 +187,43 @@ describe("footer statement — contrast-safe button", () => {
     const style = button!.props._style as { buttonStyle?: string; buttonColorToken?: string };
     expect(style.buttonStyle).toBe("outline");
     expect(style.buttonColorToken).toBe("foreground");
+  });
+});
+
+describe("preset root Columns width boundary", () => {
+  it("never exposes Columns directly from a preset Container", () => {
+    for (const [name, preset] of Object.entries(ALL_PRESETS)) {
+      const root: Node = { type: "Container", props: preset.props };
+      const topLevel = childrenOf(root);
+      expect(topLevel.some((child) => child.type === "Columns"), `${name} exposes Columns directly`).toBe(false);
+
+      for (const wrapper of topLevel) {
+        const content = childrenOf(wrapper);
+        if (wrapper.type !== "Container" || content.length !== 1 || content[0].type !== "Columns") continue;
+        expect(wrapper.props.overallWidth, `${name} Columns wrapper`).toBe("page-fit");
+        expect(content[0].props.overallWidth, `${name} wrapped Columns`).toBe("full");
+      }
+    }
+  });
+});
+
+describe("SERVICES_PRESET card composition", () => {
+  it("keeps every card's copy in a zero-padding inner Container", () => {
+    const root: Node = { type: "Container", props: SERVICES_PRESET as unknown as Record<string, unknown> };
+    const cards = childrenOf(collectColumnsNodes(root)[0]);
+
+    expect(cards).toHaveLength(3);
+    for (const card of cards) {
+      const inner = childrenOf(card)[0];
+      expect(inner.type).toBe("Container");
+      expect(inner.props._style).toMatchObject({
+        paddingTop: "0px",
+        paddingRight: "0px",
+        paddingBottom: "0px",
+        paddingLeft: "0px",
+      });
+      expect(childrenOf(inner).map((node) => node.type)).toEqual(["Heading", "Text", "Text"]);
+    }
   });
 });
 

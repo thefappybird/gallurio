@@ -28,11 +28,14 @@
  * header) cannot be localized through Puck's public API — see Phase D report.
  */
 
+import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
 import { MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
-import { StyleToolkitField, type NavDetachContext } from "./StyleToolkitField";
+import { ContactDetailsDefaultsContext, RadiusButtons, StyleToolkitField, type NavDetachContext } from "./StyleToolkitField";
 import { useChromeSync } from "./chromeSyncContext";
+import { useEffectiveBrandRadius } from "./brandColors";
 import type { ZoneKey } from "./chromeSync";
 import { RootStyleField } from "./RootStyleField";
 import type { RootPageStyle } from "./rootStyle";
@@ -95,9 +98,11 @@ import { reconcileContainerSlot } from "./containerAnchorReconciler";
 import { masonryCloneBlockConfig, type MasonryCloneProps } from "./blocks/MasonryCloneBlock";
 import {
   PageBodyBlock,
+  PAGE_BODY_MARGIN_X_DEFAULT,
   pageBodyDefaultProps,
   pageBodyPermissions,
   type PageBodyBlockProps,
+  type PageBodyContainerDefaults,
 } from "./blocks/PageBodyBlock";
 import {
   HeadingBlock,
@@ -116,6 +121,8 @@ import {
   dividerDefaultProps,
   columnsDefaultProps,
   containerDefaultProps,
+  CONTAINER_EFFECTIVE_MARGIN_BOTTOM,
+  CONTAINER_EFFECTIVE_PAD,
   containerAnchorDefaultProps,
   containerResolvePermissions,
   type HeadingBlockProps,
@@ -329,6 +336,13 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.fields.style": "Style",
   "puckConfig.fields.pageStyle": "Page style",
   "puckConfig.fields.pageBodyMargin": "Horizontal page margin",
+  "puckConfig.fields.pageBodyContainerDefaults": "New container defaults",
+  "puckConfig.fields.pageBodyContainerDefaultsDescription": "These values are applied only to containers you add from now on. Existing containers stay unchanged.",
+  "puckConfig.fields.pageBodyContainerRadius": "Corner radius",
+  "puckConfig.fields.pageBodyContainerPadding": "Padding",
+  "puckConfig.fields.pageBodyContainerMargin": "Margin",
+  "puckConfig.fields.pageBodyContainerGap": "Gap",
+  "puckConfig.fields.pageBodyContainerOverallWidth": "Overall width",
   "puckConfig.fields.bgAnimation": "Background animation",
   "puckConfig.fields.bgAnimationShort": "BG animation",
   "puckConfig.fields.bgSpeed": "Animation speed",
@@ -464,6 +478,100 @@ export function NavStyleField({
   );
 }
 
+/** PageBody defaults use the same Frame and Spacing affordances as Container. */
+function PageBodyContainerDefaultsControl({
+  value,
+  onChange,
+  t,
+}: {
+  value: PageBodyContainerDefaults | undefined;
+  onChange: (value: PageBodyContainerDefaults | undefined) => void;
+  t: PuckTranslate;
+}) {
+  const [paddingAdvanced, setPaddingAdvanced] = useState(false);
+  const [marginAdvanced, setMarginAdvanced] = useState(false);
+  const effectiveRadius = useEffectiveBrandRadius();
+  const effectiveMargin = "0px";
+  const defaults = value ?? {};
+  const set = (patch: Partial<PageBodyContainerDefaults>) => {
+    const next = { ...defaults, ...patch };
+    for (const key of Object.keys(next) as (keyof PageBodyContainerDefaults)[]) {
+      if (next[key] === undefined) delete next[key];
+    }
+    onChange(Object.keys(next).length > 0 ? next : undefined);
+  };
+  const paddingX = defaults.paddingLeft !== undefined && defaults.paddingLeft === defaults.paddingRight
+    ? defaults.paddingLeft : undefined;
+  const paddingY = defaults.paddingTop !== undefined && defaults.paddingTop === defaults.paddingBottom
+    ? defaults.paddingTop : undefined;
+  const marginX = defaults.marginLeft !== undefined && defaults.marginLeft === defaults.marginRight
+    ? defaults.marginLeft : undefined;
+  const marginY = defaults.marginTop !== undefined && defaults.marginTop === defaults.marginBottom
+    ? defaults.marginTop : undefined;
+
+  return (
+    <div className="flex flex-col gap-3 p-3">
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {t("puckConfig.fields.pageBodyContainerDefaultsDescription")}
+      </p>
+      <RadiusButtons value={defaults.radius} onChange={(radius) => set({ radius })} effectiveValue={effectiveRadius} />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("puckConfig.fields.pageBodyContainerPadding")}</span>
+          <button type="button" aria-label="Padding advanced options" onClick={() => setPaddingAdvanced((open) => !open)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            Advanced {paddingAdvanced ? <ChevronUp className="size-3" aria-hidden /> : <ChevronDown className="size-3" aria-hidden />}
+          </button>
+        </div>
+        {paddingAdvanced ? (
+          <div className="grid grid-cols-2 gap-2">
+            <DimensionInput label="Top" value={defaults.paddingTop} effectiveValue={CONTAINER_EFFECTIVE_PAD.top} onChange={(paddingTop) => set({ paddingTop })} />
+            <DimensionInput label="Right" value={defaults.paddingRight} effectiveValue={CONTAINER_EFFECTIVE_PAD.right} onChange={(paddingRight) => set({ paddingRight })} />
+            <DimensionInput label="Bottom" value={defaults.paddingBottom} effectiveValue={CONTAINER_EFFECTIVE_PAD.bottom} onChange={(paddingBottom) => set({ paddingBottom })} />
+            <DimensionInput label="Left" value={defaults.paddingLeft} effectiveValue={CONTAINER_EFFECTIVE_PAD.left} onChange={(paddingLeft) => set({ paddingLeft })} />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <DimensionInput label="Horizontal (X)" value={paddingX} effectiveValue={CONTAINER_EFFECTIVE_PAD.left} onChange={(padding) => set({ paddingLeft: padding, paddingRight: padding })} />
+            <DimensionInput label="Vertical (Y)" value={paddingY} effectiveValue={CONTAINER_EFFECTIVE_PAD.top} onChange={(padding) => set({ paddingTop: padding, paddingBottom: padding })} />
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("puckConfig.fields.pageBodyContainerMargin")}</span>
+          <button type="button" aria-label="Margin advanced options" onClick={() => setMarginAdvanced((open) => !open)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            Advanced {marginAdvanced ? <ChevronUp className="size-3" aria-hidden /> : <ChevronDown className="size-3" aria-hidden />}
+          </button>
+        </div>
+        {marginAdvanced ? (
+          <div className="grid grid-cols-2 gap-2">
+            <DimensionInput label="Top" value={defaults.marginTop} effectiveValue={effectiveMargin} onChange={(marginTop) => set({ marginTop })} />
+            <DimensionInput label="Right" value={defaults.marginRight} effectiveValue={effectiveMargin} onChange={(marginRight) => set({ marginRight })} />
+            <DimensionInput label="Bottom" value={defaults.marginBottom} effectiveValue={CONTAINER_EFFECTIVE_MARGIN_BOTTOM} onChange={(marginBottom) => set({ marginBottom })} />
+            <DimensionInput label="Left" value={defaults.marginLeft} effectiveValue={effectiveMargin} onChange={(marginLeft) => set({ marginLeft })} />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <DimensionInput label="Horizontal (X)" value={marginX} effectiveValue={effectiveMargin} onChange={(margin) => set({ marginLeft: margin, marginRight: margin })} />
+            <DimensionInput label="Vertical (Y)" value={marginY} effectiveValue={effectiveMargin} onChange={(margin) => set({ marginTop: margin, marginBottom: margin })} />
+          </div>
+        )}
+      </div>
+      <NumberInputRow label={t("puckConfig.fields.pageBodyContainerGap")} value={defaults.gap} min={0} max={96} effectiveValue={16} onChange={(gap) => set({ gap })} />
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs text-muted-foreground">{t("puckConfig.fields.pageBodyContainerOverallWidth")}</span>
+        <div className="flex">
+          {(["page-fit", "full"] as const).map((option) => (
+            <button key={option} type="button" aria-pressed={defaults.overallWidth === option || (defaults.overallWidth === undefined && option === "page-fit")} onClick={() => set({ overallWidth: option })} className={`inline-flex h-7 flex-1 items-center justify-center border border-border bg-background px-2 text-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${defaults.overallWidth === option ? "bg-foreground text-background hover:bg-foreground" : defaults.overallWidth === undefined && option === "page-fit" ? "border-foreground" : "text-foreground"}`}>
+              {option === "page-fit" ? "Page fit" : "Full"}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Factory — builds the editor Puck config with translated labels.
 // Called inside EditorShell via useMemo(() => createEditorConfig(t), [t])
@@ -511,11 +619,24 @@ export function createEditorConfig(
         <DimensionInput
           label={t("puckConfig.fields.pageBodyMargin")}
           value={value as PageBodyBlockProps["marginX"]}
+          effectiveValue={PAGE_BODY_MARGIN_X_DEFAULT}
           onChange={onChange as (value: PageBodyBlockProps["marginX"]) => void}
         />
       </div>
     ),
   } as unknown as Field<PageBodyBlockProps["marginX"]>;
+
+  const pageBodyContainerDefaultsField = {
+    type: "custom",
+    label: t("puckConfig.fields.pageBodyContainerDefaults"),
+    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+      <PageBodyContainerDefaultsControl
+        value={value as PageBodyContainerDefaults | undefined}
+        onChange={onChange as (next: PageBodyContainerDefaults | undefined) => void}
+        t={t}
+      />
+    ),
+  } as unknown as Field<PageBodyContainerDefaults | undefined>;
 
   // ---- Navigation fields (editor-only `_style` override) ------------------
   // Mirrors `editorContainerFields` below: `navigationFields`'s own `_style` is
@@ -800,20 +921,29 @@ export function createEditorConfig(
     resolveFields: (_data, { fields }) => {
       return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
     },
-    render: ({ _style, columns, email, phone, address, instagram, facebook, tiktok, website, puck }) => {
+    render: ({ _style, columns, email, phone, address, instagram, facebook, tiktok, website, puck }) => (
+      <ContactDetailsDefaultsContext.Consumer>
+        {(workspaceContact) => {
       // WYSIWYG canvas: render the actual contact rows using prop values so the canvas
-      // reflects what the user typed in the Content tab. When all fields are blank
-      // the workspace contact data fills in at runtime; show a placeholder here.
+      // reflects what the user typed in the Content tab. When a field is unset,
+      // it floats the same workspace Business details shown by the inspector.
       // No confirmMessage passed → SocialIconLink clicks are no-ops in the editor.
 
       // Pre-normalize social hrefs so we match production SocialsRow exactly
       // (skips invalid URLs, avoids double-prefixing full https:// values).
-      const igHref = instagram ? normalizeSocialUrl("instagram", instagram) : null;
-      const fbHref = facebook ? normalizeSocialUrl("facebook", facebook) : null;
-      const ttHref = tiktok ? normalizeSocialUrl("tiktok", tiktok) : null;
-      const wsHref = website ? normalizeSocialUrl("website", website) : null;
+      const effectiveEmail = email?.trim() || workspaceContact?.email;
+      const effectivePhone = phone?.trim() || workspaceContact?.phone;
+      const effectiveAddress = address?.trim() || workspaceContact?.address;
+      const effectiveInstagram = instagram?.trim() || workspaceContact?.socials?.instagram;
+      const effectiveFacebook = facebook?.trim() || workspaceContact?.socials?.facebook;
+      const effectiveTiktok = tiktok?.trim() || workspaceContact?.socials?.tiktok;
+      const effectiveWebsite = website?.trim() || workspaceContact?.socials?.website;
+      const igHref = effectiveInstagram ? normalizeSocialUrl("instagram", effectiveInstagram) : null;
+      const fbHref = effectiveFacebook ? normalizeSocialUrl("facebook", effectiveFacebook) : null;
+      const ttHref = effectiveTiktok ? normalizeSocialUrl("tiktok", effectiveTiktok) : null;
+      const wsHref = effectiveWebsite ? normalizeSocialUrl("website", effectiveWebsite) : null;
       const hasSocials = !!(igHref || fbHref || ttHref || wsHref);
-      const hasAny = email || phone || address || hasSocials;
+      const hasAny = effectiveEmail || effectivePhone || effectiveAddress || hasSocials;
       const rowStyle = { display: "flex", flexDirection: "column" as const, gap: "0.125rem" };
       const labelStyle = buildContactLabelStyle(_style);
       const valueStyle = buildContactValueStyle(_style);
@@ -839,22 +969,22 @@ export function createEditorConfig(
           }}
           {...resolveBlockAttrs(_style)}
         >
-          {email && (
+          {effectiveEmail && (
             <div style={rowStyle}>
               <dt style={labelStyle}>Email</dt>
-              <dd style={{ ...valueStyle, textDecoration: "none" }}>{email}</dd>
+              <dd style={{ ...valueStyle, textDecoration: "none" }}>{effectiveEmail}</dd>
             </div>
           )}
-          {phone && (
+          {effectivePhone && (
             <div style={rowStyle}>
               <dt style={labelStyle}>Phone</dt>
-              <dd style={{ ...valueStyle, textDecoration: "none" }}>{phone}</dd>
+              <dd style={{ ...valueStyle, textDecoration: "none" }}>{effectivePhone}</dd>
             </div>
           )}
-          {address && (
+          {effectiveAddress && (
             <div style={rowStyle}>
               <dt style={labelStyle}>Address</dt>
-              <dd style={valueStyle}>{address}</dd>
+              <dd style={valueStyle}>{effectiveAddress}</dd>
             </div>
           )}
           {hasSocials && (
@@ -875,7 +1005,9 @@ export function createEditorConfig(
           )}
         </dl>
       );
-    },
+        }}
+      </ContactDetailsDefaultsContext.Consumer>
+    ),
   };
 
   // ---- Manual primitives ---------------------------------------------------
@@ -1076,6 +1208,7 @@ export function createEditorConfig(
     defaultProps: pageBodyDefaultProps,
     fields: {
       marginX: pageBodyMarginField,
+      containerDefaults: pageBodyContainerDefaultsField,
       content: { type: "slot" },
     },
     permissions: pageBodyPermissions,

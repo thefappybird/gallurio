@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import mongoose from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { PortfolioDraft, GalleryItem } from "@/lib/db/models";
+import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => {
@@ -39,7 +40,10 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 }));
 
 vi.mock("@/lib/page-builder/resolveBrandKit", () => ({
-  resolveBrandKit: vi.fn(() => ({ cssVars: {}, className: "preview-theme" })),
+  resolveBrandKit: vi.fn((brandKit?: { backgroundColor?: string }) => ({
+    cssVars: { "--pf-color-bg": brandKit?.backgroundColor ?? "" },
+    className: "preview-theme",
+  })),
 }));
 
 vi.mock("@/lib/i18n/localeForCountry", () => ({
@@ -109,6 +113,7 @@ vi.mock("./_components/PreviewClient", () => ({
       previewNav?: { homeHref?: string; galleryHref?: string; activePath?: string };
       publicPage?: { collectionsPopup?: { imageModalLayout?: string } | null } | null;
       dir?: string;
+      brandVars?: Record<string, string>;
     };
     fallbackData: unknown;
     draftId: string | null;
@@ -125,6 +130,7 @@ vi.mock("./_components/PreviewClient", () => ({
         {workspace.publicPage?.collectionsPopup?.imageModalLayout ?? ""}
       </div>
       <div data-testid="preview-client-dir">{workspace.dir ?? ""}</div>
+      <div data-testid="preview-client-background">{workspace.brandVars?.["--pf-color-bg"] ?? ""}</div>
     </div>
   ),
 }));
@@ -280,6 +286,34 @@ describe("PortfolioPreviewPage", () => {
     expect(screen.getByTestId("preview-client-nav-gallery-href")).toHaveTextContent(
       `draftId=${String(draft._id)}`,
     );
+  });
+
+  it("uses a saved draft's brand kit and contact copy as the preview fallback", async () => {
+    const draft = await PortfolioDraft.create({
+      workspaceId: WORKSPACE_ID,
+      name: "Draft Design",
+      data: {
+        home: { content: [{ type: "Hero", props: { headline: "Draft Hero" } }], root: {} },
+      },
+      brandKit: { ...DEFAULT_BRAND_KIT, backgroundColor: "#123456" },
+      contact: { title: "Draft contact title", description: "Draft contact description" },
+    });
+
+    const homePage = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "home", draftId: String(draft._id) }),
+    });
+    const { unmount } = render(homePage);
+    expect(screen.getByTestId("preview-client-background")).toHaveTextContent("#123456");
+    unmount();
+
+    const contactPage = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "contact", draftId: String(draft._id) }),
+    });
+    render(contactPage);
+    expect(screen.getByText("Draft contact title")).toBeInTheDocument();
+    expect(screen.getByText("Draft contact description")).toBeInTheDocument();
   });
 
   it("falls back to published data when draftId belongs to another workspace (tenant isolation)", async () => {

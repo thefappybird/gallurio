@@ -40,6 +40,7 @@ import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import {
   createDraftAction,
   updateDraftAction,
+  refreshCollectionReferencesAction,
   deleteDraftAction,
   listDraftsAction,
   getDraftAction,
@@ -79,6 +80,18 @@ beforeEach(async () => {
   vi.mocked(verifyImageOwnership).mockClear();
   vi.mocked(updateImageMetadata).mockClear();
   setWorkspace();
+});
+
+describe("refreshCollectionReferencesAction", () => {
+  it("accepts both current canvas zones and returns their reconciled snapshots", async () => {
+    const result = await refreshCollectionReferencesAction({ data: snapshot.data });
+    expect(result).toEqual({ ok: true, data: snapshot.data });
+  });
+
+  it("rejects a partial canvas snapshot", async () => {
+    const result = await refreshCollectionReferencesAction({ data: { home: snapshot.data.home, gallery: null } });
+    expect(result).toEqual({ error: "invalid_data" });
+  });
 });
 
 describe("createDraftAction", () => {

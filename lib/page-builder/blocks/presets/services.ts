@@ -3,7 +3,31 @@
  */
 
 import type { ContainerBlockProps } from "../manualBlocks";
-import { accentBandSection, child, onAccentBand, pageSection, slot } from "./_helpers";
+import { accentBandSection, child, onAccentBand, pageFitColumns, pageSection, slot } from "./_helpers";
+
+function serviceCard(title: string, description: string, price: string) {
+  return child("Container", {
+    _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
+    content: slot([
+      // The outer card owns the frame and breathing room. This zero-padding
+      // child keeps the card copy together as an editable content anchor.
+      child("Container", {
+        _style: {
+          paddingTop: "0px",
+          paddingRight: "0px",
+          paddingBottom: "0px",
+          paddingLeft: "0px",
+          marginBottom: "0px",
+        },
+        content: slot([
+          child("Heading", { level: "h3", text: title }),
+          child("Text", { text: description }),
+          child("Text", { text: price, _style: { textColorToken: "foreground", bold: true } }),
+        ]),
+      }),
+    ]),
+  });
+}
 
 export const SERVICES_PRESET: ContainerBlockProps = {
   backgroundImages: [],
@@ -19,33 +43,12 @@ export const SERVICES_PRESET: ContainerBlockProps = {
   _style: { bgColorToken: "background" },
   content: slot([
     child("Heading", { level: "h2", text: "Services" }),
-    child("Columns", {
+    pageFitColumns({
       columns: 3,
       content: slot([
-        child("Container", {
-          _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-          content: slot([
-            child("Heading", { level: "h3", text: "Wedding Photography" }),
-            child("Text", { text: "Full-day coverage of your most important day." }),
-            child("Text", { text: "From ₱30,000", _style: { textColorToken: "foreground", bold: true } }),
-          ]),
-        }),
-        child("Container", {
-          _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-          content: slot([
-            child("Heading", { level: "h3", text: "Portrait Sessions" }),
-            child("Text", { text: "Individual or family portraits in natural light." }),
-            child("Text", { text: "From ₱8,000", _style: { textColorToken: "foreground", bold: true } }),
-          ]),
-        }),
-        child("Container", {
-          _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-          content: slot([
-            child("Heading", { level: "h3", text: "Event Coverage" }),
-            child("Text", { text: "Corporate events, debuts, and intimate gatherings." }),
-            child("Text", { text: "From ₱15,000", _style: { textColorToken: "foreground", bold: true } }),
-          ]),
-        }),
+        serviceCard("Wedding Photography", "Full-day coverage of your most important day.", "From ₱30,000"),
+        serviceCard("Portrait Sessions", "Individual or family portraits in natural light.", "From ₱8,000"),
+        serviceCard("Event Coverage", "Corporate events, debuts, and intimate gatherings.", "From ₱15,000"),
       ]),
     }),
   ]),
@@ -82,7 +85,7 @@ export const SERVICES_MENU_PRESET: ContainerBlockProps = {
     child("Heading", { level: "h2", text: "Services" }),
     ...MENU_SERVICES.flatMap((service) => [
       child("Divider", { thickness: 1, _style: { paddingLeft: "0px", paddingRight: "0px" } }),
-      child("Columns", {
+      pageFitColumns({
         columns: 3,
         minHeight: "0px",
         _style: { gap: 24, paddingTop: "1.25rem", paddingBottom: "1.25rem" },
@@ -110,7 +113,7 @@ export const SERVICES_FEATURE_PRESET: ContainerBlockProps = {
   _style: { ...pageSection, gap: 32 },
   content: slot([
     child("Heading", { level: "h2", text: "Services" }),
-    child("Columns", {
+    pageFitColumns({
       columns: 2,
       minHeight: "0px",
       _style: { gap: 32 },
@@ -143,7 +146,7 @@ export const SERVICES_FEATURE_PRESET: ContainerBlockProps = {
         child("Image", { alt: "Wedding coverage" }),
       ]),
     }),
-    child("Columns", {
+    pageFitColumns({
       columns: 2,
       minHeight: "0px",
       _style: { gap: 32 },

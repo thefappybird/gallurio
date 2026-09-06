@@ -12,6 +12,7 @@ vi.mock("./galleryPicker/usePickerData", () => ({
 }));
 
 import { editorPuckConfig } from "./editorConfig";
+import { ContactDetailsDefaultsContext } from "./StyleToolkitField";
 
 describe("editor gallery previews", () => {
   it("renders the real GalleryGridBlock empty state when images is empty", () => {
@@ -54,6 +55,24 @@ describe("editor ContactDetails WYSIWYG", () => {
       />
     );
     expect(screen.getByText("Workspace contact details")).toBeInTheDocument();
+  });
+
+  it("floats Business details into the canvas when no block props are set", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    render(
+      <ContactDetailsDefaultsContext.Provider value={{
+        email: "studio@example.com",
+        phone: "+63 917 000 0000",
+        socials: { instagram: "studio" },
+      }}>
+        <Render id="cd-business-defaults" _style={undefined} puck={{} as never} />
+      </ContactDetailsDefaultsContext.Provider>
+    );
+
+    expect(screen.getByText("studio@example.com")).toBeInTheDocument();
+    expect(screen.getByText("+63 917 000 0000")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute("href", "https://instagram.com/studio");
+    expect(screen.queryByText("Workspace contact details")).not.toBeInTheDocument();
   });
 
   it("canvas normalizes a bare instagram handle to a full URL (no double-prefix)", () => {

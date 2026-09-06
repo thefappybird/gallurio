@@ -151,7 +151,9 @@ export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & 
         marginLeft: _style?.marginLeft ?? LEAF_EFFECTIVE_MARGIN.left,
         width: _style?.width ?? "fit-content",
         maxWidth: "100%",
-        ...resolveBlockStyle(_style),
+        // Heading/Text always hug their copy. Alignment controls position this
+        // block in its parent; they no longer change the text inside it.
+        ...resolveBlockStyle({ ..._style, align: undefined, alignItems: undefined }),
       }}
       {...resolveBlockAttrs(_style)}
     >
@@ -231,7 +233,7 @@ export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: Bloc
         marginLeft: _style?.marginLeft ?? LEAF_EFFECTIVE_MARGIN.left,
         width: _style?.width ?? "fit-content",
         maxWidth: "100%",
-        ...resolveBlockStyle(_style),
+        ...resolveBlockStyle({ ..._style, align: undefined, alignItems: undefined }),
       }}
       {...resolveBlockAttrs(_style)}
     >
@@ -566,6 +568,13 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     buttonText = customTextColor ?? "var(--pf-color-fg)";
     tkBorderWidth = "0px";
     tkBorderColor = "transparent";
+  } else if (_style?.buttonStyle === "naked") {
+    // Naked keeps the normal button hit area while removing both fill and
+    // frame. An explicit Frame drawer choice below can add a selected border.
+    buttonBg = "transparent";
+    buttonText = customTextColor ?? "var(--pf-block-text-color, var(--pf-color-fg))";
+    tkBorderWidth = "0px";
+    tkBorderColor = "transparent";
   } else {
     // No explicit buttonStyle — legacy per-field behaviour.
     const hasColor = _style?.buttonColorToken !== undefined;
@@ -585,6 +594,20 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   // Shadow and border-frame are intentionally NOT applied to buttons — they are
   // deprecated fields for the button variant (old data is simply ignored).
   const resolved = resolveBlockStyle(_style) as Record<string, string | number | undefined>;
+  const hasExplicitFrame = _style?.borderWidth !== undefined;
+  const explicitFrameStyle: React.CSSProperties = hasExplicitFrame
+    ? _style.borderWidth && _style.borderWidth > 0
+      ? {
+        ...(resolved.borderStyle !== undefined && { borderStyle: resolved.borderStyle as string }),
+        ...(resolved.borderColor !== undefined && { borderColor: resolved.borderColor as string }),
+        ...(resolved.borderWidth !== undefined && { borderWidth: resolved.borderWidth as string }),
+        ...(resolved.borderTopWidth !== undefined && { borderTopWidth: resolved.borderTopWidth as string }),
+        ...(resolved.borderRightWidth !== undefined && { borderRightWidth: resolved.borderRightWidth as string }),
+        ...(resolved.borderBottomWidth !== undefined && { borderBottomWidth: resolved.borderBottomWidth as string }),
+        ...(resolved.borderLeftWidth !== undefined && { borderLeftWidth: resolved.borderLeftWidth as string }),
+      }
+      : { borderWidth: "0px", borderColor: "transparent" }
+    : {};
 
   const wrapperStyle: React.CSSProperties = {
     width: "fit-content",
@@ -616,6 +639,7 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     borderWidth: tkBorderWidth,
     borderColor: tkBorderColor,
     borderRadius: tkBorderRadius,
+    ...explicitFrameStyle,
     backgroundColor: buttonBg,
     color: buttonText,
     // Shadow suppressed: button no longer reads _style.shadow (deprecated for buttons).
@@ -772,7 +796,9 @@ export const COLUMNS_EFFECTIVE_PAD = {
   left: "1.5rem",
 } as const;
 
-export const CONTAINER_EFFECTIVE_MARGIN_BOTTOM = "8px";
+/** Containers no longer manufacture an 8px spacing band. Owners can still set
+ * an explicit margin whenever a section needs one. */
+export const CONTAINER_EFFECTIVE_MARGIN_BOTTOM = "0px";
 
 export const columnsDefaultProps: ColumnsBlockProps = {
   columns: 2,
@@ -895,15 +921,11 @@ export function ColumnsBlock({
         marginBottom: _style?.marginBottom ?? CONTAINER_EFFECTIVE_MARGIN_BOTTOM,
         minHeight: minHeight ?? undefined,
         ...outerStyle,
-        // A7: full-bleed breaks out of any max-width parent container.
-        // Placed after outerStyle so full-bleed width/marginLeft always wins.
-        // Bug #9: cap to canvas width in editor so 100vw (= full viewport with
-        // both Puck panels) does not overflow the narrow canvas (~428px). On the
-        // public page the true 100vw full-bleed is kept intact.
+        // Full means the maximum width available from the immediate parent.
+        // A page-body child therefore reaches the page edge, while a nested
+        // child remains inside its page-fit parent instead of escaping via 100vw.
         ...(overallWidth === "full"
-          ? isEditing
-            ? { width: "100%", marginLeft: 0 }
-            : { width: "100vw", marginLeft: "calc(50% - 50vw)" }
+          ? { width: "100%", marginLeft: 0, marginRight: 0, maxWidth: "none" }
           : {}),
         containerType: "inline-size",
         containerName: instanceContainer,
@@ -1048,8 +1070,15 @@ const CONTENT_ALIGN_TO_TEXT: Record<NonNullable<BlockStyle["contentHorizontalAli
 const CONTENT_ALIGN_TO_ITEMS: Record<NonNullable<BlockStyle["contentHorizontalAlign"]>, React.CSSProperties["alignItems"]> = {
   start: "flex-start", center: "center", end: "flex-end", stretch: "stretch",
 };
+/**
+ * A full-width Container's content slot. A direct full-width Container child
+ * uses this marker to consume the parent Container's inline padding, reaching
+ * exactly the parent's outer width (not the page viewport).
+ */
+export const PF_FULL_WIDTH_CONTAINER_SLOT_CLASS = "pf-full-width-container-slot";
 
 export function ContainerBlock({
+  id,
   _style,
   backgroundImages,
   bgAnimation,
@@ -1065,6 +1094,7 @@ export function ContainerBlock({
   content: Content,
   puck,
 }: {
+  id?: string;
   _style?: BlockStyle;
   backgroundImages?: GalleryImage[];
   bgAnimation?: "crossfade" | "kenburns" | "slide";
@@ -1091,6 +1121,17 @@ export function ContainerBlock({
   const isHugWidth = s.width === "fit-content";
   const wantsFullBleed = (overallWidth ?? (_chrome === "footer" ? "full" : "page-fit")) === "full";
   const applyFullBleed = wantsFullBleed && !isHugWidth;
+  const contentAlignmentClass = s.contentHorizontalAlign
+    ? `pf-container-align-${(id ?? "container").replace(/[^a-zA-Z0-9_-]/g, "")}`
+    : undefined;
+  const contentFlowClass = s.flexDirection === "row"
+    ? s.flexWrap === "wrap" ? PF_ROW_WRAP_CLASS : undefined
+    : PF_COLUMN_STACK_CLASS;
+  const contentSlotClassName = [
+    contentFlowClass,
+    contentAlignmentClass,
+    applyFullBleed ? PF_FULL_WIDTH_CONTAINER_SLOT_CLASS : undefined,
+  ].filter(Boolean).join(" ") || undefined;
 
   // Resolve baked background images -> cover-layer URLs (same transform as the
   // legacy single background). Drop any that don't resolve (blank publicId / no
@@ -1144,6 +1185,7 @@ export function ContainerBlock({
     <section
       ref={puck?.dragRef ?? undefined}
       data-block="container"
+      data-pf-full-width={applyFullBleed ? "" : undefined}
       style={{
         position: "relative",
         display: "flex",
@@ -1153,7 +1195,13 @@ export function ContainerBlock({
         // Growing is only wanted along a ROW (siblings share the width); a COLUMN
         // parent cancels it via PF_COLUMN_STACK_CLASS — see the content slot below.
         flexGrow: isHugWidth ? 0 : 1,
-        minHeight: puck?.isEditing
+        // Hug means the section hugs both axes. Without this explicit height
+        // guard a flex ancestor can stretch an otherwise width-hugging section
+        // vertically even though its content is short.
+        height: isHugWidth ? "fit-content" : undefined,
+        minHeight: isHugWidth
+          ? undefined
+          : puck?.isEditing
           ? minHeight === "custom"
             ? (minHeightValue ?? "128px")
             : `${CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"]}px`
@@ -1164,19 +1212,21 @@ export function ContainerBlock({
         paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? CONTAINER_EFFECTIVE_PAD.left,
+        ...({
+          "--pf-container-padding-inline-start": _style?.paddingLeft ?? CONTAINER_EFFECTIVE_PAD.left,
+          "--pf-container-padding-inline-end": _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
+        } as React.CSSProperties),
         marginBottom:
           _style?.marginBottom ?? (_chrome === "footer" ? undefined : CONTAINER_EFFECTIVE_MARGIN_BOTTOM),
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...sectionStyle,
-        // Full-bleed breakout, placed after sectionStyle so it always wins over any
+        // Full-width is constrained by this section's immediate parent, placed after sectionStyle so it always wins over any
         // explicit _style.width — EXCEPT when Hug is active (applyFullBleed is false
         // in that case, so sectionStyle's fit-content width stands). Editor canvas
-        // caps to 100% (not 100vw) so it never overflows the narrow preview.
+        // and never bypasses an enclosing page-fit container.
         ...(applyFullBleed
-          ? puck?.isEditing || puck?.metadata?.presetPreview === true
-            ? { width: "100%", marginLeft: 0 }
-            : { width: "100vw", marginLeft: "calc(50% - 50vw)" }
+          ? { width: "100%", marginLeft: 0, marginRight: 0, maxWidth: "none" }
           : {}),
       }}
       {...resolveBlockAttrs(_style)}
@@ -1214,6 +1264,18 @@ export function ContainerBlock({
           <PresetMediaPlaceholder kind="background" />
         </div>
       )}
+      {contentAlignmentClass && (
+        <style>{`.${contentAlignmentClass}>*{margin-inline:0 !important;}`}</style>
+      )}
+      {applyFullBleed && (
+        <style>{`
+          .${PF_FULL_WIDTH_CONTAINER_SLOT_CLASS} > [data-block="container"][data-pf-full-width] {
+            width: calc(100% + var(--pf-container-padding-inline-start) + var(--pf-container-padding-inline-end)) !important;
+            margin-inline-start: calc(0px - var(--pf-container-padding-inline-start)) !important;
+            margin-inline-end: calc(0px - var(--pf-container-padding-inline-end)) !important;
+          }
+        `}</style>
+      )}
       {Content({
         // A column stack cancels its child Containers' `flexGrow: 1`, which would
         // otherwise let one nested section swallow all the free vertical space —
@@ -1223,11 +1285,7 @@ export function ContainerBlock({
         // presets). See PF_COLUMN_STACK_CSS for why this is a stylesheet rule.
         // A row stack additionally opts into wrap-to-stack on narrow pages when
         // it asks for it — see PF_ROW_WRAP_CSS.
-        ...(s.flexDirection === "row"
-          ? s.flexWrap === "wrap"
-            ? { className: PF_ROW_WRAP_CLASS }
-            : {}
-          : { className: PF_COLUMN_STACK_CLASS }),
+        ...(contentSlotClassName ? { className: contentSlotClassName } : {}),
         style: {
           position: "relative",
           zIndex: 1,
