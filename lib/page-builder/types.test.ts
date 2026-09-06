@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { PortfolioCollectionsPopupConfig } from "./types";
-import { resolvePopupColumns, resolvePopupLayout, resolveImageModalLayout } from "./types";
+import { resolvePopupColumns, resolvePopupLayout, resolveImageModalLayout, resolveNavOrder } from "./types";
 
 describe("PortfolioCollectionsPopupConfig title + button fields", () => {
   it("accepts the new optional fields", () => {
@@ -69,5 +69,37 @@ describe("resolveImageModalLayout", () => {
   });
   it("passes through a real value", () => {
     expect(resolveImageModalLayout("sheet")).toBe("sheet");
+  });
+});
+
+describe("resolveNavOrder", () => {
+  const DEFAULT = ["logo", "home", "gallery", "contact"];
+
+  it("defaults undefined, empty, and non-array input to the default order", () => {
+    expect(resolveNavOrder(undefined)).toEqual(DEFAULT);
+    expect(resolveNavOrder([])).toEqual(DEFAULT);
+    expect(resolveNavOrder("garbage")).toEqual(DEFAULT);
+    expect(resolveNavOrder(null)).toEqual(DEFAULT);
+  });
+
+  it("passes through a full valid permutation unchanged", () => {
+    expect(resolveNavOrder(["contact", "gallery", "home", "logo"])).toEqual([
+      "contact",
+      "gallery",
+      "home",
+      "logo",
+    ]);
+  });
+
+  it("appends missing keys in their default relative order", () => {
+    expect(resolveNavOrder(["contact", "logo"])).toEqual(["contact", "logo", "home", "gallery"]);
+  });
+
+  it("dedupes repeated keys, keeping the first occurrence's position", () => {
+    expect(resolveNavOrder(["contact", "contact", "home"])).toEqual(["contact", "home", "logo", "gallery"]);
+  });
+
+  it("drops unknown keys", () => {
+    expect(resolveNavOrder(["fake", "home"])).toEqual(["home", "logo", "gallery", "contact"]);
   });
 });

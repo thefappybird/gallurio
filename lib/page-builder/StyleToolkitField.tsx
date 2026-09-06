@@ -119,8 +119,10 @@ import {
   HEADER_FONT_SIZES,
   HEADER_NAVBAR_SIZES,
   BRAND_KIT_RADII,
+  resolveNavOrder,
   type BrandKitRadius,
   type PortfolioHeaderConfig,
+  type NavItemKey,
 } from "@/lib/page-builder/types";
 
 // Block types that are containers (no text/video inputs in Content tab).
@@ -744,6 +746,76 @@ function NavigationLogoUpload({
   );
 }
 
+const NAV_ITEM_LABELS: Record<NavItemKey, string> = {
+  logo: "Logo",
+  home: "Home",
+  gallery: "Gallery",
+  contact: "Contact",
+};
+
+/**
+ * Reorders the 4 nav items (logo + 3 links) with up/down buttons rather than
+ * drag — there are only 4 fixed rows, never a dynamic list, so drag-and-drop
+ * would add dnd-kit machinery for no real benefit and worse keyboard/a11y
+ * support than plain buttons. This is the manual RTL-friendly path: the nav
+ * block itself never auto-mirrors (see PortfolioHeader's `dir="ltr"`), so an
+ * owner who wants e.g. Contact-Gallery-Home-Logo order for an RTL-language
+ * site builds it here by hand.
+ */
+function NavOrderControl({
+  order,
+  onChange,
+}: {
+  order: NavItemKey[] | undefined;
+  onChange: (next: NavItemKey[]) => void;
+}) {
+  const resolved = resolveNavOrder(order);
+
+  function move(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= resolved.length) return;
+    const next = [...resolved];
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">Order</span>
+      <ul className="flex flex-col gap-1">
+        {resolved.map((key, index) => (
+          <li
+            key={key}
+            className="flex items-center justify-between gap-2 border border-border bg-background px-2 py-1.5 text-xs text-foreground"
+          >
+            <span>{NAV_ITEM_LABELS[key]}</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label={`Move ${NAV_ITEM_LABELS[key]} up`}
+                disabled={index === 0}
+                onClick={() => move(index, -1)}
+                className="inline-flex size-6 cursor-pointer items-center justify-center rounded border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronUp className="size-3.5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                aria-label={`Move ${NAV_ITEM_LABELS[key]} down`}
+                disabled={index === resolved.length - 1}
+                onClick={() => move(index, 1)}
+                className="inline-flex size-6 cursor-pointer items-center justify-center rounded border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronDown className="size-3.5" aria-hidden />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function NavigationContentPanel({
   config,
   setProp,
@@ -783,6 +855,7 @@ export function NavigationContentPanel({
             setProps?.(navigationLogoPatch(config as Record<string, unknown>, logoAssetId));
           }}
         />
+        <NavOrderControl order={config.navOrder} onChange={(next) => set("navOrder", next)} />
       </div>
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">

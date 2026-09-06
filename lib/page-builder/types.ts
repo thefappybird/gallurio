@@ -190,6 +190,28 @@ export type HeaderFontSize = (typeof HEADER_FONT_SIZES)[number];
 export const HEADER_NAVBAR_SIZES = ["sleek", "balanced", "flashy"] as const;
 export type HeaderNavbarSize = (typeof HEADER_NAVBAR_SIZES)[number];
 
+/** The 4 items in the nav row — reorderable so an owner can build an
+ *  RTL-friendly layout by hand (see docs/portfolio's RTL-scope plan: the
+ *  nav block never auto-mirrors, this is the manual alternative). */
+export const NAV_ITEM_KEYS = ["logo", "home", "gallery", "contact"] as const;
+export type NavItemKey = (typeof NAV_ITEM_KEYS)[number];
+
+/**
+ * Resolves a possibly-missing/corrupt saved order into a complete
+ * permutation of all 4 nav items. Unknown/duplicate entries are dropped;
+ * any missing key is appended in its default position — so a render always
+ * gets exactly the 4 keys, once each, never fewer. Absent/invalid input
+ * resolves to the original visual order (logo, home, gallery, contact).
+ */
+export function resolveNavOrder(order: unknown): NavItemKey[] {
+  const valid = Array.isArray(order)
+    ? order.filter((k): k is NavItemKey => (NAV_ITEM_KEYS as readonly string[]).includes(k as string))
+    : [];
+  const deduped = [...new Set(valid)];
+  const missing = NAV_ITEM_KEYS.filter((k) => !deduped.includes(k));
+  return [...deduped, ...missing];
+}
+
 export type PortfolioHeaderConfig = {
   /** Override for the workspace name shown in the navigation. Undefined = workspace name; empty = logo only. */
   brandText?: string;
@@ -239,6 +261,9 @@ export type PortfolioHeaderConfig = {
   contactButtonOpacity?: number;
   /** Radius for the contact CTA. */
   contactButtonRadius?: BrandKitRadius | "";
+  /** Order of the 4 nav items. Missing/invalid = default visual order — see
+   *  `resolveNavOrder`. */
+  navOrder?: NavItemKey[];
 };
 
 export const DEFAULT_HEADER_CONFIG: PortfolioHeaderConfig = {

@@ -8,6 +8,7 @@ import {
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
   HEADER_NAVBAR_SIZES,
+  NAV_ITEM_KEYS,
   POPUP_LAYOUTS,
   IMAGE_MODAL_LAYOUTS,
 } from "@/lib/page-builder/types";
@@ -177,6 +178,7 @@ export const portfolioHeaderConfigSchema = z.object({
   contactButtonTextColor: z.string().max(32).optional().or(z.literal("")),
   contactButtonOpacity: z.number().int().min(0).max(100).optional(),
   contactButtonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  navOrder: z.array(z.enum(NAV_ITEM_KEYS)).max(4).optional(),
 });
 
 export type PortfolioHeaderConfigInput = z.infer<typeof portfolioHeaderConfigSchema>;

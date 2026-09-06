@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { PortfolioHeaderConfig } from "@/lib/page-builder/types";
+import { resolveNavOrder, type PortfolioHeaderConfig, type NavItemKey } from "@/lib/page-builder/types";
 import { buildColorWithOpacity } from "@/lib/page-builder/styleToolkit";
 import { useImageRetry } from "@/hooks/useImageRetry";
 
@@ -196,9 +196,114 @@ export function PortfolioHeader({
 
   const activeLinkExtra = getActiveLinkExtraStyle();
   const brandText = config && "brandText" in config ? config.brandText?.trim() ?? "" : labels.brand;
+  const navOrder = resolveNavOrder(config?.navOrder);
+
+  function renderNavItem(key: NavItemKey): React.ReactNode {
+    if (key === "logo") {
+      return brandSlot ? (
+        <div
+          key="logo"
+          className="pf-nav-brand"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.625rem",
+            width: "100%",
+            flex: "1 1 auto",
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
+          {brandSlot}
+        </div>
+      ) : (
+        <Link
+          key="logo"
+          href={homeHref}
+          style={{
+            fontFamily: "var(--pf-font-heading)",
+            color: brandTextColor,
+            fontSize: navbarSize.brandFontSize,
+            fontWeight: 700,
+            textDecoration: "none",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.625rem",
+            flex: "1 1 auto",
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
+          {config?.logoUrl && !logo.failed && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logo.src}
+              alt=""
+              aria-hidden="true"
+              onError={logo.onError}
+              style={{ height: navbarSize.logoHeight, maxWidth: "40vw", width: "auto", objectFit: "contain", flexShrink: 0 }}
+            />
+          )}
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              minWidth: 0,
+            }}
+          >
+            {brandText}
+          </span>
+        </Link>
+      );
+    }
+    if (key === "home") {
+      return (
+        <span key="home" className="pf-nav-collapsible">
+          <HeaderLink
+            href={homeHref}
+            isActive={isHomeActive}
+            linkColor={linkColor}
+            fontSize={fontSize}
+            activeStyle={activeLinkExtra}
+            minHeight={navbarSize.linkMinHeight}
+            paddingX={navbarSize.linkPaddingX}
+          >
+            {labels.home}
+          </HeaderLink>
+        </span>
+      );
+    }
+    if (key === "gallery") {
+      return (
+        <span key="gallery" className="pf-nav-collapsible">
+          <HeaderLink
+            href={galleryHref}
+            isActive={isGalleryActive}
+            linkColor={linkColor}
+            fontSize={fontSize}
+            activeStyle={activeLinkExtra}
+            minHeight={navbarSize.linkMinHeight}
+            paddingX={navbarSize.linkPaddingX}
+          >
+            {labels.gallery}
+          </HeaderLink>
+        </span>
+      );
+    }
+    return (
+      <span key="contact" className="pf-nav-collapsible">
+        <ContactButton label={labels.contact} config={config} minHeight={navbarSize.contactMinHeight} />
+      </span>
+    );
+  }
 
   return (
     <header
+      // Never mirrors for RTL — the owner reorders `navOrder` by hand instead
+      // (see resolveNavOrder). General blocks stay LTR-structured everywhere
+      // (canvas/preview/published) regardless of any ambient direction.
+      dir="ltr"
       style={{
         position: "sticky",
         top: 0,
@@ -217,89 +322,10 @@ export function PortfolioHeader({
           padding: navbarSize.navPadding,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: "1rem",
+          gap: `clamp(0.25rem, 1.5vw, ${navbarSize.navGap})`,
         }}
       >
-        {brandSlot ? (
-          <div
-            className="pf-nav-brand"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.625rem",
-              width: "100%",
-              flex: "1 1 auto",
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-            {brandSlot}
-          </div>
-        ) : (
-          <Link
-            href={homeHref}
-            style={{
-              fontFamily: "var(--pf-font-heading)",
-              color: brandTextColor,
-              fontSize: navbarSize.brandFontSize,
-              fontWeight: 700,
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.625rem",
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-            {config?.logoUrl && !logo.failed && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logo.src}
-                alt=""
-                aria-hidden="true"
-                onError={logo.onError}
-                style={{ height: navbarSize.logoHeight, maxWidth: "40vw", width: "auto", objectFit: "contain", flexShrink: 0 }}
-              />
-            )}
-            <span
-              style={{
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                minWidth: 0,
-              }}
-            >
-              {brandText}
-            </span>
-          </Link>
-        )}
-
-        <div className="pf-nav-desktop" style={{ alignItems: "center", gap: `clamp(0.25rem, 1.5vw, ${navbarSize.navGap})` }}>
-          <HeaderLink
-            href={homeHref}
-            isActive={isHomeActive}
-            linkColor={linkColor}
-            fontSize={fontSize}
-            activeStyle={activeLinkExtra}
-            minHeight={navbarSize.linkMinHeight}
-            paddingX={navbarSize.linkPaddingX}
-          >
-            {labels.home}
-          </HeaderLink>
-          <HeaderLink
-            href={galleryHref}
-            isActive={isGalleryActive}
-            linkColor={linkColor}
-            fontSize={fontSize}
-            activeStyle={activeLinkExtra}
-            minHeight={navbarSize.linkMinHeight}
-            paddingX={navbarSize.linkPaddingX}
-          >
-            {labels.gallery}
-          </HeaderLink>
-          <ContactButton label={labels.contact} config={config} minHeight={navbarSize.contactMinHeight} />
-        </div>
+        {navOrder.map(renderNavItem)}
 
         <button
           type="button"
@@ -342,44 +368,55 @@ export function PortfolioHeader({
             borderTop: "1px solid color-mix(in srgb, var(--pf-color-fg) 14%, transparent)",
           }}
         >
-          <HeaderLink
-            href={homeHref}
-            onNavigate={() => setMenuOpen(false)}
-            block
-            isActive={isHomeActive}
-            linkColor={linkColor}
-            fontSize={fontSize}
-            activeStyle={activeLinkExtra}
-            minHeight={navbarSize.linkMinHeight}
-            paddingX={navbarSize.linkPaddingX}
-          >
-            {labels.home}
-          </HeaderLink>
-          <HeaderLink
-            href={galleryHref}
-            onNavigate={() => setMenuOpen(false)}
-            block
-            isActive={isGalleryActive}
-            linkColor={linkColor}
-            fontSize={fontSize}
-            activeStyle={activeLinkExtra}
-            minHeight={navbarSize.linkMinHeight}
-            paddingX={navbarSize.linkPaddingX}
-          >
-            {labels.gallery}
-          </HeaderLink>
-          <ContactButton
-            label={labels.contact}
-            block
-            config={config}
-            onActivate={() => setMenuOpen(false)}
-            minHeight={navbarSize.contactMinHeight}
-          />
+          {navOrder
+            .filter((key): key is Exclude<NavItemKey, "logo"> => key !== "logo")
+            .map((key) =>
+              key === "home" ? (
+                <HeaderLink
+                  key="home"
+                  href={homeHref}
+                  onNavigate={() => setMenuOpen(false)}
+                  block
+                  isActive={isHomeActive}
+                  linkColor={linkColor}
+                  fontSize={fontSize}
+                  activeStyle={activeLinkExtra}
+                  minHeight={navbarSize.linkMinHeight}
+                  paddingX={navbarSize.linkPaddingX}
+                >
+                  {labels.home}
+                </HeaderLink>
+              ) : key === "gallery" ? (
+                <HeaderLink
+                  key="gallery"
+                  href={galleryHref}
+                  onNavigate={() => setMenuOpen(false)}
+                  block
+                  isActive={isGalleryActive}
+                  linkColor={linkColor}
+                  fontSize={fontSize}
+                  activeStyle={activeLinkExtra}
+                  minHeight={navbarSize.linkMinHeight}
+                  paddingX={navbarSize.linkPaddingX}
+                >
+                  {labels.gallery}
+                </HeaderLink>
+              ) : (
+                <ContactButton
+                  key="contact"
+                  label={labels.contact}
+                  block
+                  config={config}
+                  onActivate={() => setMenuOpen(false)}
+                  minHeight={navbarSize.contactMinHeight}
+                />
+              )
+            )}
         </div>
       )}
 
       <style>{`
-        .pf-nav-desktop { display: none; }
+        .pf-nav-collapsible { display: none; }
         .pf-nav-toggle { display: flex !important; }
         .pf-nav-brand-content { width: 100%; min-width: 0; }
         .pf-nav-brand-content > * { min-width: 0; max-width: 100%; }
@@ -417,7 +454,11 @@ export function PortfolioHeader({
           .pf-nav-contact { min-width: 0; padding-left: 0.625rem !important; padding-right: 0.625rem !important; }
         }
         @media (min-width: 640px) {
-          .pf-nav-desktop { display: flex !important; }
+          /* display:contents drops the wrapper's own box so each collapsible
+             item becomes a direct flex child of <nav> at its ordered
+             position — the logo (never wrapped) stays visible at every
+             width; only the wrapped items collapse below this breakpoint. */
+          .pf-nav-collapsible { display: contents; }
           .pf-nav-toggle { display: none !important; }
           .pf-nav-mobile { display: none !important; }
         }

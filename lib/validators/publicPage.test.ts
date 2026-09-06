@@ -4,6 +4,7 @@ import {
   portfolioPuckDataSchema,
   portfolioContactConfigSchema,
   portfolioCollectionsPopupConfigSchema,
+  portfolioHeaderConfigSchema,
   savedThemeSchema,
   savedThemesSchema,
 } from "./publicPage";
@@ -55,6 +56,32 @@ describe("portfolioCollectionsPopupConfigSchema new fields", () => {
     expect(parsed.closeButtonSize).toBe(44);
     expect(parsed.closeButtonRadius).toBe("rounded");
     expect(parsed.closeButtonBgColorToken).toBe("background");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// portfolioHeaderConfigSchema — navOrder
+// ---------------------------------------------------------------------------
+
+describe("portfolioHeaderConfigSchema — navOrder", () => {
+  it("accepts an empty object (navOrder optional)", () => {
+    expect(portfolioHeaderConfigSchema.parse({})).toEqual({});
+  });
+  it("accepts a full valid permutation of the 4 nav items", () => {
+    const v = { navOrder: ["contact", "gallery", "home", "logo"] as const };
+    expect(portfolioHeaderConfigSchema.parse(v)).toEqual(v);
+  });
+  it("accepts a partial order (resolveNavOrder fills the rest at render time)", () => {
+    const v = { navOrder: ["logo", "contact"] as const };
+    expect(portfolioHeaderConfigSchema.parse(v)).toEqual(v);
+  });
+  it("rejects an unknown nav item key", () => {
+    expect(portfolioHeaderConfigSchema.safeParse({ navOrder: ["sidebar"] }).success).toBe(false);
+  });
+  it("rejects more than 4 entries", () => {
+    expect(
+      portfolioHeaderConfigSchema.safeParse({ navOrder: ["logo", "home", "gallery", "contact", "home"] }).success
+    ).toBe(false);
   });
 });
 

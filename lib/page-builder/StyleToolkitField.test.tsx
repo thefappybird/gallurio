@@ -635,6 +635,47 @@ describe("Item 1: ContentInputs — Navigation Overall width control", () => {
   });
 });
 
+describe("NavOrderControl (Navigation Content panel)", () => {
+  it("default render (no navOrder) shows rows in Logo/Home/Gallery/Contact order with the correct ends disabled", () => {
+    render(<ContentInputs type="Navigation" props={{}} setProp={vi.fn()} />);
+    const upButtons = screen.getAllByRole("button", { name: /Move .* up/ });
+    expect(upButtons.map((btn) => btn.getAttribute("aria-label"))).toEqual([
+      "Move Logo up",
+      "Move Home up",
+      "Move Gallery up",
+      "Move Contact up",
+    ]);
+    expect(screen.getByRole("button", { name: "Move Logo up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Contact down" })).toBeDisabled();
+  });
+
+  it("clicking Home's down-button (default order) calls setProp('navOrder', ...) with the full swapped 4-key array", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Navigation" props={{}} setProp={setProp} />);
+    fireEvent.click(screen.getByRole("button", { name: "Move Home down" }));
+    expect(setProp).toHaveBeenCalledWith("navOrder", ["logo", "gallery", "home", "contact"]);
+  });
+
+  it("with a custom navOrder already set, rows render in that order with the correct ends disabled", () => {
+    render(
+      <ContentInputs
+        type="Navigation"
+        props={{ navOrder: ["contact", "home", "gallery", "logo"] }}
+        setProp={vi.fn()}
+      />,
+    );
+    const upButtons = screen.getAllByRole("button", { name: /Move .* up/ });
+    expect(upButtons.map((btn) => btn.getAttribute("aria-label"))).toEqual([
+      "Move Contact up",
+      "Move Home up",
+      "Move Gallery up",
+      "Move Logo up",
+    ]);
+    expect(screen.getByRole("button", { name: "Move Contact up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Logo down" })).toBeDisabled();
+  });
+});
+
 describe("Navigation Design panel", () => {
   it("keeps Links open first and Contact button collapsed", () => {
     render(<NavigationDesignPanel config={{}} setProp={vi.fn()} />);
