@@ -527,6 +527,25 @@ export function CollectionPopup({
           onRequestMore={handleLoadMore}
           closeLabel={L.close}
           fullSizeAlt={L.fullSizeAlt}
+          // The lightbox otherwise falls back to its own English-only
+          // defaults — CollectionPopupLabels already resolves every one of
+          // these at the page boundary, so thread them through instead of
+          // leaving the popup's own image viewer unlocalized.
+          labels={{
+            close: L.close,
+            previous: L.previousPhoto,
+            next: L.nextPhoto,
+            counter: L.counter,
+            filmstrip: L.filmstripLabel,
+            seeMore: L.seeMore,
+            seeLess: L.seeLess,
+            additionalInformation: L.additionalInformation,
+            date: L.dateLabel,
+            location: L.locationLabel,
+            client: L.clientLabel,
+            tags: L.tagsLabel,
+            photoOf: L.photoOf,
+          }}
           // The lightbox portals to document.body, escaping the wrapper that
           // declares --pf-*; without these it renders in the default palette
           // rather than the tenant's. Same reason this component re-applies

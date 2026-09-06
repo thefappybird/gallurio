@@ -372,6 +372,32 @@ describe("CollectionPopup", () => {
     });
   });
 
+  it("threads CollectionPopupLabels into the nested lightbox instead of its English-only defaults", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup
+        {...defaultProps({
+          labels: {
+            previousPhoto: "Foto anterior",
+            nextPhoto: "Foto siguiente",
+            close: "Cerrar",
+            dateLabel: "Fecha",
+            locationLabel: "Ubicación",
+            clientLabel: "Cliente",
+            tagsLabel: "Etiquetas",
+          },
+        })}
+      />
+    );
+
+    const thumbs = await screen.findAllByRole("img");
+    const thumb = thumbs.find((img) => (img as HTMLImageElement).src.includes("w=400"))!;
+    fireEvent.click(thumb.closest("button") ?? thumb);
+
+    expect(await screen.findByRole("button", { name: "Foto anterior" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Foto siguiente" })).toBeInTheDocument();
+  });
+
   it("closing the lightbox keeps the popup open", async () => {
     vi.stubGlobal("fetch", makeFetch(null));
     render(<CollectionPopup {...defaultProps()} />);

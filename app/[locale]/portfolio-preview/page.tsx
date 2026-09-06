@@ -252,6 +252,11 @@ export default async function PortfolioPreviewPage({
           clientLabel: tPopup("clientLabel"),
           tagsLabel: tPopup("tagsLabel"),
           photoOf: t("gallery.lightboxPhotoOf", { current: "{current}", total: "{total}" }),
+          // Reused from the Gallery blocks' own chrome — same concept, same copy.
+          counter: t("gallery.lightboxCounter", { current: "{current}", total: "{total}" }),
+          seeMore: t("gallery.lightboxSeeMore"),
+          seeLess: t("gallery.lightboxSeeLess"),
+          additionalInformation: t("gallery.lightboxAdditionalInformation"),
         }}
       />
     );

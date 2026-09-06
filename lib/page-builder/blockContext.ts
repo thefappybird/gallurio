@@ -156,6 +156,16 @@ export type CollectionPopupLabels = {
   tagsLabel?: string;
   /** Dot-pagination aria-label template. Contains literal "{current}"/"{total}" tokens. */
   photoOf?: string;
+  /** Counter template for the nested image lightbox. Contains literal
+   *  "{current}"/"{total}" tokens. Reuses the Gallery blocks' own
+   *  `chrome.gallery.lightboxCounter` copy — same concept, same string. */
+  counter?: string;
+  /** "See more" disclosure toggle inside the lightbox's facts/meta panel. */
+  seeMore?: string;
+  /** "See less" — same toggle, expanded state. */
+  seeLess?: string;
+  /** Heading for the lightbox's facts/custom metadata group. */
+  additionalInformation?: string;
 };
 
 /**
@@ -185,6 +195,10 @@ export function applyCollectionPopupDefaults(l: CollectionPopupLabels = {}): Req
     clientLabel: l.clientLabel ?? "Client",
     tagsLabel: l.tagsLabel ?? "Tags",
     photoOf: l.photoOf ?? "Photo {current} of {total}",
+    counter: l.counter ?? "{current} / {total}",
+    seeMore: l.seeMore ?? "See more",
+    seeLess: l.seeLess ?? "See less",
+    additionalInformation: l.additionalInformation ?? "Additional information",
   };
 }
 

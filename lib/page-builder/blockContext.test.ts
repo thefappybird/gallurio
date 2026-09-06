@@ -340,5 +340,9 @@ it("applyCollectionPopupDefaults returns all English defaults when called empty"
     clientLabel: "Client",
     tagsLabel: "Tags",
     photoOf: "Photo {current} of {total}",
+    counter: "{current} / {total}",
+    seeMore: "See more",
+    seeLess: "See less",
+    additionalInformation: "Additional information",
   });
 });
