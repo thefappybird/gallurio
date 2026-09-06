@@ -248,8 +248,11 @@ test.describe("drawer preset previews", () => {
     );
     const panel = page.locator('[data-preset-preview-panel="true"]');
     await panel.waitFor({ state: "visible", timeout: 10_000 });
-    await expect(panel.locator("[data-preset-media-placeholder='grid']")).toHaveCount(1);
-    await expect(panel.locator("[data-preset-media-tile]")).toHaveCount(4);
+    // Framed selection's grid holds real (empty) Image blocks in its content
+    // slot — each renders its own placeholder tile, so the layout preview shows
+    // six of them rather than the bulk "no images yet" schematic.
+    await expect(panel.locator("[data-block='image']")).toHaveCount(6);
+    await expect(panel.locator("[data-preset-media-placeholder='image']")).toHaveCount(6);
 
     const featured = await expand("Featured work");
     await hoverRow(

@@ -156,7 +156,7 @@ export default async function PortfolioPreviewPage({
     let fallbackData: PuckData =
       ((pp?.data as Record<string, unknown> | null | undefined)?.[zone] as PuckData | undefined) ??
       { content: [], root: {} };
-    let resolvedCollectionsPopup = collectionsPopupConfig;
+    const resolvedCollectionsPopup = collectionsPopupConfig;
     if (selectedDraft) {
       const draftZoneData = selectedDraft.data?.[zone] as PuckData | undefined;
       if (draftZoneData) {

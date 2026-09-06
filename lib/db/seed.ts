@@ -577,9 +577,9 @@ async function createPublishedPortfolio(workspace: {
   // secondary drafts let the refreshed drafts dialog and template switcher
   // demonstrate real versioning rather than a single empty state.
   const editorialTemplate = getTemplate("editorial");
-  const boldTemplate = getTemplate("bold");
+  const romanticTemplate = getTemplate("romantic");
   const minimalTemplate = getTemplate("minimal");
-  if (!editorialTemplate || !boldTemplate || !minimalTemplate) {
+  if (!editorialTemplate || !romanticTemplate || !minimalTemplate) {
     throw new Error("Required portfolio templates not found");
   }
 
@@ -611,12 +611,12 @@ async function createPublishedPortfolio(workspace: {
     },
     {
       workspaceId: workspace._id,
-      name: "Bold Campaign Concept",
-      templateId: boldTemplate.id,
-      data: boldTemplate.seedData({ workspace: { name: workspace.name } }),
-      brandKit: boldTemplate.defaultBrandKit,
-      contact: boldTemplate.defaultContact,
-      collectionsPopup: boldTemplate.defaultCollectionsPopup,
+      name: "Romantic Campaign Concept",
+      templateId: romanticTemplate.id,
+      data: romanticTemplate.seedData({ workspace: { name: workspace.name } }),
+      brandKit: romanticTemplate.defaultBrandKit,
+      contact: romanticTemplate.defaultContact,
+      collectionsPopup: romanticTemplate.defaultCollectionsPopup,
       ...draftMetadata,
       createdAt: dayOffset(-4),
       updatedAt: dayOffset(-4),

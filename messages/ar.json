@@ -2885,7 +2885,7 @@
             "contactBarPreset": "صف ختامي عريض يترتب حسب اتجاه القراءة على الهاتف.",
             "galleryGridPreset": "عنوان ووصف فوق شبكة من ثلاثة أعمدة.",
             "galleryGridFullPreset": "ترويسة بسيطة فوق شبكة بأربعة أعمدة بلا حواف.",
-            "galleryGridFramedPreset": "قسم مبطَّن ومؤطَّر حول مجموعة صغيرة مختارة.",
+            "galleryGridFramedPreset": "تأخذ الشبكة المؤطرة العمود الأوسع بينما تقع المقدمة بجانبها.",
             "galleryMasonryPreset": "عنوان ووصف فوق تدفق متداخل.",
             "galleryMasonryWallPreset": "عرض كامل وفواصل ضيقة — تشكّل الصور جدارًا واحدًا.",
             "galleryMasonryJournalPreset": "تأخذ المقدمة عمودًا واحدًا بينما يمتد المعرض المتداخل على الباقي.",

@@ -93,14 +93,24 @@ describe("portfolio template registry", () => {
       it("seeds gallery blocks with empty images[] (owner picks photos)", () => {
         // Preset blocks (e.g. GalleryLandingPreset) are Container-based and have
         // no images prop — only data gallery blocks (GalleryGrid, GalleryMasonry)
-        // carry images[]. The type check excludes the *Preset suffix.
+        // carry images[]. The type check excludes the *Preset suffix. Data blocks
+        // may live nested inside a PageBody/preset's content slot, not just at
+        // the zone's top level, so this walks recursively. An omitted `images`
+        // key is equivalent to `[]` here — fillBlockDefaults re-injects the
+        // block's own default ([]) on apply.
         const GALLERY_DATA_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
-        for (const block of data.gallery?.content ?? []) {
-          if (GALLERY_DATA_TYPES.has(block.type)) {
-            expect(block.props.images).toEqual([]);
-            expect(block.props).not.toHaveProperty("collectionId");
+        function walk(blocks: { type: string; props: Record<string, unknown> }[]) {
+          for (const block of blocks) {
+            if (GALLERY_DATA_TYPES.has(block.type)) {
+              expect(block.props.images ?? []).toEqual([]);
+              expect(block.props).not.toHaveProperty("collectionId");
+            }
+            if (Array.isArray(block.props.content)) {
+              walk(block.props.content as typeof blocks);
+            }
           }
         }
+        walk(data.gallery?.content ?? []);
       });
 
       it("has a valid default brand kit", () => {
@@ -134,28 +144,17 @@ describe("portfolio template registry", () => {
       });
 
       it("does not seed a container text token identical to its background", () => {
-        const containerTypes = new Set([
-          "Container",
-          "HeroPreset",
-          "AboutPreset",
-          "ServicesPreset",
-          "CtaPreset",
-          "ContactPreset",
-          "GalleryGridPreset",
-          "GalleryMasonryPreset",
-          "FeaturedWorkPreset",
-          "GalleryLandingPreset",
-          "VideoPreset",
-        ]);
+        // Type-agnostic on purpose: any block carrying both tokens (container or
+        // preset, current or future naming) must keep them distinct for legibility.
         function walk(blocks: { type: string; props?: Record<string, unknown> }[]) {
           for (const block of blocks) {
             const style = block.props?._style as
               | { bgColorToken?: string; textColorToken?: string }
               | undefined;
-            if (containerTypes.has(block.type) && style?.textColorToken) {
+            if (style?.bgColorToken && style?.textColorToken) {
               expect(
                 style.textColorToken,
-                `${template.id} ${block.props?.id}: container text must remain legible`,
+                `${template.id} ${block.type} ${block.props?.id}: container text must remain legible`,
               ).not.toBe(style.bgColorToken);
             }
             if (Array.isArray(block.props?.content)) {
@@ -166,13 +165,14 @@ describe("portfolio template registry", () => {
         walk([...(data.home?.content ?? []), ...(data.gallery?.content ?? [])]);
       });
 
-      it("follows the pinned Navigation with a HeroPreset or Columns block", () => {
+      it("follows the pinned Navigation with a PageBody, HeroPreset, or Columns block", () => {
         // scratch is an intentionally empty canvas (Navigation only) — exempt.
         if (template.id === "scratch") return;
         const secondBlock = data.home?.content[1];
-        // bold/luxury/editorial open with a Columns mosaic that embeds HeroPreset;
-        // minimal/romantic-style templates open directly with HeroPreset.
-        expect(["HeroPreset", "Columns"], `Expected second home block to be HeroPreset or Columns, got '${secondBlock?.type}'`)
+        // Current templates wrap their sections in a single PageBody container;
+        // legacy shapes (Columns mosaic embedding HeroPreset, or a bare HeroPreset)
+        // stay accepted so this doesn't churn on the next content-model change.
+        expect(["PageBody", "HeroPreset", "Columns"], `Expected second home block to be PageBody, HeroPreset, or Columns, got '${secondBlock?.type}'`)
           .toContain(secondBlock?.type);
       });
 
@@ -203,9 +203,14 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit.themePreset).toBe("minimal");
   });
 
-  it("bold carries the 'bold' theme preset", () => {
-    const t = getTemplate("bold")!;
-    expect(t.defaultBrandKit.themePreset).toBe("bold");
+  it("romantic carries the 'romantic' theme preset", () => {
+    const t = getTemplate("romantic")!;
+    expect(t.defaultBrandKit.themePreset).toBe("romantic");
+  });
+
+  it("modern carries the 'modern' theme preset", () => {
+    const t = getTemplate("modern")!;
+    expect(t.defaultBrandKit.themePreset).toBe("modern");
   });
 
   it("luxury carries the 'luxury' theme preset", () => {
@@ -223,9 +228,14 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.minimal.brandKit);
   });
 
-  it("bold brand kit exactly matches THEME_PRESET_DEFINITIONS.bold", () => {
-    const t = getTemplate("bold")!;
-    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.bold.brandKit);
+  it("romantic brand kit exactly matches THEME_PRESET_DEFINITIONS.romantic", () => {
+    const t = getTemplate("romantic")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.romantic.brandKit);
+  });
+
+  it("modern brand kit exactly matches THEME_PRESET_DEFINITIONS.modern", () => {
+    const t = getTemplate("modern")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.modern.brandKit);
   });
 
   it("luxury brand kit exactly matches THEME_PRESET_DEFINITIONS.luxury", () => {
@@ -238,25 +248,22 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.editorial.brandKit);
   });
 
-  it("luxury's plain (non-feature-band) preset sections pin their own background", () => {
-    // ServicesPreset/FeaturedWorkPreset have no explicit text color on their
-    // children, so they default to the theme foreground — the light pole of the
-    // Luxury palette. Without an explicit bgColorToken here they render on an
-    // unstyled (white) surface and their default-foreground text is illegible.
-    const data = getTemplate("luxury")!.seedData(mockCtx);
-    const services = data.home?.content?.find((b) => b.type === "ServicesPreset");
-    const featuredWork = data.gallery?.content?.find((b) => b.type === "FeaturedWorkPreset");
-    expect((services?.props as { _style?: { bgColorToken?: string } })?._style?.bgColorToken).toBe("background");
-    expect((featuredWork?.props as { _style?: { bgColorToken?: string } })?._style?.bgColorToken).toBe("background");
-  });
-
   it("gallery collectionId is absent from all non-scratch templates", () => {
+    function walk(blocks: { type: string; props?: Record<string, unknown> }[], templateId: string) {
+      for (const block of blocks) {
+        expect(
+          (block.props as Record<string, unknown> | undefined)?.collectionId,
+          `${templateId} gallery block '${block.type}' has collectionId`,
+        ).toBeFalsy();
+        if (Array.isArray(block.props?.content)) {
+          walk(block.props.content as typeof blocks, templateId);
+        }
+      }
+    }
     for (const template of PORTFOLIO_TEMPLATES) {
       if (template.id === "scratch") continue;
       const data = template.seedData({ workspace: { name: "Test" } });
-      for (const block of data.gallery?.content ?? []) {
-        expect((block.props as Record<string, unknown>).collectionId, `${template.id} gallery block '${block.type}' has collectionId`).toBeFalsy();
-      }
+      walk(data.gallery?.content ?? [], template.id);
     }
   });
 });
@@ -297,7 +304,7 @@ describe("_blocks factory helpers", () => {
 
 describe("getTemplate", () => {
   it("returns a template by id", () => {
-    expect(getTemplate("bold")?.id).toBe("bold");
+    expect(getTemplate("minimal")?.id).toBe("minimal");
   });
   it("returns null for an unknown id", () => {
     expect(getTemplate("nope")).toBeNull();

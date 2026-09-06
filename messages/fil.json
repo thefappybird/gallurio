@@ -2885,7 +2885,7 @@
             "contactBarPreset": "Malapad na closing row na nagsta-stack ayon sa reading order sa phone.",
             "galleryGridPreset": "Heading at description sa itaas ng three-column grid.",
             "galleryGridFullPreset": "Minimal na header sa itaas ng edge-to-edge na four-column grid.",
-            "galleryGridFramedPreset": "Padded at bordered na seksyon sa paligid ng maliit na curated set.",
+            "galleryGridFramedPreset": "Kinukuha ng may-border na grid ang mas malawak na track habang nasa tabi ang panimula.",
             "galleryMasonryPreset": "Heading at description sa itaas ng masonry flow.",
             "galleryMasonryWallPreset": "Full width na may tight gutters — nagiging isang pader ang mga larawan.",
             "galleryMasonryJournalPreset": "Isang track ang panimula habang ang masonry ay umaabot sa natitira.",

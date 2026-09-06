@@ -1,8 +1,9 @@
 import type { PortfolioTemplate, PortfolioTemplateId, TemplateBusinessType } from "./types";
-import { boldTemplate } from "./bold";
 import { luxuryTemplate } from "./luxury";
 import { editorialTemplate } from "./editorial";
 import { minimalTemplate } from "./minimal";
+import { romanticTemplate } from "./romantic";
+import { modernTemplate } from "./modern";
 import { scratchTemplate } from "./scratch";
 
 export { PORTFOLIO_TEMPLATE_IDS } from "./types";
@@ -15,10 +16,11 @@ export type {
 
 // Order matters — this is the display order on the wizard's template grid.
 export const PORTFOLIO_TEMPLATES: PortfolioTemplate[] = [
-  boldTemplate,
-  luxuryTemplate,
-  editorialTemplate,
   minimalTemplate,
+  editorialTemplate,
+  luxuryTemplate,
+  romanticTemplate,
+  modernTemplate,
   scratchTemplate,
 ];
 

@@ -12,6 +12,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 
 ### Changed
 - The Sidebar and Sheet lightbox layouts now keep their navigation controls reachable at the bottom of the panel while scrolling through a photo's details, instead of scrolling out of view.
+- The portfolio starter templates are now Minimal, Editorial, Luxury, Romantic, and Modern, replacing the earlier four-template lineup and filling the template picker evenly; Bold remains available as a brand theme but is no longer offered as a starter template.
+- The "Framed selection" gallery grid preset is now a split layout — a bordered photo grid alongside an introduction — instead of a single centered card.
 
 ### Fixed
 - The photo details editor's tags field no longer silently ignores the Enter key — it was a plain text box despite its own placeholder telling you to press Enter.

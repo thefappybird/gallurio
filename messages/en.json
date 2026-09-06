@@ -2885,7 +2885,7 @@
             "contactBarPreset": "A wide closing row that stacks in reading order on a phone.",
             "galleryGridPreset": "A heading and description above a three-column grid.",
             "galleryGridFullPreset": "A minimal header over an edge-to-edge four-column grid.",
-            "galleryGridFramedPreset": "A padded, bordered section around a small curated set.",
+            "galleryGridFramedPreset": "A bordered grid takes the wide track while the introduction sits alongside.",
             "galleryMasonryPreset": "A heading and description above a masonry flow.",
             "galleryMasonryWallPreset": "Full width and tight gutters — the photographs form one wall.",
             "galleryMasonryJournalPreset": "The introduction takes one track while the masonry spans the rest.",

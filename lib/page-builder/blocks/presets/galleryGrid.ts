@@ -8,7 +8,6 @@ import {
   child,
   hairlineFrame,
   pageFitColumns,
-  pageInsetSection,
   pageSection,
   primaryBandSection,
   slot,
@@ -63,23 +62,45 @@ export const GALLERY_GRID_FULL_PRESET: ContainerBlockProps = {
 
 export const GALLERY_GRID_FRAMED_PRESET: ContainerBlockProps = {
   minHeight: "auto",
-  _style: { ...accentBandSection, gap: 0, paddingTop: "3rem", paddingBottom: "3rem" },
+  _style: { ...pageSection, gap: 0 },
   content: slot([
-    child("Container", {
-      _style: {
-        ...pageInsetSection,
-        ...hairlineFrame,
-        gap: 28,
-        paddingTop: "2.5rem",
-        paddingRight: "2.5rem",
-        paddingBottom: "2.5rem",
-        paddingLeft: "2.5rem",
-        contentHorizontalAlign: "center",
-      },
+    pageFitColumns({
+      columns: 4,
+      minHeight: "0px",
+      _style: { gap: 40 },
       content: slot([
-        child("Heading", { level: "h2", text: "Gallery highlights" }),
-        child("Text", { text: "A curated selection from one collection." }),
-        child("GalleryGrid", { content: gridImages(4), _style: { galleryColumns: 2, galleryGap: "loose" } }),
+        child("GalleryGrid", {
+          content: gridImages(6),
+          _style: {
+            ...hairlineFrame,
+            colSpan: 3,
+            galleryColumns: 3,
+            galleryGap: "normal",
+            paddingTop: "1.5rem",
+            paddingRight: "1.5rem",
+            paddingBottom: "1.5rem",
+            paddingLeft: "1.5rem",
+          },
+        }),
+        child("Container", {
+          _style: {
+            ...accentBandSection,
+            gap: 14,
+            paddingTop: "2rem",
+            paddingRight: "2rem",
+            paddingBottom: "2rem",
+            paddingLeft: "2rem",
+          },
+          content: slot([
+            child("Heading", { level: "h2", text: "Gallery highlights" }),
+            child("Text", { text: "A curated selection from one collection." }),
+            child("Divider", {
+              thickness: 1,
+              _style: { width: "3rem", paddingLeft: "0px", paddingRight: "0px" },
+            }),
+            child("Text", { text: "Six frames, hand-picked from the full set." }),
+          ]),
+        }),
       ]),
     }),
   ]),

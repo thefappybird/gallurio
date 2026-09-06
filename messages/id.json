@@ -2885,7 +2885,7 @@
             "contactBarPreset": "Baris penutup lebar yang bertumpuk sesuai urutan baca di ponsel.",
             "galleryGridPreset": "Judul dan deskripsi di atas grid tiga kolom.",
             "galleryGridFullPreset": "Header minimal di atas grid empat kolom tepi-ke-tepi.",
-            "galleryGridFramedPreset": "Bagian berbantalan dan berbingkai di sekitar set kecil pilihan.",
+            "galleryGridFramedPreset": "Grid berbingkai mengambil kolom yang lebih lebar sementara pengantar berada di sampingnya.",
             "galleryMasonryPreset": "Judul dan deskripsi di atas alur masonry.",
             "galleryMasonryWallPreset": "Lebar penuh dan celah rapat — foto membentuk satu dinding.",
             "galleryMasonryJournalPreset": "Pengantar mengambil satu kolom sementara masonry mengisi sisanya.",

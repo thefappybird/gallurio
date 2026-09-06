@@ -296,7 +296,7 @@ export const SECTION_PRESETS = {
     "A minimal header over an edge-to-edge four-column grid.", GALLERY_GRID_FULL_PRESET,
     { dependsOn: ["gallery"] }),
   GalleryGridFramedPreset: entry("GalleryGridFramedPreset", "galleryGrid", "Framed selection",
-    "A padded, bordered section around a small curated set.", GALLERY_GRID_FRAMED_PRESET,
+    "A bordered grid takes the wide track while the introduction sits alongside.", GALLERY_GRID_FRAMED_PRESET,
     { dependsOn: ["gallery"] }),
 
   // ---- Gallery masonry ----

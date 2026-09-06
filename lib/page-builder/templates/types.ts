@@ -10,10 +10,11 @@ import type {
 // makes it persistable everywhere. Pure data (no React/block imports) so it is
 // safe to import from server models and validators without cycles.
 export const PORTFOLIO_TEMPLATE_IDS = [
-  "bold",
-  "luxury",
-  "editorial",
   "minimal",
+  "editorial",
+  "luxury",
+  "romantic",
+  "modern",
   "scratch",
 ] as const;
 
