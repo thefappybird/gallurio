@@ -38,6 +38,9 @@ export type PopupLayoutBodyProps = {
    *  render their back-compat path in that case (see ContactSheet.tsx). */
   collectionDescription?: string;
   total?: number;
+  /** Resolved column count for contact-sheet/justified/split-index — Immersive
+   *  never receives this (it has no columns concept). */
+  popupColumns: PopupColumns;
   hasMore: boolean;
   /** True while a "load more" page request is in flight (never true for the
    *  first page — CollectionPopup renders its own loading state for that). */
@@ -71,7 +74,6 @@ export type ImmersiveProps = {
   collectionName: string;
   collectionDescription?: string;
   total?: number;
-  popupColumns: PopupColumns;
   hasMore: boolean;
   onLoadMore: () => void;
   onRetry: () => void;

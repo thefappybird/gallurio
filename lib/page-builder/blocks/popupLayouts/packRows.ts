@@ -8,10 +8,16 @@
  *   rowHeight = (containerWidth - totalGutter) / sum(aspectRatio)
  *
  * So packing is a matter of choosing where to break, not how tall to make
- * things. We greedily add items until the resulting height first drops to or
- * below the target, then keep whichever break (before or after that item) lands
- * closer to the target — which stops a row of two wide images from towering over
- * a row of five narrow ones.
+ * things. By default (no `itemsPerRow`) we greedily add items until the
+ * resulting height first drops to or below the target, then keep whichever
+ * break (before or after that item) lands closer to the target — which stops
+ * a row of two wide images from towering over a row of five narrow ones.
+ *
+ * When `itemsPerRow` is set, breaking is fixed instead of automatic: every
+ * complete row holds exactly that many images (chunked in source order), and
+ * only the height is derived from their aspect ratios. A final row with fewer
+ * than `itemsPerRow` images is left at `targetHeight`, unstretched — see
+ * "does not stretch the final row" below.
  *
  * Pure: no React, no DOM, no imports. The caller supplies the container width,
  * so this runs identically on the server and in the editor canvas.

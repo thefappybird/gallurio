@@ -7,7 +7,7 @@ import { formatPhotoCount, type PopupLayoutBodyProps } from "./types";
 
 /**
  * `split-index` — a sticky narrative column (name, description, facts) on the
- * inline-start side, with a two-up masonry beside it. Stacks under the text
+ * inline-start side, with a `popupColumns`-wide masonry beside it. Stacks under the text
  * on narrow viewports via a scoped media query (mirrors the FOCUS_VISIBLE_STYLES
  * pattern used elsewhere in this file family — inline styles can't express
  * pseudo-classes/media queries on their own).

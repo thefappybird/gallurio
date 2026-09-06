@@ -684,6 +684,20 @@ describe("CollectionPopup title override", () => {
 // popupLayout routing
 // ---------------------------------------------------------------------------
 
+describe("CollectionPopup popupColumns wiring", () => {
+  it("passes popupConfig.popupColumns through to the rendered list's data-popup-columns", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup
+        {...defaultProps({ popupConfig: { popupLayout: "contact-sheet", popupColumns: 4 } })}
+      />
+    );
+    await screen.findAllByRole("img");
+    const list = screen.getByRole("list");
+    expect(list).toHaveAttribute("data-popup-columns", "4");
+  });
+});
+
 describe("CollectionPopup popupLayout routing", () => {
   it("uses the contact-sheet list markup when popupLayout is unset", async () => {
     vi.stubGlobal("fetch", makeFetch(null));

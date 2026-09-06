@@ -5,8 +5,8 @@ import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { formatPhotoCount, type PopupLayoutBodyProps } from "./types";
 
 /**
- * `contact-sheet` — the original popup body (uniform squares, six per row),
- * extracted verbatim from CollectionPopup.tsx.
+ * `contact-sheet` — the original popup body (uniform squares, laid out in an
+ * exact `popupColumns`-wide grid), extracted verbatim from CollectionPopup.tsx.
  *
  * BACK-COMPAT CONTRACT: when `collectionDescription` is absent (every page
  * saved before this feature), this must render exactly what shipped before —

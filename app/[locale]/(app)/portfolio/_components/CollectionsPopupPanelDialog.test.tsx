@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import React from "react";
 import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
@@ -495,5 +495,55 @@ describe("CollectionsPopupPanelDialog layout pickers", () => {
     fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
     fireEvent.click(screen.getByRole("button", { name: /button styles/i }));
     expect(screen.queryByText(/not used by this layout/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("CollectionsPopupPanelDialog popup columns", () => {
+  it("shows the Columns group with 3 pressed as the effective default when unset (contact-sheet)", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={{ ...baseConfig, popupLayout: "contact-sheet" }}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    const group = screen.getByRole("group", { name: /columns/i });
+    expect(within(group).getByRole("button", { name: "3" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("clicking 5 emits the config with popupColumns set to 5", () => {
+    const onChange = vi.fn();
+    const config: PortfolioCollectionsPopupConfig = { ...baseConfig, popupLayout: "contact-sheet" };
+    renderWithProviders(
+      <CollectionsPopupPanelDialog config={config} onChange={onChange} brandKit={stubBrandKit} />,
+    );
+    const group = screen.getByRole("group", { name: /columns/i });
+    fireEvent.click(within(group).getByRole("button", { name: "5" }));
+    expect(onChange).toHaveBeenCalledWith({ ...config, popupColumns: 5 });
+  });
+
+  it("hides the Columns group for immersive while the passed config still carries its value", () => {
+    const config: PortfolioCollectionsPopupConfig = {
+      ...baseConfig,
+      popupLayout: "immersive",
+      popupColumns: 4,
+    };
+    const { rerender } = renderWithProviders(
+      <CollectionsPopupPanelDialog config={config} onChange={vi.fn()} brandKit={stubBrandKit} />,
+    );
+    expect(screen.queryByRole("group", { name: /columns/i })).not.toBeInTheDocument();
+
+    // Switching layout away from immersive (config unchanged otherwise) reveals
+    // the group again still holding the explicit value — the control never
+    // stripped it while hidden.
+    rerender(
+      <CollectionsPopupPanelDialog
+        config={{ ...config, popupLayout: "contact-sheet" }}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    const group = screen.getByRole("group", { name: /columns/i });
+    expect(within(group).getByRole("button", { name: "4" })).toHaveAttribute("aria-pressed", "true");
   });
 });

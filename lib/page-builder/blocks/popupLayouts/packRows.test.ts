@@ -98,4 +98,34 @@ describe("packRows", () => {
     const rows = packRows([img(3, 2)], { containerWidth: 1000 });
     expect(rows[0].height).toBe(DEFAULT_TARGET_HEIGHT);
   });
+
+  describe("itemsPerRow (fixed-row mode)", () => {
+    it("chunks images into exact-size rows, with a shorter final row", () => {
+      const images = Array.from({ length: 8 }, (_, i) => ({ ...img(4, 3), id: i }));
+      const rows = packRows(images, { ...OPTS, itemsPerRow: 3 });
+      const ids = rows.map((r) => r.items.map((i) => (i.item as { id: number }).id));
+      expect(ids).toEqual([
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7],
+      ]);
+    });
+
+    it("stretches every complete row to fill the container width", () => {
+      const images = Array.from({ length: 8 }, () => img(4, 3));
+      const rows = packRows(images, { ...OPTS, itemsPerRow: 3 });
+      for (const row of rows.slice(0, -1)) {
+        expect(rowWidth(row.items, OPTS.gutter)).toBeCloseTo(OPTS.containerWidth, 5);
+      }
+    });
+
+    it("leaves the final incomplete row at the target height, unstretched", () => {
+      const images = Array.from({ length: 8 }, () => img(4, 3));
+      const rows = packRows(images, { ...OPTS, itemsPerRow: 3 });
+      const last = rows[rows.length - 1];
+      expect(last.items).toHaveLength(2);
+      expect(last.height).toBe(OPTS.targetHeight);
+      expect(rowWidth(last.items, OPTS.gutter)).toBeLessThan(OPTS.containerWidth);
+    });
+  });
 });
